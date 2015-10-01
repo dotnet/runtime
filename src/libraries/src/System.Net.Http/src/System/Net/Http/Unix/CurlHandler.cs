@@ -665,7 +665,15 @@ namespace System.Net.Http
             if (Uri.TryCreate(location, UriKind.RelativeOrAbsolute, out forwardUri) && forwardUri.IsAbsoluteUri)
             {
                 NetworkCredential newCredential = GetCredentials(state._handler.Credentials as CredentialCache, forwardUri);
-                state.SetCredentialsOptions(newCredential);
+                if (newCredential != null)
+                {
+                    state.SetCredentialsOptions(newCredential);
+                }
+                else
+                {
+                    state.SetCurlOption(CURLoption.CURLOPT_USERNAME, IntPtr.Zero);
+                    state.SetCurlOption(CURLoption.CURLOPT_PASSWORD, IntPtr.Zero);
+                }
 
                 // reset proxy - it is possible that the proxy has different credentials for the new URI
                 state.SetProxyOptions(forwardUri);
