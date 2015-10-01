@@ -31,7 +31,7 @@
 
 #if defined(HAVE_KW_THREAD) && defined(__linux__) \
 	|| defined(TARGET_ANDROID) \
-	|| defined(TARGET_IOS)
+	|| (defined(TARGET_IOS) && !defined(TARGET_WATCHOS))
 #define HAVE_FAST_TLS
 #endif
 
