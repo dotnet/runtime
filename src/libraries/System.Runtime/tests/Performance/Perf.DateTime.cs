@@ -13,11 +13,12 @@ namespace System.Runtime.Tests
             DateTime dt;
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    dt = DateTime.Now; dt = DateTime.Now; dt = DateTime.Now;
-                    dt = DateTime.Now; dt = DateTime.Now; dt = DateTime.Now;
-                    dt = DateTime.Now; dt = DateTime.Now; dt = DateTime.Now;
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        dt = DateTime.Now; dt = DateTime.Now; dt = DateTime.Now;
+                        dt = DateTime.Now; dt = DateTime.Now; dt = DateTime.Now;
+                        dt = DateTime.Now; dt = DateTime.Now; dt = DateTime.Now;
+                    }
         }
 
         [Benchmark]
@@ -26,11 +27,12 @@ namespace System.Runtime.Tests
             DateTime dt = DateTime.Now;
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    dt.ToString("g"); dt.ToString("g"); dt.ToString("g");
-                    dt.ToString("g"); dt.ToString("g"); dt.ToString("g");
-                    dt.ToString("g"); dt.ToString("g"); dt.ToString("g");
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        dt.ToString("g"); dt.ToString("g"); dt.ToString("g");
+                        dt.ToString("g"); dt.ToString("g"); dt.ToString("g");
+                        dt.ToString("g"); dt.ToString("g"); dt.ToString("g");
+                    }
         }
 
         [Benchmark]
@@ -41,11 +43,12 @@ namespace System.Runtime.Tests
             DateTime date2 = new DateTime(1996, 12, 6, 13, 2, 0);
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    result = date1 - date2; result = date1 - date2; result = date1 - date2;
-                    result = date1 - date2; result = date1 - date2; result = date1 - date2;
-                    result = date1 - date2; result = date1 - date2; result = date1 - date2;
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        result = date1 - date2; result = date1 - date2; result = date1 - date2;
+                        result = date1 - date2; result = date1 - date2; result = date1 - date2;
+                        result = date1 - date2; result = date1 - date2; result = date1 - date2;
+                    }
         }
     }
 }

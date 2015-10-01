@@ -16,8 +16,8 @@ namespace System.Collections.Tests
             if (_testData == null)
             {
                 _testData = new List<object[]>();
-                _testData.Add(new object[] { CreateHashtable(100) });
-                _testData.Add(new object[] { CreateHashtable(1000) });
+                _testData.Add(new object[] { CreateHashtable(10000) });
+                _testData.Add(new object[] { CreateHashtable(1000000) });
             }
             return _testData;
         }
@@ -25,8 +25,9 @@ namespace System.Collections.Tests
         public static Hashtable CreateHashtable(int size)
         {
             Hashtable ht = new Hashtable();
+            PerfUtils utils = new PerfUtils();
             for (int i = 0; i < size; i++)
-                ht.Add(PerfUtils.CreateString(50), PerfUtils.CreateString(50));
+                ht.Add(utils.CreateString(50), utils.CreateString(50));
             return ht;
         }
 
@@ -36,10 +37,13 @@ namespace System.Collections.Tests
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                 {
-                    new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable();
-                    new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable();
-                    new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable();
-                    new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable();
+                    for (int i = 0; i < 40000; i++)
+                    {
+                        new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable();
+                        new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable();
+                        new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable();
+                        new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable(); new Hashtable();
+                    }
                 }
         }
 
@@ -47,17 +51,22 @@ namespace System.Collections.Tests
         [MemberData("TestData")]
         public void GetItem(Hashtable table)
         {
+            // Setup - utils needs a specific seed to prevent key collision with TestData
             object result;
-            string key = PerfUtils.CreateString(50);
+            PerfUtils utils = new PerfUtils(983452);
+            string key = utils.CreateString(50);
             table.Add(key, "value");
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    result = table[key]; result = table[key]; result = table[key]; result = table[key];
-                    result = table[key]; result = table[key]; result = table[key]; result = table[key];
-                    result = table[key]; result = table[key]; result = table[key]; result = table[key];
-                    result = table[key]; result = table[key]; result = table[key]; result = table[key];
+                    for (int i = 0; i < 40000; i++)
+                    {
+                        result = table[key]; result = table[key]; result = table[key]; result = table[key];
+                        result = table[key]; result = table[key]; result = table[key]; result = table[key];
+                        result = table[key]; result = table[key]; result = table[key]; result = table[key];
+                        result = table[key]; result = table[key]; result = table[key]; result = table[key];
+                    }
                 }
             }
             table.Remove(key);
@@ -69,14 +78,16 @@ namespace System.Collections.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
             {
+                Hashtable tableCopy = new Hashtable(table);
                 using (iteration.StartMeasurement())
                 {
-                    table.Add("key1", "value"); table.Add("key2", "value"); table.Add("key3", "value");
-                    table.Add("key4", "value"); table.Add("key5", "value"); table.Add("key6", "value");
-                    table.Add("key7", "value"); table.Add("key8", "value"); table.Add("key9", "value");
+                    for (int i = 0; i < 40000; i++)
+                    {
+                        tableCopy.Add(i * 10 + 1, "value"); tableCopy.Add(i * 10 + 2, "value"); tableCopy.Add(i * 10 + 3, "value");
+                        tableCopy.Add(i * 10 + 4, "value"); tableCopy.Add(i * 10 + 5, "value"); tableCopy.Add(i * 10 + 6, "value");
+                        tableCopy.Add(i * 10 + 7, "value"); tableCopy.Add(i * 10 + 8, "value"); tableCopy.Add(i * 10 + 9, "value");
+                    }
                 }
-                for (int i = 1; i <= 9; i++)
-                    table.Remove("key" + i);
             }
         }
     }

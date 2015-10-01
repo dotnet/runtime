@@ -14,11 +14,12 @@ namespace System.Runtime.Tests
             Int32 i32 = 32;
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    i32.ToString(); i32.ToString(); i32.ToString();
-                    i32.ToString(); i32.ToString(); i32.ToString();
-                    i32.ToString(); i32.ToString(); i32.ToString();
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        i32.ToString(); i32.ToString(); i32.ToString();
+                        i32.ToString(); i32.ToString(); i32.ToString();
+                        i32.ToString(); i32.ToString(); i32.ToString();
+                    }
         }
 
         [Benchmark]
@@ -27,11 +28,12 @@ namespace System.Runtime.Tests
             string builtString = "1111111";
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    Int32.Parse(builtString); Int32.Parse(builtString); Int32.Parse(builtString);
-                    Int32.Parse(builtString); Int32.Parse(builtString); Int32.Parse(builtString);
-                    Int32.Parse(builtString); Int32.Parse(builtString); Int32.Parse(builtString);
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        Int32.Parse(builtString); Int32.Parse(builtString); Int32.Parse(builtString);
+                        Int32.Parse(builtString); Int32.Parse(builtString); Int32.Parse(builtString);
+                        Int32.Parse(builtString); Int32.Parse(builtString); Int32.Parse(builtString);
+                    }
         }
     }
 }

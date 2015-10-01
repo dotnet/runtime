@@ -22,9 +22,11 @@ namespace System.Collections.Tests
         {
             if (_testData == null)
             {
+                PerfUtils utils = new PerfUtils();
                 _testData = new List<object[]>();
-                _testData.Add(new object[] { CreateList(100) });
-                _testData.Add(new object[] { CreateList(1000) });
+                _testData.Add(new object[] { CreateList(utils, 1000) });
+                _testData.Add(new object[] { CreateList(utils, 10000) });
+                _testData.Add(new object[] { CreateList(utils, 100000) });
             }
             return _testData;
         }
@@ -32,11 +34,11 @@ namespace System.Collections.Tests
         /// <summary>
         /// Creates a list containing a number of elements equal to the specified size
         /// </summary>
-        public static List<object> CreateList(int size)
+        public static List<object> CreateList(PerfUtils utils, int size)
         {
             List<object> list = new List<object>();
             for (int i = 0; i < size; i++)
-                list.Add(PerfUtils.CreateString(100));
+                list.Add(utils.CreateString(100));
             return list;
         }
 
@@ -46,12 +48,15 @@ namespace System.Collections.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
             {
+                List<object> copyList = new List<object>(list);
                 using (iteration.StartMeasurement())
                 {
-                    list.Add("TestString1"); list.Add("TestString2"); list.Add("TestString3"); list.Add("TestString4");
-                    list.Add("TestString5"); list.Add("TestString6"); list.Add("TestString7"); list.Add("TestString8");
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        copyList.Add("TestString1"); copyList.Add("TestString2"); copyList.Add("TestString3"); copyList.Add("TestString4");
+                        copyList.Add("TestString5"); copyList.Add("TestString6"); copyList.Add("TestString7"); copyList.Add("TestString8");
+                    }
                 }
-                list.RemoveRange(list.Count - 8, 8);
             }
         }
 
@@ -60,11 +65,12 @@ namespace System.Collections.Tests
         public void AddRange(List<object> list)
         {
             foreach (var iteration in Benchmark.Iterations)
-            {
-                List<object> emptyList = new List<object>();
                 using (iteration.StartMeasurement())
-                    emptyList.AddRange(list);
-            }
+                    for (int i = 0; i < 5000; i++)
+                    {
+                        List<object> emptyList = new List<object>();
+                        emptyList.AddRange(list);
+                    }
         }
 
         [Benchmark]
@@ -73,10 +79,15 @@ namespace System.Collections.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
             {
-                // Create a local hard copy so that future iterations aren't affected
-                var copy = new List<object>(list);
+                // Setup lists to clear
+                List<object>[] listlist = new List<object>[5000];
+                for (int i = 0; i < 5000; i++)
+                    listlist[i] = new List<object>(list);
+
+                // Clear the lists
                 using (iteration.StartMeasurement())
-                    copy.Clear();
+                    for (int i = 0; i < 5000; i++)
+                        listlist[i].Clear();
             }
         }
 
@@ -88,9 +99,12 @@ namespace System.Collections.Tests
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                 {
-                    list.Contains(contained); list.Contains(contained); list.Contains(contained); list.Contains(contained);
-                    list.Contains(contained); list.Contains(contained); list.Contains(contained); list.Contains(contained);
-                    list.Contains(contained); list.Contains(contained); list.Contains(contained); list.Contains(contained);
+                    for (int i = 0; i < 500; i++)
+                    {
+                        list.Contains(contained); list.Contains(contained); list.Contains(contained); list.Contains(contained);
+                        list.Contains(contained); list.Contains(contained); list.Contains(contained); list.Contains(contained);
+                        list.Contains(contained); list.Contains(contained); list.Contains(contained); list.Contains(contained);
+                    }
                 }
         }
 
@@ -100,9 +114,12 @@ namespace System.Collections.Tests
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                 {
-                    new List<object>(); new List<object>(); new List<object>(); new List<object>(); new List<object>();
-                    new List<object>(); new List<object>(); new List<object>(); new List<object>(); new List<object>();
-                    new List<object>(); new List<object>(); new List<object>(); new List<object>(); new List<object>();
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        new List<object>(); new List<object>(); new List<object>(); new List<object>(); new List<object>();
+                        new List<object>(); new List<object>(); new List<object>(); new List<object>(); new List<object>();
+                        new List<object>(); new List<object>(); new List<object>(); new List<object>(); new List<object>();
+                    }
                 }
         }
 
@@ -113,7 +130,8 @@ namespace System.Collections.Tests
             var array = list.ToArray();
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    new List<object>(array);
+                    for (int i = 0; i < 10000; i++)
+                        new List<object>(array);
         }
 
         [Benchmark]
@@ -124,9 +142,12 @@ namespace System.Collections.Tests
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                 {
-                    temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count;
-                    temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count;
-                    temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count;
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count;
+                        temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count;
+                        temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count; temp = list.Count;
+                    }
                 }
         }
 
@@ -138,10 +159,13 @@ namespace System.Collections.Tests
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                 {
-                    temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50];
-                    temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50];
-                    temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50];
-                    temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50];
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50];
+                        temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50];
+                        temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50];
+                        temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50]; temp = list[50];
+                    }
                 }
         }
 
@@ -151,7 +175,8 @@ namespace System.Collections.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    foreach (var element in list) { }
+                    for (int i = 0; i < 10000; i++)
+                        foreach (var element in list) { }
         }
 
         [Benchmark]
@@ -160,7 +185,8 @@ namespace System.Collections.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    list.ToArray();
+                    for (int i = 0; i < 10000; i++)
+                        list.ToArray();
         }
     }
 }
