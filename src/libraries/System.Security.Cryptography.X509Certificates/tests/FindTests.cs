@@ -369,13 +369,33 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 "B4D738B2D4978AFF290A0B02987BABD114FEE9C7");
         }
 
-        [Fact]
+        [Theory]
+        [InlineData("5971A65A334DDA980780FF841EBE87F9723241F2")]
+        // Whitespace is allowed
+        [InlineData("59 71\tA6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 F9 72 32 41 F2")]
+        // Non-byte-aligned whitespace is allowed
+        [InlineData("597 1A6 5A3 34D DA9 807 80F F84 1EB E87 F97 232 41F 2")]
+        // Non-symmetric whitespace is allowed
+        [InlineData("    5971A65   A334DDA980780FF84  1EBE87F97           23241F   2")]
         [ActiveIssue(1993, PlatformID.AnyUnix)]
-        public static void TestBySubjectKeyIdentifier_MatchB()
+        public static void TestBySubjectKeyIdentifier_MatchB(string subjectKeyIdentifier)
         {
-            RunSingleMatchTest_MsCer(
-                X509FindType.FindBySubjectKeyIdentifier,
-                "5971A65A334DDA980780FF841EBE87F9723241F2");
+            RunSingleMatchTest_MsCer(X509FindType.FindBySubjectKeyIdentifier, subjectKeyIdentifier);
+        }
+
+        [Theory]
+        // Compat: Lone trailing nybbles are ignored
+        [InlineData("59 71 A6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 F9 72 32 41 F2 3")]
+        // Compat: Lone trailing nybbles are ignored, even if not hex
+        [InlineData("59 71 A6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 F9 72 32 41 F2 p")]
+        // Compat: A non-hex character as the high nybble makes that nybble be F
+        [InlineData("59 71 A6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 p9 72 32 41 F2")]
+        // Compat: A non-hex character as the low nybble makes the whole byte FF.
+        [InlineData("59 71 A6 5A 33 4D DA 98 07 80 0p 84 1E BE 87 F9 72 32 41 F2")]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
+        public static void TestBySubjectKeyIdentifier_MatchB_Compat(string subjectKeyIdentifier)
+        {
+            RunSingleMatchTest_MsCer(X509FindType.FindBySubjectKeyIdentifier, subjectKeyIdentifier);
         }
 
         [Fact]
