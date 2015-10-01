@@ -32,6 +32,9 @@ internal static partial class Interop
         internal static extern int BIO_gets(SafeBioHandle b, StringBuilder buf, int size);
 
         [DllImport(Libraries.LibCrypto)]
+        internal static extern int BIO_read(SafeBioHandle b, byte[] data, int len);
+
+        [DllImport(Libraries.LibCrypto)]
         internal static extern int BIO_write(SafeBioHandle b, byte[] data, int len);
 
         [DllImport(Libraries.LibCrypto)]

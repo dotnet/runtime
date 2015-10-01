@@ -21,10 +21,6 @@ namespace Internal.Cryptography.Pal
         {
         }
 
-        public void FindAndCopyTo(X509FindType findType, object findValue, bool validOnly, X509Certificate2Collection collection)
-        {
-        }
-
         public byte[] Export(X509ContentType contentType, string password)
         {
             throw new NotImplementedException();
