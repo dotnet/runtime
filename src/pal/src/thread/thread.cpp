@@ -2428,79 +2428,108 @@ ThreadInitializationRoutine(
     return NO_ERROR;
 }
 
+// Get base address of this thread's stack
+// Can be called only for the current thread.
+void *
+CPalThread::GetStackBase()
+{
+    _ASSERT_MSG(this == InternalGetCurrentThread(), "CPalThread::GetStackBase called from foreign thread");
+
+    if (m_stackBase == NULL)
+    {
+#ifdef _TARGET_MAC64
+        // This is a Mac specific method
+        m_stackBase = pthread_get_stackaddr_np(pthread_self());
+#else
+        pthread_attr_t attr;
+        void* stackAddr;
+        size_t stackSize;
+        int status;
+
+        pthread_t thread = pthread_self();
+
+        status = pthread_attr_init(&attr);
+        _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
+
+#if HAVE_PTHREAD_ATTR_GET_NP
+        status = pthread_attr_get_np(thread, &attr);
+#elif HAVE_PTHREAD_GETATTR_NP
+        status = pthread_getattr_np(thread, &attr);
+#else
+#error Dont know how to get thread attributes on this platform!
+#endif
+        _ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
+
+        status = pthread_attr_getstack(&attr, &stackAddr, &stackSize);
+        _ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
+
+        status = pthread_attr_destroy(&attr);
+        _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
+
+        m_stackBase = (void*)((size_t)stackAddr + stackSize);
+#endif
+    }
+
+    return m_stackBase;
+}
+
+// Get limit address of this thread's stack.
+// Can be called only for the current thread.
+void *
+CPalThread::GetStackLimit()
+{
+    _ASSERT_MSG(this == InternalGetCurrentThread(), "CPalThread::GetStackLimit called from foreign thread");
+
+    if (m_stackLimit == NULL)
+    {
+#ifdef _TARGET_MAC64
+        // This is a Mac specific method
+        m_stackLimit = ((BYTE *)pthread_get_stackaddr_np(pthread_self()) -
+                       pthread_get_stacksize_np(pthread_self()));
+#else
+        pthread_attr_t attr;
+        size_t stackSize;
+        int status;
+
+        pthread_t thread = pthread_self();
+
+        status = pthread_attr_init(&attr);
+        _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
+
+#if HAVE_PTHREAD_ATTR_GET_NP
+        status = pthread_attr_get_np(thread, &attr);
+#elif HAVE_PTHREAD_GETATTR_NP
+        status = pthread_getattr_np(thread, &attr);
+#else
+#error Dont know how to get thread attributes on this platform!
+#endif
+        _ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
+
+        status = pthread_attr_getstack(&attr, &m_stackLimit, &stackSize);
+        _ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
+
+        status = pthread_attr_destroy(&attr);
+        _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
+#endif
+    }
+
+    return m_stackLimit;
+}
+
 void *
 PALAPI
 PAL_GetStackBase()
 {
-#ifdef _TARGET_MAC64
-    // This is a Mac specific method
-    return pthread_get_stackaddr_np(pthread_self());
-#else
-    pthread_attr_t attr;
-    void* stackAddr;
-    size_t stackSize;
-    int status;
-    
-    pthread_t thread = pthread_self();
-    
-    status = pthread_attr_init(&attr);
-    _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
-
-#if HAVE_PTHREAD_ATTR_GET_NP
-    status = pthread_attr_get_np(thread, &attr);
-#elif HAVE_PTHREAD_GETATTR_NP
-    status = pthread_getattr_np(thread, &attr);
-#else
-#error Dont know how to get thread attributes on this platform!
-#endif
-    _ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
-
-    status = pthread_attr_getstack(&attr, &stackAddr, &stackSize);
-    _ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
-
-    status = pthread_attr_destroy(&attr);
-    _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
-
-    return (void*)((size_t)stackAddr + stackSize);
-#endif
+    CPalThread* thread = InternalGetCurrentThread();
+    return thread->GetStackBase();
 }
 
 void *
 PALAPI
 PAL_GetStackLimit()
 {
-#ifdef _TARGET_MAC64
-    // This is a Mac specific method
-    return ((BYTE *)pthread_get_stackaddr_np(pthread_self()) -
-            pthread_get_stacksize_np(pthread_self()));
-#else
-    pthread_attr_t attr;
-    void* stackAddr;
-    size_t stackSize;
-    int status;
-    
-    pthread_t thread = pthread_self();
-    
-    status = pthread_attr_init(&attr);
-    _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
-
-#if HAVE_PTHREAD_ATTR_GET_NP
-    status = pthread_attr_get_np(thread, &attr);
-#elif HAVE_PTHREAD_GETATTR_NP
-    status = pthread_getattr_np(thread, &attr);
-#else
-#error Dont know how to get thread attributes on this platform!
-#endif
-    _ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
-
-    status = pthread_attr_getstack(&attr, &stackAddr, &stackSize);
-    _ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
-
-    status = pthread_attr_destroy(&attr);
-    _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
-    
-    return stackAddr;
-#endif
+    CPalThread* thread = InternalGetCurrentThread();
+    return thread->GetStackLimit();
 }
 
 PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread);
