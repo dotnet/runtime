@@ -130,25 +130,31 @@ namespace System.Reflection.Metadata.Ecma335
 
     internal static class StringHandleType
     {
+        // The 3 high bits above the offset that specify the full string type (including virtual bit)
+        internal const uint TypeMask = ~(HeapHandleType.OffsetMask);
+
+        // The string type bits excluding the virtual bit.
+        internal const uint NonVirtualTypeMask = TypeMask & ~(HeapHandleType.VirtualBit);
+
         // NUL-terminated UTF8 string on a #String heap.
-        internal const uint String = 0;
+        internal const uint String = (0 << HeapHandleType.OffsetBitCount);
 
         // String on #String heap whose terminator is NUL and '.', whichever comes first.
-        internal const uint DotTerminatedString = String | (1 << HeapHandleType.OffsetBitCount);
+        internal const uint DotTerminatedString = (1 << HeapHandleType.OffsetBitCount);
 
         // Reserved values that can be used for future strings:
-        internal const uint ReservedString1 = String | (2 << HeapHandleType.OffsetBitCount);
-        internal const uint ReservedString2 = String | (3 << HeapHandleType.OffsetBitCount);
+        internal const uint ReservedString1 = (2 << HeapHandleType.OffsetBitCount);
+        internal const uint ReservedString2 = (3 << HeapHandleType.OffsetBitCount);
 
         // Virtual string identified by a virtual index
-        internal const uint VirtualString = HeapHandleType.VirtualBit | String;
+        internal const uint VirtualString = HeapHandleType.VirtualBit | (0 << HeapHandleType.OffsetBitCount);
 
-        // Virtual string whose value is a "<WinRT>" prefixed string found at the specified heap offset.          
-        internal const uint WinRTPrefixedString = HeapHandleType.VirtualBit | String | (1 << HeapHandleType.OffsetBitCount);
+        // Virtual string whose value is a "<WinRT>" prefixed string found at the specified heap offset.
+        internal const uint WinRTPrefixedString = HeapHandleType.VirtualBit | (1 << HeapHandleType.OffsetBitCount);
 
         // Reserved virtual strings that can be used in future:
-        internal const uint ReservedVirtualString1 = HeapHandleType.VirtualBit | String | (2 << HeapHandleType.OffsetBitCount);
-        internal const uint ReservedVirtualString2 = HeapHandleType.VirtualBit | String | (3 << HeapHandleType.OffsetBitCount);
+        internal const uint ReservedVirtualString1 = HeapHandleType.VirtualBit | (2 << HeapHandleType.OffsetBitCount);
+        internal const uint ReservedVirtualString2 = HeapHandleType.VirtualBit | (3 << HeapHandleType.OffsetBitCount);
     }
 
     internal static class HeapHandleType
@@ -157,8 +163,6 @@ namespace System.Reflection.Metadata.Ecma335
         internal const int OffsetBitCount = 29;
         internal const uint OffsetMask = (1 << OffsetBitCount) - 1;
         internal const uint VirtualBit = 0x80000000;
-        internal const uint NonVirtualTypeMask = 3u << OffsetBitCount;
-        internal const uint TypeMask = VirtualBit | NonVirtualTypeMask;
 
         internal static bool IsValidHeapOffset(uint offset)
         {
@@ -166,6 +170,9 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
+    /// <summary>
+    /// These contants are all in the byte range and apply to the interpretation of <see cref="Handle.VType"/>,
+    /// </summary>
     internal static class HandleType
     {
         internal const uint Module = 0x00;
@@ -202,23 +209,29 @@ namespace System.Reflection.Metadata.Ecma335
 
         // The following values never appear in a token stored in metadata, 
         // they are just helper values to identify the type of a handle.
+        // Note, however, that even though they do not come from the spec,
+        // they are surfaced as public constants via HandleKind enum and 
+        // therefore cannot change!
 
         internal const uint Blob = 0x71;        // #Blob heap
         internal const uint Guid = 0x72;        // #Guid heap
-        internal const uint Namespace = 0x73;   // #String heap but known to be the full name of a namespace
 
-        // #String heap and its modifications (up to 8 string kinds, virtual and non-virtual)
-        internal const uint String = 0x7c;
-        internal const uint DotTerminatedString = String | ((StringHandleType.DotTerminatedString & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
-        internal const uint ReservedString1 = String | ((StringHandleType.ReservedString1 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount); 
-        internal const uint ReservedString2 = String | ((StringHandleType.ReservedString2 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount); 
-        internal const uint VirtualString = VirtualBit | String;
-        internal const uint WinRTPrefixedString = VirtualBit | String | ((StringHandleType.WinRTPrefixedString & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
-        internal const uint ReservedVirtualString1 = VirtualBit | String | ((StringHandleType.ReservedString1 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
-        internal const uint ReservedVirtualString2 = VirtualBit | String | ((StringHandleType.ReservedString2 & ~HeapHandleType.VirtualBit) >> HeapHandleType.OffsetBitCount);
+        // #String heap and its modifications
+        //
+        // Multiple values are reserved for string handles so that we can encode special
+        // handling with more than just the virtual bit. See StringHandleType for how
+        // the two extra bits are actually interpreted. The extra String1,2,3 values here are 
+        // not used directly, but serve as a reminder that they are not available for use
+        // by another handle type.
+        internal const uint String  = 0x78;
+        internal const uint String1 = 0x79;
+        internal const uint String2 = 0x7a;
+        internal const uint String3 = 0x7b;
 
-        internal const uint StringHeapTypeMask = HeapHandleType.NonVirtualTypeMask >> HeapHandleType.OffsetBitCount;
-        internal const uint StringOrNamespaceMask = 0x7c;
+        // Namespace handles also have offsets into the #String heap (when non-virtual)
+        // to their full name. However, this is an implementation detail and they are
+        // surfaced with first-class HandleKind.Namespace and strongly-typed NamespaceHandle.
+        internal const uint Namespace = 0x7c;
 
         internal const uint HeapMask = 0x70;
         internal const uint TypeMask = 0x7F;
@@ -229,19 +242,11 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         internal const uint VirtualBit = 0x80;
 
-        public static HandleKind ToHandleKind(uint handleType)
-        {
-            Debug.Assert((handleType & VirtualBit) == 0);
-
-            // Do not surface special string token sub-types (e.g. dot terminated, winrt prefixed) 
-            // in public-facing handle type. Pretend that all strings are just plain strings.
-            if (handleType > String)
-            {
-                return HandleKind.String;
-            }
-
-            return (HandleKind)handleType;
-        }
+        /// <summary>
+        /// In the case of string handles, the two lower bits that (in addition to the 
+        /// virtual bit not included in this mask) encode how to obtain the string value.
+        /// </summary>
+        internal const uint NonVirtualStringTypeMask = 0x03;
     }
 
     internal static class TokenTypeIds
