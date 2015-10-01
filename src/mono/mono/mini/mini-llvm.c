@@ -148,7 +148,6 @@ typedef struct {
 	LLVMValueRef ex_var;
 	GHashTable *exc_meta;
 	LLVMBasicBlockRef entry_out_bb;
-	GPtrArray *grouped_clauses;
 } EmitContext;
 
 typedef struct {
@@ -648,21 +647,8 @@ op_to_llvm_type (int opcode)
 	}
 }		
 
-#define CLAUSE_START(clause) (((MonoExceptionClause *)(clause))->try_offset)
-#define CLAUSE_END(clause) (((MonoExceptionClause *)(clause))->try_offset + ((MonoExceptionClause *)(clause))->try_len)
-
-static int
-clause_group_compare_func (gconstpointer a, gconstpointer b)
-{
-	const MonoExceptionClause *clause1 = (MonoExceptionClause *) a;
-	const MonoExceptionClause *clause2 = (MonoExceptionClause *) b;
-
-	int diff = CLAUSE_START(clause2) - CLAUSE_START(clause1);
-	if (!diff) 
-		diff = CLAUSE_END(clause2) - CLAUSE_END(clause1);
-
-	return diff;
-}
+#define CLAUSE_START(clause) ((clause)->try_offset)
+#define CLAUSE_END(clause) (((clause))->try_offset + ((clause))->try_len)
 
 /*
  * load_store_to_llvm_type:
@@ -1683,12 +1669,10 @@ get_most_deep_clause (MonoCompile *cfg, EmitContext *ctx, MonoBasicBlock *bb)
 {
 	// Since they're sorted by nesting we just need
 	// the first one that the bb is a member of
-	GPtrArray *grouped_clauses = ctx->grouped_clauses;
-
 	MonoExceptionClause *last = NULL;
 
-	for (int i=0; i < grouped_clauses->len; i++) {
-		MonoExceptionClause *curr = (MonoExceptionClause *)grouped_clauses->pdata [i];
+	for (int i = 0; i < cfg->header->num_clauses; i++) {
+		MonoExceptionClause *curr = &cfg->header->clauses [i];
 
 		if (MONO_OFFSET_IN_CLAUSE (curr, bb->real_offset)) {
 			if (last && CLAUSE_END(last) > CLAUSE_END(curr))
@@ -3391,7 +3375,7 @@ get_mono_personality (EmitContext *ctx)
 }
 
 static LLVMBasicBlockRef
-emit_landing_pad (MonoCompile *cfg, EmitContext *ctx, MonoExceptionClause **group_start, int group_size)
+emit_landing_pad (MonoCompile *cfg, EmitContext *ctx, MonoExceptionClause *group_start, int group_size)
 {
 	LLVMBuilderRef old_builder = ctx->builder;
 
@@ -3424,10 +3408,10 @@ emit_landing_pad (MonoCompile *cfg, EmitContext *ctx, MonoExceptionClause **grou
 
 	gboolean finally_only = TRUE;
 
-	MonoExceptionClause **group_cursor = group_start;
+	MonoExceptionClause *group_cursor = group_start;
 
-	for (int i=0; i < group_size; i ++) {
-		if (!((*group_cursor)->flags & MONO_EXCEPTION_CLAUSE_FINALLY))
+	for (int i = 0; i < group_size; i ++) {
+		if (!(group_cursor->flags & MONO_EXCEPTION_CLAUSE_FINALLY))
 			finally_only = FALSE;
 
 		group_cursor++;
@@ -3441,14 +3425,14 @@ emit_landing_pad (MonoCompile *cfg, EmitContext *ctx, MonoExceptionClause **grou
 		// During that match, we need to compare against the handler types for the current
 		// protected region. We send the try start and end so that we can only check against
 		// handlers for this lexical protected region.
-		LLVMValueRef match = mono_llvm_emit_match_exception_call (ctx, lpadBuilder, group_start [0]->try_offset, group_start [0]->try_offset + group_start [0]->try_len);
+		LLVMValueRef match = mono_llvm_emit_match_exception_call (ctx, lpadBuilder, group_start->try_offset, group_start->try_offset + group_start->try_len);
 
 		// if returns -1, resume
 		LLVMValueRef switch_ins = LLVMBuildSwitch (lpadBuilder, match, resume_bb, group_size);
 
 		// else move to that target bb
 		for (int i=0; i < group_size; i++) {
-			MonoExceptionClause *clause = group_start [i];
+			MonoExceptionClause *clause = group_start + i;
 			int clause_index = clause - cfg->header->clauses;
 			MonoBasicBlock *handler_bb = g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (clause_index));
 			g_assert (handler_bb);
@@ -3456,7 +3440,7 @@ emit_landing_pad (MonoCompile *cfg, EmitContext *ctx, MonoExceptionClause **grou
 			LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), clause_index, FALSE), ctx->bblocks [handler_bb->block_num].call_handler_target_bb);
 		}
 	} else {
-		int clause_index = group_start [0] - cfg->header->clauses;
+		int clause_index = group_start - cfg->header->clauses;
 		MonoBasicBlock *finally_bb = g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (clause_index));
 		g_assert (finally_bb);
 
@@ -6025,27 +6009,19 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	// Make landing pads first
 	ctx->exc_meta = g_hash_table_new_full (NULL, NULL, NULL, NULL);
 
-	// Sort clauses into groups
-	GPtrArray *grouped_clauses = g_ptr_array_sized_new (cfg->header->num_clauses);
-	ctx->grouped_clauses = grouped_clauses;
-	for (int i = 0; i < cfg->header->num_clauses; i++)
-		g_ptr_array_add (grouped_clauses, &cfg->header->clauses [i]);
-	g_ptr_array_sort (grouped_clauses, (GCompareFunc) clause_group_compare_func);
-
 	size_t group_index = 0;
 	while (group_index < cfg->header->num_clauses) {
 		int count = 0;
 		size_t cursor = group_index;
 		while (cursor < cfg->header->num_clauses &&
-			CLAUSE_START(grouped_clauses->pdata [cursor]) == CLAUSE_START(grouped_clauses->pdata [group_index]) &&
-			CLAUSE_END(grouped_clauses->pdata [cursor]) == CLAUSE_END(grouped_clauses->pdata [group_index])) {
-
+			CLAUSE_START (&cfg->header->clauses [cursor]) == CLAUSE_START (&cfg->header->clauses [group_index]) &&
+			CLAUSE_END (&cfg->header->clauses [cursor]) == CLAUSE_END (&cfg->header->clauses [group_index])) {
 			count++;
 			cursor++;
 		}
 
-		LLVMBasicBlockRef lpad_bb = emit_landing_pad (cfg, ctx, (MonoExceptionClause**)&grouped_clauses->pdata [group_index], count);
-		intptr_t key = CLAUSE_END(grouped_clauses->pdata [group_index]);
+		LLVMBasicBlockRef lpad_bb = emit_landing_pad (cfg, ctx, cfg->header->clauses + group_index, count);
+		intptr_t key = CLAUSE_END (&cfg->header->clauses [group_index]);
 		g_hash_table_insert (ctx->exc_meta, (gpointer)key, lpad_bb);
 
 		group_index = cursor;
@@ -6063,9 +6039,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 	g_hash_table_destroy (ctx->exc_meta);
 
-	ctx->grouped_clauses = NULL;
 	mono_memory_barrier ();
-	g_ptr_array_free (grouped_clauses, TRUE);
 
 	/* Add incoming phi values */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
