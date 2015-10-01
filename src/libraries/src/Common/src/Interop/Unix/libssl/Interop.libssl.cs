@@ -86,6 +86,9 @@ internal static partial class Interop
         internal static extern IntPtr SSL_get_peer_certificate(IntPtr ssl);
 
         [DllImport(Interop.Libraries.LibSsl)]
+        internal static extern SafeSharedX509StackHandle SSL_get_peer_cert_chain(IntPtr ssl);
+
+        [DllImport(Interop.Libraries.LibSsl)]
         internal static extern IntPtr SSL_get_current_cipher(IntPtr ssl);
 
         [DllImport(Interop.Libraries.LibSsl)]

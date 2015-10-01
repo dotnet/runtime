@@ -225,6 +225,14 @@ internal static partial class Interop
             return certPtr;
         }
 
+        internal static SafeSharedX509StackHandle GetPeerCertificateChain(IntPtr sslContextPtr)
+        {
+            SslContext context = Marshal.PtrToStructure<SslContext>(sslContextPtr);
+            IntPtr sslPtr = context.sslPtr;
+
+            return libssl.SSL_get_peer_cert_chain(sslPtr);
+        }
+
         internal static libssl.SSL_CIPHER GetConnectionInfo(IntPtr sslContextPtr)
         {
             SslContext context = Marshal.PtrToStructure<SslContext>(sslContextPtr);
