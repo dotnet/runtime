@@ -1995,10 +1995,15 @@ DWORD ZapIndirectHelperThunk::SaveWorker(ZapWriter * pZapWriter)
     else
     if (IsLazyHelper())
     {
-        // mov rdx, [module]
         *p++ = 0x48;
         *p++ = 0x8B;
+#ifdef UNIX_AMD64_ABI
+        // mov rsi, [module]
+        *p++ = 0x35;
+#else
+        // mov rdx, [module]
         *p++ = 0x15;
+#endif
         if (pImage != NULL)
             pImage->WriteReloc(buffer, (int) (p - buffer), pImage->GetImportTable()->GetHelperImport(READYTORUN_HELPER_Module), 0, IMAGE_REL_BASED_REL32);
         p += 4;
