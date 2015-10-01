@@ -2,12 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Xml;
 
-namespace XmlDocumentTests.XmlNodeTests
+namespace System.Xml.Tests
 {
-    public class InsertBeforeTests
+    public class DocumentElement_InsertBeforeTests
     {
         [Fact]
         public static void NodeWithOneChild()

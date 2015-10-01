@@ -1,10 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Xml;
 using Xunit;
 
-namespace XmlDocumentTests.XmlNodeTests
+namespace System.Xml.Tests
 {
     public static class NextSiblingTests
     {
