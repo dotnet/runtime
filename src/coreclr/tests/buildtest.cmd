@@ -166,12 +166,35 @@ set _buildprefix=
 set _buildpostfix=
 set _buildappend=
 call :build %1
+
+set CORE_ROOT=%__TestBinDir%\Tests\Core_Root
+echo.
+echo Creating test overlay...
+
+:: Log build command line
+set _buildprefix=echo
+set _buildpostfix=^> "%__TestManagedBuildLog%"
+set _buildappend=^>
+call :CreateTestOverlay %1
+
+:: Build
+set _buildprefix=
+set _buildpostfix=
+set _buildappend=
+call :CreateTestOverlay %1
+
 exit /b %ERRORLEVEL%
 
 :build
 
 %_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
 IF ERRORLEVEL 1 echo Test build failed. Refer to !__TestManagedBuildLog! for details && exit /b 1
+exit /b 0
+
+:CreateTestOverlay
+
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\runtest.proj" /t:CreateTestOverlay /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
+IF ERRORLEVEL 1 echo Failed to create the test overlay. Refer to !__TestManagedBuildLog! for details && exit /b 1
 exit /b 0
 
 :Usage

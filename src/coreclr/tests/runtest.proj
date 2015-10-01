@@ -306,6 +306,11 @@ public class $([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)"
   <Import Project="tests.targets" />
   <Import Project="publishdependency.targets" />
 
+  <Target Name="CreateTestOverlay">
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="CopyDependecyToCoreRoot"/>
+  </Target>
+
   <Target Name="Build">
     <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"
@@ -315,7 +320,8 @@ public class $([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)"
 
     <!-- Execution -->
 
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyDependecyToCoreRoot"
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="CreateTestOverlay"
              Condition=" '$(NoRun)'!='true' "/>
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
