@@ -103,7 +103,7 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
       <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' != 'True'">"$(AssemblyName).exe"</_CLRTestRunFile>
 
       <!-- TODO: make this better? -->
-      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And !$(_CLRTestNeedsProjectToRun) ">"%Core_Root%\corerun.exe" $(_CLRTestRunFile)</_CLRTestRunFile>
+      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And !$(_CLRTestNeedsProjectToRun) ">"%CORE_ROOT%\corerun.exe" $(_CLRTestRunFile)</_CLRTestRunFile>
 
       <BatchCLRTestLaunchCmds Condition=" '$(BatchCLRTestLaunchCmds)'=='' "><![CDATA[
 ECHO $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
