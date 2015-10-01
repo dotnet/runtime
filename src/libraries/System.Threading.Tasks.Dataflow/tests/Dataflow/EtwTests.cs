@@ -9,7 +9,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
     public class EtwTests
     {
         [Fact]
-        [ActiveIssue(3520, PlatformID.OSX)]
         public void TestEtw()
         {
             using (var listener = new TestEventListener(new Guid("16F53577-E41D-43D4-B47E-C17025BF4025"), EventLevel.Verbose))
