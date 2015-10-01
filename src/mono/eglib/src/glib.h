@@ -486,6 +486,7 @@ struct _GByteArray {
 GByteArray *g_byte_array_new    (void);
 GByteArray* g_byte_array_append (GByteArray *array, const guint8 *data, guint len);
 guint8*  g_byte_array_free      (GByteArray *array, gboolean free_segment);
+void     g_byte_array_set_size  (GByteArray *array, gint length);
 
 /*
  * Array

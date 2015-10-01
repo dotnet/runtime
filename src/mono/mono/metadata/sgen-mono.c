@@ -2376,6 +2376,15 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 			sgen_conservatively_pin_objects_from ((void**)&info->client_info.regs, (void**)&info->client_info.regs + ARCH_NUM_REGS,
 					start_nursery, end_nursery, PIN_TYPE_STACK);
 #endif
+			{
+				// This is used on Coop GC for platforms where we cannot get the data for individual registers.
+				// We force a spill of all registers into the stack and pass a chunk of data into sgen.
+				MonoThreadUnwindState *state = &info->client_info.info.thread_saved_state [SELF_SUSPEND_STATE_INDEX];
+				if (state && state->gc_stackdata) {
+					sgen_conservatively_pin_objects_from (state->gc_stackdata, (void**)((char*)state->gc_stackdata + state->gc_stackdata_size),
+						start_nursery, end_nursery, PIN_TYPE_STACK);
+				}
+			}
 		}
 	} END_FOREACH_THREAD
 }

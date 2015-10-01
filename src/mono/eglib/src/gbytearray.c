@@ -49,3 +49,10 @@ g_byte_array_append (GByteArray *array,
 {
 	return (GByteArray *)g_array_append_vals ((GArray *)array, data, len);
 }
+
+void
+g_byte_array_set_size (GByteArray *array, gint length)
+{
+	g_array_set_size ((GArray *)array, length);
+}
+

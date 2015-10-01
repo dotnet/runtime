@@ -94,6 +94,8 @@ typedef struct {
 	MonoContext ctx;
 	gpointer unwind_data [3]; /*right now: domain, lmf and jit_tls*/
 	gboolean valid;
+	void *gc_stackdata;
+	int gc_stackdata_size;
 } MonoThreadUnwindState;
 
 

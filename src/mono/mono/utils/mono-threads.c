@@ -326,6 +326,8 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	info->stack_start_limit = staddr;
 	info->stack_end = staddr + stsize;
 
+	info->stackdata = g_byte_array_new ();
+
 	mono_threads_platform_register (info);
 
 	/*
@@ -386,6 +388,8 @@ unregister_thread (void *arg)
 	mono_threads_transition_detach (info);
 
 	mono_thread_info_suspend_unlock ();
+
+	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);
 
 	/*now it's safe to free the thread info.*/
 	mono_thread_hazardous_free_or_queue (info, free_thread_info, TRUE, FALSE);

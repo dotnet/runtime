@@ -224,6 +224,9 @@ typedef struct {
 	int signal;
 #endif
 
+	/* This memory pool is used by coop GC to save stack data roots between GC unsafe regions */
+	GByteArray *stackdata;
+
 	/*In theory, only the posix backend needs this, but having it on mach/win32 simplifies things a lot.*/
 	MonoThreadUnwindState thread_saved_state [2]; //0 is self suspend, 1 is async suspend.
 
