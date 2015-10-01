@@ -78,7 +78,13 @@ public class Queue_ctor
     public void DebuggerAttributeTests()
     {
         DebuggerAttributes.ValidateDebuggerDisplayReferences(new Queue());
-        DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new Queue());
+
+        var testQueue = new Queue();
+        testQueue.Enqueue("a");
+        testQueue.Enqueue(1);
+        testQueue.Enqueue("b");
+        testQueue.Enqueue(2);
+        DebuggerAttributes.ValidateDebuggerTypeProxyProperties(testQueue);
     }
 
 }

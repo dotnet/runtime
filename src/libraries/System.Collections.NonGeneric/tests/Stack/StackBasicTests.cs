@@ -362,7 +362,13 @@ public class StackBasicTests
     public void DebuggerAttributeTests()
     {
         DebuggerAttributes.ValidateDebuggerDisplayReferences(new Stack());
-        DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new Stack());
+
+        var testStack = new Stack();
+        testStack.Push("a");
+        testStack.Push(1);
+        testStack.Push("b");
+        testStack.Push(2);
+        DebuggerAttributes.ValidateDebuggerTypeProxyProperties(testStack);
     }
 }
 }
