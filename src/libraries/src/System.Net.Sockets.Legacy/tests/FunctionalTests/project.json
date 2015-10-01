@@ -8,6 +8,7 @@
     "System.Threading": "4.0.0",
     "System.Threading.Tasks": "4.0.0",
     "System.Threading.Tasks.Parallel":  "4.0.0",
+    "System.Threading.Thread": "4.0.0-beta-*",
     "System.Threading.ThreadPool": "4.0.10-beta-*",
     
     "xunit": "2.1.0-beta3-*",

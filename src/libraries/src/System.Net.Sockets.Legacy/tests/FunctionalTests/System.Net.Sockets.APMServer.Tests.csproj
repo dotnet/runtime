@@ -26,10 +26,15 @@
     <Compile Include="ReceiveMessageFromAsync.cs" />
     <Compile Include="SendPacketsAsync.cs" />
     <Compile Include="SendPacketsElementTest.cs" />
+    <Compile Include="SendReceive.cs" />
+    <Compile Include="SocketAPMExtensions.cs" />
     <Compile Include="TimeoutTest.cs" />
     <Compile Include="UdpClientTest.cs" />
 
     <!-- Common Sockets files -->
+    <Compile Include="$(CommonTestPath)\System.Net\Sockets\Fletcher32.cs">
+      <Link>SocketCommon\Fletcher32.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System.Net\Sockets\SocketTestExtensions.cs">
       <Link>SocketCommon\SocketTestExtensions.cs</Link>
     </Compile>
