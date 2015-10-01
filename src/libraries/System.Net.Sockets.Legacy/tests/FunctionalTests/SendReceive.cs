@@ -23,7 +23,7 @@ namespace System.Net.Sockets.Tests
         {
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
-            const int AckTimeout = 500;
+            const int AckTimeout = 1000;
             const int TestTimeout = 30000;
 
             var left = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -97,7 +97,7 @@ namespace System.Net.Sockets.Tests
         {
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
-            const int AckTimeout = 500;
+            const int AckTimeout = 1000;
             const int TestTimeout = 30000;
 
             var left = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -127,7 +127,7 @@ namespace System.Net.Sockets.Tests
                     Assert.Equal(rightEndpoint, remote);
 
                     int datagramId = (int)receiveBuffer[0];
-                    Assert.Null(receiveBuffer[datagramId]);
+                    Assert.Null(receivedChecksums[datagramId]);
                     receivedChecksums[datagramId] = Fletcher32.Checksum(receiveBuffer, 0, received);
 
                     receiverAck.Set();
@@ -513,84 +513,72 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [OuterLoop]
         public void SendToRecvFrom_Single_Datagram_UDP_IPv6()
         {
             SendToRecvFrom_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendToRecvFromAPM_Single_Datagram_UDP_IPv6()
         {
             SendToRecvFromAPM_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendToRecvFrom_Single_Datagram_UDP_IPv4()
         {
             SendToRecvFrom_Datagram_UDP(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendToRecvFromAPM_Single_Datagram_UDP_IPv4()
         {
             SendToRecvFromAPM_Datagram_UDP(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecv_Multiple_Stream_TCP_IPv6()
         {
             SendRecv_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: true);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecvAPM_Multiple_Stream_TCP_IPv6()
         {
             SendRecvAPM_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: true);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecv_Single_Stream_TCP_IPv6()
         {
             SendRecv_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: false);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecvAPM_Single_Stream_TCP_IPv6()
         {
             SendRecvAPM_Stream_TCP(IPAddress.IPv6Loopback, useMultipleBuffers: false);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecv_Multiple_Stream_TCP_IPv4()
         {
             SendRecv_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: true);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecvAPM_Multiple_Stream_TCP_IPv4()
         {
             SendRecvAPM_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: true);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecv_Single_Stream_TCP_IPv4()
         {
             SendRecv_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: false);
         }
 
         [Fact]
-        [OuterLoop]
         public void SendRecvAPM_Single_Stream_TCP_IPv4()
         {
             SendRecvAPM_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: false);
