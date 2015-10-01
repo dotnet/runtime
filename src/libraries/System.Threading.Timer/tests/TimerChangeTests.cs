@@ -91,7 +91,7 @@ public class TimerChangeTests
         {
             Assert.False(are.WaitOne(TimeSpan.FromMilliseconds(100)), "The reset event should not have been set yet");
             t.Change(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(-1));
-            Assert.True(are.WaitOne(TimeSpan.FromMilliseconds(500)), "Should have received a timer event after this new duration");
+            Assert.True(are.WaitOne(TimeSpan.FromMilliseconds(TimerFiringTests.MaxPositiveTimeoutInMs)), "Should have received a timer event after this new duration");
         }
     }
 }
