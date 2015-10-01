@@ -10,6 +10,7 @@
 #ifndef __MONO_THREADS_H__
 #define __MONO_THREADS_H__
 
+#include <mono/metadata/mempool.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-linked-list-set.h>
@@ -223,6 +224,9 @@ typedef struct {
 	gboolean suspend_can_continue;
 	int signal;
 #endif
+
+	/* This memory pool is used by coop GC to save stack data roots between GC unsafe regions */
+	GByteArray *stackdata;
 
 	/*In theory, only the posix backend needs this, but having it on mach/win32 simplifies things a lot.*/
 	MonoThreadUnwindState thread_saved_state [2]; //0 is self suspend, 1 is async suspend.
