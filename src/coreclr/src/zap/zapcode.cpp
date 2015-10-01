@@ -1948,10 +1948,15 @@ DWORD ZapLazyHelperThunk::SaveWorker(ZapWriter * pZapWriter)
         pImage->WriteReloc(buffer, (int)(p - buffer), m_pTarget, 0, IMAGE_REL_BASED_REL32);
     p += 4;
 #elif defined(_TARGET_AMD64_)
-    // lea rdx, module
     *p++ = 0x48;
     *p++ = 0x8D;
+#ifdef UNIX_AMD64_ABI
+    // lea rsi, module
+    *p++ = 0x35;
+#else
+    // lea rdx, module
     *p++ = 0x15;
+#endif
     if (pImage != NULL)
         pImage->WriteReloc(buffer, (int)(p - buffer), m_pArg, 0, IMAGE_REL_BASED_REL32);
     p += 4;
