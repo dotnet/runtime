@@ -2546,8 +2546,12 @@ mdTypeRef SigPointer::PeekValueTypeTokenClosed(Module *pModule, const SigTypeCon
             if (FAILED(sp.GetElemType(NULL)))
                 return mdTokenNil;
             
-            if (FAILED(sp.GetElemType(NULL)))
+            CorElementType subtype;
+            if (FAILED(sp.GetElemType(&subtype)))
                 return mdTokenNil;
+            if (subtype == ELEMENT_TYPE_INTERNAL)
+                return mdTokenNil;
+            _ASSERTE(subtype == ELEMENT_TYPE_VALUETYPE);
 
             if (FAILED(sp.GetToken(&token)))
                 return mdTokenNil;
