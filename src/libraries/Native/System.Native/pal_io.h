@@ -385,19 +385,14 @@ extern "C" int32_t FcntlSetPipeSz(int32_t fd, int32_t size);
  *
  * Returns 1 for true, 0 for false, and -1 for failure. Sets errno for failure.
  */
-extern "C"
-int32_t FcntlGetIsNonBlocking(
-    int32_t fd);
+extern "C" int32_t FcntlGetIsNonBlocking(int32_t fd);
 
 /**
  * Sets whether or not a file descriptor is non-blocking.
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
-extern "C"
-int32_t FcntlSetIsNonBlocking(
-    int32_t fd,
-    int32_t isNonBlocking);
+extern "C" int32_t FcntlSetIsNonBlocking(int32_t fd, int32_t isNonBlocking);
 
 /**
  * Create a directory. Implemented as a shim to mkdir(2).

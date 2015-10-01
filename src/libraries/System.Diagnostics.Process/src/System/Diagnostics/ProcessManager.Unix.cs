@@ -84,7 +84,7 @@ namespace System.Diagnostics
         {
             return 
                 machineName != "." && 
-                machineName != Interop.libc.gethostname();
+                machineName != Interop.Sys.GetHostName();
         }
 
         // -----------------------------

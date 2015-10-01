@@ -162,9 +162,25 @@ namespace System.Net
             }
         }
 
+        public static unsafe void SetIPv4Address(byte[] buffer, byte* address)
+        {
+            uint addr = (uint)System.Runtime.InteropServices.Marshal.ReadInt32((IntPtr)address);
+            SetIPv4Address(buffer, addr);
+        }
+
         public static unsafe void SetIPv6Address(byte[] buffer, byte[] address, uint scope)
         {
             Debug.Assert(address.Length == sizeof(Interop.libc.in6_addr));
+
+            fixed (byte* rawInput = address)
+            {
+                SetIPv6Address(buffer, rawInput, address.Length, scope);
+            }
+        }
+
+        public static unsafe void SetIPv6Address(byte[] buffer, byte* address, int addressLength, uint scope)
+        {
+            Debug.Assert(addressLength == sizeof(Interop.libc.in6_addr));
 
             fixed (byte* rawAddress = buffer)
             {

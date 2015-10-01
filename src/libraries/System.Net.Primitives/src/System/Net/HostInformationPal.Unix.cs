@@ -9,7 +9,7 @@ namespace System.Net.NetworkInformation
     {
         public static string GetHostName()
         {
-            return Interop.libc.gethostname();
+            return Interop.Sys.GetHostName();
         }
 
         public static string GetDomainName()

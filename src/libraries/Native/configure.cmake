@@ -50,6 +50,12 @@ check_struct_has_member(
     "sys/mount.h"
     HAVE_STATFS_FSTYPENAME)
 
+check_struct_has_member(
+    "struct in6_addr"
+    __in6_u
+    "netdb.h"
+    HAVE_IN6_U)
+
 check_cxx_source_compiles(
     "
     #include <string.h>
