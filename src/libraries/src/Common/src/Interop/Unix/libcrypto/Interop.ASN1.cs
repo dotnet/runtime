@@ -78,6 +78,9 @@ internal static partial class Interop
         [DllImport(Libraries.LibCrypto)]
         internal static extern void ASN1_OCTET_STRING_free(IntPtr o);
 
+        [DllImport(Libraries.LibCrypto)]
+        internal static extern void ASN1_STRING_free(IntPtr o);
+
         internal static string OBJ_obj2txt_helper(IntPtr asn1ObjectPtr)
         {
             // OBJ_obj2txt returns the number of bytes that should have been in the answer, but it does not accept

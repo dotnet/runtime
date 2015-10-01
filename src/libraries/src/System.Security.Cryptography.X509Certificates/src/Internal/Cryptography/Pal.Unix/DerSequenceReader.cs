@@ -264,7 +264,7 @@ namespace Internal.Cryptography.Pal
             return accum;
         }
 
-        private enum DerTag : byte
+        internal enum DerTag : byte
         {
             Integer = 0x02,
             BitString = 0x03,
