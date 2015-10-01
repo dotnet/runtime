@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "System.Collections": "4.0.10",
+    "System.Diagnostics.Debug": "4.0.10",
+    "System.Globalization": "4.0.10",
+    "System.Reflection": "4.0.10",
+    "System.Runtime": "4.0.20",
+    "System.Runtime.Extensions": "4.0.10",
+    "System.Threading": "4.0.10",
+    "System.Threading.Tasks": "4.0.10",
+    "xunit": "2.1.0-beta3-*",
+    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}
