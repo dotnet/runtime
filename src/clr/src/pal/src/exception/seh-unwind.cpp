@@ -36,7 +36,9 @@ Abstract:
 #endif // !__LINUX__       
 #include <libunwind.h>
 #ifdef __LINUX__
+#ifdef HAVE_LIBUNWIND_PTRACE
 #include <libunwind-ptrace.h>
+#endif // HAVE_LIBUNWIND_PTRACE
 #endif // __LINUX__    
 #endif // HAVE_LIBUNWIND_H
 
@@ -327,7 +329,6 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 #ifdef _AMD64_
 #ifdef __LINUX__
 
-
 static struct LibunwindCallbacksInfoType
 {
      CONTEXT *Context;
@@ -435,10 +436,31 @@ static int get_proc_name(unw_addr_space_t as, unw_word_t addr, char *bufp, size_
     return -UNW_EINVAL;  
 }
 
+int find_proc_info(unw_addr_space_t as, 
+                   unw_word_t ip, unw_proc_info_t *pip,
+                   int need_unwind_info, void *arg)
+{
+#ifdef HAVE_LIBUNWIND_PTRACE
+    // UNIXTODO: libunwind RPM package on Fedora/CentOS/RedHat doesn't have libunwind-ptrace.so 
+    // and we can't use it from a shared library like libmscordaccore.so.
+    // That's why all calls to ptrace parts of libunwind ifdeffed out for now.
+    return _UPT_find_proc_info(as, ip, pip, need_unwind_info, arg);
+#else    
+    return -UNW_EINVAL;
+#endif    
+}
+
+void put_unwind_info(unw_addr_space_t as, unw_proc_info_t *pip, void *arg)
+{
+#ifdef HAVE_LIBUNWIND_PTRACE    
+    return _UPT_put_unwind_info(as, pip, arg);
+#endif    
+}
+
 static unw_accessors_t unwind_accessors =
 {
-    .find_proc_info = _UPT_find_proc_info,
-    .put_unwind_info = _UPT_put_unwind_info,
+    .find_proc_info = find_proc_info,
+    .put_unwind_info = put_unwind_info,
     .get_dyn_info_list_addr = get_dyn_info_list_addr,
     .access_mem = access_mem,
     .access_reg = access_reg,
@@ -494,7 +516,9 @@ BOOL PAL_VirtualUnwindOutOfProc(CONTEXT *context,
     LibunwindCallbacksInfo.readMemCallback = readMemCallback;
     WinContextToUnwindContext(context, &unwContext);
     addrSpace = unw_create_addr_space(&unwind_accessors, 0);
+#ifdef HAVE_LIBUNWIND_PTRACE    
     libunwindUptPtr = _UPT_create(pid);
+#endif    
     st = unw_init_remote(&cursor, addrSpace, libunwindUptPtr);
     if (st < 0)
     {
@@ -518,10 +542,12 @@ BOOL PAL_VirtualUnwindOutOfProc(CONTEXT *context,
     result = TRUE;
 
 Exit:
-    if (libunwindUptPtr != nullptr) 
+#ifdef HAVE_LIBUNWIND_PTRACE
+    if (libunwindUptPtr != NULL) 
     {
         _UPT_destroy(libunwindUptPtr);
     }
+#endif    
     if (addrSpace != 0) 
     {
         unw_destroy_addr_space(addrSpace);
