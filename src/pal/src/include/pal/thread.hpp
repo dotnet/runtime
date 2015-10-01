@@ -342,6 +342,11 @@ namespace CorUnix
         bool m_fStartStatus;
         bool m_fStartStatusSet;
 
+        // Base address of the stack of this thread
+        void* m_stackBase;
+        // Limit address of the stack of this thread
+        void* m_stackLimit;
+
         // The default stack size of a newly created thread (currently 256KB)
         // when the dwStackSize paramter of PAL_CreateThread()
         // is zero. This value can be set by setting the
@@ -408,7 +413,9 @@ namespace CorUnix
             m_eThreadType(UserCreatedThread),
             m_fStartItemsInitialized(FALSE),
             m_fStartStatus(FALSE),
-            m_fStartStatusSet(FALSE)
+            m_fStartStatusSet(FALSE),
+            m_stackBase(NULL),
+            m_stackLimit(NULL)
 #ifdef FEATURE_PAL_SXS
           , m_fInPal(TRUE)
 #endif // FEATURE_PAL_SXS
@@ -644,6 +651,20 @@ namespace CorUnix
 
         void
         ReleaseThreadReference(
+            void
+            );
+
+        // Get base address of this thread's stack
+        // Can be called only for the current thread.
+        void *
+        GetStackBase(
+            void
+            );
+
+        // Get limit address of this thread's stack
+        // Can be called only for the current thread.
+        void *
+        GetStackLimit(
             void
             );
         
