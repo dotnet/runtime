@@ -205,7 +205,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue(3555, PlatformID.AnyUnix)]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
         {
             var handler = new HttpClientHandler();
@@ -245,7 +244,6 @@ namespace System.Net.Http.Functional.Tests
        }
 
         [Fact]
-        [ActiveIssue(3557, PlatformID.AnyUnix)]
         public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK()
         {
             Uri uri = HttpTestServers.BasicAuthUriForCreds(Username, Password);
