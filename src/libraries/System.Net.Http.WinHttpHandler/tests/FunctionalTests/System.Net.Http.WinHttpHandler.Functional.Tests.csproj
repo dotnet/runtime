@@ -21,7 +21,7 @@
     <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
       <Link>Common\System\Net\HttpTestServers.cs</Link>
     </Compile>
-    <Compile Include="SendAsyncWinHttpMockHandler.cs" />
+    <Compile Include="ServerCertificateTest.cs" />
     <Compile Include="WinHttpHandlerTest.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
   </ItemGroup>
