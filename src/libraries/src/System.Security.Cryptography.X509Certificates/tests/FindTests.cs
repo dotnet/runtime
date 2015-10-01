@@ -387,6 +387,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         [ActiveIssue(1993, PlatformID.AnyUnix)]
+        public static void TestBySubjectKeyIdentifier_NoMatch_RightLength()
+        {
+            RunZeroMatchTest(
+                X509FindType.FindBySubjectKeyIdentifier,
+                "5971A65A334DDA980780FF841EBE87F9723241F0");
+        }
+
+        [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByApplicationPolicy_MatchAll()
         {
             RunTest(
