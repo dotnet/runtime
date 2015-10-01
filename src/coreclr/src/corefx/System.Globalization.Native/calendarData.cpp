@@ -498,7 +498,12 @@ extern "C" int32_t EnumCalendarInfo(
 		case AbbrevMonthNames:
 			return EnumMonths(locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::ABBREVIATED, callback, context);
 		case SuperShortDayNames:
+#ifdef HAVE_DTWIDTHTYPE_SHORT
 			return EnumWeekdays(locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::SHORT, callback, context);
+#else
+			// Currently CentOS-7 uses ICU-50 and ::SHORT was added in ICU-51, so use ::NARROW instead
+			return EnumWeekdays(locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::NARROW, callback, context);
+#endif
 		case MonthGenitiveNames:
 			return EnumMonths(locale, calendarId, DateFormatSymbols::FORMAT, DateFormatSymbols::WIDE, callback, context);
 		case AbbrevMonthGenitiveNames:
