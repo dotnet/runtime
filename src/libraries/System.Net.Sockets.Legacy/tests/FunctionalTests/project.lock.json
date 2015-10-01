@@ -410,7 +410,19 @@
           "lib/dotnet/System.Threading.Tasks.Parallel.dll": {}
         }
       },
-      "System.Threading.ThreadPool/4.0.10-beta-23328": {
+      "System.Threading.Thread/4.0.0-beta-23330": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet/System.Threading.Thread.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Threading.Thread.dll": {}
+        }
+      },
+      "System.Threading.ThreadPool/4.0.10-beta-23330": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -1455,10 +1467,31 @@
         "System.Threading.Tasks.Parallel.nuspec"
       ]
     },
-    "System.Threading.ThreadPool/4.0.10-beta-23328": {
+    "System.Threading.Thread/4.0.0-beta-23330": {
       "type": "package",
       "serviceable": true,
-      "sha512": "kty/6e0CbGmZp02bi3SsxePIuySysChzbvcusVM3f4crBJHiSCOMnbfefURmGUTbi9V95zcF6IrGnuQ7q3mr5w==",
+      "sha512": "0iiPjULvHdPBxWtxRtrnqtZSPtokCs9L0Lr/CsQXbx20Nvb7bmNGDTk1PxRbvqhWJWrezeD/96R0FS08OLelCg==",
+      "files": [
+        "lib/DNXCore50/System.Threading.Thread.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net46/System.Threading.Thread.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "ref/dotnet/System.Threading.Thread.dll",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/System.Threading.Thread.dll",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "System.Threading.Thread.4.0.0-beta-23330.nupkg",
+        "System.Threading.Thread.4.0.0-beta-23330.nupkg.sha512",
+        "System.Threading.Thread.nuspec"
+      ]
+    },
+    "System.Threading.ThreadPool/4.0.10-beta-23330": {
+      "type": "package",
+      "sha512": "nM5OewUj8NJrye93apbM6KHvPddgPJGzt1IWIXk9lV5HB4NGsn6M5U0gxMQWShQuDp6NF3ya3ULRSvh3dLMbzg==",
       "files": [
         "lib/DNXCore50/System.Threading.ThreadPool.dll",
         "lib/MonoAndroid10/_._",
@@ -1472,8 +1505,8 @@
         "ref/net46/System.Threading.ThreadPool.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Threading.ThreadPool.4.0.10-beta-23328.nupkg",
-        "System.Threading.ThreadPool.4.0.10-beta-23328.nupkg.sha512",
+        "System.Threading.ThreadPool.4.0.10-beta-23330.nupkg",
+        "System.Threading.ThreadPool.4.0.10-beta-23330.nupkg.sha512",
         "System.Threading.ThreadPool.nuspec"
       ]
     },
@@ -1606,6 +1639,7 @@
       "System.Threading >= 4.0.0",
       "System.Threading.Tasks >= 4.0.0",
       "System.Threading.Tasks.Parallel >= 4.0.0",
+      "System.Threading.Thread >= 4.0.0-beta-*",
       "System.Threading.ThreadPool >= 4.0.10-beta-*",
       "xunit >= 2.1.0-beta3-*",
       "xunit.netcore.extensions >= 1.0.0-prerelease-00085"
