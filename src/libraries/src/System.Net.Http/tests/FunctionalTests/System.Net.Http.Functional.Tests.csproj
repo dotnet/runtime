@@ -25,6 +25,7 @@
       <Link>Common\Streams\DelegateStream.cs</Link>
     </Compile>
     <Compile Include="ByteArrayContentTest.cs" />
+    <Compile Include="ChannelBindingAwareContent.cs" />
     <Compile Include="DelegatingHandlerTest.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
     <Compile Include="HttpClientHandlerTest.cs" />
