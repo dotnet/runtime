@@ -56,6 +56,12 @@ namespace System.Reflection.Metadata.Tests
             assert(default(GuidHandle), HandleKind.Guid);
             assert(default(BlobHandle), HandleKind.Blob);
             assert(default(NamespaceDefinitionHandle), HandleKind.NamespaceDefinition);
+            assert(default(DocumentHandle), HandleKind.Document);
+            assert(default(MethodBodyHandle), HandleKind.MethodBody);
+            assert(default(LocalScopeHandle), HandleKind.LocalScope);
+            assert(default(LocalConstantHandle), HandleKind.LocalConstant);
+            assert(default(ImportScopeHandle), HandleKind.ImportScope);
+            assert(default(CustomDebugInformationHandle), HandleKind.CustomDebugInformation);
 
             Assert.True(expectedKinds.Count == 0, "Some handles are missing from this test: " + string.Join("," + Environment.NewLine, expectedKinds));
         }
