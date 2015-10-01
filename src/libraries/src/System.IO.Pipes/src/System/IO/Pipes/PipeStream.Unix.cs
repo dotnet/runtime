@@ -22,7 +22,7 @@ namespace System.IO.Pipes
 
         internal static string GetPipePath(string serverName, string pipeName)
         {
-            if (serverName != "." && serverName != Interop.libc.gethostname())
+            if (serverName != "." && serverName != Interop.Sys.GetHostName())
             {
                 // Cross-machine pipes are not supported.
                 throw new PlatformNotSupportedException();
