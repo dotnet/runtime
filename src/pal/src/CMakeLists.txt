@@ -224,7 +224,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     rt
     dl
     unwind
-    unwind-ptrace
     unwind-generic
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
