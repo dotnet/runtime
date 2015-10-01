@@ -13,25 +13,26 @@ namespace System.Runtime.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    Guid.NewGuid(); Guid.NewGuid(); Guid.NewGuid();
-                    Guid.NewGuid(); Guid.NewGuid(); Guid.NewGuid();
-                    Guid.NewGuid(); Guid.NewGuid(); Guid.NewGuid();
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        Guid.NewGuid(); Guid.NewGuid(); Guid.NewGuid();
+                        Guid.NewGuid(); Guid.NewGuid(); Guid.NewGuid();
+                        Guid.NewGuid(); Guid.NewGuid(); Guid.NewGuid();
+                    }
         }
 
         [Benchmark]
         public void ctor_str()
         {
+            const string guidStr = "a8a110d5-fc49-43c5-bf46-802db8f843ff";
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff"); new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff");
-                    new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff"); new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff");
-                    new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff"); new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff");
-                    new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff"); new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff");
-                    new Guid("a8a110d5-fc49-43c5-bf46-802db8f843ff");
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        new Guid(guidStr); new Guid(guidStr); new Guid(guidStr);
+                        new Guid(guidStr); new Guid(guidStr); new Guid(guidStr);
+                        new Guid(guidStr); new Guid(guidStr); new Guid(guidStr);
+                    }
         }
     }
 }

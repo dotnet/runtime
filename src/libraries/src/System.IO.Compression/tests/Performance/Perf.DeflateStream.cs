@@ -20,20 +20,21 @@ namespace System.IO.Compression.Tests
         {
             if (_compressedFiles == null)
             {
+                PerfUtils utils = new PerfUtils();
                 _compressedFiles = new List<object[]>();
                 // Crypto random data
                 byte[] bytes = new byte[100000000];
                 var rand = RandomNumberGenerator.Create();
                 rand.GetBytes(bytes);
-                string filePath = PerfUtils.GetTestFilePath() + ".gz";
+                string filePath = utils.GetTestFilePath() + ".gz";
                 using (FileStream output = File.Create(filePath))
                 using (GZipStream zip = new GZipStream(output, CompressionMode.Compress))
                     zip.Write(bytes, 0, bytes.Length);
                 _compressedFiles.Add(new object[] { filePath });
 
                 // Create a compressed file with repeated segments
-                bytes = Text.Encoding.UTF8.GetBytes(PerfUtils.CreateString(100000));
-                filePath = PerfUtils.GetTestFilePath() + ".gz";
+                bytes = Text.Encoding.UTF8.GetBytes(utils.CreateString(100000));
+                filePath = utils.GetTestFilePath() + ".gz";
                 using (FileStream output = File.Create(filePath))
                 using (GZipStream zip = new GZipStream(output, CompressionMode.Compress))
                     for (int i = 0; i < 1000; i++)
@@ -48,10 +49,11 @@ namespace System.IO.Compression.Tests
         {
             if (_byteArraysToCompress == null)
             {
+                PerfUtils utils = new PerfUtils();
                 _byteArraysToCompress = new List<object[]>();
 
                 // Regular, semi well formed data
-                _byteArraysToCompress.Add(new object[] { Text.Encoding.UTF8.GetBytes(PerfUtils.CreateString(100000000)) });
+                _byteArraysToCompress.Add(new object[] { Text.Encoding.UTF8.GetBytes(utils.CreateString(100000000)) });
 
                 // Crypto random data
                 {
@@ -64,7 +66,7 @@ namespace System.IO.Compression.Tests
                 // Highly repeated data
                 {
                     byte[] bytes = new byte[101000000];
-                    byte[] small = Text.Encoding.UTF8.GetBytes(PerfUtils.CreateString(100000));
+                    byte[] small = Text.Encoding.UTF8.GetBytes(utils.CreateString(100000));
                     for (int i = 0; i < 1000; i++)
                         small.CopyTo(bytes, 100000 * i);
                     _byteArraysToCompress.Add(new object[] { bytes });
@@ -82,29 +84,29 @@ namespace System.IO.Compression.Tests
             var bytes = new byte[_bufferSize];
             using (MemoryStream gzStream = await LocalMemoryStream.readAppFileAsync(testFilePath))
             using (MemoryStream strippedMs = StripHeaderAndFooter.Strip(gzStream))
-            {
                 foreach (var iteration in Benchmark.Iterations)
-                {
-                    using (DeflateStream zip = new DeflateStream(strippedMs, CompressionMode.Decompress, leaveOpen: true))
                     using (iteration.StartMeasurement())
-                    {
-                        while (retCount != 0)
+                        for (int i = 0; i < 20000; i++)
                         {
-                            retCount = zip.Read(bytes, 0, _bufferSize);
+                            using (DeflateStream zip = new DeflateStream(strippedMs, CompressionMode.Decompress, leaveOpen: true))
+                            {
+                                while (retCount != 0)
+                                {
+                                    retCount = zip.Read(bytes, 0, _bufferSize);
+                                }
+                            }
+                            strippedMs.Seek(0, SeekOrigin.Begin);
                         }
-                    }
-                    strippedMs.Seek(0, SeekOrigin.Begin);
-                }
-             }
         }
 
         [Benchmark]
         [MemberData("ByteArraysToCompress")]
         public void Compress(byte[] bytes)
         {
+            PerfUtils utils = new PerfUtils();
             foreach (var iteration in Benchmark.Iterations)
             {
-                string filePath = PerfUtils.GetTestFilePath();
+                string filePath = utils.GetTestFilePath();
                 using (FileStream output = File.Create(filePath))
                 using (DeflateStream zip = new DeflateStream(output, CompressionMode.Compress))
                 using (iteration.StartMeasurement())

@@ -15,9 +15,12 @@ namespace System.Globalization.Tests
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                 {
-                    result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture;
-                    result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture;
-                    result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture;
+                    for (int i = 0; i < 40000; i++)
+                    {
+                        result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture;
+                        result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture;
+                        result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture; result = CultureInfo.CurrentCulture;
+                    }
                 }
         }
 
@@ -28,9 +31,12 @@ namespace System.Globalization.Tests
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                 {
-                    result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture;
-                    result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture;
-                    result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture;
+                    for (int i = 0; i < 40000; i++)
+                    {
+                        result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture;
+                        result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture;
+                        result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture; result = CultureInfo.InvariantCulture;
+                    }
                 }
         }
     }

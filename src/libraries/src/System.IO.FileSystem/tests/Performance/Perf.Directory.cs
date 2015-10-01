@@ -5,20 +5,19 @@ using Microsoft.Xunit.Performance;
 
 namespace System.IO.FileSystem.Tests
 {
-    public class Perf_Directory
+    public class Perf_Directory : FileSystemTest
     {
         [Benchmark]
         public void GetCurrentDirectory()
         {
             foreach (var iteration in Benchmark.Iterations)
-            {
                 using (iteration.StartMeasurement())
-                {
-                    Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory();
-                    Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory();
-                    Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory();
-                }
-            }
+                    for (int i = 0; i < 20000; i++)
+                    {
+                        Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory();
+                        Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory();
+                        Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory(); Directory.GetCurrentDirectory();
+                    }
         }
 
         [Benchmark]
@@ -27,14 +26,12 @@ namespace System.IO.FileSystem.Tests
             foreach (var iteration in Benchmark.Iterations)
             {
                 // Setup
-                string testFile = PerfUtils.GetTestFilePath();
+                string testFile = GetTestFilePath();
 
                 // Actual perf testing
                 using (iteration.StartMeasurement())
-                    Directory.CreateDirectory(testFile);
-
-                // Teardown
-                Directory.Delete(testFile);
+                    for (int i = 0; i < 20000; i++)
+                        Directory.CreateDirectory(testFile + i);
             }
         }
 
@@ -42,22 +39,22 @@ namespace System.IO.FileSystem.Tests
         public void Exists()
         {
             // Setup
-            string testFile = PerfUtils.GetTestFilePath();
+            string testFile = GetTestFilePath();
             Directory.CreateDirectory(testFile);
 
             foreach (var iteration in Benchmark.Iterations)
-            {
-                // Actual perf testing
                 using (iteration.StartMeasurement())
-                {
-                    Directory.Exists(testFile); Directory.Exists(testFile); Directory.Exists(testFile);
-                    Directory.Exists(testFile); Directory.Exists(testFile); Directory.Exists(testFile);
-                    Directory.Exists(testFile); Directory.Exists(testFile); Directory.Exists(testFile);
-                }
-            }
+                    for (int i = 0; i < 20000; i++)
+                    {
+                        Directory.Exists(testFile); Directory.Exists(testFile); Directory.Exists(testFile);
+                        Directory.Exists(testFile); Directory.Exists(testFile); Directory.Exists(testFile);
+                        Directory.Exists(testFile); Directory.Exists(testFile); Directory.Exists(testFile);
+                    }
 
             // Teardown
             Directory.Delete(testFile);
         }
     }
+
+
 }

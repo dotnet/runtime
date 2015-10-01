@@ -5,19 +5,22 @@ using Microsoft.Xunit.Performance;
 
 namespace System.IO.FileSystem.Tests
 {
-    public class Perf_FileInfo
+    public class Perf_FileInfo : FileSystemTest
     {
         [Benchmark]
         public void ctor_str()
         {
-            string path = PerfUtils.GetTestFilePath();
+            string path = GetTestFilePath();
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    new FileInfo(path); new FileInfo(path); new FileInfo(path);
-                    new FileInfo(path); new FileInfo(path); new FileInfo(path);
-                    new FileInfo(path); new FileInfo(path); new FileInfo(path);
+                    for (int i = 0; i < 20000; i++)
+                    {
+                        new FileInfo(path); new FileInfo(path); new FileInfo(path);
+                        new FileInfo(path); new FileInfo(path); new FileInfo(path);
+                        new FileInfo(path); new FileInfo(path); new FileInfo(path);
+                    }
                 }
             }
         }
