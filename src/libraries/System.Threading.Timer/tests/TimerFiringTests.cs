@@ -8,7 +8,7 @@ using Xunit;
 
 public class TimerFiringTests
 {
-    private const int MaxPositiveTimeoutInMs = 30000;
+    internal const int MaxPositiveTimeoutInMs = 30000;
 
     [Fact]
     public void Timer_Fires_After_DueTime_Ellapses()
