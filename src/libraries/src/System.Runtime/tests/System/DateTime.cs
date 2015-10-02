@@ -326,17 +326,27 @@ public static unsafe class DateTimeTests
         Assert.Equal(july28Formats.OrderBy(t => t), actualJuly28Formats.OrderBy(t => t));
     }
 
-
     [Theory]
     [InlineData("fi-FI")]
     [InlineData("nb-NO")]
     [InlineData("nb-SJ")]
+    public static void TestSpecialCulturesParsing(string cultureName)
+    {
+        TestDateTimeParsingWithSpecialCultures(cultureName);
+    }
+
+    [Theory]
     [InlineData("sr-Cyrl-XK")]
     [InlineData("sr-Latn-ME")]
     [InlineData("sr-Latn-RS")]
     [InlineData("sr-Latn-XK")]
-    [ActiveIssue(3391)]
-    public static void TestDateTimeParsingWithSpecialCultures(string cultureName)
+    [ActiveIssue(3616, PlatformID.AnyUnix)] 
+    public static void TestSerbianCulturesParsing(string cultureName)
+    {
+        TestDateTimeParsingWithSpecialCultures(cultureName);
+    }
+
+    internal static void TestDateTimeParsingWithSpecialCultures(string cultureName)
     {
         // Test DateTime parsing with cultures which has the date separator and time separator are same
 
