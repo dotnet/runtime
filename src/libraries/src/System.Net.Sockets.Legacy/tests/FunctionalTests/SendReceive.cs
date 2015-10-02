@@ -518,6 +518,7 @@ namespace System.Net.Sockets.Tests
             SendToRecvFrom_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
         }
 
+        [ActiveIssue(3610)]
         [Fact]
         public void SendToRecvFromAPM_Single_Datagram_UDP_IPv6()
         {
@@ -530,6 +531,7 @@ namespace System.Net.Sockets.Tests
             SendToRecvFrom_Datagram_UDP(IPAddress.Loopback, IPAddress.Loopback);
         }
 
+        [ActiveIssue(3610)]
         [Fact]
         public void SendToRecvFromAPM_Single_Datagram_UDP_IPv4()
         {
