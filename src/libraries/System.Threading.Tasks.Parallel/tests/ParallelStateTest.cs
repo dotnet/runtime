@@ -8,13 +8,9 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-
 
-using Xunit;
-using CoreFXTestLibrary;
-
-using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using Xunit;
+using Logger = System.Threading.Tasks.Tests.Logger;
 
 namespace System.Threading.Tasks.Test
 {
