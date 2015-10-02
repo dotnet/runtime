@@ -9,19 +9,6 @@ namespace System.Collections.Tests
 {
     public class Perf_HashTable
     {
-        private static List<object[]> _testData;
-
-        public static IEnumerable<object[]> TestData()
-        {
-            if (_testData == null)
-            {
-                _testData = new List<object[]>();
-                _testData.Add(new object[] { CreateHashtable(10000) });
-                _testData.Add(new object[] { CreateHashtable(1000000) });
-            }
-            return _testData;
-        }
-
         public static Hashtable CreateHashtable(int size)
         {
             Hashtable ht = new Hashtable();
@@ -48,9 +35,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void GetItem(Hashtable table)
+        [InlineData(10000)]
+        [InlineData(1000000)]
+        public void GetItem(int size)
         {
+            Hashtable table = CreateHashtable(size);
+
             // Setup - utils needs a specific seed to prevent key collision with TestData
             object result;
             PerfUtils utils = new PerfUtils(983452);
@@ -69,13 +59,14 @@ namespace System.Collections.Tests
                     }
                 }
             }
-            table.Remove(key);
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void Add(Hashtable table)
+        [InlineData(10000)]
+        [InlineData(1000000)]
+        public void Add(int size)
         {
+            Hashtable table = CreateHashtable(size);
             foreach (var iteration in Benchmark.Iterations)
             {
                 Hashtable tableCopy = new Hashtable(table);

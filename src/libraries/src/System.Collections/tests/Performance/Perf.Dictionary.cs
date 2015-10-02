@@ -9,41 +9,12 @@ namespace System.Collections.Tests
 {
     public class Perf_Dictionary
     {
-        private static List<object[]> _testData;
-
-        /// <summary>
-        /// Yields several Dictionaries containing increasing amounts of string-string
-        /// pairs can be used as MemberData input to performance tests for Dictionary
-        /// </summary>
-        /// <remarks>Any changes made to the returned collections MUST be undone. Collections
-        /// used as MemberData are cached and reused in other perf tests.
-        /// </remarks>
-        public static List<object[]> TestData()
-        {
-            if (_testData == null)
-            {
-                PerfUtils utils = new PerfUtils();
-                _testData = new List<object[]>();
-                _testData.Add(new object[] { CreateDictionary(utils, 1000) });
-                _testData.Add(new object[] { CreateDictionary(utils, 10000) });
-                _testData.Add(new object[] { CreateDictionary(utils, 100000) });
-            }
-            return _testData;
-        }
-
-        public static IEnumerable<object[]> TestDataIntString()
-        {
-            Random rand = new Random(12);
-            yield return new object[] { CreateDictionaryIntInt(rand, 1000) };
-            yield return new object[] { CreateDictionaryIntInt(rand, 10000) };
-            yield return new object[] { CreateDictionaryIntInt(rand, 100000) };
-        }
-
         /// <summary>
         /// Creates a Dictionary of string-string with the specified number of pairs
         /// </summary>
-        public static Dictionary<string, string> CreateDictionary(PerfUtils utils, int size)
+        public static Dictionary<string, string> CreateDictionary(int size)
         {
+            PerfUtils utils = new PerfUtils(837322);
             Dictionary<string, string> dict = new Dictionary<string, string>();
             while (dict.Count < size)
             {
@@ -58,8 +29,9 @@ namespace System.Collections.Tests
         /// <summary>
         /// Creates a Dictionary of int-int with the specified number of pairs
         /// </summary>
-        public static Dictionary<int, int> CreateDictionaryIntInt(Random rand, int size)
+        public static Dictionary<int, int> CreateDictionaryIntInt(int size)
         {
+            Random rand = new Random(837322);
             Dictionary<int, int> dict = new Dictionary<int, int>();
             while (dict.Count < size)
             {
@@ -67,13 +39,16 @@ namespace System.Collections.Tests
                 if (!dict.ContainsKey(key))
                     dict.Add(key, 0);
             }
-           return dict1;
+           return dict;
         }
 
         [Benchmark]
-        [MemberData("TestDataIntString")]
-        public void Add(Dictionary<int, int> dict)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void Add(int size)
         {
+            Dictionary<int, int> dict = CreateDictionaryIntInt(size);
             foreach (var iteration in Benchmark.Iterations)
             {
                 Dictionary<int, int> copyDict = new Dictionary<int, int>(dict);
@@ -118,9 +93,13 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void GetItem(Dictionary<string, string> dict)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void GetItem(int size)
         {
+            Dictionary<string, string> dict = CreateDictionary(size);
+
             // Setup
             string retrieved;
             for (int i = 1; i <= 9; i++)
@@ -137,16 +116,15 @@ namespace System.Collections.Tests
                         retrieved = dict["key7"]; retrieved = dict["key8"]; retrieved = dict["key9"];
                     }
             }
-
-            // Teardown
-            for (int i = 1; i <= 9; i++)
-                dict.Remove("key" + i);
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void SetItem(Dictionary<string, string> dict)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void SetItem(int size)
         {
+            Dictionary<string, string> dict = CreateDictionary(size);
             // Setup
             for (int i = 1; i <= 9; i++)
                 dict.Add("key" + i, "value");
@@ -162,16 +140,15 @@ namespace System.Collections.Tests
                         dict["key7"] = "string"; dict["key8"] = "string"; dict["key9"] = "string";
                     }
             }
-
-            // Teardown
-            for (int i = 1; i <= 9; i++)
-                dict.Remove("key" + i);
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void GetKeys(Dictionary<string, string> dict)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void GetKeys(int size)
         {
+            Dictionary<string, string> dict = CreateDictionary(size);
             IEnumerable<string> result;
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
@@ -184,9 +161,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void TryGetValue(Dictionary<string, string> dict)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void TryGetValue(int size)
         {
+            Dictionary<string, string> dict = CreateDictionary(size);
             // Setup - utils needs a specific seed to prevent key collision with TestData
             string retrieved;
             PerfUtils utils = new PerfUtils(56334);
@@ -203,15 +183,16 @@ namespace System.Collections.Tests
                         dict.TryGetValue(key, out retrieved); dict.TryGetValue(key, out retrieved);
                         dict.TryGetValue(key, out retrieved); dict.TryGetValue(key, out retrieved);
                     }
-
-            // Teardown
-            dict.Remove(key);
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void ContainsKey(Dictionary<string, string> dict)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void ContainsKey(int size)
         {
+            Dictionary<string, string> dict = CreateDictionary(size);
+
             // Setup - utils needs a specific seed to prevent key collision with TestData
             PerfUtils utils = new PerfUtils(152891);
             string key = utils.CreateString(50);
@@ -227,7 +208,6 @@ namespace System.Collections.Tests
                         dict.ContainsKey(key); dict.ContainsKey(key); dict.ContainsKey(key);
                         dict.ContainsKey(key); dict.ContainsKey(key); dict.ContainsKey(key);
                     }
-            dict.Remove(key);
         }
     }
 }
