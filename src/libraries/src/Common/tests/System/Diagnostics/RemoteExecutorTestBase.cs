@@ -25,9 +25,10 @@ namespace System.Diagnostics
         /// <param name="start">true if this function should Start the Process; false if that responsibility is left up to the caller.</param>
         internal static RemoteInvokeHandle RemoteInvoke(
             Func<int> method, 
-            bool start = true)
+            bool start = true,
+            ProcessStartInfo psi = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), Array.Empty<string>(), start);
+            return RemoteInvoke(method.GetMethodInfo(), Array.Empty<string>(), start, psi);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -37,9 +38,10 @@ namespace System.Diagnostics
         internal static RemoteInvokeHandle RemoteInvoke(
             Func<string, int> method, 
             string arg, 
-            bool start = true)
+            bool start = true,
+            ProcessStartInfo psi = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), new[] { arg }, start);
+            return RemoteInvoke(method.GetMethodInfo(), new[] { arg }, start, psi);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -50,9 +52,10 @@ namespace System.Diagnostics
         internal static RemoteInvokeHandle RemoteInvoke(
             Func<string, string, int> method, 
             string arg1, string arg2, 
-            bool start = true)
+            bool start = true,
+            ProcessStartInfo psi = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), new[] { arg1, arg2 }, start);
+            return RemoteInvoke(method.GetMethodInfo(), new[] { arg1, arg2 }, start, psi);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -64,16 +67,17 @@ namespace System.Diagnostics
         internal static RemoteInvokeHandle RemoteInvoke(
             Func<string, string, string, int> method, 
             string arg1, string arg2, string arg3, 
-            bool start = true)
+            bool start = true,
+            ProcessStartInfo psi = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), new[] { arg1, arg2, arg3 }, start);
+            return RemoteInvoke(method.GetMethodInfo(), new[] { arg1, arg2, arg3 }, start, psi);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
         /// <param name="method">The method to invoke.</param>
         /// <param name="args">The arguments to pass to the method.</param>
         /// <param name="start">true if this function should Start the Process; false if that responsibility is left up to the caller.</param>
-        private static RemoteInvokeHandle RemoteInvoke(MethodInfo method, string[] args, bool start)
+        private static RemoteInvokeHandle RemoteInvoke(MethodInfo method, string[] args, bool start, ProcessStartInfo psi)
         {
             // Verify the specified method is and that it returns an int (the exit code),
             // and that if it accepts any arguments, they're all strings.
@@ -87,12 +91,12 @@ namespace System.Diagnostics
             Assert.Equal(typeof(RemoteExecutorTestBase).GetTypeInfo().Assembly, a);
 
             // Start the other process and return a wrapper for it to handle its lifetime and exit checking.
-            ProcessStartInfo psi = new ProcessStartInfo()
-            {
-                FileName = HostRunner,
-                Arguments = TestConsoleApp + " \"" + a.FullName + "\" " + t.FullName + " " + method.Name + " " + string.Join(" ", args),
-                UseShellExecute = false
-            };
+            if (psi == null)
+                psi = new ProcessStartInfo();
+
+            psi.FileName = HostRunner;
+            psi.Arguments = TestConsoleApp + " \"" + a.FullName + "\" " + t.FullName + " " + method.Name + " " + string.Join(" ", args);
+            psi.UseShellExecute = false;
 
             // Profilers / code coverage tools doing coverage of the test process set environment
             // variables to tell the targeted process what profiler to load.  We don't want the child process 

@@ -33,6 +33,23 @@ namespace System
             }
         }
 
+        private static bool EnsureInitialized(ref bool field, ref bool fieldQueried, Func<bool> initializer)
+        {
+            lock (InternalSyncObject)
+            {
+                if(!Volatile.Read(ref fieldQueried))
+                {
+                    bool result = initializer();
+                    Volatile.Write(ref field, result);
+                    Volatile.Write(ref fieldQueried, true);
+
+                    return result;
+                }
+
+                return Volatile.Read(ref field);
+            }
+        }
+
         public static TextReader In
         {
             get
@@ -71,6 +88,41 @@ namespace System
                     encoding: ConsolePal.OutputEncoding,
                     bufferSize: DefaultConsoleBufferSize,
                     leaveOpen: true) { AutoFlush = true });
+        }
+
+        private static bool _stdInRedirectQueried = false;
+        private static bool _stdOutRedirectQueried = false;
+        private static bool _stdErrRedirectQueried = false;
+
+        private static bool _isStdInRedirected;
+        private static bool _isStdOutRedirected;
+        private static bool _isStdErrRedirected;
+
+        public static bool IsInputRedirected
+        {
+            get
+            {
+                return Volatile.Read(ref _stdInRedirectQueried) ? _isStdInRedirected
+                    : EnsureInitialized(ref _isStdInRedirected, ref _stdInRedirectQueried, () => { return ConsolePal.IsInputRedirectedCore(); });
+            }
+        }
+
+        public static bool IsOutputRedirected
+        {
+            get
+            {
+                return Volatile.Read(ref _stdOutRedirectQueried) ? _isStdOutRedirected
+                    : EnsureInitialized(ref _isStdOutRedirected, ref _stdOutRedirectQueried, () => { return ConsolePal.IsOutputRedirectedCore(); });
+            }
+        }
+
+        public static bool IsErrorRedirected
+        {
+            get
+            {
+                return Volatile.Read(ref _stdErrRedirectQueried) ? _isStdErrRedirected
+                    : EnsureInitialized(ref _isStdErrRedirected, ref _stdErrRedirectQueried, () => { return ConsolePal.IsErrorRedirectedCore(); });
+            }
         }
 
         public static ConsoleColor BackgroundColor
