@@ -370,7 +370,7 @@ namespace System.Data.SqlClient
                     {
                         // Otherwise, copy over the leftover buffer
                         byteBuffer = new byte[byteBufferSize];
-                        Array.Copy(_leftOverBytes, byteBuffer, _leftOverBytes.Length);
+                        Array.Copy(_leftOverBytes, 0, byteBuffer, 0, _leftOverBytes.Length);
                         byteBufferUsed = _leftOverBytes.Length;
                     }
                 }

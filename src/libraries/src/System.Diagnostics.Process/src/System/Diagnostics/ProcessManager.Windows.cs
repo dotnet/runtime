@@ -284,7 +284,7 @@ namespace System.Diagnostics
                 break;
             }
             int[] ids = new int[size / 4];
-            Array.Copy(processIds, ids, ids.Length);
+            Array.Copy(processIds, 0, ids, 0, ids.Length);
             return ids;
         }
 

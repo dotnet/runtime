@@ -193,7 +193,7 @@ namespace System.Data.SqlTypes
 
                     default:
                         buffer = new byte[_lCurLen];
-                        Array.Copy(m_rgbBuf, buffer, (int)_lCurLen);
+                        Array.Copy(m_rgbBuf, 0, buffer, 0, (int)_lCurLen);
                         break;
                 }
 

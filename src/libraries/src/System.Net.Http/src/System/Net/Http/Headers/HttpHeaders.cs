@@ -1203,7 +1203,7 @@ namespace System.Net.Http.Headers
                 if (currentIndex < length)
                 {
                     string[] trimmedValues = new string[currentIndex];
-                    Array.Copy(values, trimmedValues, currentIndex);
+                    Array.Copy(values, 0, trimmedValues, 0, currentIndex);
                     values = trimmedValues;
                 }
             }

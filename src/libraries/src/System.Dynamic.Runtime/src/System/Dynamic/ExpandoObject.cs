@@ -1123,7 +1123,7 @@ namespace System.Dynamic
                     // we've grown too much - we need a new object array
                     int oldLength = _dataArray.Length;
                     object[] arr = new object[GetAlignedSize(newClass.Keys.Length)];
-                    Array.Copy(_dataArray, arr, _dataArray.Length);
+                    Array.Copy(_dataArray, 0, arr, 0, _dataArray.Length);
                     ExpandoData newData = new ExpandoData(newClass, arr, _version);
                     newData[oldLength] = ExpandoObject.Uninitialized;
                     return newData;

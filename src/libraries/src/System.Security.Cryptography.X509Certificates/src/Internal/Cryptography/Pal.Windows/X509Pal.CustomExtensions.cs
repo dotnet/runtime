@@ -233,7 +233,7 @@ namespace Internal.Cryptography.Pal
                             if (cb < buffer.Length)
                             {
                                 byte[] newBuffer = new byte[cb];
-                                Array.Copy(buffer, newBuffer, cb);
+                                Array.Copy(buffer, 0, newBuffer, 0, cb);
                                 buffer = newBuffer;
                             }
                             return buffer;

@@ -74,7 +74,7 @@ namespace System.Dynamic
 
                 // no applicable transition, create a new one
                 string[] keys = new string[_keys.Length + 1];
-                Array.Copy(_keys, keys, _keys.Length);
+                Array.Copy(_keys, 0, keys, 0, _keys.Length);
                 keys[_keys.Length] = newKey;
                 ExpandoClass ec = new ExpandoClass(keys, hashCode);
 

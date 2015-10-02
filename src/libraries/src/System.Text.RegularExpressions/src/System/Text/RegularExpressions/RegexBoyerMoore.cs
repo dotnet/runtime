@@ -205,7 +205,7 @@ namespace System.Text.RegularExpressions
 
                         if (i == 0)
                         {
-                            System.Array.Copy(_negativeASCII, newarray, 128);
+                            System.Array.Copy(_negativeASCII, 0, newarray, 0, 128);
                             _negativeASCII = newarray;
                         }
 
