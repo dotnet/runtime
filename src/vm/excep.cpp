@@ -7885,7 +7885,6 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
     if ((pExceptionRecord->ExceptionCode == STATUS_BREAKPOINT) ||
         (pExceptionRecord->ExceptionCode == STATUS_SINGLE_STEP))
     {
-#ifndef FEATURE_PAL
         // A breakpoint outside managed code and outside the runtime will have to be handled by some
         //  other piece of code.
 
@@ -7910,7 +7909,6 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
             //  an unhandled exception.)
             return EXCEPTION_CONTINUE_SEARCH;
         }
-#endif // !FEATURE_PAL
 
         // The breakpoint was from managed or the runtime.  Handle it.  Or,
         //  this may be a Rotor build.

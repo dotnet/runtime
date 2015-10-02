@@ -59,13 +59,6 @@ const UINT RESERVED_SEH_BIT = 0x800000;
 
 PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
 
-#ifdef __llvm__
-__thread 
-#else // __llvm__
-__declspec(thread)
-#endif // !__llvm__
-int t_holderCount = 0;
-
 /* Internal function declarations *********************************************/
 
 BOOL SEHInitializeConsole();
@@ -196,7 +189,7 @@ SEHProcessException(PEXCEPTION_POINTERS pointers)
         g_hardwareExceptionHandler(&exception);
     }
 
-    if (PAL_CatchHardwareExceptionHolder::IsEnabled())
+    if (CatchHardwareExceptionHolder::IsEnabled())
     {
         throw exception;
     }
@@ -260,23 +253,99 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
 
 /*++
 
-PAL_HandlerExceptionHolder implementation
+  CatchHardwareExceptionHolder implementation
 
 --*/
 
-PAL_CatchHardwareExceptionHolder::PAL_CatchHardwareExceptionHolder()
+#ifdef __llvm__
+__thread 
+#else // __llvm__
+__declspec(thread)
+#endif // !__llvm__
+int t_holderCount = 0;
+
+CatchHardwareExceptionHolder::CatchHardwareExceptionHolder()
 {
     ++t_holderCount;
 }
 
-PAL_CatchHardwareExceptionHolder::~PAL_CatchHardwareExceptionHolder()
+CatchHardwareExceptionHolder::~CatchHardwareExceptionHolder()
 {
     --t_holderCount;
 }
 
-bool PAL_CatchHardwareExceptionHolder::IsEnabled()
+bool CatchHardwareExceptionHolder::IsEnabled()
 {
     return t_holderCount > 0;
+}
+
+/*++
+
+  NativeExceptionHolderBase implementation
+
+--*/
+
+#ifdef __llvm__
+__thread 
+#else // __llvm__
+__declspec(thread)
+#endif // !__llvm__
+static NativeExceptionHolderBase *t_nativeExceptionHolderHead = nullptr;
+
+NativeExceptionHolderBase::NativeExceptionHolderBase()
+    : CatchHardwareExceptionHolder()
+{
+    m_head = nullptr;
+    m_next = nullptr;
+}
+
+NativeExceptionHolderBase::~NativeExceptionHolderBase()
+{
+    // Only destroy if Push was called
+    if (m_head != nullptr)
+    {
+        *m_head = m_next;
+        m_head = nullptr;
+        m_next = nullptr;
+    }
+}
+
+void 
+NativeExceptionHolderBase::Push()
+{
+    NativeExceptionHolderBase **head = &t_nativeExceptionHolderHead;
+    m_head = head;
+    m_next = *head;
+    *head = this;
+}
+
+NativeExceptionHolderBase *
+NativeExceptionHolderBase::FindNextHolder(void *stackLowAddress, void *stackHighAddress)
+{
+    NativeExceptionHolderBase *holder = this;
+
+    while (holder != nullptr)
+    {
+        if (((void *)holder > stackLowAddress) && ((void *)holder < stackHighAddress))
+        { 
+            return holder;
+        }
+        // Get next holder
+        holder = holder->m_next;
+    }
+
+    return nullptr;
+}
+
+NativeExceptionHolderBase *
+NativeExceptionHolderBase::FindHolder(void *stackLowAddress, void *stackHighAddress)
+{
+    NativeExceptionHolderBase *head = t_nativeExceptionHolderHead;
+    if (head == nullptr)
+    {
+        return nullptr;
+    }
+    return head->FindNextHolder(stackLowAddress, stackHighAddress);
 }
 
 #include "seh-unwind.cpp"
