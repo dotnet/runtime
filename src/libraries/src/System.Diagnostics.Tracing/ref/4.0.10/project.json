@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "System.Diagnostics.Tracing": "4.0.10"
+  },
+  "frameworks": {
+    "dotnet": {}
+  }
+}

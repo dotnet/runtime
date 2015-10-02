@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "System.Net.Requests": "3.9.0"
+  },
+  "frameworks": {
+    "dotnet": {}
+  }
+}
