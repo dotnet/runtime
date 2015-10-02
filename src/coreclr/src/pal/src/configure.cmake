@@ -8,7 +8,7 @@ include(CheckTypeSize)
 include(CheckLibraryExists)
 
 if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-  set(CMAKE_REQUIRED_INCLUDES "/usr/local/include" "/usr/include")
+  set(CMAKE_REQUIRED_INCLUDES /usr/local/include)
 elseif(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(CMAKE_REQUIRED_DEFINITIONS "-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L")
 endif()
