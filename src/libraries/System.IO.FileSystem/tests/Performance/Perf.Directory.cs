@@ -3,7 +3,7 @@
 
 using Microsoft.Xunit.Performance;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class Perf_Directory : FileSystemTest
     {
@@ -55,6 +55,4 @@ namespace System.IO.FileSystem.Tests
             Directory.Delete(testFile);
         }
     }
-
-
 }

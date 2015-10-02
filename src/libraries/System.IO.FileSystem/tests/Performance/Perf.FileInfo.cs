@@ -3,7 +3,7 @@
 
 using Microsoft.Xunit.Performance;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
     public class Perf_FileInfo : FileSystemTest
     {
