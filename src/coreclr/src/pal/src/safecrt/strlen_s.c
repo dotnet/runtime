@@ -47,7 +47,7 @@ size_t __cdecl strnlen(const char *str, size_t maxsize)
 {
     size_t n;
 
-    /* Note that we do not check if s == NULL, because we do not
+    /* Note that we do not check if str == NULL, because we do not
      * return errno_t...
      */
 
