@@ -11,8 +11,8 @@
     "System.Threading.Thread": "4.0.0-beta-*",
     "System.Threading.ThreadPool": "4.0.10-beta-*",
     
-    "xunit": "2.1.0-beta3-*",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00085"
+    "xunit": "2.1.0",
+    "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {
     "dnxcore50": {}
