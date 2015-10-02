@@ -9,33 +9,12 @@ namespace System.Collections.Tests
 {
     public class Perf_List
     {
-        private static List<object[]> _testData;
-
-        /// <summary>
-        /// Yields several Lists containing increasing amounts of strings
-       ///  can be used as MemberData input to performance tests for Dictionary
-        /// </summary>
-        /// <remarks>Any changes made to the returned collections MUST be undone. Collections
-        /// used as MemberData are cached and reused in other perf tests.
-        /// </remarks>
-        public static List<object[]> TestData()
-        {
-            if (_testData == null)
-            {
-                PerfUtils utils = new PerfUtils();
-                _testData = new List<object[]>();
-                _testData.Add(new object[] { CreateList(utils, 1000) });
-                _testData.Add(new object[] { CreateList(utils, 10000) });
-                _testData.Add(new object[] { CreateList(utils, 100000) });
-            }
-            return _testData;
-        }
-
         /// <summary>
         /// Creates a list containing a number of elements equal to the specified size
         /// </summary>
-        public static List<object> CreateList(PerfUtils utils, int size)
+        public static List<object> CreateList(int size)
         {
+            PerfUtils utils = new PerfUtils(24565653);
             List<object> list = new List<object>();
             for (int i = 0; i < size; i++)
                 list.Add(utils.CreateString(100));
@@ -43,9 +22,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void Add(List<object> list)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void Add(int size)
         {
+            List<object> list = CreateList(size);
             foreach (var iteration in Benchmark.Iterations)
             {
                 List<object> copyList = new List<object>(list);
@@ -61,9 +43,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void AddRange(List<object> list)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void AddRange(int size)
         {
+            List<object> list = CreateList(size);
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < 5000; i++)
@@ -74,9 +59,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void Clear(List<object> list)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void Clear(int size)
         {
+            List<object> list = CreateList(size);
             foreach (var iteration in Benchmark.Iterations)
             {
                 // Setup lists to clear
@@ -92,9 +80,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void Contains(List<object> list)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void Contains(int size)
         {
+            List<object> list = CreateList(size);
             object contained = list[list.Count / 2];
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
@@ -114,7 +105,7 @@ namespace System.Collections.Tests
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                 {
-                    for (int i = 0; i < 10000; i++)
+                    for (int i = 0; i < 20000; i++)
                     {
                         new List<object>(); new List<object>(); new List<object>(); new List<object>(); new List<object>();
                         new List<object>(); new List<object>(); new List<object>(); new List<object>(); new List<object>();
@@ -124,9 +115,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void ctor_IEnumerable(List<object> list)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void ctor_IEnumerable(int size)
         {
+            List<object> list = CreateList(size);
             var array = list.ToArray();
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
@@ -135,9 +129,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void GetCount(List<object> list)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void GetCount(int size)
         {
+            List<object> list = CreateList(size);
             int temp;
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
@@ -152,9 +149,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void GetItem(List<object> list)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void GetItem(int size)
         {
+            List<object> list = CreateList(size);
             object temp;
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
@@ -170,9 +170,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void Enumerator(List<object> list)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void Enumerator(int size)
         {
+            List<object> list = CreateList(size);
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < 10000; i++)
@@ -180,9 +183,12 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
-        [MemberData("TestData")]
-        public void ToArray(List<object> list)
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
+        public void ToArray(int size)
         {
+            List<object> list = CreateList(size);
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < 10000; i++)
