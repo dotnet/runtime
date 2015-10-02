@@ -6373,6 +6373,8 @@ public:
 
 struct PAL_SEHException
 {
+private:
+    const SIZE_T NoTargetFrameSp = SIZE_MAX;
 public:
     // Note that the following two are actually embedded in this heap-allocated
     // instance - in contrast to Win32, where the exception record would usually
@@ -6381,6 +6383,8 @@ public:
     EXCEPTION_POINTERS ExceptionPointers;
     EXCEPTION_RECORD ExceptionRecord;
     CONTEXT ContextRecord;
+    // Target frame stack pointer set before the 2nd pass.
+    SIZE_T TargetFrameSp;
 
     PAL_SEHException(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContextRecord)
     {
@@ -6388,6 +6392,7 @@ public:
         ExceptionPointers.ContextRecord = &ContextRecord;
         ExceptionRecord = *pExceptionRecord;
         ContextRecord = *pContextRecord;
+        TargetFrameSp = NoTargetFrameSp;
     }
 
     PAL_SEHException()
@@ -6399,12 +6404,18 @@ public:
         *this = ex;
     }    
 
+    bool IsFirstPass()
+    {
+        return (TargetFrameSp == NoTargetFrameSp);
+    }
+
     PAL_SEHException& operator=(const PAL_SEHException& ex)
     {
         ExceptionPointers.ExceptionRecord = &ExceptionRecord;
         ExceptionPointers.ContextRecord = &ContextRecord;
         ExceptionRecord = ex.ExceptionRecord;
         ContextRecord = ex.ContextRecord;
+        TargetFrameSp = ex.TargetFrameSp;
 
         return *this;
     }    
