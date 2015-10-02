@@ -1,15 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
 using System.IO;
 using System.Text;
-using System.Xml;
+using Xunit;
 
-namespace XMLTests.ReaderWriter.WriteWithEncodingWithFallback
+namespace System.Xml.Tests
 {
-    public class XmlWriterTests
+    public class XmlWriterTests_EncodingFallback
     {
         private const char SurHighStart = '\ud800';
         //const char SurHighEnd = '\udbff';

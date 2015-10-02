@@ -1,15 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Xml;
+using Xunit;
 
-namespace XMLTests.ReaderWriter.XmlResolverTests
+namespace System.Xml.Tests
 {
     public class XmlSystemPathResolverTests
     {

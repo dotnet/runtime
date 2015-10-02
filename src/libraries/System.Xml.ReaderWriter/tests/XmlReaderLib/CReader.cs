@@ -1,16 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Xml;
-using System.Xml.Schema;
-using OLEDB.Test.ModuleCore;
 using System.IO;
-using XmlReaderTest.Common;
-using System.Collections;
 using XmlCoreTest.Common;
 
-namespace XmlReaderTest.Common
+namespace System.Xml.Tests
 {
     public class XmlCustomReader : XmlReader
     {
