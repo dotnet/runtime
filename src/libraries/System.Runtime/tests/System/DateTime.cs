@@ -340,7 +340,7 @@ public static unsafe class DateTimeTests
     [InlineData("sr-Latn-ME")]
     [InlineData("sr-Latn-RS")]
     [InlineData("sr-Latn-XK")]
-    [PlatformSpecific(PlatformID.Windows)] // ToDo: Serbian cultures in Linux have wrong date patterns. need to fix that.
+    [ActiveIssue(3616, PlatformID.AnyUnix)] 
     public static void TestSerbianCulturesParsing(string cultureName)
     {
         TestDateTimeParsingWithSpecialCultures(cultureName);
