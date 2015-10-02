@@ -3,6 +3,36 @@
   "version": 1,
   "targets": {
     "DNXCore,Version=v5.0": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0022": {
+        "type": "package",
+        "dependencies": {
+          "System.Collections": "4.0.10",
+          "System.Diagnostics.Debug": "4.0.10",
+          "System.Diagnostics.Tracing": "4.0.20",
+          "System.Globalization": "4.0.10",
+          "System.IO": "4.0.10",
+          "System.IO.FileSystem": "4.0.0",
+          "System.IO.FileSystem.Primitives": "4.0.0",
+          "System.Linq": "4.0.0",
+          "System.Reflection": "4.0.10",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.Extensions": "4.0.10",
+          "System.Text.Encoding": "4.0.10",
+          "System.Threading": "4.0.10",
+          "System.Threading.Tasks": "4.0.10",
+          "xunit.abstractions": "2.0.0",
+          "xunit.extensibility.core": "2.1.0",
+          "xunit.extensibility.execution": "2.1.0"
+        },
+        "compile": {
+          "lib/dotnet/xunit.performance.core.dll": {},
+          "lib/dotnet/xunit.performance.execution.dotnet.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/xunit.performance.core.dll": {},
+          "lib/dotnet/xunit.performance.execution.dotnet.dll": {}
+        }
+      },
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -517,6 +547,25 @@
     }
   },
   "libraries": {
+    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0022": {
+      "type": "package",
+      "sha512": "uh4WpDAs7mW9aiMqcHojn1MEGNUND03qmSsWFyVApAcRQQ0ppCJvQ2sUGBdL1/8DB12NGzKizaGg0Tnd4PCnfA==",
+      "files": [
+        "lib/dotnet/xunit.performance.core.dll",
+        "lib/dotnet/xunit.performance.core.pdb",
+        "lib/dotnet/xunit.performance.core.XML",
+        "lib/dotnet/xunit.performance.execution.dotnet.dll",
+        "lib/dotnet/xunit.performance.execution.dotnet.pdb",
+        "lib/net46/xunit.performance.core.dll",
+        "lib/net46/xunit.performance.core.pdb",
+        "lib/net46/xunit.performance.core.XML",
+        "lib/net46/xunit.performance.execution.desktop.dll",
+        "lib/net46/xunit.performance.execution.desktop.pdb",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0022.nupkg",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0022.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.nuspec"
+      ]
+    },
     "System.Collections/4.0.10": {
       "type": "package",
       "serviceable": true,
@@ -1631,6 +1680,7 @@
   },
   "projectFileDependencyGroups": {
     "": [
+      "Microsoft.DotNet.xunit.performance >= 1.0.0-*",
       "System.Collections >= 4.0.10",
       "System.Collections.Concurrent >= 4.0.10",
       "System.IO >= 4.0.10",
