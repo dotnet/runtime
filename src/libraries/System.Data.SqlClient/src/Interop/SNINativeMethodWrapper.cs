@@ -8,9 +8,9 @@ namespace System.Data.SqlClient
 {
     internal static class SNINativeMethodWrapper
     {
+#if !MANAGED_SNI
         private const string SNI = "sni.dll";
 
-#if !MANAGED_SNI
         private static int s_sniMaxComposedSpnLength = -1;
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -228,10 +228,10 @@ namespace System.Data.SqlClient
 
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl, EntryPoint = "SNIWaitForSSLHandshakeToCompleteWrapper")]
         internal static extern uint SNIWaitForSSLHandshakeToComplete([In] SNIHandle pConn, int dwMilliseconds);
-#endif
+
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl)]
         internal static extern uint UnmanagedIsTokenRestricted([In] IntPtr token, [MarshalAs(UnmanagedType.Bool)] out bool isRestricted);
-#if !MANAGED_SNI
+
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl)]
         private static extern uint GetSniMaxComposedSpnLength();
 
@@ -416,6 +416,9 @@ namespace System.Data
     {
         internal static bool IsTokenRestrictedWrapper(IntPtr token)
         {
+#if MANAGED_SNI
+            throw new PlatformNotSupportedException("The Win32NativeMethods.IsTokenRestrictedWrapper is not supported on non-Windows platform");
+#else
             bool isRestricted;
             uint result = SNINativeMethodWrapper.UnmanagedIsTokenRestricted(token, out isRestricted);
 
@@ -425,6 +428,7 @@ namespace System.Data
             }
 
             return isRestricted;
+#endif
         }
     }
 }

@@ -9,14 +9,14 @@ namespace System.Data.SqlClient.SNI
     /// </summary>
     internal class SNIError
     {
-        public SNIProviders provider;
-        public String errorMessage;
-        public uint nativeError;
-        public uint sniError;
-        public String function;
-        public uint lineNumber;
+        public readonly SNIProviders provider;
+        public readonly string errorMessage;
+        public readonly uint nativeError;
+        public readonly uint sniError;
+        public readonly string function;
+        public readonly uint lineNumber;
 
-        public SNIError(SNIProviders provider, uint nativeError, uint sniErrorCode, String errorMessage)
+        public SNIError(SNIProviders provider, uint nativeError, uint sniErrorCode, string errorMessage)
         {
             this.lineNumber = 0;
             this.function = "";
@@ -24,9 +24,8 @@ namespace System.Data.SqlClient.SNI
             this.nativeError = nativeError;
             this.sniError = sniErrorCode;
 
-            // For now hardcode "TCP Provider" to keep TDS parser happy
-            //
-            this.errorMessage = "TCP Provider: " + errorMessage + "\r\n";
+            // Hardcode "TCP Provider" to keep TDS parser happy
+            this.errorMessage = "TCP Provider: " + errorMessage + Environment.NewLine;
         }
     }
 }

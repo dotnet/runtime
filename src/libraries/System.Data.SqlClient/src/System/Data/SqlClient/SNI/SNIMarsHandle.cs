@@ -7,6 +7,7 @@ using System.Threading;
 
 namespace System.Data.SqlClient.SNI
 {
+
     /// <summary>
     /// MARS handle
     /// </summary>
@@ -15,21 +16,22 @@ namespace System.Data.SqlClient.SNI
         private const uint ACK_THRESHOLD = 2;
 
         private readonly SNIMarsConnection _connection;
-        private readonly UInt32 _status = TdsEnums.SNI_UNINITIALIZED;
-        private Queue<SNIPacket> _receivedPacketQueue = new Queue<SNIPacket>();
-        private Queue<SNIMarsQueuedPacket> _sendPacketQueue = new Queue<SNIMarsQueuedPacket>();
-        private Object _callbackObject;
-        private Guid _connectionId = Guid.NewGuid();
-        private ushort _sessionId;
-        private uint _sequenceNumber;
-        private uint _receiveHighwater = 4;
-        private uint _receiveHighwaterLastAck = 4;
+        private readonly uint _status = TdsEnums.SNI_UNINITIALIZED;
+        private readonly Queue<SNIPacket> _receivedPacketQueue = new Queue<SNIPacket>();
+        private readonly Queue<SNIMarsQueuedPacket> _sendPacketQueue = new Queue<SNIMarsQueuedPacket>();
+        private readonly object _callbackObject;
+        private readonly Guid _connectionId = Guid.NewGuid();
+        private readonly ushort _sessionId;
+        private readonly ManualResetEventSlim _packetEvent = new ManualResetEventSlim(false);
+        private readonly ManualResetEventSlim _ackEvent = new ManualResetEventSlim(false);
+        private readonly SNISMUXHeader _currentHeader = new SNISMUXHeader();
+
         private uint _sendHighwater = 4;
         private int _asyncReceives = 0;
-        private ManualResetEvent _packetEvent = new ManualResetEvent(false);
-        private ManualResetEvent _ackEvent = new ManualResetEvent(false);
+        private uint _receiveHighwater = 4;
+        private uint _receiveHighwaterLastAck = 4;
+        private uint _sequenceNumber;
         private SNIError _connectionError;
-        private SNISMUXHeader _currentHeader = new SNISMUXHeader();
 
         /// <summary>
         /// Connection ID
@@ -45,7 +47,7 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Handle status
         /// </summary>
-        public override UInt32 Status
+        public override uint Status
         {
             get
             {
@@ -62,8 +64,9 @@ namespace System.Data.SqlClient.SNI
             {
                 SendControlPacket(SNISMUXFlags.SMUX_FIN, false);
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, 0, 0, e.Message);
             }
         }
 
@@ -74,7 +77,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="sessionId">MARS session ID</param>
         /// <param name="callbackObject">Callback object</param>
         /// <param name="async">true if connection is asynchronous</param>
-        public SNIMarsHandle(SNIMarsConnection connection, ushort sessionId, Object callbackObject, bool async)
+        public SNIMarsHandle(SNIMarsConnection connection, ushort sessionId, object callbackObject, bool async)
         {
             _sessionId = sessionId;
             _connection = connection;
@@ -148,7 +151,7 @@ namespace System.Data.SqlClient.SNI
             GetSMUXHeaderBytes(packet.Length, (byte)SNISMUXFlags.SMUX_DATA, ref headerBytes);
 
             SNIPacket smuxPacket = new SNIPacket(null);
-            smuxPacket.Description = String.Format("({0}) SMUX packet {1}", packet.Description == null ? "" : packet.Description, xSequenceNumber);
+            smuxPacket.Description = string.Format("({0}) SMUX packet {1}", packet.Description == null ? "" : packet.Description, xSequenceNumber);
             smuxPacket.Allocate(16 + packet.Length);
             smuxPacket.AppendData(headerBytes, 16);
             smuxPacket.AppendPacket(packet);
@@ -172,12 +175,13 @@ namespace System.Data.SqlClient.SNI
                     }
                 }
 
-                _ackEvent.WaitOne();
+                _ackEvent.Wait();
 
                 lock (this)
                 {
                     _ackEvent.Reset();
                 }
+
             }
 
             return _connection.Send(GetSMUXEncapsulatedPacket(packet));
@@ -301,6 +305,7 @@ namespace System.Data.SqlClient.SNI
                 {
                     _packetEvent.Reset();
                 }
+
             }
 
             lock (this)
@@ -322,7 +327,8 @@ namespace System.Data.SqlClient.SNI
                 _connectionError = SNILoadHandle.SingletonInstance.LastError;
                 _packetEvent.Set();
             }
-#if MANAGED_SNI
+
+#if MANAGED_SNI // Causes build issue if uncommented in unmanaged version
             ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(null, 1);
 #endif
         }
@@ -337,7 +343,8 @@ namespace System.Data.SqlClient.SNI
             lock (this)
             {
                 Debug.Assert(_callbackObject != null);
-#if MANAGED_SNI
+
+#if MANAGED_SNI // Causes build issue if uncommented in unmanaged version
                 ((TdsParserStateObject)_callbackObject).WriteAsyncCallback(packet, sniErrorCode);
 #endif
             }
@@ -384,7 +391,8 @@ namespace System.Data.SqlClient.SNI
 
                     _asyncReceives--;
                     Debug.Assert(_callbackObject != null);
-#if MANAGED_SNI
+
+#if MANAGED_SNI // Causes build issue if uncommented in unmanaged version
                     ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(packet, 0);
 #endif
                 }
@@ -465,7 +473,7 @@ namespace System.Data.SqlClient.SNI
                     return result;
                 }
 
-                if (!_packetEvent.WaitOne(timeout))
+                if (!_packetEvent.Wait(timeout))
                 {
                     SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, "Timeout error");
                     return TdsEnums.SNI_WAIT_TIMEOUT;

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace System.Data.SqlClient.SNI
@@ -10,8 +11,8 @@ namespace System.Data.SqlClient.SNI
     /// </summary>
     internal class SNIMarsManager
     {
-        public static SNIMarsManager Singleton = new SNIMarsManager();
-        private Dictionary<SNIHandle, SNIMarsConnection> _connections = new Dictionary<SNIHandle, SNIMarsConnection>();
+        public static readonly SNIMarsManager Singleton = new SNIMarsManager();
+        private ConcurrentDictionary<SNIHandle, SNIMarsConnection> _connections = new ConcurrentDictionary<SNIHandle, SNIMarsConnection>();
 
         /// <summary>
         /// Constructor
@@ -28,12 +29,15 @@ namespace System.Data.SqlClient.SNI
         public uint CreateMarsConnection(SNIHandle lowerHandle)
         {
             SNIMarsConnection connection = new SNIMarsConnection(lowerHandle);
-            lock (_connections)
-            {
-                _connections.Add(lowerHandle, connection);
-            }
 
-            return connection.StartReceive();
+            if (_connections.TryAdd(lowerHandle, connection))
+            {
+                return connection.StartReceive();
+            }
+            else
+            {
+                return TdsEnums.SNI_ERROR;
+            }
         }
 
         /// <summary>
@@ -43,10 +47,10 @@ namespace System.Data.SqlClient.SNI
         /// <returns>MARS connection</returns>
         public SNIMarsConnection GetConnection(SNIHandle lowerHandle)
         {
-            lock (_connections)
-            {
-                return _connections[lowerHandle];
-            }
+            return _connections[lowerHandle];
         }
+#if !PROJECTK
+        // TODO: Remove MARS connection
+#endif
     }
 }

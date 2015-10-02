@@ -1022,7 +1022,7 @@ namespace System.Data.SqlClient
             {
                 // 0 or less (i.e. Timespan.Infinite) == infinite (which is represented by Int64.MaxValue)
                 _timeoutMilliseconds = 0;
-                _timeoutTime = Int64.MaxValue;
+                _timeoutTime = long.MaxValue;
             }
             else
             {
@@ -1501,7 +1501,7 @@ namespace System.Data.SqlClient
             }
 
             AssertValidState();
-            value = (Int16)((buffer[offset + 1] << 8) + buffer[offset]);
+            value = (short)((buffer[offset + 1] << 8) + buffer[offset]);
             return true;
         }
 
@@ -1620,7 +1620,7 @@ namespace System.Data.SqlClient
             }
 
             AssertValidState();
-            value = (UInt16)((buffer[offset + 1] << 8) + buffer[offset]);
+            value = (ushort)((buffer[offset + 1] << 8) + buffer[offset]);
             return true;
         }
 
@@ -2224,13 +2224,8 @@ namespace System.Data.SqlClient
                 else
                 { // Failure!
 #if MANAGED_SNI
-#if DEBUG
-                    if (readPacket != null)
-                    {
-                        Debug.Assert(readPacket.IsInvalid, "unexpected readPacket without corresponding SNIPacketRelease");
-                    }
-#endif
-#else					
+                    Debug.Assert(readPacket == null || readPacket.IsInvalid, "unexpected readPacket without corresponding SNIPacketRelease");
+#else
                     Debug.Assert(IntPtr.Zero == readPacket, "unexpected readPacket without corresponding SNIPacketRelease");
 #endif // MANAGED_SNI
                     ReadSniError(this, error);
@@ -2493,12 +2488,7 @@ namespace System.Data.SqlClient
                 else if (TdsEnums.SNI_SUCCESS_IO_PENDING != error)
                 { // FAILURE!
 #if MANAGED_SNI
-#if DEBUG
-                    if (readPacket != null)
-                    {
-                        Debug.Assert(readPacket.IsInvalid, "unexpected readPacket without corresponding SNIPacketRelease");
-                    }
-#endif
+                    Debug.Assert(readPacket == null || readPacket.IsInvalid, "unexpected readPacket without corresponding SNIPacketRelease");
 #else
                     Debug.Assert(IntPtr.Zero == readPacket, "unexpected readPacket without corresponding SNIPacketRelease");
 #endif // MANAGED_SNI
@@ -2725,12 +2715,7 @@ namespace System.Data.SqlClient
                                 else
                                 {
 #if MANAGED_SNI
-#if DEBUG
-                                    if (syncReadPacket != null)
-                                    {
-                                        Debug.Assert(syncReadPacket.IsInvalid, "unexpected syncReadPacket without corresponding SNIPacketRelease");
-                                    }
-#endif
+                                    Debug.Assert(syncReadPacket == null || syncReadPacket.IsInvalid, "unexpected syncReadPacket without corresponding SNIPacketRelease");
 #else									
                                     Debug.Assert(IntPtr.Zero == syncReadPacket, "unexpected syncReadPacket without corresponding SNIPacketRelease");
 #endif // MANAGED_SNI

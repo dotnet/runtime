@@ -16,23 +16,23 @@ namespace System.Data.SqlClient.SNI
     internal class SNITCPHandle : SNIHandle
     {
         private readonly string _targetServer;
-        private object _callbackObject;
+        private readonly object _callbackObject;
+        private readonly Socket _socket;
+        private readonly NetworkStream _tcpStream;
+        private readonly TaskScheduler _writeScheduler;
+        private readonly TaskFactory _writeTaskFactory;
+
         private Stream _stream;
-        private Socket _socket;
-        private NetworkStream _tcpStream;
+        private TcpClient _tcpClient;
         private SslStream _sslStream;
         private SslOverTdsStream _sslOverTdsStream;
-        private TcpClient _tcpClient;
         private SNIAsyncCallback _receiveCallback;
         private SNIAsyncCallback _sendCallback;
-        private TaskScheduler _writeScheduler;
-        private TaskFactory _writeTaskFactory;
 
         private bool _validateCert = true;
-        private int _bufferSize = 4096;
+        private int _bufferSize = TdsEnums.DEFAULT_LOGIN_PACKET_SIZE;
         private uint _status = TdsEnums.SNI_UNINITIALIZED;
-
-        public Guid _connectionId = Guid.NewGuid();
+        private Guid _connectionId = Guid.NewGuid();
 
         /// <summary>
         /// Dispose object
@@ -75,7 +75,7 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Connection status
         /// </summary>
-        public override UInt32 Status
+        public override uint Status
         {
             get
             {
@@ -92,7 +92,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="callbackObject">Callback object</param>
         public SNITCPHandle(string serverName, int port, long timerExpire, object callbackObject)
         {
-            _writeScheduler = new LimitedConcurrencyLevelTaskScheduler(1);
+            _writeScheduler = new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler;
             _writeTaskFactory = new TaskFactory(_writeScheduler);
             _callbackObject = callbackObject;
             _targetServer = serverName;
@@ -107,7 +107,7 @@ namespace System.Data.SqlClient.SNI
 
                 // In case the Timeout is Infinite, we will receive the max value of Int64 as the tick count
                 // The infinite Timeout is a function of ConnectionString Timeout=0
-                bool isInfiniteTimeOut = Int64.MaxValue == timerExpire;
+                bool isInfiniteTimeOut = long.MaxValue == timerExpire;
                 if (!isInfiniteTimeOut)
                 {
                     ts = DateTime.FromFileTime(timerExpire) - DateTime.Now;
@@ -131,7 +131,7 @@ namespace System.Data.SqlClient.SNI
             }
             catch (SocketException se)
             {
-                ReportTcpSNIError((uint)se.SocketErrorCode, 0, se.Message);
+                ReportTcpSNIError(se.Message);
                 return;
             }
             catch (Exception e)
@@ -156,11 +156,11 @@ namespace System.Data.SqlClient.SNI
                 _sslStream.AuthenticateAsClient(_targetServer);
                 _sslOverTdsStream.FinishHandshake();
             }
-            catch (AuthenticationException aue)
+            catch(AuthenticationException aue)
             {
                 return ReportTcpSNIError(aue.Message);
             }
-            catch (InvalidOperationException ioe)
+            catch(InvalidOperationException ioe)
             {
                 return ReportTcpSNIError(ioe.Message);
             }
@@ -192,7 +192,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>True if certificate is valid</returns>
         private bool ValidateServerCertificate(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors policyErrors)
         {
-            if (!_validateCert)
+            if(!_validateCert)
             {
                 return true;
             }
@@ -259,22 +259,22 @@ namespace System.Data.SqlClient.SNI
 
                     if (packet.Length == 0)
                     {
-                        return ReportTcpSNIError("Connection was terminated");
+                        return ReportErrorAndReleasePacket(packet, "Connection was terminated");
                     }
 
                     return TdsEnums.SNI_SUCCESS;
                 }
                 catch (ObjectDisposedException ode)
                 {
-                    return ReportTcpSNIError(ode.Message);
+                    return ReportErrorAndReleasePacket(packet, ode.Message);
                 }
                 catch (SocketException se)
                 {
-                    return ReportTcpSNIError(se.Message);
+                    return ReportErrorAndReleasePacket(packet, se.Message);
                 }
                 catch (IOException ioe)
                 {
-                    uint errorCode = ReportTcpSNIError(ioe.Message);
+                    uint errorCode = ReportErrorAndReleasePacket(packet, ioe.Message);
                     if (ioe.InnerException is SocketException && ((SocketException)(ioe.InnerException)).SocketErrorCode == SocketError.TimedOut)
                     {
                         errorCode = TdsEnums.SNI_WAIT_TIMEOUT;
@@ -368,18 +368,15 @@ namespace System.Data.SqlClient.SNI
                 }
                 catch (ObjectDisposedException ode)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, ode.Message);
-                    return TdsEnums.SNI_ERROR;
+                    return ReportErrorAndReleasePacket(packet, ode.Message);
                 }
                 catch (SocketException se)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, se.Message);
-                    return TdsEnums.SNI_ERROR;
+                    return ReportErrorAndReleasePacket(packet, se.Message);
                 }
                 catch (IOException ioe)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, ioe.Message);
-                    return TdsEnums.SNI_ERROR;
+                    return ReportErrorAndReleasePacket(packet, ioe.Message);
                 }
             }
         }
@@ -391,9 +388,22 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error status</returns>
         public override uint CheckConnection()
         {
-            // Connection checking isn't really useful. Let client get an error
-            // when they try to send/receive.
-            //
+            try
+            {
+                if (!_socket.Connected || _socket.Poll(0, SelectMode.SelectError))
+                {
+                    return TdsEnums.SNI_ERROR;
+                }
+            }
+            catch(SocketException se)
+            {
+                return ReportTcpSNIError(se.Message);
+            }
+            catch(ObjectDisposedException ode)
+            {
+                return ReportTcpSNIError(ode.Message);
+            }
+
             return TdsEnums.SNI_SUCCESS;
         }
 
@@ -405,6 +415,12 @@ namespace System.Data.SqlClient.SNI
 
         private uint ReportTcpSNIError(string errorMessage)
         {
+            return ReportTcpSNIError(0, 0, errorMessage);
+        }
+
+        private uint ReportErrorAndReleasePacket(SNIPacket packet, string errorMessage)
+        {
+            packet.Release();
             return ReportTcpSNIError(0, 0, errorMessage);
         }
 
