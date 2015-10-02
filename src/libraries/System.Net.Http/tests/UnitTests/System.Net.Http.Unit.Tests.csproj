@@ -25,6 +25,9 @@
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>ProductionCode\Common\System\NotImplemented.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Internal\HttpStatusDescription.cs">
       <Link>ProductionCode\Internal\HttpStatusDescription.cs</Link>
     </Compile>
