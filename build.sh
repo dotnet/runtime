@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [skipmscorlib] [includetests]"
+    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [skipmscorlib] [skiptests]"
     echo "BuildArch can be: x64, ARM"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
@@ -12,7 +12,7 @@ usage()
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
     echo "skipmscorlib - do not build mscorlib.dll even if mono is installed."
-    echo "includetests - build the tests in the 'tests' subdirectory as well."
+    echo "skiptests - skip the tests in the 'tests' subdirectory."
 
     exit 1
 }
@@ -187,7 +187,7 @@ esac
 __MSBuildBuildArch=x64
 __BuildType=Debug
 __CodeCoverage=
-__IncludeTests=
+__IncludeTests=Include_Tests
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
@@ -262,7 +262,9 @@ for i in "$@"
         __SkipMSCorLib=1
         ;;
         includetests)
-        __IncludeTests=Include_Tests
+        ;;
+        skiptests)
+        __IncludeTests=
         ;;
         *)
         __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
