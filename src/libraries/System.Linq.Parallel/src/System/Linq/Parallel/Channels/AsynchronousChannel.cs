@@ -380,7 +380,7 @@ namespace System.Linq.Parallel
                 // Trim the partially-full chunk to an array just big enough to hold it.
                 Debug.Assert(1 <= _producerChunkIndex && _producerChunkIndex <= _chunkSize);
                 T[] leftOverChunk = new T[_producerChunkIndex];
-                Array.Copy(_producerChunk, leftOverChunk, _producerChunkIndex);
+                Array.Copy(_producerChunk, 0, leftOverChunk, 0, _producerChunkIndex);
 
                 // And enqueue the right-sized temporary chunk, possibly blocking if it's full.
                 EnqueueChunk(leftOverChunk);

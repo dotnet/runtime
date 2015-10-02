@@ -821,12 +821,12 @@ namespace System.Runtime.Serialization
                     {
                         baseMemberCount = BaseContract.MemberNames.Length;
                         MemberNames = new XmlDictionaryString[Members.Count + baseMemberCount];
-                        Array.Copy(BaseContract.MemberNames, MemberNames, baseMemberCount);
+                        Array.Copy(BaseContract.MemberNames, 0, MemberNames, 0, baseMemberCount);
                         MemberNamespaces = new XmlDictionaryString[Members.Count + baseMemberCount];
-                        Array.Copy(BaseContract.MemberNamespaces, MemberNamespaces, baseMemberCount);
+                        Array.Copy(BaseContract.MemberNamespaces, 0, MemberNamespaces, 0, baseMemberCount);
                         baseContractCount = BaseContract.ContractNamespaces.Length;
                         ContractNamespaces = new XmlDictionaryString[1 + baseContractCount];
-                        Array.Copy(BaseContract.ContractNamespaces, ContractNamespaces, baseContractCount);
+                        Array.Copy(BaseContract.ContractNamespaces, 0, ContractNamespaces, 0, baseContractCount);
                     }
                     ContractNamespaces[baseContractCount] = Namespace;
                     for (int i = 0; i < Members.Count; i++)
