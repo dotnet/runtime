@@ -1,0 +1,42 @@
+{
+  "locked": true,
+  "version": 1,
+  "targets": {
+    ".NETPlatform,Version=v5.0": {
+      "System.Numerics.Vectors/4.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/portable-net45+win8+wpa81/System.Numerics.Vectors.dll": {}
+        },
+        "runtime": {
+          "lib/portable-net45+win8+wpa81/System.Numerics.Vectors.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "System.Numerics.Vectors/4.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "H/72pHnKZ5wZk8lMrZ2H10OsBgkRcbQ7sXuLzxAL9/evRB95yYf3j+iXdrRv2JHNGspdmC8oVo7B3RQrY5QBWw==",
+      "files": [
+        "lib/portable-net45+win8+wpa81/System.Numerics.Vectors.dll",
+        "lib/portable-net45+win8+wpa81/System.Numerics.Vectors.xml",
+        "lib/win8/System.Numerics.Vectors.dll",
+        "lib/win8/System.Numerics.Vectors.WindowsRuntime.dll",
+        "lib/win8/System.Numerics.Vectors.WindowsRuntime.xml",
+        "lib/win8/System.Numerics.Vectors.xml",
+        "License-Stable.rtf",
+        "System.Numerics.Vectors.4.0.0.nupkg",
+        "System.Numerics.Vectors.4.0.0.nupkg.sha512",
+        "System.Numerics.Vectors.nuspec"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    "": [
+      "System.Numerics.Vectors >= 4.0.0"
+    ],
+    ".NETPlatform,Version=v5.0": []
+  }
+}
