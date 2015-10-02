@@ -96,7 +96,7 @@ namespace System.Xml
             if (_stackPos >= len)
             {
                 uint[] bitStackNew = new uint[2 * len];
-                Array.Copy(_bitStack, bitStackNew, len);
+                Array.Copy(_bitStack, 0, bitStackNew, 0, len);
                 _bitStack = bitStackNew;
             }
         }

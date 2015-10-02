@@ -299,11 +299,11 @@ namespace System.IO
                         {
                             int newSize = currentMatches.Length * 2;
                             int[] tmp = new int[newSize];
-                            Array.Copy(currentMatches, tmp, currentMatches.Length);
+                            Array.Copy(currentMatches, 0, tmp, 0, currentMatches.Length);
                             currentMatches = tmp;
 
                             tmp = new int[newSize];
-                            Array.Copy(previousMatches, tmp, previousMatches.Length);
+                            Array.Copy(previousMatches, 0, tmp, 0, previousMatches.Length);
                             previousMatches = tmp;
                         }
 

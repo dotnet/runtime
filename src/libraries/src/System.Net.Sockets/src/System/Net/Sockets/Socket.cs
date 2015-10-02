@@ -4344,7 +4344,7 @@ namespace System.Net.Sockets
 
             Socket socket = EndAccept(out innerBuffer, out bytesTransferred, asyncResult);
             buffer = new byte[bytesTransferred];
-            Array.Copy(innerBuffer, buffer, bytesTransferred);
+            Array.Copy(innerBuffer, 0, buffer, 0, bytesTransferred);
             return socket;
         }
 

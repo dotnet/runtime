@@ -8,7 +8,7 @@ namespace System.Dynamic.Utils
         public static T[] Copy<T>(this T[] array)
         {
             T[] copy = new T[array.Length];
-            Array.Copy(array, copy, array.Length);
+            Array.Copy(array, 0, copy, 0, array.Length);
             return copy;
         }
     }

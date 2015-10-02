@@ -181,7 +181,7 @@ namespace System.Runtime.Serialization
                     _memberNamespaces = new XmlDictionaryString[Members.Count];
                     baseContractCount = BaseContract._contractNamespaces.Length;
                     _contractNamespaces = new XmlDictionaryString[1 + baseContractCount];
-                    Array.Copy(BaseContract._contractNamespaces, _contractNamespaces, baseContractCount);
+                    Array.Copy(BaseContract._contractNamespaces, 0, _contractNamespaces, 0, baseContractCount);
                 }
                 _contractNamespaces[baseContractCount] = Namespace;
                 for (int i = 0; i < Members.Count; i++)
