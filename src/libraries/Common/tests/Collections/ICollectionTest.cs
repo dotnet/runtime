@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using Xunit.Sdk;
@@ -296,6 +297,19 @@ namespace Tests.Collections
                     collection.Count);
                 collection.CopyTo(itemArray, 0);
                 CollectionAssert.Equal(items, itemArray);
+            }
+        }
+
+        [Fact]
+        public void CollectionShouldContainAllItems()
+        {
+            object[] items = GenerateItems(16);
+            ICollection<T> collection = GetCollection(items) as ICollection<T>;
+            if (collection == null)
+                return;
+            foreach (var item in items)
+            {
+                Assert.True(collection.Contains((T)item));
             }
         }
 
