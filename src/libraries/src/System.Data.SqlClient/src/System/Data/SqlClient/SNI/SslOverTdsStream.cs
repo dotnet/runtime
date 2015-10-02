@@ -12,9 +12,13 @@ namespace System.Data.SqlClient.SNI
     /// </summary>
     internal sealed class SslOverTdsStream : Stream
     {
-        private Stream _stream;
-        private bool _encapsulate;
+        private readonly Stream _stream;
+
         private int _packetBytes = 0;
+        private bool _encapsulate;
+
+        private const int PACKET_SIZE_WITHOUT_HEADER = TdsEnums.DEFAULT_LOGIN_PACKET_SIZE - TdsEnums.HEADER_LEN;
+        private const int PRELOGIN_PACKET_TYPE = 0x12;
 
         /// <summary>
         /// Constructor
@@ -44,16 +48,19 @@ namespace System.Data.SqlClient.SNI
         public override int Read(byte[] buffer, int offset, int count)
         {
             int readBytes;
-            byte[] scratch = new byte[count < 8 ? 8 : count];
+#if !PROJECTK
+            // TODO: cache
+#endif
+            byte[] scratch = new byte[count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count]; 
 
             if (_encapsulate)
             {
                 if (_packetBytes == 0)
                 {
-                    readBytes = _stream.Read(scratch, 0, 8);
-                    _packetBytes = scratch[2] * 256;
+                    readBytes = _stream.Read(scratch, 0, TdsEnums.HEADER_LEN);
+                    _packetBytes = scratch[2] * 0x100;
                     _packetBytes += scratch[3];
-                    _packetBytes -= 8;
+                    _packetBytes -= TdsEnums.HEADER_LEN;
                 }
 
                 if (count > _packetBytes)
@@ -91,9 +98,9 @@ namespace System.Data.SqlClient.SNI
                 //
                 if (_encapsulate)
                 {
-                    if (count > 4088)
+                    if (count > PACKET_SIZE_WITHOUT_HEADER)
                     {
-                        currentCount = 4088;
+                        currentCount = PACKET_SIZE_WITHOUT_HEADER;
                     }
                     else
                     {
@@ -102,21 +109,21 @@ namespace System.Data.SqlClient.SNI
 
                     count -= currentCount;
 
-                    byte[] header = new byte[8];
+                    byte[] header = new byte[TdsEnums.HEADER_LEN];
 
                     // We can only send 4088 bytes in one packet. Header[1] is set to 1 if this is a 
                     // partial packet (whether or not count != 0).
                     // 
-                    header[0] = 0x12;
+                    header[0] = PRELOGIN_PACKET_TYPE;
                     header[1] = (byte)(count > 0 ? 0 : 1);
-                    header[2] = (byte)((currentCount + 8) / 256);
-                    header[3] = (byte)((currentCount + 8) % 256);
+                    header[2] = (byte)((currentCount + TdsEnums.HEADER_LEN) / 0x100);
+                    header[3] = (byte)((currentCount + TdsEnums.HEADER_LEN) % 0x100);
                     header[4] = 0;
                     header[5] = 0;
                     header[6] = 0;
                     header[7] = 0;
 
-                    _stream.Write(header, 0, 8);
+                    _stream.Write(header, 0, TdsEnums.HEADER_LEN);
                     _stream.Flush();
                 }
                 else
@@ -137,7 +144,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="value">Length</param>
         public override void SetLength(long value)
         {
-            throw NotImplemented.ByDesignWithMessage("Not required");
+            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -155,11 +162,11 @@ namespace System.Data.SqlClient.SNI
         {
             get
             {
-                throw NotImplemented.ByDesignWithMessage("Not required");
+                throw new NotSupportedException();
             }
             set
             {
-                throw NotImplemented.ByDesignWithMessage("Not required");
+                throw new NotSupportedException();
             }
         }
 
@@ -171,7 +178,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>Position</returns>
         public override long Seek(long offset, SeekOrigin origin)
         {
-            throw NotImplemented.ByDesignWithMessage("Not required");
+            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -195,7 +202,7 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         public override bool CanSeek
         {
-            get { return _stream.CanSeek; }
+            get { return false; } // Seek not supported
         }
 
         /// <summary>
@@ -205,7 +212,7 @@ namespace System.Data.SqlClient.SNI
         {
             get
             {
-                throw NotImplemented.ByDesignWithMessage("Not required");
+                throw new NotSupportedException();
             }
         }
     }

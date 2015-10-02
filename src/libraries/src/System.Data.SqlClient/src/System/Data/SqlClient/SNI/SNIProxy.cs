@@ -12,18 +12,7 @@ namespace System.Data.SqlClient.SNI
     {
         public static readonly SNIProxy Singleton = new SNIProxy();
 
-        private GCHandle _gcHandle;
-
-        /// <summary>
-        /// Create consumer info
-        /// </summary>
-        /// <param name="async">Enable asynchronous support</param>
-        /// <param name="defaultBufferSize">Default buffer size</param>
-        /// <returns>Consumer info</returns>
-        public SNIConsumerInfo CreateConsumerInfo(bool async, int defaultBufferSize)
-        {
-            return new SNIConsumerInfo();
-        }
+        private readonly GCHandle _gcHandle;
 
         /// <summary>
         /// Terminate SNI
@@ -77,7 +66,7 @@ namespace System.Data.SqlClient.SNI
             }
             catch (Exception e)
             {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, String.Format("Encryption(ssl/tls) handshake failed: {0}", e.ToString()));
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, string.Format("Encryption(ssl/tls) handshake failed: {0}", e.ToString()));
                 return TdsEnums.SNI_ERROR;
             }
         }
@@ -219,7 +208,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="async">Asynchronous connection</param>
         /// <param name="parallel">Attempt parallel connects</param>
         /// <returns>SNI handle</returns>
-        public SNIHandle CreateConnectionHandle(Object callbackObject, string fullServerName, bool ignoreSniOpenTimeout, Int64 timerExpire, out byte[] instanceName, byte[] spnBuffer, bool flushCache, bool async, bool parallel)
+        public SNIHandle CreateConnectionHandle(object callbackObject, string fullServerName, bool ignoreSniOpenTimeout, long timerExpire, out byte[] instanceName, byte[] spnBuffer, bool flushCache, bool async, bool parallel)
         {
             instanceName = new byte[1];
             instanceName[0] = 0;
@@ -244,7 +233,7 @@ namespace System.Data.SqlClient.SNI
                     return ConstructTcpHandle(serverNameParts[1], timerExpire, callbackObject);
 
                 default:
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.INVALID_PROV, 0, 0, String.Format("Unsupported transport protocol: '{0}'", serverNameParts[0]));
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.INVALID_PROV, 0, 0, string.Format("Unsupported transport protocol: '{0}'", serverNameParts[0]));
                     return null;
             }
         }
@@ -256,7 +245,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="timerExpire">Timer expiration</param>
         /// <param name="callbackObject">Asynchronous I/O callback object</param>
         /// <returns></returns>
-        private SNITCPHandle ConstructTcpHandle(string fullServerName, Int64 timerExpire, object callbackObject)
+        private SNITCPHandle ConstructTcpHandle(string fullServerName, long timerExpire, object callbackObject)
         {
             // TCP Format: 
             // tcp:<host name>\<instance name>
@@ -293,7 +282,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="defaultBufferSize">Default buffer size</param>
         /// <param name="async">Asynchronous connection</param>
         /// <returns>SNI error status</returns>
-        public SNIHandle CreateMarsHandle(Object callbackObject, SNIHandle physicalConnection, int defaultBufferSize, bool async)
+        public SNIHandle CreateMarsHandle(object callbackObject, SNIHandle physicalConnection, int defaultBufferSize, bool async)
         {
             SNIMarsConnection connection = SNIMarsManager.Singleton.GetConnection(physicalConnection);
             return connection.CreateSession(callbackObject, async);

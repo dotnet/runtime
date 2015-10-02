@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Data.SqlClient.SNI
 {
@@ -15,7 +17,7 @@ namespace System.Data.SqlClient.SNI
         private int _capacity;
         private int _offset;
         private string _description;
-        private SNIAsyncCallback _completionCallback;
+        SNIAsyncCallback _completionCallback;
 
         /// <summary>
         /// Constructor
@@ -23,7 +25,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="handle">Owning SNI handle</param>
         public SNIPacket(SNIHandle handle)
         {
-            _offset = 0;
+            this._offset = 0;
         }
 
         /// <summary>
@@ -71,7 +73,7 @@ namespace System.Data.SqlClient.SNI
         {
             get
             {
-                return _data != null;
+                return _data == null;
             }
         }
 
@@ -256,8 +258,16 @@ namespace System.Data.SqlClient.SNI
                     }
                 }
 
+                if(error)
+                {
+                    this.Release();
+                }
+
                 callback(this, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
-            });
+            }, 
+            CancellationToken.None, 
+            TaskContinuationOptions.DenyChildAttach, 
+            TaskScheduler.Default);
         }
 
         /// <summary>
@@ -292,7 +302,7 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>true if equal</returns>
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             SNIPacket packet = obj as SNIPacket;
 
@@ -313,7 +323,7 @@ namespace System.Data.SqlClient.SNI
         {
             if (packet != null)
             {
-                return Object.ReferenceEquals(packet, this);
+                return object.ReferenceEquals(packet, this);
             }
 
             return false;

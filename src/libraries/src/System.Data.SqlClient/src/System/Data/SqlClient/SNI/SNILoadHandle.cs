@@ -10,11 +10,12 @@ namespace System.Data.SqlClient.SNI
     /// </summary>
     internal class SNILoadHandle
     {
-        static public SNILoadHandle SingletonInstance = new SNILoadHandle();
+        public static readonly SNILoadHandle SingletonInstance = new SNILoadHandle();
 
-        private ThreadLocal<SNIError> _lastError = new ThreadLocal<SNIError>(() => { return new SNIError(SNIProviders.INVALID_PROV, 0, 0, "No SNI Error has been reported yet."); });
-        private readonly UInt32 _status = TdsEnums.SNI_SUCCESS;
         public readonly EncryptionOptions _encryptionOption = EncryptionOptions.OFF;
+        public ThreadLocal<SNIError> _lastError = new ThreadLocal<SNIError>(() => { return new SNIError(SNIProviders.INVALID_PROV, 0, TdsEnums.SNI_SUCCESS, null); });
+
+        private readonly uint _status = TdsEnums.SNI_SUCCESS;
 
         /// <summary>
         /// Last SNI error
@@ -28,14 +29,14 @@ namespace System.Data.SqlClient.SNI
 
             set
             {
-                _lastError = new ThreadLocal<SNIError>(() => { return value; });
+                _lastError.Value = value;
             }
         }
 
         /// <summary>
         /// SNI library status
         /// </summary>
-        public UInt32 Status
+        public uint Status
         {
             get
             {

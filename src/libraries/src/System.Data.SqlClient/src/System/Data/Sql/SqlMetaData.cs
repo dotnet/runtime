@@ -941,7 +941,7 @@ namespace Microsoft.SqlServer.Server
                     {
                         byte[] rgbValue = value.Value;
                         byte[] rgbNewValue = new byte[MaxLength];
-                        Array.Copy(rgbValue, 0, rgbNewValue, 0, rgbValue.Length);
+                        Array.Copy(rgbValue, rgbNewValue, rgbValue.Length);
                         Array.Clear(rgbNewValue, rgbValue.Length, rgbNewValue.Length - rgbValue.Length);
                         return new SqlBinary(rgbNewValue);
                     }
@@ -962,7 +962,7 @@ namespace Microsoft.SqlServer.Server
             {
                 byte[] rgbValue = value.Value;
                 byte[] rgbNewValue = new byte[MaxLength];
-                Array.Copy(rgbValue, 0, rgbNewValue, 0, (int)MaxLength);
+                Array.Copy(rgbValue, rgbNewValue, (int)MaxLength);
                 value = new SqlBinary(rgbNewValue);
             }
 
@@ -992,7 +992,7 @@ namespace Microsoft.SqlServer.Server
                         if (value.MaxLength < MaxLength)
                         {
                             char[] rgchNew = new char[(int)MaxLength];
-                            Array.Copy(value.Buffer, 0, rgchNew, 0, (int)oldLength);
+                            Array.Copy(value.Buffer, rgchNew, (int)oldLength);
                             value = new SqlChars(rgchNew);
                         }
 
@@ -1039,7 +1039,7 @@ namespace Microsoft.SqlServer.Server
                         if (value.MaxLength < MaxLength)
                         {
                             byte[] rgbNew = new byte[MaxLength];
-                            Array.Copy(value.Buffer, 0, rgbNew, 0, (int)oldLength);
+                            Array.Copy(value.Buffer, rgbNew, (int)oldLength);
                             value = new SqlBytes(rgbNew);
                         }
 
@@ -1379,7 +1379,7 @@ namespace Microsoft.SqlServer.Server
                     if (value.Length < MaxLength)
                     {
                         byte[] rgbNewValue = new byte[MaxLength];
-                        Array.Copy(value, 0, rgbNewValue, 0, value.Length);
+                        Array.Copy(value, rgbNewValue, value.Length);
                         Array.Clear(rgbNewValue, value.Length, (int)rgbNewValue.Length - value.Length);
                         return rgbNewValue;
                     }
@@ -1399,7 +1399,7 @@ namespace Microsoft.SqlServer.Server
             if (value.Length > MaxLength && Max != MaxLength)
             {
                 byte[] rgbNewValue = new byte[MaxLength];
-                Array.Copy(value, 0, rgbNewValue, 0, (int)MaxLength);
+                Array.Copy(value, rgbNewValue, (int)MaxLength);
                 value = rgbNewValue;
             }
 
@@ -1435,7 +1435,7 @@ namespace Microsoft.SqlServer.Server
                     if (oldLength < MaxLength)
                     {
                         char[] rgchNew = new char[(int)MaxLength];
-                        Array.Copy(value, 0, rgchNew, 0, (int)oldLength);
+                        Array.Copy(value, rgchNew, (int)oldLength);
 
                         // pad extra space
                         for (long i = oldLength; i < rgchNew.Length; i++)
@@ -1459,7 +1459,7 @@ namespace Microsoft.SqlServer.Server
             if (value.Length > MaxLength && Max != MaxLength)
             {
                 char[] rgchNewValue = new char[MaxLength];
-                Array.Copy(value, 0, rgchNewValue, 0, (int)MaxLength);
+                Array.Copy(value, rgchNewValue, (int)MaxLength);
                 value = rgchNewValue;
             }
 

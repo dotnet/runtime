@@ -19,8 +19,9 @@ namespace System.Data.SqlClient.SNI
     internal enum SNIProviders
     {
         NP_PROV = 1,        // Named Pipes Provider
+        SMUX_PROV = 5,      // MARS Provider
         TCP_PROV = 7,       // TCP Provider
-        INVALID_PROV = 10,   // Invalid Provider
+        INVALID_PROV = 10,  // Invalid Provider
     }
 
     /// <summary>
@@ -50,13 +51,6 @@ namespace System.Data.SqlClient.SNI
         SMUX_DATA = 8       // SMUX data packet
     }
 
-    /// <summary>
-    /// Consumer info for SNI
-    /// </summary>
-    internal class SNIConsumerInfo
-    {
-    }
-
     internal class SNICommon
     {
         /// <summary>
@@ -70,7 +64,6 @@ namespace System.Data.SqlClient.SNI
         /// <returns>True if certificate is valid</returns>
         internal static bool ValidateSslServerCertificate(string targetServerName, object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors policyErrors)
         {
-            // If the certificate is not a valid, signed certificate, then fail validation.
             if (policyErrors == SslPolicyErrors.None)
             {
                 return true;

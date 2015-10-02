@@ -74,7 +74,7 @@ namespace System.Data.SqlClient
             return true;
         }
 
-        public UInt32 SNIStatus
+        public UInt32 Status
         {
             get
             {

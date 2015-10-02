@@ -304,11 +304,7 @@ namespace System.Data.SqlClient
             _connHandler = connHandler;
             _loginWithFailover = withFailover;
 
-#if MANAGED_SNI
-            UInt32 sniStatus = SNILoadHandle.SingletonInstance.Status;
-#else
-            UInt32 sniStatus = SNILoadHandle.SingletonInstance.SNIStatus;
-#endif // MANAGED_SNI
+            uint sniStatus = SNILoadHandle.SingletonInstance.Status;
 
             if (sniStatus != TdsEnums.SNI_SUCCESS)
             {
@@ -318,8 +314,7 @@ namespace System.Data.SqlClient
                 Debug.Assert(false, "SNI returned status != success, but no error thrown?");
             }
 
-#if MANAGED_SNI
-#else
+#if !MANAGED_SNI
             if (integratedSecurity)
             {
                 LoadSSPILibrary();
@@ -481,7 +476,7 @@ namespace System.Data.SqlClient
                 // Cache physical stateObj and connection.
                 _pMarsPhysicalConObj = _physicalStateObj;
 
-                UInt32 error = 0;
+                uint error = 0;
 
 #if MANAGED_SNI
                 _pMarsPhysicalConObj.IncrementPendingCallbacks();
@@ -1280,7 +1275,7 @@ namespace System.Data.SqlClient
                 if (0 <= iColon)
                 {
                     int len = errorMessage.Length;
-                    len -= 2;    // exclude "\r\n" sequence
+                    len -= Environment.NewLine.Length; // exclude newline sequence
                     iColon += 2;  // skip over ": " sequence
                     len -= iColon;
                     /*
@@ -2438,7 +2433,7 @@ namespace System.Data.SqlClient
                         {
                             return false;
                         }
-                        UInt16 serverLen;
+                        ushort serverLen;
                         if (!stateObj.TryReadUInt16(out serverLen))
                         {
                             return false;
@@ -2449,7 +2444,7 @@ namespace System.Data.SqlClient
                             return false;
                         }
                         env.newRoutingInfo = new RoutingInfo(protocol, port, serverName);
-                        UInt16 oldLength;
+                        ushort oldLength;
                         if (!stateObj.TryReadUInt16(out oldLength))
                         {
                             return false;
@@ -3433,7 +3428,7 @@ namespace System.Data.SqlClient
                                 if (stateObj._longlen != 0)
                                 {
                                     ulong ignored;
-                                    if (!TrySkipPlpValue(UInt64.MaxValue, stateObj, out ignored))
+                                    if (!TrySkipPlpValue(ulong.MaxValue, stateObj, out ignored))
                                     {
                                         throw SQL.SynchronousCallMayNotPend();
                                     }
@@ -4201,7 +4196,7 @@ namespace System.Data.SqlClient
             if (md.metaType.IsPlp)
             {
                 ulong ignored;
-                if (!TrySkipPlpValue(UInt64.MaxValue, stateObj, out ignored))
+                if (!TrySkipPlpValue(ulong.MaxValue, stateObj, out ignored))
                 {
                     return false;
                 }
@@ -4947,23 +4942,23 @@ namespace System.Data.SqlClient
             switch (mt.TDSType)
             {
                 case TdsEnums.SQLFLT4:
-                    WriteFloat((Single)value, stateObj);
+                    WriteFloat((float)value, stateObj);
                     break;
 
                 case TdsEnums.SQLFLT8:
-                    WriteDouble((Double)value, stateObj);
+                    WriteDouble((double)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT8:
-                    WriteLong((Int64)value, stateObj);
+                    WriteLong((long)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT4:
-                    WriteInt((Int32)value, stateObj);
+                    WriteInt((int)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT2:
-                    WriteShort((Int16)value, stateObj);
+                    WriteShort((short)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT1:
@@ -5094,27 +5089,27 @@ namespace System.Data.SqlClient
             {
                 case TdsEnums.SQLFLT4:
                     WriteSqlVariantHeader(6, metatype.TDSType, metatype.PropBytes, stateObj);
-                    WriteFloat((Single)value, stateObj);
+                    WriteFloat((float)value, stateObj);
                     break;
 
                 case TdsEnums.SQLFLT8:
                     WriteSqlVariantHeader(10, metatype.TDSType, metatype.PropBytes, stateObj);
-                    WriteDouble((Double)value, stateObj);
+                    WriteDouble((double)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT8:
                     WriteSqlVariantHeader(10, metatype.TDSType, metatype.PropBytes, stateObj);
-                    WriteLong((Int64)value, stateObj);
+                    WriteLong((long)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT4:
                     WriteSqlVariantHeader(6, metatype.TDSType, metatype.PropBytes, stateObj);
-                    WriteInt((Int32)value, stateObj);
+                    WriteInt((int)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT2:
                     WriteSqlVariantHeader(4, metatype.TDSType, metatype.PropBytes, stateObj);
-                    WriteShort((Int16)value, stateObj);
+                    WriteShort((short)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT1:
@@ -5335,7 +5330,7 @@ namespace System.Data.SqlClient
         private void WriteDateTimeOffset(DateTimeOffset value, byte scale, int length, TdsParserStateObject stateObj)
         {
             WriteDateTime2(value.UtcDateTime, scale, length - 2, stateObj);
-            Int16 offset = (Int16)value.Offset.TotalMinutes;
+            short offset = (short)value.Offset.TotalMinutes;
             stateObj.WriteByte((byte)(offset & 0xff));
             stateObj.WriteByte((byte)((offset >> 8) & 0xff));
         }
@@ -7657,11 +7652,11 @@ namespace System.Data.SqlClient
                     // read user type - 4 bytes Yukon, 2 backwards
                     WriteInt(0x0, stateObj);
 
-                    UInt16 flags;
+                    ushort flags;
 
-                    flags = (UInt16)(md.updatability << 2);
-                    flags |= (UInt16)(md.isNullable ? (UInt16)TdsEnums.Nullable : (UInt16)0);
-                    flags |= (UInt16)(md.isIdentity ? (UInt16)TdsEnums.Identity : (UInt16)0);
+                    flags = (ushort)(md.updatability << 2);
+                    flags |= (ushort)(md.isNullable ? (ushort)TdsEnums.Nullable : (ushort)0);
+                    flags |= (ushort)(md.isIdentity ? (ushort)TdsEnums.Identity : (ushort)0);
 
                     WriteShort(flags, stateObj);      // write the flags
 
@@ -8242,7 +8237,7 @@ namespace System.Data.SqlClient
 
                     if (type.FixedLength == 4)
                     {
-                        if (0 > dt.DayTicks || dt.DayTicks > UInt16.MaxValue)
+                        if (0 > dt.DayTicks || dt.DayTicks > ushort.MaxValue)
                             throw SQL.SmallDateTimeOverflow(dt.ToString());
 
                         WriteShort(dt.DayTicks, stateObj);
@@ -8799,13 +8794,13 @@ namespace System.Data.SqlClient
                     if (type.FixedLength == 1)
                         stateObj.WriteByte((byte)value);
                     else if (type.FixedLength == 2)
-                        WriteShort((Int16)value, stateObj);
+                        WriteShort((short)value, stateObj);
                     else if (type.FixedLength == 4)
-                        WriteInt((Int32)value, stateObj);
+                        WriteInt((int)value, stateObj);
                     else
                     {
                         Debug.Assert(type.FixedLength == 8, "invalid length for SqlIntN type:  " + type.FixedLength.ToString(CultureInfo.InvariantCulture));
-                        WriteLong((Int64)value, stateObj);
+                        WriteLong((long)value, stateObj);
                     }
 
                     break;
@@ -8905,7 +8900,7 @@ namespace System.Data.SqlClient
 
                     if (type.FixedLength == 4)
                     {
-                        if (0 > dt.days || dt.days > UInt16.MaxValue)
+                        if (0 > dt.days || dt.days > ushort.MaxValue)
                             throw SQL.SmallDateTimeOverflow(MetaType.ToDateTime(dt.days, dt.time, 4).ToString(CultureInfo.InvariantCulture));
 
                         WriteShort(dt.days, stateObj);

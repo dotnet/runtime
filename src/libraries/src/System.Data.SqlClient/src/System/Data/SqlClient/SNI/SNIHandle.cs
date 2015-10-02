@@ -70,7 +70,7 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Last handle status
         /// </summary>
-        public abstract UInt32 Status { get; }
+        public abstract uint Status { get; }
 
         /// <summary>
         /// Connection ID

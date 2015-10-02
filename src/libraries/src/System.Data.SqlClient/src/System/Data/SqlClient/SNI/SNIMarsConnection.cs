@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 
 namespace System.Data.SqlClient.SNI
 {
@@ -10,14 +12,14 @@ namespace System.Data.SqlClient.SNI
     /// </summary>
     internal class SNIMarsConnection
     {
+        private readonly Guid _connectionId = Guid.NewGuid();
+        private readonly Dictionary<int, SNIMarsHandle> _sessions = new Dictionary<int, SNIMarsHandle>();
+        private readonly byte[] headerBytes = new byte[SNISMUXHeader.HEADER_LENGTH];
+
         private SNIHandle _lowerHandle;
         private ushort _nextSessionId = 0;
-        private Guid _connectionId = Guid.NewGuid();
-        private Dictionary<int, SNIMarsHandle> _sessions = new Dictionary<int, SNIMarsHandle>();
-        private byte[] _headerBytes = new byte[SNISMUXHeader.HEADER_LENGTH];
         private int _currentHeaderByteCount = 0;
         private int _dataBytesLeft = 0;
-
         private SNISMUXHeader _currentHeader;
         private SNIPacket _currentPacket;
 
@@ -42,7 +44,7 @@ namespace System.Data.SqlClient.SNI
             _lowerHandle.SetAsyncCallbacks(HandleReceiveComplete, HandleSendComplete);
         }
 
-        public SNIMarsHandle CreateSession(Object callbackObject, bool async)
+        public SNIMarsHandle CreateSession(object callbackObject, bool async)
         {
             lock (this)
             {
@@ -128,6 +130,7 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         public void HandleReceiveError()
         {
+            Debug.Assert(Monitor.IsEntered(this), "HandleReceiveError was called without being locked.");
             foreach (SNIMarsHandle handle in _sessions.Values)
             {
                 handle.HandleReceiveError();
@@ -177,7 +180,7 @@ namespace System.Data.SqlClient.SNI
 
                         while (_currentHeaderByteCount != SNISMUXHeader.HEADER_LENGTH)
                         {
-                            int bytesTaken = packet.TakeData(_headerBytes, _currentHeaderByteCount, SNISMUXHeader.HEADER_LENGTH - _currentHeaderByteCount);
+                            int bytesTaken = packet.TakeData(headerBytes, _currentHeaderByteCount, SNISMUXHeader.HEADER_LENGTH - _currentHeaderByteCount);
                             _currentHeaderByteCount += bytesTaken;
 
                             if (bytesTaken == 0)
@@ -194,13 +197,16 @@ namespace System.Data.SqlClient.SNI
                             }
                         }
 
-                        _currentHeader = new SNISMUXHeader();
-                        _currentHeader.SMID = _headerBytes[0];
-                        _currentHeader.flags = _headerBytes[1];
-                        _currentHeader.sessionId = BitConverter.ToUInt16(_headerBytes, 2);
-                        _currentHeader.length = BitConverter.ToUInt32(_headerBytes, 4) - SNISMUXHeader.HEADER_LENGTH;
-                        _currentHeader.sequenceNumber = BitConverter.ToUInt32(_headerBytes, 8);
-                        _currentHeader.highwater = BitConverter.ToUInt32(_headerBytes, 12);
+                        _currentHeader = new SNISMUXHeader()
+                        {
+                            SMID = headerBytes[0],
+                            flags = headerBytes[1],
+                            sessionId = BitConverter.ToUInt16(headerBytes, 2),
+                            length = BitConverter.ToUInt32(headerBytes, 4) - SNISMUXHeader.HEADER_LENGTH,
+                            sequenceNumber = BitConverter.ToUInt32(headerBytes, 8),
+                            highwater = BitConverter.ToUInt32(headerBytes, 12)
+                        };
+
                         _dataBytesLeft = (int)_currentHeader.length;
                         _currentPacket = new SNIPacket(null);
                         _currentPacket.Allocate((int)_currentHeader.length);
@@ -209,6 +215,7 @@ namespace System.Data.SqlClient.SNI
                         {
                             _sessions.Remove(_currentHeader.sessionId);
                         }
+
                     }
 
                     currentHeader = _currentHeader;
@@ -263,6 +270,10 @@ namespace System.Data.SqlClient.SNI
                     }
                     catch (Exception e)
                     {
+#if !PROJECTK
+                        // TODO: handle
+                        //Console.WriteLine("Exception {0}", e.Message);
+#endif
                         SNICommon.ReportSNIError(SNIProviders.TCP_PROV, 0, 0, e.Message);
                     }
                 }
