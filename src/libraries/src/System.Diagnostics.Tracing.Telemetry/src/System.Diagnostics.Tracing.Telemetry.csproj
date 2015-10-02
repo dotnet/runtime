@@ -12,7 +12,7 @@
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <NoWarn>0420 0618</NoWarn>
+    <NoWarn>0420</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <NoWarn>0420</NoWarn>

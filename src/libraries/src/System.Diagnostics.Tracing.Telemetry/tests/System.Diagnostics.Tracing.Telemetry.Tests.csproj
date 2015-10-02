@@ -13,6 +13,7 @@
     <NoWarn>0618</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <NoWarn>0618</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
