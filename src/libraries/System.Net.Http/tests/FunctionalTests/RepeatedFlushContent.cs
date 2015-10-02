@@ -3,24 +3,20 @@
 
 using System;
 using System.IO;
-using System.Security.Authentication.ExtendedProtection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public sealed class ChannelBindingAwareContent : StringContent
+    public sealed class RepeatedFlushContent : StringContent
     {
-        public ChannelBindingAwareContent(string content) : base(content)
+        public RepeatedFlushContent(string content) : base(content)
         {
         }
         
-        public ChannelBinding ChannelBinding { get ; private set; }
-        
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
-            ChannelBinding = context.GetChannelBinding(ChannelBindingKind.Endpoint);
-            
+            stream.Flush();
+            stream.Flush();
             return base.SerializeToStreamAsync(stream, context);
         }
     }
