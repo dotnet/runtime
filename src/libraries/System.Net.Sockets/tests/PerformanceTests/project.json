@@ -9,8 +9,8 @@
     "System.Threading.Tasks": "4.0.0",
     "System.Threading.Tasks.Parallel":  "4.0.0",
     
-    "xunit": "2.1.0-beta3-*",
-    "xunit.netcore.extensions": "1.0.0-prerelease-00085"
+    "xunit": "2.1.0",
+    "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {
     "dnxcore50": {}

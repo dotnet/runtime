@@ -7,7 +7,7 @@
     "System.Runtime.Numerics": "4.0.0",
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-*",
     "System.Security.Cryptography.X509Certificates.TestData": "1.0.0-prerelease",
-    "xunit": "2.1.0-beta3-*",
+    "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {

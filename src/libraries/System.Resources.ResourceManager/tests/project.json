@@ -3,7 +3,7 @@
     "System.Diagnostics.Tools": "4.0.0",
     "System.Globalization": "4.0.10",
     "System.Resources.ResourceManager": "4.0.0",
-    "xunit": "2.1.0-beta3-*",
+    "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {
