@@ -5,7 +5,7 @@ using Xunit;
 using System;
 using System.Xml;
 
-namespace XmlDocumentTests.XmlDocumentTests
+namespace System.Xml.Tests
 {
     public class NodeInsertedTests
     {

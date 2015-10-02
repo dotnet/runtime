@@ -1,15 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Xml;
-using System.Collections.Generic;
-
 using OLEDB.Test.ModuleCore;
+using System.Collections.Generic;
 using XmlCoreTest.Common;
 
-namespace NameTableTest
+namespace System.Xml.Tests
 {
     ////////////////////////////////////////////////////////////////
     // TestCase NameTable user scenario inheritance
@@ -21,7 +17,7 @@ namespace NameTableTest
         [Variation("Read xml file using custom name table")]
         public int v1()
         {
-            string strFile = TestFiles.GetTestFileName(EREADER_TYPE.GENERIC);
+            string strFile = NameTable_TestFiles.GetTestFileName(EREADER_TYPE.GENERIC);
 
             // create custom nametable
             MyXmlNameTable nt = new MyXmlNameTable();

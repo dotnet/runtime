@@ -1,18 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Xml;
-using System.Xml.Linq;
-using System.Text;
-using System.IO;
 using OLEDB.Test.ModuleCore;
-using Webdata.Test.XmlDriver;
+using System.IO;
 using XmlCoreTest.Common;
 
 //This file loads the specified new control file and executes the variations.
 
-namespace RWFactory
+namespace System.Xml.Tests
 {
     /// <summary>
     /// This is the CXmlDriver related code.

@@ -1,16 +1,12 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using OLEDB.Test.ModuleCore;
 using System.IO;
 using System.Text;
-using System.Xml;
-using System.Xml.Schema;
-using OLEDB.Test.ModuleCore;
-using Webdata.Test.XmlDriver;
 using XmlCoreTest.Common;
 
-namespace RWFactory
+namespace System.Xml.Tests
 {
     public partial class CReaderFactory : CFactory
     {

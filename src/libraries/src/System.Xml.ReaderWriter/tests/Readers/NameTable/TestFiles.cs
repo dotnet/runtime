@@ -1,26 +1,17 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-using System.Xml;
+using System.IO;
 using XmlCoreTest.Common;
 
-namespace NameTableTest
+namespace System.Xml.Tests
 {
-    public enum EREADER_TYPE
-    {
-        GENERIC = 0,
-        BIG_ELEMENT_SIZE,
-    };
     ////////////////////////////////////////////////////////////////
     // TestFiles
     //
     ////////////////////////////////////////////////////////////////
-    public class TestFiles
+    public class NameTable_TestFiles
     {
         //Data
         private static string s_allNodeTypeDTD = "AllNodeTypes.dtd";

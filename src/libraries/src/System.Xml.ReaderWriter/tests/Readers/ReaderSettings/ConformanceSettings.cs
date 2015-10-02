@@ -1,17 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Xml;
-using System.Collections.Generic;
-using System.Reflection;
-using XmlReaderTest.Common;
-using XmlCoreTest.Common;
 using OLEDB.Test.ModuleCore;
+using System.Collections.Generic;
+using System.IO;
 using WebData.BaseLib;
+using XmlCoreTest.Common;
 
-namespace XmlReaderTest.ReaderSettingsTest
+namespace System.Xml.Tests
 {
     [TestCase(Name = "Conformance Settings", Desc = "Conformance Settings")]
     public partial class TCConformanceSettings : TCXMLReaderBaseGeneral

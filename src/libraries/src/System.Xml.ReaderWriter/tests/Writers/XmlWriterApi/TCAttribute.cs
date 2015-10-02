@@ -1,15 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Xml;
 using OLEDB.Test.ModuleCore;
 
-namespace XmlWriterAPI.Test
+namespace System.Xml.Tests
 {
     public partial class TCAttribute : XmlWriterTestCaseBase
     {
-        // Type is XmlWriterAPI.Test.TCAttribute
+        // Type is System.Xml.Tests.TCAttribute
         // Test Case
         public override void AddChildren()
         {

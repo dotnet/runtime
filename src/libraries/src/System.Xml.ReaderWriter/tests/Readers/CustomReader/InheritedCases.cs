@@ -1,14 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Xml;
 using OLEDB.Test.ModuleCore;
 using System.IO;
-using XmlReaderTest.Common;
-using System.Collections;
 
-namespace XmlReaderTest.CustomReaderTest
+namespace System.Xml.Tests
 {
     [TestModule(Name = "CustomReader Test", Desc = "CustomReader Test")]
     public partial class CReaderTestModule : CGenericTestModule

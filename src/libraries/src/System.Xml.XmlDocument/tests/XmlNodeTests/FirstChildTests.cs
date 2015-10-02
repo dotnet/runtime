@@ -2,9 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System.Xml;
 
-namespace XmlDocumentTests.XmlNodeTests
+namespace System.Xml.Tests
 {
     public class FirstChildTests
     {
