@@ -102,6 +102,9 @@ build_mscorlib()
         return
     fi
 
+    # Temporary hack to make dnu restore more reliable. This is specifically for dnu beta 5 since this issue should already be addressed in later versions of dnu.
+    export MONO_THREADS_PER_CPU=2000
+
     echo "Commencing build of mscorlib components for $__BuildOS.$__BuildArch.$__BuildType"
 
     # Pull NuGet.exe down if we don't have it already
@@ -135,8 +138,21 @@ build_mscorlib()
         fi
     fi
 
+    # Set _ToolNugetRuntimeId
+    case $__BuildOS in
+        Linux)
+            _ToolNugetRuntimeId=ubuntu.14.04-x64
+            ;;
+        OSX)
+            _ToolNugetRuntimeId=osx.10.10-x64
+            ;;
+        *)
+            _ToolNugetRuntimeId=ubuntu.14.04-x64
+            ;;
+    esac
+
     # Invoke MSBuild
-    mono "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__MSBuildBuildArch /p:__BuildType=$__BuildType /p:UseRoslynCompiler=true /p:BuildNugetPackage=false
+    mono "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__MSBuildBuildArch /p:__BuildType=$__BuildType /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:ToolNugetRuntimeId=$_ToolNugetRuntimeId
 
     if [ $? -ne 0 ]; then
         echo "Failed to build mscorlib."

@@ -5,7 +5,7 @@
 
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Target Name="ResolveNuGetPackages">
-
+ 
     <PrereleaseResolveNuGetPackageAssets Condition="Exists($(ProjectLockJson))"
                                          AllowFallbackOnTargetSelection="true"
                                          IncludeFrameworkReferences="false"
@@ -13,7 +13,7 @@
                                          RuntimeIdentifier="dotnet"
                                          ProjectLanguage="$(Language)"
                                          ProjectLockFile="$(ProjectLockJson)"
-                                         TargetMonikers="$(NugetTargetFrameworkMoniker)">
+                                         TargetMonikers="$(TargetFrameworkMoniker)">
       <Output TaskParameter="ResolvedAnalyzers" ItemName="Analyzer" />
       <Output TaskParameter="ResolvedReferences" ItemName="Reference" />
       <Output TaskParameter="ResolvedCopyLocalItems" ItemName="CopyLocal" />
