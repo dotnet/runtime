@@ -150,7 +150,7 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.Net.NameResolution/4.0.0-beta-23328": {
+      "System.Net.NameResolution/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Net.Primitives": "4.0.10",
@@ -334,7 +334,7 @@
           "lib/dotnet/System.Security.Principal.dll": {}
         }
       },
-      "System.Security.Principal.Windows/4.0.0-beta-23328": {
+      "System.Security.Principal.Windows/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.0",
@@ -417,7 +417,7 @@
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.ThreadPool/4.0.10-beta-23328": {
+      "System.Threading.ThreadPool/4.0.10-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -838,10 +838,10 @@
         "System.IO.FileSystem.Primitives.nuspec"
       ]
     },
-    "System.Net.NameResolution/4.0.0-beta-23328": {
+    "System.Net.NameResolution/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "qUn7O0a8xQdK7FJ+i+E6SLZA8JjyyZ//KSHkmoeECLFlF9dSVuYN/lJ7b0T1zqxF3XzdI1LGv9lC6MbMRIm2ow==",
+      "sha512": "xFxJU/0tL93jkMxBSN0t1uEfFdH6ZhRjU2MrsDQPBuqzV8rNL75qkEBfbzMbtTZiaSqANU2LzbdpFKXRYw/JPA==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -855,8 +855,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Net.NameResolution.4.0.0-beta-23328.nupkg",
-        "System.Net.NameResolution.4.0.0-beta-23328.nupkg.sha512",
+        "System.Net.NameResolution.4.0.0-beta-23401.nupkg",
+        "System.Net.NameResolution.4.0.0-beta-23401.nupkg.sha512",
         "System.Net.NameResolution.nuspec"
       ]
     },
@@ -1224,10 +1224,10 @@
         "System.Security.Principal.nuspec"
       ]
     },
-    "System.Security.Principal.Windows/4.0.0-beta-23328": {
+    "System.Security.Principal.Windows/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "MoUswJNXFQZiQNpU3AUOKDpBb5AzsPttwE1WkFww7VwfR+PNL/tT9Lw5jqhlWWSFfNDLVGNMMkGmqhD2RGkPBQ==",
+      "sha512": "KI1teeWjqOT+Nen1ShiGjwTQ09/a6OxJw/Fn/Xx1BQ557COzVD//MpdzlCrcBE1gepBuPwHlkjtT4VY2Yb9vWA==",
       "files": [
         "lib/DNXCore50/de/System.Security.Principal.Windows.xml",
         "lib/DNXCore50/es/System.Security.Principal.Windows.xml",
@@ -1243,8 +1243,8 @@
         "lib/net46/System.Security.Principal.Windows.dll",
         "ref/dotnet/System.Security.Principal.Windows.dll",
         "ref/net46/System.Security.Principal.Windows.dll",
-        "System.Security.Principal.Windows.4.0.0-beta-23328.nupkg",
-        "System.Security.Principal.Windows.4.0.0-beta-23328.nupkg.sha512",
+        "System.Security.Principal.Windows.4.0.0-beta-23401.nupkg",
+        "System.Security.Principal.Windows.4.0.0-beta-23401.nupkg.sha512",
         "System.Security.Principal.Windows.nuspec"
       ]
     },
@@ -1421,10 +1421,10 @@
         "System.Threading.Tasks.nuspec"
       ]
     },
-    "System.Threading.ThreadPool/4.0.10-beta-23328": {
+    "System.Threading.ThreadPool/4.0.10-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "kty/6e0CbGmZp02bi3SsxePIuySysChzbvcusVM3f4crBJHiSCOMnbfefURmGUTbi9V95zcF6IrGnuQ7q3mr5w==",
+      "sha512": "uYRRB5hlSzSN2tQtqwTA+mkLBow0pQwxA7xvKQhB4FY+ooK3xYnwVRzXnKxf1D5o/uHKHz4HeMuBlvTv5JG4zg==",
       "files": [
         "lib/DNXCore50/System.Threading.ThreadPool.dll",
         "lib/MonoAndroid10/_._",
@@ -1438,8 +1438,8 @@
         "ref/net46/System.Threading.ThreadPool.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Threading.ThreadPool.4.0.10-beta-23328.nupkg",
-        "System.Threading.ThreadPool.4.0.10-beta-23328.nupkg.sha512",
+        "System.Threading.ThreadPool.4.0.10-beta-23401.nupkg",
+        "System.Threading.ThreadPool.4.0.10-beta-23401.nupkg.sha512",
         "System.Threading.ThreadPool.nuspec"
       ]
     }

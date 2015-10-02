@@ -332,7 +332,7 @@
           "lib/dotnet/System.Security.Principal.dll": {}
         }
       },
-      "System.Security.Principal.Windows/4.0.0-beta-23329": {
+      "System.Security.Principal.Windows/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.0",
@@ -412,7 +412,7 @@
           "ref/dotnet/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.ThreadPool/4.0.10-beta-23329": {
+      "System.Threading.ThreadPool/4.0.10-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -1242,10 +1242,10 @@
         "System.Security.Principal.nuspec"
       ]
     },
-    "System.Security.Principal.Windows/4.0.0-beta-23329": {
+    "System.Security.Principal.Windows/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "HoI7zRfZ5M2Bu8XnDkU9zs3EUHtTY1Jt+DvF9/HdbRyU826rf2lEnBMCCtJJ6+9XeFE2s20Tz/GIyDqKTdKHKw==",
+      "sha512": "KI1teeWjqOT+Nen1ShiGjwTQ09/a6OxJw/Fn/Xx1BQ557COzVD//MpdzlCrcBE1gepBuPwHlkjtT4VY2Yb9vWA==",
       "files": [
         "lib/DNXCore50/de/System.Security.Principal.Windows.xml",
         "lib/DNXCore50/es/System.Security.Principal.Windows.xml",
@@ -1261,8 +1261,8 @@
         "lib/net46/System.Security.Principal.Windows.dll",
         "ref/dotnet/System.Security.Principal.Windows.dll",
         "ref/net46/System.Security.Principal.Windows.dll",
-        "System.Security.Principal.Windows.4.0.0-beta-23329.nupkg",
-        "System.Security.Principal.Windows.4.0.0-beta-23329.nupkg.sha512",
+        "System.Security.Principal.Windows.4.0.0-beta-23401.nupkg",
+        "System.Security.Principal.Windows.4.0.0-beta-23401.nupkg.sha512",
         "System.Security.Principal.Windows.nuspec"
       ]
     },
@@ -1453,10 +1453,10 @@
         "System.Threading.Tasks.nuspec"
       ]
     },
-    "System.Threading.ThreadPool/4.0.10-beta-23329": {
+    "System.Threading.ThreadPool/4.0.10-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "dcwj97zzCE7W+TLWxdsaUsmcJt24Z6YXVc3DocP15vpyrjPSkJNd7EmOAovBN2wMskegrIRdo1Kd7g+nsvRBzw==",
+      "sha512": "uYRRB5hlSzSN2tQtqwTA+mkLBow0pQwxA7xvKQhB4FY+ooK3xYnwVRzXnKxf1D5o/uHKHz4HeMuBlvTv5JG4zg==",
       "files": [
         "lib/DNXCore50/System.Threading.ThreadPool.dll",
         "lib/MonoAndroid10/_._",
@@ -1470,8 +1470,8 @@
         "ref/net46/System.Threading.ThreadPool.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Threading.ThreadPool.4.0.10-beta-23329.nupkg",
-        "System.Threading.ThreadPool.4.0.10-beta-23329.nupkg.sha512",
+        "System.Threading.ThreadPool.4.0.10-beta-23401.nupkg",
+        "System.Threading.ThreadPool.4.0.10-beta-23401.nupkg.sha512",
         "System.Threading.ThreadPool.nuspec"
       ]
     }
