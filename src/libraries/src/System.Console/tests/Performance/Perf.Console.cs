@@ -38,9 +38,7 @@ namespace System.ConsoleTests
                     }
                 }
                 foreach (Stream s in streams)
-                {
-                    Assert.NotNull(s);
-                }
+                    s.Dispose();
             }
         }
 
