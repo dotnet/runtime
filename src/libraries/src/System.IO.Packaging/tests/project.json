@@ -12,7 +12,7 @@
     "System.Runtime": "4.0.20",
     "System.Xml.ReaderWriter": "4.0.0",
     "System.Xml.XDocument": "4.0.0",
-    "xunit": "2.1.0-beta3-*",
+    "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {

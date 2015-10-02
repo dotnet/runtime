@@ -3,7 +3,7 @@
   "version": 1,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0014": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0022": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -21,8 +21,8 @@
           "System.Threading": "4.0.10",
           "System.Threading.Tasks": "4.0.10",
           "xunit.abstractions": "2.0.0",
-          "xunit.extensibility.core": "2.1.0-rc1-build3168",
-          "xunit.extensibility.execution": "2.1.0-rc1-build3168"
+          "xunit.extensibility.core": "2.1.0",
+          "xunit.extensibility.execution": "2.1.0"
         },
         "compile": {
           "lib/dotnet/xunit.performance.core.dll": {},
@@ -45,7 +45,7 @@
           "lib/DNXCore50/System.Collections.dll": {}
         }
       },
-      "System.Console/4.0.0-beta-23328": {
+      "System.Console/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -141,7 +141,7 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.IO.Pipes/4.0.0-beta-23328": {
+      "System.IO.Pipes/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -302,7 +302,7 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23328": {
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -395,7 +395,7 @@
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.ThreadPool/4.0.10-beta-23328": {
+      "System.Threading.ThreadPool/4.0.10-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -463,7 +463,7 @@
           "xunit.extensibility.execution": "[2.1.0-rc1-build3168]"
         }
       },
-      "xunit.extensibility.core/2.1.0-rc1-build3168": {
+      "xunit.extensibility.core/2.1.0": {
         "type": "package",
         "dependencies": {
           "xunit.abstractions": "[2.0.0]"
@@ -477,7 +477,7 @@
           "lib/dotnet/xunit.runner.utility.desktop.dll": {}
         }
       },
-      "xunit.extensibility.execution/2.1.0-rc1-build3168": {
+      "xunit.extensibility.execution/2.1.0": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.0",
@@ -494,7 +494,7 @@
           "System.Threading": "4.0.0",
           "System.Threading.Tasks": "4.0.0",
           "xunit.abstractions": "2.0.0",
-          "xunit.extensibility.core": "[2.1.0-rc1-build3168]"
+          "xunit.extensibility.core": "[2.1.0]"
         },
         "compile": {
           "lib/dotnet/xunit.execution.dotnet.dll": {}
@@ -503,7 +503,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00090": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00102": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -519,7 +519,7 @@
           "System.Text.Encoding": "4.0.10",
           "System.Threading": "4.0.10",
           "System.Threading.Tasks": "4.0.10",
-          "xunit": "2.1.0-beta3-build3029"
+          "xunit": "2.1.0"
         },
         "compile": {
           "lib/dotnet/Xunit.NetCore.Extensions.dll": {}
@@ -531,9 +531,9 @@
     }
   },
   "libraries": {
-    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0014": {
+    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0022": {
       "type": "package",
-      "sha512": "NCrgkMUcuMy3T5PY9kcBFpRyN/HrUyHsSxvdyq426iTZj2pG+6odaztW5BrQov3gPEXM5cPx4+64djl4sC8/nw==",
+      "sha512": "uh4WpDAs7mW9aiMqcHojn1MEGNUND03qmSsWFyVApAcRQQ0ppCJvQ2sUGBdL1/8DB12NGzKizaGg0Tnd4PCnfA==",
       "files": [
         "lib/dotnet/xunit.performance.core.dll",
         "lib/dotnet/xunit.performance.core.pdb",
@@ -545,8 +545,8 @@
         "lib/net46/xunit.performance.core.XML",
         "lib/net46/xunit.performance.execution.desktop.dll",
         "lib/net46/xunit.performance.execution.desktop.pdb",
-        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0014.nupkg",
-        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0014.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0022.nupkg",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0022.nupkg.sha512",
         "Microsoft.DotNet.xunit.performance.nuspec"
       ]
     },
@@ -584,10 +584,10 @@
         "System.Collections.nuspec"
       ]
     },
-    "System.Console/4.0.0-beta-23328": {
+    "System.Console/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "UY0x6h5pWZG2met7eg059RS6kLet0jUoUZ0Dy8glRf+B4Hl3xsbMrslpkus+VojTV3kQqHoUDxSsm7/Tv8szow==",
+      "sha512": "49zWKpJWl584fCuBYIRg68wk69e2+r5g7K8vlZRijrmXqiMe8Bx0FEap7Dc1rPhTYD06g72P2u5v8QfLLDh4bQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -601,8 +601,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Console.4.0.0-beta-23328.nupkg",
-        "System.Console.4.0.0-beta-23328.nupkg.sha512",
+        "System.Console.4.0.0-beta-23401.nupkg",
+        "System.Console.4.0.0-beta-23401.nupkg.sha512",
         "System.Console.nuspec"
       ]
     },
@@ -806,17 +806,17 @@
         "System.IO.FileSystem.Primitives.nuspec"
       ]
     },
-    "System.IO.Pipes/4.0.0-beta-23328": {
+    "System.IO.Pipes/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "hed8wK3stWXZC65tGSEiFUTJK0zANthsGXFDPa/SBAQUus3bWSuqnMSmJDu01wsm13PnpksW0XRYZr0QL2D0xA==",
+      "sha512": "y7dWdln6qDt9iNfqJY/vo0X+WBJvMiW23jQQEE7dI/4dKsj7zMx5dhPAKhs4dSBA1fwiPNc3q2TTtUCcevJAMg==",
       "files": [
         "lib/net46/System.IO.Pipes.dll",
         "ref/dotnet/System.IO.Pipes.dll",
         "ref/net46/System.IO.Pipes.dll",
         "runtime.json",
-        "System.IO.Pipes.4.0.0-beta-23328.nupkg",
-        "System.IO.Pipes.4.0.0-beta-23328.nupkg.sha512",
+        "System.IO.Pipes.4.0.0-beta-23401.nupkg",
+        "System.IO.Pipes.4.0.0-beta-23401.nupkg.sha512",
         "System.IO.Pipes.nuspec"
       ]
     },
@@ -1235,10 +1235,10 @@
         "System.Runtime.InteropServices.nuspec"
       ]
     },
-    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23328": {
+    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "4EzxM2zKR5RfSF00FKwHyTavUx+c5/yXLyn3BygpCttvDaMwSwlkxdT17Cww6TyUl2TRg1POa0/QGV8LXWOMdg==",
+      "sha512": "SDIqmBVaUpbu7f6FJ2E2ZE43CXY+tsdFCsY+dqLCCZowAH0QCQGUKCflLPAa7OQIIft98CvOxWlRZCwiuPuGTg==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -1250,8 +1250,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23328.nupkg",
-        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23328.nupkg.sha512",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23401.nupkg",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23401.nupkg.sha512",
         "System.Runtime.InteropServices.RuntimeInformation.nuspec"
       ]
     },
@@ -1495,10 +1495,10 @@
         "System.Threading.Tasks.nuspec"
       ]
     },
-    "System.Threading.ThreadPool/4.0.10-beta-23328": {
+    "System.Threading.ThreadPool/4.0.10-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "kty/6e0CbGmZp02bi3SsxePIuySysChzbvcusVM3f4crBJHiSCOMnbfefURmGUTbi9V95zcF6IrGnuQ7q3mr5w==",
+      "sha512": "uYRRB5hlSzSN2tQtqwTA+mkLBow0pQwxA7xvKQhB4FY+ooK3xYnwVRzXnKxf1D5o/uHKHz4HeMuBlvTv5JG4zg==",
       "files": [
         "lib/DNXCore50/System.Threading.ThreadPool.dll",
         "lib/MonoAndroid10/_._",
@@ -1512,8 +1512,8 @@
         "ref/net46/System.Threading.ThreadPool.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Threading.ThreadPool.4.0.10-beta-23328.nupkg",
-        "System.Threading.ThreadPool.4.0.10-beta-23328.nupkg.sha512",
+        "System.Threading.ThreadPool.4.0.10-beta-23401.nupkg",
+        "System.Threading.ThreadPool.4.0.10-beta-23401.nupkg.sha512",
         "System.Threading.ThreadPool.nuspec"
       ]
     },
@@ -1574,9 +1574,9 @@
         "xunit.core.nuspec"
       ]
     },
-    "xunit.extensibility.core/2.1.0-rc1-build3168": {
+    "xunit.extensibility.core/2.1.0": {
       "type": "package",
-      "sha512": "8KZaq1mdeaiZxo1ScsGzhkeQRwLLS6+WIno+9gtnYccWmTjCJ/XSYz2fAAlB5mUeyw0vqqrFc+TfNZELs5QiZQ==",
+      "sha512": "ANWM3WxeaeHjACLRlmrv+xOc0WAcr3cvIiJE+gqbdzTv1NCH4p1VDyT+8WmmdCc9db0WFiJLaDy4YTYsL1wWXw==",
       "files": [
         "lib/dotnet/xunit.core.dll",
         "lib/dotnet/xunit.core.dll.tdnet",
@@ -1590,14 +1590,14 @@
         "lib/portable-net45+win8+wp8+wpa81/xunit.core.xml",
         "lib/portable-net45+win8+wp8+wpa81/xunit.runner.tdnet.dll",
         "lib/portable-net45+win8+wp8+wpa81/xunit.runner.utility.desktop.dll",
-        "xunit.extensibility.core.2.1.0-rc1-build3168.nupkg",
-        "xunit.extensibility.core.2.1.0-rc1-build3168.nupkg.sha512",
+        "xunit.extensibility.core.2.1.0.nupkg",
+        "xunit.extensibility.core.2.1.0.nupkg.sha512",
         "xunit.extensibility.core.nuspec"
       ]
     },
-    "xunit.extensibility.execution/2.1.0-rc1-build3168": {
+    "xunit.extensibility.execution/2.1.0": {
       "type": "package",
-      "sha512": "1w0u3eB7i25hca60r/53oSVb0blMOEm2eVqvwTg9jhMSe/A9raj6UZAVzUnFtA3xLssP4K1udOGTC1qrZ9/VoA==",
+      "sha512": "tAoNafoVknKa3sZJPMvtZRnhOSk3gasEGeceSm7w/gyGwsR/OXFxndWJB1xSHeoy33d3Z6jFqn4A3j+pWCF0Ew==",
       "files": [
         "lib/dnx451/xunit.execution.dotnet.dll",
         "lib/dnx451/xunit.execution.dotnet.pdb",
@@ -1611,9 +1611,9 @@
         "lib/monotouch/xunit.execution.dotnet.dll",
         "lib/monotouch/xunit.execution.dotnet.pdb",
         "lib/monotouch/xunit.execution.dotnet.xml",
-        "lib/net35/xunit.execution.desktop.dll",
-        "lib/net35/xunit.execution.desktop.pdb",
-        "lib/net35/xunit.execution.desktop.xml",
+        "lib/net45/xunit.execution.desktop.dll",
+        "lib/net45/xunit.execution.desktop.pdb",
+        "lib/net45/xunit.execution.desktop.xml",
         "lib/portable-net45+win8+wp8+wpa81/xunit.execution.dotnet.dll",
         "lib/portable-net45+win8+wp8+wpa81/xunit.execution.dotnet.pdb",
         "lib/portable-net45+win8+wp8+wpa81/xunit.execution.dotnet.xml",
@@ -1629,19 +1629,19 @@
         "lib/xamarinios/xunit.execution.dotnet.dll",
         "lib/xamarinios/xunit.execution.dotnet.pdb",
         "lib/xamarinios/xunit.execution.dotnet.xml",
-        "xunit.extensibility.execution.2.1.0-rc1-build3168.nupkg",
-        "xunit.extensibility.execution.2.1.0-rc1-build3168.nupkg.sha512",
+        "xunit.extensibility.execution.2.1.0.nupkg",
+        "xunit.extensibility.execution.2.1.0.nupkg.sha512",
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00090": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00102": {
       "type": "package",
       "serviceable": true,
-      "sha512": "9t2jrzI6N5ueydH5omBi95hiBOuNXpI6sS2kQJO56+bUavVpSD6/aD0C4+Nqbiql8Zvu0yx2GO+2IAd0JQcjIA==",
+      "sha512": "YOLHpTXiw6lEGbsQ1uQ93BAPKiUtrj4l+Yr1+WGdZShfCtGc3Sq3R9dISIHM49znLo+qDcnmo2oMGJdVZ9YTVg==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00090.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00090.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }

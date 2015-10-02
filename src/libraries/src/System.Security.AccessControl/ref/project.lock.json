@@ -139,7 +139,7 @@
           "lib/dotnet/System.Security.Principal.dll": {}
         }
       },
-      "System.Security.Principal.Windows/4.0.0-beta-23328": {
+      "System.Security.Principal.Windows/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -709,10 +709,10 @@
         "System.Security.Principal.nuspec"
       ]
     },
-    "System.Security.Principal.Windows/4.0.0-beta-23328": {
+    "System.Security.Principal.Windows/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "MoUswJNXFQZiQNpU3AUOKDpBb5AzsPttwE1WkFww7VwfR+PNL/tT9Lw5jqhlWWSFfNDLVGNMMkGmqhD2RGkPBQ==",
+      "sha512": "KI1teeWjqOT+Nen1ShiGjwTQ09/a6OxJw/Fn/Xx1BQ557COzVD//MpdzlCrcBE1gepBuPwHlkjtT4VY2Yb9vWA==",
       "files": [
         "lib/DNXCore50/de/System.Security.Principal.Windows.xml",
         "lib/DNXCore50/es/System.Security.Principal.Windows.xml",
@@ -728,8 +728,8 @@
         "lib/net46/System.Security.Principal.Windows.dll",
         "ref/dotnet/System.Security.Principal.Windows.dll",
         "ref/net46/System.Security.Principal.Windows.dll",
-        "System.Security.Principal.Windows.4.0.0-beta-23328.nupkg",
-        "System.Security.Principal.Windows.4.0.0-beta-23328.nupkg.sha512",
+        "System.Security.Principal.Windows.4.0.0-beta-23401.nupkg",
+        "System.Security.Principal.Windows.4.0.0-beta-23401.nupkg.sha512",
         "System.Security.Principal.Windows.nuspec"
       ]
     },

@@ -114,7 +114,7 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.IO.FileSystem.Watcher/4.0.0-beta-23328": {
+      "System.IO.FileSystem.Watcher/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -567,10 +567,10 @@
         "System.IO.FileSystem.Primitives.nuspec"
       ]
     },
-    "System.IO.FileSystem.Watcher/4.0.0-beta-23328": {
+    "System.IO.FileSystem.Watcher/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "h/xZsKbQbkvTquf12kVJi4osCEceQqdQxaVcrPW3SGV+pA+hN4qDIDSBK/7lLydXPsymqiAUh3k6k9R7EmV8/w==",
+      "sha512": "Xrpnf72VFndo/zE1iXG4as28el2nWXzA4KBkOpZk+AJiMHc3sGJlQWEvQmfZVpwpL22N+4SPZycC44cnoDATCA==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -584,8 +584,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.IO.FileSystem.Watcher.4.0.0-beta-23328.nupkg",
-        "System.IO.FileSystem.Watcher.4.0.0-beta-23328.nupkg.sha512",
+        "System.IO.FileSystem.Watcher.4.0.0-beta-23401.nupkg",
+        "System.IO.FileSystem.Watcher.4.0.0-beta-23401.nupkg.sha512",
         "System.IO.FileSystem.Watcher.nuspec"
       ]
     },
