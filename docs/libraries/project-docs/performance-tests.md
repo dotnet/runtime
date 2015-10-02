@@ -11,11 +11,11 @@ To run performance tests on Windows, .NET portable v5.0 is required. This librar
 2. Check the "Universal Windows App Development Tools" box under the "Windows and Web Development" menu
 3. Install
 ### Linux
-Performance tests on Linux require all of the same steps as they do for regular xunit tests - check out the linux instructions [here](https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md). Once you can have a directory on your Linux machine with a working corerun and xunit.console.netcore.exe (as well as the test dll containing your perf tests!), you only need to run the following command:
+Performance tests on Linux require all of the same steps as they do for regular xunit tests - see the linux instructions [here](https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md). Once you can have a directory on your Linux machine with a working corerun and xunit.console.netcore.exe (as well as the test dll containing your perf tests!), you only need to run the following command:
 
 `dnu commands install Microsoft.DotNet.xunit.performance.runner.dnx 1.0.0-alpha-build0021 -f https://www.myget.org/F/dotnet-buildtools/`
 
-Be careful that your mscorlib and test dlls were compiled using the "/p:Configuration=Release" property. Otherwise you may get skewed results.
+Be careful that your mscorlib, libcoreclr, and test dlls were compiled using the "/p:Configuration=Release" property. Otherwise you may get skewed results.
 
 Running the tests
 -----------
