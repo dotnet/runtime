@@ -522,7 +522,7 @@ namespace System.Xml
                 if (top == _elemScopeStack.Length)
                 {
                     ElementScope[] newStack = new ElementScope[top * 2];
-                    Array.Copy(_elemScopeStack, newStack, top);
+                    Array.Copy(_elemScopeStack, 0, newStack, 0, top);
                     _elemScopeStack = newStack;
                 }
                 _elemScopeStack[top].Set(prefix, localName, ns, _nsTop);
@@ -1845,7 +1845,7 @@ namespace System.Xml
             if (top == _nsStack.Length)
             {
                 Namespace[] newStack = new Namespace[top * 2];
-                Array.Copy(_nsStack, newStack, top);
+                Array.Copy(_nsStack, 0, newStack, 0, top);
                 _nsStack = newStack;
             }
             _nsStack[top].Set(prefix, ns, kind);
@@ -2219,7 +2219,7 @@ namespace System.Xml
             if (top == _attrStack.Length)
             {
                 AttrName[] newStack = new AttrName[top * 2];
-                Array.Copy(_attrStack, newStack, top);
+                Array.Copy(_attrStack, 0, newStack, 0, top);
                 _attrStack = newStack;
             }
             _attrStack[top].Set(prefix, localName, namespaceName);

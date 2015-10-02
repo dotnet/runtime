@@ -324,7 +324,7 @@ namespace System.Numerics
             bool needExtraByte = (bytes[msb] & 0x80) != (highByte & 0x80);
 
             byte[] trimmedBytes = new byte[msb + 1 + (needExtraByte ? 1 : 0)];
-            Array.Copy(bytes, trimmedBytes, msb + 1);
+            Array.Copy(bytes, 0, trimmedBytes, 0, msb + 1);
 
             if (needExtraByte) trimmedBytes[trimmedBytes.Length - 1] = highByte;
             return trimmedBytes;
@@ -368,7 +368,7 @@ namespace System.Numerics
             bool needExtraByte = (dwords[msb] & 0x80000000) != (highDWord & 0x80000000);
 
             uint[] trimmed = new uint[msb + 1 + (needExtraByte ? 1 : 0)];
-            Array.Copy(dwords, trimmed, msb + 1);
+            Array.Copy(dwords, 0, trimmed, 0, msb + 1);
 
             if (needExtraByte) trimmed[trimmed.Length - 1] = highDWord;
             return trimmed;
@@ -676,7 +676,7 @@ namespace System.Numerics
                     {
                         _sign = -1;
                         _bits = new uint[len];
-                        Array.Copy(val, _bits, len);
+                        Array.Copy(val, 0, _bits, 0, len);
                     }
                     else
                     {
@@ -737,7 +737,7 @@ namespace System.Numerics
             {
                 _sign = negative ? -1 : +1;
                 _bits = new uint[len];
-                Array.Copy(value, _bits, len);
+                Array.Copy(value, 0, _bits, 0, len);
             }
             AssertValid();
         }
@@ -795,7 +795,7 @@ namespace System.Numerics
                 {
                     _sign = +1;
                     _bits = new uint[dwordCount];
-                    Array.Copy(value, _bits, dwordCount);
+                    Array.Copy(value, 0, _bits, 0, dwordCount);
                 }
                 // no trimming is possible.  Assign value directly to _bits.  
                 else
@@ -838,7 +838,7 @@ namespace System.Numerics
             {
                 _sign = -1;
                 _bits = new uint[len];
-                Array.Copy(value, _bits, len);
+                Array.Copy(value, 0, _bits, 0, len);
             }
             // no trimming is possible.  Assign value directly to _bits.  
             else
@@ -1506,7 +1506,7 @@ namespace System.Numerics
                     return BigInteger.MinusOne;
                 }
                 uint[] temp = new uint[xl];
-                Array.Copy(xd /* sourceArray */, temp /* destinationArray */, xl /* length */);  // make a copy of immutable value._bits
+                Array.Copy(xd /* sourceArray */, 0 /* sourceIndex */, temp /* destinationArray */, 0 /* destinationIndex */, xl /* length */);  // make a copy of immutable value._bits
                 xd = temp;
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // mutates xd
             }

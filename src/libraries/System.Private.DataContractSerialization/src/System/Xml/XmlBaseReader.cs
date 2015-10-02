@@ -283,7 +283,7 @@ namespace System.Xml
             else if (_elementNodes.Length == _depth)
             {
                 XmlElementNode[] newElementNodes = new XmlElementNode[_depth * 2];
-                Array.Copy(_elementNodes, newElementNodes, _depth);
+                Array.Copy(_elementNodes, 0, newElementNodes, 0, _depth);
                 _elementNodes = newElementNodes;
             }
             XmlElementNode elementNode = _elementNodes[_depth];
@@ -317,7 +317,7 @@ namespace System.Xml
             else if (_attributeNodes.Length == attributeIndex)
             {
                 XmlAttributeNode[] newAttributeNodes = new XmlAttributeNode[attributeIndex * 2];
-                Array.Copy(_attributeNodes, newAttributeNodes, attributeIndex);
+                Array.Copy(_attributeNodes, 0, newAttributeNodes, 0, attributeIndex);
                 _attributeNodes = newAttributeNodes;
             }
             XmlAttributeNode attributeNode = _attributeNodes[attributeIndex];
@@ -2678,7 +2678,7 @@ namespace System.Xml
                 else if (_attributes.Length == _attributeCount)
                 {
                     XmlAttribute[] newAttributes = new XmlAttribute[_attributeCount * 2];
-                    Array.Copy(_attributes, newAttributes, _attributeCount);
+                    Array.Copy(_attributes, 0, newAttributes, 0, _attributeCount);
                     _attributes = newAttributes;
                 }
                 XmlAttribute attribute = _attributes[_attributeCount];
@@ -2716,7 +2716,7 @@ namespace System.Xml
                 else if (_namespaces.Length == _nsCount)
                 {
                     Namespace[] newNamespaces = new Namespace[_nsCount * 2];
-                    Array.Copy(_namespaces, newNamespaces, _nsCount);
+                    Array.Copy(_namespaces, 0, newNamespaces, 0, _nsCount);
                     _namespaces = newNamespaces;
                 }
                 Namespace nameSpace = _namespaces[_nsCount];
