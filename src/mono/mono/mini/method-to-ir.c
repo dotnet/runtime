@@ -7182,16 +7182,15 @@ mini_get_signature (MonoMethod *method, guint32 token, MonoGenericContext *conte
 	MonoMethodSignature *fsig;
 
 	if (method->wrapper_type != MONO_WRAPPER_NONE) {
-		MonoError error;
-
 		fsig = (MonoMethodSignature *)mono_method_get_wrapper_data (method, token);
-		if (context) {
-			fsig = mono_inflate_generic_signature (fsig, context, &error);
-			// FIXME:
-			g_assert (mono_error_ok (&error));
-		}
 	} else {
 		fsig = mono_metadata_parse_signature (method->klass->image, token);
+	}
+	if (context) {
+		MonoError error;
+		fsig = mono_inflate_generic_signature(fsig, context, &error);
+		// FIXME:
+		g_assert(mono_error_ok(&error));
 	}
 	return fsig;
 }
