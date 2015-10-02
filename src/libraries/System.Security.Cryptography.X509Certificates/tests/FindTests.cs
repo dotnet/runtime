@@ -373,6 +373,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("5971A65A334DDA980780FF841EBE87F9723241F2")]
         // Whitespace is allowed
         [InlineData("59 71\tA6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 F9 72 32 41 F2")]
+        // Lots of kinds of whitespace (does not include \u000b or \u000c, because those
+        // produce a build warning (which becomes an error):
+        //     EXEC : warning : '(not included here)', hexadecimal value 0x0C, is an invalid character.
+        [InlineData(
+            "59\u000971\u000aA6\u30005A\u205f33\u000d4D\u0020DA\u008598\u00a007\u1680" +
+            "80\u2000FF\u200184\u20021E\u2003BE\u200487\u2005F9\u200672\u200732\u2008" +
+            "4\u20091\u200aF\u20282\u2029\u202f")]
         // Non-byte-aligned whitespace is allowed
         [InlineData("597 1A6 5A3 34D DA9 807 80F F84 1EB E87 F97 232 41F 2")]
         // Non-symmetric whitespace is allowed
