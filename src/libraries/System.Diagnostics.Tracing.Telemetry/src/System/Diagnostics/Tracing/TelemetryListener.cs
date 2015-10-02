@@ -198,6 +198,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Override abstract method
         /// </summary>
+        [Obsolete("Renamed to System.Diagnostics.DiagnosticListener.Write")]
         public override void WriteTelemetry(string telemetryName, object arguments)
         {
             for (TelemetrySubscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
