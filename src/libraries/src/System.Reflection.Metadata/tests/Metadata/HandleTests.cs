@@ -10,6 +10,44 @@ namespace System.Reflection.Metadata.Tests
     public class HandleTests
     {
         [Fact]
+        public void HandleKindsMatchSpecAndDoNotChange()
+        {
+            // These are chosen to match their encoding in metadata tokens as specified by the CLI spec
+            Assert.Equal(0x00, (int)HandleKind.ModuleDefinition);
+            Assert.Equal(0x01, (int)HandleKind.TypeReference);
+            Assert.Equal(0x02, (int)HandleKind.TypeDefinition);
+            Assert.Equal(0x04, (int)HandleKind.FieldDefinition);
+            Assert.Equal(0x06, (int)HandleKind.MethodDefinition);
+            Assert.Equal(0x08, (int)HandleKind.Parameter);
+            Assert.Equal(0x09, (int)HandleKind.InterfaceImplementation);
+            Assert.Equal(0x0A, (int)HandleKind.MemberReference);
+            Assert.Equal(0x0B, (int)HandleKind.Constant);
+            Assert.Equal(0x0C, (int)HandleKind.CustomAttribute);
+            Assert.Equal(0x0E, (int)HandleKind.DeclarativeSecurityAttribute);
+            Assert.Equal(0x11, (int)HandleKind.StandaloneSignature);
+            Assert.Equal(0x14, (int)HandleKind.EventDefinition);
+            Assert.Equal(0x17, (int)HandleKind.PropertyDefinition);
+            Assert.Equal(0x19, (int)HandleKind.MethodImplementation);
+            Assert.Equal(0x1A, (int)HandleKind.ModuleReference);
+            Assert.Equal(0x1B, (int)HandleKind.TypeSpecification);
+            Assert.Equal(0x20, (int)HandleKind.AssemblyDefinition);
+            Assert.Equal(0x26, (int)HandleKind.AssemblyFile);
+            Assert.Equal(0x23, (int)HandleKind.AssemblyReference);
+            Assert.Equal(0x27, (int)HandleKind.ExportedType);
+            Assert.Equal(0x2A, (int)HandleKind.GenericParameter);
+            Assert.Equal(0x2B, (int)HandleKind.MethodSpecification);
+            Assert.Equal(0x2C, (int)HandleKind.GenericParameterConstraint);
+            Assert.Equal(0x28, (int)HandleKind.ManifestResource);
+            Assert.Equal(0x70, (int)HandleKind.UserString);
+
+            // These values were chosen arbitrarily, but must still never change
+            Assert.Equal(0x71, (int)HandleKind.Blob);
+            Assert.Equal(0x72, (int)HandleKind.Guid);
+            Assert.Equal(0x78, (int)HandleKind.String);
+            Assert.Equal(0x7c, (int)HandleKind.NamespaceDefinition);
+        }
+
+        [Fact]
         public void HandleConversionGivesCorrectKind()
         {
             var expectedKinds = new SortedSet<HandleKind>((HandleKind[])Enum.GetValues(typeof(HandleKind)));
