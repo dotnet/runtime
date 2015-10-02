@@ -1437,10 +1437,10 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             param.pExceptionRecord = pExceptionInfo->ExceptionRecord;
             g_pDebugInterface->RequestFavor(ResetWatsonBucketsFavorWorker, reinterpret_cast<void *>(&param));
         }
+#endif // !FEATURE_PAL        
 
         WatsonLastChance(pThread, pExceptionInfo, 
             (fTreatAsNativeUnhandledException == FALSE)? TypeOfReportedError::UnhandledException: TypeOfReportedError::NativeThreadUnhandledException);
-#endif // !FEATURE_PAL        
     }
 
     TerminateProcess(GetCurrentProcess(), COR_E_STACKOVERFLOW);

@@ -6367,6 +6367,10 @@ public:
 
 #include "pal_unwind.h"
 
+#define EXCEPTION_CONTINUE_SEARCH   0
+#define EXCEPTION_EXECUTE_HANDLER   1
+#define EXCEPTION_CONTINUE_EXECUTION -1
+
 struct PAL_SEHException
 {
 public:
@@ -6414,31 +6418,111 @@ PALAPI
 PAL_SetHardwareExceptionHandler(
     IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler);
 
-class PAL_CatchHardwareExceptionHolder
+//
+// This holder is used to indicate that a hardware
+// exception should be raised as a C++ exception
+// to better emulate SEH on the xplat platforms.
+//
+class CatchHardwareExceptionHolder
 {
 public:
-    PAL_CatchHardwareExceptionHolder();
+    CatchHardwareExceptionHolder();
 
-    ~PAL_CatchHardwareExceptionHolder();
+    ~CatchHardwareExceptionHolder();
 
     static bool IsEnabled();
 };
 
 #ifdef FEATURE_ENABLE_HARDWARE_EXCEPTIONS
-#define HardwareExceptionHolder PAL_CatchHardwareExceptionHolder __catchHardwareException;
+#define HardwareExceptionHolder CatchHardwareExceptionHolder __catchHardwareException;
 #else
 #define HardwareExceptionHolder
 #endif // FEATURE_ENABLE_HARDWARE_EXCEPTIONS
 
 #ifdef FEATURE_PAL_SXS
 
+extern "C++" {
+
+//
+// This is the base class of native exception holder used to provide 
+// the filter function to the exception dispatcher. This allows the
+// filter to be called during the first pass to better emulate SEH
+// the xplat platforms that only have C++ exception support.
+//
+class NativeExceptionHolderBase : CatchHardwareExceptionHolder
+{
+    // Save the address of the holder head so the destructor 
+    // doesn't have access the slow (on Linux) TLS value again.
+    NativeExceptionHolderBase **m_head;
+
+    // The next holder on the stack
+    NativeExceptionHolderBase *m_next;
+
+protected:
+    NativeExceptionHolderBase();
+
+    ~NativeExceptionHolderBase();
+
+public:
+    // Calls the holder's filter handler.
+    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex) = 0;
+
+    // Adds the holder to the "stack" of holders. This is done explicitly instead
+    // of in the constructor was to avoid the mess of move constructors combined
+    // with return value optimization (in CreateHolder).
+    void Push();
+
+    // Given the locals stack range find the next holder starting with this one
+    NativeExceptionHolderBase *FindNextHolder(void *frameLowAddress, void *frameHighAddress);
+
+    // Given the locals stack range find the holder
+    static NativeExceptionHolderBase *FindHolder(void *frameLowAddress, void *frameHighAddress);
+};
+
+//
+// This is the second part of the native exception filter holder. It is
+// templated because the lambda used to wrap the exception filter is a
+// unknown type. 
+//
+template<class FilterType>
+class NativeExceptionHolder : public NativeExceptionHolderBase
+{
+    FilterType* m_exceptionFilter;
+
+public:
+    NativeExceptionHolder(FilterType* exceptionFilter)
+        : NativeExceptionHolderBase()
+    {
+        m_exceptionFilter = exceptionFilter;
+    }
+
+    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
+    {
+        return (*m_exceptionFilter)(ex);
+    }
+};
+
+//
+// This factory class for the native exception holder is necessary because
+// templated functions don't need the explicit type parameter and can infer
+// the template type from the parameter.
+//
+class NativeExceptionHolderFactory
+{
+public:
+    template<class FilterType>
+    static NativeExceptionHolder<FilterType> CreateHolder(FilterType* exceptionFilter)
+    {
+        return NativeExceptionHolder<FilterType>(exceptionFilter);
+    }
+};
+
 // Start of a try block for exceptions raised by RaiseException
 #define PAL_TRY(__ParamType, __paramDef, __paramRef)                            \
 {                                                                               \
     __ParamType __param = __paramRef;                                           \
     auto tryBlock = [](__ParamType __paramDef)                                  \
-    {                                                                           \
-        HardwareExceptionHolder
+    {
 
 // Start of an exception handler. If an exception raised by the RaiseException 
 // occurs in the try block and the disposition is EXCEPTION_EXECUTE_HANDLER, 
@@ -6449,14 +6533,25 @@ public:
     };                                                                          \
     const bool isFinally = false;                                               \
     auto finallyBlock = []() {};                                                \
+    EXCEPTION_DISPOSITION disposition = EXCEPTION_CONTINUE_EXECUTION;           \
+    auto exceptionFilter = [&disposition, &__param](PAL_SEHException& ex)       \
+    {                                                                           \
+        disposition = dispositionExpression;                                    \
+        _ASSERTE(disposition != EXCEPTION_CONTINUE_EXECUTION);                  \
+        return disposition;                                                     \
+    };                                                                          \
     try                                                                         \
     {                                                                           \
+        auto __exceptionHolder = NativeExceptionHolderFactory::CreateHolder(&exceptionFilter); \
+        __exceptionHolder.Push();                                               \
         tryBlock(__param);                                                      \
     }                                                                           \
     catch (PAL_SEHException& ex)                                                \
     {                                                                           \
-        EXCEPTION_DISPOSITION disposition = dispositionExpression;              \
-        _ASSERTE(disposition != EXCEPTION_CONTINUE_EXECUTION);                  \
+        if (disposition == EXCEPTION_CONTINUE_EXECUTION)                        \
+        {                                                                       \
+            exceptionFilter(ex);                                                \
+        }                                                                       \
         if (disposition == EXCEPTION_CONTINUE_SEARCH)                           \
         {                                                                       \
             throw;                                                              \
@@ -6491,6 +6586,8 @@ public:
         finallyBlock();                 \
     }                                   \
 }
+
+} // extern "C++"
 
 #endif // FEATURE_PAL_SXS
 
@@ -6534,10 +6631,6 @@ public:
 #endif // FEATURE_PAL_SXS
 
 #endif // __cplusplus
-
-#define EXCEPTION_CONTINUE_SEARCH   0
-#define EXCEPTION_EXECUTE_HANDLER   1
-#define EXCEPTION_CONTINUE_EXECUTION -1
 
 // Platform-specific library naming
 // 
