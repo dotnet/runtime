@@ -563,15 +563,8 @@ namespace System.Net.Http.Tests
             MockHeaderParser parser = new MockHeaderParser(false); // doesn't support multiple values.
             MockHeaders headers = new MockHeaders(parser);
 
-            try
-            {
-                headers.Add(knownHeader, rawPrefix + "1");
-            }
-            catch (Exception e)
-            {
-                Assert.True(false, string.Format("Adding the first header already threw exception: {0}", e));
-            }
-
+            headers.Add(knownHeader, rawPrefix + "1");
+            // Can only add headers once.
             Assert.Throws<FormatException>(() => { headers.Add(knownHeader, rawPrefix + "2"); });
 
             // Verify that the first header value is still there.
@@ -2105,17 +2098,12 @@ namespace System.Net.Http.Tests
                     // We "parse" the value by replacing 'rawPrefix' strings with 'parsedPrefix' string.
                     parsedValue = parsedPrefix + tempValue.Substring(rawPrefix.Length,
                         tempValue.Length - rawPrefix.Length);
-                }
-                else if (tempValue.StartsWith(invalidHeaderValue, StringComparison.Ordinal))
-                {
-                    return false;
-                }
-                else
-                {
-                    Assert.True(false, string.Format("Unknown mock value: {0}", tempValue));
+                    return true;
                 }
 
-                return true;
+                // Only thing left is a deliberately chosen invalid value.
+                Assert.StartsWith(invalidHeaderValue, tempValue, StringComparison.Ordinal);
+                return false;
             }
             #endregion
         }
