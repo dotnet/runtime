@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -11,6 +12,29 @@ namespace Internal.Cryptography.Pal
 {
     internal partial class FindPal
     {
+        private const int NamedKeyUsageFlagsCount = 9;
+
+        private static readonly Dictionary<string, X509KeyUsageFlags> s_keyUsages =
+            new Dictionary<string, X509KeyUsageFlags>(NamedKeyUsageFlagsCount, StringComparer.OrdinalIgnoreCase)
+            {
+                { "DigitalSignature", X509KeyUsageFlags.DigitalSignature },
+                { "NonRepudiation", X509KeyUsageFlags.NonRepudiation },
+                { "KeyEncipherment", X509KeyUsageFlags.KeyEncipherment },
+                { "DataEncipherment", X509KeyUsageFlags.DataEncipherment },
+                { "KeyAgreement", X509KeyUsageFlags.KeyAgreement },
+                { "KeyCertSign", X509KeyUsageFlags.KeyCertSign },
+                { "CrlSign", X509KeyUsageFlags.CrlSign },
+                { "EncipherOnly", X509KeyUsageFlags.EncipherOnly },
+                { "DecipherOnly", X509KeyUsageFlags.DecipherOnly },
+            };
+
+#if DEBUG
+        static FindPal()
+        {
+            Debug.Assert(s_keyUsages.Count == NamedKeyUsageFlagsCount);
+        }
+#endif
+
         public static X509Certificate2Collection FindFromCollection(
             X509Certificate2Collection coll,
             X509FindType findType,
@@ -170,34 +194,12 @@ namespace Internal.Cryptography.Pal
 
             if (findValueString != null)
             {
-                if (findValueString.Equals("DigitalSignature", StringComparison.OrdinalIgnoreCase))
-                    return X509KeyUsageFlags.DigitalSignature;
+                X509KeyUsageFlags usageFlags;
 
-                if (findValueString.Equals("NonRepudiation", StringComparison.OrdinalIgnoreCase))
-                    return X509KeyUsageFlags.NonRepudiation;
-
-                if (findValueString.Equals("KeyEncipherment", StringComparison.OrdinalIgnoreCase))
-                    return X509KeyUsageFlags.KeyEncipherment;
-
-                if (findValueString.Equals("DataEncipherment", StringComparison.OrdinalIgnoreCase))
-                    return X509KeyUsageFlags.DataEncipherment;
-
-                if (findValueString.Equals("KeyAgreement", StringComparison.OrdinalIgnoreCase))
-                    return X509KeyUsageFlags.KeyAgreement;
-
-                if (findValueString.Equals("KeyCertSign", StringComparison.OrdinalIgnoreCase))
-                    return X509KeyUsageFlags.KeyCertSign;
-
-                if (findValueString.Equals("CrlSign", StringComparison.OrdinalIgnoreCase))
-                    return X509KeyUsageFlags.CrlSign;
-
-                if (findValueString.Equals("EncipherOnly", StringComparison.OrdinalIgnoreCase))
-                    return X509KeyUsageFlags.EncipherOnly;
-
-                if (findValueString.Equals("DecipherOnly", StringComparison.OrdinalIgnoreCase))
-                    return X509KeyUsageFlags.DecipherOnly;
-
-                throw new CryptographicException(SR.Cryptography_X509_InvalidFindValue);
+                if (s_keyUsages.TryGetValue(findValueString, out usageFlags))
+                {
+                    return usageFlags;
+                }
             }
 
             throw new CryptographicException(SR.Cryptography_X509_InvalidFindValue);
