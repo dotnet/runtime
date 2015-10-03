@@ -41,7 +41,7 @@ internal static partial class Interop
         internal static extern IntPtr ERR_reason_error_string(ulong error);
 
         [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern int SSL_get_error(IntPtr ssl, int ret);
+        internal static extern SslErrorCode SSL_get_error(IntPtr ssl, int ret);
 
         [DllImport(Interop.Libraries.LibSsl)]
         internal static extern void SSL_free(IntPtr ssl);
@@ -60,6 +60,9 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.LibSsl)]
         internal static extern int SSL_read(IntPtr ssl, IntPtr buf, int num);
+
+        [DllImport(Interop.Libraries.LibSsl)]
+        internal static extern int SSL_renegotiate_pending(IntPtr ssl);
 
         [DllImport(Interop.Libraries.LibSsl)]
         internal static extern int SSL_shutdown(IntPtr ssl);

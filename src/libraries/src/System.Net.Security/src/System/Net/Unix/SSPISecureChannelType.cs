@@ -67,7 +67,7 @@ namespace System.Net
         {
             int resultSize;
             SecurityStatus retVal = EncryptDecryptHelper(securityContext, buffer, offset, count, 0, 0, false, out resultSize);
-            if (SecurityStatus.OK == retVal)
+            if (SecurityStatus.OK == retVal || SecurityStatus.Renegotiate == retVal)
             {
                 count = resultSize;
             }
@@ -273,6 +273,8 @@ namespace System.Net
             {
                 securityContext.DangerousAddRef(ref gotReference);
 
+                Interop.libssl.SslErrorCode errorCode = Interop.libssl.SslErrorCode.SSL_ERROR_NONE;
+
                 unsafe
                 {
                     fixed (byte* bufferPtr = buffer)
@@ -282,12 +284,23 @@ namespace System.Net
                         IntPtr scHandle = securityContext.DangerousGetHandle();
 
                         resultSize = encrypt ?
-                            Interop.OpenSsl.Encrypt(scHandle, inputPtr, offset, size, buffer.Length) :
-                            Interop.OpenSsl.Decrypt(scHandle, inputPtr, size);
+                            Interop.OpenSsl.Encrypt(scHandle, inputPtr, offset, size, buffer.Length, out errorCode) :
+                            Interop.OpenSsl.Decrypt(scHandle, inputPtr, size, out errorCode);
                     }
                 }
 
-                return ((size == 0) || (resultSize > 0)) ? SecurityStatus.OK : SecurityStatus.ContextExpired;
+                switch (errorCode)
+                {
+                    case Interop.libssl.SslErrorCode.SSL_ERROR_RENEGOTIATE:
+                        return SecurityStatus.Renegotiate;
+                    case Interop.libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
+                        return SecurityStatus.ContextExpired;
+                    case Interop.libssl.SslErrorCode.SSL_ERROR_NONE:
+                    case Interop.libssl.SslErrorCode.SSL_ERROR_WANT_READ:
+                        return SecurityStatus.OK;
+                    default:
+                        return SecurityStatus.InternalError;
+                }
             }
             catch (Exception ex)
             {
