@@ -15,6 +15,7 @@
     <Compile Include="AcceptAsync.cs" />
     <Compile Include="ConnectAsync.cs" />
     <Compile Include="ConnectExTest.cs" />
+    <Compile Include="CreateSocketTests.cs" />
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="SendReceive.cs" />

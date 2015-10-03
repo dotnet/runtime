@@ -37,13 +37,7 @@ namespace System.Net.Sockets
 
         public static SafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
-            SafeCloseSocket handle = SafeCloseSocket.CreateWSASocket(addressFamily, socketType, protocolType);
-            if (handle.IsInvalid)
-            {
-                // Failed to create the win32 socket, throw.
-                throw new SocketException();
-            }
-            return handle;
+            return SafeCloseSocket.CreateWSASocket(addressFamily, socketType, protocolType);
         }
 
         public static unsafe SafeCloseSocket CreateSocket(SocketInformation socketInformation, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType)
