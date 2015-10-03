@@ -271,6 +271,9 @@
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sched_getsetaffinity.cs">
       <Link>Common\Interop\Linux\Interop.sched_getsetaffinity.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
+      <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\Diagnostics\Process.OSX.cs" />

@@ -99,8 +99,7 @@ internal static partial class Interop
             {
                 return ParseMapsModulesCore(File.ReadLines(GetMapsFilePathForProcess(pid)));
             }
-            catch (FileNotFoundException) { }
-            catch (DirectoryNotFoundException) { }
+            catch (IOException) { }
             catch (UnauthorizedAccessException) { }
 
             return Array.Empty<ParsedMapsModule>();
@@ -181,19 +180,30 @@ internal static partial class Interop
             return GetTaskDirectoryPathForProcess(pid) + tid.ToString(CultureInfo.InvariantCulture) + StatFileName;
         }
 
-        internal static ParsedStat ReadStatFile(int pid)
+        internal static bool TryReadStatFile(int pid, out ParsedStat result)
         {
-            return ParseStatFile(GetStatFilePathForProcess(pid));
+            return TryParseStatFile(GetStatFilePathForProcess(pid), out result);
         }
 
-        internal static ParsedStat ReadStatFile(int pid, int tid)
+        internal static bool TryReadStatFile(int pid, int tid, out ParsedStat result)
         {
-            return ParseStatFile(GetStatFilePathForThread(pid, tid));
+            return TryParseStatFile(GetStatFilePathForThread(pid, tid), out result);
         }
 
-        private static ParsedStat ParseStatFile(string statFilePath)
+        private static bool TryParseStatFile(string statFilePath, out ParsedStat result)
         {
-            string statFileContents = File.ReadAllText(statFilePath);
+            string statFileContents;
+            try
+            {
+                statFileContents = File.ReadAllText(statFilePath);
+            }
+            catch (IOException)
+            {
+                // Between the time that we get an ID and the time that we try to read the associated stat
+                // file(s), the process could be gone.
+                result = default(ParsedStat);
+                return false;
+            }
 
             var parser = new StringParser(statFileContents, ' ');
             var results = default(ParsedStat);
@@ -256,7 +266,8 @@ internal static partial class Interop
             parser.MoveNextOrFail(); // guest_time
             parser.MoveNextOrFail(); // cguest_time
 
-            return results;
+            result = results;
+            return true;
         }
     }
 }

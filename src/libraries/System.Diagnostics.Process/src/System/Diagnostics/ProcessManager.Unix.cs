@@ -91,7 +91,7 @@ namespace System.Diagnostics
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private static void ThrowIfRemoteMachine(string machineName)
+        internal static void ThrowIfRemoteMachine(string machineName)
         {
             if (IsRemoteMachine(machineName))
             {
