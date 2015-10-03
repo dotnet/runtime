@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -10,6 +11,10 @@ internal static partial class Interop
     {
         internal const int SSL_CTRL_OPTIONS = 32;
         internal static bool OPENSSL_NO_COMP = true; //no compression true by default
+
+        internal const long ProtocolMask = Options.SSL_OP_NO_SSLv2 | Options.SSL_OP_NO_SSLv3 |
+                                           Options.SSL_OP_NO_TLSv1 | Options.SSL_OP_NO_TLSv1_1 |
+                                           Options.SSL_OP_NO_TLSv1_2;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct SSL_CIPHER
@@ -61,12 +66,35 @@ internal static partial class Interop
             internal const int TRAILER_SIZE = 68;
         }
 
-        internal static class SslErrorCode
+        internal static class SslMethods
         {
-            internal const int SSL_ERROR_SSL = 1;
-            internal const int SSL_ERROR_WANT_READ = 2;
-            internal const int SSL_ERROR_SYSCALL = 5;
-            internal const int SSL_ERROR_ZERO_RETURN = 6;
+            internal static readonly IntPtr TLSv1_method = libssl.TLSv1_method();
+            internal static readonly IntPtr TLSv1_1_method = libssl.TLSv1_1_method();
+            internal static readonly IntPtr TLSv1_2_method = libssl.TLSv1_2_method();
+            internal static readonly IntPtr SSLv3_method = libssl.SSLv3_method();
+            internal static readonly IntPtr SSLv23_method = libssl.SSLv23_method();
+
+#if DEBUG
+            static SslMethods()
+            {
+                Debug.Assert(TLSv1_method != IntPtr.Zero, "TLSv1_method is null");
+                Debug.Assert(TLSv1_1_method != IntPtr.Zero, "TLSv1_1_method is null");
+                Debug.Assert(TLSv1_2_method != IntPtr.Zero, "TLSv1_2_method is null");
+                Debug.Assert(SSLv3_method != IntPtr.Zero, "SSLv3_method is null");
+                Debug.Assert(SSLv23_method != IntPtr.Zero, "SSLv23 method is null");
+            }
+#endif
+        }
+
+        internal enum SslErrorCode
+        {
+            SSL_ERROR_NONE = 0,
+            SSL_ERROR_SSL = 1,
+            SSL_ERROR_WANT_READ = 2,
+            SSL_ERROR_WANT_WRITE = 3,
+            SSL_ERROR_SYSCALL = 5,
+            SSL_ERROR_ZERO_RETURN = 6,
+            SSL_ERROR_RENEGOTIATE = 10
         }
 
         internal enum SslState
