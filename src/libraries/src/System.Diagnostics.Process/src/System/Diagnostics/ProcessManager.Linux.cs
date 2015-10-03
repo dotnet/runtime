@@ -13,20 +13,7 @@ namespace System.Diagnostics
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
         public static int[] GetProcessIds()
         {
-            // Parse /proc for any directory that's named with a number.  Each such
-            // directory represents a process.
-            var pids = new List<int>();
-            foreach (string procDir in Directory.EnumerateDirectories(Interop.procfs.RootPath))
-            {
-                string dirName = Path.GetFileName(procDir);
-                int pid;
-                if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out pid))
-                {
-                    Debug.Assert(pid >= 0);
-                    pids.Add(pid);
-                }
-            }
-            return pids.ToArray();
+            return EnumerableHelpers.ToArray(EnumerateProcessIds());
         }
 
         /// <summary>Gets an array of module infos for the specified process.</summary>
@@ -74,61 +61,62 @@ namespace System.Diagnostics
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private static ProcessInfo CreateProcessInfo(int pid)
+        /// <summary>
+        /// Creates a ProcessInfo from the specified process ID.
+        /// </summary>
+        internal static ProcessInfo CreateProcessInfo(int pid)
         {
-            // Read /proc/pid/stat to get information about the process, and churn that into a ProcessInfo
-            ProcessInfo pi;
-            try
-            {
-                Interop.procfs.ParsedStat procFsStat = Interop.procfs.ReadStatFile(pid);
-                pi = new ProcessInfo
-                {
-                    ProcessId = pid,
-                    ProcessName = procFsStat.comm,
-                    BasePriority = (int)procFsStat.nice,
-                    VirtualBytes = (long)procFsStat.vsize,
-                    WorkingSet = procFsStat.rss,
-                    SessionId = procFsStat.session,
+            Interop.procfs.ParsedStat stat;
+            return Interop.procfs.TryReadStatFile(pid, out stat) ?
+                CreateProcessInfo(stat) :
+                null;
+        }
 
-                    // We don't currently fill in the other values.
-                    // A few of these could probably be filled in from getrusage,
-                    // but only for the current process or its children, not for
-                    // arbitrary other processes.
-                };
-            }
-            catch (IOException)
+        /// <summary>
+        /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
+        /// </summary>
+        internal static ProcessInfo CreateProcessInfo(Interop.procfs.ParsedStat procFsStat)
+        {
+            int pid = procFsStat.pid;
+
+            ProcessInfo pi = new ProcessInfo()
             {
-                // Between the time that we get an ID and the time that we try to read the associated stat
-                // file(s), the process could be gone.
-                return null;
-            }
+                ProcessId = pid,
+                ProcessName = procFsStat.comm,
+                BasePriority = (int)procFsStat.nice,
+                VirtualBytes = (long)procFsStat.vsize,
+                WorkingSet = procFsStat.rss,
+                SessionId = procFsStat.session,
+
+                // We don't currently fill in the other values.
+                // A few of these could probably be filled in from getrusage,
+                // but only for the current process or its children, not for
+                // arbitrary other processes.
+            };
 
             // Then read through /proc/pid/task/ to find each thread in the process...
-            try
+            string tasksDir = Interop.procfs.GetTaskDirectoryPathForProcess(pid);
+            foreach (string taskDir in Directory.EnumerateDirectories(tasksDir))
             {
-                string tasksDir = Interop.procfs.GetTaskDirectoryPathForProcess(pid);
-                foreach (string taskDir in Directory.EnumerateDirectories(tasksDir))
+                // ...and read its associated /proc/pid/task/tid/stat file to create a ThreadInfo
+                string dirName = Path.GetFileName(taskDir);
+                int tid;
+                Interop.procfs.ParsedStat stat;
+                if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid) &&
+                    Interop.procfs.TryReadStatFile(pid, tid, out stat))
                 {
-                    string dirName = Path.GetFileName(taskDir);
-                    int tid;
-                    if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid))
+                    pi._threadInfoList.Add(new ThreadInfo
                     {
-                        // ...and read its associated /proc/pid/task/tid/stat file to create a ThreadInfo
-                        Interop.procfs.ParsedStat stat = Interop.procfs.ReadStatFile(pid, tid);
-                        pi._threadInfoList.Add(new ThreadInfo
-                        {
-                            _processId = pid,
-                            _threadId = (ulong)tid,
-                            _basePriority = pi.BasePriority,
-                            _currentPriority = (int)stat.nice,
-                            _startAddress = (IntPtr)stat.startstack,
-                            _threadState = ProcFsStateToThreadState(stat.state),
-                            _threadWaitReason = ThreadWaitReason.Unknown
-                        });
-                    }
+                        _processId = pid,
+                        _threadId = (ulong)tid,
+                        _basePriority = pi.BasePriority,
+                        _currentPriority = (int)stat.nice,
+                        _startAddress = (IntPtr)stat.startstack,
+                        _threadState = ProcFsStateToThreadState(stat.state),
+                        _threadWaitReason = ThreadWaitReason.Unknown
+                    });
                 }
             }
-            catch (IOException) { } // process and/or threads may go away by the time we try to read from them
 
             // Finally return what we've built up
             return pi;
@@ -137,6 +125,23 @@ namespace System.Diagnostics
         // ----------------------------------
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
+
+        /// <summary>Enumerates the IDs of all processes on the current machine.</summary>
+        internal static IEnumerable<int> EnumerateProcessIds()
+        {
+            // Parse /proc for any directory that's named with a number.  Each such
+            // directory represents a process.
+            foreach (string procDir in Directory.EnumerateDirectories(Interop.procfs.RootPath))
+            {
+                string dirName = Path.GetFileName(procDir);
+                int pid;
+                if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out pid))
+                {
+                    Debug.Assert(pid >= 0);
+                    yield return pid;
+                }
+            }
+        }
 
         /// <summary>Gets a ThreadState to represent the value returned from the status field of /proc/pid/stat.</summary>
         /// <param name="c">The status field value.</param>

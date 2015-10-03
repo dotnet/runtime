@@ -16,6 +16,35 @@ namespace System.Diagnostics
     public partial class Process : IDisposable
     {
         /// <summary>
+        /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
+        /// remote computer. These process resources share the specified process name.
+        /// </summary>
+        public static Process[] GetProcessesByName(string processName, string machineName)
+        {
+            if (processName == null)
+            {
+                processName = string.Empty;
+            }
+
+            Process[] procs = GetProcesses(machineName);
+            var list = new List<Process>();
+
+            for (int i = 0; i < procs.Length; i++)
+            {
+                if (string.Equals(processName, procs[i].ProcessName, StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Add(procs[i]);
+                }
+                else
+                {
+                    procs[i].Dispose();
+                }
+            }
+
+            return list.ToArray();
+        }
+
+        /// <summary>
         /// Puts a Process component in state to interact with operating system processes that run in a 
         /// special mode by enabling the native property SeDebugPrivilege on the current thread.
         /// </summary>
@@ -664,7 +693,7 @@ namespace System.Diagnostics
                 commandLine.Append("\"");
             }
 
-            if (!String.IsNullOrEmpty(arguments))
+            if (!string.IsNullOrEmpty(arguments))
             {
                 commandLine.Append(" ");
                 commandLine.Append(arguments);
