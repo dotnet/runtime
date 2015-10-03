@@ -182,12 +182,16 @@ internal static partial class Interop
 
         internal static bool TryReadStatFile(int pid, out ParsedStat result)
         {
-            return TryParseStatFile(GetStatFilePathForProcess(pid), out result);
+            bool b = TryParseStatFile(GetStatFilePathForProcess(pid), out result);
+            Debug.Assert(!b || result.pid == pid, "Expected process ID from stat file to match supplied pid");
+            return b;
         }
 
         internal static bool TryReadStatFile(int pid, int tid, out ParsedStat result)
         {
-            return TryParseStatFile(GetStatFilePathForThread(pid, tid), out result);
+            bool b = TryParseStatFile(GetStatFilePathForThread(pid, tid), out result);
+            Debug.Assert(!b || result.pid == tid, "Expected thread ID from stat file to match supplied tid");
+            return b;
         }
 
         private static bool TryParseStatFile(string statFilePath, out ParsedStat result)
