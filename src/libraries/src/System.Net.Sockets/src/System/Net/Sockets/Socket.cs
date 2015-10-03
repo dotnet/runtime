@@ -96,7 +96,13 @@ namespace System.Net.Sockets
             }
 
             InitializeSockets();
+
             _handle = SocketPal.CreateSocket(addressFamily, socketType, protocolType);
+            if (_handle.IsInvalid)
+            {
+                // Failed to create the socket, throw.
+                throw new SocketException((int)SocketPal.GetLastSocketError());
+            }
 
             _addressFamily = addressFamily;
             _socketType = socketType;
