@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
+using System.Text;
 
 namespace System.Diagnostics
 {
@@ -80,7 +81,7 @@ namespace System.Diagnostics
         private Interop.procfs.ParsedStat GetStat()
         {
             Interop.procfs.ParsedStat stat;
-            if (!Interop.procfs.TryReadStatFile(pid: _processId, tid: Id, result: out stat))
+            if (!Interop.procfs.TryReadStatFile(pid: _processId, tid: Id, result: out stat, reusableReader: new ReusableTextReader(Encoding.UTF8)))
             {
                 throw new Win32Exception(SR.ProcessInformationUnavailable);
             }

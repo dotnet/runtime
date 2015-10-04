@@ -2,9 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Text;
 
 namespace System.Diagnostics
 {
@@ -14,6 +14,29 @@ namespace System.Diagnostics
         public static int[] GetProcessIds()
         {
             return EnumerableHelpers.ToArray(EnumerateProcessIds());
+        }
+
+        /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="machineName">The target machine.</param>
+        /// <returns>An array of process infos, one per found process.</returns>
+        public static ProcessInfo[] GetProcessInfos(string machineName)
+        {
+            ThrowIfRemoteMachine(machineName);
+            int[] procIds = GetProcessIds(machineName);
+
+            // Iterate through all process IDs to load information about each process
+            var reusableReader = new ReusableTextReader();
+            var processes = new List<ProcessInfo>(procIds.Length);
+            foreach (int pid in procIds)
+            {
+                ProcessInfo pi = CreateProcessInfo(pid, reusableReader);
+                if (pi != null)
+                {
+                    processes.Add(pi);
+                }
+            }
+
+            return processes.ToArray();
         }
 
         /// <summary>Gets an array of module infos for the specified process.</summary>
@@ -64,22 +87,27 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(int pid)
+        internal static ProcessInfo CreateProcessInfo(int pid, ReusableTextReader reusableReader = null)
         {
+            if (reusableReader == null)
+            {
+                reusableReader = new ReusableTextReader();
+            }
+
             Interop.procfs.ParsedStat stat;
-            return Interop.procfs.TryReadStatFile(pid, out stat) ?
-                CreateProcessInfo(stat) :
+            return Interop.procfs.TryReadStatFile(pid, out stat, reusableReader) ?
+                CreateProcessInfo(stat, reusableReader) :
                 null;
         }
 
         /// <summary>
         /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(Interop.procfs.ParsedStat procFsStat)
+        internal static ProcessInfo CreateProcessInfo(Interop.procfs.ParsedStat procFsStat, ReusableTextReader reusableReader)
         {
             int pid = procFsStat.pid;
 
-            ProcessInfo pi = new ProcessInfo()
+            var pi = new ProcessInfo()
             {
                 ProcessId = pid,
                 ProcessName = procFsStat.comm,
@@ -103,9 +131,9 @@ namespace System.Diagnostics
                 int tid;
                 Interop.procfs.ParsedStat stat;
                 if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid) &&
-                    Interop.procfs.TryReadStatFile(pid, tid, out stat))
+                    Interop.procfs.TryReadStatFile(pid, tid, out stat, reusableReader))
                 {
-                    pi._threadInfoList.Add(new ThreadInfo
+                    pi._threadInfoList.Add(new ThreadInfo()
                     {
                         _processId = pid,
                         _threadId = (ulong)tid,

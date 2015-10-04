@@ -22,14 +22,15 @@ namespace System.Diagnostics
                 processName = string.Empty;
             }
 
+            var reusableReader = new ReusableTextReader();
             var processes = new List<Process>();
             foreach (int pid in ProcessManager.EnumerateProcessIds())
             {
                 Interop.procfs.ParsedStat parsedStat;
-                if (Interop.procfs.TryReadStatFile(pid, out parsedStat) &&
+                if (Interop.procfs.TryReadStatFile(pid, out parsedStat, reusableReader) &&
                     string.Equals(processName, parsedStat.comm, StringComparison.OrdinalIgnoreCase))
                 {
-                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(parsedStat);
+                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(parsedStat, reusableReader);
                     processes.Add(new Process(machineName, false, processInfo.ProcessId, processInfo));
                 }
             }
@@ -235,7 +236,7 @@ namespace System.Diagnostics
         {
             EnsureState(State.HaveId);
             Interop.procfs.ParsedStat stat;
-            if (!Interop.procfs.TryReadStatFile(_processId, result: out stat))
+            if (!Interop.procfs.TryReadStatFile(_processId, out stat, new ReusableTextReader()))
             {
                 throw new Win32Exception(SR.ProcessInformationUnavailable);
             }
