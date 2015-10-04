@@ -3,10 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Text;
 
 internal static partial class Interop
 {
@@ -180,26 +180,29 @@ internal static partial class Interop
             return GetTaskDirectoryPathForProcess(pid) + tid.ToString(CultureInfo.InvariantCulture) + StatFileName;
         }
 
-        internal static bool TryReadStatFile(int pid, out ParsedStat result)
+        internal static bool TryReadStatFile(int pid, out ParsedStat result, ReusableTextReader reusableReader)
         {
-            bool b = TryParseStatFile(GetStatFilePathForProcess(pid), out result);
+            bool b = TryParseStatFile(GetStatFilePathForProcess(pid), out result, reusableReader);
             Debug.Assert(!b || result.pid == pid, "Expected process ID from stat file to match supplied pid");
             return b;
         }
 
-        internal static bool TryReadStatFile(int pid, int tid, out ParsedStat result)
+        internal static bool TryReadStatFile(int pid, int tid, out ParsedStat result, ReusableTextReader reusableReader)
         {
-            bool b = TryParseStatFile(GetStatFilePathForThread(pid, tid), out result);
+            bool b = TryParseStatFile(GetStatFilePathForThread(pid, tid), out result, reusableReader);
             Debug.Assert(!b || result.pid == tid, "Expected thread ID from stat file to match supplied tid");
             return b;
         }
 
-        private static bool TryParseStatFile(string statFilePath, out ParsedStat result)
+        private static bool TryParseStatFile(string statFilePath, out ParsedStat result, ReusableTextReader reusableReader)
         {
             string statFileContents;
             try
             {
-                statFileContents = File.ReadAllText(statFilePath);
+                using (var source = new FileStream(statFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false))
+                {
+                    statFileContents = reusableReader.ReadAllText(source);
+                }
             }
             catch (IOException)
             {
