@@ -4455,7 +4455,6 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
         if (!ExecutionManager::IsManagedCode(GetIP(currentFrameContext)))
         {
             // Return back to the UnwindManagedExceptionPass1 and let it unwind the native frames
-            // return;
             {
                 GCX_COOP();
                 // Pop all frames that are below the block of native frames and that would be
@@ -4471,9 +4470,13 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 pTracker->ResetUnwoundExplicitFramesRange();
             }
 
-            //Now we need to unwind the native frames until we reach managed frames again or the exception is
-            //handled in the native code.
-            StartUnwindingNativeFrames(currentFrameContext, &ex);
+            // Now we need to unwind the native frames until we reach managed frames again or the exception is
+            // handled in the native code.
+            // We need to make a copy of the exception off stack, since the "ex" is located in one of the stack
+            // frames that will become obsolete by the StartUnwindingNativeFrames and the ThrowExceptionHelper 
+            // could overwrite the "ex" object by stack e.g. when allocating the low level exception object for "throw".
+            static __thread BYTE threadLocalExceptionStorage[sizeof(PAL_SEHException)];
+            StartUnwindingNativeFrames(currentFrameContext, new (threadLocalExceptionStorage) PAL_SEHException(ex));
             UNREACHABLE();
         }
 
@@ -4602,7 +4605,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
             BOOL success = PAL_VirtualUnwind(&frameContext, NULL);
             if (!success)
             {
-                _ASSERTE(!"Thread::VirtualUnwindToFirstManagedCallFrame: PAL_VirtualUnwind failed");
+                _ASSERTE(!"UnwindManagedExceptionPass1: PAL_VirtualUnwind failed");
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
             }
 
@@ -4610,11 +4613,11 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
 
             if (controlPc == 0)
             {
-                // This displays the managed stack in case the unwind has walked out of the stack and
-                // a managed exception was being unwound.
-                DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/,
-                                    TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
-
+                if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
+                {
+                    LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
+                    _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
+                }
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);                    
             }
 
