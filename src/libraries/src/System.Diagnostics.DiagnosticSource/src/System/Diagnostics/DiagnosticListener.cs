@@ -5,6 +5,8 @@ using System;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 
 // TODO when we upgrade to C# V6 you can remove this.  
 // warning CS0420: ‘P.x': a reference to a volatile field will not be treated as volatile
@@ -105,6 +107,10 @@ namespace System.Diagnostics
                 _next = s_allListeners;
                 s_allListeners = this;
             }
+
+            // Call IsEnabled just so we insure that the DiagnosticSourceEventSource has been 
+            // constructed (and thus is responsive to ETW requests to be enabled).  
+            DiagnosticSourceEventSource.Logger.IsEnabled();
         }
 
         /// <summary>
@@ -353,4 +359,45 @@ namespace System.Diagnostics
 
         #endregion
     }
+
+    /// <summary>
+    /// Current this EventSource is only here so that the Debugger can inject code using Function evaluation
+    /// We may add actual logging requests as well at some point.   This can be removed if the debugger  no 
+    /// longer needs it.   
+    /// </summary>
+    [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
+    class DiagnosticSourceEventSource : EventSource
+    {
+        static public DiagnosticSourceEventSource Logger = new DiagnosticSourceEventSource();
+
+        /// <summary>
+        /// On every command (which the debugger can force by turning on this EventSource with ETW)
+        /// call a function that the debugger can hook to do an arbitrary func evaluation.  
+        /// </summary>
+        /// <param name="args"></param>
+        protected override void OnEventCommand(EventCommandEventArgs args)
+        {
+            BreakPointWithDebuggerFuncEval();
+        }
+
+        #region private 
+        private volatile bool _false;       // A value that is always false but the compiler does not know this. 
+        /// <summary>
+        /// A function which is fully interruptible even in release code so we can stop here and 
+        /// do function evaluation in the debugger.   Thus this is just a place that is useful
+        /// for the debugger to place a breakpoint where it can inject code with function evaluation
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+        private void BreakPointWithDebuggerFuncEval()
+        {
+            new object();   // This is only here because it helps old desktop runtimes emit a GC safe point at the start of the method
+            while (_false)
+            {
+                _false = false;
+            }
+        }
+        #endregion 
+    }
+
+
 }
