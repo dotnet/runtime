@@ -238,11 +238,10 @@
           "lib/DNXCore50/System.Net.Security.dll": {}
         }
       },
-      "System.Net.Sockets/4.1.0-beta-23225": {
+      "System.Net.Sockets/4.0.10-beta-23213": {
         "type": "package",
         "dependencies": {
-          "System.Private.Networking": "4.0.1-beta-23225",
-          "System.Runtime": "4.0.20"
+          "System.Private.Networking": "4.0.1-beta-23213"
         },
         "compile": {
           "ref/dotnet/System.Net.Sockets.dll": {}
@@ -1204,25 +1203,32 @@
         "System.Net.Security.nuspec"
       ]
     },
-    "System.Net.Sockets/4.1.0-beta-23225": {
+    "System.Net.Sockets/4.0.10-beta-23213": {
       "type": "package",
-      "serviceable": true,
-      "sha512": "ZB+ZE/Bo52Zr38mIX4Wb1mrq9zHCbl7Oz9iv8IL3dQ2RZqMdUZpPI/PLTRI+/BgUNnycK53VY8kp8QGJIzqTiQ==",
+      "sha512": "CpSrc6gCiRUHXZBIVZgoLNzQCvzYcyYMq6m590nkjoMWRSqh8hSX4b2DnxkJ9rZiOKDOwYu+goFL8vIEfCdpwQ==",
       "files": [
         "lib/DNXCore50/System.Net.Sockets.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
-        "lib/net46/System.Net.Sockets.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Net.Sockets.xml",
+        "ref/dotnet/es/System.Net.Sockets.xml",
+        "ref/dotnet/fr/System.Net.Sockets.xml",
+        "ref/dotnet/it/System.Net.Sockets.xml",
+        "ref/dotnet/ja/System.Net.Sockets.xml",
+        "ref/dotnet/ko/System.Net.Sockets.xml",
+        "ref/dotnet/ru/System.Net.Sockets.xml",
         "ref/dotnet/System.Net.Sockets.dll",
+        "ref/dotnet/System.Net.Sockets.xml",
+        "ref/dotnet/zh-hans/System.Net.Sockets.xml",
+        "ref/dotnet/zh-hant/System.Net.Sockets.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
-        "ref/net46/System.Net.Sockets.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Net.Sockets.4.1.0-beta-23225.nupkg",
-        "System.Net.Sockets.4.1.0-beta-23225.nupkg.sha512",
+        "System.Net.Sockets.4.0.10-beta-23213.nupkg",
+        "System.Net.Sockets.4.0.10-beta-23213.nupkg.sha512",
         "System.Net.Sockets.nuspec"
       ]
     },
@@ -2068,7 +2074,7 @@
       "System.IO.FileSystem >= 4.0.0",
       "System.Net.Primitives >= 4.0.10",
       "System.Net.Security >= 4.0.0-beta-*",
-      "System.Net.Sockets >= 4.0.10",
+      "System.Net.Sockets >= 4.0.10-beta-*",
       "System.Reflection >= 4.0.0",
       "System.Reflection.TypeExtensions >= 4.0.0",
       "System.Resources.ResourceManager >= 4.0.0",

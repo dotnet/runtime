@@ -17,8 +17,8 @@ namespace System.Data.SqlClient
 
         public const string SQL_PROVIDER_NAME = Common.DbConnectionStringDefaults.ApplicationName;
 
-        public static readonly Decimal SQL_SMALL_MONEY_MIN = new Decimal(-214748.3648);
-        public static readonly Decimal SQL_SMALL_MONEY_MAX = new Decimal(214748.3647);
+        public static readonly decimal SQL_SMALL_MONEY_MIN = new decimal(-214748.3648);
+        public static readonly decimal SQL_SMALL_MONEY_MAX = new decimal(214748.3647);
 
 
         // HACK!!!
@@ -318,7 +318,7 @@ namespace System.Data.SqlClient
         public const int VARNULL = 0xffff;    // null value for character and binary types
         public const int MAXSIZE = 8000; // max size for any column
         public const byte FIXEDNULL = 0;
-        public const UInt64 UDTNULL = 0xffffffffffffffff;
+        public const ulong UDTNULL = 0xffffffffffffffff;
 
         // SQL Server Data Type Tokens.
         public const int SQLVOID = 0x1f;
@@ -525,9 +525,9 @@ namespace System.Data.SqlClient
         public const uint SNI_QUEUE_FULL = 1048576;		 // Packet queue is full
 
         // SNI flags
-        public const UInt32 SNI_SSL_VALIDATE_CERTIFICATE = 1;   // This enables validation of server certificate
-        public const UInt32 SNI_SSL_USE_SCHANNEL_CACHE = 2;     // This enables schannel session cache
-        public const UInt32 SNI_SSL_IGNORE_CHANNEL_BINDINGS = 0x10; // Used with SSL Provider, sent to SNIAddProvider in case of SQL Authentication & Encrypt.
+        public const uint SNI_SSL_VALIDATE_CERTIFICATE = 1;   // This enables validation of server certificate
+        public const uint SNI_SSL_USE_SCHANNEL_CACHE = 2;     // This enables schannel session cache
+        public const uint SNI_SSL_IGNORE_CHANNEL_BINDINGS = 0x10; // Used with SSL Provider, sent to SNIAddProvider in case of SQL Authentication & Encrypt.
 
         public const string DEFAULT_ENGLISH_CODE_PAGE_STRING = "iso_1";
         public const short DEFAULT_ENGLISH_CODE_PAGE_VALUE = 1252;
@@ -564,7 +564,7 @@ namespace System.Data.SqlClient
 
 
         // array copied directly from tdssort.h from luxor
-        public static readonly UInt16[] CODE_PAGE_FROM_SORT_ID = {
+        public static readonly ushort[] CODE_PAGE_FROM_SORT_ID = {
             0,      /*   0 */
             0,      /*   1 */
             0,      /*   2 */
@@ -848,7 +848,7 @@ namespace System.Data.SqlClient
         };
 
         // Date, Time, DateTime2, DateTimeOffset specific constants
-        internal static readonly Int64[] TICKS_FROM_SCALE = {
+        internal static readonly long[] TICKS_FROM_SCALE = {
             10000000,
             1000000,
             100000,
