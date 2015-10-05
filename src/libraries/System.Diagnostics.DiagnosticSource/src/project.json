@@ -2,7 +2,8 @@
   "dependencies": {
     "System.Diagnostics.Debug": "4.0.0",
     "System.Runtime": "4.0.0",
-    "System.Threading": "4.0.0"
+    "System.Threading": "4.0.0",
+    "System.Diagnostics.Tracing": "4.0.0"
   },
   "frameworks": {
     "dnxcore50": {}
