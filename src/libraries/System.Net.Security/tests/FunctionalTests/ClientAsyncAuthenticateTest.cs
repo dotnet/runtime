@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Net.Sockets;
@@ -33,6 +34,34 @@ namespace System.Net.Security.Tests
             SslProtocols.Tls12,
         };
 
+        public static IEnumerable<object[]> ProtocolMismatchData()
+        {
+            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(IOException) };
+            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls, typeof(IOException) };
+            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls11, typeof(IOException) };
+            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(IOException) };
+
+            yield return new object[] { SslProtocols.Ssl3, SslProtocols.Ssl2, typeof(IOException) };
+            yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls, typeof(IOException) };
+            yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls11, typeof(IOException) };
+            yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(IOException) };
+
+            yield return new object[] { SslProtocols.Tls, SslProtocols.Ssl2, typeof(IOException) };
+            yield return new object[] { SslProtocols.Tls, SslProtocols.Ssl3, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(IOException) };
+            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(IOException) };
+
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Ssl2, typeof(IOException) };
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Ssl3, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(IOException) };
+
+            yield return new object[] { SslProtocols.Tls12, SslProtocols.Ssl2, typeof(IOException) };
+            yield return new object[] { SslProtocols.Tls12, SslProtocols.Ssl3, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
+        }
+
         public ClientAsyncAuthenticateTest()
         {
             _log = TestLogging.GetInstance();
@@ -62,25 +91,11 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
-        public void ClientAsyncAuthenticate_MismatchProtocols_Fails()
+        [Theory]
+        [MemberData("ProtocolMismatchData")]
+        public void ClientAsyncAuthenticate_MismatchProtocols_Fails(SslProtocols server, SslProtocols client, Type expected)
         {
-            foreach (SslProtocols serverProtocol in s_eachSslProtocol)
-            {
-                foreach (SslProtocols clientProtocol in s_eachSslProtocol)
-                {
-                    if (serverProtocol != clientProtocol)
-                    {
-                        try
-                        {
-                            ClientAsyncSslHelper(serverProtocol, clientProtocol);
-                            Assert.True(false, serverProtocol + "; " + clientProtocol);
-                        }
-                        catch (AuthenticationException) { }
-                        catch (IOException) { }
-                    }
-                }
-            }
+            Assert.Throws(expected, () => ClientAsyncSslHelper(server, client));
         }
 
         [Fact]
@@ -198,7 +213,7 @@ namespace System.Net.Security.Tests
         {
             return true;  // allow everything
         }
+
         #endregion Helpers
     }
 }
-

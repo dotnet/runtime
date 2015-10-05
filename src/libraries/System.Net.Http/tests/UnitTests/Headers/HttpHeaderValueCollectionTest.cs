@@ -928,6 +928,7 @@ namespace System.Net.Http.Tests
             public MockHeaderParser(Type valueType)
                 : base(true)
             {
+                Assert.Contains(valueType, new[] { typeof(string), typeof(Uri) });
                 this.valueType = valueType;
             }
 
@@ -942,19 +943,7 @@ namespace System.Net.Http.Tests
                 index = value.Length;
 
                 // Just return the raw string (as string or Uri depending on the value type)
-                if (valueType == typeof(string))
-                {
-                    parsedValue = value;
-                }
-                else if (valueType == typeof(Uri))
-                {
-                    parsedValue = new Uri(value);
-                }
-                else
-                {
-                    Assert.True(false, string.Format("Parser: Unknown value type '{0}'", valueType.ToString()));
-                }
-
+                parsedValue = (valueType == typeof(Uri) ? (object)new Uri(value) : value);
                 return true;
             }
         }
