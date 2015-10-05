@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Globalization;
+using System.Diagnostics;
 
 namespace System.IO
 {
@@ -66,7 +66,7 @@ namespace System.IO
 
                 if (!_skipEmpty || _endIndex > _startIndex + 1)
                 {
-                   return true;
+                    return true;
                 }
             }
         }
@@ -105,57 +105,175 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as an Int32.</summary>
-        public int ParseNextInt32()
+        public unsafe int ParseNextInt32()
         {
-            int result;
-            if (!int.TryParse(MoveAndExtractNext(), NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
+            MoveNextOrFail();
+
+            bool negative = false;
+            int result = 0;
+
+            fixed (char* bufferPtr = _buffer)
             {
-                ThrowForInvalidData();
+                char* p = bufferPtr + _startIndex;
+                char* end = bufferPtr + _endIndex;
+
+                if (p == end)
+                {
+                    ThrowForInvalidData();
+                }
+
+                if (*p == '-')
+                {
+                    negative = true;
+                    p++;
+                    if (p == end)
+                    {
+                        ThrowForInvalidData();
+                    }
+                }
+
+                while (p != end)
+                {
+                    int d = *p - '0';
+                    if (d < 0 || d > 9)
+                    {
+                        ThrowForInvalidData();
+                    }
+                    result = checked((result * 10) + d);
+
+                    p++;
+                }
             }
+
+            if (negative)
+            {
+                result *= -1;
+            }
+
+            Debug.Assert(result == int.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
             return result;
         }
 
         /// <summary>Moves to the next component and parses it as an Int64.</summary>
-        public long ParseNextInt64()
+        public unsafe long ParseNextInt64()
         {
-            long result;
-            if (!long.TryParse(MoveAndExtractNext(), NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
+            MoveNextOrFail();
+
+            bool negative = false;
+            long result = 0;
+
+            fixed (char* bufferPtr = _buffer)
             {
-                ThrowForInvalidData();
+                char* p = bufferPtr + _startIndex;
+                char* end = bufferPtr + _endIndex;
+
+                if (p == end)
+                {
+                    ThrowForInvalidData();
+                }
+
+                if (*p == '-')
+                {
+                    negative = true;
+                    p++;
+                    if (p == end)
+                    {
+                        ThrowForInvalidData();
+                    }
+                }
+
+                while (p != end)
+                {
+                    int d = *p - '0';
+                    if (d < 0 || d > 9)
+                    {
+                        ThrowForInvalidData();
+                    }
+                    result = checked((result * 10) + d);
+
+                    p++;
+                }
             }
+
+            if (negative)
+            {
+                result *= -1;
+            }
+
+            Debug.Assert(result == long.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
             return result;
         }
 
         /// <summary>Moves to the next component and parses it as a UInt32.</summary>
-        public uint ParseNextUInt32()
+        public unsafe uint ParseNextUInt32()
         {
-            uint result;
-            if (!uint.TryParse(MoveAndExtractNext(), NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
+            MoveNextOrFail();
+            if (_startIndex == _endIndex)
             {
                 ThrowForInvalidData();
             }
+
+            uint result = 0;
+            fixed (char* bufferPtr = _buffer)
+            {
+                char* p = bufferPtr + _startIndex;
+                char* end = bufferPtr + _endIndex;
+                while (p != end)
+                {
+                    int d = *p - '0';
+                    if (d < 0 || d > 9)
+                    {
+                        ThrowForInvalidData();
+                    }
+                    result = (uint)checked((result * 10) + d);
+
+                    p++;
+                }
+            }
+
+            Debug.Assert(result == uint.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
             return result;
         }
 
         /// <summary>Moves to the next component and parses it as a UInt64.</summary>
-        public ulong ParseNextUInt64()
+        public unsafe ulong ParseNextUInt64()
         {
-            ulong result;
-            if (!ulong.TryParse(MoveAndExtractNext(), NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
+            MoveNextOrFail();
+
+            ulong result = 0;
+            fixed (char* bufferPtr = _buffer)
             {
-                ThrowForInvalidData();
+                char* p = bufferPtr + _startIndex;
+                char* end = bufferPtr + _endIndex;
+                while (p != end)
+                {
+                    int d = *p - '0';
+                    if (d < 0 || d > 9)
+                    {
+                        ThrowForInvalidData();
+                    }
+                    result = checked((result * 10ul) + (ulong)d);
+
+                    p++;
+                }
             }
+
+            Debug.Assert(result == ulong.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
             return result;
         }
 
         /// <summary>Moves to the next component and parses it as a Char.</summary>
         public char ParseNextChar()
         {
-            char result;
-            if (!char.TryParse(MoveAndExtractNext(), out result))
+            MoveNextOrFail();
+
+            if (_endIndex - _startIndex != 1)
             {
                 ThrowForInvalidData();
             }
+            char result = _buffer[_startIndex];
+
+            Debug.Assert(result == char.Parse(ExtractCurrent()), "Expected manually parsed result to match Parse result");
             return result;
         }
 

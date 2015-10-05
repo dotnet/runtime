@@ -1,15 +1,43 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
+        /// <summary>
+        /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
+        /// remote computer. These process resources share the specified process name.
+        /// </summary>
+        public static Process[] GetProcessesByName(string processName, string machineName)
+        {
+            ProcessManager.ThrowIfRemoteMachine(machineName);
+            if (processName == null)
+            {
+                processName = string.Empty;
+            }
+
+            var reusableReader = new ReusableTextReader();
+            var processes = new List<Process>();
+            foreach (int pid in ProcessManager.EnumerateProcessIds())
+            {
+                Interop.procfs.ParsedStat parsedStat;
+                if (Interop.procfs.TryReadStatFile(pid, out parsedStat, reusableReader) &&
+                    string.Equals(processName, parsedStat.comm, StringComparison.OrdinalIgnoreCase))
+                {
+                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(parsedStat, reusableReader);
+                    processes.Add(new Process(machineName, false, processInfo.ProcessId, processInfo));
+                }
+            }
+
+            return processes.ToArray();
+        }
+
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         public TimeSpan PrivilegedProcessorTime
         {
@@ -207,7 +235,12 @@ namespace System.Diagnostics
         private Interop.procfs.ParsedStat GetStat()
         {
             EnsureState(State.HaveId);
-            return Interop.procfs.ReadStatFile(_processId);
+            Interop.procfs.ParsedStat stat;
+            if (!Interop.procfs.TryReadStatFile(_processId, out stat, new ReusableTextReader()))
+            {
+                throw new Win32Exception(SR.ProcessInformationUnavailable);
+            }
+            return stat;
         }
 
     }

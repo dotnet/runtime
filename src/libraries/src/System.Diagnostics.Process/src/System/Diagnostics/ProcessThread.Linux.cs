@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.ComponentModel;
+using System.Text;
+
 namespace System.Diagnostics
 {
     public partial class ProcessThread
@@ -77,7 +80,12 @@ namespace System.Diagnostics
 
         private Interop.procfs.ParsedStat GetStat()
         {
-            return Interop.procfs.ReadStatFile(pid: _processId, tid: Id);
+            Interop.procfs.ParsedStat stat;
+            if (!Interop.procfs.TryReadStatFile(pid: _processId, tid: Id, result: out stat, reusableReader: new ReusableTextReader(Encoding.UTF8)))
+            {
+                throw new Win32Exception(SR.ProcessInformationUnavailable);
+            }
+            return stat;
         }
     }
 }

@@ -1,15 +1,41 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace System.Diagnostics
 {
     public partial class Process
     {
-        // The ri_proc_start_abstime needs to be converted to milliseconds to determine
-        // the actual start time of the process.
-        private const ulong MillisecondFactor = 100000000000;
+        /// <summary>
+        /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
+        /// remote computer. These process resources share the specified process name.
+        /// </summary>
+        public static Process[] GetProcessesByName(string processName, string machineName)
+        {
+            if (processName == null)
+            {
+                processName = string.Empty;
+            }
+
+            Process[] procs = GetProcesses(machineName);
+            var list = new List<Process>();
+
+            for (int i = 0; i < procs.Length; i++)
+            {
+                if (string.Equals(processName, procs[i].ProcessName, StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Add(procs[i]);
+                }
+                else
+                {
+                    procs[i].Dispose();
+                }
+            }
+
+            return list.ToArray();
+        }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         public TimeSpan PrivilegedProcessorTime
@@ -157,6 +183,10 @@ namespace System.Diagnostics
         // ----------------------------------
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
+
+        // The ri_proc_start_abstime needs to be converted to milliseconds to determine
+        // the actual start time of the process.
+        private const ulong MillisecondFactor = 100000000000;
 
         private Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
         {
