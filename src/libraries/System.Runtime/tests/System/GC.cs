@@ -270,43 +270,42 @@ public class GCTests
         }
     }
 
-    [ActiveIssue(2938)]
-    [Fact]
-    public static void GetTotalMemoryTest_NoForceCollection()
-    {
-        GC.Collect();
-
-        byte[] bytes = new byte[50000];
-        int genBefore = GC.GetGeneration(bytes);
-
-        Assert.True(GC.GetTotalMemory(false) >= bytes.Length);
-        Assert.True(GC.GetGeneration(bytes) == genBefore);
-    }
-
-    [ActiveIssue(2938)]
     [Fact]
     public static void GetTotalMemoryTest_ForceCollection()
     {
         GC.Collect();
 
-        byte[] bytes = new byte[50000];
-        int genBeforeGC = GC.GetGeneration(bytes);
+        int gen0 = GC.CollectionCount(0);
+        int gen1 = GC.CollectionCount(1);
+        int gen2 = GC.CollectionCount(2);
 
-        Assert.True(GC.GetTotalMemory(true) >= bytes.Length);
-        Assert.True(GC.GetGeneration(bytes) > genBeforeGC);
+        Assert.InRange(GC.GetTotalMemory(true), 1, long.MaxValue);
+
+        Assert.InRange(GC.CollectionCount(0), gen0 + 1, int.MaxValue);
+        Assert.InRange(GC.CollectionCount(1), gen1 + 1, int.MaxValue);
+        Assert.InRange(GC.CollectionCount(2), gen2 + 1, int.MaxValue);
+
+        // We don't test GetTotalMemory(false) at all because a collection
+        // could still occur even if not due to the GetTotalMemory call,
+        // and as such there's no way to validate the behavior.  We also
+        // don't verify a tighter bound for the result of GetTotalMemory
+        // because collections could cause significant fluctuations.
     }
 
-    [ActiveIssue(2938)]
     [Fact]
     public static void GetGenerationTest()
     {
         GC.Collect();
-        Version obj = new Version(1, 2);
+        object obj = new object();
 
-        for (int i = 0; i <= GC.MaxGeneration; i++)
+        for (int i = 0; i <= GC.MaxGeneration + 1; i++)
         {
-            Assert.Equal(i, GC.GetGeneration(obj));
+            Assert.InRange(GC.GetGeneration(obj), 0, GC.MaxGeneration);
             GC.Collect();
         }
+
+        // We don't test a tighter bound on GetGeneration as objects
+        // can actually get demoted or stay in the same generation
+        // across collections.
     }
 }
