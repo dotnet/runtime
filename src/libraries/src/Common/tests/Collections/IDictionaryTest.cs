@@ -28,12 +28,13 @@ namespace Tests.Collections
         public void KeysShouldBeCorrect(int count)
         {
             object[] items = GenerateItems(count);
-            IDictionary<TKey, TValue> dict = GetDictionary(items);
             var expectedKeys = new TKey[items.Length];
             for (int i = 0; i < items.Length; ++i)
             {
                 expectedKeys[i] = ((KeyValuePair<TKey, TValue>)items[i]).Key;
             }
+
+            IDictionary<TKey, TValue> dict = GetDictionary(items);
 
             CollectionAssert.Equal(expectedKeys, dict.Keys);
 
@@ -51,12 +52,13 @@ namespace Tests.Collections
         public void ValuesShouldBeCorrect(int count)
         {
             object[] items = GenerateItems(count);
-            IDictionary<TKey, TValue> dict = GetDictionary(items);
             var expectedValues = new TValue[items.Length];
             for (int i = 0; i < items.Length; ++i)
             {
                 expectedValues[i] = ((KeyValuePair<TKey, TValue>)items[i]).Value;
             }
+
+            IDictionary<TKey, TValue> dict = GetDictionary(items);
 
             CollectionAssert.Equal(expectedValues, dict.Values);
 
@@ -175,6 +177,7 @@ namespace Tests.Collections
                         Assert.Equal(pair.Key, entry.Key);
                         Assert.Equal(pair.Value, entry.Value);
                     }
+                    Assert.False(dictEnumerator.MoveNext());
                     dictEnumerator.Reset();
                     enumerator.Reset();
                 }

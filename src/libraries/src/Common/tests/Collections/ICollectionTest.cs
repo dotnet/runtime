@@ -307,10 +307,7 @@ namespace Tests.Collections
             ICollection<T> collection = GetCollection(items) as ICollection<T>;
             if (collection == null)
                 return;
-            foreach (var item in items)
-            {
-                Assert.True(collection.Contains((T)item));
-            }
+            Assert.All(items, item => Assert.True(collection.Contains((T) item)));
         }
 
         internal class MyInvalidReferenceType
