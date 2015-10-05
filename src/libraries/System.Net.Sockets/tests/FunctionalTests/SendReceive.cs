@@ -144,7 +144,7 @@ namespace System.Net.Sockets.Tests
             var receivedChecksums = new uint?[DatagramsToSend];
             int receivedDatagrams = 0;
 
-            var receiverTask = Task.Run(async () =>
+            Task receiverTask = Task.Run(async () =>
             {
                 for (; receivedDatagrams < DatagramsToSend; receivedDatagrams++)
                 {
@@ -167,7 +167,7 @@ namespace System.Net.Sockets.Tests
             var sentChecksums = new uint[DatagramsToSend];
             int sentDatagrams = 0;
 
-            var senderTask = Task.Run(async () =>
+            Task senderTask = Task.Run(async () =>
             {
                 var random = new Random();
                 var sendBuffer = new byte[DatagramSize];
@@ -393,7 +393,7 @@ namespace System.Net.Sockets.Tests
 
             int bytesReceived = 0;
             var receivedChecksum = new Fletcher32();
-            var serverTask = Task.Run(async () =>
+            Task serverTask = Task.Run(async () =>
             {
                 using (TcpClient remote = await listener.AcceptTcpClientAsync())
                 using (NetworkStream stream = remote.GetStream())
@@ -415,7 +415,7 @@ namespace System.Net.Sockets.Tests
 
             int bytesSent = 0;
             var sentChecksum = new Fletcher32();
-            var clientTask = Task.Run(async () =>
+            Task clientTask = Task.Run(async () =>
             {
                 var clientEndpoint = (IPEndPoint)listener.LocalEndpoint;
 
