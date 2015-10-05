@@ -1,17 +1,17 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information. 
 
+#ifndef __STACKSTRING_H_
+#define __STACKSTRING_H_
+
 #include "pal/malloc.hpp"
-#include "pal/dbgmsg.h"
 
-SET_DEFAULT_DEBUG_CHANNEL(MISC);
-
-template <SIZE_T STACKCOUNT>
+template <SIZE_T STACKCOUNT, class T>
 class StackString
 {
 private:
-    WCHAR m_innerBuffer[STACKCOUNT + 1];
-    WCHAR * m_buffer;
+    T m_innerBuffer[STACKCOUNT + 1];
+    T * m_buffer;
     SIZE_T m_count; // actual allocated count
 
     void NullTerminate()
@@ -31,10 +31,9 @@ private:
     void ReallocateBuffer(SIZE_T count)
     {
         // count is always > STACKCOUNT here.
-        WCHAR * newBuffer = (WCHAR *)PAL_malloc((count + 1) * sizeof(WCHAR));
+        T * newBuffer = (T *)PAL_malloc((count + 1) * sizeof(T));
         if (NULL == newBuffer)
         {
-            ERROR("malloc failed\n");
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
 
             DeleteBuffer();
@@ -84,24 +83,19 @@ private:
         Set(s);
     }
 
-    ~StackString()
-    {
-        DeleteBuffer();
-    }
-
 public:
     StackString()
-        : m_count(0), m_buffer(m_innerBuffer)
+        : m_buffer(m_innerBuffer), m_count(0)
     {
     }
 
-    BOOL Set(const WCHAR * buffer, SIZE_T count)
+    BOOL Set(const T * buffer, SIZE_T count)
     {
         Resize(count);
         if (NULL == m_buffer)
             return FALSE;
 
-        CopyMemory(m_buffer, buffer, (count + 1) * sizeof(WCHAR));
+        CopyMemory(m_buffer, buffer, (count + 1) * sizeof(T));
         NullTerminate();
         return TRUE;
     }
@@ -116,15 +110,15 @@ public:
         return m_count;
     }
 
-    CONST WCHAR * GetString() const
+    CONST T * GetString() const
     {
-        return (const WCHAR *)m_buffer;
+        return (const T *)m_buffer;
     }
 
-    WCHAR * OpenStringBuffer(SIZE_T count)
+    T * OpenStringBuffer(SIZE_T count)
     {
         Resize(count);
-        return (WCHAR *)m_buffer;
+        return (T *)m_buffer;
     }
 
     void CloseBuffer(SIZE_T count)
@@ -135,4 +129,18 @@ public:
         NullTerminate();
         return;
     }
+    
+    ~StackString()
+    {
+        DeleteBuffer();
+    }
 };
+
+#if _DEBUG
+typedef StackString<32, CHAR> PathCharString;
+typedef StackString<32, WCHAR> PathWCharString; 
+#else
+typedef StackString<260, CHAR> PathCharString;
+typedef StackString<260, WCHAR> PathWCharString; 
+#endif
+#endif
