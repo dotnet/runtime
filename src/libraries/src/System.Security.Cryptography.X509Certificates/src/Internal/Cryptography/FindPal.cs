@@ -242,9 +242,22 @@ namespace Internal.Cryptography.Pal
         internal static BigInteger PositiveBigIntegerFromByteArray(byte[] bytes)
         {
             // To prevent the big integer from misinterpreted as a negative number,
-            // add a "leading 0" to the byte array.
+            // add a "leading 0" to the byte array if it would considered negative.
+            //
             // Since BigInteger(bytes[]) requires a little-endian byte array,
             // the "leading 0" actually goes at the end of the array.
+
+            // An empty array is 0 (non-negative), so no over-allocation is required.
+            //
+            // If the last indexed value doesn't have the sign bit set (0x00-0x7F) then
+            // the number would be positive anyways, so no over-allocation is required.
+            if (bytes.Length == 0 || bytes[bytes.Length - 1] < 0x80)
+            {
+                return new BigInteger(bytes);
+            }
+
+            // Since the sign bit is set, put a new 0x00 on the end to move that bit from
+            // the sign bit to a data bit.
             byte[] newBytes = new byte[bytes.Length + 1];
             Array.Copy(bytes, 0, newBytes, 0, bytes.Length);
             return new BigInteger(newBytes);
