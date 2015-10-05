@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -119,7 +120,7 @@ internal static class Utils
         {
             if ((stringcompare.Equal != true) && (!string.IsNullOrEmpty(stringcompare.ErrorMessage)))
             {
-                Console.WriteLine("Basic basline XML comparison failed with the error : {0}\n. Running the smart XML comparer", stringcompare.ErrorMessage);
+                Debug.WriteLine("Basic basline XML comparison failed with the error : {0}\n. Running the smart XML comparer", stringcompare.ErrorMessage);
                 if (!SmartXmlCompare(expected, actual))
                 {
                     return new CompareResult { ErrorMessage = "XML comparision is also failing" };
@@ -200,7 +201,7 @@ internal static class Utils
                     actualXElement.Name.Namespace,
                     actualXElement.Name.LocalName
                     );
-            Console.WriteLine("Either padding is different or namespace is not matching.\n" + message);
+            Debug.WriteLine("Either padding is different or namespace is not matching.\n" + message);
 
             return false;
         }
@@ -211,7 +212,7 @@ internal static class Utils
 
         if (deskAtrs.Length != coreCLRAtrs.Length)
         {
-            Console.WriteLine("Number of attributes differ.Expected number of attributes are " + deskAtrs.Length.ToString() + " Actual number of attributes are " + coreCLRAtrs.Length.ToString());
+            Debug.WriteLine("Number of attributes differ.Expected number of attributes are " + deskAtrs.Length.ToString() + " Actual number of attributes are " + coreCLRAtrs.Length.ToString());
             return false;
         }
 
@@ -220,19 +221,19 @@ internal static class Utils
         {
             if (deskAtrs[i].IsNamespaceDeclaration != coreCLRAtrs[i].IsNamespaceDeclaration)
             {
-                Console.WriteLine("Either expected attribute {0} is not namespace declaration or actual attribute {1}", deskAtrs[i].ToString(), coreCLRAtrs[i].ToString());
+                Debug.WriteLine("Either expected attribute {0} is not namespace declaration or actual attribute {1}", deskAtrs[i].ToString(), coreCLRAtrs[i].ToString());
                 return false;
             }
             if (deskAtrs[i].IsNamespaceDeclaration)
             {
                 if (0 != String.Compare(deskAtrs[i].Name.NamespaceName, coreCLRAtrs[i].Name.NamespaceName))
                 {
-                    Console.WriteLine("Namspaces are different.Expected {0} namespace doesn't match with actual {1} namespace ", deskAtrs[i].Name.NamespaceName, coreCLRAtrs[i].Name.NamespaceName);
+                    Debug.WriteLine("Namspaces are different.Expected {0} namespace doesn't match with actual {1} namespace ", deskAtrs[i].Name.NamespaceName, coreCLRAtrs[i].Name.NamespaceName);
                     return false;
                 }
                 if (0 != String.Compare(deskAtrs[i].Value, coreCLRAtrs[i].Value))
                 {
-                    Console.WriteLine("Attribute values are different. Expected {0} attribute values doesn't match with actual {1} attribute value.", deskAtrs[i].Value, coreCLRAtrs[i].Value);
+                    Debug.WriteLine("Attribute values are different. Expected {0} attribute values doesn't match with actual {1} attribute value.", deskAtrs[i].Value, coreCLRAtrs[i].Value);
                     return false;
                 }
 
@@ -244,7 +245,7 @@ internal static class Utils
             {
                 if (!deskAtrs[i].Name.Equals(coreCLRAtrs[i].Name))
                 {
-                    Console.WriteLine("Attribute names are different. Expected name is {0} but actual name is {1}", deskAtrs[i].Name, coreCLRAtrs[i].Name);
+                    Debug.WriteLine("Attribute names are different. Expected name is {0} but actual name is {1}", deskAtrs[i].Name, coreCLRAtrs[i].Name);
                     return false;
                 }
 
@@ -258,7 +259,7 @@ internal static class Utils
                         XNamespace coreclrns = actualXElement.GetNamespaceOfPrefix(coreCLRPrefix);
                         if (!deskns.Equals(coreclrns))
                         {
-                            Console.WriteLine("XML namespace of attribute is different. Expected is {0} but actual is {1}", deskns.NamespaceName, coreclrns.NamespaceName);
+                            Debug.WriteLine("XML namespace of attribute is different. Expected is {0} but actual is {1}", deskns.NamespaceName, coreclrns.NamespaceName);
                             return false;
                         }
                         // Update the dictionaries
@@ -267,7 +268,7 @@ internal static class Utils
                     }
                     else
                     {
-                        Console.WriteLine("Either expected {0} or actual {1} attribute value doesn't have prefix :", deskAtrs[i].Value, coreCLRAtrs[i].Value);
+                        Debug.WriteLine("Either expected {0} or actual {1} attribute value doesn't have prefix :", deskAtrs[i].Value, coreCLRAtrs[i].Value);
                         return false;
                     }
                 }
@@ -322,10 +323,10 @@ internal static class Utils
                     }
                 }
             }
-            Console.WriteLine("Attribute value {0} has empty prefix value before :", coreCLRElemValue);
+            Debug.WriteLine("Attribute value {0} has empty prefix value before :", coreCLRElemValue);
             return false;
         }
-        Console.WriteLine("Attribute value {0} has empty prefix value before :", deskElemValue);
+        Debug.WriteLine("Attribute value {0} has empty prefix value before :", deskElemValue);
         return false;
     }
 
@@ -341,7 +342,7 @@ internal static class Utils
         {
             localPrefix = String.Empty;
         }
-        Console.WriteLine("Given attribute value {0} does not have any prefix value before :", atrValue);
+        Debug.WriteLine("Given attribute value {0} does not have any prefix value before :", atrValue);
         return false;
     }
 }
