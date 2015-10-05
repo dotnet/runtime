@@ -17,11 +17,6 @@
     <Compile Include="DataContractJsonSerializer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Console.cs">
-      <Link>Common\System\Console.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
       <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
       <Name>System.Private.DataContractSerialization</Name>
