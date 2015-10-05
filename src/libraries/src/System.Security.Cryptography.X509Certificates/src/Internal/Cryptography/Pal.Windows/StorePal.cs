@@ -73,7 +73,7 @@ namespace Internal.Cryptography.Pal
             get { return _certStore; }
         }
 
-        private StorePal(SafeCertStoreHandle certStore)
+        internal StorePal(SafeCertStoreHandle certStore)
         {
             _certStore = certStore;
         }

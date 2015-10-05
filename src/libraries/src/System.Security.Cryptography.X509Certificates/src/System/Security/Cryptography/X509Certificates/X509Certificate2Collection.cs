@@ -119,12 +119,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (findValue == null)
                 throw new ArgumentNullException("findValue");
 
-            X509Certificate2Collection collection = new X509Certificate2Collection();
-            using (IStorePal storePal = StorePal.LinkFromCertificateCollection(this))
-            {
-                storePal.FindAndCopyTo(findType, findValue, validOnly, collection);
-            }
-            return collection;
+            return FindPal.FindFromCollection(this, findType, findValue, validOnly);
         }
 
         public new X509Certificate2Enumerator GetEnumerator()
