@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -1782,7 +1783,7 @@ public static class DataContractSerializerTests
             dcs = (settings != null) ? new DataContractSerializer(typeof(T), settings) : new DataContractSerializer(typeof(T));
         }
 
-        Console.WriteLine("Testing string to deserialize: {0}", stringToDeserialize);
+        Debug.WriteLine("Testing string to deserialize: {0}", stringToDeserialize);
 
         byte[] bytesToDeserialize = Encoding.UTF8.GetBytes(stringToDeserialize);
         using (MemoryStream ms = new MemoryStream(bytesToDeserialize))
@@ -1799,7 +1800,7 @@ public static class DataContractSerializerTests
             {
                 if (shouldReportDeserializationExceptions)
                 {
-                    Console.WriteLine("Error deserializing value - could not create type {0}", typeof(T).ToString());
+                    Debug.WriteLine("Error deserializing value - could not create type {0}", typeof(T).ToString());
                 }
                 throw;
             }
