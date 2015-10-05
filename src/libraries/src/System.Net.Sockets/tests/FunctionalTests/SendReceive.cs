@@ -125,6 +125,77 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        private static void SendToRecvFromAsync_UdpClient_Datagram_UDP(IPAddress leftAddress, IPAddress rightAddress)
+        {
+            const int DatagramSize = 256;
+            const int DatagramsToSend = 256;
+            const int AckTimeout = 1000;
+            const int TestTimeout = 30000;
+
+            var left = new UdpClient(new IPEndPoint(leftAddress, 0));
+            var right = new UdpClient(new IPEndPoint(rightAddress, 0));
+
+            var leftEndpoint = (IPEndPoint)left.Client.LocalEndPoint;
+            var rightEndpoint = (IPEndPoint)right.Client.LocalEndPoint;
+
+            var receiverAck = new ManualResetEventSlim();
+            var senderAck = new ManualResetEventSlim();
+
+            var receivedChecksums = new uint?[DatagramsToSend];
+            int receivedDatagrams = 0;
+
+            var receiverTask = Task.Run(async () =>
+            {
+                for (; receivedDatagrams < DatagramsToSend; receivedDatagrams++)
+                {
+                    UdpReceiveResult result = await left.ReceiveAsync();
+
+                    receiverAck.Set();
+                    Assert.True(senderAck.Wait(AckTimeout));
+                    senderAck.Reset();
+
+                    Assert.Equal(DatagramSize, result.Buffer.Length);
+                    Assert.Equal(rightEndpoint, result.RemoteEndPoint);
+
+                    int datagramId = (int)result.Buffer[0];
+                    Assert.Null(receivedChecksums[datagramId]);
+
+                    receivedChecksums[datagramId] = Fletcher32.Checksum(result.Buffer, 0, result.Buffer.Length);
+                }
+            });
+
+            var sentChecksums = new uint[DatagramsToSend];
+            int sentDatagrams = 0;
+
+            Task.Run(async () =>
+            {
+                var random = new Random();
+                var sendBuffer = new byte[DatagramSize];
+
+                for (; sentDatagrams < DatagramsToSend; sentDatagrams++)
+                {
+                    random.NextBytes(sendBuffer);
+                    sendBuffer[0] = (byte)sentDatagrams;
+
+                    int sent = await right.SendAsync(sendBuffer, DatagramSize, leftEndpoint);
+
+                    Assert.True(receiverAck.Wait(AckTimeout));
+                    receiverAck.Reset();
+                    senderAck.Set();
+
+                    Assert.Equal(DatagramSize, sent);
+                    sentChecksums[sentDatagrams] = Fletcher32.Checksum(sendBuffer, 0, sent);
+                }
+            });
+
+            Assert.True(receiverTask.Wait(TestTimeout));
+            for (int i = 0; i < DatagramsToSend; i++)
+            {
+                Assert.NotNull(receivedChecksums[i]);
+                Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
+            }
+        }
+
         private static void SendRecvAsync_Stream_TCP(IPAddress listenAt, bool useMultipleBuffers)
         {
             const int BytesToSend = 123456;
@@ -310,6 +381,74 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
         }
 
+        private static void SendRecvAsync_TcpListener_TcpClient(IPAddress listenAt)
+        {
+            const int BytesToSend = 123456;
+            const int ListenBacklog = 1;
+            const int LingerTime = 10;
+            const int TestTimeout = 30000;
+
+            var listener = new TcpListener(listenAt, 0);
+            listener.Start(ListenBacklog);
+
+            int bytesReceived = 0;
+            var receivedChecksum = new Fletcher32();
+            var serverTask = Task.Run(async () =>
+            {
+                using (TcpClient remote = await listener.AcceptTcpClientAsync())
+                using (NetworkStream stream = remote.GetStream())
+                {
+                    var recvBuffer = new byte[256];
+                    for (;;)
+                    {
+                        int received = await stream.ReadAsync(recvBuffer, 0, recvBuffer.Length);
+                        if (received == 0)
+                        {
+                            break;
+                        }
+
+                        bytesReceived += received;
+                        receivedChecksum.Add(recvBuffer, 0, received);
+                    }
+                }
+            });
+
+            int bytesSent = 0;
+            var sentChecksum = new Fletcher32();
+            Task.Run(async () =>
+            {
+                var clientEndpoint = (IPEndPoint)listener.LocalEndpoint;
+
+                using (var client = new TcpClient(clientEndpoint.AddressFamily))
+                {
+                    await client.ConnectAsync(clientEndpoint.Address, clientEndpoint.Port);
+
+                    using (NetworkStream stream = client.GetStream())
+                    {
+                        var random = new Random();
+                        var sendBuffer = new byte[512];
+                        for (int remaining = BytesToSend, sent = 0; remaining > 0; remaining -= sent)
+                        {
+                            random.NextBytes(sendBuffer);
+
+                            sent = Math.Min(sendBuffer.Length, remaining);
+                            await stream.WriteAsync(sendBuffer, 0, sent);
+
+                            bytesSent += sent;
+                            sentChecksum.Add(sendBuffer, 0, sent);
+                        }
+
+                        client.LingerState = new LingerOption(true, LingerTime);
+                    }
+                }
+            });
+
+            Assert.True(serverTask.Wait(TestTimeout));
+
+            Assert.Equal(bytesSent, bytesReceived);
+            Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
+        }
+
         [ActiveIssue(3610)]
         [Fact]
         public void SendToRecvFromAsync_Single_Datagram_UDP_IPv6()
@@ -322,6 +461,20 @@ namespace System.Net.Sockets.Tests
         public void SendToRecvFromAsync_Single_Datagram_UDP_IPv4()
         {
             SendToRecvFromAsync_Datagram_UDP(IPAddress.Loopback, IPAddress.Loopback);
+        }
+
+        [ActiveIssue(3610)]
+        [Fact]
+        public void SendToRecvFromAsync_UdpClient_Single_Datagram_UDP_IPv6()
+        {
+            SendToRecvFromAsync_UdpClient_Datagram_UDP(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
+        }
+
+        [ActiveIssue(3610)]
+        [Fact]
+        public void SendToRecvFromAsync_UdpClient_Single_Datagram_UDP_IPv4()
+        {
+            SendToRecvFromAsync_UdpClient_Datagram_UDP(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
@@ -337,6 +490,12 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void SendRecvAsync_TcpListener_TcpClient_IPv6()
+        {
+            SendRecvAsync_TcpListener_TcpClient(IPAddress.IPv6Loopback);
+        }
+
+        [Fact]
         public void SendRecvAsync_Multiple_Stream_TCP_IPv4()
         {
             SendRecvAsync_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: true);
@@ -346,6 +505,12 @@ namespace System.Net.Sockets.Tests
         public void SendRecvAsync_Single_Stream_TCP_IPv4()
         {
             SendRecvAsync_Stream_TCP(IPAddress.Loopback, useMultipleBuffers: false);
+        }
+
+        [Fact]
+        public void SendRecvAsync_TcpListener_TcpClient_IPv4()
+        {
+            SendRecvAsync_TcpListener_TcpClient(IPAddress.Loopback);
         }
     }
 }
