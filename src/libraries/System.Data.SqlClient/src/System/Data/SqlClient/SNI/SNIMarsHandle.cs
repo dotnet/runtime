@@ -7,7 +7,6 @@ using System.Threading;
 
 namespace System.Data.SqlClient.SNI
 {
-
     /// <summary>
     /// MARS handle
     /// </summary>
@@ -181,7 +180,6 @@ namespace System.Data.SqlClient.SNI
                 {
                     _ackEvent.Reset();
                 }
-
             }
 
             return _connection.Send(GetSMUXEncapsulatedPacket(packet));
@@ -305,7 +303,6 @@ namespace System.Data.SqlClient.SNI
                 {
                     _packetEvent.Reset();
                 }
-
             }
 
             lock (this)

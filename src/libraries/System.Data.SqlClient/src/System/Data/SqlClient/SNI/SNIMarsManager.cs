@@ -49,8 +49,5 @@ namespace System.Data.SqlClient.SNI
         {
             return _connections[lowerHandle];
         }
-#if !PROJECTK
-        // TODO: Remove MARS connection
-#endif
     }
 }

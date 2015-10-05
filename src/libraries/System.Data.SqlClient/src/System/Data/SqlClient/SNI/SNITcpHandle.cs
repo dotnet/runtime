@@ -156,11 +156,11 @@ namespace System.Data.SqlClient.SNI
                 _sslStream.AuthenticateAsClient(_targetServer);
                 _sslOverTdsStream.FinishHandshake();
             }
-            catch(AuthenticationException aue)
+            catch (AuthenticationException aue)
             {
                 return ReportTcpSNIError(aue.Message);
             }
-            catch(InvalidOperationException ioe)
+            catch (InvalidOperationException ioe)
             {
                 return ReportTcpSNIError(ioe.Message);
             }
@@ -192,7 +192,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>True if certificate is valid</returns>
         private bool ValidateServerCertificate(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors policyErrors)
         {
-            if(!_validateCert)
+            if (!_validateCert)
             {
                 return true;
             }
@@ -395,11 +395,11 @@ namespace System.Data.SqlClient.SNI
                     return TdsEnums.SNI_ERROR;
                 }
             }
-            catch(SocketException se)
+            catch (SocketException se)
             {
                 return ReportTcpSNIError(se.Message);
             }
-            catch(ObjectDisposedException ode)
+            catch (ObjectDisposedException ode)
             {
                 return ReportTcpSNIError(ode.Message);
             }

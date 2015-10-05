@@ -48,10 +48,7 @@ namespace System.Data.SqlClient.SNI
         public override int Read(byte[] buffer, int offset, int count)
         {
             int readBytes;
-#if !PROJECTK
-            // TODO: cache
-#endif
-            byte[] scratch = new byte[count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count]; 
+            byte[] scratch = new byte[count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count];
 
             if (_encapsulate)
             {
