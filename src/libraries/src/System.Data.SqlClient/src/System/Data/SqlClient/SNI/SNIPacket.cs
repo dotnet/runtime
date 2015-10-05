@@ -17,7 +17,7 @@ namespace System.Data.SqlClient.SNI
         private int _capacity;
         private int _offset;
         private string _description;
-        SNIAsyncCallback _completionCallback;
+        private SNIAsyncCallback _completionCallback;
 
         /// <summary>
         /// Constructor
@@ -25,7 +25,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="handle">Owning SNI handle</param>
         public SNIPacket(SNIHandle handle)
         {
-            this._offset = 0;
+            _offset = 0;
         }
 
         /// <summary>
@@ -258,15 +258,15 @@ namespace System.Data.SqlClient.SNI
                     }
                 }
 
-                if(error)
+                if (error)
                 {
                     this.Release();
                 }
 
                 callback(this, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
-            }, 
-            CancellationToken.None, 
-            TaskContinuationOptions.DenyChildAttach, 
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.DenyChildAttach,
             TaskScheduler.Default);
         }
 

@@ -14,7 +14,7 @@ namespace System.Data.SqlClient.SNI
     {
         private readonly Guid _connectionId = Guid.NewGuid();
         private readonly Dictionary<int, SNIMarsHandle> _sessions = new Dictionary<int, SNIMarsHandle>();
-        private readonly byte[] headerBytes = new byte[SNISMUXHeader.HEADER_LENGTH];
+        private readonly byte[] _headerBytes = new byte[SNISMUXHeader.HEADER_LENGTH];
 
         private SNIHandle _lowerHandle;
         private ushort _nextSessionId = 0;
@@ -180,7 +180,7 @@ namespace System.Data.SqlClient.SNI
 
                         while (_currentHeaderByteCount != SNISMUXHeader.HEADER_LENGTH)
                         {
-                            int bytesTaken = packet.TakeData(headerBytes, _currentHeaderByteCount, SNISMUXHeader.HEADER_LENGTH - _currentHeaderByteCount);
+                            int bytesTaken = packet.TakeData(_headerBytes, _currentHeaderByteCount, SNISMUXHeader.HEADER_LENGTH - _currentHeaderByteCount);
                             _currentHeaderByteCount += bytesTaken;
 
                             if (bytesTaken == 0)
@@ -199,12 +199,12 @@ namespace System.Data.SqlClient.SNI
 
                         _currentHeader = new SNISMUXHeader()
                         {
-                            SMID = headerBytes[0],
-                            flags = headerBytes[1],
-                            sessionId = BitConverter.ToUInt16(headerBytes, 2),
-                            length = BitConverter.ToUInt32(headerBytes, 4) - SNISMUXHeader.HEADER_LENGTH,
-                            sequenceNumber = BitConverter.ToUInt32(headerBytes, 8),
-                            highwater = BitConverter.ToUInt32(headerBytes, 12)
+                            SMID = _headerBytes[0],
+                            flags = _headerBytes[1],
+                            sessionId = BitConverter.ToUInt16(_headerBytes, 2),
+                            length = BitConverter.ToUInt32(_headerBytes, 4) - SNISMUXHeader.HEADER_LENGTH,
+                            sequenceNumber = BitConverter.ToUInt32(_headerBytes, 8),
+                            highwater = BitConverter.ToUInt32(_headerBytes, 12)
                         };
 
                         _dataBytesLeft = (int)_currentHeader.length;
@@ -215,7 +215,6 @@ namespace System.Data.SqlClient.SNI
                         {
                             _sessions.Remove(_currentHeader.sessionId);
                         }
-
                     }
 
                     currentHeader = _currentHeader;
@@ -270,10 +269,6 @@ namespace System.Data.SqlClient.SNI
                     }
                     catch (Exception e)
                     {
-#if !PROJECTK
-                        // TODO: handle
-                        //Console.WriteLine("Exception {0}", e.Message);
-#endif
                         SNICommon.ReportSNIError(SNIProviders.TCP_PROV, 0, 0, e.Message);
                     }
                 }
