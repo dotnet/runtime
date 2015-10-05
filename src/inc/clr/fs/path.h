@@ -36,6 +36,25 @@ namespace clr
         class Path
         {
         public:
+#if !PLATFORM_UNIX
+            static const CHAR DirectorySeparatorChar = '\\';
+#else // PLATFORM_UNIX
+            static const CHAR DirectorySeparatorChar = '/';
+#endif
+
+#if !PLATFORM_UNIX
+            static const CHAR PathSeparatorChar = ';';
+#else // PLATFORM_UNIX
+            static const CHAR PathSeparatorChar = ':';
+#endif // !PLATFORM_UNIX
+
+#if !PLATFORM_UNIX
+            static const CHAR VolumeSeparatorChar = ':';
+#else // PLATFORM_UNIX
+            static const CHAR VolumeSeparatorChar = '/';
+#endif // !PLATFORM_UNIX
+
+        public:
             //-----------------------------------------------------------------------------------------
             static inline bool
             Exists(
@@ -55,35 +74,40 @@ namespace clr
             }
 
             //-----------------------------------------------------------------------------------------
-            static inline bool
-            HasUncPrefix(LPCWSTR wzPath)
-            {
-                _ASSERTE(!clr::str::IsNullOrEmpty(wzPath)); // Must check this first.
-                return wzPath[0] != W('\0') && wzPath[0] == W('\\')
-                    && wzPath[1] != W('\0') && wzPath[1] == W('\\')
-                    && wzPath[2] != W('\0') && wzPath[2] != W('?');
-            }
-
-            //-----------------------------------------------------------------------------------------
-            static inline bool
-            HasDrivePrefix(LPCWSTR wzPath)
-            {
-                _ASSERTE(!clr::str::IsNullOrEmpty(wzPath)); // Must check this first.
-                return wzPath[0] != W('\0')
-                    && wzPath[1] != W('\0') && wzPath[1] == W(':')
-                    && ((wzPath[0] >= W('a') && wzPath[0] <= W('z')) ||
-                        (wzPath[0] >= W('A') && wzPath[0] <= W('Z')));
-            }
-
-            //-----------------------------------------------------------------------------------------
             // Returns true if wzPath represents a relative path.
             static inline bool
             IsRelative(LPCWSTR wzPath)
             {
-                _ASSERTE(!clr::str::IsNullOrEmpty(wzPath)); // Must check this first.
-                return !HasLongFormatPrefix(wzPath)
-                    && !HasUncPrefix(wzPath)
-                    && (!HasDrivePrefix(wzPath) || wzPath[2] != W('\\'));
+                _ASSERTE(wzPath != nullptr);
+
+                // Similar to System.IO.Path.IsRelative()
+#if PLATFORM_UNIX
+                if(wzPath[0] == VolumeSeparatorChar)
+                {
+                    return false;
+                }
+#else
+                // Check for a paths like "C:\..." or "\\...". Additional notes:
+                // - "\\?\..." - long format paths are considered as absolute paths due to the "\\" prefix
+                // - "\..." - these paths are relative, as they depend on the current drive
+                // - "C:..." and not "C:\..." - these paths are relative, as they depend on the current directory for drive C
+                if (wzPath[0] != W('\0') &&
+                    wzPath[1] == VolumeSeparatorChar &&
+                    wzPath[2] == DirectorySeparatorChar &&
+                    (
+                        (wzPath[0] >= W('A') && wzPath[0] <= W('Z')) ||
+                        (wzPath[0] >= W('a') && wzPath[0] <= W('z'))
+                    ))
+                {
+                    return false;
+                }
+                if(wzPath[0] == DirectorySeparatorChar && wzPath[1] == DirectorySeparatorChar)
+                {
+                    return false;
+                }
+#endif
+
+                return true;
             }
 
             //-----------------------------------------------------------------------------------------
@@ -105,7 +129,8 @@ namespace clr
                 size_t cchBuf = *pcchBuffer;
 
                 IfFailRet(StringCchCopyExW(wzBuf, cchBuf, wzPathLeft, &wzBuf, &cchBuf, STRSAFE_NULL_ON_FAILURE));
-                IfFailRet(StringCchCatExW(wzBuf, cchBuf, wzBuf[-1] == W('\\') ? W("") : W("\\"), &wzBuf, &cchBuf, STRSAFE_NULL_ON_FAILURE));
+                const WCHAR directorySeparatorWString[] = {DirectorySeparatorChar, W('\0')};
+                IfFailRet(StringCchCatExW(wzBuf, cchBuf, wzBuf[-1] == DirectorySeparatorChar ? W("") : directorySeparatorWString, &wzBuf, &cchBuf, STRSAFE_NULL_ON_FAILURE));
                 IfFailRet(StringCchCatExW(wzBuf, cchBuf, wzPathRight, &wzBuf, &cchBuf, STRSAFE_NULL_ON_FAILURE));
 
                 return S_OK;

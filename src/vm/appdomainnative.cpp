@@ -31,6 +31,8 @@
 #include "../binder/inc/clrprivbindercoreclr.h"
 #endif
 
+#include "clr/fs/path.h"
+using namespace clr::fs;
 
 //************************************************************************
 inline AppDomain *AppDomainNative::ValidateArg(APPDOMAINREF pThis)
@@ -1578,7 +1580,7 @@ void QCALLTYPE AppDomainNative::SetNativeDllSearchDirectories(__in_z LPCWSTR wsz
         while (itr != end)
         {
             start = itr;
-            BOOL found = sDirectories.Find(itr, W(';'));
+            BOOL found = sDirectories.Find(itr, Path::PathSeparatorChar);
             if (!found)
             {
                 itr = end;
@@ -1595,9 +1597,9 @@ void QCALLTYPE AppDomainNative::SetNativeDllSearchDirectories(__in_z LPCWSTR wsz
 
             if (len > 0)
             {
-                if (qualifiedPath[len-1]!='\\')
+                if (qualifiedPath[len - 1] != Path::DirectorySeparatorChar)
                 {
-                    qualifiedPath.Append('\\');
+                    qualifiedPath.Append(Path::DirectorySeparatorChar);
                 }
 
                 NewHolder<SString> stringHolder (new SString(qualifiedPath));
