@@ -95,11 +95,11 @@ namespace Internal.Cryptography.Pal
                 delegate(SafeCertContextHandle pCertContext)
                 {
                     byte[] actual = pCertContext.CertContext->pCertInfo->SerialNumber.ToByteArray();
+                    GC.KeepAlive(pCertContext);
 
                     // Convert to BigInteger as the comparison must not fail due to spurious leading zeros
                     BigInteger actualAsBigInteger = PositiveBigIntegerFromByteArray(actual);
 
-                    GC.KeepAlive(pCertContext);
                     return hexValue.Equals(actualAsBigInteger) || decimalValue.Equals(actualAsBigInteger);
                 });
         }
@@ -315,12 +315,9 @@ namespace Internal.Cryptography.Pal
             _storePal.Dispose();
         }
 
-        private void FindCore(Func<SafeCertContextHandle, bool> filter)
+        private unsafe void FindCore(Func<SafeCertContextHandle, bool> filter)
         {
-            unsafe
-            {
-                FindCore(CertFindType.CERT_FIND_ANY, null, filter);
-            }
+            FindCore(CertFindType.CERT_FIND_ANY, null, filter);
         }
 
         private unsafe void FindCore(CertFindType dwFindType, void* pvFindPara, Func<SafeCertContextHandle, bool> filter = null)
@@ -332,7 +329,7 @@ namespace Internal.Cryptography.Pal
                 CertStoreFlags.CERT_STORE_ENUM_ARCHIVED_FLAG | CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG,
                 null);
             if (findResults.IsInvalid)
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException(); ;
+                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
             SafeCertContextHandle pCertContext = null;
             while (Interop.crypt32.CertFindCertificateInStore(_storePal.SafeCertStoreHandle, dwFindType, pvFindPara, ref pCertContext))
@@ -378,7 +375,7 @@ namespace Internal.Cryptography.Pal
             {
                 Exception verificationException;
                 bool? verified = chainPal.Verify(X509VerificationFlags.NoFlag, out verificationException);
-                if (!(verified.HasValue && verified.Value))
+                if (!verified.GetValueOrDefault())
                     return false;
             }
 
