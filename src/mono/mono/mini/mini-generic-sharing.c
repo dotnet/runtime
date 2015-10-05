@@ -2800,7 +2800,7 @@ get_shared_gparam (MonoType *t, MonoType *constraint)
 	}
 	copy->owner = NULL;
 	// FIXME:
-	copy->image = mono_defaults.corlib;
+	copy->image = image ? image : mono_defaults.corlib;
 
 	copy->gshared_constraint = constraint;
 	res = mono_metadata_type_dup (NULL, t);
