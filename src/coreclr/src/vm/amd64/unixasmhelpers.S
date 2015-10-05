@@ -315,9 +315,8 @@ LEAF_ENTRY StartUnwindingNativeFrames, _TEXT
 
         // Store return address to the stack
         push_register rax
-        push_nonvol_reg rbp
         // The PAL_SEHException pointer
         mov     rdi, rsi 
-        call    EXTERNAL_C_FUNC(ThrowExceptionHelper)
+        jmp     EXTERNAL_C_FUNC(ThrowExceptionHelper)
 LEAF_END StartUnwindingNativeFrames, _TEXT
 
