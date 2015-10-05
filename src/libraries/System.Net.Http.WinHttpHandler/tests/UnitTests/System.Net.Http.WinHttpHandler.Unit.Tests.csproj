@@ -72,11 +72,14 @@
   
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="APICallHistory.cs" />
+    <Compile Include="ClientCertificateHelper.cs" />
+    <Compile Include="ClientCertificateScenarioTest.cs" />
     <Compile Include="FakeInterop.cs" />
     <Compile Include="FakeMarshal.cs" />
     <Compile Include="FakeRegistry.cs" />
     <Compile Include="FakeSafeWinHttpHandle.cs" />
     <Compile Include="SafeWinHttpHandleTest.cs" />
+    <Compile Include="SendRequestHelper.cs" />
     <Compile Include="TestServer.cs" />
     <Compile Include="TestControl.cs" />
     <Compile Include="WinHttpHandlerTest.cs" />

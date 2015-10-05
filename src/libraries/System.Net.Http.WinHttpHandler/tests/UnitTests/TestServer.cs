@@ -12,6 +12,10 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 {
     public static class TestServer
     {
+        public const string ExpectedResponseBody = "This is the response body.";
+        public const string FakeServerEndpoint = "http://www.contoso.com/";
+        public const string FakeSecureServerEndpoint = "https://www.contoso.com/";
+
         private static MemoryStream requestBody = null;
         private static MemoryStream responseBody = null;
         private static string responseHeaders = null;
