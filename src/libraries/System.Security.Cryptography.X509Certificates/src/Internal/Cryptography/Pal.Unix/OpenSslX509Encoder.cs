@@ -25,7 +25,13 @@ namespace Internal.Cryptography.Pal
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
         }
 
-        public unsafe string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)
+        public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flags)
+        {
+            OpenSslX09NameFormatFlags nativeFlags = ConvertFormatFlags(flags);
+            return X500DistinguishedNameDecode(encodedDistinguishedName, nativeFlags);
+        }
+
+        internal static unsafe string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, OpenSslX09NameFormatFlags nativeFlags)
         {
             using (SafeX509NameHandle x509Name = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_X509_NAME, encodedDistinguishedName))
             {
@@ -34,8 +40,6 @@ namespace Internal.Cryptography.Pal
                 using (SafeBioHandle bioHandle = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
                 {
                     Interop.libcrypto.CheckValidOpenSslHandle(bioHandle);
-                    
-                    OpenSslX09NameFormatFlags nativeFlags = ConvertFormatFlags(flag);
 
                     int written = Interop.libcrypto.X509_NAME_print_ex(
                         bioHandle,
@@ -218,13 +222,18 @@ namespace Internal.Cryptography.Pal
             throw new NotImplementedException();
         }
 
-        public unsafe void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
+        public void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
+        {
+            subjectKeyIdentifier = DecodeX509SubjectKeyIdentifierExtension(encoded);
+        }
+
+        internal static unsafe byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
         {
             using (SafeAsn1OctetStringHandle octetString = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_ASN1_OCTET_STRING, encoded))
             {
                 Interop.libcrypto.CheckValidOpenSslHandle(octetString);
 
-                subjectKeyIdentifier = Interop.Crypto.GetAsn1StringBytes(octetString.DangerousGetHandle());
+                return Interop.Crypto.GetAsn1StringBytes(octetString.DangerousGetHandle());
             }
         }
 
@@ -291,7 +300,7 @@ namespace Internal.Cryptography.Pal
         }
 
         [Flags]
-        private enum OpenSslX09NameFormatFlags : uint
+        internal enum OpenSslX09NameFormatFlags : uint
         {
             XN_FLAG_SEP_MASK = (0xf << 16),
 
