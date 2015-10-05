@@ -56,6 +56,9 @@
 #include "fxretarget.h"
 #endif
 
+#include "clr/fs/path.h"
+using namespace clr::fs;
+
 // remove when we get an updated SDK
 #define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
 #define LOAD_LIBRARY_SEARCH_DEFAULT_DIRS 0x00001000
@@ -6144,48 +6147,6 @@ LPVOID NDirect::NDirectGetEntryPoint(NDirectMethodDesc *pMD, HINSTANCE hMod)
     RETURN pMD->FindEntryPoint(hMod);
 }
 
-static BOOL AbsolutePath(LPCWSTR wszLibName)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-
-        PRECONDITION(CheckPointer(wszLibName));
-    }
-    CONTRACTL_END;
-
-    // check for UNC or a drive
-    WCHAR* ptr = (WCHAR*) wszLibName;
-    WCHAR* start = ptr;
-
-    // Check for UNC path
-    while(*ptr)
-    {
-        if(*ptr != W('\\'))
-            break;
-        ptr++;
-    }
-
-    if((ptr - wszLibName) == 2)
-        return TRUE;
-    else
-    {
-        // Check to see if there is a colon indicating a drive or protocal
-        for(ptr = start; *ptr; ptr++)
-        {
-            if(*ptr == W(':'))
-                break;
-        }
-        if(*ptr != NULL)
-            return TRUE;
-    }
-
-    // We did not find a UNC/drive/protocol path
-    return FALSE;
-}
-
 VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
 {
     CONTRACTL
@@ -7078,7 +7039,7 @@ HINSTANCE NDirect::LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTrack
         }
 #endif // !FEATURE_CORECLR
 
-        if (AbsolutePath(wszLibName))
+        if (!Path::IsRelative(wszLibName))
         {
             DWORD flags = loadWithAlteredPathFlags;
             if ((dllImportSearchPathFlag & LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR) != 0)
@@ -7173,7 +7134,7 @@ HINSTANCE NDirect::LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTrack
         {
             SString qualifiedPath(*(i.GetPath()));
             qualifiedPath.Append(wszLibName);
-            if (AbsolutePath(qualifiedPath))
+            if (!Path::IsRelative(qualifiedPath))
             {
                 hmod = LocalLoadLibraryHelper(qualifiedPath, loadWithAlteredPathFlags, pErrorTracker);
             }
