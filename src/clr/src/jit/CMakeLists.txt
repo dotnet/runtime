@@ -133,3 +133,4 @@ set(CLR_EXPORTED_SYMBOL_FILE ${CLRJIT_EXPORTS_DEF})
 
 add_subdirectory(dll)
 add_subdirectory(crossgen)
+add_subdirectory(standalone)
