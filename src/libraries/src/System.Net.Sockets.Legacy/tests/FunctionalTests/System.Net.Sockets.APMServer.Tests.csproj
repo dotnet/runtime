@@ -15,10 +15,12 @@
   <ItemGroup>
     <Compile Include="AcceptAsync.cs" />
     <Compile Include="AgnosticListenerTest.cs" />
+    <Compile Include="ArgumentValidationTests.cs" />
     <Compile Include="ConnectAsync.cs" />
     <Compile Include="ConnectExTest.cs" />
     <Compile Include="Disconnect.cs" />
     <Compile Include="DisconnectAsync.cs" />
+    <Compile Include="DisposedSocketTests.cs" />
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="LingerStateTest.cs" />
