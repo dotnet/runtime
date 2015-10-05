@@ -27,6 +27,16 @@ if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
     return()
 endif()
 
+set(CMAKE_REQUIRED_INCLUDES ${ICU_HOMEBREW_INC_PATH})
+CHECK_CXX_SOURCE_COMPILES("
+ #include <unicode/dtfmtsym.h>
+ int main() { DateFormatSymbols::DtWidthType e = DateFormatSymbols::DtWidthType::SHORT; }
+" HAVE_DTWIDTHTYPE_SHORT) 
+
+if(HAVE_DTWIDTHTYPE_SHORT)
+    add_definitions(-DHAVE_DTWIDTHTYPE_SHORT=1)
+endif(HAVE_DTWIDTHTYPE_SHORT)
+
 add_compile_options(-fPIC)
 
 set(NATIVEGLOBALIZATION_SOURCES
