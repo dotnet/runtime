@@ -167,7 +167,7 @@ namespace System.Net.Sockets.Tests
             var sentChecksums = new uint[DatagramsToSend];
             int sentDatagrams = 0;
 
-            Task.Run(async () =>
+            var senderTask = Task.Run(async () =>
             {
                 var random = new Random();
                 var sendBuffer = new byte[DatagramSize];
@@ -188,7 +188,7 @@ namespace System.Net.Sockets.Tests
                 }
             });
 
-            Assert.True(receiverTask.Wait(TestTimeout));
+            Assert.True(Task.WaitAll(new[] { receiverTask, senderTask }, TestTimeout));
             for (int i = 0; i < DatagramsToSend; i++)
             {
                 Assert.NotNull(receivedChecksums[i]);
@@ -415,7 +415,7 @@ namespace System.Net.Sockets.Tests
 
             int bytesSent = 0;
             var sentChecksum = new Fletcher32();
-            Task.Run(async () =>
+            var clientTask = Task.Run(async () =>
             {
                 var clientEndpoint = (IPEndPoint)listener.LocalEndpoint;
 
@@ -443,7 +443,7 @@ namespace System.Net.Sockets.Tests
                 }
             });
 
-            Assert.True(serverTask.Wait(TestTimeout));
+            Assert.True(Task.WaitAll(new[] { serverTask, clientTask }, TestTimeout));
 
             Assert.Equal(bytesSent, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
