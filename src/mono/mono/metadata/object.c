@@ -4092,39 +4092,37 @@ mono_unhandled_exception (MonoObject *exc)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoDomain *current_domain = mono_domain_get ();
-	MonoDomain *root_domain = mono_get_root_domain ();
 	MonoClassField *field;
-	MonoObject *current_appdomain_delegate;
-	MonoObject *root_appdomain_delegate;
+	MonoDomain *current_domain, *root_domain;
+	MonoObject *current_appdomain_delegate = NULL, *root_appdomain_delegate = NULL;
 
-	field=mono_class_get_field_from_name(mono_defaults.appdomain_class, 
-					     "UnhandledException");
+	if (mono_class_has_parent (exc->vtable->klass, mono_defaults.threadabortexception_class))
+		return;
+
+	field = mono_class_get_field_from_name (mono_defaults.appdomain_class, "UnhandledException");
 	g_assert (field);
 
-	if (exc->vtable->klass != mono_defaults.threadabortexception_class) {
-		gboolean abort_process = (main_thread && (mono_thread_internal_current () == main_thread->internal_thread)) ||
-				(mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT);
-		root_appdomain_delegate = *(MonoObject **)(((char *)root_domain->domain) + field->offset);
-		if (current_domain != root_domain) {
-			current_appdomain_delegate = *(MonoObject **)(((char *)current_domain->domain) + field->offset);
-		} else {
-			current_appdomain_delegate = NULL;
+	current_domain = mono_domain_get ();
+	root_domain = mono_get_root_domain ();
+
+	root_appdomain_delegate = mono_field_get_value_object (root_domain, field, (MonoObject*) root_domain->domain);
+	if (current_domain != root_domain)
+		current_appdomain_delegate = mono_field_get_value_object (current_domain, field, (MonoObject*) current_domain->domain);
+
+	/* set exitcode only if we will abort the process */
+	if (!current_appdomain_delegate && !root_appdomain_delegate) {
+		if ((main_thread && mono_thread_internal_current () == main_thread->internal_thread)
+		     || mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT)
+		{
+			mono_environment_exitcode_set (1);
 		}
 
-		/* set exitcode only if we will abort the process */
-		if ((current_appdomain_delegate == NULL) && (root_appdomain_delegate == NULL)) {
-			if (abort_process)
-				mono_environment_exitcode_set (1);
-			mono_print_unhandled_exception (exc);
-		} else {
-			if (root_appdomain_delegate) {
-				call_unhandled_exception_delegate (root_domain, root_appdomain_delegate, exc);
-			}
-			if (current_appdomain_delegate) {
-				call_unhandled_exception_delegate (current_domain, current_appdomain_delegate, exc);
-			}
-		}
+		mono_print_unhandled_exception (exc);
+	} else {
+		if (root_appdomain_delegate)
+			call_unhandled_exception_delegate (root_domain, root_appdomain_delegate, exc);
+		if (current_appdomain_delegate)
+			call_unhandled_exception_delegate (current_domain, current_appdomain_delegate, exc);
 	}
 }
 
