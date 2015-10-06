@@ -611,7 +611,6 @@ if [ ! -d "$testRootDir" ]; then
     echo "Directory specified by --testRootDir does not exist: $testRootDir"
     exit 1
 fi
-cd "$testRootDir"
 
 xunit_output_begin
 create_core_overlay
@@ -619,6 +618,7 @@ copy_test_native_bin_to_test_root
 load_unsupported_tests
 load_failing_tests
 
+cd "$testRootDir"
 if [ -z "$testDirectories" ]
 then
     # No test directories were specified, so run everything in the current 
