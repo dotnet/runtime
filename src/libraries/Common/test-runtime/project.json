@@ -1,0 +1,27 @@
+{
+    "dependencies": {
+      "Microsoft.NETCore.Platforms": "1.0.1-beta-23328",
+      "Microsoft.NETCore.TestHost": "1.0.0-beta-23328",
+      "Microsoft.NETCore.Console": "1.0.0-beta-23328",
+
+      "coveralls.io": "1.4",
+      "OpenCover": "4.6.166",
+      "ReportGenerator": "2.3.1",
+
+      "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0022",
+      "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0022",
+
+      "xunit": "2.1.0",
+      "xunit.console.netcore": "1.0.2-prerelease-00101",
+      "xunit.runner.utility": "2.1.0"
+    },
+    "frameworks": {
+       "dnxcore50": { }
+    },
+    "runtimes": {
+       "win7-x64": { },
+       "win7-x86": { },
+       "ubuntu.14.04-x64": { },
+       "osx.10.10-x64": { }
+    }
+}
