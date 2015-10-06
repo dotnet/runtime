@@ -27,7 +27,6 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">if <paramref name="keySize" /> is not valid</exception>
         public RSACng(int keySize)
         {
-            _legalKeySizesValue = s_legalKeySizes;
             KeySize = keySize;
         }
 
@@ -48,8 +47,20 @@ namespace System.Security.Cryptography
             if (key.AlgorithmGroup != CngAlgorithmGroup.Rsa)
                 throw new ArgumentException(SR.Cryptography_ArgRSAaRequiresRSAKey, "key");
 
-            _legalKeySizesValue = s_legalKeySizes;
             Key = CngAlgorithmCore.Duplicate(key);
+        }
+
+        public override KeySizes[] LegalKeySizes
+        {
+            get
+            {
+                // See https://msdn.microsoft.com/en-us/library/windows/desktop/bb931354(v=vs.85).aspx
+                return new KeySizes[] 
+                {
+                    // All values are in bits.
+                    new KeySizes(minSize: 512, maxSize: 16384, skipSize: 64), 
+                }; 
+            }
         }
 
         protected override void Dispose(bool disposing)
@@ -58,14 +69,6 @@ namespace System.Security.Cryptography
         }
 
         private CngAlgorithmCore _core;
-
-        // See https://msdn.microsoft.com/en-us/library/windows/desktop/bb931354(v=vs.85).aspx
-        private static readonly KeySizes[] s_legalKeySizes = 
-            new KeySizes[] 
-            {
-                // All values are in bits.
-                new KeySizes(minSize: 512, maxSize: 16384, skipSize: 64), 
-            }; 
     }
 }
 

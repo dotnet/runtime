@@ -15,14 +15,6 @@
       <Project>{78452F3E-BA91-47E7-BB0F-02E8A5C116C4}</Project>
       <Name>System.Security.Cryptography.OpenSsl</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\src\System.Security.Cryptography.Algorithms.csproj">
-      <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
-      <Name>System.Security.Cryptography.Algorithms</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\src\System.Security.Cryptography.Primitives.csproj">
-      <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
-      <Name>System.Security.Cryptography.Primitives</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EcDsaOpenSslTests.cs" />
