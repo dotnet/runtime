@@ -253,6 +253,7 @@ static MonoLLVMModule aot_module;
 static int memset_param_count, memcpy_param_count;
 static const char *memset_func_name;
 static const char *memcpy_func_name;
+static gint32 *exc_tag;
 
 static void init_jit_module (MonoDomain *domain);
 
@@ -1189,6 +1190,20 @@ mono_llvm_throw_exception (MonoException *mono_ex, gint32 *exc_tag)
 	mono_llvm_cpp_throw_exception (exc_tag);
 }
 
+void
+mono_llvm_raise_exception (MonoException *e)
+{
+	g_assert (exc_tag);
+
+	mono_llvm_throw_exception (e, exc_tag);
+}
+
+void
+mono_llvm_set_cpp_ex (gpointer cpp_ex)
+{
+	exc_tag = cpp_ex;
+}
+
 MonoObject *
 mono_llvm_load_exception (void)
 {
@@ -1674,6 +1689,9 @@ get_most_deep_clause (MonoCompile *cfg, EmitContext *ctx, MonoBasicBlock *bb)
 	for (int i = 0; i < cfg->header->num_clauses; i++) {
 		MonoExceptionClause *curr = &cfg->header->clauses [i];
 
+		if (MONO_OFFSET_IN_CLAUSE (curr, bb->real_offset))
+			return curr;
+		/*
 		if (MONO_OFFSET_IN_CLAUSE (curr, bb->real_offset)) {
 			if (last && CLAUSE_END(last) > CLAUSE_END(curr))
 				last = curr;
@@ -1682,6 +1700,7 @@ get_most_deep_clause (MonoCompile *cfg, EmitContext *ctx, MonoBasicBlock *bb)
 		} else if(last) {
 			break;
 		}
+		*/
 	}
 
 	return last;
@@ -3199,7 +3218,7 @@ emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef
 
 	if (rethrow) { 
 		args [0] = LLVMConstNull (exc_type);
-		call = LLVMBuildCall (ctx->builder, callee, args, 2, "");
+		call = emit_call (ctx, bb, &ctx->builder, callee, args, 2);
 	} else {
 		args [0] = convert (ctx, exc, exc_type);
 		call = emit_call (ctx, bb, &ctx->builder, callee, args, 2);
@@ -3375,12 +3394,16 @@ get_mono_personality (EmitContext *ctx)
 }
 
 static LLVMBasicBlockRef
-emit_landing_pad (MonoCompile *cfg, EmitContext *ctx, MonoExceptionClause *group_start, int group_size)
+emit_landing_pad (EmitContext *ctx, MonoExceptionClause *group_start, int group_size)
 {
+	MonoCompile *cfg = ctx->cfg;
 	LLVMBuilderRef old_builder = ctx->builder;
 
 	LLVMBuilderRef lpadBuilder = create_builder (ctx);
 	ctx->builder = lpadBuilder;
+
+	MonoBasicBlock *handler_bb = cfg->cil_offset_to_bb [CLAUSE_START (group_start)];
+	g_assert (handler_bb);
 
 	// <resultval> = landingpad <somety> personality <type> <pers_fn> <clause>+
 	LLVMValueRef personality = get_mono_personality (ctx);
@@ -3399,8 +3422,7 @@ emit_landing_pad (MonoCompile *cfg, EmitContext *ctx, MonoExceptionClause *group
 	ctx->builder = resume_builder;
 	LLVMPositionBuilderAtEnd (resume_builder, resume_bb);
 
-	// FIXME: bb
-	emit_throw (ctx, NULL, TRUE, NULL);
+	emit_throw (ctx, handler_bb, TRUE, NULL);
 
 	// Build match
 	ctx->builder = lpadBuilder;
@@ -6020,7 +6042,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			cursor++;
 		}
 
-		LLVMBasicBlockRef lpad_bb = emit_landing_pad (cfg, ctx, cfg->header->clauses + group_index, count);
+		LLVMBasicBlockRef lpad_bb = emit_landing_pad (ctx, cfg->header->clauses + group_index, count);
 		intptr_t key = CLAUSE_END (&cfg->header->clauses [group_index]);
 		g_hash_table_insert (ctx->exc_meta, (gpointer)key, lpad_bb);
 
@@ -7003,6 +7025,7 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	else
 		fields [tindex ++] = LLVMConstNull (eltype);
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule->module, "assembly_name");
+	fields [tindex ++] = LLVMGetNamedGlobal (lmodule->module, "_ZTIPi");
 	if (lmodule->has_jitted_code) {
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt_end");

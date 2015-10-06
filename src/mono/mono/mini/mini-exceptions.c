@@ -62,6 +62,7 @@
 #include "trace.h"
 #include "debugger-agent.h"
 #include "seq-points.h"
+#include "mini-llvm-cpp.h"
 
 #ifdef ENABLE_EXTENSION_MODULE
 #include "../../../mono-extensions/mono/mini/mini-exceptions.c"
@@ -120,7 +121,10 @@ mono_exceptions_init (void)
 #endif
 	cbs.mono_walk_stack_with_ctx = mono_runtime_walk_stack_with_ctx;
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
-	cbs.mono_raise_exception = mono_get_throw_exception ();
+	if (mono_llvm_only)
+		cbs.mono_raise_exception = mono_llvm_raise_exception;
+	else
+		cbs.mono_raise_exception = mono_get_throw_exception ();
 	cbs.mono_raise_exception_with_ctx = mono_raise_exception_with_ctx;
 	cbs.mono_exception_walk_trace = mono_exception_walk_trace;
 	cbs.mono_install_handler_block_guard = mono_install_handler_block_guard;

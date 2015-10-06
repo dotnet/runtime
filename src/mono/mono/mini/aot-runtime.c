@@ -1984,8 +1984,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->trampolines [MONO_AOT_TRAMP_IMT_THUNK] = info->imt_thunks;
 	amodule->trampolines [MONO_AOT_TRAMP_GSHAREDVT_ARG] = info->gsharedvt_arg_trampolines;
 
-	if (!strcmp (assembly->aname.name, "mscorlib"))
+	if (!strcmp (assembly->aname.name, "mscorlib")) {
 		mscorlib_aot_module = amodule;
+		if (mono_llvm_only)
+			mono_llvm_set_cpp_ex (info->cpp_ex);
+	}
 
 	/* Compute method addresses */
 	amodule->methods = g_malloc0 (amodule->info.nmethods * sizeof (gpointer));

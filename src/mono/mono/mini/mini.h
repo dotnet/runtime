@@ -232,6 +232,8 @@ typedef struct MonoAotFileInfo
 	gpointer globals;
 	/* Points to a string containing the assembly name*/
 	gpointer assembly_name;
+	/* Points to the shared c++ exception we throw */
+	gpointer cpp_ex;
 	/* Start of Mono's Program Linkage Table */
 	gpointer plt;
 	/* End of Mono's Program Linkage Table */
@@ -2366,6 +2368,8 @@ void     mono_llvm_check_method_supported   (MonoCompile *cfg) MONO_LLVM_INTERNA
 void     mono_llvm_free_domain_info         (MonoDomain *domain) MONO_LLVM_INTERNAL;
 MONO_API void mono_personality              (void);
 int      mono_llvm_load                     (const char* bpath);
+// FIXME: mini-llvm-loader.c */
+void     mono_llvm_set_cpp_ex               (gpointer cpp_ex);
 
 gboolean mini_llvm_init                     (void);
 
