@@ -631,7 +631,7 @@ namespace System.Runtime.Serialization
             writer.WriteAttributeQualifiedName(Globals.XsiPrefix, DictionaryGlobals.XsiTypeLocalName, DictionaryGlobals.SchemaInstanceNamespace, dataContractName, dataContractNamespace);
         }
 
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
         public void WriteExtensionData(XmlWriterDelegator xmlWriter, ExtensionDataObject extensionData, int memberIndex)
         {
             // Needed by the code generator, but not called. 

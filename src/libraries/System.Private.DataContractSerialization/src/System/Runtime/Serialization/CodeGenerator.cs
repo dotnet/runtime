@@ -88,7 +88,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
         [SecurityCritical]
         private static MethodInfo s_objectToString;
         private static MethodInfo ObjectToString
@@ -165,7 +165,7 @@ namespace System.Runtime.Serialization
         private enum CodeGenTrace { None, Save, Tron };
         private CodeGenTrace _codeGenTrace;
 
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
         private LocalBuilder _stringFormatArray;
 #endif
 
@@ -1663,7 +1663,7 @@ namespace System.Runtime.Serialization
             If(Cmp.NotEqualTo);
         }
 
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
         internal void BeginWhileCondition()
         {
             Label startWhile = DefineLabel();
