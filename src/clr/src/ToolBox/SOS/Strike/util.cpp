@@ -753,9 +753,8 @@ HRESULT CheckEEDll()
     // Do we have clr.dll
     if (moduleInfo[MSCORWKS].baseAddr == 0)
     {
-        if (moduleInfo[MSCORWKS].baseAddr == 0)
-            g_ExtSymbols->GetModuleByModuleName (MAIN_CLR_MODULE_NAME_A,0,NULL,
-                                                 &moduleInfo[MSCORWKS].baseAddr);
+        g_ExtSymbols->GetModuleByModuleName (MAIN_CLR_MODULE_NAME_A,0,NULL,
+                                             &moduleInfo[MSCORWKS].baseAddr);
         if (moduleInfo[MSCORWKS].baseAddr != 0 && moduleInfo[MSCORWKS].hasPdb == FALSE)
         {
             g_ExtSymbols->GetModuleParameters (1, &moduleInfo[MSCORWKS].baseAddr, 0, &Params);
