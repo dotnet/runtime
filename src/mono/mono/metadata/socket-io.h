@@ -151,40 +151,6 @@ typedef enum {
 	SocketFlags_Partial = 0x8000
 } MonoSocketFlags;
 
-/*
-  Keep this in sync with SocketAsyncResult in
-  ./System.Net.Sockets/Socket.cs and ProcessAsyncReader
-  in System.Diagnostics/Process.cs.
-*/
-typedef struct _MonoSocketAsyncResult {
-	MonoObject obj;
-	MonoObject *socket;
-	HANDLE handle;
-	MonoObject *state;
-	MonoDelegate *callback;
-	MonoWaitHandle *wait_handle;
-	MonoException *delayed_exc;
-	MonoObject *ep;
-	MonoArray *buffer;
-	gint offset;
-	gint size;
-	gint socket_flags;
-	MonoObject *accept_reuse_socket;
-	MonoArray *addresses;
-	gint port;
-	MonoObject *buffers;
-	MonoBoolean reusesocket;
-	MonoObject *acc_socket;
-	gint total;
-	MonoBoolean completed_synch;
-	MonoBoolean completed;
-	MonoBoolean blocking;
-	gint error;
-	gint operation;
-	MonoAsyncResult *ares;
-	gint32 end_called;
-} MonoSocketAsyncResult;
-
 typedef struct
 {
 	MonoObject obj;
