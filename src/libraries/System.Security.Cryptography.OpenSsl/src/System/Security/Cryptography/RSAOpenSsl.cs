@@ -17,16 +17,6 @@ namespace System.Security.Cryptography
         // 65537 (0x10001) in big-endian form
         private static readonly byte[] s_defaultExponent = { 0x01, 0x00, 0x01 };
 
-        // OpenSSL seems to accept answers of all sizes.
-        // Choosing a non-multiple of 8 would make some calculations misalign
-        // (like assertions of (output.Length * 8) == KeySize).
-        // Choosing a number too small is insecure.
-        // Choosing a number too large will cause GenerateKey to take much
-        // longer than anyone would be willing to wait.
-        //
-        // So, copying the values from RSACryptoServiceProvider
-        private static readonly KeySizes s_legalKeySizes = new KeySizes(384, 16384, 8);
-
         private Lazy<SafeRsaHandle> _key;
 
         public RSAOpenSsl()
@@ -36,14 +26,12 @@ namespace System.Security.Cryptography
 
         public RSAOpenSsl(int keySize)
         {
-            _legalKeySizesValue = new[] { s_legalKeySizes };
             KeySize = keySize;
             _key = new Lazy<SafeRsaHandle>(GenerateKey);
         }
 
         public RSAOpenSsl(RSAParameters parameters)
         {
-            _legalKeySizesValue = new[] { s_legalKeySizes };
             ImportParameters(parameters);
         }
 
@@ -61,8 +49,6 @@ namespace System.Security.Cryptography
         {
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, "handle");
-
-            _legalKeySizesValue = new[] { s_legalKeySizes };
 
             SafeRsaHandle rsaHandle = SafeRsaHandle.DuplicateHandle(handle);
 
@@ -97,8 +83,6 @@ namespace System.Security.Cryptography
                 throw Interop.libcrypto.CreateOpenSslCryptographicException();
             }
 
-            _legalKeySizesValue = new[] { s_legalKeySizes };
-
             // Set base.KeySize rather than this.KeySize to avoid an unnecessary Lazy<> allocation.
             base.KeySize = BitsPerByte * Interop.libcrypto.RSA_size(rsa);
             _key = new Lazy<SafeRsaHandle>(() => rsa);
@@ -116,6 +100,22 @@ namespace System.Security.Cryptography
                 FreeKey();
                 base.KeySize = value;
                 _key = new Lazy<SafeRsaHandle>(GenerateKey);
+            }
+        }
+
+        public override KeySizes[] LegalKeySizes
+        {
+            get
+            {
+                // OpenSSL seems to accept answers of all sizes.
+                // Choosing a non-multiple of 8 would make some calculations misalign
+                // (like assertions of (output.Length * 8) == KeySize).
+                // Choosing a number too small is insecure.
+                // Choosing a number too large will cause GenerateKey to take much
+                // longer than anyone would be willing to wait.
+                //
+                // So, copying the values from RSACryptoServiceProvider
+                return new[] { new KeySizes(384, 16384, 8) };
             }
         }
 
