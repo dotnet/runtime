@@ -74,8 +74,10 @@ extern "C" {
 
 // On ARM __fastcall is ignored and causes a compile error
 #if !defined(PAL_STDCPP_COMPAT) || defined(__arm__)
-#define __fastcall
-#define _fastcall
+#  undef __fastcall
+#  undef _fastcall
+#  define __fastcall
+#  define _fastcall
 #endif // !defined(PAL_STDCPP_COMPAT) || defined(__arm__)
 
 #endif  // !defined(__i386__)
