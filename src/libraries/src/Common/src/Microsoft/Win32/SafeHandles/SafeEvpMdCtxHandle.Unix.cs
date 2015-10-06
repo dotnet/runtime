@@ -18,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
         [SecurityCritical]
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.EVP_MD_CTX_destroy(handle);
+            Interop.Crypto.EvpMdCtxDestroy(handle);
             return true;
         }
 

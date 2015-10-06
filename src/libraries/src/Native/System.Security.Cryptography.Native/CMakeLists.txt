@@ -19,6 +19,7 @@ endif()
 
 set(NATIVECRYPTO_SOURCES
     openssl.c
+    pal_evp.cpp
     pal_hmac.cpp
 )
 
