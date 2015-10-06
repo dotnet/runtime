@@ -129,7 +129,7 @@ build_managed_corefx()
     __buildproj=$__scriptpath/build.proj
     __buildlog=$__scriptpath/msbuild.log
 
-    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:OSGroup=$__BuildOS /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) "$@"
+    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:OSGroup=$__BuildOS /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestRuntimeNugetId "$@"
     BUILDERRORLEVEL=$?
 
     echo
@@ -238,6 +238,7 @@ __CleanBuild=false
 __VerboseBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
+__TestNugetRuntimeId=win7-x64
 
 for i in "$@"
     do
@@ -291,9 +292,11 @@ for i in "$@"
             ;;
         linux)
             __BuildOS=Linux
+            __TestNugetRuntimeId=ubuntu.14.04-x64
             ;;
         osx)
             __BuildOS=OSX
+            __TestNugetRuntimeId=osx.10.10-x64
             ;;
         freebsd)
             __BuildOS=FreeBSD
