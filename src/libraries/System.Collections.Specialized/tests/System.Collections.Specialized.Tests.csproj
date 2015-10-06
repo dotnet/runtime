@@ -15,6 +15,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
+      <Link>Common\System\Collections\CollectionAsserts.cs</Link>
+    </Compile>
     <Compile Include="BitVector32\CreateMaskIntTests.cs" />
     <Compile Include="BitVector32\CreateMaskTests.cs" />
     <Compile Include="BitVector32\CreateSectionShortSectionTests.cs" />
