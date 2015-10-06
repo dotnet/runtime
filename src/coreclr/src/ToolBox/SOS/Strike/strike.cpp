@@ -3895,7 +3895,7 @@ private:
         
         bool operator<(const StringSetEntry &rhs) const
         {
-            return _wcscmp(str, rhs.str) == -1;
+            return _wcscmp(str, rhs.str) < 0;
         }
     };
 
