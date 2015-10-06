@@ -75,6 +75,7 @@
     <Compile Include="BigInteger\sign.cs" />
     <Compile Include="BigInteger\stackcalculator.cs" />
     <Compile Include="BigInteger\subtract.cs" />
+    <Compile Include="BigInteger\ToByteArray.cs" />
     <Compile Include="Complex\arithmaticOperation_Abs.cs" />
     <Compile Include="Complex\arithmaticOperation_BinaryDivide_Divide.cs" />
     <Compile Include="Complex\arithmaticOperation_BinaryMinus_Subtract.cs" />
