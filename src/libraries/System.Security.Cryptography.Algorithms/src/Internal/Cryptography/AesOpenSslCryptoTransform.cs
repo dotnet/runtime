@@ -20,14 +20,14 @@ namespace Internal.Cryptography
             // AesCngCryptoTransform doesn't seem to support CFB mode, and that would
             // require passing in the feedback size.  Since Windows doesn't support it,
             // we can skip it here, too.
-            Tuple.Create(128, CipherMode.CBC, (Func<IntPtr>)Interop.libcrypto.EVP_aes_128_cbc),
-            Tuple.Create(128, CipherMode.ECB, (Func<IntPtr>)Interop.libcrypto.EVP_aes_128_ecb),
+            Tuple.Create(128, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes128Cbc),
+            Tuple.Create(128, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes128Ecb),
 
-            Tuple.Create(192, CipherMode.CBC, (Func<IntPtr>)Interop.libcrypto.EVP_aes_192_cbc),
-            Tuple.Create(192, CipherMode.ECB, (Func<IntPtr>)Interop.libcrypto.EVP_aes_192_ecb),
+            Tuple.Create(192, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes192Cbc),
+            Tuple.Create(192, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes192Ecb),
 
-            Tuple.Create(256, CipherMode.CBC, (Func<IntPtr>)Interop.libcrypto.EVP_aes_256_cbc),
-            Tuple.Create(256, CipherMode.ECB, (Func<IntPtr>)Interop.libcrypto.EVP_aes_256_ecb),
+            Tuple.Create(256, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes256Cbc),
+            Tuple.Create(256, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes256Ecb),
         };
 
         internal AesOpenSslCryptoTransform(
@@ -128,7 +128,7 @@ namespace Internal.Cryptography
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
             IntPtr algorithm = algorithmFunc();
 
-            bool status = Interop.libcrypto.EVP_CipherInit_ex(
+            bool status = Interop.Crypto.EvpCipherInitEx(
                 _ctx,
                 algorithm,
                 IntPtr.Zero,
@@ -140,7 +140,7 @@ namespace Internal.Cryptography
 
             // OpenSSL will happily do PKCS#7 padding for us, but since we support padding modes
             // that it doesn't (PaddingMode.Zeros) we'll just always pad the blocks ourselves.
-            status = Interop.libcrypto.EVP_CIPHER_CTX_set_padding(_ctx, 0);
+            status = Interop.Crypto.EvpCipherCtxSetPadding(_ctx, 0);
 
             CheckBoolReturn(status);
         }
@@ -183,7 +183,7 @@ namespace Internal.Cryptography
             //
             // But since we have a different object returned for CreateEncryptor
             // and CreateDecryptor we don't need to worry about that.
-            bool status = Interop.libcrypto.EVP_CipherInit_ex(
+            bool status = Interop.Crypto.EvpCipherInitEx(
                  _ctx,
                  IntPtr.Zero,
                  IntPtr.Zero,
@@ -249,7 +249,7 @@ namespace Internal.Cryptography
             {
                 byte* outputCurrent = outputStart + outputBytes;
 
-                status = Interop.libcrypto.EVP_CipherFinal_ex(_ctx, outputCurrent, out bytesWritten);
+                status = Interop.Crypto.EvpCipherFinalEx(_ctx, outputCurrent, out bytesWritten);
             }
 
             CheckBoolReturn(status);
@@ -286,7 +286,7 @@ namespace Internal.Cryptography
                 byte* inputCurrent = inputStart + inputOffset;
                 byte* outputCurrent = outputStart + outputOffset;
 
-                status = Interop.libcrypto.EVP_CipherUpdate(
+                status = Interop.Crypto.EvpCipherUpdate(
                     _ctx,
                     outputCurrent,
                     out bytesWritten,

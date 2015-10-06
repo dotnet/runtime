@@ -18,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
         [SecurityCritical]
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.EVP_CIPHER_CTX_cleanup(handle);
+            Interop.Crypto.EvpCipherCtxCleanup(handle);
             Marshal.FreeHGlobal(handle);
             return true;
         }
@@ -37,11 +37,11 @@ namespace Microsoft.Win32.SafeHandles
 
             try
             {
-                memPtr = Marshal.AllocHGlobal(Interop.libcrypto.EVP_CIPHER_CTX_SIZE);
+                memPtr = Marshal.AllocHGlobal(Interop.Crypto.EVP_CIPHER_CTX_SIZE);
                 safeHandle = new SafeEvpCipherCtxHandle();
                 safeHandle.SetHandle(memPtr);
 
-                Interop.libcrypto.EVP_CIPHER_CTX_init(safeHandle);
+                Interop.Crypto.EvpCipherCtxInit(safeHandle);
 
                 succeeded = true;
                 return safeHandle;
@@ -50,9 +50,9 @@ namespace Microsoft.Win32.SafeHandles
             {
                 if (!succeeded)
                 {
-                    // If we made it to SetHandle, and failed calling EVP_CIPHER_CTX_init
+                    // If we made it to SetHandle, and failed calling EvpCipherCtxInit
                     // then OpenSSL hasn't built this object yet, and we shouldn't call
-                    // EVP_CIPHER_CTX_cleanup.
+                    // EvpCipherCtxCleanup.
                     if (safeHandle != null && !safeHandle.IsInvalid)
                     {
                         safeHandle.SetHandleAsInvalid();
