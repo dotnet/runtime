@@ -113,16 +113,10 @@ internal static partial class Interop
             }
 
             int retVal = libssl.SSL_do_handshake(context.sslPtr);
-            if ((retVal == 1) && !isServer)
-            {            
-                return true;
-            }
-
-            int error;
 
             if (retVal != 1)
             {
-                error = GetSslError(context.sslPtr, retVal);
+                libssl.SslErrorCode error = GetSslError(context.sslPtr, retVal);
 
                 if ((retVal != -1) || (error != libssl.SslErrorCode.SSL_ERROR_WANT_READ))
                 {
@@ -138,11 +132,11 @@ internal static partial class Interop
                 sendCount = BioRead(context.writeBioPtr, sendPtr, sendCount);
                 if (sendCount <= 0)
                 {
-                    error = sendCount;
+                    int errorCode = sendCount;
                     Marshal.FreeHGlobal(sendPtr);
                     sendPtr = IntPtr.Zero;
-                    sendCount = 0;                  
-                    throw CreateSslException(context.sslPtr, "Read Bio failed: ", error);                   
+                    sendCount = 0;
+                    throw CreateSslException(context.sslPtr, "Read Bio failed: ", errorCode);                   
                 }
             }
         
@@ -150,34 +144,40 @@ internal static partial class Interop
 
         }
 
-        internal static int Encrypt(IntPtr handlePtr, IntPtr buffer, int offset, int count, int bufferCapacity)
+        internal static int Encrypt(IntPtr handlePtr, IntPtr buffer, int offset, int count, int bufferCapacity, out libssl.SslErrorCode errorCode)
         {
+            errorCode = libssl.SslErrorCode.SSL_ERROR_NONE;
+
             SslContext context = Marshal.PtrToStructure<SslContext>(handlePtr);
 
             var retVal = libssl.SSL_write(context.sslPtr, new IntPtr(buffer.ToInt64() + offset), count);
 
             if (retVal != count)
             {
-                int error = GetSslError(context.sslPtr, retVal);
-                if (libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN == error)
+                errorCode = GetSslError(context.sslPtr, retVal);
+                retVal = 0;
+
+                switch (errorCode)
                 {
-                    return 0; // indicate end-of-file
+                    // indicate end-of-file
+                    case libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
+                    case libssl.SslErrorCode.SSL_ERROR_WANT_READ:
+                        break;
+
+                    default:
+                        throw CreateSslException("OpenSsl::Encrypt failed");
                 }
-                throw CreateSslException("OpenSsl::Encrypt failed");
             }
-
-            int capacityNeeded = libssl.BIO_ctrl_pending(context.writeBioPtr);      
-
-            if (retVal == count)
+            else
             {
+                int capacityNeeded = libssl.BIO_ctrl_pending(context.writeBioPtr);      
+
                 if (capacityNeeded > bufferCapacity)
                 {
                     throw CreateSslException("OpenSsl::Encrypt capacity needed is more than buffer capacity. capacityNeeded = " + capacityNeeded + "," + "bufferCapacity = " + bufferCapacity);
-                }
+                }             
 
-                IntPtr outBufferPtr = buffer;
-
-                retVal = BioRead(context.writeBioPtr, outBufferPtr, capacityNeeded);
+                retVal = BioRead(context.writeBioPtr, buffer, capacityNeeded);
 
                 if (retVal < 0)
                 {
@@ -188,8 +188,10 @@ internal static partial class Interop
             return retVal;
         }
 
-        internal static int Decrypt(IntPtr sslContextPtr, IntPtr outBufferPtr, int count)
+        internal static int Decrypt(IntPtr sslContextPtr, IntPtr outBufferPtr, int count, out libssl.SslErrorCode errorCode)
         {
+            errorCode = libssl.SslErrorCode.SSL_ERROR_NONE;
+
             SslContext context = Marshal.PtrToStructure<SslContext>(sslContextPtr);
 
             int retVal = BioWrite(context.readBioPtr, outBufferPtr, count);
@@ -206,12 +208,25 @@ internal static partial class Interop
 
             if (retVal != count)
             {
-                int error = GetSslError(context.sslPtr, retVal);
-                if (libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN == error)
+                errorCode = GetSslError(context.sslPtr, retVal);
+                retVal = 0;
+
+                switch (errorCode)
                 {
-                    return 0; // indicate end-of-file
+                    // indicate end-of-file
+                    case libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:                      
+                        break;
+
+                    case libssl.SslErrorCode.SSL_ERROR_WANT_READ:
+                        // update error code to renegotiate if renegotiate is pending, otherwise make it SSL_ERROR_WANT_READ
+                        errorCode = libssl.SSL_renegotiate_pending(context.sslPtr) == 1 ?
+                                    libssl.SslErrorCode.SSL_ERROR_RENEGOTIATE :
+                                    libssl.SslErrorCode.SSL_ERROR_WANT_READ;
+                        break;
+
+                    default:
+                        throw CreateSslException("OpenSsl::Decrypt failed");
                 }
-                throw CreateSslException("OpenSsl::Decrypt failed");
             }
 
             return retVal;
@@ -279,39 +294,38 @@ internal static partial class Interop
 
         private static IntPtr GetSslMethod(bool isServer, long options)
         {
-            long protocolMask = libssl.Options.SSL_OP_NO_SSLv2 | libssl.Options.SSL_OP_NO_SSLv3 |
-                                libssl.Options.SSL_OP_NO_TLSv1 | libssl.Options.SSL_OP_NO_TLSv1_1 |
-                                libssl.Options.SSL_OP_NO_TLSv1_2;
-            options &= protocolMask;
-            Debug.Assert(options != protocolMask, "All protocols are disabled");
+            options &= libssl.ProtocolMask;
+            Debug.Assert(options != libssl.ProtocolMask, "All protocols are disabled");
 
-            bool noSsl2 = (options & libssl.Options.SSL_OP_NO_SSLv2) != 0;
-            bool noSsl3 = (options & libssl.Options.SSL_OP_NO_SSLv3) != 0;
-            bool noTls10 = (options & libssl.Options.SSL_OP_NO_TLSv1) != 0;
-            bool noTls11 = (options & libssl.Options.SSL_OP_NO_TLSv1_1) != 0;
-            bool noTls12 = (options & libssl.Options.SSL_OP_NO_TLSv1_2) != 0;
+            bool ssl2 = (options & libssl.Options.SSL_OP_NO_SSLv2) == 0;
+            bool ssl3 = (options & libssl.Options.SSL_OP_NO_SSLv3) == 0;
+            bool tls10 = (options & libssl.Options.SSL_OP_NO_TLSv1) == 0;
+            bool tls11 = (options & libssl.Options.SSL_OP_NO_TLSv1_1) == 0;
+            bool tls12 = (options & libssl.Options.SSL_OP_NO_TLSv1_2) == 0;
 
-            IntPtr method;
+            IntPtr method = libssl.SslMethods.SSLv23_method; // default
 
-            if (noSsl2 && noSsl3 && noTls11 && noTls12)
+            if (!ssl2)
             {
-                method = libssl.TLSv1_method();
-            }
-            else if (noSsl2 && noSsl3 && noTls10 && noTls12)
-            {
-                method = libssl.TLSv1_1_method();
-            }
-            else if (noSsl2 && noSsl3 && noTls10 && noTls11)
-            {
-                method = libssl.TLSv1_2_method();
-            }
-            else if (noSsl2 && noTls10 && noTls11 && noTls12)
-            {
-                method = libssl.SSLv3_method();
-            }
-            else
-            {
-                method = libssl.SSLv23_method();
+                if (!ssl3)
+                {
+                    if (!tls11 && !tls12)
+                    {
+                        method = libssl.SslMethods.TLSv1_method;
+                    }
+                    else if (!tls10 && !tls12)
+                    {
+                        method = libssl.SslMethods.TLSv1_1_method;
+                    }
+                    else if (!tls10 && !tls11)
+                    {
+                        method = libssl.SslMethods.TLSv1_2_method;
+                    }
+                }
+                else if (!tls10 && !tls11 && !tls12)
+                {
+                    method = libssl.SslMethods.SSLv3_method;
+                }
             }
 
             if (IntPtr.Zero == method)
@@ -359,12 +373,12 @@ internal static partial class Interop
             return bytes;
         }
 
-        private static int GetSslError(IntPtr sslPtr, int result)
+        private static libssl.SslErrorCode GetSslError(IntPtr sslPtr, int result)
         {
-            int retVal = libssl.SSL_get_error(sslPtr, result);
+            libssl.SslErrorCode retVal = libssl.SSL_get_error(sslPtr, result);
             if (retVal == libssl.SslErrorCode.SSL_ERROR_SYSCALL)
             {
-                retVal = (int)libssl.ERR_get_error();
+                retVal = (libssl.SslErrorCode)libssl.ERR_get_error();
             }
             return retVal;
         }
@@ -400,20 +414,19 @@ internal static partial class Interop
             return new SslException(msg, (int)errorVal);
         }
 
-        private static SslException CreateSslException(string message, int error)
+        private static SslException CreateSslException(string message, libssl.SslErrorCode error)
         {
-            if (error == libssl.SslErrorCode.SSL_ERROR_SYSCALL)
+            switch (error)
             {
-                return new SslException(message, error);
-            }
-            else if (error == libssl.SslErrorCode.SSL_ERROR_SSL)
-            {
-                Exception innerEx = Interop.libcrypto.CreateOpenSslCryptographicException();
-                return new SslException(innerEx.Message, innerEx);
-            }
-            else
-            {
-                return new SslException(message + ": " + error, error);
+                case libssl.SslErrorCode.SSL_ERROR_SYSCALL:
+                    return new SslException(message, error);
+
+                case libssl.SslErrorCode.SSL_ERROR_SSL:
+                    Exception innerEx = Interop.libcrypto.CreateOpenSslCryptographicException();
+                    return new SslException(innerEx.Message, innerEx);
+
+                default:
+                    return new SslException(message + ": " + error, error);
             }
         }
 
@@ -424,6 +437,11 @@ internal static partial class Interop
 
         private sealed class SslException : Exception
         {
+            public SslException(string inputMessage, libssl.SslErrorCode error): base(inputMessage)
+            {
+                HResult = (int)error;
+            }
+
             public SslException(string inputMessage, int error): base(inputMessage)
             {
                 HResult = error;               
