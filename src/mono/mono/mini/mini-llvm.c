@@ -3482,7 +3482,6 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBlockRef cbb,
 	LLVMBasicBlockRef target_bb = ctx->bblocks [bb->block_num].call_handler_target_bb;
 	LLVMPositionBuilderAtEnd (handler_builder, target_bb);
 
-
 	int clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);
 	MonoExceptionClause *clause = &ctx->cfg->header->clauses [clause_index];
 
@@ -7025,7 +7024,10 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	else
 		fields [tindex ++] = LLVMConstNull (eltype);
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule->module, "assembly_name");
-	fields [tindex ++] = LLVMGetNamedGlobal (lmodule->module, "_ZTIPi");
+	fields [tindex] = LLVMGetNamedGlobal (lmodule->module, "_ZTIPi");
+	if (fields [tindex] == NULL)
+		fields [tindex] = LLVMConstNull (eltype);
+	tindex ++;
 	if (lmodule->has_jitted_code) {
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt_end");
