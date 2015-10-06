@@ -187,7 +187,7 @@ namespace System.Net.Sockets
 
         private abstract class SendReceiveOperation : TransferOperation
         {
-            public BufferList Buffers;
+            public IList<ArraySegment<byte>> Buffers;
             public int BufferIndex;
 
             public Action<int, byte[], int, int, SocketError> Callback
@@ -888,7 +888,7 @@ namespace System.Net.Sockets
             {
                 var operation = new ReceiveOperation {
                     Event = @event,
-                    Buffers = new BufferList(buffers),
+                    Buffers = buffers,
                     Flags = flags,
                     SocketAddress = socketAddress,
                     SocketAddressLen = socketAddressLen,
@@ -944,7 +944,7 @@ namespace System.Net.Sockets
 
             var operation = new ReceiveOperation {
                 Callback = callback,
-                Buffers = new BufferList(buffers),
+                Buffers = buffers,
                 Flags = flags,
                 SocketAddress = socketAddress,
                 SocketAddressLen = socketAddressLen,
@@ -1192,17 +1192,17 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Send(BufferList buffers, int flags, int timeout, out int bytesSent)
+        public SocketError Send(IList<ArraySegment<byte>> buffers, int flags, int timeout, out int bytesSent)
         {
             return SendTo(buffers, flags, null, 0, timeout, out bytesSent);
         }
 
-        public SocketError SendAsync(BufferList buffers, int flags, Action<int, byte[], int, int, SocketError> callback)
+        public SocketError SendAsync(IList<ArraySegment<byte>> buffers, int flags, Action<int, byte[], int, int, SocketError> callback)
         {
             return SendToAsync(buffers, flags, null, 0, callback);
         }
 
-        public SocketError SendTo(BufferList buffers, int flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public SocketError SendTo(IList<ArraySegment<byte>> buffers, int flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0);
 
@@ -1251,7 +1251,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError SendToAsync(BufferList buffers, int flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, int, SocketError> callback)
+        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, int flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, int, SocketError> callback)
         {
             int bufferIndex = 0;
             int offset = 0;

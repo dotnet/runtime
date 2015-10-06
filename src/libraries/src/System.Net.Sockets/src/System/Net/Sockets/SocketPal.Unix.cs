@@ -681,7 +681,7 @@ namespace System.Net.Sockets
             return sent;
         }
 
-        private static unsafe int Send(int fd, int flags, BufferList buffers, ref int bufferIndex, ref int offset, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
+        private static unsafe int Send(int fd, int flags, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
         {
             // Pin buffers and set up iovecs.
             int startIndex = bufferIndex, startOffset = offset;
@@ -766,7 +766,7 @@ namespace System.Net.Sockets
             return sent;
         }
 
-        private static unsafe int Receive(int fd, int flags, int available, BufferList buffers, byte[] socketAddress, ref int socketAddressLen, out int receivedFlags, out Interop.Error errno)
+        private static unsafe int Receive(int fd, int flags, int available, IList<ArraySegment<byte>> buffers, byte[] socketAddress, ref int socketAddressLen, out int receivedFlags, out Interop.Error errno)
         {
             // Pin buffers and set up iovecs.
             int maxBuffers = buffers.Count;
@@ -993,15 +993,15 @@ namespace System.Net.Sockets
 
         public static bool TryCompleteReceiveFrom(int fileDescriptor, byte[] buffer, int offset, int count, int flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out int receivedFlags, out SocketError errorCode)
         {
-            return TryCompleteReceiveFrom(fileDescriptor, buffer, default(BufferList), offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
+            return TryCompleteReceiveFrom(fileDescriptor, buffer, null, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
         }
 
         public static bool TryCompleteReceiveFrom(int fileDescriptor, IList<ArraySegment<byte>> buffers, int flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out int receivedFlags, out SocketError errorCode)
         {
-            return TryCompleteReceiveFrom(fileDescriptor, null, new BufferList(buffers), 0, 0, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
+            return TryCompleteReceiveFrom(fileDescriptor, null, buffers, 0, 0, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
         }
 
-        public static unsafe bool TryCompleteReceiveFrom(int fileDescriptor, byte[] buffer, BufferList buffers, int offset, int count, int flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out int receivedFlags, out SocketError errorCode)
+        public static unsafe bool TryCompleteReceiveFrom(int fileDescriptor, byte[] buffer, IList<ArraySegment<byte>> buffers, int offset, int count, int flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out int receivedFlags, out SocketError errorCode)
         {
             int available;
             int err = Interop.libc.ioctl(fileDescriptor, (UIntPtr)Interop.libc.FIONREAD, &available);
@@ -1026,7 +1026,6 @@ namespace System.Net.Sockets
             }
             else
             {
-                Debug.Assert(buffers.IsInitialized);
                 received = Receive(fileDescriptor, flags, available, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
             }
 
@@ -1092,16 +1091,16 @@ namespace System.Net.Sockets
         public static bool TryCompleteSendTo(int fileDescriptor, byte[] buffer, ref int offset, ref int count, int flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
             int bufferIndex = 0;
-            return TryCompleteSendTo(fileDescriptor, buffer, default(BufferList), ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
+            return TryCompleteSendTo(fileDescriptor, buffer, null, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
         }
 
-        public static bool TryCompleteSendTo(int fileDescriptor, BufferList buffers, ref int bufferIndex, ref int offset, int flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
+        public static bool TryCompleteSendTo(int fileDescriptor, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, int flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
             int count = 0;
             return TryCompleteSendTo(fileDescriptor, null, buffers, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
         }
 
-        public static bool TryCompleteSendTo(int fileDescriptor, byte[] buffer, BufferList buffers, ref int bufferIndex, ref int offset, ref int count, int flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
+        public static bool TryCompleteSendTo(int fileDescriptor, byte[] buffer, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, ref int count, int flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
             for (;;)
             {
@@ -1113,7 +1112,6 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    Debug.Assert(buffers.IsInitialized);
                     sent = Send(fileDescriptor, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno);
                 }
 
@@ -1133,7 +1131,7 @@ namespace System.Net.Sockets
 
                 bool isComplete = sent == 0 ||
                     (buffer != null && count == 0) ||
-                    (buffers.IsInitialized && bufferIndex == buffers.Count);
+                    (buffers != null && bufferIndex == buffers.Count);
                 if (isComplete)
                 {
                     errorCode = SocketError.Success;
@@ -1228,27 +1226,9 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException();
         }
 
-        public static SocketError Send(SafeCloseSocket handle, BufferOffsetSize[] buffers, SocketFlags socketFlags, out int bytesTransferred)
-        {
-            var bufferList = new BufferList(buffers);
-            int platformFlags = GetPlatformSocketFlags(socketFlags);
-
-            if (!handle.IsNonBlocking)
-            {
-                return handle.AsyncContext.Send(bufferList, platformFlags, handle.SendTimeout, out bytesTransferred);
-            }
-
-            bytesTransferred = 0;
-            int bufferIndex = 0;
-            int offset = 0;
-            SocketError errorCode;
-            bool completed = TryCompleteSendTo(handle.FileDescriptor, bufferList, ref bufferIndex, ref offset, platformFlags, null, 0, ref bytesTransferred, out errorCode);
-            return completed ? errorCode : SocketError.WouldBlock;
-        }
-
         public static SocketError Send(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
         {
-            var bufferList = new BufferList(buffers);
+            var bufferList = buffers;
             int platformFlags = GetPlatformSocketFlags(socketFlags);
 
             if (!handle.IsNonBlocking)
@@ -1733,12 +1713,7 @@ namespace System.Net.Sockets
 
         public static SocketError SendAsync(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
-            return handle.AsyncContext.SendAsync(new BufferList(buffers), GetPlatformSocketFlags(socketFlags), asyncResult.CompletionCallback);
-        }
-
-        public static SocketError SendAsync(SafeCloseSocket handle, BufferOffsetSize[] buffers, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
-        {
-            return handle.AsyncContext.SendAsync(new BufferList(buffers), GetPlatformSocketFlags(socketFlags), asyncResult.CompletionCallback);
+            return handle.AsyncContext.SendAsync(buffers, GetPlatformSocketFlags(socketFlags), asyncResult.CompletionCallback);
         }
 
         public static SocketError SendToAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, Internals.SocketAddress socketAddress, OverlappedAsyncResult asyncResult)
