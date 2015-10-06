@@ -130,16 +130,16 @@ public class MoveFileTests
             using (var testFile = new TemporaryTestFile(Path.Combine(dir.Path, "file")))
             {
                 watcher.EnableRaisingEvents = true;
-                AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, eventType);
+                AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, eventType);
 
                 // Move the testFile to a different name in the same directory
                 testFile.Move(testFile.Path + "_" + eventType.ToString());
 
                 // Test that the event is observed or not observed
                 if (moveRaisesEvent)
-                    Utility.ExpectEvent(eventOccured, eventType.ToString());
+                    Utility.ExpectEvent(eventOccurred, eventType.ToString());
                 else
-                    Utility.ExpectNoEvent(eventOccured, eventType.ToString());
+                    Utility.ExpectNoEvent(eventOccurred, eventType.ToString());
             }
         }
     }
@@ -166,16 +166,16 @@ public class MoveFileTests
             using (var testFile = new TemporaryTestFile(Path.Combine(dir.Path, "file")))
             {
                 watcher.EnableRaisingEvents = true;
-                AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, eventType);
+                AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, eventType);
 
                 // Move the testFile to a different name in the same directory
                 testFile.Move(Path.Combine(dir_unwatched.Path, testFile.Name + "_" + eventType.ToString()));
 
                 // Test which events are thrown
                 if (moveRaisesEvent)
-                    Utility.ExpectEvent(eventOccured, eventType.ToString());
+                    Utility.ExpectEvent(eventOccurred, eventType.ToString());
                 else
-                    Utility.ExpectNoEvent(eventOccured, eventType.ToString());
+                    Utility.ExpectNoEvent(eventOccurred, eventType.ToString());
             }
         }
     }
@@ -189,15 +189,15 @@ public class MoveFileTests
     /// </summary>
     private static void MoveAndCheck_NestedDirectory(WatcherChangeTypes eventType, bool moveRaisesEvent)
     {
-        Utility.TestNestedDirectoriesHelper(eventType, (AutoResetEvent eventOccured, TemporaryTestDirectory ttd) =>
+        Utility.TestNestedDirectoriesHelper(eventType, (AutoResetEvent eventOccurred, TemporaryTestDirectory ttd) =>
         {
             using (var nestedFile = new TemporaryTestFile(Path.Combine(ttd.Path, "nestedFile" + eventType.ToString())))
             {
                 nestedFile.Move(nestedFile.Path + "_2");
                 if (moveRaisesEvent)
-                    Utility.ExpectEvent(eventOccured, eventType.ToString());
+                    Utility.ExpectEvent(eventOccurred, eventType.ToString());
                 else
-                    Utility.ExpectNoEvent(eventOccured, eventType.ToString());
+                    Utility.ExpectNoEvent(eventOccurred, eventType.ToString());
             }
         });
     }
@@ -217,7 +217,7 @@ public class MoveFileTests
         {
             watcher.NotifyFilter = NotifyFilters.FileName;
             watcher.Filter = Path.GetFileName(file.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, eventType);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, eventType);
 
             string newName = file.Path + "_" + eventType.ToString();
             Utility.EnsureDelete(newName);
@@ -227,9 +227,9 @@ public class MoveFileTests
             file.Move(newName);
 
             if (moveRaisesEvent)
-                Utility.ExpectEvent(eventOccured, eventType.ToString());
+                Utility.ExpectEvent(eventOccurred, eventType.ToString());
             else
-                Utility.ExpectNoEvent(eventOccured, eventType.ToString());
+                Utility.ExpectNoEvent(eventOccurred, eventType.ToString());
         }
     }
 

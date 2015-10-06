@@ -140,7 +140,7 @@ namespace System.Linq.Parallel
 
                 if (_cancellationState.MergedCancellationToken.IsCancellationRequested)
                 {
-                    // cancellation has occured but no user-delegate exceptions were detected 
+                    // cancellation has occurred but no user-delegate exceptions were detected 
 
                     // NOTE: it is important that we see other state variables correctly here, and that
                     // read-reordering hasn't played havoc. 

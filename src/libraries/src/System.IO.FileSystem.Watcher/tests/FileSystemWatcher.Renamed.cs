@@ -14,7 +14,7 @@ public partial class RenamedTests
         using (var watcher = new FileSystemWatcher("."))
         {
             watcher.Filter = Path.GetFileName(dir.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Renamed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Renamed);
 
             string newName = dir.Path + "_rename";
             Utility.EnsureDelete(newName);
@@ -23,7 +23,7 @@ public partial class RenamedTests
 
             dir.Move(newName);
 
-            Utility.ExpectEvent(eventOccured, "renamed");
+            Utility.ExpectEvent(eventOccurred, "renamed");
         }
     }
 
@@ -36,7 +36,7 @@ public partial class RenamedTests
             // put everything in our own directory to avoid collisions
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*.*";
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Renamed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Renamed);
 
             watcher.EnableRaisingEvents = true;
 
@@ -54,7 +54,7 @@ public partial class RenamedTests
                 // deleting a file & directory by leaving the using block
             }
 
-            Utility.ExpectNoEvent(eventOccured, "created");
+            Utility.ExpectNoEvent(eventOccurred, "created");
         }
     }
 
@@ -93,8 +93,8 @@ public partial class RenamedTests
         using (var temp = Utility.CreateTestDirectory(Path.Combine(root.Path, "temp")))
         using (var watcher = new FileSystemWatcher())
         {
-            AutoResetEvent createdOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
-            AutoResetEvent deletedOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+            AutoResetEvent createdOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+            AutoResetEvent deletedOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
 
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
@@ -103,11 +103,11 @@ public partial class RenamedTests
 
             using (var dir1 = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
             {
-                Utility.ExpectEvent(createdOccured, "dir1 created");
+                Utility.ExpectEvent(createdOccurred, "dir1 created");
 
                 using (var dir2 = new TemporaryTestDirectory(Path.Combine(dir1.Path, "dir2")))
                 {
-                    Utility.ExpectEvent(createdOccured, "dir2 created");
+                    Utility.ExpectEvent(createdOccurred, "dir2 created");
 
                     using (var file = Utility.CreateTestFile(Path.Combine(dir2.Path, "test file"))) { };
 
@@ -115,11 +115,11 @@ public partial class RenamedTests
                     string original = dir1.Path;
                     string target = Path.Combine(temp.Path, Path.GetFileName(dir1.Path));
                     dir1.Move(target);
-                    Utility.ExpectEvent(deletedOccured, "dir1 moved out");
+                    Utility.ExpectEvent(deletedOccurred, "dir1 moved out");
 
                     // Move the directory back and expect a created event
                     dir1.Move(original);
-                    Utility.ExpectEvent(createdOccured, "dir1 moved back");
+                    Utility.ExpectEvent(createdOccurred, "dir1 moved back");
                 }
             }
         }
@@ -136,8 +136,8 @@ public partial class RenamedTests
         using (var temp = Utility.CreateTestDirectory(Path.Combine(root.Path, "temp")))
         using (var watcher = new FileSystemWatcher())
         {
-            AutoResetEvent createdOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
-            AutoResetEvent deletedOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+            AutoResetEvent createdOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+            AutoResetEvent deletedOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
 
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
@@ -146,11 +146,11 @@ public partial class RenamedTests
 
             using (var dir1 = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
             {
-                Utility.ExpectEvent(createdOccured, "dir1 created");
+                Utility.ExpectEvent(createdOccurred, "dir1 created");
 
                 using (var dir2 = new TemporaryTestDirectory(Path.Combine(dir1.Path, "dir2")))
                 {
-                    Utility.ExpectNoEvent(createdOccured, "dir2 created");
+                    Utility.ExpectNoEvent(createdOccurred, "dir2 created");
 
                     using (var file = Utility.CreateTestFile(Path.Combine(dir2.Path, "test file"))) { };
 
@@ -158,11 +158,11 @@ public partial class RenamedTests
                     string original = dir1.Path;
                     string target = Path.Combine(temp.Path, Path.GetFileName(dir1.Path));
                     dir1.Move(target);
-                    Utility.ExpectEvent(deletedOccured, "dir1 moved out");
+                    Utility.ExpectEvent(deletedOccurred, "dir1 moved out");
 
                     // Move the directory back and expect a created event
                     dir1.Move(original);
-                    Utility.ExpectEvent(createdOccured, "dir1 moved back");
+                    Utility.ExpectEvent(createdOccurred, "dir1 moved back");
                 }
             }
         }
@@ -178,7 +178,7 @@ public partial class RenamedTests
         using (var dir1 = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
         using (var watcher = new FileSystemWatcher())
         {
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted | WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created | WatcherChangeTypes.Deleted | WatcherChangeTypes.Changed);
 
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
@@ -189,22 +189,22 @@ public partial class RenamedTests
             using (var file = File.Create(filePath))
             {
                 // Wait for the file to be created then make a change to validate that we get a change
-                Utility.ExpectEvent(eventOccured, "test file created");
+                Utility.ExpectEvent(eventOccurred, "test file created");
                 byte[] buffer = new byte[4096];
                 file.Write(buffer, 0, buffer.Length);
                 file.Flush();
             }
-            Utility.ExpectEvent(eventOccured, "test file changed");
+            Utility.ExpectEvent(eventOccurred, "test file changed");
 
             // Move the nested dir out of scope and validate that we get a single deleted event
             string original = dir1.Path;
             string target = Path.Combine(temp.Path, "dir1");
             dir1.Move(target);
-            Utility.ExpectEvent(eventOccured, "nested dir deleted");
+            Utility.ExpectEvent(eventOccurred, "nested dir deleted");
 
             // Move the dir (and child file) back into scope and validate that we get a created event
             dir1.Move(original);
-            Utility.ExpectEvent(eventOccured, "nested dir created");
+            Utility.ExpectEvent(eventOccurred, "nested dir created");
 
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Write))
             {
@@ -212,7 +212,7 @@ public partial class RenamedTests
                 fs.Write(buffer, 0, buffer.Length);
                 fs.Flush();
             }
-            Utility.ExpectEvent(eventOccured, "test file changed");
+            Utility.ExpectEvent(eventOccurred, "test file changed");
         }
     }
 }

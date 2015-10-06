@@ -152,7 +152,7 @@ namespace System.IO
                 return properties.Size;
             }
 
-            // Consumes cached file/directory information and throw if any error occured retrieving 
+            // Consumes cached file/directory information and throw if any error occurred retrieving 
             // it, including file not found.
             private void EnsureItemExists()
             {

@@ -16,13 +16,13 @@ public class ChangedTests
         using (var watcher = new FileSystemWatcher("."))
         {
             watcher.Filter = Path.GetFileName(file.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             watcher.EnableRaisingEvents = true;
 
             File.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
 
-            Utility.ExpectEvent(eventOccured, "changed");
+            Utility.ExpectEvent(eventOccurred, "changed");
         }
     }
 
@@ -34,12 +34,12 @@ public class ChangedTests
         using (var watcher = new FileSystemWatcher("."))
         {
             watcher.Filter = Path.GetFileName(dir.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             watcher.EnableRaisingEvents = true;
             Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
 
-            Utility.ExpectEvent(eventOccured, "changed");
+            Utility.ExpectEvent(eventOccurred, "changed");
         }
     }
 
@@ -53,7 +53,7 @@ public class ChangedTests
             // put everything in our own directory to avoid collisions
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*.*";
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             // run all scenarios together to avoid unnecessary waits, 
             // assert information is verbose enough to trace to failure cause
@@ -72,7 +72,7 @@ public class ChangedTests
                 // deleting a file & directory by leaving the using block
             }
 
-            Utility.ExpectNoEvent(eventOccured, "changed");
+            Utility.ExpectNoEvent(eventOccurred, "changed");
         }
     }
 
@@ -84,13 +84,13 @@ public class ChangedTests
         {
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             watcher.EnableRaisingEvents = true;
 
             Directory.SetLastAccessTime(watcher.Path, DateTime.Now);
 
-            Utility.ExpectEvent(eventOccured, "changed");
+            Utility.ExpectEvent(eventOccurred, "changed");
         }
     }
 
@@ -125,7 +125,7 @@ public class ChangedTests
         using (var dir = Utility.CreateTestDirectory())
         using (var watcher = new FileSystemWatcher())
         {
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             // Attach the FSW to the existing structure
             watcher.Path = Path.GetFullPath(dir.Path);
@@ -142,7 +142,7 @@ public class ChangedTests
                 file.Flush();
             }
 
-            Utility.ExpectEvent(eventOccured, "file changed");
+            Utility.ExpectEvent(eventOccurred, "file changed");
         }
     }
 
@@ -162,7 +162,7 @@ public class ChangedTests
             File.WriteAllBytes(filePath, new byte[4096]);
 
             // Attach the FSW to the existing structure
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
             watcher.NotifyFilter = NotifyFilters.Attributes;
@@ -173,9 +173,9 @@ public class ChangedTests
             File.SetAttributes(filePath, FileAttributes.Normal);
 
             if (includeSubdirectories)
-                Utility.ExpectEvent(eventOccured, "file changed");
+                Utility.ExpectEvent(eventOccurred, "file changed");
             else
-                Utility.ExpectNoEvent(eventOccured, "file changed");
+                Utility.ExpectNoEvent(eventOccurred, "file changed");
 
             // Restart the FSW
             watcher.EnableRaisingEvents = false;
@@ -185,9 +185,9 @@ public class ChangedTests
             File.SetAttributes(filePath, FileAttributes.Normal);
 
             if (includeSubdirectories)
-                Utility.ExpectEvent(eventOccured, "second file change");
+                Utility.ExpectEvent(eventOccurred, "second file change");
             else
-                Utility.ExpectNoEvent(eventOccured, "second file change");
+                Utility.ExpectNoEvent(eventOccurred, "second file change");
         }
     }
 

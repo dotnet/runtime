@@ -46,7 +46,7 @@ namespace System.Net
                 else
                 {
                     // Verify that the current status of the tcs.Task is 'Canceled'.  This
-                    // occured due to a previous call of tcs.TrySetCanceled() from the
+                    // occurred due to a previous call of tcs.TrySetCanceled() from the
                     // HttpWebRequest.Abort() method.
                     Debug.Assert(tcs.Task.IsCanceled);
                 }
