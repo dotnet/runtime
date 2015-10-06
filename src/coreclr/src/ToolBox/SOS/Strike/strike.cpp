@@ -4198,7 +4198,7 @@ static const char *const str_fgm[] =
 
 void PrintOOMInfo(DacpOomData* oomData)
 {
-    ExtOut("Managed OOM occured after GC #%d (Requested to allocate %d bytes)\n", 
+    ExtOut("Managed OOM occurred after GC #%d (Requested to allocate %d bytes)\n", 
         oomData->gc_index, oomData->alloc_size);
 
     if ((oomData->reason == oom_budget) ||

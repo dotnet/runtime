@@ -357,7 +357,7 @@ HRESULT VMPostError(                    // Returned error.
     ...);                               // Error arguments.
     
 //=====================================================================
-// Displays the messaage box or logs the message, corresponding to the last COM+ error occured
+// Displays the messaage box or logs the message, corresponding to the last COM+ error occurred
 void VMDumpCOMErrors(HRESULT hrErr);
 HRESULT LoadMscorsn();
 

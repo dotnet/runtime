@@ -52,7 +52,7 @@ int __cdecl main(int argc, char *argv[]) {
     /* Exchanged, these should be equal now */
     if(BaseVariableToManipulate != ValueToExchange) 
     {
-        Fail("ERROR: A successful compare and exchange should have occured, "
+        Fail("ERROR: A successful compare and exchange should have occurred, "
              "making the variable have the value of %d, as opposed to the "
              "current value of %d.",
              ValueToExchange,BaseVariableToManipulate);  
