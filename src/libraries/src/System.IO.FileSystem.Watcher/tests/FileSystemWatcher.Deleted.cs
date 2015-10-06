@@ -16,7 +16,7 @@ public class DeletedTests
         {
             string fileName = Guid.NewGuid().ToString();
             watcher.Filter = fileName;
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
 
 
             using (var file = new TemporaryTestFile(fileName))
@@ -24,7 +24,7 @@ public class DeletedTests
                 watcher.EnableRaisingEvents = true;
             }
 
-            Utility.ExpectEvent(eventOccured, "deleted");
+            Utility.ExpectEvent(eventOccurred, "deleted");
         }
     }
 
@@ -35,14 +35,14 @@ public class DeletedTests
         {
             string dirName = Guid.NewGuid().ToString();
             watcher.Filter = dirName;
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
 
             using (var dir = new TemporaryTestDirectory(dirName))
             {
                 watcher.EnableRaisingEvents = true;
             }
 
-            Utility.ExpectEvent(eventOccured, "deleted");
+            Utility.ExpectEvent(eventOccurred, "deleted");
         }
     }
 
@@ -55,7 +55,7 @@ public class DeletedTests
             // put everything in our own directory to avoid collisions
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*.*";
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
 
             // run all scenarios together to avoid unnecessary waits, 
             // assert information is verbose enough to trace to failure cause
@@ -80,7 +80,7 @@ public class DeletedTests
                     testDir.Move(testDir.Path + "_rename");
                 }
 
-                Utility.ExpectNoEvent(eventOccured, "deleted");
+                Utility.ExpectNoEvent(eventOccurred, "deleted");
             }
         }
     }
@@ -91,8 +91,8 @@ public class DeletedTests
         using (var dir = Utility.CreateTestDirectory())
         using (var watcher = new FileSystemWatcher())
         {
-            AutoResetEvent createOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+            AutoResetEvent createOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
 
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
@@ -102,26 +102,26 @@ public class DeletedTests
             using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
             {
                 // Wait for the created event
-                Utility.ExpectEvent(createOccured, "create");
+                Utility.ExpectEvent(createOccurred, "create");
 
                 using (var secondDir = new TemporaryTestDirectory(Path.Combine(firstDir.Path, "dir2")))
                 {
                     // Wait for the created event
-                    Utility.ExpectEvent(createOccured, "create");
+                    Utility.ExpectEvent(createOccurred, "create");
 
                     using (var nestedDir = new TemporaryTestDirectory(Path.Combine(secondDir.Path, "nested")))
                     {
                         // Wait for the created event
-                        Utility.ExpectEvent(createOccured, "create");
+                        Utility.ExpectEvent(createOccurred, "create");
                     }
 
-                    Utility.ExpectEvent(eventOccured, "deleted");
+                    Utility.ExpectEvent(eventOccurred, "deleted");
                 }
 
-                Utility.ExpectEvent(eventOccured, "deleted");
+                Utility.ExpectEvent(eventOccurred, "deleted");
             }
 
-            Utility.ExpectEvent(eventOccured, "deleted");
+            Utility.ExpectEvent(eventOccurred, "deleted");
         }
     }
 
@@ -131,8 +131,8 @@ public class DeletedTests
         using (var dir = Utility.CreateTestDirectory())
         using (var watcher = new FileSystemWatcher())
         {
-            AutoResetEvent createOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
+            AutoResetEvent createOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Deleted);
 
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
@@ -142,22 +142,22 @@ public class DeletedTests
             using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
             {
                 // Wait for the created event
-                Utility.ExpectEvent(createOccured, "create");
+                Utility.ExpectEvent(createOccurred, "create");
 
                 using (var secondDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir2")))
                 {
                     // Wait for the created event
-                    Utility.ExpectEvent(createOccured, "create");
+                    Utility.ExpectEvent(createOccurred, "create");
 
                     using (var nestedDir = new TemporaryTestFile(Path.Combine(secondDir.Path, "nestedFile"))) { }
 
-                    Utility.ExpectEvent(eventOccured, "deleted");
+                    Utility.ExpectEvent(eventOccurred, "deleted");
                 }
 
-                Utility.ExpectEvent(eventOccured, "deleted");
+                Utility.ExpectEvent(eventOccurred, "deleted");
             }
 
-            Utility.ExpectEvent(eventOccured, "deleted");
+            Utility.ExpectEvent(eventOccurred, "deleted");
         }
     }
 }

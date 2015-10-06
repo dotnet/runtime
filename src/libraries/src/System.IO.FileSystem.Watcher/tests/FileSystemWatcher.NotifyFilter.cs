@@ -18,7 +18,7 @@ public partial class NotifyFilterTests
         {
             watcher.NotifyFilter = NotifyFilters.Attributes;
             watcher.Filter = Path.GetFileName(file.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             watcher.EnableRaisingEvents = true;
 
@@ -27,7 +27,7 @@ public partial class NotifyFilterTests
 
             File.SetAttributes(file.Path, attributes);
 
-            Utility.ExpectEvent(eventOccured, "changed");
+            Utility.ExpectEvent(eventOccurred, "changed");
         }
     }
 
@@ -41,13 +41,13 @@ public partial class NotifyFilterTests
         {
             watcher.NotifyFilter = NotifyFilters.CreationTime;
             watcher.Filter = Path.GetFileName(file.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             watcher.EnableRaisingEvents = true;
 
             File.SetCreationTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
 
-            Utility.ExpectEvent(eventOccured, "changed");
+            Utility.ExpectEvent(eventOccurred, "changed");
         }
     }
 
@@ -59,7 +59,7 @@ public partial class NotifyFilterTests
         {
             watcher.NotifyFilter = NotifyFilters.DirectoryName;
             watcher.Filter = Path.GetFileName(dir.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Renamed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Renamed);
 
             string newName = dir.Path + "_rename";
             Utility.EnsureDelete(newName);
@@ -68,7 +68,7 @@ public partial class NotifyFilterTests
 
             dir.Move(newName);
 
-            Utility.ExpectEvent(eventOccured, "changed");
+            Utility.ExpectEvent(eventOccurred, "changed");
         }
     }
 
@@ -82,13 +82,13 @@ public partial class NotifyFilterTests
         {
             watcher.NotifyFilter = NotifyFilters.LastAccess;
             watcher.Filter = Path.GetFileName(file.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             watcher.EnableRaisingEvents = true;
 
             File.SetLastAccessTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
 
-            Utility.ExpectEvent(eventOccured, "changed");
+            Utility.ExpectEvent(eventOccurred, "changed");
         }
     }
 
@@ -101,13 +101,13 @@ public partial class NotifyFilterTests
         {
             watcher.NotifyFilter = NotifyFilters.LastWrite;
             watcher.Filter = Path.GetFileName(file.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             watcher.EnableRaisingEvents = true;
 
             File.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
 
-            Utility.ExpectEvent(eventOccured, "changed");
+            Utility.ExpectEvent(eventOccurred, "changed");
         }
     }
 
@@ -120,7 +120,7 @@ public partial class NotifyFilterTests
         {
             watcher.NotifyFilter = NotifyFilters.Size;
             watcher.Filter = Path.GetFileName(file.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             watcher.EnableRaisingEvents = true;
 
@@ -130,7 +130,7 @@ public partial class NotifyFilterTests
             // Size changes only occur when the file is written to disk
             file.Flush(flushToDisk: true);
 
-            Utility.ExpectEvent(eventOccured, "changed");
+            Utility.ExpectEvent(eventOccurred, "changed");
         }
     }
 
@@ -163,7 +163,7 @@ public partial class NotifyFilterTests
         {
             watcher.NotifyFilter = NotifyFilters.Security;
             watcher.Filter = Path.GetFileName(file.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Changed);
 
             watcher.EnableRaisingEvents = true;
 
@@ -177,7 +177,7 @@ public partial class NotifyFilterTests
                 sacl: IntPtr.Zero);
             Assert.Equal(ERROR_SUCCESS, result);
 
-            Utility.ExpectEvent(eventOccured, "changed");
+            Utility.ExpectEvent(eventOccurred, "changed");
         }
     }
 
@@ -192,7 +192,7 @@ public partial class NotifyFilterTests
             // only detect name.
             watcher.NotifyFilter = NotifyFilters.FileName;
             watcher.Filter = Path.GetFileName(file.Path);
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.All);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.All);
 
             string newName = file.Path + "_rename";
             Utility.EnsureDelete(newName);
@@ -232,7 +232,7 @@ public partial class NotifyFilterTests
             }
 
             // None of these should trigger any events
-            Utility.ExpectNoEvent(eventOccured, "any");
+            Utility.ExpectNoEvent(eventOccurred, "any");
         }
     }
 }
