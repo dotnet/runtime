@@ -27,7 +27,7 @@
 #include "environment.h"
 #include "coree.h"
 
-#include <Shellapi.h>
+#include <shellapi.h>
 
 HMODULE coree_module_handle = NULL;
 

@@ -93,7 +93,7 @@ mono_main_with_options (int argc, char *argv [])
 
 #ifdef HOST_WIN32
 
-#include <Shellapi.h>
+#include <shellapi.h>
 
 int
 main (void)
