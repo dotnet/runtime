@@ -275,59 +275,117 @@ namespace System.Numerics
         // return an array of one byte whose element is 0x00.
         public byte[] ToByteArray()
         {
-            if (_bits == null && _sign == 0)
+            int sign = _sign;
+            if (sign == 0)
+            {
                 return new byte[] { 0 };
-
-            // We could probably make this more efficient by eliminating one of the passes.
-            // The current code does one pass for uint array -> byte array conversion,
-            // and then another pass to remove unneeded bytes at the top of the array.
-            uint[] dwords;
-            byte highByte;
-
-            if (_bits == null)
-            {
-                dwords = new uint[] { (uint)_sign };
-                highByte = (byte)((_sign < 0) ? 0xff : 0x00);
             }
-            else if (_sign == -1)
+
+            byte highByte;
+            int nonZeroDwordIndex = 0;
+            uint highDword;
+            uint[] bits = _bits;
+            if (bits == null)
             {
-                dwords = (uint[])_bits.Clone();
-                NumericsHelpers.DangerousMakeTwosComplement(dwords);  // mutates dwords
+                highByte = (byte)((sign < 0) ? 0xff : 0x00);
+                highDword = unchecked((uint)sign);
+            }
+            else if (sign == -1)
+            {
                 highByte = 0xff;
+
+                // If sign is -1, we will need to two's complement bits.
+                // Previously this was accomplished via NumericsHelpers.DangerousMakeTwosComplement(),
+                // however, we can do the two's complement on the stack so as to avoid
+                // creating a temporary copy of bits just to hold the two's complement.
+                // One special case in DangerousMakeTwosComplement() is that if the array
+                // is all zeros, then it would allocate a new array with the high-order
+                // uint set to 1 (for the carry). In our usage, we will not hit this case
+                // because a bits array of all zeros would represent 0, and this case
+                // would be encoded as _bits = null and _sign = 0.
+                Debug.Assert(bits.Length > 0);
+                Debug.Assert(bits[bits.Length - 1] != 0);
+                while (bits[nonZeroDwordIndex] == 0U)
+                {
+                    nonZeroDwordIndex++;
+                }
+
+                highDword = ~bits[bits.Length - 1];
+                if (bits.Length - 1 == nonZeroDwordIndex)
+                {
+                    // This will not overflow because highDword is less than or equal to uint.MaxValue - 1.
+                    Debug.Assert(highDword <= uint.MaxValue - 1);
+                    highDword += 1U;
+                }
             }
             else
             {
-                dwords = _bits;
+                Debug.Assert(sign == 1);
                 highByte = 0x00;
+                highDword = bits[bits.Length - 1];
             }
 
-            byte[] bytes = new byte[checked(4 * dwords.Length)];
-            int curByte = 0;
-            uint dword;
-            for (int i = 0; i < dwords.Length; i++)
+            byte msb;
+            int msbIndex;
+            if ((msb = unchecked((byte)(highDword >> 24))) != highByte)
             {
-                dword = dwords[i];
-                for (int j = 0; j < 4; j++)
+                msbIndex = 3;
+            }
+            else if ((msb = unchecked((byte)(highDword >> 16))) != highByte)
+            {
+                msbIndex = 2;
+            }
+            else if ((msb = unchecked((byte)(highDword >> 8))) != highByte)
+            {
+                msbIndex = 1;
+            }
+            else
+            {
+                msb = unchecked((byte)highDword);
+                msbIndex = 0;
+            }
+
+            // ensure high bit is 0 if positive, 1 if negative
+            bool needExtraByte = (msb & 0x80) != (highByte & 0x80);
+            byte[] bytes;
+            int curByte = 0;
+            if (bits == null)
+            {
+                bytes = new byte[msbIndex + 1 + (needExtraByte ? 1 : 0)];
+                Debug.Assert(bytes.Length <= 4);
+            }
+            else
+            {
+                bytes = new byte[checked(4 * (bits.Length - 1) + msbIndex + 1 + (needExtraByte ? 1 : 0))];
+
+                for (int i = 0; i < bits.Length - 1; i++)
                 {
-                    bytes[curByte++] = (byte)(dword & 0xff);
-                    dword >>= 8;
+                    uint dword = bits[i];
+                    if (sign == -1)
+                    {
+                        dword = ~dword;
+                        if (i <= nonZeroDwordIndex)
+                        {
+                            dword = unchecked(dword + 1U);
+                        }
+                    }
+                    for (int j = 0; j < 4; j++)
+                    {
+                        bytes[curByte++] = unchecked((byte)dword);
+                        dword >>= 8;
+                    }
                 }
             }
-
-            // find highest significant byte
-            int msb;
-            for (msb = bytes.Length - 1; msb > 0; msb--)
+            for (int j = 0; j <= msbIndex; j++)
             {
-                if (bytes[msb] != highByte) break;
+                bytes[curByte++] = unchecked((byte)highDword);
+                highDword >>= 8;
             }
-            // ensure high bit is 0 if positive, 1 if negative
-            bool needExtraByte = (bytes[msb] & 0x80) != (highByte & 0x80);
-
-            byte[] trimmedBytes = new byte[msb + 1 + (needExtraByte ? 1 : 0)];
-            Array.Copy(bytes, 0, trimmedBytes, 0, msb + 1);
-
-            if (needExtraByte) trimmedBytes[trimmedBytes.Length - 1] = highByte;
-            return trimmedBytes;
+            if (needExtraByte)
+            {
+                bytes[bytes.Length - 1] = highByte;
+            }
+            return bytes;
         }
 
         // Return the value of this BigInteger as a little-endian twos-complement
