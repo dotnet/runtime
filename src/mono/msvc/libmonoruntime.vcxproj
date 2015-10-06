@@ -99,6 +99,7 @@
     <ClCompile Include="..\mono\sgen\sgen-debug.c" />
     <ClCompile Include="..\mono\sgen\sgen-descriptor.c" />
     <ClCompile Include="..\mono\sgen\sgen-gc.c" />
+    <ClCompile Include="..\mono\sgen\sgen-gchandles.c" />
     <ClCompile Include="..\mono\sgen\sgen-gray.c" />
     <ClCompile Include="..\mono\sgen\sgen-hash-table.c" />
     <ClCompile Include="..\mono\sgen\sgen-internal.c" />
