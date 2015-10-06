@@ -42,7 +42,6 @@
       <Link>CommonTest\AlgorithmImplementations\AES\AesFactory.cs</Link>
     </Compile>
     <Compile Include="AesProvider.cs" />
-    <Compile Include="DesTests.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
     <Compile Include="InvalidUsageTests.cs" />
     <Compile Include="HmacMD5Tests.cs" />
@@ -54,7 +53,6 @@
     <Compile Include="IncrementalHashTests.cs" />
     <Compile Include="MD5Tests.cs" />
     <Compile Include="RandomNumberGeneratorTests.cs" />
-    <Compile Include="RC2Tests.cs" />
     <Compile Include="ReusabilityTests.cs" />
     <Compile Include="Rfc2202HmacTests.cs" />
     <Compile Include="Rfc2898Tests.cs" />
