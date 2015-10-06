@@ -23,6 +23,11 @@ if not defined VisualStudioVersion (
 )
 
 :EnvSet
+:: Clear the 'Platform' env variable for this session,
+:: as it's a per-project setting within the build, and
+:: misleading value (such as 'MCD' in HP PCs) may lead
+:: to build breakage (issue: #69).
+set Platform=
 
 :: Log build command line
 set _buildproj=%~dp0build.proj
