@@ -216,8 +216,7 @@ namespace System.Net.Sockets
                         Interop.Sys.Close(fd);
                         fd = -1;
                     }
-
-                    if (addressFamily == AddressFamily.InterNetworkV6)
+                    else if (addressFamily == AddressFamily.InterNetworkV6)
                     {
                         int on = 1;
                         err = Interop.libc.setsockopt(fd, Interop.libc.IPPROTO_IPV6, Interop.libc.IPV6_V6ONLY, &on, (uint)sizeof(int));
