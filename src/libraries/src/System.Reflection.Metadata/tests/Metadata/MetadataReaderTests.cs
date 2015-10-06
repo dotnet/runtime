@@ -2503,5 +2503,142 @@ namespace System.Reflection.Metadata.Tests
             stream.Position = 0;
             return stream;
         }
+
+        [Fact]
+        public unsafe void ExtraDataObfuscation()
+        {
+            byte[] obfuscated = ObfuscateWithExtraData(Misc.Members);
+            fixed (byte* ptr = obfuscated)
+            {
+                using (var peReader = new PEReader(ptr, obfuscated.Length))
+                {
+                    MetadataReader mdReader = peReader.GetMetadataReader();
+                    ModuleDefinition module = mdReader.GetModuleDefinition();
+
+                    Assert.Equal(0, module.Generation);
+                    Assert.Equal("Members.dll", mdReader.GetString(module.Name));
+                    Assert.Equal(mdReader.GetGuid(MetadataTokens.GuidHandle(1)), mdReader.GetGuid(module.Mvid));
+                }
+            }
+        }
+
+        [Fact]
+        public unsafe void ExtraDataObfuscationWithoutCorrespondingFlag()
+        {
+            // if, unlike above, we leave the ExtraData heap size flag out but do the rest of the obfuscation,
+            // we should fail as we did before we understood the flag.
+            byte[] obfuscated = ObfuscateWithExtraData(Misc.Members, setFlag: false);
+
+            fixed (byte* ptr = obfuscated)
+            {
+                using (var peReader = new PEReader(ptr, obfuscated.Length))
+                {
+                    MetadataReader mdReader = peReader.GetMetadataReader();
+                    ModuleDefinition module = mdReader.GetModuleDefinition();
+
+                    Assert.Equal(0x0000CCCC, module.Generation);
+                    Assert.Throws<BadImageFormatException>(() => mdReader.GetString(module.Name));
+                    Assert.True(module.Mvid.IsNil);
+                }
+            }
+        }
+
+        private struct StreamHeaderInfo
+        {
+            public int OffsetToOffset; // offset from PE start to offset field in stream header
+            public int Offset; // offset from metadata start to the stream
+            public int OffsetToSize; // offset from PE start to size field in stream header
+            public int Size; // size of stream
+        }
+
+        // Mimic what at least one version of at least one obfuscator has done to use the undocumented/non-standard extra-data flag.
+        // If setFlag is false, do everything but setting the flag.
+        private static unsafe byte[] ObfuscateWithExtraData(byte[] unobfuscated, bool setFlag = true)
+        {
+            int offsetToMetadata;
+            int offsetToModuleTable;
+            int offsetToMetadataSize;
+            int tableStreamIndex = -1;
+            StreamHeaderInfo[] streamHeaders;
+
+            fixed (byte* ptr = unobfuscated)
+            {
+                using (var peReader = new PEReader(ptr, unobfuscated.Length))
+                {
+                    PEMemoryBlock metadata = peReader.GetMetadata();
+                    offsetToMetadata = peReader.PEHeaders.MetadataStartOffset;
+                    offsetToMetadataSize = peReader.PEHeaders.CorHeaderStartOffset + 12;
+                    offsetToModuleTable = offsetToMetadata + peReader.GetMetadataReader().GetTableMetadataOffset(TableIndex.Module);
+
+                    // skip root header
+                    BlobReader blobReader = new BlobReader(metadata.Pointer, metadata.Length);
+                    blobReader.ReadUInt32(); // signature
+                    blobReader.ReadUInt16(); // major version
+                    blobReader.ReadUInt16(); // minor version
+                    blobReader.ReadUInt32(); // reserved
+                    int versionStringSize = blobReader.ReadInt32();
+                    blobReader.SkipBytes(versionStringSize);
+
+                    // read stream headers to collect offsets and sizes to adjust later
+                    blobReader.ReadUInt16(); // reserved
+                    int streamCount = blobReader.ReadInt16();
+                    streamHeaders = new StreamHeaderInfo[streamCount];
+
+                    for (int i = 0; i < streamCount; i++)
+                    {
+                        streamHeaders[i].OffsetToOffset = offsetToMetadata + blobReader.Offset;
+                        streamHeaders[i].Offset = blobReader.ReadInt32();
+                        streamHeaders[i].OffsetToSize = offsetToMetadata + blobReader.Offset;
+                        streamHeaders[i].Size = blobReader.ReadInt32();
+
+                        string name = blobReader.ReadUtf8NullTerminated();
+                        if (name == "#~")
+                        {
+                            tableStreamIndex = i;
+                        }
+
+                        blobReader.Align(4);
+                    }
+                }
+            }
+
+            const int sizeOfExtraData = 4;
+            int offsetToTableStream = offsetToMetadata + streamHeaders[tableStreamIndex].Offset;
+            int offsetToHeapSizeFlags = offsetToTableStream + 6;
+
+            // copy unobfuscated to obfuscated, leaving room for 4 bytes of data right before the module table.
+            byte[] obfuscated = new byte[unobfuscated.Length + sizeOfExtraData];
+            Array.Copy(unobfuscated, 0, obfuscated, 0, offsetToModuleTable);
+            Array.Copy(unobfuscated, offsetToModuleTable, obfuscated, offsetToModuleTable + sizeOfExtraData, unobfuscated.Length - offsetToModuleTable);
+
+            fixed (byte* ptr = obfuscated)
+            {
+                // increase size of metadata
+                *(int*)(ptr + offsetToMetadataSize) += sizeOfExtraData;
+
+                // increase size of table stream
+                *(int*)(ptr + streamHeaders[tableStreamIndex].OffsetToSize) += sizeOfExtraData;
+
+                // adjust offset of any streams that follow it
+                for (int i = 0; i < streamHeaders.Length; i++)
+                    if (streamHeaders[i].Offset > streamHeaders[tableStreamIndex].Offset)
+                        *(int*)(ptr + streamHeaders[i].OffsetToOffset) += sizeOfExtraData;
+            }
+
+            // write non-zero "extra data" to make sure so that our assertion of leading Module.Generation == 0
+            // cannot succeed if extra data is interpreted as the start of the module table.
+            for (int i = 0; i < sizeOfExtraData; i++)
+            {
+                obfuscated[offsetToModuleTable + i] = 0xCC;
+            }
+
+            if (setFlag)
+            {
+                // set the non-standard ExtraData flag indicating that these 4 bytes are present
+                obfuscated[offsetToHeapSizeFlags] |= (byte)HeapSizeFlag.ExtraData;
+            }
+
+            return obfuscated;
+        }
     }
 }
