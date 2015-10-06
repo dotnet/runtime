@@ -20,6 +20,7 @@
   <ItemGroup>
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
