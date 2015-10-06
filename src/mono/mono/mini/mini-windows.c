@@ -51,7 +51,7 @@
 #include "jit-icalls.h"
 
 #ifdef _WIN32
-#include <Mmsystem.h>
+#include <mmsystem.h>
 #endif
 
 void

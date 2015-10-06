@@ -31,7 +31,7 @@
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
 
 #ifdef _WIN32
-#include <Shellapi.h>
+#include <shellapi.h>
 #endif
 
 HANDLE ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
