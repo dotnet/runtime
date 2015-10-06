@@ -20,9 +20,6 @@ namespace System.Net.Sockets
     {
         internal const int DefaultCloseTimeout = -1; // NOTE: changing this default is a breaking change.
 
-        // AcceptQueue - queued list of accept requests for BeginAccept or async Result for Begin Connect
-        private object _acceptQueueOrConnectResult;
-
         private SafeCloseSocket _handle;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
@@ -2662,22 +2659,12 @@ namespace System.Net.Sockets
             EndPoint remoteEndPoint = null;
             ConnectOverlappedAsyncResult coar;
             MultipleAddressConnectAsyncResult macar;
-            ConnectAsyncResult car;
 
             coar = asyncResult as ConnectOverlappedAsyncResult;
             if (coar == null)
             {
                 macar = asyncResult as MultipleAddressConnectAsyncResult;
-                if (macar == null)
-                {
-                    car = asyncResult as ConnectAsyncResult;
-                    if (car != null)
-                    {
-                        remoteEndPoint = car.RemoteEndPoint;
-                        castedAsyncResult = car;
-                    }
-                }
-                else
+                if (macar != null)
                 {
                     remoteEndPoint = macar.RemoteEndPoint;
                     castedAsyncResult = macar;
@@ -2700,7 +2687,6 @@ namespace System.Net.Sockets
 
             castedAsyncResult.InternalWaitForCompletion();
             castedAsyncResult.EndCalled = true;
-            _acceptQueueOrConnectResult = null;
 
             GlobalLog.Print("Socket#" + Logging.HashString(this) + "::EndConnect() asyncResult:" + Logging.HashString(asyncResult));
 
@@ -4141,49 +4127,6 @@ namespace System.Net.Sockets
             throw new ObjectDisposedException(this.GetType().FullName);
         }
 
-        // This is a shortcut to AcceptCallback when called from dispose.
-        // The only business is lock and complete all results with an error.
-        private void CompleteAcceptResults()
-        {
-            Queue<LazyAsyncResult> acceptQueue = GetAcceptQueue();
-            bool acceptNeeded = true;
-            while (acceptNeeded)
-            {
-                LazyAsyncResult asyncResult = null;
-                lock (this)
-                {
-                    // If the queue is empty, cancel the select and indicate not to loop anymore.
-                    if (acceptQueue.Count == 0)
-                    {
-                        break;
-                    }
-
-                    asyncResult = (LazyAsyncResult)acceptQueue.Dequeue();
-                    if (acceptQueue.Count == 0)
-                    {
-                        acceptNeeded = false;
-                    }
-                }
-
-                // Notify about the completion outside the lock.
-                try
-                {
-                    asyncResult.InvokeCallback(new SocketException((int)SocketError.OperationAborted));
-                }
-                catch
-                {
-                    // Exception from the user callback.
-                    // If we need to loop, offload to a different thread and re-throw for debugging
-                    if (acceptNeeded)
-                    {
-                        Task.Factory.StartNew(() => CompleteAcceptResults());
-                    }
-
-                    throw;
-                }
-            }
-        }
-
         public IAsyncResult BeginAccept(int receiveSize, AsyncCallback callback, object state)
         {
             return BeginAccept(null, receiveSize, callback, state);
@@ -4276,71 +4219,9 @@ namespace System.Net.Sockets
         //    Socket - a valid socket if successful
         public Socket EndAccept(IAsyncResult asyncResult)
         {
-            if (s_loggingEnabled)
-            {
-                Logging.Enter(Logging.Sockets, this, "EndAccept", asyncResult);
-            }
-            if (CleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-
-            if (asyncResult != null && (asyncResult is AcceptOverlappedAsyncResult))
-            {
-                int bytesTransferred;
-                byte[] buffer;
-                return EndAccept(out buffer, out bytesTransferred, asyncResult);
-            }
-
-            // Validate input parameters.
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException("asyncResult");
-            }
-
-            AcceptAsyncResult castedAsyncResult = asyncResult as AcceptAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
-            {
-                throw new ArgumentException(SR.net_io_invalidasyncresult, "asyncResult");
-            }
-            if (castedAsyncResult.EndCalled)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, "EndAccept"));
-            }
-
-            object result = castedAsyncResult.InternalWaitForCompletion();
-            castedAsyncResult.EndCalled = true;
-
-            GlobalLog.Print("Socket#" + Logging.HashString(this) + "::EndAccept() acceptedSocket:" + Logging.HashString(result));
-
-            // Throw an appropriate SocketException if the native call failed asynchronously.
-            Exception exception = result as Exception;
-            if (exception != null)
-            {
-                throw exception;
-            }
-
-            if ((SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
-            {
-                // Update the internal state of this socket according to the error before throwing.
-                SocketException socketException = new SocketException(castedAsyncResult.ErrorCode);
-                UpdateStatusAfterSocketError(socketException);
-                if (s_loggingEnabled)
-                {
-                    Logging.Exception(Logging.Sockets, this, "EndAccept", socketException);
-                }
-                throw socketException;
-            }
-
-            Socket acceptedSocket = (Socket)result;
-
-            if (s_loggingEnabled)
-            {
-                Logging.PrintInfo(Logging.Sockets, acceptedSocket,
-                    SR.Format(SR.net_log_socket_accepted, acceptedSocket.RemoteEndPoint, acceptedSocket.LocalEndPoint));
-                Logging.Exit(Logging.Sockets, this, "EndAccept", result);
-            }
-            return acceptedSocket;
+            int bytesTransferred;
+            byte[] buffer;
+            return EndAccept(out buffer, out bytesTransferred, asyncResult);
         }
 
         public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
@@ -5225,15 +5106,6 @@ namespace System.Net.Sockets
                 }
                 return _caches;
             }
-        }
-
-        private Queue<LazyAsyncResult> GetAcceptQueue()
-        {
-            if (_acceptQueueOrConnectResult == null)
-            {
-                Interlocked.CompareExchange(ref _acceptQueueOrConnectResult, new Queue<LazyAsyncResult>(16), null);
-            }
-            return (Queue<LazyAsyncResult>)_acceptQueueOrConnectResult;
         }
 
         internal bool CleanedUp
@@ -6470,25 +6342,4 @@ namespace System.Net.Sockets
         }
 #endif
     }
-
-    internal class ConnectAsyncResult : ContextAwareResult
-    {
-        private EndPoint _endPoint;
-        internal ConnectAsyncResult(object myObject, EndPoint endPoint, object myState, AsyncCallback myCallBack) : base(myObject, myState, myCallBack)
-        {
-            _endPoint = endPoint;
-        }
-        internal EndPoint RemoteEndPoint
-        {
-            get { return _endPoint; }
-        }
-    }
-
-    internal class AcceptAsyncResult : ContextAwareResult
-    {
-        internal AcceptAsyncResult(object myObject, object myState, AsyncCallback myCallBack) : base(myObject, myState, myCallBack)
-        {
-        }
-    }
 }
-
