@@ -2732,7 +2732,7 @@ LONG SODetectionFilter(EXCEPTION_POINTERS *ep, void* pv)
         return EXCEPTION_CONTINUE_EXECUTION;
     }
 
-    // Record the fact that an exception occured while running the try code.
+    // Record the fact that an exception occurred while running the try code.
     ECWGC_Param *pParam= (ECWGC_Param *)pv;
     pParam->fExceptionThrownInTryCode = TRUE;
 
@@ -2832,7 +2832,7 @@ void ExecuteCodeWithGuaranteedCleanupHelper (ECWGC_GC *gc)
 // ExecuteCodeWithGuaranteedCleanup ensures that we will call the backout code delegate even if an SO occurs. We do this by calling the 
 // try delegate from within an EX_TRY/EX_CATCH block that will catch any thrown exceptions and thus cause the stack to be unwound. This 
 // guarantees that the backout delegate is called with at least DEFAULT_ENTRY_PROBE_SIZE pages of stack. After the backout delegate is called, 
-// we re-raise any exceptions that occured inside the try delegate. Note that any CER that uses large or arbitraty amounts of stack in 
+// we re-raise any exceptions that occurred inside the try delegate. Note that any CER that uses large or arbitraty amounts of stack in 
 // it's try block must use ExecuteCodeWithGuaranteedCleanup. 
 //
 // ExecuteCodeWithGuaranteedCleanup also guarantees that the backount code will be run before any filters higher up on the stack. This

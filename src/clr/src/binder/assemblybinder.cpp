@@ -1303,7 +1303,7 @@ namespace BINDER_SPACE
             IF_FAIL_GO(FUSION_E_REF_DEF_MISMATCH);
         }
 
-        // Up-stack expects S_OK when we don't find any candidate assemblies and no fatal error occured (ie, no S_FALSE)
+        // Up-stack expects S_OK when we don't find any candidate assemblies and no fatal error occurred (ie, no S_FALSE)
         hr = S_OK;
     Exit:
         return hr;

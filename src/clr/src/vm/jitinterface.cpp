@@ -10231,7 +10231,7 @@ int CEEInfo::FilterException(struct _EXCEPTION_POINTERS *pExceptionPointers)
         {
             _ASSERTE(!"Access violation while Jitting!");
             // If you set the debugger to catch access violations and 'go'
-            // you will get back to the point at which the access violation occured
+            // you will get back to the point at which the access violation occurred
             result = EXCEPTION_CONTINUE_EXECUTION;
         }
         else

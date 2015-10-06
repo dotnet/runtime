@@ -8014,7 +8014,7 @@ BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembl
     // check for context propagation
     if (bRetVal && pSpec->GetParentLoadContext() == LOADCTX_TYPE_LOADFROM && pAssembly->GetFile()->GetLoadContext() == LOADCTX_TYPE_DEFAULT)
     {
-        // LoadFrom propagation occured, store it in a way reachable by Load() (the "post-policy" one)
+        // LoadFrom propagation occurred, store it in a way reachable by Load() (the "post-policy" one)
         AssemblySpec loadSpec;
         loadSpec.CopyFrom(pSpec);
         loadSpec.SetParentAssembly(NULL);

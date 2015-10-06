@@ -33,7 +33,7 @@ int __cdecl main(int argc, char *argv[])
     if( NULL != pFile )
     {
         Trace("\nFailed to call fopen to open a not exist for reading, "
-                "an error is expected, but no error occured\n");
+                "an error is expected, but no error occurred\n");
 
         if( EOF == fclose( pFile ) )
         {
