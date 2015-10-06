@@ -252,7 +252,7 @@ initialize (void)
 
 	threadpool->parked_threads = g_ptr_array_new ();
 	threadpool->working_threads = g_ptr_array_new ();
-	mono_mutex_init_recursive (&threadpool->active_threads_lock);
+	mono_mutex_init (&threadpool->active_threads_lock);
 
 	threadpool->heuristic_adjustment_interval = 10;
 	mono_mutex_init (&threadpool->heuristic_lock);
