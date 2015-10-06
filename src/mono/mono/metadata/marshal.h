@@ -485,10 +485,10 @@ gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size);
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size);
+ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gpointer size);
 
 gpointer 
-ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, int size);
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gpointer size);
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr);

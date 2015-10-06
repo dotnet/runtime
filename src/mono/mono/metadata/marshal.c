@@ -10387,42 +10387,44 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 }
 
 void*
-ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (int size)
+ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gpointer size)
 {
 	gpointer res;
+	size_t s = (size_t)size;
 
-	if ((gulong)size == 0)
+	if (s == 0)
 		/* This returns a valid pointer for size 0 on MS.NET */
-		size = 4;
+		s = 4;
 
 #ifdef HOST_WIN32
-	res = GlobalAlloc (GMEM_FIXED, (gulong)size);
+	res = GlobalAlloc (GMEM_FIXED, s);
 #else
-	res = g_try_malloc ((gulong)size);
+	res = g_try_malloc (s);
 #endif
 	if (!res)
-		mono_gc_out_of_memory ((gulong)size);
+		mono_gc_out_of_memory (s);
 
 	return res;
 }
 
 gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, int size)
+ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal (gpointer ptr, gpointer size)
 {
 	gpointer res;
+	size_t s = (size_t)size;
 
 	if (ptr == NULL) {
-		mono_gc_out_of_memory ((gulong)size);
+		mono_gc_out_of_memory (s);
 		return NULL;
 	}
 
 #ifdef HOST_WIN32
-	res = GlobalReAlloc (ptr, (gulong)size, GMEM_MOVEABLE);
+	res = GlobalReAlloc (ptr, s, GMEM_MOVEABLE);
 #else
-	res = g_try_realloc (ptr, (gulong)size);
+	res = g_try_realloc (ptr, s);
 #endif
 	if (!res)
-		mono_gc_out_of_memory ((gulong)size);
+		mono_gc_out_of_memory (s);
 
 	return res;
 }
