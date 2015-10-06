@@ -3514,7 +3514,7 @@ Return Value:
 
     STRSAFE_E_END_OF_FILE
                 -   this return value indicates an error or end-of-file condition,
-                    use feof or ferror to determine which one has occured.
+                    use feof or ferror to determine which one has occurred.
 
     STRSAFE_E_INSUFFICIENT_BUFFER / 
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -3625,7 +3625,7 @@ Return Value:
 
     STRSAFE_E_END_OF_FILE
                 -   this return value indicates an error or end-of-file condition,
-                    use feof or ferror to determine which one has occured.
+                    use feof or ferror to determine which one has occurred.
 
     STRSAFE_E_INSUFFICIENT_BUFFER / 
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -3761,7 +3761,7 @@ Return Value:
 
     STRSAFE_E_END_OF_FILE
                 -   this return value indicates an error or end-of-file condition,
-                    use feof or ferror to determine which one has occured.
+                    use feof or ferror to determine which one has occurred.
 
     STRSAFE_E_INSUFFICIENT_BUFFER / 
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER
@@ -3899,7 +3899,7 @@ Return Value:
 
     STRSAFE_E_END_OF_FILE
                 -   this return value indicates an error or end-of-file condition,
-                    use feof or ferror to determine which one has occured.
+                    use feof or ferror to determine which one has occurred.
 
     STRSAFE_E_INSUFFICIENT_BUFFER / 
     HRESULT_CODE(hr) == ERROR_INSUFFICIENT_BUFFER

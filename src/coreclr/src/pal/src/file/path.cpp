@@ -580,7 +580,7 @@ GetTempPathW(
         if ( 0 == MultiByteToWideChar( CP_ACP, 0, TempBuffer, -1, 
                                        lpBuffer, dwRetVal + 1 ) )
         {
-            ASSERT( "An error occured while converting the string to wide.\n" );
+            ASSERT( "An error occurred while converting the string to wide.\n" );
             SetLastError( ERROR_INTERNAL_ERROR );
             dwRetVal = 0;
         }

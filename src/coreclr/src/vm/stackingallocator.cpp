@@ -334,7 +334,7 @@ void * __cdecl operator new[](size_t n, StackingAllocator * alloc)
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) ThrowOutOfMemory();
 #else
-    if(n == (size_t)-1) ThrowOutOfMemory();    // overflow occured 
+    if(n == (size_t)-1) ThrowOutOfMemory();    // overflow occurred 
 #endif
 
     void *retval = alloc->UnsafeAllocNoThrow((unsigned)n);
@@ -368,7 +368,7 @@ void * __cdecl operator new[](size_t n, StackingAllocator * alloc, const NoThrow
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) return NULL;
 #else
-    if(n == (size_t)-1) return NULL;    // overflow occured 
+    if(n == (size_t)-1) return NULL;    // overflow occurred 
 #endif
 
     return alloc->UnsafeAllocNoThrow((unsigned)n);

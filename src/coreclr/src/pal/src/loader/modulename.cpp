@@ -155,7 +155,7 @@ Return value:
     Pointer to string with the fullpath to the librotor_pal.so being
     used.
 
-    NULL if error occured.
+    NULL if error occurred.
 
 Notes: 
     The string returned by this function is owned by the OS.

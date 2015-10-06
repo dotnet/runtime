@@ -72,7 +72,7 @@ void HandleStackOverflowAfterCatch()
 
 NOINLINE void SOIntolerantTransitionHandler::CtorImpl()
 {
-    m_exceptionOccured = true;
+    m_exceptionOccurred = true;
     m_pPreviousHandler = ClrFlsGetValue(TlsIdx_SOIntolerantTransitionHandler);
     g_fpSetSOIntolerantTransitionMarker();
 }
@@ -84,7 +84,7 @@ NOINLINE void SOIntolerantTransitionHandler::DtorImpl()
     // limit.   Checking for the guard page being present is too much overhead during
     // exception handling (if you can believe that) and impacts perf.
 
-    if (m_exceptionOccured)
+    if (m_exceptionOccurred)
     {
         g_fpCheckForSOInSOIntolerantCode();
     }

@@ -2006,7 +2006,7 @@ The percentage column contains a breakout of free or unrooted bytes to total byt
 COMMAND: analyzeoom.
 !AnalyzeOOM
 
-!AnalyzeOOM displays the info of the last OOM occured on an allocation request to
+!AnalyzeOOM displays the info of the last OOM occurred on an allocation request to
 the GC heap (in Server GC it displays OOM, if any, on each GC heap). 
 
 To see the managed exception(s) use the !Threads command which will show you 
@@ -2050,12 +2050,12 @@ Sample output:
 
 0:011> !ao
 ---------Heap 2 ---------
-Managed OOM occured after GC #28 (Requested to allocate 1234 bytes)
+Managed OOM occurred after GC #28 (Requested to allocate 1234 bytes)
 Reason: Didn't have enough memory to commit
 Detail: SOH: Didn't have enough memory to grow the internal GC datastructures (800000 bytes) - 
         on GC entry available commit space was 500 MB
 ---------Heap 4 ---------
-Managed OOM occured after GC #12 (Requested to allocate 100000 bytes)
+Managed OOM occurred after GC #12 (Requested to allocate 100000 bytes)
 Reason: Didn't have enough memory to allocate an LOH segment
 Detail: LOH: Failed to reserve memory (16777216 bytes)
 

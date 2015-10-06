@@ -832,7 +832,7 @@ HRESULT ExpressionNode::PopulateEnumValue(ICorDebugValue* pEnumValue, BYTE* enum
                 else 
                     charsCopied = _snwprintf_s(pTextValueCursor, cchTextValueCursor, _TRUNCATE, L" | %s", mdName);
 
-                // if an error or truncation occured, stop copying
+                // if an error or truncation occurred, stop copying
                 if(charsCopied == -1)
                 {
                     cchTextValueCursor = 0;

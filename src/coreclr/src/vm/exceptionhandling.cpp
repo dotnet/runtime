@@ -788,7 +788,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
     // relies on transition frame, we still cannot let an exception be handled
     // by an unprotected managed frame.
     //
-    // This code below checks to see if a SO has occured outside of managed code.
+    // This code below checks to see if a SO has occurred outside of managed code.
     // If it has, and if we don't have a transition frame higher up the stack, then
     // we don't handle the SO.
     if (!(dwExceptionFlags & EXCEPTION_UNWINDING))

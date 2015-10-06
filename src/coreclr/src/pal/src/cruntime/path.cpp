@@ -473,7 +473,7 @@ _wmakepath(
     if ((dir != NULL) &&  WideCharToMultiByte( CP_ACP, 0, dir, -1, Dir, 
                                                _MAX_DIR, NULL, NULL ) == 0 )
     {
-        ASSERT( "An error occured while converting dir to multibyte."
+        ASSERT( "An error occurred while converting dir to multibyte."
                "Possible error: Length of dir is greater than _MAX_DIR.\n" );
         goto error;
     }
@@ -481,7 +481,7 @@ _wmakepath(
     if ((fname != NULL) && WideCharToMultiByte( CP_ACP, 0, fname, -1, FileName,
                                                 _MAX_FNAME, NULL, NULL ) == 0 )
     {
-        ASSERT( "An error occured while converting fname to multibyte."
+        ASSERT( "An error occurred while converting fname to multibyte."
                "Possible error: Length of fname is greater than _MAX_FNAME.\n" );
         goto error;
     }
@@ -489,7 +489,7 @@ _wmakepath(
     if ((ext != NULL) && WideCharToMultiByte( CP_ACP, 0, ext, -1, Ext,
                                               _MAX_EXT, NULL, NULL ) == 0 )
     {
-        ASSERT( "An error occured while converting ext to multibyte."
+        ASSERT( "An error occurred while converting ext to multibyte."
                "Possible error: Length of ext is greater than _MAX_EXT.\n" );
         goto error;
     }
@@ -499,7 +499,7 @@ _wmakepath(
 
     if ( MultiByteToWideChar( CP_ACP, 0, Path, -1, path, _MAX_PATH ) == 0 )
     {
-        ASSERT( "An error occured while converting the back wide char."
+        ASSERT( "An error occurred while converting the back wide char."
                "Possible error: The length of combined path is greater "
                "than _MAX_PATH.\n" );
         goto error;

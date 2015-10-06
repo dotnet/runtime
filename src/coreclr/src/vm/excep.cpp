@@ -105,11 +105,11 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
     UINT_PTR address = reinterpret_cast<UINT_PTR>(pExceptionRecord->ExceptionAddress);
 
     // An exception code of EXCEPTION_COMPLUS indicates a managed exception
-    // has occured (most likely due to executing a "throw" instruction).
+    // has occurred (most likely due to executing a "throw" instruction).
     //
     // Also, a hardware level exception may not have an exception code of
     // EXCEPTION_COMPLUS. In this case, an exception address that resides in
-    // managed code indicates a managed exception has occured.
+    // managed code indicates a managed exception has occurred.
     return (IsComPlusException(pExceptionRecord) ||
             (ExecutionManager::IsManagedCode((PCODE)address)));
 }
@@ -5206,7 +5206,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
     //
     // This needs to be done before the check for TSNC_ProcessedUnhandledException because it is perfectly
     // legitimate (though rare) for the debugger to be inspecting exceptions which are nested in finally
-    // clauses that run after an unhandled exception has already occured on the thread
+    // clauses that run after an unhandled exception has already occurred on the thread
     if ((pThread != NULL) && pThread->IsExceptionInProgress())
     {
         LOG((LF_EH, LL_INFO1000, "InternalUnhandledExceptionFilter_Worker: Set unhandled exception flag at %p\n",
@@ -7054,7 +7054,7 @@ LONG FilterAccessViolation(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvPar
  * Returns whether this is an exception the EE knows how to intercept and continue from.
  *
  * Parameters:
- *   pThread - The thread the exception occured on.
+ *   pThread - The thread the exception occurred on.
  *
  * Returns:
  *   TRUE if the exception on the thread is interceptable or not.
@@ -7182,7 +7182,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
     // to fixup the state before any other part of the system uses it (we do it here since only the debugger
     // uses single step functionality).
 
-    // First ask the emulation itself whether this exception occured while single stepping was enabled. If so
+    // First ask the emulation itself whether this exception occurred while single stepping was enabled. If so
     // it will fix up the context to be consistent again and return true. If so and the exception was
     // EXCEPTION_BREAKPOINT then we translate it to EXCEPTION_SINGLE_STEP (otherwise we leave it be, e.g. the
     // instruction stepped caused an access violation).  since this is called from our VEH there might not
@@ -7704,7 +7704,7 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     // not already have one allocated.  Thus, if we OOM during the setting up of the
     // thread, the log buffer will not be allocated and this will try to do so.  Thus,
     // all STRESS_LOGs in here need to be after you have guaranteed the allocation has
-    // already occured.
+    // already occurred.
     //
 
     Thread *pThread;
@@ -7808,7 +7808,7 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
     // not already have one allocated.  Thus, if we OOM during the setting up of the
     // thread, the log buffer will not be allocated and this will try to do so.  Thus,
     // all STRESS_LOGs in here need to be after you have guaranteed the allocation has
-    // already occured.
+    // already occurred.
     //
 
     PEXCEPTION_RECORD pExceptionRecord  = pExceptionInfo->ExceptionRecord;
@@ -7989,7 +7989,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     // not already have one allocated.  Thus, if we OOM during the setting up of the
     // thread, the log buffer will not be allocated and this will try to do so.  Thus,
     // all STRESS_LOGs in here need to be after you have guaranteed the allocation has
-    // already occured.
+    // already occurred.
     //
 
     // Handle special cases which are common amongst all filters.
@@ -13828,7 +13828,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowSO()
 
     if (breakOnSO != 0)
     {
-        _ASSERTE(!"SO occured");
+        _ASSERTE(!"SO occurred");
     }
 #endif
 
