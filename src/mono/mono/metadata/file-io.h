@@ -216,12 +216,11 @@ extern HANDLE
 ves_icall_System_IO_MonoIO_get_ConsoleError (void);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
-				       HANDLE *write_handle);
+ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle, HANDLE *write_handle, gint32 *error);
 
-extern MonoBoolean ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, 
-						HANDLE source_handle, HANDLE target_process_handle, HANDLE *target_handle, 
-						gint32 access, gint32 inherit, gint32 options);
+extern MonoBoolean
+ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, HANDLE source_handle,
+		HANDLE target_process_handle, HANDLE *target_handle, gint32 access, gint32 inherit, gint32 options, gint32 *error);
 
 extern gunichar2 
 ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar (void);

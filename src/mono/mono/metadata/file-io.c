@@ -1055,8 +1055,7 @@ ves_icall_System_IO_MonoIO_get_ConsoleError ()
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
-				       HANDLE *write_handle)
+ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle, HANDLE *write_handle, gint32 *error)
 {
 	SECURITY_ATTRIBUTES attr;
 	gboolean ret;
@@ -1070,6 +1069,7 @@ ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
 	MONO_FINISH_BLOCKING;
 
 	if(ret==FALSE) {
+		*error = GetLastError ();
 		/* FIXME: throw an exception? */
 		return(FALSE);
 	}
@@ -1077,9 +1077,9 @@ ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
 	return(TRUE);
 }
 
-MonoBoolean ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, 
-						HANDLE source_handle, HANDLE target_process_handle, HANDLE *target_handle, 
-						gint32 access, gint32 inherit, gint32 options)
+MonoBoolean
+ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, HANDLE source_handle,
+		HANDLE target_process_handle, HANDLE *target_handle, gint32 access, gint32 inherit, gint32 options, gint32 *error)
 {
 	/* This is only used on Windows */
 	gboolean ret;
@@ -1089,6 +1089,7 @@ MonoBoolean ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_ha
 	MONO_FINISH_BLOCKING;
 
 	if(ret==FALSE) {
+		*error = GetLastError ();
 		/* FIXME: throw an exception? */
 		return(FALSE);
 	}
