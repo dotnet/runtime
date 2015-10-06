@@ -141,7 +141,7 @@ namespace System.Linq.Parallel
             Debug.Assert(mergeOptions != null);
 
             // Top-level preemptive cancellation test.
-            // This handles situations where cancellation has occured before execution commences
+            // This handles situations where cancellation has occurred before execution commences
             // The handling for in-execution occurs in QueryTaskGroupState.QueryEnd()
 
             if (querySettings.CancellationState.MergedCancellationToken.IsCancellationRequested)
@@ -210,7 +210,7 @@ namespace System.Linq.Parallel
                 QueryResults<TOutput> results = GetQueryResults(querySettings);
 
                 // Top-level preemptive cancellation test.
-                // This handles situations where cancellation has occured before execution commences
+                // This handles situations where cancellation has occurred before execution commences
                 // The handling for in-execution occurs in QueryTaskGroupState.QueryEnd()
 
                 if (querySettings.CancellationState.MergedCancellationToken.IsCancellationRequested)

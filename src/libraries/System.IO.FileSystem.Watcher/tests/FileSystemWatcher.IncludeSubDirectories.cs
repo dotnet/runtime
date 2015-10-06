@@ -20,22 +20,22 @@ public partial class IncludeSubdirectoriesTests
 
             watcher.Path = dirPath;
             watcher.IncludeSubdirectories = true;
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
 
             Directory.CreateDirectory(subDirPath);
 
             watcher.EnableRaisingEvents = true;
 
             File.WriteAllText(Path.Combine(subDirPath, "1.txt"), "testcontent");
-            Utility.ExpectEvent(eventOccured, "created");
+            Utility.ExpectEvent(eventOccurred, "created");
 
             watcher.IncludeSubdirectories = false;
             File.WriteAllText(Path.Combine(subDirPath, "2.txt"), "testcontent");
-            Utility.ExpectNoEvent(eventOccured, "created");
+            Utility.ExpectNoEvent(eventOccurred, "created");
 
             watcher.IncludeSubdirectories = true;
             File.WriteAllText(Path.Combine(subDirPath, "3.txt"), "testcontent");
-            Utility.ExpectEvent(eventOccured, "created");
+            Utility.ExpectEvent(eventOccurred, "created");
         }
     }
 
@@ -51,22 +51,22 @@ public partial class IncludeSubdirectoriesTests
 
             watcher.Path = dirPath;
             watcher.IncludeSubdirectories = true;
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
 
             Directory.CreateDirectory(subDirPath);
 
             watcher.EnableRaisingEvents = true;
 
             Directory.CreateDirectory(Path.Combine(subDirPath, "1"));
-            Utility.ExpectEvent(eventOccured, "created");
+            Utility.ExpectEvent(eventOccurred, "created");
 
             watcher.IncludeSubdirectories = false;
             Directory.CreateDirectory(Path.Combine(subDirPath, "2"));
-            Utility.ExpectNoEvent(eventOccured, "created");
+            Utility.ExpectNoEvent(eventOccurred, "created");
 
             watcher.IncludeSubdirectories = true;
             Directory.CreateDirectory(Path.Combine(subDirPath, "3"));
-            Utility.ExpectEvent(eventOccured, "created");
+            Utility.ExpectEvent(eventOccurred, "created");
         }
     }
 }
