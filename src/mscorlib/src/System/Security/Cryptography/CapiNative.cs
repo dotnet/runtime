@@ -464,7 +464,7 @@ namespace System.Security.Cryptography {
 
                 // Do the signature verification.  A TRUE result means that the signature was valid.  A FALSE
                 // result either means an invalid signature or some other error, so we need to check the last
-                // error to see which occured.
+                // error to see which occurred.
                 if (UnsafeNativeMethods.CryptVerifySignature(hashHandle,
                                                                 signatureValue,
                                                                 signatureValue.Length,

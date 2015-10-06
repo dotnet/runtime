@@ -1128,7 +1128,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         private static Guid s_iidIErrorInfo = new Guid(0x1CF2B120, 0x547D, 0x101B, 0x8E, 0x65, 0x08, 0x00, 0x2B, 0x2B, 0xD1, 0x19);
         
         /// <summary>
-        /// Report that an exception has occured which went user unhandled.  This allows the global error handler
+        /// Report that an exception has occurred which went user unhandled.  This allows the global error handler
         /// for the application to be invoked to process the error.
         /// </summary>
         /// <returns>true if the error was reported, false if not (ie running on Win8)</returns>

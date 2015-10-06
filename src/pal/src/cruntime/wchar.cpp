@@ -1527,7 +1527,7 @@ PAL_wcstod( const wchar_16 * nptr, wchar_16 **endptr )
                 /* See if strtod failed. */
                 if ( RetVal == 0.0 && ScanStop == lpStringRep )
                 {
-                    ASSERT( "An error occured in the conversion.\n" );
+                    ASSERT( "An error occurred in the conversion.\n" );
                     lpEndOfExpression = (LPWSTR)nptr;
                 }
             }

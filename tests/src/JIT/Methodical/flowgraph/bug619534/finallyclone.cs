@@ -33,7 +33,7 @@ public class TestClass
         }
         catch (ApplicationException) //This is the expected behavior.
         {
-            Console.WriteLine("correct exception occured.");
+            Console.WriteLine("correct exception occurred.");
         }
         catch (Exception e)
         {

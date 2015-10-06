@@ -397,7 +397,7 @@ private:
         SS_Opening_NC,  // Session is being formed but no connection is established yet
         SS_Opening,     // Session is being formed, the low level connection is in place
         SS_Open,        // Session is fully formed and normal transport messages can be sent and received
-        SS_Resync_NC,   // A low level connection error is occured and we're attempting to re-form the link
+        SS_Resync_NC,   // A low level connection error is occurred and we're attempting to re-form the link
         SS_Resync,      // We're trying to resynchronize high level state over the new connection
     };
 

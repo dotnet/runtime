@@ -68,10 +68,10 @@ ExternC extern PfnDliHook __pfnDliNotifyHook = CorDelayLoadHook;
 extern void DECLSPEC_NORETURN ThrowOutOfMemory();
 
 //*****************************************************************************
-// Called for errors that might have occured.
+// Called for errors that might have occurred.
 //*****************************************************************************
 FARPROC __stdcall CorDelayErrorHook(    // Always 0.
-    unsigned        dliNotify,          // What event has occured, dli* flag.
+    unsigned        dliNotify,          // What event has occurred, dli* flag.
     DelayLoadInfo   *pdli)              // Description of the event.
 {
 
@@ -164,7 +164,7 @@ DWORD _FormatMessage(                           // How many characters written.
 // A library failed to load.  This is always a bad thing.
 //*****************************************************************************
 void _FailLoadLib(
-    unsigned        dliNotify,          // What event has occured, dli* flag.
+    unsigned        dliNotify,          // What event has occurred, dli* flag.
     DelayLoadInfo   *pdli)              // Description of the event.
 {
     STATIC_CONTRACT_NOTHROW;
@@ -215,7 +215,7 @@ void _FailLoadLib(
 // A library failed to load.  This is always a bad thing.
 //*****************************************************************************
 void _FailGetProc(
-    unsigned        dliNotify,          // What event has occured, dli* flag.
+    unsigned        dliNotify,          // What event has occurred, dli* flag.
     DelayLoadInfo   *pdli)              // Description of the event.
 {
     STATIC_CONTRACT_NOTHROW;
@@ -304,7 +304,7 @@ HMODULE DoPreloadLibraryThrowing(LPCSTR szLibrary)
 // load event that occurs while the application is running.
 //*****************************************************************************
 FARPROC __stdcall CorDelayLoadHook(     // Always 0.
-    unsigned        dliNotify,          // What event has occured, dli* flag.
+    unsigned        dliNotify,          // What event has occurred, dli* flag.
     DelayLoadInfo   *pdli)              // Description of the event.
 {
 #ifdef _DEBUG

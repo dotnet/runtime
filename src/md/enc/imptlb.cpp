@@ -4169,7 +4169,7 @@ HRESULT CImportTlb::CompareSigsIgnoringRetType(
     return S_OK;
 
 ErrExit:
-    // An error occured.
+    // An error occurred.
     return hr;
 } // HRESULT CImportTlb::CompareSigsIgnoringRetType()
 

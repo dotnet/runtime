@@ -124,7 +124,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// A simple helper to determine whether disposal has occured.
+        /// A simple helper to determine whether disposal has occurred.
         /// </summary>
         internal bool IsDisposed
         {
@@ -1216,7 +1216,7 @@ namespace System.Threading
 
         // only removes the item at the specified index if it is still the expected one.
         // Returns the prevailing value.
-        // The remove occured successfully if the return value == expected element
+        // The remove occurred successfully if the return value == expected element
         // otherwise the remove did not occur.
         internal T SafeAtomicRemove(int index, T expectedElement)
         {

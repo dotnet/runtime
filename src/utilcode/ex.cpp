@@ -25,7 +25,7 @@
 
 #define MAX_EXCEPTION_MSG   200
 
-// Set if fatal error (like stack overflow or out of memory) occured in this process.
+// Set if fatal error (like stack overflow or out of memory) occurred in this process.
 GVAL_IMPL_INIT(HRESULT, g_hrFatalError, S_OK);
 
 // Helper function to get an exception object from outside the exception.  In

@@ -2775,7 +2775,7 @@ DebuggerControllerPatch *DebuggerController::GetEnCPatch(const BYTE *address)
 #endif //EnC_SUPPORTED
 
 // DebuggerController::DispatchPatchOrSingleStep - Ask any patches that are active at a given 
-// address if they want to do anything about the exception that's occured there.  How: For the given 
+// address if they want to do anything about the exception that's occurred there.  How: For the given 
 // address, go through the list of patches & see if any of them are interested (by invoking their 
 // DebuggerController's TriggerPatch).  Put any DCs that are interested into a queue and then calls
 // SendEvent on each.
