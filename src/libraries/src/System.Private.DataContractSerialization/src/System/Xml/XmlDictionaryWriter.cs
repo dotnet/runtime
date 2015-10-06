@@ -54,28 +54,10 @@ namespace System.Xml
 
         static public XmlDictionaryWriter CreateTextWriter(Stream stream, Encoding encoding, bool ownsStream)
         {
-#if NET_NATIVE || MERGE_DCJS
             XmlUTF8TextWriter writer = new XmlUTF8TextWriter();
             writer.SetOutput(stream, encoding, ownsStream);
             var asyncWriter = new XmlDictionaryAsyncCheckWriter(writer);
             return asyncWriter;
-#else
-            XmlWriterSettings settings = new XmlWriterSettings();
-            if (s_UTF8Encoding.WebName == encoding.WebName)
-            {
-                settings.Encoding = s_UTF8Encoding;
-            }
-            else
-            {
-                settings.Encoding = encoding;
-            }
-
-            settings.CloseOutput = ownsStream;
-            settings.NewLineHandling = NewLineHandling.Entitize;
-            settings.OmitXmlDeclaration = true;
-            settings.CheckCharacters = false;
-            return XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(stream, settings));
-#endif
         }
 
         static public XmlDictionaryWriter CreateDictionaryWriter(XmlWriter writer)

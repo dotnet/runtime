@@ -14,21 +14,14 @@ namespace System.Runtime.Serialization.Json
 {
 #if NET_NATIVE
     public class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
-#elif MERGE_DCJS
-    internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
 #else
-    internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContext
+    internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
 #endif
     {
         private DataContractJsonSerializer _jsonSerializer;
-#if !NET_NATIVE && !MERGE_DCJS
-        private bool _isSerializerKnownDataContractsSetExplicit;
-#endif
-#if NET_NATIVE || MERGE_DCJS
         private EmitTypeInformation _emitXsiType;
         private bool _perCallXsiTypeAlreadyEmitted;
         private bool _useSimpleDictionaryFormat;
-#endif
 
         public XmlObjectSerializerWriteContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
             : base(null, int.MaxValue, new StreamingContext(), true)
@@ -44,7 +37,6 @@ namespace System.Runtime.Serialization.Json
             return new XmlObjectSerializerWriteContextComplexJson(serializer, rootTypeDataContract);
         }
 
-#if NET_NATIVE || MERGE_DCJS
         internal static XmlObjectSerializerWriteContextComplexJson CreateContext(DataContractJsonSerializerImpl serializer, DataContract rootTypeDataContract)
         {
             return new XmlObjectSerializerWriteContextComplexJson(serializer, rootTypeDataContract);
@@ -59,23 +51,6 @@ namespace System.Runtime.Serialization.Json
             this.serializeReadOnlyTypes = serializer.SerializeReadOnlyTypes;
             _useSimpleDictionaryFormat = serializer.UseSimpleDictionaryFormat;
         }
-#endif
-
-#if !NET_NATIVE && !MERGE_DCJS
-        internal override DataContractDictionary SerializerKnownDataContracts
-        {
-            get
-            {
-                // This field must be initialized during construction by serializers using data contracts.
-                if (!_isSerializerKnownDataContractsSetExplicit)
-                {
-                    this.serializerKnownDataContracts = _jsonSerializer.KnownDataContracts;
-                    _isSerializerKnownDataContractsSetExplicit = true;
-                }
-                return this.serializerKnownDataContracts;
-            }
-        }
-#endif
 
         internal IList<Type> SerializerKnownTypeList
         {
@@ -85,7 +60,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-#if NET_NATIVE || MERGE_DCJS
         public bool UseSimpleDictionaryFormat
         {
             get
@@ -93,7 +67,7 @@ namespace System.Runtime.Serialization.Json
                 return _useSimpleDictionaryFormat;
             }
         }
-#endif
+
         internal override bool WriteClrTypeInfo(XmlWriterDelegator xmlWriter, string clrTypeName, string clrAssemblyName)
         {
             return false;
@@ -109,7 +83,6 @@ namespace System.Runtime.Serialization.Json
             //Noop
         }
 
-#if NET_NATIVE || MERGE_DCJS
         protected override void WriteTypeInfo(XmlWriterDelegator writer, string dataContractName, string dataContractNamespace)
         {
             if (_emitXsiType != EmitTypeInformation.Never)
@@ -124,7 +97,6 @@ namespace System.Runtime.Serialization.Json
                 }
             }
         }
-#endif
 
         internal static string TruncateDefaultDataContractNamespace(string dataContractNamespace)
         {
@@ -153,17 +125,13 @@ namespace System.Runtime.Serialization.Json
                    object.ReferenceEquals(contract.Namespace, declaredContract.Namespace)) ||
                  (contract.Name.Value == declaredContract.Name.Value &&
                  contract.Namespace.Value == declaredContract.Namespace.Value)) &&
-                 (contract.UnderlyingType != Globals.TypeOfObjectArray)
-#if NET_NATIVE || MERGE_DCJS
-                && (_emitXsiType != EmitTypeInformation.Never)
-#endif
-                )
+                 (contract.UnderlyingType != Globals.TypeOfObjectArray) && 
+                 (_emitXsiType != EmitTypeInformation.Never))
             {
                 // We always deserialize collections assigned to System.Object as object[]
                 // Because of its common and JSON-specific nature, 
                 //    we don't want to validate known type information for object[]
 
-#if NET_NATIVE || MERGE_DCJS
                 // Don't validate known type information when emitXsiType == Never because
                 // known types are not used without type information in the JSON
 
@@ -182,7 +150,6 @@ namespace System.Runtime.Serialization.Json
                         throw new SerializationException(SR.Format(SR.EnumTypeNotSupportedByDataContractJsonSerializer, declaredContract.UnderlyingType));
                     }
                 }
-#endif
 
                 // Return true regardless of whether we actually wrote __type information
                 // E.g. We don't write __type information for enums, but we still want verifyKnownType
@@ -192,7 +159,6 @@ namespace System.Runtime.Serialization.Json
             return false;
         }
 
-#if NET_NATIVE || MERGE_DCJS
         private static bool RequiresJsonTypeInfo(DataContract contract)
         {
             return (contract is ClassDataContract);
@@ -202,11 +168,9 @@ namespace System.Runtime.Serialization.Json
         {
             writer.WriteAttributeString(null, JsonGlobals.serverTypeString, null, typeInformation);
         }
-#endif
 
         protected override void WriteDataContractValue(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle declaredTypeHandle)
         {
-#if NET_NATIVE || MERGE_DCJS
             JsonDataContract jsonDataContract = JsonDataContract.GetJsonDataContract(dataContract);
             if (_emitXsiType == EmitTypeInformation.Always && !_perCallXsiTypeAlreadyEmitted && RequiresJsonTypeInfo(dataContract))
             {
@@ -214,19 +178,13 @@ namespace System.Runtime.Serialization.Json
             }
             _perCallXsiTypeAlreadyEmitted = false;
             DataContractJsonSerializerImpl.WriteJsonValue(jsonDataContract, xmlWriter, obj, this, declaredTypeHandle);
-#else
-            _jsonSerializer.WriteObjectInternal(obj, dataContract, this, WriteTypeInfo(null, dataContract, DataContract.GetDataContract(declaredTypeHandle, obj.GetType())), declaredTypeHandle);
-#endif
         }
 
         protected override void WriteNull(XmlWriterDelegator xmlWriter)
         {
-#if NET_NATIVE || MERGE_DCJS
             DataContractJsonSerializerImpl.WriteJsonNull(xmlWriter);
-#endif
         }
 
-#if NET_NATIVE || MERGE_DCJS
         internal XmlDictionaryString CollectionItemName
         {
             get { return JsonGlobals.itemDictionaryString; }
@@ -332,7 +290,6 @@ namespace System.Runtime.Serialization.Json
             xmlWriter.WriteStartElement("a", JsonGlobals.itemString, JsonGlobals.itemString);
             xmlWriter.WriteAttributeString(null, JsonGlobals.itemString, null, memberNames[index].Value);
         }
-#endif
 
         internal static void VerifyObjectCompatibilityWithInterface(DataContract contract, object graph, Type declaredType)
         {
@@ -376,29 +333,6 @@ namespace System.Runtime.Serialization.Json
                 scopedKnownTypes.Pop();
             }
         }
-
-#if !NET_NATIVE && !MERGE_DCJS
-        private ObjectReferenceStack _byValObjectsInScope = new ObjectReferenceStack();
-        internal override bool OnHandleReference(XmlWriterDelegator xmlWriter, object obj, bool canContainCyclicReference)
-        {
-            if (obj.GetType().GetTypeInfo().IsValueType)
-            {
-                return false;
-            }
-            if (_byValObjectsInScope.Contains(obj))
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.CannotSerializeObjectWithCycles, DataContract.GetClrTypeFullName(obj.GetType()))));
-            }
-            _byValObjectsInScope.Push(obj);
-            return false;
-        }
-
-        internal override void OnEndHandleReference(XmlWriterDelegator xmlWriter, object obj, bool canContainCyclicReference)
-        {
-            if (!obj.GetType().GetTypeInfo().IsValueType)
-                _byValObjectsInScope.Pop(obj);
-        }
-#endif
 
         internal static DataContract GetRevisedItemContract(DataContract oldItemContract)
         {
