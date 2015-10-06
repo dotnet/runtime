@@ -26,7 +26,7 @@ public class ItemThreadSafetyTests
     private object _value2 = "value2";
     private Hashtable _ht;
 
-    private bool _errorOccured = false;
+    private bool _errorOccurred = false;
     private bool _timeExpired = false;
 
     private const int MAX_TEST_TIME_MS = 10000; // 10 seconds
@@ -68,7 +68,7 @@ public class ItemThreadSafetyTests
         writer = Task.Run(new Action(WriterFunction));
 
         SpinWait spin = new SpinWait();
-        while (!_errorOccured && !_timeExpired)
+        while (!_errorOccurred && !_timeExpired)
         {
             if (MAX_TEST_TIME_MS < stopwatch.ElapsedMilliseconds)
             {
@@ -82,7 +82,7 @@ public class ItemThreadSafetyTests
         Task.WaitAll(readers2);
         writer.Wait();
 
-        Assert.False(_errorOccured);
+        Assert.False(_errorOccurred);
     }
 
     private void ReaderFunction1()
@@ -100,7 +100,7 @@ public class ItemThreadSafetyTests
 
     private void ReaderFunction2()
     {
-        while (!_errorOccured && !_timeExpired)
+        while (!_errorOccurred && !_timeExpired)
         {
             object value = _ht[_key2];
             if (value != null)
@@ -112,7 +112,7 @@ public class ItemThreadSafetyTests
 
     private void WriterFunction()
     {
-        while (!_errorOccured && !_timeExpired)
+        while (!_errorOccurred && !_timeExpired)
         {
             _ht.Add(_key1, _value1);
             _ht.Remove(_key1);
