@@ -58,7 +58,7 @@ namespace System.Net.Sockets.Tests
             acceptedClient.Dispose();
             listener.Stop();
         }
-        
+
         [Fact]
         public void ConnectWithV4AndV6_Success()
         {
@@ -81,7 +81,7 @@ namespace System.Net.Sockets.Tests
             TcpClient acceptedV4Client = listener.EndAcceptTcpClient(asyncResult);
             Assert.Equal(AddressFamily.InterNetworkV6, acceptedV4Client.Client.RemoteEndPoint.AddressFamily);
             Assert.Equal(AddressFamily.InterNetwork, v4Client.Client.RemoteEndPoint.AddressFamily);
-            
+
             v6Client.Dispose();
             acceptedV6Client.Dispose();
 

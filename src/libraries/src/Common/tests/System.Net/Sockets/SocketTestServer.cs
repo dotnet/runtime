@@ -23,8 +23,8 @@ namespace System.Net.Sockets.Tests
         }
 
         public static SocketTestServer SocketTestServerFactory(
-            int numConnections, 
-            int receiveBufferSize, 
+            int numConnections,
+            int receiveBufferSize,
             EndPoint localEndPoint)
         {
             return SocketTestServerFactory(
@@ -49,9 +49,9 @@ namespace System.Net.Sockets.Tests
         }
 
         public static SocketTestServer SocketTestServerFactory(
-            SocketImplementationType type, 
-            int numConnections, 
-            int receiveBufferSize, 
+            SocketImplementationType type,
+            int numConnections,
+            int receiveBufferSize,
             EndPoint localEndPoint)
         {
             switch (type)

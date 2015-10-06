@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DCBB8805-4658-44BF-B5E8-B6714EC8936B}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <UnsupportedPlatforms>Linux;OSX;FreeBSD</UnsupportedPlatforms>
+  </PropertyGroup>
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+
+  <ItemGroup>
+    <Compile Include="IPInterfacePropertiesTest.cs" />
+    <Compile Include="NetworkChangeTest.cs" />
+    <Compile Include="NetworkInterfaceBasicTest.cs" />
+    <Compile Include="PhysicalAddressTest.cs" />
+    
+    <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)\System.Net\TestLogging.cs">
+      <Link>Common\System.Net\TestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System.Net\VerboseTestLogging.cs">
+      <Link>Common\System.Net\VerboseTestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System.Net\EventSourceTestLogging.cs">
+      <Link>Common\System.Net\EventSourceTestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System.Net\Capability.Sockets.cs">
+      <Link>Common\System.Net\Capability.Sockets.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <!-- TODO: Remove after the packages are not using System.Private.Networking. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\System.Net.NameResolution\src\System.Net.NameResolution.csproj">
+      <Project>{1714448C-211E-48C1-8B7E-4EE667D336A1}</Project>
+      <Name>System.Net.NameResolution</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\System.Net.Sockets\src\System.Net.Sockets.csproj">
+      <Project>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</Project>
+      <Name>System.Net.Sockets</Name>
+    </ProjectReference>
+    
+    <ProjectReference Include="..\..\src\System.Net.NetworkInformation.csproj">
+      <Project>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</Project>
+      <Name>System.Net.NetworkInformation</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

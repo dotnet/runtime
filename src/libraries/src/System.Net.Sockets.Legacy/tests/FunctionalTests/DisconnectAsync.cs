@@ -77,7 +77,8 @@ namespace System.Net.Sockets.Tests
             {
                 var completed = new AutoResetEvent(false);
 
-                var args = new SocketAsyncEventArgs {
+                var args = new SocketAsyncEventArgs
+                {
                     UserToken = completed,
                     RemoteEndPoint = new IPEndPoint(address, port),
                     DisconnectReuseSocket = true

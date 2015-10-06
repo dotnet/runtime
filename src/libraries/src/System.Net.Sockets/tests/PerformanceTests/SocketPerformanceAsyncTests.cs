@@ -58,11 +58,11 @@ namespace System.Net.Sockets.Performance.Tests
             var test = new SocketPerformanceTests(_log);
 
             test.ClientServerTest(
-                serverType, 
-                clientType, 
-                iterations, 
-                bufferSize, 
-                socket_instances, 
+                serverType,
+                clientType,
+                iterations,
+                bufferSize,
+                socket_instances,
                 expectedMilliseconds);
         }
     }
