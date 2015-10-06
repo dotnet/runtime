@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using Microsoft.Win32.SafeHandles;
+
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -22,14 +23,14 @@ namespace System.Net.Sockets
     // to block the user thread in case a graceful close has been
     // requested.  (It's not legal to block any other thread - such closes
     // are always abortive.)
-    internal sealed partial class SafeCloseSocket :
+    internal partial class SafeCloseSocket :
 #if DEBUG
         DebugSafeHandleMinusOneIsInvalid
 #else
         SafeHandleMinusOneIsInvalid
 #endif
     {
-        private SafeCloseSocket() : base(true) { }
+        protected SafeCloseSocket() : base(true) { }
 
         private InnerSafeCloseSocket _innerSocket;
         private volatile bool _released;
@@ -98,7 +99,7 @@ namespace System.Net.Sockets
             return ret;
         }
 
-        private static void CreateSocket(InnerSafeCloseSocket socket, SafeCloseSocket target)
+        protected static void CreateSocket(InnerSafeCloseSocket socket, SafeCloseSocket target)
         {
             if (socket != null && socket.IsInvalid)
             {
@@ -145,7 +146,7 @@ namespace System.Net.Sockets
             {
 #if DEBUG
                 // On AppDomain unload we may still have pending Overlapped operations.
-                // ThreadPoolBoundHandle should handle this scenario by cancelling them.
+                // ThreadPoolBoundHandle should handle this scenario by canceling them.
                 innerSocket.LogRemainingOperations();
 #endif
 

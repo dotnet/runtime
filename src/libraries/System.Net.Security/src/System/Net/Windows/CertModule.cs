@@ -10,10 +10,9 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
-{   
+{
     internal partial class CertModule : CertInterface
     {
-
         private static readonly object s_syncObject = new object();
 
         private static volatile X509Store s_myCertStoreEx;
@@ -38,7 +37,7 @@ namespace System.Net
 
                     var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA()
                     {
-                        cbSize = (uint) Marshal.SizeOf<Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA>(),
+                        cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA>(),
                         dwAuthType =
                             isServer
                                 ? Interop.Crypt32.AuthType.AUTHTYPE_SERVER
@@ -49,7 +48,7 @@ namespace System.Net
 
                     var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA()
                     {
-                        cbSize = (uint) Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_PARA>(),
+                        cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_PARA>(),
                         dwFlags = 0,
                         pvExtraPolicyPara = &eppStruct
                     };
@@ -123,7 +122,7 @@ namespace System.Net
             GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::RemoteCertificate{get;}", (result == null ? "null" : result.Subject));
 
             return result;
-        }      
+        }
 
         //
         // Used only by client SSL code, never returns null.
@@ -132,11 +131,11 @@ namespace System.Net
         {
             string[] issuers = Array.Empty<string>();
 
-            object outObj;         
+            object outObj;
 
             int errorCode = SSPIWrapper.QueryContextIssuerList(GlobalSSPI.SSPISecureChannel, securityContext, out outObj);
 
-            GlobalLog.Assert(errorCode == 0, "QueryContextIssuerList returned errorCode:"+errorCode);
+            GlobalLog.Assert(errorCode == 0, "QueryContextIssuerList returned errorCode:" + errorCode);
 
             Interop.Secur32.IssuerListInfoEx issuerList = (Interop.Secur32.IssuerListInfoEx)outObj;
 
@@ -256,7 +255,7 @@ namespace System.Net
             var status = new Interop.Crypt32.CERT_CHAIN_POLICY_STATUS();
             status.cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_STATUS>();
 
-            bool errorCode =  Interop.Crypt32.CertVerifyCertificateChainPolicy( (IntPtr)Interop.Crypt32.CertChainPolicy.CERT_CHAIN_POLICY_SSL, chainContext, ref cpp, ref status);
+            bool errorCode = Interop.Crypt32.CertVerifyCertificateChainPolicy((IntPtr)Interop.Crypt32.CertChainPolicy.CERT_CHAIN_POLICY_SSL, chainContext, ref cpp, ref status);
 
             GlobalLog.Print("SecureChannel::VerifyChainPolicy() CertVerifyCertificateChainPolicy returned: " + errorCode);
 #if TRACE_VERBOSE
@@ -264,9 +263,8 @@ namespace System.Net
 #endif
             GlobalLog.Leave("SecureChannel::VerifyChainPolicy", status.dwError.ToString());
             return status.dwError;
-        }    
+        }
 
         #endregion
     }
-
 }

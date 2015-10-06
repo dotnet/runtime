@@ -4,8 +4,7 @@
 namespace System
 {
     //
-    // This silly looking class enables one to throw a NotImplementedException using the following
-    // idiom:
+    // This class enables one to throw a NotImplementedException using the following idiom:
     //
     //     throw NotImplemented.ByDesign;
     //
@@ -30,4 +29,3 @@ namespace System
         }
     }
 }
-

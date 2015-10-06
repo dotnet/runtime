@@ -150,7 +150,7 @@ namespace System.Net.Sockets.Tests
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
             args.RemoteEndPoint = new DnsEndPoint("localhost", port);
             args.Completed += OnConnectAsyncCompleted;
-            
+
             ManualResetEvent complete = new ManualResetEvent(false);
             args.UserToken = complete;
 
@@ -224,7 +224,6 @@ namespace System.Net.Sockets.Tests
         [ActiveIssue(DummyLoopbackV6Issue, PlatformID.AnyUnix)]
         public void Socket_StaticConnectAsync_Success()
         {
-
             Assert.True(Capability.IPv6Support() && Capability.IPv4Support());
 
             int port4, port6;

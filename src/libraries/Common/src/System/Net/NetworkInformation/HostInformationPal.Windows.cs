@@ -16,7 +16,21 @@ namespace System.Net.NetworkInformation
         private static bool s_fixedInfoInitialized;
         private static object s_syncObject = new object();
 
-        private static Interop.IpHlpApi.FIXED_INFO GetFixedInfo()
+        public static string GetHostName()
+        {
+            EnsureFixedInfo();
+            return s_fixedInfo.hostName;
+        }
+
+        public static string GetDomainName()
+        {
+            EnsureFixedInfo();
+            return s_fixedInfo.domainName;
+        }
+
+        // TODO: #2485: Temporarily made GetFixedInfo() public to make things build.
+        // This function needs to be switched back to private since it has no correspondent in the Unix world.
+        public static Interop.IpHlpApi.FIXED_INFO GetFixedInfo()
         {
             uint size = 0;
             SafeLocalAllocHandle buffer = null;
@@ -27,9 +41,9 @@ namespace System.Net.NetworkInformation
 
             while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
             {
-				// Now we allocate the buffer and read the network parameters.
-				using (buffer = Interop.mincore_obsolete.LocalAlloc(0, (UIntPtr)size))
-				{
+                // Now we allocate the buffer and read the network parameters.
+                using (buffer = Interop.mincore_obsolete.LocalAlloc(0, (UIntPtr)size))
+                {
                     if (buffer.IsInvalid)
                     {
                         throw new OutOfMemoryException();
@@ -40,7 +54,7 @@ namespace System.Net.NetworkInformation
                     {
                         fixedInfo = Marshal.PtrToStructure<Interop.IpHlpApi.FIXED_INFO>(buffer.DangerousGetHandle());
                     }
-				}
+                }
             }
 
             // If the result include there being no information, we'll still throw
@@ -64,18 +78,6 @@ namespace System.Net.NetworkInformation
                     }
                 }
             }
-        }
-
-        public static string GetHostName()
-        {
-            EnsureFixedInfo();
-            return s_fixedInfo.hostName;
-        }
-
-        public static string GetDomainName()
-        {
-            EnsureFixedInfo();
-            return s_fixedInfo.domainName;
         }
     }
 }

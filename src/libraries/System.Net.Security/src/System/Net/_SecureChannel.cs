@@ -59,10 +59,10 @@ namespace System.Net.Security
         {
             GlobalLog.Enter("SecureChannel#" + Logging.HashString(this) + "::.ctor", "hostname:" + hostname + " #clientCertificates=" + ((clientCertificates == null) ? "0" : clientCertificates.Count.ToString(NumberFormatInfo.InvariantInfo)));
             if (Logging.On)
-            { 
+            {
                 Logging.PrintInfo(Logging.Web, this, ".ctor", "hostname=" + hostname + ", #clientCertificates=" + ((clientCertificates == null) ? "0" : clientCertificates.Count.ToString(NumberFormatInfo.InvariantInfo)) + ", encryptionPolicy=" + encryptionPolicy);
             }
-          
+
             SSPIWrapper.VerifyPackageInfo(GlobalSSPI.SSPISecureChannel);
 
             _destination = hostname;
@@ -116,7 +116,7 @@ namespace System.Net.Security
             {
                 return _isRemoteCertificateAvailable;
             }
-        }     
+        }
 
         internal ChannelBinding GetChannelBinding(ChannelBindingKind kind)
         {
@@ -630,7 +630,7 @@ namespace System.Net.Security
                 }
                 else
                 {
-                     _credentialsHandle = SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, selectedCert, _sslProtocols, _encryptionPolicy, _serverMode);                    
+                    _credentialsHandle = SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, selectedCert, _sslProtocols, _encryptionPolicy, _serverMode);
 
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
                     _selectedClientCertificate = clientCertificate;
@@ -714,14 +714,14 @@ namespace System.Net.Security
             {
                 // An extra cert could have been created, dispose it now.
                 if ((object)localCertificate != (object)selectedCert)
-                { 
+                {
                     selectedCert.Dispose();
                 }
             }
 
             GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::AcquireServerCredentials, cachedCreds = " + cachedCred.ToString(), Logging.ObjectToString(_credentialsHandle));
             return cachedCred;
-        }     
+        }
 
         //
         internal ProtocolToken NextMessage(byte[] incoming, int offset, int count)
@@ -982,8 +982,8 @@ namespace System.Net.Security
             }
             else
             {
-                output = writeBuffer;                
-                GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::Encrypt OK", "data size:" + resultSize.ToString());               
+                output = writeBuffer;
+                GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::Encrypt OK", "data size:" + resultSize.ToString());
             }
 
             return secStatus;
@@ -1140,7 +1140,7 @@ namespace System.Net.Security
             }
             GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::VerifyRemoteCertificate", success.ToString());
             return success;
-        }     
+        }
     }
 
     //

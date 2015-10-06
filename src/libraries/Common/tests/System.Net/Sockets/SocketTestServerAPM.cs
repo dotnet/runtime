@@ -16,7 +16,7 @@ namespace System.Net.Sockets.Tests
 
         protected sealed override int Port { get { return ((IPEndPoint)_socket.LocalEndPoint).Port; } }
 
-        public SocketTestServerAPM(int numConnections, int receiveBufferSize, EndPoint localEndPoint) 
+        public SocketTestServerAPM(int numConnections, int receiveBufferSize, EndPoint localEndPoint)
         {
             _log = VerboseTestLogging.GetInstance();
             _receiveBufferSize = receiveBufferSize;
@@ -24,7 +24,7 @@ namespace System.Net.Sockets.Tests
             _socket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             _socket.Bind(localEndPoint);
             _socket.Listen(numConnections);
-            
+
             _socket.BeginAccept(OnAccept, null);
         }
 
@@ -53,7 +53,7 @@ namespace System.Net.Sockets.Tests
             catch (SocketException e)
             {
                 if (_disposed ||
-                    e.SocketErrorCode == SocketError.OperationAborted || 
+                    e.SocketErrorCode == SocketError.OperationAborted ||
                     e.SocketErrorCode == SocketError.Interrupted)
                 {
                     return;
@@ -82,7 +82,7 @@ namespace System.Net.Sockets.Tests
             catch (SocketException e)
             {
                 if (_disposed ||
-                    e.SocketErrorCode == SocketError.OperationAborted || 
+                    e.SocketErrorCode == SocketError.OperationAborted ||
                     e.SocketErrorCode == SocketError.Interrupted)
                 {
                     return;
@@ -112,11 +112,11 @@ namespace System.Net.Sockets.Tests
 
                 sendState.Socket.BeginSend(sendState.TransferBuffer, 0, bytesReceived, SocketFlags.None, OnSend, sendState);
                 recvState.Socket.BeginReceive(
-                    recvState.TransferBuffer, 
-                    0, 
-                    recvState.TransferBuffer.Length, 
-                    SocketFlags.None, 
-                    OnReceive, 
+                    recvState.TransferBuffer,
+                    0,
+                    recvState.TransferBuffer.Length,
+                    SocketFlags.None,
+                    OnReceive,
                     recvState);
             }
             catch (SocketException)
@@ -174,7 +174,7 @@ namespace System.Net.Sockets.Tests
 
             public Socket Socket
             {
-                get { return __socket; } 
+                get { return __socket; }
             }
 
             public byte[] TransferBuffer

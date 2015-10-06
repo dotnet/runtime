@@ -22,7 +22,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "TcpListener", localEP);
+                Logging.Enter(Logging.Sockets, this, "TcpListener", localEP);
             }
 
             if (localEP == null)
@@ -33,9 +33,8 @@ namespace System.Net.Sockets
             _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "TcpListener", null);
+                Logging.Exit(Logging.Sockets, this, "TcpListener", null);
             }
-
         }
 
         // Initializes a new instance of the TcpListener class that listens to the specified IP address
@@ -44,7 +43,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "TcpListener", localaddr);
+                Logging.Enter(Logging.Sockets, this, "TcpListener", localaddr);
             }
 
             if (localaddr == null)
@@ -60,7 +59,7 @@ namespace System.Net.Sockets
             _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "TcpListener", null);
+                Logging.Exit(Logging.Sockets, this, "TcpListener", null);
             }
         }
 
@@ -69,7 +68,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, "TcpListener.Create", "Port: " + port);
+                Logging.Enter(Logging.Sockets, "TcpListener.Create", "Port: " + port);
             }
 
             if (!TcpValidationHelpers.ValidatePortNumber(port))
@@ -81,7 +80,7 @@ namespace System.Net.Sockets
             listener.Server.DualMode = true;
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, "TcpListener.Create", "Port: " + port);
+                Logging.Exit(Logging.Sockets, "TcpListener.Create", "Port: " + port);
             }
 
             return listener;
@@ -165,7 +164,7 @@ namespace System.Net.Sockets
 
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "Start", null);
+                Logging.Enter(Logging.Sockets, this, "Start", null);
             }
 
             GlobalLog.Print("TCPListener::Start()");
@@ -180,7 +179,7 @@ namespace System.Net.Sockets
             {
                 if (Logging.On)
                 {
-                     Logging.Exit(Logging.Sockets, this, "Start", null);
+                    Logging.Exit(Logging.Sockets, this, "Start", null);
                 }
 
                 return;
@@ -201,7 +200,7 @@ namespace System.Net.Sockets
             _active = true;
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "Start", null);
+                Logging.Exit(Logging.Sockets, this, "Start", null);
             }
         }
 
@@ -210,7 +209,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "Stop", null);
+                Logging.Enter(Logging.Sockets, this, "Stop", null);
             }
 
             GlobalLog.Print("TCPListener::Stop()");
@@ -231,7 +230,7 @@ namespace System.Net.Sockets
 
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "Stop", null);
+                Logging.Exit(Logging.Sockets, this, "Stop", null);
             }
         }
 
@@ -251,7 +250,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "AcceptSocket", null);
+                Logging.Enter(Logging.Sockets, this, "AcceptSocket", null);
             }
 
             if (!_active)
@@ -262,7 +261,7 @@ namespace System.Net.Sockets
             Socket socket = _serverSocket.Accept();
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "AcceptSocket", socket);
+                Logging.Exit(Logging.Sockets, this, "AcceptSocket", socket);
             }
 
             return socket;
@@ -272,7 +271,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "AcceptTcpClient", null);
+                Logging.Enter(Logging.Sockets, this, "AcceptTcpClient", null);
             }
 
             if (!_active)
@@ -284,7 +283,7 @@ namespace System.Net.Sockets
             TcpClient returnValue = new TcpClient(acceptedSocket);
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "AcceptTcpClient", returnValue);
+                Logging.Exit(Logging.Sockets, this, "AcceptTcpClient", returnValue);
             }
 
             return returnValue;
@@ -294,7 +293,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "BeginAcceptSocket", null);
+                Logging.Enter(Logging.Sockets, this, "BeginAcceptSocket", null);
             }
 
             if (!_active)
@@ -305,7 +304,7 @@ namespace System.Net.Sockets
             IAsyncResult result = _serverSocket.BeginAccept(callback, state);
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "BeginAcceptSocket", null);
+                Logging.Exit(Logging.Sockets, this, "BeginAcceptSocket", null);
             }
 
             return result;
@@ -315,7 +314,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "EndAcceptSocket", null);
+                Logging.Enter(Logging.Sockets, this, "EndAcceptSocket", null);
             }
 
             if (asyncResult == null)
@@ -335,7 +334,7 @@ namespace System.Net.Sockets
 
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "EndAcceptSocket", socket);
+                Logging.Exit(Logging.Sockets, this, "EndAcceptSocket", socket);
             }
 
             return socket;
@@ -345,7 +344,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "BeginAcceptTcpClient", null);
+                Logging.Enter(Logging.Sockets, this, "BeginAcceptTcpClient", null);
             }
 
             if (!_active)
@@ -356,7 +355,7 @@ namespace System.Net.Sockets
             IAsyncResult result = _serverSocket.BeginAccept(callback, state);
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "BeginAcceptTcpClient", null);
+                Logging.Exit(Logging.Sockets, this, "BeginAcceptTcpClient", null);
             }
 
             return result;
@@ -366,7 +365,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "EndAcceptTcpClient", null);
+                Logging.Enter(Logging.Sockets, this, "EndAcceptTcpClient", null);
             }
 
             if (asyncResult == null)
@@ -386,7 +385,7 @@ namespace System.Net.Sockets
 
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "EndAcceptTcpClient", socket);
+                Logging.Exit(Logging.Sockets, this, "EndAcceptTcpClient", socket);
             }
 
             return new TcpClient(socket);

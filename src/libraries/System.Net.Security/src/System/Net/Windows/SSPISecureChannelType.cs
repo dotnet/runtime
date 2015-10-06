@@ -18,12 +18,12 @@ namespace System.Net
     {
         public const string MSSecurityPackage = "Microsoft Unified Security Protocol Provider";
 
-        public const Interop.Secur32.ContextFlags RequiredFlags = Interop.Secur32.ContextFlags.ReplayDetect |  Interop.Secur32.ContextFlags.SequenceDetect |
+        public const Interop.Secur32.ContextFlags RequiredFlags = Interop.Secur32.ContextFlags.ReplayDetect | Interop.Secur32.ContextFlags.SequenceDetect |
                                                                   Interop.Secur32.ContextFlags.Confidentiality | Interop.Secur32.ContextFlags.AllocateMemory;
 
-        public const Interop.Secur32.ContextFlags ServerRequiredFlags =  RequiredFlags | Interop.Secur32.ContextFlags.AcceptStream;
+        public const Interop.Secur32.ContextFlags ServerRequiredFlags = RequiredFlags | Interop.Secur32.ContextFlags.AcceptStream;
 
-        private static volatile SecurityPackageInfoClass[] securityPackages;   
+        private static volatile SecurityPackageInfoClass[] s_securityPackages;
 
         public void VerifyPackageInfo()
         {
@@ -31,9 +31,9 @@ namespace System.Net
 
             EnumerateSecurityPackages();
 
-            if (securityPackages != null)
+            if (s_securityPackages != null)
             {
-                foreach (var package in securityPackages)
+                foreach (var package in s_securityPackages)
                 {
                     if (string.Compare(package.Name, MSSecurityPackage, StringComparison.OrdinalIgnoreCase) == 0)
                     {
@@ -41,7 +41,7 @@ namespace System.Net
                         break;
                     }
                 }
-            }       
+            }
 
             if (!found)
             {
@@ -51,14 +51,14 @@ namespace System.Net
                 }
 
                 throw new NotSupportedException(SR.net_securitypackagesupport);
-            }          
+            }
         }
 
         public Exception GetException(SecurityStatus status)
         {
             return new Win32Exception((int)status);
         }
-     
+
         public SecurityStatus AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired)
         {
             Interop.Secur32.ContextFlags outFlags = Interop.Secur32.ContextFlags.Zero;
@@ -79,7 +79,7 @@ namespace System.Net
         public SecurityStatus InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer)
         {
             Interop.Secur32.ContextFlags outFlags = Interop.Secur32.ContextFlags.Zero;
-            
+
             var retStatus = (SecurityStatus)SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, RequiredFlags | Interop.Secur32.ContextFlags.InitManualCredValidation, Interop.Secur32.Endianness.Native, inputBuffer, null, outputBuffer, ref outFlags);
 
             return MapToSecurityStatus((Interop.SecurityStatus)retStatus);
@@ -90,11 +90,11 @@ namespace System.Net
             Interop.Secur32.ContextFlags outFlags = Interop.Secur32.ContextFlags.Zero;
             var retStatus = (SecurityStatus)SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, RequiredFlags | Interop.Secur32.ContextFlags.InitManualCredValidation, Interop.Secur32.Endianness.Native, null, inputBuffers, outputBuffer, ref outFlags);
             return MapToSecurityStatus((Interop.SecurityStatus)retStatus);
-        }      
-        
-        public SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)      
+        }
+
+        public SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
-             Interop.Secur32.SecureCredential secureCredential = CreateSecureCredential(Interop.Secur32.SecureCredential.CurrentVersion, certificate, protocols, policy, isServer);
+            Interop.Secur32.SecureCredential secureCredential = CreateSecureCredential(Interop.Secur32.SecureCredential.CurrentVersion, certificate, protocols, policy, isServer);
             // First try without impersonation, if it fails, then try the process account.
             // I.E. We don't know which account the certificate context was created under.
             try
@@ -127,11 +127,11 @@ namespace System.Net
 
             SecurityStatus secStatus = EncryptDecryptHelper(OP.Encrypt, securityContext, securityBuffer, 0);
 
-            if (secStatus == 0)           
-            {               
+            if (secStatus == 0)
+            {
                 // The full buffer may not be used.
                 resultSize = securityBuffer[0].size + securityBuffer[1].size + securityBuffer[2].size;
-                GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::Encrypt OK", "data size:" + resultSize.ToString());              
+                GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::Encrypt OK", "data size:" + resultSize.ToString());
             }
 
             return secStatus;
@@ -145,8 +145,8 @@ namespace System.Net
             decspc[1] = new SecurityBuffer(null, SecurityBufferType.Empty);
             decspc[2] = new SecurityBuffer(null, SecurityBufferType.Empty);
             decspc[3] = new SecurityBuffer(null, SecurityBufferType.Empty);
-           
-             SecurityStatus secStatus = EncryptDecryptHelper(OP.Decrypt, securityContext, decspc, 0);      
+
+            SecurityStatus secStatus = EncryptDecryptHelper(OP.Decrypt, securityContext, decspc, 0);
 
             count = 0;
             for (int i = 0; i < decspc.Length; i++)
@@ -177,7 +177,7 @@ namespace System.Net
             {
                 GlobalLog.Leave("QueryContextChannelBinding", "ERROR = " + ErrorDescription(errorCode));
                 refHandle = null;
-            }           
+            }
 
             return errorCode;
         }
@@ -208,7 +208,7 @@ namespace System.Net
             int errorCode;
             issuerList = QueryContextAttributes(securityContext, Interop.Secur32.ContextAttribute.IssuerListInfoEx, out errorCode);
             return errorCode;
-        }    
+        }
 
         #region Private Methods
 
@@ -235,11 +235,11 @@ namespace System.Net
         private void EnumerateSecurityPackages()
         {
             GlobalLog.Enter("EnumerateSecurityPackages");
-            if (securityPackages == null)
+            if (s_securityPackages == null)
             {
                 lock (this)
                 {
-                    if (securityPackages == null)
+                    if (s_securityPackages == null)
                     {
                         int moduleCount = 0;
                         SafeFreeContextBuffer arrayBaseHandle = null;
@@ -260,7 +260,7 @@ namespace System.Net
                             {
                                 Logging.PrintInfo(Logging.Web, SR.net_log_sspi_enumerating_security_packages);
                             }
-                         
+
                             for (int i = 0; i < moduleCount; i++)
                             {
                                 securityPackagesList[i] = new SecurityPackageInfoClass(arrayBaseHandle, i);
@@ -271,7 +271,7 @@ namespace System.Net
                                 }
                             }
 
-                            securityPackages = securityPackagesList;
+                            s_securityPackages = securityPackagesList;
                         }
                         finally
                         {
@@ -285,9 +285,9 @@ namespace System.Net
             }
 
             GlobalLog.Leave("EnumerateSecurityPackages");
-        }   
+        }
 
-        private SafeFreeCredentials AcquireCredentialsHandle(string package,bool isServer, Interop.Secur32.SecureCredential scc)
+        private SafeFreeCredentials AcquireCredentialsHandle(string package, bool isServer, Interop.Secur32.SecureCredential scc)
         {
             GlobalLog.Print("SSPIWrapper::AcquireCredentialsHandle#3(): using " + package);
 
@@ -401,7 +401,7 @@ namespace System.Net
             }
 
             return credential;
-        }     
+        }
 
         private unsafe SecurityStatus EncryptDecryptHelper(OP op, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
         {
@@ -436,7 +436,7 @@ namespace System.Net
                     int errorCode;
                     switch (op)
                     {
-                        case OP.Encrypt:                           
+                        case OP.Encrypt:
                             errorCode = EncryptMessage(context, sdcInOut, sequenceNumber);
                             break;
 
@@ -519,7 +519,7 @@ namespace System.Net
                     }
                 }
             }
-        }            
+        }
 
         private int EncryptMessage(SafeDeleteContext context, Interop.Secur32.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
         {
@@ -554,7 +554,7 @@ namespace System.Net
             {
                 context.DangerousRelease();
             }
-        }     
+        }
 
         private object QueryContextAttributes(SafeDeleteContext securityContext, Interop.Secur32.ContextAttribute contextAttribute, out int errorCode)
         {
@@ -681,11 +681,10 @@ namespace System.Net
                 {
                     SspiHandle.Dispose();
                 }
-
             }
             GlobalLog.Leave("QueryContextAttributes", Logging.ObjectToString(attribute));
             return attribute;
-        }     
+        }
 
         private unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.Secur32.ContextAttribute attribute, byte[] buffer, Type handleType, out SafeHandle refHandle)
         {
@@ -783,8 +782,7 @@ namespace System.Net
         internal uint NegotiationState;
         internal static readonly int Size = Marshal.SizeOf<NegotiationInfo>();
         internal static readonly int NegotiationStateOffest = (int)Marshal.OffsetOf<NegotiationInfo>("NegotiationState");
-    }  
+    }
 
     #endregion
-
 }
