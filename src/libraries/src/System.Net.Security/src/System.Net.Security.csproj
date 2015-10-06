@@ -75,9 +75,6 @@
     </Compile>
 
     <!-- System.Net common -->
-    <Compile Include="$(CommonPath)\System\Net\_BufferOffsetSize.cs">
-      <Link>Common\System\Net\_BufferOffsetSize.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\_ContextAwareResult.cs">
       <Link>Common\System\Net\_ContextAwareResult.cs</Link>
     </Compile>
