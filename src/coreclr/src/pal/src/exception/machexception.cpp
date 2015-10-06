@@ -133,9 +133,20 @@ static exception_mask_t GetExceptionMask()
 
     if (exMode == MachException_Uninitialized)
     {
+        exMode = MachException_Default;
+
         const char * exceptionSettings = getenv(PAL_MACH_EXCEPTION_MODE);
-        exMode = exceptionSettings
-            ? (MachExceptionMode)atoi(exceptionSettings) : MachException_Default;
+        if (exceptionSettings)
+        {
+            exMode = (MachExceptionMode)atoi(exceptionSettings);
+        }
+        else
+        {
+            if (PAL_IsDebuggerPresent())
+            {
+                exMode = MachException_SuppressDebugging;
+            }
+        }
     }
 
     exception_mask_t machExceptionMask = 0;
