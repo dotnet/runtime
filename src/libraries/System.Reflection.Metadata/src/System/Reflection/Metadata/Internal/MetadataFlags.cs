@@ -117,6 +117,7 @@ namespace System.Reflection.Metadata.Ecma335
         GuidHeapLarge = 0x02,   // 4 byte uint indexes used for GUID heap offsets
         BlobHeapLarge = 0x04,   // 4 byte uint indexes used for Blob heap offsets
         EnCDeltas = 0x20,       // Indicates only EnC Deltas are present
+        ExtraData = 0x40,       // Indicates that there is an extra 4 bytes of data immediately after the row counts
         DeletedMarks = 0x80,    // Indicates metadata might contain items marked deleted
     }
 
