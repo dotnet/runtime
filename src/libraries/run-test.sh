@@ -174,7 +174,7 @@ runtest()
 
   # Check here to see whether we should run this project
 
-  if grep "UnsupportedPlatforms.*$OS.*" $1
+  if grep "UnsupportedPlatforms.*$OS.*" $1 > /dev/null
   then
     echo "Test project file $1 indicates this test is not supported on $OS, skipping"
     exit 0
@@ -223,6 +223,12 @@ runtest()
   echo
   ./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop -notrait category=$xunitOSCategory
   exitCode=$?
+
+  if [ $exitCode -ne 0 ]
+  then
+      echo "One or more tests failed while running tests from '$fileNameWithoutExtension'.  Exit code $exitCode."
+  fi
+
   popd > /dev/null
   exit $exitCode
 }
