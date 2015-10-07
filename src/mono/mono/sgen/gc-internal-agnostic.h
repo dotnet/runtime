@@ -34,10 +34,10 @@
 /* h indicates whether to hide or just tag.
  * (-!!h ^ p) is used instead of (h ? ~p : p) to avoid multiple mentions of p.
  */
-#define MONO_GC_HIDE_POINTER(p,t,h) ((gpointer)(((-(size_t)!!(h) ^ (size_t)(p)) & ~3UL) | ((t) & 3UL)))
-#define MONO_GC_REVEAL_POINTER(p,h) ((gpointer)((-(size_t)!!(h) ^ (size_t)(p)) & ~3UL))
+#define MONO_GC_HIDE_POINTER(p,t,h) ((gpointer)(((-(size_t)!!(h) ^ (size_t)(p)) & ~(size_t)3) | ((t) & (size_t)3)))
+#define MONO_GC_REVEAL_POINTER(p,h) ((gpointer)((-(size_t)!!(h) ^ (size_t)(p)) & ~(size_t)3))
 
-#define MONO_GC_POINTER_TAG(p) ((size_t)(p) & 3UL)
+#define MONO_GC_POINTER_TAG(p) ((size_t)(p) & (size_t)3)
 
 #define MONO_GC_HANDLE_OCCUPIED_MASK (1)
 #define MONO_GC_HANDLE_VALID_MASK (2)
