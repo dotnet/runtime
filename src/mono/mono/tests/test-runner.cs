@@ -251,11 +251,11 @@ public class TestRunner
 				lock (monitor) {
 					fs = process_data [p2].stdout;
 
-					if (String.IsNullOrEmpty (e.Data))
+					if (e.Data == null)
 						process_data [p2].stdout = null;
 				}
 
-				if (String.IsNullOrEmpty (e.Data)) {
+				if (e.Data == null) {
 					fs.Close ();
 				} else {
 					fs.WriteLine (e.Data);
@@ -271,12 +271,12 @@ public class TestRunner
 				lock (monitor) {
 					fs = process_data [p2].stderr;
 
-					if (String.IsNullOrEmpty (e.Data))
+					if (e.Data == null)
 						process_data [p2].stderr = null;
 
 				}
 
-				if (String.IsNullOrEmpty (e.Data)) {
+				if (e.Data == null) {
 					fs.Close ();
 
 					lock (monitor) {
