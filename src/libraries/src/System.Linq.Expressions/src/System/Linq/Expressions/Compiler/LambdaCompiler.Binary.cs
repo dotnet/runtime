@@ -325,6 +325,7 @@ namespace System.Linq.Expressions.Compiler
                     {
                         throw ContractUtils.Unreachable;
                     }
+                    EmitShiftMask(leftType);
                     _ilg.Emit(OpCodes.Shl);
                     break;
                 case ExpressionType.RightShift:
@@ -332,6 +333,7 @@ namespace System.Linq.Expressions.Compiler
                     {
                         throw ContractUtils.Unreachable;
                     }
+                    EmitShiftMask(leftType);
                     if (TypeUtils.IsUnsigned(leftType))
                     {
                         _ilg.Emit(OpCodes.Shr_Un);
@@ -344,6 +346,16 @@ namespace System.Linq.Expressions.Compiler
                 default:
                     throw Error.UnhandledBinary(op);
             }
+        }
+
+        // Shift operations have undefined behavior if the shift amount exceeds
+        // the number of bits in the value operand. See CLI III.3.58 and C# 7.9
+        // for the bit mask used below.
+        private void EmitShiftMask(Type leftType)
+        {
+            int mask = TypeUtils.IsInteger64(leftType) ? 0x3F : 0x1F;
+            _ilg.EmitInt(mask);
+            _ilg.Emit(OpCodes.And);
         }
 
         // Binary/unary operations on 8 and 16 bit operand types will leave a 
