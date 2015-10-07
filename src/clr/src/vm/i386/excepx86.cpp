@@ -322,7 +322,7 @@ void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF)
                             "setting up the proper exception handling.\n\n"
                             "Get a good unmanaged stack trace for this thread. All FS:0 records are on the stack, "
                             "so you can see who installed the last handler. Somewhere between that function and "
-                            "where the thread is now is where the bad transition occured.\n\n"
+                            "where the thread is now is where the bad transition occurred.\n\n"
                             "A little extra info: FS:0 = 0x%p, pEHR->Handler = 0x%p\n",
                             GetRegdisplaySP(pCF->GetRegisterSet()),
                             pFunction ->m_pszDebugClassName,
@@ -1375,7 +1375,7 @@ CPFH_FirstPassHandler(EXCEPTION_RECORD *pExceptionRecord,
     {
         // If we ever get here in preemptive mode, we're in trouble.  We've
         // changed the thread's IP to point at a little function that throws ... if
-        // the thread were to be in preemptive mode and a GC occured, the stack
+        // the thread were to be in preemptive mode and a GC occurred, the stack
         // crawl would have been all messed up (becuase we have no frame that points
         // us back to the right place in managed code).
         _ASSERTE(disabled);

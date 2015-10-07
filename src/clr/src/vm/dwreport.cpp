@@ -1873,7 +1873,7 @@ HRESULT GetManagedBucketParametersForIp(
         // probably inside of mscorwks
         //
         // Note that while there may be an actual managed exception that
-        // occured, we can live without the managed bucket parameters. For
+        // occurred, we can live without the managed bucket parameters. For
         // exceptions coming from within mscorwks.dll, the native bucket
         // parameters will do just fine.
 

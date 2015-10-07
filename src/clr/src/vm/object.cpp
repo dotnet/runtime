@@ -2681,7 +2681,7 @@ int OBJECTREF::operator==(const OBJECTREF &objref) const
         _ASSERTE(Thread::IsObjRefValid(&objref));
         VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
-        // your OBJECTREF and a GC might have occured.  To
+        // your OBJECTREF and a GC might have occurred.  To
         // where the possible GC was, set a breakpoint in Thread::TriggersGC 
         _ASSERTE(Thread::IsObjRefValid(this));
 
@@ -2719,7 +2719,7 @@ int OBJECTREF::operator!=(const OBJECTREF &objref) const
         _ASSERTE(Thread::IsObjRefValid(&objref));
         VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
-        // your OBJECTREF and a GC might have occured.  To
+        // your OBJECTREF and a GC might have occurred.  To
         // where the possible GC was, set a breakpoint in Thread::TriggersGC 
         _ASSERTE(Thread::IsObjRefValid(this));
 
@@ -2743,7 +2743,7 @@ Object* OBJECTREF::operator->()
 
     VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
-        // your OBJECTREF and a GC might have occured.  To
+        // your OBJECTREF and a GC might have occurred.  To
         // where the possible GC was, set a breakpoint in Thread::TriggersGC 
     _ASSERTE(Thread::IsObjRefValid(this));
 
@@ -2768,7 +2768,7 @@ const Object* OBJECTREF::operator->() const
 
     VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
-        // your OBJECTREF and a GC might have occured.  To
+        // your OBJECTREF and a GC might have occurred.  To
         // where the possible GC was, set a breakpoint in Thread::TriggersGC 
     _ASSERTE(Thread::IsObjRefValid(this));
 

@@ -5078,7 +5078,7 @@ void AccessCheckOptions::ThrowAccessException(
         // If the caller and target method are non-null and the same, then this means that we're checking to see
         // if the method has access to itself in order to validate that it has access to its parameter types,
         // containing type, and return type.  In this case, throw a more informative TypeAccessException to
-        // describe the error that occured (for instance, "this method doesn't have access to one of its
+        // describe the error that occurred (for instance, "this method doesn't have access to one of its
         // parameter types", rather than "this method doesn't have access to itself").
         // We only want to do this if we know the exact type that caused the problem, otherwise fall back to
         // throwing the standard MethodAccessException.

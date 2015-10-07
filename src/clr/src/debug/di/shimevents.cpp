@@ -78,7 +78,7 @@ ICorDebugManagedCallback3 * ManagedEvent::DispatchArgs::GetCallback3()
     return m_pCallback3;
 }
 
-// Returns OS Thread Id that this event occured on, 0 if no thread affinity.
+// Returns OS Thread Id that this event occurred on, 0 if no thread affinity.
 DWORD ManagedEvent::GetOSTid()
 {
     return m_dwThreadId;

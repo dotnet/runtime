@@ -42,7 +42,7 @@ namespace BINDER_SPACE
         NewHolder<FailureCacheEntry> pFailureCacheEntry;
         SAFE_NEW(pFailureCacheEntry, FailureCacheEntry);
 
-        // No error occured; report the original error
+        // No error occurred; report the original error
         hr = hrBindingResult;
 
         pFailureCacheEntry->GetAssemblyNameOrPath().Set(assemblyNameorPath);

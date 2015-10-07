@@ -689,7 +689,7 @@ exit: /* Function clean-up and exit. */
             LocalFree( lpReturnString );
         }
     }
-    else /* Error, something occured. */
+    else /* Error, something occurred. */
     {
         if ( lpReturnString )
         {

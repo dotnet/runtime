@@ -1474,7 +1474,7 @@ interface ICorDebugManagedCallback2 : IUnknown
     //     Clients should not make any assumption about whether the controller is a process or appdomain (though they can
     //     always QI to find out).
     //     Call continue on this to resume the debuggee.
-    // - pThread - managed thread on which the debug event occured. If the MDA occurred on an unmanaged thread then
+    // - pThread - managed thread on which the debug event occurred. If the MDA occurred on an unmanaged thread then
     //     this will be null. Get the OS thread ID from the MDA object itself.
     // - pMDA is an object containing MDA information.
     //    Suggested usage is that the client does not keep a reference to the MDA object after returning from this callback
@@ -2013,7 +2013,7 @@ interface ICorDebugController : IUnknown
      * will return TRUE if there are currently managed callbacks
      * queued for any thread.
      *
-     * Note that once debug events have been queued, they've already occured,
+     * Note that once debug events have been queued, they've already occurred,
      * and so the debugger must drain the entire queue to be sure of the state
      * of the debuggee. For example, if the queue contains 2 debug events on thread X,
      * and the debugger suspends thread X after the 1st debug event and then calls continue,
@@ -3032,7 +3032,7 @@ interface ICorDebugDebugEvent : IUnknown
     HRESULT GetEventKind([out]CorDebugDebugEventKind *pDebugEventKind);
 
     /*
-     * Gets the thread on which the event occured
+     * Gets the thread on which the event occurred
      */
     HRESULT GetThread([out]ICorDebugThread **ppThread);
 }
