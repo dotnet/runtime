@@ -5,6 +5,8 @@ using System;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 
 // TODO when we upgrade to C# V6 you can remove this.  
 // warning CS0420: ‘P.x': a reference to a volatile field will not be treated as volatile
@@ -105,6 +107,10 @@ namespace System.Diagnostics
                 _next = s_allListeners;
                 s_allListeners = this;
             }
+
+            // Call IsEnabled just so we insure that the DiagnosticSourceEventSource has been 
+            // constructed (and thus is responsive to ETW requests to be enabled).  
+            DiagnosticSourceEventSource.Logger.IsEnabled();
         }
 
         /// <summary>
