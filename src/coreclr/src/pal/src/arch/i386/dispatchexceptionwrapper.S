@@ -47,7 +47,7 @@ C_FUNC(PAL_DispatchExceptionReturnOffset):
 NESTED_ENTRY PAL_DispatchExceptionWrapper, _TEXT, NoHandler
     push_nonvol_reg rbp
     mov     rbp, rsp
-    set_cfa_register rbp, 0
+    set_cfa_register rbp, (2*8)
     int3
     call    PAL_DISPATCHEXCEPTION
 LOCAL_LABEL(PAL_DispatchExceptionReturn):
