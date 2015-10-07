@@ -3536,9 +3536,13 @@ void ExceptionTracker::PopTrackers(
 
     while (pTracker)
     {
+#ifndef FEATURE_PAL
         // When we are about to pop off a tracker, it should
         // have a stack range setup.
+        // It is not true on PAL where the scanned stack range needs to
+        // be reset after unwinding a sequence of native frames.
         _ASSERTE(!pTracker->m_ScannedStackRange.IsEmpty());
+#endif // FEATURE_PAL
 
         ExceptionTracker*   pPrev   = pTracker->m_pPrevNestedInfo;
 
@@ -3629,7 +3633,11 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
     {
         fTransitionFromSecondToFirstPass = fIsFirstPass && !pTracker->IsInFirstPass();
 
+#ifndef FEATURE_PAL
+        // We don't check this on PAL where the scanned stack range needs to
+        // be reset after unwinding a sequence of native frames.
         CONSISTENCY_CHECK(!pTracker->m_ScannedStackRange.IsEmpty());
+#endif // FEATURE_PAL
 
         if (pTracker->m_ExceptionFlags.IsRethrown())
         {
@@ -4466,8 +4474,10 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 // until now. We need to reset the explicit frames range so that if GC fires before
                 // we recreate the tracker at the first managed frame after unwinding the native 
                 // frames, it doesn't attempt to scan the reclaimed stack range.
+                // We also need to reset the scanned stack range since the scanned frames will be
+                // obsolete after the unwind of the native frames completes.
                 ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-                pTracker->ResetUnwoundExplicitFramesRange();
+                pTracker->CleanupBeforeNativeFramesUnwind();
             }
 
             // Now we need to unwind the native frames until we reach managed frames again or the exception is
