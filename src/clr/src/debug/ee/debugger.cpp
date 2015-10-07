@@ -2054,6 +2054,9 @@ HRESULT Debugger::Startup(void)
     }
 #endif
 
+#ifdef FEATURE_PAL
+    PAL_InitializeDebug();
+#endif // FEATURE_PAL
 
     // Lazily initialize the interop-safe heap
 
