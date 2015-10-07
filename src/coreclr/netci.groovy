@@ -97,8 +97,10 @@ def static getBuildJobName(def configuration, def os) {
         }
         
         // Add a PR trigger.  For some OS's, create an explicit trigger
-        // Right now openSUSE doesn't get an automatic trigger
-        Utilities.addGithubPRTrigger(newPRJob, "${os} ${configuration} Build")
+        // Disable PRs for centos 7.1 and opensuse 13.2 to reduce load
+        if (!(os == 'CentOS7.1' || os == 'OpenSUSE13.2')) {
+            Utilities.addGithubPRTrigger(newPRJob, "${os} ${configuration} Build")
+        }
         Utilities.addPRTestSCM(newPRJob, project)
         Utilities.addStandardPRParameters(newPRJob, project)
         
