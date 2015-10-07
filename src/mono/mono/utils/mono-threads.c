@@ -1014,7 +1014,7 @@ mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid)
 	if (!info)
 		return;
 
-	if (mono_thread_info_run_state (info) > STATE_RUNNING) {
+	if (mono_thread_info_run_state (info) == STATE_DETACHED) {
 		mono_hazard_pointer_clear (hp, 1);
 		return;
 	}
