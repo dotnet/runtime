@@ -87,7 +87,6 @@ typedef struct {
 } ThreadPoolDomain;
 
 typedef MonoInternalThread ThreadPoolWorkingThread;
-typedef mono_cond_t ThreadPoolParkedThread;
 
 typedef struct {
 	gint32 wave_period;
@@ -129,7 +128,8 @@ typedef struct {
 	mono_mutex_t domains_lock;
 
 	GPtrArray *working_threads; // ThreadPoolWorkingThread* []
-	GPtrArray *parked_threads; // ThreadPoolParkedThread* []
+	gint32 parked_threads_count;
+	mono_cond_t parked_threads_cond;
 	mono_mutex_t active_threads_lock; /* protect access to working_threads and parked_threads */
 
 	gint32 heuristic_completions;
@@ -250,9 +250,10 @@ initialize (void)
 	threadpool->domains = g_ptr_array_new ();
 	mono_mutex_init_recursive (&threadpool->domains_lock);
 
-	threadpool->parked_threads = g_ptr_array_new ();
+	threadpool->parked_threads_count = 0;
+	mono_cond_init (&threadpool->parked_threads_cond, NULL);
 	threadpool->working_threads = g_ptr_array_new ();
-	mono_mutex_init (&threadpool->active_threads_lock);
+	mono_mutex_init_recursive (&threadpool->active_threads_lock);
 
 	threadpool->heuristic_adjustment_interval = 10;
 	mono_mutex_init (&threadpool->heuristic_lock);
@@ -303,7 +304,6 @@ initialize (void)
 	threadpool->suspended = FALSE;
 }
 
-static void worker_unpark (ThreadPoolParkedThread *thread);
 static void worker_kill (ThreadPoolWorkingThread *thread);
 
 static void
@@ -329,8 +329,7 @@ cleanup (void)
 		worker_kill ((ThreadPoolWorkingThread*) g_ptr_array_index (threadpool->working_threads, i));
 
 	/* unpark all threadpool->parked_threads */
-	for (i = 0; i < threadpool->parked_threads->len; ++i)
-		worker_unpark ((ThreadPoolParkedThread*) g_ptr_array_index (threadpool->parked_threads, i));
+	mono_cond_broadcast (&threadpool->parked_threads_cond);
 
 	mono_mutex_unlock (&threadpool->active_threads_lock);
 }
@@ -487,48 +486,18 @@ domain_get_next (ThreadPoolDomain *current)
 static void
 worker_wait_interrupt (gpointer data)
 {
-	mono_cond_t *cond = data;
-
 	mono_mutex_lock (&threadpool->active_threads_lock);
-	mono_cond_signal (cond);
+	mono_cond_signal (&threadpool->parked_threads_cond);
 	mono_mutex_unlock (&threadpool->active_threads_lock);
 }
 
-static gboolean
-worker_wait (mono_cond_t *cond)
-{
-	static gpointer rand_handle = NULL;
-	gboolean timeout = FALSE;
-	gboolean interrupted = FALSE;
-
-	if (!rand_handle)
-		rand_handle = rand_create ();
-	g_assert (rand_handle);
-
-	mono_thread_info_install_interrupt (worker_wait_interrupt, cond, &interrupted);
-	if (interrupted)
-		return FALSE;
-
-	if (mono_cond_timedwait_ms (cond, &threadpool->active_threads_lock, rand_next (rand_handle, 5 * 1000, 60 * 1000)) != 0)
-		timeout = TRUE;
-
-	mono_thread_info_uninstall_interrupt (&interrupted);
-	if (interrupted)
-		return FALSE;
-
-	return !timeout;
-}
-
-/* return TRUE if it was unparked via worker_unpark, FALSE otherwise (ex: timeout, interrupted, spurious wake, etc.) */
+/* return TRUE if timeout, FALSE otherwise (worker unpark or interrupt) */
 static gboolean
 worker_park (void)
 {
-	mono_cond_t cond;
-	gboolean ret = TRUE;
+	gboolean timeout = FALSE;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] current worker parking", GetCurrentThreadId ());
-
-	mono_cond_init (&cond, 0);
 
 	mono_gc_set_skip_thread (TRUE);
 
@@ -537,15 +506,32 @@ worker_park (void)
 	mono_mutex_lock (&threadpool->active_threads_lock);
 
 	if (!mono_runtime_is_shutting_down ()) {
-		MonoInternalThread *thread = mono_thread_internal_current ();
+		static gpointer rand_handle = NULL;
+		MonoInternalThread *thread_internal;
+		gboolean interrupted = FALSE;
 
-		g_ptr_array_add (threadpool->parked_threads, &cond);
-		g_ptr_array_remove_fast (threadpool->working_threads, thread);
+		if (!rand_handle)
+			rand_handle = rand_create ();
+		g_assert (rand_handle);
 
-		ret = worker_wait (&cond);
+		thread_internal = mono_thread_internal_current ();
+		g_assert (thread_internal);
 
-		g_ptr_array_add (threadpool->working_threads, thread);
-		g_ptr_array_remove (threadpool->parked_threads, &cond);
+		threadpool->parked_threads_count += 1;
+		g_ptr_array_remove_fast (threadpool->working_threads, thread_internal);
+
+		mono_thread_info_install_interrupt (worker_wait_interrupt, NULL, &interrupted);
+		if (interrupted)
+			goto done;
+
+		if (mono_cond_timedwait_ms (&threadpool->parked_threads_cond, &threadpool->active_threads_lock, rand_next (rand_handle, 5 * 1000, 60 * 1000)) != 0)
+			timeout = TRUE;
+
+		mono_thread_info_uninstall_interrupt (&interrupted);
+
+done:
+		g_ptr_array_add (threadpool->working_threads, thread_internal);
+		threadpool->parked_threads_count -= 1;
 	}
 
 	mono_mutex_unlock (&threadpool->active_threads_lock);
@@ -554,28 +540,23 @@ worker_park (void)
 
 	mono_gc_set_skip_thread (FALSE);
 
-	mono_cond_destroy (&cond);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] current worker unparking, timeout? %s", GetCurrentThreadId (), timeout ? "yes" : "no");
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] current worker unparking", GetCurrentThreadId ());
-
-	return ret;
+	return timeout;
 }
 
 static gboolean
 worker_try_unpark (void)
 {
 	gboolean res = FALSE;
-	guint len;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try unpark worker", GetCurrentThreadId ());
 
 	MONO_PREPARE_BLOCKING;
 
 	mono_mutex_lock (&threadpool->active_threads_lock);
-	len = threadpool->parked_threads->len;
-	if (len > 0) {
-		mono_cond_t *cond = (mono_cond_t*) g_ptr_array_index (threadpool->parked_threads, len - 1);
-		mono_cond_signal (cond);
+	if (threadpool->parked_threads_count > 0) {
+		mono_cond_signal (&threadpool->parked_threads_cond);
 		res = TRUE;
 	}
 	mono_mutex_unlock (&threadpool->active_threads_lock);
@@ -585,12 +566,6 @@ worker_try_unpark (void)
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try unpark worker, success? %s", GetCurrentThreadId (), res ? "yes" : "no");
 
 	return res;
-}
-
-static void
-worker_unpark (ThreadPoolParkedThread *thread)
-{
-	mono_cond_signal ((mono_cond_t*) thread);
 }
 
 static void
@@ -639,7 +614,7 @@ worker_thread (gpointer data)
 		}
 
 		if (retire || !(tpdomain = domain_get_next (previous_tpdomain))) {
-			gboolean unparked;
+			gboolean timeout;
 
 			COUNTER_ATOMIC (counter, {
 				counter._.working --;
@@ -647,7 +622,7 @@ worker_thread (gpointer data)
 			});
 
 			mono_mutex_unlock (&threadpool->domains_lock);
-			unparked = worker_park ();
+			timeout = worker_park ();
 			mono_mutex_lock (&threadpool->domains_lock);
 
 			COUNTER_ATOMIC (counter, {
@@ -655,7 +630,7 @@ worker_thread (gpointer data)
 				counter._.parked --;
 			});
 
-			if (!unparked)
+			if (timeout)
 				break;
 
 			if (retire)
