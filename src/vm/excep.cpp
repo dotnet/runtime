@@ -4266,7 +4266,6 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         LOG((LF_EH, LL_INFO10, "WatsonLastChance: Debugger not attached at sp %p ...\n", GetCurrentSP()));
 
 #ifndef FEATURE_PAL
-
         BOOL bRunDoFaultReport = TRUE;
         FaultReportResult result = FaultReportResultQuit;
 
@@ -4323,7 +4322,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 
                     LOG((LF_EH, LL_INFO10, "D::WLC: Call RaiseFailFastExceptionOnWin7\n"));
                     RaiseFailFastExceptionOnWin7(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
-                                                 pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord);
+                        pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord);
                     STRESS_LOG0(LF_CORDB,LL_INFO10, "D::WLC: Return from RaiseFailFastExceptionOnWin7\n");
                 }
             }
@@ -4470,12 +4469,15 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                 UNREACHABLE_MSG("Unknown FaultReportResult");
                 break;
         }
-#endif // !FEATURE_PAL
     }
     // When the debugger thread detects that the debugger process is abruptly terminated, and triggers
     // a failfast error, CORDebuggerAttached() will be TRUE, but IsDebuggerPresent() will be FALSE.
     // If IsDebuggerPresent() is FALSE, do not try to notify the deubgger.
     else if (CORDebuggerAttached() && IsDebuggerPresent())
+#else
+    }
+    else if (CORDebuggerAttached())
+#endif // !FEATURE_PAL
     {
         // Already debugging with a managed debugger.  Should let that debugger know.
         LOG((LF_EH, LL_INFO100, "WatsonLastChance: Managed debugger already attached at sp %p ...\n", GetCurrentSP()));
@@ -4710,15 +4712,18 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
     }
     CONTRACTL_END;
 
-#if defined(DEBUGGING_SUPPORTED) && !defined(FEATURE_PAL)
+#ifdef DEBUGGING_SUPPORTED
     // Invoke the unhandled exception filter, bypassing any further first pass exception processing and treating
     // user breakpoints as if they're unhandled exceptions right away.
     //
     // @todo: The InternalUnhandledExceptionFilter can trigger.
     CONTRACT_VIOLATION(GCViolation | ThrowsViolation | ModeViolation | FaultViolation | FaultNotFatal);
 
-
+#ifdef FEATURE_PAL
+    int result = COMUnhandledExceptionFilter(pEP);
+#else
     int result = UnhandledExceptionFilter(pEP);
+#endif
 
     if (result == EXCEPTION_CONTINUE_SEARCH)
     {
@@ -4729,7 +4734,7 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
         // here.
         return EXCEPTION_CONTINUE_EXECUTION;
     }
-#endif // DEBUGGING_SUPPORTED && !FEATURE_PAL
+#endif // DEBUGGING_SUPPORTED
 
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, FailFast))
     {
