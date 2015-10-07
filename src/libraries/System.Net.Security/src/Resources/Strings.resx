@@ -330,4 +330,37 @@
   <data name="NotSupported_UnwritableStream" xml:space="preserve">
     <value>Stream does not support writing.</value>
   </data>
+  <data name="net_allocate_ssl_context_failed" xml:space="preserve">
+    <value>Failed to allocate SSL/TLS context, OpenSSL error - {0}.</value>
+  </data>
+  <data name="net_generic_operation_failed" xml:space="preserve">
+    <value>Operation failed with error - {0}.</value>
+  </data>
+  <data name="net_ssl_decrypt_failed" xml:space="preserve">
+    <value>Decrypt failed with OpenSSL error - {0}.</value>
+  </data>
+  <data name="net_ssl_encrypt_failed" xml:space="preserve">
+    <value>Encrypt failed with OpenSSL error - {0}.</value>
+  </data>
+  <data name="net_get_ssl_method_failed" xml:space="preserve">
+    <value>Failed to get SSL method, OpenSSL error - {0}.</value>
+  </data>
+  <data name="net_ssl_check_private_key_failed" xml:space="preserve">
+    <value>SSL certificate private key check failed with OpenSSL error - {0}.</value>
+  </data>
+  <data name="net_ssl_handshake_failed_error" xml:space="preserve">
+    <value>SSL Handshake failed with OpenSSL error - {0}.</value>
+  </data>
+  <data name="net_ssl_read_bio_failed_error" xml:space="preserve">
+    <value>SSL Read BIO failed with OpenSSL error - {0}.</value>
+  </data>
+  <data name="net_ssl_use_cert_failed" xml:space="preserve">
+    <value>Using SSL certificate failed with OpenSSL error - {0}.</value>
+  </data>
+  <data name="net_ssl_use_private_key_failed" xml:space="preserve">
+    <value>Using SSL certificate private key failed with OpenSSL error - {0}.</value>
+  </data>
+  <data name="net_ssl_write_bio_failed_error" xml:space="preserve">
+    <value>SSL Write BIO failed with OpenSSL error - {0}.</value>
+  </data>
 </root>
