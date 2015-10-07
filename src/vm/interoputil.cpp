@@ -1446,7 +1446,7 @@ void SafeRelease_OnException(IUnknown* pUnk, RCW* pRCW
 #endif  // MDA_SUPPORTED
 
 #ifdef FEATURE_COMINTEROP
-    LogInterop(W("An exception occured during release"));
+    LogInterop(W("An exception occurred during release"));
     LogInteropLeak(pUnk);
 #endif // FEATURE_COMINTEROP
 

@@ -254,7 +254,7 @@ class DomainFile
     // Throws if a load error has occurred
     void ThrowIfError(FileLoadLevel targetLevel) DAC_EMPTY();
 
-    // Checks that a load error has not occured before the given level
+    // Checks that a load error has not occurred before the given level
     CHECK CheckNoError(FileLoadLevel targetLevel) DAC_EMPTY_RET(CHECK::OK());
 
     // IsNotified means that the profiler API notification has been delivered
