@@ -302,12 +302,17 @@ public:
         return m_pInitialExplicitFrame;
     }
 
-    // Reset the range of explicit frames that covers already unwound frames.
-    void ResetUnwoundExplicitFramesRange()
+#ifdef FEATURE_PAL
+    // Reset the range of explicit frames, the limit frame and the scanned
+    // stack range before unwinding a sequence of native frames. These frames
+    // will be in the unwound part of the stack.
+    void CleanupBeforeNativeFramesUnwind()
     {
         m_pInitialExplicitFrame = NULL;
         m_pLimitFrame = NULL;
+        m_ScannedStackRange.Reset();
     }
+#endif // FEATURE_PAL
 
     // Determines if we have unwound to the specified parent method frame.
     // Currently this is only used for funclet skipping.
