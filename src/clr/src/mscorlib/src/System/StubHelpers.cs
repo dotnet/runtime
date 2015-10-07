@@ -1056,20 +1056,11 @@ namespace  System.StubHelpers {
 
                 if (IsIn(dwFlags))
                 {
-                    int length;
-
-                    byte[] bytes = AnsiCharMarshaler.DoAnsiConversion(
-                        pManagedHome.ToString(),
+                    int length = pManagedHome.ToString().ConvertToAnsi(
+                        ptr, allocSize,
                         IsBestFit(dwFlags),
-                        IsThrowOn(dwFlags),
-                        out length);
-
-                    Buffer.Memcpy(
-                        ptr,           // dst buffer
-                        0,             // dts index
-                        bytes,         // src array
-                        0,             // src index
-                        length);       // len
+                        IsThrowOn(dwFlags));
+                    Contract.Assert(length < allocSize, "Expected a length less than the allocated size");
 
                     // null-terminate the native string
                     *(ptr + length) = 0;
