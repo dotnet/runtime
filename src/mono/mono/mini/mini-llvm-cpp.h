@@ -110,6 +110,9 @@ mono_llvm_rethrow_exception (MonoException *e, gint32 *exc_tag);
 void
 mono_llvm_throw_exception (MonoException *e, gint32 *exc_tag);
 
+void
+mono_llvm_resume_exception (gint32 *exc_tag);
+
 //gint32
 //mono_llvm_match_exception (MonoAotModule *amodule, guint32 aot_method_index);
 //

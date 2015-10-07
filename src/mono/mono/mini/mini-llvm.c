@@ -47,7 +47,7 @@ void bzero (void *to, size_t count) { memset (to, 0, count); }
   */
 typedef struct {
 	LLVMModuleRef module;
-	LLVMValueRef throw, rethrow, match_exc, throw_corlib_exception;
+	LLVMValueRef throw, rethrow, match_exc, throw_corlib_exception, resume_eh;
 	GHashTable *llvm_types;
 	LLVMValueRef got_var;
 	const char *got_symbol;
@@ -1145,12 +1145,18 @@ emit_volatile_load (EmitContext *ctx, int vreg)
 	return v;
 }
 
+/*
+ * mono_llvm_resume_exception:
+ *
+ *   Resume exception propagation.
+ */
 void
-mono_llvm_rethrow_exception (MonoException *e, gint32 *exc_tag) {
+mono_llvm_resume_exception (gint32 *exc_tag)
+{
 	mono_llvm_cpp_rethrow_exception (exc_tag);
 }
 
-#if 1
+#if 0
 static gboolean show_native_addresses = TRUE;
 #else
 static gboolean show_native_addresses = FALSE;
@@ -1170,24 +1176,45 @@ build_stack_trace (struct _Unwind_Context *frame_ctx, void *state)
 	return _URC_NO_REASON;
 }
 
-void
-mono_llvm_throw_exception (MonoException *mono_ex, gint32 *exc_tag)
+static void
+throw_exception (MonoException *mono_ex, gint32 *exc_tag, gboolean rethrow)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 	// Note: Not pinned
 	guint32 handle = mono_gchandle_new ((MonoObject *)&mono_ex->object, FALSE);
 	jit_tls->thrown_exc = handle;
 
-	GList *intermediate_trace_ips = NULL;
-	/*MOSTLY_ASYNC_SAFE_PRINTF ("Overwriting backtrace!\n");*/
-	_Unwind_Backtrace (build_stack_trace, &intermediate_trace_ips);
+	if (!rethrow) {
+		GList *l, *ips = NULL;
+		GList *trace;
 
-	MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (intermediate_trace_ips, mono_defaults.int_class));
-
-	// FIXME: Might be necessary for dynamic methods
-	/*MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));*/
-
+		// FIXME: Move this to mini-exceptions.c
+		_Unwind_Backtrace (build_stack_trace, &ips);
+		/* The list contains gshared info-ip pairs */
+		trace = NULL;
+		ips = g_list_reverse (ips);
+		for (l = ips; l; l = l->next) {
+			// FIXME:
+			trace = g_list_append (trace, l->data);
+			trace = g_list_append (trace, NULL);
+		}
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (trace, mono_defaults.int_class));
+		g_list_free (l);
+		g_list_free (trace);
+	}
 	mono_llvm_cpp_throw_exception (exc_tag);
+}
+
+void
+mono_llvm_throw_exception (MonoException *mono_ex, gint32 *exc_tag)
+{
+	throw_exception (mono_ex, exc_tag, FALSE);
+}
+
+void
+mono_llvm_rethrow_exception (MonoException *e, gint32 *exc_tag)
+{
+	throw_exception (e, exc_tag, TRUE);
 }
 
 void
@@ -1204,6 +1231,11 @@ mono_llvm_set_cpp_ex (gpointer cpp_ex)
 	exc_tag = cpp_ex;
 }
 
+/*
+ * mono_llvm_load_exception:
+ *
+ *   Return the currently thrown exception.
+ */
 MonoObject *
 mono_llvm_load_exception (void)
 {
@@ -1237,6 +1269,11 @@ mono_llvm_load_exception (void)
 	return &mono_ex->object;
 }
 
+/*
+ * mono_llvm_clear_exception:
+ *
+ *   Mark the currently thrown exception as handled.
+ */
 void
 mono_llvm_clear_exception (void)
 {
@@ -1247,16 +1284,22 @@ mono_llvm_clear_exception (void)
 	mono_memory_barrier ();
 }
 
-
+/*
+ * mono_llvm_match_exception:
+ *
+ *   Return the innermost clause containing REGION_START-REGION_END which can handle
+ * the current exception.
+ */
 gint32
 mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end)
 {
 	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
-	MonoObject *exc = mono_gchandle_get_target (jit_tls->thrown_exc);
-
+	MonoObject *exc;
 	gint32 index = -1;
 
-	for (int i=0; i < jinfo->num_clauses; i++) {
+	g_assert (jit_tls->thrown_exc);
+	exc = mono_gchandle_get_target (jit_tls->thrown_exc);
+	for (int i = 0; i < jinfo->num_clauses; i++) {
 		MonoJitExceptionInfo *ei = &jinfo->clauses [i];
 
 		if (! (ei->try_offset == region_start && ei->try_offset + ei->try_len == region_end) )
@@ -1608,6 +1651,7 @@ get_aotconst (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data)
 	MonoJumpInfo *ji;
 	LLVMValueRef got_entry_addr, load;
 	LLVMBuilderRef builder = ctx->builder;
+	char *name = NULL;
 
 	cfg = ctx->cfg;
 
@@ -1627,7 +1671,16 @@ get_aotconst (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data)
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
 	got_entry_addr = LLVMBuildGEP (builder, ctx->lmodule->got_var, indexes, 2, "");
 
-	load = LLVMBuildLoad (builder, got_entry_addr, "");
+	switch (type) {
+	case MONO_PATCH_INFO_INTERNAL_METHOD:
+		name = g_strdup_printf ("jit_icall_%s", data);
+		break;
+	default:
+		break;
+	}
+
+	load = LLVMBuildLoad (builder, got_entry_addr, name ? name : "");
+	g_free (name);
 	//set_invariant_load_flag (load);
 
 	return load;
@@ -2830,7 +2883,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		 * LLVM bblock containing a landing pad causes problems for the
 		 * LLVM optimizer passes.
 		 */
-		sprintf (name, "BB_%d_CALL_HANDLER_TARGET", bb->block_num);
+		sprintf (name, "BB%d_CALL_HANDLER_TARGET", bb->block_num);
 		ctx->bblocks [bb->block_num].call_handler_target_bb = LLVMAppendBasicBlock (ctx->lmethod, name);
 	}
 
@@ -3217,7 +3270,7 @@ emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef
 	args [1] = get_mono_sentinel_exception (ctx);
 
 	if (rethrow) { 
-		args [0] = LLVMConstNull (exc_type);
+		args [0] = exc ? convert (ctx, exc, exc_type) : LLVMConstNull (exc_type);
 		call = emit_call (ctx, bb, &ctx->builder, callee, args, 2);
 	} else {
 		args [0] = convert (ctx, exc, exc_type);
@@ -3229,6 +3282,40 @@ emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef
 	ctx->builder = create_builder (ctx);
 
 	return call;
+}
+
+
+static void
+emit_resume_eh (EmitContext *ctx, MonoBasicBlock *bb)
+{
+	const char *icall_name = "mono_llvm_resume_exception";
+	LLVMValueRef callee = ctx->lmodule->resume_eh;
+
+	LLVMTypeRef exc_tag_type = LLVMTypeOf (get_mono_sentinel_exception (ctx));
+	LLVMTypeRef fun_sig = LLVMFunctionType1 (LLVMVoidType (), exc_tag_type, FALSE);
+
+	if (!callee) {
+		if (ctx->cfg->compile_aot) {
+			callee = get_callee (ctx, fun_sig, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
+		} else {
+			callee = LLVMAddFunction (ctx->module, icall_name, fun_sig);
+			LLVMAddGlobalMapping (ctx->lmodule->ee, callee, resolve_patch (ctx->cfg, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name));
+			mono_memory_barrier ();
+
+			ctx->lmodule->resume_eh = callee;
+		}
+	}
+
+	LLVMValueRef args [16];
+	LLVMValueRef call = NULL;
+
+	args [0] = get_mono_sentinel_exception (ctx);
+
+	call = emit_call (ctx, bb, &ctx->builder, callee, args, 1);
+
+	LLVMBuildUnreachable (ctx->builder);
+
+	ctx->builder = create_builder (ctx);
 }
 
 static LLVMValueRef
@@ -3394,10 +3481,11 @@ get_mono_personality (EmitContext *ctx)
 }
 
 static LLVMBasicBlockRef
-emit_landing_pad (EmitContext *ctx, MonoExceptionClause *group_start, int group_size)
+emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 {
 	MonoCompile *cfg = ctx->cfg;
 	LLVMBuilderRef old_builder = ctx->builder;
+	MonoExceptionClause *group_start = cfg->header->clauses + group_index;
 
 	LLVMBuilderRef lpadBuilder = create_builder (ctx);
 	ctx->builder = lpadBuilder;
@@ -3409,7 +3497,9 @@ emit_landing_pad (EmitContext *ctx, MonoExceptionClause *group_start, int group_
 	LLVMValueRef personality = get_mono_personality (ctx);
 	g_assert (personality);
 
-	LLVMBasicBlockRef lpad_bb = gen_bb (ctx, "LPAD_BB");
+	char *bb_name = g_strdup_printf ("LPAD%d_BB", group_index);
+	LLVMBasicBlockRef lpad_bb = gen_bb (ctx, bb_name);
+	g_free (bb_name);
 	LLVMPositionBuilderAtEnd (lpadBuilder, lpad_bb);
 	LLVMValueRef landing_pad = LLVMBuildLandingPad (lpadBuilder, default_cpp_lpad_exc_signature (), personality, 0, "");
 	g_assert (landing_pad);
@@ -3422,7 +3512,7 @@ emit_landing_pad (EmitContext *ctx, MonoExceptionClause *group_start, int group_
 	ctx->builder = resume_builder;
 	LLVMPositionBuilderAtEnd (resume_builder, resume_bb);
 
-	emit_throw (ctx, handler_bb, TRUE, NULL);
+	emit_resume_eh (ctx, handler_bb);
 
 	// Build match
 	ctx->builder = lpadBuilder;
@@ -5604,8 +5694,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			builder = ctx->builder = create_builder (ctx);
 			LLVMPositionBuilderAtEnd (ctx->builder, resume_bb);
 
-			// Rethrow exception
-			emit_throw (ctx, handler_bb, TRUE, NULL);
+			emit_resume_eh (ctx, bb);
 
 			has_terminator = TRUE;
 			break;
@@ -6041,7 +6130,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			cursor++;
 		}
 
-		LLVMBasicBlockRef lpad_bb = emit_landing_pad (ctx, cfg->header->clauses + group_index, count);
+		LLVMBasicBlockRef lpad_bb = emit_landing_pad (ctx, group_index, count);
 		intptr_t key = CLAUSE_END (&cfg->header->clauses [group_index]);
 		g_hash_table_insert (ctx->exc_meta, (gpointer)key, lpad_bb);
 

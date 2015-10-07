@@ -11980,6 +11980,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			
 			link_bblock (cfg, cfg->cbb, end_bblock);
 			start_new_bblock = 1;
+			/* This can complicate code generation for llvm since the return value might not be defined */
+			if (COMPILE_LLVM (cfg))
+				INLINE_FAILURE ("throw");
 			break;
 		case CEE_ENDFINALLY:
 			/* mono_save_seq_point_info () depends on this */
