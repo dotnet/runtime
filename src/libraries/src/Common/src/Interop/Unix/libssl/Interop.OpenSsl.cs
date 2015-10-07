@@ -27,7 +27,7 @@ internal static partial class Interop
             {
                 if (innerContext.IsInvalid)
                 {
-                    throw CreateSslException("Failed to allocate SSL/TLS context");
+                    throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
                 libssl.SSL_CTX_ctrl(innerContext, libssl.SSL_CTRL_OPTIONS, options, IntPtr.Zero);
@@ -44,7 +44,7 @@ internal static partial class Interop
                 if (context.IsInvalid)
                 {
                     context.Dispose();
-                    throw CreateSslException("Failed to create SSL object from SSL context");
+                    throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
             }
 
@@ -62,21 +62,14 @@ internal static partial class Interop
 
             libssl.SslErrorCode error;
             int retVal = libssl.SSL_do_handshake(context);
-            if (retVal == 1)
-            {
-                // In case of a client, this indicates successful handshake completion
-                if (!context.IsServer)
-                {
-                    return true;
-                }
-            }
-            else
+
+            if (retVal != 1)
             {
                 error = GetSslError(context, retVal);
 
                 if ((retVal != -1) || (error != libssl.SslErrorCode.SSL_ERROR_WANT_READ))
                 {
-                    throw CreateSslException(context, "SSL Handshake failed: ", retVal);
+                    throw CreateSslException(context, SR.net_ssl_handshake_failed_error, retVal);
                 }
             }
 
@@ -85,14 +78,19 @@ internal static partial class Interop
             if (sendCount > 0)
             {
                 sendPtr = Marshal.AllocHGlobal(sendCount);
-                sendCount = BioRead(context.OutputBio, sendPtr, sendCount);
-                if (sendCount <= 0)
+
+                try
                 {
-                    int errorCode = sendCount;
-                    Marshal.FreeHGlobal(sendPtr);
-                    sendPtr = IntPtr.Zero;
-                    sendCount = 0;                  
-                    throw CreateSslException(context, "Read Bio failed: ", errorCode);                   
+                    sendCount = BioRead(context.OutputBio, sendPtr, sendCount);
+                }
+                finally
+                {
+                    if (sendCount <= 0)
+                    {
+                        Marshal.FreeHGlobal(sendPtr);
+                        sendPtr = IntPtr.Zero;
+                        sendCount = 0;
+                    }
                 }
             }
         
@@ -118,24 +116,17 @@ internal static partial class Interop
                         break;
 
                     default:
-                        throw CreateSslException("OpenSsl::Encrypt failed");
+                        throw CreateSslException(SR.net_ssl_encrypt_failed, errorCode);
                 }
             }
             else
             {
-                int capacityNeeded = libssl.BIO_ctrl_pending(context.OutputBio);      
+                int capacityNeeded = libssl.BIO_ctrl_pending(context.OutputBio);
 
-                if (capacityNeeded > bufferCapacity)
-                {
-                    throw CreateSslException("OpenSsl::Encrypt capacity needed is more than buffer capacity. capacityNeeded = " + capacityNeeded + "," + "bufferCapacity = " + bufferCapacity);
-                }             
+                Debug.Assert(bufferCapacity >= capacityNeeded, "Input buffer of size " + bufferCapacity +
+                                                              " bytes is insufficient since encryption needs " + capacityNeeded + " bytes.");
 
                 retVal = BioRead(context.OutputBio, buffer, capacityNeeded);
-
-                if (retVal < 0)
-                {
-                    throw CreateSslException("OpenSsl::Encrypt failed");
-                }
             }
 
             return retVal;
@@ -176,7 +167,7 @@ internal static partial class Interop
                         break;
 
                     default:
-                        throw CreateSslException("OpenSsl::Decrypt failed");
+                        throw CreateSslException(SR.net_ssl_decrypt_failed, errorCode);
                 }
             }
 
@@ -253,7 +244,7 @@ internal static partial class Interop
 
             if (IntPtr.Zero == method)
             {
-                throw CreateSslException("Failed to get SSL method");
+                throw CreateSslException(SR.net_get_ssl_method_failed);
             }
 
             return method;
@@ -275,7 +266,7 @@ internal static partial class Interop
             int bytes = libssl.BIO_read(bio, buffer, count);
             if (bytes != count)
             {
-                throw CreateSslException("Failed in Read BIO");
+                throw CreateSslException(SR.net_ssl_read_bio_failed_error);
             }
             return bytes;
         }
@@ -286,7 +277,7 @@ internal static partial class Interop
             int bytes = libssl.BIO_write(bio, buffer, count);
             if (bytes != count)
             {
-                throw CreateSslException("Failed in Write BIO");
+                throw CreateSslException(SR.net_ssl_write_bio_failed_error);
             }
             return bytes;
         }
@@ -307,45 +298,49 @@ internal static partial class Interop
             Debug.Assert(keyPtr != null && !keyPtr.IsInvalid, "keyPtr != null && !keyPtr.IsInvalid");
 
             int retVal = libssl.SSL_CTX_use_certificate(contextPtr, certPtr);
+
             if (1 != retVal)
             {
-                throw CreateSslException("Failed to use SSL certificate");
+                throw CreateSslException(SR.net_ssl_use_cert_failed);
             }
 
             retVal = libssl.SSL_CTX_use_PrivateKey(contextPtr, keyPtr);
+
             if (1 != retVal)
             {
-                throw CreateSslException("Failed to use SSL certificate private key");
+                throw CreateSslException(SR.net_ssl_use_private_key_failed);
             }
 
             //check private key
             retVal = libssl.SSL_CTX_check_private_key(contextPtr);
+
             if (1 != retVal)
             {
-                throw CreateSslException("Certificate pivate key check failed");
+                throw CreateSslException(SR.net_ssl_check_private_key_failed);
             }
         }
 
         private static SslException CreateSslException(string message)
         {
             ulong errorVal = libssl.ERR_get_error();
-            string msg = message + ": " + Marshal.PtrToStringAnsi(libssl.ERR_reason_error_string(errorVal));
+            string msg = SR.Format(message, Marshal.PtrToStringAnsi(libssl.ERR_reason_error_string(errorVal)));
             return new SslException(msg, (int)errorVal);
         }
 
         private static SslException CreateSslException(string message, libssl.SslErrorCode error)
         {
+            string msg = SR.Format(message, error);
             switch (error)
             {
                 case libssl.SslErrorCode.SSL_ERROR_SYSCALL:
-                    return new SslException(message, error);
+                    return CreateSslException(msg);
 
                 case libssl.SslErrorCode.SSL_ERROR_SSL:
                     Exception innerEx = Interop.libcrypto.CreateOpenSslCryptographicException();
                     return new SslException(innerEx.Message, innerEx);
 
                 default:
-                    return new SslException(message + ": " + error, error);
+                    return new SslException(msg, error);
             }
         }
 
@@ -353,23 +348,41 @@ internal static partial class Interop
         {
             return CreateSslException(message, libssl.SSL_get_error(context, error));
         }
+    
+        #endregion
 
-        private sealed class SslException : Exception
+        #region Internal class
+
+        internal sealed class SslException : Exception
         {
-            public SslException(string inputMessage, libssl.SslErrorCode error): base(inputMessage)
+            public SslException(string inputMessage)
+                : base(inputMessage)
             {
-                HResult = (int)error;
             }
 
-            public SslException(string inputMessage, int error): base(inputMessage)
+            public SslException(string inputMessage, Exception ex)
+                : base(inputMessage, ex)
             {
-                HResult = error;               
             }
 
-            public SslException(string inputMessage, Exception ex): base(inputMessage, ex)
-            {                
+            public SslException(string inputMessage, libssl.SslErrorCode error)
+                : this(inputMessage, (int)error)
+            {
+            }
+
+            public SslException(string inputMessage, int error)
+                : this(inputMessage)
+            {
+                HResult = error;
+            }
+
+            public SslException(int error)
+                : this(SR.Format(SR.net_generic_operation_failed, error))
+            {
+                HResult = error;
             }
         }
+
         #endregion
     }
 }

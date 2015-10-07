@@ -17,8 +17,7 @@ namespace System.Net
     {
         public Exception GetException(SecurityStatus status)
         {
-            // TODO (Issue #3362) To be implemented
-            return new Exception("status = " + status);
+            return new Interop.OpenSsl.SslException((int)status);
         }
 
         public void VerifyPackageInfo()
