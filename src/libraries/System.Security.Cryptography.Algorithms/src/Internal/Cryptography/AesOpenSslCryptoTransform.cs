@@ -111,7 +111,7 @@ namespace Internal.Cryptography
 
             return bytesWritten;
         }
-        
+
         protected override byte[] UncheckedTransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
             return _encryptor ?
@@ -123,24 +123,23 @@ namespace Internal.Cryptography
         {
             Func<IntPtr> algorithmFunc = FindAlgorithmSelector(key.Length * 8);
 
-            _ctx = SafeEvpCipherCtxHandle.Create();
-
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
             IntPtr algorithm = algorithmFunc();
 
-            bool status = Interop.Crypto.EvpCipherInitEx(
-                _ctx,
+            _ctx = Interop.Crypto.EvpCipherCreate(
                 algorithm,
-                IntPtr.Zero,
                 key,
                 iv,
                 _encryptor ? 1 : 0);
 
-            CheckBoolReturn(status);
+            if (_ctx == null)
+            {
+                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+            }
 
             // OpenSSL will happily do PKCS#7 padding for us, but since we support padding modes
             // that it doesn't (PaddingMode.Zeros) we'll just always pad the blocks ourselves.
-            status = Interop.Crypto.EvpCipherCtxSetPadding(_ctx, 0);
+            bool status = Interop.Crypto.EvpCipherCtxSetPadding(_ctx, 0);
 
             CheckBoolReturn(status);
         }
@@ -173,23 +172,7 @@ namespace Internal.Cryptography
 
         protected override void Reset()
         {
-            const int ENC_DIR_CURRENT = -1;
-
-            // CipherInit with all nulls preserves the algorithm, resets the IV,
-            // and maintains the key.
-            //
-            // The only thing that you can't do is change the encryption direction,
-            // that requires passing the key and IV in again.
-            //
-            // But since we have a different object returned for CreateEncryptor
-            // and CreateDecryptor we don't need to worry about that.
-            bool status = Interop.Crypto.EvpCipherInitEx(
-                 _ctx,
-                 IntPtr.Zero,
-                 IntPtr.Zero,
-                 null,
-                 null,
-                 ENC_DIR_CURRENT);
+            bool status = Interop.Crypto.EvpCipherReset(_ctx);
 
             CheckBoolReturn(status);
         }

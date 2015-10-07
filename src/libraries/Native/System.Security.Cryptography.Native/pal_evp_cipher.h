@@ -5,34 +5,41 @@
 #include <openssl/evp.h>
 
 /*
-Function:
-GetEvpCipherCtxSize
+Creates and initializes an EVP_CIPHER_CTX with the given args.
 
-Returns the size of EVP_CIPHER_CTX.
+Implemented by:
+   1) allocating a new EVP_CIPHER_CTX
+   2) calling EVP_CIPHER_CTX_init on the new EVP_CIPHER_CTX
+   3) calling EVP_CipherInit_ex with the new EVP_CIPHER_CTX and the given args.
+
+Returns new EVP_CIPHER_CTX on success, nullptr on failure.
 */
-extern "C" int32_t GetEvpCipherCtxSize();
-
-/*
-Function:
-EvpCipherCtxInit
-
-Direct shim to EVP_CIPHER_CTX_init.
-*/
-extern "C" void EvpCipherCtxInit(EVP_CIPHER_CTX* ctx);
-
-/*
-Function:
-EvpCipherInitEx
-
-Direct shim to EVP_CipherInit_ex.
-*/
-extern "C" int32_t EvpCipherInitEx(
-    EVP_CIPHER_CTX* ctx,
-    const EVP_CIPHER* type,
-    ENGINE* impl,
-    unsigned char* key,
-    unsigned char* iv,
+extern "C" EVP_CIPHER_CTX* EvpCipherCreate(
+    const EVP_CIPHER* type, 
+    unsigned char* key, 
+    unsigned char* iv, 
     int32_t enc);
+
+/*
+Cleans up and deletes an EVP_CIPHER_CTX instance created by EvpCipherCreate.
+
+Implemented by:
+  1) Calling EVP_CIPHER_CTX_cleanup
+  2) Deleting the EVP_CIPHER_CTX instance.
+
+No-op if ctx is null.
+The given EVP_CIPHER_CTX pointer is invalid after this call.
+Always succeeds.
+*/
+extern "C" void EvpCipherDestroy(EVP_CIPHER_CTX* ctx);
+
+/*
+Function:
+EvpCipherReset
+
+Resets an EVP_CIPHER_CTX instance for a new computation.
+*/
+extern "C" int32_t EvpCipherReset(EVP_CIPHER_CTX* ctx);
 
 /*
 Function:
@@ -49,10 +56,10 @@ EvpCipherUpdate
 Direct shim to EVP_CipherUpdate.
 */
 extern "C" int32_t EvpCipherUpdate(
-    EVP_CIPHER_CTX* ctx, 
+    EVP_CIPHER_CTX* ctx,
     unsigned char* out,
     int32_t* outl,
-    unsigned char* in, 
+    unsigned char* in,
     int32_t inl);
 
 /*
@@ -65,14 +72,6 @@ extern "C" int32_t EvpCipherFinalEx(
     EVP_CIPHER_CTX* ctx,
     unsigned char* outm,
     int32_t* outl);
-
-/*
-Function:
-EvpCipherCtxCleanup
-
-Direct shim to EVP_CIPHER_CTX_cleanup.
-*/
-extern "C" int32_t EvpCipherCtxCleanup(EVP_CIPHER_CTX* ctx);
 
 /*
 Function:

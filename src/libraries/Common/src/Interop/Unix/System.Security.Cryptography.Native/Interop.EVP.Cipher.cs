@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -11,22 +10,18 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         [DllImport(Libraries.CryptoNative)]
-        private static extern int GetEvpCipherCtxSize();
-
-        internal static readonly int EVP_CIPHER_CTX_SIZE = GetEvpCipherCtxSize();
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern void EvpCipherCtxInit(SafeEvpCipherCtxHandle ctx);
-
-        [DllImport(Libraries.CryptoNative)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EvpCipherInitEx(
-            SafeEvpCipherCtxHandle ctx,
+        internal static extern SafeEvpCipherCtxHandle EvpCipherCreate(
             IntPtr cipher,
-            IntPtr engineNull,
             byte[] key,
             byte[] iv,
             int enc);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern void EvpCipherDestroy(IntPtr ctx);
+
+        [DllImport(Libraries.CryptoNative)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool EvpCipherReset(SafeEvpCipherCtxHandle ctx);
 
         [DllImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -47,10 +42,6 @@ internal static partial class Interop
             SafeEvpCipherCtxHandle ctx,
             byte* outm,
             out int outl);
-
-        [DllImport(Libraries.CryptoNative)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EvpCipherCtxCleanup(IntPtr ctx);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr EvpAes128Ecb();
