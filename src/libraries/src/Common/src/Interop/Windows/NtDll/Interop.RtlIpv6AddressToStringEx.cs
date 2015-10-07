@@ -13,7 +13,7 @@ internal static partial class Interop
             [In] byte[] address,
             [In] uint scopeId,
             [In] ushort port,
-            [In, Out] StringBuilder addressString,
+            [Out] StringBuilder addressString,
             [In, Out] ref uint addressStringLength);
     }
 }

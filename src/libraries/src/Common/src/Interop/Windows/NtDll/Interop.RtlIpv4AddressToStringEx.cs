@@ -12,7 +12,7 @@ internal static partial class Interop
         internal extern static uint RtlIpv4AddressToStringExW(
             [In] byte[] address,
             [In] ushort port,
-            [In, Out] StringBuilder addressString,
+            [Out] StringBuilder addressString,
             [In, Out] ref uint addressStringLength);
     }
 }
