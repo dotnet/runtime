@@ -62,7 +62,7 @@ inline HRESULT OutOfMemory()
 */
 #define COMPlusThrowNonLocalized(key, msg)  throw msg
 
-// Set if fatal error (like stack overflow or out of memory) occured in this process.
+// Set if fatal error (like stack overflow or out of memory) occurred in this process.
 extern HRESULT g_hrFatalError;
 
 #endif //CLR_STANDALONE_BINDER
@@ -1558,7 +1558,7 @@ inline HRESULT IfTransientFailThrow(HRESULT hr)
     return hr;
 }
 
-// Set if fatal error (like stack overflow or out of memory) occured in this process.
+// Set if fatal error (like stack overflow or out of memory) occurred in this process.
 GVAL_DECL(HRESULT, g_hrFatalError);
 
 #endif // !CLR_STANDALONE_BINDER

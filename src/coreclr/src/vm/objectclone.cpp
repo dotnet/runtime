@@ -2190,7 +2190,7 @@ DWORD ObjectClone::CloneField(FieldDesc *pSrcField, FieldDesc *pDstField)
 
                 STRINGREF refStr = (STRINGREF) *pSrc;
                 refStr = m_cbInterface->AllocateString(refStr);
-                // Get dest addr again, as a GC might have occured
+                // Get dest addr again, as a GC might have occurred
                 pDest = (OBJECTREF *)(m_newObject->GetData() + dstOffset);
                 _ASSERTE(GetAppDomain()==m_toDomain);
                 SetObjectReference(pDest, refStr, GetAppDomain());

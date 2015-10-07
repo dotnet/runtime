@@ -172,17 +172,17 @@ networking/gethostbyaddr/gethostbyaddr_neg2
 =======================================
 This test case is written according to the MSDN doc: testing gethostbyaddr
 with an invalid type, an error WSAEAFNOSUPPORT is expected, the test result is:
-no error occured with PAL library.
-no error occured with win32 base library.
+no error occurred with PAL library.
+no error occurred with win32 base library.
 
 networking/gethostbyaddr/gethostbyaddr_neg3
 =======================================
 This test case is written according to the MSDN doc: testing gethostbyaddr
 with a small len parameter, an error WSAEFAULT is expected, the test result is:
-no error occured with PAL library 
+no error occurred with PAL library 
 and correct hostent struct data is retrieved 
 
-no error occured with win32 base library 
+no error occurred with win32 base library 
 and correct hostent struct data is retrieved
 
 
@@ -192,9 +192,9 @@ This test case is written according to the MSDN doc: testing closesocket to
 close a non-blocking stream socket with SO_LINGER setting to a nonzero 
 time-out value, an error WSAEWOULDBLOCK is expected, the test result is:
 
-no error occured with PAL library 
+no error occurred with PAL library 
 
-no error occured with win32 base library 
+no error occurred with win32 base library 
 
 
 networking/send_recv/recv_neg7

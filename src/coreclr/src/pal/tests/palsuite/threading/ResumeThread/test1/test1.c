@@ -66,7 +66,7 @@ BOOL ResumeThreadTest()
         else
         {
             /* Check to ensure the parameter hasn't changed.  The
-               function shouldn't have occured yet.
+               function shouldn't have occurred yet.
             */
             if (dwResumeThreadTestParameter != 0)
             {

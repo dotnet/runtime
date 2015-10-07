@@ -4700,7 +4700,7 @@ void CordbProcess::DispatchRCEvent()
         }
 
         HRESULT hrCallback = S_OK;
-        // It's possible a ICorDebugProcess::Detach() may have occured by now. 
+        // It's possible a ICorDebugProcess::Detach() may have occurred by now. 
         {
             // @dbgtodo shim: eventually the entire RCET should be considered outside the RS.
             PUBLIC_CALLBACK_IN_THIS_SCOPE0_NO_LOCK(this); 
@@ -4999,7 +4999,7 @@ void CordbProcess::RawDispatchEvent(
 
             _ASSERTE(pAppDomain != NULL);
 
-            // For some exceptions very early in startup (eg, TypeLoad), this may have occured before we
+            // For some exceptions very early in startup (eg, TypeLoad), this may have occurred before we
             // even executed jitted code on the thread. We may have not received a CreateThread yet.
             // In V2, we detected this and sent a LogMessage on a random thread.
             // In V3, we lazily create the CordbThread objects (possibly before the CreateThread event),
@@ -11305,7 +11305,7 @@ HRESULT CordbProcess::SetEnableCustomNotification(ICorDebugClass * pClass, BOOL 
 //    countBytes - number of bytes in pRawRecord buffer.
 //    format - format of pRawRecord
 //    dwFlags - flags providing auxillary info for exception record.
-//    dwThreadId - thread that exception occured on.
+//    dwThreadId - thread that exception occurred on.
 //    pCallback - callback to dispatch potential managed events on.
 //    pContinueStatus - Continuation status for exception. This dictates what 
 //         to pass to kernel32!ContinueDebugEvent().
@@ -12235,8 +12235,8 @@ Reaction CordbProcess::Triage1stChanceNonSpecial(CordbUnmanagedThread * pUnmanag
 // Triage a 1st-chance exception when the CLR is initialized.
 //
 // Arguments:
-//    pUnmanagedThread - thread that the event has occured on.
-//    pEvent - native debug event for the exception that occured that this is triaging.
+//    pUnmanagedThread - thread that the event has occurred on.
+//    pEvent - native debug event for the exception that occurred that this is triaging.
 //
 // Return Value:
 //    Reaction for how to handle this event.
@@ -12534,8 +12534,8 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
 // Triage a 2nd-chance exception when the CLR is initialized.
 //
 // Arguments:
-//    pUnmanagedThread - thread that the event has occured on.
-//    pEvent - native debug event for the exception that occured that this is triaging.
+//    pUnmanagedThread - thread that the event has occurred on.
+//    pEvent - native debug event for the exception that occurred that this is triaging.
 //
 // Return Value:
 //    Reaction for how to handle this event.
@@ -12568,7 +12568,7 @@ Reaction CordbProcess::TriageExcep2ndChanceAndInit(CordbUnmanagedThread * pUnman
 
     if (dwNo2ndChance)
     {
-        CONSISTENCY_CHECK_MSGF(false, ("2nd chance exception occured on LS thread=0x%x, code=0x%08x, address=0x%p\n"
+        CONSISTENCY_CHECK_MSGF(false, ("2nd chance exception occurred on LS thread=0x%x, code=0x%08x, address=0x%p\n"
             "This assert is firing b/c you explicitly requested it by having the 'DbgNo2ndChance' knob enabled.\n"
             "Disable it to avoid asserts on 2nd chance.",
             pUnmanagedThread->m_id,
@@ -12621,8 +12621,8 @@ Reaction CordbProcess::TriageExcep2ndChanceAndInit(CordbUnmanagedThread * pUnman
 // Triage a win32 Debug event to get a reaction
 //
 // Arguments:
-//    pUnmanagedThread - thread that the event has occured on.
-//    pEvent - native debug event for the exception that occured that this is triaging.
+//    pUnmanagedThread - thread that the event has occurred on.
+//    pEvent - native debug event for the exception that occurred that this is triaging.
 //
 // Return Value:
 //    Reaction for how to handle this event.

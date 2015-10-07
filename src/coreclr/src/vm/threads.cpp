@@ -4903,7 +4903,7 @@ BOOL Thread::Block(INT32 timeOut, PendingSync *syncState)
 }
 
 
-// Return whether or not a timeout occured.  TRUE=>we waited successfully
+// Return whether or not a timeout occurred.  TRUE=>we waited successfully
 DWORD Thread::Wait(HANDLE *objs, int cntObjs, INT32 timeOut, PendingSync *syncInfo)
 {
     WRAPPER_NO_CONTRACT;
@@ -4928,7 +4928,7 @@ DWORD Thread::Wait(HANDLE *objs, int cntObjs, INT32 timeOut, PendingSync *syncIn
     return dwResult;
 }
 
-// Return whether or not a timeout occured.  TRUE=>we waited successfully
+// Return whether or not a timeout occurred.  TRUE=>we waited successfully
 DWORD Thread::Wait(CLREvent *pEvent, INT32 timeOut, PendingSync *syncInfo)
 {
     WRAPPER_NO_CONTRACT;
