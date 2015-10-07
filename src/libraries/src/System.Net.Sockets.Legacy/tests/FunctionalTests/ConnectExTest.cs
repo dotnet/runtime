@@ -33,7 +33,7 @@ namespace System.Net.Sockets.Tests
 
             Assert.True(sock.ConnectAsync(args));
 
-            Assert.True(complete.WaitOne(5000), "IPv4: Timed out while waiting for connection");
+            Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "IPv4: Timed out while waiting for connection");
 
             Assert.True(args.SocketError == SocketError.Success);
 
@@ -45,7 +45,7 @@ namespace System.Net.Sockets.Tests
 
             Assert.True(sock.ConnectAsync(args));
 
-            Assert.True(complete.WaitOne(5000), "IPv6: Timed out while waiting for connection");
+            Assert.True(complete.WaitOne(Configuration.PassingTestTimeout), "IPv6: Timed out while waiting for connection");
 
             Assert.True(args.SocketError == SocketError.Success);
 

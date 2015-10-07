@@ -39,7 +39,7 @@ namespace System.Net.Sockets.Tests
                     remoteSocket.Connect(IPAddress.IPv6Loopback, port);
 
                     Socket acceptedSocket = localSocket.EndAccept(localAsync);
-                    acceptedSocket.ReceiveTimeout = 100;
+                    acceptedSocket.ReceiveTimeout = Configuration.FailingTestTimeout;
 
                     SocketException sockEx = Assert.Throws<SocketException>(() =>
                    {
@@ -66,7 +66,7 @@ namespace System.Net.Sockets.Tests
                     remoteSocket.Connect(IPAddress.IPv6Loopback, port);
 
                     Socket acceptedSocket = localSocket.EndAccept(localAsync);
-                    acceptedSocket.SendTimeout = 100;
+                    acceptedSocket.SendTimeout = Configuration.PassingTestTimeout;
 
                     // Note that Send almost never times out because it only has to copy the data to the native buffer.
                     int bytes = acceptedSocket.Send(new byte[100]);

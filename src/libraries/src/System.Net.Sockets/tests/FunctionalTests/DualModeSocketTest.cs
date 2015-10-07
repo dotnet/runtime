@@ -462,7 +462,7 @@ namespace System.Net.Sockets.Tests
                     throw new SocketException((int)args.SocketError);
                 }
 
-                bool success = server.WaitHandle.WaitOne(100); // Make sure the bytes were received
+                bool success = server.WaitHandle.WaitOne(Configuration.FailingTestTimeout); // Make sure the bytes were received
                 if (!success)
                 {
                     throw new TimeoutException();
