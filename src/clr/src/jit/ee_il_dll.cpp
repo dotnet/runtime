@@ -94,6 +94,7 @@ HINSTANCE GetModuleInst()
     return (g_hInst);
 }
 
+extern "C"
 void __stdcall sxsJitStartup(CoreClrCallbacks const & cccallbacks)
 {
 #ifndef SELF_NO_HOST
