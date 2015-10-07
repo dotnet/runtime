@@ -64,7 +64,7 @@ namespace System
         public static void ResetColor()
         {
             // We only want to reset colors if we're targeting a TTY device
-            if (Console.IsOutputRedirected)
+            if (IsConsoleOutRedirected)
                 return;
 
             string resetFormat = TerminalColorInfo.Instance.ResetFormat;
@@ -75,26 +75,38 @@ namespace System
         }
 
         /// <summary>
-        /// Gets whether ConsoleStream is redirected.
+        /// Gets whether Console.Out is redirected.
         /// By default we assume that the stream is redirected
         /// unless it is a character device.
         /// </summary>
-        private static bool IsConsoleStreamRedirected(SyncTextWriter stw)
+        private static bool IsConsoleOutRedirected
         {
-            if (stw != null)
+            get
             {
-                StreamWriter sw = stw._out as StreamWriter;
-                if (sw != null)
+                SyncTextWriter stw = Console.Out as SyncTextWriter;
+                if (stw != null)
                 {
-                    UnixConsoleStream ucs = sw.BaseStream as UnixConsoleStream;
-                    if (ucs != null)
+                    StreamWriter sw = stw._out as StreamWriter;
+                    if (sw != null)
                     {
-                        // If handle is not to a character device, we must be redirected:
-                        return (ucs._handleType & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFCHR;
+                        UnixConsoleStream ucs = sw.BaseStream as UnixConsoleStream;
+                        if (ucs != null)
+                        {
+                            // If handle is not to a character device, we must be redirected:
+                            return (ucs._handleType & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFCHR;
+                        }
                     }
                 }
+                return true;
             }
-            return true;
+        }
+
+        private static bool IsHandleRedirected(int fd)
+        {
+            Interop.Sys.FileStatus buf;
+            return (Interop.Sys.FStat((int)fd, out buf) != 0)
+                 ? false
+                 : (buf.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFCHR;
         }
 
         /// <summary>
@@ -103,22 +115,7 @@ namespace System
         /// </summary>
         public static bool IsInputRedirectedCore()
         {
-            SyncTextReader str = Console.In as SyncTextReader;
-            if (str != null)
-            {
-                StreamReader sr = str._in as StreamReader;
-                if (sr != null)
-                {
-                    UnixConsoleStream ucs = sr.BaseStream as UnixConsoleStream;
-
-                    if (ucs != null)
-                    {
-                        // If handle is not to a character device, we must be redirected:
-                        return (ucs._handleType & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFCHR;
-                    }
-                }
-            }
-            return true;
+            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDIN_FILENO);
         }
 
         /// <summary>Gets whether Console.Out is redirected.
@@ -126,7 +123,7 @@ namespace System
         /// </summary>
         public static bool IsOutputRedirectedCore()
         {
-            return IsConsoleStreamRedirected(Console.Out as SyncTextWriter);
+            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDOUT_FILENO);
         }
 
         /// <summary>Gets whether Console.Error is redirected.
@@ -134,7 +131,7 @@ namespace System
         /// </summary>
         public static bool IsErrorRedirectedCore()
         {
-            return IsConsoleStreamRedirected(Console.Error as SyncTextWriter);
+            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDERR_FILENO);
         }
 
         /// <summary>Creates an encoding from the current environment.</summary>
@@ -212,7 +209,7 @@ namespace System
             // Changing the color involves writing an ANSI character sequence out to the output stream.
             // We only want to do this if we know that sequence will be interpreted by the output.
             // rather than simply displayed visibly.
-            if (Console.IsOutputRedirected)
+            if (IsConsoleOutRedirected)
                 return;
 
             // See if we've already cached a format string for this foreground/background

@@ -33,23 +33,6 @@ namespace System
             }
         }
 
-        private static bool EnsureInitialized(ref bool field, ref bool fieldQueried, Func<bool> initializer)
-        {
-            lock (InternalSyncObject)
-            {
-                if(!Volatile.Read(ref fieldQueried))
-                {
-                    bool result = initializer();
-                    Volatile.Write(ref field, result);
-                    Volatile.Write(ref fieldQueried, true);
-
-                    return result;
-                }
-
-                return Volatile.Read(ref field);
-            }
-        }
-
         public static TextReader In
         {
             get
@@ -90,20 +73,17 @@ namespace System
                     leaveOpen: true) { AutoFlush = true });
         }
 
-        private static bool _stdInRedirectQueried = false;
-        private static bool _stdOutRedirectQueried = false;
-        private static bool _stdErrRedirectQueried = false;
-
-        private static bool _isStdInRedirected;
-        private static bool _isStdOutRedirected;
-        private static bool _isStdErrRedirected;
+        private static StrongBox<bool> _isStdInRedirected;
+        private static StrongBox<bool> _isStdOutRedirected;
+        private static StrongBox<bool> _isStdErrRedirected;
 
         public static bool IsInputRedirected
         {
             get
             {
-                return Volatile.Read(ref _stdInRedirectQueried) ? _isStdInRedirected
-                    : EnsureInitialized(ref _isStdInRedirected, ref _stdInRedirectQueried, () => { return ConsolePal.IsInputRedirectedCore(); });
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdInRedirected) ??
+                    EnsureInitialized(ref _isStdInRedirected, () => new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
+                return redirected.Value;
             }
         }
 
@@ -111,8 +91,9 @@ namespace System
         {
             get
             {
-                return Volatile.Read(ref _stdOutRedirectQueried) ? _isStdOutRedirected
-                    : EnsureInitialized(ref _isStdOutRedirected, ref _stdOutRedirectQueried, () => { return ConsolePal.IsOutputRedirectedCore(); });
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdOutRedirected) ??
+                    EnsureInitialized(ref _isStdOutRedirected, () => new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
+                return redirected.Value;
             }
         }
 
@@ -120,8 +101,9 @@ namespace System
         {
             get
             {
-                return Volatile.Read(ref _stdErrRedirectQueried) ? _isStdErrRedirected
-                    : EnsureInitialized(ref _isStdErrRedirected, ref _stdErrRedirectQueried, () => { return ConsolePal.IsErrorRedirectedCore(); });
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdErrRedirected) ??
+                    EnsureInitialized(ref _isStdErrRedirected, () => new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
+                return redirected.Value;
             }
         }
 

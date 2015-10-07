@@ -33,7 +33,7 @@
     <Compile Include="ThreadSafety.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="TermInfo.cs" />
-	<Compile Include="RedirectedStream.cs" />
+    <Compile Include="RedirectedStream.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\AssertWithCallerAttributes.cs">
       <Link>Common\tests\System\Diagnostics\AssertWithCallerAttributes.cs</Link>
     </Compile>
@@ -59,11 +59,11 @@
       <Project>{F9DF2357-81B4-4317-908E-512DA9395583}</Project>
       <Name>System.Console</Name>
     </ProjectReference>
-	<ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
-	<ProjectReference Include="..\..\System.Diagnostics.Process\src\System.Diagnostics.Process.csproj">
+    <ProjectReference Include="..\..\System.Diagnostics.Process\src\System.Diagnostics.Process.csproj">
       <Project>{63634289-90D7-4947-8BF3-DBBE98D76C85}</Project>
       <Name>System.Diagnostics.Process</Name>
     </ProjectReference>
