@@ -16,7 +16,7 @@ private:
 
     void NullTerminate()
     {
-        m_buffer[m_count] = W('\0');
+        m_buffer[m_count] = 0;
     }
 
     void DeleteBuffer()
@@ -105,9 +105,14 @@ public:
         return Set(s.m_buffer, s.m_count);
     }
 
-    SIZE_T Getcount() const
+    SIZE_T GetCount() const
     {
         return m_count;
+    }
+    
+    SIZE_T GetSizeOf() const
+    {
+        return (m_count+1) * sizeof(T);
     }
 
     CONST T * GetString() const
