@@ -24,6 +24,7 @@
     <file src="..\corerun.exe" target="lib\aspnetcore50\corerun.exe" />
     <file src="..\mscorlib.dll" target="lib\aspnetcore50\mscorlib.dll" />
     <file src="..\sos.dll" target="lib\aspnetcore50\sos.dll" />
+    <file src="..\protojit.dll" target="lib\aspnetcore50\protojit.dll" />
     <file src="..\PDB\clretwrc.pdb" target="lib\aspnetcore50\clretwrc.pdb" />
     <file src="..\PDB\coreclr.pdb" target="lib\aspnetcore50\coreclr.pdb" />
     <file src="..\PDB\corerun.pdb" target="lib\aspnetcore50\corerun.pdb" />
@@ -34,6 +35,7 @@
     <file src="..\PDB\corerun.pdb" target="lib\aspnetcore50\corerun.pdb" />
     <file src="..\PDB\sos.pdb" target="lib\aspnetcore50\sos.pdb" />
     <file src="..\PDB\mscorlib.pdb" target="lib\aspnetcore50\mscorlib.pdb" />
+    <file src="..\PDB\protojit.pdb" target="lib\aspnetcore50\protojit.pdb" />
     <file src="..\inc\cor.h" target="inc\cor.h" />
     <file src="..\inc\corerror.h" target="inc\corerror.h" />
     <file src="..\inc\corhdr.h" target="inc\corhdr.h" />
