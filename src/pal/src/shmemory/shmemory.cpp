@@ -369,8 +369,8 @@ static Volatile<HANDLE> locking_thread;
 
 #ifndef CORECLR
 /* suffix template for mkstemp */
-static char segment_name_template[MAX_LONGPATH];
-static char lockfile_name[MAX_LONGPATH];
+static char segment_name_template[MAX_PATH];
+static char lockfile_name[MAX_PATH];
 #endif // !defined(CORECLR)
 
 /* Constants ******************************************************************/
@@ -445,8 +445,8 @@ BOOL SHMInitialize(void)
     int fd_map;
     int i;
     int j;
-    CHAR config_dir[MAX_LONGPATH];
-    CHAR first_segment_name[MAX_LONGPATH];
+    CHAR config_dir[MAX_PATH];
+    CHAR first_segment_name[MAX_PATH];
     ssize_t sBytes;
 #endif // !CORECLR
 
@@ -455,14 +455,14 @@ BOOL SHMInitialize(void)
     init_waste();
     
 #ifndef CORECLR
-    if ( PALGetPalConfigDir( config_dir, MAX_LONGPATH ) )
+    if ( PALGetPalConfigDir( config_dir, MAX_PATH ) )
     {
         if ( ( strlen( config_dir ) + strlen( segment_name_prefix ) + 
                                            /* + 3 for the / _ and \0 */
-               strlen( first_segment_suffix ) + 3 ) < MAX_LONGPATH && 
+               strlen( first_segment_suffix ) + 3 ) < MAX_PATH && 
              
              ( strlen( config_dir ) + strlen( segment_name_prefix ) + 
-               SEGMENT_NAME_SUFFIX_LENGTH + 3 ) < MAX_LONGPATH ) 
+               SEGMENT_NAME_SUFFIX_LENGTH + 3 ) < MAX_PATH ) 
         {
             /* build first segment's file name */
             sprintf( first_segment_name,"%s/%s_%s", config_dir,
@@ -481,7 +481,7 @@ BOOL SHMInitialize(void)
         else
         {
             ASSERT( "Configuration directory length + segment name length "
-                   "is greater then MAX_LONGPATH.\n" );
+                   "is greater then MAX_PATH.\n" );
             return FALSE;
         }
     }
@@ -973,15 +973,15 @@ void SHMCleanup(void)
     }
     else /* Clean up everything. */
     {
-        CHAR PalDir[ MAX_LONGPATH + 1 ];
-        CHAR FileName[ MAX_LONGPATH + 1 ];
+        CHAR PalDir[ MAX_PATH + 1 ];
+        CHAR FileName[ MAX_PATH + 1 ];
         UINT nEndOfPathAndPrefix = 0;
         SHM_SEGMENT_HEADER segment_header;
         LPCSTR suffix;
         int fd_segment;
 
         /* Build start of filename. */
-        if ( !PALGetPalConfigDir( PalDir, MAX_LONGPATH ) )
+        if ( !PALGetPalConfigDir( PalDir, MAX_PATH ) )
         {
             ASSERT( "Unable to determine the PAL config directory.\n" );
 #ifdef O_EXLOCK
@@ -1839,13 +1839,13 @@ Return value :
 --*/
 static LPVOID SHMMapSegment(char *segment_name)
 {
-    char segment_path[MAX_LONGPATH];
+    char segment_path[MAX_PATH];
     int segment_fd;
     LPVOID *segment;
     struct stat sb;
 
     /* Construct the file's full path */
-    if ( !PALGetPalConfigDir( segment_path, MAX_LONGPATH ) )
+    if ( !PALGetPalConfigDir( segment_path, MAX_PATH ) )
     {
         ASSERT( "Unable to determine the PAL config directory.\n" );
         return NULL;
@@ -1965,7 +1965,7 @@ Notes :
 static BOOL SHMAddSegment(void)
 {
 #ifndef CORECLR
-    char segment_name[MAX_LONGPATH];
+    char segment_name[MAX_PATH];
     char *suffix_start;
     int fd_map;
 #endif // !CORECLR
@@ -2634,7 +2634,7 @@ static void save_waste(void)
 {
     int fd;
     FILE *log_file;
-    char file_name[MAX_LONGPATH];
+    char file_name[MAX_PATH];
     enum SHM_POOL_SIZES sps;
     int avg;
     LPSTR env_string;
@@ -2646,7 +2646,7 @@ static void save_waste(void)
         return;
     }
     
-    if ( !PALGetPalConfigDir( file_name, MAX_LONGPATH ) )
+    if ( !PALGetPalConfigDir( file_name, MAX_PATH ) )
     {
         ERROR( "Unable to determine the PAL config directory.\n" );
         return;
