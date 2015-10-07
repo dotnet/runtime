@@ -137,13 +137,7 @@ HeapCreate(
     }
     else
     {
-        malloc_zone_t *pZone = malloc_create_zone(dwInitialSize, 0 /* flags */);
-        ret = (HANDLE)pZone;
-#ifdef CACHE_HEAP_ZONE
-        _ASSERT_MSG(s_pExecutableHeap == NULL, "PAL currently only handles the creation of one executable heap.");
-        s_pExecutableHeap = pZone;
-        TRACE("s_pExecutableHeap is %p.\n", s_pExecutableHeap);
-#endif // CACHE_HEAP_ZONE
+        ret = (HANDLE)malloc_create_zone(dwInitialSize, 0 /* flags */);
     }
     
 #else // __APPLE__
@@ -176,7 +170,15 @@ GetProcessHeap(
 #if HEAP_HANDLES_ARE_REAL_HANDLES
 #error
 #else
-    ret = (HANDLE) malloc_default_zone();
+    malloc_zone_t *pZone = malloc_default_zone();
+    ret = (HANDLE)pZone;
+#ifdef CACHE_HEAP_ZONE
+    if (s_pExecutableHeap == NULL)
+    {
+        s_pExecutableHeap = pZone;
+        TRACE("s_pExecutableHeap is %p (process heap).\n", s_pExecutableHeap);
+    }
+#endif // CACHE_HEAP_ZONE
 #endif // HEAP_HANDLES_ARE_REAL_HANDLES
 #else
     ret = (HANDLE) DUMMY_HEAP;
