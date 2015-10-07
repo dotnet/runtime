@@ -32,6 +32,7 @@
     <Compile Include="Array\NullableNewArrayListTests.cs" />
     <Compile Include="Array\ObjectArrayBoundsTests.cs" />
     <Compile Include="Array\ObjectNullableArrayBoundsTests.cs" />
+    <Compile Include="BinaryOperators\Arithmetic\BinaryShiftTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryAddTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryDivideTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryModuloTests.cs" />
