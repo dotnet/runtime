@@ -173,6 +173,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.libssl_types.cs">
       <Link>Interop\Unix\libssl\Interop.libssl_types.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.SafeSslHandle.cs">
+      <Link>Interop\Unix\libssl\Interop.SafeSslHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.OpenSsl.cs">
       <Link>Interop\Unix\libssl\Interop.OpenSsl.cs</Link>
     </Compile>

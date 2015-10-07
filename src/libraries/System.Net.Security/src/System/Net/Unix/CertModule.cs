@@ -79,12 +79,8 @@ namespace System.Net
 
                 remoteCertificateStore = new X509Certificate2Collection();
 
-                SafeSharedX509StackHandle chainStack =
-                    Interop.OpenSsl.GetPeerCertificateChain(securityContext.DangerousGetHandle());
-
-                GC.KeepAlive(securityContext);
-
-                using (chainStack)
+                using (SafeSharedX509StackHandle chainStack =
+                    Interop.OpenSsl.GetPeerCertificateChain(securityContext.SslContext))
                 {
                     if (!chainStack.IsInvalid)
                     {
