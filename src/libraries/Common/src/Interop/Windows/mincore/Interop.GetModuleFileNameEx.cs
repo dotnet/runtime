@@ -11,6 +11,6 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.Psapi_Obsolete, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "K32GetModuleFileNameExW")]
-        internal static extern int GetModuleFileNameEx(SafeProcessHandle processHandle, IntPtr moduleHandle, StringBuilder baseName, int size);
+        internal static extern int GetModuleFileNameEx(SafeProcessHandle processHandle, IntPtr moduleHandle, [Out] StringBuilder baseName, int size);
     }
 }

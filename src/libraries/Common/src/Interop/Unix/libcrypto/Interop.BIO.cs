@@ -29,7 +29,7 @@ internal static partial class Interop
         internal static extern bool BIO_free(IntPtr a);
 
         [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
-        internal static extern int BIO_gets(SafeBioHandle b, StringBuilder buf, int size);
+        internal static extern int BIO_gets(SafeBioHandle b, [Out] StringBuilder buf, int size);
 
         [DllImport(Libraries.LibCrypto)]
         internal static extern int BIO_read(SafeBioHandle b, byte[] data, int len);
