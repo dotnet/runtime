@@ -3337,7 +3337,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			if (!ji->data.del_tramp->method)
 				goto cleanup;
 		}
-		ji->data.del_tramp->virtual = decode_value (p, &p) ? TRUE : FALSE;
+		ji->data.del_tramp->is_virtual = decode_value (p, &p) ? TRUE : FALSE;
 		break;
 	case MONO_PATCH_INFO_IMAGE:
 		ji->data.image = load_image (aot_module, decode_value (p, &p), TRUE);

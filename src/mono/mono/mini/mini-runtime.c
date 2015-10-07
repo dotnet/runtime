@@ -1248,7 +1248,7 @@ mono_patch_info_hash (gconstpointer data)
 		/* Hash on the selector name */
 		return g_str_hash (ji->data.target);
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
-		return (ji->type << 8) | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->virtual;
+		return (ji->type << 8) | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->is_virtual;
 	case MONO_PATCH_INFO_LDSTR_LIT:
 		return g_str_hash (ji->data.target);
 	case MONO_PATCH_INFO_VIRT_METHOD: {
@@ -1313,7 +1313,7 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 		return ji1->data.gsharedvt_method->method == ji2->data.gsharedvt_method->method;
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
-		return ji1->data.del_tramp->klass == ji2->data.del_tramp->klass && ji1->data.del_tramp->method == ji2->data.del_tramp->method && ji1->data.del_tramp->virtual == ji2->data.del_tramp->virtual;
+		return ji1->data.del_tramp->klass == ji2->data.del_tramp->klass && ji1->data.del_tramp->method == ji2->data.del_tramp->method && ji1->data.del_tramp->is_virtual == ji2->data.del_tramp->is_virtual;
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		return ji1->data.index == ji2->data.index;
 	case MONO_PATCH_INFO_VIRT_METHOD:
@@ -1496,7 +1496,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
 		MonoDelegateClassMethodPair *del_tramp = patch_info->data.del_tramp;
 
-		if (del_tramp->virtual)
+		if (del_tramp->is_virtual)
 			target = mono_create_delegate_virtual_trampoline (domain, del_tramp->klass, del_tramp->method);
 		else
 			target = mono_create_delegate_trampoline_info (domain, del_tramp->klass, del_tramp->method);

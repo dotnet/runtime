@@ -294,7 +294,7 @@ typedef struct
 {
 	MonoClass *klass;
 	MonoMethod *method;
-	gboolean virtual;
+	gboolean is_virtual;
 } MonoDelegateClassMethodPair;
 
 /* Per-domain information maintained by the JIT */
@@ -856,7 +856,7 @@ struct MonoCallInst {
 	gconstpointer fptr;
 	guint stack_usage;
 	guint stack_align_amount;
-	guint virtual : 1;
+	guint is_virtual : 1;
 	guint tail_call : 1;
 	/* If this is TRUE, 'fptr' points to a MonoJumpInfo instead of an address. */
 	guint fptr_is_patch : 1;
@@ -2238,7 +2238,7 @@ void      mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *in
 void      mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg, int offset, int from, int to);
 MonoInst* mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args);
 MonoInst* mono_emit_jit_icall_by_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args);
-MonoInst* mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this);
+MonoInst* mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this_ins);
 void      mono_create_helper_signatures (void);
 
 gboolean  mini_class_is_system_array (MonoClass *klass);
@@ -2340,7 +2340,7 @@ void     mono_aot_register_jit_icall        (const char *name, gpointer addr);
 void*    mono_aot_readonly_field_override   (MonoClassField *field);
 guint32  mono_aot_find_method_index         (MonoMethod *method);
 void     mono_aot_init_llvm_method          (gpointer aot_module, guint32 method_index);
-void     mono_aot_init_gshared_method_this  (gpointer aot_module, guint32 method_index, MonoObject *this);
+void     mono_aot_init_gshared_method_this  (gpointer aot_module, guint32 method_index, MonoObject *this_ins);
 void     mono_aot_init_gshared_method_rgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx);
 
 /* This is an exported function */
@@ -2789,7 +2789,7 @@ void
 mono_set_partial_sharing_supported (gboolean supported);
 
 gboolean
-mono_class_generic_sharing_enabled (MonoClass *class);
+mono_class_generic_sharing_enabled (MonoClass *klass);
 
 gpointer
 mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot);
@@ -2826,7 +2826,7 @@ int
 mono_generic_context_check_used (MonoGenericContext *context);
 
 int
-mono_class_check_context_used (MonoClass *class);
+mono_class_check_context_used (MonoClass *klass);
 
 gboolean
 mono_generic_context_is_sharable (MonoGenericContext *context, gboolean allow_type_vars);
@@ -2865,8 +2865,8 @@ gpointer mono_helper_get_rgctx_other_ptr (MonoClass *caller_class, MonoVTable *v
 void mono_generic_sharing_init (void);
 void mono_generic_sharing_cleanup (void);
 
-MonoClass* mini_class_get_container_class (MonoClass *class);
-MonoGenericContext* mini_class_get_context (MonoClass *class);
+MonoClass* mini_class_get_container_class (MonoClass *klass);
+MonoGenericContext* mini_class_get_context (MonoClass *klass);
 
 MonoType* mini_get_underlying_type (MonoType *type) MONO_LLVM_INTERNAL;
 MonoType* mini_type_get_underlying_type (MonoType *type);

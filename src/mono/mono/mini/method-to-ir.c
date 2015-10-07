@@ -2946,7 +2946,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 			call->inst.sreg1 = slot_reg;
 			call->inst.inst_offset = offset;
-			call->virtual = TRUE;
+			call->is_virtual = TRUE;
 		}
 	}
 
@@ -5069,7 +5069,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		del_tramp = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoDelegateClassMethodPair));
 		del_tramp->klass = klass;
 		del_tramp->method = context_used ? NULL : method;
-		del_tramp->virtual = virtual;
+		del_tramp->is_virtual = virtual;
 		EMIT_NEW_AOTCONST (cfg, tramp_ins, MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, del_tramp);
 	} else {
 		if (virtual)

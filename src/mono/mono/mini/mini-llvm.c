@@ -47,7 +47,7 @@ void bzero (void *to, size_t count) { memset (to, 0, count); }
   */
 typedef struct {
 	LLVMModuleRef module;
-	LLVMValueRef throw, rethrow, match_exc, throw_corlib_exception, resume_eh;
+	LLVMValueRef throw_icall, rethrow, match_exc, throw_corlib_exception, resume_eh;
 	GHashTable *llvm_types;
 	LLVMValueRef got_var;
 	const char *got_symbol;
@@ -468,7 +468,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 		if (klass->enumtype)
 			return type_to_llvm_type (ctx, mono_class_enum_basetype (klass));
 
-		ltype = g_hash_table_lookup (ctx->lmodule->llvm_types, klass);
+		ltype = (LLVMTypeRef)g_hash_table_lookup (ctx->lmodule->llvm_types, klass);
 		if (!ltype) {
 			ltype = create_llvm_type_for_type (klass);
 			g_hash_table_insert (ctx->lmodule->llvm_types, klass, ltype);
@@ -1162,13 +1162,13 @@ static gboolean show_native_addresses = TRUE;
 static gboolean show_native_addresses = FALSE;
 #endif
 
-static _Unwind_Reason_Code 
+static _Unwind_Reason_Code
 build_stack_trace (struct _Unwind_Context *frame_ctx, void *state) 
 {
 	MonoDomain *domain = mono_domain_get ();
 	uintptr_t ip = _Unwind_GetIP (frame_ctx);
 
-	if (show_native_addresses || mono_jit_info_table_find (domain, (gpointer)ip)) {
+	if (show_native_addresses || mono_jit_info_table_find (domain, (char*)ip)) {
 		GList **trace_ips = (GList **)state;
 		*trace_ips = g_list_prepend (*trace_ips, (gpointer)ip);
 	}
@@ -1179,7 +1179,7 @@ build_stack_trace (struct _Unwind_Context *frame_ctx, void *state)
 static void
 throw_exception (MonoException *mono_ex, gint32 *exc_tag, gboolean rethrow)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	// Note: Not pinned
 	guint32 handle = mono_gchandle_new ((MonoObject *)&mono_ex->object, FALSE);
 	jit_tls->thrown_exc = handle;
@@ -1228,7 +1228,7 @@ mono_llvm_raise_exception (MonoException *e)
 void
 mono_llvm_set_cpp_ex (gpointer cpp_ex)
 {
-	exc_tag = cpp_ex;
+	exc_tag = (gint32*)cpp_ex;
 }
 
 /*
@@ -1239,7 +1239,7 @@ mono_llvm_set_cpp_ex (gpointer cpp_ex)
 MonoObject *
 mono_llvm_load_exception (void)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 
 	MonoException *mono_ex = (MonoException*)mono_gchandle_get_target (jit_tls->thrown_exc);
 	g_assert (mono_ex->trace_ips);
@@ -1277,7 +1277,7 @@ mono_llvm_load_exception (void)
 void
 mono_llvm_clear_exception (void)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	mono_gchandle_free (jit_tls->thrown_exc);
 	jit_tls->thrown_exc = 0;
 
@@ -1293,7 +1293,7 @@ mono_llvm_clear_exception (void)
 gint32
 mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	MonoObject *exc;
 	gint32 index = -1;
 
@@ -1711,7 +1711,7 @@ get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gcons
 			mono_add_patch_info (ctx->cfg, 0, type, data);
 
 		// FIXME: Locking
-		callee = g_hash_table_lookup (ctx->lmodule->plt_entries, callee_name);
+		callee = (LLVMValueRef)g_hash_table_lookup (ctx->lmodule->plt_entries, callee_name);
 		if (!callee) {
 			callee = LLVMAddFunction (ctx->module, callee_name, llvm_sig);
 
@@ -1808,7 +1808,7 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 		 */
 		intptr_t key = CLAUSE_END(clause);
 
-		LLVMBasicBlockRef lpad_bb = g_hash_table_lookup (ctx->exc_meta, (gconstpointer)key);
+		LLVMBasicBlockRef lpad_bb = (LLVMBasicBlockRef)g_hash_table_lookup (ctx->exc_meta, (gconstpointer)key);
 
 		// FIXME: Find the one that has the lowest end bound for the right start address
 		// FIXME: Finally + nesting
@@ -2291,7 +2291,7 @@ emit_llvm_used (MonoLLVMModule *lmodule)
 	used = LLVMAddGlobal (module, used_type, "llvm.used");
 	used_elem = g_new0 (LLVMValueRef, lmodule->used->len);
 	for (i = 0; i < lmodule->used->len; ++i)
-		used_elem [i] = LLVMConstBitCast (g_ptr_array_index (lmodule->used, i), LLVMPointerType (LLVMInt8Type (), 0));
+		used_elem [i] = LLVMConstBitCast ((LLVMValueRef)g_ptr_array_index (lmodule->used, i), LLVMPointerType (LLVMInt8Type (), 0));
 	LLVMSetInitializer (used, LLVMConstArray (LLVMPointerType (LLVMInt8Type (), 0), used_elem, lmodule->used->len));
 	LLVMSetLinkage (used, LLVMAppendingLinkage);
 	LLVMSetSection (used, "llvm.metadata");
@@ -2357,7 +2357,7 @@ emit_get_method (MonoLLVMModule *lmodule)
 		builder = LLVMCreateBuilder ();
 		LLVMPositionBuilderAtEnd (builder, bb);
 
-		m = g_hash_table_lookup (lmodule->idx_to_lmethod, GINT_TO_POINTER (i));
+		m = (LLVMValueRef)g_hash_table_lookup (lmodule->idx_to_lmethod, GINT_TO_POINTER (i));
 		if (m)
 			LLVMBuildRet (builder, LLVMBuildBitCast (builder, m, rtype, ""));
 		else
@@ -2412,7 +2412,7 @@ emit_get_unbox_tramp (MonoLLVMModule *lmodule)
 
 	bbs = g_new0 (LLVMBasicBlockRef, lmodule->max_method_idx + 1);
 	for (i = 0; i < lmodule->max_method_idx + 1; ++i) {
-		m = g_hash_table_lookup (lmodule->idx_to_unbox_tramp, GINT_TO_POINTER (i));
+		m = (LLVMValueRef)g_hash_table_lookup (lmodule->idx_to_unbox_tramp, GINT_TO_POINTER (i));
 		if (!m)
 			continue;
 
@@ -2437,7 +2437,7 @@ emit_get_unbox_tramp (MonoLLVMModule *lmodule)
 
 	switch_ins = LLVMBuildSwitch (builder, LLVMGetParam (func, 0), fail_bb, 0);
 	for (i = 0; i < lmodule->max_method_idx + 1; ++i) {
-		m = g_hash_table_lookup (lmodule->idx_to_unbox_tramp, GINT_TO_POINTER (i));
+		m = (LLVMValueRef)g_hash_table_lookup (lmodule->idx_to_unbox_tramp, GINT_TO_POINTER (i));
 		if (!m)
 			continue;
 
@@ -2549,7 +2549,7 @@ emit_div_check (EmitContext *ctx, LLVMBuilderRef builder, MonoBasicBlock *bb, Mo
 void
 default_mono_llvm_unhandled_exception (void)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	MonoObject *target = mono_gchandle_get_target (jit_tls->thrown_exc);
 
 	mono_unhandled_exception (target);
@@ -2911,7 +2911,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	gboolean vretaddr;
 	LLVMTypeRef llvm_sig;
 	gpointer target;
-	gboolean virtual, calli;
+	gboolean is_virtual, calli;
 	LLVMBuilderRef builder = *builder_ref;
 	LLVMSigInfo sinfo;
 
@@ -2929,13 +2929,13 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	llvm_sig = sig_to_llvm_sig_full (ctx, sig, cinfo, &sinfo);
 	CHECK_FAILURE (ctx);
 
-	virtual = (ins->opcode == OP_VOIDCALL_MEMBASE || ins->opcode == OP_CALL_MEMBASE || ins->opcode == OP_VCALL_MEMBASE || ins->opcode == OP_LCALL_MEMBASE || ins->opcode == OP_FCALL_MEMBASE || ins->opcode == OP_RCALL_MEMBASE);
+	is_virtual = (ins->opcode == OP_VOIDCALL_MEMBASE || ins->opcode == OP_CALL_MEMBASE || ins->opcode == OP_VCALL_MEMBASE || ins->opcode == OP_LCALL_MEMBASE || ins->opcode == OP_FCALL_MEMBASE || ins->opcode == OP_RCALL_MEMBASE);
 	calli = !call->fptr_is_patch && (ins->opcode == OP_VOIDCALL_REG || ins->opcode == OP_CALL_REG || ins->opcode == OP_VCALL_REG || ins->opcode == OP_LCALL_REG || ins->opcode == OP_FCALL_REG || ins->opcode == OP_RCALL_REG);
 
 	/* FIXME: Avoid creating duplicate methods */
 
 	if (ins->flags & MONO_INST_HAS_METHOD) {
-		if (virtual) {
+		if (is_virtual) {
 			callee = NULL;
 		} else {
 			if (cfg->compile_aot) {
@@ -2982,7 +2982,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			if (cfg->compile_aot) {
 				callee = NULL;
 				if (cfg->abs_patches) {
-					MonoJumpInfo *abs_ji = g_hash_table_lookup (cfg->abs_patches, call->fptr);
+					MonoJumpInfo *abs_ji = (MonoJumpInfo*)g_hash_table_lookup (cfg->abs_patches, call->fptr);
 					if (abs_ji) {
 						callee = get_callee (ctx, llvm_sig, abs_ji->type, abs_ji->data.target);
 						if (!callee)
@@ -2995,7 +2995,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				callee = LLVMAddFunction (module, "", llvm_sig);
 				target = NULL;
 				if (cfg->abs_patches) {
-					MonoJumpInfo *abs_ji = g_hash_table_lookup (cfg->abs_patches, call->fptr);
+					MonoJumpInfo *abs_ji = (MonoJumpInfo*)g_hash_table_lookup (cfg->abs_patches, call->fptr);
 					if (abs_ji) {
 						/*
 						 * FIXME: Some trampolines might have
@@ -3016,7 +3016,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		}
 	}
 
-	if (virtual) {
+	if (is_virtual) {
 		int size = sizeof (gpointer);
 		LLVMValueRef index;
 
@@ -3036,7 +3036,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	 */
 	nargs = (sig->param_count * 16) + sig->hasthis + vretaddr + call->rgctx_reg + call->imt_arg_reg;
 	len = sizeof (LLVMValueRef) * nargs;
-	args = alloca (len);
+	args = (LLVMValueRef*)alloca (len);
 	memset (args, 0, len);
 	l = call->out_ireg_args;
 
@@ -3241,7 +3241,7 @@ static LLVMValueRef
 emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef exc)
 {
 	const char *icall_name = rethrow ? "mono_llvm_rethrow_exception" : "mono_llvm_throw_exception";
-	LLVMValueRef callee = rethrow ? ctx->lmodule->rethrow : ctx->lmodule->throw;
+	LLVMValueRef callee = rethrow ? ctx->lmodule->rethrow : ctx->lmodule->throw_icall;
 
 	LLVMTypeRef exc_type = type_to_llvm_type (ctx, &mono_get_exception_class ()->byval_arg);
 
@@ -3260,7 +3260,7 @@ emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef
 			if (rethrow)
 				ctx->lmodule->rethrow = callee;
 			else
-				ctx->lmodule->throw = callee;
+				ctx->lmodule->throw_icall = callee;
 		}
 	}
 
@@ -3546,14 +3546,14 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 		for (int i=0; i < group_size; i++) {
 			MonoExceptionClause *clause = group_start + i;
 			int clause_index = clause - cfg->header->clauses;
-			MonoBasicBlock *handler_bb = g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (clause_index));
+			MonoBasicBlock *handler_bb = (MonoBasicBlock*)g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (clause_index));
 			g_assert (handler_bb);
 			g_assert (ctx->bblocks [handler_bb->block_num].call_handler_target_bb);
 			LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), clause_index, FALSE), ctx->bblocks [handler_bb->block_num].call_handler_target_bb);
 		}
 	} else {
 		int clause_index = group_start - cfg->header->clauses;
-		MonoBasicBlock *finally_bb = g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (clause_index));
+		MonoBasicBlock *finally_bb = (MonoBasicBlock*)g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (clause_index));
 		g_assert (finally_bb);
 
 		LLVMBuildBr (ctx->builder, ctx->bblocks [finally_bb->block_num].call_handler_target_bb);
@@ -3930,7 +3930,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				/* Add stores for volatile variables */
 				emit_volatile_store (ctx, builder, ins->next->dreg);
 			} else if (MONO_IS_COND_EXC (ins->next)) {
-				emit_cond_system_exception (ctx, bb, ins->next->inst_p1, cmp);
+				emit_cond_system_exception (ctx, bb, (const char*)ins->next->inst_p1, cmp);
 				CHECK_FAILURE (ctx);
 				builder = ctx->builder;
 			} else {
@@ -4014,7 +4014,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 				/* Remember for later */
 				for (j = 0; j < count; ++j) {
-					PhiNode *node = mono_mempool_alloc0 (ctx->mempool, sizeof (PhiNode));
+					PhiNode *node = (PhiNode*)mono_mempool_alloc0 (ctx->mempool, sizeof (PhiNode));
 					node->bb = bb;
 					node->phi = ins;
 					node->in_bb = bb->in_bb [i];
@@ -4650,7 +4650,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			 * the LLVM compile fails.
 			 */
 			ji = g_new0 (MonoJumpInfo, 1);
-			ji->type = (MonoJumpInfoType)ins->inst_i1;
+			ji->type = (MonoJumpInfoType)ins->inst_c1;
 			ji->data.target = ins->inst_p0;
 
 			ji = mono_aot_patch_info_dup (ji);
@@ -4686,7 +4686,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}				
 			break;
 		case OP_LDADDR: {
-			MonoInst *var = ins->inst_p0;
+			MonoInst *var = ins->inst_i0;
 
 			if (var->opcode == OP_VTARG_ADDR) {
 				/* The variable contains the vtype address */
@@ -5667,7 +5667,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			GSList *bb_list;
 			BBInfo *info;
 
-			handler_bb = g_hash_table_lookup (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)));
+			handler_bb = (MonoBasicBlock*)g_hash_table_lookup (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)));
 			g_assert (handler_bb);
 			info = &bblocks [handler_bb->block_num];
 			lhs = info->finally_ind;
@@ -5863,7 +5863,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		cfg->llvm_method_name = g_strdup (method_name);
 	} else {
 		init_jit_module (cfg->domain);
-		ctx->lmodule = domain_jit_info (cfg->domain)->llvm_module;
+		ctx->lmodule = (MonoLLVMModule*)domain_jit_info (cfg->domain)->llvm_module;
 		method_name = mono_method_full_name (cfg->method, TRUE);
 	}
 
@@ -6009,7 +6009,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		if (bb->last_ins && MONO_IS_COND_BRANCH_OP (bb->last_ins) &&
 			bb->next_bb != bb->last_ins->inst_false_bb) {
 			
-			MonoInst *inst = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
+			MonoInst *inst = (MonoInst*)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
 			inst->opcode = OP_BR;
 			inst->inst_target_bb = bb->last_ins->inst_false_bb;
 			mono_bblock_add_inst (bb, inst);
@@ -6138,7 +6138,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 
 	for (bb_index = 0; bb_index < bblock_list->len; ++bb_index) {
-		bb = g_ptr_array_index (bblock_list, bb_index);
+		bb = (MonoBasicBlock*)g_ptr_array_index (bblock_list, bb_index);
 
 		// Prune unreachable mono BBs.
 		if (!(bb == cfg->bb_entry || bb->in_count > 0))
@@ -6158,7 +6158,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		ins_list = bblocks [bb->block_num].phi_nodes;
 
 		for (l = ins_list; l; l = l->next) {
-			PhiNode *node = l->data;
+			PhiNode *node = (PhiNode*)l->data;
 			MonoInst *phi = node->phi;
 			int sreg1 = node->sreg;
 			LLVMBasicBlockRef in_bb;
@@ -6195,7 +6195,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		ins_list = bblocks [bb->block_num].phi_nodes;
 
 		for (l = ins_list; l; l = l->next) {
-			PhiNode *node = l->data;
+			PhiNode *node = (PhiNode*)l->data;
 			MonoInst *phi = node->phi;
 			LLVMValueRef phi_ins = values [phi->dreg];
 
@@ -6216,7 +6216,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		BBInfo *info = &bblocks [bb->block_num];
 		GSList *l;
 		for (l = info->endfinally_switch_ins_list; l; l = l->next) {
-			LLVMValueRef switch_ins = l->data;
+			LLVMValueRef switch_ins = (LLVMValueRef)l->data;
 			GSList *bb_list = info->call_handler_return_bbs;
 
 			for (i = 0; i < g_slist_length (bb_list); ++i)
