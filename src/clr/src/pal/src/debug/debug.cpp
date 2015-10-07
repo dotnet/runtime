@@ -345,7 +345,13 @@ DebugBreakCommand()
     if (command_string) {
         char pid_buf[sizeof (PID_TEXT) + 32];
         PathCharString exe_bufString;
-        SIZE_T dwexe_buf = strlen(EXE_TEXT) + PAL_wcslen(exe_module.lib_name) + 1;
+        int libNameLength = 10;
+        if (exe_module.lib_name != NULL)
+        {
+            libNameLength = PAL_wcslen(exe_module.lib_name);
+        }
+        
+        SIZE_T dwexe_buf = strlen(EXE_TEXT) + libNameLength + 1;
         CHAR * exe_buf = exe_bufString.OpenStringBuffer(dwexe_buf);
 
         if (snprintf (pid_buf, sizeof (pid_buf), PID_TEXT "%d", getpid()) <= 0) {
