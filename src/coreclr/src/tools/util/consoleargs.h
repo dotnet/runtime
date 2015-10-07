@@ -26,7 +26,7 @@ public:
     ConsoleArgs() :
             m_rgArgs(NULL),
             m_listArgs(NULL),
-            m_errorOccured(false),
+            m_errorOccurred(false),
             m_lastErrorMessage(nullptr)
     {
     };
@@ -44,7 +44,7 @@ public:
 
     LPCWSTR ErrorMessage()
     {
-        if (m_errorOccured)
+        if (m_errorOccurred)
         {
             return m_lastErrorMessage;
         }
@@ -66,7 +66,7 @@ private:
     LPWSTR * m_rgArgs;
     WStrList * m_listArgs;
 
-    bool m_errorOccured;
+    bool m_errorOccurred;
     LPCWSTR m_lastErrorMessage;
 };
 

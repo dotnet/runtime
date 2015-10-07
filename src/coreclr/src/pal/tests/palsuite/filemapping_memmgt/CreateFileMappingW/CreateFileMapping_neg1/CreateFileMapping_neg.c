@@ -67,7 +67,7 @@ int __cdecl main(int argc, char *argv[])
 
 
     if(NULL != FileMappingHandle || ERROR_FILE_INVALID != GetLastError()) 
-    {//no error occured 
+    {//no error occurred 
         Trace("\nFailed to call CreateFileMapping API for a negative test!\n");
         err = CloseHandle(FileHandle);
         if(0 == err)

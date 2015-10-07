@@ -57,7 +57,7 @@ public:
     // Reference to the topmost handler we saw during an SO that goes past us
     PTR_EXCEPTION_REGISTRATION_RECORD m_pTopMostHandlerDuringSO; 
 
-    LPVOID              m_dEsp;             // Esp when  fault occured, OR esp to restore on endcatch
+    LPVOID              m_dEsp;             // Esp when  fault occurred, OR esp to restore on endcatch
 
     StackTraceInfo      m_StackTraceInfo;
 

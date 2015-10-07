@@ -57,12 +57,12 @@ int __cdecl main(int argc, char *argv[]) {
     if(BaseVariableToManipulate != ValueToExchange) 
     {
 #ifdef PLATFORM_UNIX
-        Fail("ERROR: A successful compare and exchange should have occured, "
+        Fail("ERROR: A successful compare and exchange should have occurred, "
              "making the variable have the value of %ll, as opposed to the "
              "current value of %ll.",
              ValueToExchange,BaseVariableToManipulate);  
 #else
-        Fail("ERROR: A successful compare and exchange should have occured, "
+        Fail("ERROR: A successful compare and exchange should have occurred, "
              "making the variable have the value of %I64, as opposed to the "
              "current value of %d.",
              ValueToExchange,BaseVariableToManipulate);  

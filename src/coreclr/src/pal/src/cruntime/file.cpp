@@ -418,12 +418,12 @@ _wfopen(
         }
         else
         {
-            ERROR( "An error occured while converting mode to ANSI.\n" );
+            ERROR( "An error occurred while converting mode to ANSI.\n" );
         }
     }
     else
     {
-        ERROR( "An error occured while converting"
+        ERROR( "An error occurred while converting"
                " fileName to ANSI string.\n" );
     }
     LOGEXIT("_wfopen returning FILE* %p\n", filePtr);

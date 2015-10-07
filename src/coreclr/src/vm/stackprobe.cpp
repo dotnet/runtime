@@ -150,7 +150,7 @@ void ReportStackOverflow()
 
         // We should only ever get in this situation on a probe from managed code.  From within the EE,
         // we will never let our probe point get this close.  Either way, we'd rip the process if a hard
-        // SO occured.
+        // SO occurred.
 
         UINT_PTR stackGuarantee = pThread->GetStackGuarantee();
 
@@ -1005,8 +1005,8 @@ BOOL BaseStackGuard::RequiresNStackPagesInternal(unsigned int n, BOOL fThrowOnSO
 
     BOOL fRet;
 
-    // Temporarily initialize the exception occured flag
-    m_exceptionOccured = FALSE;
+    // Temporarily initialize the exception occurred flag
+    m_exceptionOccurred = FALSE;
 
     // Code below checks if there's a Thread, and exits immediately if not.
     // So the rest of the function rightly assumes there is a Thread
@@ -1181,8 +1181,8 @@ BOOL BaseStackGuard::DoProbe(unsigned int n, BOOL fThrowOnSO)
     // Mark that we're initialized (and didn't get interupted from an exception)
     m_eInitialized = cInit;
 
-    // Initialize the exception occured flag
-    m_exceptionOccured = TRUE;
+    // Initialize the exception occurred flag
+    m_exceptionOccurred = TRUE;
 
     // setup flag to tell if we're unwinding due to an exception
     m_fEHInProgress = FALSE;
@@ -1269,7 +1269,7 @@ void BaseStackGuard::CheckStack()
 
     // if we aren't being unwound during EH, then we shouldn't have our EHInProgress bit set.  That
     // means we caught the exception in the EE and didn't call RestoreGuard or we missed a SO-tolerant
-    // transition out of the EE and the exception occured above us.
+    // transition out of the EE and the exception occurred above us.
     _ASSERTE(m_fEHInProgress == FALSE);
 
     // we should only ever be popping ourselves if we are not on the EH unwind path
@@ -1617,7 +1617,7 @@ DEBUG_NOINLINE void BoundaryStackGuard::Push()
     m_eInitialized = cInit;
 
     // setup flag to tell if we're unwinding due to an exception
-    m_exceptionOccured = TRUE;
+    m_exceptionOccurred = TRUE;
 
     SetCurrentGuard(this);
 }
@@ -1699,7 +1699,7 @@ BOOL IsBackoutCalledForEH(BYTE *origSP,
     // Caveats:
     //
     // 1) If there is less than a context on the stack on the EH path, we will miss the fact that
-    //     an exception occured
+    //     an exception occurred
     //
     // 2) If the CRT uses near the size of a context before calling the destructor in the normal case,
     //     we will assume we've got an exception and ASSERT.
@@ -1746,7 +1746,7 @@ DebugSOIntolerantTransitionHandlerBeginOnly::~DebugSOIntolerantTransitionHandler
     // Caveats:
     //
     // 1) If there is less than a context on the stack on the EH path, we will miss the fact that
-    //     an exception occured
+    //     an exception occurred
     //
     // 2) If the CRT uses near the size of a context before calling the destructor in the normal case,
     //     we will assume we've got an exception and ASSERT.
