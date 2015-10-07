@@ -38,7 +38,6 @@ namespace Internal.Cryptography
                 byte[] keyBlob = ms.ToArray();
 
                 CngKey cngKey = CngKey.Import(keyBlob, s_cipherKeyBlobFormat);
-                cngKey.ExportPolicy |= CngExportPolicies.AllowPlaintextExport;
                 return cngKey;
             }
         }
