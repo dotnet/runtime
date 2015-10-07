@@ -981,7 +981,7 @@ catch_exception_raise(
     FramePointer[0] = pContext;
     FramePointer[1] = pExceptionRecord;
     // Place the return address to right after the fake call in PAL_DispatchExceptionWrapper
-    FramePointer[-1] = (void *)((ULONG_PTR)PAL_DispatchExceptionWrapper + 6);
+    FramePointer[-1] = (void *)((ULONG_PTR)PAL_DispatchExceptionWrapper + PAL_DispatchExceptionReturnOffset);
 
     // Make the instruction register point to DispatchException
     ThreadState.__rip = (SIZE_T)PAL_DispatchException;
