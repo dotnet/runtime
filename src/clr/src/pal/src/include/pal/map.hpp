@@ -23,6 +23,7 @@ Abstract:
 #define _PAL_MAP_H_
 
 #include "corunix.hpp"
+#include <sys/param.h>
 
 extern "C"
 {
@@ -144,7 +145,7 @@ namespace CorUnix
     class CFileMappingImmutableData
     {
     public:
-        CHAR szFileName[MAX_LONGPATH + 1];
+        CHAR szFileName[MAXPATHLEN];
         UINT MaxSize;               // The max size of the file mapping object
         DWORD flProtect;            // Protection desired for the file view
         BOOL bPALCreatedTempFile;   // TRUE if it's a PAL created file

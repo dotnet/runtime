@@ -2949,7 +2949,7 @@ namespace CorUnix
         PAL_ERROR palErr = NO_ERROR;
         int iProcessPipe, iBytesToWrite, iRetryCount;
         ssize_t sszRet;
-        char strPipeFilename[MAX_LONGPATH];
+        char strPipeFilename[MAX_PATH];
         BYTE * pPos = pMsg;
         bool fRet;
         CPalThread *pthrCurrent = InternalGetCurrentThread();
@@ -2958,7 +2958,7 @@ namespace CorUnix
                     "SendMsgToRemoteWorker called with local process as "
                     "target process\n");
 
-        fRet = GetProcessPipeName(strPipeFilename, MAX_LONGPATH, dwProcessId);
+        fRet = GetProcessPipeName(strPipeFilename, MAX_PATH, dwProcessId);
 
         _ASSERT_MSG(fRet, "Failed to retrieve process pipe's name!\n");
 
@@ -3823,10 +3823,10 @@ namespace CorUnix
 
 #ifndef CORECLR
         int iPipeRd = -1, iPipeWr = -1;
-        char szPipeFilename[MAX_LONGPATH];
+        char szPipeFilename[MAX_PATH];
 
         /* Create the blocking pipe */        
-        if(!GetProcessPipeName(szPipeFilename, MAX_LONGPATH, gPID))
+        if(!GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
         {
             ERROR("couldn't get process pipe's name\n");
             szPipeFilename[0] = 0;
@@ -3966,9 +3966,9 @@ namespace CorUnix
     {
         PAL_ERROR palErr = NO_ERROR;        
 #ifndef CORECLR
-        char szPipeFilename[MAX_LONGPATH];
+        char szPipeFilename[MAX_PATH];
 
-        if(GetProcessPipeName(szPipeFilename, MAX_LONGPATH, gPID))
+        if(GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
         {
             if (InternalUnlink(pthrCurrent, szPipeFilename) == -1)
             {
@@ -4021,13 +4021,13 @@ namespace CorUnix
         int iDestSize,
         DWORD dwPid)
     {
-        CHAR config_dir[MAX_LONGPATH];
+        CHAR config_dir[MAX_PATH];
         int needed_size;
 
         _ASSERT_MSG(NULL != pDest, "Destination pointer is NULL!\n");
         _ASSERT_MSG(0 < iDestSize,"Invalid buffer size %d\n", iDestSize);
 
-        if (!PALGetPalConfigDir(config_dir, MAX_LONGPATH))
+        if (!PALGetPalConfigDir(config_dir, MAX_PATH))
         {
             ASSERT("Unable to determine the PAL config directory.\n");
             pDest[0] = '\0';

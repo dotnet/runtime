@@ -24,6 +24,7 @@ Revision History:
 #include "pal/thread.hpp"
 #include "pal/malloc.hpp"
 #include "pal/file.hpp"
+#include "pal/stackstring.hpp"
 
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
@@ -777,18 +778,29 @@ static int FILEGlobFromSplitPath( CPalThread *pthrCurrent,
                                   glob_t *pgGlob )
 {
     int  Ret;
-    char Pattern[MAX_LONGPATH];
-    char EscapedPattern[2*MAX_LONGPATH];
+    PathCharString PatternPS;
+    PathCharString EscapedPatternPS;
+    char * Pattern;
+    int length = 0;
+    char * EscapedPattern;
 
     TRACE("We shall attempt to glob from components [%s][%s][%s]\n",
           dir?dir:"NULL", fname?fname:"NULL", ext?ext:"NULL");
 
-    FILEMakePathA( Pattern, MAX_LONGPATH, dir, fname, ext );
+    if (dir) length = strlen(dir);
+    if (fname) length += strlen(fname);
+    if (ext) length += strlen(ext);
+    
+    Pattern = PatternPS.OpenStringBuffer(length);
+    FILEMakePathA( Pattern, length+1, dir, fname, ext );
+    PatternPS.CloseBuffer(length);
     TRACE("Assembled Pattern = [%s]\n", Pattern);
 
     /* special handling is needed to handle the case where
         filename contains '[' and ']' */
+    EscapedPattern = EscapedPatternPS.OpenStringBuffer(length*2);
     FILEEscapeSquareBrackets( Pattern, EscapedPattern);
+    EscapedPatternPS.CloseBuffer(strlen(EscapedPattern));
 #ifdef GLOB_QUOTE
     flags |= GLOB_QUOTE;
 #endif  // GLOB_QUOTE
