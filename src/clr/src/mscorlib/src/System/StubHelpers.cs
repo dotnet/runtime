@@ -1061,9 +1061,6 @@ namespace  System.StubHelpers {
                         IsBestFit(dwFlags),
                         IsThrowOn(dwFlags));
                     Contract.Assert(length < allocSize, "Expected a length less than the allocated size");
-
-                    // null-terminate the native string
-                    *(ptr + length) = 0;
                 }
                 if (IsOut(dwFlags))
                 {
