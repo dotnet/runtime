@@ -34,9 +34,9 @@ namespace System.Collections.Immutable
         /// Gets the element at the front of the queue.
         /// </summary>
         /// <returns>
-        /// The element on the top of the stack. 
+        /// The element at the front of the queue.
         /// </returns>
-        /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the queue is empty.</exception>
         [Pure]
         T Peek();
 
@@ -54,7 +54,7 @@ namespace System.Collections.Immutable
         /// Returns a queue that is missing the front element.
         /// </summary>
         /// <returns>A queue; never <c>null</c>.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the queue is empty.</exception>
         [Pure]
         IImmutableQueue<T> Dequeue();
     }
