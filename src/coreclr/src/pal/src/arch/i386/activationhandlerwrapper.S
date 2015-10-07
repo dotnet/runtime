@@ -16,8 +16,8 @@ C_FUNC(ActivationHandlerReturnOffset):
 NESTED_ENTRY ActivationHandlerWrapper, _TEXT, NoHandler
     push_nonvol_reg rbp
     mov     rbp, rsp
-    set_cfa_register rbp, 0
     alloc_stack (CONTEXT_Size)
+    set_cfa_register rbp, (2*8)
     mov     rdi, rsp
     int3
     call    C_FUNC(ActivationHandler)
