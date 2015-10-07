@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/file.h>
+#include <sys/ioctl.h>
 #include <syslog.h>
 #include <unistd.h>
 
@@ -792,4 +793,23 @@ extern "C" int32_t Write(int32_t fd, const void* buffer, int32_t bufferSize)
     ssize_t count = write(fd, buffer, UnsignedCast(bufferSize));
     assert(count >= -1 && count <= bufferSize);
     return static_cast<int32_t>(count);
+}
+
+extern "C" int32_t GetWindowSize(WinSize* windowSize)
+{
+    assert(windowSize != nullptr);
+
+#if HAVE_IOCTL && HAVE_TIOCGWINSZ
+    int error = ioctl(STDOUT_FILENO, TIOCGWINSZ, windowSize);
+
+    if (error != 0)
+    {
+        *windowSize = {}; // managed out param must be initialized
+    }
+
+    return error;
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
 }

@@ -20,6 +20,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CancelKeyPress.cs" />
+	<Compile Include="Common\System\IO\InterceptStreamWriter.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="ReadAndWrite.cs" />
     <Compile Include="SetError.cs" />
@@ -46,6 +47,7 @@
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
+    <Compile Include="WindowAndCursorProps.cs" />
   </ItemGroup>
   <!-- Performance Tests -->
   <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
