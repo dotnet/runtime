@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "System.Reflection": "4.0.10"
+  },
+  "frameworks": {
+    "dotnet": {}
+  }
+}

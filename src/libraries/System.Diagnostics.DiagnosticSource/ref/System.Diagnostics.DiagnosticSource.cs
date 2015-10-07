@@ -3,7 +3,7 @@ namespace System.Diagnostics {
     public DiagnosticListener(string name) { }
     public static System.Diagnostics.DiagnosticListener DefaultListener { get { return default(System.Diagnostics.DiagnosticListener); } }
     public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { return default(string); } }
-    public static IObservable<DiagnosticListener> AllListeners { get; } 
+    public static IObservable<DiagnosticListener> AllListeners { get { return default(IObservable<DiagnosticListener>); } } 
     public virtual void Dispose() { }
     public override bool IsEnabled(string name) { return default(bool); }
     public System.IDisposable Subscribe(System.IObserver<System.Collections.Generic.KeyValuePair<string, object>> observer) { return default(System.IDisposable); }
