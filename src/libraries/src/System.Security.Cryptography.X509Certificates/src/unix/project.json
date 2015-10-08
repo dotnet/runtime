@@ -10,6 +10,10 @@
     "System.Runtime": "4.0.20",
     "System.Runtime.InteropServices": "4.0.20",
     "System.Runtime.Numerics": "4.0.0",
+    "System.Security.Cryptography.Algorithms": "4.0.0-beta-*",
+    "System.Security.Cryptography.Encoding": "4.0.0-beta-*",
+    "System.Security.Cryptography.OpenSsl": "4.0.0-beta-*",
+    "System.Security.Cryptography.Primitives": "4.0.0-beta-*",
     "System.Text.Encoding": "4.0.10",
     "System.Threading": "4.0.10"
   },

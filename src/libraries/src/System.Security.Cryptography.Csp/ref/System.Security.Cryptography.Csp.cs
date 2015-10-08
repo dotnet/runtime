@@ -82,6 +82,7 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { return default(byte[]); }
         public void ImportCspBlob(byte[] keyBlob) { }
         public override void ImportParameters(System.Security.Cryptography.RSAParameters parameters) { }
+        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { return default(System.Security.Cryptography.KeySizes[]); } }
         public byte[] SignData(byte[] buffer, int offset, int count, object halg) { return default(byte[]); }
         public byte[] SignData(byte[] buffer, object halg) { return default(byte[]); }
         public byte[] SignData(System.IO.Stream inputStream, object halg) { return default(byte[]); }

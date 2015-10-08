@@ -21,7 +21,6 @@ namespace System.Security.Cryptography
         private SafeProvHandle _safeProvHandle;
         private static volatile CspProviderFlags s_UseMachineKeyStore = 0;
 
-
         public RSACryptoServiceProvider()
             : this(0, new CspParameters(CapiHelper.DefaultRsaProviderType,
                                        null,
@@ -58,7 +57,6 @@ namespace System.Security.Cryptography
             }
             _parameters = CapiHelper.SaveCspParameters(CapiHelper.CspAlgorithmType.Rsa, parameters, s_UseMachineKeyStore, ref _randomKeyContainer);
 
-            _legalKeySizesValue = new KeySizes[] { new KeySizes(384, 16384, 8) };
             _keySize = useDefaultKeySize ? 1024 : keySize;
 
             // If this is not a random container we generate, create it eagerly 
@@ -115,6 +113,14 @@ namespace System.Security.Cryptography
                 byte[] keySize = (byte[])CapiHelper.GetKeyParameter(_safeKeyHandle, Constants.CLR_KEYLEN);
                 _keySize = (keySize[0] | (keySize[1] << 8) | (keySize[2] << 16) | (keySize[3] << 24));
                 return _keySize;
+            }
+        }
+
+        public override KeySizes[] LegalKeySizes
+        {
+            get
+            {
+                return new[] { new KeySizes(384, 16384, 8) };
             }
         }
 
