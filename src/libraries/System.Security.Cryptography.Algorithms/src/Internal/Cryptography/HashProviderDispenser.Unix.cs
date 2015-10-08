@@ -70,7 +70,7 @@ namespace Internal.Cryptography
 
                 _ctx = Interop.Crypto.EvpMdCtxCreate(_algorithmEvp);
 
-                Interop.libcrypto.CheckValidOpenSslHandle(_ctx);
+                Interop.Crypto.CheckValidOpenSslHandle(_ctx);
             }
 
             public sealed override unsafe void AppendHashDataCore(byte[] data, int offset, int count)
@@ -129,7 +129,7 @@ namespace Internal.Cryptography
                 fixed (byte* keyPtr = key)
                 {
                     _hmacCtx = Interop.Crypto.HmacCreate(keyPtr, key.Length, algorithmEvp);
-                    Interop.libcrypto.CheckValidOpenSslHandle(_hmacCtx);
+                    Interop.Crypto.CheckValidOpenSslHandle(_hmacCtx);
                 }
             }
 
@@ -179,7 +179,7 @@ namespace Internal.Cryptography
             if (result != Success)
             {
                 Debug.Assert(result == 0);
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
         }
     }

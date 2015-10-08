@@ -336,7 +336,7 @@ internal static partial class Interop
                     return CreateSslException(msg);
 
                 case libssl.SslErrorCode.SSL_ERROR_SSL:
-                    Exception innerEx = Interop.libcrypto.CreateOpenSslCryptographicException();
+                    Exception innerEx = Interop.Crypto.CreateOpenSslCryptographicException();
                     return new SslException(innerEx.Message, innerEx);
 
                 default:
