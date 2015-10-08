@@ -113,14 +113,9 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile()
         {
-#if FEATURE_COMPILE
-            return Compiler.LambdaCompiler.Compile(this);
-#else
-            return Compile(preferInterpretation: true);
-#endif 
+            return Compile(preferInterpretation: false);
         }
 
-#if FEATURE_INTERPRET
         /// <summary>
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
@@ -128,16 +123,18 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile(bool preferInterpretation)
         {
+#if FEATURE_COMPILE
+#if FEATURE_INTERPRET
             if (preferInterpretation)
             {
                 return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
             }
-            else
-            {
-                return Compiler.LambdaCompiler.Compile(this);
-            }
-        }
 #endif
+            return Compiler.LambdaCompiler.Compile(this);
+#else
+            return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+#endif
+        }
 
 #if FEATURE_COMPILE
         internal abstract LambdaExpression Accept(Compiler.StackSpiller spiller);
@@ -165,14 +162,9 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile()
         {
-#if FEATURE_COMPILE
-            return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
-#else
-            return Compile(preferInterpretation: true);
-#endif
+            return Compile(preferInterpretation: false);
         }
 
-#if FEATURE_INTERPRET
         /// <summary>
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
@@ -180,16 +172,18 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile(bool preferInterpretation)
         {
+#if FEATURE_COMPILE
+#if FEATURE_INTERPRET
             if (preferInterpretation)
             {
                 return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
             }
-            else
-            {
-                return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
-            }
-        }
 #endif
+            return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
+#else
+            return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+#endif
+        }
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the
