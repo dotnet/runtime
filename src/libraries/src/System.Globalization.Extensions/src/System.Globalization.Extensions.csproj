@@ -64,10 +64,6 @@
     <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.Unix.cs">
       <Link>Common\System\StringNormalizationExtensions.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
-      <!-- TODO: Remove once implemented -->
-      <Link>Common\System\NotImplemented.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
