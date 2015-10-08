@@ -36,25 +36,6 @@ namespace clr
         class Path
         {
         public:
-#if !PLATFORM_UNIX
-            static const CHAR DirectorySeparatorChar = '\\';
-#else // PLATFORM_UNIX
-            static const CHAR DirectorySeparatorChar = '/';
-#endif
-
-#if !PLATFORM_UNIX
-            static const CHAR PathSeparatorChar = ';';
-#else // PLATFORM_UNIX
-            static const CHAR PathSeparatorChar = ':';
-#endif // !PLATFORM_UNIX
-
-#if !PLATFORM_UNIX
-            static const CHAR VolumeSeparatorChar = ':';
-#else // PLATFORM_UNIX
-            static const CHAR VolumeSeparatorChar = '/';
-#endif // !PLATFORM_UNIX
-
-        public:
             //-----------------------------------------------------------------------------------------
             static inline bool
             Exists(
@@ -82,7 +63,7 @@ namespace clr
 
                 // Similar to System.IO.Path.IsRelative()
 #if PLATFORM_UNIX
-                if(wzPath[0] == VolumeSeparatorChar)
+                if(wzPath[0] == VOLUME_SEPARATOR_CHAR_W)
                 {
                     return false;
                 }
@@ -92,8 +73,8 @@ namespace clr
                 // - "\..." - these paths are relative, as they depend on the current drive
                 // - "C:..." and not "C:\..." - these paths are relative, as they depend on the current directory for drive C
                 if (wzPath[0] != W('\0') &&
-                    wzPath[1] == VolumeSeparatorChar &&
-                    wzPath[2] == DirectorySeparatorChar &&
+                    wzPath[1] == VOLUME_SEPARATOR_CHAR_W &&
+                    wzPath[2] == DIRECTORY_SEPARATOR_CHAR_W &&
                     (
                         (wzPath[0] >= W('A') && wzPath[0] <= W('Z')) ||
                         (wzPath[0] >= W('a') && wzPath[0] <= W('z'))
@@ -101,7 +82,7 @@ namespace clr
                 {
                     return false;
                 }
-                if(wzPath[0] == DirectorySeparatorChar && wzPath[1] == DirectorySeparatorChar)
+                if (wzPath[0] == DIRECTORY_SEPARATOR_CHAR_W && wzPath[1] == DIRECTORY_SEPARATOR_CHAR_W)
                 {
                     return false;
                 }
@@ -129,8 +110,7 @@ namespace clr
                 size_t cchBuf = *pcchBuffer;
 
                 IfFailRet(StringCchCopyExW(wzBuf, cchBuf, wzPathLeft, &wzBuf, &cchBuf, STRSAFE_NULL_ON_FAILURE));
-                const WCHAR directorySeparatorWString[] = {DirectorySeparatorChar, W('\0')};
-                IfFailRet(StringCchCatExW(wzBuf, cchBuf, wzBuf[-1] == DirectorySeparatorChar ? W("") : directorySeparatorWString, &wzBuf, &cchBuf, STRSAFE_NULL_ON_FAILURE));
+                IfFailRet(StringCchCatExW(wzBuf, cchBuf, wzBuf[-1] == DIRECTORY_SEPARATOR_CHAR_W ? W("") : DIRECTORY_SEPARATOR_STR_W, &wzBuf, &cchBuf, STRSAFE_NULL_ON_FAILURE));
                 IfFailRet(StringCchCatExW(wzBuf, cchBuf, wzPathRight, &wzBuf, &cchBuf, STRSAFE_NULL_ON_FAILURE));
 
                 return S_OK;
