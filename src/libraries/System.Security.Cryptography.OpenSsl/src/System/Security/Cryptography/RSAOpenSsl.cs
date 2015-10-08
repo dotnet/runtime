@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
 
             if (rsa.IsInvalid)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             // Set base.KeySize rather than this.KeySize to avoid an unnecessary Lazy<> allocation.
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography
                 // So everything should be copacetic.
                 if (!Interop.libcrypto.EVP_PKEY_set1_RSA(pkeyHandle, currentKey))
                 {
-                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
                 return pkeyHandle;
@@ -277,7 +277,7 @@ namespace System.Security.Cryptography
             SafeRsaHandle key = Interop.libcrypto.RSA_new();
             bool imported = false;
 
-            Interop.libcrypto.CheckValidOpenSslHandle(key);
+            Interop.Crypto.CheckValidOpenSslHandle(key);
 
             try
             {
@@ -387,7 +387,7 @@ namespace System.Security.Cryptography
         {
             if (returnValue == -1)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
         }
 
@@ -398,7 +398,7 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            throw Interop.libcrypto.CreateOpenSslCryptographicException();
+            throw Interop.Crypto.CreateOpenSslCryptographicException();
         }
 
         private SafeRsaHandle GenerateKey()
@@ -406,7 +406,7 @@ namespace System.Security.Cryptography
             SafeRsaHandle key = Interop.libcrypto.RSA_new();
             bool generated = false;
 
-            Interop.libcrypto.CheckValidOpenSslHandle(key);
+            Interop.Crypto.CheckValidOpenSslHandle(key);
 
             try
             {
@@ -477,7 +477,7 @@ namespace System.Security.Cryptography
 
             if (!success)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             Debug.Assert(

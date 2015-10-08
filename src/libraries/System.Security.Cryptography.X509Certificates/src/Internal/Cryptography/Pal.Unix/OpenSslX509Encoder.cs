@@ -35,11 +35,11 @@ namespace Internal.Cryptography.Pal
         {
             using (SafeX509NameHandle x509Name = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_X509_NAME, encodedDistinguishedName))
             {
-                Interop.libcrypto.CheckValidOpenSslHandle(x509Name);
+                Interop.Crypto.CheckValidOpenSslHandle(x509Name);
 
                 using (SafeBioHandle bioHandle = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
                 {
-                    Interop.libcrypto.CheckValidOpenSslHandle(bioHandle);
+                    Interop.Crypto.CheckValidOpenSslHandle(bioHandle);
 
                     int written = Interop.libcrypto.X509_NAME_print_ex(
                         bioHandle,
@@ -55,7 +55,7 @@ namespace Internal.Cryptography.Pal
 
                     if (read < 0)
                     {
-                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
                     return builder.ToString();
@@ -92,7 +92,7 @@ namespace Internal.Cryptography.Pal
         {
             using (SafeAsn1BitStringHandle bitString = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_ASN1_BIT_STRING, encoded))
             {
-                Interop.libcrypto.CheckValidOpenSslHandle(bitString);
+                Interop.Crypto.CheckValidOpenSslHandle(bitString);
 
                 byte[] decoded = Interop.Crypto.GetAsn1StringBytes(bitString.DangerousGetHandle());
 
@@ -166,7 +166,7 @@ namespace Internal.Cryptography.Pal
         {
             using (SafeBasicConstraintsHandle constraints = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_BASIC_CONSTRAINTS, encoded))
             {
-                Interop.libcrypto.CheckValidOpenSslHandle(constraints);
+                Interop.Crypto.CheckValidOpenSslHandle(constraints);
 
                 Interop.libcrypto.BASIC_CONSTRAINTS* data = (Interop.libcrypto.BASIC_CONSTRAINTS*)constraints.DangerousGetHandle();
                 certificateAuthority = data->CA != 0;
@@ -195,7 +195,7 @@ namespace Internal.Cryptography.Pal
 
             using (SafeEkuExtensionHandle eku = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_EXTENDED_KEY_USAGE, encoded))
             {
-                Interop.libcrypto.CheckValidOpenSslHandle(eku);
+                Interop.Crypto.CheckValidOpenSslHandle(eku);
 
                 int count = Interop.Crypto.GetX509EkuFieldCount(eku);
 
@@ -205,7 +205,7 @@ namespace Internal.Cryptography.Pal
 
                     if (oidPtr == IntPtr.Zero)
                     {
-                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
                     string oidValue = Interop.libcrypto.OBJ_obj2txt_helper(oidPtr);
@@ -231,7 +231,7 @@ namespace Internal.Cryptography.Pal
         {
             using (SafeAsn1OctetStringHandle octetString = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_ASN1_OCTET_STRING, encoded))
             {
-                Interop.libcrypto.CheckValidOpenSslHandle(octetString);
+                Interop.Crypto.CheckValidOpenSslHandle(octetString);
 
                 return Interop.Crypto.GetAsn1StringBytes(octetString.DangerousGetHandle());
             }
@@ -290,7 +290,7 @@ namespace Internal.Cryptography.Pal
         {
             using (SafeRsaHandle rsaHandle = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_RSAPublicKey, encodedData))
             {
-                Interop.libcrypto.CheckValidOpenSslHandle(rsaHandle);
+                Interop.Crypto.CheckValidOpenSslHandle(rsaHandle);
 
                 RSAParameters rsaParameters = Interop.libcrypto.ExportRsaParameters(rsaHandle, false);
                 RSA rsa = new RSAOpenSsl();

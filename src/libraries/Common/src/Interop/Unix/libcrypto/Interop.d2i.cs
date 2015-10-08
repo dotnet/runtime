@@ -29,7 +29,7 @@ internal static partial class Interop
 
                 if (checkHandle)
                 {
-                    CheckValidOpenSslHandle(handle);
+                    Crypto.CheckValidOpenSslHandle(handle);
                 }
 
                 return handle;
@@ -43,7 +43,7 @@ internal static partial class Interop
 
             if (size < 1)
             {
-                throw CreateOpenSslCryptographicException();
+                throw Crypto.CreateOpenSslCryptographicException();
             }
 
             byte[] data = new byte[size];

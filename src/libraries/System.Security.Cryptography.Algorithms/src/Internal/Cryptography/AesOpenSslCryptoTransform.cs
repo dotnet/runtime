@@ -134,7 +134,7 @@ namespace Internal.Cryptography
 
             if (_ctx == null)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             // OpenSSL will happily do PKCS#7 padding for us, but since we support padding modes
@@ -288,7 +288,7 @@ namespace Internal.Cryptography
                 return;
             }
 
-            throw Interop.libcrypto.CreateOpenSslCryptographicException();
+            throw Interop.Crypto.CreateOpenSslCryptographicException();
         }
     }
 }

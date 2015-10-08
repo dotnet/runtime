@@ -38,7 +38,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (!Interop.libcrypto.RSA_up_ref(handle))
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             safeHandle.SetHandle(handle);

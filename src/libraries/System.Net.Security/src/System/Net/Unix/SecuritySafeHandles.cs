@@ -99,7 +99,7 @@ namespace System.Net.Security
                     if (rsa != null)
                     {
                         _certKeyHandle = rsa.DuplicateKeyHandle();
-                        Interop.libcrypto.CheckValidOpenSslHandle(_certKeyHandle);
+                        Interop.Crypto.CheckValidOpenSslHandle(_certKeyHandle);
                     }
                 }
 
@@ -108,7 +108,7 @@ namespace System.Net.Security
                 Debug.Assert(_certKeyHandle != null, "Failed to extract a private key handle");
 
                 _certHandle = Interop.libcrypto.X509_dup(cert.Handle);
-                Interop.libcrypto.CheckValidOpenSslHandle(_certHandle);
+                Interop.Crypto.CheckValidOpenSslHandle(_certHandle);
             }
 
             _protocols = protocols;

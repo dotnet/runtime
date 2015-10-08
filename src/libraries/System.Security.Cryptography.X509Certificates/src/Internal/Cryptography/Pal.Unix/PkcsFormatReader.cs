@@ -119,7 +119,7 @@ namespace Internal.Cryptography.Pal
         {
             using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
             {
-                Interop.libcrypto.CheckValidOpenSslHandle(bio);
+                Interop.Crypto.CheckValidOpenSslHandle(bio);
 
                 Interop.libcrypto.BIO_write(bio, rawData, rawData.Length);
 

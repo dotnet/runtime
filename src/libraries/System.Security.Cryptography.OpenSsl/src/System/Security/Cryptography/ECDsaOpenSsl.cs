@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
 
             if (ecKey.IsInvalid)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             // Set base.KeySize rather than this.KeySize to avoid an unnecessary Lazy<> allocation.
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography
                 // So everything should be copacetic.
                 if (!Interop.libcrypto.EVP_PKEY_set1_EC_KEY(pkeyHandle, currentKey))
                 {
-                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
                 return pkeyHandle;
@@ -140,7 +140,7 @@ namespace System.Security.Cryptography
             int signatureLength = Interop.libcrypto.ECDSA_size(key);
             byte[] signature = new byte[signatureLength];
             if (!Interop.libcrypto.ECDSA_sign(0, hash, hash.Length, signature, ref signatureLength, key))
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             Array.Resize(ref signature, signatureLength);
             return signature;
         }
@@ -223,10 +223,10 @@ namespace System.Security.Cryptography
                     int nid = s_supportedAlgorithms[i].Nid;
                     SafeEcKeyHandle key = Interop.libcrypto.EC_KEY_new_by_curve_name(nid);
                     if (key == null || key.IsInvalid)
-                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
 
                     if (!Interop.libcrypto.EC_KEY_generate_key(key))
-                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
 
                     return key;
                 }
