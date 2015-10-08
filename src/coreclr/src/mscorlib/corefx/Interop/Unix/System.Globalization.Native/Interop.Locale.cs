@@ -11,15 +11,15 @@ internal static partial class Interop
     {
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal unsafe static extern bool GetLocaleName(string localeName, StringBuilder value, int valueLength);
+        internal unsafe static extern bool GetLocaleName(string localeName, [Out] StringBuilder value, int valueLength);
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal unsafe static extern bool GetLocaleInfoString(string localeName, uint localeStringData, StringBuilder value, int valueLength);
+        internal unsafe static extern bool GetLocaleInfoString(string localeName, uint localeStringData, [Out] StringBuilder value, int valueLength);
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal unsafe static extern bool GetLocaleTimeFormat(string localeName, bool shortFormat, StringBuilder value, int valueLength);
+        internal unsafe static extern bool GetLocaleTimeFormat(string localeName, bool shortFormat, [Out] StringBuilder value, int valueLength);
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
