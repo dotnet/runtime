@@ -116,7 +116,7 @@ namespace System.Linq.Expressions
 #if FEATURE_COMPILE
             return Compiler.LambdaCompiler.Compile(this);
 #else
-            return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+            return Compile(preferInterpretation: true);
 #endif 
         }
 
@@ -124,10 +124,18 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
+        /// <param name="preferInterpretation">A <see cref="Boolean"/> that indicates if the expression should be compiled to an interpreted form, if available. </param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
-        public Delegate Interpret()
+        public Delegate Compile(bool preferInterpretation)
         {
-            return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+            if (preferInterpretation)
+            {
+                return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+            }
+            else
+            {
+                return Compiler.LambdaCompiler.Compile(this);
+            }
         }
 #endif
 
@@ -160,7 +168,7 @@ namespace System.Linq.Expressions
 #if FEATURE_COMPILE
             return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
 #else
-            return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+            return Compile(preferInterpretation: true);
 #endif
         }
 
@@ -168,10 +176,18 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Produces a delegate that represents the lambda expression.
         /// </summary>
+        /// <param name="preferInterpretation">A <see cref="Boolean"/> that indicates if the expression should be compiled to an interpreted form, if available. </param>
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
-        public new TDelegate Interpret()
+        public new TDelegate Compile(bool preferInterpretation)
         {
-            return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+            if (preferInterpretation)
+            {
+                return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+            }
+            else
+            {
+                return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
+            }
         }
 #endif
 

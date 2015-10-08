@@ -35,7 +35,7 @@ namespace Tests.ExpressionInterpreter
                     Enumerable.Empty<ParameterExpression>());
 
             Func<object> c = e.Compile();
-            Func<object> i = e.Interpret();
+            Func<object> i = e.Compile(preferInterpretation: true);
 
             // compute the value with the compiler
             object cResult = null;
