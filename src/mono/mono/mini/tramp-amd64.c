@@ -972,13 +972,13 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "debugger_agent_single_step_from_context");
 		else
 			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "debugger_agent_breakpoint_from_context");
-		amd64_call_reg (code, AMD64_R11);
 	} else {
 		if (single_step)
-			amd64_call_code (code, debugger_agent_single_step_from_context);
+			amd64_mov_reg_imm (code, AMD64_R11, debugger_agent_single_step_from_context);
 		else
-			amd64_call_code (code, debugger_agent_breakpoint_from_context);
-	}
+			amd64_mov_reg_imm (code, AMD64_R11, debugger_agent_breakpoint_from_context);
+	}	
+	amd64_call_reg (code, AMD64_R11);
 
 	/* Restore registers from ctx */
 	for (i = 0; i < AMD64_NREG; ++i) {
