@@ -3285,7 +3285,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 #if defined(__native_client_codegen__) || defined(USE_COOP_GC)
 	cfg->opt |= MONO_OPT_LOOP;
 #endif
-
 	cfg->explicit_null_checks = debug_options.explicit_null_checks || (flags & JIT_FLAG_EXPLICIT_NULL_CHECKS);
 	cfg->soft_breakpoints = debug_options.soft_breakpoints;
 	cfg->check_pinvoke_callconv = debug_options.check_pinvoke_callconv;
@@ -3297,8 +3296,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (cfg->compile_aot)
 		cfg->method_index = aot_method_index;
 
+	/*
 	if (!mono_debug_count ())
 		cfg->opt &= ~MONO_OPT_FLOAT32;
+	*/
+	if (cfg->llvm_only)
+		cfg->opt &= ~MONO_OPT_SIMD;
 	cfg->r4fp = (cfg->opt & MONO_OPT_FLOAT32) ? 1 : 0;
 	cfg->r4_stack_type = cfg->r4fp ? STACK_R4 : STACK_R8;
 
