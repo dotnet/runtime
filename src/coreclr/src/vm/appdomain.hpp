@@ -1857,7 +1857,7 @@ struct FailedAssembly {
         CONTRACTL
         {
             THROWS;
-            GC_NOTRIGGER;
+            GC_TRIGGERS;
             MODE_ANY;
         }
         CONTRACTL_END;
