@@ -138,7 +138,6 @@ set(SOURCES
   misc/interlock.cpp
   misc/miscpalapi.cpp
   misc/msgbox.cpp
-  misc/stackstring.cpp
   misc/strutil.cpp
   misc/sysinfo.cpp
   misc/time.cpp
