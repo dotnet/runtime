@@ -7,6 +7,8 @@
     <ProjectGuid>{89F37791-6254-4D60-AB96-ACD3CCA0E771}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
