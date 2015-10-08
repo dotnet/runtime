@@ -339,10 +339,32 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex);
             DispatchManagedException(exCopy);       \
         }
 
+// Install trap that catches unhandled managed exception and dumps its stack
+#define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                                    \
+        try {                                                                                       \
+            auto exceptionFilter = [](PAL_SEHException& ex)                                         \
+            {                                                                                       \
+                return EXCEPTION_EXECUTE_HANDLER;                                                   \
+            };                                                                                      \
+            auto __exceptionHolder = NativeExceptionHolderFactory::CreateHolder(&exceptionFilter);  \
+            __exceptionHolder.Push();
+
+// Uninstall trap that catches unhandled managed exception and dumps its stack
+#define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                              \
+        }                                                                                       \
+        catch (PAL_SEHException& ex)                                                            \
+        {                                                                                       \
+            LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);  \
+            _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);                                 \
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);                                 \
+        }
+
 #else
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+#define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
+#define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 
 #endif // FEATURE_PAL
 
