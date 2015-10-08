@@ -59,6 +59,34 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public void Ctor_ExpectedDefaultPropertyValues()
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                // Same as .NET Framework (Desktop).
+                Assert.True(handler.AllowAutoRedirect);
+                Assert.Equal(ClientCertificateOption.Manual, handler.ClientCertificateOptions);
+                CookieContainer cookies = handler.CookieContainer;
+                Assert.NotNull(cookies);
+                Assert.Equal(0, cookies.Count);
+                Assert.Null(handler.Credentials);
+                Assert.Equal(50, handler.MaxAutomaticRedirections);
+                Assert.False(handler.PreAuthenticate);
+                Assert.Equal(null, handler.Proxy);
+                Assert.True(handler.SupportsAutomaticDecompression);
+                Assert.True(handler.SupportsProxy);
+                Assert.True(handler.SupportsRedirectConfiguration);
+                Assert.True(handler.UseCookies);
+                Assert.False(handler.UseDefaultCredentials);
+                Assert.True(handler.UseProxy);
+                
+                // Changes from .NET Framework (Desktop).
+                Assert.Equal(DecompressionMethods.GZip | DecompressionMethods.Deflate, handler.AutomaticDecompression);
+                Assert.Equal(0, handler.MaxRequestContentBufferSize);
+            }
+        }
+
+        [Fact]
         public void MaxRequestContentBufferSize_Get_ReturnsZero()
         {
             using (var handler = new HttpClientHandler())
