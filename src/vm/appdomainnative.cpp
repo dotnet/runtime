@@ -1580,7 +1580,7 @@ void QCALLTYPE AppDomainNative::SetNativeDllSearchDirectories(__in_z LPCWSTR wsz
         while (itr != end)
         {
             start = itr;
-            BOOL found = sDirectories.Find(itr, Path::PathSeparatorChar);
+            BOOL found = sDirectories.Find(itr, PATH_SEPARATOR_CHAR_W);
             if (!found)
             {
                 itr = end;
@@ -1597,9 +1597,9 @@ void QCALLTYPE AppDomainNative::SetNativeDllSearchDirectories(__in_z LPCWSTR wsz
 
             if (len > 0)
             {
-                if (qualifiedPath[len - 1] != Path::DirectorySeparatorChar)
+                if (qualifiedPath[len - 1] != DIRECTORY_SEPARATOR_CHAR_W)
                 {
-                    qualifiedPath.Append(Path::DirectorySeparatorChar);
+                    qualifiedPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
                 }
 
                 NewHolder<SString> stringHolder (new SString(qualifiedPath));
