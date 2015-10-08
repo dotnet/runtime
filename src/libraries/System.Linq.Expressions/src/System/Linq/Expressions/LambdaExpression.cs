@@ -113,16 +113,27 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile()
         {
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
             return Compiler.LambdaCompiler.Compile(this);
 #else
             return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
 #endif 
         }
 
-#if FEATURE_CORECLR
+#if FEATURE_INTERPRET
+        /// <summary>
+        /// Produces a delegate that represents the lambda expression.
+        /// </summary>
+        /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        public Delegate Interpret()
+        {
+            return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+        }
+#endif
+
+#if FEATURE_COMPILE
         internal abstract LambdaExpression Accept(Compiler.StackSpiller spiller);
-#endif 
+#endif
     }
 
     /// <summary>
@@ -146,12 +157,23 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile()
         {
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
             return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
 #else
             return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
-#endif 
+#endif
         }
+
+#if FEATURE_INTERPRET
+        /// <summary>
+        /// Produces a delegate that represents the lambda expression.
+        /// </summary>
+        /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        public new TDelegate Interpret()
+        {
+            return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+        }
+#endif
 
         /// <summary>
         /// Creates a new expression that is like this one, but using the
@@ -178,7 +200,7 @@ namespace System.Linq.Expressions
             return visitor.VisitLambda(this);
         }
 
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
         internal override LambdaExpression Accept(Compiler.StackSpiller spiller)
         {
             return spiller.Rewrite(this);
@@ -188,10 +210,10 @@ namespace System.Linq.Expressions
         {
             return new Expression<TDelegate>(body, name, tailCall, parameters);
         }
-#endif  
+#endif
     }
 
-#if !FEATURE_CORECLR
+#if !FEATURE_COMPILE
     // Seperate expression creation class to hide the CreateExpressionFunc function from users reflecting on Expression<T>
     public class ExpressionCreator<TDelegate>
     {
@@ -223,7 +245,7 @@ namespace System.Linq.Expressions
             MethodInfo create = null;
             if (!factories.TryGetValue(delegateType, out fastPath))
             {
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
                 create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic);
 #else
                 create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public);

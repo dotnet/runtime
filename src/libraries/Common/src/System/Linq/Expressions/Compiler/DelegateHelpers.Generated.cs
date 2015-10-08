@@ -39,7 +39,7 @@ namespace System.Linq.Expressions.Compiler
             return nextTypeInfo;
         }
 
-#if !FEATURE_CORECLR
+#if !FEATURE_COMPILE
 
         public delegate object VBCallSiteDelegate0<T>(T callSite, object instance);
         public delegate object VBCallSiteDelegate1<T>(T callSite, object instance, ref object arg1);
@@ -118,7 +118,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (needCustom)
             {
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
                 return MakeNewCustomDelegate(types);
 #else
                 return TryMakeVBStyledCallSite(types) ?? MakeNewCustomDelegate(types);
