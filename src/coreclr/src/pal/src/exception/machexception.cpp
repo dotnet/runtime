@@ -1821,47 +1821,61 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     if (palError == NO_ERROR)
     {
         mach_port_t thread = pThread->GetMachPortSelf();
-        x86_thread_state64_t ThreadState;
-        mach_msg_type_number_t count = sizeof(ThreadState)/sizeof(natural_t);
+        mach_msg_type_number_t count;
         kern_return_t MachRet;
 
+        x86_exception_state64_t ExceptionState;
+        count = x86_EXCEPTION_STATE64_COUNT;
         MachRet = thread_get_state(thread,
-                                   x86_THREAD_STATE64,
-                                   (thread_state_t)&ThreadState,
+                                   x86_EXCEPTION_STATE64,
+                                   (thread_state_t)&ExceptionState,
                                    &count);
-        _ASSERT_MSG(MachRet == KERN_SUCCESS, "thread_get_state\n");
+        _ASSERT_MSG(MachRet == KERN_SUCCESS, "thread_get_state for x86_EXCEPTION_STATE64\n");
 
-        if ((g_safeActivationCheckFunction != NULL) && g_safeActivationCheckFunction(ThreadState.__rip))
+        // Inject the activation only if the thread doesn't have a pending hardware exception
+        static const int MaxHardwareExceptionVector = 31;
+        if (ExceptionState.__trapno > MaxHardwareExceptionVector)
         {
-            // TODO: it would be nice to preserve the red zone in case a jitter would want to use it
-            // Do we really care about unwinding through the wrapper?
-            size_t* sp = (size_t*)ThreadState.__rsp;
-            *(--sp) = ThreadState.__rip;
-            *(--sp) = ThreadState.__rbp;
-            size_t rbpAddress = (size_t)sp;
-            size_t contextAddress = (((size_t)sp) - sizeof(CONTEXT)) & ~15;
-            size_t returnAddressAddress = contextAddress - sizeof(size_t);
-            *(size_t*)(returnAddressAddress) =  ActivationHandlerReturnOffset + (size_t)ActivationHandlerWrapper;
-
-            // Fill in the context in the helper frame with the full context of the suspended thread.
-            // The ActivationHandler will use the context to resume the execution of the thread
-            // after the activation function returns.
-            CONTEXT *pContext = (CONTEXT *)contextAddress;
-            pContext->ContextFlags = CONTEXT_FULL | CONTEXT_SEGMENTS;
-            MachRet = CONTEXT_GetThreadContextFromPort(thread, pContext);
-            _ASSERT_MSG(MachRet == KERN_SUCCESS, "CONTEXT_GetThreadContextFromPort\n");
-        
-            // Make the instruction register point to ActivationHandler
-            ThreadState.__rip = (size_t)ActivationHandler;
-            ThreadState.__rsp = returnAddressAddress;
-            ThreadState.__rbp = rbpAddress;
-            ThreadState.__rdi = contextAddress;
-
-            MachRet = thread_set_state(thread,
+            x86_thread_state64_t ThreadState;
+            count = x86_THREAD_STATE64_COUNT;
+            MachRet = thread_get_state(thread,
                                        x86_THREAD_STATE64,
                                        (thread_state_t)&ThreadState,
-                                       count);
-            _ASSERT_MSG(MachRet == KERN_SUCCESS, "thread_set_state\n");
+                                       &count);
+            _ASSERT_MSG(MachRet == KERN_SUCCESS, "thread_get_state for x86_THREAD_STATE64\n");
+
+            if ((g_safeActivationCheckFunction != NULL) && g_safeActivationCheckFunction(ThreadState.__rip))
+            {
+                // TODO: it would be nice to preserve the red zone in case a jitter would want to use it
+                // Do we really care about unwinding through the wrapper?
+                size_t* sp = (size_t*)ThreadState.__rsp;
+                *(--sp) = ThreadState.__rip;
+                *(--sp) = ThreadState.__rbp;
+                size_t rbpAddress = (size_t)sp;
+                size_t contextAddress = (((size_t)sp) - sizeof(CONTEXT)) & ~15;
+                size_t returnAddressAddress = contextAddress - sizeof(size_t);
+                *(size_t*)(returnAddressAddress) =  ActivationHandlerReturnOffset + (size_t)ActivationHandlerWrapper;
+
+                // Fill in the context in the helper frame with the full context of the suspended thread.
+                // The ActivationHandler will use the context to resume the execution of the thread
+                // after the activation function returns.
+                CONTEXT *pContext = (CONTEXT *)contextAddress;
+                pContext->ContextFlags = CONTEXT_FULL | CONTEXT_SEGMENTS;
+                MachRet = CONTEXT_GetThreadContextFromPort(thread, pContext);
+                _ASSERT_MSG(MachRet == KERN_SUCCESS, "CONTEXT_GetThreadContextFromPort\n");
+
+                // Make the instruction register point to ActivationHandler
+                ThreadState.__rip = (size_t)ActivationHandler;
+                ThreadState.__rsp = returnAddressAddress;
+                ThreadState.__rbp = rbpAddress;
+                ThreadState.__rdi = contextAddress;
+
+                MachRet = thread_set_state(thread,
+                                           x86_THREAD_STATE64,
+                                           (thread_state_t)&ThreadState,
+                                           count);
+                _ASSERT_MSG(MachRet == KERN_SUCCESS, "thread_set_state\n");
+            }
         }
 
         palError = pCurrentThread->suspensionInfo.InternalResumeThreadFromData(
