@@ -4,189 +4,144 @@
 using System;
 using System.Collections;
 using System.Xml.Linq;
-using Microsoft.Test.ModuleCore;
+using Xunit;
 
-namespace CoreXml.Test.XLinq
+namespace XDocumentTests.SDMSample
 {
-    public partial class FunctionalTests : TestModule
+    public class SDM_Document
     {
-        public partial class SDMSamplesTests : XLinqTestCase
+        /// <summary>
+        /// Validate behavior of the default XDocument constructor.
+        /// </summary>
+        [Fact]
+        public void CreateEmptyDocument()
         {
-            public partial class SDM_Document : XLinqTestCase
-            {
-                /// <summary>
-                /// Validate behavior of the default XDocument constructor.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "CreateEmptyDocument")]
-                public void CreateEmptyDocument()
-                {
-                    XDocument doc = new XDocument();
+            XDocument doc = new XDocument();
 
-                    Validate.IsNull(doc.Parent);
-                    Validate.IsNull(doc.Root);
-                    Validate.IsNull(doc.Declaration);
-                    Validate.Enumerator(doc.Nodes(), new XNode[0]);
-                }
+            Assert.Null(doc.Parent);
+            Assert.Null(doc.Root);
+            Assert.Null(doc.Declaration);
+            Assert.Empty(doc.Nodes());
+        }
 
-                /// <summary>
-                /// Validate behavior of the XDocument constructor that takes content.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "CreateDocumentWithContent")]
-                public void CreateDocumentWithContent()
-                {
-                    XDeclaration declaration = new XDeclaration("1.0", "utf-8", "yes");
-                    XComment comment = new XComment("This is a document");
-                    XProcessingInstruction instruction = new XProcessingInstruction("doc-target", "doc-data");
-                    XElement element = new XElement("RootElement");
+        /// <summary>
+        /// Validate behavior of the XDocument constructor that takes content.
+        /// </summary>
+        [Fact]
+        public void CreateDocumentWithContent()
+        {
+            XDeclaration declaration = new XDeclaration("1.0", "utf-8", "yes");
+            XComment comment = new XComment("This is a document");
+            XProcessingInstruction instruction = new XProcessingInstruction("doc-target", "doc-data");
+            XElement element = new XElement("RootElement");
 
-                    XDocument doc = new XDocument(declaration, comment, instruction, element);
+            XDocument doc = new XDocument(declaration, comment, instruction, element);
 
-                    Validate.Enumerator(
-                        doc.Nodes(),
-                        new XNode[] { comment, instruction, element });
-                }
+            Assert.Equal(new XNode[] { comment, instruction, element }, doc.Nodes());
+        }
 
-                /// <summary>
-                /// Validate behavior of the XDocument copy/clone constructor.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "CreateDocumentCopy")]
-                public void CreateDocumentCopy()
-                {
-                    try
-                    {
-                        new XDocument((XDocument)null);
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+        /// <summary>
+        /// Validate behavior of the XDocument copy/clone constructor.
+        /// </summary>
+        [Fact]
+        public void CreateDocumentCopy()
+        {
+            Assert.Throws<ArgumentNullException>(() => new XDocument((XDocument)null));
 
-                    XDeclaration declaration = new XDeclaration("1.0", "utf-8", "yes");
-                    XComment comment = new XComment("This is a document");
-                    XProcessingInstruction instruction = new XProcessingInstruction("doc-target", "doc-data");
-                    XElement element = new XElement("RootElement");
+            XDeclaration declaration = new XDeclaration("1.0", "utf-8", "yes");
+            XComment comment = new XComment("This is a document");
+            XProcessingInstruction instruction = new XProcessingInstruction("doc-target", "doc-data");
+            XElement element = new XElement("RootElement");
 
-                    XDocument doc = new XDocument(declaration, comment, instruction, element);
+            XDocument doc = new XDocument(declaration, comment, instruction, element);
 
-                    XDocument doc2 = new XDocument(doc);
+            XDocument doc2 = new XDocument(doc);
 
-                    IEnumerator e = doc2.Nodes().GetEnumerator();
+            IEnumerator e = doc2.Nodes().GetEnumerator();
 
-                    // First node: declaration
-                    Validate.IsEqual(doc.Declaration.ToString(), doc2.Declaration.ToString());
+            // First node: declaration
+            Assert.Equal(doc.Declaration.ToString(), doc2.Declaration.ToString());
 
-                    // Next node: comment
-                    Validate.IsEqual(e.MoveNext(), true);
-                    Validate.Type(e.Current, typeof(XComment));
-                    Validate.IsNotReferenceEqual(e.Current, comment);
-                    XComment comment2 = (XComment)e.Current;
-                    Validate.IsEqual(comment2.Value, comment.Value);
+            // Next node: comment
+            Assert.True(e.MoveNext());
+            Assert.IsType<XComment>(e.Current);
+            Assert.NotSame(comment, e.Current);
 
-                    // Next node: processing instruction
-                    Validate.IsEqual(e.MoveNext(), true);
-                    Validate.Type(e.Current, typeof(XProcessingInstruction));
-                    Validate.IsNotReferenceEqual(e.Current, instruction);
-                    XProcessingInstruction instruction2 = (XProcessingInstruction)e.Current;
-                    Validate.String(instruction2.Target, instruction.Target);
-                    Validate.String(instruction2.Data, instruction.Data);
+            XComment comment2 = (XComment)e.Current;
+            Assert.Equal(comment.Value, comment2.Value);
 
-                    // Next node: element.
-                    Validate.IsEqual(e.MoveNext(), true);
-                    Validate.Type(e.Current, typeof(XElement));
-                    Validate.IsNotReferenceEqual(e.Current, element);
-                    XElement element2 = (XElement)e.Current;
-                    Validate.ElementName(element2, element.Name.ToString());
-                    Validate.Count(element2.Nodes(), 0);
+            // Next node: processing instruction
+            Assert.True(e.MoveNext());
+            Assert.IsType<XProcessingInstruction>(e.Current);
+            Assert.NotSame(instruction, e.Current);
 
-                    // Should be end.
-                    Validate.IsEqual(e.MoveNext(), false);
-                }
+            XProcessingInstruction instruction2 = (XProcessingInstruction)e.Current;
+            Assert.Equal(instruction.Target, instruction2.Target);
+            Assert.Equal(instruction.Data, instruction2.Data);
 
-                /// <summary>
-                /// Validate behavior of the XDocument XmlDeclaration property.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "DocumentXmlDeclaration")]
-                public void DocumentXmlDeclaration()
-                {
-                    XDocument doc = new XDocument();
-                    Validate.IsNull(doc.Declaration);
+            // Next node: element.
+            Assert.True(e.MoveNext());
+            Assert.IsType<XElement>(e.Current);
+            Assert.NotSame(element, e.Current);
 
-                    XDeclaration dec = new XDeclaration("1.0", "utf-16", "yes");
-                    XDocument doc2 = new XDocument(dec);
-                    XDeclaration dec2 = doc2.Declaration;
-                    Validate.IsReferenceEqual(dec2, dec);
+            XElement element2 = (XElement)e.Current;
+            Assert.Equal(element.Name.ToString(), element2.Name.ToString());
+            Assert.Empty(element2.Nodes());
 
-                    doc2.RemoveNodes();
-                    Validate.IsNotNull(doc2.Declaration);
-                }
+            // Should be end.
+            Assert.False(e.MoveNext());
+        }
 
-                /// <summary>
-                /// Validate behavior of the XDocument Root property.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "DocumentRoot")]
-                public void DocumentRoot()
-                {
-                    XDocument doc = new XDocument();
-                    Validate.IsNull(doc.Root);
+        /// <summary>
+        /// Validate behavior of the XDocument XmlDeclaration property.
+        /// </summary>
+        [Fact]
+        public void DocumentXmlDeclaration()
+        {
+            XDocument doc = new XDocument();
+            Assert.Null(doc.Declaration);
 
-                    XElement e = new XElement("element");
-                    doc.Add(e);
-                    XElement e2 = doc.Root;
-                    Validate.IsReferenceEqual(e2, e);
+            XDeclaration dec = new XDeclaration("1.0", "utf-16", "yes");
+            XDocument doc2 = new XDocument(dec);
+            Assert.Same(dec, doc2.Declaration);
 
-                    doc.RemoveNodes();
-                    doc.Add(new XComment("comment"));
-                    Validate.IsNull(doc.Root);
-                }
+            doc2.RemoveNodes();
+            Assert.NotNull(doc2.Declaration);
+        }
 
-                /// <summary>
-                /// Validate behavior of adding string content to a document.
-                /// </summary>
-                /// <returns>true if pass, false if fail</returns>
-                //[Variation(Desc = "DocumentAddString")]
-                public void DocumentAddString()
-                {
-                    XDocument doc = new XDocument();
+        /// <summary>
+        /// Validate behavior of the XDocument Root property.
+        /// </summary>
+        [Fact]
+        public void DocumentRoot()
+        {
+            XDocument doc = new XDocument();
+            Assert.Null(doc.Root);
 
-                    try
-                    {
-                        doc.Add("");
-                        Validate.String(doc.ToString(SaveOptions.DisableFormatting), "");
-                        doc.Add(" \t" + Environment.NewLine);
-                        Validate.String(doc.ToString(SaveOptions.DisableFormatting), " \t" + Environment.NewLine);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new TestException(TestResult.Failed, ex.ToString());
-                    }
+            XElement e = new XElement("element");
+            doc.Add(e);
+            Assert.Same(e, doc.Root);
 
-                    try
-                    {
-                        doc.Add("a");
-                        Validate.ExpectedThrow(typeof(ArgumentException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentException));
-                    }
+            doc.RemoveNodes();
+            doc.Add(new XComment("comment"));
+            Assert.Null(doc.Root);
+        }
 
-                    try
-                    {
-                        doc.Add("\tab");
-                        Validate.ExpectedThrow(typeof(ArgumentException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentException));
-                    }
-                }
-            }
+        /// <summary>
+        /// Validate behavior of adding string content to a document.
+        /// </summary>
+        [Fact]
+        public void DocumentAddString()
+        {
+            XDocument doc = new XDocument();
+            doc.Add("");
+            Assert.Equal("", doc.ToString(SaveOptions.DisableFormatting));
+
+            doc.Add(" \t" + Environment.NewLine);
+            Assert.Equal(" \t" + Environment.NewLine, doc.ToString(SaveOptions.DisableFormatting));
+
+            Assert.Throws<ArgumentException>(() => doc.Add("a"));
+            Assert.Throws<ArgumentException>(() => doc.Add("\tab"));
         }
     }
 }
