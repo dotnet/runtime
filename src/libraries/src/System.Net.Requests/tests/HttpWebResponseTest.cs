@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.Http;
+using System.Threading.Tasks;
 
 using Xunit;
 
@@ -9,37 +10,21 @@ namespace System.Net.Tests
 {
     public class HttpWebResponseTest
     {
-        public static object[][] HasContentTypeHeaderServers
+        [Fact]
+        public async Task ContentType_ServerResponseHasContentTypeHeader_ContentTypeIsNonEmptyString()
         {
-            get
-            {
-                return HttpTestServers.GetServers;
-            }
-        }
-
-        public static object[][] MissingContentTypeHeaderServers
-        {
-            get
-            {
-                return null;
-            }
-        }
-
-        [Theory, MemberData("HasContentTypeHeaderServers")]
-        public void ContentType_ServerResponseHasContentTypeHeader_ContentTypeIsNonEmptyString(Uri remoteServer)
-        {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            HttpWebRequest request = WebRequest.CreateHttp(HttpTestServers2.RemoteEchoServer);
             request.Method = HttpMethod.Get.Method;
-            WebResponse response = request.GetResponseAsync().GetAwaiter().GetResult();
+            WebResponse response = await request.GetResponseAsync();
             Assert.True(!string.IsNullOrEmpty(response.ContentType));
         }
 
-        [Theory, MemberData("MissingContentTypeHeaderServers"), ActiveIssue(2385)]
-        public void ContentType_ServerResponseMissingContentTypeHeader_ContentTypeIsEmptyString(Uri remoteServer)
+        [Fact]
+        public async Task ContentType_ServerResponseMissingContentTypeHeader_ContentTypeIsEmptyString()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
+            HttpWebRequest request = WebRequest.CreateHttp(HttpTestServers2.RemoteEmptyContentServer);
             request.Method = HttpMethod.Get.Method;
-            WebResponse response = request.GetResponseAsync().GetAwaiter().GetResult();
+            WebResponse response = await request.GetResponseAsync();
             Assert.Equal(string.Empty, response.ContentType);
         }
     }
