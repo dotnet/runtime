@@ -26,7 +26,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginSend_NegativeBytes_Throws()
         {
-            UdpClient udpClient = new UdpClient();
+            UdpClient udpClient = new UdpClient(AddressFamily.InterNetwork);
             byte[] sendBytes = new byte[1];
             IPEndPoint remoteServer = new IPEndPoint(IPAddress.Loopback, UnusedPort);
 
@@ -39,7 +39,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginSend_BytesMoreThanArrayLength_Throws()
         {
-            UdpClient udpClient = new UdpClient();
+            UdpClient udpClient = new UdpClient(AddressFamily.InterNetwork);
             byte[] sendBytes = new byte[1];
             IPEndPoint remoteServer = new IPEndPoint(IPAddress.Loopback, UnusedPort);
 
@@ -52,7 +52,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginSend_Success()
         {
-            UdpClient udpClient = new UdpClient();
+            UdpClient udpClient = new UdpClient(AddressFamily.InterNetwork);
             byte[] sendBytes = new byte[1];
             IPEndPoint remoteServer = new IPEndPoint(IPAddress.Loopback, UnusedPort);
             _waitHandle.Reset();

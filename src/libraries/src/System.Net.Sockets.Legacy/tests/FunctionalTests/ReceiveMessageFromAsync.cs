@@ -44,7 +44,7 @@ namespace System.Net.Sockets.Tests
 
                     Assert.True(receiver.ReceiveMessageFromAsync(args));
 
-                    Assert.True(completed.WaitOne(5000), "Timeout while waiting for connection");
+                    Assert.True(completed.WaitOne(Configuration.PassingTestTimeout), "Timeout while waiting for connection");
 
                     Assert.Equal(1024, args.BytesTransferred);
                     Assert.Equal(sender.LocalEndPoint, args.RemoteEndPoint);
