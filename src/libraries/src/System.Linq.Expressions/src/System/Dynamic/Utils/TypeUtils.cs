@@ -683,7 +683,7 @@ namespace System.Dynamic.Utils
             return type.IsByRef ? type.GetElementType() : type;
         }
 
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
         internal static bool IsUnsigned(Type type)
         {
             type = GetNonNullableType(type);

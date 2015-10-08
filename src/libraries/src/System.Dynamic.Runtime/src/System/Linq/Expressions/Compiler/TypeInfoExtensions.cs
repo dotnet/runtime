@@ -24,7 +24,7 @@ namespace System.Linq.Expressions.Compiler
             // nope, go ahead and create it and spend the
             // cost of creating the array.
             Type[] paramTypes = new Type[args.Count + 2];
-#if FEATURE_CORECLR        
+#if FEATURE_COMPILE        
             paramTypes[0] = typeof(CallSite);
 #else
             paramTypes[0] = typeof(object);
