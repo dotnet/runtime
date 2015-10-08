@@ -454,10 +454,11 @@ public:
         // SIMPLIFY:  only use allocation contexts
         return true;
 #else
-#ifdef _TARGET_ARM_
-        return TRUE;
-#endif
+#if defined(_TARGET_ARM_) || defined(FEATURE_PAL)
+        return true;
+#else
         return ((IsServerHeap() ? true : (g_SystemInfo.dwNumberOfProcessors >= 2)));
+#endif
 #endif 
     }
 
