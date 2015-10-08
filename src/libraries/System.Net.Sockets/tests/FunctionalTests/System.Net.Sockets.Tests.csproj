@@ -20,6 +20,7 @@
     <Compile Include="DisposedSocketTests.cs" />
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
+    <Compile Include="NetworkStreamTest.cs" />
     <Compile Include="SendReceive.cs" />
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAsyncExtensions.cs" />
