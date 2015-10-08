@@ -281,7 +281,7 @@ dllmap_start (gpointer user_data,
 				char *p = strstr (attribute_values [i], "$mono_libdir");
 				if (p != NULL){
 					const char *libdir = mono_assembly_getrootdir ();
-					int libdir_len = strlen (libdir);
+					size_t libdir_len = strlen (libdir);
 					char *result;
 					
 					result = g_malloc (libdir_len-strlen("$mono_libdir")+strlen(attribute_values[i])+1);
