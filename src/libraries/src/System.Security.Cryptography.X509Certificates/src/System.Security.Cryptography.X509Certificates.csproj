@@ -13,11 +13,11 @@
     <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <PropertyGroup Condition=" '$(TargetsWindows)' == 'true' and '$(ProjectJson)' == '' ">
     <ProjectJson>win\project.json</ProjectJson>
     <ProjectLockJson>win\project.lock.json</ProjectLockJson>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' and '$(ProjectJson)' == '' ">
     <ProjectJson>unix\project.json</ProjectJson>
     <ProjectLockJson>unix\project.lock.json</ProjectLockJson>
   </PropertyGroup>
