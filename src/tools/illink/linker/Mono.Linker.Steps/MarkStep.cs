@@ -357,7 +357,6 @@ namespace Mono.Linker.Steps {
 			if ((git != null) && git.HasGenericArguments) {
 				foreach (var ga in git.GenericArguments)
 					MarkWithResolvedScope (ga);
-				return;
 			}
 			// we cannot set the Scope of a TypeSpecification but it's element type can be set
 			// e.g. System.String[] -> System.String
