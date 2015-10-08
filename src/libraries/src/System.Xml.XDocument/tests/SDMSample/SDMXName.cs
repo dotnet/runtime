@@ -4,236 +4,139 @@
 using System;
 using System.Xml;
 using System.Xml.Linq;
-using Microsoft.Test.ModuleCore;
+using Xunit;
 
-namespace CoreXml.Test.XLinq
+namespace XDocumentTests.SDMSample
 {
-    public partial class FunctionalTests : TestModule
+    public class SDM_XName
     {
-        public partial class SDMSamplesTests : XLinqTestCase
+        /// <summary>
+        /// Gets an XML qualified name for an XName, for interop.
+        /// </summary>
+        /// <param name="name">XName.</param>
+        /// <returns>XmlQualifiedName.</returns>
+        internal static XmlQualifiedName GetQName(XName name)
         {
-            public partial class SDM_XName : XLinqTestCase
-            {
-                /// <summary>
-                /// Gets an XML qualified name for an XName, for interop.
-                /// </summary>
-                /// <param name="name">XName.</param>
-                /// <returns>XmlQualifiedName.</returns>
-                internal static XmlQualifiedName GetQName(XName name)
-                {
-                    return new XmlQualifiedName(name.LocalName, name.Namespace.NamespaceName);
-                }
+            return new XmlQualifiedName(name.LocalName, name.Namespace.NamespaceName);
+        }
 
-                /// <summary>
-                /// Tests trying to use an invalid name with XName.Get.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "NameGetInvalId")]
-                public void NameGetInvalid()
-                {
-                    try
-                    {
-                        XName.Get(null);
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+        /// <summary>
+        /// Tests trying to use an invalid name with XName.Get.
+        /// </summary>
+        [Fact]
+        public void NameGetInvalid()
+        {
+            Assert.Throws<ArgumentNullException>(() => XName.Get(null));
+            Assert.Throws<ArgumentNullException>(() => XName.Get(null, "foo"));
+            Assert.Throws<ArgumentNullException>(() => XName.Get(string.Empty, "foo"));
+            Assert.Throws<ArgumentException>(() => XName.Get(string.Empty));
+            Assert.Throws<ArgumentException>(() => XName.Get("{}"));
+            Assert.Throws<ArgumentException>(() => XName.Get("{foo}"));
+        }
 
-                    try
-                    {
-                        XName.Get(null, "foo");
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+        /// <summary>
+        /// Tests the operators on XName.
+        /// </summary>
+        [Fact]
+        public void NameOperators()
+        {
+            // Implicit conversion from string.
+            XName name = (XName)(string)null;
+            Assert.Null(name);
 
-                    try
-                    {
-                        XName.Get(string.Empty, "foo");
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            name = (XName)"foo";
+            Assert.Equal("", name.Namespace.NamespaceName);
+            Assert.Equal("foo", name.LocalName);
 
-                    try
-                    {
-                        XName.Get(string.Empty);
-                        Validate.ExpectedThrow(typeof(ArgumentException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentException));
-                    }
+            name = (XName)"{bar}foo";
+            Assert.Equal("bar", name.Namespace.NamespaceName);
+            Assert.Equal("foo", name.LocalName);
 
-                    try
-                    {
-                        XName.Get("{}");
-                        Validate.ExpectedThrow(typeof(ArgumentException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentException));
-                    }
+            // Conversion to XmlQualifiedName
+            XmlQualifiedName qname = GetQName(name);
+            Assert.Equal("bar", qname.Namespace);
+            Assert.Equal("foo", qname.Name);
 
-                    try
-                    {
-                        XName.Get("{foo}");
-                        Validate.ExpectedThrow(typeof(ArgumentException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentException));
-                    }
-                }
+            // Equality, which should be based on reference equality.
+            XName ns1 = (XName)"foo";
+            XName ns2 = (XName)"foo";
+            XName ns3 = (XName)"bar";
+            XName ns4 = null;
 
-                /// <summary>
-                /// Tests the operators on XName.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "NameOperators")]
-                public void NameOperators()
-                {
-                    // Implicit conversion from string.
-                    XName name = (XName)(string)null;
-                    Validate.IsNull(name);
+            Assert.NotNull(ns1);
+            Assert.NotNull(ns2);
+            Assert.NotNull(ns3);
 
-                    name = (XName)"foo";
-                    Validate.String(name.Namespace.NamespaceName, "");
-                    Validate.String(name.LocalName, "foo");
+            Assert.Same(ns1, ns2);
+            Assert.NotSame(ns1, ns3);
+            Assert.NotSame(ns2, ns3);
 
-                    name = (XName)"{bar}foo";
-                    Validate.String(name.Namespace.NamespaceName, "bar");
-                    Validate.String(name.LocalName, "foo");
+            Assert.True(ns1 == ns2); // equal
+            Assert.False(ns1 == ns3); // not equal
+            Assert.False(ns1 == ns4); // not equal
 
-                    // Conversion to XmlQualifiedName
-                    XmlQualifiedName qname = GetQName(name);
-                    Validate.String(qname.Namespace, "bar");
-                    Validate.String(qname.Name, "foo");
+            Assert.False(ns1 != ns2); // false
+            Assert.True(ns1 != ns3); // true
+            Assert.True(ns1 != ns4); // true
+        }
 
-                    // Equality, which should be based on reference equality.
-                    XName ns1 = (XName)"foo";
-                    XName ns2 = (XName)"foo";
-                    XName ns3 = (XName)"bar";
-                    XName ns4 = null;
+        /// <summary>
+        /// Tests trying to use an invalid name with XNamespace.Get.
+        /// </summary>
+        [Fact]
+        public void NamespaceGetNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => XNamespace.Get(null));
+        }
 
-                    Validate.IsReferenceEqual(ns1, ns2);
-                    Validate.IsNotReferenceEqual(ns1, ns3);
-                    Validate.IsNotReferenceEqual(ns2, ns3);
+        /// <summary>
+        /// Tests the operators on XNamespace.
+        /// </summary>
+        [Fact]
+        public void NamespaceOperators()
+        {
+            // Implicit conversion from string.
+            XNamespace ns = (XNamespace)(string)null;
+            Assert.Null(ns);
 
-                    bool b1 = ns1 == ns2;   // equal
-                    bool b2 = ns1 == ns3;   // not equal
-                    bool b3 = ns1 == ns4;   // not equal
+            ns = (XNamespace)"foo";
+            Assert.Equal("foo", ns.NamespaceName);
 
-                    Validate.IsEqual(b1, true);
-                    Validate.IsEqual(b2, false);
-                    Validate.IsEqual(b3, false);
+            // Operator +
+            XName name;
+            Assert.Throws<ArgumentNullException>(() => (XNamespace)null + "localname");
+            Assert.Throws<ArgumentNullException>(() => ns + (string)null);
 
-                    b1 = ns1 != ns2;   // false
-                    b2 = ns1 != ns3;   // true
-                    b3 = ns1 != ns4;   // true
+            name = ns + "localname";
+            Assert.Equal("localname", name.LocalName);
+            Assert.Equal("foo", name.Namespace.NamespaceName);
 
-                    Validate.IsEqual(b1, false);
-                    Validate.IsEqual(b2, true);
-                    Validate.IsEqual(b3, true);
-                }
+            // Equality, which should be based on reference equality.
+            XNamespace ns1 = (XNamespace)"foo";
+            XNamespace ns2 = (XNamespace)"foo";
+            XNamespace ns3 = (XNamespace)"bar";
+            XNamespace ns4 = null;
 
-                /// <summary>
-                /// Tests trying to use an invalid name with XNamespace.Get.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "NamespaceGetNull")]
-                public void NamespaceGetNull()
-                {
-                    try
-                    {
-                        XNamespace.Get(null);
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
-                }
+            Assert.NotNull(ns1);
+            Assert.NotNull(ns2);
+            Assert.NotNull(ns3);
 
-                /// <summary>
-                /// Tests the operators on XNamespace.
-                /// </summary>
-                /// <param name="contextValue"></param>
-                /// <returns></returns>
-                //[Variation(Desc = "NamespaceOperators")]
-                public void NamespaceOperators()
-                {
-                    // Implicit conversion from string.
-                    XNamespace ns = (XNamespace)(string)null;
-                    Validate.IsNull(ns);
+            Assert.Same(ns1, ns2);
+            Assert.True(ns1.Equals(ns2));
 
-                    ns = (XNamespace)"foo";
-                    Validate.String(ns.NamespaceName, "foo");
+            Assert.NotSame(ns1, ns3);
+            Assert.False(ns1.Equals(ns3));
 
-                    // Operator +
-                    XName name;
+            Assert.NotSame(ns2, ns3);
+            Assert.False(ns2.Equals(ns3));
 
-                    try
-                    {
-                        name = (XNamespace)null + "localname";
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
+            Assert.True(ns1 == ns2); // equal
+            Assert.False(ns1 == ns3); // not equal
+            Assert.False(ns1 == ns4); // not equal
 
-                    try
-                    {
-                        name = ns + (string)null;
-                        Validate.ExpectedThrow(typeof(ArgumentNullException));
-                    }
-                    catch (Exception ex)
-                    {
-                        Validate.Catch(ex, typeof(ArgumentNullException));
-                    }
-
-                    name = ns + "localname";
-                    Validate.String(name.LocalName, "localname");
-                    Validate.String(name.Namespace.NamespaceName, "foo");
-
-                    // Equality, which should be based on reference equality.
-                    XNamespace ns1 = (XNamespace)"foo";
-                    XNamespace ns2 = (XNamespace)"foo";
-                    XNamespace ns3 = (XNamespace)"bar";
-                    XNamespace ns4 = null;
-
-                    Validate.IsReferenceEqual(ns1, ns2);
-                    Validate.IsNotReferenceEqual(ns1, ns3);
-                    Validate.IsNotReferenceEqual(ns2, ns3);
-
-                    bool b1 = ns1 == ns2;   // equal
-                    bool b2 = ns1 == ns3;   // not equal
-                    bool b3 = ns1 == ns4;   // not equal
-
-                    Validate.IsEqual(b1, true);
-                    Validate.IsEqual(b2, false);
-                    Validate.IsEqual(b3, false);
-
-                    b1 = ns1 != ns2;   // false
-                    b2 = ns1 != ns3;   // true
-                    b3 = ns1 != ns4;   // true
-
-                    Validate.IsEqual(b1, false);
-                    Validate.IsEqual(b2, true);
-                    Validate.IsEqual(b3, true);
-                }
-            }
+            Assert.False(ns1 != ns2); // false
+            Assert.True(ns1 != ns3); // true
+            Assert.True(ns1 != ns4); // true
         }
     }
 }
-
