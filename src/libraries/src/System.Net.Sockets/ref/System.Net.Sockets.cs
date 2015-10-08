@@ -101,9 +101,11 @@ namespace System.Net.Sockets
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
         public override int Read(byte[] buffer, int offset, int size) { buffer = default(byte[]); return default(int); }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int size, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task<int>); }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { return default(long); }
         public override void SetLength(long value) { }
         public override void Write(byte[] buffer, int offset, int size) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int size, System.Threading.CancellationToken cancellationToken) { return default(System.Threading.Tasks.Task); }
     }
     public enum ProtocolType
     {
