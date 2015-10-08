@@ -12,8 +12,12 @@ namespace System.Net.Tests
         public const string Host = "corefx-networking.azurewebsites.net";
 
         private const string EchoHandler = "Echo.ashx";
+        private const string EmptyContentHandler = "EmptyContent.ashx";
+        
         public readonly static Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
         public readonly static Uri SecureRemoteEchoServer = new Uri("https://" + Host + "/" + EchoHandler);
+        
+        public readonly static Uri RemoteEmptyContentServer = new Uri("http://" + Host + "/" + EmptyContentHandler);
 
         public readonly static object[][] EchoServers = { new object[] { RemoteEchoServer }, new object[] { SecureRemoteEchoServer } };
 
