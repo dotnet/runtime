@@ -32,6 +32,10 @@ namespace System.Net.Http.Functional.Tests
 
         private readonly NetworkCredential _credential = new NetworkCredential(Username, Password);
 
+        public readonly static object[][] GetServers = HttpTestServers.GetServers;
+        public readonly static object[][] PutServers = HttpTestServers.PutServers;
+        public readonly static object[][] PostServers = HttpTestServers.PostServers;
+
         private static bool JsonMessageContainsKeyValue(string message, string key, string value)
         {
             // TODO: Align with the rest of tests w.r.t response parsing once the test server is finalized.
@@ -47,22 +51,6 @@ namespace System.Net.Http.Functional.Tests
             string responseContent = await response.Content.ReadAsStringAsync();
             Assert.True(JsonMessageContainsKeyValue(responseContent, "url", uri.AbsoluteUri));
             output.WriteLine(responseContent);
-        }
-
-        public static object[][] PutServers
-        {
-            get
-            {
-                return HttpTestServers.PutServers;
-            }
-        }
-
-        public static object[][] PostServers
-        {
-            get
-            {
-                return HttpTestServers.PostServers;
-            }
         }
 
         public HttpClientHandlerTest(ITestOutputHelper output)
@@ -88,27 +76,32 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public async Task SendAsync_SimpleGet_Success()
+        [Theory, MemberData("GetServers")]
+        public async Task SendAsync_SimpleGet_Success(Uri remoteServer)
         {
             using (var client = new HttpClient())
             {
                 // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
-                HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteGetServer);
-                await AssertSuccessfulGetResponse(response, HttpTestServers.RemoteGetServer, _output);
+                HttpResponseMessage response = await client.GetAsync(remoteServer);
+                await AssertSuccessfulGetResponse(response, remoteServer, _output);
             }
         }
 
         [Fact]
-        public async Task SendAsync_SimpleHttpsGet_Success()
+        public async Task SendAsync_MultipleRequestsReusingSameClient_Success()
         {
             using (var client = new HttpClient())
             {
-                HttpResponseMessage response = await client.GetAsync(HttpTestServers.SecureRemoteGetServer);
-                await AssertSuccessfulGetResponse(response, HttpTestServers.SecureRemoteGetServer, _output);
+                HttpResponseMessage response;
+                for (int i = 0; i < 3; i++)
+                {
+                    response = await client.GetAsync(HttpTestServers.RemoteGetServer);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    response.Dispose();
+                }
             }
         }
-
+        
         [Fact]
         public async Task GetAsync_ResponseContentAfterClientAndHandlerDispose_Success()
         {
@@ -150,7 +143,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task GetAsync_SetCredential_StatusCodeOK()
+        public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK()
         {
             var handler = new HttpClientHandler();
             handler.Credentials = _credential;
@@ -159,6 +152,17 @@ namespace System.Net.Http.Functional.Tests
                 Uri uri = HttpTestServers.BasicAuthUriForCreds(Username, Password);
                 HttpResponseMessage response = await client.GetAsync(uri);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [Fact]
+        public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized()
+        {
+            using (var client = new HttpClient())
+            {
+                Uri uri = HttpTestServers.BasicAuthUriForCreds(Username, Password);
+                HttpResponseMessage response = await client.GetAsync(uri);
+                Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             }
         }
 
