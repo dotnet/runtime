@@ -3021,6 +3021,93 @@ HCIMPL2(Object *, JIT_StrCns, unsigned rid, CORINFO_MODULE_HANDLE scopeHnd)
 HCIMPLEND
 
 
+//========================================================================
+//
+//      ARRAY FAST PATHS
+//
+//========================================================================
+
+#include <optsmallperfcritical.h>
+
+//*************************************************************
+// Array allocation fast path for arrays of value type elements
+//
+
+HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size)
+{
+    FCALL_CONTRACT;
+
+    do
+    {
+        _ASSERTE(GCHeap::UseAllocationContexts());
+
+        // Do a conservative check here.  This is to avoid overflow while doing the calculations.  We don't
+        // have to worry about "large" objects, since the allocation quantum is never big enough for
+        // LARGE_OBJECT_SIZE.
+        //
+        // For Value Classes, this needs to be 2^16 - slack (2^32 / max component size), 
+        // The slack includes the size for the array header and round-up ; for alignment.  Use 256 for the
+        // slack value out of laziness.
+        SIZE_T componentCount = static_cast<SIZE_T>(size);
+        if (componentCount >= static_cast<SIZE_T>(65535 - 256))
+        {
+            break;
+        }
+
+        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
+        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
+        // some reshuffling of intermediate values into nonvolatile registers around the call.
+        Thread *thread = GetThread();
+
+        TypeHandle arrayTypeHandle(arrayTypeHnd_);
+        ArrayTypeDesc *arrayTypeDesc = arrayTypeHandle.AsArray();
+        MethodTable *arrayMethodTable = arrayTypeDesc->GetTemplateMethodTable();
+
+        _ASSERTE(arrayMethodTable->HasComponentSize());
+        SIZE_T componentSize = arrayMethodTable->RawGetComponentSize();
+        SIZE_T totalSize = componentCount * componentSize;
+        _ASSERTE(totalSize / componentSize == componentCount);
+
+        SIZE_T baseSize = arrayMethodTable->GetBaseSize();
+        totalSize += baseSize;
+        _ASSERTE(totalSize >= baseSize);
+
+        SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
+        _ASSERTE(alignedTotalSize >= totalSize);
+        totalSize = alignedTotalSize;
+
+        alloc_context *allocContext = thread->GetAllocContext();
+        BYTE *allocPtr = allocContext->alloc_ptr;
+        _ASSERTE(allocPtr <= allocContext->alloc_limit);
+        if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+        {
+            break;
+        }
+        allocContext->alloc_ptr = allocPtr + totalSize;
+
+        _ASSERTE(allocPtr != nullptr);
+        ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
+        array->SetMethodTable(arrayMethodTable);
+        _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
+        array->m_NumComponents = static_cast<DWORD>(componentCount);
+
+#if CHECK_APP_DOMAIN_LEAKS
+        if (g_pConfig->AppDomainLeaks())
+        {
+            array->SetAppDomain();
+        }
+#endif // CHECK_APP_DOMAIN_LEAKS
+
+        return array;
+    } while (false);
+
+    // Tail call to the slow helper
+    ENDFORBIDGC();
+    return HCCALL2(JIT_NewArr1, arrayTypeHnd_, size);
+}
+HCIMPLEND
+
+#include <optdefault.h>
 
 //========================================================================
 //
@@ -3068,7 +3155,8 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size)
         && (elemType != ELEMENT_TYPE_U8)
         && (elemType != ELEMENT_TYPE_R8)
 #endif
-        ) {
+        )
+    {
 #ifdef _DEBUG
         if (g_pConfig->FastGCStressLevel()) {
             GetThread()->DisableStressHeap();

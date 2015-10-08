@@ -199,11 +199,10 @@ void InitJITHelpers1()
 
 #if defined(_TARGET_AMD64_)
 
-     g_WriteBarrierManager.Initialize();
+    g_WriteBarrierManager.Initialize();
 
 #ifndef FEATURE_IMPLICIT_TLS
-
-     if (gThreadTLSIndex < TLS_MINIMUM_AVAILABLE)
+    if (gThreadTLSIndex < TLS_MINIMUM_AVAILABLE)
     {
         FixupInlineGetters(gThreadTLSIndex, InlineGetThreadLocations, COUNTOF(InlineGetThreadLocations));
     }
@@ -212,6 +211,7 @@ void InitJITHelpers1()
     {
         FixupInlineGetters(gAppDomainTLSIndex, InlineGetAppDomainLocations, COUNTOF(InlineGetAppDomainLocations));
     }
+#endif // !FEATURE_IMPLICIT_TLS
 
     // Allocation helpers, faster but non-logging
     if (!((TrackAllocationsEnabled()) || 
@@ -221,10 +221,12 @@ void InitJITHelpers1()
 #endif // _DEBUG
         ))
     {
-
         // if (multi-proc || server GC)
         if (GCHeap::UseAllocationContexts())
         {
+#ifdef FEATURE_IMPLICIT_TLS
+            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
+#else // !FEATURE_IMPLICIT_TLS
             // If the TLS for Thread is low enough use the super-fast helpers
             if (gThreadTLSIndex < TLS_MINIMUM_AVAILABLE)
             {
@@ -246,9 +248,11 @@ void InitJITHelpers1()
 
                 ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateStringFastMP), ECall::FastAllocateString);
             }
+#endif // FEATURE_IMPLICIT_TLS
         }
         else
         {
+#ifndef FEATURE_PAL
             // Replace the 1p slow allocation helpers with faster version
             //
             // When we're running Workstation GC on a single proc box we don't have 
@@ -260,9 +264,11 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_UP);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateStringFastUP), ECall::FastAllocateString);
+#endif // !FEATURE_PAL
         }
     }
 
+#ifndef FEATURE_IMPLICIT_TLS
     if (gThreadTLSIndex >= TLS_MINIMUM_AVAILABLE)
     {
         // We need to patch the helpers for FCalls
