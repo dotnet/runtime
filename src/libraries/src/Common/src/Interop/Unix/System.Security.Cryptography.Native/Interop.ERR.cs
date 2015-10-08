@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         [DllImport(Libraries.CryptoNative)]
-        private static extern ulong ErrGetError();
+        private static extern ulong ErrGetError([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
 
         [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
         private static extern void ErrErrorStringN(ulong e, StringBuilder buf, int len);
@@ -27,9 +27,6 @@ internal static partial class Interop
 
         internal static Exception CreateOpenSslCryptographicException()
         {
-            const uint ReasonMask = 0x0FFF;
-            const uint ERR_R_MALLOC_FAILURE = 64 | 1;
-
             // The Windows cryptography library reports error codes through
             // Marshal.GetLastWin32Error, which has a single value when the
             // function exits, last writer wins.
@@ -43,15 +40,19 @@ internal static partial class Interop
             // Windows code and the OpenSSL-calling code, drain the queue
             // whenever an Exception is desired, and report the exception
             // related to the last value in the queue.
-            ulong error = ErrGetError();
+            bool isAllocFailure;
+            ulong error = ErrGetError(out isAllocFailure);
             ulong lastRead = error;
+            bool lastIsAllocFailure = isAllocFailure;
 
             // 0 (there's no named constant) is only returned when the calls
             // to ERR_get_error exceed the calls to ERR_set_error.
             while (lastRead != 0)
             {
                 error = lastRead;
-                lastRead = ErrGetError();
+                isAllocFailure = lastIsAllocFailure;
+
+                lastRead = ErrGetError(out lastIsAllocFailure);
             }
 
             // If we're in an error flow which results in an Exception, but
@@ -62,17 +63,14 @@ internal static partial class Interop
                 return new CryptographicException();
             }
 
-            // Even though ErrGetError returns ulong (C++ unsigned long), we 
-            // really only expect error codes in the UInt32 range
-            Debug.Assert(error <= uint.MaxValue, "ErrGetError should only return error codes in the UInt32 range.");
-
-            // Inline version of the ERR_GET_REASON macro.
-            ulong reason = error & ReasonMask;
-
-            if (reason == ERR_R_MALLOC_FAILURE)
+            if (isAllocFailure)
             {
                 return new OutOfMemoryException();
             }
+
+            // Even though ErrGetError returns ulong (C++ unsigned long), we 
+            // really only expect error codes in the UInt32 range
+            Debug.Assert(error <= uint.MaxValue, "ErrGetError should only return error codes in the UInt32 range.");
 
             // If there was an error code, and it wasn't something handled specially,
             // use the OpenSSL error string as the message to a CryptographicException.
