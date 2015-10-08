@@ -53,7 +53,7 @@ namespace System.Net.Sockets.Tests
             _waitHandle.Reset();
             udpClient.BeginSend(sendBytes, sendBytes.Length, remoteServer, new AsyncCallback(AsyncCompleted), udpClient);
 
-            Assert.True(_waitHandle.WaitOne(5000), "Timed out while waiting for connection");
+            Assert.True(_waitHandle.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
         }
 
         private void AsyncCompleted(IAsyncResult ar)
