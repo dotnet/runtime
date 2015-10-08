@@ -4623,11 +4623,8 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
 
             if (controlPc == 0)
             {
-                if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
-                {
-                    LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
-                    _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
-                }
+                // The unhandled exceptions should be caught by the high level exception filter
+                _ASSERTE(!"UnwindManagedExceptionPass1: Exception escaped the stack");
                 EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);                    
             }
 
