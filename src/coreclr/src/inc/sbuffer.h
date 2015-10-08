@@ -50,7 +50,7 @@
     (( (size^(size-1)) >> 1) +1)
 
 #define ALIGN(size, align) \
-    (((size)+(align)-1) & ~((align)-1))
+    (((size)+((align)-1)) & ~((align)-1))
 
 #define PAD(size, align) \
     (ALIGN((size), (align)) - (size))
