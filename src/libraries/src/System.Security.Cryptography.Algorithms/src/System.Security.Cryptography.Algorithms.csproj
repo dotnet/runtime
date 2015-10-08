@@ -145,11 +145,11 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ERR.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.ERR.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EVP.Cipher.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.EVP.Cipher.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.Cipher.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>

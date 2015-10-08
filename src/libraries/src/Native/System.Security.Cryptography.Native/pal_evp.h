@@ -5,20 +5,32 @@
 #include <openssl/evp.h>
 
 /*
-Function:
-EvpMdCtxCreate
+Creates and initializes an EVP_MD_CTX with the given args.
 
-Direct shim to EVP_MD_CTX_create.
+Implemented by:
+1) calling EVP_MD_CTX_create
+2) calling EVP_DigestInit_ex on the new EVP_MD_CTX with the specified EVP_MD
+
+Returns new EVP_MD_CTX on success, nullptr on failure.
 */
-extern "C" EVP_MD_CTX* EvpMdCtxCreate();
+extern "C" EVP_MD_CTX* EvpMdCtxCreate(const EVP_MD* type);
 
 /*
-Function:
-EvpDigestInitEx
+Cleans up and deletes an EVP_MD_CTX instance created by EvpMdCtxCreate.
 
-Direct shim to EVP_DigestInit_ex.
+Implemented by:
+1) Calling EVP_MD_CTX_destroy
+
+No-op if ctx is null.
+The given EVP_MD_CTX pointer is invalid after this call.
+Always succeeds.
 */
-extern "C" int32_t EvpDigestInitEx(EVP_MD_CTX* ctx, const EVP_MD* type, ENGINE* impl);
+extern "C" void EvpMdCtxDestroy(EVP_MD_CTX* ctx);
+
+/*
+Resets an EVP_MD_CTX instance for a new computation.
+*/
+extern "C" int32_t EvpDigestReset(EVP_MD_CTX* ctx, const EVP_MD* type);
 
 /*
 Function:
@@ -36,13 +48,6 @@ Direct shim to EVP_DigestFinal_ex.
 */
 extern "C" int32_t EvpDigestFinalEx(EVP_MD_CTX* ctx, unsigned char* md, uint32_t* s);
 
-/*
-Function:
-EvpMdCtxDestroy
-
-Direct shim to EVP_MD_CTX_destroy.
-*/
-extern "C" void EvpMdCtxDestroy(EVP_MD_CTX* ctx);
 
 /*
 Function:

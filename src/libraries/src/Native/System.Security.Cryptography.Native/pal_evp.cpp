@@ -3,16 +3,40 @@
 
 #include "pal_evp.h"
 
+#include <assert.h>
+
 #define SUCCESS 1
 
-extern "C" EVP_MD_CTX* EvpMdCtxCreate()
+extern "C" EVP_MD_CTX* EvpMdCtxCreate(const EVP_MD* type)
 {
-    return EVP_MD_CTX_create();
+    EVP_MD_CTX* ctx = EVP_MD_CTX_create();
+    if (ctx == nullptr)
+    {
+        assert(false && "Allocation failed.");
+        return nullptr;
+    }
+
+    int ret = EVP_DigestInit_ex(ctx, type, nullptr);
+    if (!ret)
+    {
+        EVP_MD_CTX_destroy(ctx);
+        return nullptr;
+    }
+
+    return ctx;
 }
 
-extern "C" int32_t EvpDigestInitEx(EVP_MD_CTX* ctx, const EVP_MD* type, ENGINE* impl)
+extern "C" void EvpMdCtxDestroy(EVP_MD_CTX* ctx)
 {
-    return EVP_DigestInit_ex(ctx, type, impl);
+    if (ctx != nullptr)
+    {
+        EVP_MD_CTX_destroy(ctx);
+    }
+}
+
+extern "C" int32_t EvpDigestReset(EVP_MD_CTX* ctx, const EVP_MD* type)
+{
+    return EVP_DigestInit_ex(ctx, type, nullptr);
 }
 
 extern "C" int32_t EvpDigestUpdate(EVP_MD_CTX* ctx, const void* d, size_t cnt)
@@ -30,11 +54,6 @@ extern "C" int32_t EvpDigestFinalEx(EVP_MD_CTX* ctx, unsigned char* md, uint32_t
     }
 
     return ret;
-}
-
-extern "C" void EvpMdCtxDestroy(EVP_MD_CTX* ctx)
-{
-    EVP_MD_CTX_destroy(ctx);
 }
 
 extern "C" int32_t EvpMdSize(const EVP_MD* md)
