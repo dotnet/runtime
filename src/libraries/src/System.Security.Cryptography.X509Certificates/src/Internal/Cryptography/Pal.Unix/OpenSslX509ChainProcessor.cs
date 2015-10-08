@@ -61,8 +61,8 @@ namespace Internal.Cryptography.Pal
             using (SafeX509StoreHandle store = Interop.libcrypto.X509_STORE_new())
             using (SafeX509StoreCtxHandle storeCtx = Interop.libcrypto.X509_STORE_CTX_new())
             {
-                Interop.libcrypto.CheckValidOpenSslHandle(store);
-                Interop.libcrypto.CheckValidOpenSslHandle(storeCtx);
+                Interop.Crypto.CheckValidOpenSslHandle(store);
+                Interop.Crypto.CheckValidOpenSslHandle(storeCtx);
 
                 bool lookupCrl = revocationMode != X509RevocationMode.NoCheck;
 
@@ -72,7 +72,7 @@ namespace Internal.Cryptography.Pal
 
                     if (!Interop.libcrypto.X509_STORE_add_cert(store, pal.SafeHandle))
                     {
-                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
                     if (lookupCrl)
@@ -101,7 +101,7 @@ namespace Internal.Cryptography.Pal
 
                     if (!Interop.libcrypto.X509_STORE_set_flags(store, vfyFlags))
                     {
-                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
                 }
 
@@ -112,7 +112,7 @@ namespace Internal.Cryptography.Pal
 
                 if (!Interop.libcrypto.X509_STORE_CTX_init(storeCtx, store, leafHandle, IntPtr.Zero))
                 {
-                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
                 Interop.Crypto.SetX509ChainVerifyTime(storeCtx, verificationTime);
@@ -121,7 +121,7 @@ namespace Internal.Cryptography.Pal
 
                 if (verify < 0)
                 {
-                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
                 using (SafeX509StackHandle chainStack = Interop.libcrypto.X509_STORE_CTX_get1_chain(storeCtx))
@@ -153,7 +153,7 @@ namespace Internal.Cryptography.Pal
 
                         if (elementCertPtr == IntPtr.Zero)
                         {
-                            throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                            throw Interop.Crypto.CreateOpenSslCryptographicException();
                         }
 
                         // Duplicate the certificate handle

@@ -183,9 +183,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EcKey.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.EcKey.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ERR.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.ERR.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.cs</Link>
     </Compile>
@@ -197,6 +194,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>

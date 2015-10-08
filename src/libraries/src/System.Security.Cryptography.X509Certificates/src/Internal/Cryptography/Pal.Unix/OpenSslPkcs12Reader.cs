@@ -88,7 +88,7 @@ namespace Internal.Cryptography.Pal
 
             if (!parsed)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
         }
 

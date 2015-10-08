@@ -28,7 +28,7 @@ namespace Internal.Cryptography
                     // The pointer is to a shared string, so marshalling it out is all that's required.
                     return Marshal.PtrToStringAnsi(friendlyNamePtr);
                 case -1: /* OpenSSL internal error */
-                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
                 default:
                     Debug.Assert(result == 0, "LookupFriendlyNameByOid returned unexpected result " + result);
                     return null;

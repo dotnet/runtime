@@ -160,7 +160,7 @@ internal static partial class Interop
 
             if (succeeded != 1)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
         }
 
@@ -176,7 +176,7 @@ internal static partial class Interop
 
             if (result != 1)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             // Track the parent relationship for the interior pointer so lifetime is well-managed.
@@ -191,7 +191,7 @@ internal static partial class Interop
 
             if (negativeSize > 0)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             byte[] bytes = new byte[-negativeSize];
@@ -200,7 +200,7 @@ internal static partial class Interop
 
             if (ret != 1)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             return bytes;

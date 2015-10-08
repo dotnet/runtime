@@ -40,7 +40,7 @@ internal static partial class Interop
 
                 if (len < 0)
                 {
-                    throw CreateOpenSslCryptographicException();
+                    throw Crypto.CreateOpenSslCryptographicException();
                 }
 
                 int bioSize = GetMemoryBioSize(bio);
@@ -50,7 +50,7 @@ internal static partial class Interop
 
                 if (read < 0)
                 {
-                    throw CreateOpenSslCryptographicException();
+                    throw Crypto.CreateOpenSslCryptographicException();
                 }
             }
 
