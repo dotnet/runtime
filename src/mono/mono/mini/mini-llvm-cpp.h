@@ -113,12 +113,6 @@ mono_llvm_throw_exception (MonoObject *ex, gint32 *exc_tag);
 void
 mono_llvm_resume_exception (gint32 *exc_tag);
 
-//gint32
-//mono_llvm_match_exception (MonoAotModule *amodule, guint32 aot_method_index);
-//
-// FIXME: The aot.h header is not cpp-safe. Since this header is shared, I am
-// temporarily stubbing it out. The real solution is to partition this header at
-// some point.
 gint32
 mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end);
 

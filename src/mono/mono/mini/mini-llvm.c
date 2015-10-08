@@ -2648,9 +2648,6 @@ emit_init_method (EmitContext *ctx)
 		LLVMBuildCall (builder, callee, args, 2, "");
 	}
 
-	// FIXME:
-	mono_llvm_emit_install_unhandled_exception_call (ctx, ctx->builder);
-
 	// Set the inited flag
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, FALSE);
