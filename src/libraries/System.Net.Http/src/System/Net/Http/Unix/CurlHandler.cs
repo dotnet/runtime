@@ -314,9 +314,6 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_invalid_cookiecontainer);
             }
 
-            // TODO: Check that SendAsync is not being called again for same request object.
-            //       Probably fix is needed in WinHttpHandler as well
-
             CheckDisposed();
             SetOperationStarted();
 
