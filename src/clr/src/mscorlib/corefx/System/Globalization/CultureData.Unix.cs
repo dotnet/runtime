@@ -13,9 +13,6 @@ namespace System.Globalization
 {
     internal partial class CultureData
     {
-        // Win32 constants
-        const string LOCALE_NAME_SYSTEM_DEFAULT = @"!x-sys-default-locale";
-        
         // ICU constants
         const int ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY = 100; // max size of keyword or value
         const int ICU_ULOC_FULLNAME_CAPACITY = 157;           // max size of locale name
@@ -30,47 +27,35 @@ namespace System.Globalization
             Contract.Assert(this.sRealName != null);
 
             string alternateSortName = string.Empty;
-            string realNameBuffer = null;
-            int index;
+            string realNameBuffer = this.sRealName;
 
-            bool useSystemDefault = (this.sRealName == LOCALE_NAME_SYSTEM_DEFAULT);
-            if (!useSystemDefault) //ICU uses null to obtain the default (system) locale
+            // Basic validation
+            if (realNameBuffer.Contains("@"))
             {
-                realNameBuffer = this.sRealName;
+                return false; // don't allow ICU variants to come in directly
+            }
 
-                // Basic validation
-                if (realNameBuffer.Contains("@"))
+            // Replace _ (alternate sort) with @collation= for ICU
+            int index = realNameBuffer.IndexOf('_');
+            if (index > 0)
+            {
+                if (index >= (realNameBuffer.Length - 1) // must have characters after _
+                    || realNameBuffer.Substring(index + 1).Contains("_")) // only one _ allowed
                 {
-                    return false; // don't allow ICU variants to come in directly
+                    return false; // fail
                 }
-
-                // Replace _ (alternate sort) with @collation= for ICU
-                index = realNameBuffer.IndexOf('_');
-                if (index > 0)
-                {
-                    if (index >= (realNameBuffer.Length - 1) // must have characters after _
-                        || realNameBuffer.Substring(index + 1).Contains("_")) // only one _ allowed
-                    {
-                        return false; // fail
-                    }
-                    alternateSortName = realNameBuffer.Substring(index + 1);
-                    realNameBuffer = realNameBuffer.Substring(0, index) + ICU_COLLATION_KEYWORD + alternateSortName;
-                }
+                alternateSortName = realNameBuffer.Substring(index + 1);
+                realNameBuffer = realNameBuffer.Substring(0, index) + ICU_COLLATION_KEYWORD + alternateSortName;
             }
 
             // Get the locale name from ICU
-            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
-            if (!Interop.GlobalizationInterop.GetLocaleName(realNameBuffer, sb, sb.Capacity))
+            if (!GetLocaleName(realNameBuffer, out this.sWindowsName))
             {
-                StringBuilderCache.Release(sb);
                 return false; // fail
             }
 
-            // Success - use the locale name returned which may be different than realNameBuffer (casing)
-            this.sWindowsName = StringBuilderCache.GetStringAndRelease(sb); // the name passed to subsequent ICU calls
-
             // Replace the ICU collation keyword with an _
-            index = realNameBuffer.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
+            index = this.sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
             if (index >= 0)
             {
                 this.sName = this.sWindowsName.Substring(0, index) + "_" + alternateSortName;
@@ -79,21 +64,13 @@ namespace System.Globalization
             {
                 this.sName = this.sWindowsName;
             }
-
             this.sRealName = this.sName;
             this.sSpecificCulture = this.sRealName; // we don't attempt to find a non-neutral locale if a neutral is passed in (unlike win32)
 
             this.iLanguage = this.ILANGUAGE;
             if (this.iLanguage == 0)
             {
-                if (useSystemDefault)
-                {
-                    this.iLanguage = LOCALE_CUSTOM_DEFAULT;
-                }
-                else
-                {
-                    this.iLanguage = LOCALE_CUSTOM_UNSPECIFIED;
-                }
+                this.iLanguage = LOCALE_CUSTOM_UNSPECIFIED;
             }
 
             this.bNeutral = (this.SISO3166CTRYNAME.Length == 0);
@@ -106,10 +83,41 @@ namespace System.Globalization
                     this.sName = this.sWindowsName.Substring(0, index);
                 }
             }
-
             return true;
         }
- 
+
+        internal static bool GetLocaleName(string localeName, out string windowsName)
+        {
+            // Get the locale name from ICU
+            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
+            if (!Interop.GlobalizationInterop.GetLocaleName(localeName, sb, sb.Capacity))
+            {
+                StringBuilderCache.Release(sb);
+                windowsName = null;
+                return false; // fail
+            }
+
+            // Success - use the locale name returned which may be different than realNameBuffer (casing)
+            windowsName = StringBuilderCache.GetStringAndRelease(sb); // the name passed to subsequent ICU calls
+            return true;
+        }
+
+        internal static bool GetDefaultLocaleName(out string windowsName)
+        {
+            // Get the default (system) locale name from ICU
+            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
+            if (!Interop.GlobalizationInterop.GetDefaultLocaleName(sb, sb.Capacity))
+            {
+                StringBuilderCache.Release(sb);
+                windowsName = null;
+                return false; // fail
+            }
+
+            // Success - use the locale name returned which may be different than realNameBuffer (casing)
+            windowsName = StringBuilderCache.GetStringAndRelease(sb); // the name passed to subsequent ICU calls
+            return true;
+        }
+
         private string GetLocaleInfo(LocaleStringData type)
         {
             Contract.Assert(this.sWindowsName != null, "[CultureData.GetLocaleInfo] Expected this.sWindowsName to be populated already");
@@ -244,7 +252,7 @@ namespace System.Globalization
 
         private static CultureInfo GetUserDefaultCulture()
         {
-            return new CultureInfo(LOCALE_NAME_SYSTEM_DEFAULT);
+            return CultureInfo.GetUserDefaultCulture();
         }
     }
 }
