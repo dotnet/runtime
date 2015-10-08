@@ -937,7 +937,6 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class LeftShiftInstruction : Instruction
     {
-        // Perf: LeftShiftityComparer<T> but is 3/2 to 2 times slower.
         private static Instruction s_SByte,s_int16,s_int32,s_int64,s_byte,s_UInt16,s_UInt32,s_UInt64;
 
         public override int ConsumedStack { get { return 2; } }
@@ -1123,7 +1122,6 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class RightShiftInstruction : Instruction
     {
-        // Perf: RightShiftityComparer<T> but is 3/2 to 2 times slower.
         private static Instruction s_SByte,s_int16,s_int32,s_int64,s_byte,s_UInt16,s_UInt32,s_UInt64;
 
         public override int ConsumedStack { get { return 2; } }
@@ -1309,7 +1307,6 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class ExclusiveOrInstruction : Instruction
     {
-        // Perf: ExclusiveOrityComparer<T> but is 3/2 to 2 times slower.
         private static Instruction s_SByte,s_int16,s_int32,s_int64,s_byte,s_UInt16,s_UInt32,s_UInt64,s_bool;
 
         public override int ConsumedStack { get { return 2; } }
@@ -1501,7 +1498,6 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class OrInstruction : Instruction
     {
-        // Perf: OrityComparer<T> but is 3/2 to 2 times slower.
         private static Instruction s_SByte,s_int16,s_int32,s_int64,s_byte,s_UInt16,s_UInt32,s_UInt64,s_bool;
 
         public override int ConsumedStack { get { return 2; } }
@@ -1700,7 +1696,6 @@ namespace System.Linq.Expressions.Interpreter
 
     internal abstract class AndInstruction : Instruction
     {
-        // Perf: AndityComparer<T> but is 3/2 to 2 times slower.
         private static Instruction s_SByte,s_int16,s_int32,s_int64,s_byte,s_UInt16,s_UInt32,s_UInt64,s_bool;
 
         public override int ConsumedStack { get { return 2; } }
