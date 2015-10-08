@@ -10,19 +10,19 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         [DllImport(Libraries.CryptoNative)]
-        internal extern static SafeEvpMdCtxHandle EvpMdCtxCreate();
+        internal extern static SafeEvpMdCtxHandle EvpMdCtxCreate(IntPtr type);
 
         [DllImport(Libraries.CryptoNative)]
-        internal extern static int EvpDigestInitEx(SafeEvpMdCtxHandle ctx, IntPtr type, IntPtr impl);
+        internal extern static void EvpMdCtxDestroy(IntPtr ctx);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal extern static int EvpDigestReset(SafeEvpMdCtxHandle ctx, IntPtr type);
 
         [DllImport(Libraries.CryptoNative)]
         internal extern static unsafe int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, byte* d, int cnt);
 
         [DllImport(Libraries.CryptoNative)]
         internal extern static unsafe int EvpDigestFinalEx(SafeEvpMdCtxHandle ctx, byte* md, ref uint s);
-
-        [DllImport(Libraries.CryptoNative)]
-        internal extern static void EvpMdCtxDestroy(IntPtr ctx);
 
         [DllImport(Libraries.CryptoNative)]
         internal extern static int EvpMdSize(IntPtr md);
