@@ -207,4 +207,6 @@ MonoObject* mono_get_assembly_object (MonoImage *image);
 
 void mono_throw_corlib_exception (guint32 ex_token_index, gint32 *exc_tag);
 
+double mono_ckfinite (double d);
+
 #endif /* __MONO_JIT_ICALLS_H__ */

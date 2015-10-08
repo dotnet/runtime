@@ -3407,6 +3407,7 @@ register_icalls (void)
 		register_icall (mono_isfinite, "mono_isfinite", "uint32 double", FALSE);
 	}
 #endif
+	register_icall (mono_ckfinite, "mono_ckfinite", "double double", FALSE);
 
 #ifdef COMPRESSED_INTERFACE_BITMAP
 	register_icall (mono_class_interface_match, "mono_class_interface_match", "uint32 ptr int32", TRUE);

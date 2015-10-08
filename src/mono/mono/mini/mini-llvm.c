@@ -1177,12 +1177,18 @@ build_stack_trace (struct _Unwind_Context *frame_ctx, void *state)
 }
 
 static void
-throw_exception (MonoException *mono_ex, gint32 *exc_tag, gboolean rethrow)
+throw_exception (MonoObject *ex, gint32 *exc_tag, gboolean rethrow)
 {
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+	MonoException *mono_ex;
+
+	if (!mono_object_isinst (ex, mono_defaults.exception_class))
+		mono_ex = mono_get_exception_runtime_wrapped (ex);
+	else
+		mono_ex = (MonoException*)ex;
+
 	// Note: Not pinned
-	guint32 handle = mono_gchandle_new ((MonoObject *)&mono_ex->object, FALSE);
-	jit_tls->thrown_exc = handle;
+	jit_tls->thrown_exc = mono_gchandle_new ((MonoObject*)mono_ex, FALSE);
 
 	if (!rethrow) {
 		GList *l, *ips = NULL;
@@ -1206,15 +1212,15 @@ throw_exception (MonoException *mono_ex, gint32 *exc_tag, gboolean rethrow)
 }
 
 void
-mono_llvm_throw_exception (MonoException *mono_ex, gint32 *exc_tag)
+mono_llvm_throw_exception (MonoObject *ex, gint32 *exc_tag)
 {
-	throw_exception (mono_ex, exc_tag, FALSE);
+	throw_exception (ex, exc_tag, FALSE);
 }
 
 void
-mono_llvm_rethrow_exception (MonoException *e, gint32 *exc_tag)
+mono_llvm_rethrow_exception (MonoObject *ex, gint32 *exc_tag)
 {
-	throw_exception (e, exc_tag, TRUE);
+	throw_exception (ex, exc_tag, TRUE);
 }
 
 void
@@ -1222,7 +1228,7 @@ mono_llvm_raise_exception (MonoException *e)
 {
 	g_assert (exc_tag);
 
-	mono_llvm_throw_exception (e, exc_tag);
+	mono_llvm_throw_exception ((MonoObject*)e, exc_tag);
 }
 
 void
@@ -2642,6 +2648,7 @@ emit_init_method (EmitContext *ctx)
 		LLVMBuildCall (builder, callee, args, 2, "");
 	}
 
+	// FIXME:
 	mono_llvm_emit_install_unhandled_exception_call (ctx, ctx->builder);
 
 	// Set the inited flag

@@ -105,10 +105,10 @@ void
 mono_llvm_cpp_rethrow_exception (gint32 *exc);
 
 void
-mono_llvm_rethrow_exception (MonoException *e, gint32 *exc_tag);
+mono_llvm_rethrow_exception (MonoObject *ex, gint32 *exc_tag);
 
 void
-mono_llvm_throw_exception (MonoException *e, gint32 *exc_tag);
+mono_llvm_throw_exception (MonoObject *ex, gint32 *exc_tag);
 
 void
 mono_llvm_resume_exception (gint32 *exc_tag);

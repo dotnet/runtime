@@ -1470,7 +1470,7 @@ mono_resolve_vcall (MonoObject *this, int slot, MonoMethod *imt_method)
 		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		/* FIXME: only do this if the method is sharable */
 		// FIXME:
-		g_assert_not_reached ();
+		//g_assert_not_reached ();
 		//need_rgctx_tramp = TRUE;
 	}
 
@@ -1537,5 +1537,13 @@ mono_throw_corlib_exception (guint32 ex_token_index, gint32 *exc_tag)
 
 	ex = mono_exception_from_token (mono_defaults.exception_class->image, ex_token);
 
-	mono_llvm_throw_exception (ex, exc_tag);
+	mono_llvm_throw_exception ((MonoObject*)ex, exc_tag);
+}
+
+double
+mono_ckfinite (double d)
+{
+	if (isinf (d) || isnan (d))
+		mono_set_pending_exception (mono_get_exception_arithmetic ());
+	return d;
 }

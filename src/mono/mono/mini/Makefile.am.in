@@ -724,7 +724,7 @@ llvmonlycheck: mono $(fullaot_regtests)
 	cp $(regtests) $(fullaot_regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
 	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper  --aot=llvmonly fullaot-tmp/{generics-variant-types.dll,TestDriver.dll,*.exe} || exit 1
 	ln -s $$PWD/mono fullaot-tmp/
-	for i in $(fullaot_regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --llvmonly fullaot-tmp/$$i --exclude '!FULLAOT' $(ARCH_FULLAOT_EXCLUDE) || exit 1; done
+	for i in $(fullaot_regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --llvmonly fullaot-tmp/$$i --exclude '!FULLAOT' --exclude '!BITCODE' $(ARCH_FULLAOT_EXCLUDE) || exit 1; done
 
 # This can run in parallel
 fullaot-libs: $(patsubst %,fullaot-tmp/%.dylib,$(FULLAOT_LIBS))

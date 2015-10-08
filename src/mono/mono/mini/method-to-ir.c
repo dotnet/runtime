@@ -2562,6 +2562,9 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	int i;
 #endif
 
+	if (cfg->llvm_only)
+		tail = FALSE;
+
 	if (tail) {
 		emit_instrumentation_call (cfg, mono_profiler_method_leave);
 
@@ -7734,6 +7737,41 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 	return;
 }
 
+static void
+emit_setret (MonoCompile *cfg, MonoInst *val)
+{
+	MonoType *ret_type = mini_get_underlying_type (mono_method_signature (cfg->method)->ret);
+	MonoInst *ins;
+
+	if (mini_type_to_stind (cfg, ret_type) == CEE_STOBJ) {
+		MonoInst *ret_addr;
+
+		if (!cfg->vret_addr) {
+			EMIT_NEW_VARSTORE (cfg, ins, cfg->ret, ret_type, val);
+		} else {
+			EMIT_NEW_RETLOADA (cfg, ret_addr);
+
+			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREV_MEMBASE, ret_addr->dreg, 0, val->dreg);
+			ins->klass = mono_class_from_mono_type (ret_type);
+		}
+	} else {
+#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
+		if (COMPILE_SOFT_FLOAT (cfg) && !ret_type->byref && ret_type->type == MONO_TYPE_R4) {
+			MonoInst *iargs [1];
+			MonoInst *conv;
+
+			iargs [0] = val;
+			conv = mono_emit_jit_icall (cfg, mono_fload_r4_arg, iargs);
+			mono_arch_emit_setret (cfg, cfg->method, conv);
+		} else {
+			mono_arch_emit_setret (cfg, cfg->method, val);
+		}
+#else
+		mono_arch_emit_setret (cfg, cfg->method, val);
+#endif
+	}
+}
+
 static MonoMethodSignature*
 sig_to_rgctx_sig (MonoMethodSignature *sig)
 {
@@ -8623,6 +8661,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case CEE_JMP: {
 			MonoCallInst *call;
+			MonoMethodSignature *fsig;
+			int i, n;
 
 			INLINE_FAILURE ("jmp");
 			GSHAREDVT_FAILURE (*ip);
@@ -8642,13 +8682,29 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			emit_instrumentation_call (cfg, mono_profiler_method_leave);
 
-			if (ARCH_HAVE_OP_TAIL_CALL) {
-				MonoMethodSignature *fsig = mono_method_signature (cmethod);
-				int i, n;
+			fsig = mono_method_signature (cmethod);
+			n = fsig->param_count + fsig->hasthis;
+			if (cfg->llvm_only) {
+				MonoInst **args;
 
+				args = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * n);
+				for (i = 0; i < n; ++i)
+					EMIT_NEW_ARGLOAD (cfg, args [i], i);
+				ins = mono_emit_method_call_full (cfg, cmethod, fsig, TRUE, args, NULL, NULL, NULL);
+				/*
+				 * The code in mono-basic-block.c treats the rest of the code as dead, but we
+				 * have to emit a normal return since llvm expects it.
+				 */
+				if (cfg->ret)
+					emit_setret (cfg, ins);
+				MONO_INST_NEW (cfg, ins, OP_BR);
+				ins->inst_target_bb = end_bblock;
+				MONO_ADD_INS (cfg->cbb, ins);
+				link_bblock (cfg, cfg->cbb, end_bblock);
+				ip += 5;
+				break;
+			} else if (ARCH_HAVE_OP_TAIL_CALL) {
 				/* Handle tail calls similarly to calls */
-				n = fsig->param_count + fsig->hasthis;
-
 				DISABLE_AOT (cfg);
 
 				MONO_INST_NEW_CALL (cfg, call, OP_TAILCALL);
@@ -9632,7 +9688,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins = mono_emit_method_call_full (cfg, cmethod, fsig, tail_call, sp, virtual ? sp [0] : NULL,
 											  imt_arg, vtable_arg);
 
-			if (tail_call) {
+			if (tail_call && !cfg->llvm_only) {
 				link_bblock (cfg, cfg->cbb, end_bblock);
 				start_new_bblock = 1;
 
@@ -9731,35 +9787,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if ((method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD || method->wrapper_type == MONO_WRAPPER_NONE) && target_type_is_incompatible (cfg, ret_type, *sp))
 						UNVERIFIED;
 
-					if (mini_type_to_stind (cfg, ret_type) == CEE_STOBJ) {
-						MonoInst *ret_addr;
-
-						if (!cfg->vret_addr) {
-							MonoInst *ins;
-
-							EMIT_NEW_VARSTORE (cfg, ins, cfg->ret, ret_type, (*sp));
-						} else {
-							EMIT_NEW_RETLOADA (cfg, ret_addr);
-
-							EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREV_MEMBASE, ret_addr->dreg, 0, (*sp)->dreg);
-							ins->klass = mono_class_from_mono_type (ret_type);
-						}
-					} else {
-#ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
-						if (COMPILE_SOFT_FLOAT (cfg) && !ret_type->byref && ret_type->type == MONO_TYPE_R4) {
-							MonoInst *iargs [1];
-							MonoInst *conv;
-
-							iargs [0] = *sp;
-							conv = mono_emit_jit_icall (cfg, mono_fload_r4_arg, iargs);
-							mono_arch_emit_setret (cfg, method, conv);
-						} else {
-							mono_arch_emit_setret (cfg, method, *sp);
-						}
-#else
-						mono_arch_emit_setret (cfg, method, *sp);
-#endif
-					}
+					emit_setret (cfg, *sp);
 				}
 			}
 			if (sp != stack_start)
@@ -11734,13 +11762,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (1);
 			--sp;
 
-			MONO_INST_NEW (cfg, ins, OP_CKFINITE);
-			ins->sreg1 = sp [0]->dreg;
-			ins->dreg = alloc_freg (cfg);
-			ins->type = STACK_R8;
-			MONO_ADD_INS (cfg->cbb, ins);
+			if (cfg->llvm_only) {
+				MonoInst *iargs [1];
 
-			*sp++ = mono_decompose_opcode (cfg, ins);
+				iargs [0] = sp [0];
+				*sp++ = mono_emit_jit_icall (cfg, mono_ckfinite, iargs);
+			} else  {
+				MONO_INST_NEW (cfg, ins, OP_CKFINITE);
+				ins->sreg1 = sp [0]->dreg;
+				ins->dreg = alloc_freg (cfg);
+				ins->type = STACK_R8;
+				MONO_ADD_INS (cfg->cbb, ins);
+
+				*sp++ = mono_decompose_opcode (cfg, ins);
+			}
 
 			++ip;
 			break;
