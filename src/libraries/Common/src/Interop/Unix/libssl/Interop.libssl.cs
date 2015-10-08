@@ -85,6 +85,9 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.LibSsl)]
         internal static extern SafeX509Handle SSL_get_peer_certificate(SafeSslHandle ssl);
 
+        [DllImport(Interop.Libraries.LibSsl, EntryPoint = "SSL_get_client_CA_list")]
+        private static extern SafeSharedX509NameStackHandle SSL_get_client_CA_list_private(SafeSslHandle ssl);
+
         [DllImport(Interop.Libraries.LibSsl)]
         internal static extern SafeSharedX509StackHandle SSL_get_peer_cert_chain(SafeSslHandle ssl);
 
@@ -105,5 +108,19 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.LibSsl)]
         internal static extern void SSL_CTX_set_quiet_shutdown(SafeSslContextHandle ctx, int mode);
+
+        internal static SafeSharedX509NameStackHandle SSL_get_client_CA_list(SafeSslHandle ssl)
+        {
+            Interop.Crypto.CheckValidOpenSslHandle(ssl);
+
+            SafeSharedX509NameStackHandle handle = SSL_get_client_CA_list_private(ssl);
+
+            if (!handle.IsInvalid)
+            {
+                handle.SetParent(ssl);
+            }
+
+            return handle;
+        }
     }
 }
