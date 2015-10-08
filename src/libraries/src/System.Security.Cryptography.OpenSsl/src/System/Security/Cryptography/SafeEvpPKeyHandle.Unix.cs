@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
             if (newRefCount < 2)
             {
                 Debug.Fail("Called UpRefEvpPkey on a key which was already marked for destruction");
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             // Since we didn't actually create a new handle, copy the handle

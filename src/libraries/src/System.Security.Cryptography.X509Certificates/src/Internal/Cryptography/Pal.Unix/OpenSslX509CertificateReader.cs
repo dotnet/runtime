@@ -30,7 +30,7 @@ namespace Internal.Cryptography.Pal
 
             if (!init)
             {
-                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
             _cert = handle;
@@ -205,18 +205,18 @@ namespace Internal.Cryptography.Pal
                 {
                     IntPtr ext = Interop.libcrypto.X509_get_ext(_cert, i);
 
-                    Interop.libcrypto.CheckValidOpenSslHandle(ext);
+                    Interop.Crypto.CheckValidOpenSslHandle(ext);
 
                     IntPtr oidPtr = Interop.libcrypto.X509_EXTENSION_get_object(ext);
 
-                    Interop.libcrypto.CheckValidOpenSslHandle(oidPtr);
+                    Interop.Crypto.CheckValidOpenSslHandle(oidPtr);
 
                     string oidValue = Interop.libcrypto.OBJ_obj2txt_helper(oidPtr);
                     Oid oid = new Oid(oidValue);
 
                     IntPtr dataPtr = Interop.libcrypto.X509_EXTENSION_get_data(ext);
 
-                    Interop.libcrypto.CheckValidOpenSslHandle(dataPtr);
+                    Interop.Crypto.CheckValidOpenSslHandle(dataPtr);
 
                     byte[] extData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
                     bool critical = Interop.libcrypto.X509_EXTENSION_get_critical(ext);
@@ -280,7 +280,7 @@ namespace Internal.Cryptography.Pal
 
                 if (read < 0)
                 {
-                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
                 return builder.ToString();
@@ -331,7 +331,7 @@ namespace Internal.Cryptography.Pal
 
         private static X500DistinguishedName LoadX500Name(IntPtr namePtr)
         {
-            Interop.libcrypto.CheckValidOpenSslHandle(namePtr);
+            Interop.Crypto.CheckValidOpenSslHandle(namePtr);
 
             byte[] buf = Interop.Crypto.GetX509NameRawBytes(namePtr);
             return new X500DistinguishedName(buf);
