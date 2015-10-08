@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Ansi)] // readlink requires char*
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool ReadLink(string filePath, StringBuilder result, uint resultCapacity);
+        internal static extern bool ReadLink(string filePath, [Out] StringBuilder result, uint resultCapacity);
     }
 }
