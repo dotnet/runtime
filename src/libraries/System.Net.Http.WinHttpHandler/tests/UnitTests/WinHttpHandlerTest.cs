@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,11 +32,33 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public void AutomaticRedirection_CtorAndGet_DefaultValueIsTrue()
+        public void Ctor_ExpectedDefaultPropertyValues()
         {
             var handler = new WinHttpHandler();
-            
-            Assert.True(handler.AutomaticRedirection);
+
+            Assert.Equal(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, handler.SslProtocols);
+            Assert.Equal(true, handler.AutomaticRedirection);
+            Assert.Equal(50, handler.MaxAutomaticRedirections);
+            Assert.Equal(DecompressionMethods.Deflate | DecompressionMethods.GZip, handler.AutomaticDecompression);
+            Assert.Equal(CookieUsePolicy.UseInternalCookieStoreOnly, handler.CookieUsePolicy);
+            Assert.Equal(null, handler.CookieContainer);
+            Assert.Equal(null, handler.ServerCertificateValidationCallback);
+            Assert.Equal(false, handler.CheckCertificateRevocationList);
+            Assert.Equal(ClientCertificateOption.Manual, handler.ClientCertificateOption);
+            X509Certificate2Collection certs = handler.ClientCertificates;
+            Assert.True(certs.Count == 0);
+            Assert.Equal(false, handler.PreAuthenticate);
+            Assert.Equal(null, handler.ServerCredentials);
+            Assert.Equal(WindowsProxyUsePolicy.UseWinHttpProxy, handler.WindowsProxyUsePolicy);
+            Assert.Equal(CredentialCache.DefaultCredentials, handler.DefaultProxyCredentials);
+            Assert.Equal(null, handler.Proxy);
+            Assert.Equal(Int32.MaxValue, handler.MaxConnectionsPerServer);
+            Assert.Equal(TimeSpan.FromSeconds(60), handler.ConnectTimeout);
+            Assert.Equal(TimeSpan.FromSeconds(30), handler.SendTimeout);
+            Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveHeadersTimeout);
+            Assert.Equal(TimeSpan.FromSeconds(30), handler.ReceiveDataTimeout);
+            Assert.Equal(64 * 1024, handler.MaxResponseHeadersLength);
+            Assert.Equal(64 * 1024, handler.MaxResponseDrainSize);
         }
 
         [Fact]
