@@ -253,14 +253,12 @@ static MonoLLVMModule aot_module;
 static int memset_param_count, memcpy_param_count;
 static const char *memset_func_name;
 static const char *memcpy_func_name;
-static gint32 *exc_tag;
 
 static void init_jit_module (MonoDomain *domain);
 
 static void emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil_code);
 static LLVMValueRef emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, const char *name);
 static void emit_dbg_info (MonoLLVMModule *lmodule, const char *filename, const char *cu_name);
-static LLVMValueRef get_mono_sentinel_exception (EmitContext *ctx);
 
 /*
  * IntPtrType:
@@ -1146,184 +1144,6 @@ emit_volatile_load (EmitContext *ctx, int vreg)
 }
 
 /*
- * mono_llvm_resume_exception:
- *
- *   Resume exception propagation.
- */
-void
-mono_llvm_resume_exception (gint32 *exc_tag)
-{
-	mono_llvm_cpp_rethrow_exception (exc_tag);
-}
-
-#if 0
-static gboolean show_native_addresses = TRUE;
-#else
-static gboolean show_native_addresses = FALSE;
-#endif
-
-static _Unwind_Reason_Code
-build_stack_trace (struct _Unwind_Context *frame_ctx, void *state) 
-{
-	MonoDomain *domain = mono_domain_get ();
-	uintptr_t ip = _Unwind_GetIP (frame_ctx);
-
-	if (show_native_addresses || mono_jit_info_table_find (domain, (char*)ip)) {
-		GList **trace_ips = (GList **)state;
-		*trace_ips = g_list_prepend (*trace_ips, (gpointer)ip);
-	}
-
-	return _URC_NO_REASON;
-}
-
-static void
-throw_exception (MonoObject *ex, gint32 *exc_tag, gboolean rethrow)
-{
-	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
-	MonoException *mono_ex;
-
-	if (!mono_object_isinst (ex, mono_defaults.exception_class))
-		mono_ex = mono_get_exception_runtime_wrapped (ex);
-	else
-		mono_ex = (MonoException*)ex;
-
-	// Note: Not pinned
-	jit_tls->thrown_exc = mono_gchandle_new ((MonoObject*)mono_ex, FALSE);
-
-	if (!rethrow) {
-		GList *l, *ips = NULL;
-		GList *trace;
-
-		// FIXME: Move this to mini-exceptions.c
-		_Unwind_Backtrace (build_stack_trace, &ips);
-		/* The list contains gshared info-ip pairs */
-		trace = NULL;
-		ips = g_list_reverse (ips);
-		for (l = ips; l; l = l->next) {
-			// FIXME:
-			trace = g_list_append (trace, l->data);
-			trace = g_list_append (trace, NULL);
-		}
-		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (trace, mono_defaults.int_class));
-		g_list_free (l);
-		g_list_free (trace);
-	}
-	mono_llvm_cpp_throw_exception (exc_tag);
-}
-
-void
-mono_llvm_throw_exception (MonoObject *ex, gint32 *exc_tag)
-{
-	throw_exception (ex, exc_tag, FALSE);
-}
-
-void
-mono_llvm_rethrow_exception (MonoObject *ex, gint32 *exc_tag)
-{
-	throw_exception (ex, exc_tag, TRUE);
-}
-
-void
-mono_llvm_raise_exception (MonoException *e)
-{
-	g_assert (exc_tag);
-
-	mono_llvm_throw_exception ((MonoObject*)e, exc_tag);
-}
-
-void
-mono_llvm_set_cpp_ex (gpointer cpp_ex)
-{
-	exc_tag = (gint32*)cpp_ex;
-}
-
-/*
- * mono_llvm_load_exception:
- *
- *   Return the currently thrown exception.
- */
-MonoObject *
-mono_llvm_load_exception (void)
-{
-	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
-
-	MonoException *mono_ex = (MonoException*)mono_gchandle_get_target (jit_tls->thrown_exc);
-	g_assert (mono_ex->trace_ips);
-
-	GList *trace_ips = NULL;
-	gpointer ip = __builtin_return_address (0);
-
-	size_t upper = mono_array_length (mono_ex->trace_ips);
-
-	for (int i = 0; i < upper; i++) {
-		gpointer curr_ip = mono_array_get (mono_ex->trace_ips, gpointer, i);
-		trace_ips = g_list_prepend (trace_ips, curr_ip);
-
-		if (ip == curr_ip)
-			break;
-	}
-
-	// FIXME: Does this work correctly for rethrows?
-	// We may be discarding useful information
-	// when this gets GC'ed
-	MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (trace_ips, mono_defaults.int_class));
-	g_list_free (trace_ips);
-
-	// FIXME:
-	//MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
-
-	return &mono_ex->object;
-}
-
-/*
- * mono_llvm_clear_exception:
- *
- *   Mark the currently thrown exception as handled.
- */
-void
-mono_llvm_clear_exception (void)
-{
-	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
-	mono_gchandle_free (jit_tls->thrown_exc);
-	jit_tls->thrown_exc = 0;
-
-	mono_memory_barrier ();
-}
-
-/*
- * mono_llvm_match_exception:
- *
- *   Return the innermost clause containing REGION_START-REGION_END which can handle
- * the current exception.
- */
-gint32
-mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end)
-{
-	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
-	MonoObject *exc;
-	gint32 index = -1;
-
-	g_assert (jit_tls->thrown_exc);
-	exc = mono_gchandle_get_target (jit_tls->thrown_exc);
-	for (int i = 0; i < jinfo->num_clauses; i++) {
-		MonoJitExceptionInfo *ei = &jinfo->clauses [i];
-
-		if (! (ei->try_offset == region_start && ei->try_offset + ei->try_len == region_end) )
-			continue;
-
-		// FIXME: Handle edge cases handled in get_exception_catch_class
-		if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst (exc, ei->data.catch_class)) {
-			index = ei->clause_index;
-			break;
-		} else if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-			g_assert_not_reached ();
-		}
-	}
-
-	return index;
-}
-
-/*
  * emit_volatile_store:
  *
  *   If VREG is volatile, emit a store from its value to its address.
@@ -1581,10 +1401,22 @@ sig_to_llvm_sig (EmitContext *ctx, MonoMethodSignature *sig)
  *
  *   Create an LLVM function type from the arguments.
  */
+static G_GNUC_UNUSED LLVMTypeRef
+LLVMFunctionType0 (LLVMTypeRef ReturnType,
+				   int IsVarArg)
+{
+	return LLVMFunctionType (ReturnType, NULL, 0, IsVarArg);
+}
+
+/*
+ * LLVMFunctionType1:
+ *
+ *   Create an LLVM function type from the arguments.
+ */
 static G_GNUC_UNUSED LLVMTypeRef 
-LLVMFunctionType1(LLVMTypeRef ReturnType,
-				  LLVMTypeRef ParamType1,
-				  int IsVarArg)
+LLVMFunctionType1 (LLVMTypeRef ReturnType,
+				   LLVMTypeRef ParamType1,
+				   int IsVarArg)
 {
 	LLVMTypeRef param_types [1];
 
@@ -1599,10 +1431,10 @@ LLVMFunctionType1(LLVMTypeRef ReturnType,
  *   Create an LLVM function type from the arguments.
  */
 static G_GNUC_UNUSED LLVMTypeRef
-LLVMFunctionType2(LLVMTypeRef ReturnType,
-				  LLVMTypeRef ParamType1,
-				  LLVMTypeRef ParamType2,
-				  int IsVarArg)
+LLVMFunctionType2 (LLVMTypeRef ReturnType,
+				   LLVMTypeRef ParamType1,
+				   LLVMTypeRef ParamType2,
+				   int IsVarArg)
 {
 	LLVMTypeRef param_types [2];
 
@@ -1618,11 +1450,11 @@ LLVMFunctionType2(LLVMTypeRef ReturnType,
  *   Create an LLVM function type from the arguments.
  */
 static G_GNUC_UNUSED LLVMTypeRef
-LLVMFunctionType3(LLVMTypeRef ReturnType,
-				  LLVMTypeRef ParamType1,
-				  LLVMTypeRef ParamType2,
-				  LLVMTypeRef ParamType3,
-				  int IsVarArg)
+LLVMFunctionType3 (LLVMTypeRef ReturnType,
+				   LLVMTypeRef ParamType1,
+				   LLVMTypeRef ParamType2,
+				   LLVMTypeRef ParamType3,
+				   int IsVarArg)
 {
 	LLVMTypeRef param_types [3];
 
@@ -2028,11 +1860,8 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	if (ctx->cfg->llvm_only) {
 		static LLVMTypeRef sig;
 
-		args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token - MONO_TOKEN_TYPE_DEF, FALSE);
-		args [1] = get_mono_sentinel_exception (ctx);
-
 		if (!sig)
-			sig = LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), LLVMTypeOf (args [1]), FALSE);
+			sig = LLVMFunctionType1 (LLVMVoidType (), LLVMInt32Type (), FALSE);
 		callee = get_callee (ctx, sig, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_throw_corlib_exception");
 
 		LLVMBuildBr (builder, ex2_bb);
@@ -2040,7 +1869,8 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 		ctx->builder = builder = create_builder (ctx);
 		LLVMPositionBuilderAtEnd (ctx->builder, ex2_bb);
 
-		emit_call (ctx, bb, &builder, callee, args, 2);
+		args [0] = LLVMConstInt (LLVMInt32Type (), exc_class->type_token - MONO_TOKEN_TYPE_DEF, FALSE);
+		emit_call (ctx, bb, &builder, callee, args, 1);
 		LLVMBuildUnreachable (builder);
 
 		ctx->builder = builder = create_builder (ctx);
@@ -3241,7 +3071,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	return;
 }
 
-static LLVMValueRef
+static void
 emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef exc)
 {
 	const char *icall_name = rethrow ? "mono_llvm_rethrow_exception" : "mono_llvm_throw_exception";
@@ -3250,9 +3080,7 @@ emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef
 	LLVMTypeRef exc_type = type_to_llvm_type (ctx, &mono_get_exception_class ()->byval_arg);
 
 	if (!callee) {
-		LLVMTypeRef exc_tag_type = LLVMTypeOf (get_mono_sentinel_exception (ctx));
-		LLVMTypeRef param_types [2] = {exc_type, exc_tag_type};
-		LLVMTypeRef fun_sig = LLVMFunctionType (LLVMVoidType (), param_types, 2, FALSE);
+		LLVMTypeRef fun_sig = LLVMFunctionType1 (LLVMVoidType (), exc_type, FALSE);
 
 		if (ctx->cfg->compile_aot) {
 			callee = get_callee (ctx, fun_sig, MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
@@ -3269,25 +3097,14 @@ emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef
 	}
 
 	LLVMValueRef args [2];
-	LLVMValueRef call = NULL;
 
-	args [1] = get_mono_sentinel_exception (ctx);
-
-	if (rethrow) { 
-		args [0] = exc ? convert (ctx, exc, exc_type) : LLVMConstNull (exc_type);
-		call = emit_call (ctx, bb, &ctx->builder, callee, args, 2);
-	} else {
-		args [0] = convert (ctx, exc, exc_type);
-		call = emit_call (ctx, bb, &ctx->builder, callee, args, 2);
-	}
+	args [0] = convert (ctx, exc, exc_type);
+	emit_call (ctx, bb, &ctx->builder, callee, args, 1);
 
 	LLVMBuildUnreachable (ctx->builder);
 
 	ctx->builder = create_builder (ctx);
-
-	return call;
 }
-
 
 static void
 emit_resume_eh (EmitContext *ctx, MonoBasicBlock *bb)
@@ -3295,8 +3112,7 @@ emit_resume_eh (EmitContext *ctx, MonoBasicBlock *bb)
 	const char *icall_name = "mono_llvm_resume_exception";
 	LLVMValueRef callee = ctx->lmodule->resume_eh;
 
-	LLVMTypeRef exc_tag_type = LLVMTypeOf (get_mono_sentinel_exception (ctx));
-	LLVMTypeRef fun_sig = LLVMFunctionType1 (LLVMVoidType (), exc_tag_type, FALSE);
+	LLVMTypeRef fun_sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
 
 	if (!callee) {
 		if (ctx->cfg->compile_aot) {
@@ -3310,12 +3126,7 @@ emit_resume_eh (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 	}
 
-	LLVMValueRef args [16];
-	LLVMValueRef call = NULL;
-
-	args [0] = get_mono_sentinel_exception (ctx);
-
-	call = emit_call (ctx, bb, &ctx->builder, callee, args, 1);
+	emit_call (ctx, bb, &ctx->builder, callee, NULL, 0);
 
 	LLVMBuildUnreachable (ctx->builder);
 
@@ -3439,24 +3250,6 @@ default_cpp_lpad_exc_signature (void)
 }
 
 static LLVMValueRef
-get_mono_sentinel_exception (EmitContext *ctx)
-{
-	if (!aot_module.sentinel_exception) {
-		// Do something with this field?
-		LLVMTypeRef exc = LLVMPointerType (LLVMInt8Type (), 0);
-		aot_module.sentinel_exception = LLVMAddGlobal (ctx->module, exc, "_ZTIPi");
-		LLVMSetLinkage (aot_module.sentinel_exception, LLVMExternalLinkage);
-
-		/*aot_module.sentinel_exception = LLVMAddGlobal (ctx->module, exc, "mono_exc_sentinel");*/
-		/*LLVMSetVisibility (aot_module.sentinel_exception, LLVMHiddenVisibility);*/
-		/*LLVMSetLinkage (aot_module.sentinel_exception, LLVMInternalLinkage);*/
-		/*LLVMSetInitializer (aot_module.sentinel_exception, LLVMConstNull (exc));*/
-		mono_llvm_set_is_constant (aot_module.sentinel_exception);
-	}
-	return aot_module.sentinel_exception;
-}
-
-static LLVMValueRef
 get_mono_personality (EmitContext *ctx)
 {
 	LLVMValueRef personality = NULL;
@@ -3508,7 +3301,7 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 	LLVMValueRef landing_pad = LLVMBuildLandingPad (lpadBuilder, default_cpp_lpad_exc_signature (), personality, 0, "");
 	g_assert (landing_pad);
 
-	LLVMValueRef cast = LLVMBuildBitCast (lpadBuilder, get_mono_sentinel_exception (ctx), LLVMPointerType (LLVMInt8Type (), 0), "int8TypeInfo");
+	LLVMValueRef cast = LLVMBuildBitCast (lpadBuilder, ctx->lmodule->sentinel_exception, LLVMPointerType (LLVMInt8Type (), 0), "int8TypeInfo");
 	LLVMAddClause (landing_pad, cast);
 
 	LLVMBasicBlockRef resume_bb = gen_bb (ctx, "RESUME_BB");
@@ -6948,6 +6741,14 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		mark_as_used (lmodule, personality);
 	}
 
+	/* Add a reference to the c++ exception we throw/catch */
+	{
+		LLVMTypeRef exc = LLVMPointerType (LLVMInt8Type (), 0);
+		lmodule->sentinel_exception = LLVMAddGlobal (lmodule->module, exc, "_ZTIPi");
+		LLVMSetLinkage (lmodule->sentinel_exception, LLVMExternalLinkage);
+		mono_llvm_set_is_constant (lmodule->sentinel_exception);
+	}
+
 	lmodule->llvm_types = g_hash_table_new (NULL, NULL);
 	lmodule->plt_entries = g_hash_table_new (g_str_hash, g_str_equal);
 	lmodule->plt_entries_ji = g_hash_table_new (NULL, NULL);
@@ -7117,10 +6918,6 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	else
 		fields [tindex ++] = LLVMConstNull (eltype);
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule->module, "assembly_name");
-	fields [tindex] = LLVMGetNamedGlobal (lmodule->module, "_ZTIPi");
-	if (fields [tindex] == NULL)
-		fields [tindex] = LLVMConstNull (eltype);
-	tindex ++;
 	if (lmodule->has_jitted_code) {
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt_end");
@@ -7482,6 +7279,188 @@ emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil
 			mono_debug_symfile_free_location (loc);
 		}
 	}
+}
+
+#if 0
+static gboolean show_native_addresses = TRUE;
+#else
+static gboolean show_native_addresses = FALSE;
+#endif
+
+static _Unwind_Reason_Code
+build_stack_trace (struct _Unwind_Context *frame_ctx, void *state)
+{
+	MonoDomain *domain = mono_domain_get ();
+	uintptr_t ip = _Unwind_GetIP (frame_ctx);
+
+	if (show_native_addresses || mono_jit_info_table_find (domain, (char*)ip)) {
+		GList **trace_ips = (GList **)state;
+		*trace_ips = g_list_prepend (*trace_ips, (gpointer)ip);
+	}
+
+	return _URC_NO_REASON;
+}
+
+static void
+throw_exception (MonoObject *ex, gboolean rethrow)
+{
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+	MonoException *mono_ex;
+
+	if (!mono_object_isinst (ex, mono_defaults.exception_class))
+		mono_ex = mono_get_exception_runtime_wrapped (ex);
+	else
+		mono_ex = (MonoException*)ex;
+
+	// Note: Not pinned
+	jit_tls->thrown_exc = mono_gchandle_new ((MonoObject*)mono_ex, FALSE);
+
+	if (!rethrow) {
+		GList *l, *ips = NULL;
+		GList *trace;
+
+		// FIXME: Move this to mini-exceptions.c
+		_Unwind_Backtrace (build_stack_trace, &ips);
+		/* The list contains gshared info-ip pairs */
+		trace = NULL;
+		ips = g_list_reverse (ips);
+		for (l = ips; l; l = l->next) {
+			// FIXME:
+			trace = g_list_append (trace, l->data);
+			trace = g_list_append (trace, NULL);
+		}
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (trace, mono_defaults.int_class));
+		g_list_free (l);
+		g_list_free (trace);
+	}
+
+	mono_llvm_cpp_throw_exception ();
+}
+
+void
+mono_llvm_throw_exception (MonoObject *ex)
+{
+	throw_exception (ex, FALSE);
+}
+
+void
+mono_llvm_rethrow_exception (MonoObject *ex)
+{
+	throw_exception (ex, TRUE);
+}
+
+void
+mono_llvm_raise_exception (MonoException *e)
+{
+	mono_llvm_throw_exception ((MonoObject*)e);
+}
+
+void
+mono_throw_corlib_exception (guint32 ex_token_index)
+{
+	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
+	MonoException *ex;
+
+	ex = mono_exception_from_token (mono_defaults.exception_class->image, ex_token);
+
+	mono_llvm_throw_exception ((MonoObject*)ex);
+}
+
+/*
+ * mono_llvm_resume_exception:
+ *
+ *   Resume exception propagation.
+ */
+void
+mono_llvm_resume_exception (void)
+{
+	mono_llvm_cpp_throw_exception ();
+}
+
+/*
+ * mono_llvm_load_exception:
+ *
+ *   Return the currently thrown exception.
+ */
+MonoObject *
+mono_llvm_load_exception (void)
+{
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+
+	MonoException *mono_ex = (MonoException*)mono_gchandle_get_target (jit_tls->thrown_exc);
+	g_assert (mono_ex->trace_ips);
+
+	GList *trace_ips = NULL;
+	gpointer ip = __builtin_return_address (0);
+
+	size_t upper = mono_array_length (mono_ex->trace_ips);
+
+	for (int i = 0; i < upper; i++) {
+		gpointer curr_ip = mono_array_get (mono_ex->trace_ips, gpointer, i);
+		trace_ips = g_list_prepend (trace_ips, curr_ip);
+
+		if (ip == curr_ip)
+			break;
+	}
+
+	// FIXME: Does this work correctly for rethrows?
+	// We may be discarding useful information
+	// when this gets GC'ed
+	MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (trace_ips, mono_defaults.int_class));
+	g_list_free (trace_ips);
+
+	// FIXME:
+	//MONO_OBJECT_SETREF (mono_ex, stack_trace, ves_icall_System_Exception_get_trace (mono_ex));
+
+	return &mono_ex->object;
+}
+
+/*
+ * mono_llvm_clear_exception:
+ *
+ *   Mark the currently thrown exception as handled.
+ */
+void
+mono_llvm_clear_exception (void)
+{
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+	mono_gchandle_free (jit_tls->thrown_exc);
+	jit_tls->thrown_exc = 0;
+
+	mono_memory_barrier ();
+}
+
+/*
+ * mono_llvm_match_exception:
+ *
+ *   Return the innermost clause containing REGION_START-REGION_END which can handle
+ * the current exception.
+ */
+gint32
+mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end)
+{
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+	MonoObject *exc;
+	gint32 index = -1;
+
+	g_assert (jit_tls->thrown_exc);
+	exc = mono_gchandle_get_target (jit_tls->thrown_exc);
+	for (int i = 0; i < jinfo->num_clauses; i++) {
+		MonoJitExceptionInfo *ei = &jinfo->clauses [i];
+
+		if (! (ei->try_offset == region_start && ei->try_offset + ei->try_len == region_end) )
+			continue;
+
+		// FIXME: Handle edge cases handled in get_exception_catch_class
+		if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst (exc, ei->data.catch_class)) {
+			index = ei->clause_index;
+			break;
+		} else if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+			g_assert_not_reached ();
+		}
+	}
+
+	return index;
 }
 
 /*

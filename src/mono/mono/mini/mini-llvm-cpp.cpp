@@ -60,15 +60,12 @@ using namespace llvm;
 #ifndef MONO_CROSS_COMPILE
 
 void
-mono_llvm_cpp_throw_exception (gint32 *exc) 
+mono_llvm_cpp_throw_exception (void)
 {
-	throw exc;
-}
+	gint32 *ex = NULL;
 
-void
-mono_llvm_cpp_rethrow_exception (gint32 *exc) 
-{
-	throw exc;
+	/* The generated code catches an int32* */
+	throw ex;
 }
 
 static void (*unhandled_exception)() = default_mono_llvm_unhandled_exception;

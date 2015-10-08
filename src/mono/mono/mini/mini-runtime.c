@@ -3259,13 +3259,14 @@ register_icalls (void)
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
 #ifdef MONO_ARCH_LLVM_SUPPORTED
-	register_icall (mono_llvm_throw_exception, "mono_llvm_throw_exception", "void object ptr", TRUE);
-	register_icall (mono_llvm_rethrow_exception, "mono_llvm_rethrow_exception", "void object ptr", TRUE);
-	register_icall (mono_llvm_resume_exception, "mono_llvm_resume_exception", "void ptr", TRUE);
+	register_icall (mono_llvm_throw_exception, "mono_llvm_throw_exception", "void object", TRUE);
+	register_icall (mono_llvm_rethrow_exception, "mono_llvm_rethrow_exception", "void object", TRUE);
+	register_icall (mono_llvm_resume_exception, "mono_llvm_resume_exception", "void", TRUE);
 	register_icall (mono_llvm_match_exception, "mono_llvm_match_exception", "int ptr int int", TRUE);
 	register_icall (mono_llvm_clear_exception, "mono_llvm_clear_exception", NULL, TRUE);
 	register_icall (mono_llvm_load_exception, "mono_llvm_load_exception", "object", TRUE);
 	register_icall (mono_llvm_set_unhandled_exception_handler, "mono_llvm_set_unhandled_exception_handler", NULL, TRUE);
+	register_icall (mono_throw_corlib_exception, "mono_throw_corlib_exception", "void int", FALSE);
 
 	// FIXME: This is broken
 	register_icall (mono_debug_personality, "mono_debug_personality", "int int int ptr ptr ptr", TRUE);
@@ -3475,7 +3476,6 @@ register_icalls (void)
 	register_icall (mono_init_delegate, "mono_init_delegate", "void object object ptr", TRUE);
 	register_icall (mono_init_delegate_virtual, "mono_init_delegate_virtual", "void object object ptr", TRUE);
 	register_icall (mono_get_assembly_object, "mono_get_assembly_object", "object ptr", TRUE);
-	register_icall (mono_throw_corlib_exception, "mono_throw_corlib_exception", "void int ptr", FALSE);
 
 #ifdef TARGET_IOS
 	register_icall (pthread_getspecific, "pthread_getspecific", "ptr ptr", TRUE);

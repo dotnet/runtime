@@ -99,19 +99,19 @@ void
 mono_llvm_set_is_constant (LLVMValueRef global_var);
 
 void
-mono_llvm_cpp_throw_exception (gint32 *exc);
+mono_llvm_cpp_throw_exception (void);
 
 void
-mono_llvm_cpp_rethrow_exception (gint32 *exc);
+mono_llvm_rethrow_exception (MonoObject *ex);
 
 void
-mono_llvm_rethrow_exception (MonoObject *ex, gint32 *exc_tag);
+mono_llvm_throw_exception (MonoObject *ex);
 
 void
-mono_llvm_throw_exception (MonoObject *ex, gint32 *exc_tag);
+mono_throw_corlib_exception (guint32 ex_token_index);
 
 void
-mono_llvm_resume_exception (gint32 *exc_tag);
+mono_llvm_resume_exception (void);
 
 gint32
 mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end);
