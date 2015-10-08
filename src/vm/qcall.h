@@ -34,9 +34,9 @@
 // The pointers to common unmanaged EE structures should be wrapped into helper handle types. This is to make the managed implementation
 // type safe and avoid falling into unsafe C# everywhere. See the AssemblyHandle below for a good example.
 //
-// There is a way how to pass a raw object references in and out of QCalls. It is done by wrapping a pointer to 
+// There is a way to pass raw object references in and out of QCalls. It is done by wrapping a pointer to 
 // a local variable in a handle. It is intentionally cumbersome and should be avoided if reasonably possible.  
-// See the StringHandleOnStack in the example below. Strings arguments will get marshalled in as LPCWSTR. 
+// See the StringHandleOnStack in the example below. String arguments will get marshaled in as LPCWSTR. 
 // Returning objects, especially strings, from QCalls is the only common pattern 
 // where returning the raw objects (as an OUT argument) is widely acceptable.
 //
@@ -104,10 +104,10 @@
 //      if (flags != 0)
 //          COMPlusThrow(kArgumentException, L"InvalidFlags");
 //
-//      // No need to worry about GC moving strings passed into QCall. Marshalling pins them for us.
+//      // No need to worry about GC moving strings passed into QCall. Marshaling pins them for us.
 //      printf("%S", wszString);
 //
-//      // This is most the efficient way of how to return strings back to managed code. No need to use StringBuilder.
+//      // This is the most efficient way to return strings back to managed code. No need to use StringBuilder.
 //      retString.Set(L"Hello");
 //
 //      // You can not return from inside of BEGIN_QCALL/END_QCALL. The return value has to be passed out in helper variable.
@@ -158,7 +158,7 @@ public:
     // 
     // The C/C++ compiler has to treat these types as POD (plain old data) to generate
     // a calling convention compatible with P/Invoke marshaling. This means that:
-    // NONE OF THESE HELPER TYPES CAN HAVE CONSTRUCTOR OR DESTRUCTOR!
+    // NONE OF THESE HELPER TYPES CAN HAVE A CONSTRUCTOR OR DESTRUCTOR!
     // THESE HELPER TYPES CAN NOT BE IMPLEMENTED USING INHERITANCE OR TEMPLATES!
     //
 
@@ -225,7 +225,7 @@ public:
 
        // Do not add operator overloads to convert this object into a stack reference to a specific object type
        // such as OBJECTREF *. While such things are correct, our debug checking logic is unable to verify that
-       // the object reference is actually protected from access and there fore will assert.
+       // the object reference is actually protected from access and therefore will assert.
        // See bug 254159 for details.
 
 #endif // !DACCESS_COMPILE
@@ -245,7 +245,7 @@ public:
         }
     };
 
-    // AppDomainHandle is used for apssing AppDomains into QCalls via System.AppDomainHandle
+    // AppDomainHandle is used for passing AppDomains into QCalls via System.AppDomainHandle
     struct AppDomainHandle
     {
         AppDomain *m_pAppDomain;
@@ -332,8 +332,8 @@ public:
         }
     };
 
-    // The lifetime management between managed and native Thread objects is broken. There is resurrection 
-    // race where one can get dangling pointer to the unmanaged Thread object. Once this race is fixed 
+    // The lifetime management between managed and native Thread objects is broken. There is a resurrection 
+    // race where one can get a dangling pointer to the unmanaged Thread object. Once this race is fixed 
     // we may need to revisit how the unmanaged thread handles are passed around.
     struct ThreadHandle
     {
