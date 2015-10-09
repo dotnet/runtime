@@ -73,6 +73,8 @@
                              message="$(string.RuntimePublisher.DebuggerKeywordMessage)" symbol="CLR_DEBUGGER_KEYWORD" />
                     <keyword name="MonitoringKeyword" mask="0x200000000"
                              message="$(string.RuntimePublisher.MonitoringKeywordMessage)" symbol="CLR_MONITORING_KEYWORD" />
+                    <keyword name="CodeSymbolsKeyword" mask="0x400000000"
+                             message="$(string.RuntimePublisher.CodeSymbolsKeywordMessage)" symbol="CLR_CODESYMBOLS_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -362,7 +364,13 @@
                     <opcodes>
                     </opcodes>
                   </task>
-                <!--Next available ID is 30-->
+                    <task name="CodeSymbols" symbol="CLR_CODE_SYMBOLS_TASK"
+                          value="30" eventGUID="{53aedf69-2049-4f7d-9345-d3018b5c4d80}"
+                          message="$(string.RuntimePublisher.CodeSymbolsTaskMessage)">
+                    <opcodes>
+                    </opcodes>
+                  </task>
+                <!--Next available ID is 31-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -2249,6 +2257,25 @@
                       </UserData>
                     </template>
 
+                    <template tid="CodeSymbols">
+                      <data name="ModuleId"           inType="win:UInt64"    />
+                      <data name="TotalChunks"        inType="win:UInt16"  />
+                      <data name="ChunkNumber"        inType="win:UInt16"  />
+                      <data name="ChunkLength"        inType="win:UInt32"  />
+                      <data name="Chunk"              inType="win:Binary" length="ChunkLength"/>
+                      <data name="ClrInstanceID" inType="win:UInt16" />
+                      <UserData>
+                        <CodeSymbols xmlns="myNs">
+                          <ClrInstanceID> %1 </ClrInstanceID>
+                          <ModuleId> %2 </ModuleId>
+                          <TotalChunks> %3 </TotalChunks>
+                          <ChunkNumber> %4 </ChunkNumber>
+                          <ChunkLength> %5 </ChunkLength>
+                          <Chunk> %6 </Chunk>
+                        </CodeSymbols>
+                      </UserData>
+                    </template>
+
                 </templates>
 
                 <events>
@@ -3121,6 +3148,12 @@
                            keywords="DebuggerKeyword" opcode="win:Stop"
                            task="DebugExceptionProcessing"
                            symbol="DebugExceptionProcessingEnd" />
+
+                    <!-- CLR Code Symbol Emission events 260-269 -->
+                    <event value="260" version="0" level="win:Verbose" template="CodeSymbols"
+                           keywords="CodeSymbolsKeyword" opcode="win:Start" 
+                           task="CodeSymbols"
+                           symbol="CodeSymbols" message="$(string.RuntimePublisher.CodeSymbolsEventMessage)"/>
                 </events>
             </provider>
 
@@ -6262,6 +6295,7 @@
                 <string id="RuntimePublisher.MethodJitTailCallSucceededEventMessage" value="MethodBeingCompiledNamespace=%1;%nMethodBeingCompiledName=%2;%nMethodBeingCompiledNameSignature=%3;%nCallerNamespace=%4;%nCallerName=%5;%nCallerNameSignature=%6;%nCalleeNamespace=%7;%nCalleeName=%8;%nCalleeNameSignature=%9;%nTailPrefix=%10;%nTailCallType=%11;%nClrInstanceID=%12" />
                 <string id="RuntimePublisher.SetGCHandleEventMessage" value="HandleID=%1;%nObjectID=%2;%nKind=%3;%nGeneration=%4;%nAppDomainID=%5;%nClrInstanceID=%6" />
                 <string id="RuntimePublisher.DestroyGCHandleEventMessage" value="HandleID=%1;%nClrInstanceID=%2" />
+                <string id="RuntimePublisher.CodeSymbolsEventMessage" value="%nClrInstanceId=%1;%nModuleId=%2;%nTotalChunks=%3;%nChunkNumber=%4;%nChunkLength=%5;%nChunk=%6" />
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
                 <string id="RundownPublisher.MethodDCStart_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7;%nReJITID=%8" />
@@ -6416,6 +6450,7 @@
                 <string id="RuntimePublisher.ThreadTaskMessage" value="Thread" />
                 <string id="RuntimePublisher.DebugIPCEventTaskMessage" value="DebugIPCEvent" />
                 <string id="RuntimePublisher.DebugExceptionProcessingTaskMessage" value="DebugExceptionProcessing" />
+                <string id="RuntimePublisher.CodeSymbolsTaskMessage" value="CodeSymbols" />
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
                 <string id="RundownPublisher.LoaderTaskMessage" value="Loader" />
@@ -6689,6 +6724,7 @@
                 <string id="RuntimePublisher.ThreadTransferKeywordMessage" value="ThreadTransfer" />
                 <string id="RuntimePublisher.DebuggerKeywordMessage" value="Debugger" />
                 <string id="RuntimePublisher.MonitoringKeywordMessage" value="Monitoring" />
+                <string id="RuntimePublisher.CodeSymbolsKeywordMessage" value="CodeSymbols" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />
