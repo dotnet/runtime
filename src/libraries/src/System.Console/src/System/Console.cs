@@ -124,6 +124,30 @@ namespace System
             ConsolePal.ResetColor();
         }
 
+        public static int WindowWidth
+        {
+            get
+            {
+                return ConsolePal.WindowWidth;
+            }
+            set
+            {
+                ConsolePal.WindowWidth = value;
+            }
+        }
+
+        public static bool CursorVisible
+        {
+            get
+            {
+                return ConsolePal.CursorVisible;
+            }
+            set
+            {
+                ConsolePal.CursorVisible = value;
+            }
+        }
+
         public static event ConsoleCancelEventHandler CancelKeyPress
         {
             add

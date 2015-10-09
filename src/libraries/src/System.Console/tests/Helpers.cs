@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 using Xunit;
 
 class Helpers
@@ -43,6 +44,44 @@ class Helpers
         finally
         {
             setHelper(oldWriterToRestore);
+        }
+    }
+
+    public static void RunInRedirectedOutput(Action<MemoryStream> command)
+    {
+        // Make sure that redirecting to a memory stream causes no special writing to the stream when using Console.CursorVisible
+        MemoryStream data = new MemoryStream();
+        TextWriter savedOut = Console.Out;
+        try
+        {
+            Console.SetOut(new StreamWriter(data, new UTF8Encoding(false), 0x1000, leaveOpen: true) { AutoFlush = true });
+            command(data);
+        }
+        finally
+        {
+            Console.SetOut(savedOut);
+        }
+    }
+
+    public static void RunInNonRedirectedOutput(Action<MemoryStream> command)
+    {
+        // Make sure that when writing out to a UnixConsoleStream
+        // written out.
+        MemoryStream data = new MemoryStream();
+        TextWriter savedOut = Console.Out;
+        try
+        {
+            Console.SetOut(
+                new InterceptStreamWriter(
+                    Console.OpenStandardOutput(),
+                    new StreamWriter(data, new UTF8Encoding(false), 0x1000, leaveOpen: true) { AutoFlush = true },
+                    new UTF8Encoding(false), 0x1000, leaveOpen: true)
+                { AutoFlush = true });
+            command(data);
+        }
+        finally
+        {
+            Console.SetOut(savedOut);
         }
     }
 }

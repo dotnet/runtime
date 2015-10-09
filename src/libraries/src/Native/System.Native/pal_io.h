@@ -22,6 +22,17 @@ struct FileStatus
     int64_t BirthTime; // time the file was created
 };
 
+/*
+ * Window Size of the terminal
+*/
+struct WinSize
+{
+    uint16_t Row;
+    uint16_t Col;
+    uint16_t XPixel;
+    uint16_t YPixel;
+};
+
 /************
  * The values below in the header are fixed and correct for managed callers to use forever.
  * We must never change them. The implementation must either static_assert that they are equal
@@ -610,3 +621,11 @@ extern "C" void Sync();
  * Returns the number of bytes written on success; otherwise, returns -1 and sets errno
  */
 extern "C" int32_t Write(int32_t fd, const void* buffer, int32_t bufferSize);
+
+
+/**
+* Gets the windows size of the terminal
+*
+* Returns 0 on success; otherwise, returns errorNo.
+*/
+extern "C" int32_t GetWindowSize(WinSize* windowsSize);
