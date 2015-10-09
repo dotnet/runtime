@@ -12,6 +12,9 @@ namespace System
         public static System.ConsoleColor BackgroundColor { get { return default(System.ConsoleColor); } set { } }
         public static System.IO.TextWriter Error { get { return default(System.IO.TextWriter); } }
         public static System.ConsoleColor ForegroundColor { get { return default(System.ConsoleColor); } set { } }
+        public static bool IsInputRedirected { get { return false; } }
+        public static bool IsOutputRedirected { get { return false; } }
+        public static bool IsErrorRedirected { get { return false; } }
         public static System.IO.TextReader In { get { return default(System.IO.TextReader); } }
         public static System.IO.TextWriter Out { get { return default(System.IO.TextWriter); } }
         public static event System.ConsoleCancelEventHandler CancelKeyPress { add { } remove { } }
