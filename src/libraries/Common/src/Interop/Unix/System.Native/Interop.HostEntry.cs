@@ -11,9 +11,6 @@ internal static partial class Interop
         internal const int NI_MAXHOST = 1025;
         internal const int NI_MAXSERV = 32;
 
-        internal const int NUM_BYTES_IN_IPV6_ADDRESS = 16;
-        internal const int MAX_IP_ADDRESS_BYTES = 16;
-
         internal enum GetAddrInfoErrorFlags : int
         {
             EAI_AGAIN = 1,      // Temporary failure in name resolution.
@@ -32,14 +29,6 @@ internal static partial class Interop
             NO_RECOVERY = 3,
             NO_DATA = 4,
             NO_ADDRESS = NO_DATA,
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct IPAddress
-        {
-            internal fixed byte Address[MAX_IP_ADDRESS_BYTES]; // Buffer to fit an IPv4 or IPv6 address
-            internal uint IsIPv6;                              // Non-zero if this is an IPv6 address; zero for IPv4.
-            internal uint ScopeId;                             // Scope ID (IPv6 only)
         }
         
         [StructLayout(LayoutKind.Sequential)]
