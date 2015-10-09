@@ -294,14 +294,16 @@ namespace System.Net.Http
                 throw new ArgumentNullException("request", SR.net_http_handler_norequest);
             }
 
-            if ((request.RequestUri.Scheme != UriSchemeHttp) && (request.RequestUri.Scheme != UriSchemeHttps))
+            if (request.RequestUri.Scheme == UriSchemeHttps)
             {
-                throw NotImplemented.ByDesignWithMessage(SR.net_http_client_http_baseaddress_required);
+                if (!s_supportsSSL)
+                {
+                    throw new PlatformNotSupportedException(SR.net_http_unix_https_support_unavailable_libcurl);
+                }
             }
-
-            if (request.RequestUri.Scheme == UriSchemeHttps && !s_supportsSSL)
+            else
             {
-                throw new PlatformNotSupportedException(SR.net_http_unix_https_support_unavailable_libcurl);
+                Debug.Assert(request.RequestUri.Scheme == UriSchemeHttp, "HttpClient expected to validate scheme as http or https.");
             }
 
             if (request.Headers.TransferEncodingChunked.GetValueOrDefault() && (request.Content == null))
