@@ -5,6 +5,7 @@
     "System.Collections.Concurrent": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
+    "System.Reflection.Extensions": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-*",

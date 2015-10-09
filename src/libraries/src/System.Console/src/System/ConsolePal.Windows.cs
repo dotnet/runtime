@@ -110,6 +110,36 @@ namespace System
             return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
         }
 
+        /// <summary>Gets whether Console.In is targeting a terminal display.</summary>
+        public static bool IsInputRedirectedCore()
+        {
+            return IsHandleRedirected(InputHandle);
+        }
+
+        /// <summary>Gets whether Console.Out is targeting a terminal display.</summary>
+        public static bool IsOutputRedirectedCore()
+        {
+            return IsHandleRedirected(OutputHandle);
+        }
+
+        /// <summary>Gets whether Console.In is targeting a terminal display.</summary>
+        public static bool IsErrorRedirectedCore()
+        {
+            return IsHandleRedirected(ErrorHandle);
+        }
+
+        private static bool IsHandleRedirected(IntPtr handle)
+        {
+            // If handle is not to a character device, we must be redirected:
+            uint fileType = Interop.mincore.GetFileType(handle);
+            if ((fileType & Interop.mincore.FileTypes.FILE_TYPE_CHAR) != Interop.mincore.FileTypes.FILE_TYPE_CHAR)
+                return true;
+
+            // We are on a char device if GetConsoleMode succeeds and so we are not redirected.
+            return (!Interop.mincore.IsGetConsoleModeCallSuccessful(handle));
+        }
+
+
         // For ResetColor
         private static volatile bool _haveReadDefaultColors;
         private static volatile byte _defaultColors;

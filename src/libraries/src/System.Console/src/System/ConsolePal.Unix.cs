@@ -63,7 +63,8 @@ namespace System
 
         public static void ResetColor()
         {
-            if (!ConsoleOutIsTerminal)
+            // We only want to reset colors if we're targeting a TTY device
+            if (IsConsoleOutRedirected)
                 return;
 
             string resetFormat = TerminalColorInfo.Instance.ResetFormat;
@@ -73,19 +74,15 @@ namespace System
             }
         }
 
-        /// <summary>Gets whether Console.Out is targeting a terminal display.</summary>
-        private static bool ConsoleOutIsTerminal
+        /// <summary>
+        /// Gets whether Console.Out is redirected.
+        /// By default we assume that the stream is redirected
+        /// unless it is a character device.
+        /// </summary>
+        private static bool IsConsoleOutRedirected
         {
             get
             {
-                // We only want to write out ANSI escape sequences if we're targeting a TTY device,
-                // so we don't want to if the output stream is redirected, either redirected to another
-                // stream via Console.SetOut, or redirected via Unix stdout redirection.
-                // We make a best guess by unwrapping the TextWriter to get at the underlying
-                // UnixConsoleStream, and checking the type of the underlying file descriptor
-                // for that stream: we say it's a TTY if we can get the UnixConsoleStream and
-                // if its type is CHR (a "character device").
-
                 SyncTextWriter stw = Console.Out as SyncTextWriter;
                 if (stw != null)
                 {
@@ -95,12 +92,46 @@ namespace System
                         UnixConsoleStream ucs = sw.BaseStream as UnixConsoleStream;
                         if (ucs != null)
                         {
-                            return ucs._handleType == Interop.Sys.FileTypes.S_IFCHR;
+                            // If handle is not to a character device, we must be redirected:
+                            return (ucs._handleType & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFCHR;
                         }
                     }
                 }
-                return false;
+                return true;
             }
+        }
+
+        private static bool IsHandleRedirected(int fd)
+        {
+            Interop.Sys.FileStatus buf;
+            return (Interop.Sys.FStat((int)fd, out buf) != 0)
+                 ? false
+                 : (buf.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFCHR;
+        }
+
+        /// <summary>
+        /// Gets whether Console.In is redirected.
+        /// We approximate the behaviorby checking whether the underlying stream is our UnixConsoleStream and it's wrapping a character device.
+        /// </summary>
+        public static bool IsInputRedirectedCore()
+        {
+            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDIN_FILENO);
+        }
+
+        /// <summary>Gets whether Console.Out is redirected.
+        /// We approximate the behaviorby checking whether the underlying stream is our UnixConsoleStream and it's wrapping a character device.
+        /// </summary>
+        public static bool IsOutputRedirectedCore()
+        {
+            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDOUT_FILENO);
+        }
+
+        /// <summary>Gets whether Console.Error is redirected.
+        /// We approximate the behaviorby checking whether the underlying stream is our UnixConsoleStream and it's wrapping a character device.
+        /// </summary>
+        public static bool IsErrorRedirectedCore()
+        {
+            return IsHandleRedirected(Interop.Sys.FileDescriptors.STDERR_FILENO);
         }
 
         /// <summary>Creates an encoding from the current environment.</summary>
@@ -176,10 +207,9 @@ namespace System
             }
 
             // Changing the color involves writing an ANSI character sequence out to the output stream.
-            // We only want to do this if we know that sequence will be interpreted by the output
-            // rather than simply displayed visibly.  A reasonable approximation for this is whether
-            // the underlying stream is our UnixConsoleStream and it's wrapping a character device.
-            if (!ConsoleOutIsTerminal)
+            // We only want to do this if we know that sequence will be interpreted by the output.
+            // rather than simply displayed visibly.
+            if (IsConsoleOutRedirected)
                 return;
 
             // See if we've already cached a format string for this foreground/background

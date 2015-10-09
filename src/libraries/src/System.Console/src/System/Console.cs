@@ -73,6 +73,40 @@ namespace System
                     leaveOpen: true) { AutoFlush = true });
         }
 
+        private static StrongBox<bool> _isStdInRedirected;
+        private static StrongBox<bool> _isStdOutRedirected;
+        private static StrongBox<bool> _isStdErrRedirected;
+
+        public static bool IsInputRedirected
+        {
+            get
+            {
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdInRedirected) ??
+                    EnsureInitialized(ref _isStdInRedirected, () => new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
+                return redirected.Value;
+            }
+        }
+
+        public static bool IsOutputRedirected
+        {
+            get
+            {
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdOutRedirected) ??
+                    EnsureInitialized(ref _isStdOutRedirected, () => new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
+                return redirected.Value;
+            }
+        }
+
+        public static bool IsErrorRedirected
+        {
+            get
+            {
+                StrongBox<bool> redirected = Volatile.Read(ref _isStdErrRedirected) ??
+                    EnsureInitialized(ref _isStdErrRedirected, () => new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
+                return redirected.Value;
+            }
+        }
+
         public static ConsoleColor BackgroundColor
         {
             get { return ConsolePal.BackgroundColor; }
