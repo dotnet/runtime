@@ -31551,7 +31551,7 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
                 assert (seg == hp->ephemeral_heap_segment);
                 assert (curr_gen_number0 <= max_generation);
                 //
-                if ((curr_gen_number0 == max_generation))
+                if (curr_gen_number0 == max_generation)
                 {
                     if (heap_segment_mem (seg) < generation_allocation_start (hp->generation_of (max_generation-1)))
                     {

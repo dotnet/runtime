@@ -5408,7 +5408,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
 #endif // DEBUGGING_SUPPORTED
 
 
-#ifdef FEATURE_EVENT_TRACE    
+#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL)
         DoReportForUnhandledException(pParam->pExceptionInfo);
 #endif // FEATURE_EVENT_TRACE    
 
