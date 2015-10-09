@@ -3261,7 +3261,7 @@ register_icalls (void)
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
 #ifdef MONO_ARCH_LLVM_SUPPORTED
-#ifdef ENABLE_LLVM
+#if defined(ENABLE_LLVM) && !defined(MONO_LLVM_LOADED)
 	register_icall (mono_llvm_throw_exception, "mono_llvm_throw_exception", "void object", TRUE);
 	register_icall (mono_llvm_rethrow_exception, "mono_llvm_rethrow_exception", "void object", TRUE);
 	register_icall (mono_llvm_resume_exception, "mono_llvm_resume_exception", "void", TRUE);

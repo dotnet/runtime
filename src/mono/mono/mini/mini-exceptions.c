@@ -125,12 +125,14 @@ mono_exceptions_init (void)
 	cbs.mono_walk_stack_with_ctx = mono_runtime_walk_stack_with_ctx;
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 
-#ifdef ENABLE_LLVM
+#if defined(ENABLE_LLVM) && !defined(MONO_LLVM_LOADED)
 	if (mono_llvm_only)
 		cbs.mono_raise_exception = mono_llvm_raise_exception;
 	else
-#endif
 		cbs.mono_raise_exception = mono_get_throw_exception ();
+#else
+		cbs.mono_raise_exception = mono_get_throw_exception ();
+#endif
 	cbs.mono_raise_exception_with_ctx = mono_raise_exception_with_ctx;
 	cbs.mono_exception_walk_trace = mono_exception_walk_trace;
 	cbs.mono_install_handler_block_guard = mono_install_handler_block_guard;
