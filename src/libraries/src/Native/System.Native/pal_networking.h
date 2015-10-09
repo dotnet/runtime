@@ -45,14 +45,17 @@ enum GetHostErrorCodes
 };
 
 /**
- * Address families recognized by {Get,Set}AddressFamily
+ * Address families recognized by {Get,Set}AddressFamily.
+ *
+ * NOTE: these values are taken from System.Net.AddressFamily. If you add
+ *       new entries, be sure that the values are chosen accordingly.
  */
 enum AddressFamily : int32_t
 {
-    PAL_AF_UNSPEC = 0,
-    PAL_AF_UNIX = 1,
-    PAL_AF_INET = 2,
-    PAL_AF_INET6 = 23,
+    PAL_AF_UNSPEC = 0,  // System.Net.AddressFamily.Unspecified
+    PAL_AF_UNIX = 1,    // System.Net.AddressFamily.Unix
+    PAL_AF_INET = 2,    // System.Net.AddressFamily.InterNetwork
+    PAL_AF_INET6 = 23,  // System.Net.AddressFamily.InterNetworkV6
 };
 
 /**
