@@ -36,8 +36,9 @@ Locale GetLocale(const UChar* localeName, bool canonize)
 
 	if (localeName != NULL)
 	{
-		int32_t len = u_strlen(localeName);
-		u_UCharsToChars(localeName, localeNameTemp, len + 1);
+		// use UnicodeString.extract instead of u_UCharsToChars; u_UCharsToChars considers '@' a variant and stops
+		UnicodeString str(localeName, -1, ULOC_FULLNAME_CAPACITY);
+		str.extract(0, str.length(), localeNameTemp);
 	}
 
 	Locale loc;
@@ -64,9 +65,10 @@ UErrorCode u_charsToUChars_safe(const char *str, UChar* value, int32_t valueLeng
 	return U_ZERO_ERROR;
 }
 
-void FixupLocaleName(UChar* value, int32_t valueLength)
+int FixupLocaleName(UChar* value, int32_t valueLength)
 {
-	for (int i = 0; i < valueLength; i++)
+	int i = 0;
+	for (; i < valueLength; i++)
 	{
 		if (value[i] == (UChar)'\0')
 		{
@@ -77,8 +79,9 @@ void FixupLocaleName(UChar* value, int32_t valueLength)
 			value[i] = (UChar)'-';
 		}
 	}
-}
 
+	return i;
+}
 
 extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
 {
@@ -100,3 +103,34 @@ extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t 
 
 	return UErrorCodeToBool(status);
 }
+
+extern "C" int32_t GetDefaultLocaleName(UChar* value, int32_t valueLength)
+{
+	Locale locale = GetLocale(NULL);
+	if (locale.isBogus())
+	{
+		// ICU should be able to get default locale
+		return UErrorCodeToBool(U_INTERNAL_PROGRAM_ERROR);
+	}
+
+	UErrorCode status = u_charsToUChars_safe(locale.getBaseName(), value, valueLength);
+	if (U_SUCCESS(status))
+	{
+		int localeNameLen = FixupLocaleName(value, valueLength);
+
+		// if collation is present, return that to managed side
+		char collationValueTemp[ULOC_KEYWORDS_CAPACITY];
+		if (locale.getKeywordValue("collation", collationValueTemp, ULOC_KEYWORDS_CAPACITY, status) > 0)
+		{
+			// copy the collation; managed uses a "_" to represent collation (not "@collation=")
+			status = u_charsToUChars_safe("_", &value[localeNameLen], valueLength - localeNameLen);
+			if (U_SUCCESS(status))
+			{
+				status = u_charsToUChars_safe(collationValueTemp, &value[localeNameLen + 1], valueLength - localeNameLen - 1);
+			}
+		}
+	}
+
+	return UErrorCodeToBool(status);
+}
+
