@@ -12096,7 +12096,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
+#ifdef ENABLE_LLVM
 			cfg->cbb->try_end = (intptr_t)(ip - header->code);
+#endif
 
 			if ((handlers = mono_find_final_block (cfg, ip, target, MONO_EXCEPTION_CLAUSE_FINALLY))) {
 				GList *tmp;

@@ -17,8 +17,11 @@
 #endif
 
 #include "jit-icalls.h"
-#include "mini-llvm-cpp.h"
 #include <mono/utils/mono-error-internals.h>
+
+#ifdef ENABLE_LLVM
+#include "mini-llvm-cpp.h"
+#endif
 
 void*
 mono_ldftn (MonoMethod *method)

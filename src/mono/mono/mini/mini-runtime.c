@@ -76,7 +76,9 @@
 #include "debugger-agent.h"
 
 #ifdef MONO_ARCH_LLVM_SUPPORTED
-	#include "mini-llvm-cpp.h"
+#ifdef ENABLE_LLVM
+#include "mini-llvm-cpp.h"
+#endif
 #endif
 
 static guint32 default_opt = 0;
@@ -3259,6 +3261,7 @@ register_icalls (void)
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);
 
 #ifdef MONO_ARCH_LLVM_SUPPORTED
+#ifdef ENABLE_LLVM
 	register_icall (mono_llvm_throw_exception, "mono_llvm_throw_exception", "void object", TRUE);
 	register_icall (mono_llvm_rethrow_exception, "mono_llvm_rethrow_exception", "void object", TRUE);
 	register_icall (mono_llvm_resume_exception, "mono_llvm_resume_exception", "void", TRUE);
@@ -3270,6 +3273,7 @@ register_icalls (void)
 
 	// FIXME: This is broken
 	register_icall (mono_debug_personality, "mono_debug_personality", "int int int ptr ptr ptr", TRUE);
+#endif
 #endif
 
 	register_dyn_icall (mono_get_throw_exception (), "mono_arch_throw_exception", "void object", TRUE);
