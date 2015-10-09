@@ -12,20 +12,23 @@ namespace System.Net
     {
         public const int DataOffset = 0;
 
-        public readonly static int IPv6AddressSize;
-        public readonly static int IPv4AddressSize;
+        public readonly static int IPv6AddressSize = GetIPv6AddressSize();
+        public readonly static int IPv4AddressSize = GetIPv4AddressSize();
 
-        static SocketAddressPal()
+        private static unsafe int GetIPv6AddressSize()
         {
-            int ipv4AddressSize, ipv6AddressSize;
-            unsafe
-            {
-                Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&ipv4AddressSize, &ipv6AddressSize);
-                Debug.Assert(err == Interop.Error.SUCCESS);
-            }
+            int ipv6AddressSize, unused;
+            Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&unused, &ipv6AddressSize);
+            Debug.Assert(err == Interop.Error.SUCCESS);
+            return ipv6AddressSize;
+        }
 
-            IPv4AddressSize = ipv4AddressSize;
-            IPv6AddressSize = ipv6AddressSize;
+        private static unsafe int GetIPv4AddressSize()
+        {
+            int ipv4AddressSize, unused;
+            Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&ipv4AddressSize, &unused);
+            Debug.Assert(err == Interop.Error.SUCCESS);
+            return ipv4AddressSize;
         }
 
         private static void ThrowOnFailure(Interop.Error err)
