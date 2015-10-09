@@ -22,15 +22,15 @@ namespace Internal.Cryptography
             // or to return null and let rawData get hex-encoded.  CryptographicException should not
             // be raised.
 
-            using (SafeAsn1ObjectHandle asnOid = Interop.libcrypto.OBJ_txt2obj(oid.Value, true))
-            using (SafeAsn1OctetStringHandle octetString = Interop.libcrypto.ASN1_OCTET_STRING_new())
+            using (SafeAsn1ObjectHandle asnOid = Interop.Crypto.ObjTxt2Obj(oid.Value))
+            using (SafeAsn1OctetStringHandle octetString = Interop.Crypto.Asn1OctetStringNew())
             {
                 if (asnOid.IsInvalid || octetString.IsInvalid)
                 {
                     return null;
                 }
 
-                if (!Interop.libcrypto.ASN1_OCTET_STRING_set(octetString, rawData, rawData.Length))
+                if (!Interop.Crypto.Asn1OctetStringSet(octetString, rawData, rawData.Length))
                 {
                     return null;
                 }

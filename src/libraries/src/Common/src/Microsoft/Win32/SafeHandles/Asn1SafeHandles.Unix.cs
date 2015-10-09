@@ -17,7 +17,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.ASN1_OBJECT_free(handle);
+            Interop.Crypto.Asn1ObjectFree(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }
@@ -38,7 +38,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.ASN1_BIT_STRING_free(handle);
+            Interop.Crypto.Asn1BitStringFree(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }
@@ -59,7 +59,8 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.ASN1_OCTET_STRING_free(handle);
+            Interop.Crypto.Asn1OctetStringFree(handle);
+            SetHandle(IntPtr.Zero);
             return true;
         }
 
@@ -79,7 +80,8 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.ASN1_STRING_free(handle);
+            Interop.Crypto.Asn1StringFree(handle);
+            SetHandle(IntPtr.Zero);
             return true;
         }
 
