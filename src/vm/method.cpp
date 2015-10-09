@@ -4456,9 +4456,7 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
                 pIMD->m_wFlags2 = pIMD->m_wFlags2 & ~InstantiatedMethodDesc::Unrestored;
             }
 
-#if defined(FEATURE_EVENT_TRACE)
-            if (MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled)
-#endif
+            if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
             {
                 ETW::MethodLog::MethodRestored(this);
             }
@@ -4475,9 +4473,7 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
             PTR_DynamicMethodDesc pDynamicMD = AsDynamicMethodDesc();
             pDynamicMD->Restore();
 
-#if defined(FEATURE_EVENT_TRACE)
-            if (MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled)
-#endif
+            if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
             {
                 ETW::MethodLog::MethodRestored(this);
             }
