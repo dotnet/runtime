@@ -226,21 +226,13 @@
           "lib/DNXCore50/System.Text.Encoding.Extensions.dll": {}
         }
       },
-      "System.Text.RegularExpressions/4.0.10": {
+      "System.Text.RegularExpressions/4.0.0": {
         "type": "package",
         "dependencies": {
-          "System.Collections": "4.0.10",
-          "System.Globalization": "4.0.10",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Extensions": "4.0.10",
-          "System.Threading": "4.0.10"
+          "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Text.RegularExpressions.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.Text.RegularExpressions.dll": {}
         }
       },
       "System.Threading/4.0.10": {
@@ -836,17 +828,19 @@
         "System.Text.Encoding.Extensions.nuspec"
       ]
     },
-    "System.Text.RegularExpressions/4.0.10": {
+    "System.Text.RegularExpressions/4.0.0": {
       "type": "package",
-      "serviceable": true,
-      "sha512": "0vDuHXJePpfMCecWBNOabOKCvzfTbFMNcGgklt3l5+RqHV5SzmF7RUVpuet8V0rJX30ROlL66xdehw2Rdsn2DA==",
+      "sha512": "D2CHm8LBIymJK9+1E3sn4cUEzMd6B+quQUrCGUluv9QFBNOdL3XqNu548QKeNplEXFOmF5aKXMxXbTrjbEUNMw==",
       "files": [
-        "lib/dotnet/System.Text.RegularExpressions.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
-        "lib/net46/_._",
+        "lib/net45/_._",
+        "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "License.rtf",
         "ref/dotnet/de/System.Text.RegularExpressions.xml",
         "ref/dotnet/es/System.Text.RegularExpressions.xml",
         "ref/dotnet/fr/System.Text.RegularExpressions.xml",
@@ -860,11 +854,25 @@
         "ref/dotnet/zh-hant/System.Text.RegularExpressions.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
-        "ref/net46/_._",
+        "ref/net45/_._",
+        "ref/netcore50/de/System.Text.RegularExpressions.xml",
+        "ref/netcore50/es/System.Text.RegularExpressions.xml",
+        "ref/netcore50/fr/System.Text.RegularExpressions.xml",
+        "ref/netcore50/it/System.Text.RegularExpressions.xml",
+        "ref/netcore50/ja/System.Text.RegularExpressions.xml",
+        "ref/netcore50/ko/System.Text.RegularExpressions.xml",
+        "ref/netcore50/ru/System.Text.RegularExpressions.xml",
+        "ref/netcore50/System.Text.RegularExpressions.dll",
+        "ref/netcore50/System.Text.RegularExpressions.xml",
+        "ref/netcore50/zh-hans/System.Text.RegularExpressions.xml",
+        "ref/netcore50/zh-hant/System.Text.RegularExpressions.xml",
+        "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Text.RegularExpressions.4.0.10.nupkg",
-        "System.Text.RegularExpressions.4.0.10.nupkg.sha512",
+        "System.Text.RegularExpressions.4.0.0.nupkg",
+        "System.Text.RegularExpressions.4.0.0.nupkg.sha512",
         "System.Text.RegularExpressions.nuspec"
       ]
     },
@@ -981,7 +989,7 @@
       "System.Threading.Tasks >= 4.0.10",
       "System.Text.Encoding >= 4.0.10",
       "System.Text.Encoding.Extensions >= 4.0.10",
-      "System.Text.RegularExpressions >= 4.0.10"
+      "System.Text.RegularExpressions >= 4.0.0"
     ],
     "DNXCore,Version=v5.0": []
   }
