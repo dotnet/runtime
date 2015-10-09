@@ -32,16 +32,15 @@ check_function_exists(
 check_function_exists(
     posix_fadvise
     HAVE_POSIX_ADVISE)
-	
+
 check_function_exists(
     ioctl
     HAVE_IOCTL)
-	
- check_symbol_exists (
+
+check_symbol_exists(
     TIOCGWINSZ
-	"sys/ioctl.h"
-	HAVE_TIOCGWINSZ
-	)
+    "sys/ioctl.h"
+    HAVE_TIOCGWINSZ)
 
 check_struct_has_member(
     "struct stat"
