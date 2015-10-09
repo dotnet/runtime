@@ -748,8 +748,6 @@ STDAPI CreateStreamOnHGlobal(PVOID hGlobal, BOOL fDeleteOnRelease, interface ISt
 STDAPI IIDFromString(LPOLESTR lpsz, IID* lpiid);
 STDAPI_(int) StringFromGUID2(REFGUID rguid, LPOLESTR lpsz, int cchMax); 
 
-STDAPI CoCreateGuid(OUT GUID * pguid);
-
 /******************* CRYPT **************************************/
 
 #define PUBLICKEYBLOB           0x6
