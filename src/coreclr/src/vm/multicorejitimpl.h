@@ -480,7 +480,7 @@ extern bool     g_MulticoreJitEnabled;                           // Enable/Disab
 inline bool PrivateEtwEnabled()
 {
 #ifdef FEATURE_EVENT_TRACE
-    return MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.IsEnabled != 0;
+    return ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER) != 0;
 #else // FEATURE_EVENT_TRACE
     return FALSE;
 #endif // FEATURE_EVENT_TRACE

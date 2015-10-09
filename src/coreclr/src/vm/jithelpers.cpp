@@ -5472,7 +5472,7 @@ void DoJITFailFast ()
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, FailFast))
     {
         // Fire an ETW FailFast event
-        FireEtwFailFast(L"Unsafe buffer security check failure: Buffer overrun detected", 
+        FireEtwFailFast(W("Unsafe buffer security check failure: Buffer overrun detected"),
                        (const PVOID)GetThread()->GetFrame()->GetIP(), 
                        STATUS_STACK_BUFFER_OVERRUN, 
                        COR_E_EXECUTIONENGINE, 
