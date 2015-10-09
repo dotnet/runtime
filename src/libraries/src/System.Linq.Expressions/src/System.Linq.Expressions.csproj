@@ -68,7 +68,6 @@
     <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs">
       <Link>Common\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs</Link>
     </Compile>
-    <Compile Include="System\Dynamic\Utils\CollectionExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\TypeExtensions.cs" />
     <Compile Include="System\Dynamic\Utils\TypeUtils.cs" />
     <Compile Include="System\Linq\Expressions\BinaryExpression.cs" />
