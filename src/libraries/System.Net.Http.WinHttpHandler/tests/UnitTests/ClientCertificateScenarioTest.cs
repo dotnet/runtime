@@ -112,6 +112,81 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                     Assert.Equal(IntPtr.Zero, APICallHistory.WinHttpOptionClientCertContext[0]);
                 }
             }
+        }
+        
+        [Fact]
+        public void SecureRequest_ClientCertificateOptionAutomatic_CertStoreEmpty_NullCertificateContextSet()
+        {
+            using (var handler = new WinHttpHandler())
+            {
+                handler.ClientCertificateOption = ClientCertificateOption.Automatic;
+                using (HttpResponseMessage response = SendRequestHelper.Send(
+                    handler,
+                    () => { },
+                    TestServer.FakeSecureServerEndpoint))
+                {
+                    Assert.Equal(1, APICallHistory.WinHttpOptionClientCertContext.Count);
+                    Assert.Equal(IntPtr.Zero, APICallHistory.WinHttpOptionClientCertContext[0]);
+                }
+            }
+        }
+        
+        [Fact]
+        public void SecureRequest_ClientCertificateOptionAutomatic_CertStoreHasInvalidCerts_NullCertificateContextSet()
+        {
+            using (var handler = new WinHttpHandler())
+            {
+                var helper = new ClientCertificateHelper();
+                TestControl.CurrentUserCertificateStore = helper.InvalidClientCertificateCollection;
+                handler.ClientCertificateOption = ClientCertificateOption.Automatic;
+                using (HttpResponseMessage response = SendRequestHelper.Send(
+                    handler,
+                    () => { },
+                    TestServer.FakeSecureServerEndpoint))
+                {
+                    Assert.Equal(1, APICallHistory.WinHttpOptionClientCertContext.Count);
+                    Assert.Equal(IntPtr.Zero, APICallHistory.WinHttpOptionClientCertContext[0]);
+                }
+            }
+        }
+        
+        [Fact]
+        public void SecureRequest_ClientCertificateOptionAutomatic_CertStoreHasValidCerts_ValidCertificateContextSet()
+        {
+            using (var handler = new WinHttpHandler())
+            {
+                var helper = new ClientCertificateHelper();
+                TestControl.CurrentUserCertificateStore = helper.ValidClientCertificateCollection;
+                handler.ClientCertificateOption = ClientCertificateOption.Automatic;
+                using (HttpResponseMessage response = SendRequestHelper.Send(
+                    handler,
+                    () => { },
+                    TestServer.FakeSecureServerEndpoint))
+                {
+                    Assert.Equal(1, APICallHistory.WinHttpOptionClientCertContext.Count);
+                    Assert.NotEqual(IntPtr.Zero, APICallHistory.WinHttpOptionClientCertContext[0]);
+                }
+            }
+        }
+        
+        
+        [Fact]
+        public void SecureRequest_ClientCertificateOptionAutomatic_CertStoreHasValidAndInvalidCerts_ValidCertificateContextSet()
+        {
+            using (var handler = new WinHttpHandler())
+            {
+                var helper = new ClientCertificateHelper();
+                TestControl.CurrentUserCertificateStore = helper.ValidAndInvalidClientCertificateCollection;
+                handler.ClientCertificateOption = ClientCertificateOption.Automatic;
+                using (HttpResponseMessage response = SendRequestHelper.Send(
+                    handler,
+                    () => { },
+                    TestServer.FakeSecureServerEndpoint))
+                {
+                    Assert.Equal(1, APICallHistory.WinHttpOptionClientCertContext.Count);
+                    Assert.NotEqual(IntPtr.Zero, APICallHistory.WinHttpOptionClientCertContext[0]);
+                }
+            }
         }        
     }
 }
