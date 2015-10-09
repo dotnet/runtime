@@ -114,7 +114,14 @@ else()
     )
 endif(WIN32)
 
-target_link_libraries(coreclr ${CORECLR_LIBRARIES})
+if(CLR_CMAKE_PLATFORM_LINUX)
+    list(APPEND CORECLR_LIBRARIES
+        eventprovider
+  )
+  
+endif(CLR_CMAKE_PLATFORM_LINUX)
+
+target_link_libraries(coreclr ${CORECLR_LIBRARIES}) 
 
 if(WIN32)
     add_dependencies(coreclr dactablegen)
