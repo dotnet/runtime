@@ -5921,7 +5921,7 @@ emit_plt (MonoAotCompile *acfg)
 {
 	int i;
 
-	if (!acfg->has_jitted_code) {
+	if (acfg->aot_opts.llvm_only) {
 		g_assert (acfg->plt_offset == 1);
 		return;
 	}
@@ -7444,7 +7444,6 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 * then removing tailcallelim + the global opts.
 	 * strip-dead-prototypes deletes unused intrinsics definitions.
 	 */
-	//opts = g_strdup ("-instcombine -simplifycfg");
 	//opts = g_strdup ("-simplifycfg -domtree -domfrontier -scalarrepl -instcombine -simplifycfg -domtree -domfrontier -scalarrepl -simplify-libcalls -instcombine -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -domfrontier -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -iv-users -indvars -loop-deletion -loop-simplify -lcssa -loop-unroll -instcombine -memdep -gvn -memdep -memcpyopt -sccp -instcombine -domtree -memdep -dse -adce -simplifycfg -domtree -verify");
 	/* The dse pass is disabled because of #13734 and #17616 */
 	/*
@@ -7457,7 +7456,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 * return OverwriteComplete;
 	 * Here, if 'Earlier' refers to a memset, and Later has no size info, it mistakenly thinks the memset is redundant.
 	 */
-	//opts = g_strdup ("-targetlibinfo -no-aa -basicaa -notti -instcombine -simplifycfg -inline-cost -inline -sroa -domtree -early-cse -lazy-value-info -correlated-propagation -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -indvars -loop-idiom -loop-deletion -loop-unroll -memdep -gvn -memdep -memcpyopt -sccp -instcombine -lazy-value-info -correlated-propagation -domtree -memdep -adce -simplifycfg -instcombine -strip-dead-prototypes -domtree -verify");
+	opts = g_strdup ("-targetlibinfo -no-aa -basicaa -notti -instcombine -simplifycfg -inline-cost -inline -sroa -domtree -early-cse -lazy-value-info -correlated-propagation -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -indvars -loop-idiom -loop-deletion -loop-unroll -memdep -gvn -memdep -memcpyopt -sccp -instcombine -lazy-value-info -correlated-propagation -domtree -memdep -adce -simplifycfg -instcombine -strip-dead-prototypes -domtree -verify");
 	opts = g_strdup ("");
 #if 1
 	command = g_strdup_printf ("\"%sopt\" -f %s -o \"%s.opt.bc\" \"%s.bc\"", acfg->aot_opts.llvm_path, opts, acfg->tmpbasename, acfg->tmpbasename);
@@ -7515,7 +7514,7 @@ emit_code (MonoAotCompile *acfg)
 	gboolean saved_unbox_info = FALSE;
 	char symbol [256];
 
-	if (!acfg->has_jitted_code)
+	if (acfg->aot_opts.llvm_only)
 		return;
 
 #if defined(TARGET_POWERPC64)
@@ -8149,7 +8148,7 @@ emit_unwind_info (MonoAotCompile *acfg)
 	int i;
 	char symbol [128];
 
-	if (!acfg->has_jitted_code) {
+	if (acfg->aot_opts.llvm_only) {
 		g_assert (acfg->unwind_ops->len == 0);
 		return;
 	}
@@ -8416,7 +8415,7 @@ emit_got (MonoAotCompile *acfg)
 {
 	char symbol [256];
 
-	if (!acfg->has_jitted_code || acfg->aot_opts.llvm_only)
+	if (acfg->aot_opts.llvm_only)
 		return;
 
 	/* Don't make GOT global so accesses to it don't need relocations */
@@ -8563,7 +8562,7 @@ emit_mem_end (MonoAotCompile *acfg)
 {
 	char symbol [128];
 
-	if (!acfg->has_jitted_code || acfg->aot_opts.llvm_only)
+	if (acfg->aot_opts.llvm_only)
 		return;
 
 	sprintf (symbol, "mem_end");
@@ -8623,9 +8622,15 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	symbols [sindex ++] = NULL;
 	/* llvm_get_unbox_tramp */
 	symbols [sindex ++] = NULL;
-	symbols [sindex ++] = "jit_code_start";
-	symbols [sindex ++] = "jit_code_end";
-	symbols [sindex ++] = "method_addresses";
+	if (!acfg->aot_opts.llvm_only) {
+		symbols [sindex ++] = "jit_code_start";
+		symbols [sindex ++] = "jit_code_end";
+		symbols [sindex ++] = "method_addresses";
+	} else {
+		symbols [sindex ++] = NULL;
+		symbols [sindex ++] = NULL;
+		symbols [sindex ++] = NULL;
+	}
 	symbols [sindex ++] = "blob";
 	symbols [sindex ++] = "class_name_table";
 	symbols [sindex ++] = "class_info_offsets";
@@ -8662,9 +8667,16 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	symbols [sindex ++] = "plt";
 	symbols [sindex ++] = "plt_end";
 	symbols [sindex ++] = "unwind_info";
-	symbols [sindex ++] = "unbox_trampolines";
-	symbols [sindex ++] = "unbox_trampolines_end";
-	symbols [sindex ++] = "unbox_trampoline_addresses";
+	if (!acfg->aot_opts.llvm_only) {
+		symbols [sindex ++] = "unbox_trampolines";
+		symbols [sindex ++] = "unbox_trampolines_end";
+		symbols [sindex ++] = "unbox_trampoline_addresses";
+	} else {
+		symbols [sindex ++] = NULL;
+		symbols [sindex ++] = NULL;
+		symbols [sindex ++] = NULL;
+	}
+
 	g_assert (sindex == MONO_AOT_FILE_INFO_NUM_SYMBOLS);
 
 	sprintf (symbol, "%smono_aot_file_info", acfg->user_symbol_prefix);

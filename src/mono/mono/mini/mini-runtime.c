@@ -3266,7 +3266,7 @@ register_icalls (void)
 	register_icall (mono_llvm_clear_exception, "mono_llvm_clear_exception", NULL, TRUE);
 	register_icall (mono_llvm_load_exception, "mono_llvm_load_exception", "object", TRUE);
 	register_icall (mono_llvm_set_unhandled_exception_handler, "mono_llvm_set_unhandled_exception_handler", NULL, TRUE);
-	register_icall (mono_throw_corlib_exception, "mono_throw_corlib_exception", "void int", FALSE);
+	register_icall (mono_llvm_throw_corlib_exception, "mono_llvm_throw_corlib_exception", "void int", FALSE);
 
 	// FIXME: This is broken
 	register_icall (mono_debug_personality, "mono_debug_personality", "int int int ptr ptr ptr", TRUE);

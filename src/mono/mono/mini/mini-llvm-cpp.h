@@ -108,7 +108,7 @@ void
 mono_llvm_throw_exception (MonoObject *ex);
 
 void
-mono_throw_corlib_exception (guint32 ex_token_index);
+mono_llvm_throw_corlib_exception (guint32 ex_token_index);
 
 void
 mono_llvm_resume_exception (void);
