@@ -142,6 +142,12 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.hostent.cs">
+      <Link>Interop\Unix\libc\Interop.hostent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.socket.cs">
+      <Link>Interop\Unix\libc\Interop.socket.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
@@ -151,14 +157,11 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNameInfo.cs">
       <Link>Interop\Unix\System.Native\Interop.GetNameInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.hostent.cs">
-      <Link>Interop\Unix\libc\Interop.hostent.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.HostEntry.cs">
+      <Link>Interop\Unix\System.Native\Interop.HostEntry.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.HostEntries.cs">
-      <Link>Interop\Unix\System.Native\Interop.HostEntries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.socket.cs">
-      <Link>Interop\Unix\libc\Interop.socket.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
+      <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>
 

@@ -394,6 +394,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
       <Link>Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
+      <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">

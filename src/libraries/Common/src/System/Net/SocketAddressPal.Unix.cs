@@ -10,156 +10,132 @@ namespace System.Net
 {
     internal static class SocketAddressPal
     {
-        public const int IPv6AddressSize = Interop.libc.sockaddr_in6.Size;
-        public const int IPv4AddressSize = Interop.libc.sockaddr_in.Size;
         public const int DataOffset = 0;
+
+        public readonly static int IPv6AddressSize = GetIPv6AddressSize();
+        public readonly static int IPv4AddressSize = GetIPv4AddressSize();
+
+        private static unsafe int GetIPv6AddressSize()
+        {
+            int ipv6AddressSize, unused;
+            Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&unused, &ipv6AddressSize);
+            Debug.Assert(err == Interop.Error.SUCCESS);
+            return ipv6AddressSize;
+        }
+
+        private static unsafe int GetIPv4AddressSize()
+        {
+            int ipv4AddressSize, unused;
+            Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&ipv4AddressSize, &unused);
+            Debug.Assert(err == Interop.Error.SUCCESS);
+            return ipv4AddressSize;
+        }
+
+        private static void ThrowOnFailure(Interop.Error err)
+        {
+            switch (err)
+            {
+                case Interop.Error.SUCCESS:
+                    return;
+
+                case Interop.Error.EFAULT:
+                    // The buffer was either null or too small.
+                    throw new IndexOutOfRangeException();
+
+                case Interop.Error.EAFNOSUPPORT:
+                    // There was no appropriate mapping from the platform address family.
+                    throw new PlatformNotSupportedException();
+
+                default:
+                    Debug.Fail("Unexpected failure in GetAddressFamily");
+                    throw new PlatformNotSupportedException();
+            }
+        }
 
         public static unsafe AddressFamily GetAddressFamily(byte[] buffer)
         {
+            AddressFamily family;
+            Interop.Error err;
             fixed (byte* rawAddress = buffer)
             {
-                var sockaddr = (Interop.libc.sockaddr*)rawAddress;
-                switch (Interop.CheckedRead((byte*)sockaddr, buffer.Length, &sockaddr->sa_family))
-                {
-                    case Interop.libc.AF_UNSPEC:
-                        return AddressFamily.Unspecified;
-
-                    case Interop.libc.AF_UNIX:
-                        return AddressFamily.Unix;
-
-                    case Interop.libc.AF_INET:
-                        return AddressFamily.InterNetwork;
-
-                    case Interop.libc.AF_INET6:
-                        return AddressFamily.InterNetworkV6;
-
-                    default:
-                        throw new PlatformNotSupportedException();
-                }
+                err = Interop.Sys.GetAddressFamily(rawAddress, buffer.Length, (int*)&family);
             }
+
+            ThrowOnFailure(err);
+            return family;
         }
 
         public static unsafe void SetAddressFamily(byte[] buffer, AddressFamily family)
         {
+            Interop.Error err;
             fixed (byte* rawAddress = buffer)
             {
-                var sockaddr = (Interop.libc.sockaddr*)rawAddress;
-                Interop.CheckBounds((byte*)sockaddr, buffer.Length, &sockaddr->sa_family);
-
-                switch (family)
-                {
-                    case AddressFamily.Unspecified:
-                        sockaddr->sa_family = Interop.libc.AF_UNSPEC;
-                        break;
-
-                    case AddressFamily.Unix:
-                        sockaddr->sa_family = Interop.libc.AF_UNIX;
-                        break;
-
-                    case AddressFamily.InterNetwork:
-                        sockaddr->sa_family = Interop.libc.AF_INET;
-                        break;
-
-                    case AddressFamily.InterNetworkV6:
-                        sockaddr->sa_family = Interop.libc.AF_INET6;
-                        break;
-
-                    default:
-                        Debug.Fail("Unsupported addres family");
-                        throw new PlatformNotSupportedException();
-                }
+                err = Interop.Sys.SetAddressFamily(rawAddress, buffer.Length, (int)family);
             }
+
+            ThrowOnFailure(err);
         }
 
         public static unsafe ushort GetPort(byte[] buffer)
         {
             ushort port;
-
+            Interop.Error err;
             fixed (byte* rawAddress = buffer)
             {
-                var sockaddr = (Interop.libc.sockaddr*)rawAddress;
-                switch (sockaddr->sa_family)
-                {
-                    case Interop.libc.AF_INET:
-                        port = Interop.CheckedRead((byte*)sockaddr, buffer.Length, &((Interop.libc.sockaddr_in*)sockaddr)->sin_port);
-                        break;
-
-                    case Interop.libc.AF_INET6:
-                        port = Interop.CheckedRead((byte*)sockaddr, buffer.Length, &((Interop.libc.sockaddr_in6*)sockaddr)->sin6_port);
-                        break;
-
-                    default:
-                        Debug.Fail("Unsupported address family");
-                        throw new PlatformNotSupportedException();
-                }
+                err = Interop.Sys.GetPort(rawAddress, buffer.Length, &port);
             }
 
-            return port.NetworkToHost();
+            ThrowOnFailure(err);
+            return port;
         }
 
         public static unsafe void SetPort(byte[] buffer, ushort port)
         {
-            port = port.HostToNetwork();
-
+            Interop.Error err;
             fixed (byte* rawAddress = buffer)
             {
-                var sockaddr = (Interop.libc.sockaddr*)rawAddress;
-                switch (sockaddr->sa_family)
-                {
-                    case Interop.libc.AF_INET:
-                        Interop.CheckedWrite((byte*)sockaddr, buffer.Length, &((Interop.libc.sockaddr_in*)sockaddr)->sin_port, port);
-                        break;
-
-                    case Interop.libc.AF_INET6:
-                        Interop.CheckedWrite((byte*)sockaddr, buffer.Length, &((Interop.libc.sockaddr_in6*)sockaddr)->sin6_port, port);
-                        break;
-
-                    default:
-                        Debug.Fail("Unsupported address family");
-                        throw new PlatformNotSupportedException();
-                }
+                err = Interop.Sys.SetPort(rawAddress, buffer.Length, port);
             }
+
+            ThrowOnFailure(err);
         }
 
         public static unsafe uint GetIPv4Address(byte[] buffer)
         {
+            uint ipAddress;
+            Interop.Error err;
             fixed (byte* rawAddress = buffer)
             {
-                var sockaddr = (Interop.libc.sockaddr_in*)rawAddress;
-                Debug.Assert(sockaddr->sin_family == Interop.libc.AF_INET);
-
-                return Interop.CheckedRead((byte*)sockaddr, buffer.Length, &sockaddr->sin_addr.s_addr);
+                err = Interop.Sys.GetIPv4Address(rawAddress, buffer.Length, &ipAddress);
             }
+
+            ThrowOnFailure(err);
+            return ipAddress;
         }
 
         public static unsafe void GetIPv6Address(byte[] buffer, byte[] address, out uint scope)
         {
-            Debug.Assert(address.Length == sizeof(Interop.libc.in6_addr));
-
+            uint localScope;
+            Interop.Error err;
             fixed (byte* rawAddress = buffer)
+            fixed (byte* ipAddress = address)
             {
-                var sockaddr = (Interop.libc.sockaddr_in6*)rawAddress;
-                Debug.Assert(sockaddr->sin6_family == Interop.libc.AF_INET6);
-
-                Interop.CheckBounds((byte*)sockaddr, buffer.Length, (byte*)&sockaddr->sin6_addr.s6_addr[0], sizeof(Interop.libc.in6_addr));
-                for (int i = 0; i < sizeof(Interop.libc.in6_addr); i++)
-                {
-                    address[i] = sockaddr->sin6_addr.s6_addr[i];
-                }
-
-                scope = Interop.CheckedRead((byte*)sockaddr, buffer.Length, &sockaddr->sin6_scope_id);
+                err = Interop.Sys.GetIPv6Address(rawAddress, buffer.Length, ipAddress, address.Length, &localScope);
             }
+
+            ThrowOnFailure(err);
+            scope = localScope;
         }
 
         public static unsafe void SetIPv4Address(byte[] buffer, uint address)
         {
+            Interop.Error err;
             fixed (byte* rawAddress = buffer)
             {
-                var sockaddr = (Interop.libc.sockaddr_in*)rawAddress;
-                Debug.Assert(sockaddr->sin_family == Interop.libc.AF_INET);
-
-                Interop.CheckedWrite((byte*)sockaddr, buffer.Length, &sockaddr->sin_addr.s_addr, address);
+                err = Interop.Sys.SetIPv4Address(rawAddress, buffer.Length, address);
             }
+
+            ThrowOnFailure(err);
         }
 
         public static unsafe void SetIPv4Address(byte[] buffer, byte* address)
@@ -170,8 +146,6 @@ namespace System.Net
 
         public static unsafe void SetIPv6Address(byte[] buffer, byte[] address, uint scope)
         {
-            Debug.Assert(address.Length == sizeof(Interop.libc.in6_addr));
-
             fixed (byte* rawInput = address)
             {
                 SetIPv6Address(buffer, rawInput, address.Length, scope);
@@ -180,23 +154,13 @@ namespace System.Net
 
         public static unsafe void SetIPv6Address(byte[] buffer, byte* address, int addressLength, uint scope)
         {
-            Debug.Assert(addressLength == sizeof(Interop.libc.in6_addr));
-
+            Interop.Error err;
             fixed (byte* rawAddress = buffer)
             {
-                var sockaddr = (Interop.libc.sockaddr_in6*)rawAddress;
-                Debug.Assert(sockaddr->sin6_family == Interop.libc.AF_INET6);
-
-                Interop.CheckedWrite((byte*)sockaddr, buffer.Length, &sockaddr->sin6_flowinfo, 0);
-
-                Interop.CheckBounds((byte*)sockaddr, buffer.Length, (byte*)&sockaddr->sin6_addr.s6_addr[0], sizeof(Interop.libc.in6_addr));
-                for (int i = 0; i < sizeof(Interop.libc.in6_addr); i++)
-                {
-                    sockaddr->sin6_addr.s6_addr[i] = address[i];
-                }
-
-                Interop.CheckedWrite((byte*)sockaddr, buffer.Length, &sockaddr->sin6_scope_id, scope);
+                err = Interop.Sys.SetIPv6Address(rawAddress, buffer.Length, address, addressLength, scope);
             }
+
+            ThrowOnFailure(err);
         }
     }
 }
