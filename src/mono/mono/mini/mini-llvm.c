@@ -7112,7 +7112,10 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 		fields [tindex ++] = LLVMConstNull (eltype);
 		fields [tindex ++] = LLVMConstNull (eltype);
 	}
-	fields [tindex ++] = AddJitGlobal (lmodule, eltype, "method_addresses");
+	if (!lmodule->llvm_only)
+		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "method_addresses");
+	else
+		fields [tindex ++] = LLVMConstNull (eltype);
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule->module, "blob");
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule->module, "class_name_table");
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule->module, "class_info_offsets");
@@ -7143,14 +7146,17 @@ emit_aot_file_info (MonoLLVMModule *lmodule)
 	else
 		fields [tindex ++] = LLVMConstNull (eltype);
 	fields [tindex ++] = LLVMGetNamedGlobal (lmodule->module, "assembly_name");
-	fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt");
-	fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt_end");
-	fields [tindex ++] = AddJitGlobal (lmodule, eltype, "unwind_info");
 	if (!lmodule->llvm_only) {
+		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt");
+		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "plt_end");
+		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "unwind_info");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "unbox_trampolines");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "unbox_trampolines_end");
 		fields [tindex ++] = AddJitGlobal (lmodule, eltype, "unbox_trampoline_addresses");
 	} else {
+		fields [tindex ++] = LLVMConstNull (eltype);
+		fields [tindex ++] = LLVMConstNull (eltype);
+		fields [tindex ++] = LLVMConstNull (eltype);
 		fields [tindex ++] = LLVMConstNull (eltype);
 		fields [tindex ++] = LLVMConstNull (eltype);
 		fields [tindex ++] = LLVMConstNull (eltype);
