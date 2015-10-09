@@ -129,7 +129,7 @@ build_managed_corefx()
     __buildproj=$__scriptpath/build.proj
     __buildlog=$__scriptpath/msbuild.log
 
-    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:OSGroup=$__BuildOS /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestRuntimeNugetId "$@"
+    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:OSGroup=$__BuildOS /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId "$@"
     BUILDERRORLEVEL=$?
 
     echo
@@ -193,15 +193,19 @@ __msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MS
 __BuildArch=x64
 __buildmanaged=false
 __buildnative=false
+__TestNugetRuntimeId=win7-x64
+
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 case $OSName in
     Linux)
         __HostOS=Linux
+        __TestNugetRuntimeId=ubuntu.14.04-x64
         ;;
 
     Darwin)
         __HostOS=OSX
+        __TestNugetRuntimeId=osx.10.10-x64
         ;;
 
     FreeBSD)
@@ -211,6 +215,7 @@ case $OSName in
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
         __HostOS=Linux
+        __TestNugetRuntimeId=ubuntu.14.04-x64
         ;;
 esac
 __BuildOS=$__HostOS
@@ -238,7 +243,6 @@ __CleanBuild=false
 __VerboseBuild=false
 __ClangMajorVersion=3
 __ClangMinorVersion=5
-__TestNugetRuntimeId=win7-x64
 
 for i in "$@"
     do
