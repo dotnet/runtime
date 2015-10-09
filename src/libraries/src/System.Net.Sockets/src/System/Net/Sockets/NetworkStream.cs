@@ -955,6 +955,68 @@ namespace System.Net.Sockets
 #endif
         }
 
+        // ReadAsync - provide async read functionality.
+        // 
+        // This method provides async read functionality. All we do is
+        // call through to the Begin/EndRead methods.
+        // 
+        // Input:
+        // 
+        //     buffer            - Buffer to read into.
+        //     offset            - Offset into the buffer where we're to read.
+        //     size              - Number of bytes to read.
+        //     cancellationtoken - Token used to request cancellation of the operation
+        // 
+        // Returns:
+        // 
+        //     A Task<int> representing the read.
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            return Task.Factory.FromAsync(
+                (bufferArg, offsetArg, sizeArg, callback, state) => ((NetworkStream)state).BeginRead(bufferArg, offsetArg, sizeArg, callback, state),
+                iar => ((NetworkStream)iar.AsyncState).EndRead(iar),
+                buffer, 
+                offset, 
+                size, 
+                this);
+        }
+
+        // WriteAsync - provide async write functionality.
+        // 
+        // This method provides async write functionality. All we do is
+        // call through to the Begin/EndWrite methods.
+        // 
+        // Input:
+        // 
+        //     buffer  - Buffer to write into.
+        //     offset  - Offset into the buffer where we're to write.
+        //     size    - Number of bytes to write.
+        //     cancellationtoken - Token used to request cancellation of the operation
+        // 
+        // Returns:
+        // 
+        //     A Task representing the write.
+        public override Task WriteAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            return Task.Factory.FromAsync(
+                (bufferArg, offsetArg, sizeArg, callback, state) => ((NetworkStream)state).BeginWrite(bufferArg, offsetArg, sizeArg, callback, state),
+                iar => ((NetworkStream)iar.AsyncState).EndWrite(iar),
+                buffer, 
+                offset, 
+                size, 
+                this);
+        }
+
         // Flushes data from the stream.  This is meaningless for us, so it does nothing.
         public override void Flush()
         {
