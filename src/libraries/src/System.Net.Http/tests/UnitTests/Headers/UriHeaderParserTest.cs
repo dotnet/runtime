@@ -17,7 +17,6 @@ namespace System.Net.Http.Tests
             Assert.Null(parser.Comparer);
         }
 
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         [Fact]
         public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
         {
