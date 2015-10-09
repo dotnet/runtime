@@ -15,7 +15,7 @@ internal static partial class Interop
         private static extern ulong ErrGetError([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
 
         [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
-        private static extern void ErrErrorStringN(ulong e, StringBuilder buf, int len);
+        private static extern void ErrErrorStringN(ulong e, [Out] StringBuilder buf, int len);
 
         private static string ErrErrorStringN(ulong error)
         {
