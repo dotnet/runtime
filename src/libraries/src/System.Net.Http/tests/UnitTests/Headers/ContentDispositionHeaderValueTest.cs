@@ -203,7 +203,6 @@ namespace System.Net.Http.Tests
             Assert.Null(contentDisposition.FileNameStar);
         }
 
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         [Fact]
         public void FileNameStar_UnknownOrBadEncoding_PropertyFails()
         {
