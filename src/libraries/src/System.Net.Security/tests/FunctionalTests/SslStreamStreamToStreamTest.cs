@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,6 +16,11 @@ namespace System.Net.Security.Tests
 {
     public class SslStreamStreamToStreamTest
     {
+        private readonly byte[] sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
+        private readonly TimeSpan TaskTimeSpan = TimeSpan.FromSeconds(15);
+
+        #region Tests
+
         [Fact]
         public void SslStream_StreamToStream_Authentication_Success()
         {
@@ -32,20 +39,6 @@ namespace System.Net.Security.Tests
                 bool finished = Task.WaitAll(auth, TimeSpan.FromSeconds(3));
                 Assert.True(finished, "Handshake completed in the allotted time");
             }
-        }
-
-        public bool AllowAnyServerCertificate(
-            object sender,
-            X509Certificate certificate,
-            X509Chain chain,
-            SslPolicyErrors sslPolicyErrors)
-        {
-            if (sslPolicyErrors != SslPolicyErrors.RemoteCertificateNameMismatch)
-            {
-                return true;
-            }
-
-            return false;
         }
 
         [Fact]
@@ -71,160 +64,77 @@ namespace System.Net.Security.Tests
             }
         }
 
-        internal class MockNetwork
+        /// <summary>
+        /// Tests that a second clientSslStream.write after first clientSslStream.write is successfull.
+        /// </summary>
+        [Fact]
+        public void SslStream_StreamToStream_Successive_ClientWrite_Success()
         {
-            private readonly Queue<byte[]> _clientWriteQueue = new Queue<byte[]>();
-            private readonly Queue<byte[]> _serverWriteQueue = new Queue<byte[]>();
+            byte[] recvBuf = new byte[sampleMsg.Length];
+            MockNetwork network = new MockNetwork();
 
-            private readonly SemaphoreSlim _clientDataAvailable = new SemaphoreSlim(0);
-            private readonly SemaphoreSlim _serverDataAvailable = new SemaphoreSlim(0);
-
-            public MockNetwork()
+            using (var clientStream = new FakeNetworkStream(false, network))
+            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
             {
-            }
+                bool result = DoHandshake(clientSslStream, serverSslStream, TaskTimeSpan);
 
-            public void ReadFrame(bool server, out byte[] buffer)
-            {
-                SemaphoreSlim semaphore;
-                Queue<byte[]> packetQueue;
+                Assert.True(result, "Handshake completed.");
 
-                if (server)
-                {
-                    semaphore = _clientDataAvailable;
-                    packetQueue = _clientWriteQueue;
-                }
-                else
-                {
-                    semaphore = _serverDataAvailable;
-                    packetQueue = _serverWriteQueue;
-                }
+                clientSslStream.Write(sampleMsg);
 
-                semaphore.Wait();
-                buffer = packetQueue.Dequeue();
-            }
+                serverSslStream.Read(recvBuf, 0, sampleMsg.Length);
 
-            public void WriteFrame(bool server, byte[] buffer)
-            {
-                SemaphoreSlim semaphore;
-                Queue<byte[]> packetQueue;
+                clientSslStream.Write(sampleMsg);
 
-                if (server)
-                {
-                    semaphore = _serverDataAvailable;
-                    packetQueue = _serverWriteQueue;
-                }
-                else
-                {
-                    semaphore = _clientDataAvailable;
-                    packetQueue = _clientWriteQueue;
-                }
+                // TODO Issue#3802
+                // The condition on which read method (UpdateReadStream) in FakeNetworkStream does a network read is flawed.
+                // That works fine in single read/write but fails in multi read write as stream size can be more, but real data can be < stream size.
+                // So I am doing an explicit read here. This issue is specific to test only & irrespective of xplat.
+                serverStream.DoNetworkRead();
 
-                byte[] innerBuffer = new byte[buffer.Length];
-                buffer.CopyTo(innerBuffer, 0);
+                serverSslStream.Read(recvBuf, 0, sampleMsg.Length);
 
-                packetQueue.Enqueue(innerBuffer);
-                semaphore.Release();
+                Assert.True(VerifyOutput(recvBuf, sampleMsg), "verify second read data is as expected.");
             }
         }
 
-        internal class FakeNetworkStream : Stream
+        #endregion
+
+        #region Private Methods
+
+        private bool VerifyOutput(byte [] actualBuffer, byte [] expectedBuffer)
         {
-            private readonly MockNetwork _network;
-            private MemoryStream _readStream;
-            private readonly bool _isServer;
-
-            public FakeNetworkStream(bool isServer, MockNetwork network)
-            {
-                _network = network;
-                _isServer = isServer;
-            }
-
-            public override bool CanRead
-            {
-                get
-                {
-                    return true;
-                }
-            }
-
-            public override bool CanSeek
-            {
-                get
-                {
-                    return false;
-                }
-            }
-
-            public override bool CanWrite
-            {
-                get
-                {
-                    return true;
-                }
-            }
-
-            public override long Length
-            {
-                get
-                {
-                    throw new NotImplementedException();
-                }
-            }
-
-            public override long Position
-            {
-                get
-                {
-                    throw new NotImplementedException();
-                }
-
-                set
-                {
-                    throw new NotImplementedException();
-                }
-            }
-
-            public override void Flush()
-            {
-                throw new NotImplementedException();
-            }
-
-            public override void SetLength(long value)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override long Seek(long offset, SeekOrigin origin)
-            {
-                throw new NotImplementedException();
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                UpdateReadStream();
-                return _readStream.Read(buffer, offset, count);
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                byte[] innerBuffer = new byte[count];
-
-                Buffer.BlockCopy(buffer, offset, innerBuffer, 0, count);
-                _network.WriteFrame(_isServer, buffer);
-            }
-
-            private void UpdateReadStream()
-            {
-                if (_readStream != null && (_readStream.Position < _readStream.Length))
-                {
-                    return;
-                }
-
-                byte[] innerBuffer;
-                _network.ReadFrame(_isServer, out innerBuffer);
-
-                _readStream = new MemoryStream(innerBuffer);
-            }
+            return expectedBuffer.SequenceEqual(actualBuffer);
         }
+
+        private bool AllowAnyServerCertificate(
+            object sender,
+            X509Certificate certificate,
+            X509Chain chain,
+            SslPolicyErrors sslPolicyErrors)
+        {
+            if (sslPolicyErrors != SslPolicyErrors.RemoteCertificateNameMismatch)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool DoHandshake(SslStream clientSslStream, SslStream serverSslStream, TimeSpan waitTimeSpan)
+        {
+            X509Certificate2 certificate = TestConfiguration.GetServerCertificate();
+            Task[] auth = new Task[2];
+
+            auth[0] = clientSslStream.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
+            auth[1] = serverSslStream.AuthenticateAsServerAsync(certificate);
+
+            bool finished = Task.WaitAll(auth, waitTimeSpan);
+            return finished;
+        }
+
+        #endregion
     }
 }
