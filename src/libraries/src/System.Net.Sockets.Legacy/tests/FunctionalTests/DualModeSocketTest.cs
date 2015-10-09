@@ -89,6 +89,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [ActiveIssue(3494, PlatformID.AnyUnix)]
         [Fact] // Base Case
         public void ConnectV4MappedIPAddressToV4Host_Success()
         {
@@ -781,6 +782,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [ActiveIssue(3682, PlatformID.AnyUnix)]
         [Fact]
         public void ConnectAsyncV4IPEndPointToDualHost_Success()
         {
