@@ -6,9 +6,20 @@
 #include <openssl/asn1.h>
 
 /*
+NID values that are used in managed code.
+*/
+enum SupportedAlgorithmNids
+{
+    PAL_NID_undef = 0,
+    PAL_NID_secp224r1 = 713,
+    PAL_NID_secp384r1 = 715,
+    PAL_NID_secp521r1 = 716,
+};
+
+/*
 Direct shim to ASN1_INTEGER_get.
 */
-extern "C" int64_t Asn1IntegerGet(const ASN1_INTEGER* a);
+extern "C" int64_t Asn1IntegerGet(ASN1_INTEGER* a);
 
 /*
 Direct shim to OBJ_txt2obj.
@@ -25,7 +36,7 @@ Retrieves the ASN1_OBJECT for the specified friendly name.
 
 Can return nullptr if there isn't a corresponding shared object.
 */
-extern "C" const ASN1_OBJECT* GetFriendlyNameSharedObject(const char* friendlyName);
+extern "C" const ASN1_OBJECT* GetObjectDefinitionByName(const char* friendlyName);
 
 /*
 Direct shim to OBJ_sn2nid.

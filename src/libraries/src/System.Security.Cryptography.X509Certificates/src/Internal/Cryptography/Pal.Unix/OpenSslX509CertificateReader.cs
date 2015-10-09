@@ -74,7 +74,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 IntPtr oidPtr = Interop.Crypto.GetX509PublicKeyAlgorithm(_cert);
-                return Interop.Crypto.OBJ_obj2txt_helper(oidPtr);
+                return Interop.Crypto.GetOidValue(oidPtr);
             }
         }
 
@@ -114,7 +114,7 @@ namespace Internal.Cryptography.Pal
             get
             {
                 IntPtr oidPtr = Interop.Crypto.GetX509SignatureAlgorithm(_cert);
-                return Interop.Crypto.OBJ_obj2txt_helper(oidPtr);
+                return Interop.Crypto.GetOidValue(oidPtr);
             }
         }
 
@@ -211,7 +211,7 @@ namespace Internal.Cryptography.Pal
 
                     Interop.Crypto.CheckValidOpenSslHandle(oidPtr);
 
-                    string oidValue = Interop.Crypto.OBJ_obj2txt_helper(oidPtr);
+                    string oidValue = Interop.Crypto.GetOidValue(oidPtr);
                     Oid oid = new Oid(oidValue);
 
                     IntPtr dataPtr = Interop.libcrypto.X509_EXTENSION_get_data(ext);
