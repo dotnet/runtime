@@ -138,24 +138,7 @@ namespace System.Net
                     int err = Interop.Sys.GetNextIPAddress(&addressListHandle, &nativeIPAddress);
                     Debug.Assert(err == 0);
 
-                    IPAddress ipAddress;
-                    if (nativeIPAddress.IsIPv6 == 0)
-                    {
-                        uint address = *(uint*)nativeIPAddress.Address;
-                        ipAddress = new IPAddress((long)address);
-                    }
-                    else
-                    {
-                        byte[] address = new byte[Interop.Sys.NUM_BYTES_IN_IPV6_ADDRESS];
-                        for (int b = 0; b < Interop.Sys.NUM_BYTES_IN_IPV6_ADDRESS; b++)
-                        {
-                            address[b] = nativeIPAddress.Address[b];
-                        }
-
-                        ipAddress = new IPAddress(address, (long)nativeIPAddress.ScopeId);
-                    }
-
-                    hostinfo.AddressList[i] = ipAddress;
+                    hostinfo.AddressList[i] = nativeIPAddress.GetIPAddress();
                 }
             }
             finally
