@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
 namespace System.Net.Http.WinHttpHandlerUnitTests
@@ -26,6 +27,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public static int ResponseDelayTime { get; set; }
 
         public static AutoResetEvent ResponseDelayCompletedEvent { get; internal set; }
+        
+        public static X509Certificate2Collection CurrentUserCertificateStore{ get; set; }
 
         public static void Reset()
         {
@@ -40,6 +43,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             PACFileNotDetectedOnNetwork = false;
             ResponseDelayTime = 0;
             ResponseDelayCompletedEvent = new AutoResetEvent(true);
+            
+            CurrentUserCertificateStore = new X509Certificate2Collection();
         }
 
         public static void ResetAll()
