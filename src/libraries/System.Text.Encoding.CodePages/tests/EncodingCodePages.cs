@@ -451,7 +451,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestDefaultEncodings()
         {
             ValidateDefaultEncodings();
