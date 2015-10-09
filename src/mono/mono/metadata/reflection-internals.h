@@ -11,4 +11,7 @@
 MonoObject*
 mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error);
 
+char*
+mono_identifier_unescape_type_name_chars (char* identifier);
+
 #endif

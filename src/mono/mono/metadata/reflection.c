@@ -7637,7 +7637,6 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
  *
  *  The string is modified in place!
  */
-static
 char*
 mono_identifier_unescape_type_name_chars(char* identifier)
 {
