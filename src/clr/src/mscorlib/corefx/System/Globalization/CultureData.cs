@@ -1679,8 +1679,8 @@ namespace System.Globalization
             {
                 // Note: Custom cultures might point at another culture's textinfo, however windows knows how
                 // to redirect it to the desired textinfo culture, so this is OK.
-                Contract.Assert(this.sWindowsName != null, "[CultureData.STEXTINFO] Expected this.sWindowsName to be populated by already");
-                return (this.sWindowsName);
+                Contract.Assert(this.sRealName != null, "[CultureData.STEXTINFO] Expected this.sRealName to be populated by already");
+                return (this.sRealName);
             }
         }
 
@@ -1689,8 +1689,8 @@ namespace System.Globalization
         {
             get
             {
-                Contract.Assert(this.sWindowsName != null, "[CultureData.SCOMPAREINFO] Expected this.sWindowsName to be populated by already");
-                return (this.sWindowsName);
+                Contract.Assert(this.sRealName != null, "[CultureData.SCOMPAREINFO] Expected this.sRealName to be populated by already");
+                return (this.sRealName);
             }
         }
 
