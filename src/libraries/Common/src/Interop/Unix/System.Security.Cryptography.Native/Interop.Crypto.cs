@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -132,9 +133,12 @@ internal static partial class Interop
             return GetDynamicBuffer((handle, buf, i) => GetX509Thumbprint(handle, buf, i), x509);
         }
 
-        internal static byte[] GetX509NameRawBytes(IntPtr x509Name)
+        internal static X500DistinguishedName LoadX500Name(IntPtr namePtr)
         {
-            return GetDynamicBuffer((ptr, buf, i) => GetX509NameRawBytes(ptr, buf, i), x509Name);
+            CheckValidOpenSslHandle(namePtr);
+
+            byte[] buf = GetDynamicBuffer((ptr, buf1, i) => GetX509NameRawBytes(ptr, buf1, i), namePtr);
+            return new X500DistinguishedName(buf);
         }
 
         internal static byte[] GetX509PublicKeyParameterBytes(SafeX509Handle x509)
