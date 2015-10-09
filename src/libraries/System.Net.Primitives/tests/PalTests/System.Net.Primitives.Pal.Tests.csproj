@@ -161,23 +161,29 @@
     <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs" >
       <Link>ProductionCode\Common\Interop\Interop.CheckedAccess.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs" >
+      <Link>ProductionCode\Common\Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs" >
       <Link>ProductionCode\Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs" >
-      <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getdomainname.cs" >
       <Link>ProductionCode\Common\Interop\Unix\libc\Interop.getdomainname.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs" >
+      <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNameInfo.cs" >
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.GetNameInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.HostEntries.cs">
-      <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.HostEntries.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.HostEntry.cs">
+      <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.HostEntry.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.IPAddress.cs">
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.IPAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
+      <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>
 
