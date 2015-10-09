@@ -361,10 +361,13 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 		/* FIXME: ji->from_aot is not set for llvm methods */
 		if (ji && (ji->from_aot || mono_aot_only)) {
 			/* In AOT mode, compiled_method points to one of the InternalArray methods in Array. */
-			if (mono_method_needs_static_rgctx_invoke (jinfo_get_method (ji), TRUE))
+			if (!mono_llvm_only && mono_method_needs_static_rgctx_invoke (jinfo_get_method (ji), TRUE))
 				add_static_rgctx_tramp = TRUE;
 		}
 	}
+
+	if (mono_llvm_only)
+		add_static_rgctx_tramp = FALSE;
 
 	if (add_static_rgctx_tramp)
 		addr = mono_create_static_rgctx_trampoline (m, addr);
@@ -1291,6 +1294,9 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	if (code && !ji->has_generic_jit_info && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED))
 		return code;
 
+	if (mono_llvm_only)
+		return mono_jit_compile_method (method);
+
 	mono_domain_lock (domain);
 	code = g_hash_table_lookup (domain_jit_info (domain)->jump_trampoline_hash, method);
 	mono_domain_unlock (domain);
@@ -1319,6 +1325,12 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	return ji->code_start;
 }
 
+static void
+method_not_found (void)
+{
+	g_assert_not_reached ();
+}
+
 gpointer
 mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 {
@@ -1330,6 +1342,14 @@ mono_create_jit_trampoline_in_domain (MonoDomain *domain, MonoMethod *method)
 		
 		if (code)
 			return code;
+		if (mono_llvm_only) {
+			if (method->wrapper_type == MONO_WRAPPER_PROXY_ISINST || method->wrapper_type == MONO_WRAPPER_LDFLD_REMOTE ||
+				method->wrapper_type == MONO_WRAPPER_STFLD_REMOTE)
+				/* These wrappers are not generated */
+				return method_not_found;
+			/* Methods are lazily initialized on first call, so this can't lead recursion */
+			return mono_compile_method (method);
+		}
 	}
 
 	mono_domain_lock (domain);
@@ -1413,9 +1433,18 @@ mono_create_delegate_trampoline_info (MonoDomain *domain, MonoClass *klass, Mono
 	return tramp_info;
 }
 
+static void
+no_delegate_trampoline (void)
+{
+	g_assert_not_reached ();
+}
+
 gpointer
 mono_create_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
 {
+	if (mono_llvm_only)
+		return no_delegate_trampoline;
+
 	return mono_create_delegate_trampoline_info (domain, klass, NULL)->invoke_impl;
 }
 

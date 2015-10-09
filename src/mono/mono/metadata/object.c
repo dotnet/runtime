@@ -6032,7 +6032,7 @@ mono_runtime_capture_context (MonoDomain *domain)
 		MonoMethod *wrapper;
 		if (!method)
 			return NULL;
-		wrapper = mono_marshal_get_runtime_invoke (method, FALSE);
+		wrapper = mono_marshal_get_runtime_invoke (method, FALSE, FALSE);
 		domain->capture_context_runtime_invoke = mono_compile_method (wrapper);
 		domain->capture_context_method = mono_compile_method (method);
 	}
@@ -6906,5 +6906,25 @@ mono_array_addr_with_size (MonoArray *array, int size, uintptr_t idx)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	return ((char*)(array)->vector) + size * idx;
+}
+
+
+MonoArray *
+mono_glist_to_array (GList *list, MonoClass *eclass) 
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoArray *res;
+	int len, i;
+
+	if (!list)
+		return NULL;
+
+	len = g_list_length (list);
+	res = mono_array_new (domain, eclass, len);
+
+	for (i = 0; list; list = list->next, i++)
+		mono_array_set (res, gpointer, i, list->data);
+
+	return res;
 }
 

@@ -15,6 +15,11 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/ExecutionEngine.h"
 
+#include "../metadata/object.h"
+#include "../metadata/domain-internals.h"
+
+#include <unwind.h>
+
 G_BEGIN_DECLS
 
 /*
@@ -92,6 +97,46 @@ mono_llvm_create_constant_data_array (const uint8_t *data, int len);
 
 void
 mono_llvm_set_is_constant (LLVMValueRef global_var);
+
+void
+mono_llvm_cpp_throw_exception (void);
+
+void
+mono_llvm_rethrow_exception (MonoObject *ex);
+
+void
+mono_llvm_throw_exception (MonoObject *ex);
+
+void
+mono_llvm_throw_corlib_exception (guint32 ex_token_index);
+
+void
+mono_llvm_resume_exception (void);
+
+gint32
+mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end);
+
+void 
+mono_llvm_clear_exception (void);
+
+MonoObject *
+mono_llvm_load_exception (void);
+
+void
+mono_llvm_reset_exception (void);
+
+_Unwind_Reason_Code 
+mono_debug_personality (int a, _Unwind_Action b,
+	uint64_t c, struct _Unwind_Exception *d, struct _Unwind_Context *e);
+
+void
+mono_llvm_set_unhandled_exception_handler (void);
+
+void
+default_mono_llvm_unhandled_exception (void);
+
+void
+mono_llvm_raise_exception (MonoException *e);
 
 G_END_DECLS
 

@@ -1151,6 +1151,7 @@ mini_usage_jitdeveloper (void)
 		 "    --inject-async-exc METHOD OFFSET Inject an asynchronous exception at METHOD\n"
 		 "    --verify-all           Run the verifier on all assemblies and methods\n"
 		 "    --full-aot             Avoid JITting any code\n"
+		 "    --llvmonly             Use LLVM compiled code only\n"
 		 "    --agent=ASSEMBLY[:ARG] Loads the specific agent assembly and executes its Main method with the given argument before loading the main assembly.\n"
 		 "    --no-x86-stack-align   Don't align stack on x86\n"
 		 "\n"
@@ -1687,6 +1688,9 @@ mono_main (int argc, char* argv[])
 			mono_verifier_enable_verify_all ();
 		} else if (strcmp (argv [i], "--full-aot") == 0) {
 			mono_aot_only = TRUE;
+		} else if (strcmp (argv [i], "--llvmonly") == 0) {
+			mono_aot_only = TRUE;
+			mono_llvm_only = TRUE;
 		} else if (strcmp (argv [i], "--print-vtable") == 0) {
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
@@ -2222,6 +2226,8 @@ void
 mono_jit_set_aot_only (gboolean val)
 {
 	mono_aot_only = val;
+	if (mono_aot_only)
+		mono_llvm_only = TRUE;
 }
 
 void

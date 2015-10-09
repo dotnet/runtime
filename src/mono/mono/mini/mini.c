@@ -3272,6 +3272,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->orig_method = method;
 	cfg->gen_seq_points = debug_options.gen_seq_points_compact_data || debug_options.gen_sdb_seq_points;
 	cfg->gen_sdb_seq_points = debug_options.gen_sdb_seq_points;
+	cfg->llvm_only = (flags & JIT_FLAG_LLVM_ONLY) != 0;
 
 #ifdef PLATFORM_ANDROID
 	if (cfg->method->wrapper_type != MONO_WRAPPER_NONE) {
@@ -3284,8 +3285,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 #if defined(__native_client_codegen__) || defined(USE_COOP_GC)
 	cfg->opt |= MONO_OPT_LOOP;
 #endif
-
-	cfg->explicit_null_checks = debug_options.explicit_null_checks;
+	cfg->explicit_null_checks = debug_options.explicit_null_checks || (flags & JIT_FLAG_EXPLICIT_NULL_CHECKS);
 	cfg->soft_breakpoints = debug_options.soft_breakpoints;
 	cfg->check_pinvoke_callconv = debug_options.check_pinvoke_callconv;
 	cfg->disable_direct_icalls = disable_direct_icalls;
@@ -3296,8 +3296,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (cfg->compile_aot)
 		cfg->method_index = aot_method_index;
 
+	/*
 	if (!mono_debug_count ())
 		cfg->opt &= ~MONO_OPT_FLOAT32;
+	*/
+	if (cfg->llvm_only)
+		cfg->opt &= ~MONO_OPT_SIMD;
 	cfg->r4fp = (cfg->opt & MONO_OPT_FLOAT32) ? 1 : 0;
 	cfg->r4_stack_type = cfg->r4fp ? STACK_R4 : STACK_R8;
 
@@ -3384,10 +3388,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		if (COMPILE_LLVM (cfg)) {
 			mono_llvm_check_method_supported (cfg);
 			if (cfg->disable_llvm) {
-				if (cfg->verbose_level >= 1) {
+				if (cfg->verbose_level >= cfg->llvm_only ? 0 : 1) {
 					//nm = mono_method_full_name (cfg->method, TRUE);
 					printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
 					//g_free (nm);
+				}
+				if (cfg->llvm_only) {
+					cfg->disable_aot = TRUE;
+					return cfg;
 				}
 				mono_destroy_compile (cfg);
 				try_llvm = FALSE;
@@ -3899,10 +3907,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		if (!cfg->disable_llvm)
 			mono_llvm_emit_method (cfg);
 		if (cfg->disable_llvm) {
-			if (cfg->verbose_level >= 1) {
+			if (cfg->verbose_level >= cfg->llvm_only ? 0 : 1) {
 				//nm = mono_method_full_name (cfg->method, TRUE);
 				printf ("LLVM failed for '%s': %s\n", method->name, cfg->exception_message);
 				//g_free (nm);
+			}
+			if (cfg->llvm_only) {
+				cfg->disable_aot = TRUE;
+				return cfg;
 			}
 			mono_destroy_compile (cfg);
 			try_llvm = FALSE;
@@ -4104,6 +4116,10 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				 */
 				return mono_get_addr_from_ftnptr ((gpointer)mono_icall_get_wrapper_full (mi, TRUE));
 			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
+				if (mono_llvm_only) {
+					nm = mono_marshal_get_delegate_invoke (method, NULL);
+					return mono_get_addr_from_ftnptr (mono_compile_method (nm));
+				}
 				return mono_create_delegate_trampoline (target_domain, method->klass);
 			} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_begin_invoke (method);

@@ -48,6 +48,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/profiler.h>
@@ -61,6 +62,7 @@
 #include "trace.h"
 #include "debugger-agent.h"
 #include "seq-points.h"
+#include "mini-llvm-cpp.h"
 
 #ifdef ENABLE_EXTENSION_MODULE
 #include "../../../mono-extensions/mono/mini/mini-exceptions.c"
@@ -108,8 +110,10 @@ mono_exceptions_init (void)
 		mono_tramp_info_register (info, NULL);
 	}
 #ifdef MONO_ARCH_HAVE_RESTORE_STACK_SUPPORT
-	try_more_restore_tramp = mono_create_specific_trampoline (try_more_restore, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
-	restore_stack_protection_tramp = mono_create_specific_trampoline (restore_stack_protection, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
+	if (!mono_llvm_only) {
+		try_more_restore_tramp = mono_create_specific_trampoline (try_more_restore, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
+		restore_stack_protection_tramp = mono_create_specific_trampoline (restore_stack_protection, MONO_TRAMPOLINE_RESTORE_STACK_PROT, mono_domain_get (), NULL);
+	}
 #endif
 
 #ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
@@ -117,7 +121,10 @@ mono_exceptions_init (void)
 #endif
 	cbs.mono_walk_stack_with_ctx = mono_runtime_walk_stack_with_ctx;
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
-	cbs.mono_raise_exception = mono_get_throw_exception ();
+	if (mono_llvm_only)
+		cbs.mono_raise_exception = mono_llvm_raise_exception;
+	else
+		cbs.mono_raise_exception = mono_get_throw_exception ();
 	cbs.mono_raise_exception_with_ctx = mono_raise_exception_with_ctx;
 	cbs.mono_exception_walk_trace = mono_exception_walk_trace;
 	cbs.mono_install_handler_block_guard = mono_install_handler_block_guard;
@@ -951,25 +958,6 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	return TRUE;
 }
 
-static MonoArray *
-glist_to_array (GList *list, MonoClass *eclass) 
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoArray *res;
-	int len, i;
-
-	if (!list)
-		return NULL;
-
-	len = g_list_length (list);
-	res = mono_array_new (domain, eclass, len);
-
-	for (i = 0; list; list = list->next, i++)
-		mono_array_set (res, gpointer, i, list->data);
-
-	return res;
-}
-
 static MonoClass*
 get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContext *ctx)
 {
@@ -1156,7 +1144,7 @@ setup_stack_trace (MonoException *mono_ex, GSList *dynamic_methods, MonoArray *i
 {
 	if (mono_ex && !initial_trace_ips) {
 		*trace_ips = g_list_reverse (*trace_ips);
-		MONO_OBJECT_SETREF (mono_ex, trace_ips, glist_to_array (*trace_ips, mono_defaults.int_class));
+		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (*trace_ips, mono_defaults.int_class));
 		MONO_OBJECT_SETREF (mono_ex, native_trace_ips, build_native_trace ());
 		if (dynamic_methods) {
 			/* These methods could go away anytime, so save a reference to them in the exception object */
@@ -1981,6 +1969,9 @@ mono_altstack_restore_prot (mgreg_t *regs, guint8 *code, gpointer *tramp_data, g
 gboolean
 mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, guint8* fault_addr)
 {
+	if (mono_llvm_only)
+		return FALSE;
+
 	/* we got a stack overflow in the soft-guard pages
 	 * There are two cases:
 	 * 1) managed code caused the overflow: we unprotect the soft-guard page

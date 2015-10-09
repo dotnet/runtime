@@ -86,6 +86,10 @@ typedef struct {
 	 * associated with this handler.
 	 */
 	int clause_index;
+	uint32_t try_offset;
+	uint32_t try_len;
+	uint32_t handler_offset;
+	uint32_t handler_len;
 	union {
 		MonoClass *catch_class;
 		gpointer filter;

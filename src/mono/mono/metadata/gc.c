@@ -220,7 +220,7 @@ mono_gc_run_finalize (void *obj, void *data)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Compiling finalizer.", o->vtable->klass->name, o);
 
 	if (!domain->finalize_runtime_invoke) {
-		MonoMethod *invoke = mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE);
+		MonoMethod *invoke = mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE, FALSE);
 
 		domain->finalize_runtime_invoke = mono_compile_method (invoke);
 	}

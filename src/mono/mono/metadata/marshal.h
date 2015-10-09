@@ -139,6 +139,7 @@ typedef struct {
 	MonoMethod *method;
 	/* For WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL */
 	MonoMethodSignature *sig;
+	gboolean pass_rgctx;
 } RuntimeInvokeWrapperInfo;
 
 typedef struct {
@@ -312,7 +313,7 @@ MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method);
 
 MonoMethod *
-mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean is_virtual);
+mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean is_virtual, gboolean pass_rgctx);
 
 MonoMethod*
 mono_marshal_get_runtime_invoke_dynamic (void);

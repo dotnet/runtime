@@ -195,5 +195,16 @@ gpointer mono_fill_class_rgctx (MonoVTable *vtable, int index);
 
 gpointer mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index);
 
-#endif /* __MONO_JIT_ICALLS_H__ */
+gpointer mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *imt_method, gpointer *out_rgctx_arg);
 
+gpointer mono_resolve_vcall (MonoObject *this, int slot, MonoMethod *imt_method);
+
+void mono_init_delegate (MonoDelegate *del, MonoObject *target, MonoMethod *method);
+
+void mono_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
+
+MonoObject* mono_get_assembly_object (MonoImage *image);
+
+double mono_ckfinite (double d);
+
+#endif /* __MONO_JIT_ICALLS_H__ */

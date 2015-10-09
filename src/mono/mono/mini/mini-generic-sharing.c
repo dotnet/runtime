@@ -2300,6 +2300,13 @@ mono_method_is_generic_sharable (MonoMethod *method, gboolean allow_type_vars)
 	return mono_method_is_generic_sharable_full (method, allow_type_vars, partial_sharing_supported (), TRUE);
 }
 
+/*
+ * mono_method_needs_static_rgctx_invoke:
+ *
+ *   Return whenever METHOD needs an rgctx argument.
+ * An rgctx argument is needed when the method is generic sharable, but it doesn't
+ * have a this argument which can be used to load the rgctx.
+ */
 gboolean
 mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_vars)
 {
