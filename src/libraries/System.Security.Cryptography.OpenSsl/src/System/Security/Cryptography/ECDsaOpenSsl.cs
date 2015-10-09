@@ -206,7 +206,7 @@ namespace System.Security.Cryptography
 
             if (keySize == 0)
             {
-                string curveNameOid = Interop.libcrypto.OBJ_obj2txt_helper(Interop.libcrypto.OBJ_nid2obj(nid));
+                string curveNameOid = Interop.Crypto.OBJ_obj2txt_helper(Interop.Crypto.ObjNid2Obj(nid));
                 throw new NotSupportedException(SR.Format(SR.Cryptography_UnsupportedEcKeyAlgorithm, curveNameOid));
             }
 
@@ -255,9 +255,9 @@ namespace System.Security.Cryptography
         private static readonly SupportedAlgorithm[] s_supportedAlgorithms =
             new SupportedAlgorithm[]
             {
-                new SupportedAlgorithm(keySize: 224, nid: Interop.libcrypto.NID_secp224r1),
-                new SupportedAlgorithm(keySize: 384, nid: Interop.libcrypto.NID_secp384r1),
-                new SupportedAlgorithm(keySize: 521, nid: Interop.libcrypto.NID_secp521r1),
+                new SupportedAlgorithm(keySize: 224, nid: Interop.Crypto.NID_secp224r1),
+                new SupportedAlgorithm(keySize: 384, nid: Interop.Crypto.NID_secp384r1),
+                new SupportedAlgorithm(keySize: 521, nid: Interop.Crypto.NID_secp521r1),
             };
     }
 }

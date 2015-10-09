@@ -528,9 +528,9 @@ namespace System.Security.Cryptography
             // If there's ever a new one that doesn't, translate it here.
             string sn = hashAlgorithmName.Name;
 
-            int nid = Interop.libcrypto.OBJ_sn2nid(sn);
+            int nid = Interop.Crypto.ObjSn2Nid(sn);
 
-            if (nid == Interop.libcrypto.NID_undef)
+            if (nid == Interop.Crypto.NID_undef)
             {
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
             }

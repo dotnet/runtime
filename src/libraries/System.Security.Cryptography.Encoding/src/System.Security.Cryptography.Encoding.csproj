@@ -61,14 +61,14 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ASN1.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.ASN1.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.BIO.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.BIO.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.X509Ext.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.X509Ext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
