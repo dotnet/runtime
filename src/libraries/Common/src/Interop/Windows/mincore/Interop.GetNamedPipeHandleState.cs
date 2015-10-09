@@ -29,7 +29,7 @@ internal partial class Interop
             IntPtr lpCurInstances,
             IntPtr lpMaxCollectionCount,
             IntPtr lpCollectDataTimeout,
-            StringBuilder lpUserName,
+            [Out] StringBuilder lpUserName,
             int nMaxUserNameSize);
 
         [DllImport(Libraries.Pipe_L2, SetLastError = true, EntryPoint="GetNamedPipeHandleStateW")]

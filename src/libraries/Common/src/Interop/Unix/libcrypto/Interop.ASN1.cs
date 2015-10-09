@@ -30,7 +30,7 @@ internal static partial class Interop
         internal static extern SafeAsn1ObjectHandle OBJ_txt2obj(string s, [MarshalAs(UnmanagedType.Bool)] bool no_name);
 
         [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
-        private static extern int OBJ_obj2txt(StringBuilder buf, int buf_len, IntPtr a, [MarshalAs(UnmanagedType.Bool)] bool no_name);
+        private static extern int OBJ_obj2txt([Out] StringBuilder buf, int buf_len, IntPtr a, [MarshalAs(UnmanagedType.Bool)] bool no_name);
 
         [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
         internal static extern int OBJ_txt2nid(string s);
