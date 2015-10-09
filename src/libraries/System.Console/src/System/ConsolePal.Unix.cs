@@ -74,8 +74,36 @@ namespace System
             }
         }
 
-        /// <summary>
-        /// Gets whether Console.Out is redirected.
+        public static int WindowWidth
+        {
+            get
+            {
+                int cols = Interop.Sys.GetWindowWidth();
+                return (cols != -1) ? cols : TerminalBasicInfo.Instance.ColumnFormat;
+            }
+            set
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+        public static bool CursorVisible
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
+            set
+            {
+                if (IsConsoleOutRedirected) return;
+                string formatString = value ?
+                    TerminalBasicInfo.Instance.CursorVisibleFormat :
+                    TerminalBasicInfo.Instance.CursorInvisibleFormat;
+                if (!string.IsNullOrEmpty(formatString))
+                {
+                    Console.Write(formatString);
+                }
+            }
+        }
         /// By default we assume that the stream is redirected
         /// unless it is a character device.
         /// </summary>
@@ -306,6 +334,33 @@ namespace System
             {
                 TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
                 return new TerminalColorInfo(db);
+            }, isThreadSafe: true);
+        }
+
+        private struct TerminalBasicInfo
+        {
+            /// <summary>The no. of columns in a format</summary>
+            public int ColumnFormat;
+            /// <summary>The format string to use to make cursor visible.</summary>
+            public string CursorVisibleFormat;
+            /// <summary>The format string to use to make cursor invisible</summary>
+            public string CursorInvisibleFormat;
+
+            /// <summary>The cached instance.</summary>
+            public static TerminalBasicInfo Instance { get { return _instance.Value; } }
+
+            private TerminalBasicInfo(TermInfo.Database db)
+            {
+                ColumnFormat = db != null ? db.GetNumber(TermInfo.Database.ColumnIndex) : 0;
+                CursorVisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorVisibleIndex) : string.Empty;
+                CursorInvisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorInvisibleIndex) : string.Empty;
+            }
+
+            /// <summary>Lazy initialization of the terminal basic information.</summary>
+            private static Lazy<TerminalBasicInfo> _instance = new Lazy<TerminalBasicInfo>(() =>
+            {
+                TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
+                return new TerminalBasicInfo(db);
             }, isThreadSafe: true);
         }
 
@@ -676,6 +731,14 @@ namespace System
                 public const int SetAnsiForegroundIndex = 359;
                 /// <summary>The well-known index of the set_a_background string entry.</summary>
                 public const int SetAnsiBackgroundIndex = 360;
+
+                /// <summary>The well-known index of the columns numeric entry.</summary>
+                public const int ColumnIndex = 0;
+                /// <summary>The well-known index of the cursor_invisible string entry.</summary>
+                public const int CursorInvisibleIndex = 13;
+                /// <summary>The well-known index of the cursor_normal string entry.</summary>
+                public const int CursorVisibleIndex = 16;
+
 
                 /// <summary>Read a 16-bit value from the buffer starting at the specified position.</summary>
                 /// <param name="buffer">The buffer from which to read.</param>
