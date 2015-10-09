@@ -49,7 +49,7 @@ namespace System.Net
             var result = (Interop.libc.hostent*)null;
             if (TryGetHostByName(hostName, stackBuffer, bufferSize, &hostent, &result))
             {
-                return CreateHostEntry(&hostent);
+                return CreateHostEntry(result);
             }
 
             for (; ;)
@@ -59,7 +59,7 @@ namespace System.Net
                 {
                     if (TryGetHostByName(hostName, heapBuffer, bufferSize, &hostent, &result))
                     {
-                        return CreateHostEntry(&hostent);
+                        return CreateHostEntry(result);
                     }
                 }
             }
@@ -78,7 +78,7 @@ namespace System.Net
             var result = (Interop.libc.hostent*)null;
             if (TryGetHostByAddr(address, stackBuffer, bufferSize, &hostent, &result))
             {
-                return CreateHostEntry(&hostent);
+                return CreateHostEntry(result);
             }
 
             for (; ;)
@@ -88,7 +88,7 @@ namespace System.Net
                 {
                     if (TryGetHostByAddr(address, heapBuffer, bufferSize, &hostent, &result))
                     {
-                        return CreateHostEntry(&hostent);
+                        return CreateHostEntry(result);
                     }
                 }
             }

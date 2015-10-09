@@ -16,15 +16,15 @@ internal static partial class Interop
         internal const int INET6_ADDRSTRLEN = 65;
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern int Ipv6StringToAddress(string address, string port, byte[] buffer, int bufferLength, out uint scope);
+        internal static extern int IPv6StringToAddress(string address, string port, byte[] buffer, int bufferLength, out uint scope);
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern int Ipv4StringToAddress(string address, byte[] buffer, int bufferLength, out ushort port);
+        internal static extern int IPv4StringToAddress(string address, byte[] buffer, int bufferLength, out ushort port);
 
         [DllImport(Libraries.SystemNative)]
-        internal unsafe static extern int IpAddressToString(byte* address, int addressLength, bool isIpv6, byte* str, int stringLength, uint scope = 0);
+        internal unsafe static extern int IPAddressToString(byte* address, int addressLength, bool isIPv6, byte* str, int stringLength, uint scope = 0);
 
-        internal unsafe static uint IpAddressToString(byte[] address, bool isIpV6, System.Text.StringBuilder addressString, uint scope = 0)
+        internal unsafe static uint IPAddressToString(byte[] address, bool isIPv6, System.Text.StringBuilder addressString, uint scope = 0)
         {
             Debug.Assert(address != null);
             Debug.Assert((address.Length == IPv4AddressBytes) || (address.Length == IPv6AddressBytes));
@@ -32,9 +32,9 @@ internal static partial class Interop
             int err;
             fixed (byte* rawAddress = address)
             {
-                int bufferLength = isIpV6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN;
+                int bufferLength = isIPv6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN;
                 byte* buffer = stackalloc byte[bufferLength];
-                err = IpAddressToString(rawAddress, address.Length, isIpV6, buffer, bufferLength, scope);
+                err = IPAddressToString(rawAddress, address.Length, isIPv6, buffer, bufferLength, scope);
                 if (err == 0)
                 {
                     addressString.Append(Marshal.PtrToStringAnsi((IntPtr)buffer));

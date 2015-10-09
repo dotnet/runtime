@@ -18,7 +18,7 @@ namespace System.Net
             Debug.Assert(buffer != null);
             Debug.Assert(buffer.Capacity >= IPAddressParser.INET_ADDRSTRLEN);
 
-            return Interop.Sys.IpAddressToString(address, false, buffer);
+            return Interop.Sys.IPAddressToString(address, false, buffer);
         }
 
         public static unsafe uint Ipv6AddressToString(byte[] address, uint scopeId, StringBuilder buffer)
@@ -28,7 +28,7 @@ namespace System.Net
             Debug.Assert(buffer != null);
             Debug.Assert(buffer.Capacity >= IPAddressParser.INET6_ADDRSTRLEN);
 
-            return Interop.Sys.IpAddressToString(address, true, buffer, scopeId);
+            return Interop.Sys.IPAddressToString(address, true, buffer, scopeId);
         }
 
         public static unsafe uint Ipv4StringToAddress(string ipString, byte[] bytes, out ushort port)
@@ -37,7 +37,7 @@ namespace System.Net
             Debug.Assert(bytes != null);
             Debug.Assert(bytes.Length >= IPAddressParserStatics.IPv4AddressBytes);
 
-            return unchecked((uint)Interop.Sys.Ipv4StringToAddress(ipString, bytes, bytes.Length, out port));
+            return unchecked((uint)Interop.Sys.IPv4StringToAddress(ipString, bytes, bytes.Length, out port));
         }
 
         private static bool IsHexString(string input, int startIndex)
@@ -134,7 +134,7 @@ namespace System.Net
                 return unchecked((uint)Interop.Sys.GetAddrInfoErrorFlags.EAI_NONAME);
             }
 
-            return unchecked((uint)Interop.Sys.Ipv6StringToAddress(host, port, bytes, bytes.Length, out scope));
+            return unchecked((uint)Interop.Sys.IPv6StringToAddress(host, port, bytes, bytes.Length, out scope));
         }
 
         public static SocketError GetSocketErrorForErrorCode(uint status)
