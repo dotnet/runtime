@@ -255,6 +255,9 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafePkcs12Handle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafePkcs12Handle.Unix.cs</Link>
     </Compile>

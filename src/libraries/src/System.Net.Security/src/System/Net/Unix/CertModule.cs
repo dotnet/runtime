@@ -132,10 +132,33 @@ namespace System.Net
         //
         internal override string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
-            // TODO (Issue #3362) populate issuers
-            string[] issuers = Array.Empty<string>();          
+            using (SafeSharedX509NameStackHandle names = Interop.libssl.SSL_get_client_CA_list(securityContext.SslContext))
+            {
+                if (names.IsInvalid)
+                {
+                    return Array.Empty<string>();
+                }
 
-            return issuers;
+                int nameCount = Interop.Crypto.GetX509NameStackFieldCount(names);
+
+                if (nameCount == 0)
+                {
+                    return Array.Empty<string>();
+                }
+
+                string[] clientAuthorityNames = new string[nameCount];
+
+                for (int i = 0; i < nameCount; i++)
+                {
+                    using (SafeSharedX509NameHandle nameHandle = Interop.Crypto.GetX509NameStackField(names, i))
+                    {
+                        X500DistinguishedName dn = Interop.Crypto.LoadX500Name(nameHandle);
+                        clientAuthorityNames[i] = dn.Name;
+                    }
+                }
+
+                return clientAuthorityNames;
+            }
         }
 
         internal override X509Store EnsureStoreOpened(bool isMachineStore)
