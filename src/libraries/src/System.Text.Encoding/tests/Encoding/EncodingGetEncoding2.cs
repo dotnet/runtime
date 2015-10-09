@@ -19,7 +19,6 @@ namespace System.Text.Tests
 
         // PosTest2: Get Encoding with the defined name 4
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest2()
         {
             string name = "Unicode";
@@ -31,7 +30,6 @@ namespace System.Text.Tests
         #region NegativeTest
         // NegTest1: the name is not valid codepage name
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void NegTest1()
         {
             string name = null;
@@ -43,7 +41,6 @@ namespace System.Text.Tests
 
         // NegTest2: The platform do not support the named codepage
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void NegTest2()
         {
             string name = "helloworld";
