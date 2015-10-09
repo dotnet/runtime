@@ -595,7 +595,7 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddress != null || socketAddressLen == 0);
 
             var pinnedSocketAddress = default(GCHandle);
-            Interop.libc.sockaddr* sockAddr = null;
+            byte* sockAddr = null;
             uint sockAddrLen = 0;
 
             int received;
@@ -604,7 +604,7 @@ namespace System.Net.Sockets
                 if (socketAddress != null)
                 {
                     pinnedSocketAddress = GCHandle.Alloc(socketAddress, GCHandleType.Pinned);
-                    sockAddr = (Interop.libc.sockaddr*)pinnedSocketAddress.AddrOfPinnedObject();
+                    sockAddr = (byte*)pinnedSocketAddress.AddrOfPinnedObject();
                     sockAddrLen = (uint)socketAddressLen;
                 }
 
@@ -643,7 +643,7 @@ namespace System.Net.Sockets
         private static unsafe int Send(int fd, int flags, byte[] buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
         {
             var pinnedSocketAddress = default(GCHandle);
-            Interop.libc.sockaddr* sockAddr = null;
+            byte* sockAddr = null;
             uint sockAddrLen = 0;
 
             int sent;
@@ -652,7 +652,7 @@ namespace System.Net.Sockets
                 if (socketAddress != null)
                 {
                     pinnedSocketAddress = GCHandle.Alloc(socketAddress, GCHandleType.Pinned);
-                    sockAddr = (Interop.libc.sockaddr*)pinnedSocketAddress.AddrOfPinnedObject();
+                    sockAddr = (byte*)pinnedSocketAddress.AddrOfPinnedObject();
                     sockAddrLen = (uint)socketAddressLen;
                 }
 
@@ -687,7 +687,7 @@ namespace System.Net.Sockets
             int startIndex = bufferIndex, startOffset = offset;
 
             var pinnedSocketAddress = default(GCHandle);
-            Interop.libc.sockaddr* sockAddr = null;
+            byte* sockAddr = null;
             uint sockAddrLen = 0;
 
             int maxBuffers = buffers.Count - startIndex;
@@ -713,7 +713,7 @@ namespace System.Net.Sockets
                 if (socketAddress != null)
                 {
                     pinnedSocketAddress = GCHandle.Alloc(socketAddress, GCHandleType.Pinned);
-                    sockAddr = (Interop.libc.sockaddr*)pinnedSocketAddress.AddrOfPinnedObject();
+                    sockAddr = (byte*)pinnedSocketAddress.AddrOfPinnedObject();
                     sockAddrLen = (uint)socketAddressLen;
                 }
 
@@ -774,7 +774,7 @@ namespace System.Net.Sockets
             var iovecs = new Interop.libc.iovec[maxBuffers];
 
             var pinnedSocketAddress = default(GCHandle);
-            Interop.libc.sockaddr* sockAddr = null;
+            byte* sockAddr = null;
             uint sockAddrLen = 0;
 
             int received = 0;
@@ -803,7 +803,7 @@ namespace System.Net.Sockets
                 if (socketAddress != null)
                 {
                     pinnedSocketAddress = GCHandle.Alloc(socketAddress, GCHandleType.Pinned);
-                    sockAddr = (Interop.libc.sockaddr*)pinnedSocketAddress.AddrOfPinnedObject();
+                    sockAddr = (byte*)pinnedSocketAddress.AddrOfPinnedObject();
                     sockAddrLen = (uint)socketAddressLen;
                 }
 
@@ -859,7 +859,7 @@ namespace System.Net.Sockets
             fixed (byte* rawSocketAddress = socketAddress)
             fixed (byte* b = buffer)
             {
-                var sockAddr = (Interop.libc.sockaddr*)rawSocketAddress;
+                var sockAddr = (byte*)rawSocketAddress;
 
                 var iov = new Interop.libc.iovec {
                     iov_base = &b[offset],
@@ -892,7 +892,7 @@ namespace System.Net.Sockets
             uint sockAddrLen = (uint)socketAddressLen;
             fixed (byte* rawSocketAddress = socketAddress)
             {
-                fd = Interop.libc.accept(fileDescriptor, (Interop.libc.sockaddr*)rawSocketAddress, &sockAddrLen);
+                fd = Interop.libc.accept(fileDescriptor, (byte*)rawSocketAddress, &sockAddrLen);
             }
 
             if (fd != -1)
@@ -935,7 +935,7 @@ namespace System.Net.Sockets
             int err;
             fixed (byte* rawSocketAddress = socketAddress)
             {
-                var sockAddr = (Interop.libc.sockaddr*)rawSocketAddress;
+                var sockAddr = (byte*)rawSocketAddress;
                 err = Interop.libc.connect(fileDescriptor, sockAddr, (uint)socketAddressLen);
             }
 
@@ -1157,7 +1157,7 @@ namespace System.Net.Sockets
             uint addrLen = (uint)nameLen;
             fixed (byte* rawBuffer = buffer)
             {
-                err = Interop.libc.getsockname(handle.FileDescriptor, (Interop.libc.sockaddr*)rawBuffer, &addrLen);
+                err = Interop.libc.getsockname(handle.FileDescriptor, (byte*)rawBuffer, &addrLen);
             }
             nameLen = (int)addrLen;
 
@@ -1179,7 +1179,7 @@ namespace System.Net.Sockets
             uint addrLen = (uint)nameLen;
             fixed (byte* rawBuffer = buffer)
             {
-                err = Interop.libc.getpeername(handle.FileDescriptor, (Interop.libc.sockaddr*)rawBuffer, &addrLen);
+                err = Interop.libc.getpeername(handle.FileDescriptor, (byte*)rawBuffer, &addrLen);
             }
             nameLen = (int)addrLen;
 
@@ -1191,7 +1191,7 @@ namespace System.Net.Sockets
             int err;
             fixed (byte* rawBuffer = buffer)
             {
-                err = Interop.libc.bind(handle.FileDescriptor, (Interop.libc.sockaddr*)rawBuffer, (uint)nameLen);
+                err = Interop.libc.bind(handle.FileDescriptor, (byte*)rawBuffer, (uint)nameLen);
             }
 
             return err == -1 ? GetLastSocketError() : SocketError.Success;

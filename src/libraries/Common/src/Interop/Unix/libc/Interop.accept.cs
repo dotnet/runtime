@@ -11,6 +11,6 @@ internal static partial class Interop
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        public static extern unsafe int accept(int sockfd, sockaddr* addr, socklen_t* addrlen);
+        public static extern unsafe int accept(int sockfd, byte* addr, socklen_t* addrlen);
     }
 }
