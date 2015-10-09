@@ -1875,6 +1875,8 @@ BOOL CEEPreloader::DoesMethodNeedRestoringBeforePrestubIsRun(
 
 BOOL CEECompileInfo::IsNativeCallableMethod(CORINFO_METHOD_HANDLE handle)
 {
+    WRAPPER_NO_CONTRACT;
+
     MethodDesc * pMethod = GetMethod(handle);
     return pMethod->HasNativeCallableAttribute();
 }

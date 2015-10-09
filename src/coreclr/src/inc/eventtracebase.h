@@ -732,6 +732,22 @@ namespace ETW
         static VOID RuntimeInformation(INT32 type) {};
 #endif // FEATURE_EVENT_TRACE
     };
+
+    class CodeSymbolLog
+    {
+    public:
+#ifdef FEATURE_EVENT_TRACE
+        static VOID EmitCodeSymbols(Module* pModule);
+        static HRESULT GetInMemorySymbolsLength(Module* pModule, DWORD* pCountSymbolBytes);
+        static HRESULT ReadInMemorySymbols(Module* pmodule, DWORD symbolsReadOffset, BYTE* pSymbolBytes,
+            DWORD countSymbolBytes,    DWORD* pCountSymbolBytesRead);
+#else
+        static VOID EmitCodeSymbols(Module* pModule) {}
+        static HRESULT GetInMemorySymbolsLength(Module* pModule, DWORD* pCountSymbolBytes) { return S_OK; }
+        static HRESULT ReadInMemorySymbols(Module* pmodule, DWORD symbolsReadOffset, BYTE* pSymbolBytes,
+            DWORD countSymbolBytes, DWORD* pCountSymbolBytesRead) {    return S_OK; }
+#endif // FEATURE_EVENT_TRACE
+    };
 };
 
 

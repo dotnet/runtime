@@ -218,7 +218,7 @@ Remarks:
 #endif
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 //+
-// Provider Microsoft-Windows-DotNETRuntime Event Count 166
+// Provider Microsoft-Windows-DotNETRuntime Event Count 167
 //+
 EXTERN_C __declspec(selectany) const GUID MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER = {0xe13c0d23, 0xccbc, 0x4e12, {0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4}};
 
@@ -371,6 +371,8 @@ EXTERN_C __declspec(selectany) const GUID ThreadId = {0x641994c5, 0x16f2, 0x4123
 EXTERN_C __declspec(selectany) const GUID DebugIPCEventId = {0xec2f3703, 0x8321, 0x4301, {0xbd, 0x51, 0x2c, 0xb9, 0xa0, 0x9f, 0x31, 0xb1}};
 #define CLR_EXCEPTION_PROCESSING_TASK 0x1a
 EXTERN_C __declspec(selectany) const GUID DebugExceptionProcessingId = {0xc4412198, 0xef03, 0x47f1, {0x9b, 0xd1, 0x11, 0xc6, 0x63, 0x7a, 0x20, 0x62}};
+#define CLR_CODE_SYMBOLS_TASK 0x1e
+EXTERN_C __declspec(selectany) const GUID CodeSymbolsId = {0x53aedf69, 0x2049, 0x4f7d, {0x93, 0x45, 0xd3, 0x01, 0x8b, 0x5c, 0x4d, 0x80}};
 //
 // Keyword
 //
@@ -403,6 +405,7 @@ EXTERN_C __declspec(selectany) const GUID DebugExceptionProcessingId = {0xc44121
 #define CLR_THREADTRANSFER_KEYWORD 0x80000000
 #define CLR_DEBUGGER_KEYWORD 0x100000000
 #define CLR_MONITORING_KEYWORD 0x200000000
+#define CLR_CODESYMBOLS_KEYWORD 0x400000000
 
 //
 // Event Descriptors
@@ -739,6 +742,8 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR DebugExceptionProcessingSt
 #define DebugExceptionProcessingStart_value 0xf2
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR DebugExceptionProcessingEnd = {0xf3, 0x0, 0x0, 0x4, 0x2, 0x1a, 0x100000000};
 #define DebugExceptionProcessingEnd_value 0xf3
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR CodeSymbols = {0x104, 0x0, 0x0, 0x5, 0x1, 0x1e, 0x400000000};
+#define CodeSymbols_value 0x104
 
 //
 // Note on Generate Code from Manifest Windows Vista and above
@@ -768,9 +773,9 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR DebugExceptionProcessingEn
 //
 
 EXTERN_C __declspec(selectany) DECLSPEC_CACHEALIGN ULONG Microsoft_Windows_DotNETRuntimeEnableBits[1];
-EXTERN_C __declspec(selectany) const ULONGLONG Microsoft_Windows_DotNETRuntimeKeywords[31] = {0x1, 0x1, 0x10001, 0x80000, 0x100000, 0x200000, 0x400000, 0x2, 0x2000000, 0x10000, 0x10000, 0x80010000, 0x80010000, 0x0, 0x200008000, 0x8000, 0x4000, 0x40000000, 0x800, 0x10800, 0x2000, 0x30, 0x10, 0x1000, 0x20000, 0x8, 0x20000008, 0x20000000, 0x400, 0x400, 0x100000000};
-EXTERN_C __declspec(selectany) const UCHAR Microsoft_Windows_DotNETRuntimeLevels[31] = {4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 4, 4, 2, 4, 4, 0, 4, 4, 4, 4, 5, 5, 5, 4, 4, 4, 5, 4, 4};
-EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context = {0, 0, 0, 0, 0, 0, 0, 0, 31, Microsoft_Windows_DotNETRuntimeEnableBits, Microsoft_Windows_DotNETRuntimeKeywords, Microsoft_Windows_DotNETRuntimeLevels};
+EXTERN_C __declspec(selectany) const ULONGLONG Microsoft_Windows_DotNETRuntimeKeywords[32] = {0x1, 0x1, 0x10001, 0x80000, 0x100000, 0x200000, 0x400000, 0x2, 0x2000000, 0x10000, 0x10000, 0x80010000, 0x80010000, 0x0, 0x200008000, 0x8000, 0x4000, 0x40000000, 0x800, 0x10800, 0x2000, 0x30, 0x10, 0x1000, 0x20000, 0x8, 0x20000008, 0x20000000, 0x400, 0x400, 0x100000000, 0x400000000};
+EXTERN_C __declspec(selectany) const UCHAR Microsoft_Windows_DotNETRuntimeLevels[32] = {4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 4, 4, 2, 4, 4, 0, 4, 4, 4, 4, 5, 5, 5, 4, 4, 4, 5, 4, 4, 5};
+EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context = {0, 0, 0, 0, 0, 0, 0, 0, 32, Microsoft_Windows_DotNETRuntimeEnableBits, Microsoft_Windows_DotNETRuntimeKeywords, Microsoft_Windows_DotNETRuntimeLevels};
 
 EXTERN_C __declspec(selectany) REGHANDLE Microsoft_Windows_DotNETRuntimeHandle = (REGHANDLE)0;
 
@@ -3189,6 +3194,20 @@ Remarks:
 #define FireEtwDebugExceptionProcessingEnd()\
         EventEnabledDebugExceptionProcessingEnd() ?\
         CoTemplateEventDescriptor(Microsoft_Windows_DotNETRuntimeHandle, &DebugExceptionProcessingEnd)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for CodeSymbols
+//
+
+#define EventEnabledCodeSymbols() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x80000000) != 0)
+
+//
+// Event Macro for CodeSymbols
+//
+#define FireEtwCodeSymbols(ModuleId, TotalChunks, ChunkNumber, ChunkLength, Chunk, ClrInstanceID)\
+        EventEnabledCodeSymbols() ?\
+        CoTemplate_xhhqbh(Microsoft_Windows_DotNETRuntimeHandle, &CodeSymbols, ModuleId, TotalChunks, ChunkNumber, ChunkLength, Chunk, ClrInstanceID)\
         : ERROR_SUCCESS\
 
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
@@ -10910,6 +10929,54 @@ MCGEN_CALLOUT(RegHandle,
 #endif
 
 //
+//Template from manifest : CodeSymbols
+//
+#ifndef CoTemplate_xhhqbh_def
+#define CoTemplate_xhhqbh_def
+ETW_INLINE
+ULONG
+CoTemplate_xhhqbh(
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_ const unsigned short  _Arg1,
+    _In_ const unsigned short  _Arg2,
+    _In_ const unsigned int  _Arg3,
+    _In_reads_(_Arg3) const BYTE*  _Arg4,
+    _In_ const unsigned short  _Arg5
+    )
+{
+#define ARGUMENT_COUNT_xhhqbh 6
+    ULONG Error = ERROR_SUCCESS;
+
+    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_xhhqbh];
+
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(unsigned __int64)  );
+
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[4], _Arg4, (ULONG)sizeof(char)*_Arg3);
+
+    EventDataDescCreate(&EventData[5], &_Arg5, sizeof(const unsigned short)  );
+
+    Error = EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_xhhqbh, EventData);
+
+#ifdef MCGEN_CALLOUT
+MCGEN_CALLOUT(RegHandle,
+              Descriptor,
+              ARGUMENT_COUNT_xhhqbh,
+              EventData);
+#endif
+
+    return Error;
+}
+#endif
+
+//
 //Template from manifest : StressLog
 //
 #ifndef CoTemplate_qcs_def
@@ -12438,6 +12505,7 @@ MCGEN_CALLOUT(RegHandle,
 #define MSG_RuntimePublisher_ThreadTransferKeywordMessage 0x10000020L
 #define MSG_RuntimePublisher_DebuggerKeywordMessage 0x10000021L
 #define MSG_RuntimePublisher_MonitoringKeywordMessage 0x10000022L
+#define MSG_RuntimePublisher_CodeSymbolsKeywordMessage 0x10000023L
 #define MSG_RundownPublisher_LoaderKeywordMessage 0x11000004L
 #define MSG_RundownPublisher_JitKeywordMessage 0x11000005L
 #define MSG_RundownPublisher_NGenKeywordMessage 0x11000006L
@@ -12725,6 +12793,7 @@ MCGEN_CALLOUT(RegHandle,
 #define MSG_RuntimePublisher_ExceptionCatchTaskMessage 0x7000001BL
 #define MSG_RuntimePublisher_ExceptionFinallyTaskMessage 0x7000001CL
 #define MSG_RuntimePublisher_ExceptionFilterTaskMessage 0x7000001DL
+#define MSG_RuntimePublisher_CodeSymbolsTaskMessage 0x7000001EL
 #define MSG_RundownPublisher_MethodTaskMessage 0x71000001L
 #define MSG_RundownPublisher_LoaderTaskMessage 0x71000002L
 #define MSG_RundownPublisher_StackTaskMessage 0x7100000BL
@@ -12848,6 +12917,7 @@ MCGEN_CALLOUT(RegHandle,
 #define MSG_RuntimePublisher_GCMarkWithTypeEventMessage 0xB00000CAL
 #define MSG_RuntimePublisher_ExceptionExceptionHandlingEventMessage 0xB00000FAL
 #define MSG_RuntimePublisher_ExceptionExceptionHandlingNoneEventMessage 0xB00000FBL
+#define MSG_RuntimePublisher_CodeSymbolsEventMessage 0xB0000104L
 #define MSG_RuntimePublisher_GCStart_V1EventMessage 0xB0010001L
 #define MSG_RuntimePublisher_GCEnd_V1EventMessage 0xB0010002L
 #define MSG_RuntimePublisher_GCRestartEEEnd_V1EventMessage 0xB0010003L
