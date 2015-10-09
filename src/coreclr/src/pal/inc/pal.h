@@ -5674,6 +5674,10 @@ ReportEventW (
 #define ReportEvent  ReportEventA
 #endif // !UNICODE
 
+PALIMPORT
+HRESULT
+PALAPI
+CoCreateGuid(OUT GUID * pguid);
 
 /******************* C Runtime Entrypoints *******************************/
 

@@ -33,6 +33,14 @@ Revision History:
 #include <pthread.h>
 #include <dlfcn.h>
 
+#if HAVE_LIBUUID_H
+#include <uuid/uuid.h>
+#elif HAVE_BSD_UUID_H
+#include <uuid.h>
+#endif
+
+#include <pal_endian.h>
+
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif // __APPLE__
@@ -311,3 +319,32 @@ PAL_Random(
     return bRet;
 }
 
+HRESULT
+PALAPI
+CoCreateGuid(OUT GUID * pguid)
+{
+#if HAVE_LIBUUID_H
+    uuid_generate(*(uuid_t*)pguid);
+
+    // Change the byte order of the Data1, 2 and 3, since the uuid_generate generates them
+    // with big endian while GUIDS need to have them in little endian.
+    pguid->Data1 = SWAP32(pguid->Data1);
+    pguid->Data2 = SWAP16(pguid->Data2);
+    pguid->Data3 = SWAP16(pguid->Data3);
+#elif HAVE_BSD_UUID_H
+    uuid_t uuid;
+    uint32_t status;
+    uuid_create(&uuid, &status);
+    if (status != uuid_s_ok)
+    {
+        ASSERT("Unexpected uuid_create failure (status=%u)\n", status);
+        abort();
+    }
+
+    // Encode the uuid with little endian.
+    uuid_enc_le(pguid, &uuid);
+#else
+    #error Don't know how to generate UUID on this platform
+#endif
+    return 0;
+}

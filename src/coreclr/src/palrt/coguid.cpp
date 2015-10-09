@@ -13,17 +13,6 @@
 
 #include "common.h" 
 
-STDAPI CoCreateGuid(OUT GUID * pguid)
-{
-    if (!PAL_Random(FALSE, pguid, sizeof(GUID)))
-    {
-        DWORD dwError = GetLastError();
-        return HRESULT_FROM_WIN32(dwError);        
-    }
-
-    return S_OK;
-}
-
 STDAPI_(int) StringFromGUID2(REFGUID rguid, LPOLESTR lptsz, int cchMax)
 {
     if (cchMax < 39)
