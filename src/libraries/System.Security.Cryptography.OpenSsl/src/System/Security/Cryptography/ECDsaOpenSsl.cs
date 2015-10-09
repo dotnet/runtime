@@ -206,7 +206,7 @@ namespace System.Security.Cryptography
 
             if (keySize == 0)
             {
-                string curveNameOid = Interop.Crypto.OBJ_obj2txt_helper(Interop.Crypto.ObjNid2Obj(nid));
+                string curveNameOid = Interop.Crypto.GetOidValue(Interop.Crypto.ObjNid2Obj(nid));
                 throw new NotSupportedException(SR.Format(SR.Cryptography_UnsupportedEcKeyAlgorithm, curveNameOid));
             }
 

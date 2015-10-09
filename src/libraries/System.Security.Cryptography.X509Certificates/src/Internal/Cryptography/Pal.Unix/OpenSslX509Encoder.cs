@@ -177,7 +177,7 @@ namespace Internal.Cryptography.Pal
                     long pathLengthConstraint64 = Interop.Crypto.Asn1IntegerGet(data->pathlen);
 
                     Debug.Assert(pathLengthConstraint64 < int.MaxValue, "pathLengthConstraint needs to be in the Int32 range.");
-                    pathLengthConstraint = (int)pathLengthConstraint64;
+                    pathLengthConstraint = checked((int)pathLengthConstraint64);
                 }
                 else
                 {
@@ -211,7 +211,7 @@ namespace Internal.Cryptography.Pal
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
-                    string oidValue = Interop.Crypto.OBJ_obj2txt_helper(oidPtr);
+                    string oidValue = Interop.Crypto.GetOidValue(oidPtr);
 
                     oids.Add(new Oid(oidValue));
                 }

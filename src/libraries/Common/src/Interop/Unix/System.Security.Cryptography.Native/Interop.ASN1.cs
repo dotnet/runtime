@@ -29,7 +29,7 @@ internal static partial class Interop
         private static extern int ObjObj2Txt([Out] StringBuilder buf, int buf_len, IntPtr a);
 
         [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
-        internal static extern IntPtr GetFriendlyNameSharedObject(string friendlyName);
+        internal static extern IntPtr GetObjectDefinitionByName(string friendlyName);
 
         [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
         internal static extern int ObjSn2Nid(string sn);
@@ -63,12 +63,11 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative)]
         internal static extern void Asn1StringFree(IntPtr o);
 
-        internal static string OBJ_obj2txt_helper(IntPtr asn1ObjectPtr)
+        internal static string GetOidValue(IntPtr asn1ObjectPtr)
         {
             // OBJ_obj2txt returns the number of bytes that should have been in the answer, but it does not accept
             // a NULL buffer.  The documentation says "A buffer length of 80 should be more than enough to handle
             // any OID encountered in practice", so start with a buffer of size 80, and try again if required.
-            // Therefore, 512 should be quite sufficient.
             StringBuilder buf = new StringBuilder(80);
 
             int bytesNeeded = ObjObj2Txt(buf, buf.Capacity, asn1ObjectPtr);

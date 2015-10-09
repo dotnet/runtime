@@ -5,12 +5,12 @@
 
 #include <openssl/objects.h>
 
-static_assert(NID_undef == 0, "Managed code relies on NID_undef == 0");
-static_assert(NID_secp224r1 == 713, "Managed code relies on NID_secp224r1 == 713");
-static_assert(NID_secp384r1 == 715, "Managed code relies on NID_secp384r1 == 715");
-static_assert(NID_secp521r1 == 716, "Managed code relies on NID_secp521r1 == 716");
+static_assert(PAL_NID_undef == NID_undef, "");
+static_assert(PAL_NID_secp224r1 == NID_secp224r1, "");
+static_assert(PAL_NID_secp384r1 == NID_secp384r1, "");
+static_assert(PAL_NID_secp521r1 == NID_secp521r1, "");
 
-extern "C" int64_t Asn1IntegerGet(const ASN1_INTEGER* a)
+extern "C" int64_t Asn1IntegerGet(ASN1_INTEGER* a)
 {
     return ASN1_INTEGER_get(a);
 }
@@ -25,7 +25,7 @@ extern "C" int32_t ObjObj2Txt(char* buf, int32_t buf_len, const ASN1_OBJECT* a)
     return OBJ_obj2txt(buf, buf_len, a, true);
 }
 
-extern "C" const ASN1_OBJECT* GetFriendlyNameSharedObject(const char* friendlyName)
+extern "C" const ASN1_OBJECT* GetObjectDefinitionByName(const char* friendlyName)
 {
     int nid = OBJ_ln2nid(friendlyName);
 

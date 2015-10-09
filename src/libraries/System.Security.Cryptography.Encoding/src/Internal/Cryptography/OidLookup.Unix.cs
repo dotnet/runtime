@@ -37,14 +37,14 @@ namespace Internal.Cryptography
 
         private static string NativeFriendlyNameToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
-            IntPtr sharedObject = Interop.Crypto.GetFriendlyNameSharedObject(friendlyName);
+            IntPtr sharedObject = Interop.Crypto.GetObjectDefinitionByName(friendlyName);
 
             if (sharedObject == IntPtr.Zero)
             {
                 return null;
             }
 
-            return Interop.Crypto.OBJ_obj2txt_helper(sharedObject);
+            return Interop.Crypto.GetOidValue(sharedObject);
         }
 
         // -----------------------------
