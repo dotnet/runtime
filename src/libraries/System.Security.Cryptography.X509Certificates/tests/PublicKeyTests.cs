@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -124,6 +125,61 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal(expectedModulus, rsaParameters.Modulus);
                 Assert.Equal(expectedExponent, rsaParameters.Exponent);
+            }
+        }
+
+        [Fact]
+        public static void TestECDsaPublicKey()
+        {
+            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
+
+            using (var cert = new X509Certificate2(TestData.ECDsa384Certificate))
+            using (ECDsa publicKey = cert.GetECDsaPublicKey())
+            {
+                Assert.Equal(384, publicKey.KeySize);
+
+                // The public key should be unable to sign.
+                Assert.ThrowsAny<CryptographicException>(() => publicKey.SignData(helloBytes, HashAlgorithmName.SHA256));
+            }
+        }
+
+        [Fact]
+        [ActiveIssue(3769, PlatformID.AnyUnix)]
+        public static void TestECDsaPublicKey_ValidatesSignature()
+        {
+            // This signature was produced as the output of ECDsaCng.SignData with the same key
+            // on .NET 4.6.  Ensure it is verified here as a data compatibility test.
+            //
+            // Note that since ECDSA signatures contain randomness as an input, this value is unlikely
+            // to be reproduced by another equivalent program.
+            byte[] existingSignature =
+            {
+                // r:
+                0x7E, 0xD7, 0xEF, 0x46, 0x04, 0x92, 0x61, 0x27,
+                0x9F, 0xC9, 0x1B, 0x7B, 0x8A, 0x41, 0x6A, 0xC6,
+                0xCF, 0xD4, 0xD4, 0xD1, 0x73, 0x05, 0x1F, 0xF3,
+                0x75, 0xB2, 0x13, 0xFA, 0x82, 0x2B, 0x55, 0x11,
+                0xBE, 0x57, 0x4F, 0x20, 0x07, 0x24, 0xB7, 0xE5,
+                0x24, 0x44, 0x33, 0xC3, 0xB6, 0x8F, 0xBC, 0x1F,
+
+                // s:
+                0x48, 0x57, 0x25, 0x39, 0xC0, 0x84, 0xB9, 0x0E,
+                0xDA, 0x32, 0x35, 0x16, 0xEF, 0xA0, 0xE2, 0x34,
+                0x35, 0x7E, 0x10, 0x38, 0xA5, 0xE4, 0x8B, 0xD3,
+                0xFC, 0xE7, 0x60, 0x25, 0x4E, 0x63, 0xF7, 0xDB,
+                0x7C, 0xBF, 0x18, 0xD6, 0xD3, 0x49, 0xD0, 0x93,
+                0x08, 0xC5, 0xAA, 0xA6, 0xE5, 0xFD, 0xD0, 0x96,
+            };
+
+            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello");
+
+            using (var cert = new X509Certificate2(TestData.ECDsa384Certificate))
+            using (ECDsa publicKey = cert.GetECDsaPublicKey())
+            {
+                Assert.Equal(384, publicKey.KeySize);
+
+                bool isSignatureValid = publicKey.VerifyData(helloBytes, existingSignature, HashAlgorithmName.SHA256);
+                Assert.True(isSignatureValid, "isSignatureValid");
             }
         }
 
