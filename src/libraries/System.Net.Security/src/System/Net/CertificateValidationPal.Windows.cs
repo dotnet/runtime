@@ -11,15 +11,14 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    internal partial class CertModule : CertInterface
+    internal static partial class CertificateValidationPal
     {
         private static readonly object s_syncObject = new object();
 
         private static volatile X509Store s_myCertStoreEx;
         private static volatile X509Store s_myMachineCertStoreEx;
 
-        #region internal Methods
-        internal override SslPolicyErrors VerifyCertificateProperties(X509Chain chain, X509Certificate2 certificate, bool checkCertName, bool isServer, string hostName)
+        internal static SslPolicyErrors VerifyCertificateProperties(X509Chain chain, X509Certificate2 certificate, bool checkCertName, bool isServer, string hostName)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
@@ -84,7 +83,7 @@ namespace System.Net
         //
         // Extracts a remote certificate upon request.
         //
-        internal override X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateStore)
+        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateStore)
         {
             remoteCertificateStore = null;
 
@@ -93,12 +92,12 @@ namespace System.Net
                 return null;
             }
 
-            GlobalLog.Enter("SecureChannel#" + Logging.HashString(this) + "::RemoteCertificate{get;}");
+            GlobalLog.Enter("SecureChannel#" + Logging.HashString(securityContext) + "::RemoteCertificate{get;}");
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
             try
             {
-                int errorCode = SSPIWrapper.QueryContextRemoteCertificate(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
+                int errorCode = SslStreamPal.QueryContextRemoteCertificate(securityContext, out remoteContext);
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
@@ -119,7 +118,7 @@ namespace System.Net
                 Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_remote_certificate, (result == null ? "null" : result.ToString(true))));
             }
 
-            GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::RemoteCertificate{get;}", (result == null ? "null" : result.Subject));
+            GlobalLog.Leave("SecureChannel#" + Logging.HashString(securityContext) + "::RemoteCertificate{get;}", (result == null ? "null" : result.Subject));
 
             return result;
         }
@@ -127,13 +126,13 @@ namespace System.Net
         //
         // Used only by client SSL code, never returns null.
         //
-        internal override string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
+        internal static string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
             string[] issuers = Array.Empty<string>();
 
             object outObj;
 
-            int errorCode = SSPIWrapper.QueryContextIssuerList(GlobalSSPI.SSPISecureChannel, securityContext, out outObj);
+            int errorCode = SslStreamPal.QueryContextIssuerList(securityContext, out outObj);
 
             GlobalLog.Assert(errorCode == 0, "QueryContextIssuerList returned errorCode:" + errorCode);
 
@@ -164,7 +163,7 @@ namespace System.Net
 
                                 X500DistinguishedName x500DistinguishedName = new X500DistinguishedName(x);
                                 issuers[i] = x500DistinguishedName.Name;
-                                GlobalLog.Print("SecureChannel#" + Logging.HashString(this) + "::GetIssuers() IssuerListEx[" + i + "]:" + issuers[i]);
+                                GlobalLog.Print("SecureChannel#" + Logging.HashString(securityContext) + "::GetIssuers() IssuerListEx[" + i + "]:" + issuers[i]);
                             }
                         }
                     }
@@ -184,7 +183,7 @@ namespace System.Net
         //
         // Security: We temporarily reset thread token to open the cert store under process account.
         //
-        internal override X509Store EnsureStoreOpened(bool isMachineStore)
+        internal static X509Store EnsureStoreOpened(bool isMachineStore)
         {
             X509Store store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
 
@@ -245,11 +244,8 @@ namespace System.Net
             }
             return store;
         }
-        #endregion
 
-        #region Private Methods
-
-        private uint Verify(SafeX509ChainHandle chainContext, ref Interop.Crypt32.CERT_CHAIN_POLICY_PARA cpp)
+        private static uint Verify(SafeX509ChainHandle chainContext, ref Interop.Crypt32.CERT_CHAIN_POLICY_PARA cpp)
         {
             GlobalLog.Enter("SecureChannel::VerifyChainPolicy", "chainContext=" + chainContext + ", options=" + String.Format("0x{0:x}", cpp.dwFlags));
             var status = new Interop.Crypt32.CERT_CHAIN_POLICY_STATUS();
@@ -264,7 +260,5 @@ namespace System.Net
             GlobalLog.Leave("SecureChannel::VerifyChainPolicy", status.dwError.ToString());
             return status.dwError;
         }
-
-        #endregion
     }
 }

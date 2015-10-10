@@ -36,7 +36,7 @@ namespace System.Net.Security
 
         private bool _handshakeCompleted;
         private bool _certValidationFailed;
-        private SecurityStatus _securityStatus;
+        private SecurityStatusPal _securityStatus;
         private Exception _exception;
 
         private enum CachedSessionStatus : byte
@@ -227,7 +227,7 @@ namespace System.Net.Security
             }
         }
 
-        internal SecurityStatus LastSecurityStatus
+        internal SecurityStatusPal LastSecurityStatus
         {
             get { return _securityStatus; }
         }
@@ -487,19 +487,19 @@ namespace System.Net.Security
             }
         }
 
-        internal SecurityStatus EncryptData(byte[] buffer, int offset, int count, ref byte[] outBuffer, out int outSize)
+        internal SecurityStatusPal EncryptData(byte[] buffer, int offset, int count, ref byte[] outBuffer, out int outSize)
         {
             CheckThrow(true);
             return Context.Encrypt(buffer, offset, count, ref outBuffer, out outSize);
         }
 
-        internal SecurityStatus DecryptData(byte[] buffer, ref int offset, ref int count)
+        internal SecurityStatusPal DecryptData(byte[] buffer, ref int offset, ref int count)
         {
             CheckThrow(true);
             return PrivateDecryptData(buffer, ref offset, ref count);
         }
 
-        private SecurityStatus PrivateDecryptData(byte[] buffer, ref int offset, ref int count)
+        private SecurityStatusPal PrivateDecryptData(byte[] buffer, ref int offset, ref int count)
         {
             return Context.Decrypt(buffer, ref offset, ref count);
         }
@@ -924,9 +924,9 @@ namespace System.Net.Security
             if (_pendingReHandshake)
             {
                 int offset = 0;
-                SecurityStatus status = PrivateDecryptData(buffer, ref offset, ref count);
+                SecurityStatusPal status = PrivateDecryptData(buffer, ref offset, ref count);
 
-                if (status == SecurityStatus.OK)
+                if (status == SecurityStatusPal.OK)
                 {
                     Exception e = EnqueueOldKeyDecryptedData(buffer, offset, count);
                     if (e != null)
@@ -939,7 +939,7 @@ namespace System.Net.Security
                     StartReceiveBlob(buffer, asyncRequest);
                     return;
                 }
-                else if (status != SecurityStatus.Renegotiate)
+                else if (status != SecurityStatusPal.Renegotiate)
                 {
                     // Fail re-handshake.
                     ProtocolToken message = new ProtocolToken(null, status);

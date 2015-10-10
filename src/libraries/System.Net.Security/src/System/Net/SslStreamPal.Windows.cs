@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -14,8 +15,10 @@ using System.Security.Principal;
 namespace System.Net
 {
     // For SSL connections:
-    internal partial class SSPISecureChannelType : SSPIInterface
+    internal static partial class SslStreamPal
     {
+        private readonly static object s_lock = new object();
+
         public const string MSSecurityPackage = "Microsoft Unified Security Protocol Provider";
 
         public const Interop.Secur32.ContextFlags RequiredFlags = Interop.Secur32.ContextFlags.ReplayDetect | Interop.Secur32.ContextFlags.SequenceDetect |
@@ -25,7 +28,7 @@ namespace System.Net
 
         private static volatile SecurityPackageInfoClass[] s_securityPackages;
 
-        public void VerifyPackageInfo()
+        public static void VerifyPackageInfo()
         {
             bool found = false;
 
@@ -54,12 +57,12 @@ namespace System.Net
             }
         }
 
-        public Exception GetException(SecurityStatus status)
+        public static Exception GetException(SecurityStatusPal status)
         {
             return new Win32Exception((int)status);
         }
 
-        public SecurityStatus AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired)
+        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired)
         {
             Interop.Secur32.ContextFlags outFlags = Interop.Secur32.ContextFlags.Zero;
             var retStatus = SafeDeleteContext.AcceptSecurityContext(
@@ -76,23 +79,23 @@ namespace System.Net
             return MapToSecurityStatus((Interop.SecurityStatus)retStatus);
         }
 
-        public SecurityStatus InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer)
+        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer)
         {
             Interop.Secur32.ContextFlags outFlags = Interop.Secur32.ContextFlags.Zero;
 
-            var retStatus = (SecurityStatus)SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, RequiredFlags | Interop.Secur32.ContextFlags.InitManualCredValidation, Interop.Secur32.Endianness.Native, inputBuffer, null, outputBuffer, ref outFlags);
+            var retStatus = (SecurityStatusPal)SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, RequiredFlags | Interop.Secur32.ContextFlags.InitManualCredValidation, Interop.Secur32.Endianness.Native, inputBuffer, null, outputBuffer, ref outFlags);
 
             return MapToSecurityStatus((Interop.SecurityStatus)retStatus);
         }
 
-        public SecurityStatus InitializeSecurityContext(SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer)
+        public static SecurityStatusPal InitializeSecurityContext(SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer)
         {
             Interop.Secur32.ContextFlags outFlags = Interop.Secur32.ContextFlags.Zero;
-            var retStatus = (SecurityStatus)SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, RequiredFlags | Interop.Secur32.ContextFlags.InitManualCredValidation, Interop.Secur32.Endianness.Native, null, inputBuffers, outputBuffer, ref outFlags);
+            var retStatus = (SecurityStatusPal)SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, RequiredFlags | Interop.Secur32.ContextFlags.InitManualCredValidation, Interop.Secur32.Endianness.Native, null, inputBuffers, outputBuffer, ref outFlags);
             return MapToSecurityStatus((Interop.SecurityStatus)retStatus);
         }
 
-        public SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             Interop.Secur32.SecureCredential secureCredential = CreateSecureCredential(Interop.Secur32.SecureCredential.CurrentVersion, certificate, protocols, policy, isServer);
             // First try without impersonation, if it fails, then try the process account.
@@ -113,7 +116,7 @@ namespace System.Net
             }
         }
 
-        public SecurityStatus EncryptMessage(SafeDeleteContext securityContext, byte[] buffer, int size, int headerSize, int trailerSize, out int resultSize)
+        public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] buffer, int size, int headerSize, int trailerSize, out int resultSize)
         {
             resultSize = 0;
 
@@ -125,19 +128,19 @@ namespace System.Net
             securityBuffer[2] = new SecurityBuffer(buffer, headerSize + size, trailerSize, SecurityBufferType.Trailer);
             securityBuffer[3] = new SecurityBuffer(null, SecurityBufferType.Empty);
 
-            SecurityStatus secStatus = EncryptDecryptHelper(OP.Encrypt, securityContext, securityBuffer, 0);
+            SecurityStatusPal secStatus = EncryptDecryptHelper(OP.Encrypt, securityContext, securityBuffer, 0);
 
             if (secStatus == 0)
             {
                 // The full buffer may not be used.
                 resultSize = securityBuffer[0].size + securityBuffer[1].size + securityBuffer[2].size;
-                GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::Encrypt OK", "data size:" + resultSize.ToString());
+                GlobalLog.Leave("SecureChannel#" + Logging.HashString(securityContext) + "::Encrypt OK", "data size:" + resultSize.ToString());
             }
 
             return secStatus;
         }
 
-        public SecurityStatus DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
+        public static SecurityStatusPal DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
         {
             // Decryption using SCHANNEL requires four buffers.
             SecurityBuffer[] decspc = new SecurityBuffer[4];
@@ -146,15 +149,15 @@ namespace System.Net
             decspc[2] = new SecurityBuffer(null, SecurityBufferType.Empty);
             decspc[3] = new SecurityBuffer(null, SecurityBufferType.Empty);
 
-            SecurityStatus secStatus = EncryptDecryptHelper(OP.Decrypt, securityContext, decspc, 0);
+            SecurityStatusPal secStatus = EncryptDecryptHelper(OP.Decrypt, securityContext, decspc, 0);
 
             count = 0;
             for (int i = 0; i < decspc.Length; i++)
             {
                 // Successfully decoded data and placed it at the following position in the buffer,
-                if ((secStatus == SecurityStatus.OK && decspc[i].type == SecurityBufferType.Data)
+                if ((secStatus == SecurityStatusPal.OK && decspc[i].type == SecurityBufferType.Data)
                     // or we failed to decode the data, here is the encoded data.
-                    || (secStatus != SecurityStatus.OK && decspc[i].type == SecurityBufferType.Extra))
+                    || (secStatus != SecurityStatusPal.OK && decspc[i].type == SecurityBufferType.Extra))
                 {
                     offset = decspc[i].offset;
                     count = decspc[i].size;
@@ -165,10 +168,10 @@ namespace System.Net
             return secStatus;
         }
 
-        public unsafe int QueryContextChannelBinding(SafeDeleteContext phContext, ChannelBindingKind attribute, out SafeFreeContextBufferChannelBinding refHandle)
+        public unsafe static SafeFreeContextBufferChannelBinding QueryContextChannelBinding(SafeDeleteContext phContext, ChannelBindingKind attribute)
         {
-            refHandle = SafeFreeContextBufferChannelBinding.CreateEmptyHandle();
-
+            var refHandle = SafeFreeContextBufferChannelBinding.CreateEmptyHandle();
+            
             // Bindings is on the stack, so there's no need for a fixed block.
             Bindings bindings = new Bindings();
             int errorCode = SafeFreeContextBufferChannelBinding.QueryContextChannelBinding(phContext, (Interop.Secur32.ContextAttribute)attribute, &bindings, refHandle);
@@ -179,31 +182,31 @@ namespace System.Net
                 refHandle = null;
             }
 
-            return errorCode;
+            return refHandle;
         }
 
-        public int QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
+        public static int QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
         {
             int errorCode;
             streamSizes = QueryContextAttributes(securityContext, Interop.Secur32.ContextAttribute.StreamSizes, out errorCode) as StreamSizes;
             return errorCode;
         }
 
-        public int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
+        public static int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
         {
             int errorCode;
             connectionInfo = QueryContextAttributes(securityContext, Interop.Secur32.ContextAttribute.ConnectionInfo, out errorCode) as SslConnectionInfo;
             return errorCode;
         }
 
-        public int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext remoteCert)
+        public static int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext remoteCert)
         {
             int errorCode;
             remoteCert = QueryContextAttributes(securityContext, Interop.Secur32.ContextAttribute.RemoteCertificate, out errorCode) as SafeFreeCertContext;
             return errorCode;
         }
 
-        public int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList)
+        public static int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList)
         {
             int errorCode;
             issuerList = QueryContextAttributes(securityContext, Interop.Secur32.ContextAttribute.IssuerListInfoEx, out errorCode);
@@ -218,26 +221,25 @@ namespace System.Net
             Decrypt
         }
 
-        private SecurityStatus MapToSecurityStatus(Interop.SecurityStatus secStatus)
+        private static SecurityStatusPal MapToSecurityStatus(Interop.SecurityStatus secStatus)
         {
-            SecurityStatus retStatus;
+            SecurityStatusPal retStatus;
 
-            if (SecurityStatus.TryParse(secStatus.ToString(), out retStatus))
+            if (!SecurityStatusPal.TryParse(secStatus.ToString(), out retStatus))
             {
-                return retStatus;
+                Debug.Fail("Could not map from Interop.SecurityStatus to SecurityStatusPal. Interop.SecurityStatus value:" + secStatus.ToString());
+                return SecurityStatusPal.InternalError;
             }
-            else
-            {
-                throw new Win32Exception("Coulbd not map from Interop.SecurityStatus to SecurityStatus. Interop.SecurityStatus value:" + secStatus.ToString());
-            }
+
+            return retStatus;
         }
 
-        private void EnumerateSecurityPackages()
+        private static void EnumerateSecurityPackages()
         {
             GlobalLog.Enter("EnumerateSecurityPackages");
             if (s_securityPackages == null)
             {
-                lock (this)
+                lock (s_lock)
                 {
                     if (s_securityPackages == null)
                     {
@@ -247,7 +249,7 @@ namespace System.Net
                         {
                             int errorCode = SafeFreeContextBuffer.EnumeratePackages(out moduleCount, out arrayBaseHandle);
 
-                            GlobalLog.Print("SSPIWrapper::arrayBase: " + (arrayBaseHandle.DangerousGetHandle().ToString("x")));
+                            GlobalLog.Print("SslStreamPal::arrayBase: " + (arrayBaseHandle.DangerousGetHandle().ToString("x")));
 
                             if (errorCode != 0)
                             {
@@ -287,9 +289,9 @@ namespace System.Net
             GlobalLog.Leave("EnumerateSecurityPackages");
         }
 
-        private SafeFreeCredentials AcquireCredentialsHandle(string package, bool isServer, Interop.Secur32.SecureCredential scc)
+        private static SafeFreeCredentials AcquireCredentialsHandle(string package, bool isServer, Interop.Secur32.SecureCredential scc)
         {
-            GlobalLog.Print("SSPIWrapper::AcquireCredentialsHandle#3(): using " + package);
+            GlobalLog.Print("SslStreamPal::AcquireCredentialsHandle#3(): using " + package);
 
             if (Logging.On)
             {
@@ -310,25 +312,25 @@ namespace System.Net
             if (errorCode != 0)
             {
 #if TRACE_VERBOSE
-                GlobalLog.Print("SSPIWrapper::AcquireCredentialsHandle#3(): error " + Interop.MapSecurityStatus((uint)errorCode));
+                GlobalLog.Print("SslStreamPal::AcquireCredentialsHandle#3(): error " + Interop.MapSecurityStatus((uint)errorCode));
 #endif
                 if (Logging.On) Logging.PrintError(Logging.Web, SR.Format(SR.net_log_operation_failed_with_error, "AcquireCredentialsHandle()", String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
                 throw new Win32Exception(errorCode);
             }
 
 #if TRACE_VERBOSE
-            GlobalLog.Print("SSPIWrapper::AcquireCredentialsHandle#3(): cred handle = " + outCredential.ToString());
+            GlobalLog.Print("SslStreamPal::AcquireCredentialsHandle#3(): cred handle = " + outCredential.ToString());
 #endif
             return outCredential;
         }
 
-        private int AcquireCredentialsHandle(string moduleName, bool IsInBoundCred, ref Interop.Secur32.SecureCredential authdata, out SafeFreeCredentials outCredential)
+        private static int AcquireCredentialsHandle(string moduleName, bool IsInBoundCred, ref Interop.Secur32.SecureCredential authdata, out SafeFreeCredentials outCredential)
         {
             Interop.Secur32.CredentialUse intent = IsInBoundCred ? Interop.Secur32.CredentialUse.Inbound : Interop.Secur32.CredentialUse.Outbound;
             return SafeFreeCredentials.AcquireCredentialsHandle(moduleName, intent, ref authdata, out outCredential);
         }
 
-        private Interop.Secur32.SecureCredential CreateSecureCredential(int version, X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        private static Interop.Secur32.SecureCredential CreateSecureCredential(int version, X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             Interop.Secur32.SecureCredential.Flags flags = Interop.Secur32.SecureCredential.Flags.Zero;
 
@@ -403,7 +405,7 @@ namespace System.Net
             return credential;
         }
 
-        private unsafe SecurityStatus EncryptDecryptHelper(OP op, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
+        private static unsafe SecurityStatusPal EncryptDecryptHelper(OP op, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
         {
             Interop.Secur32.SecurityBufferDescriptor sdcInOut = new Interop.Secur32.SecurityBufferDescriptor(input.Length);
             var unmanagedBuffer = new Interop.Secur32.SecurityBufferStruct[input.Length];
@@ -483,7 +485,7 @@ namespace System.Net
 
                                 if (j >= input.Length)
                                 {
-                                    GlobalLog.Assert("SSPIWrapper::EncryptDecryptHelper", "Output buffer out of range.");
+                                    GlobalLog.Assert("SslStreamPal::EncryptDecryptHelper", "Output buffer out of range.");
                                     iBuffer.size = 0;
                                     iBuffer.offset = 0;
                                     iBuffer.token = null;
@@ -491,8 +493,8 @@ namespace System.Net
                             }
 
                         // Backup validate the new sizes.
-                        GlobalLog.Assert(iBuffer.offset >= 0 && iBuffer.offset <= (iBuffer.token == null ? 0 : iBuffer.token.Length), "SSPIWrapper::EncryptDecryptHelper|'offset' out of range.  [{0}]", iBuffer.offset);
-                        GlobalLog.Assert(iBuffer.size >= 0 && iBuffer.size <= (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset), "SSPIWrapper::EncryptDecryptHelper|'size' out of range.  [{0}]", iBuffer.size);
+                        GlobalLog.Assert(iBuffer.offset >= 0 && iBuffer.offset <= (iBuffer.token == null ? 0 : iBuffer.token.Length), "SslStreamPal::EncryptDecryptHelper|'offset' out of range.  [{0}]", iBuffer.offset);
+                        GlobalLog.Assert(iBuffer.size >= 0 && iBuffer.size <= (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset), "SslStreamPal::EncryptDecryptHelper|'size' out of range.  [{0}]", iBuffer.size);
                     }
 
                     if (errorCode != 0 && Logging.On)
@@ -521,7 +523,7 @@ namespace System.Net
             }
         }
 
-        private int EncryptMessage(SafeDeleteContext context, Interop.Secur32.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
+        private static int EncryptMessage(SafeDeleteContext context, Interop.Secur32.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
         {
             int status = (int)Interop.SecurityStatus.InvalidHandle;
 
@@ -538,7 +540,7 @@ namespace System.Net
             }
         }
 
-        private unsafe int DecryptMessage(SafeDeleteContext context, Interop.Secur32.SecurityBufferDescriptor inputOutput,
+        private static unsafe int DecryptMessage(SafeDeleteContext context, Interop.Secur32.SecurityBufferDescriptor inputOutput,
             uint sequenceNumber)
         {
             int status = (int)Interop.SecurityStatus.InvalidHandle;
@@ -556,7 +558,7 @@ namespace System.Net
             }
         }
 
-        private object QueryContextAttributes(SafeDeleteContext securityContext, Interop.Secur32.ContextAttribute contextAttribute, out int errorCode)
+        private static object QueryContextAttributes(SafeDeleteContext securityContext, Interop.Secur32.ContextAttribute contextAttribute, out int errorCode)
         {
             GlobalLog.Enter("QueryContextAttributes", contextAttribute.ToString());
 
@@ -686,7 +688,7 @@ namespace System.Net
             return attribute;
         }
 
-        private unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.Secur32.ContextAttribute attribute, byte[] buffer, Type handleType, out SafeHandle refHandle)
+        private static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.Secur32.ContextAttribute attribute, byte[] buffer, Type handleType, out SafeHandle refHandle)
         {
             refHandle = null;
             if (handleType != null)
@@ -710,7 +712,7 @@ namespace System.Net
             }
         }
 
-        private string ErrorDescription(int errorCode)
+        private static string ErrorDescription(int errorCode)
         {
             if (errorCode == -1)
             {
