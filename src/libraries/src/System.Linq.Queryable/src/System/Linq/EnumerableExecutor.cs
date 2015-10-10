@@ -22,7 +22,6 @@ namespace System.Linq
     public class EnumerableExecutor<T> : EnumerableExecutor
     {
         private Expression _expression;
-        private Func<T> _func;
 
         // Must remain public for Silverlight
         public EnumerableExecutor(Expression expression)
@@ -37,14 +36,11 @@ namespace System.Linq
 
         internal T Execute()
         {
-            if (_func == null)
-            {
-                EnumerableRewriter rewriter = new EnumerableRewriter();
-                Expression body = rewriter.Visit(_expression);
-                Expression<Func<T>> f = Expression.Lambda<Func<T>>(body, (IEnumerable<ParameterExpression>)null);
-                _func = f.Compile();
-            }
-            return _func();
+            EnumerableRewriter rewriter = new EnumerableRewriter();
+            Expression body = rewriter.Visit(_expression);
+            Expression<Func<T>> f = Expression.Lambda<Func<T>>(body, (IEnumerable<ParameterExpression>)null);
+            Func<T> func = f.Compile();
+            return func();
         }
     }
 }
