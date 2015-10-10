@@ -37,5 +37,10 @@ namespace System.Linq
         {
             return SR.Format(SR.NoMethodOnTypeMatchingArguments, name, type);
         }
+
+        internal static string EnumeratingNullEnumerableExpression()
+        {
+            return SR.EnumeratingNullEnumerableExpression;
+        }
     }
 }
