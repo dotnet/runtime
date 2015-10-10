@@ -27,11 +27,11 @@ namespace System.Net.Http
             internal readonly HttpRequestMessage _requestMessage;
             internal readonly CurlResponseMessage _responseMessage;
             internal readonly CancellationToken _cancellationToken;
+            internal readonly HttpContentAsyncStream _requestContentStream;
 
             internal SafeCurlHandle _easyHandle;
             private SafeCurlSlistHandle _requestHeaders;
 
-            internal Stream _requestContentStream;
             internal NetworkCredential _networkCredential;
 
             internal MultiAgent _associatedMultiAgent;
@@ -43,8 +43,14 @@ namespace System.Net.Http
             {
                 _handler = handler;
                 _requestMessage = requestMessage;
-                _responseMessage = new CurlResponseMessage(this);
                 _cancellationToken = cancellationToken;
+
+                if (requestMessage.Content != null)
+                {
+                    _requestContentStream = new HttpContentAsyncStream(requestMessage.Content);
+                }
+
+                _responseMessage = new CurlResponseMessage(this);
             }
 
             /// <summary>

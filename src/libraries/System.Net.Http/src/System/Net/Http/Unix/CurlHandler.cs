@@ -330,26 +330,6 @@ namespace System.Net.Http
             // Create the easy request.  This associates the easy request with this handler and configures
             // it based on the settings configured for the handler.
             var easy = new EasyRequest(this, request, cancellationToken);
-
-            // Submit the easy request to the multi agent.
-            if (request.Content != null)
-            {
-                // If there is request content to be sent, preload the stream
-                // and submit the request to the multi agent.  This is separated
-                // out into a separate async method to avoid associated overheads
-                // in the case where there is no request content stream.
-                return QueueOperationWithRequestContentAsync(easy);
-            }
-            else
-            {
-                // Otherwise, just submit the request.
-                ConfigureAndQueue(easy);
-                return easy.Task;
-            }
-        }
-
-        private void ConfigureAndQueue(EasyRequest easy)
-        {
             try
             {
                 easy.InitializeCurl();
@@ -360,27 +340,7 @@ namespace System.Net.Http
                 easy.FailRequest(exc);
                 easy.Cleanup(); // no active processing remains, so we can cleanup
             }
-        }
-
-        /// <summary>
-        /// Loads the request's request content stream asynchronously and 
-        /// then submits the request to the multi agent.
-        /// </summary>
-        private async Task<HttpResponseMessage> QueueOperationWithRequestContentAsync(EasyRequest easy)
-        {
-            Debug.Assert(easy._requestMessage.Content != null, "Expected request to have non-null request content");
-
-            easy._requestContentStream = await easy._requestMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            if (easy._cancellationToken.IsCancellationRequested)
-            {
-                easy.FailRequest(new OperationCanceledException(easy._cancellationToken));
-                easy.Cleanup(); // no active processing remains, so we can cleanup
-            }
-            else
-            {
-                ConfigureAndQueue(easy);
-            }
-            return await easy.Task.ConfigureAwait(false);
+            return easy.Task;
         }
 
         #region Private methods

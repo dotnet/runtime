@@ -78,7 +78,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory, MemberData("BasicAuthEchoServers")]
-        [ActiveIssue(3699, PlatformID.AnyUnix)]
         public async Task PostRewindableContentUsingAuth_NoPreAuthenticate_Success(Uri serverUri)
         {
             HttpContent content = CustomContent.Create(ExpectedContent, true);
