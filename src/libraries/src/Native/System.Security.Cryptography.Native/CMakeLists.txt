@@ -24,6 +24,7 @@ set(NATIVECRYPTO_SOURCES
     pal_evp.cpp
     pal_evp_cipher.cpp
     pal_hmac.cpp
+    pal_x509.cpp
     pal_x509_name.cpp
 )
 

@@ -19,6 +19,8 @@ namespace Internal.Cryptography.Pal
             {
                 case Oids.RsaRsa:
                     return BuildRsaPublicKey(encodedKeyValue);
+                case Oids.Ecc:
+                    return ((OpenSslX509CertificateReader)certificatePal).GetECDsaPublicKey();
             }
 
             // NotSupportedException is what desktop and CoreFx-Windows throw in this situation.
