@@ -200,6 +200,9 @@ EXTERN_C FCDECL2(Object*, JIT_IsInstanceOfInterface_Portable, MethodTable* pMT, 
 EXTERN_C FCDECL1(Object*, JIT_NewCrossContext, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL1(Object*, JIT_NewCrossContext_Portable, CORINFO_CLASS_HANDLE typeHnd_);
 
+extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+
 #ifndef JIT_Stelem_Ref
 #define JIT_Stelem_Ref JIT_Stelem_Ref_Portable
 #endif
@@ -1614,7 +1617,6 @@ FCDECL1(StringObject*, UnframedAllocateString, DWORD stringLength);
 OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok);
 
 FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
-FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL0(VOID, JIT_PollGC);
 #ifdef ENABLE_FAST_GCPOLL_HELPER
