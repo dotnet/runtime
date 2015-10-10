@@ -96,12 +96,6 @@ namespace System.Net.Http
                         return s_zeroTask;
                     }
 
-                    // Start the transfer of data from the HttpContent to this stream, if it hasn't been started yet.
-                    if (_copyTask == null)
-                    {
-                        _copyTask = Task.Run(new Func<Task>(TransferAsync)); // use a task to escape the lock
-                    }
-
                     // If we've already completed, return 0 bytes or fail with the same error that the CopyToAsync failed with.
                     if (_copyTask.IsCompleted)
                     {
@@ -275,63 +269,86 @@ namespace System.Net.Http
                 return false;
             }
 
-            private Task TransferAsync()
+            /// <summary>Initiate a new copy from the HttpContent to this stream. This is not thread-safe.</summary>
+            internal void Run()
             {
-                VerboseTrace("Initiating new CopyToAsync");
+                Debug.Assert(!Monitor.IsEntered(_syncObj), "Should not be invoked while holding the lock");
+                Debug.Assert(_copyTask == null, "Should only be invoked after construction or a reset");
 
-                Task t;
+                // Start the copy and store the task to represent it
+                _copyTask = StartCopyToAsync();
+
+                // Fix up the instance when it's done
+                _copyTask.ContinueWith((t, s) => ((HttpContentAsyncStream)s).EndCopyToAsync(t), this,
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+
+            /// <summary>
+            /// Initiates a new CopyToAsync from the HttpContent to this stream, and should only be called when the caller
+            /// can be sure that no one else is accessing the stream or attempting to initiate a copy.
+            /// </summary>
+            private Task StartCopyToAsync()
+            {
+                Debug.Assert(!Monitor.IsEntered(_syncObj), "Should not be invoked while holding the lock");
+                Debug.Assert(_copyTask == null, "Should only be invoked after construction or a reset");
+
+                // Transfer the data from the content to this stream
                 try
                 {
-                    t = _content.CopyToAsync(this);
+                    VerboseTrace("Initiating new CopyToAsync");
+                    return _content.CopyToAsync(this);
                 }
                 catch (Exception exc)
                 {
-                    t = Task.FromException(exc);
+                    // CopyToAsync allows some exceptions to propagate synchronously, including exceptions
+                    // indicating that a stream can't be re-copied.
+                    return Task.FromException(exc);
                 }
+            }
 
-                // Transfer the data from the content to this stream
-                return t.ContinueWith(p =>
+            /// <summary>Completes a CopyToAsync; called only from StartCopyToAsync.</summary>
+            private void EndCopyToAsync(Task completedCopy)
+            {
+                Debug.Assert(!Monitor.IsEntered(_syncObj), "Should not be invoked while holding the lock");
+                lock (_syncObj)
                 {
-                    lock (_syncObj)
+                    VerboseTrace("CopyToAsync completed " + completedCopy.Status + " " + completedCopy.Exception);
+
+                    // We're done transferring, but a reader doesn't know that until they successfully
+                    // read 0 bytes, which won't happen until either a) we complete an already waiting
+                    // reader or b) a new reader comes along and see _copyTask completed.  We also need
+                    // to make sure that, once we do signal completion by giving a reader 0 bytes, we're
+                    // immediately ready for a TryReset, which means the _copyTask needs to be completed.
+                    // As such, while we're holding the lock, we need to both give 0 bytes to any waiting
+                    // reader and force _copyTask to complete, which we do by replacing this Task's
+                    // reference with one known to already be complete.
+
+                    if (_asyncOp != null)
                     {
-                        VerboseTrace("CopyToAsync completed " + p.Status + " " + p.Exception);
-
-                        // We're done transferring, but a reader doesn't know that until they successfully
-                        // read 0 bytes, which won't happen until either a) we complete an already waiting
-                        // reader or b) a new reader comes along and see _copyTask completed.  We also need
-                        // to make sure that, once we do signal completion by giving a reader 0 bytes, we're
-                        // immediately ready for a TryReset, which means the _copyTask needs to be completed.
-                        // As such, while we're holding the lock, we need to both give 0 bytes to any waiting
-                        // reader and force _copyTask to complete, which we do by replacing this Task's
-                        // reference with one known to already be complete.
-
-                        if (_asyncOp != null)
+                        _cancellationRegistration.Dispose();
+                        Debug.Assert(_waiterIsReader, "We're done writing, so a waiter must be a reader.");
+                        if (completedCopy.IsFaulted)
                         {
-                            _cancellationRegistration.Dispose();
-                            Debug.Assert(_waiterIsReader, "We're done writing, so a waiter must be a reader.");
-                            if (p.IsFaulted)
-                            {
-                                _asyncOp.TrySetException(p.Exception.InnerException);
-                                _copyTask = p;
-                            }
-                            else if (p.IsCanceled)
-                            {
-                                _asyncOp.TrySetCanceled();
-                                _copyTask = p;
-                            }
-                            else
-                            {
-                                _asyncOp.TrySetResult(0);
-                                _copyTask = s_zeroTask;
-                            }
-                            Update(false, null, 0, 0, null);
+                            _asyncOp.TrySetException(completedCopy.Exception.InnerException);
+                            _copyTask = completedCopy;
+                        }
+                        else if (completedCopy.IsCanceled)
+                        {
+                            _asyncOp.TrySetCanceled();
+                            _copyTask = completedCopy;
                         }
                         else
                         {
-                            _copyTask = p.Status == TaskStatus.RanToCompletion ? s_zeroTask : p;
+                            _asyncOp.TrySetResult(0);
+                            _copyTask = s_zeroTask;
                         }
+                        Update(false, null, 0, 0, null);
                     }
-                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    else
+                    {
+                        _copyTask = completedCopy.Status == TaskStatus.RanToCompletion ? s_zeroTask : completedCopy;
+                    }
+                }
             }
 
             /// <summary>Returns a task that's faulted or canceled based on the specified task's state.</summary>

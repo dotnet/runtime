@@ -333,6 +333,10 @@ namespace System.Net.Http
             try
             {
                 easy.InitializeCurl();
+                if (easy._requestContentStream != null)
+                {
+                    easy._requestContentStream.Run();
+                }
                 _agent.Queue(new MultiAgent.IncomingRequest { Easy = easy, Type = MultiAgent.IncomingRequestType.New });
             }
             catch (Exception exc)
