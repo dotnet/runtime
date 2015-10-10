@@ -805,11 +805,15 @@ namespace System.Net.Http
                         if (offset == 0 && origin == (int)SeekOrigin.Begin && 
                             easy._requestContentStream != null && easy._requestContentStream.TryReset())
                         {
+                            // Dump any state associated with the old stream's position
                             if (easy._sendTransferState != null)
                             {
-                                // Dump any state associated with the old stream's position
                                 easy._sendTransferState.SetTaskOffsetCount(null, 0, 0);
                             }
+
+                            // Restart the transfer
+                            easy._requestContentStream.Run();
+
                             return Interop.libcurl.CURL_SEEKFUNC.CURL_SEEKFUNC_OK;
                         }
                         else
