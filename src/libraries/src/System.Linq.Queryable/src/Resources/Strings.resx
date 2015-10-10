@@ -135,4 +135,7 @@
   <data name="NoMethodOnTypeMatchingArguments" xml:space="preserve">
     <value>There is no method '{0}' on type '{1}' that matches the specified arguments</value>
   </data>
+  <data name="EnumeratingNullEnumerableExpression" xml:space="preserve">
+    <value>Cannot enumerate a query created from a null IEnumerable&lt;&gt;</value>
+  </data>
 </root>
