@@ -102,7 +102,11 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    TrySetException(error as HttpRequestException ?? CreateHttpRequestException(error));
+                    if (error is IOException || error == null)
+                    {
+                        error = CreateHttpRequestException(error);
+                    }
+                    TrySetException(error);
                 }
                 // There's not much we can reasonably assert here about the result of TrySet*.
                 // It's possible that the task wasn't yet completed (e.g. a failure while initiating the request),
