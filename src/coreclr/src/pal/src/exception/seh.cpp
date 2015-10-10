@@ -19,9 +19,7 @@ Abstract:
 
 --*/
 
-#include <typeinfo>
 #include "pal/thread.hpp"
-#include "signal.hpp"
 #include "pal/handleapi.hpp"
 #include "pal/seh.hpp"
 #include "pal/dbgmsg.h"
@@ -30,18 +28,19 @@ Abstract:
 #include "pal/init.h"
 #include "pal/process.h"
 #include "pal/malloc.hpp"
+#include "signal.hpp"
 
 #if HAVE_ALLOCA_H
 #include "alloca.h"
 #endif
 
-#include <errno.h>
-#include <string.h>
 #if HAVE_MACH_EXCEPTIONS
 #include "machexception.h"
 #else
 #include <signal.h>
 #endif
+
+#include <string.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <stdlib.h>
