@@ -13,13 +13,17 @@ namespace System.Linq
     {
         internal static Type FindGenericType(Type definition, Type type)
         {
+            bool? definitionIsInterface = null;
             while (type != null && type != typeof(object))
             {
-                if (type.GetTypeInfo().IsGenericType && type.GetTypeInfo().GetGenericTypeDefinition() == definition)
+                TypeInfo typeInfo = type.GetTypeInfo();
+                if (typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == definition)
                     return type;
-                if (definition.GetTypeInfo().IsInterface)
+                if (!definitionIsInterface.HasValue)
+                    definitionIsInterface = definition.GetTypeInfo().IsInterface;
+                if (definitionIsInterface.GetValueOrDefault())
                 {
-                    foreach (Type itype in type.GetTypeInfo().ImplementedInterfaces)
+                    foreach (Type itype in typeInfo.ImplementedInterfaces)
                     {
                         Type found = FindGenericType(definition, itype);
                         if (found != null)
@@ -45,17 +49,9 @@ namespace System.Linq
             return t.IsGenericTypeDefinition ? t.GenericTypeParameters : t.GenericTypeArguments;
         }
 
-        internal static MethodInfo[] GetStaticMethods(this Type type)
+        internal static IEnumerable<MethodInfo> GetStaticMethods(this Type type)
         {
-            var list = new List<MethodInfo>();
-            foreach (var method in type.GetRuntimeMethods())
-            {
-                if (method.IsStatic)
-                {
-                    list.Add(method);
-                }
-            }
-            return list.ToArray();
+            return type.GetRuntimeMethods().Where(m => m.IsStatic);
         }
     }
 }
