@@ -14,23 +14,23 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\Collections\IEnumerableTest.cs">
-      <Link>Common\Collections\IEnumerableTest.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerableTest.cs">
+      <Link>Common\System\CollectionsIEnumerableTest.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Collections\ICollectionTest.cs">
-      <Link>Common\Collections\ICollectionTest.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollectionTest.cs">
+      <Link>Common\System\CollectionsICollectionTest.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Collections\IListTest.cs">
-      <Link>Common\Collections\IListTest.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Collections\IListTest.cs">
+      <Link>Common\System\CollectionsIListTest.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Collections\Utils.cs">
-      <Link>Common\Collections\Utils.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Collections\Utils.cs">
+      <Link>Common\System\CollectionsUtils.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Collections\IDictionaryTest.cs">
-      <Link>Common\Collections\IDictionaryTest.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionaryTest.cs">
+      <Link>Common\System\CollectionsIDictionaryTest.cs</Link>
     </Compile>
     <Compile Include="ComponentModel\INotifyPropertyChangingTests.cs" />
     <Compile Include="ComponentModel\PropertyChangingEventArgsTests.cs" />
