@@ -256,6 +256,7 @@ namespace System.Security.Cryptography
             new SupportedAlgorithm[]
             {
                 new SupportedAlgorithm(keySize: 224, nid: Interop.Crypto.NID_secp224r1),
+                new SupportedAlgorithm(keySize: 256, nid: Interop.Crypto.NID_X9_62_prime256v1),
                 new SupportedAlgorithm(keySize: 384, nid: Interop.Crypto.NID_secp384r1),
                 new SupportedAlgorithm(keySize: 521, nid: Interop.Crypto.NID_secp521r1),
             };
