@@ -362,9 +362,13 @@ namespace System.Net.Http
                             Debug.Assert(FindActiveRequest(easy, out gcHandlePtr, out ar), "Couldn't find active request for unpause");
 
                             int unpauseResult = Interop.libcurl.curl_easy_pause(easy._easyHandle, Interop.libcurl.CURLPAUSE_CONT);
-                            if (unpauseResult != CURLcode.CURLE_OK)
+                            try
                             {
-                                FindAndFailActiveRequest(multiHandle, easy, new CurlException(unpauseResult, isMulti: false));
+                                ThrowIfCURLEError(unpauseResult);
+                            }
+                            catch (Exception exc)
+                            {
+                                FindAndFailActiveRequest(multiHandle, easy, exc);
                             }
                         }
                         break;
@@ -515,24 +519,19 @@ namespace System.Net.Http
                         completedOperation._requestMessage.RequestUri, completedOperation._responseMessage);
                 }
 
-                switch (messageResult)
+                // Complete or fail the request
+                try
                 {
-                    case CURLcode.CURLE_OK:
-                        completedOperation.EnsureResponseMessagePublished();
-                        break;
-                    case CURLcode.CURLE_UNSUPPORTED_PROTOCOL:
-                        if (completedOperation._isRedirect)
-                        {
-                            completedOperation.EnsureResponseMessagePublished();
-                        }
-                        else
-                        {
-                            completedOperation.FailRequest(CreateHttpRequestException(new CurlException(messageResult, isMulti: false)));
-                        }
-                        break;
-                    default:
-                        completedOperation.FailRequest(CreateHttpRequestException(new CurlException(messageResult, isMulti: false)));
-                        break;
+                    bool unsupportedProtocolRedirect = messageResult == CURLcode.CURLE_UNSUPPORTED_PROTOCOL && completedOperation._isRedirect;
+                    if (!unsupportedProtocolRedirect)
+                    {
+                        ThrowIfCURLEError(messageResult);
+                    }
+                    completedOperation.EnsureResponseMessagePublished();
+                }
+                catch (Exception exc)
+                {
+                    completedOperation.FailRequest(exc);
                 }
 
                 // At this point, we've completed processing the entire request, either due to error
