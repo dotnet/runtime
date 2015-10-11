@@ -460,7 +460,7 @@ namespace System.Net.Http
             {
                 var inner = new CurlException(error, isMulti: false);
                 VerboseTrace(inner.Message);
-                throw CreateHttpRequestException(inner);
+                throw inner;
             }
         }
 
@@ -483,7 +483,7 @@ namespace System.Net.Http
                         throw new OutOfMemoryException(msg);
                     case CURLMcode.CURLM_INTERNAL_ERROR:
                     default:
-                        throw CreateHttpRequestException(new CurlException(error, msg));
+                        throw new CurlException(error, msg);
                 }
             }
         }

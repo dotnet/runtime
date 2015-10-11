@@ -102,7 +102,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    if (error is IOException || error == null)
+                    if (error is IOException || error is CurlException || error == null)
                     {
                         error = CreateHttpRequestException(error);
                     }

@@ -35,7 +35,7 @@ namespace System.Net.Http
 
             /// <summary>Object used to synchronize all activity on the stream.</summary>
             private readonly object _syncObj = new object();
-            /// <summary>The HttpContent to read from.</summary>
+            /// <summary>The HttpContent to read from, potentially repeatedly until a response is received.</summary>
             private readonly HttpContent _content;
 
             /// <summary>true if the stream has been disposed; otherwise, false.</summary>
@@ -211,17 +211,21 @@ namespace System.Net.Http
             {
                 lock (_syncObj)
                 {
-                    // Mark ourselves as disposed, and make sure to wake
-                    // up any writer or reader who's been waiting.
-                    _disposed = true;
-                    if (_asyncOp != null)
+                    if (!_disposed)
                     {
-                        _cancellationRegistration.Dispose();
-                        bool canceled = _asyncOp.TrySetCanceled();
-                        Debug.Assert(canceled, "No one else should have completed the operation.");
+                        // Mark ourselves as disposed, and make sure to wake
+                        // up any writer or reader who's been waiting.
+                        _disposed = true;
+                        if (_asyncOp != null)
+                        {
+                            _cancellationRegistration.Dispose();
+                            bool canceled = _asyncOp.TrySetCanceled();
+                            Debug.Assert(canceled, "No one else should have completed the operation.");
+                        }
+                        Update(false, null, 0, 0, null);
                     }
-                    Update(false, null, 0, 0, null);
                 }
+
                 base.Dispose(disposing);
             }
 
