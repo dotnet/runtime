@@ -305,6 +305,24 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        [Theory]
+        [InlineData(256)]
+        [InlineData(384)]
+        [InlineData(521)]
+        public void CreateKey(int keySize)
+        {
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                // Step 1, don't throw here.
+                ecdsa.KeySize = keySize;
+
+                // Step 2, ensure the key was generated without throwing.
+                ecdsa.SignData(Array.Empty<byte>(), HashAlgorithmName.SHA256);
+            }
+        }
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         public static IEnumerable<object[]> InteroperableSignatureConfigurations()
         {
             foreach (HashAlgorithmName hashAlgorithm in new[] { 
