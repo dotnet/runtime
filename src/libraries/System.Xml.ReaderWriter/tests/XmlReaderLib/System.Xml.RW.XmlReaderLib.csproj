@@ -93,11 +93,11 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\SystemXml\ModuleCore\ModuleCore.csproj">
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj">
       <Project>{3cf0cc76-4ce0-460a-ba37-657cfed39ab0}</Project>
       <Name>ModuleCore</Name>
     </ProjectReference>
-    <ProjectReference Include="$(CommonTestPath)\SystemXml\XmlCoreTest\XmlCoreTest.csproj">
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj">
       <Project>{89701565-f68b-46d9-bd78-95b0f052c50b}</Project>
       <Name>XmlCoreTest</Name>
     </ProjectReference>

@@ -16,25 +16,25 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs">
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.Data.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs">
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesContractTests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesCornerTests.cs">
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCornerTests.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCornerTests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs">
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesModeTests.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs">
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\DecryptorReusability.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Cryptography\AlgorithmImplementations\AES\AesFactory.cs">
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesFactory.cs</Link>
     </Compile>
     <Compile Include="AesProvider.cs" />
@@ -58,11 +58,11 @@
     <Compile Include="Sha384Tests.cs" />
     <Compile Include="Sha512Tests.cs" />
     <Compile Include="TripleDesTests.cs" />
-    <Compile Include="$(CommonTestPath)\Cryptography\ByteUtils.cs">
-      <Link>CommonTest\Cryptography\ByteUtils.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Cryptography\CryptoUtils.cs">
-      <Link>CommonTest\Cryptography\CryptoUtils.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\CryptoUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\CryptoUtils.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

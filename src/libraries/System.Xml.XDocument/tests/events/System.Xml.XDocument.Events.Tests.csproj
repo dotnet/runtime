@@ -29,7 +29,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\SystemXml\XmlCoreTest\XmlCoreTest.csproj">
+    <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj">
       <Project>{89701565-f68b-46d9-bd78-95b0f052c50b}</Project>
       <Name>XmlCoreTest</Name>
     </ProjectReference>
