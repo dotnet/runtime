@@ -845,6 +845,7 @@ protected:
     // Frame is considered an abstract class: this protected constructor
     // causes any attempt to instantiate one to fail at compile-time.
     Frame()
+    : m_Next(dac_cast<PTR_Frame>(nullptr))
     { 
         LIMITED_METHOD_CONTRACT;
     }
