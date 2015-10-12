@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata
 {
     public struct ImportDefinitionCollection : IEnumerable<ImportDefinition>
     {
-        MemoryBlock _block;
+        private readonly MemoryBlock _block;
 
         internal ImportDefinitionCollection(MemoryBlock block)
         {

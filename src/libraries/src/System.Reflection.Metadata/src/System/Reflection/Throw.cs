@@ -111,5 +111,11 @@ namespace System.Reflection
         {
             throw new InvalidCastException();
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void SequencePointValueOutOfRange()
+        {
+            throw new BadImageFormatException(SR.SequencePointValueOutOfRange);
+        }
     }
 }
