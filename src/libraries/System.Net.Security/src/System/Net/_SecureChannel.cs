@@ -17,10 +17,8 @@ using System.Security.Authentication;
 
 namespace System.Net.Security
 {
-    //
     // SecureChannel - a wrapper on SSPI based functionality. 
     // Provides an additional abstraction layer over SSPI for SslStream.
-    //
     internal class SecureChannel
     {
         // When reading a frame from the wire first read this many bytes for the header.
@@ -818,8 +816,7 @@ namespace System.Net.Security
                                       ref _securityContext,
                                       incomingSecurity,
                                       outgoingSecurity,
-                                      _remoteCertRequired
-                                      );
+                                      _remoteCertRequired);
                     }
                     else
                     {
@@ -830,8 +827,7 @@ namespace System.Net.Security
                                            ref _securityContext,
                                            _destination,
                                            incomingSecurity,
-                                           outgoingSecurity
-                                           );
+                                           outgoingSecurity);
                         }
                         else
                         {
@@ -840,8 +836,7 @@ namespace System.Net.Security
                                            ref _securityContext,
                                            _destination,
                                            incomingSecurityBuffers,
-                                           outgoingSecurity
-                                           );
+                                           outgoingSecurity);
                         }
                     }
                 } while (cachedCreds && _credentialsHandle == null);
@@ -892,7 +887,6 @@ namespace System.Net.Security
             GlobalLog.Enter("SecureChannel#" + Logging.HashString(this) + "::ProcessHandshakeSuccess");
 
             StreamSizes streamSizes;
-
             SslStreamPal.QueryContextStreamSizes(_securityContext, out streamSizes);
 
             if (streamSizes != null)
@@ -944,6 +938,7 @@ namespace System.Net.Security
                 {
                     throw new ArgumentOutOfRangeException("offset");
                 }
+
                 if (size < 0 || size > (buffer == null ? 0 : buffer.Length - offset))
                 {
                     throw new ArgumentOutOfRangeException("size");
@@ -960,6 +955,7 @@ namespace System.Net.Security
                 {
                     writeBuffer = new byte[bufferSizeNeeded];
                 }
+
                 Buffer.BlockCopy(buffer, offset, writeBuffer, _headerSize, size);
             }
             catch (Exception e)
@@ -968,6 +964,7 @@ namespace System.Net.Security
                 {
                     GlobalLog.Assert(false, "SecureChannel#" + Logging.HashString(this) + "::Encrypt", "Arguments out of range.");
                 }
+
                 throw;
             }
 
@@ -975,7 +972,7 @@ namespace System.Net.Security
 
             if (secStatus != SecurityStatusPal.OK)
             {
-                GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::Encrypt ERROR", secStatus.ToString("x"));
+                GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::Encrypt ERROR", secStatus.ToString());
             }
             else
             {
@@ -1048,11 +1045,7 @@ namespace System.Net.Security
                     {
                         chain.ChainPolicy.ExtraStore.AddRange(remoteCertificateStore);
                     }
-
-                    // Don't call chain.Build here in the common code, because the Windows version
-                    // is potentially going to check for GetLastWin32Error, and that call needs to be
-                    // guaranteed to be right after the call to chain.Build.
-
+                    
                     sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
                         chain,
                         remoteCertificateEx,
@@ -1140,11 +1133,7 @@ namespace System.Net.Security
         }
     }
 
-    //
-    // ProtocolToken - used to process and handle the return codes
-    //   from the SSPI wrapper
-    //
-
+    // ProtocolToken - used to process and handle the return codes from the SSPI wrapper
     internal class ProtocolToken
     {
         internal SecurityStatusPal Status;

@@ -8,6 +8,7 @@ using System.Net.Security;
 using System.Security.Principal;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace System.Net
 {
@@ -18,11 +19,16 @@ namespace System.Net
         private static volatile X509Store s_myCertStoreEx;
         private static volatile X509Store s_myMachineCertStoreEx;
 
-        internal static SslPolicyErrors VerifyCertificateProperties(X509Chain chain, X509Certificate2 certificate, bool checkCertName, bool isServer, string hostName)
+        internal static SslPolicyErrors VerifyCertificateProperties(
+            X509Chain chain,
+            X509Certificate2 remoteCertificate,
+            bool checkCertName,
+            bool isServer,
+            string hostName)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
-            if (!chain.Build(certificate)       // Build failed on handle or on policy.
+            if (!chain.Build(remoteCertificate)       // Build failed on handle or on policy.
                 && chain.SafeHandle.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
             {
                 throw new CryptographicException(Marshal.GetLastWin32Error());
@@ -34,18 +40,15 @@ namespace System.Net
                 {
                     uint status = 0;
 
-                    var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA()
+                    var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA() 
                     {
                         cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA>(),
-                        dwAuthType =
-                            isServer
-                                ? Interop.Crypt32.AuthType.AUTHTYPE_SERVER
-                                : Interop.Crypt32.AuthType.AUTHTYPE_CLIENT,
+                        dwAuthType = isServer ? Interop.Crypt32.AuthType.AUTHTYPE_SERVER : Interop.Crypt32.AuthType.AUTHTYPE_CLIENT,
                         fdwChecks = 0,
                         pwszServerName = null
                     };
 
-                    var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA()
+                    var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA() 
                     {
                         cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_PARA>(),
                         dwFlags = 0,
@@ -55,14 +58,12 @@ namespace System.Net
                     fixed (char* namePtr = hostName)
                     {
                         eppStruct.pwszServerName = namePtr;
-                        cppStruct.dwFlags |= (Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
-                                              ~Interop.Crypt32.CertChainPolicyIgnoreFlags
-                                                  .CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG);
+                        cppStruct.dwFlags |=
+                            (Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
+                             ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG);
 
                         SafeX509ChainHandle chainContext = chain.SafeHandle;
-
                         status = Verify(chainContext, ref cppStruct);
-
                         if (status == Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH)
                         {
                             sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
@@ -92,12 +93,12 @@ namespace System.Net
                 return null;
             }
 
-            GlobalLog.Enter("SecureChannel#" + Logging.HashString(securityContext) + "::RemoteCertificate{get;}");
+            GlobalLog.Enter("CertificateValidationPal.Windows SecureChannel#" + Logging.HashString(securityContext) + "::GetRemoteCertificate()");
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
             try
             {
-                int errorCode = SslStreamPal.QueryContextRemoteCertificate(securityContext, out remoteContext);
+                remoteContext = SSPIWrapper.QueryContextAttributes(GlobalSSPI.SSPISecureChannel, securityContext, Interop.Secur32.ContextAttribute.RemoteCertificate) as SafeFreeCertContext;
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
@@ -118,7 +119,7 @@ namespace System.Net
                 Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_remote_certificate, (result == null ? "null" : result.ToString(true))));
             }
 
-            GlobalLog.Leave("SecureChannel#" + Logging.HashString(securityContext) + "::RemoteCertificate{get;}", (result == null ? "null" : result.Subject));
+            GlobalLog.Leave("CertificateValidationPal.Windows SecureChannel#" + Logging.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
 
             return result;
         }
@@ -128,15 +129,13 @@ namespace System.Net
         //
         internal static string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
-            string[] issuers = Array.Empty<string>();
+            Interop.Secur32.IssuerListInfoEx issuerList = 
+                (Interop.Secur32.IssuerListInfoEx)SSPIWrapper.QueryContextAttributes(
+                    GlobalSSPI.SSPISecureChannel, 
+                    securityContext, 
+                    Interop.Secur32.ContextAttribute.IssuerListInfoEx);
 
-            object outObj;
-
-            int errorCode = SslStreamPal.QueryContextIssuerList(securityContext, out outObj);
-
-            GlobalLog.Assert(errorCode == 0, "QueryContextIssuerList returned errorCode:" + errorCode);
-
-            Interop.Secur32.IssuerListInfoEx issuerList = (Interop.Secur32.IssuerListInfoEx)outObj;
+            string [] issuers = Array.Empty<string>();
 
             try
             {
@@ -187,12 +186,13 @@ namespace System.Net
         {
             X509Store store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
 
-            if (store == null)
+            // TODO #3862 Investigate if this can be switched to either the static or Lazy<T> patterns.
+            if (Volatile.Read(ref store) == null)
             {
                 lock (s_syncObject)
                 {
                     store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
-                    if (store == null)
+                    if (Volatile.Read(ref store) == null)
                     {
                         // NOTE: that if this call fails we won't keep track and the next time we enter we will try to open the store again.
                         StoreLocation storeLocation = isMachineStore ? StoreLocation.LocalMachine : StoreLocation.CurrentUser;
@@ -202,8 +202,7 @@ namespace System.Net
                             // For app-compat We want to ensure the store is opened under the **process** account.
                             try
                             {
-                                WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () =>
-                                {
+                                WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () => {
                                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
                                     GlobalLog.Print("SecureChannel::EnsureStoreOpened() storeLocation:" + storeLocation + " returned store:" + store.GetHashCode().ToString("x"));
                                 });
@@ -242,6 +241,7 @@ namespace System.Net
                     }
                 }
             }
+
             return store;
         }
 
@@ -251,7 +251,12 @@ namespace System.Net
             var status = new Interop.Crypt32.CERT_CHAIN_POLICY_STATUS();
             status.cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_STATUS>();
 
-            bool errorCode = Interop.Crypt32.CertVerifyCertificateChainPolicy((IntPtr)Interop.Crypt32.CertChainPolicy.CERT_CHAIN_POLICY_SSL, chainContext, ref cpp, ref status);
+            bool errorCode =
+                Interop.Crypt32.CertVerifyCertificateChainPolicy(
+                    (IntPtr)Interop.Crypt32.CertChainPolicy.CERT_CHAIN_POLICY_SSL,
+                    chainContext,
+                    ref cpp,
+                    ref status);
 
             GlobalLog.Print("SecureChannel::VerifyChainPolicy() CertVerifyCertificateChainPolicy returned: " + errorCode);
 #if TRACE_VERBOSE

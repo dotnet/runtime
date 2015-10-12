@@ -4,9 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.Net.Security;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
@@ -14,130 +12,141 @@ using System.Security.Principal;
 
 namespace System.Net
 {
-    // For SSL connections:
-    internal static partial class SslStreamPal
+    internal static class SslStreamPal
     {
-        private readonly static object s_lock = new object();
+        private const string SecurityPackage = "Microsoft Unified Security Protocol Provider";
 
-        public const string MSSecurityPackage = "Microsoft Unified Security Protocol Provider";
+        private const Interop.Secur32.ContextFlags RequiredFlags =
+            Interop.Secur32.ContextFlags.ReplayDetect |
+            Interop.Secur32.ContextFlags.SequenceDetect |
+            Interop.Secur32.ContextFlags.Confidentiality |
+            Interop.Secur32.ContextFlags.AllocateMemory;
 
-        public const Interop.Secur32.ContextFlags RequiredFlags = Interop.Secur32.ContextFlags.ReplayDetect | Interop.Secur32.ContextFlags.SequenceDetect |
-                                                                  Interop.Secur32.ContextFlags.Confidentiality | Interop.Secur32.ContextFlags.AllocateMemory;
-
-        public const Interop.Secur32.ContextFlags ServerRequiredFlags = RequiredFlags | Interop.Secur32.ContextFlags.AcceptStream;
-
-        private static volatile SecurityPackageInfoClass[] s_securityPackages;
-
-        public static void VerifyPackageInfo()
-        {
-            bool found = false;
-
-            EnumerateSecurityPackages();
-
-            if (s_securityPackages != null)
-            {
-                foreach (var package in s_securityPackages)
-                {
-                    if (string.Compare(package.Name, MSSecurityPackage, StringComparison.OrdinalIgnoreCase) == 0)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!found)
-            {
-                if (Logging.On)
-                {
-                    Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_sspi_security_package_not_found, MSSecurityPackage));
-                }
-
-                throw new NotSupportedException(SR.net_securitypackagesupport);
-            }
-        }
+        private const Interop.Secur32.ContextFlags ServerRequiredFlags = 
+            RequiredFlags | Interop.Secur32.ContextFlags.AcceptStream;
 
         public static Exception GetException(SecurityStatusPal status)
         {
-            return new Win32Exception((int)status);
+            int win32Code = (int)GetInteropFromSecurityStatusPal(status);
+            return new Win32Exception(win32Code);
         }
 
-        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired)
+        public static void VerifyPackageInfo()
         {
-            Interop.Secur32.ContextFlags outFlags = Interop.Secur32.ContextFlags.Zero;
-            var retStatus = SafeDeleteContext.AcceptSecurityContext(
-                                        ref credential,
-                                        ref context,
-                                        ServerRequiredFlags | (remoteCertRequired ? Interop.Secur32.ContextFlags.MutualAuth : Interop.Secur32.ContextFlags.Zero),
-                                        Interop.Secur32.Endianness.Native,
-                                        inputBuffer,
-                                        null,
-                                        outputBuffer,
-                                        ref outFlags
-                                        );
-
-            return MapToSecurityStatus((Interop.SecurityStatus)retStatus);
+            SSPIWrapper.GetVerifyPackageInfo(GlobalSSPI.SSPISecureChannel, SecurityPackage, true);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer)
+        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired)
         {
-            Interop.Secur32.ContextFlags outFlags = Interop.Secur32.ContextFlags.Zero;
+            Interop.Secur32.ContextFlags unusedAttributes = default(Interop.Secur32.ContextFlags);
 
-            var retStatus = (SecurityStatusPal)SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, RequiredFlags | Interop.Secur32.ContextFlags.InitManualCredValidation, Interop.Secur32.Endianness.Native, inputBuffer, null, outputBuffer, ref outFlags);
+            int errorCode = SSPIWrapper.AcceptSecurityContext(
+                GlobalSSPI.SSPISecureChannel,
+                ref credentialsHandle,
+                ref context,
+                ServerRequiredFlags | (remoteCertRequired ? Interop.Secur32.ContextFlags.MutualAuth : Interop.Secur32.ContextFlags.Zero),
+                Interop.Secur32.Endianness.Native,
+                inputBuffer,
+                outputBuffer,
+                ref unusedAttributes);
 
-            return MapToSecurityStatus((Interop.SecurityStatus)retStatus);
+            return GetSecurityStatusPalFromWin32Int(errorCode);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer)
+        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer)
         {
-            Interop.Secur32.ContextFlags outFlags = Interop.Secur32.ContextFlags.Zero;
-            var retStatus = (SecurityStatusPal)SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, RequiredFlags | Interop.Secur32.ContextFlags.InitManualCredValidation, Interop.Secur32.Endianness.Native, null, inputBuffers, outputBuffer, ref outFlags);
-            return MapToSecurityStatus((Interop.SecurityStatus)retStatus);
+            Interop.Secur32.ContextFlags unusedAttributes = default(Interop.Secur32.ContextFlags);
+
+            int errorCode = SSPIWrapper.InitializeSecurityContext(
+                GlobalSSPI.SSPISecureChannel,
+                ref credentialsHandle,
+                ref context,
+                targetName,
+                RequiredFlags | Interop.Secur32.ContextFlags.InitManualCredValidation,
+                Interop.Secur32.Endianness.Native,
+                inputBuffer,
+                outputBuffer,
+                ref unusedAttributes);
+
+            return GetSecurityStatusPalFromWin32Int(errorCode);
+        }
+
+        public static SecurityStatusPal InitializeSecurityContext(SafeFreeCredentials credentialsHandle, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer)
+        {
+            Interop.Secur32.ContextFlags unusedAttributes = default(Interop.Secur32.ContextFlags);
+
+            int errorCode = SSPIWrapper.InitializeSecurityContext(
+                            GlobalSSPI.SSPISecureChannel,
+                            credentialsHandle,
+                            ref context,
+                            targetName,
+                            RequiredFlags | Interop.Secur32.ContextFlags.InitManualCredValidation,
+                            Interop.Secur32.Endianness.Native,
+                            inputBuffers,
+                            outputBuffer,
+                            ref unusedAttributes);
+
+            return GetSecurityStatusPalFromWin32Int(errorCode);
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
-            Interop.Secur32.SecureCredential secureCredential = CreateSecureCredential(Interop.Secur32.SecureCredential.CurrentVersion, certificate, protocols, policy, isServer);
-            // First try without impersonation, if it fails, then try the process account.
-            // I.E. We don't know which account the certificate context was created under.
-            try
+            int protocolFlags = GetProtocolFlagsFromSslProtocols(protocols, isServer);
+            Interop.Secur32.SecureCredential.Flags flags;
+            Interop.Secur32.CredentialUse direction;
+
+            if (!isServer)
             {
-                //
-                // For app-compat we want to ensure the credential are accessed under >>process<< acount.
-                //
-                return WindowsIdentity.RunImpersonated<SafeFreeCredentials>(SafeAccessTokenHandle.InvalidHandle, () =>
+                direction = Interop.Secur32.CredentialUse.Outbound;
+                flags = Interop.Secur32.SecureCredential.Flags.ValidateManual | Interop.Secur32.SecureCredential.Flags.NoDefaultCred;
+
+                // CoreFX: always opt-in SCH_USE_STRONG_CRYPTO except for SSL3.
+                if (((protocolFlags & (Interop.SChannel.SP_PROT_TLS1_0 | Interop.SChannel.SP_PROT_TLS1_1 | Interop.SChannel.SP_PROT_TLS1_2)) != 0)
+                     && (policy != EncryptionPolicy.AllowNoEncryption) && (policy != EncryptionPolicy.NoEncryption))
                 {
-                    return AcquireCredentialsHandle(MSSecurityPackage, isServer, secureCredential);
-                });
+                    flags |= Interop.Secur32.SecureCredential.Flags.UseStrongCrypto;
+                }
             }
-            catch
+            else
             {
-                return AcquireCredentialsHandle(MSSecurityPackage, isServer, secureCredential);
+                direction = Interop.Secur32.CredentialUse.Inbound;
+                flags = Interop.Secur32.SecureCredential.Flags.Zero;
             }
+
+            Interop.Secur32.SecureCredential secureCredential = CreateSecureCredential(
+                Interop.Secur32.SecureCredential.CurrentVersion,
+                certificate,
+                flags,
+                protocolFlags,
+                policy);
+
+             return AcquireCredentialsHandle(direction, secureCredential);
         }
 
-        public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] buffer, int size, int headerSize, int trailerSize, out int resultSize)
+        public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] writeBuffer, int size, int headerSize, int trailerSize, out int resultSize)
         {
-            resultSize = 0;
-
             // Encryption using SCHANNEL requires 4 buffers: header, payload, trailer, empty.
             SecurityBuffer[] securityBuffer = new SecurityBuffer[4];
 
-            securityBuffer[0] = new SecurityBuffer(buffer, 0, headerSize, SecurityBufferType.Header);
-            securityBuffer[1] = new SecurityBuffer(buffer, headerSize, size, SecurityBufferType.Data);
-            securityBuffer[2] = new SecurityBuffer(buffer, headerSize + size, trailerSize, SecurityBufferType.Trailer);
+            securityBuffer[0] = new SecurityBuffer(writeBuffer, 0, headerSize, SecurityBufferType.Header);
+            securityBuffer[1] = new SecurityBuffer(writeBuffer, headerSize, size, SecurityBufferType.Data);
+            securityBuffer[2] = new SecurityBuffer(writeBuffer, headerSize + size, trailerSize, SecurityBufferType.Trailer);
             securityBuffer[3] = new SecurityBuffer(null, SecurityBufferType.Empty);
 
-            SecurityStatusPal secStatus = EncryptDecryptHelper(OP.Encrypt, securityContext, securityBuffer, 0);
+            int errorCode = SSPIWrapper.EncryptMessage(GlobalSSPI.SSPISecureChannel, securityContext, securityBuffer, 0);
 
-            if (secStatus == 0)
+            if (errorCode != 0)
+            {
+                GlobalLog.Print("SslStreamPal.Windows: SecureChannel#" + Logging.HashString(securityContext) + "::Encrypt ERROR" + errorCode.ToString("x"));
+                resultSize = 0;
+            }
+            else
             {
                 // The full buffer may not be used.
                 resultSize = securityBuffer[0].size + securityBuffer[1].size + securityBuffer[2].size;
-                GlobalLog.Leave("SecureChannel#" + Logging.HashString(securityContext) + "::Encrypt OK", "data size:" + resultSize.ToString());
             }
 
-            return secStatus;
+            return GetSecurityStatusPalFromWin32Int(errorCode);
         }
 
         public static SecurityStatusPal DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
@@ -149,15 +158,19 @@ namespace System.Net
             decspc[2] = new SecurityBuffer(null, SecurityBufferType.Empty);
             decspc[3] = new SecurityBuffer(null, SecurityBufferType.Empty);
 
-            SecurityStatusPal secStatus = EncryptDecryptHelper(OP.Decrypt, securityContext, decspc, 0);
+            Interop.SecurityStatus errorCode = (Interop.SecurityStatus)SSPIWrapper.DecryptMessage(
+                GlobalSSPI.SSPISecureChannel, 
+                securityContext, 
+                decspc, 
+                0);
 
             count = 0;
             for (int i = 0; i < decspc.Length; i++)
             {
                 // Successfully decoded data and placed it at the following position in the buffer,
-                if ((secStatus == SecurityStatusPal.OK && decspc[i].type == SecurityBufferType.Data)
+                if ((errorCode == Interop.SecurityStatus.OK && decspc[i].type == SecurityBufferType.Data)
                     // or we failed to decode the data, here is the encoded data.
-                    || (secStatus != SecurityStatusPal.OK && decspc[i].type == SecurityBufferType.Extra))
+                    || (errorCode != Interop.SecurityStatus.OK && decspc[i].type == SecurityBufferType.Extra))
                 {
                     offset = decspc[i].offset;
                     count = decspc[i].size;
@@ -165,188 +178,53 @@ namespace System.Net
                 }
             }
 
-            return secStatus;
+            return GetSecurityStatusPalFromInterop(errorCode);
         }
 
-        public unsafe static SafeFreeContextBufferChannelBinding QueryContextChannelBinding(SafeDeleteContext phContext, ChannelBindingKind attribute)
+        public unsafe static SafeFreeContextBufferChannelBinding QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
         {
-            var refHandle = SafeFreeContextBufferChannelBinding.CreateEmptyHandle();
-            
-            // Bindings is on the stack, so there's no need for a fixed block.
-            Bindings bindings = new Bindings();
-            int errorCode = SafeFreeContextBufferChannelBinding.QueryContextChannelBinding(phContext, (Interop.Secur32.ContextAttribute)attribute, &bindings, refHandle);
+            return SSPIWrapper.QueryContextChannelBinding(GlobalSSPI.SSPISecureChannel, securityContext, (Interop.Secur32.ContextAttribute)attribute);
+        }
 
-            if (errorCode != 0)
+        public static void QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
+        {
+            streamSizes = SSPIWrapper.QueryContextAttributes(
+                GlobalSSPI.SSPISecureChannel, 
+                securityContext, 
+                Interop.Secur32.ContextAttribute.StreamSizes) as StreamSizes;
+        }
+
+        public static void QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
+        {
+            connectionInfo = SSPIWrapper.QueryContextAttributes(
+                GlobalSSPI.SSPISecureChannel, 
+                securityContext, 
+                Interop.Secur32.ContextAttribute.ConnectionInfo) as SslConnectionInfo;
+        }
+
+        private static int GetProtocolFlagsFromSslProtocols(SslProtocols protocols, bool isServer)
+        {
+            int protocolFlags = (int)protocols;
+
+            if (isServer)
             {
-                GlobalLog.Leave("QueryContextChannelBinding", "ERROR = " + ErrorDescription(errorCode));
-                refHandle = null;
+                protocolFlags &= Interop.SChannel.ServerProtocolMask;
+            }
+            else
+            {
+                protocolFlags &= Interop.SChannel.ClientProtocolMask;
             }
 
-            return refHandle;
+            return protocolFlags;
         }
 
-        public static int QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
+        private static Interop.Secur32.SecureCredential CreateSecureCredential(
+            int version,
+            X509Certificate certificate,
+            Interop.Secur32.SecureCredential.Flags flags,
+            int protocols, EncryptionPolicy policy)
         {
-            int errorCode;
-            streamSizes = QueryContextAttributes(securityContext, Interop.Secur32.ContextAttribute.StreamSizes, out errorCode) as StreamSizes;
-            return errorCode;
-        }
-
-        public static int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
-        {
-            int errorCode;
-            connectionInfo = QueryContextAttributes(securityContext, Interop.Secur32.ContextAttribute.ConnectionInfo, out errorCode) as SslConnectionInfo;
-            return errorCode;
-        }
-
-        public static int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext remoteCert)
-        {
-            int errorCode;
-            remoteCert = QueryContextAttributes(securityContext, Interop.Secur32.ContextAttribute.RemoteCertificate, out errorCode) as SafeFreeCertContext;
-            return errorCode;
-        }
-
-        public static int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList)
-        {
-            int errorCode;
-            issuerList = QueryContextAttributes(securityContext, Interop.Secur32.ContextAttribute.IssuerListInfoEx, out errorCode);
-            return errorCode;
-        }
-
-        #region Private Methods
-
-        private enum OP
-        {
-            Encrypt = 1,
-            Decrypt
-        }
-
-        private static SecurityStatusPal MapToSecurityStatus(Interop.SecurityStatus secStatus)
-        {
-            SecurityStatusPal retStatus;
-
-            if (!SecurityStatusPal.TryParse(secStatus.ToString(), out retStatus))
-            {
-                Debug.Fail("Could not map from Interop.SecurityStatus to SecurityStatusPal. Interop.SecurityStatus value:" + secStatus.ToString());
-                return SecurityStatusPal.InternalError;
-            }
-
-            return retStatus;
-        }
-
-        private static void EnumerateSecurityPackages()
-        {
-            GlobalLog.Enter("EnumerateSecurityPackages");
-            if (s_securityPackages == null)
-            {
-                lock (s_lock)
-                {
-                    if (s_securityPackages == null)
-                    {
-                        int moduleCount = 0;
-                        SafeFreeContextBuffer arrayBaseHandle = null;
-                        try
-                        {
-                            int errorCode = SafeFreeContextBuffer.EnumeratePackages(out moduleCount, out arrayBaseHandle);
-
-                            GlobalLog.Print("SslStreamPal::arrayBase: " + (arrayBaseHandle.DangerousGetHandle().ToString("x")));
-
-                            if (errorCode != 0)
-                            {
-                                throw new Win32Exception(errorCode);
-                            }
-
-                            SecurityPackageInfoClass[] securityPackagesList = new SecurityPackageInfoClass[moduleCount];
-
-                            if (Logging.On)
-                            {
-                                Logging.PrintInfo(Logging.Web, SR.net_log_sspi_enumerating_security_packages);
-                            }
-
-                            for (int i = 0; i < moduleCount; i++)
-                            {
-                                securityPackagesList[i] = new SecurityPackageInfoClass(arrayBaseHandle, i);
-
-                                if (Logging.On)
-                                {
-                                    Logging.PrintInfo(Logging.Web, "    " + securityPackagesList[i].Name);
-                                }
-                            }
-
-                            s_securityPackages = securityPackagesList;
-                        }
-                        finally
-                        {
-                            if (arrayBaseHandle != null)
-                            {
-                                arrayBaseHandle.Dispose();
-                            }
-                        }
-                    }
-                }
-            }
-
-            GlobalLog.Leave("EnumerateSecurityPackages");
-        }
-
-        private static SafeFreeCredentials AcquireCredentialsHandle(string package, bool isServer, Interop.Secur32.SecureCredential scc)
-        {
-            GlobalLog.Print("SslStreamPal::AcquireCredentialsHandle#3(): using " + package);
-
-            if (Logging.On)
-            {
-                Logging.PrintInfo(Logging.Web,
-                    "AcquireCredentialsHandle(" +
-                    "package = " + package + ", " +
-                    "IsInBoundCred  = " + isServer + ", " +
-                    "scc     = " + scc + ")");
-            }
-
-            SafeFreeCredentials outCredential = null;
-            int errorCode = AcquireCredentialsHandle(
-                                            package,
-                                            isServer,
-                                            ref scc,
-                                            out outCredential
-                                            );
-            if (errorCode != 0)
-            {
-#if TRACE_VERBOSE
-                GlobalLog.Print("SslStreamPal::AcquireCredentialsHandle#3(): error " + Interop.MapSecurityStatus((uint)errorCode));
-#endif
-                if (Logging.On) Logging.PrintError(Logging.Web, SR.Format(SR.net_log_operation_failed_with_error, "AcquireCredentialsHandle()", String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
-                throw new Win32Exception(errorCode);
-            }
-
-#if TRACE_VERBOSE
-            GlobalLog.Print("SslStreamPal::AcquireCredentialsHandle#3(): cred handle = " + outCredential.ToString());
-#endif
-            return outCredential;
-        }
-
-        private static int AcquireCredentialsHandle(string moduleName, bool IsInBoundCred, ref Interop.Secur32.SecureCredential authdata, out SafeFreeCredentials outCredential)
-        {
-            Interop.Secur32.CredentialUse intent = IsInBoundCred ? Interop.Secur32.CredentialUse.Inbound : Interop.Secur32.CredentialUse.Outbound;
-            return SafeFreeCredentials.AcquireCredentialsHandle(moduleName, intent, ref authdata, out outCredential);
-        }
-
-        private static Interop.Secur32.SecureCredential CreateSecureCredential(int version, X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)
-        {
-            Interop.Secur32.SecureCredential.Flags flags = Interop.Secur32.SecureCredential.Flags.Zero;
-
-            if (!isServer)
-            {
-                flags = Interop.Secur32.SecureCredential.Flags.ValidateManual | Interop.Secur32.SecureCredential.Flags.NoDefaultCred;
-
-                if ((protocols.HasFlag(SslProtocols.Tls) || protocols.HasFlag(SslProtocols.Tls11) || protocols.HasFlag(SslProtocols.Tls12))
-                     && (policy != EncryptionPolicy.AllowNoEncryption) && (policy != EncryptionPolicy.NoEncryption))
-                {
-                    flags |= Interop.Secur32.SecureCredential.Flags.UseStrongCrypto;
-                }
-            }
-
-            var credential = new Interop.Secur32.SecureCredential()
-            {
+            var credential = new Interop.Secur32.SecureCredential() {
                 rootStore = IntPtr.Zero,
                 phMappers = IntPtr.Zero,
                 palgSupportedAlgs = IntPtr.Zero,
@@ -381,21 +259,9 @@ namespace System.Net
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), "policy");
             }
 
-            int _protocolFlags = 0;
-
-            if (isServer)
-            {
-                _protocolFlags = ((int)protocols & Interop.SChannel.ServerProtocolMask);
-            }
-            else
-            {
-                _protocolFlags = ((int)protocols & Interop.SChannel.ClientProtocolMask);
-            }
-
             credential.version = version;
             credential.dwFlags = flags;
-            credential.grbitEnabledProtocols = _protocolFlags;
-
+            credential.grbitEnabledProtocols = protocols;
             if (certificate != null)
             {
                 credential.certContextArray = certificate.Handle;
@@ -405,386 +271,210 @@ namespace System.Net
             return credential;
         }
 
-        private static unsafe SecurityStatusPal EncryptDecryptHelper(OP op, SafeDeleteContext context, SecurityBuffer[] input, uint sequenceNumber)
+        //
+        // Security: we temporarily reset thread token to open the handle under process account.
+        //
+        private static SafeFreeCredentials AcquireCredentialsHandle(Interop.Secur32.CredentialUse credUsage, Interop.Secur32.SecureCredential secureCredential)
         {
-            Interop.Secur32.SecurityBufferDescriptor sdcInOut = new Interop.Secur32.SecurityBufferDescriptor(input.Length);
-            var unmanagedBuffer = new Interop.Secur32.SecurityBufferStruct[input.Length];
-
-            fixed (Interop.Secur32.SecurityBufferStruct* unmanagedBufferPtr = unmanagedBuffer)
-            {
-                sdcInOut.UnmanagedPointer = unmanagedBufferPtr;
-                GCHandle[] pinnedBuffers = new GCHandle[input.Length];
-                byte[][] buffers = new byte[input.Length][];
-                try
-                {
-                    for (int i = 0; i < input.Length; i++)
-                    {
-                        SecurityBuffer iBuffer = input[i];
-                        unmanagedBuffer[i].count = iBuffer.size;
-                        unmanagedBuffer[i].type = iBuffer.type;
-                        if (iBuffer.token == null || iBuffer.token.Length == 0)
-                        {
-                            unmanagedBuffer[i].token = IntPtr.Zero;
-                        }
-                        else
-                        {
-                            pinnedBuffers[i] = GCHandle.Alloc(iBuffer.token, GCHandleType.Pinned);
-                            unmanagedBuffer[i].token = Marshal.UnsafeAddrOfPinnedArrayElement(iBuffer.token, iBuffer.offset);
-                            buffers[i] = iBuffer.token;
-                        }
-                    }
-
-                    // The result is written in the input Buffer passed as type=BufferType.Data.
-                    int errorCode;
-                    switch (op)
-                    {
-                        case OP.Encrypt:
-                            errorCode = EncryptMessage(context, sdcInOut, sequenceNumber);
-                            break;
-
-                        case OP.Decrypt:
-                            errorCode = DecryptMessage(context, sdcInOut, sequenceNumber);
-                            break;
-
-                        default: throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
-                    }
-
-                    // Marshalling back returned sizes / data.
-                    for (int i = 0; i < input.Length; i++)
-                    {
-                        SecurityBuffer iBuffer = input[i];
-                        iBuffer.size = unmanagedBuffer[i].count;
-                        iBuffer.type = unmanagedBuffer[i].type;
-
-                        if (iBuffer.size == 0)
-                        {
-                            iBuffer.offset = 0;
-                            iBuffer.token = null;
-                        }
-                        else
-                            checked
-                            {
-                                // Find the buffer this is inside of.  Usually they all point inside buffer 0.
-                                int j;
-                                for (j = 0; j < input.Length; j++)
-                                {
-                                    if (buffers[j] == null)
-                                    {
-                                        continue;
-                                    }
-
-                                    byte* bufferAddress = (byte*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers[j], 0);
-                                    if ((byte*)unmanagedBuffer[i].token >= bufferAddress &&
-                                        (byte*)unmanagedBuffer[i].token + iBuffer.size <= bufferAddress + buffers[j].Length)
-                                    {
-                                        iBuffer.offset = (int)((byte*)unmanagedBuffer[i].token - bufferAddress);
-                                        iBuffer.token = buffers[j];
-                                        break;
-                                    }
-                                }
-
-                                if (j >= input.Length)
-                                {
-                                    GlobalLog.Assert("SslStreamPal::EncryptDecryptHelper", "Output buffer out of range.");
-                                    iBuffer.size = 0;
-                                    iBuffer.offset = 0;
-                                    iBuffer.token = null;
-                                }
-                            }
-
-                        // Backup validate the new sizes.
-                        GlobalLog.Assert(iBuffer.offset >= 0 && iBuffer.offset <= (iBuffer.token == null ? 0 : iBuffer.token.Length), "SslStreamPal::EncryptDecryptHelper|'offset' out of range.  [{0}]", iBuffer.offset);
-                        GlobalLog.Assert(iBuffer.size >= 0 && iBuffer.size <= (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset), "SslStreamPal::EncryptDecryptHelper|'size' out of range.  [{0}]", iBuffer.size);
-                    }
-
-                    if (errorCode != 0 && Logging.On)
-                    {
-                        if (errorCode == 0x90321)
-                        {
-                            Logging.PrintError(Logging.Web, SR.Format(SR.net_log_operation_returned_something, op, "SEC_I_RENEGOTIATE"));
-                        }
-                        else
-                        {
-                            Logging.PrintError(Logging.Web, SR.Format(SR.net_log_operation_failed_with_error, op, String.Format(CultureInfo.CurrentCulture, "0X{0:X}", errorCode)));
-                        }
-                    }
-                    return MapToSecurityStatus((Interop.SecurityStatus)errorCode);
-                }
-                finally
-                {
-                    for (int i = 0; i < pinnedBuffers.Length; ++i)
-                    {
-                        if (pinnedBuffers[i].IsAllocated)
-                        {
-                            pinnedBuffers[i].Free();
-                        }
-                    }
-                }
-            }
-        }
-
-        private static int EncryptMessage(SafeDeleteContext context, Interop.Secur32.SecurityBufferDescriptor inputOutput, uint sequenceNumber)
-        {
-            int status = (int)Interop.SecurityStatus.InvalidHandle;
-
+            // First try without impersonation, if it fails, then try the process account.
+            // I.E. We don't know which account the certificate context was created under.
             try
             {
-                bool ignore = false;
-                context.DangerousAddRef(ref ignore);
-                status = Interop.Secur32.EncryptMessage(ref context._handle, 0, inputOutput, sequenceNumber);
-                return status;
+                //
+                // For app-compat we want to ensure the credential are accessed under >>process<< acount.
+                //
+                return WindowsIdentity.RunImpersonated<SafeFreeCredentials>(SafeAccessTokenHandle.InvalidHandle, () => {
+                    return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
+                });
             }
-            finally
+            catch
             {
-                context.DangerousRelease();
-            }
-        }
-
-        private static unsafe int DecryptMessage(SafeDeleteContext context, Interop.Secur32.SecurityBufferDescriptor inputOutput,
-            uint sequenceNumber)
-        {
-            int status = (int)Interop.SecurityStatus.InvalidHandle;
-
-            try
-            {
-                bool ignore = false;
-                context.DangerousAddRef(ref ignore);
-                status = Interop.Secur32.DecryptMessage(ref context._handle, inputOutput, sequenceNumber, null);
-                return status;
-            }
-            finally
-            {
-                context.DangerousRelease();
+                return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
             }
         }
 
-        private static object QueryContextAttributes(SafeDeleteContext securityContext, Interop.Secur32.ContextAttribute contextAttribute, out int errorCode)
+        private static SecurityStatusPal GetSecurityStatusPalFromWin32Int(int win32SecurityStatus)
         {
-            GlobalLog.Enter("QueryContextAttributes", contextAttribute.ToString());
-
-            int nativeBlockSize = IntPtr.Size;
-            Type handleType = null;
-
-            switch (contextAttribute)
-            {
-                case Interop.Secur32.ContextAttribute.Sizes:
-                    nativeBlockSize = SecSizes.SizeOf;
-                    break;
-                case Interop.Secur32.ContextAttribute.StreamSizes:
-                    nativeBlockSize = StreamSizes.SizeOf;
-                    break;
-
-                case Interop.Secur32.ContextAttribute.Names:
-                    handleType = typeof(SafeFreeContextBuffer);
-                    break;
-
-                case Interop.Secur32.ContextAttribute.PackageInfo:
-                    handleType = typeof(SafeFreeContextBuffer);
-                    break;
-
-                case Interop.Secur32.ContextAttribute.NegotiationInfo:
-                    handleType = typeof(SafeFreeContextBuffer);
-                    nativeBlockSize = Marshal.SizeOf<NegotiationInfo>();
-                    break;
-
-                case Interop.Secur32.ContextAttribute.ClientSpecifiedSpn:
-                    handleType = typeof(SafeFreeContextBuffer);
-                    break;
-
-                case Interop.Secur32.ContextAttribute.RemoteCertificate:
-                    handleType = typeof(SafeFreeCertContext);
-                    break;
-
-                case Interop.Secur32.ContextAttribute.LocalCertificate:
-                    handleType = typeof(SafeFreeCertContext);
-                    break;
-
-                case Interop.Secur32.ContextAttribute.IssuerListInfoEx:
-                    nativeBlockSize = Marshal.SizeOf<Interop.Secur32.IssuerListInfoEx>();
-                    handleType = typeof(SafeFreeContextBuffer);
-                    break;
-
-                case Interop.Secur32.ContextAttribute.ConnectionInfo:
-                    nativeBlockSize = Marshal.SizeOf<SslConnectionInfo>();
-                    break;
-
-                default:
-                    throw new ArgumentException(SR.Format(SR.net_invalid_enum, "ContextAttribute"), "contextAttribute");
-            }
-
-            SafeHandle SspiHandle = null;
-            object attribute = null;
-
-            try
-            {
-                byte[] nativeBuffer = new byte[nativeBlockSize];
-                errorCode = QueryContextAttributes(securityContext, contextAttribute, nativeBuffer, handleType, out SspiHandle);
-                if (errorCode != 0)
-                {
-                    GlobalLog.Leave("Win32:QueryContextAttributes", "ERROR = " + ErrorDescription(errorCode));
-                    return null;
-                }
-
-                switch (contextAttribute)
-                {
-                    case Interop.Secur32.ContextAttribute.Sizes:
-                        attribute = new SecSizes(nativeBuffer);
-                        break;
-
-                    case Interop.Secur32.ContextAttribute.StreamSizes:
-                        attribute = new StreamSizes(nativeBuffer);
-                        break;
-
-                    case Interop.Secur32.ContextAttribute.Names:
-                        attribute = Marshal.PtrToStringUni(SspiHandle.DangerousGetHandle());
-                        break;
-
-                    case Interop.Secur32.ContextAttribute.PackageInfo:
-                        attribute = new SecurityPackageInfoClass(SspiHandle, 0);
-                        break;
-
-                    case Interop.Secur32.ContextAttribute.NegotiationInfo:
-                        unsafe
-                        {
-                            fixed (void* ptr = nativeBuffer)
-                            {
-                                attribute = new NegotiationInfoClass(SspiHandle, Marshal.ReadInt32(new IntPtr(ptr), NegotiationInfo.NegotiationStateOffest));
-                            }
-                        }
-                        break;
-
-                    case Interop.Secur32.ContextAttribute.ClientSpecifiedSpn:
-                        attribute = Marshal.PtrToStringUni(SspiHandle.DangerousGetHandle());
-                        break;
-
-                    case Interop.Secur32.ContextAttribute.LocalCertificate:
-                        goto case Interop.Secur32.ContextAttribute.RemoteCertificate;
-                    case Interop.Secur32.ContextAttribute.RemoteCertificate:
-                        attribute = SspiHandle;
-                        SspiHandle = null;
-                        break;
-
-                    case Interop.Secur32.ContextAttribute.IssuerListInfoEx:
-                        attribute = new Interop.Secur32.IssuerListInfoEx(SspiHandle, nativeBuffer);
-                        SspiHandle = null;
-                        break;
-
-                    case Interop.Secur32.ContextAttribute.ConnectionInfo:
-                        attribute = new SslConnectionInfo(nativeBuffer);
-                        break;
-                    default:
-                        // Will return null.
-                        break;
-                }
-            }
-            finally
-            {
-                if (SspiHandle != null)
-                {
-                    SspiHandle.Dispose();
-                }
-            }
-            GlobalLog.Leave("QueryContextAttributes", Logging.ObjectToString(attribute));
-            return attribute;
+            return GetSecurityStatusPalFromInterop((Interop.SecurityStatus)win32SecurityStatus);
         }
-
-        private static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.Secur32.ContextAttribute attribute, byte[] buffer, Type handleType, out SafeHandle refHandle)
+        
+        private static SecurityStatusPal GetSecurityStatusPalFromInterop(Interop.SecurityStatus win32SecurityStatus)
         {
-            refHandle = null;
-            if (handleType != null)
+            switch (win32SecurityStatus)
             {
-                if (handleType == typeof(SafeFreeContextBuffer))
-                {
-                    refHandle = SafeFreeContextBuffer.CreateEmptyHandle();
-                }
-                else if (handleType == typeof(SafeFreeCertContext))
-                {
-                    refHandle = new SafeFreeCertContext();
-                }
-                else
-                {
-                    throw new ArgumentException(SR.Format(SR.SSPIInvalidHandleType, handleType.FullName), "handleType");
-                }
-            }
-            fixed (byte* bufferPtr = buffer)
-            {
-                return SafeFreeContextBuffer.QueryContextAttributes(phContext, attribute, bufferPtr, refHandle);
-            }
-        }
-
-        private static string ErrorDescription(int errorCode)
-        {
-            if (errorCode == -1)
-            {
-                return "An exception when invoking Win32 API";
-            }
-
-            switch ((Interop.SecurityStatus)errorCode)
-            {
-                case Interop.SecurityStatus.InvalidHandle:
-                    return "Invalid handle";
-                case Interop.SecurityStatus.InvalidToken:
-                    return "Invalid token";
+                case Interop.SecurityStatus.OK:
+                    return SecurityStatusPal.OK;
                 case Interop.SecurityStatus.ContinueNeeded:
-                    return "Continue needed";
-                case Interop.SecurityStatus.IncompleteMessage:
-                    return "Message incomplete";
-                case Interop.SecurityStatus.WrongPrincipal:
-                    return "Wrong principal";
+                    return SecurityStatusPal.ContinueNeeded;
+                case Interop.SecurityStatus.CompleteNeeded:
+                    return SecurityStatusPal.CompleteNeeded;
+                case Interop.SecurityStatus.CompAndContinue:
+                    return SecurityStatusPal.CompAndContinue;
+                case Interop.SecurityStatus.ContextExpired:
+                    return SecurityStatusPal.ContextExpired;
+                case Interop.SecurityStatus.CredentialsNeeded:
+                    return SecurityStatusPal.CredentialsNeeded;
+                case Interop.SecurityStatus.Renegotiate:
+                    return SecurityStatusPal.Renegotiate;
+                case Interop.SecurityStatus.OutOfMemory:
+                    return SecurityStatusPal.OutOfMemory;
+                case Interop.SecurityStatus.InvalidHandle:
+                    return SecurityStatusPal.InvalidHandle;
+                case Interop.SecurityStatus.Unsupported:
+                    return SecurityStatusPal.Unsupported;
                 case Interop.SecurityStatus.TargetUnknown:
-                    return "Target unknown";
+                    return SecurityStatusPal.TargetUnknown;
+                case Interop.SecurityStatus.InternalError:
+                    return SecurityStatusPal.InternalError;
                 case Interop.SecurityStatus.PackageNotFound:
-                    return "Package not found";
-                case Interop.SecurityStatus.BufferNotEnough:
-                    return "Buffer not enough";
+                    return SecurityStatusPal.PackageNotFound;
+                case Interop.SecurityStatus.NotOwner:
+                    return SecurityStatusPal.NotOwner;
+                case Interop.SecurityStatus.CannotInstall:
+                    return SecurityStatusPal.CannotInstall;
+                case Interop.SecurityStatus.InvalidToken:
+                    return SecurityStatusPal.InvalidToken;
+                case Interop.SecurityStatus.CannotPack:
+                    return SecurityStatusPal.CannotPack;
+                case Interop.SecurityStatus.QopNotSupported:
+                    return SecurityStatusPal.QopNotSupported;
+                case Interop.SecurityStatus.NoImpersonation:
+                    return SecurityStatusPal.NoImpersonation;
+                case Interop.SecurityStatus.LogonDenied:
+                    return SecurityStatusPal.LogonDenied;
+                case Interop.SecurityStatus.UnknownCredentials:
+                    return SecurityStatusPal.UnknownCredentials;
+                case Interop.SecurityStatus.NoCredentials:
+                    return SecurityStatusPal.NoCredentials;
                 case Interop.SecurityStatus.MessageAltered:
-                    return "Message altered";
+                    return SecurityStatusPal.MessageAltered;
+                case Interop.SecurityStatus.OutOfSequence:
+                    return SecurityStatusPal.OutOfSequence;
+                case Interop.SecurityStatus.NoAuthenticatingAuthority:
+                    return SecurityStatusPal.NoAuthenticatingAuthority;
+                case Interop.SecurityStatus.IncompleteMessage:
+                    return SecurityStatusPal.IncompleteMessage;
+                case Interop.SecurityStatus.IncompleteCredentials:
+                    return SecurityStatusPal.IncompleteCredentials;
+                case Interop.SecurityStatus.BufferNotEnough:
+                    return SecurityStatusPal.BufferNotEnough;
+                case Interop.SecurityStatus.WrongPrincipal:
+                    return SecurityStatusPal.WrongPrincipal;
+                case Interop.SecurityStatus.TimeSkew:
+                    return SecurityStatusPal.TimeSkew;
                 case Interop.SecurityStatus.UntrustedRoot:
-                    return "Untrusted root";
+                    return SecurityStatusPal.UntrustedRoot;
+                case Interop.SecurityStatus.IllegalMessage:
+                    return SecurityStatusPal.IllegalMessage;
+                case Interop.SecurityStatus.CertUnknown:
+                    return SecurityStatusPal.CertUnknown;
+                case Interop.SecurityStatus.CertExpired:
+                    return SecurityStatusPal.CertExpired;
+                case Interop.SecurityStatus.AlgorithmMismatch:
+                    return SecurityStatusPal.AlgorithmMismatch;
+                case Interop.SecurityStatus.SecurityQosFailed:
+                    return SecurityStatusPal.SecurityQosFailed;
+                case Interop.SecurityStatus.SmartcardLogonRequired:
+                    return SecurityStatusPal.SmartcardLogonRequired;
+                case Interop.SecurityStatus.UnsupportedPreauth:
+                    return SecurityStatusPal.UnsupportedPreauth;
+                case Interop.SecurityStatus.BadBinding:
+                    return SecurityStatusPal.BadBinding;
                 default:
-                    return "0x" + errorCode.ToString("x", NumberFormatInfo.InvariantInfo);
+                    Debug.Fail("Unknown Interop.SecurityStatus value: " + win32SecurityStatus);
+                    throw new InternalException();
             }
         }
 
-        #endregion
+        private static Interop.SecurityStatus GetInteropFromSecurityStatusPal(SecurityStatusPal status)
+        {
+            switch (status)
+            {
+                case SecurityStatusPal.NotSet:
+                    Debug.Fail("SecurityStatus NotSet");
+                    throw new InternalException();
+                case SecurityStatusPal.OK:
+                    return Interop.SecurityStatus.OK;
+                case SecurityStatusPal.ContinueNeeded:
+                    return Interop.SecurityStatus.ContinueNeeded;
+                case SecurityStatusPal.CompleteNeeded:
+                    return Interop.SecurityStatus.CompleteNeeded;
+                case SecurityStatusPal.CompAndContinue:
+                    return Interop.SecurityStatus.CompAndContinue;
+                case SecurityStatusPal.ContextExpired:
+                    return Interop.SecurityStatus.ContextExpired;
+                case SecurityStatusPal.CredentialsNeeded:
+                    return Interop.SecurityStatus.CredentialsNeeded;
+                case SecurityStatusPal.Renegotiate:
+                    return Interop.SecurityStatus.Renegotiate;
+                case SecurityStatusPal.OutOfMemory:
+                    return Interop.SecurityStatus.OutOfMemory;
+                case SecurityStatusPal.InvalidHandle:
+                    return Interop.SecurityStatus.InvalidHandle;
+                case SecurityStatusPal.Unsupported:
+                    return Interop.SecurityStatus.Unsupported;
+                case SecurityStatusPal.TargetUnknown:
+                    return Interop.SecurityStatus.TargetUnknown;
+                case SecurityStatusPal.InternalError:
+                    return Interop.SecurityStatus.InternalError;
+                case SecurityStatusPal.PackageNotFound:
+                    return Interop.SecurityStatus.PackageNotFound;
+                case SecurityStatusPal.NotOwner:
+                    return Interop.SecurityStatus.NotOwner;
+                case SecurityStatusPal.CannotInstall:
+                    return Interop.SecurityStatus.CannotInstall;
+                case SecurityStatusPal.InvalidToken:
+                    return Interop.SecurityStatus.InvalidToken;
+                case SecurityStatusPal.CannotPack:
+                    return Interop.SecurityStatus.CannotPack;
+                case SecurityStatusPal.QopNotSupported:
+                    return Interop.SecurityStatus.QopNotSupported;
+                case SecurityStatusPal.NoImpersonation:
+                    return Interop.SecurityStatus.NoImpersonation;
+                case SecurityStatusPal.LogonDenied:
+                    return Interop.SecurityStatus.LogonDenied;
+                case SecurityStatusPal.UnknownCredentials:
+                    return Interop.SecurityStatus.UnknownCredentials;
+                case SecurityStatusPal.NoCredentials:
+                    return Interop.SecurityStatus.NoCredentials;
+                case SecurityStatusPal.MessageAltered:
+                    return Interop.SecurityStatus.MessageAltered;
+                case SecurityStatusPal.OutOfSequence:
+                    return Interop.SecurityStatus.OutOfSequence;
+                case SecurityStatusPal.NoAuthenticatingAuthority:
+                    return Interop.SecurityStatus.NoAuthenticatingAuthority;
+                case SecurityStatusPal.IncompleteMessage:
+                    return Interop.SecurityStatus.IncompleteMessage;
+                case SecurityStatusPal.IncompleteCredentials:
+                    return Interop.SecurityStatus.IncompleteCredentials;
+                case SecurityStatusPal.BufferNotEnough:
+                    return Interop.SecurityStatus.BufferNotEnough;
+                case SecurityStatusPal.WrongPrincipal:
+                    return Interop.SecurityStatus.WrongPrincipal;
+                case SecurityStatusPal.TimeSkew:
+                    return Interop.SecurityStatus.TimeSkew;
+                case SecurityStatusPal.UntrustedRoot:
+                    return Interop.SecurityStatus.UntrustedRoot;
+                case SecurityStatusPal.IllegalMessage:
+                    return Interop.SecurityStatus.IllegalMessage;
+                case SecurityStatusPal.CertUnknown:
+                    return Interop.SecurityStatus.CertUnknown;
+                case SecurityStatusPal.CertExpired:
+                    return Interop.SecurityStatus.CertExpired;
+                case SecurityStatusPal.AlgorithmMismatch:
+                    return Interop.SecurityStatus.AlgorithmMismatch;
+                case SecurityStatusPal.SecurityQosFailed:
+                    return Interop.SecurityStatus.SecurityQosFailed;
+                case SecurityStatusPal.SmartcardLogonRequired:
+                    return Interop.SecurityStatus.SmartcardLogonRequired;
+                case SecurityStatusPal.UnsupportedPreauth:
+                    return Interop.SecurityStatus.UnsupportedPreauth;
+                case SecurityStatusPal.BadBinding:
+                    return Interop.SecurityStatus.BadBinding;
+                default:
+                    Debug.Fail("Unknown Interop.SecurityStatus value: " + status);
+                    throw new InternalException();
+            }
+        }
     }
-
-    #region structures
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct SecurityPackageInfo
-    {
-        // see SecPkgInfoW in <sspi.h>
-        internal int Capabilities;
-        internal short Version;
-        internal short RPCID;
-        internal int MaxToken;
-        internal IntPtr Name;
-        internal IntPtr Comment;
-
-        internal static readonly int Size = Marshal.SizeOf<SecurityPackageInfo>();
-        internal static readonly int NameOffest = (int)Marshal.OffsetOf<SecurityPackageInfo>("Name");
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct Bindings
-    {
-        // see SecPkgContext_Bindings in <sspi.h>
-        internal int BindingsLength;
-        internal IntPtr pBindings;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NegotiationInfo
-    {
-        // see SecPkgContext_NegotiationInfoW in <sspi.h>
-
-        // [MarshalAs(UnmanagedType.LPStruct)] internal SecurityPackageInfo PackageInfo;
-        internal IntPtr PackageInfo;
-        internal uint NegotiationState;
-        internal static readonly int Size = Marshal.SizeOf<NegotiationInfo>();
-        internal static readonly int NegotiationStateOffest = (int)Marshal.OffsetOf<NegotiationInfo>("NegotiationState");
-    }
-
-    #endregion
 }

@@ -26,13 +26,8 @@ namespace System.Net
             IntPtr packageInfo = safeHandle.DangerousGetHandle();
             GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8"));
 
-            const int SECPKG_NEGOTIATION_COMPLETE = 0;
-            const int SECPKG_NEGOTIATION_OPTIMISTIC = 1;
-            // const int SECPKG_NEGOTIATION_IN_PROGRESS     = 2;
-            // const int SECPKG_NEGOTIATION_DIRECT          = 3;
-            // const int SECPKG_NEGOTIATION_TRY_MULTICRED   = 4;
-
-            if (negotiationState == SECPKG_NEGOTIATION_COMPLETE || negotiationState == SECPKG_NEGOTIATION_OPTIMISTIC)
+            if (negotiationState == Interop.Secur32.SECPKG_NEGOTIATION_COMPLETE 
+                || negotiationState == Interop.Secur32.SECPKG_NEGOTIATION_OPTIMISTIC)
             {
                 IntPtr unmanagedString = Marshal.ReadIntPtr(packageInfo, SecurityPackageInfo.NameOffest);
                 string name = null;
@@ -43,7 +38,7 @@ namespace System.Net
 
                 GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8") + " name:" + Logging.ObjectToString(name));
 
-                // an optimization for future string comparisons
+                // An optimization for future string comparisons.
                 if (string.Compare(name, Kerberos, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     AuthenticationPackage = Kerberos;

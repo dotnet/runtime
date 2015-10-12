@@ -31,6 +31,7 @@ namespace System.Net
                 GlobalLog.Print("SecurityPackageInfoClass::.ctor() the pointer is invalid: " + (safeHandle.DangerousGetHandle()).ToString("x"));
                 return;
             }
+
             IntPtr unmanagedAddress = IntPtrHelper.Add(safeHandle.DangerousGetHandle(), SecurityPackageInfo.Size * index);
             GlobalLog.Print("SecurityPackageInfoClass::.ctor() unmanagedPointer: " + ((long)unmanagedAddress).ToString("x"));
 
@@ -65,8 +66,7 @@ namespace System.Net
                 + " RPCID:" + RPCID.ToString(NumberFormatInfo.InvariantInfo)
                 + " MaxToken:" + MaxToken.ToString(NumberFormatInfo.InvariantInfo)
                 + " Name:" + ((Name == null) ? "(null)" : Name)
-                + " Comment:" + ((Comment == null) ? "(null)" : Comment
-                );
+                + " Comment:" + ((Comment == null) ? "(null)" : Comment);
         }
     }
 }

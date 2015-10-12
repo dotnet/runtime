@@ -1,5 +1,9 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System.Collections.Generic;
 using System.Threading;
+
 namespace System.Net.Security.Tests
 {
     internal class MockNetwork
@@ -9,10 +13,6 @@ namespace System.Net.Security.Tests
 
         private readonly SemaphoreSlim _clientDataAvailable = new SemaphoreSlim(0);
         private readonly SemaphoreSlim _serverDataAvailable = new SemaphoreSlim(0);
-
-        public MockNetwork()
-        {
-        }
 
         public void ReadFrame(bool server, out byte[] buffer)
         {
@@ -30,7 +30,7 @@ namespace System.Net.Security.Tests
                 packetQueue = _serverWriteQueue;
             }
 
-            semaphore.Wait();
+            semaphore.Wait(TestConfiguration.TestTimeoutSeconds * 1000);
             buffer = packetQueue.Dequeue();
         }
 
