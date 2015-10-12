@@ -34,12 +34,17 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public BlobHandle Imports
+        public BlobHandle ImportsBlob
         {
             get
             {
                 return _reader.ImportScopeTable.GetImports(Handle);
             }
+        }
+
+        public ImportDefinitionEnumerator GetImportDefinitionEnumerator()
+        {
+            return new ImportDefinitionEnumerator(_reader.BlobStream.GetMemoryBlock(ImportsBlob));
         }
     }
 }

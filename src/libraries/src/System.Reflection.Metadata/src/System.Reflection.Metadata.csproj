@@ -138,7 +138,7 @@
     <Compile Include="System\Reflection\Metadata\PortablePdb\HasCustomDebugInformationTag.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\ImportDefinition.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\ImportDefinitionKind.cs" />
-    <Compile Include="System\Reflection\Metadata\PortablePdb\ImportsBlobReader.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\ImportDefinitionEnumerator.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\LocalConstant.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\ImportScope.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\LocalScope.cs" />
@@ -146,7 +146,7 @@
     <Compile Include="System\Reflection\Metadata\PortablePdb\LocalVariableAttributes.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\MethodDebugInformation.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\SequencePoint.cs" />
-    <Compile Include="System\Reflection\Metadata\PortablePdb\SequencePointBlobReader.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\SequencePointEnumerator.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\Tables.Debug.cs" />
     <Compile Include="System\Reflection\Metadata\PEReaderExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\PropertyDefinition.cs" />

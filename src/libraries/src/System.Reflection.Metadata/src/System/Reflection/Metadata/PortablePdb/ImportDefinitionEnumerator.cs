@@ -10,17 +10,17 @@ using System.Reflection.Metadata.Ecma335;
 namespace System.Reflection.Metadata
 {
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
-    public struct ImportsBlobReader : IEnumerator<ImportDefinition>
+    public struct ImportDefinitionEnumerator : IEnumerator<ImportDefinition>
     {
         private BlobReader _reader;
         private ImportDefinition _current;
 
-        public unsafe ImportsBlobReader(byte* buffer, int length)
+        public unsafe ImportDefinitionEnumerator(byte* buffer, int length)
             : this(MemoryBlock.CreateChecked(buffer, length))
         {
         }
 
-        internal ImportsBlobReader(MemoryBlock block)
+        internal ImportDefinitionEnumerator(MemoryBlock block)
         {
             _reader = new BlobReader(block);
             _current = default(ImportDefinition);

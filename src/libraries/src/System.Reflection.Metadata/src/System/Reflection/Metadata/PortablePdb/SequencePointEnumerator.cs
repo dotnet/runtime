@@ -10,19 +10,19 @@ using System.Reflection.Metadata.Ecma335;
 namespace System.Reflection.Metadata
 {
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
-    public struct SequencePointBlobReader : IEnumerator<SequencePoint>
+    public struct SequencePointEnumerator : IEnumerator<SequencePoint>
     {
         private BlobReader _reader;
         private SequencePoint _current;
         private int _previousNonHiddenStartLine;
         private ushort _previousNonHiddenStartColumn;
 
-        public unsafe SequencePointBlobReader(byte* buffer, int length, DocumentHandle primaryDocument)
+        public unsafe SequencePointEnumerator(byte* buffer, int length, DocumentHandle primaryDocument)
             : this(MemoryBlock.CreateChecked(buffer, length), primaryDocument)
         {
         }
 
-        internal SequencePointBlobReader(MemoryBlock block, DocumentHandle primaryDocument)
+        internal SequencePointEnumerator(MemoryBlock block, DocumentHandle primaryDocument)
         {
             _reader = new BlobReader(block);
             _current = new SequencePoint(primaryDocument, -1);

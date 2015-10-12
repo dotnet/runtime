@@ -1437,11 +1437,6 @@ namespace System.Reflection.Metadata
             return TypeDefTable.FindTypeContainingField(fieldRowId, FieldTable.NumberOfRows);
         }
 
-        public ImportsBlobReader GetImportsReader(BlobHandle handle)
-        {
-            return new ImportsBlobReader(BlobStream.GetMemoryBlock(handle));
-        }
-
         private static readonly ObjectPool<StringBuilder> s_stringBuilderPool = new ObjectPool<StringBuilder>(() => new StringBuilder());
 
         public string GetString(DocumentNameBlobHandle handle)
