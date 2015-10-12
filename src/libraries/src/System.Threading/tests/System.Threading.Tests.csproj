@@ -43,8 +43,8 @@
   <!-- Performance Tests -->
   <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
     <Compile Include="Performance\Perf.EventWaitHandle.cs" />
-    <Compile Include="$(CommonTestPath)\Performance\PerfUtils.cs">
-      <Link>Common\Performance\PerfUtils.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

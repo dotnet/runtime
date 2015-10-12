@@ -17,54 +17,54 @@
     <Compile Include="SocketTestServerAPMMock.cs" />
 
     <!-- Common Sockets files -->
-    <Compile Include="$(CommonTestPath)\System.Net\Sockets\Configuration.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Configuration.cs">
       <Link>SocketCommon\Configuration.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System.Net\Sockets\SocketTestServer.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.cs">
       <Link>SocketCommon\SocketTestServer.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System.Net\Sockets\SocketTestServer.DefaultAsyncFactoryConfiguration.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.DefaultAsyncFactoryConfiguration.cs">
       <Link>SocketCommon\SocketTestServer.DefaultAsyncFactoryConfiguration.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System.Net\Sockets\SocketTestServerAsync.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServerAsync.cs">
       <Link>SocketCommon\SocketTestServerAsync.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System.Net\Sockets\SocketImplementationType.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketImplementationType.cs">
       <Link>SocketCommon\SocketImplementationType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System.Net\Sockets\Performance\SocketPerformanceTests.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Performance\SocketPerformanceTests.cs">
       <Link>SocketCommon\SocketPerformanceFactories.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System.Net\Sockets\Performance\SocketTestClient.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Performance\SocketTestClient.cs">
       <Link>SocketCommon\SocketTestClient.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System.Net\Sockets\Performance\SocketTestClientAsync.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Performance\SocketTestClientAsync.cs">
       <Link>SocketCommon\SocketTestClientAsync.cs</Link>
     </Compile>
 
     <!-- Common test files -->
-    <Compile Include="$(CommonTestPath)\System.Net\TestLogging.cs">
-      <Link>Common\System.Net\TestLogging.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\TestLogging.cs">
+      <Link>Common\System\Net\TestLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System.Net\VerboseTestLogging.cs">
-      <Link>Common\System.Net\VerboseTestLogging.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\VerboseTestLogging.cs">
+      <Link>Common\System\Net\VerboseTestLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System.Net\EventSourceTestLogging.cs">
-      <Link>Common\System.Net\EventSourceTestLogging.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\EventSourceTestLogging.cs">
+      <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System.Net\Capability.Sockets.cs">
-      <Link>Common\System.Net\Capability.Sockets.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
+      <Link>Common\System\Net\Capability.Sockets.cs</Link>
     </Compile>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="$(CommonTestPath)\System.Net\Sockets\Performance\SocketTestMemcmp.Windows.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Performance\SocketTestMemcmp.Windows.cs">
       <Link>SocketCommon\SocketTestMemcmp.Windows.cs</Link>
     </Compile>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="$(CommonTestPath)\System.Net\Sockets\Performance\SocketTestMemcmp.Unix.cs">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Performance\SocketTestMemcmp.Unix.cs">
       <Link>SocketCommon\SocketTestMemcmp.Unix.cs</Link>
     </Compile>
   </ItemGroup>

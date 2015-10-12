@@ -37,27 +37,27 @@
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
     <Compile Include="Utilities\StripHeaderAndFooter.cs" />
     <Compile Include="Utilities\WrappedStream.cs" />
-    <Compile Include="$(CommonTestPath)\Compression\Utilities\CRC.cs">
-      <Link>Common\Compression\Utilities\CRC.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\CRC.cs">
+      <Link>Common\System\IO\Compression\CRC.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Compression\Utilities\FileData.cs">
-      <Link>Common\Compression\Utilities\FileData.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\FileData.cs">
+      <Link>Common\System\IO\Compression\FileData.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Compression\Utilities\LocalMemoryStream.cs">
-      <Link>Common\Compression\Utilities\LocalMemoryStream.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\LocalMemoryStream.cs">
+      <Link>Common\System\IO\Compression\LocalMemoryStream.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Compression\Utilities\StreamHelpers.cs">
-      <Link>Common\Compression\Utilities\StreamHelpers.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\StreamHelpers.cs">
+      <Link>Common\System\IO\Compression\StreamHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\Compression\Utilities\ZipTestHelper.cs">
-      <Link>Common\Compression\Utilities\ZipTestHelper.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\ZipTestHelper.cs">
+      <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Performance Tests -->
   <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
     <Compile Include="Performance\Perf.DeflateStream.cs" />
-    <Compile Include="$(CommonTestPath)\Performance\PerfUtils.cs">
-      <Link>Common\Performance\PerfUtils.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

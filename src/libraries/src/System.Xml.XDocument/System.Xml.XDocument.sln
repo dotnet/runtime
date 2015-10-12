@@ -24,11 +24,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.TreeMa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.xNodeReader.Tests", "tests\xNodeReader\System.Xml.XDocument.xNodeReader.Tests.csproj", "{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlDiff", "..\Common\tests\SystemXml\XmlDiff\XmlDiff.csproj", "{466D87DF-BDEC-4E6C-BACD-317D79B8EDBE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlDiff", "..\Common\tests\System\Xml\XmlDiff\XmlDiff.csproj", "{466D87DF-BDEC-4E6C-BACD-317D79B8EDBE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlCoreTest", "..\Common\tests\SystemXml\XmlCoreTest\XmlCoreTest.csproj", "{89701565-F68B-46D9-BD78-95B0F052C50B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlCoreTest", "..\Common\tests\System\Xml\XmlCoreTest\XmlCoreTest.csproj", "{89701565-F68B-46D9-BD78-95B0F052C50B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModuleCore", "..\Common\tests\SystemXml\ModuleCore\ModuleCore.csproj", "{3CF0CC76-4CE0-460A-BA37-657CFED39AB0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModuleCore", "..\Common\tests\System\Xml\ModuleCore\ModuleCore.csproj", "{3CF0CC76-4CE0-460A-BA37-657CFED39AB0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{CF6DABDD-5158-4CAF-88B0-B823EE173E53}"
 	ProjectSection(SolutionItems) = preProject

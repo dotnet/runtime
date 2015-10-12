@@ -174,8 +174,8 @@
     <Compile Include="Performance\Perf.Directory.cs" />
     <Compile Include="Performance\Perf.File.cs" />
     <Compile Include="Performance\Perf.FileInfo.cs" />
-    <Compile Include="$(CommonTestPath)\Performance\PerfUtils.cs">
-      <Link>Common\Performance\PerfUtils.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
