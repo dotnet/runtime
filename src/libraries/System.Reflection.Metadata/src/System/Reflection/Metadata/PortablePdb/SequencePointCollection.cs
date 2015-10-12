@@ -11,8 +11,8 @@ namespace System.Reflection.Metadata
 {
     public struct SequencePointCollection : IEnumerable<SequencePoint>
     {
-        private MemoryBlock _block;
-        private DocumentHandle _document;
+        private readonly MemoryBlock _block;
+        private readonly DocumentHandle _document;
 
         internal SequencePointCollection(MemoryBlock block, DocumentHandle document)
         {
@@ -49,7 +49,6 @@ namespace System.Reflection.Metadata
                 _previousNonHiddenStartLine = -1;
                 _previousNonHiddenStartColumn = 0;
             }
-
 
             public bool MoveNext()
             {
@@ -140,8 +139,7 @@ namespace System.Reflection.Metadata
                 int column = _reader.ReadCompressedInteger();
                 if (column > ushort.MaxValue)
                 {
-                    // TODO:
-                    throw new BadImageFormatException();
+                    Throw.SequencePointValueOutOfRange();
                 }
 
                 return (ushort)column;
@@ -149,11 +147,10 @@ namespace System.Reflection.Metadata
 
             private int AddOffsets(int value, int delta)
             {
-                // TODO:
                 int result = unchecked(value + delta);
                 if (result < 0 || result > int.MaxValue)
                 {
-                    throw new BadImageFormatException();
+                    Throw.SequencePointValueOutOfRange();
                 }
 
                 return result;
@@ -161,11 +158,10 @@ namespace System.Reflection.Metadata
 
             private int AddLines(int value, int delta)
             {
-                // TODO:
                 int result = unchecked(value + delta);
                 if (result < 0 || result >= SequencePoint.HiddenLine)
                 {
-                    throw new BadImageFormatException();
+                    Throw.SequencePointValueOutOfRange();
                 }
 
                 return result;
@@ -173,11 +169,10 @@ namespace System.Reflection.Metadata
 
             private ushort AddColumns(ushort value, int delta)
             {
-                // TODO:
                 int result = unchecked(value + delta);
                 if (result < 0 || result >= ushort.MaxValue)
                 {
-                    throw new BadImageFormatException();
+                    Throw.SequencePointValueOutOfRange();
                 }
 
                 return (ushort)result;
@@ -213,7 +208,6 @@ namespace System.Reflection.Metadata
             void IDisposable.Dispose()
             {
             }
-
         }
     }
 }

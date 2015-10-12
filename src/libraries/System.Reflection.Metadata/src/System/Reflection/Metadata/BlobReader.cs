@@ -394,7 +394,6 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <param name="value">The value of the compressed integer that was read.</param>
         /// <returns>true if the value was read successfully. false if the data at the current position was not a valid compressed integer.</returns>
-        /// <exception cref="BadImageFormatException">The data at the current position was not a valid compressed integer.</exception>
         public bool TryReadCompressedSignedInteger(out int value)
         {
             int bytesRead;

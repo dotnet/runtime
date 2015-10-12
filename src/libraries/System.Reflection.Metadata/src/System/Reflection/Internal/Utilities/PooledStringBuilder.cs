@@ -42,23 +42,9 @@ namespace System.Reflection.Internal
             }
         }
 
-        [Obsolete("Consider calling ToStringAndFree instead.")]
-        public new string ToString()
-        {
-            return this.Builder.ToString();
-        }
-
         public string ToStringAndFree()
         {
             string result = this.Builder.ToString();
-            this.Free();
-
-            return result;
-        }
-
-        public string ToStringAndFree(int startIndex, int length)
-        {
-            string result = this.Builder.ToString(startIndex, length);
             this.Free();
 
             return result;
@@ -80,11 +66,6 @@ namespace System.Reflection.Internal
             var builder = s_poolInstance.Allocate();
             Debug.Assert(builder.Builder.Length == 0);
             return builder;
-        }
-
-        public static implicit operator StringBuilder(PooledStringBuilder obj)
-        {
-            return obj.Builder;
         }
     }
 }
