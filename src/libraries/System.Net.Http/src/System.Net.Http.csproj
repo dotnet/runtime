@@ -142,6 +142,7 @@
     <Compile Include="System\Net\Http\HttpClientHandler.Unix.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.EasyRequest.cs" />
+    <Compile Include="System\Net\Http\Unix\CurlHandler.HttpContentAsyncStream.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.MultiAgent.cs" />
     <Compile Include="System\Net\Http\Unix\CurlException.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.CurlResponseMessage.cs" />
