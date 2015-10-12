@@ -23,6 +23,27 @@ namespace System.Reflection.Internal
             this.Length = length;
         }
 
+        internal static MemoryBlock CreateChecked(byte* buffer, int length)
+        {
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException("length");
+            }
+
+            if (buffer == null && length != 0)
+            {
+                throw new ArgumentNullException("buffer");
+            }
+
+            // the reader performs little-endian specific operations
+            if (!BitConverter.IsLittleEndian)
+            {
+                throw new PlatformNotSupportedException(SR.LitteEndianArchitectureRequired);
+            }
+
+            return new MemoryBlock(buffer, length);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckBounds(int offset, int byteCount)
         {
@@ -30,6 +51,12 @@ namespace System.Reflection.Internal
             {
                 Throw.OutOfBounds();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void ThrowValueOverflow()
+        {
+            throw new BadImageFormatException(SR.ValueTooLarge);
         }
 
         internal byte[] ToArray()
@@ -60,28 +87,58 @@ namespace System.Reflection.Internal
             return result;
         }
 
+        internal string GetDebuggerDisplay(int offset)
+        {
+            if (Pointer == null)
+            {
+                return "<null>";
+            }
+
+            int displayedBytes;
+            string display = GetDebuggerDisplay(out displayedBytes);
+            if (offset < displayedBytes)
+            {
+                display = display.Insert(offset * 3, "*");
+            }
+            else if (displayedBytes == Length)
+            {
+                display += "*";
+            }
+            else
+            {
+                display += "*...";
+            }
+
+            return display;
+        }
+
         internal MemoryBlock GetMemoryBlockAt(int offset, int length)
         {
             CheckBounds(offset, length);
             return new MemoryBlock(Pointer + offset, length);
         }
 
-        internal Byte PeekByte(int offset)
+        internal byte PeekByte(int offset)
         {
-            CheckBounds(offset, sizeof(Byte));
+            CheckBounds(offset, sizeof(byte));
             return Pointer[offset];
         }
 
-        internal Int32 PeekInt32(int offset)
+        internal int PeekInt32(int offset)
         {
-            CheckBounds(offset, sizeof(Int32));
-            return *(Int32*)(Pointer + offset);
+            uint result = PeekUInt32(offset);
+            if (unchecked((int)result != result))
+            {
+                ThrowValueOverflow();
+            }
+
+            return (int)result;
         }
 
-        internal UInt32 PeekUInt32(int offset)
+        internal uint PeekUInt32(int offset)
         {
-            CheckBounds(offset, sizeof(UInt32));
-            return *(UInt32*)(Pointer + offset);
+            CheckBounds(offset, sizeof(uint));
+            return *(uint*)(Pointer + offset);
         }
 
         /// <summary>
@@ -133,10 +190,10 @@ namespace System.Reflection.Internal
             return BlobReader.InvalidCompressedInteger;
         }
 
-        internal UInt16 PeekUInt16(int offset)
+        internal ushort PeekUInt16(int offset)
         {
-            CheckBounds(offset, sizeof(UInt16));
-            return *(UInt16*)(Pointer + offset);
+            CheckBounds(offset, sizeof(ushort));
+            return *(ushort*)(Pointer + offset);
         }
 
         // When reference has tag bits.
@@ -292,59 +349,56 @@ namespace System.Reflection.Internal
         }
 
         // comparison stops at null terminator, terminator parameter, or end-of-block -- whichever comes first.
-        internal bool Utf8NullTerminatedEquals(int offset, string text, MetadataStringDecoder utf8Decoder, char terminator = '\0')
+        internal bool Utf8NullTerminatedEquals(int offset, string text, MetadataStringDecoder utf8Decoder, char terminator, bool ignoreCase)
         {
-            FastComparisonResult result = Utf8NullTerminatedFastCompare(offset, text, terminator);
+            int firstDifference;
+            FastComparisonResult result = Utf8NullTerminatedFastCompare(offset, text, 0, out firstDifference, terminator, ignoreCase);
 
-            switch (result)
+            if (result == FastComparisonResult.Inconclusive)
             {
-                case FastComparisonResult.Equal:
-                    return true;
-
-                case FastComparisonResult.IsPrefix:
-                case FastComparisonResult.Unequal:
-                    return false;
-
-                default:
-                    Debug.Assert(result == FastComparisonResult.Inconclusive);
-                    int bytesRead;
-                    string decoded = PeekUtf8NullTerminated(offset, null, utf8Decoder, out bytesRead, terminator);
-                    return decoded.Equals(text, StringComparison.Ordinal);
+                int bytesRead;
+                string decoded = PeekUtf8NullTerminated(offset, null, utf8Decoder, out bytesRead, terminator);
+                return decoded.Equals(text, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
             }
+
+            return result == FastComparisonResult.Equal;
         }
 
         // comparison stops at null terminator, terminator parameter, or end-of-block -- whichever comes first.
-        internal bool Utf8NullTerminatedStartsWith(int offset, string text, MetadataStringDecoder utf8Decoder, char terminator = '\0')
+        internal bool Utf8NullTerminatedStartsWith(int offset, string text, MetadataStringDecoder utf8Decoder, char terminator, bool ignoreCase)
         {
-            FastComparisonResult result = Utf8NullTerminatedFastCompare(offset, text, terminator);
+            int endIndex;
+            FastComparisonResult result = Utf8NullTerminatedFastCompare(offset, text, 0, out endIndex, terminator, ignoreCase);
 
             switch (result)
             {
                 case FastComparisonResult.Equal:
-                case FastComparisonResult.IsPrefix:
+                case FastComparisonResult.BytesStartWithText:
                     return true;
 
                 case FastComparisonResult.Unequal:
+                case FastComparisonResult.TextStartsWithBytes:
                     return false;
 
                 default:
                     Debug.Assert(result == FastComparisonResult.Inconclusive);
                     int bytesRead;
                     string decoded = PeekUtf8NullTerminated(offset, null, utf8Decoder, out bytesRead, terminator);
-                    return decoded.StartsWith(text, StringComparison.Ordinal);
+                    return decoded.StartsWith(text, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
             }
         }
 
         internal enum FastComparisonResult
         {
             Equal,
-            IsPrefix,
+            BytesStartWithText,
+            TextStartsWithBytes,
             Unequal,
             Inconclusive
         }
 
         // comparison stops at null terminator, terminator parameter, or end-of-block -- whichever comes first.
-        private FastComparisonResult Utf8NullTerminatedFastCompare(int offset, string text, char terminator = '\0')
+        internal FastComparisonResult Utf8NullTerminatedFastCompare(int offset, string text, int textStart, out int firstDifferenceIndex, char terminator, bool ignoreCase)
         {
             CheckBounds(offset, 0);
 
@@ -354,49 +408,44 @@ namespace System.Reflection.Internal
             byte* endPointer = Pointer + Length;
             byte* currentPointer = startPointer;
 
-            int currentIndex = 0;
+            int ignoreCaseMask = StringUtils.IgnoreCaseMask(ignoreCase);
+            int currentIndex = textStart;
             while (currentIndex < text.Length && currentPointer != endPointer)
             {
-                byte currentByte = *currentPointer++;
+                byte currentByte = *currentPointer;
+
+                // note that terminator is not compared case-insensitively even if ignore case is true
                 if (currentByte == 0 || currentByte == terminator)
                 {
                     break;
                 }
 
-                char currentChar = text[currentIndex++];
-                if ((currentByte & 0x80) == 0)
+                char currentChar = text[currentIndex];
+                if ((currentByte & 0x80) == 0 && StringUtils.IsEqualAscii(currentChar, currentByte, ignoreCaseMask))
                 {
-                    // current byte is in ascii range.
-                    //  --> strings are unequal if current char and current byte are unequal
-                    if (currentChar != currentByte)
-                    {
-                        return FastComparisonResult.Unequal;
-                    }
-                }
-                else if (currentChar <= 0x7F)
-                {
-                    // current byte is not in ascii range, but current char is.
-                    // --> strings are unequal.
-                    return FastComparisonResult.Unequal;
+                    currentIndex++;
+                    currentPointer++;
                 }
                 else
                 {
+                    firstDifferenceIndex = currentIndex;
+
                     // uncommon non-ascii case --> fall back to slow allocating comparison.
-                    return FastComparisonResult.Inconclusive;
+                    return (currentChar > 0x7F) ? FastComparisonResult.Inconclusive : FastComparisonResult.Unequal;
                 }
             }
 
-            if (currentIndex != text.Length)
+            firstDifferenceIndex = currentIndex;
+
+            bool textTerminated = currentIndex == text.Length;
+            bool bytesTerminated = currentPointer == endPointer || *currentPointer == 0 || *currentPointer == terminator;
+
+            if (textTerminated && bytesTerminated)
             {
-                return FastComparisonResult.Unequal;
+                return FastComparisonResult.Equal;
             }
 
-            if (currentPointer != endPointer && *currentPointer != 0 && *currentPointer != terminator)
-            {
-                return FastComparisonResult.IsPrefix;
-            }
-
-            return FastComparisonResult.Equal;
+            return textTerminated ? FastComparisonResult.BytesStartWithText : FastComparisonResult.TextStartsWithBytes;
         }
 
         // comparison stops at null terminator, terminator parameter, or end-of-block -- whichever comes first.
@@ -416,7 +465,7 @@ namespace System.Reflection.Internal
 
             for (int i = 0; i < asciiPrefix.Length; i++)
             {
-                Debug.Assert((int)asciiPrefix[i] > 0 && (int)asciiPrefix[i] <= 0x7f);
+                Debug.Assert(asciiPrefix[i] > 0 && asciiPrefix[i] <= 0x7f);
 
                 if (asciiPrefix[i] != *p)
                 {
@@ -440,7 +489,7 @@ namespace System.Reflection.Internal
 
             for (int i = 0; i < asciiString.Length; i++)
             {
-                Debug.Assert((int)asciiString[i] > 0 && (int)asciiString[i] <= 0x7f);
+                Debug.Assert(asciiString[i] > 0 && asciiString[i] <= 0x7f);
 
                 if (i > limit)
                 {
@@ -526,18 +575,22 @@ namespace System.Reflection.Internal
             return ~low;
         }
 
-        // Returns row number [0..RowCount) or -1 if not found.
+        /// <summary>
+        /// In a table that specifies children via a list field (e.g. TypeDef.FieldList, TypeDef.MethodList), 
+        /// seaches for the parent given a reference to a child.
+        /// </summary>
+        /// <returns>Returns row number [0..RowCount).</returns>
         internal int BinarySearchForSlot(
             int rowCount,
             int rowSize,
-            int referenceOffset,
+            int referenceListOffset,
             uint referenceValue,
             bool isReferenceSmall)
         {
             int startRowNumber = 0;
             int endRowNumber = rowCount - 1;
-            uint startValue = PeekReferenceUnchecked(startRowNumber * rowSize + referenceOffset, isReferenceSmall);
-            uint endValue = PeekReferenceUnchecked(endRowNumber * rowSize + referenceOffset, isReferenceSmall);
+            uint startValue = PeekReferenceUnchecked(startRowNumber * rowSize + referenceListOffset, isReferenceSmall);
+            uint endValue = PeekReferenceUnchecked(endRowNumber * rowSize + referenceListOffset, isReferenceSmall);
             if (endRowNumber == 1)
             {
                 if (referenceValue >= endValue)
@@ -548,7 +601,7 @@ namespace System.Reflection.Internal
                 return startRowNumber;
             }
 
-            while ((endRowNumber - startRowNumber) > 1)
+            while (endRowNumber - startRowNumber > 1)
             {
                 if (referenceValue <= startValue)
                 {
@@ -561,7 +614,7 @@ namespace System.Reflection.Internal
                 }
 
                 int midRowNumber = (startRowNumber + endRowNumber) / 2;
-                uint midReferenceValue = PeekReferenceUnchecked(midRowNumber * rowSize + referenceOffset, isReferenceSmall);
+                uint midReferenceValue = PeekReferenceUnchecked(midRowNumber * rowSize + referenceListOffset, isReferenceSmall);
                 if (referenceValue > midReferenceValue)
                 {
                     startRowNumber = midRowNumber;
@@ -581,7 +634,10 @@ namespace System.Reflection.Internal
             return startRowNumber;
         }
 
-        // Returns row number [0..RowCount) or -1 if not found.
+        /// <summary>
+        /// In a table ordered by a column containing entity references seaches for a row with the specified reference.
+        /// </summary>
+        /// <returns>Returns row number [0..RowCount) or -1 if not found.</returns>
         internal int BinarySearchReference(
             int rowCount,
             int rowSize,

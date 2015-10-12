@@ -622,7 +622,7 @@ namespace System.Reflection.Metadata
             else if (parent.Kind == HandleKind.TypeSpecification)
             {
                 BlobHandle blob = TypeSpecTable.GetSignature((TypeSpecificationHandle)parent);
-                BlobReader sig = BlobStream.GetBlobReader(blob);
+                BlobReader sig = new BlobReader(BlobStream.GetMemoryBlock(blob));
 
                 if (sig.Length < 2 ||
                     sig.ReadByte() != (byte)CorElementType.ELEMENT_TYPE_GENERICINST ||

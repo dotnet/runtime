@@ -106,7 +106,7 @@ namespace System.Reflection.Metadata
                     return AssemblyReferenceHandle.FromVirtualIndex(AssemblyReferenceHandle.VirtualIndex.System_Runtime);
 
                 case TypeRefTreatment.UseProjectionInfo:
-                    return MetadataReader.GetProjectedAssemblyRef((int)RowId);
+                    return MetadataReader.GetProjectedAssemblyRef(RowId);
             }
 
             Debug.Assert(false, "Unknown TypeRef treatment");
@@ -117,7 +117,7 @@ namespace System.Reflection.Metadata
         {
             if (Treatment == TypeRefTreatment.UseProjectionInfo)
             {
-                return MetadataReader.GetProjectedName((int)RowId);
+                return MetadataReader.GetProjectedName(RowId);
             }
             else
             {
@@ -134,7 +134,7 @@ namespace System.Reflection.Metadata
                     return StringHandle.FromVirtualIndex(StringHandle.VirtualIndex.System);
 
                 case TypeRefTreatment.UseProjectionInfo:
-                    return MetadataReader.GetProjectedNamespace((int)RowId);
+                    return MetadataReader.GetProjectedNamespace(RowId);
             }
 
             Debug.Assert(false, "Unknown TypeRef treatment");

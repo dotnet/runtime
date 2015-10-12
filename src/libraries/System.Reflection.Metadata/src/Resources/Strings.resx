@@ -150,6 +150,9 @@
   <data name="MetadataImageDoesNotRepresentAnAssembly" xml:space="preserve">
     <value>Metadata image doesn't represent an assembly.</value>
   </data>
+  <data name="StandaloneDebugMetadataImageDoesNotContainModuleTable" xml:space="preserve">
+    <value>Standalone debug metadata image doesn't contain Module table.</value>
+  </data>
   <data name="PEImageNotAvailable" xml:space="preserve">
     <value>PE image not available.</value>
   </data>
@@ -267,6 +270,9 @@
   <data name="InvalidCompressedInteger" xml:space="preserve">
     <value>Invalid compressed integer.</value>
   </data>
+  <data name="InvalidDocumentName" xml:space="preserve">
+    <value>Invalid document name.</value>
+  </data>
   <data name="RowIdOrHeapOffsetTooLarge" xml:space="preserve">
     <value>Row ID or heap offset is too large.</value>
   </data>
@@ -291,6 +297,15 @@
   <data name="MetadataStringDecoderEncodingMustBeUtf8" xml:space="preserve">
     <value>The MetadataStringDecoder instance used to instantiate the Metadata reader must have a UTF8 encoding.</value>
   </data>
+  <data name="InvalidConstantValue" xml:space="preserve">
+    <value>Invalid constant value.</value>
+  </data>
+  <data name="InvalidImportDefinitionKind" xml:space="preserve">
+    <value>Invalid import definition kind: {0}.</value>
+  </data>
+  <data name="ValueTooLarge" xml:space="preserve">
+    <value>Value is too large.</value>
+  </data>
   <data name="InvalidTypeSize" xml:space="preserve">
     <value>Invalid type size.</value>
   </data>
@@ -300,7 +315,13 @@
   <data name="InvalidRowCount" xml:space="preserve">
     <value>Invalid row count: {0}</value>
   </data>
+  <data name="InvalidEntryPointToken" xml:space="preserve">
+    <value>Invalid entry point token: 0x{0:8X}</value>
+  </data>
   <data name="TooManySubnamespaces" xml:space="preserve">
     <value>There are too many subnamespaces.</value>
+  </data>
+  <data name="SequencePointValueOutOfRange" xml:space="preserve">
+    <value>Sequence point value is out of range.</value>
   </data>
 </root>

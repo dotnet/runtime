@@ -2635,7 +2635,7 @@ namespace System.Reflection.Metadata.Tests
             if (setFlag)
             {
                 // set the non-standard ExtraData flag indicating that these 4 bytes are present
-                obfuscated[offsetToHeapSizeFlags] |= (byte)HeapSizeFlag.ExtraData;
+                obfuscated[offsetToHeapSizeFlags] |= (byte)HeapSizes.ExtraData;
             }
 
             return obfuscated;
