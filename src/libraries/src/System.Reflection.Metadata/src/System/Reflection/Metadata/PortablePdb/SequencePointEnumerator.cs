@@ -17,15 +17,15 @@ namespace System.Reflection.Metadata
         private int _previousNonHiddenStartLine;
         private ushort _previousNonHiddenStartColumn;
 
-        public unsafe SequencePointEnumerator(byte* buffer, int length, DocumentHandle primaryDocument)
-            : this(MemoryBlock.CreateChecked(buffer, length), primaryDocument)
+        public unsafe SequencePointEnumerator(byte* buffer, int length, DocumentHandle document)
+            : this(MemoryBlock.CreateChecked(buffer, length), document)
         {
         }
 
-        internal SequencePointEnumerator(MemoryBlock block, DocumentHandle primaryDocument)
+        internal SequencePointEnumerator(MemoryBlock block, DocumentHandle document)
         {
             _reader = new BlobReader(block);
-            _current = new SequencePoint(primaryDocument, -1);
+            _current = new SequencePoint(document, -1);
             _previousNonHiddenStartLine = -1;
             _previousNonHiddenStartColumn = 0;
         }
@@ -45,6 +45,11 @@ namespace System.Reflection.Metadata
             {
                 // header (skip local signature rid):
                 _reader.ReadCompressedInteger();
+
+                if (document.IsNil)
+                {
+                    document = ReadDocumentHandle();
+                }
 
                 // IL offset:
                 offset = _reader.ReadCompressedInteger();
