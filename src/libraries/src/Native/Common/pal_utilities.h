@@ -61,8 +61,8 @@ inline typename std::make_unsigned<T>::type UnsignedCast(T value)
  * MSDN blogs: http://blogs.msdn.com/b/the1/archive/2004/05/07/128242.aspx
  */
 template <typename T, size_t N>
-char ( &_ArraySizeHelper( T (&array)[N] ))[N];
-#define ARRAY_SIZE( array ) (sizeof( _ArraySizeHelper( array ) ))
+char(&_ArraySizeHelper(T(&array)[N]))[N];
+#define ARRAY_SIZE(array) (sizeof(_ArraySizeHelper(array)))
 
 /**
  * Abstraction helper method to safely copy strings using strlcpy or strcpy_s
