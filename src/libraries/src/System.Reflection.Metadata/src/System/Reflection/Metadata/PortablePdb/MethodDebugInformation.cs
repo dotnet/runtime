@@ -5,14 +5,14 @@ using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
-    public struct MethodBody
+    public struct MethodDebugInformation
     {
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
         private readonly int _rowId;
 
-        internal MethodBody(MetadataReader reader, MethodBodyHandle handle)
+        internal MethodDebugInformation(MetadataReader reader, MethodDebugInformationHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
@@ -21,9 +21,9 @@ namespace System.Reflection.Metadata
             _rowId = handle.RowId;
         }
 
-        private MethodBodyHandle Handle
+        private MethodDebugInformationHandle Handle
         {
-            get { return MethodBodyHandle.FromRowId(_rowId); }
+            get { return MethodDebugInformationHandle.FromRowId(_rowId); }
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.MethodBodyTable.GetSequencePoints(Handle);
+                return _reader.MethodDebugInformationTable.GetSequencePoints(Handle);
             }
         }
 
@@ -45,7 +45,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.MethodBodyTable.GetDocument(Handle);
+                return _reader.MethodDebugInformationTable.GetDocument(Handle);
             }
         }
 

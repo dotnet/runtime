@@ -64,7 +64,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
-    internal struct MethodBodyTableReader
+    internal struct MethodDebugInformationTableReader
     {
         internal readonly int NumberOfRows;
 
@@ -77,7 +77,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
-        internal MethodBodyTableReader(
+        internal MethodDebugInformationTableReader(
             int numberOfRows,
             int documentRefSize,
             int blobHeapRefSize,
@@ -94,13 +94,13 @@ namespace System.Reflection.Metadata.Ecma335
             Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, RowSize * numberOfRows);
         }
 
-        internal DocumentHandle GetDocument(MethodBodyHandle handle)
+        internal DocumentHandle GetDocument(MethodDebugInformationHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * RowSize;
             return DocumentHandle.FromRowId(Block.PeekReference(rowOffset + DocumentOffset, _isDocumentRefSmall));
         }
 
-        internal BlobHandle GetSequencePoints(MethodBodyHandle handle)
+        internal BlobHandle GetSequencePoints(MethodDebugInformationHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * RowSize;
             return BlobHandle.FromOffset(Block.PeekHeapReference(rowOffset + _sequencePointsOffset, _isBlobHeapRefSizeSmall));

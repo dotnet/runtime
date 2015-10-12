@@ -144,7 +144,7 @@
     <Compile Include="System\Reflection\Metadata\PortablePdb\LocalScope.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\LocalVariable.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\LocalVariableAttributes.cs" />
-    <Compile Include="System\Reflection\Metadata\PortablePdb\MethodBody.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\MethodDebugInformation.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\SequencePoint.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\SequencePointBlobReader.cs" />
     <Compile Include="System\Reflection\Metadata\PortablePdb\Tables.Debug.cs" />

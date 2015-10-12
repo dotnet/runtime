@@ -53,7 +53,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         // debug tables:
         Document = 0x30,
-        MethodBody = 0x31,
+        MethodDebugInformation = 0x31,
         LocalScope = 0x32,
         LocalVariable = 0x33,
         LocalConstant = 0x34,

@@ -94,7 +94,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 // debug tables
                 case TableIndex.Document: return reader.DocumentTable.RowSize;
-                case TableIndex.MethodBody: return reader.MethodBodyTable.RowSize;
+                case TableIndex.MethodDebugInformation: return reader.MethodDebugInformationTable.RowSize;
                 case TableIndex.LocalScope: return reader.LocalScopeTable.RowSize;
                 case TableIndex.LocalVariable: return reader.LocalVariableTable.RowSize;
                 case TableIndex.LocalConstant: return reader.LocalConstantTable.RowSize;
@@ -176,7 +176,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 // debug tables
                 case TableIndex.Document: return reader.DocumentTable.Block;
-                case TableIndex.MethodBody: return reader.MethodBodyTable.Block;
+                case TableIndex.MethodDebugInformation: return reader.MethodDebugInformationTable.Block;
                 case TableIndex.LocalScope: return reader.LocalScopeTable.Block;
                 case TableIndex.LocalVariable: return reader.LocalVariableTable.Block;
                 case TableIndex.LocalConstant: return reader.LocalConstantTable.Block;
