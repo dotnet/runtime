@@ -29,7 +29,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Returns a blob encoding sequence points.
         /// </summary>
-        public BlobHandle SequencePoints
+        public BlobHandle SequencePointsBlob
         {
             get
             {
@@ -56,21 +56,21 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                if (SequencePoints.IsNil)
+                if (SequencePointsBlob.IsNil)
                 {
                     return default(StandaloneSignatureHandle);
                 }
 
-                return StandaloneSignatureHandle.FromRowId(_reader.GetBlobReader(SequencePoints).ReadCompressedInteger());
+                return StandaloneSignatureHandle.FromRowId(_reader.GetBlobReader(SequencePointsBlob).ReadCompressedInteger());
             }
         }
 
         /// <summary>
         /// Returns a sequence points reader.
         /// </summary>
-        public SequencePointBlobReader GetSequencePointsReader()
+        public SequencePointEnumerator GetSequencePointEnumerator()
         {
-            return new SequencePointBlobReader(_reader.BlobStream.GetMemoryBlock(SequencePoints), Document);
+            return new SequencePointEnumerator(_reader.BlobStream.GetMemoryBlock(SequencePointsBlob), Document);
         }
 
         /// <summary>
