@@ -744,7 +744,7 @@ namespace System.Reflection.Metadata
             this.MethodDebugInformationTable = new MethodDebugInformationTableReader(rowCounts[(int)TableIndex.MethodDebugInformation], GetReferenceSize(rowCounts, TableIndex.Document), blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.MethodDebugInformationTable.Block.Length;
 
-            this.LocalScopeTable = new LocalScopeTableReader(rowCounts[(int)TableIndex.LocalScope], methodRefSizeCombined, GetReferenceSize(rowCounts, TableIndex.ImportScope), GetReferenceSize(rowCounts, TableIndex.LocalVariable), GetReferenceSize(rowCounts, TableIndex.LocalConstant), metadataTablesMemoryBlock, totalRequiredSize);
+            this.LocalScopeTable = new LocalScopeTableReader(rowCounts[(int)TableIndex.LocalScope], IsDeclaredSorted(TableMask.LocalScope), methodRefSizeCombined, GetReferenceSize(rowCounts, TableIndex.ImportScope), GetReferenceSize(rowCounts, TableIndex.LocalVariable), GetReferenceSize(rowCounts, TableIndex.LocalConstant), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.LocalScopeTable.Block.Length;
 
             this.LocalVariableTable = new LocalVariableTableReader(rowCounts[(int)TableIndex.LocalVariable], stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
@@ -756,7 +756,7 @@ namespace System.Reflection.Metadata
             this.ImportScopeTable = new ImportScopeTableReader(rowCounts[(int)TableIndex.ImportScope], GetReferenceSize(rowCounts, TableIndex.ImportScope), blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.ImportScopeTable.Block.Length;
 
-            this.StateMachineMethodTable = new StateMachineMethodTableReader(rowCounts[(int)TableIndex.StateMachineMethod], methodRefSizeCombined, metadataTablesMemoryBlock, totalRequiredSize);
+            this.StateMachineMethodTable = new StateMachineMethodTableReader(rowCounts[(int)TableIndex.StateMachineMethod], IsDeclaredSorted(TableMask.StateMachineMethod), methodRefSizeCombined, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.StateMachineMethodTable.Block.Length;
 
             this.CustomDebugInformationTable = new CustomDebugInformationTableReader(rowCounts[(int)TableIndex.CustomDebugInformation], IsDeclaredSorted(TableMask.CustomDebugInformation), hasCustomDebugInformationRefSizeCombined, guidHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);

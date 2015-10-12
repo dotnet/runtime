@@ -67,7 +67,7 @@ namespace System.Reflection.Metadata.Ecma335
         LocalVariable = 1UL << TableIndex.LocalVariable,
         LocalConstant = 1UL << TableIndex.LocalConstant,
         ImportScope = 1UL << TableIndex.ImportScope,
-        AsyncMethod = 1UL << TableIndex.StateMachineMethod,
+        StateMachineMethod = 1UL << TableIndex.StateMachineMethod,
         CustomDebugInformation = 1UL << TableIndex.CustomDebugInformation,
 
         PtrTables =
@@ -127,7 +127,7 @@ namespace System.Reflection.Metadata.Ecma335
           | LocalVariable
           | LocalConstant
           | ImportScope
-          | AsyncMethod
+          | StateMachineMethod
           | CustomDebugInformation,
 
         V3_0_TablesMask =

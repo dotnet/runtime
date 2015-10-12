@@ -128,6 +128,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal LocalScopeTableReader(
             int numberOfRows,
+            bool declaredSorted,
             int methodRefSize,
             int importScopeRefSize,
             int localVariableRefSize,
@@ -149,6 +150,11 @@ namespace System.Reflection.Metadata.Ecma335
             RowSize = _lengthOffset + sizeof(uint);
 
             Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, RowSize * numberOfRows);
+
+            if (numberOfRows > 0 && !declaredSorted)
+            {
+                Throw.TableNotSorted(TableIndex.LocalScope);
+            }
         }
 
         internal MethodDefinitionHandle GetMethod(int rowId)
@@ -332,6 +338,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal StateMachineMethodTableReader(
             int numberOfRows,
+            bool declaredSorted,
             int methodRefSize,
             MemoryBlock containingBlock,
             int containingBlockOffset)
@@ -343,6 +350,11 @@ namespace System.Reflection.Metadata.Ecma335
             RowSize = _kickoffMethodOffset + methodRefSize;
 
             Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, RowSize * numberOfRows);
+
+            if (numberOfRows > 0 && !declaredSorted)
+            {
+                Throw.TableNotSorted(TableIndex.StateMachineMethod);
+            }
         }
 
         internal MethodDefinitionHandle FindKickoffMethod(int moveNextMethodRowId)
@@ -448,9 +460,9 @@ namespace System.Reflection.Metadata.Ecma335
 
             Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, RowSize * numberOfRows);
 
-            if (!declaredSorted && !CheckSorted())
+            if (numberOfRows > 0 && !declaredSorted)
             {
-                MetadataReader.ThrowTableNotSorted(TableIndex.CustomDebugInformation);
+                Throw.TableNotSorted(TableIndex.CustomDebugInformation);
             }
         }
 
