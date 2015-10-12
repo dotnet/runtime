@@ -1109,7 +1109,7 @@ namespace System.Reflection.Metadata
             get { return new DocumentHandleCollection(this); }
         }
 
-        public MethodDebugInformationHandleCollection MethodBodies
+        public MethodDebugInformationHandleCollection MethodDebugInformation
         {
             get { return new MethodDebugInformationHandleCollection(this); }
         }
