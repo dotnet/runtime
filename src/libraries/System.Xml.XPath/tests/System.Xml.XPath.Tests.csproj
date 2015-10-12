@@ -16,7 +16,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
   </PropertyGroup>
   <PropertyGroup>
-    <CommonPathXPath>$(CommonPath)\System.Xml.XPath</CommonPathXPath>
+    <CommonPathXPath>$(CommonPath)\System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
   <ItemGroup>
     <!-- XPath.XPathDocument navigator -->
