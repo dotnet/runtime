@@ -2608,9 +2608,9 @@ if test "x$enable_llvm" = "xyes"; then
    LLVM_SYSTEM_LIBS=`$LLVM_CONFIG --system-libs 2>/dev/null | grep -- -`
    if test "x$host" != "x$target"; then
       # No need for jit libs
-      LLVM_LIBS=`$LLVM_CONFIG --libs core bitwriter`
+      LLVM_LIBS=`$LLVM_CONFIG --libs analysis core bitwriter`
    else
-      LLVM_LIBS=`$LLVM_CONFIG --libs core bitwriter jit mcjit $llvm_codegen`
+      LLVM_LIBS=`$LLVM_CONFIG --libs analysis core bitwriter jit mcjit $llvm_codegen`
    fi
    LLVM_LIBS="$LLVM_LIBS $LLVM_LDFLAGS $LLVM_SYSTEM_LIBS -lstdc++"
 
@@ -2641,6 +2641,7 @@ if test "x$enable_llvm" = "xyes"; then
          -lLLVMARMAsmPrinter -lLLVMTableGen -lLLVMDebugInfo -lLLVMOption -lLLVMX86Disassembler \
          -lLLVMX86AsmParser -lLLVMX86CodeGen -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMX86Desc \
          -lLLVMMCDisassembler -lLLVMX86Info -lLLVMX86AsmPrinter -lLLVMX86Utils -lLLVMJIT \
+         -lLLVMAnalysis -lLLVMTarget \
          -lLLVMIRReader -lLLVMAsmParser -lLLVMLineEditor -lLLVMMCAnalysis -lLLVMInstrumentation \
          -lLLVMInterpreter -lLLVMCodeGen -lLLVMScalarOpts -lLLVMInstCombine -lLLVMTransformUtils \
          -lLLVMipa -lLLVMAnalysis -lLLVMProfileData -lLLVMMCJIT -lLLVMTarget -lLLVMRuntimeDyld \

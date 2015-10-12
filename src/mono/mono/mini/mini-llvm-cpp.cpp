@@ -738,6 +738,16 @@ mono_llvm_dispose_ee (MonoEERef *eeref)
 
 #else
 
+void
+mono_llvm_cpp_throw_exception (void)
+{
+}
+
+void
+mono_llvm_set_unhandled_exception_handler (void)
+{
+}
+
 MonoEERef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb, LLVMExecutionEngineRef *ee)
 {
@@ -765,6 +775,5 @@ LLVMGetPointerToGlobal(LLVMExecutionEngineRef EE, LLVMValueRef Global)
 	g_assert_not_reached ();
 	return NULL;
 }
-
 
 #endif /* !MONO_CROSS_COMPILE */
