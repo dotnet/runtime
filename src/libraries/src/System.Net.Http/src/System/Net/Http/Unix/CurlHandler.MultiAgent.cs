@@ -41,14 +41,6 @@ namespace System.Net.Http
             private readonly Dictionary<IntPtr, ActiveRequest> _activeOperations = new Dictionary<IntPtr, ActiveRequest>();
 
             /// <summary>
-            /// Lazily-initialized buffer used to transfer data from a request content stream to libcurl.
-            /// This buffer may be shared amongst all of the connections associated with
-            /// this multi agent, as long as those operations are performed synchronously on the thread
-            /// associated with the multi handle. Asynchronous operation must use a separate buffer.
-            /// </summary>
-            private byte[] _transferBuffer;
-
-            /// <summary>
             /// Special file descriptor used to wake-up curl_multi_wait calls.  This is the read
             /// end of a pipe, with the write end written to when work is queued or when cancellation
             /// is requested. This is only valid while the worker is executing.
@@ -370,9 +362,13 @@ namespace System.Net.Http
                             Debug.Assert(FindActiveRequest(easy, out gcHandlePtr, out ar), "Couldn't find active request for unpause");
 
                             int unpauseResult = Interop.libcurl.curl_easy_pause(easy._easyHandle, Interop.libcurl.CURLPAUSE_CONT);
-                            if (unpauseResult != CURLcode.CURLE_OK)
+                            try
                             {
-                                FindAndFailActiveRequest(multiHandle, easy, new CurlException(unpauseResult, isMulti: false));
+                                ThrowIfCURLEError(unpauseResult);
+                            }
+                            catch (Exception exc)
+                            {
+                                FindAndFailActiveRequest(multiHandle, easy, exc);
                             }
                         }
                         break;
@@ -523,24 +519,19 @@ namespace System.Net.Http
                         completedOperation._requestMessage.RequestUri, completedOperation._responseMessage);
                 }
 
-                switch (messageResult)
+                // Complete or fail the request
+                try
                 {
-                    case CURLcode.CURLE_OK:
-                        completedOperation.EnsureResponseMessagePublished();
-                        break;
-                    case CURLcode.CURLE_UNSUPPORTED_PROTOCOL:
-                        if (completedOperation._isRedirect)
-                        {
-                            completedOperation.EnsureResponseMessagePublished();
-                        }
-                        else
-                        {
-                            completedOperation.FailRequest(CreateHttpRequestException(new CurlException(messageResult, isMulti: false)));
-                        }
-                        break;
-                    default:
-                        completedOperation.FailRequest(CreateHttpRequestException(new CurlException(messageResult, isMulti: false)));
-                        break;
+                    bool unsupportedProtocolRedirect = messageResult == CURLcode.CURLE_UNSUPPORTED_PROTOCOL && completedOperation._isRedirect;
+                    if (!unsupportedProtocolRedirect)
+                    {
+                        ThrowIfCURLEError(messageResult);
+                    }
+                    completedOperation.EnsureResponseMessagePublished();
+                }
+                catch (Exception exc)
+                {
+                    completedOperation.FailRequest(exc);
                 }
 
                 // At this point, we've completed processing the entire request, either due to error
@@ -652,25 +643,10 @@ namespace System.Net.Http
                     Debug.Assert(easy._requestContentStream != null, "We should only be in the send callback if we have a request content stream");
                     Debug.Assert(easy._associatedMultiAgent != null, "The request should be associated with a multi agent.");
 
-                    // Transfer data from the request's content stream to libcurl
                     try
                     {
-                        if (easy._requestContentStream is MemoryStream)
-                        {
-                            // If the request content stream is a memory stream (a very common case, as it's the default
-                            // stream type used by the base HttpContent type), then we can simply perform the read synchronously 
-                            // knowing that it won't block.
-                            return (size_t)TransferDataFromRequestMemoryStream(buffer, length, easy);
-                        }
-                        else
-                        {
-                            // Otherwise, we need to be concerned about blocking, due to this being called from the only thread able to 
-                            // service the multi agent (a multi handle can only be accessed by one thread at a time).  The whole 
-                            // operation, across potentially many callbacks, will be performed asynchronously: we issue the request
-                            // asynchronously, and if it's not completed immediately, we pause the connection until the data
-                            // is ready to be consumed by libcurl.
-                            return TransferDataFromRequestStream(buffer, length, easy);
-                        }
+                        // Transfer data from the request's content stream to libcurl
+                        return TransferDataFromRequestStream(buffer, length, easy);
                     }
                     catch (Exception ex)
                     {
@@ -684,37 +660,11 @@ namespace System.Net.Http
 
             /// <summary>
             /// Transfers up to <paramref name="length"/> data from the <paramref name="easy"/>'s
-            /// request content memory stream to the buffer.
-            /// </summary>
-            /// <returns>The number of bytes transferred.</returns>
-            private static int TransferDataFromRequestMemoryStream(IntPtr buffer, int length, EasyRequest easy)
-            {
-                Debug.Assert(easy._requestContentStream is MemoryStream, "Must only be used when the request stream is a memory stream");
-                Debug.Assert(easy._sendTransferState == null, "We should never have initialized the transfer state if the request stream is in memory");
-
-                MultiAgent multi = easy._associatedMultiAgent;
-
-                byte[] arr = multi._transferBuffer ?? (multi._transferBuffer = new byte[RequestBufferSize]);
-                int numBytes = easy._requestContentStream.Read(arr, 0, Math.Min(arr.Length, length));
-                Debug.Assert(numBytes >= 0 && numBytes <= length, "Read more bytes than requested");
-                if (numBytes > 0)
-                {
-                    Marshal.Copy(arr, 0, buffer, numBytes);
-                }
-
-                multi.VerboseTrace("Transferred " + numBytes + " from memory stream", easy: easy);
-                return numBytes;
-            }
-
-            /// <summary>
-            /// Transfers up to <paramref name="length"/> data from the <paramref name="easy"/>'s
             /// request content (non-memory) stream to the buffer.
             /// </summary>
             /// <returns>The number of bytes transferred.</returns>
             private static size_t TransferDataFromRequestStream(IntPtr buffer, int length, EasyRequest easy)
             {
-                Debug.Assert(!(easy._requestContentStream is MemoryStream), "Memory streams should use TransferFromRequestMemoryStreamToBuffer.");
-
                 MultiAgent multi = easy._associatedMultiAgent;
 
                 // First check to see whether there's any data available from a previous asynchronous read request.
@@ -848,9 +798,21 @@ namespace System.Net.Http
                 {
                     try
                     {
-                        if (easy._requestContentStream.CanSeek)
+                        // If libcul is requesting we seek back to the beginning and if the request
+                        // content stream is in a position to reset itself, reset and let libcurl
+                        // know we did the seek; otherwise, let it know we can't seek.
+                        if (offset == 0 && origin == (int)SeekOrigin.Begin && 
+                            easy._requestContentStream != null && easy._requestContentStream.TryReset())
                         {
-                            easy._requestContentStream.Seek(offset, (SeekOrigin)origin);
+                            // Dump any state associated with the old stream's position
+                            if (easy._sendTransferState != null)
+                            {
+                                easy._sendTransferState.SetTaskOffsetCount(null, 0, 0);
+                            }
+
+                            // Restart the transfer
+                            easy._requestContentStream.Run();
+
                             return Interop.libcurl.CURL_SEEKFUNC.CURL_SEEKFUNC_OK;
                         }
                         else
