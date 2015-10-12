@@ -2849,6 +2849,63 @@ HCIMPLEND
 //
 //========================================================================
 
+#include <optsmallperfcritical.h>
+
+//*************************************************************
+// Allocation fast path for typical objects
+//
+HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
+{
+    FCALL_CONTRACT;
+
+    do
+    {
+        _ASSERTE(GCHeap::UseAllocationContexts());
+
+        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
+        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
+        // some reshuffling of intermediate values into nonvolatile registers around the call.
+        Thread *thread = GetThread();
+
+        TypeHandle typeHandle(typeHnd_);
+        _ASSERTE(!typeHandle.IsTypeDesc());
+        MethodTable *methodTable = typeHandle.AsMethodTable();
+
+        SIZE_T size = methodTable->GetBaseSize();
+        _ASSERTE(size % DATA_ALIGNMENT == 0);
+
+        alloc_context *allocContext = thread->GetAllocContext();
+        BYTE *allocPtr = allocContext->alloc_ptr;
+        _ASSERTE(allocPtr <= allocContext->alloc_limit);
+        if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+        {
+            break;
+        }
+        allocContext->alloc_ptr = allocPtr + size;
+
+        _ASSERTE(allocPtr != nullptr);
+        Object *object = reinterpret_cast<Object *>(allocPtr);
+        _ASSERTE(object->HasEmptySyncBlockInfo());
+        object->SetMethodTable(methodTable);
+
+#if CHECK_APP_DOMAIN_LEAKS
+        if (g_pConfig->AppDomainLeaks())
+        {
+            object->SetAppDomain();
+        }
+#endif // CHECK_APP_DOMAIN_LEAKS
+
+        return object;
+    } while (false);
+
+    // Tail call to the slow helper
+    ENDFORBIDGC();
+    return HCCALL1(JIT_New, typeHnd_);
+}
+HCIMPLEND
+
+#include <optdefault.h>
+
 /*************************************************************/
 HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 {
@@ -3023,7 +3080,7 @@ HCIMPLEND
 
 //========================================================================
 //
-//      ARRAY FAST PATHS
+//      ARRAY HELPERS
 //
 //========================================================================
 
@@ -3032,7 +3089,6 @@ HCIMPLEND
 //*************************************************************
 // Array allocation fast path for arrays of value type elements
 //
-
 HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size)
 {
     FCALL_CONTRACT;
@@ -3107,13 +3163,75 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayTypeHn
 }
 HCIMPLEND
 
-#include <optdefault.h>
+//*************************************************************
+// Array allocation fast path for arrays of object elements
+//
+HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size)
+{
+    FCALL_CONTRACT;
 
-//========================================================================
-//
-//      ARRAY HELPERS
-//
-//========================================================================
+    do
+    {
+        _ASSERTE(GCHeap::UseAllocationContexts());
+
+        // Make sure that the total size cannot reach LARGE_OBJECT_SIZE, which also allows us to avoid overflow checks. The
+        // "256" slack is to cover the array header size and round-up, using a constant value here out of laziness.
+        SIZE_T componentCount = static_cast<SIZE_T>(size);
+        if (componentCount >= static_cast<SIZE_T>((LARGE_OBJECT_SIZE - 256) / sizeof(void *)))
+        {
+            break;
+        }
+
+        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
+        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
+        // some reshuffling of intermediate values into nonvolatile registers around the call.
+        Thread *thread = GetThread();
+
+        TypeHandle arrayTypeHandle(arrayTypeHnd_);
+        ArrayTypeDesc *arrayTypeDesc = arrayTypeHandle.AsArray();
+        MethodTable *arrayMethodTable = arrayTypeDesc->GetTemplateMethodTable();
+
+        SIZE_T totalSize = componentCount * sizeof(void *);
+        _ASSERTE(totalSize / sizeof(void *) == componentCount);
+
+        SIZE_T baseSize = arrayMethodTable->GetBaseSize();
+        totalSize += baseSize;
+        _ASSERTE(totalSize >= baseSize);
+
+        _ASSERTE(ALIGN_UP(totalSize, DATA_ALIGNMENT) == totalSize);
+
+        alloc_context *allocContext = thread->GetAllocContext();
+        BYTE *allocPtr = allocContext->alloc_ptr;
+        _ASSERTE(allocPtr <= allocContext->alloc_limit);
+        if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+        {
+            break;
+        }
+        allocContext->alloc_ptr = allocPtr + totalSize;
+
+        _ASSERTE(allocPtr != nullptr);
+        ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
+        array->SetMethodTable(arrayMethodTable);
+        _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
+        array->m_NumComponents = static_cast<DWORD>(componentCount);
+
+#if CHECK_APP_DOMAIN_LEAKS
+        if (g_pConfig->AppDomainLeaks())
+        {
+            array->SetAppDomain();
+        }
+#endif // CHECK_APP_DOMAIN_LEAKS
+
+        return array;
+    } while (false);
+
+    // Tail call to the slow helper
+    ENDFORBIDGC();
+    return HCCALL2(JIT_NewArr1, arrayTypeHnd_, size);
+}
+HCIMPLEND
+
+#include <optdefault.h>
 
 /*************************************************************/
 HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size)
