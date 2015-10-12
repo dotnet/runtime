@@ -164,8 +164,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\Interop.FLock.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs">
-      <Link>Common\Interop\Unix\Interop.gethostname.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs">
+      <Link>Common\Interop\Unix\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MkDir.cs">
       <Link>Common\Interop\Unix\Interop.MkDir.cs</Link>

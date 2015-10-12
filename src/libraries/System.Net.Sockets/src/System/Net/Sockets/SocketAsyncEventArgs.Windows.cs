@@ -836,6 +836,15 @@ namespace System.Net.Sockets
                 {
                     _ptrNativeOverlapped.Dispose();
                     _ptrNativeOverlapped = null;
+                }
+
+                // Free the preallocated overlapped object. This in turn will unpin
+                // any pinned buffers.
+                if (_preAllocatedOverlapped != null)
+                {
+                    _preAllocatedOverlapped.Dispose();
+                    _preAllocatedOverlapped = null;
+
                     _pinState = PinState.None;
                     _pinnedAcceptBuffer = null;
                     _pinnedSingleBuffer = null;
@@ -843,25 +852,22 @@ namespace System.Net.Sockets
                     _pinnedSingleBufferCount = 0;
                 }
 
-                if (_preAllocatedOverlapped != null)
-                {
-                    _preAllocatedOverlapped.Dispose();
-                    _preAllocatedOverlapped = null;
-                }
-
-                // Free any alloc'd GCHandles.
+                // Free any allocated GCHandles.
                 if (_socketAddressGCHandle.IsAllocated)
                 {
                     _socketAddressGCHandle.Free();
                 }
+
                 if (_wsaMessageBufferGCHandle.IsAllocated)
                 {
                     _wsaMessageBufferGCHandle.Free();
                 }
+
                 if (_wsaRecvMsgWSABufferArrayGCHandle.IsAllocated)
                 {
                     _wsaRecvMsgWSABufferArrayGCHandle.Free();
                 }
+
                 if (_controlBufferGCHandle.IsAllocated)
                 {
                     _controlBufferGCHandle.Free();

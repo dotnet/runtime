@@ -135,7 +135,7 @@ namespace System.Runtime.Serialization.Json
                 properResizeMethod.Invoke(null, new object[] { array, srcArray.Length });
 
                 // Copy
-                Array.Copy(srcArray, array, srcArray.Length);
+                Array.Copy(srcArray, 0, array, 0, srcArray.Length);
                 return;
             }
 

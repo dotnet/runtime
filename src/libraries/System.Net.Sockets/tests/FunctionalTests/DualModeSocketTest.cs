@@ -81,19 +81,19 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ConnectAsyncV4IPEndPointToV6Host_Fails()
         {
-            Assert.Throws<SocketException>( () =>
-            {
-                DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
-            });
+            Assert.Throws<SocketException>(() =>
+           {
+               DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
+           });
         }
 
         [Fact]
         public void ConnectAsyncV6IPEndPointToV4Host_Fails()
         {
-            Assert.Throws<SocketException> ( () =>
-            {
-                DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
-            });
+            Assert.Throws<SocketException>(() =>
+          {
+              DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
+          });
         }
 
         [Fact]
@@ -318,7 +318,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 SocketClient client = new SocketClient(_log, serverSocket, connectTo, port);
-                
+
                 var waitHandles = new WaitHandle[2];
                 waitHandles[0] = waitHandle;
                 waitHandles[1] = client.WaitHandle;
@@ -331,7 +331,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 if (completedHandle == 1)   // Client finished
-                {       
+                {
                     if (client.Error != SocketError.Success)
                     {
                         // Client SocketException
@@ -345,7 +345,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 _log.WriteLine(args.SocketError.ToString());
-                
+
 
                 if (args.SocketError != SocketError.Success)
                 {
@@ -462,7 +462,7 @@ namespace System.Net.Sockets.Tests
                     throw new SocketException((int)args.SocketError);
                 }
 
-                bool success = server.WaitHandle.WaitOne(100); // Make sure the bytes were received
+                bool success = server.WaitHandle.WaitOne(Configuration.FailingTestTimeout); // Make sure the bytes were received
                 if (!success)
                 {
                     throw new TimeoutException();
@@ -781,7 +781,7 @@ namespace System.Net.Sockets.Tests
                 _output.WriteLine(
                     "Received: " + e.GetHashCode() + " SocketAsyncEventArgs with manual event " +
                     handle.GetHashCode() + " error: " + e.SocketError);
-                
+
                 handle.Set();
             }
 

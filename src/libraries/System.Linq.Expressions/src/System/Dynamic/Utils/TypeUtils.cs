@@ -84,6 +84,23 @@ namespace System.Dynamic.Utils
             }
         }
 
+        public static bool IsInteger64(Type type)
+        {
+            type = GetNonNullableType(type);
+            if (type.GetTypeInfo().IsEnum)
+            {
+                return false;
+            }
+            switch (type.GetTypeCode())
+            {
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public static bool IsArithmetic(Type type)
         {
             type = GetNonNullableType(type);

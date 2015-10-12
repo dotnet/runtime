@@ -202,7 +202,7 @@ namespace System.Net
                 {
                     waitHandle.Dispose();
                 }
-                    
+
                 throw;
             }
         }

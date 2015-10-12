@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Xunit;
+using Tests.Collections;
 
 namespace System.Collections.ObjectModel.Tests
 {
@@ -214,6 +215,186 @@ namespace System.Collections.ObjectModel.Tests
 
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()).Keys);
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()).Values);
+        }
+    }
+
+    public class TestReadOnlyDictionary<TKey, TValue> : ReadOnlyDictionary<TKey, TValue>
+    {
+        public TestReadOnlyDictionary(IDictionary<TKey, TValue> dict)
+            : base(dict)
+        {
+        }
+
+        public IDictionary<TKey, TValue> GetDictionary()
+        {
+            return Dictionary;
+        }
+    }
+
+    public class DictionaryThatDoesntImplementNonGeneric<TKey, TValue> : IDictionary<TKey, TValue>
+    {
+        private readonly IDictionary<TKey, TValue> _inner;
+        
+        public DictionaryThatDoesntImplementNonGeneric(IDictionary<TKey, TValue> inner)
+        {
+            _inner = inner;
+        }
+
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            return _inner.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable) _inner).GetEnumerator();
+        }
+
+        public void Add(KeyValuePair<TKey, TValue> item)
+        {
+            _inner.Add(item);
+        }
+
+        public void Clear()
+        {
+            _inner.Clear();
+        }
+
+        public bool Contains(KeyValuePair<TKey, TValue> item)
+        {
+            return _inner.Contains(item);
+        }
+
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        {
+            _inner.CopyTo(array, arrayIndex);
+        }
+
+        public bool Remove(KeyValuePair<TKey, TValue> item)
+        {
+            return _inner.Remove(item);
+        }
+
+        public int Count
+        {
+            get { return _inner.Count; }
+        }
+
+        public bool IsReadOnly
+        {
+            get { return _inner.IsReadOnly; }
+        }
+
+        public void Add(TKey key, TValue value)
+        {
+            _inner.Add(key, value);
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            return _inner.ContainsKey(key);
+        }
+
+        public bool Remove(TKey key)
+        {
+            return _inner.Remove(key);
+        }
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            return _inner.TryGetValue(key, out value);
+        }
+
+        public TValue this[TKey key]
+        {
+            get { return _inner[key]; }
+            set { _inner[key] = value; }
+        }
+
+        public ICollection<TKey> Keys
+        {
+            get { return _inner.Keys; }
+        }
+
+        public ICollection<TValue> Values
+        {
+            get { return _inner.Values; }
+        }
+    }
+
+    public class ReadOnlyDictionaryOverNonGenericTests
+        : IDictionaryTest<string, int>
+    {
+        public ReadOnlyDictionaryOverNonGenericTests()
+            : base(false)
+        {
+        }
+
+        private int m_next_item = 1;
+        protected override bool IsResetNotSupported { get { return false; } }
+        protected override bool IsGenericCompatibility { get { return false; } }
+        protected override bool ItemsMustBeUnique { get { return true; } }
+        protected override bool ItemsMustBeNonNull { get { return true; } }
+        protected override object GenerateItem()
+        {
+            return new KeyValuePair<string, int>(m_next_item.ToString(), m_next_item++);
+        }
+
+        protected override IEnumerable GetEnumerable(object[] items)
+        {
+            var dict = new DictionaryThatDoesntImplementNonGeneric<string, int>(new Dictionary<string, int>());
+            foreach (KeyValuePair<string, int> p in items)
+                dict[p.Key] = p.Value;
+            return new TestReadOnlyDictionary<string, int>(dict);
+        }
+
+        protected override object[] InvalidateEnumerator(IEnumerable enumerable)
+        {
+            var roDict = (TestReadOnlyDictionary<string, int>)enumerable;
+            var dict = roDict.GetDictionary();
+            var item = (KeyValuePair<string, int>)GenerateItem();
+            dict.Add(item.Key, item.Value);
+            var arr = new object[dict.Count];
+            ((ICollection)roDict).CopyTo(arr, 0);
+            return arr;
+        }
+    }
+
+    public class ReadOnlyDictionaryTestsStringInt
+        : IDictionaryTest<string, int>
+    {
+        public ReadOnlyDictionaryTestsStringInt()
+            : base(false)
+        {
+        }
+
+        private int m_next_item = 1;
+        protected override bool IsResetNotSupported { get { return false; } }
+        protected override bool IsGenericCompatibility { get { return false; } }
+        protected override bool ItemsMustBeUnique { get { return true; } }
+        protected override bool ItemsMustBeNonNull { get { return true; } }
+        protected override object GenerateItem()
+        {
+            return new KeyValuePair<string, int>(m_next_item.ToString(), m_next_item++);
+        }
+
+        protected override IEnumerable GetEnumerable(object[] items)
+        {
+            var dict = new Dictionary<string, int>();
+            foreach (KeyValuePair<string, int> p in items)
+                dict[p.Key] = p.Value;
+            return new TestReadOnlyDictionary<string, int>(dict);
+        }
+
+        protected override object[] InvalidateEnumerator(IEnumerable enumerable)
+        {
+            var roDict = (TestReadOnlyDictionary<string, int>)enumerable;
+            var dict = roDict.GetDictionary();
+            var item = (KeyValuePair<string, int>)GenerateItem();
+            dict.Add(item.Key, item.Value);
+            var arr = new object[dict.Count];
+            ((ICollection)roDict).CopyTo(arr, 0);
+            return arr;
         }
     }
 

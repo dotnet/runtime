@@ -10,7 +10,7 @@ namespace System.Net.Sockets.Tests
     {
         protected override int Port { get { throw new NotSupportedException(); } }
 
-        public SocketTestServerAPM(int numConnections, int receiveBufferSize, EndPoint localEndPoint) 
+        public SocketTestServerAPM(int numConnections, int receiveBufferSize, EndPoint localEndPoint)
         {
             throw new NotSupportedException();
         }

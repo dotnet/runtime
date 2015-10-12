@@ -9,6 +9,6 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.Localization, CharSet = CharSet.Unicode, EntryPoint = "VerLanguageNameW")]
-        internal static extern int VerLanguageName(uint langID, StringBuilder lpBuffer, uint nSize);
+        internal static extern int VerLanguageName(uint langID, [Out] StringBuilder lpBuffer, uint nSize);
     }
 }

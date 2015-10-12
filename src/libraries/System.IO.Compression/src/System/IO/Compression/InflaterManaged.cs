@@ -728,7 +728,7 @@ namespace System.IO.Compression
             byte[] distanceTreeCodeLength = new byte[HuffmanTree.MaxDistTreeElements];
 
             // Create literal and distance tables
-            Array.Copy(_codeList, literalTreeCodeLength, _literalLengthCodeCount);
+            Array.Copy(_codeList, 0, literalTreeCodeLength, 0, _literalLengthCodeCount);
             Array.Copy(_codeList, _literalLengthCodeCount, distanceTreeCodeLength, 0, _distanceCodeCount);
 
             // Make sure there is an end-of-block code, otherwise how could we ever end?

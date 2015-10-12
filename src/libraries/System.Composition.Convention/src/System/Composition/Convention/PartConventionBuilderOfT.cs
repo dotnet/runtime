@@ -46,7 +46,7 @@ namespace System.Composition.Convention
                     }
                 }
 
-                // An error occured the expression must be a void Method() Member Expression
+                // An error occurred the expression must be a void Method() Member Expression
                 throw ExceptionBuilder.Argument_ExpressionMustBeVoidMethodWithNoArguments("methodSelector");
             }
 
@@ -120,7 +120,7 @@ namespace System.Composition.Convention
                     }
                 }
 
-                // An error occured the expression must be a Property Member Expression
+                // An error occurred the expression must be a Property Member Expression
                 throw ExceptionBuilder.Argument_ExpressionMustBePropertyMember("propertySelector");
             }
 

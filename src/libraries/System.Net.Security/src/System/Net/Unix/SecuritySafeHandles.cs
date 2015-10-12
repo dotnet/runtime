@@ -19,24 +19,34 @@ namespace System.Net.Security
     internal sealed class SafeFreeCertContext : SafeHandle
     {
 #endif
-        public SafeFreeCertContext(IntPtr handle) : base(handle, true)
+        private readonly SafeX509Handle _certificate;
+
+        public SafeFreeCertContext(SafeX509Handle certificate) : base(IntPtr.Zero, true)
         {
+            // In certain scenarios (eg. server querying for a client cert), the
+            // input certificate may be invalid and this is OK
+            if ((null != certificate) && !certificate.IsInvalid)
+            {
+                bool gotRef = false;
+                certificate.DangerousAddRef(ref gotRef);
+                Debug.Assert(gotRef, "Unexpected failure in AddRef of certificate");
+                _certificate = certificate;
+                handle = _certificate.DangerousGetHandle();
+            }
         }
 
         public override bool IsInvalid
         {
             get
             {
-                return IntPtr.Zero == handle;
+                return handle == IntPtr.Zero;
             }
         }
 
         protected override bool ReleaseHandle()
         {
-            if (IntPtr.Zero != handle)
-            {
-                Interop.libcrypto.X509_free(handle);
-            }
+            _certificate.DangerousRelease();
+            _certificate.Dispose();
             return true;
         }
     }
@@ -89,7 +99,7 @@ namespace System.Net.Security
                     if (rsa != null)
                     {
                         _certKeyHandle = rsa.DuplicateKeyHandle();
-                        Interop.libcrypto.CheckValidOpenSslHandle(_certKeyHandle);
+                        Interop.Crypto.CheckValidOpenSslHandle(_certKeyHandle);
                     }
                 }
 
@@ -98,7 +108,7 @@ namespace System.Net.Security
                 Debug.Assert(_certKeyHandle != null, "Failed to extract a private key handle");
 
                 _certHandle = Interop.libcrypto.X509_dup(cert.Handle);
-                Interop.libcrypto.CheckValidOpenSslHandle(_certHandle);
+                Interop.Crypto.CheckValidOpenSslHandle(_certHandle);
             }
 
             _protocols = protocols;
@@ -112,7 +122,6 @@ namespace System.Net.Security
 
         protected override bool ReleaseHandle()
         {
-
             if (_certHandle != null)
             {
                 _certHandle.Dispose();
@@ -126,6 +135,7 @@ namespace System.Net.Security
             _protocols = SslProtocols.None;
             return true;
         }
+
     }
 
     //
@@ -185,8 +195,18 @@ namespace System.Net.Security
     {
 #endif
         private readonly SafeFreeCredentials _credential;
+        private readonly Interop.libssl.SafeSslHandle _sslContext;
 
-        public SafeDeleteContext(IntPtr handle, SafeFreeCredentials credential) : base(handle, true)
+        public Interop.libssl.SafeSslHandle SslContext
+        {
+            get
+            {
+                return _sslContext;
+            }
+        }
+
+        public SafeDeleteContext(SafeFreeCredentials credential, long options, bool isServer, bool remoteCertRequired)
+            : base(IntPtr.Zero, true)
         {
             Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteContext");
 
@@ -197,19 +217,36 @@ namespace System.Net.Security
             bool ignore = false;
             _credential = credential;
             _credential.DangerousAddRef(ref ignore);
+
+            try
+            {
+                _sslContext = Interop.OpenSsl.AllocateSslContext(
+                    options,
+                    credential.CertHandle,
+                    credential.CertKeyHandle,
+                    isServer,
+                    remoteCertRequired);
+            }
+            finally
+            {
+                if (IsInvalid)
+                {
+                    _credential.DangerousRelease();
+                }
+            }
         }
 
         public override bool IsInvalid
         {
             get
             {
-                return IntPtr.Zero == handle;
+                return (null == _sslContext) || _sslContext.IsInvalid;
             }
         }
 
         protected override bool ReleaseHandle()
         {
-            Interop.OpenSsl.FreeSslContext(handle);
+            Interop.OpenSsl.FreeSslContext(_sslContext);
             Debug.Assert((null != _credential) && !_credential.IsInvalid, "Invalid credential saved in SafeDeleteContext");
             _credential.DangerousRelease();
             return true;

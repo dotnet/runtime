@@ -17,13 +17,13 @@ public class CreatedTests
         {
             string fileName = Guid.NewGuid().ToString();
             watcher.Filter = fileName;
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
 
             watcher.EnableRaisingEvents = true;
 
             using (var file = new TemporaryTestFile(fileName))
             {
-                Utility.ExpectEvent(eventOccured, "created");
+                Utility.ExpectEvent(eventOccurred, "created");
             }
         }
     }
@@ -35,13 +35,13 @@ public class CreatedTests
         {
             string dirName = Guid.NewGuid().ToString();
             watcher.Filter = dirName;
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
 
             watcher.EnableRaisingEvents = true;
 
             using (var dir = new TemporaryTestDirectory(dirName))
             {
-                Utility.ExpectEvent(eventOccured, "created");
+                Utility.ExpectEvent(eventOccurred, "created");
             }
         }
     }
@@ -60,7 +60,7 @@ public class CreatedTests
             // watch the target dir
             watcher.Path = Path.GetFullPath(targetDir.Path);
             watcher.Filter = testFileName;
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
 
             string sourceFile = Path.Combine(dir.Path, testFileName);
             string targetFile = Path.Combine(targetDir.Path, testFileName);
@@ -73,7 +73,7 @@ public class CreatedTests
             // move the test file from source to target directory
             File.Move(sourceFile, targetFile);
 
-            Utility.ExpectEvent(eventOccured, "created");
+            Utility.ExpectEvent(eventOccurred, "created");
         }
     }
 
@@ -86,7 +86,7 @@ public class CreatedTests
             // put everything in our own directory to avoid collisions
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*.*";
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
 
             // run all scenarios together to avoid unnecessary waits, 
             // assert information is verbose enough to trace to failure cause
@@ -114,7 +114,7 @@ public class CreatedTests
                 // deleting a file & directory by leaving the using block
             }
 
-            Utility.ExpectNoEvent(eventOccured, "created");
+            Utility.ExpectNoEvent(eventOccurred, "created");
         }
     }
 
@@ -143,7 +143,7 @@ public class CreatedTests
             using (var dir = Utility.CreateTestDirectory())
             using (var watcher = new FileSystemWatcher())
             {
-                AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+                AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
 
                 // put everything in our own directory to avoid collisions
                 watcher.Path = Path.GetFullPath(dir.Path);
@@ -154,19 +154,19 @@ public class CreatedTests
                 // Priming directory
                 TemporaryTestDirectory priming = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir"));
                 lst.Add(priming);
-                Utility.ExpectEvent(eventOccured, "priming create");
+                Utility.ExpectEvent(eventOccurred, "priming create");
 
                 // Create a deep directory structure and expect things to work
                 for (int i = 1; i < 20; i++)
                 {
                     lst.Add(new TemporaryTestDirectory(Path.Combine(lst[i - 1].Path, String.Format("dir{0}", i))));
-                    Utility.ExpectEvent(eventOccured, lst[i].Path + " create");
+                    Utility.ExpectEvent(eventOccurred, lst[i].Path + " create");
                 }
 
                 // Put a file at the very bottom and expect it to raise an event
                 using (var file = new TemporaryTestFile(Path.Combine(lst[lst.Count - 1].Path, "temp file")))
                 {
-                    Utility.ExpectEvent(eventOccured, "temp file create");
+                    Utility.ExpectEvent(eventOccurred, "temp file create");
                 }
             }
         }
@@ -187,7 +187,7 @@ public class CreatedTests
         using (var temp = Utility.CreateTestFile(Path.GetTempFileName()))
         using (var watcher = new FileSystemWatcher())
         {
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
 
             // put everything in our own directory to avoid collisions
             watcher.Path = Path.GetFullPath(dir.Path);
@@ -196,7 +196,7 @@ public class CreatedTests
 
             // Make the symlink in our path (to the temp file) and make sure an event is raised
             Utility.CreateSymLink(Path.GetFullPath(temp.Path), Path.Combine(dir.Path, Path.GetFileName(temp.Path)), false);
-            Utility.ExpectEvent(eventOccured, "symlink created");
+            Utility.ExpectEvent(eventOccurred, "symlink created");
         }
     }
 
@@ -207,7 +207,7 @@ public class CreatedTests
         using (var temp = Utility.CreateTestDirectory(Path.Combine(Path.GetTempPath(), "FooBar")))
         using (var watcher = new FileSystemWatcher())
         {
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created);
 
             // put everything in our own directory to avoid collisions
             watcher.Path = Path.GetFullPath(dir.Path);
@@ -216,7 +216,7 @@ public class CreatedTests
 
             // Make the symlink in our path (to the temp folder) and make sure an event is raised
             Utility.CreateSymLink(Path.GetFullPath(temp.Path), Path.Combine(dir.Path, Path.GetFileName(temp.Path)), true);
-            Utility.ExpectEvent(eventOccured, "symlink created");
+            Utility.ExpectEvent(eventOccurred, "symlink created");
         }
     }
 }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using Xunit.Sdk;
@@ -297,6 +298,16 @@ namespace Tests.Collections
                 collection.CopyTo(itemArray, 0);
                 CollectionAssert.Equal(items, itemArray);
             }
+        }
+
+        [Fact]
+        public void CollectionShouldContainAllItems()
+        {
+            object[] items = GenerateItems(16);
+            ICollection<T> collection = GetCollection(items) as ICollection<T>;
+            if (collection == null)
+                return;
+            Assert.All(items, item => Assert.True(collection.Contains((T) item)));
         }
 
         internal class MyInvalidReferenceType

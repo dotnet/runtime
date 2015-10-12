@@ -25,6 +25,7 @@
     <Compile Include="UTF32LE.cs" />
     <Compile Include="UTF7.cs" />
     <Compile Include="UTF8.cs" />
+    <Compile Include="Fallback.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

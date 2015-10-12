@@ -61,7 +61,6 @@ namespace System.Net.Http.Tests
             Assert.Equal(" http://example.com http://other", headers.GetValues("Location").First());
         }
 
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         [Fact]
         public void Location_RequiresEncoding_Encoded()
         {

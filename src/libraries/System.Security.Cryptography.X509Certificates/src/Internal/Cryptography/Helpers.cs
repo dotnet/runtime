@@ -33,8 +33,8 @@ namespace Internal.Cryptography
             return new string(ToHexArrayUpper(bytes));
         }
 
-        // Decode a hex string-encoded byte array passed to various X509 crypto api. The parsing rules are overly forgiving but for compat reasons,
-        // they cannot be tightened.
+        // Decode a hex string-encoded byte array passed to various X509 crypto api.
+        // The parsing rules are overly forgiving but for compat reasons, they cannot be tightened.
         public static byte[] DecodeHexString(this string s)
         {
             int whitespaceCount = 0;
@@ -47,19 +47,40 @@ namespace Internal.Cryptography
 
             uint cbHex = (uint)(s.Length - whitespaceCount) / 2;
             byte[] hex = new byte[cbHex];
+            byte accum = 0;
+            bool byteInProgress = false;
+            int index = 0;
 
-            for (int index = 0, i = 0; index < cbHex; index++)
+            for (int i = 0; i < s.Length; i++)
             {
-                if (char.IsWhiteSpace(s[i]))
+                char c = s[i];
+
+                if (char.IsWhiteSpace(c))
                 {
-                    i++;
+                    continue;
                 }
-                else
+
+                accum <<= 4;
+                accum |= HexToByte(c);
+
+                byteInProgress = !byteInProgress;
+
+                // If we've flipped from 0 to 1, back to 0, we have a whole byte
+                // so add it to the buffer.
+                if (!byteInProgress)
                 {
-                    hex[index] = (byte)((HexToByte(s[i]) << 4) | HexToByte(s[i + 1]));
-                    i += 2;
+                    Debug.Assert(index < cbHex, "index < cbHex");
+
+                    hex[index] = accum;
+                    index++;
                 }
             }
+
+            // Desktop compat:
+            // The desktop algorithm removed all whitespace before the loop, then went up to length/2
+            // of what was left.  This means that in the event of odd-length input the last char is
+            // ignored, no exception should be raised.
+            Debug.Assert(index == cbHex, "index == cbHex");
 
             return hex;
         }
@@ -91,7 +112,7 @@ namespace Internal.Cryptography
 
             for (int i = 0; i < a1.Length; i++)
             {
-                if (a1[0] != a2[0])
+                if (a1[i] != a2[i])
                     return false;
             }
             return true;

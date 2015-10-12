@@ -341,7 +341,7 @@ namespace Internal.Cryptography.Pal
             return oids;
         }
 
-        private static ISet<string> ReadCertPolicyExtension(X509Extension extension)
+        internal static ISet<string> ReadCertPolicyExtension(X509Extension extension)
         {
             DerSequenceReader reader = new DerSequenceReader(extension.RawData);
             HashSet<string> policies = new HashSet<string>();

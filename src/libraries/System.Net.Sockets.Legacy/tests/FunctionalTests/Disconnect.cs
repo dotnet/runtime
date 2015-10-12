@@ -17,6 +17,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
+        [ActiveIssue(3580)]
         public void Success()
         {
             AutoResetEvent completed = new AutoResetEvent(false);
@@ -36,7 +37,7 @@ namespace System.Net.Sockets.Tests
                     Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
                     Assert.True(client.ConnectAsync(args));
-                    Assert.True(completed.WaitOne(5000), "Timed out while waiting for connection");
+                    Assert.True(completed.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
                     Assert.Equal<SocketError>(SocketError.Success, args.SocketError);
 
                     client.Disconnect(true);
@@ -44,7 +45,7 @@ namespace System.Net.Sockets.Tests
                     args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, port1);
 
                     Assert.True(client.ConnectAsync(args));
-                    Assert.True(completed.WaitOne(5000), "Timed out while waiting for connection");
+                    Assert.True(completed.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
                     Assert.Equal<SocketError>(SocketError.Success, args.SocketError);
 
                     client.Dispose();
@@ -75,7 +76,8 @@ namespace System.Net.Sockets.Tests
             {
                 var completed = new AutoResetEvent(false);
 
-                var args = new SocketAsyncEventArgs {
+                var args = new SocketAsyncEventArgs
+                {
                     UserToken = completed,
                     RemoteEndPoint = new IPEndPoint(address, port),
                     DisconnectReuseSocket = true
@@ -84,7 +86,7 @@ namespace System.Net.Sockets.Tests
 
                 var client = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 Assert.True(client.ConnectAsync(args));
-                Assert.True(completed.WaitOne(5000), "Timed out while waiting for connection");
+                Assert.True(completed.WaitOne(Configuration.PassingTestTimeout), "Timed out while waiting for connection");
                 Assert.Equal<SocketError>(SocketError.Success, args.SocketError);
 
                 Assert.Throws<PlatformNotSupportedException>(() => client.Disconnect(true));

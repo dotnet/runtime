@@ -23,10 +23,10 @@ public partial class ErrorTests
                 unblockHandler.WaitOne();
             };
 
-            AutoResetEvent eventOccured = new AutoResetEvent(false);
+            AutoResetEvent eventOccurred = new AutoResetEvent(false);
             watcher.Error += (o, e) =>
             {
-                eventOccured.Set();
+                eventOccurred.Set();
             };
             watcher.EnableRaisingEvents = true;
 
@@ -71,7 +71,7 @@ public partial class ErrorTests
 
             unblockHandler.Set();
 
-            Utility.ExpectEvent(eventOccured, "error");
+            Utility.ExpectEvent(eventOccurred, "error");
         }
     }
 }

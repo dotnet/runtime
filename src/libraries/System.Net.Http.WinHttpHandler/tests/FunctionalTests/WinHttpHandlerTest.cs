@@ -15,6 +15,8 @@ using Xunit.Abstractions;
 // WinHttpHandler is a class and not a namespace and can't be part of namespace paths.
 namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 {
+    // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
+    // to separately Dispose (or have a 'using' statement) for the handler.
     public class WinHttpHandlerTest
     {
         readonly ITestOutputHelper _output;
@@ -28,35 +30,13 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         public void SendAsync_SimpleGet_Success()
         {
             var handler = new WinHttpHandler();
-            var client = new HttpClient(handler);
-            
-            // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
-            var response = client.GetAsync(HttpTestServers.RemoteGetServer).Result;
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            var responseContent = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-            _output.WriteLine(responseContent);
-        }
-
-        [Fact]
-        public async Task GetAsync_Cancel_CancellationTokenPropagates()
-        {
-            var cts = new CancellationTokenSource();
-            cts.Cancel();
-            try
+            using (var client = new HttpClient(handler))
             {
-                var handler = new SendAsyncWinHttpMockHandler();
-                Task <HttpResponseMessage> task = handler.SendAsyncPublic(new HttpRequestMessage(HttpMethod.Post, HttpTestServers.RemoteGetServer), cts.Token);       
-                await task;
-
-                Assert.True(false, "Expected TaskCanceledException to be thrown.");
-            }
-            catch (TaskCanceledException ex)
-            {
-                Assert.True(cts.Token.IsCancellationRequested,
-                    "Expected cancellation requested on original token.");
-
-                Assert.True(ex.CancellationToken.IsCancellationRequested,
-                    "Expected cancellation requested on token attached to exception.");
+                // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
+                var response = client.GetAsync(HttpTestServers.RemoteGetServer).Result;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                var responseContent = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                _output.WriteLine(responseContent);
             }
         }
     }

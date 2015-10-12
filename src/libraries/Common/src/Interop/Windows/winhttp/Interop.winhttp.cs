@@ -61,7 +61,7 @@ internal partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool WinHttpAddRequestHeaders(
             SafeWinHttpHandle requestHandle,
-            StringBuilder headers,
+            [In] StringBuilder headers,
             uint headersLength,
             uint modifiers);
 
@@ -77,7 +77,7 @@ internal partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool WinHttpSendRequest(
             SafeWinHttpHandle requestHandle,
-            StringBuilder headers,
+            [In] StringBuilder headers,
             uint headersLength,
             IntPtr optional,
             uint optionalLength,
@@ -110,7 +110,7 @@ internal partial class Interop
             SafeWinHttpHandle requestHandle,
             uint infoLevel,
             string name,
-            StringBuilder buffer,
+            [Out] StringBuilder buffer,
             ref uint bufferLength,
             IntPtr index);
 
@@ -129,7 +129,7 @@ internal partial class Interop
         public static extern bool WinHttpQueryOption(
             SafeWinHttpHandle handle,
             uint option,
-            StringBuilder buffer,
+            [Out] StringBuilder buffer,
             ref uint bufferSize);
 
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]

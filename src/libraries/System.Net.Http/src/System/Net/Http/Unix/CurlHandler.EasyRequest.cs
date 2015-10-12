@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 using CURLAUTH = Interop.libcurl.CURLAUTH;
 using CURLoption = Interop.libcurl.CURLoption;
+using CurlProtocols = Interop.libcurl.CURLPROTO_Definitions;
 using CURLProxyType = Interop.libcurl.curl_proxytype;
 using SafeCurlHandle = Interop.libcurl.SafeCurlHandle;
 using SafeCurlSlistHandle = Interop.libcurl.SafeCurlSlistHandle;
@@ -135,6 +136,7 @@ namespace System.Net.Http
             {
                 VerboseTrace(_requestMessage.RequestUri.AbsoluteUri);
                 SetCurlOption(CURLoption.CURLOPT_URL, _requestMessage.RequestUri.AbsoluteUri);
+                SetCurlOption(CURLoption.CURLOPT_PROTOCOLS, CurlProtocols.CURLPROTO_HTTP | CurlProtocols.CURLPROTO_HTTPS);
             }
 
             [Conditional(VerboseDebuggingConditional)]
@@ -161,6 +163,11 @@ namespace System.Net.Http
 
                 VerboseTrace(_handler._maxAutomaticRedirections.ToString());
                 SetCurlOption(CURLoption.CURLOPT_FOLLOWLOCATION, 1L);
+                long redirectProtocols = string.Equals(_requestMessage.RequestUri.Scheme, UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ?
+                    CurlProtocols.CURLPROTO_HTTPS : // redirect only to another https
+                    CurlProtocols.CURLPROTO_HTTP | CurlProtocols.CURLPROTO_HTTPS; // redirect to http or to https
+                SetCurlOption(CURLoption.CURLOPT_REDIR_PROTOCOLS, redirectProtocols);
+
                 SetCurlOption(CURLoption.CURLOPT_MAXREDIRS, _handler._maxAutomaticRedirections);
             }
 
@@ -267,9 +274,6 @@ namespace System.Net.Http
             {
                 if (credentials == null)
                 {
-                    SetCurlOption(CURLoption.CURLOPT_HTTPAUTH, CURLAUTH.None);
-                    SetCurlOption(CURLoption.CURLOPT_USERNAME, IntPtr.Zero);
-                    SetCurlOption(CURLoption.CURLOPT_PASSWORD, IntPtr.Zero);
                     _networkCredential = null;
                     return;
                 }

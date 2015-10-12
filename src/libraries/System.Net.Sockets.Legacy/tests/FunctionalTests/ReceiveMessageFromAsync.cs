@@ -35,7 +35,7 @@ namespace System.Net.Sockets.Tests
                     Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                     sender.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                     sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.Loopback, port));
-                    
+
                     SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                     args.RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
                     args.SetBuffer(new byte[1024], 0, 1024);
@@ -44,7 +44,7 @@ namespace System.Net.Sockets.Tests
 
                     Assert.True(receiver.ReceiveMessageFromAsync(args));
 
-                    Assert.True(completed.WaitOne(5000), "Timeout while waiting for connection");
+                    Assert.True(completed.WaitOne(Configuration.PassingTestTimeout), "Timeout while waiting for connection");
 
                     Assert.Equal(1024, args.BytesTransferred);
                     Assert.Equal(sender.LocalEndPoint, args.RemoteEndPoint);

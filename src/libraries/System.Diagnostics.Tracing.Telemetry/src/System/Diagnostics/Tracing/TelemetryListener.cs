@@ -29,6 +29,7 @@ namespace System.Diagnostics.Tracing
     /// If you need to see 'everything' you can subscribe to the 'AllListeners' event that
     /// will fire for every live TelemetryListener in the appdomain (past or present). 
     /// </summary>
+    [Obsolete("Renamed to System.Diagnostics.DiagnosticListener")]
     public class TelemetryListener : TelemetrySource, IObservable<KeyValuePair<string, object>>, IDisposable
     {
         /// <summary>
@@ -38,12 +39,14 @@ namespace System.Diagnostics.Tracing
         /// The main reason not to us this one is that you WANT isolation from other 
         /// events in the system (e.g. multi-tenancy).  
         /// </summary>
+        [Obsolete("Make your own static variable with a System.Diagnostics.DiagnosticListener")]
         public static TelemetryListener DefaultListener { get { return s_default; } }
 
         /// <summary>
         /// When you subscribe to this you get callbacks for all NotificationListeners in the appdomain
         /// as well as those that occurred in the past, and all future Listeners created in the future. 
         /// </summary>
+        [Obsolete("Renamed to System.Diagnostics.DiagnosticListener.AllListeners")]
         public static IObservable<TelemetryListener> AllListeners
         {
             get
@@ -61,6 +64,7 @@ namespace System.Diagnostics.Tracing
         /// Add a subscriber (Observer).  If 'IsEnabled' == null (or not present), then the Source's IsEnabled 
         /// will always return true.  
         /// </summary>
+        [Obsolete("Renamed to System.Diagnostics.DiagnosticListener.Subscribe")]
         virtual public IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
         {
             // If we have been disposed, we silently ignore any subscriptions.  
@@ -76,6 +80,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Same as other Subscribe overload where the predicate is assumed to always return true.  
         /// </summary>
+        [Obsolete("Renamed to System.Diagnostics.DiagnosticListener.Subscribe")]
         public IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer)
         {
             return Subscribe(observer, null);
@@ -88,6 +93,7 @@ namespace System.Diagnostics.Tracing
         /// (multi-casting).    Generally you should not be making your own TelemetryListener but use the
         /// TelemetryListener.Default, so that notifications are as 'public' as possible.  
         /// </summary>
+        [Obsolete("Renamed to System.Diagnostics.DiagnosticListener")]
         public TelemetryListener(string name)
         {
             Name = name;
@@ -192,6 +198,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Override abstract method
         /// </summary>
+        [Obsolete("Renamed to System.Diagnostics.DiagnosticListener.Write")]
         public override void WriteTelemetry(string telemetryName, object arguments)
         {
             for (TelemetrySubscription curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)

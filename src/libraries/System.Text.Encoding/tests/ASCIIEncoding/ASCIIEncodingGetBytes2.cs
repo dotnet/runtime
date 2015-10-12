@@ -1,11 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Text;
 using Xunit;
 
-namespace System.Text.EncodingTests
+namespace System.Text.Tests
 {
     // Encodes a set of characters from the specified character array into the specified byte array. 
     // for method: ASCIIEncoding.GetBytes(char[], Int32, Int32, Byte[], Int32)

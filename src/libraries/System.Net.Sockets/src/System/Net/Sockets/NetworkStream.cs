@@ -228,7 +228,7 @@ namespace System.Net.Sockets
 
         // Set/Get WriteTimeout, note of a strange behavior, 0 timeout == infinite for sockets,
         // so we map this to -1, and if you set 0, we cannot support it
-	    public override int WriteTimeout
+        public override int WriteTimeout
         {
             get
             {
@@ -436,7 +436,7 @@ namespace System.Net.Sockets
                         throw;
                     }
 
-                    // Some sort of error occured on the socket call,
+                    // Some sort of error occurred on the socket call,
                     // set the SocketException as InnerException and throw.
                     throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
                 }
@@ -510,7 +510,7 @@ namespace System.Net.Sockets
                         throw;
                     }
 
-                    // Some sort of error occured on the socket call,
+                    // Some sort of error occurred on the socket call,
                     // set the SocketException as InnerException and throw.
                     throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
                 }
@@ -674,7 +674,7 @@ namespace System.Net.Sockets
                         throw;
                     }
 
-                    // Some sort of error occured on the socket call,
+                    // Some sort of error occurred on the socket call,
                     // set the SocketException as InnerException and throw.
                     throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
                 }
@@ -717,7 +717,7 @@ namespace System.Net.Sockets
             {
                 if (ExceptionCheck.IsFatal(exception)) throw;
 
-                // Some sort of error occured on the socket call,
+                // Some sort of error occurred on the socket call,
                 // set the SocketException as InnerException and throw.
                 throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
             }
@@ -766,7 +766,7 @@ namespace System.Net.Sockets
                         throw;
                     }
 
-                    // Some sort of error occured on the socket call,
+                    // Some sort of error occurred on the socket call,
                     // set the SocketException as InnerException and throw.
                     throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
                 }
@@ -846,7 +846,7 @@ namespace System.Net.Sockets
                         throw;
                     }
 
-                    // Some sort of error occured on the socket call,
+                    // Some sort of error occurred on the socket call,
                     // set the SocketException as InnerException and throw.
                     throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
                 }
@@ -899,7 +899,7 @@ namespace System.Net.Sockets
                         throw;
                     }
 
-                    // Some sort of error occured on the socket call,
+                    // Some sort of error occurred on the socket call,
                     // set the SocketException as InnerException and throw.
                     throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
                 }
@@ -946,7 +946,7 @@ namespace System.Net.Sockets
                         throw;
                     }
 
-                    // Some sort of error occured on the socket call,
+                    // Some sort of error occurred on the socket call,
                     // set the SocketException as InnerException and throw.
                     throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
                 }
@@ -955,174 +955,66 @@ namespace System.Net.Sockets
 #endif
         }
 
-        // Performs a sync Write of an array of buffers.
-        internal virtual void MultipleWrite(BufferOffsetSize[] buffers)
+        // ReadAsync - provide async read functionality.
+        // 
+        // This method provides async read functionality. All we do is
+        // call through to the Begin/EndRead methods.
+        // 
+        // Input:
+        // 
+        //     buffer            - Buffer to read into.
+        //     offset            - Offset into the buffer where we're to read.
+        //     size              - Number of bytes to read.
+        //     cancellationtoken - Token used to request cancellation of the operation
+        // 
+        // Returns:
+        // 
+        //     A Task<int> representing the read.
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
-            GlobalLog.ThreadContract(ThreadKinds.Sync, "NetworkStream#" + Logging.HashString(this) + "::MultipleWrite");
-
-            // Validate input parameters.
-            if (buffers == null)
+            if (cancellationToken.IsCancellationRequested)
             {
-                throw new ArgumentNullException("buffers");
+                return Task.FromCanceled<int>(cancellationToken);
             }
 
-            Socket chkStreamSocket = _streamSocket;
-            if (chkStreamSocket == null)
-            {
-                throw new IOException(SR.Format(SR.net_io_writefailure, SR.net_io_connectionclosed));
-            }
-
-            try
-            {
-                chkStreamSocket.MultipleSend(
-                    buffers,
-                    SocketFlags.None);
-            }
-            catch (Exception exception)
-            {
-                if (exception is OutOfMemoryException)
-                {
-                    throw;
-                }
-
-                // Some sort of error occured on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
-            }
+            return Task.Factory.FromAsync(
+                (bufferArg, offsetArg, sizeArg, callback, state) => ((NetworkStream)state).BeginRead(bufferArg, offsetArg, sizeArg, callback, state),
+                iar => ((NetworkStream)iar.AsyncState).EndRead(iar),
+                buffer, 
+                offset, 
+                size, 
+                this);
         }
 
-        // Starts off an async Write of an array of buffers.
-        internal virtual IAsyncResult BeginMultipleWrite(
-            BufferOffsetSize[] buffers,
-            AsyncCallback callback,
-            Object state)
+        // WriteAsync - provide async write functionality.
+        // 
+        // This method provides async write functionality. All we do is
+        // call through to the Begin/EndWrite methods.
+        // 
+        // Input:
+        // 
+        //     buffer  - Buffer to write into.
+        //     offset  - Offset into the buffer where we're to write.
+        //     size    - Number of bytes to write.
+        //     cancellationtoken - Token used to request cancellation of the operation
+        // 
+        // Returns:
+        // 
+        //     A Task representing the write.
+        public override Task WriteAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
-#if DEBUG
-            GlobalLog.ThreadContract(ThreadKinds.Unknown, "NetworkStream#" + Logging.HashString(this) + "::BeginMultipleWrite");
-            using (GlobalLog.SetThreadKind(ThreadKinds.Async))
+            if (cancellationToken.IsCancellationRequested)
             {
-#endif
-                // Validate input parameters.
-                if (buffers == null)
-                {
-                    throw new ArgumentNullException("buffers");
-                }
-
-                Socket chkStreamSocket = _streamSocket;
-                if (chkStreamSocket == null)
-                {
-                    throw new IOException(SR.Format(SR.net_io_writefailure, SR.net_io_connectionclosed));
-                }
-
-                try
-                {
-                    // Call BeginMultipleSend on the Socket.
-                    IAsyncResult asyncResult =
-                        chkStreamSocket.BeginMultipleSend(
-                            buffers,
-                            SocketFlags.None,
-                            callback,
-                            state);
-
-                    return asyncResult;
-                }
-                catch (Exception exception)
-                {
-                    if (exception is OutOfMemoryException)
-                    {
-                        throw;
-                    }
-
-                    // Some sort of error occured on the socket call,
-                    // set the SocketException as InnerException and throw.
-                    throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
-                }
-#if DEBUG
-            }
-#endif
-        }
-
-        internal virtual IAsyncResult UnsafeBeginMultipleWrite(
-            BufferOffsetSize[] buffers,
-            AsyncCallback callback,
-            Object state)
-        {
-#if DEBUG
-            GlobalLog.ThreadContract(ThreadKinds.Unknown, "NetworkStream#" + Logging.HashString(this) + "::BeginMultipleWrite");
-            using (GlobalLog.SetThreadKind(ThreadKinds.Async))
-            {
-#endif
-                // Validate input parameters.
-                if (buffers == null)
-                {
-                    throw new ArgumentNullException("buffers");
-                }
-
-                Socket chkStreamSocket = _streamSocket;
-                if (chkStreamSocket == null)
-                {
-                    throw new IOException(SR.Format(SR.net_io_writefailure, SR.net_io_connectionclosed));
-                }
-
-                try
-                {
-                    // Call BeginMultipleSend on the Socket.
-                    IAsyncResult asyncResult =
-                        chkStreamSocket.UnsafeBeginMultipleSend(
-                            buffers,
-                            SocketFlags.None,
-                            callback,
-                            state);
-
-                    return asyncResult;
-                }
-                catch (Exception exception)
-                {
-                    if (exception is OutOfMemoryException)
-                    {
-                        throw;
-                    }
-
-                    // Some sort of error occured on the socket call,
-                    // set the SocketException as InnerException and throw.
-                    throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
-                }
-#if DEBUG
-            }
-#endif
-        }
-
-        internal virtual void EndMultipleWrite(IAsyncResult asyncResult)
-        {
-            GlobalLog.ThreadContract(ThreadKinds.Unknown, "NetworkStream#" + Logging.HashString(this) + "::EndMultipleWrite");
-
-            // Validate input parameters.
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException("asyncResult");
+                return Task.FromCanceled<int>(cancellationToken);
             }
 
-            Socket chkStreamSocket = _streamSocket;
-            if (chkStreamSocket == null)
-            {
-                throw new IOException(SR.Format(SR.net_io_writefailure, SR.net_io_connectionclosed));
-            }
-
-            try
-            {
-                chkStreamSocket.EndMultipleSend(asyncResult);
-            }
-            catch (Exception exception)
-            {
-                if (exception is OutOfMemoryException)
-                {
-                    throw;
-                }
-
-                // Some sort of error occured on the socket call,
-                // set the SocketException as InnerException and throw.
-                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
-            }
+            return Task.Factory.FromAsync(
+                (bufferArg, offsetArg, sizeArg, callback, state) => ((NetworkStream)state).BeginWrite(bufferArg, offsetArg, sizeArg, callback, state),
+                iar => ((NetworkStream)iar.AsyncState).EndWrite(iar),
+                buffer, 
+                offset, 
+                size, 
+                this);
         }
 
         // Flushes data from the stream.  This is meaningless for us, so it does nothing.

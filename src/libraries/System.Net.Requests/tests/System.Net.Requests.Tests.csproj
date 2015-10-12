@@ -27,6 +27,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
       <Link>Common\System\Net\HttpTestServers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers2.cs">
+      <Link>Common\System\Net\HttpTestServers2.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>

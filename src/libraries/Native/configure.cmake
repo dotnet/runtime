@@ -3,6 +3,7 @@ include(CheckStructHasMember)
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
 include(CheckPrototypeDefinition)
+include(CheckSymbolExists)
 
 #CMake does not include /usr/local/include into the include search path
 #thus add it manually. This is required on FreeBSD.
@@ -32,6 +33,15 @@ check_function_exists(
     posix_fadvise
     HAVE_POSIX_ADVISE)
 
+check_function_exists(
+    ioctl
+    HAVE_IOCTL)
+
+check_symbol_exists(
+    TIOCGWINSZ
+    "sys/ioctl.h"
+    HAVE_TIOCGWINSZ)
+
 check_struct_has_member(
     "struct stat"
     st_birthtime
@@ -49,6 +59,12 @@ check_struct_has_member(
     f_fstypename
     "sys/mount.h"
     HAVE_STATFS_FSTYPENAME)
+
+check_struct_has_member(
+    "struct in6_addr"
+    __in6_u
+    "netdb.h"
+    HAVE_IN6_U)
 
 check_cxx_source_compiles(
     "

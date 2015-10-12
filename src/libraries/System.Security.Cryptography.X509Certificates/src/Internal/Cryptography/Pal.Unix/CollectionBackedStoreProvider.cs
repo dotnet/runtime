@@ -28,10 +28,6 @@ namespace Internal.Cryptography.Pal
         {
         }
 
-        public void FindAndCopyTo(X509FindType findType, object findValue, bool validOnly, X509Certificate2Collection collection)
-        {
-        }
-
         public byte[] Export(X509ContentType contentType, string password)
         {
             switch (contentType)
@@ -91,7 +87,7 @@ namespace Internal.Cryptography.Pal
                         {
                             if (!Interop.Crypto.PushX509StackField(publicCerts, certHandle))
                             {
-                                throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                                throw Interop.Crypto.CreateOpenSslCryptographicException();
                             }
 
                             // The handle ownership has been transferred into the STACK_OF(X509).
@@ -129,7 +125,7 @@ namespace Internal.Cryptography.Pal
                 {
                     if (pkcs12.IsInvalid)
                     {
-                        throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
                     unsafe

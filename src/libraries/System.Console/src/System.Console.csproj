@@ -41,6 +41,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
+	<Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConsoleCursorInfo.cs">
+      <Link>Common\Interop\Windows\Interop.ConsoleCursorInfo.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConsoleScreenBufferInfo.cs">
       <Link>Common\Interop\Windows\Interop.ConsoleScreenBufferInfo.cs</Link>
     </Compile>
@@ -56,8 +59,14 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetConsoleCP.cs">
       <Link>Common\Interop\Windows\Interop.GetConsoleCP.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetConsoleMode.cs">
+      <Link>Common\Interop\Windows\Interop.GetConsoleMode.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetConsoleOutputCP.cs">
       <Link>Common\Interop\Windows\Interop.GetConsoleOutputCP.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLargestConsoleWindowSize.cs">
+      <Link>Common\Interop\Windows\Interop.GetLargestConsoleWindowSize.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileType_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.GetFileType.cs</Link>
@@ -74,11 +83,17 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsole.cs">
       <Link>Common\Interop\Windows\Interop.ReadConsole.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCtrlHandler.cs">
+	<Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCtrlHandler.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleScreenBufferSize.cs">
+      <Link>Common\Interop\Windows\Interop.SetConsoleScreenBufferSize.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleTextAttribute.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleTextAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleWindowInfo.cs">
+      <Link>Common\Interop\Windows\Interop.SetConsoleWindowInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.WriteFile.cs</Link>
@@ -157,6 +172,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.SetConsoleCtrlHandler.cs">
       <Link>Common\Interop\Unix\Interop.SetConsoleCtrlHandler.cs"</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetWindowWidth.cs">
+      <Link>Common\Interop\Unix\Interop.GetWindowWidth.cs"</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

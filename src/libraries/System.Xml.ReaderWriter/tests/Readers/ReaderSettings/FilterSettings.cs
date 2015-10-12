@@ -1,37 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using OLEDB.Test.ModuleCore;
 using System.IO;
-using System.Xml;
-using System.Xml.Schema;
-using System.Collections;
-using XmlReaderTest.Common;
 using XmlCoreTest.Common;
 
-using OLEDB.Test.ModuleCore;
-
-/*
-
-<?xml version="1.0"?>
-<!DOCTYPE root [
-  <!ELEMENT root (elem)*>
-  <!ELEMENT elem (#PCDATA)>
-  <!ATTLIST elem num ID #REQUIRED>
-  <!ATTLIST elem link1 IDREF #IMPLIED>
-  <!ATTLIST elem link2 IDREFS #IMPLIED>
-]>
-<root>
-  <elem num="a">data1</elem>
-  <elem num="b">data2</elem>
-  <elem num="c" link1="a">data3</elem>
-  <elem num="d" link2="b">data4</elem>
-  <elem num="e" link1="c" link2="a b">data5</elem>
-</root>
-
-*/
-
-namespace XmlReaderTest.ReaderSettingsTest
+namespace System.Xml.Tests
 {
     [TestCase(Name = "Filter Settings", Desc = "Filter Settings")]
     public partial class TCFilterSettings : TCXMLReaderBaseGeneral

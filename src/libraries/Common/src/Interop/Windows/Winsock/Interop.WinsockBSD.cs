@@ -2,8 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
@@ -38,7 +38,7 @@ internal static partial class Interop
             // SIO_TRANSLATE_HANDLE (opcode setting: I, O, T==1)
             // SIO_ROUTING_INTERFACE_QUERY (opcode setting: I, O, T==1)
             //
-            // Likely to block (reccommended for async IO):
+            // Likely to block (recommended for async IO):
             //
             // SIO_FIND_ROUTE (opcode setting: O, T==1)
             // SIO_FLUSH (opcode setting: V, T==1)
@@ -49,7 +49,7 @@ internal static partial class Interop
             // SIO_ROUTING_INTERFACE_CHANGE (opcode setting: I, T==1)
             // SIO_ADDRESS_LIST_CHANGE (opcode setting: T==1)
         }
-       
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct TimeValue
         {
@@ -63,7 +63,7 @@ internal static partial class Interop
         {
             internal int MulticastAddress; // IP multicast address of group
             internal int InterfaceAddress; // local IP address of interface
-    
+
             internal static readonly int Size = Marshal.SizeOf<IPMulticastRequest>();
         }
 
@@ -74,10 +74,10 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
             internal byte[] MulticastAddress; // IP address of group.
             internal int InterfaceIndex; // Local interface index.
-    
+
             internal static readonly int Size = Marshal.SizeOf<IPv6MulticastRequest>();
         }
-    
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct Linger
         {

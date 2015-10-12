@@ -83,7 +83,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
         // *** These fields are mutated during execution.
 
-        /// <summary>Exceptions that may have occured and gone unhandled during processing.</summary>
+        /// <summary>Exceptions that may have occurred and gone unhandled during processing.</summary>
         private List<Exception> _exceptions;
         /// <summary>Whether to stop accepting new messages.</summary>
         private bool _decliningPermanently;

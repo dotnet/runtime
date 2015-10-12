@@ -18,6 +18,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Encodings\Web\AllowedCharactersBitmap.cs" />
+    <Compile Include="System\Text\Encodings\Web\BufferInternal.cs" />
     <Compile Include="System\Text\Encodings\Web\HexUtil.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\JavaScriptStringEncoder.cs" />

@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
-{  
+{
     internal unsafe static class UnmanagedCertificateContext
     {
         internal static X509Certificate2Collection GetRemoteCertificatesFromStoreContext(SafeFreeCertContext certContext)
@@ -18,7 +18,7 @@ namespace System.Net
                 return result;
             }
 
-            Interop.Crypt32.CERT_CONTEXT context =  Marshal.PtrToStructure<Interop.Crypt32.CERT_CONTEXT>(certContext.DangerousGetHandle());
+            Interop.Crypt32.CERT_CONTEXT context = Marshal.PtrToStructure<Interop.Crypt32.CERT_CONTEXT>(certContext.DangerousGetHandle());
 
             if (context.hCertStore != IntPtr.Zero)
             {

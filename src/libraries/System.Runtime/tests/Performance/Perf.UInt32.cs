@@ -10,14 +10,15 @@ namespace System.Runtime.Tests
         [Benchmark]
         public void ToString_()
         {
-            UInt32 i = new UInt32();
+            UInt32 testint = new UInt32();
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    i.ToString(); i.ToString(); i.ToString();
-                    i.ToString(); i.ToString(); i.ToString();
-                    i.ToString(); i.ToString(); i.ToString();
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        testint.ToString(); testint.ToString(); testint.ToString();
+                        testint.ToString(); testint.ToString(); testint.ToString();
+                        testint.ToString(); testint.ToString(); testint.ToString();
+                    }
         }
     }
 }

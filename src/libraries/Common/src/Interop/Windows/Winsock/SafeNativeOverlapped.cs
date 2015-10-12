@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using Microsoft.Win32.SafeHandles;
+
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -66,7 +67,7 @@ namespace System.Net.Sockets
         {
             IntPtr oldHandle = Interlocked.Exchange(ref handle, IntPtr.Zero);
 
-            // Do not call free durring AppDomain shutdown, there may be an outstanding operation.
+            // Do not call free during AppDomain shutdown, there may be an outstanding operation.
             // Overlapped will take care calling free when the native callback completes.
             if (oldHandle != IntPtr.Zero && !Environment.HasShutdownStarted)
             {

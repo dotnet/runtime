@@ -6,7 +6,7 @@ namespace System.Net.Sockets
     // Defines socket option names for the <see cref='System.Net.Sockets.Socket'/> class.
     public enum SocketOptionName
     {
-#region SocketOptionLevel.Socket
+        #region SocketOptionLevel.Socket
         // Record debugging information.
         Debug = 0x0001,
 
@@ -67,13 +67,13 @@ namespace System.Net.Sockets
 
         // Maximum queue length that can be specified by <see cref='System.Net.Sockets.Socket.Listen'/>.
         MaxConnections = 0x7fffffff,
-#endregion
+        #endregion
 
         // The following values are taken from ws2tcpip.h,
         // note that these are understood only by ws2_32.dll and are not backwards compatible
         // with the values found in winsock.h which are understood by wsock32.dll.
 
-#region SocketOptionLevel.IP
+        #region SocketOptionLevel.IP
         // IP options.
         IPOptions = 1,
 
@@ -118,24 +118,24 @@ namespace System.Net.Sockets
 
         // Receive packet information for ipv4.
         PacketInformation = 19,
-#endregion
+        #endregion
 
-#region SocketOptionLevel.IPv6
+        #region SocketOptionLevel.IPv6
         HopLimit = 21,
 
         IPProtectionLevel = 23,
 
         IPv6Only = 27,
-#endregion
+        #endregion
 
-#region SocketOptionLevel.Tcp
+        #region SocketOptionLevel.Tcp
         // Disables the Nagle algorithm for send coalescing.
         NoDelay = 1,
         BsdUrgent = 2,
         Expedited = 2,
-#endregion
+        #endregion
 
-#region SocketOptionlevel.Udp
+        #region SocketOptionlevel.Udp
         NoChecksum = 1,
 
         // Udp-Lite checksum coverage.
@@ -144,6 +144,6 @@ namespace System.Net.Sockets
         UpdateAcceptContext = 0x700B,
 
         UpdateConnectContext = 0x7010,
-#endregion
+        #endregion
     }
 }

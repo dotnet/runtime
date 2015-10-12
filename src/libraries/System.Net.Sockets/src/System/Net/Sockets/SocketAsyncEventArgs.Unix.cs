@@ -202,7 +202,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.SendAsync(new BufferList(_bufferList), platformFlags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendAsync(_bufferList, platformFlags, TransferCompletionCallback);
             }
 
             bytesTransferred = 0;
@@ -236,7 +236,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.SendToAsync(new BufferList(_bufferList), platformFlags, _socketAddress.Buffer, _socketAddress.Size, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendToAsync(_bufferList, platformFlags, _socketAddress.Buffer, _socketAddress.Size, TransferCompletionCallback);
             }
 
             bytesTransferred = 0;

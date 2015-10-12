@@ -48,7 +48,7 @@ namespace System.Xml
                 else if (id >= _strings.Length)
                 {
                     XmlDictionaryString[] newStrings = new XmlDictionaryString[Math.Min(Math.Max(id + 1, _strings.Length * 2), MaxArrayEntries)];
-                    Array.Copy(_strings, newStrings, _strings.Length);
+                    Array.Copy(_strings, 0, newStrings, 0, _strings.Length);
                     _strings = newStrings;
                 }
                 _strings[id] = xmlString;

@@ -403,7 +403,7 @@ namespace System.Net
             }
             lock (_domainTable)
             {
-                foreach (KeyValuePair<string,PathList> entry in _domainTable)
+                foreach (KeyValuePair<string, PathList> entry in _domainTable)
                 {
                     if (domain == null)
                     {

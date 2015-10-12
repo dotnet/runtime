@@ -4,7 +4,7 @@
     "System.Reflection.Emit.Lightweight": "4.0.0-beta-*",
     "System.Runtime": "4.0.20-beta-*",
     "System.Runtime.Serialization.Primitives": "4.0.10-beta-*",
-    "xunit": "2.1.0-beta3-*",
+    "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {

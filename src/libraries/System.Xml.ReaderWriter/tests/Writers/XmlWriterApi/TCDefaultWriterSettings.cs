@@ -1,16 +1,14 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Xml;
 using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
 
-namespace XmlWriterAPI.Test
+namespace System.Xml.Tests
 {
     public partial class TCDefaultWriterSettings : XmlFactoryWriterTestCaseBase
     {
-        // Type is XmlWriterAPI.Test.TCDefaultWriterSettings
+        // Type is System.Xml.Tests.TCDefaultWriterSettings
         // Test Case
         public override void AddChildren()
         {

@@ -1123,7 +1123,7 @@ namespace System.IO.Packaging
         }
 
         //We needed to separate the rels parts from the other parts
-        //because if a rels part for a part occured earlier than the part itself in the array,
+        //because if a rels part for a part occurred earlier than the part itself in the array,
         //the rels part would be closed and then when close the part and try to persist the relationships
         //for the particular part, it would throw an exception
         private bool DoClose(PackagePart p)

@@ -26,10 +26,8 @@ usage()
     echo "                                      the FreeBSD, Linux or OSX mscorlib.dll"
     echo "                                      default: <repo_root>/bin/Product/<OS>.x64.<Configuration>"
     echo "    --corefx-tests <location>         Location of the root binaries location containing"
-    echo "                                      the windows tests"
-    echo "                                      default: <repo_root>/bin/tests/Windows_NT.AnyCPU.<Configuration>"
-    echo "    --corefx-bins <location>          Location of the FreeBSD, Linux or OSX corefx binaries"
-    echo "                                      default: <repo_root>/bin/<OS>.AnyCPU.<Configuration>"
+    echo "                                      the tests to run"
+    echo "                                      default: <repo_root>/bin/tests/<OS>.AnyCPU.<Configuration>"
     echo "    --corefx-native-bins <location>   Location of the FreeBSD, Linux or OSX native corefx binaries"
     echo "                                      default: <repo_root>/bin/<OS>.x64.<Configuration>"
     echo
@@ -78,54 +76,22 @@ case $OSName in
         ;;
 esac
 # Misc defaults
-TestHostVersion="0.0.2-prerelease"
 TestSelection=".*"
 TestsFailed=0
 OverlayDir="$ProjectRoot/bin/tests/$OS.AnyCPU.$Configuration/TestOverlay/"
 
 create_test_overlay()
 {
-  # Creates the test overlay that will be copied on top of
-  # Each of the test directories.
-
-  local packageName="Microsoft.DotNet.CoreFx.$OS.TemporaryTestHost.$TestHostVersion.nupkg"
-  local packageDir="packages/Microsoft.DotNet.CoreFx.$OS.TemporaryTestHost.$TestHostVersion"
-  rm -rf $packageDir
-  mkdir -p $packageDir
-  pushd $packageDir > /dev/null
-  # Pull down the testhost package and unzip it.
-  echo "Pulling down $packageName"
-
-  which curl > /dev/null 2> /dev/null
-  if [ $? -ne 0 ]; then
-    wget -q -O $packageName https://www.myget.org/F/dotnet-buildtools/api/v2/package/Microsoft.DotNet.CoreFx.$OS.TemporaryTestHost/$TestHostVersion
-  else
-    curl -sSL -o $packageName https://www.myget.org/F/dotnet-buildtools/api/v2/package/Microsoft.DotNet.CoreFx.$OS.TemporaryTestHost/$TestHostVersion
-  fi
-
-  echo "Unzipping to $packageDir"
-  unzip -q -o $packageName
-  popd > /dev/null
+  local mscorlibLocation="$MscorlibBins/mscorlib.dll"
 
   # Make the overlay
-
+    
   rm -rf $OverlayDir
   mkdir -p $OverlayDir
   
   local LowerConfiguration="$(echo $Configuration | awk '{print tolower($0)}')"
-
-  # First the temporary test host binaries
-  local packageLibDir="$packageDir/lib"
-  local mscorlibLocation="$MscorlibBins/mscorlib.dll"
-  
-  if [ ! -d $packageLibDir ]
-  then
-	echo "Package not laid out as expected"
-	exit 1
-  fi
-  cp $packageLibDir/* $OverlayDir
-  
-  # Then the CoreCLR native binaries
+ 
+  # Copy the CoreCLR native binaries
   if [ ! -d $CoreClrBins ]
   then
 	echo "Coreclr $OS binaries not found at $CoreClrBins"
@@ -142,18 +108,10 @@ create_test_overlay()
   fi
   cp -r $mscorlibLocation $OverlayDir
   
-  # Then the binaries from the Linux build of corefx
-  if [ ! -d $CoreFxBins ]
-  then
-	echo "Corefx binaries not found at $CoreFxBins"
-	exit 1
-  fi
-  find $CoreFxBins -path "*ToolRuntime*" -prune -o -name '*.dll' -and -not -name "*Test*" -exec cp '{}' "$OverlayDir" ";"
-
   # Then the native CoreFX binaries
   if [ ! -d $CoreFxNativeBins ]
   then
-	echo "Corefx native binaries should be built (use build.sh in root)"
+	echo "Corefx native binaries should be built (use build.sh native in root)"
 	exit 1
   fi
   cp $CoreFxNativeBins/* $OverlayDir
@@ -174,7 +132,7 @@ runtest()
 
   # Check here to see whether we should run this project
 
-  if grep "UnsupportedPlatforms.*$OS.*" $1
+  if grep "UnsupportedPlatforms.*$OS.*" $1 > /dev/null
   then
     echo "Test project file $1 indicates this test is not supported on $OS, skipping"
     exit 0
@@ -214,6 +172,8 @@ runtest()
   then
     rm mscorlib.ni.dll
   fi
+
+  chmod +x ./corerun
   
   # Invoke xunit
 
@@ -223,6 +183,12 @@ runtest()
   echo
   ./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop -notrait category=$xunitOSCategory
   exitCode=$?
+
+  if [ $exitCode -ne 0 ]
+  then
+      echo "One or more tests failed while running tests from '$fileNameWithoutExtension'.  Exit code $exitCode."
+  fi
+
   popd > /dev/null
   exit $exitCode
 }
@@ -296,9 +262,6 @@ do
         --corefx-tests)
         CoreFxTests=$2
         ;;
-        --corefx-bins)
-        CoreFxBins=$2
-        ;;
         --corefx-native-bins)
         CoreFxNativeBins=$2
         ;;
@@ -340,12 +303,7 @@ fi
 
 if [ "$CoreFxTests" == "" ]
 then
-    CoreFxTests="$ProjectRoot/bin/tests/Windows_NT.AnyCPU.$Configuration"
-fi
-
-if [ "$CoreFxBins" == "" ]
-then
-    CoreFxBins="$ProjectRoot/bin/$OS.AnyCPU.$Configuration"
+    CoreFxTests="$ProjectRoot/bin/tests/$OS.AnyCPU.$Configuration"
 fi
 
 if [ "$CoreFxNativeBins" == "" ]
@@ -375,7 +333,7 @@ fi
 
 create_test_overlay
 
-# Walk the directory tree rooted at src bin/tests/Windows_NT.AnyCPU.$Configuration/
+# Walk the directory tree rooted at src bin/tests/$OS.AnyCPU.$Configuration/
 
 TestsFailed=0
 numberOfProcesses=0
@@ -404,7 +362,10 @@ fi
 
 if [ "$TestsFailed" -gt 0 ]
 then
-  echo "$TestsFailed test(s) failed"
+    echo "$TestsFailed test(s) failed"
+else
+    echo "All tests passed."
 fi
+
 exit $TestsFailed
 

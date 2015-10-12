@@ -294,14 +294,16 @@ namespace System.Net.Http
                 throw new ArgumentNullException("request", SR.net_http_handler_norequest);
             }
 
-            if ((request.RequestUri.Scheme != UriSchemeHttp) && (request.RequestUri.Scheme != UriSchemeHttps))
+            if (request.RequestUri.Scheme == UriSchemeHttps)
             {
-                throw NotImplemented.ByDesignWithMessage(SR.net_http_client_http_baseaddress_required);
+                if (!s_supportsSSL)
+                {
+                    throw new PlatformNotSupportedException(SR.net_http_unix_https_support_unavailable_libcurl);
+                }
             }
-
-            if (request.RequestUri.Scheme == UriSchemeHttps && !s_supportsSSL)
+            else
             {
-                throw new PlatformNotSupportedException(SR.net_http_unix_https_support_unavailable_libcurl);
+                Debug.Assert(request.RequestUri.Scheme == UriSchemeHttp, "HttpClient expected to validate scheme as http or https.");
             }
 
             if (request.Headers.TransferEncodingChunked.GetValueOrDefault() && (request.Content == null))
@@ -313,9 +315,6 @@ namespace System.Net.Http
             {
                 throw new InvalidOperationException(SR.net_http_invalid_cookiecontainer);
             }
-
-            // TODO: Check that SendAsync is not being called again for same request object.
-            //       Probably fix is needed in WinHttpHandler as well
 
             CheckDisposed();
             SetOperationStarted();
@@ -665,7 +664,15 @@ namespace System.Net.Http
             if (Uri.TryCreate(location, UriKind.RelativeOrAbsolute, out forwardUri) && forwardUri.IsAbsoluteUri)
             {
                 NetworkCredential newCredential = GetCredentials(state._handler.Credentials as CredentialCache, forwardUri);
-                state.SetCredentialsOptions(newCredential);
+                if (newCredential != null)
+                {
+                    state.SetCredentialsOptions(newCredential);
+                }
+                else
+                {
+                    state.SetCurlOption(CURLoption.CURLOPT_USERNAME, IntPtr.Zero);
+                    state.SetCurlOption(CURLoption.CURLOPT_PASSWORD, IntPtr.Zero);
+                }
 
                 // reset proxy - it is possible that the proxy has different credentials for the new URI
                 state.SetProxyOptions(forwardUri);

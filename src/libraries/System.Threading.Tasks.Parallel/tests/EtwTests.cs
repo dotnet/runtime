@@ -4,10 +4,9 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
 using System.Linq;
-using System.Threading;
 using Xunit;
 
-namespace System.Threading.Tasks.Test.Unit
+namespace System.Threading.Tasks.Tests
 {
     public class EtwTests
     {

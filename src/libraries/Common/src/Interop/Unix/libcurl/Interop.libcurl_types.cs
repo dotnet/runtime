@@ -32,6 +32,8 @@ internal static partial class Interop
             internal const int CURLOPT_NOSIGNAL = CurlOptionLongBase + 99;
             internal const int CURLOPT_PROXYTYPE = CurlOptionLongBase + 101;
             internal const int CURLOPT_HTTPAUTH = CurlOptionLongBase + 107;
+            internal const int CURLOPT_PROTOCOLS = CurlOptionLongBase + 181;
+            internal const int CURLOPT_REDIR_PROTOCOLS = CurlOptionLongBase + 182;
 
             internal const int CURLOPT_WRITEDATA = CurlOptionObjectPointBase + 1;
             internal const int CURLOPT_URL = CurlOptionObjectPointBase + 2;
@@ -131,6 +133,12 @@ internal static partial class Interop
             internal const int CURL_VERSION_GSSAPI       = (1<<17);
             internal const int CURL_VERSION_KERBEROS5    = (1<<18);
             internal const int CURL_VERSION_UNIX_SOCKETS = (1<<19);
+        }
+
+        internal static partial class CURLPROTO_Definitions
+        {
+            internal const int CURLPROTO_HTTP  =  (1<<0);
+            internal const int CURLPROTO_HTTPS =  (1<<1);
         }
 
         // Type definition of CURLMsg from multi.h

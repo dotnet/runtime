@@ -88,18 +88,18 @@
           "ref/dotnet/System.Runtime.Handles.dll": {}
         }
       },
-      "System.Security.Cryptography.Algorithms/4.0.0-beta-23329": {
+      "System.Security.Cryptography.Algorithms/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
           "System.Runtime": "4.0.0",
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23329"
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23401"
         },
         "compile": {
           "ref/dotnet/System.Security.Cryptography.Algorithms.dll": {}
         }
       },
-      "System.Security.Cryptography.Encoding/4.0.0-beta-23329": {
+      "System.Security.Cryptography.Encoding/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -108,7 +108,7 @@
           "ref/dotnet/System.Security.Cryptography.Encoding.dll": {}
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23329": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -126,13 +126,13 @@
           "lib/dotnet/System.Security.Cryptography.Primitives.dll": {}
         }
       },
-      "System.Security.Cryptography.X509Certificates/4.0.0-beta-23329": {
+      "System.Security.Cryptography.X509Certificates/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Cryptography.Algorithms": "4.0.0-beta-23329",
-          "System.Security.Cryptography.Encoding": "4.0.0-beta-23329"
+          "System.Security.Cryptography.Algorithms": "4.0.0-beta-23401",
+          "System.Security.Cryptography.Encoding": "4.0.0-beta-23401"
         },
         "compile": {
           "ref/dotnet/System.Security.Cryptography.X509Certificates.dll": {}
@@ -544,10 +544,10 @@
         "System.Runtime.Handles.nuspec"
       ]
     },
-    "System.Security.Cryptography.Algorithms/4.0.0-beta-23329": {
+    "System.Security.Cryptography.Algorithms/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "1DK9T008Gvwr4O7xncSJPDPqxPBAsZek7Sh2GIeGigoLUZlHFwebeBrWPfy7DCVTWtHPNP8rgE7zE750rmkT5g==",
+      "sha512": "unUfGNfc/kIWzbGZw+m0WkAlVzc1VhW3ayYhaUJla1B5XVokc0iMMFV9vCOQE54gNOA41E0xEY+EUo+DS9MWfQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -561,15 +561,15 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Security.Cryptography.Algorithms.4.0.0-beta-23329.nupkg",
-        "System.Security.Cryptography.Algorithms.4.0.0-beta-23329.nupkg.sha512",
+        "System.Security.Cryptography.Algorithms.4.0.0-beta-23401.nupkg",
+        "System.Security.Cryptography.Algorithms.4.0.0-beta-23401.nupkg.sha512",
         "System.Security.Cryptography.Algorithms.nuspec"
       ]
     },
-    "System.Security.Cryptography.Encoding/4.0.0-beta-23329": {
+    "System.Security.Cryptography.Encoding/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "fvl79cC30OgRjBFfCrqcKXqZGZcLESKDTXPBNXtmyEDxb7gaIPhPE8lZ5/+J1mjqrtU+njOzV8Gn3ceiwERgbQ==",
+      "sha512": "m0thm9z5xf+J3PmL638k/FvcL7tS6FJDfZ+7SATYvZOizQlcNIu86GcGamptQuXUpQA+t3gzhhsrvdS/mcvs8w==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -583,15 +583,15 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Security.Cryptography.Encoding.4.0.0-beta-23329.nupkg",
-        "System.Security.Cryptography.Encoding.4.0.0-beta-23329.nupkg.sha512",
+        "System.Security.Cryptography.Encoding.4.0.0-beta-23401.nupkg",
+        "System.Security.Cryptography.Encoding.4.0.0-beta-23401.nupkg.sha512",
         "System.Security.Cryptography.Encoding.nuspec"
       ]
     },
-    "System.Security.Cryptography.Primitives/4.0.0-beta-23329": {
+    "System.Security.Cryptography.Primitives/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "gGytL3GddY454dqBieeAtEQp6jtebMclzU3tXXLXRcT8w7Vk4HG4kLF3xp1+BhLBew+3KnfRUjkiAW4+GgYPfQ==",
+      "sha512": "RMF1swkhksZRBwFqzeI3axkOFHVILVxtaFuE61hqpuDa0l8y1C//S3QeTaUH6FSpWnhR6U8KCzj9z+tUsvKshg==",
       "files": [
         "lib/dotnet/System.Security.Cryptography.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -605,15 +605,15 @@
         "ref/net46/System.Security.Cryptography.Primitives.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23329.nupkg",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23329.nupkg.sha512",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23401.nupkg",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23401.nupkg.sha512",
         "System.Security.Cryptography.Primitives.nuspec"
       ]
     },
-    "System.Security.Cryptography.X509Certificates/4.0.0-beta-23329": {
+    "System.Security.Cryptography.X509Certificates/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "YXGJ3XUKTUC44BdN6bH8zo2WCuII6J7HRH13QbyOh5ASa+X5szMrMfEsbORvGSGOfb8BdPgorBoMcVy5So1kNA==",
+      "sha512": "bc99cqoPM15WccMCk6/bTOizw/vwNnoY/eJuFQBT9yLOFhdknY2Smp1I8gPkREzE/nvl/NemiHTEsjIlOudS2A==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -627,8 +627,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Security.Cryptography.X509Certificates.4.0.0-beta-23329.nupkg",
-        "System.Security.Cryptography.X509Certificates.4.0.0-beta-23329.nupkg.sha512",
+        "System.Security.Cryptography.X509Certificates.4.0.0-beta-23401.nupkg",
+        "System.Security.Cryptography.X509Certificates.4.0.0-beta-23401.nupkg.sha512",
         "System.Security.Cryptography.X509Certificates.nuspec"
       ]
     },

@@ -21,10 +21,15 @@
     <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
       <Link>Common\System\Net\HttpTestServers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers2.cs">
+      <Link>Common\System\Net\HttpTestServers2.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\Streams\DelegateStream.cs">
       <Link>Common\Streams\DelegateStream.cs</Link>
     </Compile>
     <Compile Include="ByteArrayContentTest.cs" />
+    <Compile Include="ChannelBindingAwareContent.cs" />
+    <Compile Include="CustomContent.cs" />
     <Compile Include="DelegatingHandlerTest.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
     <Compile Include="HttpClientHandlerTest.cs" />
@@ -37,6 +42,8 @@
     <Compile Include="MessageProcessingHandlerTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
     <Compile Include="MultipartFormDataContentTest.cs" />
+    <Compile Include="PostScenarioTest.cs" />
+    <Compile Include="RepeatedFlushContent.cs" />
     <Compile Include="ResponseStreamTest.cs" />
     <Compile Include="StreamContentTest.cs" />
     <Compile Include="StringContentTest.cs" />

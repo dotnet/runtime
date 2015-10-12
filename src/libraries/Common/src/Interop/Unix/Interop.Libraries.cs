@@ -13,7 +13,7 @@ internal static partial class Interop
 
         // Shims
         internal const string SystemNative = "System.Native";
-        internal const string HttpNative = "System.Net.Http.Native";     
+        internal const string HttpNative = "System.Net.Http.Native";
         internal const string CryptoNative = "System.Security.Cryptography.Native";
         internal const string GlobalizationNative = "System.Globalization.Native";
     }

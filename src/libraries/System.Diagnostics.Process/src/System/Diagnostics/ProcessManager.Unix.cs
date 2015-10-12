@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.Text;
 
 namespace System.Diagnostics
 {
@@ -38,28 +39,6 @@ namespace System.Diagnostics
             return CreateProcessInfo(processId);
         }
 
-        /// <summary>Gets process infos for each process on the specified machine.</summary>
-        /// <param name="machineName">The target machine.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string machineName)
-        {
-            ThrowIfRemoteMachine(machineName);
-            int[] procIds = GetProcessIds(machineName);
-
-            // Iterate through all process IDs to load information about each process
-            var processes = new List<ProcessInfo>(procIds.Length);
-            foreach (int pid in procIds)
-            {
-                ProcessInfo pi = CreateProcessInfo(pid);
-                if (pi != null)
-                {
-                    processes.Add(pi);
-                }
-            }
-
-            return processes.ToArray();
-        }
-
         /// <summary>Gets the IDs of all processes on the specified machine.</summary>
         /// <param name="machineName">The machine to examine.</param>
         /// <returns>An array of process IDs from the specified machine.</returns>
@@ -84,14 +63,14 @@ namespace System.Diagnostics
         {
             return 
                 machineName != "." && 
-                machineName != Interop.libc.gethostname();
+                machineName != Interop.Sys.GetHostName();
         }
 
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private static void ThrowIfRemoteMachine(string machineName)
+        internal static void ThrowIfRemoteMachine(string machineName)
         {
             if (IsRemoteMachine(machineName))
             {

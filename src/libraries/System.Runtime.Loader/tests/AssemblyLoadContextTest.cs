@@ -109,15 +109,22 @@ namespace System.Runtime.Loader.Tests
             Assert.NotNull(context);
         }
 
+        [ActiveIssue(3569, PlatformID.Windows)]
         [Fact]
         public static void InitializeDefaultContextTest()
         {
-            var loadContext = new ResourceAssemblyLoadContext();
+            // The coreclr binding model will become locked upon loading the first assembly that is not on the TPA list, or
+            // upon initializing the default context for the first time. For this test, test assemblies are located alongside
+            // corerun, and hence will be on the TPA list. So, we should be able to set the default context once successfully,
+            // and fail on the second try.
 
-            // because the coreclr binding model is already locked for the appdomain
-            // and cannot be reset
+            var loadContext = new ResourceAssemblyLoadContext();
+            AssemblyLoadContext.InitializeDefaultContext(loadContext);
+            Assert.Equal(loadContext, AssemblyLoadContext.Default);
+
+            loadContext = new ResourceAssemblyLoadContext();
             Assert.Throws(typeof(InvalidOperationException), 
                 () => AssemblyLoadContext.InitializeDefaultContext(loadContext));
-        }        
+        }
     }
 }

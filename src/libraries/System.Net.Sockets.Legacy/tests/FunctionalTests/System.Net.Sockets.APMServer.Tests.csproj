@@ -15,10 +15,12 @@
   <ItemGroup>
     <Compile Include="AcceptAsync.cs" />
     <Compile Include="AgnosticListenerTest.cs" />
+    <Compile Include="ArgumentValidationTests.cs" />
     <Compile Include="ConnectAsync.cs" />
     <Compile Include="ConnectExTest.cs" />
     <Compile Include="Disconnect.cs" />
     <Compile Include="DisconnectAsync.cs" />
+    <Compile Include="DisposedSocketTests.cs" />
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="LingerStateTest.cs" />
@@ -26,10 +28,18 @@
     <Compile Include="ReceiveMessageFromAsync.cs" />
     <Compile Include="SendPacketsAsync.cs" />
     <Compile Include="SendPacketsElementTest.cs" />
+    <Compile Include="SendReceive.cs" />
+    <Compile Include="SocketAPMExtensions.cs" />
     <Compile Include="TimeoutTest.cs" />
     <Compile Include="UdpClientTest.cs" />
 
     <!-- Common Sockets files -->
+    <Compile Include="$(CommonTestPath)\System.Net\Sockets\Configuration.cs">
+      <Link>SocketCommon\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System.Net\Sockets\Fletcher32.cs">
+      <Link>SocketCommon\Fletcher32.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System.Net\Sockets\SocketTestExtensions.cs">
       <Link>SocketCommon\SocketTestExtensions.cs</Link>
     </Compile>

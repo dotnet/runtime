@@ -1,15 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Xml;
 using OLEDB.Test.ModuleCore;
 
-namespace XmlWriterAPI.Test
+namespace System.Xml.Tests
 {
     public partial class TCFullEndElement : XmlWriterTestCaseBase
     {
-        // Type is XmlWriterAPI.Test.TCFullEndElement
+        // Type is System.Xml.Tests.TCFullEndElement
         // Test Case
         public override void AddChildren()
         {
@@ -49,70 +47,70 @@ namespace XmlWriterAPI.Test
             }
 
 
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCElemNamespace
+            // for class System.Xml.Tests.TCFullEndElement+TCElemNamespace
             {
                 this.AddChild(new TCElemNamespace() { Attribute = new TestCase() { Name = "Element Namespace" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCAttrNamespace
+            // for class System.Xml.Tests.TCFullEndElement+TCAttrNamespace
             {
                 this.AddChild(new TCAttrNamespace() { Attribute = new TestCase() { Name = "Attribute Namespace" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCCData
+            // for class System.Xml.Tests.TCFullEndElement+TCCData
             {
                 this.AddChild(new TCCData() { Attribute = new TestCase() { Name = "WriteCData" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCComment
+            // for class System.Xml.Tests.TCFullEndElement+TCComment
             {
                 this.AddChild(new TCComment() { Attribute = new TestCase() { Name = "WriteComment" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCEntityRef
+            // for class System.Xml.Tests.TCFullEndElement+TCEntityRef
             {
                 this.AddChild(new TCEntityRef() { Attribute = new TestCase() { Name = "WriteEntityRef" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCCharEntity
+            // for class System.Xml.Tests.TCFullEndElement+TCCharEntity
             {
                 this.AddChild(new TCCharEntity() { Attribute = new TestCase() { Name = "WriteCharEntity" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCSurrogateCharEntity
+            // for class System.Xml.Tests.TCFullEndElement+TCSurrogateCharEntity
             {
                 this.AddChild(new TCSurrogateCharEntity() { Attribute = new TestCase() { Name = "WriteSurrogateCharEntity" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCPI
+            // for class System.Xml.Tests.TCFullEndElement+TCPI
             {
                 this.AddChild(new TCPI() { Attribute = new TestCase() { Name = "WriteProcessingInstruction" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteNmToken
+            // for class System.Xml.Tests.TCFullEndElement+TCWriteNmToken
             {
                 this.AddChild(new TCWriteNmToken() { Attribute = new TestCase() { Name = "WriteNmToken" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteName
+            // for class System.Xml.Tests.TCFullEndElement+TCWriteName
             {
                 this.AddChild(new TCWriteName() { Attribute = new TestCase() { Name = "WriteName" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteQName
+            // for class System.Xml.Tests.TCFullEndElement+TCWriteQName
             {
                 this.AddChild(new TCWriteQName() { Attribute = new TestCase() { Name = "WriteQualifiedName" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteChars
+            // for class System.Xml.Tests.TCFullEndElement+TCWriteChars
             {
                 this.AddChild(new TCWriteChars() { Attribute = new TestCase() { Name = "WriteChars" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteString
+            // for class System.Xml.Tests.TCFullEndElement+TCWriteString
             {
                 this.AddChild(new TCWriteString() { Attribute = new TestCase() { Name = "WriteString" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCWhiteSpace
+            // for class System.Xml.Tests.TCFullEndElement+TCWhiteSpace
             {
                 this.AddChild(new TCWhiteSpace() { Attribute = new TestCase() { Name = "WriteWhitespace" } });
             }
-            // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue
+            // for class System.Xml.Tests.TCFullEndElement+TCWriteValue
             {
                 this.AddChild(new TCWriteValue() { Attribute = new TestCase() { Name = "WriteValue" } });
             }
         }
         public partial class TCElemNamespace : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCElemNamespace
+            // Type is System.Xml.Tests.TCFullEndElement+TCElemNamespace
             // Test Case
             public override void AddChildren()
             {
@@ -310,7 +308,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCAttrNamespace : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCAttrNamespace
+            // Type is System.Xml.Tests.TCFullEndElement+TCAttrNamespace
             // Test Case
             public override void AddChildren()
             {
@@ -562,7 +560,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCCData : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCCData
+            // Type is System.Xml.Tests.TCFullEndElement+TCCData
             // Test Case
             public override void AddChildren()
             {
@@ -651,7 +649,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCComment : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCComment
+            // Type is System.Xml.Tests.TCFullEndElement+TCComment
             // Test Case
             public override void AddChildren()
             {
@@ -693,7 +691,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCEntityRef : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCEntityRef
+            // Type is System.Xml.Tests.TCFullEndElement+TCEntityRef
             // Test Case
             public override void AddChildren()
             {
@@ -715,7 +713,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCCharEntity : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCCharEntity
+            // Type is System.Xml.Tests.TCFullEndElement+TCCharEntity
             // Test Case
             public override void AddChildren()
             {
@@ -769,7 +767,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCSurrogateCharEntity : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCSurrogateCharEntity
+            // Type is System.Xml.Tests.TCFullEndElement+TCSurrogateCharEntity
             // Test Case
             public override void AddChildren()
             {
@@ -823,7 +821,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCPI : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCPI
+            // Type is System.Xml.Tests.TCFullEndElement+TCPI
             // Test Case
             public override void AddChildren()
             {
@@ -907,7 +905,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCWriteNmToken : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteNmToken
+            // Type is System.Xml.Tests.TCFullEndElement+TCWriteNmToken
             // Test Case
             public override void AddChildren()
             {
@@ -941,7 +939,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCWriteName : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteName
+            // Type is System.Xml.Tests.TCFullEndElement+TCWriteName
             // Test Case
             public override void AddChildren()
             {
@@ -973,7 +971,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCWriteQName : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteQName
+            // Type is System.Xml.Tests.TCFullEndElement+TCWriteQName
             // Test Case
             public override void AddChildren()
             {
@@ -1011,7 +1009,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCWriteChars : TCWriteBuffer
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteChars
+            // Type is System.Xml.Tests.TCFullEndElement+TCWriteChars
             // Test Case
             public override void AddChildren()
             {
@@ -1083,7 +1081,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCWriteString : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteString
+            // Type is System.Xml.Tests.TCFullEndElement+TCWriteString
             // Test Case
             public override void AddChildren()
             {
@@ -1173,7 +1171,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCWhiteSpace : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCWhiteSpace
+            // Type is System.Xml.Tests.TCFullEndElement+TCWhiteSpace
             // Test Case
             public override void AddChildren()
             {
@@ -1214,7 +1212,7 @@ namespace XmlWriterAPI.Test
         }
         public partial class TCWriteValue : XmlWriterTestCaseBase
         {
-            // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue
+            // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue
             // Test Case
             public override void AddChildren()
             {
@@ -1982,50 +1980,50 @@ namespace XmlWriterAPI.Test
                 }
 
 
-                // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCLookUpPrefix
+                // for class System.Xml.Tests.TCFullEndElement+TCWriteValue+TCLookUpPrefix
                 {
                     this.AddChild(new TCLookUpPrefix() { Attribute = new TestCase() { Name = "LookupPrefix" } });
                 }
-                // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCXmlSpace
+                // for class System.Xml.Tests.TCFullEndElement+TCWriteValue+TCXmlSpace
                 {
                     this.AddChild(new TCXmlSpace() { Attribute = new TestCase() { Name = "XmlSpace" } });
                 }
-                // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCXmlLang
+                // for class System.Xml.Tests.TCFullEndElement+TCWriteValue+TCXmlLang
                 {
                     this.AddChild(new TCXmlLang() { Attribute = new TestCase() { Name = "XmlLang" } });
                 }
-                // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCWriteRaw
+                // for class System.Xml.Tests.TCFullEndElement+TCWriteValue+TCWriteRaw
                 {
                     this.AddChild(new TCWriteRaw() { Attribute = new TestCase() { Name = "WriteRaw" } });
                 }
-                // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCWriteBase64
+                // for class System.Xml.Tests.TCFullEndElement+TCWriteValue+TCWriteBase64
                 {
                     this.AddChild(new TCWriteBase64() { Attribute = new TestCase() { Name = "WriteBase64" } });
                 }
-                // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCWriteBinHex
+                // for class System.Xml.Tests.TCFullEndElement+TCWriteValue+TCWriteBinHex
                 {
                     this.AddChild(new TCWriteBinHex() { Attribute = new TestCase() { Name = "WriteBinHex" } });
                 }
-                // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCWriteState
+                // for class System.Xml.Tests.TCFullEndElement+TCWriteValue+TCWriteState
                 {
                     this.AddChild(new TCWriteState() { Attribute = new TestCase() { Name = "WriteState" } });
                 }
-                // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TC_NDP20_NewMethods
+                // for class System.Xml.Tests.TCFullEndElement+TCWriteValue+TC_NDP20_NewMethods
                 {
                     this.AddChild(new TC_NDP20_NewMethods() { Attribute = new TestCase() { Name = "NDP20_NewMethods" } });
                 }
-                // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCGlobalization
+                // for class System.Xml.Tests.TCFullEndElement+TCWriteValue+TCGlobalization
                 {
                     this.AddChild(new TCGlobalization() { Attribute = new TestCase() { Name = "Globalization" } });
                 }
-                // for class XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCClose
+                // for class System.Xml.Tests.TCFullEndElement+TCWriteValue+TCClose
                 {
                     this.AddChild(new TCClose() { Attribute = new TestCase() { Name = "Close()" } });
                 }
             }
             public partial class TCLookUpPrefix : XmlWriterTestCaseBase
             {
-                // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCLookUpPrefix
+                // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue+TCLookUpPrefix
                 // Test Case
                 public override void AddChildren()
                 {
@@ -2091,7 +2089,7 @@ namespace XmlWriterAPI.Test
             }
             public partial class TCXmlSpace : XmlWriterTestCaseBase
             {
-                // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCXmlSpace
+                // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue+TCXmlSpace
                 // Test Case
                 public override void AddChildren()
                 {
@@ -2151,7 +2149,7 @@ namespace XmlWriterAPI.Test
             }
             public partial class TCXmlLang : XmlWriterTestCaseBase
             {
-                // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCXmlLang
+                // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue+TCXmlLang
                 // Test Case
                 public override void AddChildren()
                 {
@@ -2205,7 +2203,7 @@ namespace XmlWriterAPI.Test
             }
             public partial class TCWriteRaw : TCWriteBuffer
             {
-                // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCWriteRaw
+                // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue+TCWriteRaw
                 // Test Case
                 public override void AddChildren()
                 {
@@ -2295,7 +2293,7 @@ namespace XmlWriterAPI.Test
             }
             public partial class TCWriteBase64 : TCWriteBuffer
             {
-                // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCWriteBase64
+                // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue+TCWriteBase64
                 // Test Case
                 public override void AddChildren()
                 {
@@ -2379,7 +2377,7 @@ namespace XmlWriterAPI.Test
             }
             public partial class TCWriteBinHex : TCWriteBuffer
             {
-                // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCWriteBinHex
+                // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue+TCWriteBinHex
                 // Test Case
                 public override void AddChildren()
                 {
@@ -2445,7 +2443,7 @@ namespace XmlWriterAPI.Test
             }
             public partial class TCWriteState : XmlWriterTestCaseBase
             {
-                // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCWriteState
+                // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue+TCWriteState
                 // Test Case
                 public override void AddChildren()
                 {
@@ -2554,7 +2552,7 @@ namespace XmlWriterAPI.Test
             }
             public partial class TC_NDP20_NewMethods : XmlWriterTestCaseBase
             {
-                // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TC_NDP20_NewMethods
+                // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue+TC_NDP20_NewMethods
                 // Test Case
                 public override void AddChildren()
                 {
@@ -2603,7 +2601,7 @@ namespace XmlWriterAPI.Test
             }
             public partial class TCGlobalization : XmlWriterTestCaseBase
             {
-                // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCGlobalization
+                // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue+TCGlobalization
                 // Test Case
                 public override void AddChildren()
                 {
@@ -2621,7 +2619,7 @@ namespace XmlWriterAPI.Test
             }
             public partial class TCClose : XmlWriterTestCaseBase
             {
-                // Type is XmlWriterAPI.Test.TCFullEndElement+TCWriteValue+TCClose
+                // Type is System.Xml.Tests.TCFullEndElement+TCWriteValue+TCClose
                 // Test Case
                 public override void AddChildren()
                 {

@@ -17,7 +17,6 @@ namespace System.Net.Http.Tests
             Assert.Equal(StringComparer.OrdinalIgnoreCase, parser.Comparer);
         }
 
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         [Fact]
         public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
         {

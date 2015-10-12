@@ -2,11 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using CoreFXTestLibrary;
 
-using System;
-
-namespace System.Threading.Tasks.Test.Unit
+namespace System.Threading.Tasks.Tests
 {
     public sealed class ParallelForBoundary
     {

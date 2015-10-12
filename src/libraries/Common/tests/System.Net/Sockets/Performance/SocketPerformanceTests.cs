@@ -21,12 +21,12 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         public void ClientServerTest(
-            int port, 
-            SocketImplementationType serverType, 
-            SocketImplementationType clientType, 
-            int iterations, 
-            int bufferSize, 
-            int socketInstances, 
+            int port,
+            SocketImplementationType serverType,
+            SocketImplementationType clientType,
+            int iterations,
+            int bufferSize,
+            int socketInstances,
             long expectedMilliseconds)
         {
             long milliseconds;
@@ -66,11 +66,11 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         public void ClientServerTest(
-            SocketImplementationType serverType, 
-            SocketImplementationType clientType, 
-            int iterations, 
-            int bufferSize, 
-            int socketInstances, 
+            SocketImplementationType serverType,
+            SocketImplementationType clientType,
+            int iterations,
+            int bufferSize,
+            int socketInstances,
             long expectedMilliseconds)
         {
             // NOTE: port '0' below indicates that the server should bind to an anonymous port.
@@ -78,10 +78,10 @@ namespace System.Net.Sockets.Performance.Tests
         }
 
         public long RunClient(
-            SocketImplementationType testType, 
-            string server, 
+            SocketImplementationType testType,
+            string server,
             int port,
-            int iterations, 
+            int iterations,
             int bufferSize,
             int socketInstances)
         {
@@ -121,11 +121,11 @@ namespace System.Net.Sockets.Performance.Tests
                 {
                     var test = SocketTestClient.SocketTestClientFactory(
                         _log,
-                        testType, 
+                        testType,
                         server,
-                        port, 
-                        iterations, 
-                        message, 
+                        port,
+                        iterations,
+                        message,
                         timeProgramStart);
 
                     tasks[i] = test.RunTest();

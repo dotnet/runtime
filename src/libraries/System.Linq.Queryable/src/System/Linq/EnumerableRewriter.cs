@@ -23,25 +23,26 @@ namespace System.Linq
             // check for args changed
             if (obj != m.Object || args != m.Arguments)
             {
-                Type[] typeArgs = (m.Method.IsGenericMethod) ? m.Method.GetGenericArguments() : null;
+                MethodInfo mInfo = m.Method;
+                Type[] typeArgs = (mInfo.IsGenericMethod) ? mInfo.GetGenericArguments() : null;
 
-                if ((m.Method.IsStatic || m.Method.DeclaringType.IsAssignableFrom(obj.Type))
-                    && ArgsMatch(m.Method, args, typeArgs))
+                if ((mInfo.IsStatic || mInfo.DeclaringType.IsAssignableFrom(obj.Type))
+                    && ArgsMatch(mInfo, args, typeArgs))
                 {
                     // current method is still valid
-                    return Expression.Call(obj, m.Method, args);
+                    return Expression.Call(obj, mInfo, args);
                 }
-                else if (m.Method.DeclaringType == typeof(Queryable))
+                else if (mInfo.DeclaringType == typeof(Queryable))
                 {
                     // convert Queryable method to Enumerable method
-                    MethodInfo seqMethod = FindEnumerableMethod(m.Method.Name, args, typeArgs);
+                    MethodInfo seqMethod = FindEnumerableMethod(mInfo.Name, args, typeArgs);
                     args = this.FixupQuotedArgs(seqMethod, args);
                     return Expression.Call(obj, seqMethod, args);
                 }
                 else
                 {
                     // rebind to new method
-                    MethodInfo method = FindMethod(m.Method.DeclaringType, m.Method.Name, args, typeArgs);
+                    MethodInfo method = FindMethod(mInfo.DeclaringType, mInfo.Name, args, typeArgs);
                     args = this.FixupQuotedArgs(method, args);
                     return Expression.Call(obj, method, args);
                 }
@@ -120,13 +121,15 @@ namespace System.Linq
             // we cannot use the expression tree in a context which has only execution
             // permissions.  We should endeavour to translate constants into 
             // new constants which have public types.
-            if (t.GetTypeInfo().IsGenericType && t.GetTypeInfo().GetGenericTypeDefinition().GetTypeInfo().ImplementedInterfaces.Contains(typeof(IGrouping<,>)))
+            TypeInfo typeInfo = t.GetTypeInfo();
+            if (typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition().GetTypeInfo().ImplementedInterfaces.Contains(typeof(IGrouping<,>)))
                 return typeof(IGrouping<,>).MakeGenericType(t.GetGenericArguments());
-            if (!t.GetTypeInfo().IsNestedPrivate)
+            if (!typeInfo.IsNestedPrivate)
                 return t;
             foreach (Type iType in t.GetTypeInfo().ImplementedInterfaces)
             {
-                if (iType.GetTypeInfo().IsGenericType && iType.GetTypeInfo().GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                TypeInfo iTypeInfo = iType.GetTypeInfo();
+                if (iTypeInfo.IsGenericType && iTypeInfo.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     return iType;
             }
             if (typeof(IEnumerable).IsAssignableFrom(t))
@@ -144,7 +147,9 @@ namespace System.Linq
                     Type t = GetPublicType(sq.Enumerable.GetType());
                     return Expression.Constant(sq.Enumerable, t);
                 }
-                return this.Visit(sq.Expression);
+                Expression exp = sq.Expression;
+                if (exp != c)
+                    return Visit(exp);
             }
             return c;
         }
@@ -171,15 +176,18 @@ namespace System.Linq
 
         internal static MethodInfo FindMethod(Type type, string name, ReadOnlyCollection<Expression> args, Type[] typeArgs)
         {
-            MethodInfo[] methods = type.GetStaticMethods().Where(m => m.Name == name).ToArray();
-            if (methods.Length == 0)
-                throw Error.NoMethodOnType(name, type);
-            MethodInfo mi = methods.FirstOrDefault(m => ArgsMatch(m, args, typeArgs));
-            if (mi == null)
-                throw Error.NoMethodOnTypeMatchingArguments(name, type);
-            if (typeArgs != null)
-                return mi.MakeGenericMethod(typeArgs);
-            return mi;
+            using (IEnumerator<MethodInfo> en = type.GetStaticMethods().Where(m => m.Name == name).GetEnumerator())
+            {
+                if (!en.MoveNext())
+                    throw Error.NoMethodOnType(name, type);
+                do
+                {
+                    MethodInfo mi = en.Current;
+                    if (ArgsMatch(mi, args, typeArgs))
+                        return (typeArgs != null) ? mi.MakeGenericMethod(typeArgs) : mi;
+                } while (en.MoveNext());
+            }
+            throw Error.NoMethodOnTypeMatchingArguments(name, type);
         }
 
         private static bool ArgsMatch(MethodInfo m, ReadOnlyCollection<Expression> args, Type[] typeArgs)

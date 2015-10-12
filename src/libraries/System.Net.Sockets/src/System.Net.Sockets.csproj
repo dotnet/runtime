@@ -2,12 +2,14 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Net.Sockets</AssemblyName>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <ProjectGuid>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
-  </PropertyGroup>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
+</PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
@@ -24,7 +26,6 @@
 
   <ItemGroup>
     <Compile Include="System\Net\DnsAPMExtensions.cs"/>
-    <Compile Include="System\Net\StartIPOptions.cs"/>
     <Compile Include="System\Net\SocketPerfCounters.cs"/>
 
     <Compile Include="System\Net\Sockets\IOControlCode.cs" />
@@ -98,10 +99,6 @@
       <Link>Common\System\Net\Shims\DBNull.cs</Link>
     </Compile>
     
-    <Compile Include="$(CommonPath)\System\Net\_BufferOffsetSize.cs">
-      <Link>Common\System\Net\_BufferOffsetSize.cs</Link>
-    </Compile>
-
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>Common\System\Net\ByteOrder.cs</Link>
     </Compile>
@@ -134,10 +131,10 @@
       <Link>Common\System\Net\TcpValidationHelpers.cs</Link>
     </Compile>
 
-    <Compile Include="$(CommonPath)\System\Net\_Win32.cs">
-      <Link>Common\System\Net\_Win32.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\StartIPOptions.cs" >
+      <Link>Common\System\Net\NetworkInformation\StartIPOptions.cs</Link>
     </Compile>
-    
+
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)\System\Net\Internals\IPEndPointExtensions.cs">
       <Link>Common\System\Net\Internals\IPEndPointExtensions.cs</Link>
@@ -148,10 +145,8 @@
     <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.cs">
       <Link>Common\System\Net\Internals\SocketExceptionFactory.cs</Link>
     </Compile>
-
-    <!-- TODO: move this into sockets from interop -->
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SocketType.cs">
-      <Link>Interop\Windows\Winsock\SocketType.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
+      <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>    
 
     <!-- Common -->
@@ -193,8 +188,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.SafeOverlappedFree.cs">
-      <Link>Interop\Windows\mincore_obsolete\Interop.LocalAlloc.SafeOverlappedFree.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalAlloc_SafeOverlappedFree.cs">
+      <Link>Interop\Windows\mincore_obsolete\Interop.LocalAlloc_SafeOverlappedFree.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.Constants.cs">
+      <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.Constants.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs" >
       <Link>Common\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs</Link>
@@ -303,7 +301,6 @@
     <Compile Include="System\Net\Sockets\_ConnectOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\_OverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\_ReceiveMessageOverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\BufferList.cs" />
     <Compile Include="System\Net\Sockets\SendPacketsElementFlags.Unix.cs" />
     <Compile Include="System\Net\Sockets\Socket.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncContext.Unix.cs" />
@@ -397,6 +394,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
       <Link>Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
+      <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
@@ -417,9 +417,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SocketOptionName.cs">
       <Link>Interop\Linux\libc\Interop.SocketOptionName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.addrinfo.cs">
-      <Link>Interop\Linux\libc\Interop.addrinfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.cmsghdr.cs">
       <Link>Interop\Linux\libc\Interop.cmsghdr.cs</Link>
@@ -480,9 +477,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SocketOptionName.cs">
       <Link>Interop\OSX\libc\Interop.SocketOptionName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.addrinfo.cs">
-      <Link>Interop\OSX\libc\Interop.addrinfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.cmsghdr.cs">
       <Link>Interop\OSX\libc\Interop.cmsghdr.cs</Link>

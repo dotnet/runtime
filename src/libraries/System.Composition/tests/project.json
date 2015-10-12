@@ -5,7 +5,7 @@
     "System.Reflection.Emit.ILGeneration": "4.0.0",
     "System.Reflection.Emit.Lightweight": "4.0.0",
     "System.Runtime": "4.0.20",
-    "xunit": "2.1.0-beta3-*",
+    "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {

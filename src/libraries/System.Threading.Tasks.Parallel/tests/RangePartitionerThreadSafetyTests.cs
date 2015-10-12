@@ -12,16 +12,11 @@
 // 
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using Xunit;
-using CoreFXTestLibrary;
-
-using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using Xunit;
 
-namespace System.Threading.Tasks.Test
+namespace System.Threading.Tasks.Tests
 {
 
     public class RangePartitionerThreadSafetyTests

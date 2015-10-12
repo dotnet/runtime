@@ -29,6 +29,9 @@
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\Collections\IDictionaryTest.cs">
+      <Link>Common\Collections\IDictionaryTest.cs</Link>
+    </Compile>
     <Compile Include="ComponentModel\INotifyPropertyChangingTests.cs" />
     <Compile Include="ComponentModel\PropertyChangingEventArgsTests.cs" />
     <Compile Include="KeyedCollection\TestMethods.cs" />

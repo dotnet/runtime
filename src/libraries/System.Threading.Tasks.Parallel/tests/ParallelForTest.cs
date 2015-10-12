@@ -9,18 +9,12 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-
 
-using Xunit;
-using CoreFXTestLibrary;
-
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using Xunit;
 
-namespace System.Threading.Tasks.Test.Unit
+namespace System.Threading.Tasks.Tests
 {
     public sealed class ParallelForTest
     {

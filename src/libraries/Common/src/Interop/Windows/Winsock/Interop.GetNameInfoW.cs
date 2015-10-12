@@ -24,9 +24,9 @@ internal static partial class Interop
         internal static extern SocketError GetNameInfoW(
             [In]         byte[] sa,
             [In]         int salen,
-            [In, Out]     StringBuilder host,
+            [Out]        StringBuilder host,
             [In]         int hostlen,
-            [In, Out]     StringBuilder serv,
+            [Out]        StringBuilder serv,
             [In]         int servlen,
             [In]         int flags);
     }

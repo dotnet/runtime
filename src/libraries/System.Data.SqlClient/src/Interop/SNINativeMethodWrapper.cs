@@ -8,6 +8,7 @@ namespace System.Data.SqlClient
 {
     internal static class SNINativeMethodWrapper
     {
+#if !MANAGED_SNI
         private const string SNI = "sni.dll";
 
         private static int s_sniMaxComposedSpnLength = -1;
@@ -26,8 +27,10 @@ namespace System.Data.SqlClient
                 return s_sniMaxComposedSpnLength;
             }
         }
+#endif
 
         #region Structs\Enums
+#if !MANAGED_SNI
         [StructLayout(LayoutKind.Sequential)]
         internal struct ConsumerInfo
         {
@@ -163,6 +166,7 @@ namespace System.Data.SqlClient
             internal string function;
             internal uint lineNumber;
         }
+#endif
 
         internal enum SniSpecialErrors : uint
         {
@@ -179,6 +183,7 @@ namespace System.Data.SqlClient
         #endregion
 
         #region DLL Imports
+#if !MANAGED_SNI
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl, EntryPoint = "SNIAddProviderWrapper")]
         internal static extern uint SNIAddProvider(SNIHandle pConn, ProviderEnum ProvNum, [In] ref uint pInfo);
 
@@ -223,8 +228,10 @@ namespace System.Data.SqlClient
 
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl, EntryPoint = "SNIWaitForSSLHandshakeToCompleteWrapper")]
         internal static extern uint SNIWaitForSSLHandshakeToComplete([In] SNIHandle pConn, int dwMilliseconds);
+
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl)]
         internal static extern uint UnmanagedIsTokenRestricted([In] IntPtr token, [MarshalAs(UnmanagedType.Bool)] out bool isRestricted);
+
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl)]
         private static extern uint GetSniMaxComposedSpnLength();
 
@@ -272,7 +279,9 @@ namespace System.Data.SqlClient
 
         [DllImport(SNI, CallingConvention = CallingConvention.Cdecl)]
         private static extern uint SNIWriteSyncOverAsync(SNIHandle pConn, [In] SNIPacket pPacket);
+#endif
         #endregion
+#if !MANAGED_SNI
         internal static uint SniGetConnectionId(SNIHandle pConn, ref Guid connId)
         {
             return SNIGetInfoWrapper(pConn, QTypes.SNI_QUERY_CONN_CONNID, out connId);
@@ -388,6 +397,7 @@ namespace System.Data.SqlClient
                 : IntPtr.Zero;
             native_consumerInfo.ConsumerKey = consumerInfo.key;
         }
+#endif
     }
 }
 
@@ -406,6 +416,9 @@ namespace System.Data
     {
         internal static bool IsTokenRestrictedWrapper(IntPtr token)
         {
+#if MANAGED_SNI
+            throw new PlatformNotSupportedException("The Win32NativeMethods.IsTokenRestrictedWrapper is not supported on non-Windows platform");
+#else
             bool isRestricted;
             uint result = SNINativeMethodWrapper.UnmanagedIsTokenRestricted(token, out isRestricted);
 
@@ -415,6 +428,7 @@ namespace System.Data
             }
 
             return isRestricted;
+#endif
         }
     }
 }

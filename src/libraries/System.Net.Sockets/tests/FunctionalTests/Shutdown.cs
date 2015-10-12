@@ -24,36 +24,36 @@ namespace System.Net.Sockets.Tests
             switch (args.LastOperation)
             {
                 case SocketAsyncOperation.Accept:
-                {
-                    Socket client = args.AcceptSocket;
-                    args.SetBuffer(new byte[1], 0, 1);
-                    args.UserToken = client;
-
-                    Assert.True(client.ReceiveAsync(args));
-                    break;
-                }
-
-                case SocketAsyncOperation.Receive:
-                {
-                    var client = (Socket)args.UserToken;
-                    if (args.BytesTransferred == 0)
                     {
-                        client.Dispose();
+                        Socket client = args.AcceptSocket;
+                        args.SetBuffer(new byte[1], 0, 1);
+                        args.UserToken = client;
+
+                        Assert.True(client.ReceiveAsync(args));
                         break;
                     }
 
-                    Assert.True(client.SendAsync(args));
-                    break;
-                }
+                case SocketAsyncOperation.Receive:
+                    {
+                        var client = (Socket)args.UserToken;
+                        if (args.BytesTransferred == 0)
+                        {
+                            client.Dispose();
+                            break;
+                        }
+
+                        Assert.True(client.SendAsync(args));
+                        break;
+                    }
 
                 case SocketAsyncOperation.Send:
-                {
-                    var client = (Socket)args.UserToken;
+                    {
+                        var client = (Socket)args.UserToken;
 
-                    Assert.True(args.BytesTransferred == args.Buffer.Length);
-                    Assert.True(client.ReceiveAsync(args));
-                    break;
-                }
+                        Assert.True(args.BytesTransferred == args.Buffer.Length);
+                        Assert.True(client.ReceiveAsync(args));
+                        break;
+                    }
             }
         }
 

@@ -23,7 +23,7 @@ internal partial class Interop
             IntPtr lpSource, 
             uint dwMessageId,
             int dwLanguageId,
-            StringBuilder lpBuffer,
+            [Out] StringBuilder lpBuffer,
             int nSize,
             IntPtr[] arguments);
 

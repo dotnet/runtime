@@ -89,7 +89,7 @@ namespace System.Collections.Tests
         public void DebuggerAttributeTests()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ArrayList());
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ArrayList());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ArrayList() { "a", 1, "b", 2 });
         }
     }
 }

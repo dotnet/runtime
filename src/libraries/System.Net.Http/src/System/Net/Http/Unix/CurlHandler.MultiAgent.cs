@@ -513,7 +513,6 @@ namespace System.Net.Http
                         ulong availedAuth;
                         if (Interop.libcurl.curl_easy_getinfo(completedOperation._easyHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
                         {
-                            // TODO: fix locking in AddCredentialToCache
                             completedOperation._handler.AddCredentialToCache(
                                completedOperation._requestMessage.RequestUri, availedAuth, completedOperation._networkCredential);
                         }
@@ -528,6 +527,16 @@ namespace System.Net.Http
                 {
                     case CURLcode.CURLE_OK:
                         completedOperation.EnsureResponseMessagePublished();
+                        break;
+                    case CURLcode.CURLE_UNSUPPORTED_PROTOCOL:
+                        if (completedOperation._isRedirect)
+                        {
+                            completedOperation.EnsureResponseMessagePublished();
+                        }
+                        else
+                        {
+                            completedOperation.FailRequest(CreateHttpRequestException(new CurlException(messageResult, isMulti: false)));
+                        }
                         break;
                     default:
                         completedOperation.FailRequest(CreateHttpRequestException(new CurlException(messageResult, isMulti: false)));

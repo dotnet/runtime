@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Xml;
 
-namespace XmlDocumentTests.XmlElementTests
+namespace System.Xml.Tests
 {
     public class SetAttributeNodeTests
     {

@@ -25,7 +25,7 @@ namespace System.Net
 
             IntPtr packageInfo = safeHandle.DangerousGetHandle();
             GlobalLog.Print("NegotiationInfoClass::.ctor() packageInfo:" + packageInfo.ToString("x8") + " negotiationState:" + negotiationState.ToString("x8"));
-           
+
             const int SECPKG_NEGOTIATION_COMPLETE = 0;
             const int SECPKG_NEGOTIATION_OPTIMISTIC = 1;
             // const int SECPKG_NEGOTIATION_IN_PROGRESS     = 2;

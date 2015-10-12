@@ -53,7 +53,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>An action to invoke for every accepted message.</summary>
         private readonly Action<TInput> _action;
 
-        /// <summary>Exceptions that may have occured and gone unhandled during processing.  This field is lazily initialized.</summary>
+        /// <summary>Exceptions that may have occurred and gone unhandled during processing.  This field is lazily initialized.</summary>
         private volatile List<Exception> _exceptions;
         /// <summary>Whether to stop accepting new messages.</summary>
         private volatile bool _decliningPermanently;
