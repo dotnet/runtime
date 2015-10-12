@@ -37,26 +37,14 @@ namespace Internal.Cryptography
 
         private static string NativeFriendlyNameToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
-            int nid = Interop.libcrypto.OBJ_ln2nid(friendlyName);
-
-            if (nid == Interop.libcrypto.NID_undef)
-            {
-                nid = Interop.libcrypto.OBJ_sn2nid(friendlyName);
-            }
-
-            if (nid == Interop.libcrypto.NID_undef)
-            {
-                return null;
-            }
-
-            IntPtr sharedObject = Interop.libcrypto.OBJ_nid2obj(nid);
+            IntPtr sharedObject = Interop.Crypto.GetObjectDefinitionByName(friendlyName);
 
             if (sharedObject == IntPtr.Zero)
             {
                 return null;
             }
 
-            return Interop.libcrypto.OBJ_obj2txt_helper(sharedObject);
+            return Interop.Crypto.GetOidValue(sharedObject);
         }
 
         // -----------------------------

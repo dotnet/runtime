@@ -190,11 +190,11 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.BIO.cs">
       <Link>Interop\Unix\libcrypto\Interop.BIO.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ASN1.cs">
-      <Link>Interop\Unix\libcrypto\Interop.ASN1.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Pkcs7.cs">
       <Link>Interop\Unix\libcrypto\Interop.Pkcs7.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
