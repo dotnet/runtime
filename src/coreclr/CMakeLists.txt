@@ -221,6 +221,10 @@ if (WIN32 OR CLR_CMAKE_PLATFORM_LINUX)
   add_definitions(-DFEATURE_EVENT_TRACE=1)
 endif (WIN32 OR CLR_CMAKE_PLATFORM_LINUX)
 
+if (CLR_CMAKE_PLATFORM_LINUX)
+    add_definitions(-DFEATURE_EVENTSOURCE_XPLAT=1)
+endif (CLR_CMAKE_PLATFORM_LINUX)
+
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(src/ToolBox/SOS/lldbplugin)
     add_subdirectory(src/pal)
