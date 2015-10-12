@@ -17,9 +17,6 @@ internal static partial class Interop
         internal static extern void X509_free(IntPtr a);
 
         [DllImport(Libraries.LibCrypto)]
-        internal static unsafe extern SafeX509Handle d2i_X509(IntPtr zero, byte** ppin, int len);
-
-        [DllImport(Libraries.LibCrypto)]
         internal static extern unsafe int i2d_X509(SafeX509Handle x, byte** @out);
 
         [DllImport(Libraries.LibCrypto)]
@@ -33,9 +30,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.LibCrypto)]
         internal static extern IntPtr X509_get_serialNumber(SafeX509Handle x);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static unsafe extern SafeX509NameHandle d2i_X509_NAME(IntPtr zero, byte** ppin, int len);
 
         [DllImport(Libraries.LibCrypto)]
         internal static extern int X509_NAME_print_ex(SafeBioHandle @out, SafeX509NameHandle nm, int indent, NativeULong flags);
@@ -132,9 +126,6 @@ internal static partial class Interop
         
         [DllImport(Libraries.LibCrypto)]
         internal static extern void X509_CRL_free(IntPtr a);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static unsafe extern SafeX509CrlHandle d2i_X509_CRL(IntPtr zero, byte** ppin, int len);
 
         [DllImport(Libraries.LibCrypto)]
         internal static extern int PEM_write_bio_X509_CRL(SafeBioHandle bio, SafeX509CrlHandle crl);

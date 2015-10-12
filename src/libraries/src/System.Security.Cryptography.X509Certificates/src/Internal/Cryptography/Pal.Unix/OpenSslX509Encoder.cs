@@ -33,9 +33,9 @@ namespace Internal.Cryptography.Pal
             return X500DistinguishedNameDecode(encodedDistinguishedName, nativeFlags);
         }
 
-        internal static unsafe string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, OpenSslX09NameFormatFlags nativeFlags)
+        internal static string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, OpenSslX09NameFormatFlags nativeFlags)
         {
-            using (SafeX509NameHandle x509Name = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_X509_NAME, encodedDistinguishedName))
+            using (SafeX509NameHandle x509Name = Interop.Crypto.DecodeX509Name(encodedDistinguishedName, encodedDistinguishedName.Length))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(x509Name);
 
@@ -90,9 +90,9 @@ namespace Internal.Cryptography.Pal
             throw new NotImplementedException();
         }
 
-        public unsafe void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
+        public void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
         {
-            using (SafeAsn1BitStringHandle bitString = Interop.libcrypto.OpenSslD2I(Interop.Crypto.D2IAsn1BitString, encoded))
+            using (SafeAsn1BitStringHandle bitString = Interop.Crypto.DecodeAsn1BitString(encoded, encoded.Length))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bitString);
 
@@ -166,7 +166,7 @@ namespace Internal.Cryptography.Pal
             out bool hasPathLengthConstraint,
             out int pathLengthConstraint)
         {
-            using (SafeBasicConstraintsHandle constraints = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_BASIC_CONSTRAINTS, encoded))
+            using (SafeBasicConstraintsHandle constraints = Interop.Crypto.DecodeBasicConstraints(encoded, encoded.Length))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(constraints);
 
@@ -194,11 +194,11 @@ namespace Internal.Cryptography.Pal
             throw new NotImplementedException();
         }
 
-        public unsafe void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
+        public void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
         {
             OidCollection oids = new OidCollection();
 
-            using (SafeEkuExtensionHandle eku = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_EXTENDED_KEY_USAGE, encoded))
+            using (SafeEkuExtensionHandle eku = Interop.Crypto.DecodeExtendedKeyUsage(encoded, encoded.Length))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(eku);
 
@@ -232,9 +232,9 @@ namespace Internal.Cryptography.Pal
             subjectKeyIdentifier = DecodeX509SubjectKeyIdentifierExtension(encoded);
         }
 
-        internal static unsafe byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
+        internal static byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
         {
-            using (SafeAsn1OctetStringHandle octetString = Interop.libcrypto.OpenSslD2I(Interop.Crypto.D2IAsn1OctetString, encoded))
+            using (SafeAsn1OctetStringHandle octetString = Interop.Crypto.DecodeAsn1OctetString(encoded, encoded.Length))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(octetString);
 
@@ -291,9 +291,9 @@ namespace Internal.Cryptography.Pal
             return outFlags;
         }
 
-        private static unsafe RSA BuildRsaPublicKey(byte[] encodedData)
+        private static RSA BuildRsaPublicKey(byte[] encodedData)
         {
-            using (SafeRsaHandle rsaHandle = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_RSAPublicKey, encodedData))
+            using (SafeRsaHandle rsaHandle = Interop.Crypto.DecodeRsaPublicKey(encodedData, encodedData.Length))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(rsaHandle);
 

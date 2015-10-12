@@ -54,9 +54,9 @@ Direct shim to ASN1_OBJECT_free.
 extern "C" void Asn1ObjectFree(ASN1_OBJECT* a);
 
 /*
-Direct shim to d2i_ASN1_BIT_STRING.
+Shims the d2i_ASN1_BIT_STRING method and makes it easier to invoke from managed code.
 */
-extern "C" ASN1_BIT_STRING* D2IAsn1BitString(ASN1_BIT_STRING** zero, const unsigned char** ppin, int32_t len);
+extern "C" ASN1_BIT_STRING* DecodeAsn1BitString(const unsigned char* buf, int32_t len);
 
 /*
 Direct shim to ASN1_BIT_STRING_free.
@@ -64,9 +64,9 @@ Direct shim to ASN1_BIT_STRING_free.
 extern "C" void Asn1BitStringFree(ASN1_STRING* a);
 
 /*
-Direct shim to d2i_ASN1_OCTET_STRING.
+Shims the d2i_ASN1_OCTET_STRING method and makes it easier to invoke from managed code.
 */
-extern "C" ASN1_OCTET_STRING* D2IAsn1OctetString(ASN1_OCTET_STRING** zero, const unsigned char** ppin, int32_t len);
+extern "C" ASN1_OCTET_STRING* DecodeAsn1OctetString(const unsigned char* buf, int32_t len);
 
 /*
 Direct shim to ASN1_OCTET_STRING_new.

@@ -13,9 +13,6 @@ internal static partial class Interop
         internal const int PKCS12_DEFAULT_ITER = 2048;
 
         [DllImport(Libraries.LibCrypto)]
-        internal static unsafe extern SafePkcs12Handle d2i_PKCS12(IntPtr zero, byte** ppin, int len);
-
-        [DllImport(Libraries.LibCrypto)]
         internal static extern SafePkcs12Handle d2i_PKCS12_bio(SafeBioHandle bio, IntPtr zero);
 
         [DllImport(Libraries.LibCrypto)]
