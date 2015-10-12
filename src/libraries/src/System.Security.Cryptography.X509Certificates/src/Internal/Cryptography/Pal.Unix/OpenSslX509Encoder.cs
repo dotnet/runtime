@@ -90,7 +90,7 @@ namespace Internal.Cryptography.Pal
 
         public unsafe void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
         {
-            using (SafeAsn1BitStringHandle bitString = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_ASN1_BIT_STRING, encoded))
+            using (SafeAsn1BitStringHandle bitString = Interop.libcrypto.OpenSslD2I(Interop.Crypto.D2IAsn1BitString, encoded))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bitString);
 
@@ -174,7 +174,10 @@ namespace Internal.Cryptography.Pal
                 if (data->pathlen != IntPtr.Zero)
                 {
                     hasPathLengthConstraint = true;
-                    pathLengthConstraint = Interop.libcrypto.ASN1_INTEGER_get(data->pathlen).ToInt32();
+                    long pathLengthConstraint64 = Interop.Crypto.Asn1IntegerGet(data->pathlen);
+
+                    Debug.Assert(pathLengthConstraint64 < int.MaxValue, "pathLengthConstraint needs to be in the Int32 range.");
+                    pathLengthConstraint = checked((int)pathLengthConstraint64);
                 }
                 else
                 {
@@ -208,7 +211,7 @@ namespace Internal.Cryptography.Pal
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
-                    string oidValue = Interop.libcrypto.OBJ_obj2txt_helper(oidPtr);
+                    string oidValue = Interop.Crypto.GetOidValue(oidPtr);
 
                     oids.Add(new Oid(oidValue));
                 }
@@ -229,7 +232,7 @@ namespace Internal.Cryptography.Pal
 
         internal static unsafe byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
         {
-            using (SafeAsn1OctetStringHandle octetString = Interop.libcrypto.OpenSslD2I(Interop.libcrypto.d2i_ASN1_OCTET_STRING, encoded))
+            using (SafeAsn1OctetStringHandle octetString = Interop.libcrypto.OpenSslD2I(Interop.Crypto.D2IAsn1OctetString, encoded))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(octetString);
 

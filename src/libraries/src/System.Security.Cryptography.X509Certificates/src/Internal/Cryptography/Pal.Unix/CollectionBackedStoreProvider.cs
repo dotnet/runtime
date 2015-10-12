@@ -117,8 +117,8 @@ namespace Internal.Cryptography.Pal
                     privateCertKeyHandle,
                     privateCertHandle,
                     publicCerts,
-                    Interop.libcrypto.NID_undef,
-                    Interop.libcrypto.NID_undef,
+                    Interop.Crypto.NID_undef,
+                    Interop.Crypto.NID_undef,
                     Interop.libcrypto.PKCS12_DEFAULT_ITER,
                     Interop.libcrypto.PKCS12_DEFAULT_ITER,
                     0))
