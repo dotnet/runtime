@@ -22,39 +22,44 @@
 
 #define MONO_PREPARE_BLOCKING	\
 {	\
-	void *__blocking_cookie = mono_threads_prepare_blocking ();
+	void *__dummy;	\
+	void *__blocking_cookie = mono_threads_prepare_blocking (&__dummy);
 
 #define MONO_FINISH_BLOCKING \
-	mono_threads_finish_blocking (__blocking_cookie);	\
+	mono_threads_finish_blocking (__blocking_cookie, &__dummy);	\
 }
 
 #define MONO_PREPARE_RESET_BLOCKING	\
 {	\
-	void *__reset_cookie = mono_threads_reset_blocking_start ();
+	void *__dummy;	\
+	void *__reset_cookie = mono_threads_reset_blocking_start (&__dummy);
 
 #define MONO_FINISH_RESET_BLOCKING \
-	mono_threads_reset_blocking_end (__reset_cookie);	\
+	mono_threads_reset_blocking_end (__reset_cookie, &__dummy);	\
 }
 
 #define MONO_TRY_BLOCKING	\
 {	\
-	void *__try_block_cookie = mono_threads_try_prepare_blocking ();
+	void *__dummy;	\
+	void *__try_block_cookie = mono_threads_try_prepare_blocking (&__dummy);
 
 #define MONO_FINISH_TRY_BLOCKING \
-	mono_threads_finish_try_blocking (__try_block_cookie);	\
+	mono_threads_finish_try_blocking (__try_block_cookie, &__dummy);	\
 }
 
 /* Internal API */
 
 void mono_threads_state_poll (void);
-void* mono_threads_prepare_blocking (void);
-void mono_threads_finish_blocking (void* cookie);
+void mono_threads_state_poll_stack_data (void* stackdata);
 
-void* mono_threads_reset_blocking_start (void);
-void mono_threads_reset_blocking_end (void* cookie);
+void* mono_threads_prepare_blocking (void* stackdata);
+void mono_threads_finish_blocking (void* cookie, void* stackdata);
 
-void* mono_threads_try_prepare_blocking (void);
-void mono_threads_finish_try_blocking (void* cookie);
+void* mono_threads_reset_blocking_start (void* stackdata);
+void mono_threads_reset_blocking_end (void* cookie, void* stackdata);
+
+void* mono_threads_try_prepare_blocking (void* stackdata);
+void mono_threads_finish_try_blocking (void* cookie, void* stackdata);
 
 /* JIT specific interface */
 extern volatile size_t mono_polling_required;
