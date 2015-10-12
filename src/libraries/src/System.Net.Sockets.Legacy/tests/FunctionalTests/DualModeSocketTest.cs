@@ -171,6 +171,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [ActiveIssue(3744, PlatformID.AnyUnix)]
         [Fact] // Base case
         public void ConnectV4MappedIPEndPointToV4Host_Success()
         {
