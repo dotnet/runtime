@@ -549,6 +549,21 @@
 
                 <!--Templates-->
                 <templates>
+                    <template tid="EventSource">
+                        <data name="EventID" inType="win:Int32" />
+                        <data name="EventName" inType="win:UnicodeString" />
+                        <data name="EventSourceName" inType="win:UnicodeString" />
+                        <data name="Payload" inType="win:UnicodeString" />
+
+                        <UserData>
+                            <EventSource xmlns="myNs">
+                                <EventID> %1 </EventID>
+                                <EventName> %2 </EventName>
+                                <EventSourceName> %3 </EventSourceName>
+                                <Payload> %4 </Payload>
+                            </EventSource>
+                        </UserData>
+                    </template>
                     <template tid="StrongNameVerification">
                         <data name="VerificationFlags" inType="win:UInt32" outType="win:HexInt32"/>
                         <data name="ErrorCode" inType="win:UInt32" outType="win:HexInt32"/>
@@ -3154,6 +3169,10 @@
                            keywords="CodeSymbolsKeyword" opcode="win:Start" 
                            task="CodeSymbols"
                            symbol="CodeSymbols" message="$(string.RuntimePublisher.CodeSymbolsEventMessage)"/>
+                    
+                   <event value="270" version="0" level="win:Informational"  template="EventSource"
+                           opcode="win:Start"
+                           symbol="EventSource" />
                 </events>
             </provider>
 

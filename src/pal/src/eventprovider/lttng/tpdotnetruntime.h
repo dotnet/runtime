@@ -26,6 +26,32 @@ This file is generated using the logic from <root>/src/inc/genXplatLttng.pl
 #include <lttng/tracepoint.h>
 
 
+#define EventSource_TRACEPOINT_ARGS \
+TP_ARGS(\
+        const signed int ,EventID,\
+        const char* ,EventName,\
+        const char* ,EventSourceName,\
+        const char* ,Payload\
+)
+TRACEPOINT_EVENT_CLASS(
+    DotNETRuntime,
+    EventSource,
+    EventSource_TRACEPOINT_ARGS,
+     TP_FIELDS(
+        ctf_integer(signed int,EventID,EventID)
+        ctf_string(EventName,EventName)
+        ctf_string(EventSourceName,EventSourceName)
+        ctf_string(Payload,Payload)
+    )
+)
+#define EventSourceT_TRACEPOINT_INSTANCE(name) \
+TRACEPOINT_EVENT_INSTANCE(\
+    DotNETRuntime,\
+    EventSource ,\
+    name ,\
+    EventSource_TRACEPOINT_ARGS \
+)
+
 #define StrongNameVerification_TRACEPOINT_ARGS \
 TP_ARGS(\
         const unsigned int ,VerificationFlags,\
@@ -3204,5 +3230,6 @@ T_TRACEPOINT_INSTANCE(DebugIPCEventEnd)
 T_TRACEPOINT_INSTANCE(DebugExceptionProcessingStart)
 T_TRACEPOINT_INSTANCE(DebugExceptionProcessingEnd)
 CodeSymbolsT_TRACEPOINT_INSTANCE(CodeSymbols)
+EventSourceT_TRACEPOINT_INSTANCE(EventSource)
 #endif /* LTTNG_CORECLR_HDotNETRuntime */
 #include <lttng/tracepoint-event.h>

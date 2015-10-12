@@ -1243,6 +1243,13 @@ extern "C" ULONG   FireEtXplatCodeSymbols(
                   const BYTE* Chunk,
                   const unsigned short  ClrInstanceID
 );
+extern "C" BOOL EventXplatEnabledEventSource();
+extern "C" ULONG   FireEtXplatEventSource(
+                  const signed int  EventID,
+                  PCWSTR  EventName,
+                  PCWSTR  EventSourceName,
+                  PCWSTR  Payload
+);
 extern "C" BOOL EventXplatEnabledCLRStackWalkDCStart();
 extern "C" ULONG   FireEtXplatCLRStackWalkDCStart(
                   const unsigned short  ClrInstanceID,
