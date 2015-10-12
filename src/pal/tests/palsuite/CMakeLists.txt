@@ -21,4 +21,5 @@ add_subdirectory(miscellaneous)
 add_subdirectory(pal_specific)
 add_subdirectory(samples)
 add_subdirectory(threading)
+add_subdirectory(eventprovider)
 
