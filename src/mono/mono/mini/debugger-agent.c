@@ -3009,12 +3009,12 @@ is_suspended (void)
 }
 
 static void
-no_seq_points_found (MonoMethod *method)
+no_seq_points_found (MonoMethod *method, int offset)
 {
 	/*
 	 * This can happen in full-aot mode with assemblies AOTed without the 'soft-debug' option to save space.
 	 */
-	printf ("Unable to find seq points for method '%s'.\n", mono_method_full_name (method, TRUE));
+	printf ("Unable to find seq points for method '%s', offset 0x%x.\n", mono_method_full_name (method, TRUE), offset);
 }
 
 typedef struct {
@@ -4628,7 +4628,7 @@ process_breakpoint_inner (DebuggerTlsData *tls, gboolean from_signal)
 	found_sp = mono_find_prev_seq_point_for_native_offset (mono_domain_get (), method, native_offset, &info, &sp);
 
 	if (!found_sp)
-		no_seq_points_found (method);
+		no_seq_points_found (method, native_offset);
 
 	g_assert (found_sp);
 
@@ -5313,7 +5313,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 		found_sp = mono_find_next_seq_point_for_native_offset (frame.domain, frame.method, frame.native_offset, &info, &local_sp);
 		sp = (found_sp)? &local_sp : NULL;
 		if (!sp)
-			no_seq_points_found (frame.method);
+			no_seq_points_found (frame.method, frame.native_offset);
 		g_assert (sp);
 
 		method = frame.method;
@@ -5359,7 +5359,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 				found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info, &local_sp);
 				sp = (found_sp)? &local_sp : NULL;
 				if (!sp)
-					no_seq_points_found (frame->method);
+					no_seq_points_found (frame->method, frame->native_offset);
 				g_assert (sp);
 				method = frame->method;
 			}
