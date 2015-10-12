@@ -11,12 +11,12 @@ namespace System.Reflection.Metadata
     {
         public const int HiddenLine = 0xfeefee;
 
-        public readonly DocumentHandle Document;
-        public readonly int Offset;
-        public readonly int StartLine;
-        public readonly int EndLine;
-        public readonly ushort StartColumn;
-        public readonly ushort EndColumn;
+        public DocumentHandle Document { get; private set; }
+        public int Offset { get; private set; }
+        public int StartLine { get; private set; }
+        public int EndLine { get; private set; }
+        public ushort StartColumn { get; private set; }
+        public ushort EndColumn { get; private set; }
 
         internal SequencePoint(DocumentHandle document, int offset)
         {

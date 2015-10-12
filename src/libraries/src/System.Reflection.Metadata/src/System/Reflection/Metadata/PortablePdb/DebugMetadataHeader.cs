@@ -8,8 +8,8 @@ namespace System.Reflection.Metadata
 {
     public sealed class DebugMetadataHeader
     {
-        public readonly ImmutableArray<byte> Id;
-        public readonly MethodDefinitionHandle EntryPoint;
+        public ImmutableArray<byte> Id { get; private set; }
+        public MethodDefinitionHandle EntryPoint { get; private set; }
 
         internal DebugMetadataHeader(ImmutableArray<byte> id, MethodDefinitionHandle entryPoint)
         {
