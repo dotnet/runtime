@@ -10,7 +10,7 @@ GetX509NameStackFieldCount
 
 Direct shim to sk_X509_NAME_num
 */
-extern "C" int32_t GetX509NameStackFieldCount(STACK_OF(X509_NAME)* sk);
+extern "C" int32_t GetX509NameStackFieldCount(STACK_OF(X509_NAME) * sk);
 
 /*
 Function:
@@ -18,4 +18,4 @@ GetX509NameStackField
 
 Direct shim to sk_X509_NAME_value
 */
-extern "C" X509_NAME* GetX509NameStackField(STACK_OF(X509_NAME)* sk, int32_t loc);
+extern "C" X509_NAME* GetX509NameStackField(STACK_OF(X509_NAME) * sk, int32_t loc);
