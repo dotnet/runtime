@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
+    // _SecPkgContext_Sizes in sspi.h.
     [StructLayout(LayoutKind.Sequential)]
     internal class SecSizes
     {

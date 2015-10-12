@@ -10,13 +10,12 @@ using System.Threading;
 
 namespace System.Net
 {   
-    internal partial class CertModule : CertInterface
+    internal static partial class CertificateValidationPal
     {
         private static readonly object s_lockObject = new object();
         private static X509Store s_userCertStore;
 
-        #region internal Methods
-        internal override SslPolicyErrors VerifyCertificateProperties(
+        internal static SslPolicyErrors VerifyCertificateProperties(
             X509Chain chain,
             X509Certificate2 certificate,
             bool checkCertName,
@@ -58,7 +57,7 @@ namespace System.Net
         //
         // Extracts a remote certificate upon request.
         //
-        internal override X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateStore)
+        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateStore)
         {
             remoteCertificateStore = null;
             bool gotReference = false;
@@ -68,12 +67,12 @@ namespace System.Net
                 return null;
             }
 
-            GlobalLog.Enter("SecureChannel#" + Logging.HashString(this) + "::RemoteCertificate{get;}");
+            GlobalLog.Enter("SecureChannel#" + Logging.HashString(securityContext) + "::RemoteCertificate{get;}");
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
             try
             {
-                int errorCode = SSPIWrapper.QueryContextRemoteCertificate(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
+                int errorCode = SslStreamPal.QueryContextRemoteCertificate(securityContext, out remoteContext);
 
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
@@ -122,7 +121,7 @@ namespace System.Net
                 Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_remote_certificate, (result == null ? "null" : result.ToString(true))));
             }
 
-            GlobalLog.Leave("SecureChannel#" + Logging.HashString(this) + "::RemoteCertificate{get;}", (result == null ? "null" : result.Subject));
+            GlobalLog.Leave("SecureChannel#" + Logging.HashString(securityContext) + "::RemoteCertificate{get;}", (result == null ? "null" : result.Subject));
 
             return result;
         }      
@@ -130,7 +129,7 @@ namespace System.Net
         //
         // Used only by client SSL code, never returns null.
         //
-        internal override string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
+        internal static string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
             using (SafeSharedX509NameStackHandle names = Interop.libssl.SSL_get_client_CA_list(securityContext.SslContext))
             {
@@ -161,7 +160,7 @@ namespace System.Net
             }
         }
 
-        internal override X509Store EnsureStoreOpened(bool isMachineStore)
+        internal static X509Store EnsureStoreOpened(bool isMachineStore)
         {
             if (isMachineStore)
             {
@@ -212,9 +211,5 @@ namespace System.Net
 
             return store;
         }
-
-        #endregion
-     
     }
-
 }

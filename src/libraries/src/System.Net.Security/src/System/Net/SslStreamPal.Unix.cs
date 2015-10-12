@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
-using System.Globalization;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -12,68 +11,66 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Net
 {
-    // For SSL connections:
-    internal class SSPISecureChannelType : SSPIInterface
+    internal static class SslStreamPal
     {
-        public Exception GetException(SecurityStatus status)
+        public static Exception GetException(SecurityStatusPal status)
         {
             return new Interop.OpenSsl.SslException((int)status);
         }
 
-        public void VerifyPackageInfo()
+        public static void VerifyPackageInfo()
         {
         }
 
-        public SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
+        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
             SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
             return new SafeFreeCredentials(certificate, protocols, policy);
         }
 
-        public SecurityStatus AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
+        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
             SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired)
         {
             return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, true, remoteCertRequired);
         }
 
-        public SecurityStatus InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
+        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
             string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer)
         {        
             return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, false, false);
         }
 
-        public SecurityStatus InitializeSecurityContext(SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer)
+        public static SecurityStatusPal InitializeSecurityContext(SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer)
         {          
             Debug.Assert(inputBuffers.Length == 2);
             Debug.Assert(inputBuffers[1].token == null);
             return HandshakeInternal(credential, ref context, inputBuffers[0], outputBuffer, false, false);
         }
 
-        public SecurityStatus EncryptMessage(SafeDeleteContext securityContext, byte[] buffer, int size, int headerSize, int trailerSize, out int resultSize)
+        public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] buffer, int size, int headerSize, int trailerSize, out int resultSize)
         {
             // Unencrypted data starts at an offset of headerSize
             return EncryptDecryptHelper(securityContext, buffer, headerSize, size, headerSize, trailerSize, true, out resultSize);
         }
 
-        public SecurityStatus DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
+        public static SecurityStatusPal DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count)
         {
             int resultSize;
-            SecurityStatus retVal = EncryptDecryptHelper(securityContext, buffer, offset, count, 0, 0, false, out resultSize);
-            if (SecurityStatus.OK == retVal || SecurityStatus.Renegotiate == retVal)
+            SecurityStatusPal retVal = EncryptDecryptHelper(securityContext, buffer, offset, count, 0, 0, false, out resultSize);
+            if (SecurityStatusPal.OK == retVal || SecurityStatusPal.Renegotiate == retVal)
             {
                 count = resultSize;
             }
             return retVal;
         }
 
-        public int QueryContextChannelBinding(SafeDeleteContext phContext, ChannelBindingKind attribute,
-            out SafeFreeContextBufferChannelBinding refHandle)
+        public static SafeFreeContextBufferChannelBinding QueryContextChannelBinding(SafeDeleteContext phContext, ChannelBindingKind attribute)
         {
             // TODO (Issue #3362) To be implemented
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        public int QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
+        public static int QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
         {
             streamSizes = null;
             try
@@ -87,7 +84,7 @@ namespace System.Net
             }
         }
 
-        public int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
+        public static int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
         {
             connectionInfo = null;
             try
@@ -102,7 +99,7 @@ namespace System.Net
             }
         }
 
-        public int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext remoteCertContext)
+        public static int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext remoteCertContext)
         {
             remoteCertContext = null;
             try
@@ -118,13 +115,13 @@ namespace System.Net
             }
         }
 
-        public int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList)
+        public static int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList)
         {
             // TODO (Issue #3362) To be implemented
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        private long GetOptions(SslProtocols protocols)
+        private static long GetOptions(SslProtocols protocols)
         {
             long retVal = Interop.libssl.Options.SSL_OP_NO_SSLv2 | Interop.libssl.Options.SSL_OP_NO_SSLv3 |
                                 Interop.libssl.Options.SSL_OP_NO_TLSv1 | Interop.libssl.Options.SSL_OP_NO_TLSv1_1 |
@@ -154,7 +151,7 @@ namespace System.Net
             return retVal;
         }
 
-        private SecurityStatus HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context,
+        private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context,
             SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool isServer, bool remoteCertRequired)
         {
             Debug.Assert(!credential.IsInvalid);
@@ -205,17 +202,17 @@ namespace System.Net
                      outputPtr = IntPtr.Zero;
                 }
 
-                return done ? SecurityStatus.OK : SecurityStatus.ContinueNeeded;
+                return done ? SecurityStatusPal.OK : SecurityStatusPal.ContinueNeeded;
             }
             catch (Exception ex)
             {
                 Debug.Fail("Exception Caught. - " + ex);
-                return SecurityStatus.InternalError;             
+                return SecurityStatusPal.InternalError;             
             }
         }
 
 
-        private SecurityStatus EncryptDecryptHelper(SafeDeleteContext securityContext, byte[] buffer, int offset, int size, int headerSize, int trailerSize, bool encrypt, out int resultSize)
+        private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteContext securityContext, byte[] buffer, int offset, int size, int headerSize, int trailerSize, bool encrypt, out int resultSize)
         {
             resultSize = 0;
             try
@@ -239,20 +236,20 @@ namespace System.Net
                 switch (errorCode)
                 {
                     case Interop.libssl.SslErrorCode.SSL_ERROR_RENEGOTIATE:
-                        return SecurityStatus.Renegotiate;
+                        return SecurityStatusPal.Renegotiate;
                     case Interop.libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
-                        return SecurityStatus.ContextExpired;
+                        return SecurityStatusPal.ContextExpired;
                     case Interop.libssl.SslErrorCode.SSL_ERROR_NONE:
                     case Interop.libssl.SslErrorCode.SSL_ERROR_WANT_READ:
-                        return SecurityStatus.OK;
+                        return SecurityStatusPal.OK;
                     default:
-                        return SecurityStatus.InternalError;
+                        return SecurityStatusPal.InternalError;
                 }
             }
             catch (Exception ex)
             {
                 Debug.Fail("Exception Caught. - " + ex);
-                return SecurityStatus.InternalError;
+                return SecurityStatusPal.InternalError;
             }
         }
     }
