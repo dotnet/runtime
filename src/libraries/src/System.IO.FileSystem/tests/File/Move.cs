@@ -194,6 +194,18 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
+        public void WindowsPathWithIllegalColons()
+        {
+            FileInfo testFile = new FileInfo(GetTestFilePath());
+            testFile.Create().Dispose();
+            Assert.All(IOInputs.GetPathsWithInvalidColons(), (invalid) =>
+            {
+                Assert.Throws<NotSupportedException>(() => Move(testFile.FullName, invalid));
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void WindowsWildCharacterPath()
         {
             Assert.Throws<ArgumentException>(() => Move("*", GetTestFilePath()));

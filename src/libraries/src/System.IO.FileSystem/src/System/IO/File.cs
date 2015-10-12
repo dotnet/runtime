@@ -110,8 +110,8 @@ namespace System.IO
             Contract.Requires(sourceFileName.Length > 0);
             Contract.Requires(destFileName.Length > 0);
 
-            String fullSourceFileName = PathHelpers.GetFullPathInternal(sourceFileName);
-            String fullDestFileName = PathHelpers.GetFullPathInternal(destFileName);
+            String fullSourceFileName = Path.GetFullPath(sourceFileName);
+            String fullDestFileName = Path.GetFullPath(destFileName);
 
             FileSystem.Current.CopyFile(fullSourceFileName, fullDestFileName, overwrite);
 
@@ -167,7 +167,7 @@ namespace System.IO
                 throw new ArgumentNullException("path");
             Contract.EndContractBlock();
 
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
 
             FileSystem.Current.DeleteFile(fullPath);
         }
@@ -190,7 +190,7 @@ namespace System.IO
                 if (path.Length == 0)
                     return false;
 
-                path = PathHelpers.GetFullPathInternal(path);
+                path = Path.GetFullPath(path);
                 // After normalizing, check whether path ends in directory separator.
                 // Otherwise, FillAttributeInfo removes it and we may return a false positive.
                 // GetFullPath should never return null
@@ -246,93 +246,93 @@ namespace System.IO
 
         public static void SetCreationTime(String path, DateTime creationTimeUtc)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetCreationTime(fullPath, creationTimeUtc, asDirectory: false);
         }
 
         public static void SetCreationTimeUtc(String path, DateTime creationTime)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetCreationTime(fullPath, GetUtcDateTimeOffset(creationTime), asDirectory: false);
         }
 
         [System.Security.SecuritySafeCritical]
         public static DateTime GetCreationTime(String path)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetCreationTime(fullPath).LocalDateTime;
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static DateTime GetCreationTimeUtc(String path)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetCreationTime(fullPath).UtcDateTime;
         }
 
         public static void SetLastAccessTime(String path, DateTime lastAccessTime)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastAccessTime(fullPath, lastAccessTime, asDirectory: false);
         }
 
         public static void SetLastAccessTimeUtc(String path, DateTime lastAccessTimeUtc)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastAccessTime(fullPath, GetUtcDateTimeOffset(lastAccessTimeUtc), asDirectory: false);
         }
 
         [System.Security.SecuritySafeCritical]
         public static DateTime GetLastAccessTime(String path)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetLastAccessTime(fullPath).LocalDateTime;
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static DateTime GetLastAccessTimeUtc(String path)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetLastAccessTime(fullPath).UtcDateTime;
         }
 
         public static void SetLastWriteTime(String path, DateTime lastWriteTime)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastWriteTime(fullPath, lastWriteTime, asDirectory: false);
         }
 
         public static void SetLastWriteTimeUtc(String path, DateTime lastWriteTimeUtc)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastWriteTime(fullPath, GetUtcDateTimeOffset(lastWriteTimeUtc), asDirectory: false);
         }
 
         [System.Security.SecuritySafeCritical]
         public static DateTime GetLastWriteTime(String path)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetLastWriteTime(fullPath).LocalDateTime;
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static DateTime GetLastWriteTimeUtc(String path)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetLastWriteTime(fullPath).UtcDateTime;
         }
 
         [System.Security.SecuritySafeCritical]
         public static FileAttributes GetAttributes(String path)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             return FileSystem.Current.GetAttributes(fullPath);
         }
 
         [System.Security.SecurityCritical]
         public static void SetAttributes(String path, FileAttributes fileAttributes)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetAttributes(fullPath, fileAttributes);
         }
 
@@ -686,8 +686,8 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyFileName, "destFileName");
             Contract.EndContractBlock();
 
-            String fullSourceFileName = PathHelpers.GetFullPathInternal(sourceFileName);
-            String fullDestFileName = PathHelpers.GetFullPathInternal(destFileName);
+            String fullSourceFileName = Path.GetFullPath(sourceFileName);
+            String fullDestFileName = Path.GetFullPath(destFileName);
 
             if (!InternalExists(fullSourceFileName))
             {

@@ -190,36 +190,35 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void WindowsSearchPatternLongPath()
+        public void WindowsSearchPatternLongSegment()
         {
-            //Create a destination path longer than the traditional Windows limit of 256 characters
+            // Create a path segment longer than the normal max of 255
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string longName = new string('k', 257);
 
-            // TODO #645: Requires long path support
-            //using (File.Create(Path.Combine(testDir.FullName, longName)))
-            //{
-            //    string[] results = GetEntries(testDir.FullName, longName);
-            //    Assert.Contains(Path.Combine(testDir.FullName, longName), results);
-            //}
             Assert.Throws<PathTooLongException>(() => GetEntries(testDir.FullName, longName));
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        public void UnixSearchPatternLongPath()
+        public void SearchPatternLongPath()
         {
-            //Create a destination path longer than the traditional Windows limit of 256 characters
+            // Create a destination path longer than the traditional Windows limit of 256 characters
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string longName = new string('k', 257);
 
-            //TODO: #645 File creation on Unix still restricts path length, so test this when it is solved
-            //using (File.Create(Path.Combine(testDir.FullName, longName)))
-            //{
-            //    string[] results = GetEntries(testDir.FullName, longName);
-            //    Assert.Contains(Path.Combine(testDir.FullName, longName), results);
-            //}
-            Assert.Empty(GetEntries(testDir.FullName, longName));
+            string longName = new string('k', 254);
+            string longFullname = Path.Combine(testDir.FullName, longName);
+
+            if (TestFiles)
+            {
+                using (File.Create(longFullname)) { }
+            }
+            else
+            {
+                Directory.CreateDirectory(longFullname);
+            }
+
+            string[] results = GetEntries(testDir.FullName, longName);
+            Assert.Contains(longFullname, results);
         }
 
         [Fact]

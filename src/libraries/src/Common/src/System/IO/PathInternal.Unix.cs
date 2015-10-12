@@ -33,7 +33,6 @@ namespace System.IO
             return c == Path.DirectorySeparatorChar;
         }
 
-
         /// <summary>
         /// Returns true if the path is too long
         /// </summary>
