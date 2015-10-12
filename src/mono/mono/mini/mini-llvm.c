@@ -150,7 +150,6 @@ typedef struct {
 	GSList **nested_in;
 	LLVMValueRef ex_var;
 	GHashTable *exc_meta;
-	LLVMBasicBlockRef entry_out_bb;
 } EmitContext;
 
 typedef struct {
@@ -2499,7 +2498,7 @@ emit_init_method (EmitContext *ctx)
 	LLVMBuildStore (builder, LLVMConstInt (LLVMInt8Type (), 1, FALSE), LLVMBuildGEP (builder, ctx->lmodule->inited_var, indexes, 2, ""));
 
 	LLVMBuildBr (builder, inited_bb);
-	ctx->entry_out_bb = inited_bb;
+	ctx->bblocks [cfg->bb_entry->block_num].end_bblock = inited_bb;
 
 	builder = ctx->builder = create_builder (ctx);
 	LLVMPositionBuilderAtEnd (ctx->builder, inited_bb);
@@ -3610,10 +3609,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	LLVMValueRef lhs, rhs;
 	int nins = 0;
 
-	if (bb == cfg->bb_entry && ctx->entry_out_bb)
-		cbb = ctx->entry_out_bb;
-	else
-		cbb = get_bb (ctx, bb);
+	cbb = get_end_bb (ctx, bb);
 
 	builder = create_builder (ctx);
 	ctx->builder = builder;
