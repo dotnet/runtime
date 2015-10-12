@@ -17,15 +17,15 @@ namespace System.Reflection.Metadata
         private int _previousNonHiddenStartLine;
         private ushort _previousNonHiddenStartColumn;
 
-        public unsafe SequencePointBlobReader(byte* buffer, int length)
-            : this(MemoryBlock.CreateChecked(buffer, length))
+        public unsafe SequencePointBlobReader(byte* buffer, int length, DocumentHandle primaryDocument)
+            : this(MemoryBlock.CreateChecked(buffer, length), primaryDocument)
         {
         }
 
-        internal SequencePointBlobReader(MemoryBlock block)
+        internal SequencePointBlobReader(MemoryBlock block, DocumentHandle primaryDocument)
         {
             _reader = new BlobReader(block);
-            _current = default(SequencePoint);
+            _current = new SequencePoint(primaryDocument, -1);
             _previousNonHiddenStartLine = -1;
             _previousNonHiddenStartColumn = 0;
         }
@@ -37,23 +37,20 @@ namespace System.Reflection.Metadata
                 return false;
             }
 
-            DocumentHandle document;
+            DocumentHandle document = _current.Document;
             int offset, deltaLines, deltaColumns, startLine;
             ushort startColumn;
 
-            if (_current.Document.IsNil)
+            if (_reader.Offset == 0)
             {
                 // header (skip local signature rid):
                 _reader.ReadCompressedInteger();
-                document = ReadDocumentHandle();
 
                 // IL offset:
                 offset = _reader.ReadCompressedInteger();
             }
             else
             {
-                document = _current.Document;
-
                 // skip all document records and update the current document accordingly:
                 int deltaOffset;
                 while ((deltaOffset = _reader.ReadCompressedInteger()) == 0)
