@@ -36,8 +36,8 @@
 #include <llvm/Analysis/Passes.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Support/CommandLine.h>
-#include "llvm/IR/LegacyPassNameParser.h"
-#include "llvm/Support/PrettyStackTrace.h"
+#include <llvm/IR/LegacyPassNameParser.h>
+#include <llvm/Support/PrettyStackTrace.h>
 #include <llvm/CodeGen/Passes.h>
 #include <llvm/CodeGen/MachineFunctionPass.h>
 #include <llvm/CodeGen/MachineFunction.h>
@@ -46,8 +46,8 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
-#include "llvm-c/Core.h"
-#include "llvm-c/ExecutionEngine.h"
+#include <llvm-c/Core.h>
+#include <llvm-c/ExecutionEngine.h>
 
 #include "mini-llvm-cpp.h"
 
