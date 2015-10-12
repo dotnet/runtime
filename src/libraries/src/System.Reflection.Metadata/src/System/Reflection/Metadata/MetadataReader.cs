@@ -511,7 +511,10 @@ namespace System.Reflection.Metadata
         private void ReadStandalonePortablePdbStream(MemoryBlock block, out DebugMetadataHeader debugMetadataHeader, out int[] externalTableRowCounts)
         {
             var reader = new BlobReader(block);
-            
+
+            const int PdbIdSize = 20;
+            byte[] pdbId = reader.ReadBytes(PdbIdSize);
+
             // ECMA-335 15.4.1.2:
             // The entry point to an application shall be static.
             // This entry point method can be a global method or it can appear inside a type. 
@@ -537,6 +540,7 @@ namespace System.Reflection.Metadata
             externalTableRowCounts = ReadMetadataTableRowCounts(ref reader, externalTableMask);
 
             debugMetadataHeader = new DebugMetadataHeader(
+                ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref pdbId),
                 MethodDefinitionHandle.FromRowId((int)(entryPointToken & TokenTypeIds.RIDMask)));
         }
 
@@ -737,7 +741,7 @@ namespace System.Reflection.Metadata
             this.DocumentTable = new DocumentTableReader(rowCounts[(int)TableIndex.Document], guidHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.DocumentTable.Block.Length;
 
-            this.MethodBodyTable = new MethodBodyTableReader(rowCounts[(int)TableIndex.MethodBody], blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            this.MethodBodyTable = new MethodBodyTableReader(rowCounts[(int)TableIndex.MethodBody], GetReferenceSize(rowCounts, TableIndex.Document), blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.MethodBodyTable.Block.Length;
 
             this.LocalScopeTable = new LocalScopeTableReader(rowCounts[(int)TableIndex.LocalScope], methodRefSizeCombined, GetReferenceSize(rowCounts, TableIndex.ImportScope), GetReferenceSize(rowCounts, TableIndex.LocalVariable), GetReferenceSize(rowCounts, TableIndex.LocalConstant), metadataTablesMemoryBlock, totalRequiredSize);
@@ -1431,11 +1435,6 @@ namespace System.Reflection.Metadata
             }
 
             return TypeDefTable.FindTypeContainingField(fieldRowId, FieldTable.NumberOfRows);
-        }
-
-        public SequencePointBlobReader GetSequencePointsReader(BlobHandle handle)
-        {
-            return new SequencePointBlobReader(BlobStream.GetMemoryBlock(handle));
         }
 
         public ImportsBlobReader GetImportsReader(BlobHandle handle)

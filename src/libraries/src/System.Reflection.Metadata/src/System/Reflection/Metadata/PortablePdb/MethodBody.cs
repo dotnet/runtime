@@ -38,6 +38,18 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
+        /// The document containing the first sequence point of the method, 
+        /// or nil if the method doesn't have sequence points.
+        /// </summary>
+        public DocumentHandle Document
+        {
+            get
+            {
+                return _reader.MethodBodyTable.GetDocument(Handle);
+            }
+        }
+
+        /// <summary>
         /// Returns local signature handle.
         /// </summary>
         public StandaloneSignatureHandle LocalSignature
@@ -51,6 +63,14 @@ namespace System.Reflection.Metadata
 
                 return StandaloneSignatureHandle.FromRowId(_reader.GetBlobReader(SequencePoints).ReadCompressedInteger());
             }
+        }
+
+        /// <summary>
+        /// Returns a sequence points reader.
+        /// </summary>
+        public SequencePointBlobReader GetSequencePointsReader()
+        {
+            return new SequencePointBlobReader(_reader.BlobStream.GetMemoryBlock(SequencePoints), Document);
         }
 
         /// <summary>

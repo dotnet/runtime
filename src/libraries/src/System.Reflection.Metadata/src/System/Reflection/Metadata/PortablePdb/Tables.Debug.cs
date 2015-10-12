@@ -68,31 +68,42 @@ namespace System.Reflection.Metadata.Ecma335
     {
         internal readonly int NumberOfRows;
 
+        private readonly bool _isDocumentRefSmall;
         private readonly bool _isBlobHeapRefSizeSmall;
 
-        private const int SequencePointsOffset = 0;
+        private const int DocumentOffset = 0;
+        private readonly int _sequencePointsOffset;
 
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
         internal MethodBodyTableReader(
             int numberOfRows,
+            int documentRefSize,
             int blobHeapRefSize,
             MemoryBlock containingBlock,
             int containingBlockOffset)
         {
             NumberOfRows = numberOfRows;
+            _isDocumentRefSmall = documentRefSize == 2;
             _isBlobHeapRefSizeSmall = blobHeapRefSize == 2;
 
-            RowSize = SequencePointsOffset + blobHeapRefSize;
+            _sequencePointsOffset = DocumentOffset + documentRefSize;
+            RowSize = _sequencePointsOffset + blobHeapRefSize;
 
             Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, RowSize * numberOfRows);
+        }
+
+        internal DocumentHandle GetDocument(MethodBodyHandle handle)
+        {
+            int rowOffset = (handle.RowId - 1) * RowSize;
+            return DocumentHandle.FromRowId(Block.PeekReference(rowOffset + DocumentOffset, _isDocumentRefSmall));
         }
 
         internal BlobHandle GetSequencePoints(MethodBodyHandle handle)
         {
             int rowOffset = (handle.RowId - 1) * RowSize;
-            return BlobHandle.FromOffset(Block.PeekHeapReference(rowOffset + SequencePointsOffset, _isBlobHeapRefSizeSmall));
+            return BlobHandle.FromOffset(Block.PeekHeapReference(rowOffset + _sequencePointsOffset, _isBlobHeapRefSizeSmall));
         }
     }
 
