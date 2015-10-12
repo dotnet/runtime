@@ -24,6 +24,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/cil-coff.h>
 
 #include "debug-mono-ppdb.h"
 
@@ -32,6 +33,50 @@ struct _MonoPPDBFile {
 	GHashTable *doc_cache;
 };
 
+/* IMAGE_DEBUG_DIRECTORY structure */
+typedef struct
+{
+	gint32 characteristics;
+	gint32 time_date_stamp;
+	gint16 major_version;
+	gint16 minor_version;
+	gint32 type;
+	gint32 size_of_data;
+	gint32 address;
+	gint32 pointer;
+}  ImageDebugDirectory;
+
+typedef struct {
+	gint32 signature;
+	guint8 guid [16];
+	gint32 age;
+} CodeviewDebugDirectory;
+
+static gboolean
+get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age)
+{
+	MonoPEDirEntry *debug_dir_entry;
+	ImageDebugDirectory *debug_dir;
+
+	debug_dir_entry = &((MonoCLIImageInfo*)image->image_info)->cli_header.datadir.pe_debug;
+	if (!debug_dir_entry->size)
+		return FALSE;
+
+	int offset = mono_cli_rva_image_map (image, debug_dir_entry->rva);
+	debug_dir = (ImageDebugDirectory*)(image->raw_data + offset);
+	if (debug_dir->type == 2 && debug_dir->major_version == 1 && debug_dir->minor_version == 0x504d) {
+		/* This is a 'CODEVIEW' debug directory */
+		CodeviewDebugDirectory *dir = (CodeviewDebugDirectory*)(image->raw_data + debug_dir->pointer);
+
+		if (dir->signature == 0x53445352) {
+			memcpy (out_guid, dir->guid, 16);
+			*out_age = dir->age;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 MonoPPDBFile*
 mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 {
@@ -39,11 +84,8 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	const char *filename;
 	char *s, *ppdb_filename;
 	MonoImageOpenStatus status;
-#if 0
-	MonoTableInfo *tables;
-	guint32 cols [MONO_MODULE_SIZE];
-	const char *guid, *ppdb_guid;
-#endif
+	guint8 pe_guid [16];
+	gint32 pe_age;
 	MonoPPDBFile *ppdb;
 
 	if (raw_contents) {
@@ -65,26 +107,14 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	if (!ppdb_image)
 		return NULL;
 
-#if 0
-	/* Check that the images match */
-	// FIXME: ppdb files no longer have a MODULE table */
-	tables = image->tables;
-	g_assert (tables [MONO_TABLE_MODULE].rows);
-	mono_metadata_decode_row (&tables [MONO_TABLE_MODULE], 0, cols, MONO_MODULE_SIZE);
-	guid = mono_metadata_guid_heap (image, cols [MONO_MODULE_MVID]);
-
-	tables = ppdb_image->tables;
-	g_assert (tables [MONO_TABLE_MODULE].rows);
-	mono_metadata_decode_row (&tables [MONO_TABLE_MODULE], 0, cols, MONO_MODULE_SIZE);
-	ppdb_guid = mono_metadata_guid_heap (ppdb_image, cols [MONO_MODULE_MVID]);
-
-	if (memcmp (guid, ppdb_guid, 16) != 0) {
-		g_warning ("Symbol file %s doesn't match image %s", ppdb_image->name,
-				   image->name);
-		mono_image_close (ppdb_image);
-		return NULL;
+	/*
+	 * Check that the images match.
+	 * The same id is stored in the Debug Directory of the PE file, and in the
+	 * #Pdb stream in the ppdb file.
+	 */
+	if (get_pe_debug_guid (image, pe_guid, &pe_age)) {
+		// FIXME: Read the id from the ppdb file
 	}
-#endif
 
 	ppdb = g_new0 (MonoPPDBFile, 1);
 	ppdb->image = ppdb_image;
