@@ -513,7 +513,7 @@ namespace System.IO
                 Interop.mincore.WIN32_FIND_DATA data = new Interop.mincore.WIN32_FIND_DATA();
 
                 // Open a Find handle
-                using (SafeFindHandle hnd = Interop.mincore.FindFirstFile(fullPath + PathHelpers.DirectorySeparatorCharAsString + "*", ref data))
+                using (SafeFindHandle hnd = Interop.mincore.FindFirstFile(Directory.EnsureTrailingDirectorySeparator(fullPath) + "*", ref data))
                 {
                     if (hnd.IsInvalid)
                         throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);

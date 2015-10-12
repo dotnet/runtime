@@ -201,5 +201,12 @@ namespace System.IO.Tests
             Assert.False(testDir.Exists);
         }
 
+        [Fact]
+        public void RecursiveDeleteWithTrailingSlash()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            Delete(testDir.FullName + Path.DirectorySeparatorChar, true);
+            Assert.False(testDir.Exists);
+        }
     }
 }
