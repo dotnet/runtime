@@ -42,9 +42,9 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public ImportDefinitionEnumerator GetImportDefinitionEnumerator()
+        public ImportDefinitionCollection GetImports()
         {
-            return new ImportDefinitionEnumerator(_reader.BlobStream.GetMemoryBlock(ImportsBlob));
+            return new ImportDefinitionCollection(_reader.BlobStream.GetMemoryBlock(ImportsBlob));
         }
     }
 }

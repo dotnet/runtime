@@ -28,6 +28,7 @@ namespace System.Reflection.Metadata
 
         /// <summary>
         /// Returns a blob encoding sequence points.
+        /// Use <see cref="GetSequencePoints()"/> to decode.
         /// </summary>
         public BlobHandle SequencePointsBlob
         {
@@ -65,12 +66,9 @@ namespace System.Reflection.Metadata
             }
         }
 
-        /// <summary>
-        /// Returns a sequence points reader.
-        /// </summary>
-        public SequencePointEnumerator GetSequencePointEnumerator()
+        public SequencePointCollection GetSequencePoints()
         {
-            return new SequencePointEnumerator(_reader.BlobStream.GetMemoryBlock(SequencePointsBlob), Document);
+            return new SequencePointCollection(_reader.BlobStream.GetMemoryBlock(SequencePointsBlob), Document);
         }
 
         /// <summary>
