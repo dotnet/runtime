@@ -703,6 +703,7 @@ typedef struct _GUID {
     USHORT  Data3;
     UCHAR   Data4[ 8 ];
 } GUID;
+typedef const GUID *LPCGUID;
 #define GUID_DEFINED
 #endif // !GUID_DEFINED
 
