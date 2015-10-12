@@ -29,6 +29,21 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public unsafe void ReadBoolean1()
+        {
+            byte[] buffer = new byte[] { 1, 0xff, 0, 2 };
+            fixed (byte* bufferPtr = buffer)
+            {
+                var reader = new BlobReader(new MemoryBlock(bufferPtr, buffer.Length));
+
+                Assert.True(reader.ReadBoolean());
+                Assert.True(reader.ReadBoolean());
+                Assert.False(reader.ReadBoolean());
+                Assert.True(reader.ReadBoolean());
+            }
+        }
+
+        [Fact]
         public unsafe void ReadFromMemoryReader()
         {
             byte[] buffer = new byte[4] { 0, 1, 0, 2 };

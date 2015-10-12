@@ -652,6 +652,18 @@ namespace System.Reflection.Metadata
         {
             return left._rowId != right._rowId;
         }
+
+        /// <summary>
+        /// Returns a handle to <see cref="MethodDebugInformation"/> corresponding to this handle.
+        /// </summary>
+        /// <remarks>
+        /// The resulting handle is only valid within the context of a <see cref="MetadataReader"/> open on the Portable PDB blob,
+        /// which in case of standalone PDB file is a different reader than the one containing this method definition.
+        /// </remarks>
+        public MethodDebugInformationHandle ToDebugInformationHandle()
+        {
+            return MethodDebugInformationHandle.FromRowId(_rowId);
+        }
     }
 
     public struct MethodImplementationHandle : IEquatable<MethodImplementationHandle>

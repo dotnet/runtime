@@ -66,7 +66,7 @@ namespace System.Reflection.Metadata
             int setter = 0;
 
             ushort methodCount;
-            int firstRowId = (int)_reader.MethodSemanticsTable.FindSemanticMethodsForProperty(Handle, out methodCount);
+            int firstRowId = _reader.MethodSemanticsTable.FindSemanticMethodsForProperty(Handle, out methodCount);
             for (ushort i = 0; i < methodCount; i++)
             {
                 int rowId = firstRowId + i;

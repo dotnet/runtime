@@ -94,6 +94,12 @@ namespace System.Reflection.Metadata.Tests
             assert(default(GuidHandle), HandleKind.Guid);
             assert(default(BlobHandle), HandleKind.Blob);
             assert(default(NamespaceDefinitionHandle), HandleKind.NamespaceDefinition);
+            assert(default(DocumentHandle), HandleKind.Document);
+            assert(default(MethodDebugInformationHandle), HandleKind.MethodDebugInformation);
+            assert(default(LocalScopeHandle), HandleKind.LocalScope);
+            assert(default(LocalConstantHandle), HandleKind.LocalConstant);
+            assert(default(ImportScopeHandle), HandleKind.ImportScope);
+            assert(default(CustomDebugInformationHandle), HandleKind.CustomDebugInformation);
 
             Assert.True(expectedKinds.Count == 0, "Some handles are missing from this test: " + string.Join("," + Environment.NewLine, expectedKinds));
         }
@@ -446,11 +452,13 @@ namespace System.Reflection.Metadata.Tests
             Assert.False(BlobHandle.FromOffset(1).IsNil);
             Assert.False(UserStringHandle.FromOffset(1).IsNil);
             Assert.False(GuidHandle.FromIndex(1).IsNil);
+            Assert.False(DocumentNameBlobHandle.FromOffset(1).IsNil);
 
             Assert.False(((Handle)StringHandle.FromOffset(1)).IsNil);
             Assert.False(((Handle)BlobHandle.FromOffset(1)).IsNil);
             Assert.False(((Handle)UserStringHandle.FromOffset(1)).IsNil);
             Assert.False(((Handle)GuidHandle.FromIndex(1)).IsNil);
+            Assert.False(((BlobHandle)DocumentNameBlobHandle.FromOffset(1)).IsNil);
 
             Assert.True(ModuleDefinitionHandle.FromRowId(0).IsNil);
             Assert.True(AssemblyDefinitionHandle.FromRowId(0).IsNil);
@@ -519,11 +527,13 @@ namespace System.Reflection.Metadata.Tests
             Assert.True(BlobHandle.FromOffset(0).IsNil);
             Assert.True(UserStringHandle.FromOffset(0).IsNil);
             Assert.True(GuidHandle.FromIndex(0).IsNil);
+            Assert.True(DocumentNameBlobHandle.FromOffset(0).IsNil);
 
             Assert.True(((Handle)StringHandle.FromOffset(0)).IsNil);
             Assert.True(((Handle)BlobHandle.FromOffset(0)).IsNil);
             Assert.True(((Handle)UserStringHandle.FromOffset(0)).IsNil);
             Assert.True(((Handle)GuidHandle.FromIndex(0)).IsNil);
+            Assert.True(((BlobHandle)DocumentNameBlobHandle.FromOffset(0)).IsNil);
 
             // virtual:
             Assert.False(AssemblyReferenceHandle.FromVirtualIndex(0).IsNil);
@@ -615,6 +625,18 @@ namespace System.Reflection.Metadata.Tests
                     }
                 }
             }
+        }
+
+        [Fact]
+        public void MethodDefToDebugInfo()
+        {
+            Assert.Equal(
+                MethodDefinitionHandle.FromRowId(123).ToDebugInformationHandle(), 
+                MethodDebugInformationHandle.FromRowId(123));
+
+            Assert.Equal(
+                MethodDebugInformationHandle.FromRowId(123).ToDefinitionHandle(),
+                MethodDefinitionHandle.FromRowId(123));
         }
     }
 }

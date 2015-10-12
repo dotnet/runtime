@@ -92,20 +92,33 @@ namespace System.Reflection.Metadata
             _options = options;
             this.utf8Decoder = utf8Decoder;
 
-            BlobReader memReader = new BlobReader(this.Block);
-
-            this.ReadMetadataHeader(ref memReader);
+            var headerReader = new BlobReader(this.Block);
+            this.ReadMetadataHeader(ref headerReader, out _versionString);
+            _metadataKind = GetMetadataKind(_versionString);
+            var streamHeaders = this.ReadStreamHeaders(ref headerReader);
 
             // storage header and stream headers:
             MemoryBlock metadataTableStream;
-            var streamHeaders = this.ReadStreamHeaders(ref memReader);
-            this.InitializeStreamReaders(ref this.Block, streamHeaders, out metadataTableStream);
+            MemoryBlock standalonePdbStream;
+            this.InitializeStreamReaders(ref this.Block, streamHeaders, out _metadataStreamKind, out metadataTableStream, out standalonePdbStream);
 
-            memReader = new BlobReader(metadataTableStream);
+            int[] externalTableRowCountsOpt;
+            if (standalonePdbStream.Length > 0)
+            {
+                ReadStandalonePortablePdbStream(standalonePdbStream, out _debugMetadataHeader, out externalTableRowCountsOpt);
+            }
+            else
+            {
+                externalTableRowCountsOpt = null;
+            }
 
+            var tableReader = new BlobReader(metadataTableStream);
+
+            HeapSizes heapSizes;
             int[] metadataTableRowCounts;
-            this.ReadMetadataTableHeader(ref memReader, out metadataTableRowCounts);
-            this.InitializeTableReaders(memReader.GetMemoryBlockAt(0, memReader.RemainingBytes), metadataTableRowCounts);
+            this.ReadMetadataTableHeader(ref tableReader, out heapSizes, out metadataTableRowCounts, out _sortedTables);
+
+            this.InitializeTableReaders(tableReader.GetMemoryBlockAt(0, tableReader.RemainingBytes), heapSizes, metadataTableRowCounts, externalTableRowCountsOpt);
 
             // This previously could occur in obfuscated assemblies but a check was added to prevent 
             // it getting to this point
@@ -114,7 +127,7 @@ namespace System.Reflection.Metadata
             // Although the specification states that the module table will have exactly one row,
             // the native metadata reader would successfully read files containing more than one row.
             // Such files exist in the wild and may be produced by obfuscators.
-            if (this.ModuleTable.NumberOfRows < 1)
+            if (standalonePdbStream.Length == 0 && this.ModuleTable.NumberOfRows < 1)
             {
                 throw new BadImageFormatException(SR.Format(SR.ModuleTableInvalidNumberOfRows, this.ModuleTable.NumberOfRows));
             }
@@ -132,9 +145,10 @@ namespace System.Reflection.Metadata
 
         #region Metadata Headers
 
-        private MetadataHeader _metadataHeader;
-        private MetadataKind _metadataKind;
-        private MetadataStreamKind _metadataStreamKind;
+        private readonly string _versionString;
+        private readonly MetadataKind _metadataKind;
+        private readonly MetadataStreamKind _metadataStreamKind;
+        private readonly DebugMetadataHeader _debugMetadataHeader;
 
         internal StringStreamReader StringStream;
         internal BlobStreamReader BlobStream;
@@ -157,32 +171,37 @@ namespace System.Reflection.Metadata
         /// Looks like this function reads beginning of the header described in
         /// Ecma-335 24.2.1 Metadata root
         /// </summary>
-        private void ReadMetadataHeader(ref BlobReader memReader)
+        private void ReadMetadataHeader(ref BlobReader memReader, out string versionString)
         {
             if (memReader.RemainingBytes < COR20Constants.MinimumSizeofMetadataHeader)
             {
                 throw new BadImageFormatException(SR.MetadataHeaderTooSmall);
             }
 
-            _metadataHeader.Signature = memReader.ReadUInt32();
-            if (_metadataHeader.Signature != COR20Constants.COR20MetadataSignature)
+            uint signature = memReader.ReadUInt32();
+            if (signature != COR20Constants.COR20MetadataSignature)
             {
                 throw new BadImageFormatException(SR.MetadataSignature);
             }
 
-            _metadataHeader.MajorVersion = memReader.ReadUInt16();
-            _metadataHeader.MinorVersion = memReader.ReadUInt16();
-            _metadataHeader.ExtraData = memReader.ReadUInt32();
-            _metadataHeader.VersionStringSize = memReader.ReadInt32();
-            if (memReader.RemainingBytes < _metadataHeader.VersionStringSize)
+            // major version
+            memReader.ReadUInt16();
+
+            // minor version
+            memReader.ReadUInt16();
+
+            // reserved:
+            memReader.ReadUInt32();
+
+            int versionStringSize = memReader.ReadInt32();
+            if (memReader.RemainingBytes < versionStringSize)
             {
                 throw new BadImageFormatException(SR.NotEnoughSpaceForVersionString);
             }
 
             int numberOfBytesRead;
-            _metadataHeader.VersionString = memReader.GetMemoryBlockAt(0, _metadataHeader.VersionStringSize).PeekUtf8NullTerminated(0, null, utf8Decoder, out numberOfBytesRead, '\0');
-            memReader.SkipBytes(_metadataHeader.VersionStringSize);
-            _metadataKind = GetMetadataKind(_metadataHeader.VersionString);
+            versionString = memReader.GetMemoryBlockAt(0, versionStringSize).PeekUtf8NullTerminated(0, null, utf8Decoder, out numberOfBytesRead, '\0');
+            memReader.SkipBytes(versionStringSize);
         }
 
         private MetadataKind GetMetadataKind(string versionString)
@@ -238,9 +257,16 @@ namespace System.Reflection.Metadata
             return streamHeaders;
         }
 
-        private void InitializeStreamReaders(ref MemoryBlock metadataRoot, StreamHeader[] streamHeaders, out MemoryBlock metadataTableStream)
+        private void InitializeStreamReaders(
+            ref MemoryBlock metadataRoot, 
+            StreamHeader[] streamHeaders, 
+            out MetadataStreamKind metadataStreamKind,
+            out MemoryBlock metadataTableStream,
+            out MemoryBlock standalonePdbStream)
         {
             metadataTableStream = default(MemoryBlock);
+            standalonePdbStream = default(MemoryBlock);
+            metadataStreamKind = MetadataStreamKind.Illegal;
 
             foreach (StreamHeader streamHeader in streamHeaders)
             {
@@ -288,7 +314,7 @@ namespace System.Reflection.Metadata
                             throw new BadImageFormatException(SR.NotEnoughSpaceForMetadataStream);
                         }
 
-                        _metadataStreamKind = MetadataStreamKind.Compressed;
+                        metadataStreamKind = MetadataStreamKind.Compressed;
                         metadataTableStream = metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size);
                         break;
 
@@ -298,7 +324,7 @@ namespace System.Reflection.Metadata
                             throw new BadImageFormatException(SR.NotEnoughSpaceForMetadataStream);
                         }
 
-                        _metadataStreamKind = MetadataStreamKind.Uncompressed;
+                        metadataStreamKind = MetadataStreamKind.Uncompressed;
                         metadataTableStream = metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size);
                         break;
 
@@ -312,13 +338,22 @@ namespace System.Reflection.Metadata
                         this.IsMinimalDelta = true;
                         break;
 
+                    case COR20Constants.StandalonePdbStreamName:
+                        if (metadataRoot.Length < streamHeader.Offset + streamHeader.Size)
+                        {
+                            throw new BadImageFormatException(SR.NotEnoughSpaceForMetadataStream);
+                        }
+
+                        standalonePdbStream = metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size);
+                        break;
+
                     default:
                         // Skip unknown streams. Some obfuscators insert invalid streams.
                         continue;
                 }
             }
 
-            if (IsMinimalDelta && _metadataStreamKind != MetadataStreamKind.Uncompressed)
+            if (IsMinimalDelta && metadataStreamKind != MetadataStreamKind.Uncompressed)
             {
                 throw new BadImageFormatException(SR.InvalidMetadataStreamFormat);
             }
@@ -328,7 +363,7 @@ namespace System.Reflection.Metadata
 
         #region Tables and Heaps
 
-        private MetadataTableHeader _MetadataTableHeader;
+        private readonly TableMask _sortedTables;
 
         /// <summary>
         /// A row count for each possible table. May be indexed by <see cref="TableIndex"/>.
@@ -381,28 +416,48 @@ namespace System.Reflection.Metadata
         internal MethodSpecTableReader MethodSpecTable;
         internal GenericParamConstraintTableReader GenericParamConstraintTable;
 
-        private void ReadMetadataTableHeader(ref BlobReader memReader, out int[] metadataTableRowCounts)
+        // debug tables
+        internal DocumentTableReader DocumentTable;
+        internal MethodDebugInformationTableReader MethodDebugInformationTable;
+        internal LocalScopeTableReader LocalScopeTable;
+        internal LocalVariableTableReader LocalVariableTable;
+        internal LocalConstantTableReader LocalConstantTable;
+        internal ImportScopeTableReader ImportScopeTable;
+        internal StateMachineMethodTableReader StateMachineMethodTable;
+        internal CustomDebugInformationTableReader CustomDebugInformationTable;
+
+        private void ReadMetadataTableHeader(ref BlobReader reader, out HeapSizes heapSizes, out int[] metadataTableRowCounts, out TableMask sortedTables)
         {
-            if (memReader.RemainingBytes < MetadataStreamConstants.SizeOfMetadataTableHeader)
+            if (reader.RemainingBytes < MetadataStreamConstants.SizeOfMetadataTableHeader)
             {
                 throw new BadImageFormatException(SR.MetadataTableHeaderTooSmall);
             }
 
-            _MetadataTableHeader.Reserved = memReader.ReadUInt32();
-            _MetadataTableHeader.MajorVersion = memReader.ReadByte();
-            _MetadataTableHeader.MinorVersion = memReader.ReadByte();
-            _MetadataTableHeader.HeapSizeFlags = (HeapSizeFlag)memReader.ReadByte();
-            _MetadataTableHeader.RowId = memReader.ReadByte();
-            _MetadataTableHeader.ValidTables = (TableMask)memReader.ReadUInt64();
-            _MetadataTableHeader.SortedTables = (TableMask)memReader.ReadUInt64();
-            ulong presentTables = (ulong)_MetadataTableHeader.ValidTables;
+            // reserved (shall be ignored):
+            reader.ReadUInt32();
+
+            // major version (shall be ignored):
+            reader.ReadByte();
+
+            // minor version (shall be ignored):
+            reader.ReadByte();
+
+            // heap sizes:
+            heapSizes = (HeapSizes)reader.ReadByte();
+
+            // reserved (shall be ignored):
+            reader.ReadByte();
+
+            ulong presentTables = reader.ReadUInt64();
+            sortedTables = (TableMask)reader.ReadUInt64();
 
             // According to ECMA-335, MajorVersion and MinorVersion have fixed values and, 
             // based on recommendation in 24.1 Fixed fields: When writing these fields it 
-            // is best that they be set to the value indicated, on reading they should be ignored.?
-            // we will not be checking version values. We will continue checking that the set of 
+            // is best that they be set to the value indicated, on reading they should be ignored.
+            // We will not be checking version values. We will continue checking that the set of 
             // present tables is within the set we understand.
-            ulong validTables = (ulong)TableMask.V2_0_TablesMask;
+
+            ulong validTables = (ulong)TableMask.V3_0_TablesMask;
 
             if ((presentTables & ~validTables) != 0)
             {
@@ -421,75 +476,103 @@ namespace System.Reflection.Metadata
                 }
             }
 
-            int numberOfTables = _MetadataTableHeader.GetNumberOfTablesPresent();
-            if (memReader.RemainingBytes < numberOfTables * sizeof(int))
-            {
-                throw new BadImageFormatException(SR.TableRowCountSpaceTooSmall);
-            }
+            metadataTableRowCounts = ReadMetadataTableRowCounts(ref reader, presentTables);
 
-            var rowCounts = new int[numberOfTables];
-            for (int i = 0; i < rowCounts.Length; i++)
-            {
-                uint rowCount = memReader.ReadUInt32();
-                if (rowCount > TokenTypeIds.RIDMask)
-                {
-                    throw new BadImageFormatException(SR.Format(SR.InvalidRowCount, rowCount));
-                }
-
-                rowCounts[i] = (int)rowCount;
-            }
-
-            metadataTableRowCounts = rowCounts;
-
-            if ((_MetadataTableHeader.HeapSizeFlags & HeapSizeFlag.ExtraData) == HeapSizeFlag.ExtraData)
+            if ((heapSizes & HeapSizes.ExtraData) == HeapSizes.ExtraData)
             {
                 // Skip "extra data" used by some obfuscators. Although it is not mentioned in the CLI spec,
                 // it is honored by the native metadata reader.
-                memReader.ReadUInt32();
+                reader.ReadUInt32();
             }
+        }
+
+        private int[] ReadMetadataTableRowCounts(ref BlobReader memReader, ulong presentTableMask)
+        {
+            ulong currentTableBit = 1;
+
+            var rowCounts = new int[TableIndexExtensions.Count];
+            for (int i = 0; i < rowCounts.Length; i++)
+            {
+                if ((presentTableMask & currentTableBit) != 0)
+                {
+                    if (memReader.RemainingBytes < sizeof(uint))
+                    {
+                        throw new BadImageFormatException(SR.TableRowCountSpaceTooSmall);
+                    }
+
+                    uint rowCount = memReader.ReadUInt32();
+                    if (rowCount > TokenTypeIds.RIDMask)
+                    {
+                        throw new BadImageFormatException(SR.Format(SR.InvalidRowCount, rowCount));
+                    }
+
+                    rowCounts[i] = (int)rowCount;
+                }
+
+                currentTableBit <<= 1;
+            }
+
+            return rowCounts;
+        }
+
+        private void ReadStandalonePortablePdbStream(MemoryBlock block, out DebugMetadataHeader debugMetadataHeader, out int[] externalTableRowCounts)
+        {
+            var reader = new BlobReader(block);
+
+            const int PdbIdSize = 20;
+            byte[] pdbId = reader.ReadBytes(PdbIdSize);
+
+            // ECMA-335 15.4.1.2:
+            // The entry point to an application shall be static.
+            // This entry point method can be a global method or it can appear inside a type. 
+            // The entry point method shall either accept no arguments or a vector of strings.
+            // The return type of the entry point method shall be void, int32, or unsigned int32. 
+            // The entry point method cannot be defined in a generic class.
+            uint entryPointToken = reader.ReadUInt32();
+            if (entryPointToken != 0 && (entryPointToken & TokenTypeIds.TypeMask) != TokenTypeIds.MethodDef)
+            {
+                throw new BadImageFormatException(string.Format(SR.InvalidEntryPointToken, entryPointToken));
+            }
+
+            ulong externalTableMask = reader.ReadUInt64();
+
+            // EnC & Ptr tables can't be referenced from standalone PDB metadata:
+            const ulong validTables = (ulong)(TableMask.V2_0_TablesMask & ~TableMask.PtrTables & ~TableMask.EnCLog & ~TableMask.EnCMap);
+
+            if ((externalTableMask & ~validTables) != 0)
+            {
+                throw new BadImageFormatException(string.Format(SR.UnknownTables, (TableMask)externalTableMask));
+            }
+
+            externalTableRowCounts = ReadMetadataTableRowCounts(ref reader, externalTableMask);
+
+            debugMetadataHeader = new DebugMetadataHeader(
+                ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref pdbId),
+                MethodDefinitionHandle.FromRowId((int)(entryPointToken & TokenTypeIds.RIDMask)));
         }
 
         private const int SmallIndexSize = 2;
         private const int LargeIndexSize = 4;
 
-        private void InitializeTableReaders(MemoryBlock metadataTablesMemoryBlock, int[] compressedRowCounts)
+        private int GetReferenceSize(int[] rowCounts, TableIndex index)
         {
-            // Only sizes of tables present in metadata are recorded in rowCountCompressedArray.
-            // This array contains a slot for each possible table, not just those that are present in the metadata.
-            int[] rowCounts = new int[TableIndexExtensions.Count];
+            return (rowCounts[(int)index] < MetadataStreamConstants.LargeTableRowCount && !IsMinimalDelta) ? SmallIndexSize : LargeIndexSize;
+        }
 
+        private void InitializeTableReaders(MemoryBlock metadataTablesMemoryBlock, HeapSizes heapSizes, int[] rowCounts, int[] externalRowCountsOpt)
+        {
             // Size of reference tags in each table.
-            int[] referenceSizes = new int[TableIndexExtensions.Count];
-
-            ulong validTables = (ulong)_MetadataTableHeader.ValidTables;
-            int compressedRowCountIndex = 0;
-            for (int i = 0; i < TableIndexExtensions.Count; i++)
-            {
-                bool fitsSmall;
-
-                if ((validTables & 1UL) != 0)
-                {
-                    int rowCount = compressedRowCounts[compressedRowCountIndex++];
-                    rowCounts[i] = rowCount;
-                    fitsSmall = rowCount < MetadataStreamConstants.LargeTableRowCount;
-                }
-                else
-                {
-                    fitsSmall = true;
-                }
-
-                referenceSizes[i] = (fitsSmall && !IsMinimalDelta) ? SmallIndexSize : LargeIndexSize;
-                validTables >>= 1;
-            }
-
             this.TableRowCounts = rowCounts;
 
-            // Compute ref sizes for tables that can have pointer tables for it
-            int fieldRefSize = referenceSizes[(int)TableIndex.FieldPtr] > SmallIndexSize ? LargeIndexSize : referenceSizes[(int)TableIndex.Field];
-            int methodRefSize = referenceSizes[(int)TableIndex.MethodPtr] > SmallIndexSize ? LargeIndexSize : referenceSizes[(int)TableIndex.MethodDef];
-            int paramRefSize = referenceSizes[(int)TableIndex.ParamPtr] > SmallIndexSize ? LargeIndexSize : referenceSizes[(int)TableIndex.Param];
-            int eventRefSize = referenceSizes[(int)TableIndex.EventPtr] > SmallIndexSize ? LargeIndexSize : referenceSizes[(int)TableIndex.Event];
-            int propertyRefSize = referenceSizes[(int)TableIndex.PropertyPtr] > SmallIndexSize ? LargeIndexSize : referenceSizes[(int)TableIndex.Property];
+            // TODO (https://github.com/dotnet/corefx/issues/2061): 
+            // Shouldn't XxxPtr table be always the same size or smaller than the corresponding Xxx table?
+
+            // Compute ref sizes for tables that can have pointer tables
+            int fieldRefSizeSorted = GetReferenceSize(rowCounts, TableIndex.FieldPtr) > SmallIndexSize ? LargeIndexSize : GetReferenceSize(rowCounts, TableIndex.Field);
+            int methodRefSizeSorted = GetReferenceSize(rowCounts, TableIndex.MethodPtr) > SmallIndexSize ? LargeIndexSize : GetReferenceSize(rowCounts, TableIndex.MethodDef);
+            int paramRefSizeSorted = GetReferenceSize(rowCounts, TableIndex.ParamPtr) > SmallIndexSize ? LargeIndexSize : GetReferenceSize(rowCounts, TableIndex.Param);
+            int eventRefSizeSorted = GetReferenceSize(rowCounts, TableIndex.EventPtr) > SmallIndexSize ? LargeIndexSize : GetReferenceSize(rowCounts, TableIndex.Event);
+            int propertyRefSizeSorted = GetReferenceSize(rowCounts, TableIndex.PropertyPtr) > SmallIndexSize ? LargeIndexSize : GetReferenceSize(rowCounts, TableIndex.Property);
 
             // Compute the coded token ref sizes
             int typeDefOrRefRefSize = ComputeCodedTokenSize(TypeDefOrRefTag.LargeRowSize, rowCounts, TypeDefOrRefTag.TablesReferenced);
@@ -507,9 +590,9 @@ namespace System.Reflection.Metadata
             int typeOrMethodDefRefSize = ComputeCodedTokenSize(TypeOrMethodDefTag.LargeRowSize, rowCounts, TypeOrMethodDefTag.TablesReferenced);
 
             // Compute HeapRef Sizes
-            int stringHeapRefSize = (_MetadataTableHeader.HeapSizeFlags & HeapSizeFlag.StringHeapLarge) == HeapSizeFlag.StringHeapLarge ? LargeIndexSize : SmallIndexSize;
-            int guidHeapRefSize = (_MetadataTableHeader.HeapSizeFlags & HeapSizeFlag.GuidHeapLarge) == HeapSizeFlag.GuidHeapLarge ? LargeIndexSize : SmallIndexSize;
-            int blobHeapRefSize = (_MetadataTableHeader.HeapSizeFlags & HeapSizeFlag.BlobHeapLarge) == HeapSizeFlag.BlobHeapLarge ? LargeIndexSize : SmallIndexSize;
+            int stringHeapRefSize = (heapSizes & HeapSizes.StringHeapLarge) == HeapSizes.StringHeapLarge ? LargeIndexSize : SmallIndexSize;
+            int guidHeapRefSize = (heapSizes & HeapSizes.GuidHeapLarge) == HeapSizes.GuidHeapLarge ? LargeIndexSize : SmallIndexSize;
+            int blobHeapRefSize = (heapSizes & HeapSizes.BlobHeapLarge) == HeapSizes.BlobHeapLarge ? LargeIndexSize : SmallIndexSize;
 
             // Populate the Table blocks
             int totalRequiredSize = 0;
@@ -519,28 +602,28 @@ namespace System.Reflection.Metadata
             this.TypeRefTable = new TypeRefTableReader(rowCounts[(int)TableIndex.TypeRef], resolutionScopeRefSize, stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.TypeRefTable.Block.Length;
 
-            this.TypeDefTable = new TypeDefTableReader(rowCounts[(int)TableIndex.TypeDef], fieldRefSize, methodRefSize, typeDefOrRefRefSize, stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            this.TypeDefTable = new TypeDefTableReader(rowCounts[(int)TableIndex.TypeDef], fieldRefSizeSorted, methodRefSizeSorted, typeDefOrRefRefSize, stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.TypeDefTable.Block.Length;
 
-            this.FieldPtrTable = new FieldPtrTableReader(rowCounts[(int)TableIndex.FieldPtr], referenceSizes[(int)TableIndex.Field], metadataTablesMemoryBlock, totalRequiredSize);
+            this.FieldPtrTable = new FieldPtrTableReader(rowCounts[(int)TableIndex.FieldPtr], GetReferenceSize(rowCounts, TableIndex.Field), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.FieldPtrTable.Block.Length;
 
             this.FieldTable = new FieldTableReader(rowCounts[(int)TableIndex.Field], stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.FieldTable.Block.Length;
 
-            this.MethodPtrTable = new MethodPtrTableReader(rowCounts[(int)TableIndex.MethodPtr], referenceSizes[(int)TableIndex.MethodDef], metadataTablesMemoryBlock, totalRequiredSize);
+            this.MethodPtrTable = new MethodPtrTableReader(rowCounts[(int)TableIndex.MethodPtr], GetReferenceSize(rowCounts, TableIndex.MethodDef), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.MethodPtrTable.Block.Length;
 
-            this.MethodDefTable = new MethodTableReader(rowCounts[(int)TableIndex.MethodDef], paramRefSize, stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            this.MethodDefTable = new MethodTableReader(rowCounts[(int)TableIndex.MethodDef], paramRefSizeSorted, stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.MethodDefTable.Block.Length;
 
-            this.ParamPtrTable = new ParamPtrTableReader(rowCounts[(int)TableIndex.ParamPtr], referenceSizes[(int)TableIndex.Param], metadataTablesMemoryBlock, totalRequiredSize);
+            this.ParamPtrTable = new ParamPtrTableReader(rowCounts[(int)TableIndex.ParamPtr], GetReferenceSize(rowCounts, TableIndex.Param), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.ParamPtrTable.Block.Length;
 
             this.ParamTable = new ParamTableReader(rowCounts[(int)TableIndex.Param], stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.ParamTable.Block.Length;
 
-            this.InterfaceImplTable = new InterfaceImplTableReader(rowCounts[(int)TableIndex.InterfaceImpl], IsDeclaredSorted(TableMask.InterfaceImpl), referenceSizes[(int)TableIndex.TypeDef], typeDefOrRefRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            this.InterfaceImplTable = new InterfaceImplTableReader(rowCounts[(int)TableIndex.InterfaceImpl], IsDeclaredSorted(TableMask.InterfaceImpl), GetReferenceSize(rowCounts, TableIndex.TypeDef), typeDefOrRefRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.InterfaceImplTable.Block.Length;
 
             this.MemberRefTable = new MemberRefTableReader(rowCounts[(int)TableIndex.MemberRef], memberRefParentRefSize, stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
@@ -564,37 +647,37 @@ namespace System.Reflection.Metadata
             this.DeclSecurityTable = new DeclSecurityTableReader(rowCounts[(int)TableIndex.DeclSecurity], IsDeclaredSorted(TableMask.DeclSecurity), hasDeclSecurityRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.DeclSecurityTable.Block.Length;
 
-            this.ClassLayoutTable = new ClassLayoutTableReader(rowCounts[(int)TableIndex.ClassLayout], IsDeclaredSorted(TableMask.ClassLayout), referenceSizes[(int)TableIndex.TypeDef], metadataTablesMemoryBlock, totalRequiredSize);
+            this.ClassLayoutTable = new ClassLayoutTableReader(rowCounts[(int)TableIndex.ClassLayout], IsDeclaredSorted(TableMask.ClassLayout), GetReferenceSize(rowCounts, TableIndex.TypeDef), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.ClassLayoutTable.Block.Length;
 
-            this.FieldLayoutTable = new FieldLayoutTableReader(rowCounts[(int)TableIndex.FieldLayout], IsDeclaredSorted(TableMask.FieldLayout), referenceSizes[(int)TableIndex.Field], metadataTablesMemoryBlock, totalRequiredSize);
+            this.FieldLayoutTable = new FieldLayoutTableReader(rowCounts[(int)TableIndex.FieldLayout], IsDeclaredSorted(TableMask.FieldLayout), GetReferenceSize(rowCounts, TableIndex.Field), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.FieldLayoutTable.Block.Length;
 
             this.StandAloneSigTable = new StandAloneSigTableReader(rowCounts[(int)TableIndex.StandAloneSig], blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.StandAloneSigTable.Block.Length;
 
-            this.EventMapTable = new EventMapTableReader(rowCounts[(int)TableIndex.EventMap], referenceSizes[(int)TableIndex.TypeDef], eventRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            this.EventMapTable = new EventMapTableReader(rowCounts[(int)TableIndex.EventMap], GetReferenceSize(rowCounts, TableIndex.TypeDef), eventRefSizeSorted, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.EventMapTable.Block.Length;
 
-            this.EventPtrTable = new EventPtrTableReader(rowCounts[(int)TableIndex.EventPtr], referenceSizes[(int)TableIndex.Event], metadataTablesMemoryBlock, totalRequiredSize);
+            this.EventPtrTable = new EventPtrTableReader(rowCounts[(int)TableIndex.EventPtr], GetReferenceSize(rowCounts, TableIndex.Event), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.EventPtrTable.Block.Length;
 
             this.EventTable = new EventTableReader(rowCounts[(int)TableIndex.Event], typeDefOrRefRefSize, stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.EventTable.Block.Length;
 
-            this.PropertyMapTable = new PropertyMapTableReader(rowCounts[(int)TableIndex.PropertyMap], referenceSizes[(int)TableIndex.TypeDef], propertyRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            this.PropertyMapTable = new PropertyMapTableReader(rowCounts[(int)TableIndex.PropertyMap], GetReferenceSize(rowCounts, TableIndex.TypeDef), propertyRefSizeSorted, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.PropertyMapTable.Block.Length;
 
-            this.PropertyPtrTable = new PropertyPtrTableReader(rowCounts[(int)TableIndex.PropertyPtr], referenceSizes[(int)TableIndex.Property], metadataTablesMemoryBlock, totalRequiredSize);
+            this.PropertyPtrTable = new PropertyPtrTableReader(rowCounts[(int)TableIndex.PropertyPtr], GetReferenceSize(rowCounts, TableIndex.Property), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.PropertyPtrTable.Block.Length;
 
             this.PropertyTable = new PropertyTableReader(rowCounts[(int)TableIndex.Property], stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.PropertyTable.Block.Length;
 
-            this.MethodSemanticsTable = new MethodSemanticsTableReader(rowCounts[(int)TableIndex.MethodSemantics], IsDeclaredSorted(TableMask.MethodSemantics), referenceSizes[(int)TableIndex.MethodDef], hasSemanticsRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            this.MethodSemanticsTable = new MethodSemanticsTableReader(rowCounts[(int)TableIndex.MethodSemantics], IsDeclaredSorted(TableMask.MethodSemantics), GetReferenceSize(rowCounts, TableIndex.MethodDef), hasSemanticsRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.MethodSemanticsTable.Block.Length;
 
-            this.MethodImplTable = new MethodImplTableReader(rowCounts[(int)TableIndex.MethodImpl], IsDeclaredSorted(TableMask.MethodImpl), referenceSizes[(int)TableIndex.TypeDef], methodDefOrRefRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            this.MethodImplTable = new MethodImplTableReader(rowCounts[(int)TableIndex.MethodImpl], IsDeclaredSorted(TableMask.MethodImpl), GetReferenceSize(rowCounts, TableIndex.TypeDef), methodDefOrRefRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.MethodImplTable.Block.Length;
 
             this.ModuleRefTable = new ModuleRefTableReader(rowCounts[(int)TableIndex.ModuleRef], stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
@@ -603,10 +686,10 @@ namespace System.Reflection.Metadata
             this.TypeSpecTable = new TypeSpecTableReader(rowCounts[(int)TableIndex.TypeSpec], blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.TypeSpecTable.Block.Length;
 
-            this.ImplMapTable = new ImplMapTableReader(rowCounts[(int)TableIndex.ImplMap], IsDeclaredSorted(TableMask.ImplMap), referenceSizes[(int)TableIndex.ModuleRef], memberForwardedRefSize, stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            this.ImplMapTable = new ImplMapTableReader(rowCounts[(int)TableIndex.ImplMap], IsDeclaredSorted(TableMask.ImplMap), GetReferenceSize(rowCounts, TableIndex.ModuleRef), memberForwardedRefSize, stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.ImplMapTable.Block.Length;
 
-            this.FieldRvaTable = new FieldRVATableReader(rowCounts[(int)TableIndex.FieldRva], IsDeclaredSorted(TableMask.FieldRva), referenceSizes[(int)TableIndex.Field], metadataTablesMemoryBlock, totalRequiredSize);
+            this.FieldRvaTable = new FieldRVATableReader(rowCounts[(int)TableIndex.FieldRva], IsDeclaredSorted(TableMask.FieldRva), GetReferenceSize(rowCounts, TableIndex.Field), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.FieldRvaTable.Block.Length;
 
             this.EncLogTable = new EnCLogTableReader(rowCounts[(int)TableIndex.EncLog], metadataTablesMemoryBlock, totalRequiredSize, _metadataStreamKind);
@@ -624,13 +707,13 @@ namespace System.Reflection.Metadata
             this.AssemblyOSTable = new AssemblyOSTableReader(rowCounts[(int)TableIndex.AssemblyOS], metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.AssemblyOSTable.Block.Length;
 
-            this.AssemblyRefTable = new AssemblyRefTableReader((int)rowCounts[(int)TableIndex.AssemblyRef], stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize, _metadataKind);
+            this.AssemblyRefTable = new AssemblyRefTableReader(rowCounts[(int)TableIndex.AssemblyRef], stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize, _metadataKind);
             totalRequiredSize += this.AssemblyRefTable.Block.Length;
 
-            this.AssemblyRefProcessorTable = new AssemblyRefProcessorTableReader(rowCounts[(int)TableIndex.AssemblyRefProcessor], referenceSizes[(int)TableIndex.AssemblyRef], metadataTablesMemoryBlock, totalRequiredSize);
+            this.AssemblyRefProcessorTable = new AssemblyRefProcessorTableReader(rowCounts[(int)TableIndex.AssemblyRefProcessor], GetReferenceSize(rowCounts, TableIndex.AssemblyRef), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.AssemblyRefProcessorTable.Block.Length;
 
-            this.AssemblyRefOSTable = new AssemblyRefOSTableReader(rowCounts[(int)TableIndex.AssemblyRefOS], referenceSizes[(int)TableIndex.AssemblyRef], metadataTablesMemoryBlock, totalRequiredSize);
+            this.AssemblyRefOSTable = new AssemblyRefOSTableReader(rowCounts[(int)TableIndex.AssemblyRefOS], GetReferenceSize(rowCounts, TableIndex.AssemblyRef), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.AssemblyRefOSTable.Block.Length;
 
             this.FileTable = new FileTableReader(rowCounts[(int)TableIndex.File], stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
@@ -642,7 +725,7 @@ namespace System.Reflection.Metadata
             this.ManifestResourceTable = new ManifestResourceTableReader(rowCounts[(int)TableIndex.ManifestResource], implementationRefSize, stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.ManifestResourceTable.Block.Length;
 
-            this.NestedClassTable = new NestedClassTableReader(rowCounts[(int)TableIndex.NestedClass], IsDeclaredSorted(TableMask.NestedClass), referenceSizes[(int)TableIndex.TypeDef], metadataTablesMemoryBlock, totalRequiredSize);
+            this.NestedClassTable = new NestedClassTableReader(rowCounts[(int)TableIndex.NestedClass], IsDeclaredSorted(TableMask.NestedClass), GetReferenceSize(rowCounts, TableIndex.TypeDef), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.NestedClassTable.Block.Length;
 
             this.GenericParamTable = new GenericParamTableReader(rowCounts[(int)TableIndex.GenericParam], IsDeclaredSorted(TableMask.GenericParam), typeOrMethodDefRefSize, stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
@@ -651,8 +734,40 @@ namespace System.Reflection.Metadata
             this.MethodSpecTable = new MethodSpecTableReader(rowCounts[(int)TableIndex.MethodSpec], methodDefOrRefRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.MethodSpecTable.Block.Length;
 
-            this.GenericParamConstraintTable = new GenericParamConstraintTableReader(rowCounts[(int)TableIndex.GenericParamConstraint], IsDeclaredSorted(TableMask.GenericParamConstraint), referenceSizes[(int)TableIndex.GenericParam], typeDefOrRefRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            this.GenericParamConstraintTable = new GenericParamConstraintTableReader(rowCounts[(int)TableIndex.GenericParamConstraint], IsDeclaredSorted(TableMask.GenericParamConstraint), GetReferenceSize(rowCounts, TableIndex.GenericParam), typeDefOrRefRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.GenericParamConstraintTable.Block.Length;
+
+            // debug tables:
+            // Type-system metadata tables may be stored in a separate (external) metadata file.
+            // We need to use the row counts of the external tables when referencing them.
+            var combinedRowCounts = (externalRowCountsOpt != null) ? CombineRowCounts(rowCounts, externalRowCountsOpt, TableIndex.Document) : rowCounts;
+
+            int methodRefSizeCombined = GetReferenceSize(combinedRowCounts, TableIndex.MethodDef);
+            int hasCustomDebugInformationRefSizeCombined = ComputeCodedTokenSize(HasCustomDebugInformationTag.LargeRowSize, combinedRowCounts, HasCustomDebugInformationTag.TablesReferenced);
+
+            this.DocumentTable = new DocumentTableReader(rowCounts[(int)TableIndex.Document], guidHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            totalRequiredSize += this.DocumentTable.Block.Length;
+
+            this.MethodDebugInformationTable = new MethodDebugInformationTableReader(rowCounts[(int)TableIndex.MethodDebugInformation], GetReferenceSize(rowCounts, TableIndex.Document), blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            totalRequiredSize += this.MethodDebugInformationTable.Block.Length;
+
+            this.LocalScopeTable = new LocalScopeTableReader(rowCounts[(int)TableIndex.LocalScope], IsDeclaredSorted(TableMask.LocalScope), methodRefSizeCombined, GetReferenceSize(rowCounts, TableIndex.ImportScope), GetReferenceSize(rowCounts, TableIndex.LocalVariable), GetReferenceSize(rowCounts, TableIndex.LocalConstant), metadataTablesMemoryBlock, totalRequiredSize);
+            totalRequiredSize += this.LocalScopeTable.Block.Length;
+
+            this.LocalVariableTable = new LocalVariableTableReader(rowCounts[(int)TableIndex.LocalVariable], stringHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            totalRequiredSize += this.LocalVariableTable.Block.Length;
+
+            this.LocalConstantTable = new LocalConstantTableReader(rowCounts[(int)TableIndex.LocalConstant], stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            totalRequiredSize += this.LocalConstantTable.Block.Length;
+
+            this.ImportScopeTable = new ImportScopeTableReader(rowCounts[(int)TableIndex.ImportScope], GetReferenceSize(rowCounts, TableIndex.ImportScope), blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            totalRequiredSize += this.ImportScopeTable.Block.Length;
+
+            this.StateMachineMethodTable = new StateMachineMethodTableReader(rowCounts[(int)TableIndex.StateMachineMethod], IsDeclaredSorted(TableMask.StateMachineMethod), methodRefSizeCombined, metadataTablesMemoryBlock, totalRequiredSize);
+            totalRequiredSize += this.StateMachineMethodTable.Block.Length;
+
+            this.CustomDebugInformationTable = new CustomDebugInformationTableReader(rowCounts[(int)TableIndex.CustomDebugInformation], IsDeclaredSorted(TableMask.CustomDebugInformation), hasCustomDebugInformationRefSizeCombined, guidHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            totalRequiredSize += this.CustomDebugInformationTable.Block.Length;
 
             if (totalRequiredSize > metadataTablesMemoryBlock.Length)
             {
@@ -660,7 +775,25 @@ namespace System.Reflection.Metadata
             }
         }
 
-        private int ComputeCodedTokenSize(int largeRowSize, int[] rowCountArray, TableMask tablesReferenced)
+        private static int[] CombineRowCounts(int[] local, int[] external, TableIndex firstExternalTableIndex)
+        {
+            Debug.Assert(local.Length == external.Length);
+
+            var rowCounts = new int[local.Length];
+            for (int i = 0; i < (int)firstExternalTableIndex; i++)
+            {
+                rowCounts[i] = local[i];
+            }
+
+            for (int i = (int)firstExternalTableIndex; i < rowCounts.Length; i++)
+            {
+                rowCounts[i] = external[i];
+            }
+
+            return rowCounts;
+        }
+
+        private int ComputeCodedTokenSize(int largeRowSize, int[] rowCounts, TableMask tablesReferenced)
         {
             if (IsMinimalDelta)
             {
@@ -671,9 +804,9 @@ namespace System.Reflection.Metadata
             ulong tablesReferencedMask = (ulong)tablesReferenced;
             for (int tableIndex = 0; tableIndex < TableIndexExtensions.Count; tableIndex++)
             {
-                if ((tablesReferencedMask & 1UL) != 0)
+                if ((tablesReferencedMask & 1) != 0)
                 {
-                    isAllReferencedTablesSmall = isAllReferencedTablesSmall && (rowCountArray[tableIndex] < largeRowSize);
+                    isAllReferencedTablesSmall = isAllReferencedTablesSmall && (rowCounts[tableIndex] < largeRowSize);
                 }
 
                 tablesReferencedMask >>= 1;
@@ -684,7 +817,7 @@ namespace System.Reflection.Metadata
 
         private bool IsDeclaredSorted(TableMask index)
         {
-            return (_MetadataTableHeader.SortedTables & index) != 0;
+            return (_sortedTables & index) != 0;
         }
 
         #endregion
@@ -774,11 +907,11 @@ namespace System.Reflection.Metadata
             firstEventRowId = this.EventMapTable.GetEventListStartFor(eventMapRowId);
             if (eventMapRowId == this.EventMapTable.NumberOfRows)
             {
-                lastEventRowId = (int)(this.UseEventPtrTable ? this.EventPtrTable.NumberOfRows : this.EventTable.NumberOfRows);
+                lastEventRowId = this.UseEventPtrTable ? this.EventPtrTable.NumberOfRows : this.EventTable.NumberOfRows;
             }
             else
             {
-                lastEventRowId = (int)this.EventMapTable.GetEventListStartFor(eventMapRowId + 1) - 1;
+                lastEventRowId = this.EventMapTable.GetEventListStartFor(eventMapRowId + 1) - 1;
             }
         }
 
@@ -823,6 +956,46 @@ namespace System.Reflection.Metadata
             }
         }
 
+        internal void GetLocalVariableRange(LocalScopeHandle scope, out int firstVariableRowId, out int lastVariableRowId)
+        {
+            int scopeRowId = scope.RowId;
+
+            firstVariableRowId = this.LocalScopeTable.GetVariableStart(scopeRowId);
+            if (firstVariableRowId == 0)
+            {
+                firstVariableRowId = 1;
+                lastVariableRowId = 0;
+            }
+            else if (scopeRowId == this.LocalScopeTable.NumberOfRows)
+            {
+                lastVariableRowId = this.LocalVariableTable.NumberOfRows;
+            }
+            else
+            {
+                lastVariableRowId = this.LocalScopeTable.GetVariableStart(scopeRowId + 1) - 1;
+            }
+        }
+
+        internal void GetLocalConstantRange(LocalScopeHandle scope, out int firstConstantRowId, out int lastConstantRowId)
+        {
+            int scopeRowId = scope.RowId;
+
+            firstConstantRowId = this.LocalScopeTable.GetConstantStart(scopeRowId);
+            if (firstConstantRowId == 0)
+            {
+                firstConstantRowId = 1;
+                lastConstantRowId = 0;
+            }
+            else if (scopeRowId == this.LocalScopeTable.NumberOfRows)
+            {
+                lastConstantRowId = this.LocalConstantTable.NumberOfRows;
+            }
+            else
+            {
+                lastConstantRowId = this.LocalScopeTable.GetConstantStart(scopeRowId + 1) - 1;
+            }
+        }
+
         #endregion
 
         #region Public APIs
@@ -834,7 +1007,15 @@ namespace System.Reflection.Metadata
 
         public string MetadataVersion
         {
-            get { return _metadataHeader.VersionString; }
+            get { return _versionString; }
+        }
+
+        /// <summary>
+        /// Information decoded from #Pdb stream, or null if the stream is not present.
+        /// </summary>
+        public DebugMetadataHeader DebugMetadataHeader
+        {
+            get { return _debugMetadataHeader; }
         }
 
         public MetadataKind MetadataKind
@@ -859,12 +1040,12 @@ namespace System.Reflection.Metadata
 
         public TypeDefinitionHandleCollection TypeDefinitions
         {
-            get { return new TypeDefinitionHandleCollection((int)TypeDefTable.NumberOfRows); }
+            get { return new TypeDefinitionHandleCollection(TypeDefTable.NumberOfRows); }
         }
 
         public TypeReferenceHandleCollection TypeReferences
         {
-            get { return new TypeReferenceHandleCollection((int)TypeRefTable.NumberOfRows); }
+            get { return new TypeReferenceHandleCollection(TypeRefTable.NumberOfRows); }
         }
 
         public CustomAttributeHandleCollection CustomAttributes
@@ -879,22 +1060,22 @@ namespace System.Reflection.Metadata
 
         public MemberReferenceHandleCollection MemberReferences
         {
-            get { return new MemberReferenceHandleCollection((int)MemberRefTable.NumberOfRows); }
+            get { return new MemberReferenceHandleCollection(MemberRefTable.NumberOfRows); }
         }
 
         public ManifestResourceHandleCollection ManifestResources
         {
-            get { return new ManifestResourceHandleCollection((int)ManifestResourceTable.NumberOfRows); }
+            get { return new ManifestResourceHandleCollection(ManifestResourceTable.NumberOfRows); }
         }
 
         public AssemblyFileHandleCollection AssemblyFiles
         {
-            get { return new AssemblyFileHandleCollection((int)FileTable.NumberOfRows); }
+            get { return new AssemblyFileHandleCollection(FileTable.NumberOfRows); }
         }
 
         public ExportedTypeHandleCollection ExportedTypes
         {
-            get { return new ExportedTypeHandleCollection((int)ExportedTypeTable.NumberOfRows); }
+            get { return new ExportedTypeHandleCollection(ExportedTypeTable.NumberOfRows); }
         }
 
         public MethodDefinitionHandleCollection MethodDefinitions
@@ -915,6 +1096,41 @@ namespace System.Reflection.Metadata
         public PropertyDefinitionHandleCollection PropertyDefinitions
         {
             get { return new PropertyDefinitionHandleCollection(this); }
+        }
+
+        public DocumentHandleCollection Documents
+        {
+            get { return new DocumentHandleCollection(this); }
+        }
+
+        public MethodDebugInformationHandleCollection MethodDebugInformation
+        {
+            get { return new MethodDebugInformationHandleCollection(this); }
+        }
+
+        public LocalScopeHandleCollection LocalScopes
+        {
+            get { return new LocalScopeHandleCollection(this, 0); }
+        }
+
+        public LocalVariableHandleCollection LocalVariables
+        {
+            get { return new LocalVariableHandleCollection(this, default(LocalScopeHandle)); }
+        }
+
+        public LocalConstantHandleCollection LocalConstants
+        {
+            get { return new LocalConstantHandleCollection(this, default(LocalScopeHandle)); }
+        }
+
+        public ImportScopeCollection ImportScopes
+        {
+            get { return new ImportScopeCollection(this); }
+        }
+
+        public CustomDebugInformationHandleCollection CustomDebugInformation
+        {
+            get { return new CustomDebugInformationHandleCollection(this); }
         }
 
         public AssemblyDefinition GetAssemblyDefinition()
@@ -971,6 +1187,11 @@ namespace System.Reflection.Metadata
 
         public ModuleDefinition GetModuleDefinition()
         {
+            if (_debugMetadataHeader != null)
+            {
+                throw new InvalidOperationException(SR.StandaloneDebugMetadataImageDoesNotContainModuleTable);
+            }
+
             return new ModuleDefinition(this);
         }
 
@@ -1208,6 +1429,69 @@ namespace System.Reflection.Metadata
             }
 
             return TypeDefTable.FindTypeContainingField(fieldRowId, FieldTable.NumberOfRows);
+        }
+
+        private static readonly ObjectPool<StringBuilder> s_stringBuilderPool = new ObjectPool<StringBuilder>(() => new StringBuilder());
+
+        public string GetString(DocumentNameBlobHandle handle)
+        {
+            return BlobStream.GetDocumentName(handle);
+        }
+
+        public Document GetDocument(DocumentHandle handle)
+        {
+            return new Document(this, handle);
+        }
+
+        public MethodDebugInformation GetMethodDebugInformation(MethodDebugInformationHandle handle)
+        {
+            return new MethodDebugInformation(this, handle);
+        }
+
+        public MethodDebugInformation GetMethodDebugInformation(MethodDefinitionHandle handle)
+        {
+            return new MethodDebugInformation(this, MethodDebugInformationHandle.FromRowId(handle.RowId));
+        }
+
+        public LocalScope GetLocalScope(LocalScopeHandle handle)
+        {
+            return new LocalScope(this, handle);
+        }
+
+        public LocalVariable GetLocalVariable(LocalVariableHandle handle)
+        {
+            return new LocalVariable(this, handle);
+        }
+
+        public LocalConstant GetLocalConstant(LocalConstantHandle handle)
+        {
+            return new LocalConstant(this, handle);
+        }
+
+        public ImportScope GetImportScope(ImportScopeHandle handle)
+        {
+            return new ImportScope(this, handle);
+        }
+
+        public CustomDebugInformation GetCustomDebugInformation(CustomDebugInformationHandle handle)
+        {
+            return new CustomDebugInformation(this, handle);
+        }
+
+        public CustomDebugInformationHandleCollection GetCustomDebugInformation(EntityHandle handle)
+        {
+            Debug.Assert(!handle.IsNil);
+            return new CustomDebugInformationHandleCollection(this, handle);
+        }
+
+        public LocalScopeHandleCollection GetLocalScopes(MethodDefinitionHandle handle)
+        {
+            return new LocalScopeHandleCollection(this, handle.RowId);
+        }
+
+        public LocalScopeHandleCollection GetLocalScopes(MethodDebugInformationHandle handle)
+        {
+            return new LocalScopeHandleCollection(this, handle.RowId);
         }
 
         #endregion

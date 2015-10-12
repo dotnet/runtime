@@ -14,7 +14,7 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
-    <AssemblyVersion>1.0.23.0</AssemblyVersion>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -45,14 +45,17 @@
     <Compile Include="System\Reflection\Internal\MemoryBlocks\StreamConstraints.cs" />
     <Compile Include="System\Reflection\Internal\MemoryBlocks\StreamMemoryBlockProvider.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\BitArithmetic.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\StringUtils.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EmptyArray.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\Hash.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableByteArrayInterop.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableMemoryStream.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\LightUpHelper.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryBlock.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\PooledStringBuilder.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ObjectPool`1.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ReadOnlyUnmanagedMemoryStream.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\StreamExtensions.cs" />
@@ -97,9 +100,7 @@
     <Compile Include="System\Reflection\Metadata\Internal\MemberForwardedTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MemberRefParentTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MetadataFlags.cs" />
-    <Compile Include="System\Reflection\Metadata\Internal\MetadataHeader.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MetadataStreamConstants.cs" />
-    <Compile Include="System\Reflection\Metadata\Internal\MetadataTableHeader.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MethodDefOrRefTag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\NamespaceCache.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\NamespaceData.cs" />
@@ -128,6 +129,25 @@
     <Compile Include="System\Reflection\Metadata\ModuleReference.cs" />
     <Compile Include="System\Reflection\Metadata\NamespaceDefinition.cs" />
     <Compile Include="System\Reflection\Metadata\Parameter.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\CustomDebugInformation.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\DebugMetadataHeader.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\Document.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\DocumentNameBlobHandle.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\HandleCollections.Debug.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\Handles.Debug.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\HasCustomDebugInformationTag.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\ImportDefinition.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\ImportDefinitionKind.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\ImportDefinitionCollection.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\LocalConstant.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\ImportScope.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\LocalScope.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\LocalVariable.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\LocalVariableAttributes.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\MethodDebugInformation.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\SequencePoint.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\SequencePointCollection.cs" />
+    <Compile Include="System\Reflection\Metadata\PortablePdb\Tables.Debug.cs" />
     <Compile Include="System\Reflection\Metadata\PEReaderExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\PropertyDefinition.cs" />
     <Compile Include="System\Reflection\Metadata\SerializationTypeCode.cs" />

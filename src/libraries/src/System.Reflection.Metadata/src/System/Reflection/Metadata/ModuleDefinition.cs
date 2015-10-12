@@ -19,7 +19,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (int)_reader.ModuleTable.GetGeneration();
+                return _reader.ModuleTable.GetGeneration();
             }
         }
 
