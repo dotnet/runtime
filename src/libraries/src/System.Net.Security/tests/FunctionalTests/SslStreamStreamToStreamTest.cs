@@ -1,13 +1,10 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -17,9 +14,7 @@ namespace System.Net.Security.Tests
     public class SslStreamStreamToStreamTest
     {
         private readonly byte[] sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
-        private readonly TimeSpan TaskTimeSpan = TimeSpan.FromSeconds(15);
-
-        #region Tests
+        private readonly TimeSpan TestTimeoutSpan = TimeSpan.FromSeconds(TestConfiguration.TestTimeoutSeconds);
 
         [Fact]
         public void SslStream_StreamToStream_Authentication_Success()
@@ -36,7 +31,7 @@ namespace System.Net.Security.Tests
                 auth[0] = client.AuthenticateAsClientAsync(certificate.Subject);
                 auth[1] = server.AuthenticateAsServerAsync(certificate);
 
-                bool finished = Task.WaitAll(auth, TimeSpan.FromSeconds(3));
+                bool finished = Task.WaitAll(auth, TestTimeoutSpan);
                 Assert.True(finished, "Handshake completed in the allotted time");
             }
         }
@@ -64,9 +59,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        /// <summary>
-        /// Tests that a second clientSslStream.write after first clientSslStream.write is successfull.
-        /// </summary>
         [Fact]
         public void SslStream_StreamToStream_Successive_ClientWrite_Success()
         {
@@ -78,7 +70,7 @@ namespace System.Net.Security.Tests
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
             using (var serverSslStream = new SslStream(serverStream))
             {
-                bool result = DoHandshake(clientSslStream, serverSslStream, TaskTimeSpan);
+                bool result = DoHandshake(clientSslStream, serverSslStream);
 
                 Assert.True(result, "Handshake completed.");
 
@@ -88,7 +80,7 @@ namespace System.Net.Security.Tests
 
                 clientSslStream.Write(sampleMsg);
 
-                // TODO Issue#3802
+                // TODO Test Issue #3802
                 // The condition on which read method (UpdateReadStream) in FakeNetworkStream does a network read is flawed.
                 // That works fine in single read/write but fails in multi read write as stream size can be more, but real data can be < stream size.
                 // So I am doing an explicit read here. This issue is specific to test only & irrespective of xplat.
@@ -99,10 +91,6 @@ namespace System.Net.Security.Tests
                 Assert.True(VerifyOutput(recvBuf, sampleMsg), "verify second read data is as expected.");
             }
         }
-
-        #endregion
-
-        #region Private Methods
 
         private bool VerifyOutput(byte [] actualBuffer, byte [] expectedBuffer)
         {
@@ -123,7 +111,7 @@ namespace System.Net.Security.Tests
             return false;
         }
 
-        private bool DoHandshake(SslStream clientSslStream, SslStream serverSslStream, TimeSpan waitTimeSpan)
+        private bool DoHandshake(SslStream clientSslStream, SslStream serverSslStream)
         {
             X509Certificate2 certificate = TestConfiguration.GetServerCertificate();
             Task[] auth = new Task[2];
@@ -131,10 +119,8 @@ namespace System.Net.Security.Tests
             auth[0] = clientSslStream.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
             auth[1] = serverSslStream.AuthenticateAsServerAsync(certificate);
 
-            bool finished = Task.WaitAll(auth, waitTimeSpan);
+            bool finished = Task.WaitAll(auth, TestTimeoutSpan);
             return finished;
         }
-
-        #endregion
     }
 }
