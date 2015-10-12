@@ -588,5 +588,17 @@ namespace System.Reflection.Metadata.Tests
                 }
             }
         }
+
+        [Fact]
+        public void MethodDefToDebugInfo()
+        {
+            Assert.Equal(
+                MethodDefinitionHandle.FromRowId(123).ToDebugInformationHandle(), 
+                MethodDebugInformationHandle.FromRowId(123));
+
+            Assert.Equal(
+                MethodDebugInformationHandle.FromRowId(123).ToDefinitionHandle(),
+                MethodDefinitionHandle.FromRowId(123));
+        }
     }
 }
