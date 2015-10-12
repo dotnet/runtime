@@ -52,10 +52,10 @@ enum GetHostErrorCodes
  */
 enum AddressFamily : int32_t
 {
-    PAL_AF_UNSPEC = 0,  // System.Net.AddressFamily.Unspecified
-    PAL_AF_UNIX = 1,    // System.Net.AddressFamily.Unix
-    PAL_AF_INET = 2,    // System.Net.AddressFamily.InterNetwork
-    PAL_AF_INET6 = 23,  // System.Net.AddressFamily.InterNetworkV6
+    PAL_AF_UNSPEC = 0, // System.Net.AddressFamily.Unspecified
+    PAL_AF_UNIX = 1,   // System.Net.AddressFamily.Unix
+    PAL_AF_INET = 2,   // System.Net.AddressFamily.InterNetwork
+    PAL_AF_INET6 = 23, // System.Net.AddressFamily.InterNetworkV6
 };
 
 /**
@@ -79,14 +79,15 @@ struct HostEntry
 {
     uint8_t* CanonicalName;  // Canonical Name of the Host
     void* AddressListHandle; // Handle for host socket addresses
-    int32_t IPAddressCount; // Number of IP end points in the list
+    int32_t IPAddressCount;  // Number of IP end points in the list
     int32_t Padding;         // Pad out to 8-byte alignment
 };
 
 /**
  * Converts string-representations of IP Addresses to
  */
-extern "C" int32_t IPv6StringToAddress(const uint8_t* address, const uint8_t* port, uint8_t* buffer, int32_t bufferLength, uint32_t* scope);
+extern "C" int32_t IPv6StringToAddress(
+    const uint8_t* address, const uint8_t* port, uint8_t* buffer, int32_t bufferLength, uint32_t* scope);
 
 extern "C" int32_t IPv4StringToAddress(const uint8_t* address, uint8_t* buffer, int32_t bufferLength, uint16_t* port);
 
@@ -128,6 +129,8 @@ extern "C" Error GetIPv4Address(const uint8_t* socketAddress, int32_t socketAddr
 
 extern "C" Error SetIPv4Address(uint8_t* socketAddress, int32_t socketAddressLen, uint32_t address);
 
-extern "C" Error GetIPv6Address(const uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t* scopeId);
+extern "C" Error GetIPv6Address(
+    const uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t* scopeId);
 
-extern "C" Error SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t scopeId);
+extern "C" Error SetIPv6Address(
+    uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t scopeId);
