@@ -251,6 +251,14 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public ECDsa GetECDsaPublicKey()
+        {
+            using (SafeEvpPKeyHandle publicKeyHandle = Interop.Crypto.GetX509EvpPublicKey(_cert))
+            {
+                return new ECDsaOpenSsl(publicKeyHandle);
+            }
+        }
+
         public ECDsa GetECDsaPrivateKey()
         {
             if (_privateKey == null || _privateKey.IsInvalid)
