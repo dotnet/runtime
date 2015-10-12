@@ -35,6 +35,7 @@
     <Compile Include="System\Net\SecureProtocols\SslStreamContext.cs" />
     <Compile Include="System\Net\SecureProtocols\AuthenticationException.cs" />
     <Compile Include="System\Net\SecureProtocols\_FixedSizeReader.cs" />
+    <Compile Include="System\Net\SecureProtocols\ProtectionLevel.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicy.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\PolicyEnforcement.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ProtectionScenario.cs" />
@@ -42,7 +43,8 @@
 
     <!-- TODO: Shims -->
     <Compile Include="Shims\X509CertificateExtensions.cs" />
-
+    <Compile Include="Shims\NegotiateStream.cs" />
+    
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>Common\System\Net\Shims\TraceSource.cs</Link>
