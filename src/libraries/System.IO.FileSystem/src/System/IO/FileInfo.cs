@@ -35,7 +35,7 @@ namespace System.IO
         {
             OriginalPath = fileName;
             // Must fully qualify the path for the security check
-            String fullPath = PathHelpers.GetFullPathInternal(fileName);
+            String fullPath = Path.GetFullPath(fileName);
 
             _name = Path.GetFileName(fileName);
             FullPath = fullPath;
@@ -266,7 +266,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyFileName, "destFileName");
             Contract.EndContractBlock();
 
-            String fullDestFileName = PathHelpers.GetFullPathInternal(destFileName);
+            String fullDestFileName = Path.GetFullPath(destFileName);
 
             // These checks are in place to ensure Unix error throwing happens the same way
             // as it does on Windows.These checks can be removed if a solution to #2460 is

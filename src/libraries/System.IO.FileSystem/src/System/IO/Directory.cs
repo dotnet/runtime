@@ -27,7 +27,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_PathEmpty, "path");
             Contract.EndContractBlock();
 
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
 
             String s = Path.GetDirectoryName(fullPath);
             if (s == null)
@@ -44,7 +44,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_PathEmpty, "path");
             Contract.EndContractBlock();
 
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
 
             FileSystem.Current.CreateDirectory(fullPath);
 
@@ -81,7 +81,7 @@ namespace System.IO
                 if (path.Length == 0)
                     return false;
 
-                String fullPath = PathHelpers.GetFullPathInternal(path);
+                String fullPath = Path.GetFullPath(path);
 
                 return FileSystem.Current.DirectoryExists(fullPath);
             }
@@ -96,13 +96,13 @@ namespace System.IO
 
         public static void SetCreationTime(String path, DateTime creationTime)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetCreationTime(fullPath, creationTime, asDirectory: true);
         }
 
         public static void SetCreationTimeUtc(String path, DateTime creationTimeUtc)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetCreationTime(fullPath, File.GetUtcDateTimeOffset(creationTimeUtc), asDirectory: true);
         }
 
@@ -118,13 +118,13 @@ namespace System.IO
  
         public static void SetLastWriteTime(String path, DateTime lastWriteTime)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastWriteTime(fullPath, lastWriteTime, asDirectory: true);
         }
 
         public static void SetLastWriteTimeUtc(String path, DateTime lastWriteTimeUtc)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastWriteTime(fullPath, File.GetUtcDateTimeOffset(lastWriteTimeUtc), asDirectory: true);
         }
 
@@ -140,13 +140,13 @@ namespace System.IO
 
         public static void SetLastAccessTime(String path, DateTime lastAccessTime)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastAccessTime(fullPath, lastAccessTime, asDirectory: true);
         }
 
         public static void SetLastAccessTimeUtc(String path, DateTime lastAccessTimeUtc)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastAccessTime(fullPath, File.GetUtcDateTimeOffset(lastAccessTimeUtc), asDirectory: true);
         }
 
@@ -485,7 +485,7 @@ namespace System.IO
                 throw new ArgumentNullException("path");
             Contract.EndContractBlock();
 
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             String root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath));
 
             return root;
@@ -522,7 +522,7 @@ namespace System.IO
             if (PathInternal.IsPathTooLong(path))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
-            String fulldestDirName = PathHelpers.GetFullPathInternal(path);
+            String fulldestDirName = Path.GetFullPath(path);
 
             FileSystem.Current.SetCurrentDirectory(fulldestDirName);
         }
@@ -541,13 +541,13 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyFileName, "destDirName");
             Contract.EndContractBlock();
 
-            String fullsourceDirName = PathHelpers.GetFullPathInternal(sourceDirName);
+            String fullsourceDirName = Path.GetFullPath(sourceDirName);
             String sourcePath = EnsureTrailingDirectorySeparator(fullsourceDirName);
 
             if (PathInternal.IsDirectoryTooLong(sourcePath))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
-            String fulldestDirName = PathHelpers.GetFullPathInternal(destDirName);
+            String fulldestDirName = Path.GetFullPath(destDirName);
             String destPath = EnsureTrailingDirectorySeparator(fulldestDirName);
             if (PathInternal.IsDirectoryTooLong(destPath))
                 throw new PathTooLongException(SR.IO_PathTooLong);
@@ -568,14 +568,14 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]
         public static void Delete(String path)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.RemoveDirectory(fullPath, false);
         }
 
         [System.Security.SecuritySafeCritical]
         public static void Delete(String path, bool recursive)
         {
-            String fullPath = PathHelpers.GetFullPathInternal(path);
+            String fullPath = Path.GetFullPath(path);
             FileSystem.Current.RemoveDirectory(fullPath, recursive);
         }
     }

@@ -69,9 +69,9 @@ namespace System.IO
             if (path != null)
             {
                 PathInternal.CheckInvalidPathChars(path);
-                path = NormalizePath(path, fullCheck: false);
-
                 int root = PathInternal.GetRootLength(path);
+                path = RemoveRelativeSegments(path, root);
+
                 int i = path.Length;
                 if (i > root)
                 {
@@ -122,27 +122,6 @@ namespace System.IO
             return string.Empty;
         }
 
-        private static string GetFullPathInternal(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException("path");
-            Contract.EndContractBlock();
-
-            return NormalizePath(path, fullCheck: true);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        private static string NormalizePath(string path, bool fullCheck)
-        {
-            return NormalizePath(path, fullCheck, MaxLongPath, expandShortPaths: true);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        private static string NormalizePath(string path, bool fullCheck, bool expandShortPaths)
-        {
-            return NormalizePath(path, fullCheck, MaxLongPath, expandShortPaths);
-        }
-        
         // Returns the name and extension parts of the given path. The resulting
         // string contains the characters of path that follow the last
         // separator in path. The resulting string is null if path is null.
@@ -175,22 +154,6 @@ namespace System.IO
             return (i = path.LastIndexOf('.')) == -1 ?
                 path : // No path extension found
                 path.Substring(0, i);
-        }
-
-        // Returns the root portion of the given path. The resulting string
-        // consists of those rightmost characters of the path that constitute the
-        // root of the path. Possible patterns for the resulting string are: An
-        // empty string (a relative path on the current drive), "\" (an absolute
-        // path on the current drive), "X:" (a relative path on a given drive,
-        // where X is the drive letter), "X:\" (an absolute path on a given drive),
-        // and "\\server\share" (a UNC path for a given server and share name).
-        // The resulting string is null if path is null.
-        [Pure]
-        public static string GetPathRoot(string path)
-        {
-            if (path == null) return null;
-            path = NormalizePath(path, fullCheck: false);
-            return path.Substring(0, PathInternal.GetRootLength(path));
         }
 
         // Returns a cryptographically strong random 8.3 string that can be 
@@ -454,6 +417,97 @@ namespace System.IO
             } while (i < len);
 
             return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        /// <summary>
+        /// Try and remove relative segments from the given path (without combining with a root).
+        /// </summary>
+        /// <param name="skip">Skip the specified number of characters before evaluating.</param>
+        private static string RemoveRelativeSegments(string path, int skip = 0)
+        {
+            bool flippedSeparator = false;
+
+            // Remove "//", "/./", and "/../" from the path by copying each character to the output, 
+            // except the ones we're removing, such that the builder contains the normalized path 
+            // at the end.
+            var sb = StringBuilderCache.Acquire(path.Length);
+            if (skip > 0)
+                sb.Append(path, 0, skip);
+
+            int componentCharCount = 0;
+            for (int i = skip; i < path.Length; i++)
+            {
+                char c = path[i];
+
+                if (PathInternal.IsDirectorySeparator(c) && i + 1 < path.Length)
+                {
+                    componentCharCount = 0;
+
+                    // Skip this character if it's a directory separator and if the next character is, too,
+                    // e.g. "parent//child" => "parent/child"
+                    if (PathInternal.IsDirectorySeparator(path[i + 1]))
+                    {
+                        continue;
+                    }
+
+                    // Skip this character and the next if it's referring to the current directory,
+                    // e.g. "parent/./child" =? "parent/child"
+                    if ((i + 2 == path.Length || PathInternal.IsDirectorySeparator(path[i + 2])) &&
+                        path[i + 1] == '.')
+                    {
+                        i++;
+                        continue;
+                    }
+
+                    // Skip this character and the next two if it's referring to the parent directory,
+                    // e.g. "parent/child/../grandchild" => "parent/grandchild"
+                    if (i + 2 < path.Length &&
+                        (i + 3 == path.Length || PathInternal.IsDirectorySeparator(path[i + 3])) &&
+                        path[i + 1] == '.' && path[i + 2] == '.')
+                    {
+                        // Unwind back to the last slash (and if there isn't one, clear out everything).
+                        int s;
+                        for (s = sb.Length - 1; s >= 0; s--)
+                        {
+                            if (PathInternal.IsDirectorySeparator(sb[s]))
+                            {
+                                sb.Length = s;
+                                break;
+                            }
+                        }
+                        if (s < 0)
+                            sb.Length = 0;
+
+                        i += 2;
+                        continue;
+                    }
+                }
+
+                if (++componentCharCount > MaxComponentLength)
+                {
+                    throw new PathTooLongException(SR.IO_PathTooLong);
+                }
+
+                // Normalize the directory separator if needed
+                if (c != Path.DirectorySeparatorChar && c == Path.AltDirectorySeparatorChar)
+                {
+                    c = Path.DirectorySeparatorChar;
+                    flippedSeparator = true;
+                }
+
+                sb.Append(c);
+            }
+
+            if (flippedSeparator || sb.Length != path.Length)
+            {
+                return StringBuilderCache.GetStringAndRelease(sb);
+            }
+            else
+            {
+                // We haven't changed the source path, return the original
+                StringBuilderCache.Release(sb);
+                return path;
+            }
         }
     }
 }

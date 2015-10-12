@@ -26,15 +26,5 @@ namespace System.IO
                 }
             }
         }
-
-        internal static string GetFullPathInternal(string path)
-        {
-            // The Windows implementation trims off whitespace from the start and end of the path,
-            // and then based on whether that trimmed path is rooted decides to use the trimmed
-            // or original version.  On Unix, a filename can be composed of entirely whitespace
-            // characters, so we can't legimately do such trimming.  As such, we just delegate
-            // to the real GetFullPath.
-            return Path.GetFullPath(path);
-        }
     }
 }

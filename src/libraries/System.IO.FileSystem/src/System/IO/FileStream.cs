@@ -94,7 +94,7 @@ namespace System.IO
                 }
             }
 
-            string fullPath = PathHelpers.GetFullPathInternal(path);
+            string fullPath = Path.GetFullPath(path);
 
             ValidatePath(fullPath, "path");
 
