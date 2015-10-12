@@ -2086,6 +2086,13 @@ FCFuncStart(gWindowsRuntimeBufferHelperFuncs)
 FCFuncEnd()
 #endif // ifdef FEATURE_COMINTEROP
 
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
+FCFuncStart(gEventLogger)
+    QCFuncElement("IsEventSourceLoggingEnabled", XplatEventSourceLogger::IsEventSourceLoggingEnabled)
+    QCFuncElement("LogEventSource", XplatEventSourceLogger::LogEventSource)
+FCFuncEnd()
+#endif // defined(FEATURE_EVENTSOURCE_XPLAT)
+
 #ifdef FEATURE_COMINTEROP
 FCFuncStart(gRuntimeClassFuncs)
     FCFuncElement("GetRedirectedGetHashCodeMD", ComObject::GetRedirectedGetHashCodeMD)
@@ -2479,6 +2486,9 @@ FCClassElement("WindowsRuntimeMetadata", "System.Runtime.InteropServices.Windows
 #ifdef FEATURE_X509
 FCClassElement("X509Utils", "System.Security.Cryptography.X509Certificates", gX509CertificateFuncs)
 #endif // FEATURE_X509
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
+FCClassElement("XplatEventLogger", "System.Diagnostics.Tracing", gEventLogger)
+#endif //defined(FEATURE_EVENTSOURCE_XPLAT)
 #ifdef FEATURE_CAS_POLICY
 FCClassElement("Zone", "System.Security.Policy", gCOMSecurityZone)
 #endif // FEATURE_CAS_POLICY
