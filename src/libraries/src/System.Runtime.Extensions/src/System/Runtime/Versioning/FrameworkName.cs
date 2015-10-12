@@ -127,7 +127,9 @@ namespace System.Runtime.Versioning
             {
                 throw new ArgumentNullException("identifier");
             }
-            if (identifier.Trim().Length == 0)
+
+            identifier = identifier.Trim();
+            if (identifier.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, "identifier"), "identifier");
             }
@@ -136,7 +138,7 @@ namespace System.Runtime.Versioning
                 throw new ArgumentNullException("version");
             }
 
-            _identifier = identifier.Trim();
+            _identifier = identifier;
 
             // Ensure we call the correct Version constructor to clone the Version
             if (version.Revision < 0)
