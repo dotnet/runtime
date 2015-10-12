@@ -725,8 +725,8 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 			if (field->type->byref)
 				break;
 
-			// Special static fields do not have a domain-level static slot
-			if (static_fields && mono_class_field_is_special_static (field))
+			if (static_fields && field->offset == -1)
+				/* special static */
 				continue;
 
 			pos = field->offset / sizeof (gpointer);
