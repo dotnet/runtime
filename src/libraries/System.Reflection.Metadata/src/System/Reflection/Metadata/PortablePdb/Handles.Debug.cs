@@ -89,51 +89,51 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct MethodBodyHandle : IEquatable<MethodBodyHandle>
+    public struct MethodDebugInformationHandle : IEquatable<MethodDebugInformationHandle>
     {
-        private const uint tokenType = TokenTypeIds.MethodBody;
-        private const byte tokenTypeSmall = (byte)HandleType.MethodBody;
+        private const uint tokenType = TokenTypeIds.MethodDebugInformation;
+        private const byte tokenTypeSmall = (byte)HandleType.MethodDebugInformation;
         private readonly int _rowId;
 
-        private MethodBodyHandle(int rowId)
+        private MethodDebugInformationHandle(int rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
             _rowId = rowId;
         }
 
-        internal static MethodBodyHandle FromRowId(int rowId)
+        internal static MethodDebugInformationHandle FromRowId(int rowId)
         {
-            return new MethodBodyHandle(rowId);
+            return new MethodDebugInformationHandle(rowId);
         }
 
-        public static implicit operator Handle(MethodBodyHandle handle)
+        public static implicit operator Handle(MethodDebugInformationHandle handle)
         {
             return new Handle(tokenTypeSmall, handle._rowId);
         }
 
-        public static implicit operator EntityHandle(MethodBodyHandle handle)
+        public static implicit operator EntityHandle(MethodDebugInformationHandle handle)
         {
             return new EntityHandle((uint)(tokenType | handle._rowId));
         }
 
-        public static explicit operator MethodBodyHandle(Handle handle)
+        public static explicit operator MethodDebugInformationHandle(Handle handle)
         {
             if (handle.VType != tokenTypeSmall)
             {
                 Throw.InvalidCast();
             }
 
-            return new MethodBodyHandle(handle.RowId);
+            return new MethodDebugInformationHandle(handle.RowId);
         }
 
-        public static explicit operator MethodBodyHandle(EntityHandle handle)
+        public static explicit operator MethodDebugInformationHandle(EntityHandle handle)
         {
             if (handle.VType != tokenType)
             {
                 Throw.InvalidCast();
             }
 
-            return new MethodBodyHandle(handle.RowId);
+            return new MethodDebugInformationHandle(handle.RowId);
         }
 
         public bool IsNil
@@ -146,17 +146,17 @@ namespace System.Reflection.Metadata
 
         internal int RowId { get { return _rowId; } }
 
-        public static bool operator ==(MethodBodyHandle left, MethodBodyHandle right)
+        public static bool operator ==(MethodDebugInformationHandle left, MethodDebugInformationHandle right)
         {
             return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is MethodBodyHandle && ((MethodBodyHandle)obj)._rowId == _rowId;
+            return obj is MethodDebugInformationHandle && ((MethodDebugInformationHandle)obj)._rowId == _rowId;
         }
 
-        public bool Equals(MethodBodyHandle other)
+        public bool Equals(MethodDebugInformationHandle other)
         {
             return _rowId == other._rowId;
         }
@@ -166,7 +166,7 @@ namespace System.Reflection.Metadata
             return _rowId.GetHashCode();
         }
 
-        public static bool operator !=(MethodBodyHandle left, MethodBodyHandle right)
+        public static bool operator !=(MethodDebugInformationHandle left, MethodDebugInformationHandle right)
         {
             return left._rowId != right._rowId;
         }

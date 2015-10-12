@@ -418,7 +418,7 @@ namespace System.Reflection.Metadata
 
         // debug tables
         internal DocumentTableReader DocumentTable;
-        internal MethodBodyTableReader MethodBodyTable;
+        internal MethodDebugInformationTableReader MethodDebugInformationTable;
         internal LocalScopeTableReader LocalScopeTable;
         internal LocalVariableTableReader LocalVariableTable;
         internal LocalConstantTableReader LocalConstantTable;
@@ -741,8 +741,8 @@ namespace System.Reflection.Metadata
             this.DocumentTable = new DocumentTableReader(rowCounts[(int)TableIndex.Document], guidHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.DocumentTable.Block.Length;
 
-            this.MethodBodyTable = new MethodBodyTableReader(rowCounts[(int)TableIndex.MethodBody], GetReferenceSize(rowCounts, TableIndex.Document), blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
-            totalRequiredSize += this.MethodBodyTable.Block.Length;
+            this.MethodDebugInformationTable = new MethodDebugInformationTableReader(rowCounts[(int)TableIndex.MethodDebugInformation], GetReferenceSize(rowCounts, TableIndex.Document), blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize);
+            totalRequiredSize += this.MethodDebugInformationTable.Block.Length;
 
             this.LocalScopeTable = new LocalScopeTableReader(rowCounts[(int)TableIndex.LocalScope], methodRefSizeCombined, GetReferenceSize(rowCounts, TableIndex.ImportScope), GetReferenceSize(rowCounts, TableIndex.LocalVariable), GetReferenceSize(rowCounts, TableIndex.LocalConstant), metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.LocalScopeTable.Block.Length;
@@ -1109,9 +1109,9 @@ namespace System.Reflection.Metadata
             get { return new DocumentHandleCollection(this); }
         }
 
-        public MethodBodyHandleCollection MethodBodies
+        public MethodDebugInformationHandleCollection MethodBodies
         {
-            get { return new MethodBodyHandleCollection(this); }
+            get { return new MethodDebugInformationHandleCollection(this); }
         }
 
         public LocalScopeHandleCollection LocalScopes
@@ -1454,14 +1454,14 @@ namespace System.Reflection.Metadata
             return new Document(this, handle);
         }
 
-        public MethodBody GetMethodBody(MethodBodyHandle handle)
+        public MethodDebugInformation GetMethodDebugInformation(MethodDebugInformationHandle handle)
         {
-            return new MethodBody(this, handle);
+            return new MethodDebugInformation(this, handle);
         }
 
-        public MethodBody GetMethodBody(MethodDefinitionHandle handle)
+        public MethodDebugInformation GetMethodDebugInformation(MethodDefinitionHandle handle)
         {
-            return new MethodBody(this, MethodBodyHandle.FromRowId(handle.RowId));
+            return new MethodDebugInformation(this, MethodDebugInformationHandle.FromRowId(handle.RowId));
         }
 
         public LocalScope GetLocalScope(LocalScopeHandle handle)
@@ -1500,7 +1500,7 @@ namespace System.Reflection.Metadata
             return new LocalScopeHandleCollection(this, handle.RowId);
         }
 
-        public LocalScopeHandleCollection GetLocalScopes(MethodBodyHandle handle)
+        public LocalScopeHandleCollection GetLocalScopes(MethodDebugInformationHandle handle)
         {
             return new LocalScopeHandleCollection(this, handle.RowId);
         }

@@ -57,7 +57,7 @@ namespace System.Reflection.Metadata.Tests
             assert(default(BlobHandle), HandleKind.Blob);
             assert(default(NamespaceDefinitionHandle), HandleKind.NamespaceDefinition);
             assert(default(DocumentHandle), HandleKind.Document);
-            assert(default(MethodBodyHandle), HandleKind.MethodBody);
+            assert(default(MethodDebugInformationHandle), HandleKind.MethodDebugInformation);
             assert(default(LocalScopeHandle), HandleKind.LocalScope);
             assert(default(LocalConstantHandle), HandleKind.LocalConstant);
             assert(default(ImportScopeHandle), HandleKind.ImportScope);

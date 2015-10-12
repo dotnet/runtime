@@ -107,20 +107,20 @@ namespace System.Reflection.Metadata
         }
     }
 
-    public struct MethodBodyHandleCollection : IReadOnlyCollection<MethodBodyHandle>
+    public struct MethodDebugInformationHandleCollection : IReadOnlyCollection<MethodDebugInformationHandle>
     {
         private readonly MetadataReader _reader;
 
         private readonly int _firstRowId;
         private readonly int _lastRowId;
 
-        internal MethodBodyHandleCollection(MetadataReader reader)
+        internal MethodDebugInformationHandleCollection(MetadataReader reader)
         {
             Debug.Assert(reader != null);
             _reader = reader;
 
             _firstRowId = 1;
-            _lastRowId = reader.MethodBodyTable.NumberOfRows;
+            _lastRowId = reader.MethodDebugInformationTable.NumberOfRows;
         }
 
         public int Count
@@ -136,7 +136,7 @@ namespace System.Reflection.Metadata
             return new Enumerator(_reader, _firstRowId, _lastRowId);
         }
 
-        IEnumerator<MethodBodyHandle> IEnumerable<MethodBodyHandle>.GetEnumerator()
+        IEnumerator<MethodDebugInformationHandle> IEnumerable<MethodDebugInformationHandle>.GetEnumerator()
         {
             return GetEnumerator();
         }
@@ -146,7 +146,7 @@ namespace System.Reflection.Metadata
             return GetEnumerator();
         }
 
-        public struct Enumerator : IEnumerator<MethodBodyHandle>, IEnumerator
+        public struct Enumerator : IEnumerator<MethodDebugInformationHandle>, IEnumerator
         {
             private readonly MetadataReader _reader;
             private readonly int _lastRowId; // inclusive
@@ -165,12 +165,12 @@ namespace System.Reflection.Metadata
                 _currentRowId = firstRowId - 1;
             }
 
-            public MethodBodyHandle Current
+            public MethodDebugInformationHandle Current
             {
                 get
                 {
                     // PERF: keep this code small to enable inlining.
-                    return MethodBodyHandle.FromRowId((int)(_currentRowId & TokenTypeIds.RIDMask));
+                    return MethodDebugInformationHandle.FromRowId((int)(_currentRowId & TokenTypeIds.RIDMask));
                 }
             }
 
