@@ -38,16 +38,13 @@ namespace Internal.Cryptography.Pal
             return TryReadPkcs7Der(bio, false, out ignored, out certPals);
         }
 
-        private static unsafe bool TryReadPkcs7Der(
+        private static bool TryReadPkcs7Der(
             byte[] rawData,
             bool single,
             out ICertificatePal certPal,
             out List<ICertificatePal> certPals)
         {
-            SafePkcs7Handle pkcs7 = Interop.libcrypto.OpenSslD2I(
-                (ptr, b, i) => Interop.libcrypto.d2i_PKCS7(ptr, b, i),
-                rawData,
-                checkHandle: false);
+            SafePkcs7Handle pkcs7 = Interop.Crypto.DecodePkcs7(rawData, rawData.Length);
 
             if (pkcs7.IsInvalid)
             {

@@ -25,13 +25,7 @@ internal static partial class Interop
         internal static extern bool X509V3_EXT_print(SafeBioHandle buf, SafeX509ExtensionHandle ext, X509V3ExtPrintFlags flags, int indent);
 
         [DllImport(Libraries.LibCrypto)]
-        internal static unsafe extern SafeBasicConstraintsHandle d2i_BASIC_CONSTRAINTS(IntPtr zero, byte** ppin, int len);
-
-        [DllImport(Libraries.LibCrypto)]
         internal static extern void BASIC_CONSTRAINTS_free(IntPtr a);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static unsafe extern SafeEkuExtensionHandle d2i_EXTENDED_KEY_USAGE(IntPtr zero, byte** ppin, int len);
 
         [DllImport(Libraries.LibCrypto)]
         internal static extern void EXTENDED_KEY_USAGE_free(IntPtr a);
