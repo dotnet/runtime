@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
+    // _SecPkgInfoW in sspi.h.
     internal class SecurityPackageInfoClass
     {
         internal int Capabilities = 0;
@@ -20,6 +21,8 @@ namespace System.Net
          *  Note that it is only for SSL with no client cert
          *
          *  Important: safeHandle should not be Disposed during construction of this object.
+         * 
+         *  _SecPkgInfoW in sspi.h
          */
         internal SecurityPackageInfoClass(SafeHandle safeHandle, int index)
         {

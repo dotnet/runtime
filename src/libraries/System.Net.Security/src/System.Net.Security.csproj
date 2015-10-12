@@ -25,12 +25,7 @@
     <Compile Include="System\Net\_SecurityBuffer.cs" />
     <Compile Include="System\Net\_SecurityBufferType.cs" />
     <Compile Include="System\Net\_SecureChannel.cs" />
-    <Compile Include="System\Net\SSPIInterface.cs" />
-    <Compile Include="System\Net\_SSPIWrapper.cs" />
-    <Compile Include="System\Net\GlobalSSPI.cs" />
-    <Compile Include="System\Net\SecurityStatus.cs" />
-    <Compile Include="System\Net\CertInterface.cs" />
-    <Compile Include="System\Net\CertWrapper.cs" />
+    <Compile Include="System\Net\SecurityStatusPal.cs" />
     <Compile Include="System\Net\_SslSessionsCache.cs" />
     <Compile Include="System\Net\SecureProtocols\SslStream.cs" />
     <Compile Include="System\Net\SecureProtocols\AuthenticatedStream.cs" />
@@ -125,16 +120,11 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">  
+    <Compile Include="System\Net\SslStreamPal.Windows.cs" />
     <Compile Include="System\Net\SecurityContextTokenHandle.cs" />
-    <Compile Include="System\Net\Windows\CertModule.cs" />
-    <Compile Include="System\Net\Windows\NegotiationInfo.cs" />
-    <Compile Include="System\Net\Windows\SecSizes.cs" />
-    <Compile Include="System\Net\Windows\SecurityPackageInfoClass.cs" />
-    <Compile Include="System\Net\Windows\SslConnectionInfo.cs" />
-    <Compile Include="System\Net\Windows\StreamSizes.cs" />
-    <Compile Include="System\Net\Windows\UnmanagedCertificateContext.cs" />
-    <Compile Include="System\Net\SecureProtocols\_SecuritySafeHandles.Windows.cs" />
-    <Compile Include="System\Net\Windows\SSPISecureChannelType.cs" />
+    <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
+    <Compile Include="System\Net\NegotiationInfo.Windows.cs" />
+    
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
@@ -154,17 +144,33 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SecurityStatus.cs">
       <Link>Interop\Windows\SChannel\Interop.SecurityStatus.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.cs">
+      <Link>Interop\Windows\SChannel\UnmanagedCertificateContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecuritySafeHandles.cs">
+      <Link>Interop\Windows\secur32\SecuritySafeHandles.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\StreamSizes.cs">
+      <Link>Interop\Windows\secur32\StreamSizes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecurityPackageInfoClass.cs">
+      <Link>Interop\Windows\secur32\SecurityPackageInfoClass.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\SslConnectionInfo.cs">
+      <Link>Interop\Windows\SChannel\SslConnectionInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecSizes.cs">
+      <Link>Interop\Windows\secur32\SecSizes.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.SSPI.cs">
       <Link>Interop\Windows\secur32\Interop.SSPI.cs</Link>
     </Compile>
   </ItemGroup>
   
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="System\Net\Unix\CertModule.cs" />
-    <Compile Include="System\Net\Unix\SecuritySafeHandles.cs" />
-    <Compile Include="System\Net\Unix\SslConnectionInfo.cs" />
-    <Compile Include="System\Net\Unix\SSPISecureChannelType.cs" />	
-    <Compile Include="System\Net\Unix\StreamSizes.cs" />
+    <Compile Include="System\Net\SslStreamPal.Unix.cs" />
+    <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
+
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
@@ -177,6 +183,15 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.SafeSslHandle.cs">
       <Link>Interop\Unix\libssl\Interop.SafeSslHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libssl\SecuritySafeHandles.cs">
+      <Link>Interop\Unix\libssl\SecuritySafeHandles.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libssl\StreamSizes.cs">
+      <Link>Interop\Unix\libssl\StreamSizes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libssl\SslConnectionInfo.cs">
+      <Link>Interop\Unix\libssl\SslConnectionInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.OpenSsl.cs">
       <Link>Interop\Unix\libssl\Interop.OpenSsl.cs</Link>

@@ -3,7 +3,7 @@
 
 namespace System.Net
 {
-    internal enum SecurityStatus
+    internal enum SecurityStatusPal
     {
         NotSet = 0,
         OK,
