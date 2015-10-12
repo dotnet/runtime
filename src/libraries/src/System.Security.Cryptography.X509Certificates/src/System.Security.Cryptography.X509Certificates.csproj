@@ -140,7 +140,6 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CollectionBackedStoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CrlCache.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Unix\DerSequenceReader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\DirectoryBasedStoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\FindPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslCertificateFinder.cs" />
@@ -284,6 +283,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
+      <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true'">
