@@ -36,9 +36,35 @@ namespace System.Globalization
             }
 
             string result = string.FastAllocateString(s.Length);
-            fixed (char* pBuf = result)
+
+            fixed (char* pResult = result)
             {
-                Interop.GlobalizationInterop.ChangeCase(s, s.Length, pBuf, result.Length, toUpper, m_needsTurkishCasing);
+                if (IsAsciiCasingSameAsInvariant && s.IsAscii())
+                {
+                    fixed (char* pSource = s)
+                    {
+                        int length = s.Length;
+                        char* a = pSource, b = pResult;
+                        if (toUpper)
+                        {
+                            while (length-- != 0)
+                            {
+                                *b++ = ToUpperAsciiInvariant(*a++);
+                            }
+                        }
+                        else
+                        {
+                            while (length-- != 0)
+                            {
+                                *b++ = ToLowerAsciiInvariant(*a++);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Interop.GlobalizationInterop.ChangeCase(s, s.Length, pResult, result.Length, toUpper, m_needsTurkishCasing);
+                }
             }
 
             return result;
