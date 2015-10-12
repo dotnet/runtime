@@ -2246,6 +2246,19 @@ inline ULONG FireEtwCodeSymbols(
                   return FireEtXplatCodeSymbols(ModuleId,TotalChunks,ChunkNumber,ChunkLength,Chunk,ClrInstanceID);
 }
 
+inline BOOL EventEnabledEventSource() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEventSource();}
+
+inline ULONG FireEtwEventSource(
+                  const signed int  EventID,
+                  PCWSTR  EventName,
+                  PCWSTR  EventSourceName,
+                  PCWSTR  Payload
+)
+{
+                  if (!EventEnabledEventSource()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEventSource(EventID,EventName,EventSourceName,Payload);
+}
+
 inline BOOL EventEnabledCLRStackWalkDCStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledCLRStackWalkDCStart();}
 
 inline ULONG FireEtwCLRStackWalkDCStart(
