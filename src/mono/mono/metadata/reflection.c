@@ -7424,7 +7424,7 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 {
 	char *start, *p, *w, *last_point, *startn;
 	int in_modifiers = 0;
-	int isbyref = 0, rank = 0;
+	int isbyref = 0, rank = 0, isptr = 0;
 
 	start = p = w = name;
 
@@ -7496,20 +7496,27 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 			if (isbyref) /* only one level allowed by the spec */
 				return 0;
 			isbyref = 1;
+			isptr = 0;
 			info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (0));
 			*p++ = 0;
 			break;
 		case '*':
+			if (isbyref) /* pointer to ref not okay */
+				return 0;
 			info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (-1));
+			isptr = 1;
 			*p++ = 0;
 			break;
 		case '[':
+			if (isbyref) /* array of ref and generic ref are not okay */
+				return 0;
 			//Decide if it's an array of a generic argument list
 			*p++ = 0;
 
 			if (!*p) //XXX test
 				return 0;
 			if (*p  == ',' || *p == '*' || *p == ']') { //array
+				isptr = 0;
 				rank = 1;
 				while (*p) {
 					if (*p == ']')
@@ -7526,8 +7533,9 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 					return 0;
 				info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (rank));
 			} else {
-				if (rank) /* generic args after array spec*/ //XXX test
+				if (rank || isptr) /* generic args after array spec or ptr*/ //XXX test
 					return 0;
+				isptr = 0;
 				info->type_arguments = g_ptr_array_new ();
 				while (*p) {
 					MonoTypeNameParse *subinfo = g_new0 (MonoTypeNameParse, 1);

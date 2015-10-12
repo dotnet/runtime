@@ -1231,23 +1231,13 @@ get_caller_no_reflection (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed
 }
 
 static MonoReflectionType *
-type_from_name (const char *str, MonoBoolean ignoreCase)
+type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase)
 {
 	MonoMethod *m, *dest;
 
 	MonoType *type = NULL;
 	MonoAssembly *assembly = NULL;
-	MonoTypeNameParse info;
-	char *temp_str = g_strdup (str);
 	gboolean type_resolve = FALSE;
-
-	/* mono_reflection_parse_type() mangles the string */
-	if (!mono_reflection_parse_type (temp_str, &info)) {
-		mono_reflection_free_type_info (&info);
-		g_free (temp_str);
-		return NULL;
-	}
-
 
 	/*
 	 * We must compute the calling assembly as type loading must happen under a metadata context.
@@ -1276,25 +1266,22 @@ type_from_name (const char *str, MonoBoolean ignoreCase)
 		g_warning (G_STRLOC);
 	}
 
-	if (info.assembly.name)
-		assembly = mono_assembly_load (&info.assembly, assembly ? assembly->basedir : NULL, NULL);
+	if (info->assembly.name)
+		assembly = mono_assembly_load (&info->assembly, assembly ? assembly->basedir : NULL, NULL);
 
 
 	if (assembly) {
 		/* When loading from the current assembly, AppDomain.TypeResolve will not be called yet */
-		type = mono_reflection_get_type (assembly->image, &info, ignoreCase, &type_resolve);
+		type = mono_reflection_get_type (assembly->image, info, ignoreCase, &type_resolve);
 	}
 
-	if (!info.assembly.name && !type) /* try mscorlib */
-		type = mono_reflection_get_type (NULL, &info, ignoreCase, &type_resolve);
+	if (!info->assembly.name && !type) /* try mscorlib */
+		type = mono_reflection_get_type (NULL, info, ignoreCase, &type_resolve);
 
 	if (assembly && !type && type_resolve) {
 		type_resolve = FALSE; /* This will invoke TypeResolve if not done in the first 'if' */
-		type = mono_reflection_get_type (assembly->image, &info, ignoreCase, &type_resolve);
+		type = mono_reflection_get_type (assembly->image, info, ignoreCase, &type_resolve);
 	}
-
-	mono_reflection_free_type_info (&info);
-	g_free (temp_str);
 
 	if (!type) 
 		return NULL;
@@ -1307,9 +1294,22 @@ MonoReflectionType *
 mono_type_get (const char *str)
 {
 	char *copy = g_strdup (str);
-	MonoReflectionType *type = type_from_name (copy, FALSE);
+	MonoTypeNameParse info;
+	MonoReflectionType *type;
+	gboolean parsedOk;
 
-	g_free (copy);
+	parsedOk = mono_reflection_parse_type(copy, &info);
+	if (!parsedOk) {
+		mono_reflection_free_type_info (&info);
+		g_free(copy);
+		return NULL;
+	}
+
+	type = type_from_parsed_name (&info, FALSE);
+
+	mono_reflection_free_type_info (&info);
+	g_free(copy);
+
 	return type;
 }
 #endif
@@ -1320,10 +1320,27 @@ ves_icall_type_from_name (MonoString *name,
 			  MonoBoolean ignoreCase)
 {
 	char *str = mono_string_to_utf8 (name);
+	MonoTypeNameParse info;
 	MonoReflectionType *type;
+	gboolean parsedOk;
 
-	type = type_from_name (str, ignoreCase);
+	parsedOk = mono_reflection_parse_type (str, &info);
+
+	/* mono_reflection_parse_type() mangles the string */
+	if (!parsedOk) {
+		mono_reflection_free_type_info (&info);
+		g_free (str);
+		if (throwOnError) {
+			mono_set_pending_exception(mono_get_exception_argument("typeName", "failed parse"));
+		}
+		return NULL;
+	}
+
+	type = type_from_parsed_name (&info, ignoreCase);
+
+	mono_reflection_free_type_info (&info);
 	g_free (str);
+
 	if (type == NULL){
 		MonoException *e = NULL;
 		
@@ -3908,8 +3925,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 		g_free (str);
 		mono_reflection_free_type_info (&info);
 		if (throwOnError) {
-			/* uhm: this is a parse error, though... */
-			mono_set_pending_exception (mono_get_exception_type_load (name, NULL));
+			mono_set_pending_exception (mono_get_exception_argument("name", "failed parse"));
 			return NULL;
 		}
 		/*g_print ("failed parse\n");*/
