@@ -390,9 +390,10 @@ size_t GCHeap::GetNow()
     return hp->get_time_now();
 }
 
+#if defined(GC_PROFILING) //UNIXTODO: Enable this for FEATURE_EVENT_TRACE
 void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, DWORD dwFlags)
 {
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#if  defined(FEATURE_EVENT_TRACE)
     Object *pObj = *ppObject;
 #ifdef INTERIOR_POINTERS
     if (dwFlags & GC_CALL_INTERIOR)
@@ -408,10 +409,9 @@ void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, DWORD dwFlags)
     }
 #endif //INTERIOR_POINTERS
     ScanRootsHelper(&pObj, pSC, dwFlags);
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#endif //  defined(FEATURE_EVENT_TRACE)
 }
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 // This is called only if we've determined that either:
 //     a) The Profiling API wants to do a walk of the heap, and it has pinned the
 //     profiler in place (so it cannot be detached), and it's thus safe to call into the
@@ -454,7 +454,6 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
             pGenGCHeap->finalize_queue->GcScanRoots(&ScanRootsHelper, 0, &SC);
 
 #endif // MULTIPLE_HEAPS
-
             // Handles are kept independent of wks/svr/concurrent builds
             SC.dwEtwRootKind = kEtwGCRootKindHandle;
             CNameSpace::GcScanHandlesForProfilerAndETW(max_generation, &SC);
@@ -482,12 +481,10 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
             // indicate that dependent handle scanning is over, so we can flush the buffered roots
             // to the profiler.  (This is for profapi only.  ETW will flush after the
             // entire heap was is complete, via ETW::GCLog::EndHeapDump.)
-#if defined (GC_PROFILING)
             if (fProfilerPinned && CORProfilerTrackConditionalWeakTableElements())
             {
                 g_profControlBlock.pProfInterface->EndConditionalWeakTableElementReferences(&SC.pHeapId);
             }
-#endif // defined (GC_PROFILING)
         }
 
         ProfilerWalkHeapContext profilerWalkHeapContext(fProfilerPinned, SC.pvEtwContext);
@@ -517,7 +514,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
         }
     }
 }
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#endif // defined(GC_PROFILING)
 
 void GCProfileWalkHeap()
 {
@@ -543,7 +540,7 @@ void GCProfileWalkHeap()
     }
 #endif // defined (GC_PROFILING)
 
-#ifdef FEATURE_EVENT_TRACE
+#if  defined (GC_PROFILING)//UNIXTODO: Enable this for FEATURE_EVENT_TRACE
     // If the profiling API didn't want us to walk the heap but ETW does, then do the
     // walk here
     if (!fWalkedHeapForProfiler && 

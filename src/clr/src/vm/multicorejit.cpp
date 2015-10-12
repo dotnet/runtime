@@ -28,6 +28,7 @@
 #include "appdomain.hpp"
 #include "qcall.h"
 
+#include "eventtracebase.h"
 #include "multicorejit.h"
 #include "multicorejitimpl.h"
 
@@ -96,7 +97,7 @@ void MulticoreJitFireEtwA(const wchar_t * pAction, const char * pTarget, int p1,
 #ifdef FEATURE_EVENT_TRACE
     EX_TRY
     {
-        if (McGenEventTracingEnabled(& MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, & MulticoreJit))
+        if (EventEnabledMulticoreJit())
         {
             SString wTarget;
 

@@ -217,6 +217,10 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
 
 endif(WIN32)
 
+if (WIN32 OR CLR_CMAKE_PLATFORM_LINUX)
+  add_definitions(-DFEATURE_EVENT_TRACE=1)
+endif (WIN32 OR CLR_CMAKE_PLATFORM_LINUX)
+
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(src/ToolBox/SOS/lldbplugin)
     add_subdirectory(src/pal)
@@ -224,6 +228,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(src/corefx)
     add_subdirectory(src/coreclr/hosts/unixcoreconsole)
 endif(CLR_CMAKE_PLATFORM_UNIX)
+
 
 if(CLR_CMAKE_PLATFORM_DARWIN)
     add_subdirectory(src/coreclr/hosts/osxbundlerun)
@@ -421,10 +426,7 @@ if (WIN32)
 endif(WIN32)
 # Definition directives
 
-# The following defines were extracted from the official amd64 debug / release builds.
-if (WIN32)
-  add_definitions(-DFEATURE_EVENT_TRACE=1)
-endif (WIN32)
+
 
 if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DPLATFORM_UNIX=1)

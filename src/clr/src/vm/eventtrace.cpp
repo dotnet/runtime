@@ -232,6 +232,7 @@ extern "C"
 /*************************************/
 /* Function to append a frame to an existing stack */
 /*************************************/
+#if  !defined(FEATURE_PAL)
 void ETW::SamplingLog::Append(SIZE_T currentFrame)
 {
     LIMITED_METHOD_CONTRACT;
@@ -323,7 +324,6 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
     if (pThread->m_State & Thread::TS_Hijacked) {
         return ETW::SamplingLog::UnInitialized;
     }
-
     if (pThread->IsEtwStackWalkInProgress())
     {
         return ETW::SamplingLog::InProgress;
@@ -412,6 +412,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
     return ETW::SamplingLog::Completed;
 }
 
+#endif // !defined(FEATURE_PAL)
 #endif // !FEATURE_REDHAWK
 
 /****************************************************************************/
@@ -1198,6 +1199,7 @@ void BulkComLogger::FlushRcw()
 
     unsigned short instance = GetClrInstanceId();
 
+#if !defined(FEATURE_PAL)
     EVENT_DATA_DESCRIPTOR eventData[3];
     EventDataDescCreate(&eventData[0], &m_currRcw, sizeof(const unsigned int));
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
@@ -1205,6 +1207,9 @@ void BulkComLogger::FlushRcw()
 
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRCW, _countof(eventData), eventData);
     _ASSERTE(result == ERROR_SUCCESS);
+#else
+// UNIXTODO: "Eventing Not Implemented"
+#endif // !defined(FEATURE_PAL)
 
     m_currRcw = 0;
 }
@@ -1282,6 +1287,7 @@ void BulkComLogger::FlushCcw()
 
     unsigned short instance = GetClrInstanceId();
 
+#if !defined(FEATURE_PAL)
     EVENT_DATA_DESCRIPTOR eventData[3];
     EventDataDescCreate(&eventData[0], &m_currCcw, sizeof(const unsigned int));
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
@@ -1289,6 +1295,10 @@ void BulkComLogger::FlushCcw()
 
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootCCW, _countof(eventData), eventData);
     _ASSERTE(result == ERROR_SUCCESS);
+#else
+// UNIXTODO: "Eventing Not Implemented"
+#endif //!defined(FEATURE_PAL)
+
 
     m_currCcw = 0;
 }
@@ -1480,6 +1490,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     unsigned short instance = GetClrInstanceId();
     unsigned __int64 appDomain = (unsigned __int64)m_domain;
 
+#if !defined(FEATURE_PAL)
     EVENT_DATA_DESCRIPTOR eventData[4];
     EventDataDescCreate(&eventData[0], &m_count, sizeof(const unsigned int)  );
     EventDataDescCreate(&eventData[1], &appDomain, sizeof(unsigned __int64)  );
@@ -1488,6 +1499,9 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
 
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootStaticVar, _countof(eventData), eventData);
     _ASSERTE(result == ERROR_SUCCESS);
+#else
+// UNIXTODO: "Eventing Not Implemented"
+#endif //!defined(FEATURE_PAL)
 
     m_used = 0;
     m_count = 0;
@@ -1642,12 +1656,13 @@ void BulkStaticsLogger::LogAllStatics()
 // be logged via ETW in bulk
 //---------------------------------------------------------------------------------------
 
-BulkTypeValue::BulkTypeValue() : cTypeParameters(0), rgTypeParameters()
+BulkTypeValue::BulkTypeValue() : cTypeParameters(0)
 #ifdef FEATURE_REDHAWK
 , ullSingleTypeParameter(0)
 #else // FEATURE_REDHAWK
 , sName()
 #endif // FEATURE_REDHAWK
+, rgTypeParameters()
 {
     LIMITED_METHOD_CONTRACT;
     ZeroMemory(&fixedSizedData, sizeof(fixedSizedData));
@@ -1686,6 +1701,7 @@ void BulkTypeValue::Clear()
 //
 //
 
+#if !defined(FEATURE_PAL)
 void BulkTypeEventLogger::FireBulkTypeEvent()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1774,6 +1790,12 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
     m_nBulkTypeValueByteCount = 0;
 }
 
+#else
+void BulkTypeEventLogger::FireBulkTypeEvent()
+{
+// UNIXTODO: "Eventing Not Implemented"
+}
+#endif //!defined(FEATURE_PAL)
 #ifndef FEATURE_REDHAWK
 
 //---------------------------------------------------------------------------------------
@@ -2278,9 +2300,9 @@ VOID ETW::GCLog::RootReference(
     switch (nRootKind)
     {
     case kEtwGCRootKindStack:
-#ifndef FEATURE_REDHAWK
+#if !defined (FEATURE_REDHAWK) && (defined(GC_PROFILING) || defined (DACCESS_COMPILE))
         pvRootID = profilingScanContext->pMD;
-#endif // !FEATURE_REDHAWK
+#endif // !defined (FEATURE_REDHAWK) && (defined(GC_PROFILING) || defined (DACCESS_COMPILE))
         break;
 
     case kEtwGCRootKindHandle:
@@ -2356,7 +2378,6 @@ VOID ETW::GCLog::RootReference(
         }
     }
 }
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -4205,6 +4226,7 @@ Return Value:
 
 --*/
 
+#if !defined(FEATURE_PAL)
 void InitializeEventTracing()
 {
     CONTRACTL
@@ -4235,7 +4257,6 @@ void InitializeEventTracing()
     // providers can do so now
     ETW::TypeSystemLog::PostRegistrationInit();
 }
-
 HRESULT ETW::CEtwTracer::Register()
 {
     WRAPPER_NO_CONTRACT;
@@ -4298,7 +4319,6 @@ Return Value:
 HRESULT ETW::CEtwTracer::UnRegister() 
 {
     LIMITED_METHOD_CONTRACT;
-
     EventUnregisterMicrosoft_Windows_DotNETRuntime();
     EventUnregisterMicrosoft_Windows_DotNETRuntimePrivate();
     EventUnregisterMicrosoft_Windows_DotNETRuntimeRundown();
@@ -4483,7 +4503,11 @@ extern "C"
 
     }
 }
+#else
 
+void InitializeEventTracing(){}
+
+#endif // !defined(FEATURE_PAL)
 #endif // FEATURE_REDHAWK
 
 #ifndef FEATURE_REDHAWK
@@ -4875,8 +4899,8 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
 
             LPCGUID comGUID=&g_EEComObjectGuid;
 
-            LPWSTR lpwszCommandLine = W("");
-            LPWSTR lpwszRuntimeDllPath = (LPWSTR)dllPath;
+            PCWSTR lpwszCommandLine = W("");
+            PCWSTR lpwszRuntimeDllPath = (PCWSTR)dllPath;
 
 #ifndef FEATURE_CORECLR
             startupFlags = CorHost2::GetStartupFlags();
@@ -4990,6 +5014,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
 
 VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
 {
+#if  !defined(FEATURE_PAL) //UNIXTODO: Enable EmitCodeSymbols
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -5047,6 +5072,7 @@ VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
             }
         }
     } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+#endif//  !defined(FEATURE_PAL)
 }
 
 /* Returns the length of an in-memory symbol stream
@@ -6099,7 +6125,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     CV_INFO_PDB70 cvInfoNative = {0};
     GetCodeViewInfo(pModule, &cvInfoIL, &cvInfoNative);
 
-    PWCHAR ModuleILPath=W(""), ModuleNativePath=W("");
+    PWCHAR ModuleILPath=(PWCHAR)W(""), ModuleNativePath=(PWCHAR)W("");
 
     if(bFireDomainModuleEvents)
     {

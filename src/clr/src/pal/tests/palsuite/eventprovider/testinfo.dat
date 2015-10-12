@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = EventProvider 
+Function = EventProvider
+Name = PAL test for FireEtW* and EventEnabled* functions
+TYPE = DEFAULT
+EXE1 = eventprovidertest 
+Description
+=This is a sanity test to check that there are no crashes in PAL eventing 
+
