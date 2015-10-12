@@ -2,13 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using OLEDB.Test.ModuleCore;
-using System;
 using System.IO;
-using System.Xml;
 using XmlCoreTest.Common;
-using XmlReaderTest.Common;
 
-namespace XmlReaderTest
+namespace System.Xml.Tests
 {
     ////////////////////////////////////////////////////////////////
     // Module: use CXMLTypeCoercionTestModule

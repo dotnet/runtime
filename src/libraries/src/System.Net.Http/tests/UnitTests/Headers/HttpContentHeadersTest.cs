@@ -51,7 +51,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void ContentLength_SetCustomValue_DelegateNotInvoked()
         {
-            _headers = new HttpContentHeaders(() => { Assert.True(false, "Delegate called."); return 0; });
+            _headers = new HttpContentHeaders(() => { throw new ShouldNotBeInvokedException(); });
 
             _headers.ContentLength = 27;
             Assert.Equal((long)27, _headers.ContentLength);
@@ -70,7 +70,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void ContentLength_UseAddMethod_AddedValueCanBeRetrievedUsingProperty()
         {
-            _headers = new HttpContentHeaders(() => { Assert.True(false, "Delegate called."); return 0; });
+            _headers = new HttpContentHeaders(() => { throw new ShouldNotBeInvokedException(); });
             _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, " 68 \r\n ");
 
             Assert.Equal(68, _headers.ContentLength);

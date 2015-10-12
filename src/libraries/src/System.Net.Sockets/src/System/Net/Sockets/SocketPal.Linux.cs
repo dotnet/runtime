@@ -15,12 +15,12 @@ namespace System.Net.Sockets
             // with another connect to AF_UNSPEC before further connect() attempts will return
             // valid errors. Otherwise, further connect() attempts will return ECONNABORTED.
             
-            var socketAddressBuffer = stackalloc byte[socketAddressLen];
-            var sockAddr = (Interop.libc.sockaddr*)socketAddressBuffer;
-            sockAddr->sa_family = Interop.libc.AF_UNSPEC;
+            var sockAddr = stackalloc byte[socketAddressLen];
+            Interop.Error afErr = Interop.Sys.SetAddressFamily(sockAddr, socketAddressLen, (int)AddressFamily.Unspecified);
+            Debug.Assert(afErr == Interop.Error.SUCCESS, "PrimeForNextConnectAttempt: failed to set address family");
 
             int err = Interop.libc.connect(fileDescriptor, sockAddr, (uint)socketAddressLen);
-            Debug.Assert(err == 0, "TryCompleteConnect: failed to disassociate socket after failed connect()");
+            Debug.Assert(err == 0, "PrimeForNextConnectAttempt: failed to disassociate socket after failed connect()");
         }
 
         public static void SetReceivingDualModeIPv4PacketInformation(Socket socket)

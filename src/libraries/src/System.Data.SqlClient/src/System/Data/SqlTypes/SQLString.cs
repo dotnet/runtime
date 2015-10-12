@@ -165,27 +165,6 @@ namespace System.Data.SqlTypes
         {
         }
 
-        /*
-                // UNDONE: Should we expose SQL collation id?
-                // Constructor: take SQL Server collation id, and Unicode data
-                private SqlString(int sqlColId, byte[] data) {
-                    // UNDONE: sortid and versionid are discarded.
-                    m_lcid = LCIDFromSQLCID(sqlColId);
-                    m_flag = FlagFromSQLCID(sqlColId);
-                    if (m_flag == SQL_BINARYSORT) {
-                        SQLDebug.Check(m_lcid == x_lcidBinary, "m_lcid == x_lcidBinary", "");
-                        m_value = x_UnicodeEncoding.GetString(data);
-                        m_cmpInfo = null;
-                    }
-                    else {
-                        m_cmpInfo = null;
-
-                        m_value = x_UnicodeEncoding.GetString(data);
-                    }
-                    m_fNotNull = true;
-                }
-        */
-
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.Data.SqlTypes.SqlString'/> class.

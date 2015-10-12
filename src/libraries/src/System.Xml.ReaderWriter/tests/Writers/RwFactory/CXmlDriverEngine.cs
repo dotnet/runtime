@@ -1,21 +1,16 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Xml;
-using System.IO;
+using OLEDB.Test.ModuleCore;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Diagnostics;
 using System.Globalization;
-using RWFactory;
-using OLEDB.Test.ModuleCore;
-using XmlCoreTest.Common;
+using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using XmlCoreTest.Common;
 
-namespace Webdata.Test.XmlDriver
+namespace System.Xml.Tests
 {
     /// <summary>
     /// CXmlDriverEngine

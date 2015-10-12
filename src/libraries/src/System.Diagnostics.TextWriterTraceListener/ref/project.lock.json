@@ -3,7 +3,7 @@
   "version": 1,
   "targets": {
     ".NETPlatform,Version=v5.0": {
-      "System.Diagnostics.TraceSource/4.0.0-beta-23328": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23401": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -50,10 +50,10 @@
     }
   },
   "libraries": {
-    "System.Diagnostics.TraceSource/4.0.0-beta-23328": {
+    "System.Diagnostics.TraceSource/4.0.0-beta-23401": {
       "type": "package",
       "serviceable": true,
-      "sha512": "u2YIvNdRFgFW94skYsyR+vOzJ6f7jpmQHG7vRFv7Br3gigUl3UUiqFotInyCTgfme/U25EizmcN5+pOHPUs/wg==",
+      "sha512": "NLH0NEUKOm509sDqQ+OaMitxea7/0wcv2ypLsCb+hW/K8gYDzK9bIvCsAMHN1c0dcEevHGQmGq3VGHnyFuMG+g==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -67,8 +67,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23328.nupkg",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23328.nupkg.sha512",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23401.nupkg",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23401.nupkg.sha512",
         "System.Diagnostics.TraceSource.nuspec"
       ]
     },

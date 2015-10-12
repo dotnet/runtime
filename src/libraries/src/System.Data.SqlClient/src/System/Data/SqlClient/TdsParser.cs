@@ -16,6 +16,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Res = System.SR;
+#if MANAGED_SNI
+using System.Data.SqlClient.SNI;
+#endif
 
 using MSS = Microsoft.SqlServer.Server;
 
@@ -301,7 +304,7 @@ namespace System.Data.SqlClient
             _connHandler = connHandler;
             _loginWithFailover = withFailover;
 
-            UInt32 sniStatus = SNILoadHandle.SingletonInstance.SNIStatus;
+            uint sniStatus = SNILoadHandle.SingletonInstance.Status;
 
             if (sniStatus != TdsEnums.SNI_SUCCESS)
             {
@@ -311,6 +314,7 @@ namespace System.Data.SqlClient
                 Debug.Assert(false, "SNI returned status != success, but no error thrown?");
             }
 
+#if !MANAGED_SNI
             if (integratedSecurity)
             {
                 LoadSSPILibrary();
@@ -321,6 +325,7 @@ namespace System.Data.SqlClient
             {
                 _sniSpnBuffer = null;
             }
+#endif // MANAGED_SNI
 
             byte[] instanceName = null;
 
@@ -330,8 +335,13 @@ namespace System.Data.SqlClient
 
             bool fParallel = _connHandler.ConnectionOptions.MultiSubnetFailover;
 
+#if MANAGED_SNI
+            _physicalStateObj.CreateConnectionHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire,
+                        out instanceName, _sniSpnBuffer, false, true, fParallel);
+#else
             _physicalStateObj.CreatePhysicalSNIHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire,
                         out instanceName, _sniSpnBuffer, false, true, fParallel);
+#endif // MANAGED_SNI
 
             if (TdsEnums.SNI_SUCCESS != _physicalStateObj.Status)
             {
@@ -367,7 +377,11 @@ namespace System.Data.SqlClient
             _connHandler.TimeoutErrorInternal.EndPhase(SqlConnectionTimeoutErrorPhase.InitializeConnection);
             _connHandler.TimeoutErrorInternal.SetAndBeginPhase(SqlConnectionTimeoutErrorPhase.SendPreLoginHandshake);
 
+#if MANAGED_SNI
+            UInt32 result = SNIProxy.Singleton.GetConnectionId(_physicalStateObj.Handle, ref _connHandler._clientConnectionId);
+#else
             UInt32 result = SNINativeMethodWrapper.SniGetConnectionId(_physicalStateObj.Handle, ref _connHandler._clientConnectionId);
+#endif // MANAGED_SNI
 
             Debug.Assert(result == TdsEnums.SNI_SUCCESS, "Unexpected failure state upon calling SniGetConnectionId");
 
@@ -386,7 +400,11 @@ namespace System.Data.SqlClient
 
                 // On Instance failure re-connect and flush SNI named instance cache.
                 _physicalStateObj.SniContext = SniContext.Snix_Connect;
+#if MANAGED_SNI
+                _physicalStateObj.CreateConnectionHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire, out instanceName, _sniSpnBuffer, true, true, fParallel);
+#else
                 _physicalStateObj.CreatePhysicalSNIHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire, out instanceName, _sniSpnBuffer, true, true, fParallel);
+#endif // MANAGED_SNI
 
                 if (TdsEnums.SNI_SUCCESS != _physicalStateObj.Status)
                 {
@@ -394,7 +412,11 @@ namespace System.Data.SqlClient
                     ThrowExceptionAndWarning(_physicalStateObj);
                 }
 
+#if MANAGED_SNI
+                UInt32 retCode = SNIProxy.Singleton.GetConnectionId(_physicalStateObj.Handle, ref _connHandler._clientConnectionId);
+#else
                 UInt32 retCode = SNINativeMethodWrapper.SniGetConnectionId(_physicalStateObj.Handle, ref _connHandler._clientConnectionId);
+#endif // MANAGED_SNI
 
                 Debug.Assert(retCode == TdsEnums.SNI_SUCCESS, "Unexpected failure state upon calling SniGetConnectionId");
 
@@ -425,10 +447,14 @@ namespace System.Data.SqlClient
         {
             Debug.Assert(_encryptionOption == EncryptionOptions.LOGIN, "Invalid encryption option state");
 
+#if MANAGED_SNI
+            uint error = SNIProxy.Singleton.DisableSsl(_physicalStateObj.Handle);
+#else
             UInt32 error = 0;
 
             // Remove SSL (Encryption) SNI provider since we only wanted to encrypt login.
             error = SNINativeMethodWrapper.SNIRemoveProvider(_physicalStateObj.Handle, SNINativeMethodWrapper.ProviderEnum.SSL_PROV);
+#endif // MANAGED_SNI
             if (error != TdsEnums.SNI_SUCCESS)
             {
                 _physicalStateObj.AddError(ProcessSNIError(_physicalStateObj));
@@ -450,11 +476,16 @@ namespace System.Data.SqlClient
                 // Cache physical stateObj and connection.
                 _pMarsPhysicalConObj = _physicalStateObj;
 
-                UInt32 error = 0;
+                uint error = 0;
 
+#if MANAGED_SNI
+                _pMarsPhysicalConObj.IncrementPendingCallbacks();
+                error = SNIProxy.Singleton.EnableMars(_pMarsPhysicalConObj.Handle);
+#else
                 // Add SMUX (MARS) SNI provider.
                 UInt32 info = 0;
                 error = SNINativeMethodWrapper.SNIAddProvider(_pMarsPhysicalConObj.Handle, SNINativeMethodWrapper.ProviderEnum.SMUX_PROV, ref info);
+#endif // MANAGED_SNI
 
                 if (error != TdsEnums.SNI_SUCCESS)
                 {
@@ -462,6 +493,7 @@ namespace System.Data.SqlClient
                     ThrowExceptionAndWarning(_physicalStateObj);
                 }
 
+#if !MANAGED_SNI
                 // HACK HACK HACK - for Async only
                 // Have to post read to intialize MARS - will get callback on this when connection goes
                 // down or is closed.
@@ -488,6 +520,7 @@ namespace System.Data.SqlClient
                     _physicalStateObj.AddError(ProcessSNIError(_physicalStateObj));
                     ThrowExceptionAndWarning(_physicalStateObj);
                 }
+#endif // MANAGED_SNI
 
                 _physicalStateObj = CreateSession(); // Create and open default MARS stateObj and connection.
             }
@@ -816,6 +849,9 @@ namespace System.Data.SqlClient
                             UInt32 info = ((encrypt && !trustServerCert) ? TdsEnums.SNI_SSL_VALIDATE_CERTIFICATE : 0)
                                 | (isYukonOrLater ? TdsEnums.SNI_SSL_USE_SCHANNEL_CACHE : 0);
 
+#if MANAGED_SNI
+                            error = SNIProxy.Singleton.EnableSsl(_physicalStateObj.Handle, info);
+#else
 
                             if (encrypt && !integratedSecurity)
                             {
@@ -826,6 +862,7 @@ namespace System.Data.SqlClient
 
                             // Add SSL (Encryption) SNI provider.
                             error = SNINativeMethodWrapper.SNIAddProvider(_physicalStateObj.Handle, SNINativeMethodWrapper.ProviderEnum.SSL_PROV, ref info);
+#endif // MANAGED_SNI
 
                             if (error != TdsEnums.SNI_SUCCESS)
                             {
@@ -833,6 +870,7 @@ namespace System.Data.SqlClient
                                 ThrowExceptionAndWarning(_physicalStateObj);
                             }
 
+#if !MANAGED_SNI
                             // in the case where an async connection is made, encryption is used and Windows Authentication is used, 
                             // wait for SSL handshake to complete, so that the SSL context is fully negotiated before we try to use its 
                             // Channel Bindings as part of the Windows Authentication context build (SSL handshake must complete 
@@ -843,6 +881,7 @@ namespace System.Data.SqlClient
                                 _physicalStateObj.AddError(ProcessSNIError(_physicalStateObj));
                                 ThrowExceptionAndWarning(_physicalStateObj);
                             }
+#endif
 
                             // create a new packet encryption changes the internal packet size
                             try { } // EmptyTry/Finally to avoid FXCop violation
@@ -1168,8 +1207,15 @@ namespace System.Data.SqlClient
             // There is an exception here for MARS as its possible that another thread has closed the connection just as we see an error
             Debug.Assert(SniContext.Undefined != stateObj.DebugOnlyCopyOfSniContext || ((_fMARS) && ((_state == TdsParserState.Closed) || (_state == TdsParserState.Broken))), "SniContext must not be None");
 #endif
+#if MANAGED_SNI
+            SNIError sniError = SNIProxy.Singleton.GetLastError();
+#else
             SNINativeMethodWrapper.SNI_Error sniError;
             SNINativeMethodWrapper.SNIGetLastError(out sniError);
+#endif // MANAGED_SNI
+#if MANAGED_SNI
+            // NYI
+#else
             if (sniError.sniError != 0)
             {
                 // handle special SNI error codes that are converted into exception which is not a SqlException.
@@ -1189,6 +1235,7 @@ namespace System.Data.SqlClient
                         // continue building SqlError instance
                 }
             }
+#endif // MANAGED_SNI
             // PInvoke code automatically sets the length of the string for us
             // So no need to look for \0
             string errorMessage = sniError.errorMessage;
@@ -1228,7 +1275,7 @@ namespace System.Data.SqlClient
                 if (0 <= iColon)
                 {
                     int len = errorMessage.Length;
-                    len -= 2;    // exclude "\r\n" sequence
+                    len -= Environment.NewLine.Length; // exclude newline sequence
                     iColon += 2;  // skip over ": " sequence
                     len -= iColon;
                     /*
@@ -1249,12 +1296,15 @@ namespace System.Data.SqlClient
                 //
                 errorMessage = SQL.GetSNIErrorMessage((int)sniError.sniError);
 
+#if MANAGED_SNI
+#else
                 // If its a LocalDB error, then nativeError actually contains a LocalDB-specific error code, not a win32 error code
                 if (sniError.sniError == (int)SNINativeMethodWrapper.SniSpecialErrors.LocalDBErrorCode)
                 {
                     errorMessage += LocalDBAPI.GetLocalDBMessage((int)sniError.nativeError);
                     win32ErrorCode = 0;
                 }
+#endif // MANAGED_SNI
             }
             errorMessage = String.Format((IFormatProvider)null, "{0} (provider: {1}, error: {2} - {3})",
                 sqlContextInfo, providerName, (int)sniError.sniError, errorMessage);
@@ -2227,7 +2277,11 @@ namespace System.Data.SqlClient
 
                             // Update SNI ConsumerInfo value to be resulting packet size
                             UInt32 unsignedPacketSize = (UInt32)packetSize;
+#if MANAGED_SNI
+                            UInt32 result = SNIProxy.Singleton.SetConnectionBufferSize(_physicalStateObj.Handle, unsignedPacketSize);
+#else
                             UInt32 result = SNINativeMethodWrapper.SNISetInfo(_physicalStateObj.Handle, SNINativeMethodWrapper.QTypes.SNI_QUERY_CONN_BUFSIZE, ref unsignedPacketSize);
+#endif // MANAGED_SNI
 
                             Debug.Assert(result == TdsEnums.SNI_SUCCESS, "Unexpected failure state upon calling SNISetInfo");
                         }
@@ -2379,7 +2433,7 @@ namespace System.Data.SqlClient
                         {
                             return false;
                         }
-                        UInt16 serverLen;
+                        ushort serverLen;
                         if (!stateObj.TryReadUInt16(out serverLen))
                         {
                             return false;
@@ -2390,7 +2444,7 @@ namespace System.Data.SqlClient
                             return false;
                         }
                         env.newRoutingInfo = new RoutingInfo(protocol, port, serverName);
-                        UInt16 oldLength;
+                        ushort oldLength;
                         if (!stateObj.TryReadUInt16(out oldLength))
                         {
                             return false;
@@ -3374,7 +3428,7 @@ namespace System.Data.SqlClient
                                 if (stateObj._longlen != 0)
                                 {
                                     ulong ignored;
-                                    if (!TrySkipPlpValue(UInt64.MaxValue, stateObj, out ignored))
+                                    if (!TrySkipPlpValue(ulong.MaxValue, stateObj, out ignored))
                                     {
                                         throw SQL.SynchronousCallMayNotPend();
                                     }
@@ -4142,7 +4196,7 @@ namespace System.Data.SqlClient
             if (md.metaType.IsPlp)
             {
                 ulong ignored;
-                if (!TrySkipPlpValue(UInt64.MaxValue, stateObj, out ignored))
+                if (!TrySkipPlpValue(ulong.MaxValue, stateObj, out ignored))
                 {
                     return false;
                 }
@@ -4888,23 +4942,23 @@ namespace System.Data.SqlClient
             switch (mt.TDSType)
             {
                 case TdsEnums.SQLFLT4:
-                    WriteFloat((Single)value, stateObj);
+                    WriteFloat((float)value, stateObj);
                     break;
 
                 case TdsEnums.SQLFLT8:
-                    WriteDouble((Double)value, stateObj);
+                    WriteDouble((double)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT8:
-                    WriteLong((Int64)value, stateObj);
+                    WriteLong((long)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT4:
-                    WriteInt((Int32)value, stateObj);
+                    WriteInt((int)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT2:
-                    WriteShort((Int16)value, stateObj);
+                    WriteShort((short)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT1:
@@ -5035,27 +5089,27 @@ namespace System.Data.SqlClient
             {
                 case TdsEnums.SQLFLT4:
                     WriteSqlVariantHeader(6, metatype.TDSType, metatype.PropBytes, stateObj);
-                    WriteFloat((Single)value, stateObj);
+                    WriteFloat((float)value, stateObj);
                     break;
 
                 case TdsEnums.SQLFLT8:
                     WriteSqlVariantHeader(10, metatype.TDSType, metatype.PropBytes, stateObj);
-                    WriteDouble((Double)value, stateObj);
+                    WriteDouble((double)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT8:
                     WriteSqlVariantHeader(10, metatype.TDSType, metatype.PropBytes, stateObj);
-                    WriteLong((Int64)value, stateObj);
+                    WriteLong((long)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT4:
                     WriteSqlVariantHeader(6, metatype.TDSType, metatype.PropBytes, stateObj);
-                    WriteInt((Int32)value, stateObj);
+                    WriteInt((int)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT2:
                     WriteSqlVariantHeader(4, metatype.TDSType, metatype.PropBytes, stateObj);
-                    WriteShort((Int16)value, stateObj);
+                    WriteShort((short)value, stateObj);
                     break;
 
                 case TdsEnums.SQLINT1:
@@ -5276,7 +5330,7 @@ namespace System.Data.SqlClient
         private void WriteDateTimeOffset(DateTimeOffset value, byte scale, int length, TdsParserStateObject stateObj)
         {
             WriteDateTime2(value.UtcDateTime, scale, length - 2, stateObj);
-            Int16 offset = (Int16)value.Offset.TotalMinutes;
+            short offset = (short)value.Offset.TotalMinutes;
             stateObj.WriteByte((byte)(offset & 0xff));
             stateObj.WriteByte((byte)((offset >> 8) & 0xff));
         }
@@ -6185,7 +6239,11 @@ namespace System.Data.SqlClient
                 receivedLength = 0;
             }
             // we need to respond to the server's message with SSPI data
+#if MANAGED_SNI
+            if (0 != SNIProxy.Singleton.GenSspiClientContext(_physicalStateObj.Handle, receivedBuff, receivedLength, sendBuff, ref sendLength, _sniSpnBuffer, (uint)_sniSpnBuffer.Length)) 
+#else
             if (0 != SNINativeMethodWrapper.SNISecGenClientContext(_physicalStateObj.Handle, receivedBuff, receivedLength, sendBuff, ref sendLength, _sniSpnBuffer))
+#endif // MANAGED_SNI
             {
                 SSPIError(SQLMessage.SSPIGenerateError(), TdsEnums.GEN_CLIENT_CONTEXT);
             }
@@ -6243,7 +6301,11 @@ namespace System.Data.SqlClient
                     {
                         // use local for ref param to defer setting s_maxSSPILength until we know the call succeeded.
                         UInt32 maxLength = 0;
+#if MANAGED_SNI
+                        if (0 != SNIProxy.Singleton.InitializeSspiPackage(ref maxLength))
+#else
                         if (0 != SNINativeMethodWrapper.SNISecInitPackage(ref maxLength))
+#endif // MANAGED_SNI
                             SSPIError(SQLMessage.SSPIInitializeError(), TdsEnums.INIT_SSPI_PACKAGE);
 
                         s_maxSSPILength = maxLength;
@@ -7590,11 +7652,11 @@ namespace System.Data.SqlClient
                     // read user type - 4 bytes Yukon, 2 backwards
                     WriteInt(0x0, stateObj);
 
-                    UInt16 flags;
+                    ushort flags;
 
-                    flags = (UInt16)(md.updatability << 2);
-                    flags |= (UInt16)(md.isNullable ? (UInt16)TdsEnums.Nullable : (UInt16)0);
-                    flags |= (UInt16)(md.isIdentity ? (UInt16)TdsEnums.Identity : (UInt16)0);
+                    flags = (ushort)(md.updatability << 2);
+                    flags |= (ushort)(md.isNullable ? (ushort)TdsEnums.Nullable : (ushort)0);
+                    flags |= (ushort)(md.isIdentity ? (ushort)TdsEnums.Identity : (ushort)0);
 
                     WriteShort(flags, stateObj);      // write the flags
 
@@ -8175,7 +8237,7 @@ namespace System.Data.SqlClient
 
                     if (type.FixedLength == 4)
                     {
-                        if (0 > dt.DayTicks || dt.DayTicks > UInt16.MaxValue)
+                        if (0 > dt.DayTicks || dt.DayTicks > ushort.MaxValue)
                             throw SQL.SmallDateTimeOverflow(dt.ToString());
 
                         WriteShort(dt.DayTicks, stateObj);
@@ -8732,13 +8794,13 @@ namespace System.Data.SqlClient
                     if (type.FixedLength == 1)
                         stateObj.WriteByte((byte)value);
                     else if (type.FixedLength == 2)
-                        WriteShort((Int16)value, stateObj);
+                        WriteShort((short)value, stateObj);
                     else if (type.FixedLength == 4)
-                        WriteInt((Int32)value, stateObj);
+                        WriteInt((int)value, stateObj);
                     else
                     {
                         Debug.Assert(type.FixedLength == 8, "invalid length for SqlIntN type:  " + type.FixedLength.ToString(CultureInfo.InvariantCulture));
-                        WriteLong((Int64)value, stateObj);
+                        WriteLong((long)value, stateObj);
                     }
 
                     break;
@@ -8838,7 +8900,7 @@ namespace System.Data.SqlClient
 
                     if (type.FixedLength == 4)
                     {
-                        if (0 > dt.days || dt.days > UInt16.MaxValue)
+                        if (0 > dt.days || dt.days > ushort.MaxValue)
                             throw SQL.SmallDateTimeOverflow(MetaType.ToDateTime(dt.days, dt.time, 4).ToString(CultureInfo.InvariantCulture));
 
                         WriteShort(dt.days, stateObj);

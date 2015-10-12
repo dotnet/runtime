@@ -21,11 +21,11 @@ namespace System.Net
         SecurityStatus InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer);
         SecurityStatus InitializeSecurityContext(SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer);
         SecurityStatus EncryptMessage(SafeDeleteContext securityContext, byte[] buffer, int size, int headerSize, int trailerSize, out int resultSize);
-        SecurityStatus DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count);     
+        SecurityStatus DecryptMessage(SafeDeleteContext securityContext, byte[] buffer, ref int offset, ref int count);
         int QueryContextChannelBinding(SafeDeleteContext phContext, ChannelBindingKind attribute, out SafeFreeContextBufferChannelBinding refHandle);
         int QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes);
         int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo conectionInfo);
         int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext remoteCert);
         int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList);
-    }   
+    }
 }

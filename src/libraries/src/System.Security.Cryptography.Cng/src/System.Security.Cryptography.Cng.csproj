@@ -16,16 +16,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Security.Cryptography.Primitives\src\System.Security.Cryptography.Primitives.csproj">
-      <Project>{D04A73AE-E418-4ACD-A132-7688435BE8B5}</Project>
-      <Name>System.Security.Cryptography.Primitives</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\src\System.Security.Cryptography.Algorithms.csproj">
-      <Project>{81A05E2E-E3AE-4246-B4E6-DD5F31FB71F9}</Project>
-      <Name>System.Security.Cryptography.Algorithms</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
+     <Compile Include="System\Security\Cryptography\AesCng.cs" />
      <Compile Include="System\Security\Cryptography\CngAlgorithm.cs" />
      <Compile Include="System\Security\Cryptography\CngAlgorithmGroup.cs" />
      <Compile Include="System\Security\Cryptography\CngExportPolicies.cs" />
@@ -61,16 +52,21 @@
      <Compile Include="System\Security\Cryptography\RSACng.ImportExport.cs" />
      <Compile Include="System\Security\Cryptography\RSACng.Key.cs" />
      <Compile Include="System\Security\Cryptography\RSACng.SignVerify.cs" />
+     <Compile Include="System\Security\Cryptography\TripleDESCng.cs" />
 
      <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
 
+     <Compile Include="Internal\Cryptography\BasicSymmetricCipherCng.cs" />
      <Compile Include="Internal\Cryptography\CngAlgorithmCore.cs" />
      <Compile Include="Internal\Cryptography\CngCommon.Hash.cs" />
      <Compile Include="Internal\Cryptography\CngCommon.SignVerify.cs" />
      <Compile Include="Internal\Cryptography\Helpers.cs" />
+     <Compile Include="Internal\Cryptography\ICngSymmetricAlgorithm.cs" />
      <Compile Include="Internal\Cryptography\KeyPropertyName.cs" />
      <Compile Include="Internal\Cryptography\ProviderPropertyName.cs" />
      <Compile Include="Internal\Cryptography\SafeUnicodeStringHandle.cs" />
+     <Compile Include="Internal\Cryptography\SymmetricImportExportExtensions.cs" />
+     <Compile Include="Internal\Cryptography\CngSymmetricAlgorithmCore.cs" />
 
      <Compile Include="Interop\NCrypt\NCrypt.cs" />
      <Compile Include="Interop\BCrypt\Interop.Blobs.cs" />
@@ -112,6 +108,21 @@
      <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\BCryptAlgorithmCache.cs">
        <Link>Internal\Windows\BCrypt\BCryptAlgorithmCache.cs</Link>
      </Compile>
+     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptChainingModes.cs">
+       <Link>Internal\Windows\BCrypt\Interop.BCryptChainingModes.cs</Link>
+     </Compile>
+     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptKeyDataBlob.cs">
+       <Link>Internal\Windows\BCrypt\Interop.BCryptKeyDataBlob.cs</Link>
+     </Compile>
+     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptAlgorithms.cs">
+       <Link>Internal\Windows\NCrypt\Interop.NCryptAlgorithms.cs</Link>
+     </Compile>
+     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptCipherKeyBlob.cs">
+       <Link>Internal\Windows\NCrypt\Interop.NCryptCipherKeyBlob.cs</Link>
+     </Compile>
+     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptPropertyNames.cs">
+       <Link>Internal\Windows\NCrypt\Interop.NCryptPropertyNames.cs</Link>
+     </Compile>
      <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
        <Link>Internal\Windows\mincore\Interop.FormatMessage.cs</Link>
      </Compile>
@@ -132,6 +143,18 @@
      </Compile>
      <Compile Include="$(CommonPath)\Internal\Cryptography\HashProviderCng.cs">
        <Link>Internal\Cryptography\HashProviderCng.cs</Link>
+     </Compile>
+     <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipher.cs">
+       <Link>Internal\Cryptography\BasicSymmetricCipher.cs</Link>
+     </Compile>
+     <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoTransform.cs">
+       <Link>Internal\Cryptography\UniversalCryptoTransform.cs</Link>
+     </Compile>
+     <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoEncryptor.cs">
+       <Link>Internal\Cryptography\UniversalCryptoEncryptor.cs</Link>
+     </Compile>
+     <Compile Include="$(CommonPath)\Internal\Cryptography\UniversalCryptoDecryptor.cs">
+       <Link>Internal\Cryptography\UniversalCryptoDecryptor.cs</Link>
      </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

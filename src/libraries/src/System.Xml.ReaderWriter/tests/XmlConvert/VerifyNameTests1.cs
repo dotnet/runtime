@@ -2,11 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using OLEDB.Test.ModuleCore;
-using System;
-using System.Xml;
 using XmlCoreTest.Common;
 
-namespace XmlConvertTests
+namespace System.Xml.Tests
 {
     internal class VerifyNameTests1 : CTestCase
     {

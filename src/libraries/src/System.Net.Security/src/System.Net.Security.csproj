@@ -7,6 +7,8 @@
     <ProjectGuid>{89F37791-6254-4D60-AB96-ACD3CCA0E771}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
+    <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dnxcore50</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
@@ -75,9 +77,6 @@
     </Compile>
 
     <!-- System.Net common -->
-    <Compile Include="$(CommonPath)\System\Net\_BufferOffsetSize.cs">
-      <Link>Common\System\Net\_BufferOffsetSize.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\_ContextAwareResult.cs">
       <Link>Common\System\Net\_ContextAwareResult.cs</Link>
     </Compile>
@@ -176,6 +175,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.libssl_types.cs">
       <Link>Interop\Unix\libssl\Interop.libssl_types.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.SafeSslHandle.cs">
+      <Link>Interop\Unix\libssl\Interop.SafeSslHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.OpenSsl.cs">
       <Link>Interop\Unix\libssl\Interop.OpenSsl.cs</Link>
     </Compile>
@@ -188,20 +190,23 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.BIO.cs">
       <Link>Interop\Unix\libcrypto\Interop.BIO.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ERR.cs">
-      <Link>Interop\Unix\libcrypto\Interop.ERR.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ASN1.cs">
       <Link>Interop\Unix\libcrypto\Interop.ASN1.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Pkcs7.cs">
       <Link>Interop\Unix\libcrypto\Interop.Pkcs7.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs</Link>
@@ -214,6 +219,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafePkcs7Handle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafePkcs7Handle.Unix.cs</Link>

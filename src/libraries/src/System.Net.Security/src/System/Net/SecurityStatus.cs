@@ -4,7 +4,7 @@
 namespace System.Net
 {
     internal enum SecurityStatus
-    {        
+    {
         NotSet = 0,
         OK,
         ContinueNeeded,

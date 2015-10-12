@@ -3,7 +3,7 @@
 
 using OLEDB.Test.ModuleCore;
 
-namespace XmlConvertTests
+namespace System.Xml.Tests
 {
     internal abstract class XmlBaseCharConvertTests : CTestCase
     {

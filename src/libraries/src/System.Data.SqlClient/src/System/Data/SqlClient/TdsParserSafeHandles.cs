@@ -5,6 +5,8 @@
 
 //------------------------------------------------------------------------------
 
+#if MANAGED_SNI
+#else
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -72,7 +74,7 @@ namespace System.Data.SqlClient
             return true;
         }
 
-        public UInt32 SNIStatus
+        public UInt32 Status
         {
             get
             {
@@ -297,4 +299,5 @@ namespace System.Data.SqlClient
         }
     }
 }
+#endif // MANAGED_SNI
 

@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "System.Net.Primitives": "4.0.10-beta-*",
+    "System.Net.NameResolution": "4.0.0-beta-*"
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}

@@ -49,7 +49,7 @@ namespace Internal.Cryptography.Pal
         {
             using (SafeBioHandle bio = Interop.libcrypto.BIO_new_file(fileName, "rb"))
             {
-                Interop.libcrypto.CheckValidOpenSslHandle(bio);
+                Interop.Crypto.CheckValidOpenSslHandle(bio);
 
                 return FromBio(bio, password);
             }
@@ -106,7 +106,7 @@ namespace Internal.Cryptography.Pal
             // 
             // But, before seeking back to start, save the Exception representing the last reported
             // OpenSSL error in case the last BioSeek would change it.
-            Exception openSslException = Interop.libcrypto.CreateOpenSslCryptographicException();
+            Exception openSslException = Interop.Crypto.CreateOpenSslCryptographicException();
 
             // Use BioSeek directly for the last seek attempt, because any failure here should instead
             // report the already created (but not yet thrown) exception.

@@ -120,47 +120,13 @@ namespace Microsoft.Win32.SafeHandles
     /// by another SafeHandle.
     /// </summary>
     [SecurityCritical]
-    internal sealed class SafeSharedX509StackHandle : SafeHandle
+    internal sealed class SafeSharedX509StackHandle : SafeInteriorHandle
     {
         internal static readonly SafeSharedX509StackHandle InvalidHandle = new SafeSharedX509StackHandle();
-        private SafeHandle _parent;
 
         private SafeSharedX509StackHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            SafeHandle parent = _parent;
-
-            if (parent != null)
-            {
-                parent.DangerousRelease();
-            }
-
-            _parent = null;
-            SetHandle(IntPtr.Zero);
-            return true;
-        }
-
-        public override bool IsInvalid
-        {
-            get
-            {
-                // If handle is 0, we're invalid.
-                // If we have a _parent and they're invalid, we're invalid.
-                return handle == IntPtr.Zero || (_parent != null && _parent.IsInvalid);
-            }
-        }
-
-        internal void SetParent(SafeHandle parent)
-        {
-            bool addedRef = false;
-            parent.DangerousAddRef(ref addedRef);
-            Debug.Assert(addedRef);
-
-            _parent = parent;
         }
     }
 }

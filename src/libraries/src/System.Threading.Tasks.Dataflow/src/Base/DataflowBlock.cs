@@ -1229,7 +1229,7 @@ namespace System.Threading.Tasks.Dataflow
                     }
                     catch (Exception exc)
                     {
-                        // An error occured.  Take ourselves out of the game.
+                        // An error occurred.  Take ourselves out of the game.
                         status = DataflowMessageStatus.DecliningPermanently;
                         Common.StoreDataflowMessageValueIntoExceptionData(exc, messageValue);
                         _receivedException = exc;

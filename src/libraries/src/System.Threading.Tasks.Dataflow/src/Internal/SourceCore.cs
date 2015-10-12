@@ -89,7 +89,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         private bool _enableOffering = true; // Protected by ValueLock, sometimes read with volatile reads
         /// <summary>Whether someone has reserved the right to call CompleteBlockOncePossible.</summary>
         private bool _completionReserved; // Protected by OutgoingLock
-        /// <summary>Exceptions that may have occured and gone unhandled during processing.</summary>
+        /// <summary>Exceptions that may have occurred and gone unhandled during processing.</summary>
         private List<Exception> _exceptions; // Protected by ValueLock, sometimes read with volatile reads
 
         /// <summary>Initializes the source core.</summary>

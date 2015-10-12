@@ -3,58 +3,63 @@
 
 using System.IO;
 using Microsoft.Xunit.Performance;
+using Xunit;
 
 namespace System.IO.Tests
 {
     public class Perf_Path
     {
         [Benchmark]
-        public void Combine()
+        [InlineData(10000)]
+        [InlineData(20000)]
+        [InlineData(30000)]
+        public void Combine(int innerIterations)
         {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                // Setup
-                string testPath1 = PerfUtils.GetTestFilePath();
-                string testPath2 = PerfUtils.CreateString(10);
+            PerfUtils utils = new PerfUtils();
+            string testPath1 = utils.GetTestFilePath();
+            string testPath2 = utils.CreateString(10);
 
-                // Actual perf testing
+            foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2);
-                    Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2);
-                    Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2);
-                }
-            }
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2);
+                        Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2);
+                        Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2); Path.Combine(testPath1, testPath2);
+                    }
         }
 
         [Benchmark]
-        public void GetFileName()
+        [InlineData(10000)]
+        [InlineData(20000)]
+        [InlineData(30000)]
+        public void GetFileName(int innerIterations)
         {
-            string testPath = PerfUtils.GetTestFilePath();
+            PerfUtils utils = new PerfUtils();
+            string testPath = utils.GetTestFilePath();
             foreach (var iteration in Benchmark.Iterations)
-            {
                 using (iteration.StartMeasurement())
-                {
-                    Path.GetFileName(testPath); Path.GetFileName(testPath); Path.GetFileName(testPath);
-                    Path.GetFileName(testPath); Path.GetFileName(testPath); Path.GetFileName(testPath);
-                    Path.GetFileName(testPath); Path.GetFileName(testPath); Path.GetFileName(testPath);
-                }
-            }
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        Path.GetFileName(testPath); Path.GetFileName(testPath); Path.GetFileName(testPath);
+                        Path.GetFileName(testPath); Path.GetFileName(testPath); Path.GetFileName(testPath);
+                        Path.GetFileName(testPath); Path.GetFileName(testPath); Path.GetFileName(testPath);
+                    }
         }
 
         [Benchmark]
         public void GetDirectoryName()
         {
-            string testPath = PerfUtils.GetTestFilePath();
+            PerfUtils utils = new PerfUtils();
+            string testPath = utils.GetTestFilePath();
             foreach (var iteration in Benchmark.Iterations)
-            {
                 using (iteration.StartMeasurement())
-                {
-                    Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath);
-                    Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath);
-                    Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath);
-                }
-            }
+                    for (int i = 0; i < 20000; i++)
+                    {
+                        Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath);
+                        Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath);
+                        Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath); Path.GetDirectoryName(testPath);
+                    }
         }
     }
 }

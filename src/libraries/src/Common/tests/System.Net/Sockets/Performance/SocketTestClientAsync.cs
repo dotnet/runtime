@@ -9,21 +9,21 @@ namespace System.Net.Sockets.Performance.Tests
 {
     public class SocketTestClientAsync : SocketTestClient
     {
-        SocketAsyncEventArgs sendEventArgs = new SocketAsyncEventArgs();
-        SocketAsyncEventArgs recvEventArgs = new SocketAsyncEventArgs();
+        private SocketAsyncEventArgs _sendEventArgs = new SocketAsyncEventArgs();
+        private SocketAsyncEventArgs _recvEventArgs = new SocketAsyncEventArgs();
 
         public SocketTestClientAsync(
             ITestOutputHelper log,
-            string server, 
-            int port, 
-            int iterations, 
-            string message, 
+            string server,
+            int port,
+            int iterations,
+            string message,
             Stopwatch timeProgramStart) : base(log, server, port, iterations, message, timeProgramStart)
         {
-            sendEventArgs.Completed += IO_Complete;
-            recvEventArgs.Completed += IO_Complete;
+            _sendEventArgs.Completed += IO_Complete;
+            _recvEventArgs.Completed += IO_Complete;
         }
-        
+
         public override void Connect(Action<SocketError> onConnectCallback)
         {
             var connectEventArgs = new SocketAsyncEventArgs();
@@ -51,25 +51,25 @@ namespace System.Net.Sockets.Performance.Tests
 
         public override void Send(Action<int, SocketError> onSendCallback)
         {
-            sendEventArgs.SetBuffer(_sendBuffer, _sendBufferIndex, _sendBuffer.Length - _sendBufferIndex);
-            sendEventArgs.UserToken = onSendCallback;
+            _sendEventArgs.SetBuffer(_sendBuffer, _sendBufferIndex, _sendBuffer.Length - _sendBufferIndex);
+            _sendEventArgs.UserToken = onSendCallback;
 
-            bool willRaiseEvent = _s.SendAsync(sendEventArgs);
+            bool willRaiseEvent = _s.SendAsync(_sendEventArgs);
             if (!willRaiseEvent)
             {
-                IO_Complete(this, sendEventArgs);
+                IO_Complete(this, _sendEventArgs);
             }
         }
 
         public override void Receive(Action<int, SocketError> onReceiveCallback)
         {
-            recvEventArgs.SetBuffer(_recvBuffer, _recvBufferIndex, _recvBuffer.Length - _recvBufferIndex);
-            recvEventArgs.UserToken = onReceiveCallback;
+            _recvEventArgs.SetBuffer(_recvBuffer, _recvBufferIndex, _recvBuffer.Length - _recvBufferIndex);
+            _recvEventArgs.UserToken = onReceiveCallback;
 
-            bool willRaiseEvent = _s.ReceiveAsync(recvEventArgs);
+            bool willRaiseEvent = _s.ReceiveAsync(_recvEventArgs);
             if (!willRaiseEvent)
             {
-                IO_Complete(this, recvEventArgs);
+                IO_Complete(this, _recvEventArgs);
             }
         }
 

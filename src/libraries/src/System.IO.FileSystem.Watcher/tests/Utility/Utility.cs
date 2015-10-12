@@ -62,14 +62,14 @@ public static class Utility
 
     public static AutoResetEvent WatchForEvents(FileSystemWatcher watcher, WatcherChangeTypes actions)
     {
-        AutoResetEvent eventOccured = new AutoResetEvent(false);
+        AutoResetEvent eventOccurred = new AutoResetEvent(false);
 
         if (0 != (actions & WatcherChangeTypes.Changed))
         {
             watcher.Changed += (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Changed, e.ChangeType);
-                eventOccured.Set();
+                eventOccurred.Set();
             };
         }
 
@@ -78,7 +78,7 @@ public static class Utility
             watcher.Created += (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
-                eventOccured.Set();
+                eventOccurred.Set();
             };
         }
 
@@ -87,7 +87,7 @@ public static class Utility
             watcher.Deleted += (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Deleted, e.ChangeType);
-                eventOccured.Set();
+                eventOccurred.Set();
             };
         }
 
@@ -96,23 +96,23 @@ public static class Utility
             watcher.Renamed += (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType);
-                eventOccured.Set();
+                eventOccurred.Set();
             };
         }
 
-        return eventOccured;
+        return eventOccurred;
     }
 
-    public static void ExpectEvent(WaitHandle eventOccured, string eventName, int timeout = WaitForExpectedEventTimeout)
+    public static void ExpectEvent(WaitHandle eventOccurred, string eventName, int timeout = WaitForExpectedEventTimeout)
     {
         string message = String.Format("Didn't observe a {0} event within {1}ms", eventName, timeout);
-        Assert.True(eventOccured.WaitOne(timeout), message);
+        Assert.True(eventOccurred.WaitOne(timeout), message);
     }
 
-    public static void ExpectNoEvent(WaitHandle eventOccured, string eventName, int timeout = WaitForUnexpectedEventTimeout)
+    public static void ExpectNoEvent(WaitHandle eventOccurred, string eventName, int timeout = WaitForUnexpectedEventTimeout)
     {
         string message = String.Format("Should not observe a {0} event within {1}ms", eventName, timeout);
-        Assert.False(eventOccured.WaitOne(timeout), message);
+        Assert.False(eventOccurred.WaitOne(timeout), message);
     }
 
     public static void TestNestedDirectoriesHelper(
@@ -123,8 +123,8 @@ public static class Utility
         using (var dir = Utility.CreateTestDirectory(Guid.NewGuid().ToString()))
         using (var watcher = new FileSystemWatcher())
         {
-            AutoResetEvent createdOccured = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
-            AutoResetEvent eventOccured = Utility.WatchForEvents(watcher, change);
+            AutoResetEvent createdOccurred = Utility.WatchForEvents(watcher, WatcherChangeTypes.Created); // not "using" to avoid race conditions with FSW callbacks
+            AutoResetEvent eventOccurred = Utility.WatchForEvents(watcher, change);
 
             watcher.Path = Path.GetFullPath(dir.Path);
             watcher.Filter = "*";
@@ -134,13 +134,13 @@ public static class Utility
 
             using (var firstDir = new TemporaryTestDirectory(Path.Combine(dir.Path, "dir1")))
             {
-                Utility.ExpectEvent(createdOccured, "dir1 created");
+                Utility.ExpectEvent(createdOccurred, "dir1 created");
 
                 using (var nestedDir = new TemporaryTestDirectory(Path.Combine(firstDir.Path, "nested")))
                 {
-                    Utility.ExpectEvent(createdOccured, "nested created");
+                    Utility.ExpectEvent(createdOccurred, "nested created");
 
-                    action(eventOccured, nestedDir);
+                    action(eventOccurred, nestedDir);
                 }
             }
         }

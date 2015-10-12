@@ -2,15 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Xml;
 using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
 
-namespace XmlWriterAPI.Test
+namespace System.Xml.Tests
 {
     public partial class TCIndentChars : XmlFactoryWriterTestCaseBase
     {
-        // Type is XmlWriterAPI.Test.TCIndentChars
+        // Type is System.Xml.Tests.TCIndentChars
         // Test Case
         public override void AddChildren()
         {

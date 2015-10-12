@@ -3,15 +3,15 @@
 
 using Microsoft.Xunit.Performance;
 
-namespace System.IO.FileSystem.Tests
+namespace System.IO.Tests
 {
-    public class Perf_File
+    public class Perf_File : FileSystemTest
     {
         [Benchmark]
         public void Exists()
         {
             // Setup
-            string testFile = PerfUtils.GetTestFilePath();
+            string testFile = GetTestFilePath();
             File.Create(testFile).Dispose();
 
             foreach (var iteration in Benchmark.Iterations)
@@ -19,9 +19,12 @@ namespace System.IO.FileSystem.Tests
                 // Actual perf testing
                 using (iteration.StartMeasurement())
                 {
-                    File.Exists(testFile); File.Exists(testFile); File.Exists(testFile);
-                    File.Exists(testFile); File.Exists(testFile); File.Exists(testFile);
-                    File.Exists(testFile); File.Exists(testFile); File.Exists(testFile);
+                    for (int i = 0; i < 20000; i++)
+                    {
+                        File.Exists(testFile); File.Exists(testFile); File.Exists(testFile);
+                        File.Exists(testFile); File.Exists(testFile); File.Exists(testFile);
+                        File.Exists(testFile); File.Exists(testFile); File.Exists(testFile);
+                    }
                 }
             }
 
@@ -35,14 +38,14 @@ namespace System.IO.FileSystem.Tests
             foreach (var iteration in Benchmark.Iterations)
             {
                 // Setup
-                string testFile = PerfUtils.GetTestFilePath();
-                File.Create(testFile + 1).Dispose(); File.Create(testFile + 2).Dispose(); File.Create(testFile + 3).Dispose();
+                string testFile = GetTestFilePath();
+                for (int i = 0; i < 10000; i++)
+                    File.Create(testFile + 1).Dispose();
 
                 // Actual perf testing
                 using (iteration.StartMeasurement())
-                {
-                    File.Delete(testFile + 1); File.Delete(testFile + 2); File.Delete(testFile + 3);
-                }
+                    for (int i = 0; i < 10000; i++)
+                        File.Delete(testFile + 1);
             }
         }
     }

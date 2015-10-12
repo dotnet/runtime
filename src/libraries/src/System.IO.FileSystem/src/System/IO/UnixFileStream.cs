@@ -1,13 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-
-using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -32,8 +31,31 @@ namespace System.IO
         /// <summary>If the file was opened with FileMode.Append, the length of the file when opened; otherwise, -1.</summary>
         private readonly long _appendStart = -1;
 
-        /// <summary>Whether asynchronous read/write/flush operations should be performed using async I/O.</summary>
+        /// <summary>
+        /// Whether asynchronous read/write/flush operations should be performed using async I/O.
+        /// On Windows FileOptions.Asynchronous controls how the file handle is configured, 
+        /// and then as a result how operations are issued against that file handle.  On Unix, 
+        /// there isn't any distinction around how file descriptors are created for async vs 
+        /// sync, but we still differentiate how the operations are issued in order to provide
+        /// similar behavioral semantics and performance characteristics as on Windows.  On
+        /// Windows, if non-async, async read/write requests just delegate to the base stream,
+        /// and no attempt is made to synchronize between sync and async operations on the stream;
+        /// if async, then async read/write requests are implemented specially, and sync read/write
+        /// requests are coordinated with async ones by implementing the sync ones over the async
+        /// ones.  On Unix, we do something similar.  If non-async, async read/write requests just
+        /// delegate to the base stream, and no attempt is made to synchronize.  If async, we use
+        /// a semaphore to coordinate both sync and async operations.
+        /// </summary>
         private readonly bool _useAsyncIO;
+
+        /// <summary>
+        /// Extra state used by the file stream when _useAsyncIO is true.  This includes
+        /// the semaphore used to serialize all operation, the buffer/offset/count provided by the
+        /// caller for ReadAsync/WriteAsync operations, and the last successul task returned
+        /// synchronously from ReadAsync which can be reused if the count matches the next request.
+        /// Only initialized when <see cref="_useAsyncIO"/> is true.
+        /// </summary>
+        private readonly AsyncState _asyncState;
 
         /// <summary>The length of the _buffer.</summary>
         private readonly int _bufferLength;
@@ -81,7 +103,11 @@ namespace System.IO
             _mode = mode;
             _options = options;
             _bufferLength = bufferSize;
-            _useAsyncIO = (options & FileOptions.Asynchronous) != 0;
+            if ((options & FileOptions.Asynchronous) != 0)
+            {
+                _useAsyncIO = true;
+                _asyncState = new AsyncState();
+            }
 
             // Translate the arguments into arguments for an open call
             Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, access, options); // FileShare currently ignored
@@ -154,7 +180,11 @@ namespace System.IO
             _access = access;
             _exposedHandle = true;
             _bufferLength = bufferSize;
-            _useAsyncIO = useAsyncIO;
+            if (useAsyncIO)
+            {
+                _useAsyncIO = true;
+                _asyncState = new AsyncState();
+            }
 
             if (CanSeek)
             {
@@ -162,7 +192,10 @@ namespace System.IO
             }
         }
 
-        /// <summary>Gets the array used for buffering reading and writing.  If the array hasn't been allocated, this will lazily allocate it.</summary>
+        /// <summary>
+        /// Gets the array used for buffering reading and writing.  
+        /// If the array hasn't been allocated, this will lazily allocate it.
+        /// </summary>
         /// <returns>The buffer.</returns>
         private byte[] GetBuffer()
         {
@@ -494,7 +527,7 @@ namespace System.IO
             VerifyBufferInvariants();
             if (_writePos > 0)
             {
-                WriteCore(GetBuffer(), 0, _writePos);
+                WriteNative(GetBuffer(), 0, _writePos);
                 _writePos = 0;
             }
         }
@@ -620,6 +653,31 @@ namespace System.IO
         {
             ValidateReadWriteArgs(array, offset, count);
 
+            if (_useAsyncIO)
+            {
+                _asyncState.Wait();
+                try { return ReadCore(array, offset, count); }
+                finally { _asyncState.Release(); }
+            }
+            else
+            {
+                return ReadCore(array, offset, count);
+            }
+        }
+
+        /// <summary>Reads a block of bytes from the stream and writes the data in a given buffer.</summary>
+        /// <param name="array">
+        /// When this method returns, contains the specified byte array with the values between offset and 
+        /// (offset + count - 1) replaced by the bytes read from the current source.
+        /// </param>
+        /// <param name="offset">The byte offset in array at which the read bytes will be placed.</param>
+        /// <param name="count">The maximum number of bytes to read. </param>
+        /// <returns>
+        /// The total number of bytes read into the buffer. This might be less than the number of bytes requested 
+        /// if that number of bytes are not currently available, or zero if the end of the stream is reached.
+        /// </returns>
+        private int ReadCore(byte[] array, int offset, int count)
+        {
             PrepareForReading();
 
             // Are there any bytes available in the read buffer? If yes,
@@ -639,12 +697,12 @@ namespace System.IO
                 {
                     // Read directly into the user's buffer
                     _readPos = _readLength = 0;
-                    return ReadCore(array, offset, count);
+                    return ReadNative(array, offset, count);
                 }
                 else
                 {
                     // Read into our buffer.
-                    _readLength = numBytesAvailable = ReadCore(GetBuffer(), 0, _bufferLength);
+                    _readLength = numBytesAvailable = ReadNative(GetBuffer(), 0, _bufferLength);
                     _readPos = 0;
                     if (numBytesAvailable == 0)
                     {
@@ -676,7 +734,7 @@ namespace System.IO
             {
                 Debug.Assert(_readPos == _readLength, "bytesToRead should only be < count if numBytesAvailable < count");
                 _readPos = _readLength = 0; // no data left in the read buffer
-                bytesRead += ReadCore(array, offset + bytesRead, count - bytesRead);
+                bytesRead += ReadNative(array, offset + bytesRead, count - bytesRead);
             }
 
             return bytesRead;
@@ -693,7 +751,7 @@ namespace System.IO
         /// The total number of bytes read into the buffer. This might be less than the number of bytes requested 
         /// if that number of bytes are not currently available, or zero if the end of the stream is reached.
         /// </returns>
-        private unsafe int ReadCore(byte[] array, int offset, int count)
+        private unsafe int ReadNative(byte[] array, int offset, int count)
         {
             FlushWriteBuffer(); // we're about to read; dump the write buffer
 
@@ -730,17 +788,77 @@ namespace System.IO
             if (_fileHandle.IsClosed)
                 throw __Error.GetFileNotOpen();
 
-            // No specialized handling based on _useAsyncIO. The options available on Unix
-            // for reading asynchronously from an arbitrary file handle typically amount
-            // to just using another thread to do the synchronous read, which is exactly
-            // what the base Stream implementation does.  This does mean there are subtle
-            // differences in certain FileStream behaviors between Windows and Unix when
-            // multiple asynchronous operations are issued against the stream to execute
-            // concurrently; on Unix the operations will be serialized due to the base
-            // Stream's usage of a semaphore, but the position/length information won't
-            // be updated until after the read/write has completed.
+            if (_useAsyncIO)
+            {
+                if (!_parent.CanRead) // match Windows behavior; this gets thrown synchronously
+                {
+                    throw __Error.GetReadNotSupported();
+                }
 
-            return base.ReadAsync(buffer, offset, count, cancellationToken);
+                // Serialize operations using the semaphore.
+                Task waitTask = _asyncState.WaitAsync();
+
+                // If we got ownership immediately, and if there's enough data in our buffer
+                // to satisfy the full request of the caller, hand back the buffered data.
+                // While it would be a legal implementation of the Read contract, we don't
+                // hand back here less than the amount requested so as to match the behavior
+                // in ReadCore that will make a native call to try to fulfill the remainder
+                // of the request.
+                if (waitTask.Status == TaskStatus.RanToCompletion)
+                {
+                    int numBytesAvailable = _readLength - _readPos;
+                    if (numBytesAvailable >= count)
+                    {
+                        try
+                        {
+                            PrepareForReading();
+
+                            Buffer.BlockCopy(GetBuffer(), _readPos, buffer, offset, count);
+                            _readPos += count;
+
+                            return _asyncState._lastSuccessfulReadTask != null && _asyncState._lastSuccessfulReadTask.Result == count ?
+                                _asyncState._lastSuccessfulReadTask :
+                                (_asyncState._lastSuccessfulReadTask = Task.FromResult(count));
+                        }
+                        catch (Exception exc)
+                        {
+                            return Task.FromException<int>(exc);
+                        }
+                        finally
+                        {
+                            _asyncState.Release();
+                        }
+                    }
+                }
+
+                // Otherwise, issue the whole request asynchronously.
+                _asyncState.Update(buffer, offset, count);
+                return waitTask.ContinueWith((t, s) =>
+                {
+                    // The options available on Unix for writing asynchronously to an arbitrary file 
+                    // handle typically amount to just using another thread to do the synchronous write, 
+                    // which is exactly  what this implementation does. This does mean there are subtle
+                    // differences in certain FileStream behaviors between Windows and Unix when multiple 
+                    // asynchronous operations are issued against the stream to execute concurrently; on 
+                    // Unix the operations will be serialized due to the usage of a semaphore, but the 
+                    // position /length information won't be updated until after the write has completed, 
+                    // whereas on Windows it may happen before the write has completed.
+
+                    Debug.Assert(t.Status == TaskStatus.RanToCompletion);
+                    var thisRef = (UnixFileStream)s;
+                    try
+                    {
+                        byte[] b = thisRef._asyncState._buffer;
+                        thisRef._asyncState._buffer = null; // remove reference to user's buffer
+                        return thisRef.ReadCore(b, thisRef._asyncState._offset, thisRef._asyncState._count);
+                    }
+                    finally { thisRef._asyncState.Release(); }
+                }, this, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+            }
+            else
+            {
+                return base.ReadAsync(buffer, offset, count, cancellationToken);
+            }
         }
 
         /// <summary>
@@ -750,12 +868,26 @@ namespace System.IO
         /// <returns>The unsigned byte cast to an Int32, or -1 if at the end of the stream.</returns>
         public override int ReadByte()
         {
+            if (_useAsyncIO)
+            {
+                _asyncState.Wait();
+                try { return ReadByteCore(); }
+                finally { _asyncState.Release(); }
+            }
+            else
+            {
+                return ReadByteCore();
+            }
+        }
+
+        private int ReadByteCore()
+        {
             PrepareForReading();
 
             byte[] buffer = GetBuffer();
             if (_readPos == _readLength)
             {
-                _readLength = ReadCore(buffer, 0, _bufferLength);
+                _readLength = ReadNative(buffer, 0, _bufferLength);
                 _readPos = 0;
                 if (_readLength == 0)
                 {
@@ -788,6 +920,24 @@ namespace System.IO
         {
             ValidateReadWriteArgs(array, offset, count);
 
+            if (_useAsyncIO)
+            {
+                _asyncState.Wait();
+                try { WriteCore(array, offset, count); }
+                finally { _asyncState.Release(); }
+            }
+            else
+            {
+                WriteCore(array, offset, count);
+            }
+        }
+
+        /// <summary>Writes a block of bytes to the file stream.</summary>
+        /// <param name="array">The buffer containing data to write to the stream.</param>
+        /// <param name="offset">The zero-based byte offset in array from which to begin copying bytes to the stream.</param>
+        /// <param name="count">The maximum number of bytes to write.</param>
+        private void WriteCore(byte[] array, int offset, int count)
+        {
             PrepareForWriting();
 
             // If no data is being written, nothing more to do.
@@ -830,7 +980,7 @@ namespace System.IO
             Debug.Assert(_writePos == 0);
             if (count >= _bufferLength)
             {
-                WriteCore(array, offset, count);
+                WriteNative(array, offset, count);
             }
             else
             {
@@ -843,7 +993,7 @@ namespace System.IO
         /// <param name="array">The buffer containing data to write to the stream.</param>
         /// <param name="offset">The zero-based byte offset in array from which to begin copying bytes to the stream.</param>
         /// <param name="count">The maximum number of bytes to write.</param>
-        private unsafe void WriteCore(byte[] array, int offset, int count)
+        private unsafe void WriteNative(byte[] array, int offset, int count)
         {
             VerifyOSHandlePosition();
 
@@ -882,17 +1032,71 @@ namespace System.IO
             if (_fileHandle.IsClosed)
                 throw __Error.GetFileNotOpen();
 
-            // No specialized handling based on _useAsyncIO. The options available on Unix
-            // for writing asynchronously to an arbitrary file handle typically amount
-            // to just using another thread to do the synchronous write, which is exactly
-            // what the base Stream implementation does. This does mean there are subtle
-            // differences in certain FileStream behaviors between Windows and Unix when
-            // multiple asynchronous operations are issued against the stream to execute
-            // concurrently; on Unix the operations will be serialized due to the base
-            // Stream's usage of a semaphore, but the position/length information won't
-            // be updated until after the read/write has completed.
+            if (_useAsyncIO)
+            {
+                if (!_parent.CanWrite) // match Windows behavior; this gets thrown synchronously
+                {
+                    throw __Error.GetWriteNotSupported();
+                }
 
-            return base.WriteAsync(buffer, offset, count, cancellationToken);
+                // Serialize operations using the semaphore.
+                Task waitTask = _asyncState.WaitAsync();
+
+                // If we got ownership immediately, and if there's enough space in our buffer
+                // to buffer the entire write request, then do so and we're done.
+                if (waitTask.Status == TaskStatus.RanToCompletion)
+                {
+                    int spaceRemaining = _bufferLength - _writePos;
+                    if (spaceRemaining >= count)
+                    {
+                        try
+                        {
+                            PrepareForWriting();
+
+                            Buffer.BlockCopy(buffer, offset, GetBuffer(), _writePos, count);
+                            _writePos += count;
+
+                            return Task.CompletedTask;
+                        }
+                        catch (Exception exc)
+                        {
+                            return Task.FromException(exc);
+                        }
+                        finally
+                        {
+                            _asyncState.Release();
+                        }
+                    }
+                }
+
+                // Otherwise, issue the whole request asynchronously.
+                _asyncState.Update(buffer, offset, count);
+                return waitTask.ContinueWith((t, s) =>
+                {
+                    // The options available on Unix for writing asynchronously to an arbitrary file 
+                    // handle typically amount to just using another thread to do the synchronous write, 
+                    // which is exactly  what this implementation does. This does mean there are subtle
+                    // differences in certain FileStream behaviors between Windows and Unix when multiple 
+                    // asynchronous operations are issued against the stream to execute concurrently; on 
+                    // Unix the operations will be serialized due to the usage of a semaphore, but the 
+                    // position /length information won't be updated until after the write has completed, 
+                    // whereas on Windows it may happen before the write has completed.
+
+                    Debug.Assert(t.Status == TaskStatus.RanToCompletion);
+                    var thisRef = (UnixFileStream)s;
+                    try
+                    {
+                        byte[] b = thisRef._asyncState._buffer;
+                        thisRef._asyncState._buffer = null; // remove reference to user's buffer
+                        thisRef.WriteCore(b, thisRef._asyncState._offset, thisRef._asyncState._count);
+                    }
+                    finally { thisRef._asyncState.Release(); }
+                }, this, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+            }
+            else
+            {
+                return base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
         }
 
         /// <summary>
@@ -902,8 +1106,22 @@ namespace System.IO
         /// <param name="value">The byte to write to the stream.</param>
         public override void WriteByte(byte value) // avoids an array allocation in the base implementation
         {
-            PrepareForWriting();
+            if (_useAsyncIO)
+            {
+                _asyncState.Wait();
+                try { WriteByteCore(value); }
+                finally { _asyncState.Release(); }
+            }
+            else
+            {
+                WriteByteCore(value);
+            }
+        }
 
+        private void WriteByteCore(byte value)
+        {
+            PrepareForWriting();
+            
             // Flush the write buffer if it's full
             if (_writePos == _bufferLength)
             {
@@ -1104,6 +1322,30 @@ namespace System.IO
                 {
                     throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
                 }
+            }
+        }
+
+        /// <summary>State used when the stream is in async mode.</summary>
+        private sealed class AsyncState : SemaphoreSlim
+        {
+            /// <summary>The caller's buffer currently being used by the active async operation.</summary>
+            internal byte[] _buffer;
+            /// <summary>The caller's offset currently being used by the active async operation.</summary>
+            internal int _offset;
+            /// <summary>The caller's count currently being used by the active async operation.</summary>
+            internal int _count;
+            /// <summary>The last task successfully, synchronously returned task from ReadAsync.</summary>
+            internal Task<int> _lastSuccessfulReadTask;
+
+            /// <summary>Initialize the AsyncState.</summary>
+            internal AsyncState() : base(initialCount: 1, maxCount: 1) { }
+
+            /// <summary>Sets the active buffer, offset, and count.</summary>
+            internal void Update(byte[] buffer, int offset, int count)
+            {
+                _buffer = buffer;
+                _offset = offset;
+                _count = count;
             }
         }
     }

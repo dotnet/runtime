@@ -12,11 +12,12 @@ namespace System.Runtime.Tests
         {
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    new Object(); new Object(); new Object();
-                    new Object(); new Object(); new Object();
-                    new Object(); new Object(); new Object();
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        new Object(); new Object(); new Object();
+                        new Object(); new Object(); new Object();
+                        new Object(); new Object(); new Object();
+                    }
         }
 
         [Benchmark]
@@ -25,11 +26,12 @@ namespace System.Runtime.Tests
             Object obj = new Object();
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                {
-                    obj.GetType(); obj.GetType(); obj.GetType();
-                    obj.GetType(); obj.GetType(); obj.GetType();
-                    obj.GetType(); obj.GetType(); obj.GetType();
-                }
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        obj.GetType(); obj.GetType(); obj.GetType();
+                        obj.GetType(); obj.GetType(); obj.GetType();
+                        obj.GetType(); obj.GetType(); obj.GetType();
+                    }
         }
     }
 }

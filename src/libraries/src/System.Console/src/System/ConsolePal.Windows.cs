@@ -110,6 +110,36 @@ namespace System
             return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
         }
 
+        /// <summary>Gets whether Console.In is targeting a terminal display.</summary>
+        public static bool IsInputRedirectedCore()
+        {
+            return IsHandleRedirected(InputHandle);
+        }
+
+        /// <summary>Gets whether Console.Out is targeting a terminal display.</summary>
+        public static bool IsOutputRedirectedCore()
+        {
+            return IsHandleRedirected(OutputHandle);
+        }
+
+        /// <summary>Gets whether Console.In is targeting a terminal display.</summary>
+        public static bool IsErrorRedirectedCore()
+        {
+            return IsHandleRedirected(ErrorHandle);
+        }
+
+        private static bool IsHandleRedirected(IntPtr handle)
+        {
+            // If handle is not to a character device, we must be redirected:
+            uint fileType = Interop.mincore.GetFileType(handle);
+            if ((fileType & Interop.mincore.FileTypes.FILE_TYPE_CHAR) != Interop.mincore.FileTypes.FILE_TYPE_CHAR)
+                return true;
+
+            // We are on a char device if GetConsoleMode succeeds and so we are not redirected.
+            return (!Interop.mincore.IsGetConsoleModeCallSuccessful(handle));
+        }
+
+
         // For ResetColor
         private static volatile bool _haveReadDefaultColors;
         private static volatile byte _defaultColors;
@@ -194,6 +224,117 @@ namespace System
             Interop.mincore.SetConsoleTextAttribute(OutputHandle, (short)(ushort)_defaultColors);
         }
 
+        public static bool CursorVisible
+        {
+            get
+            {
+                Interop.mincore.CONSOLE_CURSOR_INFO cci;
+                if (!Interop.mincore.GetConsoleCursorInfo(OutputHandle, out cci))
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+
+                return cci.bVisible;
+            }
+            set
+            {
+                Interop.mincore.CONSOLE_CURSOR_INFO cci;
+                if (!Interop.mincore.GetConsoleCursorInfo(OutputHandle, out cci))
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+
+                cci.bVisible = value;
+                if (!Interop.mincore.SetConsoleCursorInfo(OutputHandle, ref cci))
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+            }
+        }
+
+        public static int WindowWidth
+        {
+            get
+            {
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+                return csbi.srWindow.Right - csbi.srWindow.Left + 1;
+            }
+            set
+            {
+                SetWindowSize(value, WindowHeight);
+            }
+        }
+
+        private static int WindowHeight
+        {
+            get
+            {
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+                return csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+            }
+            set
+            {
+                SetWindowSize(WindowWidth, value);
+            }
+        }
+
+        public static unsafe void SetWindowSize(int width, int height)
+        {
+            if (width <= 0)
+                throw new ArgumentOutOfRangeException("width", width, SR.ArgumentOutOfRange_NeedPosNum);
+            if (height <= 0)
+                throw new ArgumentOutOfRangeException("height", height, SR.ArgumentOutOfRange_NeedPosNum);
+
+            // Get the position of the current console window
+            Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo();
+
+            // If the buffer is smaller than this new window size, resize the
+            // buffer to be large enough.  Include window position.
+            bool resizeBuffer = false;
+            Interop.mincore.COORD size = new Interop.mincore.COORD();
+            size.X = csbi.dwSize.X;
+            size.Y = csbi.dwSize.Y;
+            if (csbi.dwSize.X < csbi.srWindow.Left + width)
+            {
+                if (csbi.srWindow.Left >= Int16.MaxValue - width)
+                    throw new ArgumentOutOfRangeException("width", SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
+                size.X = (short)(csbi.srWindow.Left + width);
+                resizeBuffer = true;
+            }
+            if (csbi.dwSize.Y < csbi.srWindow.Top + height)
+            {
+                if (csbi.srWindow.Top >= Int16.MaxValue - height)
+                    throw new ArgumentOutOfRangeException("height", SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
+                size.Y = (short)(csbi.srWindow.Top + height);
+                resizeBuffer = true;
+            }
+            if (resizeBuffer)
+            {
+                if (!Interop.mincore.SetConsoleScreenBufferSize(OutputHandle, size))
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+            }
+
+            Interop.mincore.SMALL_RECT srWindow = csbi.srWindow;
+            // Preserve the position, but change the size.
+            srWindow.Bottom = (short)(srWindow.Top + height - 1);
+            srWindow.Right = (short)(srWindow.Left + width - 1);
+
+            if (!Interop.mincore.SetConsoleWindowInfo(OutputHandle, true, &srWindow))
+            {
+                int errorCode = Marshal.GetLastWin32Error();
+
+                // If we resized the buffer, un-resize it.
+                if (resizeBuffer)
+                {
+                    Interop.mincore.SetConsoleScreenBufferSize(OutputHandle, csbi.dwSize);
+                }
+
+                // Try to give a better error message here
+               Interop.mincore.COORD bounds = Interop.mincore.GetLargestConsoleWindowSize(OutputHandle);
+                if (width > bounds.X)
+                    throw new ArgumentOutOfRangeException("width", width, SR.Format(SR.ArgumentOutOfRange_ConsoleWindowSize_Size, bounds.X));
+                if (height > bounds.Y)
+                    throw new ArgumentOutOfRangeException("height", height, SR.Format(SR.ArgumentOutOfRange_ConsoleWindowSize_Size, bounds.Y));
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
+        }
+
+
         private static Interop.mincore.Color ConsoleColorToColorAttribute(ConsoleColor color, bool isBackground)
         {
             if ((((int)color) & ~0xf) != 0)
@@ -216,6 +357,12 @@ namespace System
                 c = (Interop.mincore.Color)(((int)c) >> 4);
             }
             return (ConsoleColor)c;
+        }
+
+        private static Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO GetBufferInfo()
+        {
+            bool unused;
+            return GetBufferInfo(true, out unused);
         }
 
         // For apps that don't have a console (like Windows apps), they might

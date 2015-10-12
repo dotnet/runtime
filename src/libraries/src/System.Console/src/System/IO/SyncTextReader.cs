@@ -13,7 +13,7 @@ namespace System.IO
      */
     internal sealed class SyncTextReader : TextReader
     {
-        private readonly TextReader _in;
+        internal readonly TextReader _in;
 
         public static SyncTextReader GetSynchronizedTextReader(TextReader reader)
         {

@@ -13,29 +13,29 @@ namespace System.Net
 
         public static uint Ipv4AddressToString(byte[] address, StringBuilder buffer)
         {
-			return 0;
+            return 0;
         }
 
         public static uint Ipv6AddressToString(byte[] address, uint scopeId, StringBuilder buffer)
         {
-			return 0;
+            return 0;
         }
 
         public static uint Ipv4StringToAddress(string ipString, byte[] bytes, out ushort port)
         {
-			port = 0;
+            port = 0;
             return 0;
         }
 
         public static uint Ipv6StringToAddress(string ipString, byte[] bytes, out uint scope)
         {
-			scope = 0;
-			return 0;
-		}
+            scope = 0;
+            return 0;
+        }
 
         public static SocketError GetSocketErrorForErrorCode(uint status)
         {
-			return SocketError.Success;
+            return SocketError.Success;
         }
     }
 }

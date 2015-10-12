@@ -40,7 +40,7 @@ namespace System.Linq.Parallel
             }
         }
 
-        // A shared boolean flag to track whether a query-opening-enumerator dispose has occured.
+        // A shared boolean flag to track whether a query-opening-enumerator dispose has occurred.
         internal Shared<bool> TopLevelDisposedFlag;
 
         internal CancellationState(CancellationToken externalCancellationToken)
@@ -77,7 +77,7 @@ namespace System.Linq.Parallel
                 throw new OperationCanceledException(token);
         }
 
-        // Test if external cancellation was requested and occured, and if so throw a standardize OCE with standardized message
+        // Test if external cancellation was requested and occurred, and if so throw a standardize OCE with standardized message
         internal static void ThrowWithStandardMessageIfCanceled(CancellationToken externalCancellationToken)
         {
             if (externalCancellationToken.IsCancellationRequested)

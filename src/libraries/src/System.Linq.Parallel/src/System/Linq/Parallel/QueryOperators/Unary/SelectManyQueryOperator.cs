@@ -140,7 +140,7 @@ namespace System.Linq.Parallel
 
         /// <summary>
         /// A helper method for WrapPartitionedStream. We use the helper to reuse a block of code twice, but with
-        /// a different order key type. (If premature merge occured, the order key type will be "int". Otherwise, 
+        /// a different order key type. (If premature merge occurred, the order key type will be "int". Otherwise, 
         /// it will be the same type as "TLeftKey" in WrapPartitionedStream.)
         /// </summary>
         private void WrapPartitionedStreamNotIndexed<TLeftKey>(

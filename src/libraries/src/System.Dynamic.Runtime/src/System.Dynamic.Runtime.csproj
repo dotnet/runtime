@@ -65,9 +65,6 @@
     <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs">
       <Link>Common\System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs">
       <Link>Common\System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs</Link>
     </Compile>

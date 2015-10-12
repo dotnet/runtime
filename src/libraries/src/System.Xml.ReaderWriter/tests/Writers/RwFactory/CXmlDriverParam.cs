@@ -1,14 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Xml;
-using System.Xml.Linq;
-using System.Collections.Generic;
-using System.Diagnostics;
 using OLEDB.Test.ModuleCore;
+using System.Collections.Generic;
+using System.Xml.Linq;
 
-namespace Webdata.Test.XmlDriver
+namespace System.Xml.Tests
 {
     /// <summary>
     /// CXmlDriverParam

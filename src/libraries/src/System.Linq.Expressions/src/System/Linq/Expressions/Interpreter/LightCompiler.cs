@@ -1194,6 +1194,10 @@ namespace System.Linq.Expressions.Interpreter
                     case ExpressionType.IsFalse:
                         EmitUnaryBoolCheck(node);
                         break;
+                    case ExpressionType.OnesComplement:
+                        Compile(node.Operand);
+                        _instructions.EmitOnesComplement(node.Type);
+                        break;
                     default:
                         throw new PlatformNotSupportedException(SR.Format(SR.UnsupportedExpressionType, node.NodeType));
                 }

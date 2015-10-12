@@ -477,6 +477,13 @@ namespace System.Reflection.Metadata
             }
 
             metadataTableRowCounts = ReadMetadataTableRowCounts(ref reader, presentTables);
+
+            if ((heapSizes & HeapSizes.ExtraData) == HeapSizes.ExtraData)
+            {
+                // Skip "extra data" used by some obfuscators. Although it is not mentioned in the CLI spec,
+                // it is honored by the native metadata reader.
+                reader.ReadUInt32();
+            }
         }
 
         private int[] ReadMetadataTableRowCounts(ref BlobReader memReader, ulong presentTableMask)

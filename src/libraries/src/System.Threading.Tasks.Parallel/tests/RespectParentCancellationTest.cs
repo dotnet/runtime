@@ -11,15 +11,13 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-
 
-using Xunit;
-using CoreFXTestLibrary;
-
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
-namespace Microsoft.Test.PCP
+namespace Sytem.Threading.Tasks.Tests
 {
 
     public sealed class RespectParentCancellationTest
@@ -85,35 +83,36 @@ namespace Microsoft.Test.PCP
                 yield return 0;
             }
         }
-       
-    }
 
-    public enum API
-    {
-        For,      // Parallel.For
-        For64,    // Parallel.For64
-        Foreach,  // Parallel.Foreach
-    }
+        public enum API
+        {
+            For,      // Parallel.For
+            For64,    // Parallel.For64
+            Foreach,  // Parallel.Foreach
+        }
 
-    public static class TestMethods
-    {
-        [Fact]
-        public static void RespectParentCancellation1()
+        public static class TestMethods
         {
-            RespectParentCancellationTest test = new RespectParentCancellationTest(API.For);
-            test.RealRun();
-        }
-        [Fact]
-        public static void RespectParentCancellation2()
-        {
-            RespectParentCancellationTest test = new RespectParentCancellationTest(API.For64);
-            test.RealRun();
-        }
-        [Fact]
-        public static void RespectParentCancellation3()
-        {
-            RespectParentCancellationTest test = new RespectParentCancellationTest(API.Foreach);
-            test.RealRun();
+            [Fact]
+            public static void RespectParentCancellation1()
+            {
+                RespectParentCancellationTest test = new RespectParentCancellationTest(API.For);
+                test.RealRun();
+            }
+
+            [Fact]
+            public static void RespectParentCancellation2()
+            {
+                RespectParentCancellationTest test = new RespectParentCancellationTest(API.For64);
+                test.RealRun();
+            }
+
+            [Fact]
+            public static void RespectParentCancellation3()
+            {
+                RespectParentCancellationTest test = new RespectParentCancellationTest(API.Foreach);
+                test.RealRun();
+            }
         }
     }
 }

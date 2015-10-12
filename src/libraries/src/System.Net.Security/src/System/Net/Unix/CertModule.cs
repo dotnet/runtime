@@ -4,13 +4,17 @@
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 using System.Net.Security;
-using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace System.Net
 {   
     internal partial class CertModule : CertInterface
     {
+        private static readonly object s_lockObject = new object();
+        private static X509Store s_userCertStore;
+
         #region internal Methods
         internal override SslPolicyErrors VerifyCertificateProperties(
             X509Chain chain,
@@ -76,6 +80,29 @@ namespace System.Net
                     remoteContext.DangerousAddRef(ref gotReference);
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
                 }
+
+                remoteCertificateStore = new X509Certificate2Collection();
+
+                using (SafeSharedX509StackHandle chainStack =
+                    Interop.OpenSsl.GetPeerCertificateChain(securityContext.SslContext))
+                {
+                    if (!chainStack.IsInvalid)
+                    {
+                        int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
+
+                            if (certPtr != IntPtr.Zero)
+                            {
+                                // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
+                                X509Certificate2 chainCert = new X509Certificate2(certPtr);
+                                remoteCertificateStore.Add(chainCert);
+                            }
+                        }
+                    }
+                }
             }
             finally
             {
@@ -88,9 +115,6 @@ namespace System.Net
                 {
                     remoteContext.Dispose();
                 }
-
-                // TODO (Issue #3362) Fetch remoteCertificateStore, if applicable for unix
-				remoteCertificateStore = new X509Certificate2Collection();
             }
 
             if (Logging.On)
@@ -108,16 +132,85 @@ namespace System.Net
         //
         internal override string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
-            // TODO (Issue #3362) populate issuers
-            string[] issuers = Array.Empty<string>();          
+            using (SafeSharedX509NameStackHandle names = Interop.libssl.SSL_get_client_CA_list(securityContext.SslContext))
+            {
+                if (names.IsInvalid)
+                {
+                    return Array.Empty<string>();
+                }
 
-            return issuers;
+                int nameCount = Interop.Crypto.GetX509NameStackFieldCount(names);
+
+                if (nameCount == 0)
+                {
+                    return Array.Empty<string>();
+                }
+
+                string[] clientAuthorityNames = new string[nameCount];
+
+                for (int i = 0; i < nameCount; i++)
+                {
+                    using (SafeSharedX509NameHandle nameHandle = Interop.Crypto.GetX509NameStackField(names, i))
+                    {
+                        X500DistinguishedName dn = Interop.Crypto.LoadX500Name(nameHandle);
+                        clientAuthorityNames[i] = dn.Name;
+                    }
+                }
+
+                return clientAuthorityNames;
+            }
         }
 
         internal override X509Store EnsureStoreOpened(bool isMachineStore)
         {
-            // TODO (Issue #3362) do the implementation
-            return null;
+            if (isMachineStore)
+            {
+                // There's not currently a LocalMachine\My store on Unix, so don't bother trying
+                // and having to deal with the exception.
+                //
+                // https://github.com/dotnet/corefx/issues/3690 tracks the lack of this store.
+                return null;
+            }
+
+            return EnsureStoreOpened(ref s_userCertStore, StoreLocation.CurrentUser);
+        }
+
+        private static X509Store EnsureStoreOpened(ref X509Store storeField, StoreLocation storeLocation)
+        {
+            X509Store store = Volatile.Read(ref storeField);
+
+            if (store == null)
+            {
+                lock (s_lockObject)
+                {
+                    store = Volatile.Read(ref storeField);
+
+                    if (store == null)
+                    {
+                        try
+                        {
+                            store = new X509Store(StoreName.My, storeLocation);
+                            store.Open(OpenFlags.ReadOnly);
+
+                            Volatile.Write(ref storeField, store);
+
+                            GlobalLog.Print(
+                                "CertModule::EnsureStoreOpened() storeLocation:" + storeLocation +
+                                    " returned store:" + store.GetHashCode().ToString("x"));
+                        }
+                        catch (CryptographicException e)
+                        {
+                            GlobalLog.Assert(
+                                "CertModule::EnsureStoreOpened()",
+                                "Failed to open cert store, location:" + storeLocation + " exception:" + e);
+
+                            throw;
+                        }
+                    }
+                }
+            }
+
+            return store;
         }
 
         #endregion

@@ -26,6 +26,7 @@
   <ItemGroup>
     <Compile Include="AllowedCharsBitmapTests.cs" />
     <Compile Include="CommonTestEncoder.cs" />
+    <Compile Include="BufferInternalTests.cs" />
     <Compile Include="EncoderCommon.cs" />
     <Compile Include="EncoderCommonTests.cs" />
     <Compile Include="EncoderExtensionsTests.cs" />

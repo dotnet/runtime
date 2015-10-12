@@ -136,6 +136,7 @@ publish/
 *.publishproj
 
 # NuGet Packages
+*.nuget.props
 *.nupkg
 **/packages/*
 

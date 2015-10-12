@@ -9,7 +9,11 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
-	<DefineConstants>$(DefineConstants);PROJECTK</DefineConstants>
+	<PackageTargetFramework>dotnet</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
+    <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -141,6 +145,21 @@
     <Compile Include="System\Data\SqlTypes\SQLUtility.cs" />
     <Compile Include="System\Data\SqlTypes\SqlXml.cs" />
 	<Compile Include="$(CommonPath)\System\NotImplemented.cs"/>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
+    <Compile Include="System\Data\SqlClient\SNI\LimitedConcurrencyLevelTaskScheduler.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIHandle.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNILoadHandle.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIMarsConnection.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIMarsHandle.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIMarsManager.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIMarsQueuedPacket.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIPacket.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIProxy.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNITcpHandle.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SslOverTdsStream.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNICommon.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

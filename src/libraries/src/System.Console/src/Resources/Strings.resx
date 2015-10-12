@@ -117,8 +117,17 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ArgumentOutOfRange_ConsoleWindowBufferSize" xml:space="preserve">
+    <value>The value must be less than the console's current maximum window size of {0} in that dimension. Note that this value depends on screen resolution and the console font.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ConsoleWindowSize_Size" xml:space="preserve">
+    <value>The new console window size would force the console buffer size to be too large.</value>
+  </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
   </data>
   <data name="ArgumentNull_Buffer" xml:space="preserve">
     <value>Buffer cannot be null.</value>

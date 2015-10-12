@@ -2,11 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System.Xml;
 
-namespace XmlDocumentTests.XmlNodeListTests
+namespace System.Xml.Tests
 {
-    public static class ItemTests
+    public static class NodeList_ItemTests
     {
         [Fact]
         public static void ItemTest1()

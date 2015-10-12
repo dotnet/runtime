@@ -1,17 +1,12 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Xml;
-using System.Collections;
-using System.Text;
-using XmlReaderTest.Common;
-using XmlCoreTest.Common;
 using OLEDB.Test.ModuleCore;
-using WebData.BaseLib;
+using System.IO;
+using System.Text;
+using XmlCoreTest.Common;
 
-namespace XmlReaderTest.ReaderSettingsTest
+namespace System.Xml.Tests
 {
     [TestModule(Name = "ReaderSettings Test", Desc = "ReaderSettings Test")]
     public partial class CReaderTestModule : CGenericTestModule

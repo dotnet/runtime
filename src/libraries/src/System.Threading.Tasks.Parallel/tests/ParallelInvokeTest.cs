@@ -9,12 +9,8 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-
 
 using Xunit;
-using CoreFXTestLibrary;
 
-using System;
-using System.Threading.Tasks;
-
-namespace System.Threading.Tasks.Test
+namespace System.Threading.Tasks.Tests
 {
     public sealed class ParallelInvokeTest
     {

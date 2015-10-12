@@ -211,7 +211,7 @@
     <value>StandardError has not been redirected.</value>
   </data>
   <data name="CantMixSyncAsyncOperation" xml:space="preserve">
-    <value> Cannot mix synchronous and asynchronous operation on process stream.</value>
+    <value>Cannot mix synchronous and asynchronous operation on process stream.</value>
   </data>
   <data name="CantRedirectStreams" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to redirect IO streams.</value>
@@ -226,7 +226,7 @@
     <value>An async read operation has already been started on the stream.</value>
   </data>
   <data name="UseShellExecute" xml:space="preserve">
-    <value> UseShellExecute must always be set to false.</value>
+    <value>UseShellExecute must always be set to false.</value>
   </data>
   <data name="InvalidParameter" xml:space="preserve">
     <value>Invalid value '{1}' for parameter '{0}'.</value>
@@ -259,7 +259,7 @@
     <value>Process IDs cannot be negative.</value>
   </data>
   <data name="ProcessorAffinityNotSupported" xml:space="preserve">
-    <value>OS X does not support deterministic Process or Thread Processor Affinity.</value>
+    <value>Processor affinity for processes or threads is not supported.</value>
   </data>
   <data name="ResourceLimitQueryFailure" xml:space="preserve">
     <value>Failed to retrieve process resource limits for the current process. See the error code for OS-specific error information.</value>
@@ -268,9 +268,12 @@
     <value>Failed to set or retrieve rusage information. See the error code for OS-specific error information.</value>
   </data>
   <data name="MinimumWorkingSetNotSupported" xml:space="preserve">
-    <value>OS X does not support setting the minimum working set.</value>
+    <value>Setting the minimum working set is not supported.</value>
   </data>
   <data name="OsxExternalProcessWorkingSetNotSupported" xml:space="preserve">
-    <value>Getting or Setting the Working Set limits on other processes is not supported on OS X.</value>
+    <value>Getting or setting the working set limits on other processes is not supported.</value>
+  </data>
+  <data name="ProcessInformationUnavailable" xml:space="preserve">
+    <value>Unable to retrieve the specified information about the process or thread.  It may have exited or may be privileged.</value>
   </data>
 </root>

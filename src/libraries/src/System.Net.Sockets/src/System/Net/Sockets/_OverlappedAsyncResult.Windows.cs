@@ -64,27 +64,6 @@ namespace System.Net.Sockets
             _singleBuffer.Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset);
         }
 
-        internal void SetUnmanagedStructures(BufferOffsetSize[] buffers)
-        {
-            // Fill in Buffer Array structure that will be used for our send/recv Buffer
-            _wsaBuffers = new WSABuffer[buffers.Length];
-
-            object[] objectsToPin = new object[buffers.Length];
-            for (int i = 0; i < buffers.Length; i++)
-            {
-                objectsToPin[i] = buffers[i].Buffer;
-            }
-
-            // has to be called now to pin memory
-            base.SetUnmanagedStructures(objectsToPin);
-
-            for (int i = 0; i < buffers.Length; i++)
-            {
-                _wsaBuffers[i].Length = buffers[i].Size;
-                _wsaBuffers[i].Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(buffers[i].Buffer, buffers[i].Offset);
-            }
-        }
-
         internal void SetUnmanagedStructures(IList<ArraySegment<byte>> buffers)
         {
             // Fill in Buffer Array structure that will be used for our send/recv Buffer.

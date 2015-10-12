@@ -272,19 +272,19 @@ public class FileSystemWatcherTests
     {
         using (TestFileSystemWatcher watcher = new TestFileSystemWatcher())
         {
-            bool eventOccured = false;
+            bool eventOccurred = false;
             object obj = null;
             FileSystemEventArgs actualArgs = null, expectedArgs = new FileSystemEventArgs(WatcherChangeTypes.Changed, "directory", "file");
 
             watcher.Changed += (o, e) =>
             {
-                eventOccured = true;
+                eventOccurred = true;
                 obj = o;
                 actualArgs = e;
             };
 
             watcher.CallOnChanged(expectedArgs);
-            Assert.True(eventOccured, "Event should be invoked");
+            Assert.True(eventOccurred, "Event should be invoked");
             Assert.Equal(watcher, obj);
             Assert.Equal(expectedArgs, actualArgs);
         }
@@ -295,19 +295,19 @@ public class FileSystemWatcherTests
     {
         using (TestFileSystemWatcher watcher = new TestFileSystemWatcher())
         {
-            bool eventOccured = false;
+            bool eventOccurred = false;
             object obj = null;
             FileSystemEventArgs actualArgs = null, expectedArgs = new FileSystemEventArgs(WatcherChangeTypes.Created, "directory", "file");
 
             watcher.Created += (o, e) =>
             {
-                eventOccured = true;
+                eventOccurred = true;
                 obj = o;
                 actualArgs = e;
             };
 
             watcher.CallOnCreated(expectedArgs);
-            Assert.True(eventOccured, "Event should be invoked");
+            Assert.True(eventOccurred, "Event should be invoked");
             Assert.Equal(watcher, obj);
             Assert.Equal(expectedArgs, actualArgs);
         }
@@ -318,19 +318,19 @@ public class FileSystemWatcherTests
     {
         using (TestFileSystemWatcher watcher = new TestFileSystemWatcher())
         {
-            bool eventOccured = false;
+            bool eventOccurred = false;
             object obj = null;
             FileSystemEventArgs actualArgs = null, expectedArgs = new FileSystemEventArgs(WatcherChangeTypes.Deleted, "directory", "file");
 
             watcher.Deleted += (o, e) =>
             {
-                eventOccured = true;
+                eventOccurred = true;
                 obj = o;
                 actualArgs = e;
             };
 
             watcher.CallOnDeleted(expectedArgs);
-            Assert.True(eventOccured, "Event should be invoked");
+            Assert.True(eventOccurred, "Event should be invoked");
             Assert.Equal(watcher, obj);
             Assert.Equal(expectedArgs, actualArgs);
         }
@@ -341,19 +341,19 @@ public class FileSystemWatcherTests
     {
         using (TestFileSystemWatcher watcher = new TestFileSystemWatcher())
         {
-            bool eventOccured = false;
+            bool eventOccurred = false;
             object obj = null;
             ErrorEventArgs actualArgs = null, expectedArgs = new ErrorEventArgs(new Exception());
 
             watcher.Error += (o, e) =>
             {
-                eventOccured = true;
+                eventOccurred = true;
                 obj = o;
                 actualArgs = e;
             };
 
             watcher.CallOnError(expectedArgs);
-            Assert.True(eventOccured, "Event should be invoked");
+            Assert.True(eventOccurred, "Event should be invoked");
             Assert.Equal(watcher, obj);
             Assert.Equal(expectedArgs, actualArgs);
         }
@@ -364,19 +364,19 @@ public class FileSystemWatcherTests
     {
         using (TestFileSystemWatcher watcher = new TestFileSystemWatcher())
         {
-            bool eventOccured = false;
+            bool eventOccurred = false;
             object obj = null;
             RenamedEventArgs actualArgs = null, expectedArgs = new RenamedEventArgs(WatcherChangeTypes.Renamed, "directory", "file", "oldFile");
 
             watcher.Renamed += (o, e) =>
             {
-                eventOccured = true;
+                eventOccurred = true;
                 obj = o;
                 actualArgs = e;
             };
 
             watcher.CallOnRenamed(expectedArgs);
-            Assert.True(eventOccured, "Event should be invoked");
+            Assert.True(eventOccurred, "Event should be invoked");
             Assert.Equal(watcher, obj);
             Assert.Equal(expectedArgs, actualArgs);
         }

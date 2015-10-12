@@ -32,6 +32,7 @@
     <Compile Include="Array\NullableNewArrayListTests.cs" />
     <Compile Include="Array\ObjectArrayBoundsTests.cs" />
     <Compile Include="Array\ObjectNullableArrayBoundsTests.cs" />
+    <Compile Include="BinaryOperators\Arithmetic\BinaryShiftTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryAddTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryDivideTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryModuloTests.cs" />
@@ -65,6 +66,7 @@
     <Compile Include="BinaryOperators\Comparison\BinaryNullableNotEqualTests.cs" />
     <Compile Include="BinaryOperators\Logical\BinaryLogicalTests.cs" />
     <Compile Include="BinaryOperators\Logical\BinaryNullableLogicalTests.cs" />
+    <Compile Include="Block\BlockFactoryTests.cs" />
     <Compile Include="Call\CallFactoryTests.cs" />
     <Compile Include="Cast\AsNullable.cs" />
     <Compile Include="Cast\AsTests.cs" />
@@ -130,7 +132,9 @@
     <Compile Include="Ternary\TernaryNullableTests.cs" />
     <Compile Include="Ternary\TernaryTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableOneOffTests.cs" />
+    <Compile Include="Unary\UnaryArithmeticNegateCheckedNullableTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableTests.cs" />
+    <Compile Include="Unary\UnaryArithmeticNegateCheckedTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateTests.cs" />
     <Compile Include="Unary\UnaryBitwiseNotNullableTests.cs" />
     <Compile Include="Unary\UnaryBitwiseNotTests.cs" />
@@ -138,7 +142,9 @@
     <Compile Include="Unary\UnaryIsFalseTests.cs" />
     <Compile Include="Unary\UnaryIsTrueNullableTests.cs" />
     <Compile Include="Unary\UnaryIsTrueTests.cs" />
+    <Compile Include="Unary\UnaryOnesComplementNullableTests.cs" />
     <Compile Include="Unary\UnaryUnaryPlusNullableTests.cs" />
+    <Compile Include="Unary\UnaryOnesComplementTests.cs" />
     <Compile Include="Unary\UnaryUnaryPlusTests.cs" />
   </ItemGroup>
   <ItemGroup>

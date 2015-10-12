@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
             {
                 if (!Interop.Crypto.GetRandomBytes(data, data.Length))
                 {
-                    throw Interop.libcrypto.CreateOpenSslCryptographicException();
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
             }
         }

@@ -2,9 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
+
 using System;
-using System.Runtime.InteropServices;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
@@ -30,7 +31,7 @@ internal static partial class Interop
             internal byte[] address;
             internal uint index;
         }
-        
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct WSAPROTOCOLCHAIN
         {
@@ -41,7 +42,7 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 7)]
             internal uint[] ChainEntries;
         }
-       
+
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct WSAPROTOCOL_INFO
         {
@@ -67,18 +68,7 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
             internal string szProtocol;
         }
-        
-        // Used as last parameter to WSASocket call.
-        [Flags]
-        internal enum SocketConstructorFlags
-        {
-            WSA_FLAG_OVERLAPPED = 0x01,
-            WSA_FLAG_MULTIPOINT_C_ROOT = 0x02,
-            WSA_FLAG_MULTIPOINT_C_LEAF = 0x04,
-            WSA_FLAG_MULTIPOINT_D_ROOT = 0x08,
-            WSA_FLAG_MULTIPOINT_D_LEAF = 0x10,
-        }
-        
+
         // Flags equivalent to winsock TRANSMIT_PACKETS_ELEMENT flags
         //    #define TP_ELEMENT_MEMORY   1
         //    #define TP_ELEMENT_FILE     2
@@ -138,7 +128,7 @@ internal static partial class Interop
             FdAddressListChange = 1 << 9,
             FdAllEvents = (1 << 10) - 1,
         }
-    
+
         // Array position in NetworkEvents (WSAEnumNetworkEvents).
         internal enum AsyncEventBitsPos
         {
@@ -154,18 +144,20 @@ internal static partial class Interop
             FdAddressListChangeBit = 9,
             FdMaxEvents = 10,
         }
-    
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct NetworkEvents
         {
             // Indicates which of the FD_XXX network events have occurred.
             public AsyncEventBits Events;
-    
-            // An array that contains any associated error codes, with an array index that corresponds to the position of event bits in lNetworkEvents. The identifiers FD_READ_BIT, FD_WRITE_BIT and other can be used to index the iErrorCode array.
+
+            // An array that contains any associated error codes,
+            // with an array index that corresponds to the position of event bits in lNetworkEvents.
+            // The identifiers FD_READ_BIT, FD_WRITE_BIT and other can be used to index the iErrorCode array.
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = (int)AsyncEventBitsPos.FdMaxEvents)]
             public int[] ErrorCodes;
         }
-        
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct WSAMsg
         {

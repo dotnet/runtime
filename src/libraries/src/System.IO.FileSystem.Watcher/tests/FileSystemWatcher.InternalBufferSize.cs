@@ -24,10 +24,10 @@ public class InternalBufferSizeTests
                 unblockHandler.WaitOne();
             };
 
-            AutoResetEvent eventOccured = new AutoResetEvent(false);
+            AutoResetEvent eventOccurred = new AutoResetEvent(false);
             watcher.Error += (o, e) =>
             {
-                eventOccured.Set();
+                eventOccurred.Set();
             };
             watcher.EnableRaisingEvents = true;
 
@@ -39,7 +39,7 @@ public class InternalBufferSizeTests
             }
 
             unblockHandler.Set();
-            Utility.ExpectEvent(eventOccured, "error");
+            Utility.ExpectEvent(eventOccurred, "error");
 
             // Update InternalBufferSize to accomadate the data
             watcher.InternalBufferSize = watcher.InternalBufferSize * 2;
@@ -52,7 +52,7 @@ public class InternalBufferSizeTests
             }
             unblockHandler.Set();
             // This time we should not see an error
-            Utility.ExpectNoEvent(eventOccured, "error");
+            Utility.ExpectNoEvent(eventOccurred, "error");
         }
     }
 }

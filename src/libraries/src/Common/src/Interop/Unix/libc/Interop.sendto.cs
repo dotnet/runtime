@@ -11,6 +11,6 @@ internal static partial class Interop
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        public static extern unsafe size_t sendto(int sockfd, void* buf, size_t len, int flags, sockaddr* dest_addr, socklen_t addrlen);
+        public static extern unsafe size_t sendto(int sockfd, void* buf, size_t len, int flags, byte* dest_addr, socklen_t addrlen);
     }
 }

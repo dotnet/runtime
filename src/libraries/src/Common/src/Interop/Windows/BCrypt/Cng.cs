@@ -246,7 +246,7 @@ namespace Internal.NativeCrypto
                 [In]      byte[] pbEncoded,         // Data to be formatted
                 [In]      int cbEncoded,            // Length of data to be formatted
                 [MarshalAs(UnmanagedType.LPWStr)]
-                [In, Out] StringBuilder pbFormat,   // Receives formatted string.
+                [Out]     StringBuilder pbFormat,   // Receives formatted string.
                 [In, Out] ref int pcbFormat);       // Sends/receives length of formatted String.
         }
     }

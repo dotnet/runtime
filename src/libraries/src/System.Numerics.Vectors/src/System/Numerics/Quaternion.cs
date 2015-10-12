@@ -155,9 +155,10 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Creates a Quaternion from a vector and an angle to rotate about the vector.
+        /// Creates a Quaternion from a normalized vector axis and an angle to rotate about the vector.
         /// </summary>
-        /// <param name="axis">The vector to rotate around.</param>
+        /// <param name="axis">The unit vector to rotate around.
+        /// This vector must be normalized before calling this function or the resulting Quaternion will be incorrect.</param>
         /// <param name="angle">The angle, in radians, to rotate around the vector.</param>
         /// <returns>The created Quaternion.</returns>
         public static Quaternion CreateFromAxisAngle(Vector3 axis, float angle)

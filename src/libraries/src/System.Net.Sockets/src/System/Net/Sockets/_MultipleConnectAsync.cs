@@ -429,7 +429,7 @@ namespace System.Net.Sockets
                         // actually cancel the Dns query, but we'll fake it by failing the connect attempt asynchronously
                         // from here, and silently dropping the connection attempt when the Dns query finishes.
                         Task.Factory.StartNew(
-                            s => CallAsyncFail(s), 
+                            s => CallAsyncFail(s),
                             null,
                             CancellationToken.None,
                             TaskCreationOptions.DenyChildAttach,

@@ -30,7 +30,7 @@ internal static partial class Interop
         internal static extern SafeAsn1ObjectHandle OBJ_txt2obj(string s, [MarshalAs(UnmanagedType.Bool)] bool no_name);
 
         [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
-        private static extern int OBJ_obj2txt(StringBuilder buf, int buf_len, IntPtr a, [MarshalAs(UnmanagedType.Bool)] bool no_name);
+        private static extern int OBJ_obj2txt([Out] StringBuilder buf, int buf_len, IntPtr a, [MarshalAs(UnmanagedType.Bool)] bool no_name);
 
         [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
         internal static extern int OBJ_txt2nid(string s);
@@ -41,8 +41,16 @@ internal static partial class Interop
         [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
         internal static extern int OBJ_sn2nid(string sn);
 
-        [DllImport(Libraries.LibCrypto, CharSet = CharSet.Ansi)]
-        internal static extern string OBJ_nid2ln(int n);
+        internal static string OBJ_nid2ln(int n)
+        {
+            IntPtr ptr = OBJ_nid2ln_private(n);
+            return ptr != null ?
+                Marshal.PtrToStringAnsi(ptr) :
+                null;
+        }
+
+        [DllImport(Libraries.LibCrypto, EntryPoint = "OBJ_nid2ln")]
+        private static extern IntPtr OBJ_nid2ln_private(int n);
 
         // Returns shared pointers, should not be tracked as a SafeHandle.
         [DllImport(Libraries.LibCrypto)]
@@ -70,6 +78,9 @@ internal static partial class Interop
         [DllImport(Libraries.LibCrypto)]
         internal static extern void ASN1_OCTET_STRING_free(IntPtr o);
 
+        [DllImport(Libraries.LibCrypto)]
+        internal static extern void ASN1_STRING_free(IntPtr o);
+
         internal static string OBJ_obj2txt_helper(IntPtr asn1ObjectPtr)
         {
             // OBJ_obj2txt returns the number of bytes that should have been in the answer, but it does not accept
@@ -82,7 +93,7 @@ internal static partial class Interop
 
             if (bytesNeeded < 0)
             {
-                throw CreateOpenSslCryptographicException();
+                throw Crypto.CreateOpenSslCryptographicException();
             }
 
             Debug.Assert(bytesNeeded != 0, "OBJ_obj2txt reported a zero-length response");
@@ -99,7 +110,7 @@ internal static partial class Interop
 
                 if (bytesNeeded < 0)
                 {
-                    throw CreateOpenSslCryptographicException();
+                    throw Crypto.CreateOpenSslCryptographicException();
                 }
 
                 Debug.Assert(

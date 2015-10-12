@@ -251,7 +251,7 @@ namespace System.Xml
                     if (index >= _array.Length)
                     {
                         int[] newArray = new int[Math.Max(index + 1, _array.Length * 2)];
-                        Array.Copy(_array, newArray, _array.Length);
+                        Array.Copy(_array, 0, newArray, 0, _array.Length);
                         _array = newArray;
                     }
 

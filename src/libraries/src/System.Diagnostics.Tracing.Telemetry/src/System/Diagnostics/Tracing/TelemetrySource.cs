@@ -9,6 +9,7 @@ namespace System.Diagnostics.Tracing
     /// This is the basic API to 'hook' parts of the framework.   It is like an EventSource
     /// (which can also write object), but is intended to log complex objects that can't be serialized.
     /// </summary>
+    [Obsolete("Renamed to System.Diagnostics.DiagnosticSource")]
     public abstract class TelemetrySource
     {
         /// <summary>
@@ -16,6 +17,8 @@ namespace System.Diagnostics.Tracing
         /// most of the class library does.   Data written here goes to DefaultListener
         /// which dispatches to all its subscribers.  
         /// </summary>
+        [Obsolete("Make your own static variable with a System.Diagnostics.DiagnosticSource")]
+
         public static TelemetrySource DefaultSource { get { return TelemetryListener.DefaultListener; } }
 
         /// <summary>
@@ -31,6 +34,8 @@ namespace System.Diagnostics.Tracing
         /// that listeners will use string prefixing to filter groups, thus having hierarchy in component 
         /// names is good.  
         /// </summary>
+        [Obsolete("Renamed to System.Diagnostics.DiagnosticSource.Write")]
+
         public abstract void WriteTelemetry(string telemetryName, object parameters);
 
         /// <summary>

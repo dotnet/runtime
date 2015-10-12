@@ -10,8 +10,12 @@ namespace System
     public static partial class Console
     {
         public static System.ConsoleColor BackgroundColor { get { return default(System.ConsoleColor); } set { } }
+        public static bool CursorVisible { get { return default(bool); } set { } }
         public static System.IO.TextWriter Error { get { return default(System.IO.TextWriter); } }
         public static System.ConsoleColor ForegroundColor { get { return default(System.ConsoleColor); } set { } }
+        public static bool IsInputRedirected { get { return false; } }
+        public static bool IsOutputRedirected { get { return false; } }
+        public static bool IsErrorRedirected { get { return false; } }
         public static System.IO.TextReader In { get { return default(System.IO.TextReader); } }
         public static System.IO.TextWriter Out { get { return default(System.IO.TextWriter); } }
         public static event System.ConsoleCancelEventHandler CancelKeyPress { add { } remove { } }
@@ -24,6 +28,7 @@ namespace System
         public static void SetError(System.IO.TextWriter newError) { }
         public static void SetIn(System.IO.TextReader newIn) { }
         public static void SetOut(System.IO.TextWriter newOut) { }
+        public static int WindowWidth { get { return default(int); } set { } }
         public static void Write(bool value) { }
         public static void Write(char value) { }
         public static void Write(char[] buffer) { }

@@ -1661,8 +1661,8 @@ namespace System.Net.Http
             }
 
             // Reduce the set of certificates to match the proper 'Client Authentication' criteria.
-            certs = certs.Find(X509FindType.FindByKeyUsage, X509KeyUsageFlags.DigitalSignature, true);
-            certs = certs.Find(X509FindType.FindByApplicationPolicy, ClientAuthenticationOID, true);
+            certs = certs.Find(X509FindType.FindByKeyUsage, X509KeyUsageFlags.DigitalSignature, false);
+            certs = certs.Find(X509FindType.FindByApplicationPolicy, ClientAuthenticationOID, false);
 
             // Build a new collection with certs that have a private key. Need to do this
             // manually because there is no X509FindType to match this criteria.
@@ -1678,7 +1678,7 @@ namespace System.Net.Http
             // TOOD: Filter the list based on TrustedIssuerList info from WINHTTP.
 
             // Set the client certificate.
-            if (certs.Count == 0)
+            if (clientCerts.Count == 0)
             {
                 SetNoClientCertificate(requestHandle);
             }

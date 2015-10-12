@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.Net.Requests.Test
+namespace System.Net.Tests
 {
     public class WebRequestTest
     {

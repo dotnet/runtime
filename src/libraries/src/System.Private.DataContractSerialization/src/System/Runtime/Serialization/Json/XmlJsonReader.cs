@@ -1076,7 +1076,7 @@ namespace System.Runtime.Serialization.Json
             else if (_scopes.Length == _scopeDepth)
             {
                 JsonNodeType[] newScopes = new JsonNodeType[_scopeDepth * 2];
-                Array.Copy(_scopes, newScopes, _scopeDepth);
+                Array.Copy(_scopes, 0, newScopes, 0, _scopeDepth);
                 _scopes = newScopes;
             }
             _scopes[_scopeDepth] = currentNodeType;

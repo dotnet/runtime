@@ -24,7 +24,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "TcpClient", localEP);
+                Logging.Enter(Logging.Sockets, this, "TcpClient", localEP);
             }
 
             if (localEP == null)
@@ -39,7 +39,7 @@ namespace System.Net.Sockets
             Client.Bind(localEP);
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "TcpClient", "");
+                Logging.Exit(Logging.Sockets, this, "TcpClient", "");
             }
         }
 
@@ -49,12 +49,12 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "TcpClient", null);
+                Logging.Enter(Logging.Sockets, this, "TcpClient", null);
             }
 
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "TcpClient", null);
+                Logging.Exit(Logging.Sockets, this, "TcpClient", null);
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "TcpClient", family);
+                Logging.Enter(Logging.Sockets, this, "TcpClient", family);
             }
 
             // Validate parameter
@@ -77,7 +77,7 @@ namespace System.Net.Sockets
             initialize();
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "TcpClient", null);
+                Logging.Exit(Logging.Sockets, this, "TcpClient", null);
             }
         }
 
@@ -87,7 +87,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "TcpClient", hostname);
+                Logging.Enter(Logging.Sockets, this, "TcpClient", hostname);
             }
 
             if (hostname == null)
@@ -122,7 +122,7 @@ namespace System.Net.Sockets
 
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "TcpClient", null);
+                Logging.Exit(Logging.Sockets, this, "TcpClient", null);
             }
         }
 
@@ -131,14 +131,14 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "TcpClient", acceptedSocket);
+                Logging.Enter(Logging.Sockets, this, "TcpClient", acceptedSocket);
             }
 
             Client = acceptedSocket;
             _active = true;
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "TcpClient", null);
+                Logging.Exit(Logging.Sockets, this, "TcpClient", null);
             }
         }
 
@@ -187,7 +187,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "Connect", hostname);
+                Logging.Enter(Logging.Sockets, this, "Connect", hostname);
             }
 
             if (_cleanedUp)
@@ -323,7 +323,7 @@ namespace System.Net.Sockets
 
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "Connect", null);
+                Logging.Exit(Logging.Sockets, this, "Connect", null);
             }
         }
 
@@ -332,7 +332,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "Connect", address);
+                Logging.Enter(Logging.Sockets, this, "Connect", address);
             }
 
             if (_cleanedUp)
@@ -352,7 +352,7 @@ namespace System.Net.Sockets
             Connect(remoteEP);
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "Connect", null);
+                Logging.Exit(Logging.Sockets, this, "Connect", null);
             }
         }
 
@@ -361,7 +361,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "Connect", remoteEP);
+                Logging.Enter(Logging.Sockets, this, "Connect", remoteEP);
             }
 
             if (_cleanedUp)
@@ -377,7 +377,7 @@ namespace System.Net.Sockets
             _active = true;
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "Connect", null);
+                Logging.Exit(Logging.Sockets, this, "Connect", null);
             }
         }
 
@@ -385,14 +385,14 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "Connect", ipAddresses);
+                Logging.Enter(Logging.Sockets, this, "Connect", ipAddresses);
             }
 
             Client.Connect(ipAddresses, port);
             _active = true;
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "Connect", null);
+                Logging.Exit(Logging.Sockets, this, "Connect", null);
             }
         }
 
@@ -400,13 +400,13 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "BeginConnect", host);
+                Logging.Enter(Logging.Sockets, this, "BeginConnect", host);
             }
 
             IAsyncResult result = Client.BeginConnect(host, port, requestCallback, state);
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "BeginConnect", null);
+                Logging.Exit(Logging.Sockets, this, "BeginConnect", null);
             }
 
             return result;
@@ -416,13 +416,13 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "BeginConnect", address);
+                Logging.Enter(Logging.Sockets, this, "BeginConnect", address);
             }
 
             IAsyncResult result = Client.BeginConnect(address, port, requestCallback, state);
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "BeginConnect", null);
+                Logging.Exit(Logging.Sockets, this, "BeginConnect", null);
             }
 
             return result;
@@ -432,13 +432,13 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "BeginConnect", addresses);
+                Logging.Enter(Logging.Sockets, this, "BeginConnect", addresses);
             }
 
             IAsyncResult result = Client.BeginConnect(addresses, port, requestCallback, state);
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "BeginConnect", null);
+                Logging.Exit(Logging.Sockets, this, "BeginConnect", null);
             }
 
             return result;
@@ -448,16 +448,15 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "EndConnect", asyncResult);
+                Logging.Enter(Logging.Sockets, this, "EndConnect", asyncResult);
             }
 
             Client.EndConnect(asyncResult);
             _active = true;
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "EndConnect", null);
+                Logging.Exit(Logging.Sockets, this, "EndConnect", null);
             }
-
         }
 
         public Task ConnectAsync(IPAddress address, int port)
@@ -480,7 +479,7 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "GetStream", "");
+                Logging.Enter(Logging.Sockets, this, "GetStream", "");
             }
 
             if (_cleanedUp)
@@ -499,7 +498,7 @@ namespace System.Net.Sockets
 
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "GetStream", _dataStream);
+                Logging.Exit(Logging.Sockets, this, "GetStream", _dataStream);
             }
 
             return _dataStream;
@@ -512,14 +511,14 @@ namespace System.Net.Sockets
         {
             if (Logging.On)
             {
-                 Logging.Enter(Logging.Sockets, this, "Dispose", "");
+                Logging.Enter(Logging.Sockets, this, "Dispose", "");
             }
 
             if (_cleanedUp)
             {
                 if (Logging.On)
                 {
-                     Logging.Exit(Logging.Sockets, this, "Dispose", "");
+                    Logging.Exit(Logging.Sockets, this, "Dispose", "");
                 }
 
                 return;
@@ -559,7 +558,7 @@ namespace System.Net.Sockets
             _cleanedUp = true;
             if (Logging.On)
             {
-                 Logging.Exit(Logging.Sockets, this, "Dispose", "");
+                Logging.Exit(Logging.Sockets, this, "Dispose", "");
             }
         }
 

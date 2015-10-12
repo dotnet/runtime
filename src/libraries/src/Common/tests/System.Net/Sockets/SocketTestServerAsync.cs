@@ -98,7 +98,6 @@ namespace System.Net.Sockets.Tests
                 // Add SocketAsyncEventArg to the pool.
                 _readWritePool.Push(readWriteEventArg);
             }
-
         }
 
         // Starts the server such that it is listening for  
@@ -137,7 +136,7 @@ namespace System.Net.Sockets.Tests
             }
 
             _log.WriteLine(this.GetHashCode() + " StartAccept(_numConnectedSockets={0})", _numConnectedSockets);
-            _maxNumberAcceptedClientsSemaphore.WaitOne();
+            Assert.True(_maxNumberAcceptedClientsSemaphore.WaitOne(Configuration.PassingTestTimeout), "Timeout waiting for client connection.");
 
             if (_listenSocket == null)
             {
@@ -239,7 +238,7 @@ namespace System.Net.Sockets.Tests
         private void ProcessReceive(SocketAsyncEventArgs e)
         {
             _log.WriteLine(
-                this.GetHashCode() + " ProcessReceive(bytesTransferred={0}, SocketError={1}, _numConnectedSockets={2})", 
+                this.GetHashCode() + " ProcessReceive(bytesTransferred={0}, SocketError={1}, _numConnectedSockets={2})",
                 e.BytesTransferred,
                 e.SocketError,
                 _numConnectedSockets);
@@ -259,7 +258,6 @@ namespace System.Net.Sockets.Tests
                 {
                     ProcessSend(e);
                 }
-
             }
             else
             {
@@ -326,7 +324,7 @@ namespace System.Net.Sockets.Tests
             Interlocked.Decrement(ref _numConnectedSockets);
             _maxNumberAcceptedClientsSemaphore.Release();
             _log.WriteLine(
-                this.GetHashCode() + " CloseClientSocket(_numConnectedSockets={0})", 
+                this.GetHashCode() + " CloseClientSocket(_numConnectedSockets={0})",
                 _numConnectedSockets);
 
             // Free the SocketAsyncEventArg so they can be reused by another client.
@@ -342,7 +340,7 @@ namespace System.Net.Sockets.Tests
     // Represents a collection of reusable SocketAsyncEventArgs objects.   
     internal class SocketAsyncEventArgsPool
     {
-        Stack<SocketAsyncEventArgs> _pool;
+        private Stack<SocketAsyncEventArgs> _pool;
 
         // Initializes the object pool to the specified size.
         // 
@@ -381,7 +379,6 @@ namespace System.Net.Sockets.Tests
         {
             get { return _pool.Count; }
         }
-
     }
 
     // This class creates a single large buffer which can be divided up  
@@ -394,11 +391,11 @@ namespace System.Net.Sockets.Tests
     // The operations exposed on the BufferManager class are not thread safe. 
     internal class BufferManager
     {
-        int _numBytes;  // The total number of bytes controlled by the buffer pool.
-        byte[] _buffer; // The underlying byte array maintained by the Buffer Manager.
-        Stack<int> _freeIndexPool;
-        int _currentIndex;
-        int _bufferSize;
+        private readonly int _numBytes;  // The total number of bytes controlled by the buffer pool.
+        private readonly Stack<int> _freeIndexPool;
+        private readonly int _bufferSize;
+        private byte[] _buffer; // The underlying byte array maintained by the Buffer Manager.
+        private int _currentIndex;
 
         public BufferManager(int totalBytes, int bufferSize)
         {
@@ -422,7 +419,6 @@ namespace System.Net.Sockets.Tests
         // <returns>true if the buffer was successfully set, else false</returns> 
         public bool SetBuffer(SocketAsyncEventArgs args)
         {
-
             if (_freeIndexPool.Count > 0)
             {
                 args.SetBuffer(_buffer, _freeIndexPool.Pop(), _bufferSize);
@@ -446,6 +442,5 @@ namespace System.Net.Sockets.Tests
             _freeIndexPool.Push(args.Offset);
             args.SetBuffer(null, 0, 0);
         }
-
     }
 }
