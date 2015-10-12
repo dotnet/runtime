@@ -622,7 +622,6 @@ extern "C" void Sync();
  */
 extern "C" int32_t Write(int32_t fd, const void* buffer, int32_t bufferSize);
 
-
 /**
 * Gets the windows size of the terminal
 *
