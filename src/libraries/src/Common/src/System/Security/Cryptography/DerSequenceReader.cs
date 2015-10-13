@@ -1,13 +1,11 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Security.Cryptography;
 using System.Text;
 
-namespace Internal.Cryptography.Pal
+namespace System.Security.Cryptography
 {
     /// <summary>
     /// Reads data encoded via the Distinguished Encoding Rules for Abstract
@@ -183,7 +181,7 @@ namespace Internal.Cryptography.Pal
 
             // IA5 (International Alphabet - 5) is functionally equivalent to 7-bit ASCII.
 
-            string ia5String = Encoding.ASCII.GetString(_data, _position, contentLength);
+            string ia5String = System.Text.Encoding.ASCII.GetString(_data, _position, contentLength);
             _position += contentLength;
 
             return ia5String;

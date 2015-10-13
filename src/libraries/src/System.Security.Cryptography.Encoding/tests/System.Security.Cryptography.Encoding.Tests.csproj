@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -17,8 +17,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsnEncodedData.cs" />
+    <Compile Include="DerEncoderTests.cs" />
+    <Compile Include="DerSequenceReaderTests.cs" />
     <Compile Include="Oid.cs" />
     <Compile Include="OidCollection.cs" />
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
+      <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
+      <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
+      <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
