@@ -5,6 +5,8 @@ JIT/Directed/coverage/oldtests/Desktop/callipinvoke_il_r.sh
 JIT/Directed/IL/PInvokeTail/TailWinApi.sh
 JIT/Directed/pinvoke/jump.sh
 JIT/Directed/pinvoke/sysinfo_il.sh
+JIT/jit64/gc/misc/funclet.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b32374/b32374.sh
 JIT/Regression/clr-x64-JIT/v2.1/b173569/b173569.sh
 managed/Compilation/Compilation.sh
 readytorun/mainv1.sh
