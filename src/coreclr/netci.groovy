@@ -120,3 +120,67 @@ def static getBuildJobName(def configuration, def os) {
         }
     }
 }
+
+# Ubuntu cross compiled arm and arm64 builds
+# Scheduled for nightly and on-demand PR for now
+
+def os = 'Ubuntu'
+[true, false].each { isPR ->
+    ['Debug', 'Release'].each { configuration ->
+        def lowerConfiguration = configuration.toLowerCase()
+        
+        // Create the new job
+        def newArm64Job = job(Utilities.getFullJobName(project, "arm64_cross_${os.toLowerCase()}_${lowerConfiguration}, isPR)) {
+            // Set the label.
+            label(machineLabelMap[os])
+            steps {
+                shell("""
+echo \"Using rootfs in /opt/aarch64-linux-gnu-root\"
+ROOTFS_DIR=/opt/aarch64-linux-gnu-root ./build.sh skipmscorlib arm64 cross verbose ${lowerConfiguration}""")
+            }
+        }
+        
+        if (!isPR) {
+            // Add rolling job options
+            Utilities.addScm(newArm64Job, project)
+            Utilities.addStandardNonPRParameters(newArm64Job)
+            Utilities.addPeriodicTrigger(newArm64Job, '@daily')
+            Utilities.addArchival(newArm64Job, "bin/Product/**")
+        }
+        else {
+            // Add PR job options
+            Utilities.addPRTestSCM(newArm64Job, project)
+            Utilities.addStandardPRParameters(newArm64Job, project)
+            Utilities.addGithubPRTrigger(newArm64Job, "Arm64 ${os} cross ${configuration} Build", '@dotnet-bot test arm')
+        }
+        
+        // Create the new job
+        def newArmJob = job(Utilities.getFullJobName(project, "arm_cross_${os.toLowerCase()}_${lowerConfiguration}, isPR)) {
+            // Set the label.
+            label(machineLabelMap[os])
+            steps {
+                shell("""
+echo \"Using rootfs in /opt/arm-liux-genueabihf-root\"
+ROOTFS_DIR=/opt/arm-liux-genueabihf-root ./build.sh skipmscorlib arm cross verbose ${lowerConfiguration}""")
+            }
+        }
+        
+        if (!isPR) {
+            // Add rolling job options
+            Utilities.addScm(newArmJob, project)
+            Utilities.addStandardNonPRParameters(newArmJob)
+            Utilities.addPeriodicTrigger(newArmJob, '@daily')
+            Utilities.addArchival(newArmJob, "bin/Product/**")
+        }
+        else {
+            // Add PR job options
+            Utilities.addPRTestSCM(newArmJob, project)
+            Utilities.addStandardPRParameters(newArmJob, project)
+            Utilities.addGithubPRTrigger(newArmJob, "Arm ${os} cross ${configuration} Build", '@dotnet-bot test arm')
+        }
+        
+        [newArmJob, newArm64Job].each { newJob ->
+            Utilities.addStandardOptions(newJob)
+        }
+    }
+}
