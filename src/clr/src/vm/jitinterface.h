@@ -203,6 +203,10 @@ extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL1(Object*, JIT_NewCrossContext, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL1(Object*, JIT_NewCrossContext_Portable, CORINFO_CLASS_HANDLE typeHnd_);
 
+extern FCDECL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength);
+extern FCDECL1(StringObject*, UnframedAllocateString, DWORD stringLength);
+extern FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
+
 extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
@@ -1615,8 +1619,6 @@ void DoGcStress (PT_CONTEXT regs, MethodDesc *pMD);
 #endif //HAVE_GCCOVER
 
 EXTERN_C FCDECL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray);
-FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
-FCDECL1(StringObject*, UnframedAllocateString, DWORD stringLength);
 
 OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok);
 
