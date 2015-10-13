@@ -17,7 +17,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.BN_clear_free(handle);
+            Interop.Crypto.BigNumDestroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }

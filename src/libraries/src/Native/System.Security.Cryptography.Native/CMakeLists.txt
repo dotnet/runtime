@@ -21,6 +21,8 @@ set(NATIVECRYPTO_SOURCES
     openssl.c
     pal_asn1.cpp
     pal_asn1_print.cpp
+    pal_bignum.cpp
+    pal_bio.cpp
     pal_err.cpp
     pal_evp.cpp
     pal_evp_cipher.cpp

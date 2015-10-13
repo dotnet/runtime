@@ -3,33 +3,23 @@
 
 using System;
 using System.Runtime.InteropServices;
-
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-    internal static partial class libcrypto
+    internal static partial class Crypto
     {
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern void BN_clear_free(IntPtr a);
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern void BigNumDestroy(IntPtr a);
 
-        [DllImport(Libraries.LibCrypto)]
-        private static extern IntPtr BN_bin2bn(byte[] s, int len, IntPtr zero);
+        [DllImport(Libraries.CryptoNative)]
+        private static extern IntPtr BigNumFromBinary(byte[] s, int len);
 
-        [DllImport(Libraries.LibCrypto)]
-        private static extern unsafe int BN_bn2bin(SafeBignumHandle a, byte* to);
+        [DllImport(Libraries.CryptoNative)]
+        private static extern unsafe int BigNumToBinary(SafeBignumHandle a, byte* to);
 
-        [DllImport(Libraries.LibCrypto)]
-        private static extern int BN_num_bits(SafeBignumHandle a);
-
-        /// <summary>
-        /// Returns the number of bytes needed to export a BIGNUM.
-        /// </summary>
-        /// <remarks>This is a macro in bn.h, expanded here.</remarks>
-        private static int BN_num_bytes(SafeBignumHandle a)
-        {
-            return (BN_num_bits(a) + 7) / 8;
-        }
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int GetBigNumBytes(SafeBignumHandle a);
 
         internal static IntPtr CreateBignumPtr(byte[] bigEndianValue)
         {
@@ -38,8 +28,7 @@ internal static partial class Interop
                 return IntPtr.Zero;
             }
 
-            IntPtr handle = BN_bin2bn(bigEndianValue, bigEndianValue.Length, IntPtr.Zero);
-            return handle;
+            return BigNumFromBinary(bigEndianValue, bigEndianValue.Length);
         }
 
         internal static SafeBignumHandle CreateBignum(byte[] bigEndianValue)
@@ -48,7 +37,7 @@ internal static partial class Interop
             return new SafeBignumHandle(handle, true);
         }
 
-        private static byte[] ExtractBignum(IntPtr bignum, int targetSize)
+        internal static byte[] ExtractBignum(IntPtr bignum, int targetSize)
         {
             // Given that the only reference held to bignum is an IntPtr, create an unowned SafeHandle
             // to ensure that we don't destroy the key after extraction.
@@ -65,7 +54,7 @@ internal static partial class Interop
                 return null;
             }
 
-            int compactSize = BN_num_bytes(bignum);
+            int compactSize = GetBigNumBytes(bignum);
 
             if (targetSize < compactSize)
             {
@@ -85,7 +74,7 @@ internal static partial class Interop
             fixed (byte* to = buf)
             {
                 byte* start = to + offset;
-                BN_bn2bin(bignum, start);
+                BigNumToBinary(bignum, start);
             }
 
             return buf;

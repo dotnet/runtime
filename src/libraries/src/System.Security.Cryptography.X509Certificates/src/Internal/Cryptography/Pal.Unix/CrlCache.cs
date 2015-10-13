@@ -44,7 +44,7 @@ namespace Internal.Cryptography.Pal
         {
             string crlFile = GetCachedCrlPath(cert);
 
-            using (SafeBioHandle bio = Interop.libcrypto.BIO_new_file(crlFile, "rb"))
+            using (SafeBioHandle bio = Interop.Crypto.BioNewFile(crlFile, "rb"))
             {
                 if (bio.IsInvalid)
                 {
@@ -120,7 +120,7 @@ namespace Internal.Cryptography.Pal
                     {
                         string crlFile = GetCachedCrlPath(cert, mkDir: true);
 
-                        using (SafeBioHandle bio = Interop.libcrypto.BIO_new_file(crlFile, "wb"))
+                        using (SafeBioHandle bio = Interop.Crypto.BioNewFile(crlFile, "wb"))
                         {
                             if (!bio.IsInvalid)
                             {

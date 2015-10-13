@@ -162,12 +162,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Permissions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Bignum.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.Bignum.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.BIO.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.BIO.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.CURLcode.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.CURLcode.cs</Link>
     </Compile>
@@ -194,6 +188,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Print.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Print.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
