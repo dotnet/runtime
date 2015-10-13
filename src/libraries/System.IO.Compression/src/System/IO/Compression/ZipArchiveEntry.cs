@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.IO.Compression
@@ -15,6 +16,9 @@ namespace System.IO.Compression
         #region Fields
 
         private const UInt16 DefaultVersionToExtract = 10;
+
+        //The maximum index of our buffers, from the maximum index of a byte array
+        private const int MaxSingleBufferSize = 0x7FFFFFC7;
 
         private ZipArchive _archive;
         private readonly Boolean _originallyInArchive;
@@ -29,7 +33,8 @@ namespace System.IO.Compression
         private Int64 _offsetOfLocalHeader;
         private Int64? _storedOffsetOfCompressedData;
         private UInt32 _crc32;
-        private Byte[] _compressedBytes;
+        //An array of buffers, each a maximum of MaxSingleBufferSize in size
+        private Byte[][] _compressedBytes;
         private MemoryStream _storedUncompressedData;
         private Boolean _currentlyOpenForWrite;
         private Boolean _everOpenedForWrite;
@@ -347,6 +352,11 @@ namespace System.IO.Compression
 
         #region Privates
 
+        // Only allow opening ZipArchives with large ZipArchiveEntries in update mode when running in a 64-bit process.
+        // This is for compatibility with old behavior that threw an exception for all process bitnesses, because this
+        // will not work in a 32-bit process.
+        private bool AllowLargeZipArchiveEntriesInUpdateMode { get { return Marshal.SizeOf(new IntPtr()) >= 4; } }
+
         internal Boolean EverOpenedForWrite { get { return _everOpenedForWrite; } }
 
         private Int64 OffsetOfCompressedData
@@ -613,10 +623,20 @@ namespace System.IO.Compression
             {
                 //we know that it is openable at this point
 
-                _compressedBytes = new Byte[_compressedSize];
+                _compressedBytes = new Byte[(_compressedSize / MaxSingleBufferSize) + 1][];
+                for (int i = 0; i < _compressedBytes.Length - 1; i++)
+                {
+                    _compressedBytes[i] = new Byte[MaxSingleBufferSize];
+                }
+                _compressedBytes[_compressedBytes.Length - 1] = new Byte[_compressedSize % MaxSingleBufferSize];
+
                 _archive.ArchiveStream.Seek(OffsetOfCompressedData, SeekOrigin.Begin);
-                //casting _compressedSize to Int32 here is safe because of check in IsOpenable
-                ZipHelper.ReadBytes(_archive.ArchiveStream, _compressedBytes, (Int32)_compressedSize);
+
+                for (int i = 0; i < _compressedBytes.Length - 1; i++)
+                {
+                    ZipHelper.ReadBytes(_archive.ArchiveStream, _compressedBytes[i], MaxSingleBufferSize);
+                }
+                ZipHelper.ReadBytes(_archive.ArchiveStream, _compressedBytes[_compressedBytes.Length - 1], (Int32)(_compressedSize % MaxSingleBufferSize));
             }
 
             return true;
@@ -772,14 +792,19 @@ namespace System.IO.Compression
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
                 }
-                //this limitation exists because a) it is unreasonable to load > 4GB into memory
-                //but also because the stream reading functions make it hard
+                //This limitation originally existed because a) it is unreasonable to load > 4GB into memory
+                //but also because the stream reading functions make it hard.  This has been updated to handle
+                //this scenario in a 64-bit process using multiple buffers, delivered first as an OOB for
+                //compatibility.
                 if (needToLoadIntoMemory)
                 {
                     if (_compressedSize > Int32.MaxValue)
                     {
-                        message = SR.EntryTooLarge;
-                        return false;
+                        if (!AllowLargeZipArchiveEntriesInUpdateMode)
+                        {
+                            message = SR.EntryTooLarge;
+                            return false;
+                        }
                     }
                 }
             }
@@ -924,9 +949,12 @@ namespace System.IO.Compression
                     WriteLocalFileHeader(false);
                     // we just want to copy the compressed bytes straight over, but the stream apis
                     // don't handle larger than 32 bit values, so we just wrap it in a stream
-                    using (MemoryStream compressedStream = new MemoryStream(_compressedBytes))
+                    foreach (Byte[] compressedBytes in _compressedBytes)
                     {
-                        compressedStream.CopyTo(_archive.ArchiveStream);
+                        using (MemoryStream compressedStream = new MemoryStream(compressedBytes))
+                        {
+                            compressedStream.CopyTo(_archive.ArchiveStream);
+                        }
                     }
                 }
             }
