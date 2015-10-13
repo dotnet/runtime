@@ -221,6 +221,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     dl
     unwind
     unwind-generic
+    uuid
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
