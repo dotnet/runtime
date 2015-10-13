@@ -24,6 +24,24 @@ namespace System.Runtime.Tests
         }
 
         [Benchmark]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public void ctor_string(int length)
+        {
+            PerfUtils utils = new PerfUtils();
+            string input = utils.CreateString(length);
+            StringBuilder builder;
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        builder = new StringBuilder(input); builder = new StringBuilder(input); builder = new StringBuilder(input);
+                        builder = new StringBuilder(input); builder = new StringBuilder(input); builder = new StringBuilder(input);
+                        builder = new StringBuilder(input); builder = new StringBuilder(input); builder = new StringBuilder(input);
+                    }
+        }
+
+        [Benchmark]
         [InlineData(0)]
         [InlineData(200)]
         public void Append(int length)

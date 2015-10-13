@@ -4,6 +4,7 @@
 using Xunit;
 using Microsoft.Xunit.Performance;
 using System.IO;
+using System.Collections.Generic;
 
 namespace System.Diagnostics.Tests
 {
@@ -12,11 +13,12 @@ namespace System.Diagnostics.Tests
         [Benchmark]
         public void Kill()
         {
+            const int inneriterations = 500;
             foreach (var iteration in Benchmark.Iterations)
             {
                 // Create several processes to test on
-                Process[] processes = new Process[500];
-                for (int i = 0; i < 500; i++)
+                Process[] processes = new Process[inneriterations];
+                for (int i = 0; i < inneriterations; i++)
                 {
                     processes[i] = CreateProcessInfinite();
                     processes[i].Start();
@@ -24,31 +26,50 @@ namespace System.Diagnostics.Tests
 
                 // Begin Testing - Kill all of the processes
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i < 500; i++)
+                    for (int i = 0; i < inneriterations; i++)
                         processes[i].Kill();
 
                 // Cleanup the processes
-                for (int i = 0; i < 500; i++)
-                    processes[i].Dispose();
+                foreach (Process proc in processes)
+                {
+                    proc.WaitForExit();
+                    proc.Dispose();
+                }
             }
         }
 
         [Benchmark]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(3)]
-        public void GetProcessesByName(int innerIterations)
+        public void GetProcessesByName()
         {
+            // To offset a different number of processes on a different machine, I create dummy processes
+            // until our baseline number is reached.
+            const int baseline = 300;
+            int numberOfProcesses = Process.GetProcesses().Length;
+            List<Process> processes = new List<Process>();
+            while (numberOfProcesses++ <= baseline)
+            {
+                Process proc = CreateProcess();
+                proc.Start();
+                processes.Add(proc);
+            }
+
+            // Begin testing
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                 {
-                    for (int i = 0; i < innerIterations; i++)
-                    {
-                        Process.GetProcessesByName("1"); Process.GetProcessesByName("1"); Process.GetProcessesByName("1");
-                        Process.GetProcessesByName("1"); Process.GetProcessesByName("1"); Process.GetProcessesByName("1");
-                        Process.GetProcessesByName("1"); Process.GetProcessesByName("1"); Process.GetProcessesByName("1");
-                    }
+                    Process.GetProcessesByName("1"); Process.GetProcessesByName("1"); Process.GetProcessesByName("1");
+                    Process.GetProcessesByName("1"); Process.GetProcessesByName("1"); Process.GetProcessesByName("1");
+                    Process.GetProcessesByName("1"); Process.GetProcessesByName("1"); Process.GetProcessesByName("1");
                 }
+
+            // Cleanup
+            foreach (Process proc in processes)
+            {
+                if (!proc.HasExited)
+                    proc.Kill();
+                proc.WaitForExit();
+                proc.Dispose();
+            }
         }
 
         [Benchmark]
@@ -70,9 +91,13 @@ namespace System.Diagnostics.Tests
                     for (int i = 0; i < 500; i++)
                         id = processes[i].Id;
 
-                // Cleanup the processes
-                for (int i = 0; i < 500; i++)
-                    processes[i].Dispose();
+                foreach (Process proc in processes)
+                {
+                    if (!proc.HasExited)
+                        proc.Kill();
+                    proc.WaitForExit();
+                    proc.Dispose();
+                }
             }
         }
 
@@ -94,8 +119,13 @@ namespace System.Diagnostics.Tests
                         processes[i].Start();
 
                 // Cleanup the processes
-                for (int i = 0; i < 500; i++)
-                    processes[i].Dispose();
+                foreach (Process proc in processes)
+                {
+                    if (!proc.HasExited)
+                        proc.Kill();
+                    proc.WaitForExit();
+                    proc.Dispose();
+                }
             }
         }
 
@@ -119,8 +149,13 @@ namespace System.Diagnostics.Tests
                         result = processes[i].HasExited;
 
                 // Cleanup the processes
-                for (int i = 0; i < 500; i++)
-                    processes[i].Dispose();
+                foreach (Process proc in processes)
+                {
+                    if (!proc.HasExited)
+                        proc.Kill();
+                    proc.WaitForExit();
+                    proc.Dispose();
+                }
             }
         }
 
@@ -145,8 +180,10 @@ namespace System.Diagnostics.Tests
                         result = processes[i].ExitCode;
 
                 // Cleanup the processes
-                for (int i = 0; i < 500; i++)
-                    processes[i].Dispose();
+                foreach (Process proc in processes)
+                {
+                    proc.Dispose();
+                }
             }
         }
 
@@ -161,6 +198,7 @@ namespace System.Diagnostics.Tests
                 for (int i = 0; i < 500; i++)
                 {
                     processes[i] = CreateProcess();
+                    processes[i].Start();
                 }
 
                 // Begin Testing
@@ -169,8 +207,13 @@ namespace System.Diagnostics.Tests
                         result = processes[i].StartInfo;
 
                 // Cleanup the processes
-                for (int i = 0; i < 500; i++)
-                    processes[i].Dispose();
+                foreach (Process proc in processes)
+                {
+                    if (!proc.HasExited)
+                        proc.Kill();
+                    proc.WaitForExit();
+                    proc.Dispose();
+                }
             }
         }
 
@@ -203,8 +246,13 @@ namespace System.Diagnostics.Tests
                         processes[i].StandardOutput.ReadToEnd();
 
                 // Cleanup the processes
-                for (int i = 0; i < innerIterations; i++)
-                    processes[i].Dispose();
+                foreach (Process proc in processes)
+                {
+                    if (!proc.HasExited)
+                        proc.Kill();
+                    proc.WaitForExit();
+                    proc.Dispose();
+                }
             }
         }
     }

@@ -22,6 +22,20 @@ namespace System.Runtime.Tests
         }
 
         [Benchmark]
+        public void GetUtcNow()
+        {
+            DateTime dt;
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int i = 0; i < 10000; i++)
+                    {
+                        dt = DateTime.UtcNow; dt = DateTime.UtcNow; dt = DateTime.UtcNow;
+                        dt = DateTime.UtcNow; dt = DateTime.UtcNow; dt = DateTime.UtcNow;
+                        dt = DateTime.UtcNow; dt = DateTime.UtcNow; dt = DateTime.UtcNow;
+                    }
+        }
+
+        [Benchmark]
         public void ToString_str()
         {
             DateTime dt = DateTime.Now;
@@ -43,7 +57,7 @@ namespace System.Runtime.Tests
             DateTime date2 = new DateTime(1996, 12, 6, 13, 2, 0);
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i < 10000; i++)
+                    for (int i = 0; i < 100000; i++)
                     {
                         result = date1 - date2; result = date1 - date2; result = date1 - date2;
                         result = date1 - date2; result = date1 - date2; result = date1 - date2;

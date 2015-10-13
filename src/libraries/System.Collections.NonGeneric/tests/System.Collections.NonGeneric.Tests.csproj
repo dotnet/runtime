@@ -9,11 +9,7 @@
     <AssemblyName>System.Collections.NonGeneric.Tests</AssemblyName>
     <ProjectGuid>{EE95AE39-845A-42D3-86D0-8065DBE56612}</ProjectGuid>
   </PropertyGroup>
-  <!-- Performance tests require v5.0 portable tools -->
-  <PropertyGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
-    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
+
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
