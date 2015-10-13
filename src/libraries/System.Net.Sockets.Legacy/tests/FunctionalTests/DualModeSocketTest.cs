@@ -220,6 +220,7 @@ namespace System.Net.Sockets.Tests
             DualModeConnect_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Any, true);
         }
 
+        [ActiveIssue(3494, PlatformID.AnyUnix)]
         [Fact]
         public void ConnectV6IPEndPointToDualHost_Success()
         {
