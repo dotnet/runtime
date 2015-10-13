@@ -1,6 +1,7 @@
 //
 // Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed under the MIT license. See LICENSE file in the project root for full
+// license information.
 //
 
 #include <stdint.h>
@@ -9,7 +10,8 @@
 /*
  * These values should be kept in sync with System.Text.NormalizationForm
  */
-enum class NormalizationForm : int32_t {
+enum class NormalizationForm : int32_t
+{
     C = 0x1,
     D = 0x2,
     KC = 0x5,
@@ -18,16 +20,16 @@ enum class NormalizationForm : int32_t {
 
 const UNormalizer2* GetNormalizerForForm(NormalizationForm normalizationForm, UErrorCode* pErrorCode)
 {
-    switch(normalizationForm)
+    switch (normalizationForm)
     {
-    case NormalizationForm::C:
-        return unorm2_getNFCInstance(pErrorCode);
-    case NormalizationForm::D:
-        return unorm2_getNFDInstance(pErrorCode);
-    case NormalizationForm::KC:
-        return unorm2_getNFKCInstance(pErrorCode);
-    case NormalizationForm::KD:
-        return unorm2_getNFKDInstance(pErrorCode);
+        case NormalizationForm::C:
+            return unorm2_getNFCInstance(pErrorCode);
+        case NormalizationForm::D:
+            return unorm2_getNFDInstance(pErrorCode);
+        case NormalizationForm::KC:
+            return unorm2_getNFKCInstance(pErrorCode);
+        case NormalizationForm::KD:
+            return unorm2_getNFKDInstance(pErrorCode);
     }
 
     *pErrorCode = U_ILLEGAL_ARGUMENT_ERROR;
@@ -38,7 +40,8 @@ const UNormalizer2* GetNormalizerForForm(NormalizationForm normalizationForm, UE
 Function:
 IsNormalized
 
-Used by System.StringNormalizationExtensions.IsNormalized to detect if a string is in a certain
+Used by System.StringNormalizationExtensions.IsNormalized to detect if a string
+is in a certain
 Unicode Normalization Form.
 
 Return values:
@@ -66,14 +69,16 @@ extern "C" int32_t IsNormalized(NormalizationForm normalizationForm, const UChar
 Function:
 NormalizeString
 
-Used by System.StringNormalizationExtensions.Normalize to normalize a string into a certain
+Used by System.StringNormalizationExtensions.Normalize to normalize a string
+into a certain
 Unicode Normalization Form.
 
 Return values:
 0: internal error during normalization.
 >0: the length of the normalized string (not counting the null terminator).
 */
-extern "C" int32_t NormalizeString(NormalizationForm normalizationForm, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
+extern "C" int32_t NormalizeString(
+    NormalizationForm normalizationForm, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
 {
     UErrorCode err = U_ZERO_ERROR;
     const UNormalizer2* pNormalizer = GetNormalizerForForm(normalizationForm, &err);

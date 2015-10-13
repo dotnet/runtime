@@ -1,6 +1,7 @@
 //
 // Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed under the MIT license. See LICENSE file in the project root for full
+// license information.
 //
 
 #include <stdint.h>
@@ -30,7 +31,8 @@ uint32_t GetOptions(uint32_t flags)
 Function:
 ToASCII
 
-Used by System.Globalization.IdnMapping.GetAsciiCore to convert an Unicode domain name to ASCII
+Used by System.Globalization.IdnMapping.GetAsciiCore to convert an Unicode
+domain name to ASCII
 
 Return values:
 0: internal error during conversion.
@@ -54,7 +56,8 @@ extern "C" int32_t ToAscii(uint32_t flags, const UChar* lpSrc, int32_t cwSrcLeng
 Function:
 ToUnicode
 
-Used by System.Globalization.IdnMapping.GetUnicodeCore to convert an ASCII name to Unicode
+Used by System.Globalization.IdnMapping.GetUnicodeCore to convert an ASCII name
+to Unicode
 
 Return values:
 0: internal error during conversion.
