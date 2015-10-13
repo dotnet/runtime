@@ -19,9 +19,6 @@ internal static partial class Interop
         internal static extern SafeRsaHandle RSA_new();
 
         [DllImport(Libraries.LibCrypto)]
-        internal static unsafe extern SafeRsaHandle d2i_RSAPublicKey(IntPtr zero, byte** ppin, int len);
-
-        [DllImport(Libraries.LibCrypto)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool RSA_up_ref(IntPtr rsa);
 

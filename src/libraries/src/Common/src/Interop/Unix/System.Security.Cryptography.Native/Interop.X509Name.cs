@@ -20,6 +20,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative)]
         private static extern int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, byte[] buf, int cBuf);
 
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern SafeX509NameHandle DecodeX509Name(byte[] buf, int len);
+
         internal static X500DistinguishedName LoadX500Name(SafeSharedX509NameHandle namePtr)
         {
             CheckValidOpenSslHandle(namePtr);

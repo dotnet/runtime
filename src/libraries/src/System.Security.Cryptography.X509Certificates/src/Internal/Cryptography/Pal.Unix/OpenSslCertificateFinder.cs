@@ -139,7 +139,7 @@ namespace Internal.Cryptography.Pal
                     if (ext != null)
                     {
                         // Try a V1 template structure, just a string:
-                        string decodedName = Interop.libcrypto.DerStringToManagedString(ext.RawData);
+                        string decodedName = Interop.Crypto.DerStringToManagedString(ext.RawData);
 
                         // If this doesn't match, maybe a V2 template will
                         if (StringComparer.OrdinalIgnoreCase.Equals(templateName, decodedName))

@@ -40,16 +40,8 @@ namespace Internal.Cryptography.Pal
                 return null;
             }
 
-            SafeX509CrlHandle handle;
-
-            unsafe
-            {
-                // DER-encoded CRL seems to be the most common off of some random spot-checking, so try DER first.
-                handle = Interop.libcrypto.OpenSslD2I(
-                    (ptr, b, i) => Interop.libcrypto.d2i_X509_CRL(ptr, b, i),
-                    data,
-                    checkHandle: false);
-            }
+            // DER-encoded CRL seems to be the most common off of some random spot-checking, so try DER first.
+            SafeX509CrlHandle handle = Interop.Crypto.DecodeX509Crl(data, data.Length);
 
             if (!handle.IsInvalid)
             {

@@ -58,9 +58,14 @@ extern "C" void Asn1ObjectFree(ASN1_OBJECT* a)
     ASN1_OBJECT_free(a);
 }
 
-extern "C" ASN1_BIT_STRING* D2IAsn1BitString(ASN1_BIT_STRING** zero, const unsigned char** ppin, int32_t len)
+extern "C" ASN1_BIT_STRING* DecodeAsn1BitString(const unsigned char* buf, int32_t len)
 {
-    return d2i_ASN1_BIT_STRING(zero, ppin, len);
+    if (!buf || !len)
+    {
+        return nullptr;
+    }
+
+    return d2i_ASN1_BIT_STRING(nullptr, &buf, len);
 }
 
 extern "C" void Asn1BitStringFree(ASN1_STRING* a)
@@ -68,9 +73,14 @@ extern "C" void Asn1BitStringFree(ASN1_STRING* a)
     ASN1_BIT_STRING_free(a);
 }
 
-extern "C" ASN1_OCTET_STRING* D2IAsn1OctetString(ASN1_OCTET_STRING** zero, const unsigned char** ppin, int32_t len)
+extern "C" ASN1_OCTET_STRING* DecodeAsn1OctetString(const unsigned char* buf, int32_t len)
 {
-    return d2i_ASN1_OCTET_STRING(zero, ppin, len);
+    if (!buf || !len)
+    {
+        return nullptr;
+    }
+
+    return d2i_ASN1_OCTET_STRING(nullptr, &buf, len);
 }
 
 extern "C" ASN1_OCTET_STRING* Asn1OctetStringNew()
