@@ -2502,6 +2502,7 @@ typedef struct
 	gboolean last_frame_set;
 	MonoContext ctx;
 	gpointer lmf;
+	MonoDomain *domain;
 } GetLastFrameUserData;
 
 static gboolean
@@ -2521,19 +2522,32 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 		/* Store the context/lmf for the frame above the last frame */
 		memcpy (&data->ctx, ctx, sizeof (MonoContext));
 		data->lmf = info->lmf;
+		data->domain = info->domain;
 		return TRUE;
 	}
+}
+
+static void
+copy_unwind_state_from_frame_data (MonoThreadUnwindState *to, GetLastFrameUserData *data, gpointer jit_tls)
+{
+	memcpy (&to->ctx, &data->ctx, sizeof (MonoContext));
+
+	to->unwind_data [MONO_UNWIND_DATA_DOMAIN] = data->domain;
+	to->unwind_data [MONO_UNWIND_DATA_LMF] = data->lmf;
+	to->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = jit_tls;
+	to->valid = TRUE;
 }
 
 /*
  * thread_interrupt:
  *
  *   Process interruption of a thread. This should be signal safe.
+ *
+ * This always runs in the debugger thread.
  */
 static void
 thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 {
-	gboolean res;
 	gpointer ip;
 	MonoNativeThreadId tid;
 
@@ -2556,7 +2570,6 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 		 * tls->suspending flag to avoid races when that happens.
 		 */
 		if (!tls->suspended && !tls->suspending) {
-			MonoContext ctx;
 			GetLastFrameUserData data;
 
 			// FIXME: printf is not signal safe, but this is only used during
@@ -2582,15 +2595,12 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 			data.last_frame_set = FALSE;
 			mono_get_eh_callbacks ()->mono_walk_stack_with_state (get_last_frame, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, &data);
 			if (data.last_frame_set) {
-				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
-				res = mono_thread_state_init_from_monoctx (&tls->async_state, &ctx);
-				g_assert (res);
-				mono_thread_state_init_from_monoctx (&tls->context, &ctx);
-				g_assert (res);
+				gpointer jit_tls = ((MonoThreadInfo*)tls->thread->thread_info)->jit_data;
 
-				memcpy (&tls->async_state.ctx, &data.ctx, sizeof (MonoContext));
-				tls->async_state.unwind_data [MONO_UNWIND_DATA_LMF] = data.lmf;
-				tls->async_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = ((MonoThreadInfo*)tls->thread->thread_info)->jit_data;
+				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
+
+				copy_unwind_state_from_frame_data (&tls->async_state, &data, jit_tls);
+				copy_unwind_state_from_frame_data (&tls->context, &data, jit_tls);
 			} else {
 				tls->async_state.valid = FALSE;
 			}
