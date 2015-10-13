@@ -75,7 +75,7 @@ namespace System.Linq
                     }
                 }
                 if (newArgs != null)
-                    argList = newArgs.ToReadOnlyCollection();
+                    argList = newArgs.AsReadOnly();
             }
             return argList;
         }
