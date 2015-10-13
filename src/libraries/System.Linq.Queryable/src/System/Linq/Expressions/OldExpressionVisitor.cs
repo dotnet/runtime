@@ -207,7 +207,7 @@ namespace System.Linq.Expressions
                 }
             }
             if (list != null)
-                return list.ToReadOnlyCollection();
+                return list.AsReadOnly();
             return original;
         }
 
