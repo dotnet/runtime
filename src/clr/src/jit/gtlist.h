@@ -108,6 +108,8 @@ GTNODE(GT_AND        , "&"          ,1,GTK_BINOP|GTK_LOGOP)
 GTNODE(GT_LSH        , "<<"         ,0,GTK_BINOP)
 GTNODE(GT_RSH        , ">>"         ,0,GTK_BINOP)
 GTNODE(GT_RSZ        , ">>>"        ,0,GTK_BINOP)
+GTNODE(GT_ROL        , "rol"        ,0,GTK_BINOP)
+GTNODE(GT_ROR        , "ror"        ,0,GTK_BINOP)
 GTNODE(GT_MULHI      , "mulhi"      ,1,GTK_BINOP) // returns high bits (top N bits of the 2N bit result of an NxN multiply)
 
 GTNODE(GT_ASG        , "="          ,0,GTK_BINOP|GTK_ASGOP)
