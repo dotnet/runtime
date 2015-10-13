@@ -20,16 +20,6 @@ namespace System.Linq
             return new ArgumentException(Strings.ArgumentNotValid(message));
         }
 
-        internal static Exception UnhandledExpressionType(object message)
-        {
-            return new ArgumentException(Strings.UnhandledExpressionType(message));
-        }
-
-        internal static Exception UnhandledBindingType(object message)
-        {
-            return new ArgumentException(Strings.UnhandledBindingType(message));
-        }
-
         internal static Exception ArgumentOutOfRange(string message)
         {
             return new ArgumentOutOfRangeException(message);
