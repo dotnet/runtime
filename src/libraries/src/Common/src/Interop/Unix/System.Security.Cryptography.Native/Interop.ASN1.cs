@@ -15,9 +15,10 @@ internal static partial class Interop
     {
         internal const int NID_undef = 0;
 
-        internal const int NID_secp224r1 = 713; // NIST-224
-        internal const int NID_secp384r1 = 715; // NIST-384
-        internal const int NID_secp521r1 = 716; // NIST-521
+        internal const int NID_X9_62_prime256v1 = 415; // NIST P-256
+        internal const int NID_secp224r1 = 713; // NIST P-224
+        internal const int NID_secp384r1 = 715; // NIST P-384
+        internal const int NID_secp521r1 = 716; // NIST P-521
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern long Asn1IntegerGet(IntPtr a);

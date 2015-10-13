@@ -11,6 +11,7 @@ NID values that are used in managed code.
 enum SupportedAlgorithmNids
 {
     PAL_NID_undef = 0,
+    PAL_NID_X9_62_prime256v1 = 415,
     PAL_NID_secp224r1 = 713,
     PAL_NID_secp384r1 = 715,
     PAL_NID_secp521r1 = 716,
