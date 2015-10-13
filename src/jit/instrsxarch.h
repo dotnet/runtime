@@ -339,6 +339,13 @@ INST2(ret    , "ret"          , 0, IUM_RD, 0, 0, 0x0000C3, 0x0000C2)
 INST2(loop   , "loop"         , 0, IUM_RD, 0, 0, BAD_CODE, 0x0000E2)
 INST2(call   , "call"         , 0, IUM_RD, 0, 1, 0x0010FF, 0x0000E8)
 
+INST2(rol    , "rol"          , 0, IUM_RW, 0, 1, 0x0000D2, BAD_CODE)
+INST2(rol_1  , "rol"          , 0, IUM_RW, 0, 1, 0x0000D0, 0x0000D0)
+INST2(rol_N  , "rol"          , 0, IUM_RW, 0, 1, 0x0000C0, 0x0000C0)
+INST2(ror    , "ror"          , 0, IUM_RW, 0, 1, 0x0008D2, BAD_CODE)
+INST2(ror_1  , "ror"          , 0, IUM_RW, 0, 1, 0x0008D0, 0x0008D0)
+INST2(ror_N  , "ror"          , 0, IUM_RW, 0, 1, 0x0008C0, 0x0008C0)
+
 INST2(rcl    , "rcl"          , 0, IUM_RW, 1, 1, 0x0010D2, BAD_CODE)
 INST2(rcl_1  , "rcl"          , 0, IUM_RW, 1, 1, 0x0010D0, 0x0010D0)
 INST2(rcl_N  , "rcl"          , 0, IUM_RW, 1, 1, 0x0010C0, 0x0010C0)

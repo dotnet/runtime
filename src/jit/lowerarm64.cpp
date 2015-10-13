@@ -486,6 +486,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
+        case GT_ROR:
             {
                 info->srcCount = 2;
                 info->dstCount = 1;
@@ -1622,6 +1623,31 @@ void Lowering::LowerCast( GenTreePtr* ppTree)
         tree->gtFlags &= ~GTF_UNSIGNED;
         tree->gtOp.gtOp1 = tmp;
         op1->InsertAfterSelf(tmp);
+    }
+}
+
+void Lowering::LowerRotate(GenTreePtr tree)
+{
+    if (tree->OperGet() == GT_ROL)
+    {
+        // There is no ROL instruction on ARM. Convert rol into ROR.
+        GenTreePtr rotatedValue = tree->gtOp.gtOp1;
+        unsigned rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
+        GenTreePtr rotateLeftIndexNode = tree->gtOp.gtOp2;
+
+        if (rotateLeftIndexNode->IsCnsIntOrI())
+        {
+            ssize_t   rotateLeftIndex = rotateLeftIndexNode->gtIntCon.gtIconVal;
+            ssize_t   rotateRightIndex = rotatedValueBitSize - rotateLeftIndex;
+            rotateIndexNode->gtIntCon.gtIconVal = rotateRightIndex;
+        }
+        else
+        {
+            GenTreePtr tmp = gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
+            rotateLeftIndexNode->InsertAfterSelf(tmp);
+            tree->gtOp.gtOp2 = tmp;
+        }
+        tree->ChangeOper(GT_ROR);
     }
 }
 

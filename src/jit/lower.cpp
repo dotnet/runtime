@@ -400,6 +400,8 @@ void Lowering::DecomposeNode(GenTreePtr* pTree, Compiler::fgWalkData* data)
     case GT_LSH:
     case GT_RSH:
     case GT_RSZ:
+    case GT_ROL:
+    case GT_ROR:
     case GT_MULHI:
         NYI("Arithmetic binary operators on TYP_LONG");
         break;
@@ -523,6 +525,11 @@ void Lowering::LowerNode(GenTreePtr* ppTree, Compiler::fgWalkData* data)
             LowerArrElem(ppTree, data);
             comp->fgFixupIfCallArg(data->parentStack, oldTree, *ppTree);
         }
+        break;
+
+    case GT_ROL:
+    case GT_ROR:
+        LowerRotate(*ppTree);
         break;
 
 #ifdef FEATURE_SIMD
