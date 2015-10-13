@@ -875,19 +875,15 @@ namespace System.Linq.Expressions
 
             if (variableList.Count == 0)
             {
-                var expressionsList = expressions as IReadOnlyList<Expression>;
-                if (expressionsList != null)
+                var expressionCount = expressionList.Count;
+
+                if (expressionCount != 0)
                 {
-                    var expressionCount = expressionsList.Count;
+                    var lastExpression = expressionList[expressionCount - 1];
 
-                    if (expressionCount > 0)
+                    if (lastExpression.Type == type)
                     {
-                        var lastExpression = expressionsList[expressionCount - 1];
-
-                        if (lastExpression.Type == type)
-                        {
-                            return GetOptimizedBlockExpression(expressionsList);
-                        }
+                        return GetOptimizedBlockExpression(expressionList);
                     }
                 }
             }
