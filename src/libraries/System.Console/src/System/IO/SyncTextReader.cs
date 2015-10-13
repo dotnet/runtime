@@ -11,7 +11,7 @@ namespace System.IO
     /* SyncTextReader intentionally locks on itself rather than a private lock object.
      * This is done to synchronize different console readers(Issue#2855).
      */
-    internal sealed class SyncTextReader : TextReader
+    internal sealed partial class SyncTextReader : TextReader
     {
         internal readonly TextReader _in;
 

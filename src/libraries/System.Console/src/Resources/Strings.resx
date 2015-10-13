@@ -204,10 +204,16 @@
   <data name="InvalidOperation_PrintF" xml:space="preserve">
     <value>The printf operation failed.</value>
   </data>
+  <data name="InvalidOperation_ConsoleReadKeyOnFile" xml:space="preserve">
+    <value>Cannot read keys when either application does not have a console or when console input has been redirected. Try Console.Read.</value>
+  </data>
   <data name="PlatformNotSupported_GettingColor" xml:space="preserve">
     <value>This platform does not support getting the current color.</value>
   </data>
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ConsoleKey" xml:space="preserve">
+    <value>Console key values must be between 0 and 255 inclusive.</value>
   </data>
 </root>
