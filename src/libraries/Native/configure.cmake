@@ -37,6 +37,14 @@ check_function_exists(
     ioctl
     HAVE_IOCTL)
 
+check_function_exists(
+    sched_getaffinity
+    HAVE_SCHED_GETAFFINITY)
+
+check_function_exists(
+    sched_setaffinity
+    HAVE_SCHED_SETAFFINITY)
+
 check_symbol_exists(
     TIOCGWINSZ
     "sys/ioctl.h"
