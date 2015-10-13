@@ -130,7 +130,7 @@ def os = 'Ubuntu'
         def lowerConfiguration = configuration.toLowerCase()
         
         // Create the new job
-        def newArm64Job = job(Utilities.getFullJobName(project, "arm64_cross_${os.toLowerCase()}_${lowerConfiguration}, isPR)) {
+        def newArm64Job = job(Utilities.getFullJobName(project, "arm64_cross_${os.toLowerCase()}_${lowerConfiguration}", isPR)) {
             // Set the label.
             label(machineLabelMap[os])
             steps {
@@ -155,7 +155,7 @@ ROOTFS_DIR=/opt/aarch64-linux-gnu-root ./build.sh skipmscorlib arm64 cross verbo
         }
         
         // Create the new job
-        def newArmJob = job(Utilities.getFullJobName(project, "arm_cross_${os.toLowerCase()}_${lowerConfiguration}, isPR)) {
+        def newArmJob = job(Utilities.getFullJobName(project, "arm_cross_${os.toLowerCase()}_${lowerConfiguration}", isPR)) {
             // Set the label.
             label(machineLabelMap[os])
             steps {
