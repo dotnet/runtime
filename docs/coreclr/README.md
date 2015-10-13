@@ -30,6 +30,7 @@ Project Docs
 - [Contributing Workflow](project-docs/contributing-workflow.md)
 - [Performance Guidelines](project-docs/performance-guidelines.md)
 - [Garbage Collector Guidelines](project-docs/garbage-collector-guidelines.md)
+- [Adding new public APIs to mscorlib](project-docs/adding_new_public_apis.md)
 
 Coding Guidelines
 =================
@@ -47,6 +48,7 @@ Build CoreCLR from Source
 - [Building CoreCLR on Windows](building/windows-instructions.md)
 - [Debugging CoreCLR on Windows](building/windows-debugging-instructions.md)
 - [Testing Changes on Windows](building/windows-test-instructions.md)
+- [Testing Changes on Linux, OS X, and FreeBSD](building/unix-test-instructions.md)
 - [Testing with CoreFX](building/testing-with-corefx.md)
 - [Creating a Custom DNX](building/custom-dnx-instructions.md)
 
