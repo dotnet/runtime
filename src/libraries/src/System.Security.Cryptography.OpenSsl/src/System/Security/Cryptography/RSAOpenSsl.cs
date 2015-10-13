@@ -288,14 +288,14 @@ namespace System.Security.Cryptography
 
                 // CreateBignumPtr returns IntPtr.Zero for null input, so this just does the right thing
                 // on a public-key-only set of RSAParameters.
-                rsaStructure->n = Interop.libcrypto.CreateBignumPtr(parameters.Modulus);
-                rsaStructure->e = Interop.libcrypto.CreateBignumPtr(parameters.Exponent);
-                rsaStructure->d = Interop.libcrypto.CreateBignumPtr(parameters.D);
-                rsaStructure->p = Interop.libcrypto.CreateBignumPtr(parameters.P);
-                rsaStructure->dmp1 = Interop.libcrypto.CreateBignumPtr(parameters.DP);
-                rsaStructure->q = Interop.libcrypto.CreateBignumPtr(parameters.Q);
-                rsaStructure->dmq1 = Interop.libcrypto.CreateBignumPtr(parameters.DQ);
-                rsaStructure->iqmp = Interop.libcrypto.CreateBignumPtr(parameters.InverseQ);
+                rsaStructure->n = Interop.Crypto.CreateBignumPtr(parameters.Modulus);
+                rsaStructure->e = Interop.Crypto.CreateBignumPtr(parameters.Exponent);
+                rsaStructure->d = Interop.Crypto.CreateBignumPtr(parameters.D);
+                rsaStructure->p = Interop.Crypto.CreateBignumPtr(parameters.P);
+                rsaStructure->dmp1 = Interop.Crypto.CreateBignumPtr(parameters.DP);
+                rsaStructure->q = Interop.Crypto.CreateBignumPtr(parameters.Q);
+                rsaStructure->dmq1 = Interop.Crypto.CreateBignumPtr(parameters.DQ);
+                rsaStructure->iqmp = Interop.Crypto.CreateBignumPtr(parameters.InverseQ);
 
                 imported = true;
             }
@@ -410,7 +410,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                using (SafeBignumHandle exponent = Interop.libcrypto.CreateBignum(s_defaultExponent))
+                using (SafeBignumHandle exponent = Interop.Crypto.CreateBignum(s_defaultExponent))
                 {
                     // The documentation for RSA_generate_key_ex does not say that it returns only
                     // 0 or 1, so the call marshalls it back as a full Int32 and checks for a value
