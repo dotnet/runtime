@@ -15,6 +15,8 @@
     <Compile Include="ClientAsyncAuthenticateTest.cs" />
     <Compile Include="ClientDefaultEncryptionTest.cs" />
     <Compile Include="DummyTcpServer.cs" />
+    <Compile Include="FakeNetworkStream.cs" />
+    <Compile Include="MockNetwork.cs" />
     <Compile Include="ParameterValidationTest.cs" />
     <Compile Include="ServerAllowNoEncryptionTest.cs" />
     <Compile Include="ServerNoEncryptionTest.cs" />
@@ -24,7 +26,6 @@
     <Compile Include="SslStreamAPMExtensions.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="TransportContextTest.cs" />
-    
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)\System\Net\TestLogging.cs">
       <Link>Common\System\Net\TestLogging.cs</Link>
@@ -38,9 +39,7 @@
     <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskAPMExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskAPMExtensions.cs</Link>
     </Compile>
-
   </ItemGroup>
-
   <!-- TODO: Remove after the packages are not using System.Private.Networking. -->
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Net.Security.csproj">
@@ -48,12 +47,10 @@
       <Name>System.Net.Security</Name>
     </ProjectReference>
   </ItemGroup>
-
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
   <!-- Temporary until we have new work in build tools to
        deploy content from nuget packages -->
   <Target Name="CopyX509TestDataToTestDirectory" AfterTargets="CopyTestToTestDirectory" Inputs="$(PackagesDir)$(X509TestPackage)\content" Outputs="$(TestPath)%(TestTargetFramework.Folder)\*.*">
@@ -69,5 +66,4 @@
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
-
 </Project>
