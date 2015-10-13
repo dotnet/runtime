@@ -1,6 +1,7 @@
 //
 // Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed under the MIT license. See LICENSE file in the project root for full
+// license information.
 //
 
 #include <assert.h>
@@ -18,7 +19,8 @@ const int32_t CompareOptionsIgnoreCase = 1;
 // const int32_t CompareOptionsStringSort = 0x20000000;
 
 /*
- * To collator returned by this function is owned by the callee and must be closed when this method returns
+ * To collator returned by this function is owned by the callee and must be
+ *closed when this method returns
  * with a U_SUCCESS UErrorCode.
  *
  * On error, the return value is undefined.
@@ -37,12 +39,16 @@ UCollator* GetCollatorForLocaleAndOptions(const char* lpLocaleName, int32_t opti
     return pColl;
 }
 
-
 /*
 Function:
 CompareString
 */
-extern "C" int32_t CompareString(const char* lpLocaleName, const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length, int32_t options)
+extern "C" int32_t CompareString(const char* lpLocaleName,
+                                 const UChar* lpStr1,
+                                 int32_t cwStr1Length,
+                                 const UChar* lpStr2,
+                                 int32_t cwStr2Length,
+                                 int32_t options)
 {
     static_assert(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");
     static_assert(UCOL_LESS < 0, "managed side requires less than zero for a < b");
@@ -65,7 +71,8 @@ extern "C" int32_t CompareString(const char* lpLocaleName, const UChar* lpStr1, 
 Function:
 IndexOf
 */
-extern "C" int32_t IndexOf(const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+extern "C" int32_t
+IndexOf(const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
@@ -93,7 +100,8 @@ extern "C" int32_t IndexOf(const char* lpLocaleName, const UChar* lpTarget, cons
 Function:
 LastIndexOf
 */
-extern "C" int32_t LastIndexOf(const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+extern "C" int32_t LastIndexOf(
+    const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
@@ -120,7 +128,8 @@ extern "C" int32_t LastIndexOf(const char* lpLocaleName, const UChar* lpTarget, 
 /*
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
-extern "C" int32_t StartsWith(const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+extern "C" int32_t StartsWith(
+    const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     int32_t result = FALSE;
     UErrorCode err = U_ZERO_ERROR;
@@ -149,11 +158,12 @@ extern "C" int32_t StartsWith(const char* lpLocaleName, const UChar* lpTarget, c
 
                     result = TRUE;
 
-                    while((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
+                    while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
                     {
                         if (curCollElem != 0)
                         {
-                            // Non ignorable collation element found between start of the string and the first match for lpTarget.
+                            // Non ignorable collation element found between start of the
+                            // string and the first match for lpTarget.
                             result = FALSE;
                             break;
                         }
@@ -180,7 +190,8 @@ extern "C" int32_t StartsWith(const char* lpLocaleName, const UChar* lpTarget, c
 /*
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
-extern "C" int32_t EndsWith(const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+extern "C" int32_t EndsWith(
+    const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     int32_t result = FALSE;
     UErrorCode err = U_ZERO_ERROR;
@@ -202,7 +213,8 @@ extern "C" int32_t EndsWith(const char* lpLocaleName, const UChar* lpTarget, con
                     result = TRUE;
                 }
 
-                // TODO (dotnet/corefx#3467): We should do something similar to what StartsWith does where we can ignore
+                // TODO (dotnet/corefx#3467): We should do something similar to what
+                // StartsWith does where we can ignore
                 // some collation elements at the end of te string if they are zero.
             }
 
@@ -215,7 +227,12 @@ extern "C" int32_t EndsWith(const char* lpLocaleName, const UChar* lpTarget, con
     return result;
 }
 
-extern "C" int32_t GetSortKey(const char* lpLocaleName, const UChar* lpStr, int32_t cwStrLength, uint8_t* sortKey, int32_t cbSortKeyLength, int32_t options)
+extern "C" int32_t GetSortKey(const char* lpLocaleName,
+                              const UChar* lpStr,
+                              int32_t cwStrLength,
+                              uint8_t* sortKey,
+                              int32_t cbSortKeyLength,
+                              int32_t options)
 {
     UErrorCode err = U_ZERO_ERROR;
     UCollator* pColl = GetCollatorForLocaleAndOptions(lpLocaleName, options, &err);
@@ -231,7 +248,8 @@ extern "C" int32_t GetSortKey(const char* lpLocaleName, const UChar* lpStr, int3
     return result;
 }
 
-extern "C" int32_t CompareStringOrdinalIgnoreCase(const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length)
+extern "C" int32_t
+CompareStringOrdinalIgnoreCase(const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length)
 {
     assert(lpStr1 != nullptr);
     assert(cwStr1Length >= 0);
