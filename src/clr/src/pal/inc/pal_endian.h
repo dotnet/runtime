@@ -14,20 +14,35 @@
 #ifndef __PAL_ENDIAN_H__
 #define __PAL_ENDIAN_H__
 
-#if BIGENDIAN
 #ifdef __cplusplus
 extern "C++" {
-inline UINT16 VAL16(UINT16 x)
+inline UINT16 SWAP16(UINT16 x)
 {
     return (x >> 8) | (x << 8);
 }
 
-inline UINT32 VAL32(UINT32 x)
+inline UINT32 SWAP32(UINT32 x)
 {
     return  (x >> 24) |
             ((x >> 8) & 0x0000FF00L) |
             ((x & 0x0000FF00L) << 8) |
             (x << 24);
+}
+
+}
+#endif // __cplusplus
+
+#if BIGENDIAN
+#ifdef __cplusplus
+extern "C++" {
+inline UINT16 VAL16(UINT16 x)
+{
+    return SWAP16(x);
+}
+
+inline UINT32 VAL32(UINT32 x)
+{
+    return SWAP32(x);
 }
 
 inline UINT64 VAL64(UINT64 x)   
