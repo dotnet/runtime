@@ -121,8 +121,8 @@ def static getBuildJobName(def configuration, def os) {
     }
 }
 
-# Ubuntu cross compiled arm and arm64 builds
-# Scheduled for nightly and on-demand PR for now
+// Ubuntu cross compiled arm and arm64 builds
+// Scheduled for nightly and on-demand PR for now
 
 def os = 'Ubuntu'
 [true, false].each { isPR ->
