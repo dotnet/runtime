@@ -268,8 +268,8 @@
     <Compile Include="$(CommonPath)\Interop\Linux\procfs\Interop.ProcFsStat.cs">
       <Link>Common\Interop\Linux\Interop.ProcFsStat.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sched_getsetaffinity.cs">
-      <Link>Common\Interop\Linux\Interop.sched_getsetaffinity.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs">
+      <Link>Common\Interop\Linux\Interop.SchedGetSetAffinity.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
       <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>

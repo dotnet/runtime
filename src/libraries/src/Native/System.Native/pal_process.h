@@ -151,6 +151,16 @@ struct RLimit
 };
 
 /**
+ * The native struct is dependent on the size of a numeric type
+ * so make it the largest possible value here and then we will 
+ * copy to native as necessary
+ */
+struct CpuSetBits
+{
+    uint64_t Bits[16]; // __CPU_SETSIZE / (8 * sizeof(int64_t))
+};
+
+/**
  * Get the current limit for the specified resource of the current process.
  * Returns 0 on success; returns -1 on failure and errno is set to the error reason.
  */
@@ -246,3 +256,31 @@ extern "C" int32_t SetPriority(PriorityWhich which, int32_t who, int32_t nice);
  * Gets the current working directory of the currently executing process.
  */
 extern "C" char* GetCwd(char* buffer, int32_t bufferSize);
+
+#if HAVE_SCHED_SETAFFINITY
+/**
+ * Sets the CPU affinity mask for a specified thread (or the current thread if 0).
+ *
+ * Returns 0 on success; otherwise, -1 is returned and errno is set
+ */
+extern "C" int32_t SchedSetAffinity(int32_t pid, CpuSetBits* mask);
+#endif
+
+#if HAVE_SCHED_GETAFFINITY
+/**
+ * Gets the affinity mask of the specified thread (or the current thread if 0).
+ *
+ * Returns 0 on success; otherwise, -1 is returned and errno is set.
+ */
+extern "C" int32_t SchedGetAffinity(int32_t pid, CpuSetBits* mask);
+#endif
+
+#if HAVE_SCHED_GETAFFINITY || HAVE_SCHED_SETAFFINITY
+
+/**
+ * Shim's for the macros of the same name. Sets a CPU bit or 
+ * retrieves if the CPU bit is set
+ */
+extern "C" void CpuSet(int32_t cpu, CpuSetBits* set);
+extern "C" bool CpuIsSet(int32_t cpu, CpuSetBits* set);
+#endif
