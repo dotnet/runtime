@@ -13,7 +13,7 @@ namespace System.Runtime.Tests
             RuntimeTypeHandle type1 = typeof(int).TypeHandle;
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i < 10000; i++)
+                    for (int i = 0; i < 100000; i++)
                     {
                         Type.GetTypeFromHandle(type1); Type.GetTypeFromHandle(type1); Type.GetTypeFromHandle(type1);
                         Type.GetTypeFromHandle(type1); Type.GetTypeFromHandle(type1); Type.GetTypeFromHandle(type1);
@@ -29,7 +29,7 @@ namespace System.Runtime.Tests
             Type type2 = typeof(string);
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i < 10000; i++)
+                    for (int i = 0; i < 100000; i++)
                     {
                         result = type1 == type2; result = type1 == type2; result = type1 == type2;
                         result = type1 == type2; result = type1 == type2; result = type1 == type2;

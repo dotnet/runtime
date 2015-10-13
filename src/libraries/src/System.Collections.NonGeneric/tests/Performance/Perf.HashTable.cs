@@ -12,9 +12,13 @@ namespace System.Collections.Tests
         public static Hashtable CreateHashtable(int size)
         {
             Hashtable ht = new Hashtable();
-            PerfUtils utils = new PerfUtils();
-            for (int i = 0; i < size; i++)
-                ht.Add(utils.CreateString(50), utils.CreateString(50));
+            Random rand = new Random(341553);
+            while (ht.Count < size)
+            {
+                int key = rand.Next(400000, int.MaxValue);
+                if (!ht.ContainsKey(key))
+                    ht.Add(key, rand.Next());
+            }
             return ht;
         }
 
@@ -35,7 +39,9 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
+        [InlineData(1000)]
         [InlineData(10000)]
+        [InlineData(100000)]
         [InlineData(1000000)]
         public void GetItem(int size)
         {
@@ -43,9 +49,11 @@ namespace System.Collections.Tests
 
             // Setup - utils needs a specific seed to prevent key collision with TestData
             object result;
-            PerfUtils utils = new PerfUtils(983452);
-            string key = utils.CreateString(50);
-            table.Add(key, "value");
+            Random rand = new Random(3453);
+            int key = rand.Next();
+            while (table.Contains(key))
+                key = rand.Next();
+            table.Add(key, rand.Next());
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
@@ -62,7 +70,35 @@ namespace System.Collections.Tests
         }
 
         [Benchmark]
+        [InlineData(1000)]
         [InlineData(10000)]
+        [InlineData(100000)]
+        [InlineData(1000000)]
+        public void SetItem(int size)
+        {
+            Hashtable table = CreateHashtable(size);
+            Random rand = new Random(3453);
+            int key = rand.Next();
+            while (table.Contains(key))
+                key = rand.Next();
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < 40000; i++)
+                    {
+                        table[key] = "newValue"; table[key] = "newValue"; table[key] = "newValue";
+                        table[key] = "newValue"; table[key] = "newValue"; table[key] = "newValue";
+                        table[key] = "newValue"; table[key] = "newValue"; table[key] = "newValue";
+                    }
+                }
+            }
+        }
+
+        [Benchmark]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
         [InlineData(1000000)]
         public void Add(int size)
         {

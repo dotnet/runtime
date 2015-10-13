@@ -9,39 +9,41 @@ namespace XmlDocumentTests.XmlNodeListTests
 {
     public class Perf_XmlNodeList
     {
+        private const int innerIterations = 10000;
+
         [Benchmark]
         public void Enumerator()
         {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                // Setup
-                var doc = new XmlDocument();
-                doc.LoadXml("<a><sub1/><sub1/><sub2/><sub1/><sub2/><sub1/><sub2/><sub1/><sub2/><sub1/><sub2/><sub2/></a>");
-                XmlNodeList list = doc.DocumentElement.ChildNodes;
+            // Setup
+            var doc = new XmlDocument();
+            doc.LoadXml("<a><sub1/><sub1/><sub2/><sub1/><sub2/><sub1/><sub2/><sub1/><sub2/><sub1/><sub2/><sub2/></a>");
+            XmlNodeList list = doc.DocumentElement.ChildNodes;
 
-                // Actual perf testing
+            foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    foreach (var element in list) { }
-            }
+                    for (int i = 0; i < innerIterations; i++)
+                        foreach (var element in list) { }
         }
 
         [Benchmark]
         public void GetCount()
         {
+            // Setup
+            var doc = new XmlDocument();
+            doc.LoadXml("<a><sub1/><sub2/></a>");
+            XmlNodeList list = doc.DocumentElement.ChildNodes;
             int count;
+
             foreach (var iteration in Benchmark.Iterations)
             {
-                // Setup
-                var doc = new XmlDocument();
-                doc.LoadXml("<a><sub1/><sub2/></a>");
-                XmlNodeList list = doc.DocumentElement.ChildNodes;
-
-                // Actual perf testing
                 using (iteration.StartMeasurement())
                 {
-                    count = list.Count; count = list.Count; count = list.Count;
-                    count = list.Count; count = list.Count; count = list.Count;
-                    count = list.Count; count = list.Count; count = list.Count;
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        count = list.Count; count = list.Count; count = list.Count;
+                        count = list.Count; count = list.Count; count = list.Count;
+                        count = list.Count; count = list.Count; count = list.Count;
+                    }
                 }
             }
         }

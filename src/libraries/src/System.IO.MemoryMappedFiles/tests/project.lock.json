@@ -3,6 +3,36 @@
   "version": 1,
   "targets": {
     "DNXCore,Version=v5.0": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0023": {
+        "type": "package",
+        "dependencies": {
+          "System.Collections": "4.0.10",
+          "System.Diagnostics.Debug": "4.0.10",
+          "System.Diagnostics.Tracing": "4.0.20",
+          "System.Globalization": "4.0.10",
+          "System.IO": "4.0.10",
+          "System.IO.FileSystem": "4.0.0",
+          "System.IO.FileSystem.Primitives": "4.0.0",
+          "System.Linq": "4.0.0",
+          "System.Reflection": "4.0.10",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.Extensions": "4.0.10",
+          "System.Text.Encoding": "4.0.10",
+          "System.Threading": "4.0.10",
+          "System.Threading.Tasks": "4.0.10",
+          "xunit.abstractions": "2.0.0",
+          "xunit.extensibility.core": "2.1.0",
+          "xunit.extensibility.execution": "2.1.0"
+        },
+        "compile": {
+          "lib/dotnet/xunit.performance.core.dll": {},
+          "lib/dotnet/xunit.performance.execution.dotnet.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/xunit.performance.core.dll": {},
+          "lib/dotnet/xunit.performance.execution.dotnet.dll": {}
+        }
+      },
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -25,6 +55,18 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
+        }
+      },
+      "System.Diagnostics.Tracing/4.0.20": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet/System.Diagnostics.Tracing.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Diagnostics.Tracing.dll": {}
         }
       },
       "System.Globalization/4.0.10": {
@@ -255,7 +297,7 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23401": {
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23409": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -431,7 +473,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00102": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00105": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -459,6 +501,25 @@
     }
   },
   "libraries": {
+    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0023": {
+      "type": "package",
+      "sha512": "7TOhATYXNVMF3HHGuM/WFHLt7r4uvFIUliplzIHsfL/KwxaHUbV6RI1f7EZRAioMbJI5520BGOOZ+9XIqtTQuA==",
+      "files": [
+        "lib/dotnet/xunit.performance.core.dll",
+        "lib/dotnet/xunit.performance.core.pdb",
+        "lib/dotnet/xunit.performance.core.XML",
+        "lib/dotnet/xunit.performance.execution.dotnet.dll",
+        "lib/dotnet/xunit.performance.execution.dotnet.pdb",
+        "lib/net46/xunit.performance.core.dll",
+        "lib/net46/xunit.performance.core.pdb",
+        "lib/net46/xunit.performance.core.XML",
+        "lib/net46/xunit.performance.execution.desktop.dll",
+        "lib/net46/xunit.performance.execution.desktop.pdb",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0023.nupkg",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0023.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.nuspec"
+      ]
+    },
     "System.Collections/4.0.10": {
       "type": "package",
       "serviceable": true,
@@ -525,6 +586,40 @@
         "System.Diagnostics.Debug.4.0.10.nupkg",
         "System.Diagnostics.Debug.4.0.10.nupkg.sha512",
         "System.Diagnostics.Debug.nuspec"
+      ]
+    },
+    "System.Diagnostics.Tracing/4.0.20": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "gn/wexGHc35Fv++5L1gYHMY5g25COfiZ0PGrL+3PfwzoJd4X2LbTAm/U8d385SI6BKQBI/z4dQfvneS9J27+Tw==",
+      "files": [
+        "lib/DNXCore50/System.Diagnostics.Tracing.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net46/_._",
+        "lib/netcore50/System.Diagnostics.Tracing.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Diagnostics.Tracing.xml",
+        "ref/dotnet/es/System.Diagnostics.Tracing.xml",
+        "ref/dotnet/fr/System.Diagnostics.Tracing.xml",
+        "ref/dotnet/it/System.Diagnostics.Tracing.xml",
+        "ref/dotnet/ja/System.Diagnostics.Tracing.xml",
+        "ref/dotnet/ko/System.Diagnostics.Tracing.xml",
+        "ref/dotnet/ru/System.Diagnostics.Tracing.xml",
+        "ref/dotnet/System.Diagnostics.Tracing.dll",
+        "ref/dotnet/System.Diagnostics.Tracing.xml",
+        "ref/dotnet/zh-hans/System.Diagnostics.Tracing.xml",
+        "ref/dotnet/zh-hant/System.Diagnostics.Tracing.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Tracing.dll",
+        "System.Diagnostics.Tracing.4.0.20.nupkg",
+        "System.Diagnostics.Tracing.4.0.20.nupkg.sha512",
+        "System.Diagnostics.Tracing.nuspec"
       ]
     },
     "System.Globalization/4.0.10": {
@@ -1106,10 +1201,10 @@
         "System.Runtime.InteropServices.nuspec"
       ]
     },
-    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23401": {
+    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23409": {
       "type": "package",
       "serviceable": true,
-      "sha512": "SDIqmBVaUpbu7f6FJ2E2ZE43CXY+tsdFCsY+dqLCCZowAH0QCQGUKCflLPAa7OQIIft98CvOxWlRZCwiuPuGTg==",
+      "sha512": "BE5xuM8Lx1Jh2/fonWW6jIB0a6HgpiT+asK9rfdJSwDR7iDHmJ0vOXbreV+CTLOVX/xGDRogIIt50MsN36h0kg==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -1121,8 +1216,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23401.nupkg",
-        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23401.nupkg.sha512",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23409.nupkg",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23409.nupkg.sha512",
         "System.Runtime.InteropServices.RuntimeInformation.nuspec"
       ]
     },
@@ -1450,20 +1545,21 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00102": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00105": {
       "type": "package",
       "serviceable": true,
-      "sha512": "YOLHpTXiw6lEGbsQ1uQ93BAPKiUtrj4l+Yr1+WGdZShfCtGc3Sq3R9dISIHM49znLo+qDcnmo2oMGJdVZ9YTVg==",
+      "sha512": "EnnGcy9rmSdQ8izHWvYSYVyjQGhbeFH7JeM/L35ZrrPGtYvq5XD3hc1cJPCs+43mXdF9cdqhkt5uTlXYzC+Z8g==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00105.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00105.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }
   },
   "projectFileDependencyGroups": {
     "": [
+      "Microsoft.DotNet.xunit.performance >= 1.0.0-*",
       "System.Globalization >= 4.0.10",
       "System.IO >= 4.0.10",
       "System.IO.FileSystem >= 4.0.0",
