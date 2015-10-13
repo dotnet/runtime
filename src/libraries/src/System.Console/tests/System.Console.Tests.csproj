@@ -29,6 +29,7 @@
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="TermInfo.cs" />
     <Compile Include="RedirectedStream.cs" />
+    <Compile Include="ReadKey.cs" />
     <Compile Include="$(CommonTestPath)\System\IO\InterceptStreamWriter.cs">
       <Link>Common\System\IO\InterceptStreamWriter.cs</Link>
     </Compile>

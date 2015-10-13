@@ -55,6 +55,29 @@ check_symbol_exists(
     "sys/ioctl.h"
     HAVE_TIOCGWINSZ)
 
+check_function_exists(
+    tcgetattr
+    HAVE_TCGETATTR)
+
+check_function_exists(
+    tcsetattr
+    HAVE_TCSETATTR)
+
+check_symbol_exists(
+    ECHO
+    "termios.h"
+    HAVE_ECHO)
+
+check_symbol_exists(
+    ICANON
+    "termios.h"
+    HAVE_ICANON)
+
+check_symbol_exists(
+    TCSANOW
+    "termios.h"
+    HAVE_TCSANOW)
+
 check_struct_has_member(
     "struct stat"
     st_birthtime
