@@ -120,12 +120,6 @@
   <data name="ArgumentNotIEnumerableGeneric" xml:space="preserve">
     <value>{0} is not IEnumerable&lt;&gt;</value>
   </data>
-  <data name="UnhandledExpressionType" xml:space="preserve">
-    <value>Unhandled Expression Type: {0}</value>
-  </data>
-  <data name="UnhandledBindingType" xml:space="preserve">
-    <value>Unhandled Binding Type: {0}</value>
-  </data>
   <data name="ArgumentNotValid" xml:space="preserve">
     <value>Argument {0} is not valid</value>
   </data>
