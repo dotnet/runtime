@@ -24,7 +24,6 @@
     <Compile Include="System\Linq\EnumerableQuery.cs" />
     <Compile Include="System\Linq\EnumerableRewriter.cs" />
     <Compile Include="System\Linq\Error.cs" />
-    <Compile Include="System\Linq\Expressions\OldExpressionVisitor.cs" />
     <Compile Include="System\Linq\Queryable.cs" />
     <Compile Include="System\Linq\Strings.cs" />
     <Compile Include="System\Linq\TypeHelper.cs" />
