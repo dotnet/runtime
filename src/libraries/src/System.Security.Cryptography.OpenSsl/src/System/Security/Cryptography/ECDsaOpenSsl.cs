@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
@@ -141,8 +140,10 @@ namespace System.Security.Cryptography
             byte[] signature = new byte[signatureLength];
             if (!Interop.libcrypto.ECDSA_sign(0, hash, hash.Length, signature, ref signatureLength, key))
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
-            Array.Resize(ref signature, signatureLength);
-            return signature;
+
+            byte[] converted = ConvertToApiFormat(signature, 0, signatureLength);
+
+            return converted;
         }
 
         public override bool VerifyHash(byte[] hash, byte[] signature)
@@ -152,8 +153,22 @@ namespace System.Security.Cryptography
             if (signature == null)
                 throw new ArgumentNullException("signature");
 
+            // The signature format for .NET is r.Concat(s). Each of r and s are of length BitsToBytes(KeySize), even
+            // when they would have leading zeroes.  If it's the correct size, then we need to encode it from
+            // r.Concat(s) to SEQUENCE(INTEGER(r), INTEGER(s)), because that's the format that OpenSSL expects.
+
+            int expectedBytes = 2 * GetSignatureFieldSize();
+
+            if (signature.Length != expectedBytes)
+            {
+                // The input isn't of the right length, so we can't sensibly re-encode it.
+                return false;
+            }
+
+            byte[] openSslFormat = ConvertToOpenSslFormat(signature);
+
             SafeEcKeyHandle key = _key.Value;
-            int verifyResult = Interop.libcrypto.ECDSA_verify(0, hash, hash.Length, signature, signature.Length, key);
+            int verifyResult = Interop.libcrypto.ECDSA_verify(0, hash, hash.Length, openSslFormat, openSslFormat.Length, key);
             return verifyResult == 1;
         }
 
@@ -175,6 +190,77 @@ namespace System.Security.Cryptography
             }
 
             base.Dispose(disposing);
+        }
+
+        private int GetSignatureFieldSize()
+        {
+            int keySizeBits = KeySize;
+            int keySizeBytes = (keySizeBits + 7) / 8;
+            return keySizeBytes;
+        }
+
+        private static byte[] ConvertToOpenSslFormat(byte[] input)
+        {
+            Debug.Assert(input != null);
+            Debug.Assert(input.Length % 2 == 0);
+            Debug.Assert(input.Length > 1);
+
+            // Input is (r, s), each of them exactly half of the array.
+            // Output is the DER encoded value of CONSTRUCTEDSEQUENCE(INTEGER(r), INTEGER(s)).
+            int halfLength = input.Length / 2;
+
+            byte[][] rEncoded = DerEncoder.SegmentedEncodeUnsignedInteger(input, 0, halfLength);
+            byte[][] sEncoded = DerEncoder.SegmentedEncodeUnsignedInteger(input, halfLength, halfLength);
+
+            return DerEncoder.ConstructSequence(rEncoded, sEncoded);
+        }
+
+        private byte[] ConvertToApiFormat(byte[] input, int inputOffset, int inputCount)
+        {
+            int size = GetSignatureFieldSize();
+
+            try
+            {
+                DerSequenceReader reader = new DerSequenceReader(input, inputOffset, inputCount);
+                byte[] rDer = reader.ReadIntegerBytes();
+                byte[] sDer = reader.ReadIntegerBytes();
+                byte[] response = new byte[2 * size];
+
+                CopySignatureField(rDer, response, 0, size);
+                CopySignatureField(sDer, response, size, size);
+                
+                return response;
+            }
+            catch (InvalidOperationException e)
+            {
+                throw new CryptographicException(SR.Arg_CryptographyException, e);
+            }
+        }
+
+        private static void CopySignatureField(byte[] signatureField, byte[] response, int offset, int fieldLength)
+        {
+            if (signatureField.Length > fieldLength)
+            {
+                // The only way this should be true is if the value required a zero-byte-pad.
+                Debug.Assert(signatureField.Length == fieldLength + 1, "signatureField.Length == fieldLength + 1");
+                Debug.Assert(signatureField[0] == 0, "signatureField[0] == 0");
+                Debug.Assert(signatureField[1] > 0x7F, "signatureField[1] > 0x7F");
+
+                Buffer.BlockCopy(signatureField, 1, response, offset, fieldLength);
+            }
+            else if (signatureField.Length == fieldLength)
+            {
+                Buffer.BlockCopy(signatureField, 0, response, offset, fieldLength);
+            }
+            else
+            {
+                // If the field is too short then it needs to be prepended
+                // with zeroes in the response.  Since the array was already
+                // zeroed out, just figure out where we need to start copying.
+                int writeOffset = fieldLength - signatureField.Length;
+
+                Buffer.BlockCopy(signatureField, 0, response, offset + writeOffset, signatureField.Length);
+            }
         }
 
         private void FreeKey()
