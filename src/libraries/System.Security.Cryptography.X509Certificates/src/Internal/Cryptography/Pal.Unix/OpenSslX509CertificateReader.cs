@@ -281,10 +281,10 @@ namespace Internal.Cryptography.Pal
                     return "";
                 }
 
-                int bioSize = Interop.libcrypto.GetMemoryBioSize(bioHandle);
+                int bioSize = Interop.Crypto.GetMemoryBioSize(bioHandle);
                 // Ensure space for the trailing \0
                 StringBuilder builder = new StringBuilder(bioSize + 1);
-                int read = Interop.libcrypto.BIO_gets(bioHandle, builder, builder.Capacity);
+                int read = Interop.Crypto.BioGets(bioHandle, builder, builder.Capacity);
 
                 if (read < 0)
                 {

@@ -59,15 +59,13 @@ internal static partial class Interop
 
             public static SafeSslHandle Create(SafeSslContextHandle context, bool isServer)
             {
-                IntPtr memMethod = libcrypto.BIO_s_mem();
-
-                SafeBioHandle readBio = libcrypto.BIO_new(memMethod);
+                SafeBioHandle readBio = Crypto.CreateMemoryBio();
                 if (readBio.IsInvalid)
                 {
                     return new SafeSslHandle();
                 }
 
-                SafeBioHandle writeBio = libcrypto.BIO_new(memMethod);
+                SafeBioHandle writeBio = Crypto.CreateMemoryBio();
                 if (writeBio.IsInvalid)
                 {
                     readBio.Dispose();

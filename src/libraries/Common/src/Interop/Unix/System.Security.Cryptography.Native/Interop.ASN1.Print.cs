@@ -28,7 +28,7 @@ internal static partial class Interop
             byte[] utf8Bytes;
 
             using (asn1String)
-            using (SafeBioHandle bio = libcrypto.BIO_new(libcrypto.BIO_s_mem()))
+            using (SafeBioHandle bio = CreateMemoryBio())
             {
                 int len = Asn1StringPrintEx(bio, asn1String, Asn1StringPrintFlags.ASN1_STRFLGS_UTF8_CONVERT);
 
@@ -37,10 +37,10 @@ internal static partial class Interop
                     throw Crypto.CreateOpenSslCryptographicException();
                 }
 
-                int bioSize = libcrypto.GetMemoryBioSize(bio);
+                int bioSize = GetMemoryBioSize(bio);
                 utf8Bytes = new byte[bioSize + 1];
 
-                int read = libcrypto.BIO_read(bio, utf8Bytes, utf8Bytes.Length);
+                int read = BioRead(bio, utf8Bytes, utf8Bytes.Length);
 
                 if (read < 0)
                 {

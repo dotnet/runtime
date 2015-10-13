@@ -25,9 +25,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Bignum.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.Bignum.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.cs</Link>
     </Compile>
@@ -48,6 +45,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs"</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs"</Link>

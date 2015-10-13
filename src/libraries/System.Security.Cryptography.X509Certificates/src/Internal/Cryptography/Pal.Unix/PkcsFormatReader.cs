@@ -114,11 +114,11 @@ namespace Internal.Cryptography.Pal
             out ICertificatePal certPal,
             out List<ICertificatePal> certPals)
         {
-            using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
+            using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
 
-                Interop.libcrypto.BIO_write(bio, rawData, rawData.Length);
+                Interop.Crypto.BioWrite(bio, rawData, rawData.Length);
 
                 SafePkcs7Handle pkcs7 =
                     Interop.libcrypto.PEM_read_bio_PKCS7(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
