@@ -32,14 +32,15 @@ namespace System.Net.Sockets
             }
         }
 
-        public static bool operator ==(IPPacketInformation packetInformation1, IPPacketInformation packetInformation2)
+        public static bool operator ==(IPPacketInformation left, IPPacketInformation right)
         {
-            return packetInformation1.Equals(packetInformation2);
+            return left._networkInterface == right._networkInterface &&
+                (left._address == null && right._address == null || left._address.Equals(right._address));
         }
 
-        public static bool operator !=(IPPacketInformation packetInformation1, IPPacketInformation packetInformation2)
+        public static bool operator !=(IPPacketInformation left, IPPacketInformation right)
         {
-            return !packetInformation1.Equals(packetInformation2);
+            return !(left == right);
         }
 
         public override bool Equals(object comparand)
@@ -49,13 +50,13 @@ namespace System.Net.Sockets
                 return false;
             }
 
-            IPPacketInformation obj = (IPPacketInformation)comparand;
-            return _address.Equals(obj._address) && _networkInterface == obj._networkInterface;
+            return this == (IPPacketInformation)comparand;
         }
 
         public override int GetHashCode()
         {
-            return _address.GetHashCode() + _networkInterface.GetHashCode();
+            return unchecked(_networkInterface.GetHashCode() * (int)0xA5555529) +
+                (_address == null ? 0 : _address.GetHashCode());
         }
     }
 }
