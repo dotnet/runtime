@@ -7,10 +7,13 @@
     <Clean Include="@(RewrittenAssembly->'$(FinalOutputPath)\%(Filename)%(Extension)')" />
     <Clean Include="$(FinalOutputPath)\$(TargetName).pdb" />
   </ItemGroup>
+  
+  <Import Project="$(ToolsDir)toolruntime.targets" />
 
   <PropertyGroup>
     <CurrentAssemblyPdb>$(IntermediateOutputPath)$(TargetName).pdb</CurrentAssemblyPdb>
     <PostProcessingTargets>RewriteWithBclRewriter</PostProcessingTargets>
+    <BclRewriterDependencyTargets>EnsureBuildToolsRuntime</BclRewriterDependencyTargets>
   </PropertyGroup>
 
   <Target Name="AfterBuild" DependsOnTargets="$(PostProcessingTargets)"

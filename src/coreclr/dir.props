@@ -9,7 +9,7 @@
   
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00079</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00105</BuildToolsVersion>
     <BuildToolsCoreCLRVersion>1.0.3-prerelease</BuildToolsCoreCLRVersion>
     <DnxVersion Condition="'$(OsEnvironment)'!='Unix'">1.0.0-beta5-12101</DnxVersion>
     <DnxVersion Condition="'$(OsEnvironment)'=='Unix'">1.0.0-beta5-12101</DnxVersion>
@@ -51,6 +51,8 @@
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
 
+    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(__IntermediatesDir)\</IntermediateOutputRootPath>
+
     <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
          fails to write packages to it if the path contains the forward slash.
     -->
@@ -58,6 +60,7 @@
     <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget</PackagesBinDir>
     
     <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)/lib/</ToolsDir>
+    <BuildToolsSemaphore Condition="'$(BuildToolsSemaphore)' == ''">$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll</BuildToolsSemaphore>
     <!-- Directory for the CoreCLR tools (BCLRewriter, etc.) -->
     <CoreCLRToolsDir>$(PackagesDir)Microsoft.DotNet.BuildTools.CoreCLR.$(BuildToolsCoreCLRVersion)/</CoreCLRToolsDir>
     
