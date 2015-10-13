@@ -10324,6 +10324,17 @@ CM_ADD_OP:
             }
 #endif // LEA_AVAILABLE
         }
+        else if(oper == GT_OR)
+        {
+            tree = fgMorphRotation(tree);
+
+            // fgMorphRotation may return a new tree
+            oper = tree->OperGet();
+            typ = tree->TypeGet();
+            op1 = tree->gtOp.gtOp1;
+            op2 = tree->gtOp.gtOp2;
+        }
+
         break;
 
     case GT_CHS:
@@ -10929,7 +10940,8 @@ CM_ADD_OP:
                 /* for the shift nodes the type of op2 can differ from the tree type */
                 if ((typ == TYP_LONG) && (genActualType(op2->gtType) == TYP_INT))
                 {
-                    noway_assert((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ));
+                    noway_assert((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ) ||
+                                 (oper == GT_ROL) || (oper == GT_ROR));
 
                     GenTreePtr commaOp2 = op2->gtOp.gtOp2;
 
@@ -11864,6 +11876,208 @@ GenTree* Compiler::fgMorphDivByConst(GenTreeOp* tree)
     return result;
 }
 
+//------------------------------------------------------------------------------
+// fgMorphRotation : Check if the tree represents a left or right rotation. If so, return
+//                   an equivalent GT_ROL or GT_ROR tree; otherwise, return the original tree.
+//
+// Arguments:
+//    tree  - tree to check for a rotation pattern
+//
+// Return Value:
+//    An equivalent GT_ROL or GT_ROR tree if a pattern is found; original tree otherwise.
+//
+// Assumption:
+//    The input is a GT_OR tree.
+
+GenTreePtr Compiler::fgMorphRotation(GenTreePtr tree)
+{
+#ifndef LEGACY_BACKEND
+    //
+    // Check for a rotation pattern, e.g.,
+    //
+    //                         OR                      ROL
+    //                      /      \                   / \
+    //                    LSH      RSZ      ->        x   y
+    //                    / \      / \
+    //                   x  AND   x  AND
+    //                      / \      / \
+    //                     y  31   ADD  31
+    //                             / \
+    //                            NEG 32
+    //                             |
+    //                             y
+
+    genTreeOps      oper = tree->OperGet();
+    noway_assert(oper == GT_OR);
+
+    if ((tree->gtFlags & GTF_ALL_EFFECT) != 0)
+    {
+        return tree; // Can't do anything due to side effects.
+    }
+
+    // Check if we have an LSH on one side of the OR and an RSZ on the other side.
+    GenTreePtr op1 = tree->gtGetOp1();
+    GenTreePtr op2 = tree->gtGetOp2();
+    GenTreePtr leftShiftTree = nullptr;
+    GenTreePtr rightShiftTree = nullptr;
+    if ((op1->OperGet() == GT_LSH) && (op2->OperGet() == GT_RSZ))
+    {
+        leftShiftTree = op1;
+        rightShiftTree = op2;
+    }
+    else if ((op1->OperGet() == GT_RSZ) && (op2->OperGet() == GT_LSH))
+    {
+        leftShiftTree = op2;
+        rightShiftTree = op1;
+    }
+    else
+    {
+        return tree;
+    }
+
+    // Check if the trees representing the value to shift are identical.
+    // We already checked that there are no side effects above.
+    if (GenTree::Compare(leftShiftTree->gtGetOp1(), rightShiftTree->gtGetOp1()))
+    {
+        GenTreePtr rotatedValue = leftShiftTree->gtGetOp1();
+        ssize_t rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
+        noway_assert((rotatedValueBitSize == 32) || (rotatedValueBitSize == 64));
+        GenTreePtr leftShiftIndex = leftShiftTree->gtGetOp2();
+        GenTreePtr rightShiftIndex = rightShiftTree->gtGetOp2();
+
+        // The shift index may be masked. At least (rotatedValueBitSize - 1) lower bits
+        // shouldn't be masked for the transformation to be valid. If additional
+        // higher bits are not masked, the transformation is still valid since the result
+        // of MSIL shift instructions is unspecified if the shift amount is greater or equal
+        // than the width of the value being shifted.
+        ssize_t minimalMask = rotatedValueBitSize - 1;
+        ssize_t leftShiftMask = -1;
+        ssize_t rightShiftMask = -1;
+
+        if ((leftShiftIndex->OperGet() == GT_AND))
+        {
+            if (leftShiftIndex->gtGetOp2()->IsCnsIntOrI())
+            {
+                leftShiftMask = leftShiftIndex->gtGetOp2()->gtIntCon.gtIconVal;
+                leftShiftIndex = leftShiftIndex->gtGetOp1();
+            }
+            else
+            {
+                return tree;
+            }
+        }
+
+        if ((rightShiftIndex->OperGet() == GT_AND))
+        {
+            if (rightShiftIndex->gtGetOp2()->IsCnsIntOrI())
+            {
+                rightShiftMask = rightShiftIndex->gtGetOp2()->gtIntCon.gtIconVal;
+                rightShiftIndex = rightShiftIndex->gtGetOp1();
+            }
+            else
+            {
+                return tree;
+            }
+        }
+
+        if (((minimalMask & leftShiftMask) != minimalMask) ||
+            ((minimalMask & rightShiftMask) != minimalMask))
+        {
+            // The shift index is overmasked, e.g., we have
+            // something like (x << y & 15) or
+            // (x >> (32 - y) & 15 with 32 bit x.
+            // The transformation is not valid.
+            return tree;
+        }
+
+        GenTreePtr shiftIndexWithAdd = nullptr;
+        GenTreePtr shiftIndexWithoutAdd = nullptr;
+        genTreeOps rotateOp = GT_NONE;
+        GenTreePtr rotateIndex = nullptr;
+
+        if (leftShiftIndex->OperGet() == GT_ADD)
+        {
+            shiftIndexWithAdd = leftShiftIndex;
+            shiftIndexWithoutAdd = rightShiftIndex;
+            rotateOp = GT_ROR;
+        }
+        else if (rightShiftIndex->OperGet() == GT_ADD)
+        {
+            shiftIndexWithAdd = rightShiftIndex;
+            shiftIndexWithoutAdd = leftShiftIndex;
+            rotateOp = GT_ROL;
+        }
+
+        if (shiftIndexWithAdd != nullptr)
+        {
+            if (shiftIndexWithAdd->gtGetOp2()->IsCnsIntOrI())
+            {
+                if (shiftIndexWithAdd->gtGetOp2()->gtIntCon.gtIconVal == rotatedValueBitSize)
+                {
+                    if (shiftIndexWithAdd->gtGetOp1()->OperGet() == GT_NEG)
+                    {
+                        if (GenTree::Compare(shiftIndexWithAdd->gtGetOp1()->gtGetOp1(), shiftIndexWithoutAdd))
+                        {
+                            // We found one of these patterns:
+                            // (x << (y & M)) | (x >>> ((-y + N) & M))
+                            // (x << y) | (x >>> (-y + N))
+                            // (x >>> (y & M)) | (x << ((-y + N) & M))
+                            // (x >>> y) | (x << (-y + N))
+                            // where N == bitsize(x), M is const, and
+                            // M & (N - 1) == N - 1
+
+#ifndef _TARGET_64BIT_
+                            if (!shiftIndexWithoutAdd->IsCnsIntOrI() && (rotatedValueBitSize == 64))
+                            {
+                                // TODO: we need to handle variable-sized long shifts specially on x86.
+                                // GT_LSH, GT_RSH, and GT_RSZ have helpers for this case. We may need
+                                // to add helpers for GT_ROL and GT_ROR.
+                                NYI("Rotation of a long value by variable amount");
+                            }
+#endif
+
+                            rotateIndex = shiftIndexWithoutAdd;
+                        }
+                    }
+                }
+            }
+        }
+        else if ((leftShiftIndex->IsCnsIntOrI() &&
+                  rightShiftIndex->IsCnsIntOrI()))
+        {
+            if (leftShiftIndex->gtIntCon.gtIconVal +
+                rightShiftIndex->gtIntCon.gtIconVal == rotatedValueBitSize)
+            {
+                // We found this pattern:
+                // (x << c1) | (x >>> c2)
+                // where c1 and c2 are const and c1 + c2 == bitsize(x)
+                rotateOp = GT_ROL;
+                rotateIndex = leftShiftIndex;
+            }
+        }
+
+        if (rotateIndex != nullptr)
+        {
+            noway_assert((rotateOp == GT_ROL) || (rotateOp == GT_ROR));
+
+            // We can use the same tree only during global morph; reusing the tree in a later morph
+            // may invalidate value numbers.
+            if (fgGlobalMorph)
+            {
+                tree->gtOp.gtOp1 = rotatedValue;
+                tree->gtOp.gtOp2 = rotateIndex;
+                tree->ChangeOper(rotateOp);
+            }
+            else
+            {
+                tree = gtNewOperNode(rotateOp, genActualType(rotatedValue->gtType), rotatedValue, rotateIndex);
+            }
+            return tree;
+        }
+    }
+#endif //LEGACY_BACKEND
+    return tree;
+}
 
 #if !CPU_HAS_FP_SUPPORT
 GenTreePtr Compiler::fgMorphToEmulatedFP(GenTreePtr tree)
@@ -12054,7 +12268,7 @@ GenTreePtr Compiler::fgMorphToEmulatedFP(GenTreePtr tree)
 
 /*****************************************************************************
  *
- *  Transform the given tree for code generation and returns an equivalent tree.
+ *  Transform the given tree for code generation and return an equivalent tree.
  */
 
 
@@ -15198,6 +15412,8 @@ Compiler::fgWalkResult      Compiler::fgMarkAddrTakenLocalsPreCB(GenTreePtr* pTr
     case GT_LSH:
     case GT_RSH:
     case GT_RSZ:
+    case GT_ROL:
+    case GT_ROR:
     case GT_EQ:
     case GT_NE:
     case GT_LT:

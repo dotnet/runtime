@@ -3694,6 +3694,8 @@ COMMON_CNS:
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
+        case GT_ROL:
+        case GT_ROR:
         case GT_ASG_LSH:
         case GT_ASG_RSH:
         case GT_ASG_RSZ:
@@ -9248,6 +9250,8 @@ GenTreePtr              Compiler::gtFoldExprSpecial(GenTreePtr tree)
     case GT_LSH:
     case GT_RSH:
     case GT_RSZ:
+    case GT_ROL:
+    case GT_ROR:
     case GT_ASG_LSH:
     case GT_ASG_RSH:
     case GT_ASG_RSZ:
@@ -9943,8 +9947,12 @@ CHK_OVF:
         case GT_LSH: i1 <<= (i2 & 0x1f); break;
         case GT_RSH: i1 >>= (i2 & 0x1f); break;
         case GT_RSZ:
-                /* logical shift -> make it unsigned to propagate the sign bit */
+                /* logical shift -> make it unsigned to not propagate the sign bit */
                 i1 = UINT32(i1) >> (i2 & 0x1f);
+            break;
+        case GT_ROL: i1 = (i1 << (i2 & 0x1f)) | (UINT32(i1) >> ((32 - i2) & 0x1f));
+            break;
+        case GT_ROR: i1 = (i1 << ((32 - i2) & 0x1f)) | (UINT32(i1) >> (i2 & 0x1f));
             break;
 
         /* DIV and MOD can generate an INT 0 - if division by 0
@@ -10284,11 +10292,15 @@ LNG_ADD_CHKOVF:
         case GT_XOR: lval1 ^= lval2; break;
         case GT_AND: lval1 &= lval2; break;
 
-        case GT_LSH: lval1 <<= (op2->gtIntConCommon.IconValue() & 0x3f); break;
-        case GT_RSH: lval1 >>= (op2->gtIntConCommon.IconValue() & 0x3f); break;
+        case GT_LSH: lval1 <<= (lval2 & 0x3f); break;
+        case GT_RSH: lval1 >>= (lval2 & 0x3f); break;
         case GT_RSZ:
-                /* logical shift -> make it unsigned to propagate the sign bit */
-                lval1 = UINT64(lval1) >> (op2->gtIntConCommon.IconValue() & 0x3f);
+                /* logical shift -> make it unsigned to not propagate the sign bit */
+                lval1 = UINT64(lval1) >> (lval2 & 0x3f);
+            break;
+        case GT_ROL: lval1 = (lval1 << (lval2 & 0x3f)) | (UINT64(lval1) >> ((64 - lval2) & 0x3f));
+            break;
+        case GT_ROR: lval1 = (lval1 << ((64 - lval2) & 0x3f)) | (UINT64(lval1) >> (lval2 & 0x3f));
             break;
 
             //Both DIV and IDIV on x86 raise an exception for min_int (and min_long) / -1.  So we preserve

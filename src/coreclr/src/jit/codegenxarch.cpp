@@ -1516,6 +1516,8 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     case GT_LSH:
     case GT_RSH:
     case GT_RSZ:
+    case GT_ROL:
+    case GT_ROR:
         genCodeForShift(treeNode->gtGetOp1(), treeNode->gtGetOp2(), treeNode);
         // genCodeForShift() calls genProduceReg()
         break;
@@ -2584,7 +2586,9 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                     {
                         if (data->OperGet() == GT_LSH ||
                             data->OperGet() == GT_RSH ||
-                            data->OperGet() == GT_RSZ)
+                            data->OperGet() == GT_RSZ ||
+                            data->OperGet() == GT_ROL ||
+                            data->OperGet() == GT_ROR)
                         {
                             genCodeForShift(addr, data->gtOp.gtOp2, data);
                         }
@@ -4644,11 +4648,13 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
     {
     case GT_ADD: ins = INS_add; break;
     case GT_AND: ins = INS_and; break;
-    case GT_MUL: ins = INS_imul; break;
     case GT_LSH: ins = INS_shl; break;
+    case GT_MUL: ins = INS_imul; break;
     case GT_NEG: ins = INS_neg; break;
     case GT_NOT: ins = INS_not; break;
     case GT_OR:  ins = INS_or;  break;
+    case GT_ROL: ins = INS_rol;  break;
+    case GT_ROR: ins = INS_ror;  break;
     case GT_RSH: ins = INS_sar; break;
     case GT_RSZ: ins = INS_shr; break;
     case GT_SUB: ins = INS_sub; break;
@@ -4660,10 +4666,10 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 }
 
 /** Generates the code sequence for a GenTree node that
- * represents a bit shift operation (<<, >>, >>>).
+ * represents a bit shift or rotate operation (<<, >>, >>>, rol, ror).
  *
- * Arguments: operand:  the value to be shifted by shiftBy bits.
- *            shiftBy:  the number of bits to shift the operand.
+ * Arguments: operand:  the value to be shifted or rotated by shiftBy bits.
+ *            shiftBy:  the number of bits to shift or rotate the operand.
  *            parent:   the actual bitshift node (that specifies the
  *                      type of bitshift to perform.
  *
@@ -4758,6 +4764,12 @@ void CodeGen::genCodeForShift(GenTreePtr operand, GenTreePtr shiftBy,
                 case INS_shr:
                     ins = INS_shr_1;
                     break;
+                case INS_rol:
+                    ins = INS_rol_1;
+                    break;
+                case INS_ror:
+                    ins = INS_ror_1;
+                    break;
                 default:
                     // leave 'ins' unchanged
                     break;
@@ -4776,6 +4788,12 @@ void CodeGen::genCodeForShift(GenTreePtr operand, GenTreePtr shiftBy,
                     break;
                 case INS_shr:
                     ins = INS_shr_N;
+                    break;
+                case INS_rol:
+                    ins = INS_rol_N;
+                    break;
+                case INS_ror:
+                    ins = INS_ror_N;
                     break;
                 default:
                     // leave 'ins' unchanged

@@ -1086,23 +1086,25 @@ public:
     int             OperIsArithmetic() const
     {
         genTreeOps op = OperGet();
-        return     op==GT_ADD 
-                || op==GT_SUB        
-                || op==GT_MUL 
+        return     op==GT_ADD
+                || op==GT_SUB
+                || op==GT_MUL
                 || op==GT_DIV
                 || op==GT_MOD
-        
+
                 || op==GT_UDIV
                 || op==GT_UMOD
 
-                || op==GT_OR 
+                || op==GT_OR
                 || op==GT_XOR
                 || op==GT_AND
 
                 || op==GT_LSH
                 || op==GT_RSH
-                || op==GT_RSZ;        
-        
+                || op==GT_RSZ
+
+                || op==GT_ROL
+                || op==GT_ROR;
     }
 
     static
@@ -3506,6 +3508,8 @@ inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
     case GT_LSH:
     case GT_RSH:
     case GT_RSZ:
+    case GT_ROL:
+    case GT_ROR:
     case GT_INDEX:
     case GT_ASG:
     case GT_ASG_ADD:

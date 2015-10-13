@@ -161,6 +161,7 @@ private:
     void HandleIndirAddressExpression(GenTree *indirTree, GenTree* tree);
     void LowerGCWriteBarrier(GenTree *tree);
     void LowerArrElem(GenTree **ppTree, Compiler::fgWalkData* data);
+    void LowerRotate(GenTree *tree);
 
     // Utility functions
     void MorphBlkIntoHelperCall         (GenTreePtr pTree, GenTreePtr treeStmt);

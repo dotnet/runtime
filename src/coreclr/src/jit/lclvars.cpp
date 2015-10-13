@@ -2899,7 +2899,9 @@ void                Compiler::lvaMarkLclRefs(GenTreePtr tree)
 
     if  (tree->gtOper == GT_LSH ||
          tree->gtOper == GT_RSH ||
-         tree->gtOper == GT_RSZ)
+         tree->gtOper == GT_RSZ ||
+         tree->gtOper == GT_ROL ||
+         tree->gtOper == GT_ROR)
     {
         if  (tree->gtType == TYP_INT)
         {
