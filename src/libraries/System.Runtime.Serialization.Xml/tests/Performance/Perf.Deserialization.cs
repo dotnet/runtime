@@ -15,26 +15,25 @@ namespace System.Runtime.Tests
         [Benchmark]
         public void DeserializeLargeObjectGraph()
         {
-            var obj = CreateObject(SimpleType.GraphSize, 0);
+            SimpleType obj = CreateObject(0, 0, -1);
             var serializer = new DataContractSerializer(typeof(SimpleType));
             using (var stream = new MemoryStream())
             {
                 serializer.WriteObject(stream, obj);
-                stream.Position = 0;
 
                 foreach (var iteration in Benchmark.Iterations)
                     using (iteration.StartMeasurement())
                         for (int i = 0; i < 3; i++)
                         {
-                            var obj2 = serializer.ReadObject(stream);
                             stream.Position = 0;
+                            SimpleType obj2 = (SimpleType)serializer.ReadObject(stream);
                         }
             }
         }
 
-        public SimpleType CreateObject(int height, int id)
+        public SimpleType CreateObject(int height, int parentId, int currentId)
         {
-            var index = height * 10 + id;
+            int index = parentId * SimpleType.SimpleTypeListSize + (currentId + 1);
             var obj = new SimpleType()
             {
                 IntProperty = index,
@@ -43,15 +42,15 @@ namespace System.Runtime.Tests
                 CollectionProperty = new List<string>(),
                 SimpleTypeList = new List<SimpleType>()
             };
-            for (var i = 0; i < SimpleType.CollectionSize; ++i)
+            for (int i = 0; i < SimpleType.CollectionSize; ++i)
             {
                 obj.CollectionProperty.Add(index + "." + i);
             }
-            if (height > 0)
+            if (height < SimpleType.GraphSize)
             {
-                for (var i = 0; i < SimpleType.SimpleTypeListSize; ++i)
+                for (int i = 0; i < SimpleType.SimpleTypeListSize; ++i)
                 {
-                    obj.SimpleTypeList.Add(CreateObject(height - 1, i));
+                    obj.SimpleTypeList.Add(CreateObject(height + 1, index, i));
                 }
             }
             return obj;
