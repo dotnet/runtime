@@ -4,27 +4,21 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
-using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-    internal static partial class libcrypto
+    internal static partial class Crypto
     {
-        [DllImport(Libraries.LibCrypto)]
-        private static unsafe extern SafeAsn1StringHandle d2i_ASN1_type_bytes(IntPtr zero, byte** ppin, int len, Asn1StringTypeFlags flags);
+        [DllImport(Libraries.CryptoNative)]
+        private static extern SafeAsn1StringHandle DecodeAsn1TypeBytes(byte[] buf, int len, Asn1StringTypeFlags flags);
 
-        [DllImport(Libraries.LibCrypto)]
-        private static extern int ASN1_STRING_print_ex(SafeBioHandle bio, SafeAsn1StringHandle str, Asn1StringPrintFlags flags);
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int Asn1StringPrintEx(SafeBioHandle bio, SafeAsn1StringHandle str, Asn1StringPrintFlags flags);
 
-        internal static unsafe string DerStringToManagedString(
-            byte[] derString,
-            Asn1StringTypeFlags flags=AnyTextStringType)
+        internal static unsafe string DerStringToManagedString(byte[] derString)
         {
-            SafeAsn1StringHandle asn1String = OpenSslD2I(
-                (zero, ppin, len) => d2i_ASN1_type_bytes(zero, ppin, len, flags),
-                derString,
-                checkHandle: false);
+            SafeAsn1StringHandle asn1String = DecodeAsn1TypeBytes(derString, derString.Length, AnyTextStringType);
 
             if (asn1String.IsInvalid)
             {
@@ -34,19 +28,19 @@ internal static partial class Interop
             byte[] utf8Bytes;
 
             using (asn1String)
-            using (SafeBioHandle bio = BIO_new(BIO_s_mem()))
+            using (SafeBioHandle bio = libcrypto.BIO_new(libcrypto.BIO_s_mem()))
             {
-                int len = ASN1_STRING_print_ex(bio, asn1String, Asn1StringPrintFlags.ASN1_STRFLGS_UTF8_CONVERT);
+                int len = Asn1StringPrintEx(bio, asn1String, Asn1StringPrintFlags.ASN1_STRFLGS_UTF8_CONVERT);
 
                 if (len < 0)
                 {
                     throw Crypto.CreateOpenSslCryptographicException();
                 }
 
-                int bioSize = GetMemoryBioSize(bio);
+                int bioSize = libcrypto.GetMemoryBioSize(bio);
                 utf8Bytes = new byte[bioSize + 1];
 
-                int read = BIO_read(bio, utf8Bytes, utf8Bytes.Length);
+                int read = libcrypto.BIO_read(bio, utf8Bytes, utf8Bytes.Length);
 
                 if (read < 0)
                 {
@@ -72,16 +66,14 @@ internal static partial class Interop
             return Encoding.UTF8.GetString(utf8Bytes, 0, nonNullCount);
         }
 
-        // This is defined as an "unsigned long" in native code, so
-        // really UIntPtr on Linux/OSX.
         [Flags]
-        internal enum Asn1StringPrintFlags : ulong
+        private enum Asn1StringPrintFlags : ulong
         {
             ASN1_STRFLGS_UTF8_CONVERT = 0x10,
         }
 
         [Flags]
-        internal enum Asn1StringTypeFlags
+        private enum Asn1StringTypeFlags
         {
             B_ASN1_NUMERICSTRING = 0x0001,
             B_ASN1_PRINTABLESTRING = 0x0002,
@@ -116,8 +108,5 @@ internal static partial class Interop
             Asn1StringTypeFlags.B_ASN1_UTF8STRING |
             Asn1StringTypeFlags.B_ASN1_UTCTIME |
             Asn1StringTypeFlags.B_ASN1_GENERALIZEDTIME;
-
     }
 }
-
-

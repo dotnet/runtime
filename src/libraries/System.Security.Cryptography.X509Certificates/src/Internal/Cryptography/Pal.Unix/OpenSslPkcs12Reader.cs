@@ -20,12 +20,9 @@ namespace Internal.Cryptography.Pal
             _pkcs12Handle = pkcs12Handle;
         }
 
-        public unsafe static bool TryRead(byte[] data, out OpenSslPkcs12Reader pkcs12Reader)
+        public static bool TryRead(byte[] data, out OpenSslPkcs12Reader pkcs12Reader)
         {
-            SafePkcs12Handle handle = Interop.libcrypto.OpenSslD2I(
-                (ptr, b, i) => Interop.libcrypto.d2i_PKCS12(ptr, b, i),
-                data,
-                checkHandle: false);
+            SafePkcs12Handle handle = Interop.Crypto.DecodePkcs12(data, data.Length);
 
             if (!handle.IsInvalid)
             {

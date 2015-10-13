@@ -43,13 +43,13 @@ internal static partial class Interop
         internal static extern void Asn1ObjectFree(IntPtr o);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static unsafe extern SafeAsn1BitStringHandle D2IAsn1BitString(IntPtr zero, byte** ppin, int len);
+        internal static extern SafeAsn1BitStringHandle DecodeAsn1BitString(byte[] buf, int len);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern void Asn1BitStringFree(IntPtr o);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static unsafe extern SafeAsn1OctetStringHandle D2IAsn1OctetString(IntPtr zero, byte** ppin, int len);
+        internal static extern SafeAsn1OctetStringHandle DecodeAsn1OctetString(byte[] buf, int len);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern SafeAsn1OctetStringHandle Asn1OctetStringNew();
