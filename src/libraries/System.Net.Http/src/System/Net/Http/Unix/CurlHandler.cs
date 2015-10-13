@@ -357,19 +357,19 @@ namespace System.Net.Http
             }
         }
 
-        private NetworkCredential GetNetworkCredentials(ICredentials credentials, Uri requestUri)
+        private KeyValuePair<NetworkCredential, ulong> GetNetworkCredentials(ICredentials credentials, Uri requestUri)
         {
             if (_preAuthenticate)
             {
-                NetworkCredential nc = null;
+                KeyValuePair<NetworkCredential, ulong> ncAndScheme;
                 lock (LockObject)
                 {
                     Debug.Assert(_credentialCache != null, "Expected non-null credential cache");
-                    nc = GetCredentials(_credentialCache, requestUri);
+                    ncAndScheme = GetCredentials(_credentialCache, requestUri);
                 }
-                if (nc != null)
+                if (ncAndScheme.Key != null)
                 {
-                    return nc;
+                    return ncAndScheme;
                 }
             }
 
@@ -385,7 +385,14 @@ namespace System.Net.Http
                     if ((authAvail & s_authSchemePriorityOrder[i]) != 0)
                     {
                         Debug.Assert(_credentialCache != null, "Expected non-null credential cache");
-                        _credentialCache.Add(serverUri, s_authenticationSchemes[i], nc);
+                        try
+                        {
+                            _credentialCache.Add(serverUri, s_authenticationSchemes[i], nc);
+                        }
+                        catch(ArgumentException)
+                        {
+                            //Ignore the case of key already present
+                        }
                     }
                 }
             }
@@ -419,22 +426,36 @@ namespace System.Net.Http
             }
         }
 
-		private static NetworkCredential GetCredentials(ICredentials credentials, Uri requestUri)
+        private static KeyValuePair<NetworkCredential, ulong> GetCredentials(ICredentials credentials, Uri requestUri)
         {
-            if (credentials == null)
-            {
-                return null;
-            }
+            NetworkCredential nc = null;
+            ulong curlAuthScheme = CURLAUTH.None;
 
-            foreach (var authScheme in s_authenticationSchemes)
+            if (credentials != null)
             {
-                NetworkCredential networkCredential = credentials.GetCredential(requestUri, authScheme);
-                if (networkCredential != null)
+                // we collect all the schemes that are accepted by libcurl for which there is a non-null network credential.
+                // But CurlHandler works under following assumption:
+                //           for a given server, the credentials do not vary across authentication schemes.
+                for (int i=0; i < s_authSchemePriorityOrder.Length; i++)
                 {
-                    return networkCredential;
+                    NetworkCredential networkCredential = credentials.GetCredential(requestUri, s_authenticationSchemes[i]);
+                    if (networkCredential != null)
+                    {
+                        curlAuthScheme |= s_authSchemePriorityOrder[i];
+                        if (nc == null)
+                        {
+                            nc = networkCredential;
+                        }
+                        else if(!AreEqualNetworkCredentials(nc, networkCredential))
+                        {
+                            throw new PlatformNotSupportedException(SR.net_http_unix_invalid_credential);
+                        }
+                    }
                 }
             }
-            return null;
+
+            VerboseTrace("curlAuthScheme = " + curlAuthScheme);
+            return new KeyValuePair<NetworkCredential, ulong>(nc, curlAuthScheme); ;
         }
 
         private void CheckDisposed()
@@ -486,6 +507,14 @@ namespace System.Net.Http
                         throw new CurlException(error, msg);
                 }
             }
+        }
+
+        private static bool AreEqualNetworkCredentials(NetworkCredential credential1, NetworkCredential credential2)
+        {
+            Debug.Assert(credential1 != null && credential2 != null, "arguments are non-null in network equality check");
+            return credential1.UserName == credential2.UserName &&
+                credential1.Domain == credential2.Domain &&
+                string.Equals(credential1.Password, credential2.Password, StringComparison.Ordinal);
         }
 
         [Conditional(VerboseDebuggingConditional)]
@@ -627,10 +656,10 @@ namespace System.Net.Http
             Uri forwardUri;
             if (Uri.TryCreate(location, UriKind.RelativeOrAbsolute, out forwardUri) && forwardUri.IsAbsoluteUri)
             {
-                NetworkCredential newCredential = GetCredentials(state._handler.Credentials as CredentialCache, forwardUri);
-                if (newCredential != null)
+                KeyValuePair<NetworkCredential, ulong> ncAndScheme = GetCredentials(state._handler.Credentials as CredentialCache, forwardUri);
+                if (ncAndScheme.Key != null)
                 {
-                    state.SetCredentialsOptions(newCredential);
+                    state.SetCredentialsOptions(ncAndScheme);
                 }
                 else
                 {
