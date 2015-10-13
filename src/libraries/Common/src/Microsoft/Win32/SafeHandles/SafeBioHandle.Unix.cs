@@ -17,7 +17,8 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.BIO_free(handle);
+            Interop.Crypto.BioDestroy(handle);
+            SetHandle(IntPtr.Zero);
             return true;
         }
 

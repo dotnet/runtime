@@ -48,9 +48,9 @@ namespace Internal.Cryptography.Pal
                 return handle;
             }
 
-            using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
+            using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
             {
-                Interop.libcrypto.BIO_write(bio, data, data.Length);
+                Interop.Crypto.BioWrite(bio, data, data.Length);
 
                 handle = Interop.libcrypto.PEM_read_bio_X509_CRL(bio);
 

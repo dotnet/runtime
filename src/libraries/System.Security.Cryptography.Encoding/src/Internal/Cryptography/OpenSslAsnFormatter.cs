@@ -35,7 +35,7 @@ namespace Internal.Cryptography
                     return null;
                 }
 
-                using (SafeBioHandle bio = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
+                using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
                 using (SafeX509ExtensionHandle x509Ext = Interop.libcrypto.X509_EXTENSION_create_by_OBJ(IntPtr.Zero, asnOid, false, octetString))
                 {
                     if (bio.IsInvalid || x509Ext.IsInvalid)
@@ -48,11 +48,11 @@ namespace Internal.Cryptography
                         return null;
                     }
 
-                    int printLen = Interop.libcrypto.GetMemoryBioSize(bio);
+                    int printLen = Interop.Crypto.GetMemoryBioSize(bio);
 
                     // Account for the null terminator that it'll want to write.
                     StringBuilder builder = new StringBuilder(printLen + 1);
-                    Interop.libcrypto.BIO_gets(bio, builder, builder.Capacity);
+                    Interop.Crypto.BioGets(bio, builder, builder.Capacity);
 
                     return builder.ToString();
                 }

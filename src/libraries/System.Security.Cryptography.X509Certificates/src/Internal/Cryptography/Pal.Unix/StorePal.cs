@@ -47,7 +47,7 @@ namespace Internal.Cryptography.Pal
 
         public static IStorePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
-            using (SafeBioHandle bio = Interop.libcrypto.BIO_new_file(fileName, "rb"))
+            using (SafeBioHandle bio = Interop.Crypto.BioNewFile(fileName, "rb"))
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
 

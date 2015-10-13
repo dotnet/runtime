@@ -39,7 +39,7 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.Crypto.CheckValidOpenSslHandle(x509Name);
 
-                using (SafeBioHandle bioHandle = Interop.libcrypto.BIO_new(Interop.libcrypto.BIO_s_mem()))
+                using (SafeBioHandle bioHandle = Interop.Crypto.CreateMemoryBio())
                 {
                     Interop.Crypto.CheckValidOpenSslHandle(bioHandle);
 
@@ -53,7 +53,7 @@ namespace Internal.Cryptography.Pal
                     // BIO_gets wants to ensure that the response is NULL-terminated.
                     // So add one to leave space for the NULL.
                     StringBuilder builder = new StringBuilder(written + 1);
-                    int read = Interop.libcrypto.BIO_gets(bioHandle, builder, builder.Capacity);
+                    int read = Interop.Crypto.BioGets(bioHandle, builder, builder.Capacity);
 
                     if (read < 0)
                     {
