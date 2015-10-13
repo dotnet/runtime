@@ -847,14 +847,14 @@ namespace System.Linq.Expressions
         public static BlockExpression Block(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions)
         {
             ContractUtils.RequiresNotNull(expressions, "expressions");
-            var expressionList = expressions.ToReadOnly();
             var variableList = variables.ToReadOnly();
 
             if (variableList.Count == 0)
             {
-                return GetOptimizedBlockExpression(expressionList);
+                return GetOptimizedBlockExpression(expressions as IReadOnlyList<Expression> ?? expressions.ToReadOnly());
             }
 
+            var expressionList = expressions.ToReadOnly();
             return BlockCore(expressionList.Last().Type, variableList, expressionList);
         }
 
@@ -967,7 +967,7 @@ namespace System.Linq.Expressions
                 default:
                     ContractUtils.RequiresNotEmptyList(expressions, "expressions");
                     RequiresCanRead(expressions, "expressions");
-                    return new BlockN(expressions.ToArray());
+                    return new BlockN(expressions as ReadOnlyCollection<Expression> ?? (IList<Expression>)expressions.ToArray());
             }
         }
     }
