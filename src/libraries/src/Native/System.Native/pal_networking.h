@@ -117,6 +117,25 @@ struct LingerOption
     int32_t Seconds; // Number of seconds to linger for
 };
 
+// NOTE: the layout of this type is intended to exactly  match the layout of a `struct iovec`. There are
+//       assertions in pal_networking.cpp that validate this.
+struct IOVector
+{
+    uint8_t* Base;
+    uintptr_t Count;
+};
+
+struct MessageHeader
+{
+    uint8_t* SocketAddress;
+    IOVector* IOVectors;
+    uint8_t* ControlBuffer;
+    int32_t SocketAddressLen;
+    int32_t IOVectorCount;
+    int32_t ControlBufferLen;
+    int32_t Flags;
+};
+
 /**
  * Converts string-representations of IP Addresses to
  */
@@ -168,8 +187,8 @@ extern "C" Error GetIPv6Address(
 
 extern "C" int32_t GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6);
 
-// NOTE: the messageHeader parameter will be more strongly-typed in the future.
-extern "C" int32_t TryGetIPPacketInformation(uint8_t* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo);
+extern "C" int32_t
+TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo);
 
 extern "C" Error GetIPv4MulticastOption(int32_t socket, int32_t multicastOption, IPv4MulticastOption* option);
 
@@ -182,3 +201,7 @@ extern "C" Error SetIPv6MulticastOption(int32_t socket, int32_t multicastOption,
 extern "C" Error GetLingerOption(int32_t socket, LingerOption* option);
 
 extern "C" Error SetLingerOption(int32_t socket, LingerOption* option);
+
+extern "C" Error ReceiveMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
+
+extern "C" Error SendMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);

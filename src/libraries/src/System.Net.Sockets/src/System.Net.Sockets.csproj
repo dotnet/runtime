@@ -351,32 +351,11 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ioctl.cs">
       <Link>Interop\Unix\libc\Interop.ioctl.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.iovec.cs">
-      <Link>Interop\Unix\libc\Interop.iovec.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.listen.cs">
       <Link>Interop\Unix\libc\Interop.listen.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.recv.cs">
-      <Link>Interop\Unix\libc\Interop.recv.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.recvfrom.cs">
-      <Link>Interop\Unix\libc\Interop.recvfrom.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.recvmsg.cs">
-      <Link>Interop\Unix\libc\Interop.recvmsg.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.select.cs">
       <Link>Interop\Unix\libc\Interop.select.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.send.cs">
-      <Link>Interop\Unix\libc\Interop.send.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sendmsg.cs">
-      <Link>Interop\Unix\libc\Interop.sendmsg.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sendto.cs">
-      <Link>Interop\Unix\libc\Interop.sendto.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.setsockopt.cs">
       <Link>Interop\Unix\libc\Interop.setsockopt.cs</Link>
@@ -403,8 +382,17 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.LingerOption.cs">
       <Link>Interop\Unix\System.Native\Interop.LingerOption.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MessageHeader.cs">
+      <Link>Interop\Unix\System.Native\Interop.MessageHeader.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MulticastOption.cs">
       <Link>Interop\Unix\System.Native\Interop.MulticastOption.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ReceiveMessage.cs">
+      <Link>Interop\Unix\System.Native\Interop.ReceiveMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SendMessage.cs">
+      <Link>Interop\Unix\System.Native\Interop.SendMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
       <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
@@ -445,9 +433,6 @@
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.fd_set.cs">
       <Link>Interop\Linux\libc\Interop.fd_set.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.msghdr.cs">
-      <Link>Interop\Linux\libc\Interop.msghdr.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sockaddr.cs">
       <Link>Interop\Linux\libc\Interop.sockaddr.cs</Link>
     </Compile>
@@ -483,9 +468,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.kevent64.cs">
       <Link>Interop\OSX\libc\Interop.kevent.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.msghdr.cs">
-      <Link>Interop\OSX\libc\Interop.msghdr.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.sockaddr.cs">
       <Link>Interop\OSX\libc\Interop.sockaddr.cs</Link>
