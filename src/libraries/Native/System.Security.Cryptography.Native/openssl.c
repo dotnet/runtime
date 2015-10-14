@@ -881,7 +881,6 @@ CheckX509Hostname(
     // RFC2818 says that if ANY dNSName alternative name field is matched then we
     // should ignore the subject common name.
 
-    // TODO (3445): Match an input IP Address against the iPAddress SAN entries
     // TODO (3446): Match using IDNA rules.
 
     if (san)
@@ -937,6 +936,100 @@ CheckX509Hostname(
     return success;
 }
 
+/*
+Function:
+CheckX509IpAddress
+
+Used by System.Net.Security's Unix CertModule to identify if the certificate presented by
+the server is applicable to the hostname (an IP address) requested.
+
+Return values:
+1 if the hostname is a match
+0 if the hostname is not a match
+Any negative number indicates an error in the arguments.
+*/
+int
+CheckX509IpAddress(
+    X509* x509,
+    const unsigned char* addressBytes,
+    int addressBytesLen,
+    const char* hostname,
+    int cchHostname)
+{
+    if (!x509)
+        return -2;
+    if (cchHostname > 0 && !hostname)
+        return -3;
+    if (cchHostname < 0)
+        return -4;
+    if (addressBytesLen < 0)
+        return -5;
+    if (!addressBytes)
+        return -6;
+
+    int subjectNid = NID_commonName;
+    int sanGenType = GEN_IPADD;
+    GENERAL_NAMES* san = X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL);
+    int success = 0;
+
+    if (san)
+    {
+        int i;
+        int count = sk_GENERAL_NAME_num(san);
+
+        for (i = 0; i < count; ++i)
+        {
+            GENERAL_NAME* sanEntry = sk_GENERAL_NAME_value(san, i);
+            ASN1_OCTET_STRING* ipAddr;
+
+            if (sanEntry->type != sanGenType)
+            {
+                continue;
+            }
+
+            ipAddr = sanEntry->d.iPAddress;
+
+            if (!ipAddr || !ipAddr->data || ipAddr->length != addressBytesLen)
+            {
+                continue;
+            }
+
+            if (!memcmp(addressBytes, ipAddr->data, (size_t)addressBytesLen))
+            {
+                success = 1;
+                break;
+            }
+        }
+
+        GENERAL_NAMES_free(san);
+    }
+
+    if (!success)
+    {
+        // This is a shared/interor pointer, do not free!
+        X509_NAME* subject = X509_get_subject_name(x509);
+
+        if (subject)
+        {
+            int i = -1;
+
+            while ((i = X509_NAME_get_index_by_NID(subject, subjectNid, i)) >= 0)
+            {
+                // Shared/interior pointers, do not free!
+                X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
+                ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
+
+                if (CheckX509HostnameMatch(cn, hostname, cchHostname, 0))
+                {
+                    success = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    return success;
+}
 /*
 Function:
 GetX509StackFieldCount
