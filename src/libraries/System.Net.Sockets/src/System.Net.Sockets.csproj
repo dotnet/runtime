@@ -308,6 +308,9 @@
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Unix.cs" />
 
+    <Compile Include="$(CommonPath)\System\Net\InteropIPAddressExtensions.Unix.cs">
+      <Link>Common\System\Net\InteropIPAddressExtensions.Unix.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.Unix.cs">
       <Link>Common\System\Net\SafeCloseSocket.Unix.cs</Link>
     </Compile>    
@@ -394,6 +397,12 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
       <Link>Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.IPAddress.cs">
+      <Link>Interop\Unix\System.Native\Interop.IPAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.IPPacketInformation.cs">
+      <Link>Interop\Unix\System.Native\Interop.IPPacketInformation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
       <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
@@ -436,12 +445,6 @@
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.fd_set.cs">
       <Link>Interop\Linux\libc\Interop.fd_set.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.in_pktinfo.cs">
-      <Link>Interop\Linux\libc\Interop.in_pktinfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.in6_pktinfo.cs">
-      <Link>Interop\Linux\libc\Interop.in6_pktinfo.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.ip_mreqn.cs">
       <Link>Interop\Linux\libc\Interop.ip_mreqn.cs</Link>
     </Compile>
@@ -483,12 +486,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.fd_set.cs">
       <Link>Interop\OSX\libc\Interop.fd_set.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.in_pktinfo.cs">
-      <Link>Interop\OSX\libc\Interop.in_pktinfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.in6_pktinfo.cs">
-      <Link>Interop\OSX\libc\Interop.in6_pktinfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.ip_mreqn.cs">
       <Link>Interop\OSX\libc\Interop.ip_mreqn.cs</Link>

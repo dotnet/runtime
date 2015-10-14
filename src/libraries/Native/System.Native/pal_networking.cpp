@@ -47,14 +47,14 @@ static void ConvertByteArrayToV6SockAddrIn(sockaddr_in6& addr, const uint8_t* bu
     addr.sin6_family = AF_INET6;
 }
 
-static void ConvertV6SockAddrInToByteArray(uint8_t* buffer, int32_t bufferLength, const sockaddr_in6& addr)
+static void ConvertIn6AddrToByteArray(uint8_t* buffer, int32_t bufferLength, const in6_addr& addr)
 {
 #if HAVE_IN6_U
-    assert(bufferLength == ARRAY_SIZE(addr.sin6_addr.__in6_u.__u6_addr8));
-    memcpy(buffer, addr.sin6_addr.__in6_u.__u6_addr8, UnsignedCast(bufferLength));
+    assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
+    memcpy(buffer, addr.__in6_u.__u6_addr8, UnsignedCast(bufferLength));
 #else
-    assert(bufferLength == ARRAY_SIZE(addr.sin6_addr.__u6_addr.__u6_addr8));
-    memcpy(buffer, addr.sin6_addr.__u6_addr.__u6_addr8, UnsignedCast(bufferLength));
+    assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
+    memcpy(buffer, addr.__u6_addr.__u6_addr8, UnsignedCast(bufferLength));
 #endif
 }
 
@@ -67,13 +67,12 @@ static void ConvertByteArrayToSockAddrIn(sockaddr_in& addr, const uint8_t* buffe
     addr.sin_family = AF_INET;
 }
 
-static void ConvertSockAddrInToByteArray(uint8_t* buffer, int32_t bufferLength, const sockaddr_in& addr)
+static void ConvertInAddrToByteArray(uint8_t* buffer, int32_t bufferLength, const in_addr& addr)
 {
     assert(bufferLength == NUM_BYTES_IN_IPV4_ADDRESS);
     (void)bufferLength; // Silence compiler warnings about unused variables on release mode
 
-    uint32_t* output = reinterpret_cast<uint32_t*>(buffer);
-    *output = addr.sin_addr.s_addr; // Send back in network byte order
+    *reinterpret_cast<uint32_t*>(buffer) = addr.s_addr; // Send back in network byte order.
 }
 
 static int32_t ConvertGetAddrInfoAndGetNameInfoErrorsToPal(int32_t error)
@@ -112,7 +111,7 @@ IPv6StringToAddress(const uint8_t* address, const uint8_t* port, uint8_t* buffer
     if (result == 0)
     {
         sockaddr_in6* addr = reinterpret_cast<sockaddr_in6*>(info->ai_addr);
-        ConvertV6SockAddrInToByteArray(buffer, bufferLength, *addr);
+        ConvertIn6AddrToByteArray(buffer, bufferLength, addr->sin6_addr);
         *scope = addr->sin6_scope_id;
 
         freeaddrinfo(info);
@@ -133,7 +132,7 @@ extern "C" int32_t IPv4StringToAddress(const uint8_t* address, uint8_t* buffer, 
     if (result == 0)
     {
         sockaddr_in* addr = reinterpret_cast<sockaddr_in*>(info->ai_addr);
-        ConvertSockAddrInToByteArray(buffer, bufferLength, *addr);
+        ConvertInAddrToByteArray(buffer, bufferLength, addr->sin_addr);
         *port = addr->sin_port;
 
         freeaddrinfo(info);
@@ -244,7 +243,7 @@ extern "C" int32_t GetNextIPAddress(void** addressListHandle, IPAddress* endPoin
             {
                 auto* inetSockAddr = reinterpret_cast<sockaddr_in*>(ai->ai_addr);
 
-                ConvertSockAddrInToByteArray(endPoint->Address, NUM_BYTES_IN_IPV4_ADDRESS, *inetSockAddr);
+                ConvertInAddrToByteArray(endPoint->Address, NUM_BYTES_IN_IPV4_ADDRESS, inetSockAddr->sin_addr);
                 endPoint->IsIPv6 = 0;
                 break;
             }
@@ -253,7 +252,7 @@ extern "C" int32_t GetNextIPAddress(void** addressListHandle, IPAddress* endPoin
             {
                 auto* inet6SockAddr = reinterpret_cast<sockaddr_in6*>(ai->ai_addr);
 
-                ConvertV6SockAddrInToByteArray(endPoint->Address, NUM_BYTES_IN_IPV6_ADDRESS, *inet6SockAddr);
+                ConvertIn6AddrToByteArray(endPoint->Address, NUM_BYTES_IN_IPV6_ADDRESS, inet6SockAddr->sin6_addr);
                 endPoint->IsIPv6 = 1;
                 endPoint->ScopeId = inet6SockAddr->sin6_scope_id;
                 break;
@@ -590,7 +589,7 @@ extern "C" Error GetIPv6Address(
     }
 
     auto* inet6SockAddr = reinterpret_cast<const sockaddr_in6*>(sockAddr);
-    ConvertV6SockAddrInToByteArray(address, addressLen, *inet6SockAddr);
+    ConvertIn6AddrToByteArray(address, addressLen, inet6SockAddr->sin6_addr);
     *scopeId = inet6SockAddr->sin6_scope_id;
 
     return PAL_SUCCESS;
@@ -623,4 +622,84 @@ SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* addres
     inet6SockAddr->sin6_scope_id = scopeId;
 
     return PAL_SUCCESS;
+}
+
+extern "C" int32_t GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6)
+{
+    // Note: it is possible that the address family of the socket is neither
+    //       AF_INET nor AF_INET6. In this case both inputs will be false and
+    //       the controll message buffer size should be zero.
+    return (isIPv4 != 0 ? CMSG_SPACE(sizeof(in_pktinfo)) : 0) + (isIPv6 != 0 ? CMSG_SPACE(sizeof(in6_pktinfo)) : 0);
+}
+
+static int32_t GetIPv4PacketInformation(cmsghdr* controlMessage, IPPacketInformation* packetInfo)
+{
+    assert(controlMessage != nullptr);
+    assert(packetInfo != nullptr);
+
+    if (controlMessage->cmsg_len < sizeof(in_pktinfo))
+    {
+        assert(false && "expected a control message large enough to hold an in_pktinfo value");
+        return 0;
+    }
+
+    auto* pktinfo = reinterpret_cast<in_pktinfo*>(CMSG_DATA(controlMessage));
+    ConvertInAddrToByteArray(&packetInfo->Address.Address[0], NUM_BYTES_IN_IPV4_ADDRESS, pktinfo->ipi_addr);
+    packetInfo->InterfaceIndex = static_cast<int32_t>(pktinfo->ipi_ifindex);
+
+    return 1;
+}
+
+static int32_t GetIPv6PacketInformation(cmsghdr* controlMessage, IPPacketInformation* packetInfo)
+{
+    assert(controlMessage != nullptr);
+    assert(packetInfo != nullptr);
+
+    if (controlMessage->cmsg_len < sizeof(in6_pktinfo))
+    {
+        assert(false && "expected a control message large enough to hold an in6_pktinfo value");
+        return 0;
+    }
+
+    auto* pktinfo = reinterpret_cast<in6_pktinfo*>(CMSG_DATA(controlMessage));
+    ConvertIn6AddrToByteArray(&packetInfo->Address.Address[0], NUM_BYTES_IN_IPV6_ADDRESS, pktinfo->ipi6_addr);
+    packetInfo->Address.IsIPv6 = 1;
+    packetInfo->InterfaceIndex = static_cast<int32_t>(pktinfo->ipi6_ifindex);
+
+    return 1;
+}
+
+// NOTE: the messageHeader parameter will be more strongly-typed in the future.
+extern "C" int32_t TryGetIPPacketInformation(uint8_t* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
+{
+    if (messageHeader == nullptr || packetInfo == nullptr)
+    {
+        return 0;
+    }
+
+    msghdr* header = reinterpret_cast<msghdr*>(messageHeader);
+
+    cmsghdr* controlMessage = CMSG_FIRSTHDR(header);
+    if (isIPv4 != 0)
+    {
+        for (; controlMessage != nullptr; controlMessage = CMSG_NXTHDR(header, controlMessage))
+        {
+            if (controlMessage->cmsg_level == IPPROTO_IP && controlMessage->cmsg_type == IP_PKTINFO)
+            {
+                return GetIPv4PacketInformation(controlMessage, packetInfo);
+            }
+        }
+    }
+    else
+    {
+        for (; controlMessage != nullptr; controlMessage = CMSG_NXTHDR(header, controlMessage))
+        {
+            if (controlMessage->cmsg_level == IPPROTO_IPV6 && controlMessage->cmsg_type == IPV6_PKTINFO)
+            {
+                return GetIPv6PacketInformation(controlMessage, packetInfo);
+            }
+        }
+    }
+
+    return 0;
 }

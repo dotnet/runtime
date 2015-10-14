@@ -83,6 +83,13 @@ struct HostEntry
     int32_t Padding;         // Pad out to 8-byte alignment
 };
 
+struct IPPacketInformation
+{
+    IPAddress Address;      // Destination IP address
+    int32_t InterfaceIndex; // Interface index
+    int32_t Padding;        // Pad out to 8-byte alignment
+};
+
 /**
  * Converts string-representations of IP Addresses to
  */
@@ -132,5 +139,7 @@ extern "C" Error SetIPv4Address(uint8_t* socketAddress, int32_t socketAddressLen
 extern "C" Error GetIPv6Address(
     const uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t* scopeId);
 
-extern "C" Error SetIPv6Address(
-    uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* address, int32_t addressLen, uint32_t scopeId);
+extern "C" int32_t GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6);
+
+// NOTE: the messageHeader parameter will be more strongly-typed in the future.
+extern "C" int32_t TryGetIPPacketInformation(uint8_t* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo);
