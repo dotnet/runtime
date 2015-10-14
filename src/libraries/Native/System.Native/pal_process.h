@@ -152,7 +152,7 @@ struct RLimit
 
 /**
  * The native struct is dependent on the size of a numeric type
- * so make it the largest possible value here and then we will 
+ * so make it the largest possible value here and then we will
  * copy to native as necessary
  */
 struct CpuSetBits
@@ -278,7 +278,7 @@ extern "C" int32_t SchedGetAffinity(int32_t pid, CpuSetBits* mask);
 #if HAVE_SCHED_GETAFFINITY || HAVE_SCHED_SETAFFINITY
 
 /**
- * Shim's for the macros of the same name. Sets a CPU bit or 
+ * Shim's for the macros of the same name. Sets a CPU bit or
  * retrieves if the CPU bit is set
  */
 extern "C" void CpuSet(int32_t cpu, CpuSetBits* set);

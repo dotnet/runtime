@@ -38,7 +38,7 @@ extern "C" int32_t BioWrite(BIO* b, const void* buf, int32_t len)
 extern "C" int32_t GetMemoryBioSize(BIO* bio)
 {
     long ret = BIO_get_mem_data(bio, nullptr);
-    
+
     // BIO_get_mem_data returns the memory size, which will always be
     // an int32.
     assert(ret <= INT32_MAX);

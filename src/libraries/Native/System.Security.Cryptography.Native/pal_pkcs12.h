@@ -9,4 +9,3 @@
 Shims the d2i_PKCS12 method and makes it easier to invoke from managed code.
 */
 extern "C" PKCS12* DecodePkcs12(const unsigned char* buf, int32_t len);
-
