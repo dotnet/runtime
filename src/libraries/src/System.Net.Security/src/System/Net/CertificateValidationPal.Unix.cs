@@ -17,14 +17,14 @@ namespace System.Net
 
         internal static SslPolicyErrors VerifyCertificateProperties(
             X509Chain chain,
-            X509Certificate2 certificate,
+            X509Certificate2 remoteCertificate,
             bool checkCertName,
             bool isServer,
             string hostName)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
-            if (!chain.Build(certificate))
+            if (!chain.Build(remoteCertificate))
             {
                 sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
             }
@@ -39,7 +39,7 @@ namespace System.Net
                 {
                     int hostnameMatch;
 
-                    using (SafeX509Handle certHandle = Interop.libcrypto.X509_dup(certificate.Handle))
+                    using (SafeX509Handle certHandle = Interop.libcrypto.X509_dup(remoteCertificate.Handle))
                     {
                         IPAddress hostnameAsIp;
 
@@ -83,12 +83,12 @@ namespace System.Net
                 return null;
             }
 
-            GlobalLog.Enter("SecureChannel#" + Logging.HashString(securityContext) + "::RemoteCertificate{get;}");
+            GlobalLog.Enter("CertificateValidationPal.Unix SecureChannel#" + Logging.HashString(securityContext) + "::GetRemoteCertificate()");
             X509Certificate2 result = null;
             SafeFreeCertContext remoteContext = null;
             try
             {
-                int errorCode = SslStreamPal.QueryContextRemoteCertificate(securityContext, out remoteContext);
+                int errorCode = QueryContextRemoteCertificate(securityContext, out remoteContext);
 
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
@@ -137,7 +137,7 @@ namespace System.Net
                 Logging.PrintInfo(Logging.Web, SR.Format(SR.net_log_remote_certificate, (result == null ? "null" : result.ToString(true))));
             }
 
-            GlobalLog.Leave("SecureChannel#" + Logging.HashString(securityContext) + "::RemoteCertificate{get;}", (result == null ? "null" : result.Subject));
+            GlobalLog.Leave("CertificateValidationPal.Unix SecureChannel#" + Logging.HashString(securityContext) + "::GetRemoteCertificate()", (result == null ? "null" : result.Subject));
 
             return result;
         }      
@@ -226,6 +226,28 @@ namespace System.Net
             }
 
             return store;
+        }
+
+        private static int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext remoteCertContext)
+        {
+            remoteCertContext = null;
+            try
+            {
+                SafeX509Handle remoteCertificate = Interop.OpenSsl.GetPeerCertificate(securityContext.SslContext);
+                // Note that cert ownership is transferred to SafeFreeCertContext
+                remoteCertContext = new SafeFreeCertContext(remoteCertificate);
+                return 0;
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        private static int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList)
+        {
+            // TODO (Issue #3362) To be implemented
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
     }
 }

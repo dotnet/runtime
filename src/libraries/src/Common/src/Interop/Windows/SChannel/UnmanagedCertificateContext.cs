@@ -18,7 +18,8 @@ namespace System.Net
                 return result;
             }
 
-            Interop.Crypt32.CERT_CONTEXT context = Marshal.PtrToStructure<Interop.Crypt32.CERT_CONTEXT>(certContext.DangerousGetHandle());
+                Interop.Crypt32.CERT_CONTEXT context =
+                    Marshal.PtrToStructure<Interop.Crypt32.CERT_CONTEXT>(certContext.DangerousGetHandle());
 
             if (context.hCertStore != IntPtr.Zero)
             {

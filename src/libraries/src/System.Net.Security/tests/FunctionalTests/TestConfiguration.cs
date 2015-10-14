@@ -4,12 +4,15 @@
 using System.IO;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+
 using Xunit;
 
 namespace System.Net.Security.Tests
 {
     internal static class TestConfiguration
     {
+        public const int TestTimeoutSeconds = 3; 
+        
         public const SslProtocols DefaultSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
 
         public static X509Certificate2 GetServerCertificate()
