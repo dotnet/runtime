@@ -1178,7 +1178,6 @@ namespace System.Collections.Immutable
         /// Adds the specified item.
         /// </summary>
         /// <param name="item">The item.</param>
-        /// <exception cref="System.NotImplementedException"></exception>
         void ICollection<T>.Add(T item)
         {
             throw new NotSupportedException();
@@ -1237,7 +1236,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The position into which the new element was inserted, or -1 to indicate that the item was not inserted into the collection,
         /// </returns>
-        /// <exception cref="System.NotImplementedException"></exception>
         int IList.Add(object value)
         {
             throw new NotSupportedException();
@@ -1256,7 +1254,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Clears this instance.
         /// </summary>
-        /// <exception cref="System.NotImplementedException"></exception>
         void IList.Clear()
         {
             throw new NotSupportedException();
@@ -1269,7 +1266,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// true if the <see cref="object"/> is found in the <see cref="IList"/>; otherwise, false.
         /// </returns>
-        /// <exception cref="System.NotImplementedException"></exception>
         bool IList.Contains(object value)
         {
             return this.Contains((T)value);
@@ -1282,7 +1278,6 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The index of <paramref name="value"/> if found in the list; otherwise, -1.
         /// </returns>
-        /// <exception cref="System.NotImplementedException"></exception>
         int IList.IndexOf(object value)
         {
             return this.IndexOf((T)value);
@@ -1293,7 +1288,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The zero-based index at which <paramref name="value"/> should be inserted.</param>
         /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
-        /// <exception cref="System.NotImplementedException"></exception>
         void IList.Insert(int index, object value)
         {
             throw new NotSupportedException();
@@ -1303,7 +1297,6 @@ namespace System.Collections.Immutable
         /// Gets a value indicating whether the <see cref="IList"/> has a fixed size.
         /// </summary>
         /// <returns>true if the <see cref="IList"/> has a fixed size; otherwise, false.</returns>
-        /// <exception cref="System.NotImplementedException"></exception>
         bool IList.IsFixedSize
         {
             get { return true; }
@@ -1314,7 +1307,6 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <returns>true if the <see cref="ICollection{T}"/> is read-only; otherwise, false.
         ///   </returns>
-        /// <exception cref="System.NotImplementedException"></exception>
         bool IList.IsReadOnly
         {
             get { return true; }
@@ -1324,7 +1316,6 @@ namespace System.Collections.Immutable
         /// Removes the first occurrence of a specific object from the <see cref="IList"/>.
         /// </summary>
         /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
-        /// <exception cref="System.NotImplementedException"></exception>
         void IList.Remove(object value)
         {
             throw new NotSupportedException();
@@ -1338,7 +1329,6 @@ namespace System.Collections.Immutable
         /// </value>
         /// <param name="index">The index.</param>
         /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
         object IList.this[int index]
         {
             get { return this[index]; }
