@@ -218,9 +218,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Pkcs7.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.Pkcs7.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Pkcs12.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.Pkcs12.cs</Link>
     </Compile>
