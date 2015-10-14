@@ -3574,7 +3574,7 @@ decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean
 		ji->type = decode_value (p, &p);
 
 		/* See load_method () for SFLDA */
-		if (got [got_offsets [i]] && ji->type != MONO_PATCH_INFO_SFLDA) {
+		if (got && got [got_offsets [i]] && ji->type != MONO_PATCH_INFO_SFLDA) {
 			/* Already loaded */
 		} else {
 			res = decode_patch (amodule, mp, ji, p, &p);
