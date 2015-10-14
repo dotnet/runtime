@@ -160,32 +160,20 @@ namespace Internal.Cryptography.Pal
             throw new NotImplementedException();
         }
 
-        public unsafe void DecodeX509BasicConstraints2Extension(
+        public void DecodeX509BasicConstraints2Extension(
             byte[] encoded,
             out bool certificateAuthority,
             out bool hasPathLengthConstraint,
             out int pathLengthConstraint)
         {
-            using (SafeBasicConstraintsHandle constraints = Interop.Crypto.DecodeBasicConstraints(encoded, encoded.Length))
+            if (!Interop.Crypto.DecodeX509BasicConstraints2Extension(
+                encoded,
+                encoded.Length,
+                out certificateAuthority,
+                out hasPathLengthConstraint,
+                out pathLengthConstraint))
             {
-                Interop.Crypto.CheckValidOpenSslHandle(constraints);
-
-                Interop.libcrypto.BASIC_CONSTRAINTS* data = (Interop.libcrypto.BASIC_CONSTRAINTS*)constraints.DangerousGetHandle();
-                certificateAuthority = data->CA != 0;
-
-                if (data->pathlen != IntPtr.Zero)
-                {
-                    hasPathLengthConstraint = true;
-                    long pathLengthConstraint64 = Interop.Crypto.Asn1IntegerGet(data->pathlen);
-
-                    Debug.Assert(pathLengthConstraint64 < int.MaxValue, "pathLengthConstraint needs to be in the Int32 range.");
-                    pathLengthConstraint = checked((int)pathLengthConstraint64);
-                }
-                else
-                {
-                    hasPathLengthConstraint = false;
-                    pathLengthConstraint = 0;
-                }
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
         }
 
