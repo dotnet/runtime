@@ -210,6 +210,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The 0-based index of the element in the set to return.</param>
         /// <returns>The element at the given position.</returns>
+        /// <exception cref="IndexOutOfRangeException">Thrown from getter when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
         public T this[int index]
         {
             get
@@ -1145,7 +1146,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The index.</param>
         /// <param name="item">The item.</param>
-        /// <exception cref="System.NotSupportedException"></exception>
+        /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
         void IList<T>.Insert(int index, T item)
         {
             throw new NotSupportedException();
@@ -1155,7 +1156,7 @@ namespace System.Collections.Immutable
         /// Removes the value at the specified index.
         /// </summary>
         /// <param name="index">The index.</param>
-        /// <exception cref="System.NotSupportedException"></exception>
+        /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
         void IList<T>.RemoveAt(int index)
         {
             throw new NotSupportedException();
@@ -1164,6 +1165,8 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets or sets the value at the specified index.
         /// </summary>
+        /// <exception cref="IndexOutOfRangeException">Thrown from getter when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
+        /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
         T IList<T>.this[int index]
         {
             get { return this[index]; }
@@ -1178,6 +1181,7 @@ namespace System.Collections.Immutable
         /// Adds the specified item.
         /// </summary>
         /// <param name="item">The item.</param>
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         void ICollection<T>.Add(T item)
         {
             throw new NotSupportedException();
@@ -1186,7 +1190,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Clears this instance.
         /// </summary>
-        /// <exception cref="System.NotSupportedException"></exception>
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         void ICollection<T>.Clear()
         {
             throw new NotSupportedException();
@@ -1206,8 +1210,8 @@ namespace System.Collections.Immutable
         /// Removes the specified item.
         /// </summary>
         /// <param name="item">The item.</param>
-        /// <returns></returns>
-        /// <exception cref="System.NotSupportedException"></exception>
+        /// <returns>Nothing. An exception is always thrown.</returns>
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         bool ICollection<T>.Remove(T item)
         {
             throw new NotSupportedException();
@@ -1234,8 +1238,9 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="value">The object to add to the <see cref="IList"/>.</param>
         /// <returns>
-        /// The position into which the new element was inserted, or -1 to indicate that the item was not inserted into the collection,
+        /// Nothing. An exception is always thrown.
         /// </returns>
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         int IList.Add(object value)
         {
             throw new NotSupportedException();
@@ -1245,7 +1250,7 @@ namespace System.Collections.Immutable
         /// Removes the <see cref="IList"/> item at the specified index.
         /// </summary>
         /// <param name="index">The zero-based index of the item to remove.</param>
-        /// <exception cref="System.NotSupportedException"></exception>
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         void IList.RemoveAt(int index)
         {
             throw new NotSupportedException();
@@ -1254,6 +1259,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Clears this instance.
         /// </summary>
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         void IList.Clear()
         {
             throw new NotSupportedException();
@@ -1288,6 +1294,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The zero-based index at which <paramref name="value"/> should be inserted.</param>
         /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         void IList.Insert(int index, object value)
         {
             throw new NotSupportedException();
@@ -1316,6 +1323,7 @@ namespace System.Collections.Immutable
         /// Removes the first occurrence of a specific object from the <see cref="IList"/>.
         /// </summary>
         /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         void IList.Remove(object value)
         {
             throw new NotSupportedException();
@@ -1328,7 +1336,9 @@ namespace System.Collections.Immutable
         /// The <see cref="System.Object"/>.
         /// </value>
         /// <param name="index">The index.</param>
-        /// <returns></returns>
+        /// <returns>The value at the specified index.</returns>
+        /// <exception cref="IndexOutOfRangeException">Thrown from getter when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
+        /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
         object IList.this[int index]
         {
             get { return this[index]; }
