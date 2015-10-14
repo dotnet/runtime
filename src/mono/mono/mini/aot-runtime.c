@@ -84,7 +84,7 @@ typedef struct MonoAotModule {
 	/* Pointer to the Global Offset Table */
 	gpointer *got;
 	gpointer *llvm_got;
-	gpointer shared_got [N_COMMON_GOT_ENTRIES];
+	gpointer *shared_got;
 	GHashTable *name_cache;
 	GHashTable *extra_methods;
 	/* Maps methods to their code */
@@ -214,6 +214,9 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 
 static gboolean
 init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context);
+
+static MonoJumpInfo*
+decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets);
 
 static inline void
 amodule_lock (MonoAotModule *amodule)
@@ -1752,42 +1755,62 @@ get_call_table_entry (void *table, int index)
 #endif
 }
 
-static void
-init_gots (MonoAotModule *amodule)
-{
-	int i;
-
-	if (amodule->got) {
-		for (i = 0; i < N_COMMON_GOT_ENTRIES; ++i)
-			amodule->got [i] = amodule->shared_got [i];
-	}
-	if (amodule->llvm_got) {
-		for (i = 0; i < N_COMMON_GOT_ENTRIES; ++i)
-			amodule->llvm_got [i] = amodule->shared_got [i];
-	}
-}
-
+/*
+ * init_amodule_got:
+ *
+ *   Initialize the shared got entries for AMODULE.
+ */
 static void
 init_amodule_got (MonoAotModule *amodule)
 {
-	MonoJumpInfo ji;
+	MonoJumpInfo *ji;
+	MonoMemPool *mp = mono_mempool_new ();
+	MonoJumpInfo *patches;
+	guint32 got_offsets [128];
+	int i, npatches;
 
 	/* These can't be initialized in load_aot_module () */
-	if (!amodule->shared_got [6] && !amodule->got_initializing) {
-		amodule->got_initializing = TRUE;
+	if (amodule->shared_got [0] || amodule->got_initializing)
+		return;
 
-		memset (&ji, 0, sizeof (ji));
-		ji.type = MONO_PATCH_INFO_INTERNAL_METHOD;
-		ji.data.name = "mono_aot_init_llvm_method";
-		amodule->got_initializing = TRUE;
-		amodule->shared_got [6] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
-		ji.data.name = "mono_aot_init_gshared_method_this";
-		amodule->shared_got [7] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
-		ji.data.name = "mono_aot_init_gshared_method_rgctx";
-		amodule->shared_got [8] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
-		ji.data.name = "mono_llvm_throw_corlib_exception";
-		amodule->shared_got [9] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
-		init_gots (amodule);
+	amodule->got_initializing = TRUE;
+
+	npatches = amodule->info.nshared_got_entries;
+	for (i = 0; i < npatches; ++i)
+		got_offsets [i] = i;
+	patches = decode_patches (amodule, mp, npatches, FALSE, got_offsets);
+	g_assert (patches);
+	for (i = 0; i < npatches; ++i) {
+		ji = &patches [i];
+
+		if (ji->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR && !mono_gc_is_moving ()) {
+			amodule->shared_got [i] = NULL;
+		} else if (ji->type == MONO_PATCH_INFO_GC_NURSERY_START && !mono_gc_is_moving ()) {
+			amodule->shared_got [i] = NULL;
+		} else if (ji->type == MONO_PATCH_INFO_IMAGE) {
+			amodule->shared_got [i] = amodule->assembly->image;
+		} else if (ji->type == MONO_PATCH_INFO_MSCORLIB_GOT_ADDR) {
+			if (mono_defaults.corlib) {
+				MonoAotModule *mscorlib_amodule = mono_defaults.corlib->aot_module;
+
+				amodule->shared_got [i] = mscorlib_amodule->got;
+			} else {
+				amodule->shared_got [i] = amodule->got;
+			}
+		} else if (ji->type == MONO_PATCH_INFO_AOT_MODULE) {
+			amodule->shared_got [i] = amodule;
+		} else {
+			amodule->shared_got [i] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, ji, FALSE);
+		}
+	}
+
+	if (amodule->got) {
+		for (i = 0; i < npatches; ++i)
+			amodule->got [i] = amodule->shared_got [i];
+	}
+	if (amodule->llvm_got) {
+		for (i = 0; i < npatches; ++i)
+			amodule->llvm_got [i] = amodule->shared_got [i];
 	}
 }
 
@@ -1920,6 +1943,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->sofile = sofile;
 	amodule->method_to_code = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	amodule->blob = blob;
+	amodule->shared_got = g_new0 (gpointer, info->nshared_got_entries);
 
 	mono_mutex_init_recursive (&amodule->mutex);
 
@@ -2058,39 +2082,12 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	assembly->image->aot_module = amodule;
 
-	amodule->shared_got [0] = assembly->image;
-
 	if (mono_aot_only) {
 		char *code;
 		find_symbol (amodule->sofile, amodule->globals, "specific_trampolines_page", (gpointer *)&code);
 		amodule->use_page_trampolines = code != NULL;
 		/*g_warning ("using page trampolines: %d", amodule->use_page_trampolines);*/
-		if (mono_defaults.corlib) {
-			/* The second got slot contains the mscorlib got addr */
-			MonoAotModule *mscorlib_amodule = mono_defaults.corlib->aot_module;
-
-			amodule->shared_got [1] = mscorlib_amodule->got;
-		} else {
-			amodule->shared_got [1] = amodule->got;
-		}
 	}
-
-	if (mono_gc_is_moving ()) {
-		MonoJumpInfo ji;
-
-		memset (&ji, 0, sizeof (ji));
-		ji.type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
-		amodule->shared_got [2] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
-
-		memset (&ji, 0, sizeof (ji));
-		ji.type = MONO_PATCH_INFO_GC_NURSERY_START;
-		amodule->shared_got [3] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
-	}
-
-	amodule->shared_got [5] = amodule;
-	/* Can't initialize the other shared got slots yet, they are initialized in init_amodule_got () */
-
-	init_gots (amodule);
 
 	/*
 	 * Register the plt region as a single trampoline so we can unwind from this code
@@ -3444,6 +3441,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	}
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 	case MONO_PATCH_INFO_AOT_MODULE:
+	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
 		break;
 	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE: {
 		MonoJumpInfoImtTramp *imt_tramp = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoImtTramp));
@@ -3544,63 +3542,77 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	return FALSE;
 }
 
+/*
+ * decode_patches:
+ *
+ *    Decode a list of patches identified by the got offsets in GOT_OFFSETS. Return an array of
+ * MonoJumpInfo structures allocated from MP.
+ */
 static MonoJumpInfo*
-load_patch_info (MonoAotModule *aot_module, MonoMemPool *mp, int n_patches,
+decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets)
+{
+	MonoJumpInfo *patches;
+	MonoJumpInfo *ji;
+	gpointer *got;
+	guint32 *got_info_offsets;
+	int i;
+	gboolean res;
+
+	if (llvm) {
+		got = amodule->llvm_got;
+		got_info_offsets = amodule->info.llvm_got_info_offsets;
+	} else {
+		got = amodule->got;
+		got_info_offsets = amodule->info.got_info_offsets;
+	}
+
+	patches = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo) * n_patches);
+	for (i = 0; i < n_patches; ++i) {
+		guint8 *p = amodule->blob + mono_aot_get_offset (got_info_offsets, got_offsets [i]);
+
+		ji = &patches [i];
+		ji->type = decode_value (p, &p);
+
+		/* See load_method () for SFLDA */
+		if (got [got_offsets [i]] && ji->type != MONO_PATCH_INFO_SFLDA) {
+			/* Already loaded */
+		} else {
+			res = decode_patch (amodule, mp, ji, p, &p);
+			if (!res)
+				return NULL;
+		}
+	}
+
+	return patches;
+}
+
+static MonoJumpInfo*
+load_patch_info (MonoAotModule *amodule, MonoMemPool *mp, int n_patches,
 				 gboolean llvm, guint32 **got_slots,
 				 guint8 *buf, guint8 **endbuf)
 {
 	MonoJumpInfo *patches;
 	int pindex;
 	guint8 *p;
-	gpointer *got;
-	guint32 *got_offsets;
 
 	p = buf;
-
-	if (llvm) {
-		got = aot_module->llvm_got;
-		got_offsets = aot_module->info.llvm_got_info_offsets;
-	} else {
-		got = aot_module->got;
-		got_offsets = aot_module->info.got_info_offsets;
-	}
 
 	patches = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo) * n_patches);
 
 	*got_slots = g_malloc (sizeof (guint32) * n_patches);
-
 	for (pindex = 0; pindex < n_patches; ++pindex) {
-		MonoJumpInfo *ji = &patches [pindex];
-		guint8 *shared_p;
-		gboolean res;
-		guint32 got_offset;
+		(*got_slots)[pindex] = decode_value (p, &p);
+	}
 
-		got_offset = decode_value (p, &p);
-
-		shared_p = aot_module->blob + mono_aot_get_offset (got_offsets, got_offset);
-
-		ji->type = decode_value (shared_p, &shared_p);
-
-		/* See load_method () for SFLDA */
-		if (got [got_offset] && ji->type != MONO_PATCH_INFO_SFLDA) {
-			/* Already loaded */
-		} else {
-			res = decode_patch (aot_module, mp, ji, shared_p, &shared_p);
-			if (!res)
-				goto cleanup;
-		}
-
-		(*got_slots) [pindex] = got_offset;
+	patches = decode_patches (amodule, mp, n_patches, llvm, *got_slots);
+	if (!patches) {
+		g_free (*got_slots);
+		*got_slots = NULL;
+		return NULL;
 	}
 
 	*endbuf = p;
 	return patches;
-
- cleanup:
-	g_free (*got_slots);
-	*got_slots = NULL;
-
-	return NULL;
 }
 
 static void
