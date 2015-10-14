@@ -73,4 +73,3 @@ JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b51575/b51575.sh
 JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b88793/b88793.sh
 JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b91248/b91248.sh
 JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748.sh
-Regressions/expl_double/expl_double_1.sh
