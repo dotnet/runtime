@@ -1051,7 +1051,12 @@ namespace System.Collections.Immutable
             /// <exception cref="System.NotImplementedException"></exception>
             bool IList.Contains(object value)
             {
-                return this.Contains((T)value);
+                if (IsCompatibleObject(value))
+                {
+                    return this.Contains((T)value);
+                }
+
+                return false;
             }
 
             /// <summary>
@@ -1064,7 +1069,12 @@ namespace System.Collections.Immutable
             /// <exception cref="System.NotImplementedException"></exception>
             int IList.IndexOf(object value)
             {
-                return this.IndexOf((T)value);
+                if (IsCompatibleObject(value))
+                {
+                    return this.IndexOf((T)value);
+                }
+
+                return -1;
             }
 
             /// <summary>
@@ -1106,7 +1116,10 @@ namespace System.Collections.Immutable
             /// <exception cref="System.NotImplementedException"></exception>
             void IList.Remove(object value)
             {
-                this.Remove((T)value);
+                if (IsCompatibleObject(value))
+                {
+                    this.Remove((T)value);
+                }
             }
 
             /// <summary>
