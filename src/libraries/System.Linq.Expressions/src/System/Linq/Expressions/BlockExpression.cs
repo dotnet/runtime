@@ -847,14 +847,14 @@ namespace System.Linq.Expressions
         public static BlockExpression Block(IEnumerable<ParameterExpression> variables, IEnumerable<Expression> expressions)
         {
             ContractUtils.RequiresNotNull(expressions, "expressions");
-            var expressionList = expressions.ToReadOnly();
             var variableList = variables.ToReadOnly();
 
             if (variableList.Count == 0)
             {
-                return GetOptimizedBlockExpression(expressionList);
+                return GetOptimizedBlockExpression(expressions as IReadOnlyList<Expression> ?? expressions.ToReadOnly());
             }
 
+            var expressionList = expressions.ToReadOnly();
             return BlockCore(expressionList.Last().Type, variableList, expressionList);
         }
 
@@ -875,19 +875,15 @@ namespace System.Linq.Expressions
 
             if (variableList.Count == 0)
             {
-                var expressionsList = expressions as IReadOnlyList<Expression>;
-                if (expressionsList != null)
+                var expressionCount = expressionList.Count;
+
+                if (expressionCount != 0)
                 {
-                    var expressionCount = expressionsList.Count;
+                    var lastExpression = expressionList[expressionCount - 1];
 
-                    if (expressionCount > 0)
+                    if (lastExpression.Type == type)
                     {
-                        var lastExpression = expressionsList[expressionCount - 1];
-
-                        if (lastExpression.Type == type)
-                        {
-                            return GetOptimizedBlockExpression(expressionsList);
-                        }
+                        return GetOptimizedBlockExpression(expressionList);
                     }
                 }
             }
@@ -967,7 +963,7 @@ namespace System.Linq.Expressions
                 default:
                     ContractUtils.RequiresNotEmptyList(expressions, "expressions");
                     RequiresCanRead(expressions, "expressions");
-                    return new BlockN(expressions.ToArray());
+                    return new BlockN(expressions as ReadOnlyCollection<Expression> ?? (IList<Expression>)expressions.ToArray());
             }
         }
     }
