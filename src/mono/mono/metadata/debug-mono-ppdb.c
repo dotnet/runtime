@@ -52,6 +52,12 @@ typedef struct {
 	gint32 age;
 } CodeviewDebugDirectory;
 
+typedef struct {
+	guint8 guid [20];
+	guint32 entry_point;
+	guint64 referenced_tables;
+} PdbStreamHeader;
+
 static gboolean
 get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age)
 {
@@ -64,7 +70,7 @@ get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age)
 
 	int offset = mono_cli_rva_image_map (image, debug_dir_entry->rva);
 	debug_dir = (ImageDebugDirectory*)(image->raw_data + offset);
-	if (debug_dir->type == 2 && debug_dir->major_version == 1 && debug_dir->minor_version == 0x504d) {
+	if (debug_dir->type == 2 && debug_dir->major_version == 0x100 && debug_dir->minor_version == 0x504d) {
 		/* This is a 'CODEVIEW' debug directory */
 		CodeviewDebugDirectory *dir = (CodeviewDebugDirectory*)(image->raw_data + debug_dir->pointer);
 
@@ -113,7 +119,16 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	 * #Pdb stream in the ppdb file.
 	 */
 	if (get_pe_debug_guid (image, pe_guid, &pe_age)) {
-		// FIXME: Read the id from the ppdb file
+		PdbStreamHeader *pdb_stream = (PdbStreamHeader*)ppdb_image->heap_pdb.data;
+
+		g_assert (pdb_stream);
+
+		if (memcmp (pe_guid, pdb_stream->guid, 16) != 0) {
+			g_warning ("Symbol file %s doesn't match image %s", ppdb_image->name,
+					   image->name);
+			mono_image_close (ppdb_image);
+			return NULL;
+		}
 	}
 
 	ppdb = g_new0 (MonoPPDBFile, 1);
