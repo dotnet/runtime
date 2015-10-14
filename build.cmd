@@ -23,6 +23,7 @@ set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set __MSBCleanBuildArgs=
 set __SkipTestBuild=
+set __DoCrossgen=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -44,6 +45,7 @@ if /i "%1" == "windowsmscorlib" (set __MscorlibOnly=1&set __BuildOS=Windows_NT&s
 if /i "%1" == "vs2013" (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "vs2015" (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "skiptestbuild" (set __SkipTestBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "docrossgen" (set __DoCrossgen=1&shift&goto Arg_Loop)
 
 echo Invalid commandline argument: %1
 goto Usage
@@ -205,6 +207,13 @@ echo MScorlib build failed. Refer !__MScorlibBuildLog! for details.
 exit /b 1
 
 :CrossGenMscorlib
+if /i "%__BuildArch%" == "x86" (
+  if not defined __DoCrossgen (
+    echo Skipping Crossgen
+    goto PerformTestBuild
+  )
+)
+
 echo Generating native image of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 set "__CrossGenMScorlibLog=%__LogsDir%\CrossgenMScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
