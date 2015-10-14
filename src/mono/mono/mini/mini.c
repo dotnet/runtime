@@ -4421,6 +4421,13 @@ void mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
 {
 	g_assert_not_reached ();
 }
+
+void
+mono_llvm_throw_corlib_exception (guint32 ex_token_index)
+{
+	g_assert_not_reached ();
+}
+
 #endif
 
 #ifdef DISABLE_JIT
