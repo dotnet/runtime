@@ -229,6 +229,8 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
+
+            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
 #else // !FEATURE_IMPLICIT_TLS
             // If the TLS for Thread is low enough use the super-fast helpers
             if (gThreadTLSIndex < TLS_MINIMUM_AVAILABLE)
