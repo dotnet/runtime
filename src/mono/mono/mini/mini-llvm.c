@@ -136,6 +136,7 @@ typedef struct {
 	LLVMValueRef rgctx_arg;
 	LLVMValueRef this_arg;
 	LLVMTypeRef *vreg_types;
+	LLVMBasicBlockRef init_bb, inited_bb;
 	gboolean *is_dead;
 	gboolean *unreachable;
 	gboolean llvm_only;
@@ -2464,7 +2465,7 @@ emit_init_method (EmitContext *ctx)
 
 	cmp = LLVMBuildICmp (builder, LLVMIntEQ, inited_var, LLVMConstInt (LLVMTypeOf (inited_var), 0, FALSE), "");
 
-	inited_bb = gen_bb (ctx, "INITED_BB");
+	inited_bb = ctx->inited_bb;
 	notinited_bb = gen_bb (ctx, "NOTINITED_BB");
 
 	LLVMBuildCondBr (ctx->builder, cmp, notinited_bb, inited_bb);
@@ -2692,8 +2693,14 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 	/* Initialize the method if needed */
 	if (cfg->compile_aot && ctx->llvm_only) {
-		emit_init_method (ctx);
-		builder = ctx->builder;
+		/* Emit a location for the initialization code */
+		ctx->init_bb = gen_bb (ctx, "INIT_BB");
+		ctx->inited_bb = gen_bb (ctx, "INITED_BB");
+
+		LLVMBuildBr (ctx->builder, ctx->init_bb);
+		builder = ctx->builder = create_builder (ctx);
+		LLVMPositionBuilderAtEnd (ctx->builder, ctx->inited_bb);
+		ctx->bblocks [cfg->bb_entry->block_num].end_bblock = ctx->inited_bb;
 	}
 
 	/* Compute nesting between clauses */
@@ -6231,6 +6238,28 @@ mono_llvm_emit_method (MonoCompile *cfg)
 			for (i = 0; i < g_slist_length (bb_list); ++i)
 				LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i + 1, FALSE), g_slist_nth (bb_list, i)->data);
 		}
+	}
+
+	/* Initialize the method if needed */
+	if (cfg->compile_aot && ctx->llvm_only) {
+		MonoJumpInfo *ji;
+		gboolean need_init = FALSE;
+
+		for (ji = cfg->patch_info; ji; ji = ji->next) {
+			// FIXME: Pre-initialize slots for frequently used patches
+			need_init = TRUE;
+		}
+
+		// FIXME: beforefieldinit
+		if (mono_class_get_cctor (cfg->method->klass))
+			need_init = TRUE;
+
+		ctx->builder = create_builder (ctx);
+		LLVMPositionBuilderAtEnd (ctx->builder, ctx->init_bb);
+		if (need_init)
+			emit_init_method (ctx);
+		else
+			LLVMBuildBr (ctx->builder, ctx->inited_bb);
 	}
 
 	if (cfg->verbose_level > 1)
