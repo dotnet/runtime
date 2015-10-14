@@ -5,6 +5,7 @@
 
 #include "unicode/ucal.h"
 #include "unicode/uenum.h"
+#include "unicode/udatpg.h"
 
 // IcuHolder is a template that can manage the lifetime of a raw pointer to ensure that it is cleaned up at the correct
 // time.  The general usage pattern is to aquire some ICU resource via an _open call, then construct a holder using the
@@ -51,5 +52,15 @@ struct UEnumerationCloser
     }
 };
 
+struct UDateTimePatternGeneratorCloser
+{
+  public:
+    void operator()(UDateTimePatternGenerator* pGenerator) const
+    {
+        udatpg_close(pGenerator);
+    }
+};
+
 typedef IcuHolder<UCalendar, UCalendarCloser> UCalendarHolder;
 typedef IcuHolder<UEnumeration, UEnumerationCloser> UEnumerationHolder;
+typedef IcuHolder<UDateTimePatternGenerator, UDateTimePatternGeneratorCloser> UDateTimePatternGeneratorHolder;
