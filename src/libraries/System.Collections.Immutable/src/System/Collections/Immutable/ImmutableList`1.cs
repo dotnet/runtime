@@ -2485,7 +2485,10 @@ namespace System.Collections.Immutable
             /// <param name="count">
             /// The number of elements in the section to search.
             /// </param>
-            /// <param name="equalityComparer">The equality comparer to use for testing the match of two elements.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
             /// <returns>
             /// The zero-based index of the first occurrence of <paramref name="item"/> within the range of
             /// elements in the <see cref="ImmutableList{T}"/> that starts at <paramref name="index"/> and
@@ -2498,8 +2501,8 @@ namespace System.Collections.Immutable
                 Requires.Range(count >= 0, "count");
                 Requires.Range(count <= this.Count, "count");
                 Requires.Range(index + count <= this.Count, "count");
-                Requires.NotNull(equalityComparer, "equalityComparer");
 
+                equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
                 using (var enumerator = new Enumerator(this, startIndex: index, count: count))
                 {
                     while (enumerator.MoveNext())
@@ -2537,11 +2540,11 @@ namespace System.Collections.Immutable
             [Pure]
             internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
             {
-                Requires.NotNull(equalityComparer, "ValueComparer");
                 Requires.Range(index >= 0, "index");
                 Requires.Range(count >= 0 && count <= this.Count, "count");
                 Requires.Argument(index - count + 1 >= 0);
 
+                equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
                 using (var enumerator = new Enumerator(this, startIndex: index, count: count, reversed: true))
                 {
                     while (enumerator.MoveNext())
