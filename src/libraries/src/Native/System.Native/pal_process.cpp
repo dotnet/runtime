@@ -434,7 +434,7 @@ static bool ConvertPalToNativeCpuSet(const CpuSetBits& pal, cpu_set_t& native)
     if (sizeof(pal) > sizeof(native))
     {
         // If the PAL struct is bigger than the native struct
-        // then make sure the user hasn't put data in the 
+        // then make sure the user hasn't put data in the
         // bits that would be inaccessible to the underlying OS
         for (size_t i = sizeof(native); i < sizeof(pal); i++)
         {
