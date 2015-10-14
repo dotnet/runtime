@@ -18,6 +18,6 @@ internal static partial class Interop
         internal static extern int GetControlMessageBufferSize(bool isIPv4, bool isIPv6);
 
         [DllImport(Libraries.SystemNative)]
-        internal static extern unsafe bool TryGetIPPacketInformation(byte* messageHeader, bool isIPv4, IPPacketInformation* packetInfo);
+        internal static extern unsafe bool TryGetIPPacketInformation(MessageHeader* messageHeader, bool isIPv4, IPPacketInformation* packetInfo);
     }
 }
