@@ -2,13 +2,21 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+// File implements Slicing-by-8 CRC Generation, as described in
+// "Novel Table Lookup-Based Algorithms for High-Performance CRC Generation"
+// IEEE TRANSACTIONS ON COMPUTERS, VOL. 57, NO. 11, NOVEMBER 2008
+
 using System.Diagnostics;
 
 namespace System.IO.Compression
 {
     internal static class Crc32Helper
     {
-        // Table for CRC calculation
+        // Generated tables for crc calculation.
+        // Each table n (starting at 0) contains remainders from the long division of 
+        // all possible byte values, shifted by an offset of (n * 4 bits).
+        // The divisor used is the crc32 standard polynomial 0xEDB88320
+        // Please see cited paper for more details.
         private static readonly uint[] s_crcTable_0 = new uint[256] {
             0x00000000u, 0x77073096u, 0xee0e612cu, 0x990951bau, 0x076dc419u,
             0x706af48fu, 0xe963a535u, 0x9e6495a3u, 0x0edb8832u, 0x79dcb8a4u,
@@ -449,15 +457,15 @@ namespace System.IO.Compression
             Debug.Assert((buffer != null) && (offset >= 0) && (length >= 0)
                        && (offset <= buffer.Length - length), "check the caller");
 
+            Debug.Assert(BitConverter.IsLittleEndian, "UpdateCrc32 Expects Little Endian");
+
             uint term1, term2, term3 = 0;
-            int running_length;
-            int end_bytes;
 
             crc32 ^= 0xFFFFFFFFU;
-            running_length = (length / 8) * 8;
-            end_bytes = length - running_length;
+            int runningLength = (length / 8) * 8;
+            int endBytes = length - runningLength;
 
-            for (int i = 0; i < running_length / 8; i++)
+            for (int i = 0; i < runningLength / 8; i++)
             {
                 crc32 ^= (uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24);
                 offset += 4;
@@ -479,7 +487,7 @@ namespace System.IO.Compression
                         s_crcTable_0[(term2 >> 8) & 0x000000FF];
             }
 
-            for (int i = 0; i < end_bytes; i++)
+            for (int i = 0; i < endBytes; i++)
             {
                 crc32 = s_crcTable_0[(crc32 ^ buffer[offset++]) & 0x000000FF] ^ (crc32 >> 8);
             }
