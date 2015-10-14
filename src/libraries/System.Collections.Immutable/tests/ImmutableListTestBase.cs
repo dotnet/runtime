@@ -219,6 +219,30 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IList_IndexOf_NullArgument()
+        {
+            this.AssertIndexOfBaseline(1, (string)null);
+            this.AssertIndexOfBaseline("item", (string)null);
+        }
+
+        [Fact]
+        public void IList_IndexOf_ArgTypeMismatch()
+        {
+            this.AssertIndexOfBaseline("first item", new object());
+            this.AssertIndexOfBaseline(1, 1.0);
+
+            this.AssertIndexOfBaseline("first item", (object)null);
+            this.AssertIndexOfBaseline(1, (string)null);
+        }
+
+        [Fact]
+        public void IList_IndexOf_EqualsOverride()
+        {
+            this.AssertIndexOfBaseline(new ProgrammaticEquals(v => v is string), "foo");
+            this.AssertIndexOfBaseline(new ProgrammaticEquals(v => v is string), 3);
+        }
+
+        [Fact]
         public void ConvertAllTest()
         {
             Assert.True(this.GetListQuery(ImmutableList<int>.Empty).ConvertAll<float>(n => n).IsEmpty);
@@ -419,6 +443,39 @@ namespace System.Collections.Immutable.Tests
             var expected = bclList.TrueForAll(test);
             var actual = this.GetListQuery(list).TrueForAll(test);
             Assert.Equal(expected, actual);
+        }
+
+        private void AssertIndexOfBaseline<T1, T2>(T1 item, T2 other)
+        {
+            IndexOfTests.SimpleIndexOfBaselineTest(
+                i => (IList)this.GetListQuery(ImmutableList.Create(i)),
+                item,
+                other);
+
+            IndexOfTests.SimpleIndexOfBaselineTest(
+                i => (IList)this.GetListQuery(ImmutableList.Create(i)),
+                other,
+                item);
+        }
+
+        private class ProgrammaticEquals
+        {
+            private readonly Func<object, bool> equalsCallback;
+
+            internal ProgrammaticEquals(Func<object, bool> equalsCallback)
+            {
+                this.equalsCallback = equalsCallback;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return this.equalsCallback(obj);
+            }
+
+            public override int GetHashCode()
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
