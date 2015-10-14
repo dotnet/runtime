@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace Validation
+namespace System.Collections.Immutable
 {
     /// <summary>
     /// Common runtime checks that throw <see cref="ArgumentException"/> upon failure.

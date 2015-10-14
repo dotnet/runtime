@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using Validation;
 
 namespace System.Collections.Immutable
 {

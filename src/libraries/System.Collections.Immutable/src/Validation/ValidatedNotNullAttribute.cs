@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Validation
+namespace System.Collections.Immutable
 {
     /// <summary>
     /// Indicates to Code Analysis that a method validates a particular parameter.
