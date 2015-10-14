@@ -861,6 +861,7 @@ namespace System.Net.Security
 
             StartReadFrame(buffer, readBytes, asyncRequest);
         }
+
         //
         private void StartReadFrame(byte[] buffer, int readBytes, AsyncProtocolRequest asyncRequest)
         {
@@ -1093,6 +1094,7 @@ namespace System.Net.Security
                 sslState.FinishHandshake(e, asyncRequest);
             }
         }
+
         //
         //
         private static void ReadFrameCallback(AsyncProtocolRequest asyncRequest)

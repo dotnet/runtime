@@ -22,12 +22,6 @@ namespace System.Net
         {
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
-            SslProtocols protocols, EncryptionPolicy policy, bool isServer)
-        {
-            return new SafeFreeCredentials(certificate, protocols, policy);
-        }
-
         public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
             SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired)
         {
@@ -47,6 +41,12 @@ namespace System.Net
             return HandshakeInternal(credential, ref context, inputBuffers[0], outputBuffer, false, false);
         }
 
+        public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
+            SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+        {
+            return new SafeFreeCredentials(certificate, protocols, policy);
+        }
+        
         public static SecurityStatusPal EncryptMessage(SafeDeleteContext securityContext, byte[] buffer, int size, int headerSize, int trailerSize, out int resultSize)
         {
             // Unencrypted data starts at an offset of headerSize
@@ -70,55 +70,17 @@ namespace System.Net
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
-        public static int QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
+        public static void QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
         {
             streamSizes = null;
-            try
-            {
-                streamSizes = new StreamSizes(Interop.libssl.SslSizes.HEADER_SIZE, Interop.libssl.SslSizes.TRAILER_SIZE, Interop.libssl.SslSizes.SSL3_RT_MAX_PLAIN_LENGTH);
-                return 0;
-            }
-            catch
-            {              
-                return -1;
-            }
+            streamSizes = new StreamSizes(Interop.libssl.SslSizes.HEADER_SIZE, Interop.libssl.SslSizes.TRAILER_SIZE, Interop.libssl.SslSizes.SSL3_RT_MAX_PLAIN_LENGTH);
         }
 
-        public static int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
+        public static void QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
         {
             connectionInfo = null;
-            try
-            {
-                Interop.libssl.SSL_CIPHER cipher = Interop.OpenSsl.GetConnectionInfo(securityContext.SslContext);
-                connectionInfo =  new SslConnectionInfo(cipher);
-                return 0;
-            }
-            catch
-            {
-                return -1;
-            }
-        }
-
-        public static int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext remoteCertContext)
-        {
-            remoteCertContext = null;
-            try
-            {
-                SafeX509Handle remoteCertificate = Interop.OpenSsl.GetPeerCertificate(securityContext.SslContext);
-                // Note that cert ownership is transferred to SafeFreeCertContext
-                remoteCertContext = new SafeFreeCertContext(remoteCertificate);
-                return 0;
-            }
-            catch
-            {
-                return -1;
-            }
-        }
-
-        public static int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList)
-        {
-            // TODO (Issue #3362) To be implemented
-            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
+            Interop.libssl.SSL_CIPHER cipher = Interop.OpenSsl.GetConnectionInfo(securityContext.SslContext);
+            connectionInfo =  new SslConnectionInfo(cipher);
         }
 
         private static long GetOptions(SslProtocols protocols)
@@ -210,8 +172,7 @@ namespace System.Net
                 return SecurityStatusPal.InternalError;             
             }
         }
-
-
+        
         private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteContext securityContext, byte[] buffer, int offset, int size, int headerSize, int trailerSize, bool encrypt, out int resultSize)
         {
             resultSize = 0;

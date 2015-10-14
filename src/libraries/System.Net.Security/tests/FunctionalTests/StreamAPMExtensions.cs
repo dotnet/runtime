@@ -3,13 +3,11 @@
 
 using System.Threading.Tasks;
 
-/// <summary>
-/// Extensions that add the legacy APM Pattern (Begin/End) for generic Streams
-/// </summary>
-
-
 namespace System.IO
 {
+    /// <summary>
+    /// Extensions that add the legacy APM Pattern (Begin/End) for generic Streams
+    /// </summary>
     public static class StreamAPMExtensions
     {
         public static IAsyncResult BeginRead(this Stream s, byte[] buffer, int offset, int count, AsyncCallback callback, object state)

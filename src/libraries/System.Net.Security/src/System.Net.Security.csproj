@@ -125,7 +125,6 @@
     <Compile Include="System\Net\SslStreamPal.Windows.cs" />
     <Compile Include="System\Net\SecurityContextTokenHandle.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
-    <Compile Include="System\Net\NegotiationInfo.Windows.cs" />
     
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -146,26 +145,53 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SecurityStatus.cs">
       <Link>Interop\Windows\SChannel\Interop.SecurityStatus.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\SslConnectionInfo.cs">
+      <Link>Interop\Windows\SChannel\SslConnectionInfo.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.cs">
       <Link>Interop\Windows\SChannel\UnmanagedCertificateContext.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecuritySafeHandles.cs">
-      <Link>Interop\Windows\secur32\SecuritySafeHandles.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Bindings.cs">
+      <Link>Interop\Windows\secur32\Bindings.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\StreamSizes.cs">
-      <Link>Interop\Windows\secur32\StreamSizes.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\GlobalSSPI.cs">
+      <Link>Interop\Windows\secur32\GlobalSSPI.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecurityPackageInfoClass.cs">
-      <Link>Interop\Windows\secur32\SecurityPackageInfoClass.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.SSPI.cs">
+      <Link>Interop\Windows\secur32\Interop.SSPI.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\SChannel\SslConnectionInfo.cs">
-      <Link>Interop\Windows\SChannel\SslConnectionInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\NegotiationInfo.cs">
+      <Link>Interop\Windows\secur32\NegotiationInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\NegotiationInfoClass.cs">
+      <Link>Interop\Windows\secur32\NegotiationInfoClass.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecSizes.cs">
       <Link>Interop\Windows\secur32\SecSizes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.SSPI.cs">
-      <Link>Interop\Windows\secur32\Interop.SSPI.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecurityPackageInfo.cs">
+      <Link>Interop\Windows\secur32\SecurityPackageInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecurityPackageInfoClass.cs">
+      <Link>Interop\Windows\secur32\SecurityPackageInfoClass.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecuritySafeHandles.cs">
+      <Link>Interop\Windows\secur32\SecuritySafeHandles.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPIAuthType.cs">
+      <Link>Interop\Windows\secur32\SSPIAuthType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPIInterface.cs">
+      <Link>Interop\Windows\secur32\SSPIInterface.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPISecureChannelType.cs">
+      <Link>Interop\Windows\secur32\SSPISecureChannelType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPIWrapper.cs">
+      <Link>Interop\Windows\secur32\SSPIWrapper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\StreamSizes.cs">
+      <Link>Interop\Windows\secur32\StreamSizes.cs</Link>
     </Compile>
   </ItemGroup>
   

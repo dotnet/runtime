@@ -192,7 +192,7 @@ namespace System.Net.Security.Tests
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null))
                 {
                     IAsyncResult async = sslStream.BeginAuthenticateAsClient("localhost", null, clientSslProtocols, false, null, null);
-                    Assert.True(async.AsyncWaitHandle.WaitOne(10000), "Timed Out");
+                    Assert.True(async.AsyncWaitHandle.WaitOne(TestConfiguration.TestTimeoutSeconds * 1000), "Timed Out");
                     sslStream.EndAuthenticateAsClient(async);
 
                     _log.WriteLine("Client({0}) authenticated to server({1}) with encryption cipher: {2} {3}-bit strength",
