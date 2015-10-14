@@ -58,6 +58,12 @@ enum AddressFamily : int32_t
     PAL_AF_INET6 = 23, // System.Net.AddressFamily.InterNetworkV6
 };
 
+enum MulticastOption : int32_t
+{
+    PAL_MULTICAST_ADD = 0, // IP{,V6}_ADD_MEMBERSHIP
+    PAL_MULTICAST_DROP = 1 // IP{,V6}_DROP_MEMBERSHIP
+};
+
 /**
  * IP address sizes.
  */
@@ -88,6 +94,27 @@ struct IPPacketInformation
     IPAddress Address;      // Destination IP address
     int32_t InterfaceIndex; // Interface index
     int32_t Padding;        // Pad out to 8-byte alignment
+};
+
+struct IPv4MulticastOption
+{
+    uint32_t MulticastAddress; // Multicast address
+    uint32_t LocalAddress;     // Local address
+    int32_t InterfaceIndex;    // Interface index
+    int32_t Padding;           // Pad out to 8-byte alignment
+};
+
+struct IPv6MulticastOption
+{
+    IPAddress Address;      // Multicast address
+    int32_t InterfaceIndex; // Interface index
+    int32_t Padding;        // Pad out to 8-byte alignment
+};
+
+struct LingerOption
+{
+    int32_t OnOff;   // Non-zero to enable linger
+    int32_t Seconds; // Number of seconds to linger for
 };
 
 /**
@@ -143,3 +170,15 @@ extern "C" int32_t GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6);
 
 // NOTE: the messageHeader parameter will be more strongly-typed in the future.
 extern "C" int32_t TryGetIPPacketInformation(uint8_t* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo);
+
+extern "C" Error GetIPv4MulticastOption(int32_t socket, int32_t multicastOption, IPv4MulticastOption* option);
+
+extern "C" Error SetIPv4MulticastOption(int32_t socket, int32_t multicastOption, IPv4MulticastOption* option);
+
+extern "C" Error GetIPv6MulticastOption(int32_t socket, int32_t multicastOption, IPv6MulticastOption* option);
+
+extern "C" Error SetIPv6MulticastOption(int32_t socket, int32_t multicastOption, IPv6MulticastOption* option);
+
+extern "C" Error GetLingerOption(int32_t socket, LingerOption* option);
+
+extern "C" Error SetLingerOption(int32_t socket, LingerOption* option);

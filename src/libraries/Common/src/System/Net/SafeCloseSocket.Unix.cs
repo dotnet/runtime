@@ -161,19 +161,15 @@ namespace System.Net.Sockets
                 }
 
                 // By default or if CloseAsIs() path failed, set linger timeout to zero to get an abortive close (RST).
-                var linger = new Interop.libc.linger {
-                    l_onoff = 1,
-                    l_linger = 0
+                var linger = new Interop.Sys.LingerOption {
+                    OnOff = 1,
+                    Seconds = 0
                 };
 
-                errorCode = Interop.libc.setsockopt((int)handle, Interop.libc.SOL_SOCKET, Interop.libc.SO_LINGER, &linger, (uint)sizeof(Interop.libc.linger));
+                errorCode = (int)Interop.Sys.SetLingerOption((int)handle, &linger);
 #if DEBUG
                 _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
 #endif
-                if (errorCode == -1)
-                {
-                    errorCode = (int)Interop.Sys.GetLastError();
-                }
                 GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") setsockopt():" + errorCode.ToString());
 
                 if (errorCode != 0 && errorCode != (int)Interop.Error.EINVAL && errorCode != (int)Interop.Error.ENOPROTOOPT)

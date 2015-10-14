@@ -13,6 +13,15 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
+#include <errno.h>
+
+#if !defined(IPV6_ADD_MEMBERSHIP) && defined(IPV6_JOIN_GROUP)
+#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+#endif
+
+#if !defined(IPV6_DROP_MEMBERSHIP) && defined(IPV6_LEAVE_GROUP)
+#define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
+#endif
 
 const int INET6_ADDRSTRLEN_MANAGED = 65; // The C# code has a longer max string length
 
@@ -33,18 +42,15 @@ static int IpStringToAddressHelper(const uint8_t* address, const uint8_t* port, 
     return getaddrinfo(reinterpret_cast<const char*>(address), reinterpret_cast<const char*>(port), &hint, &info);
 }
 
-static void ConvertByteArrayToV6SockAddrIn(sockaddr_in6& addr, const uint8_t* buffer, int32_t bufferLength)
+static void ConvertByteArrayToIn6Addr(in6_addr& addr, const uint8_t* buffer, int32_t bufferLength)
 {
 #if HAVE_IN6_U
-    assert(bufferLength == ARRAY_SIZE(addr.sin6_addr.__in6_u.__u6_addr8));
-    memcpy(addr.sin6_addr.__in6_u.__u6_addr8, buffer, UnsignedCast(bufferLength));
+    assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
+    memcpy(addr.__in6_u.__u6_addr8, buffer, UnsignedCast(bufferLength));
 #else
-    assert(bufferLength == ARRAY_SIZE(addr.sin6_addr.__u6_addr.__u6_addr8));
-    memcpy(addr.sin6_addr.__u6_addr.__u6_addr8, buffer, UnsignedCast(bufferLength));
+    assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
+    memcpy(addr.__u6_addr.__u6_addr8, buffer, UnsignedCast(bufferLength));
 #endif
-
-    // Mark that this is INET6
-    addr.sin6_family = AF_INET6;
 }
 
 static void ConvertIn6AddrToByteArray(uint8_t* buffer, int32_t bufferLength, const in6_addr& addr)
@@ -56,6 +62,14 @@ static void ConvertIn6AddrToByteArray(uint8_t* buffer, int32_t bufferLength, con
     assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
     memcpy(buffer, addr.__u6_addr.__u6_addr8, UnsignedCast(bufferLength));
 #endif
+}
+
+static void ConvertByteArrayToV6SockAddrIn(sockaddr_in6& addr, const uint8_t* buffer, int32_t bufferLength)
+{
+    ConvertByteArrayToIn6Addr(addr.sin6_addr, buffer, bufferLength);
+
+    // Mark that this is INET6
+    addr.sin6_family = AF_INET6;
 }
 
 static void ConvertByteArrayToSockAddrIn(sockaddr_in& addr, const uint8_t* buffer, int32_t bufferLength)
@@ -702,4 +716,145 @@ extern "C" int32_t TryGetIPPacketInformation(uint8_t* messageHeader, int32_t isI
     }
 
     return 0;
+}
+
+static bool GetMulticastOptionName(int32_t multicastOption, bool isIPv6, int& optionName)
+{
+    switch (multicastOption)
+    {
+        case PAL_MULTICAST_ADD:
+            optionName = isIPv6 ? IPV6_ADD_MEMBERSHIP : IP_ADD_MEMBERSHIP;
+            return true;
+
+        case PAL_MULTICAST_DROP:
+            optionName = isIPv6 ? IPV6_DROP_MEMBERSHIP : IP_DROP_MEMBERSHIP;
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+extern "C" Error GetIPv4MulticastOption(int32_t socket, int32_t multicastOption, IPv4MulticastOption* option)
+{
+    if (option == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    int optionName;
+    if (!GetMulticastOptionName(multicastOption, false, optionName))
+    {
+        return PAL_EINVAL;
+    }
+
+    ip_mreqn opt;
+    socklen_t len = sizeof(opt);
+    int err = getsockopt(socket, IPPROTO_IP, optionName, &opt, &len);
+    if (err != 0)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    *option = {.MulticastAddress = opt.imr_multiaddr.s_addr,
+               .LocalAddress = opt.imr_address.s_addr,
+               .InterfaceIndex = opt.imr_ifindex};
+    return PAL_SUCCESS;
+}
+
+extern "C" Error SetIPv4MulticastOption(int32_t socket, int32_t multicastOption, IPv4MulticastOption* option)
+{
+    if (option == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    int optionName;
+    if (!GetMulticastOptionName(multicastOption, false, optionName))
+    {
+        return PAL_EINVAL;
+    }
+
+    ip_mreqn opt = {.imr_multiaddr = {.s_addr = option->MulticastAddress},
+                    .imr_address = {.s_addr = option->LocalAddress},
+                    .imr_ifindex = option->InterfaceIndex};
+    int err = setsockopt(socket, IPPROTO_IP, optionName, &opt, sizeof(opt));
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error GetIPv6MulticastOption(int32_t socket, int32_t multicastOption, IPv6MulticastOption* option)
+{
+    if (option == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    int optionName;
+    if (!GetMulticastOptionName(multicastOption, false, optionName))
+    {
+        return PAL_EINVAL;
+    }
+
+    ipv6_mreq opt;
+    socklen_t len = sizeof(opt);
+    int err = getsockopt(socket, IPPROTO_IP, optionName, &opt, &len);
+    if (err != 0)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    ConvertIn6AddrToByteArray(&option->Address.Address[0], NUM_BYTES_IN_IPV6_ADDRESS, opt.ipv6mr_multiaddr);
+    option->InterfaceIndex = static_cast<int32_t>(opt.ipv6mr_interface);
+    return PAL_SUCCESS;
+}
+
+extern "C" Error SetIPv6MulticastOption(int32_t socket, int32_t multicastOption, IPv6MulticastOption* option)
+{
+    if (option == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    int optionName;
+    if (!GetMulticastOptionName(multicastOption, false, optionName))
+    {
+        return PAL_EINVAL;
+    }
+
+    ipv6_mreq opt = {.ipv6mr_interface = static_cast<unsigned int>(option->InterfaceIndex)};
+    ConvertByteArrayToIn6Addr(opt.ipv6mr_multiaddr, &option->Address.Address[0], NUM_BYTES_IN_IPV6_ADDRESS);
+
+    int err = setsockopt(socket, IPPROTO_IP, optionName, &opt, sizeof(opt));
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error GetLingerOption(int32_t socket, LingerOption* option)
+{
+    if (option == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    linger opt;
+    socklen_t len = sizeof(opt);
+    int err = getsockopt(socket, SOL_SOCKET, SO_LINGER, &opt, &len);
+    if (err != 0)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    *option = {.OnOff = opt.l_onoff, .Seconds = opt.l_linger};
+    return PAL_SUCCESS;
+}
+
+extern "C" Error SetLingerOption(int32_t socket, LingerOption* option)
+{
+    if (option == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    linger opt = {.l_onoff = option->OnOff, .l_linger = option->Seconds};
+    int err = setsockopt(socket, SOL_SOCKET, SO_LINGER, &opt, sizeof(opt));
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
 }
