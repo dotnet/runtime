@@ -36,9 +36,9 @@ namespace System.Linq.Expressions.Interpreter
 
         public abstract int Run(InterpretedFrame frame);
 
-        public virtual string InstructionName
+        public abstract string InstructionName
         {
-            get { return "<Unknown>"; }
+            get;
         }
 
         public override string ToString()
