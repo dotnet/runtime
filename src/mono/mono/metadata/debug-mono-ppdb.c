@@ -258,9 +258,10 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODBODY], idx-1, cols, MONO_METHODBODY_SIZE);
 
+	docidx = cols [MONO_METHODBODY_DOCUMENT];
+
 	// FIXME:
 	g_assert (cols [MONO_METHODBODY_SEQ_POINTS]);
-
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODBODY_SEQ_POINTS]);
 	size = mono_metadata_decode_blob_size (ptr, &ptr);
 	end = ptr + size;
@@ -268,7 +269,8 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 	/* Header */
 	/* LocalSignature */
 	mono_metadata_decode_value (ptr, &ptr);
-	docidx = mono_metadata_decode_value (ptr, &ptr);
+	if (docidx == 0)
+		docidx = mono_metadata_decode_value (ptr, &ptr);
 	docname = get_docname (ppdb, image, docidx);
 
 	iloffset = 0;
@@ -303,7 +305,7 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 			start_line += adv_line;
 			start_col += adv_col;
 		}
-		first_non_hidden = TRUE;
+		first_non_hidden = FALSE;
 	}
 
 	location = g_new0 (MonoDebugSourceLocation, 1);
@@ -355,6 +357,8 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODBODY], method_idx-1, cols, MONO_METHODBODY_SIZE);
 
+	docidx = cols [MONO_METHODBODY_DOCUMENT];
+
 	if (!cols [MONO_METHODBODY_SEQ_POINTS])
 		return;
 
@@ -367,8 +371,10 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	/* Header */
 	/* LocalSignature */
 	mono_metadata_decode_value (ptr, &ptr);
-	docidx = mono_metadata_decode_value (ptr, &ptr);
+	if (docidx == 0)
+		docidx = mono_metadata_decode_value (ptr, &ptr);
 	docinfo = get_docinfo (ppdb, image, docidx);
+
 	if (sfiles)
 		g_ptr_array_add (sfiles, docinfo);
 
@@ -408,7 +414,7 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 			start_line += adv_line;
 			start_col += adv_col;
 		}
-		first_non_hidden = TRUE;
+		first_non_hidden = FALSE;
 
 		memset (&sp, 0, sizeof (sp));
 		sp.il_offset = iloffset;

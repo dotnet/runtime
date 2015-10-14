@@ -376,10 +376,11 @@ const static unsigned char TableSchemas [] = {
 	MONO_MT_END,
 
 #define METHODBODY_SCHEMA_OFFSET DOCUMENT_SCHEMA_OFFSET + 5
+	MONO_MT_TABLE_IDX,   /* Document */
 	MONO_MT_BLOB_IDX,   /* SequencePoints */
 	MONO_MT_END,
 
-#define LOCALSCOPE_SCHEMA_OFFSET METHODBODY_SCHEMA_OFFSET + 2
+#define LOCALSCOPE_SCHEMA_OFFSET METHODBODY_SCHEMA_OFFSET + 3
 	MONO_MT_TABLE_IDX,   /* Method */
 	MONO_MT_TABLE_IDX,   /* ImportScope */
 	MONO_MT_TABLE_IDX,   /* VariableList */
@@ -663,6 +664,10 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 					g_assert_not_reached ();
 					break;
 				}
+				break;
+			case MONO_TABLE_METHODBODY:
+				g_assert (i == 0);
+				field_size = idx_size (meta, MONO_TABLE_DOCUMENT);
 				break;
 			default:
 				g_error ("Can't handle MONO_MT_TABLE_IDX for table %d element %d", tableindex, i);
