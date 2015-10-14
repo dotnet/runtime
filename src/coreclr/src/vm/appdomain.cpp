@@ -14,7 +14,6 @@
 #include "excep.h"
 #include "eeconfig.h"
 #include "gc.h"
-#include "gcenv.h"
 #include "eventtrace.h"
 #ifdef FEATURE_FUSION
 #include "assemblysink.h"

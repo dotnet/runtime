@@ -7,19 +7,6 @@
 //
 // Helper classes expected by the GC
 //
-class EEThreadId
-{
-public:
-    EEThreadId(uint32_t uiId) : m_uiId(uiId) {}
-    bool IsSameThread()
-    {
-        return m_uiId == GetCurrentThreadId();
-    }
-
-private:
-    uint32_t m_uiId;
-};
-
 #define CRST_REENTRANCY         0
 #define CRST_UNSAFE_SAMELEVEL   0
 #define CRST_UNSAFE_ANYMODE     0
@@ -33,37 +20,37 @@ typedef int CrstType;
 
 class CrstStatic
 {
-    CRITICAL_SECTION m_cs;
+    CLRCriticalSection m_cs;
 #ifdef _DEBUG
-    uint32_t m_holderThreadId;
+    EEThreadId m_holderThreadId;
 #endif
 
 public:
     bool InitNoThrow(CrstType eType, CrstFlags eFlags = CRST_DEFAULT)
     {
-        UnsafeInitializeCriticalSection(&m_cs);
+        m_cs.Initialize();
         return true;
     }
 
     void Destroy()
     {
-        UnsafeDeleteCriticalSection(&m_cs);
+        m_cs.Destroy();
     }
 
     void Enter()
     {
-        UnsafeEEEnterCriticalSection(&m_cs);
+        m_cs.Enter();
 #ifdef _DEBUG
-        m_holderThreadId = GetCurrentThreadId();
+        m_holderThreadId.SetToCurrentThread();
 #endif
     }
 
     void Leave()
     {
 #ifdef _DEBUG
-        m_holderThreadId = 0;
+        m_holderThreadId.Clear();
 #endif
-        UnsafeEELeaveCriticalSection(&m_cs);
+        m_cs.Leave();
     }
 
 #ifdef _DEBUG
@@ -74,7 +61,7 @@ public:
 
     bool OwnedByCurrentThread()
     {
-        return GetHolderThreadId().IsSameThread();
+        return GetHolderThreadId().IsCurrentThread();
     }
 #endif
 };

@@ -882,7 +882,7 @@ void AssertAllocationAllowed()
 
         // Can't call IsDbgHelperSpecialThread() here b/c that changes program state.
         // So we use our
-        if (DebuggerRCThread::s_DbgHelperThreadId.IsSameThread())
+        if (DebuggerRCThread::s_DbgHelperThreadId.IsCurrentThread())
         {
             // In case assert allocates, bump up the 'OK' counter to avoid an infinite recursion.
             SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
@@ -935,7 +935,7 @@ void DebuggerRCThread::ThreadProc(void)
 
 #ifdef _DEBUG
     // Track the helper thread.
-    s_DbgHelperThreadId.SetThreadId();
+    s_DbgHelperThreadId.SetToCurrentThread();
 #endif
     CantAllocHolder caHolder;
 

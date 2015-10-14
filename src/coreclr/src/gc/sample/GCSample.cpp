@@ -111,12 +111,15 @@ void WriteBarrier(Object ** dst, Object * ref)
     ErectWriteBarrier(dst, ref);
 }
 
-int main(int argc, char* argv[])
+int __cdecl main(int argc, char* argv[])
 {
     //
     // Initialize system info
     //
-    InitializeSystemInfo();
+    if (!GCToOSInterface::Initialize())
+    {
+        return -1;
+    }
 
     // 
     // Initialize free object methodtable. The GC uses a special array-like methodtable as placeholder
@@ -170,7 +173,7 @@ int main(int argc, char* argv[])
     My_MethodTable;
 
     // 'My' contains the MethodTable*
-    size_t baseSize = sizeof(My);
+    uint32_t baseSize = sizeof(My);
     // GC expects the size of ObjHeader (extra void*) to be included in the size.
     baseSize = baseSize + sizeof(ObjHeader);
     // Add padding as necessary. GC requires the object size to be at least MIN_OBJECT_SIZE.

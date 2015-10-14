@@ -17,7 +17,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::OwnLock()
         return TRUE;
 
     if (m_pfnLockOwner == NULL) {
-        return m_writerThreadId.IsSameThread();
+        return m_writerThreadId.IsCurrentThread();
     }
     else {
         BOOL ret = m_pfnLockOwner(m_lockData);
@@ -211,7 +211,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Init(DWORD dwNumBucke
     }
 
     if (m_pfnLockOwner == NULL) {
-        m_writerThreadId.SetThreadId();
+        m_writerThreadId.SetToCurrentThread();
     }
     m_CheckThreadSafety = CheckThreadSafety;
 #endif
