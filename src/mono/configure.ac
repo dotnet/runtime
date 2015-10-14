@@ -2620,7 +2620,7 @@ if test "x$enable_llvm" = "xyes"; then
    fi
    LLVM_LIBS="$LLVM_LIBS $LLVM_LDFLAGS $LLVM_SYSTEM_LIBS"
    # The c++ standard library used by llvm doesn't show up in $LLVM_SYSTEM_LIBS so add it manually
-   if echo $LLVM_CXXFLAGS | grep -q -stdlib=libc++; then
+   if echo $LLVM_CXXFLAGS | grep -q -- '-stdlib=libc++'; then
       LLVM_LIBS="$LLVM_LIBS -lc++"
    else
       LLVM_LIBS="$LLVM_LIBS -lstdc++"
