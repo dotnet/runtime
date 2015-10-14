@@ -311,7 +311,6 @@ namespace System.Collections.Immutable
             /// <returns>
             /// An <see cref="IDictionaryEnumerator"/> object for the <see cref="IDictionary"/> object.
             /// </returns>
-            /// <exception cref="System.NotImplementedException"></exception>
             IDictionaryEnumerator IDictionary.GetEnumerator()
             {
                 return new DictionaryEnumerator<TKey, TValue>(this.GetEnumerator());
