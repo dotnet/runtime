@@ -6,13 +6,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using System.Diagnostics;
+using Microsoft.Xunit.Performance;
 
-namespace System.Linq.Tests.Performance
+namespace System.Linq.Tests
 {
     /// <summary>
     /// Classes and methods to unify performance testing logic
     /// </summary>
-    public partial class LinqPerformanceCore
+    public partial class Perf_LinqTestBase
     {
         public class EnumerableWrapper<T> : IEnumerable<T>
         {
@@ -106,97 +107,49 @@ namespace System.Linq.Tests.Performance
             Collections.IEnumerator Collections.IEnumerable.GetEnumerator() { return ((IEnumerable<T>)_array).GetEnumerator(); }
         }
 
-
         // =============
 
-
-        [System.Runtime.CompilerServices.MethodImpl(Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        private static TimeSpan MeasureIteration<T>(IEnumerable<T> source, int iterationCount, out int sideEffect)
-        {
-            int totalSize = 0;
-            Stopwatch sw = Stopwatch.StartNew();
-            for (int i = 0; i < iterationCount; i++)
-            {
-                foreach (var item in source)
-                    totalSize++;
-            }
-            sw.Stop();
-
-            sideEffect = totalSize;
-            return sw.Elapsed;
-        }
         /// <summary>
         /// Measures the time of iteration over IEnumerable sequence
         /// </summary>
         /// <typeparam name="T">Elements type</typeparam>
         /// <param name="source">Sequence</param>
         /// <param name="iterationCount">Number of passes</param>
-        /// <returns>Measured time</returns>
-        public static TimeSpan MeasureIteration<T>(IEnumerable<T> source, int iterationCount)
+        public static void MeasureIteration<T>(IEnumerable<T> source, int iterationCount)
         {
-            // WarmUp
-            int tmp = 0;
-            MeasureIteration(source, 1, out tmp);
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            return MeasureIteration(source, iterationCount, out tmp);
-        }
-
-
-        [System.Runtime.CompilerServices.MethodImpl(Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        private static TimeSpan MeasureMaterializationToArray<T>(IEnumerable<T> source, int iterationCount, out int sideEffect)
-        {
-            int totalSize = 0;
-            Stopwatch sw = Stopwatch.StartNew();
-            for (int i = 0; i < iterationCount; i++)
+            foreach (var iteration in Benchmark.Iterations)
             {
-                var array = source.ToArray();
-                totalSize += array.Length;
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < iterationCount; i++)
+                    {
+                        foreach (var item in source)
+                        { }
+                    }
+                }
             }
-            sw.Stop();
-
-            sideEffect = totalSize;
-            return sw.Elapsed;
         }
+
         /// <summary>
         /// Measures the time of materialization of IEnumerable sequence to Array
         /// </summary>
         /// <typeparam name="T">Elements type</typeparam>
         /// <param name="source">Sequence</param>
         /// <param name="iterationCount">Number of passes</param>
-        /// <returns>Measured time</returns>
-        public static TimeSpan MeasureMaterializationToArray<T>(IEnumerable<T> source, int iterationCount)
+        public static void MeasureMaterializationToArray<T>(IEnumerable<T> source, int iterationCount)
         {
-            // WarmUp
-            int tmp = 0;
-            MeasureMaterializationToArray(source, 1, out tmp);
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            return MeasureMaterializationToArray(source, iterationCount, out tmp);
-        }
-
-
-        [System.Runtime.CompilerServices.MethodImpl(Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        private static TimeSpan MeasureMaterializationToList<T>(IEnumerable<T> source, int iterationCount, out int sideEffect)
-        {
-            int totalSize = 0;
-            Stopwatch sw = Stopwatch.StartNew();
-            for (int i = 0; i < iterationCount; i++)
+            foreach (var iteration in Benchmark.Iterations)
             {
-                var list = source.ToList();
-                totalSize += list.Count;
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < iterationCount; i++)
+                    {
+                        source.ToArray();
+                    }
+                }
             }
-            sw.Stop();
-
-            sideEffect = totalSize;
-            return sw.Elapsed;
         }
+
         /// <summary>
         /// Measures the time of materialization of IEnumerable sequence to List
         /// </summary>
@@ -204,60 +157,42 @@ namespace System.Linq.Tests.Performance
         /// <param name="source">Sequence</param>
         /// <param name="iterationCount">Number of passes</param>
         /// <returns>Measured time</returns>
-        public static TimeSpan MeasureMaterializationToList<T>(IEnumerable<T> source, int iterationCount)
+        public static void MeasureMaterializationToList<T>(IEnumerable<T> source, int iterationCount)
         {
-            // WarmUp
-            int tmp = 0;
-            MeasureMaterializationToList(source, 1, out tmp);
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            return MeasureMaterializationToList(source, iterationCount, out tmp);
-        }
-
-
-
-        [System.Runtime.CompilerServices.MethodImpl(Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        private static TimeSpan MeasureMaterializationToDictionary<T>(IEnumerable<T> source, int iterationCount, out int sideEffect)
-        {
-            int totalSize = 0;
-            int count = 0;
-            Stopwatch sw = Stopwatch.StartNew();
-            for (int i = 0; i < iterationCount; i++)
+            foreach (var iteration in Benchmark.Iterations)
             {
-                var dictionary = source.ToDictionary(key => count++);
-                totalSize += dictionary.Count;
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < iterationCount; i++)
+                    {
+                        source.ToList();
+                    }
+                }
             }
-            sw.Stop();
-
-            sideEffect = totalSize;
-            return sw.Elapsed;
         }
+
         /// <summary>
         /// Measures the time of materialization of IEnumerable sequence to Dictionary
         /// </summary>
         /// <typeparam name="T">Elements type</typeparam>
         /// <param name="source">Sequence</param>
         /// <param name="iterationCount">Number of passes</param>
-        /// <returns>Measured time</returns>
-        public static TimeSpan MeasureMaterializationToDictionary<T>(IEnumerable<T> source, int iterationCount)
+        public static void MeasureMaterializationToDictionary<T>(IEnumerable<T> source, int iterationCount)
         {
-            // WarmUp
-            int tmp = 0;
-            MeasureMaterializationToDictionary(source, 1, out tmp);
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            return MeasureMaterializationToDictionary(source, iterationCount, out tmp);
+            int count = 0;
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < iterationCount; i++)
+                    {
+                        source.ToDictionary(key => count++);
+                    }
+                }
+            }
         }
 
-
         // ===============
-
 
         public enum WrapperType
         {
@@ -297,34 +232,28 @@ namespace System.Linq.Tests.Performance
         /// Main method to measure performance.
         /// Creates array of Int32 with length 'elementCount', wraps it by one of the wrapper, appies LINQ and measures materialization to Array
         /// </summary>
-        public static TimeSpan Measure<TElement>(int elementCount, int iterationCount, WrapperType wrapperKind, Func<IEnumerable<int>, IEnumerable<TElement>> applyLINQ)
+        public static void Measure<TElement>(int elementCount, int iterationCount, WrapperType wrapperKind, Func<IEnumerable<int>, IEnumerable<TElement>> applyLINQ)
         {
             int[] data = Enumerable.Range(0, elementCount).ToArray();
             IEnumerable<int> wrapper = Wrap(data, wrapperKind);
 
             IEnumerable<TElement> linqExpr = applyLINQ(wrapper);
-            return MeasureMaterializationToArray(linqExpr, iterationCount);
+            MeasureMaterializationToArray(linqExpr, iterationCount);
         }
 
         /// <summary>
         /// Main method to measure performance.
         /// Creates array of TSource with length 'elementCount', wraps it by one of the wrapper, appies LINQ and measures materialization to Array
         /// </summary>
-        public static TimeSpan Measure<TSource, TElement>(int elementCount, int iterationCount, TSource defaultValue, WrapperType wrapperKind, Func<IEnumerable<TSource>, IEnumerable<TElement>> applyLINQ)
+        public static void Measure<TSource, TElement>(int elementCount, int iterationCount, TSource defaultValue, WrapperType wrapperKind, Func<IEnumerable<TSource>, IEnumerable<TElement>> applyLINQ)
         {
             TSource[] data = Enumerable.Repeat(defaultValue, elementCount).ToArray();
             IEnumerable<TSource> wrapper = Wrap(data, wrapperKind);
 
             IEnumerable<TElement> linqExpr = applyLINQ(wrapper);
-            return MeasureMaterializationToArray(linqExpr, iterationCount);
+            MeasureMaterializationToArray(linqExpr, iterationCount);
         }
 
         // ===========
-
-        public static void WriteLine(string str, params object[] args)
-        {
-            System.Console.WriteLine(str, args);
-            Debug.WriteLine(str, args);
-        }
     }
 }

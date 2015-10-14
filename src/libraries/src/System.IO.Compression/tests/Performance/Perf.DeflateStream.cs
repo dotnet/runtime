@@ -10,75 +10,91 @@ namespace System.IO.Compression.Tests
 {
     public class Perf_DeflateStream
     {
-        private static List<object[]> _compressedFiles;
-        private static List<object[]> _byteArraysToCompress;
-
-        /// <summary>
-        /// Yields an Enumerable list of paths to GZTestData files
-        /// </summary>
-        public static IEnumerable<object[]> CompressedFiles()
+        /// <returns></returns>
+        private static string CreateCompressedFile(CompressionType type)
         {
-            if (_compressedFiles == null)
-            {
-                PerfUtils utils = new PerfUtils();
-                _compressedFiles = new List<object[]>();
-                // Crypto random data
-                byte[] bytes = new byte[100000000];
-                var rand = RandomNumberGenerator.Create();
-                rand.GetBytes(bytes);
-                string filePath = utils.GetTestFilePath() + ".gz";
-                using (FileStream output = File.Create(filePath))
-                using (GZipStream zip = new GZipStream(output, CompressionMode.Compress))
-                    zip.Write(bytes, 0, bytes.Length);
-                _compressedFiles.Add(new object[] { filePath });
-
-                // Create a compressed file with repeated segments
-                bytes = Text.Encoding.UTF8.GetBytes(utils.CreateString(100000));
-                filePath = utils.GetTestFilePath() + ".gz";
-                using (FileStream output = File.Create(filePath))
-                using (GZipStream zip = new GZipStream(output, CompressionMode.Compress))
-                    for (int i = 0; i < 1000; i++)
-                        zip.Write(bytes, 0, bytes.Length);
-                _compressedFiles.Add(new object[] { filePath });
+            const int fileSize = 100000000;
+            PerfUtils utils = new PerfUtils();
+            string filePath = utils.GetTestFilePath() + ".gz";
+            switch (type)
+            {    
+                case CompressionType.CryptoRandom:
+                    using (RandomNumberGenerator rand = RandomNumberGenerator.Create())
+                    {
+                        byte[] bytes = new byte[fileSize];
+                        rand.GetBytes(bytes);
+                        using (FileStream output = File.Create(filePath))
+                        using (GZipStream zip = new GZipStream(output, CompressionMode.Compress))
+                            zip.Write(bytes, 0, bytes.Length);
+                    }
+                    break;
+                case CompressionType.RepeatedSegments:
+                    {
+                        byte[] bytes = new byte[fileSize / 1000];
+                        new Random(128453).NextBytes(bytes);
+                        using (FileStream output = File.Create(filePath))
+                        using (GZipStream zip = new GZipStream(output, CompressionMode.Compress))
+                            for (int i = 0; i < 1000; i++)
+                                zip.Write(bytes, 0, bytes.Length);
+                    }
+                    break;
+                case CompressionType.NormalData:
+                    {
+                        byte[] bytes = new byte[fileSize];
+                        new Random(128453).NextBytes(bytes);
+                        using (FileStream output = File.Create(filePath))
+                        using (GZipStream zip = new GZipStream(output, CompressionMode.Compress))
+                            zip.Write(bytes, 0, bytes.Length);
+                    }
+                    break;
             }
-            return _compressedFiles;
+            return filePath;
         }
 
-        // Creates byte arrays that contain random data to be compressed
-        public static IEnumerable<object[]> ByteArraysToCompress()
+        private static byte[] CreateBytesToCompress(CompressionType type)
         {
-            if (_byteArraysToCompress == null)
+            const int fileSize = 100000000;
+            byte[] bytes = new byte[fileSize];
+            switch (type)
             {
-                PerfUtils utils = new PerfUtils();
-                _byteArraysToCompress = new List<object[]>();
-
-                // Regular, semi well formed data
-                _byteArraysToCompress.Add(new object[] { Text.Encoding.UTF8.GetBytes(utils.CreateString(100000000)) });
-
-                // Crypto random data
-                {
-                    byte[] bytes = new byte[100000000];
-                    var rand = RandomNumberGenerator.Create();
-                    rand.GetBytes(bytes);
-                    _byteArraysToCompress.Add(new object[] { bytes });
-                }
-
-                // Highly repeated data
-                {
-                    byte[] bytes = new byte[101000000];
-                    byte[] small = Text.Encoding.UTF8.GetBytes(utils.CreateString(100000));
-                    for (int i = 0; i < 1000; i++)
-                        small.CopyTo(bytes, 100000 * i);
-                    _byteArraysToCompress.Add(new object[] { bytes });
-                }
+                case CompressionType.CryptoRandom:
+                    using (RandomNumberGenerator rand = RandomNumberGenerator.Create())
+                        rand.GetBytes(bytes);
+                    break;
+                case CompressionType.RepeatedSegments:
+                    {
+                        byte[] small = new byte[1000];
+                        new Random(123453).NextBytes(small);
+                        for (int i = 0; i < fileSize / 1000; i++)
+                        {
+                            small.CopyTo(bytes, 1000 * i);
+                        }
+                    }
+                    break;
+                case CompressionType.VeryRepetitive:
+                    {
+                        byte[] small = new byte[100];
+                        new Random(123453).NextBytes(small);
+                        for (int i = 0; i < fileSize / 100; i++)
+                        {
+                            small.CopyTo(bytes, 100 * i);
+                        }
+                        break;
+                    }
+                case CompressionType.NormalData:
+                    new Random(123453).NextBytes(bytes);
+                    break;
             }
-            return _byteArraysToCompress;
+            return bytes;
         }
 
         [Benchmark]
-        [MemberData("CompressedFiles")]
-        public async void Decompress(string testFilePath)
+        [InlineData(CompressionType.CryptoRandom)]
+        [InlineData(CompressionType.RepeatedSegments)]
+        [InlineData(CompressionType.NormalData)]
+        public async void Decompress(CompressionType type)
         {
+            string testFilePath = CreateCompressedFile(type);
             int _bufferSize = 1024;
             int retCount = -1;
             var bytes = new byte[_bufferSize];
@@ -97,12 +113,17 @@ namespace System.IO.Compression.Tests
                             }
                             strippedMs.Seek(0, SeekOrigin.Begin);
                         }
+            File.Delete(testFilePath);
         }
 
         [Benchmark]
-        [MemberData("ByteArraysToCompress")]
-        public void Compress(byte[] bytes)
+        [InlineData(CompressionType.CryptoRandom)]
+        [InlineData(CompressionType.RepeatedSegments)]
+        [InlineData(CompressionType.VeryRepetitive)]
+        [InlineData(CompressionType.NormalData)]
+        public void Compress(CompressionType type)
         {
+            byte[] bytes = CreateBytesToCompress(type);
             PerfUtils utils = new PerfUtils();
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -116,5 +137,13 @@ namespace System.IO.Compression.Tests
                 File.Delete(filePath);
             }
         }
+    }
+
+    public enum CompressionType
+    {
+        CryptoRandom = 1,
+        RepeatedSegments = 2,
+        VeryRepetitive = 3,
+        NormalData = 4
     }
 }
