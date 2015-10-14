@@ -265,24 +265,6 @@ namespace System.Linq.Expressions.Interpreter
             _pendingContinuation = (int)Pop();
         }
 
-        private static MethodInfo s_goto;
-        private static MethodInfo s_voidGoto;
-
-        internal static MethodInfo GotoMethod
-        {
-            get { return s_goto ?? (s_goto = typeof(InterpretedFrame).GetMethod("Goto")); }
-        }
-
-        internal static MethodInfo VoidGotoMethod
-        {
-            get { return s_voidGoto ?? (s_voidGoto = typeof(InterpretedFrame).GetMethod("VoidGoto")); }
-        }
-
-        public int VoidGoto(int labelIndex)
-        {
-            return Goto(labelIndex, Interpreter.NoValue, gotoExceptionHandler: false);
-        }
-
         public int Goto(int labelIndex, object value, bool gotoExceptionHandler)
         {
             // TODO: we know this at compile time (except for compiled loop):
