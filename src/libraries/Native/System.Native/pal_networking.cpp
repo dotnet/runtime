@@ -15,16 +15,12 @@
 #include <vector>
 #include <errno.h>
 
-#if defined(__APPLE__)
-
-#ifndef IPV6_ADD_MEMBERSHIP
+#if !defined(IPV6_ADD_MEMBERSHIP) && defined(IPV6_JOIN_GROUP)
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
 #endif
 
-#ifndef IPV6_DROP_MEMBERSHIP
+#if !defined(IPV6_DROP_MEMBERSHIP) && defined(IPV6_LEAVE_GROUP)
 #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
-#endif
-
 #endif
 
 const int INET6_ADDRSTRLEN_MANAGED = 65; // The C# code has a longer max string length
