@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
-using Validation;
 
 namespace System.Collections.Immutable
 {
@@ -411,7 +410,7 @@ namespace System.Collections.Immutable
             {
                 if (_disposed)
                 {
-                    Validation.Requires.FailObjectDisposed(this);
+                    Requires.FailObjectDisposed(this);
                 }
             }
         }

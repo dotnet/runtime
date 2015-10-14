@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
-using Validation;
 
 namespace System.Collections.Immutable
 {
