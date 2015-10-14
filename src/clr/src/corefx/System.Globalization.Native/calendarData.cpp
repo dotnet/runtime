@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "locale.hpp"
+#include "holders.h"
 
 #include <unicode/dtfmtsym.h>
 #include <unicode/smpdtfmt.h>
@@ -208,13 +209,13 @@ extern "C" int32_t GetCalendars(const UChar* localeName, CalendarId* calendars, 
         return 0;
 
     UErrorCode err = U_ZERO_ERROR;
-    LocalPointer<StringEnumeration> stringEnumerator(
-        Calendar::getKeywordValuesForLocale("calendar", locale, TRUE, err));
+    UEnumeration* pEnum = ucal_getKeywordValuesForLocale("calendar", locale.getName(), TRUE, &err);
+    UEnumerationHolder enumHolder(pEnum, err);
 
-    if (stringEnumerator.isNull() || U_FAILURE(err))
+    if (U_FAILURE(err))
         return 0;
 
-    int stringEnumeratorCount = stringEnumerator->count(err);
+    int stringEnumeratorCount = uenum_count(pEnum, &err);
     if (U_FAILURE(err))
         return 0;
 
@@ -222,7 +223,7 @@ extern "C" int32_t GetCalendars(const UChar* localeName, CalendarId* calendars, 
     for (int i = 0; i < stringEnumeratorCount && calendarsReturned < calendarsCapacity; i++)
     {
         int32_t calendarNameLength = 0;
-        const char* calendarName = stringEnumerator->next(&calendarNameLength, err);
+        const char* calendarName = uenum_next(pEnum, &calendarNameLength, &err);
         if (U_SUCCESS(err))
         {
             CalendarId calendarId = GetCalendarId(calendarName);
@@ -558,13 +559,15 @@ Gets the latest era in the Japanese calendar.
 extern "C" int32_t GetLatestJapaneseEra()
 {
     UErrorCode err = U_ZERO_ERROR;
-    Locale japaneseLocale(JAPANESE_LOCALE_AND_CALENDAR);
-    LocalPointer<Calendar> calendar(Calendar::createInstance(japaneseLocale, err));
+    UCalendar* pCal = ucal_open(nullptr, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);
+    UCalendarHolder calHolder(pCal, err);
 
     if (U_FAILURE(err))
         return 0;
 
-    return calendar->getMaximum(UCAL_ERA);
+    int32_t ret = ucal_getLimit(pCal, UCAL_ERA, UCAL_MAXIMUM, &err);
+
+    return U_SUCCESS(err) ? ret : 0;
 }
 
 /*
@@ -580,27 +583,28 @@ extern "C" int32_t GetJapaneseEraStartDate(int32_t era, int32_t* startYear, int3
     *startDay = -1;
 
     UErrorCode err = U_ZERO_ERROR;
-    Locale japaneseLocale(JAPANESE_LOCALE_AND_CALENDAR);
-    LocalPointer<Calendar> calendar(Calendar::createInstance(japaneseLocale, err));
+    UCalendar* pCal = ucal_open(nullptr, 0, JAPANESE_LOCALE_AND_CALENDAR, UCAL_TRADITIONAL, &err);
+    UCalendarHolder calHolder(pCal, err);
+
     if (U_FAILURE(err))
         return false;
 
-    calendar->set(UCAL_ERA, era);
-    calendar->set(UCAL_YEAR, 1);
+    ucal_set(pCal, UCAL_ERA, era);
+    ucal_set(pCal, UCAL_YEAR, 1);
 
     // UCAL_EXTENDED_YEAR is the gregorian year for the JapaneseCalendar
-    *startYear = calendar->get(UCAL_EXTENDED_YEAR, err);
+    *startYear = ucal_get(pCal, UCAL_EXTENDED_YEAR, &err);
     if (U_FAILURE(err))
         return false;
 
     // set the date to Jan 1
-    calendar->set(UCAL_MONTH, 0);
-    calendar->set(UCAL_DATE, 1);
+    ucal_set(pCal, UCAL_MONTH, 0);
+    ucal_set(pCal, UCAL_DATE, 1);
 
     int32_t currentEra;
     for (int i = 0; i <= 12; i++)
     {
-        currentEra = calendar->get(UCAL_ERA, err);
+        currentEra = ucal_get(pCal, UCAL_ERA, &err);
         if (U_FAILURE(err))
             return false;
 
@@ -609,27 +613,27 @@ extern "C" int32_t GetJapaneseEraStartDate(int32_t era, int32_t* startYear, int3
             for (int i = 0; i < 31; i++)
             {
                 // subtract 1 day at a time until we get out of the specified Era
-                calendar->add(Calendar::DATE, -1, err);
+                ucal_add(pCal, UCAL_DATE, -1, &err);
                 if (U_FAILURE(err))
                     return false;
 
-                currentEra = calendar->get(UCAL_ERA, err);
+                currentEra = ucal_get(pCal, UCAL_ERA, &err);
                 if (U_FAILURE(err))
                     return false;
 
                 if (currentEra != era)
                 {
                     // add back 1 day to get back into the specified Era
-                    calendar->add(UCAL_DATE, 1, err);
+                    ucal_add(pCal, UCAL_DATE, 1, &err);
                     if (U_FAILURE(err))
                         return false;
 
                     *startMonth =
-                        calendar->get(UCAL_MONTH, err) + 1; // ICU Calendar months are 0-based, but .NET is 1-based
+                        ucal_get(pCal, UCAL_MONTH, &err) + 1; // ICU Calendar months are 0-based, but .NET is 1-based
                     if (U_FAILURE(err))
                         return false;
 
-                    *startDay = calendar->get(UCAL_DATE, err);
+                    *startDay = ucal_get(pCal, UCAL_DATE, &err);
                     if (U_FAILURE(err))
                         return false;
 
@@ -639,7 +643,7 @@ extern "C" int32_t GetJapaneseEraStartDate(int32_t era, int32_t* startYear, int3
         }
 
         // add 1 month at a time until we get into the specified Era
-        calendar->add(UCAL_MONTH, 1, err);
+        ucal_add(pCal, UCAL_MONTH, 1, &err);
         if (U_FAILURE(err))
             return false;
     }
