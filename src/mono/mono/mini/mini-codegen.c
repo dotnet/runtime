@@ -437,6 +437,10 @@ mono_print_ji (const MonoJumpInfo *ji)
 		g_free (s);
 		break;
 	}
+	case MONO_PATCH_INFO_INTERNAL_METHOD: {
+		printf ("[INTERNAL_METHOD - %s]", ji->data.name);
+		break;
+	}
 	default:
 		printf ("[%s]", patch_info_str [ji->type]);
 		break;

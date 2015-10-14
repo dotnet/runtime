@@ -140,6 +140,7 @@ typedef struct {
 	gboolean *is_dead;
 	gboolean *unreachable;
 	gboolean llvm_only;
+	gboolean has_got_access;
 	int *pindexes;
 	int this_arg_pindex, rgctx_arg_pindex;
 	LLVMValueRef imt_rgctx_loc;
@@ -1505,6 +1506,15 @@ get_aotconst (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data)
 
 	got_offset = mono_aot_get_got_offset (cfg->patch_info);
 	ctx->lmodule->max_got_offset = MAX (ctx->lmodule->max_got_offset, got_offset);
+	/* 
+	 * If the got slot is shared, it means its initialized when the aot image is loaded, so we don't need to
+	 * explicitly initialize it.
+	 */
+	if (!mono_aot_is_shared_got_offset (got_offset)) {
+		//mono_print_ji (ji);
+		//printf ("\n");
+		ctx->has_got_access = TRUE;
+	}
 
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
@@ -4661,6 +4671,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			//mono_add_patch_info (cfg, 0, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
 			got_offset = mono_aot_get_got_offset (cfg->patch_info);
 			ctx->lmodule->max_got_offset = MAX (ctx->lmodule->max_got_offset, got_offset);
+			if (!mono_aot_is_shared_got_offset (got_offset)) {
+				//mono_print_ji (ji);
+				//printf ("\n");
+				ctx->has_got_access = TRUE;
+			}
  
 			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
@@ -6242,24 +6257,16 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	/* Initialize the method if needed */
 	if (cfg->compile_aot && ctx->llvm_only) {
-		MonoJumpInfo *ji;
-		gboolean need_init = FALSE;
-
-		for (ji = cfg->patch_info; ji; ji = ji->next) {
-			// FIXME: Pre-initialize slots for frequently used patches
-			need_init = TRUE;
-		}
-
-		// FIXME: beforefieldinit
-		if (mono_class_get_cctor (cfg->method->klass))
-			need_init = TRUE;
-
+		// FIXME: Add more shared got entries
 		ctx->builder = create_builder (ctx);
 		LLVMPositionBuilderAtEnd (ctx->builder, ctx->init_bb);
-		if (need_init)
+
+		// FIXME: beforefieldinit
+		if (ctx->has_got_access || mono_class_get_cctor (cfg->method->klass)) {
 			emit_init_method (ctx);
-		else
+		} else {
 			LLVMBuildBr (ctx->builder, ctx->inited_bb);
+		}
 	}
 
 	if (cfg->verbose_level > 1)

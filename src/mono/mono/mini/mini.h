@@ -2325,6 +2325,7 @@ guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_in
 guint32  mono_aot_method_hash               (MonoMethod *method);
 MonoMethod* mono_aot_get_array_helper_from_wrapper (MonoMethod *method);
 guint32  mono_aot_get_got_offset            (MonoJumpInfo *ji) MONO_LLVM_INTERNAL;
+gboolean mono_aot_is_shared_got_offset      (int offset) MONO_LLVM_INTERNAL;
 char*    mono_aot_get_method_name           (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 gboolean mono_aot_is_direct_callable        (MonoJumpInfo *patch_info) MONO_LLVM_INTERNAL;
 void     mono_aot_mark_unused_llvm_plt_entry(MonoJumpInfo *patch_info) MONO_LLVM_INTERNAL;

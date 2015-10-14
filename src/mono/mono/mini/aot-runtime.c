@@ -68,7 +68,7 @@
 #endif
 
 /* Number of got entries shared between the JIT and LLVM GOT */
-#define N_COMMON_GOT_ENTRIES 9
+#define N_COMMON_GOT_ENTRIES 10
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
@@ -1785,6 +1785,8 @@ init_amodule_got (MonoAotModule *amodule)
 		amodule->shared_got [7] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
 		ji.data.name = "mono_aot_init_gshared_method_rgctx";
 		amodule->shared_got [8] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
+		ji.data.name = "mono_llvm_throw_corlib_exception";
+		amodule->shared_got [9] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
 		init_gots (amodule);
 	}
 }

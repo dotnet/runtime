@@ -178,7 +178,7 @@ typedef struct MonoAotCompile {
 	/* Maps MonoMethod* -> blob offset */
 	GHashTable *method_blob_hash;
 	guint32 *plt_got_info_offsets;
-	guint32 got_offset, llvm_got_offset, plt_offset, plt_got_offset_base;
+	guint32 got_offset, llvm_got_offset, plt_offset, plt_got_offset_base, nshared_got_entries;
 	/* Number of GOT entries reserved for trampolines */
 	guint32 num_trampoline_got_entries;
 	guint32 tramp_page_size;
@@ -7291,6 +7291,12 @@ mono_aot_get_got_offset (MonoJumpInfo *ji)
 	return get_got_offset (llvm_acfg, TRUE, ji);
 }
 
+gboolean
+mono_aot_is_shared_got_offset (int offset)
+{
+	return offset < llvm_acfg->nshared_got_entries;
+}
+
 char*
 mono_aot_get_method_name (MonoCompile *cfg)
 {
@@ -9687,6 +9693,15 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		ji->data.name = "mono_aot_init_gshared_method_rgctx";
 		get_got_offset (acfg, FALSE, ji);
 		get_got_offset (acfg, TRUE, ji);
+
+		/* Slot 9 */
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+		ji->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+		ji->data.name = "mono_llvm_throw_corlib_exception";
+		get_got_offset (acfg, FALSE, ji);
+		get_got_offset (acfg, TRUE, ji);
+
+		acfg->nshared_got_entries = acfg->got_offset;
 	}
 
 	TV_GETTIME (atv);
@@ -9923,6 +9938,12 @@ int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
 	return 0;
+}
+
+gboolean
+mono_aot_is_shared_got_offset (int offset)
+{
+	return FALSE;
 }
 
 #endif
