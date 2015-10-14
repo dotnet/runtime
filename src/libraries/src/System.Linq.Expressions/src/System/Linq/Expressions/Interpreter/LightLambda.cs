@@ -16,16 +16,6 @@ using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    internal sealed class LightLambdaCompileEventArgs : EventArgs
-    {
-        public Delegate Compiled { get; private set; }
-
-        internal LightLambdaCompileEventArgs(Delegate compiled)
-        {
-            Compiled = compiled;
-        }
-    }
-
     public partial class LightLambda
     {
         private readonly IStrongBox[] _closure;
