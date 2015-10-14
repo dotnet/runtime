@@ -9469,6 +9469,68 @@ static void aot_dump (MonoAotCompile *acfg)
 	mono_json_writer_destroy (&writer);
 }
 
+static const char *preinited_jit_icalls[] = {
+	"mono_aot_init_llvm_method",
+	"mono_aot_init_gshared_method_this",
+	"mono_aot_init_gshared_method_rgctx",
+	"mono_llvm_throw_corlib_exception",
+	"mono_resolve_vcall",
+	"mono_helper_ldstr_mscorlib"
+};
+
+static void
+add_preinit_got_slots (MonoAotCompile *acfg)
+{
+	MonoJumpInfo *ji;
+	int i;
+
+	/*
+	 * Allocate the first few GOT entries to information which is needed frequently, or it is needed
+	 * during method initialization etc.
+	 */
+
+	ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_IMAGE;
+	ji->data.image = acfg->image;
+	get_got_offset (acfg, FALSE, ji);
+	get_got_offset (acfg, TRUE, ji);
+
+	ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_MSCORLIB_GOT_ADDR;
+	get_got_offset (acfg, FALSE, ji);
+	get_got_offset (acfg, TRUE, ji);
+
+	ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
+	get_got_offset (acfg, FALSE, ji);
+	get_got_offset (acfg, TRUE, ji);
+
+	ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_GC_NURSERY_START;
+	get_got_offset (acfg, FALSE, ji);
+	get_got_offset (acfg, TRUE, ji);
+
+	ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_JIT_TLS_ID;
+	get_got_offset (acfg, FALSE, ji);
+	get_got_offset (acfg, TRUE, ji);
+
+	ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_AOT_MODULE;
+	get_got_offset (acfg, FALSE, ji);
+	get_got_offset (acfg, TRUE, ji);
+
+	for (i = 0; i < sizeof (preinited_jit_icalls) / sizeof (char*); ++i) {
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+		ji->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+		ji->data.name = preinited_jit_icalls [i];
+		get_got_offset (acfg, FALSE, ji);
+		get_got_offset (acfg, TRUE, ji);
+	}
+
+	acfg->nshared_got_entries = acfg->got_offset;
+}
+
 int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
@@ -9641,70 +9703,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 #endif
 
-	/*
-	 * Allocate the first few GOT entries to information which is needed frequently, or it is needed
-	 * during method initialization etc.
-	 */
-	{
-		MonoJumpInfo *ji;
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-		ji->type = MONO_PATCH_INFO_IMAGE;
-		ji->data.image = acfg->image;
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-		ji->type = MONO_PATCH_INFO_MSCORLIB_GOT_ADDR;
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-		ji->type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-		ji->type = MONO_PATCH_INFO_GC_NURSERY_START;
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-		ji->type = MONO_PATCH_INFO_JIT_TLS_ID;
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-		ji->type = MONO_PATCH_INFO_AOT_MODULE;
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
-		ji->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-		ji->data.name = "mono_aot_init_llvm_method";
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
-		ji->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-		ji->data.name = "mono_aot_init_gshared_method_this";
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
-		ji->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-		ji->data.name = "mono_aot_init_gshared_method_rgctx";
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
-
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
-		ji->type = MONO_PATCH_INFO_INTERNAL_METHOD;
-		ji->data.name = "mono_llvm_throw_corlib_exception";
-		get_got_offset (acfg, FALSE, ji);
-		get_got_offset (acfg, TRUE, ji);
-
-		acfg->nshared_got_entries = acfg->got_offset;
-	}
+	add_preinit_got_slots (acfg);
 
 	TV_GETTIME (atv);
 
