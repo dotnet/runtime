@@ -19,6 +19,13 @@
     <Compile Include="MyResolver.cs" />
     <Compile Include="XmlDictionaryWriterTest.cs" />
   </ItemGroup>
+  <!-- Performance Tests -->  
+  <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">  
+    <Compile Include="Performance\Perf.Deserialization.cs" />  
+    <Compile Include="$(CommonTestPath)\Performance\PerfUtils.cs">  
+      <Link>Common\Performance\PerfUtils.cs</Link>  
+    </Compile>  
+  </ItemGroup>  
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.DataContractSerialization\src\System.Private.DataContractSerialization.csproj">
       <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
