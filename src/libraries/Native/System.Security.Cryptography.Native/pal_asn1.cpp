@@ -11,11 +11,6 @@ static_assert(PAL_NID_secp224r1 == NID_secp224r1, "");
 static_assert(PAL_NID_secp384r1 == NID_secp384r1, "");
 static_assert(PAL_NID_secp521r1 == NID_secp521r1, "");
 
-extern "C" int64_t Asn1IntegerGet(ASN1_INTEGER* a)
-{
-    return ASN1_INTEGER_get(a);
-}
-
 extern "C" const ASN1_OBJECT* ObjTxt2Obj(const char* s)
 {
     return OBJ_txt2obj(s, true);
