@@ -7,7 +7,7 @@ function print_usage {
     echo 'Typical command line:'
     echo ''
     echo 'coreclr/tests/runtest.sh'
-    echo '    --testRootDir="temp/Windows.x64.Debug"'
+    echo '    --testRootDir="temp/Windows_NT.x64.Debug"'
     echo '    --testNativeBinDir="coreclr/bin/obj/Linux.x64.Debug/tests"'
     echo '    --coreClrBinDir="coreclr/bin/Product/Linux.x64.Debug"'
     echo '    --mscorlibDir="windows/coreclr/bin/Product/Linux.x64.Debug"'
