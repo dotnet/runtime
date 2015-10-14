@@ -36,14 +36,14 @@ namespace Internal.Cryptography
                 }
 
                 using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
-                using (SafeX509ExtensionHandle x509Ext = Interop.libcrypto.X509_EXTENSION_create_by_OBJ(IntPtr.Zero, asnOid, false, octetString))
+                using (SafeX509ExtensionHandle x509Ext = Interop.Crypto.X509ExtensionCreateByObj(asnOid, octetString))
                 {
                     if (bio.IsInvalid || x509Ext.IsInvalid)
                     {
                         return null;
                     }
 
-                    if (!Interop.libcrypto.X509V3_EXT_print(bio, x509Ext, Interop.libcrypto.X509V3ExtPrintFlags.None, 0))
+                    if (!Interop.Crypto.X509V3ExtPrint(bio, x509Ext))
                     {
                         return null;
                     }

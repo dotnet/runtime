@@ -20,9 +20,6 @@ internal static partial class Interop
         internal const int NID_secp384r1 = 715; // NIST P-384
         internal const int NID_secp521r1 = 716; // NIST P-521
 
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern long Asn1IntegerGet(IntPtr a);
-
         [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
         internal static extern SafeAsn1ObjectHandle ObjTxt2Obj(string s);
 

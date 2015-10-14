@@ -18,11 +18,6 @@ enum SupportedAlgorithmNids
 };
 
 /*
-Direct shim to ASN1_INTEGER_get.
-*/
-extern "C" int64_t Asn1IntegerGet(ASN1_INTEGER* a);
-
-/*
 Direct shim to OBJ_txt2obj.
 */
 extern "C" const ASN1_OBJECT* ObjTxt2Obj(const char* s);

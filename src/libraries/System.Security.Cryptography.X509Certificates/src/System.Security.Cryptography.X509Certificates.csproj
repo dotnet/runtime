@@ -230,9 +230,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.X509.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.X509.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.X509Ext.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.X509Ext.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.SafeCurlHandle.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.SafeCurlHandle.cs</Link>
     </Compile>
