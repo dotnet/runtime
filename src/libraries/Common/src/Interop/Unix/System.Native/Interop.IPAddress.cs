@@ -22,7 +22,11 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct IPAddress
         {
-            public bool IsIPv6 { get { return _isIPv6 != 0; } }
+            public bool IsIPv6
+            {
+                get { return _isIPv6 != 0; }
+                set { _isIPv6 = value ? 1u : 0u; }
+            }
 
             internal fixed byte Address[MAX_IP_ADDRESS_BYTES]; // Buffer to fit an IPv4 or IPv6 address
             private  uint _isIPv6;                             // Non-zero if this is an IPv6 address; zero for IPv4.
