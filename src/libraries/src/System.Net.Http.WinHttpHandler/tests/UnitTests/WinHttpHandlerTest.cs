@@ -238,7 +238,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        [ActiveIssue(2165, PlatformID.AnyUnix)]
         public void CookieUsePolicy_SetUseSpecifiedCookieContainerAndContainer_ExpectedWinHttpHandleSettings()
         {
             var handler = new WinHttpHandler();
@@ -539,10 +538,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(request));
         }
 
-        // TODO: Need to skip this test due to missing native dependency clrcompression.dll.
-        // https://github.com/dotnet/corefx/issues/1298
         [Fact]
-        [ActiveIssue(1298)]
         public async Task SendAsync_NoWinHttpDecompressionSupportAndResponseBodyIsDeflateCompressed_ExpectedResponse()
         {
             TestControl.WinHttpDecompressionSupport = false;
@@ -562,10 +558,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(TestServer.ExpectedResponseBody, responseBody);
         }
 
-        // TODO: Need to skip this test due to missing native dependency clrcompression.dll.
-        // https://github.com/dotnet/corefx/issues/1298
         [Fact]
-        [ActiveIssue(1298)]
         public async Task SendAsync_NoWinHttpDecompressionSupportAndResponseBodyIsGZipCompressed_ExpectedResponse()
         {
             TestControl.WinHttpDecompressionSupport = false;
