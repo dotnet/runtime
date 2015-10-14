@@ -42,6 +42,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
@@ -65,6 +66,7 @@ namespace System.Collections.Immutable
         /// <param name="count">The number of elements in the section to search.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of <paramref name="item"/> within the range of elements

@@ -481,13 +481,14 @@ namespace System.Collections.Immutable
             /// <param name="item">The item to search for.</param>
             /// <param name="startIndex">The index at which to begin the search.</param>
             /// <param name="count">The number of elements to search.</param>
-            /// <param name="equalityComparer">The equality comparer to use in the search.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
             /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
             [Pure]
             public int IndexOf(T item, int startIndex, int count, IEqualityComparer<T> equalityComparer)
             {
-                Requires.NotNull(equalityComparer, "equalityComparer");
-
                 if (count == 0 && startIndex == 0)
                 {
                     return -1;
@@ -496,6 +497,7 @@ namespace System.Collections.Immutable
                 Requires.Range(startIndex >= 0 && startIndex < this.Count, "startIndex");
                 Requires.Range(count >= 0 && startIndex + count <= this.Count, "count");
 
+                equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
                 if (equalityComparer == EqualityComparer<T>.Default)
                 {
                     return Array.IndexOf(_elements, item, startIndex, count);
@@ -573,8 +575,6 @@ namespace System.Collections.Immutable
             [Pure]
             public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T> equalityComparer)
             {
-                Requires.NotNull(equalityComparer, "equalityComparer");
-
                 if (count == 0 && startIndex == 0)
                 {
                     return -1;
@@ -583,6 +583,7 @@ namespace System.Collections.Immutable
                 Requires.Range(startIndex >= 0 && startIndex < this.Count, "startIndex");
                 Requires.Range(count >= 0 && startIndex - count + 1 >= 0, "count");
 
+                equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
                 if (equalityComparer == EqualityComparer<T>.Default)
                 {
                     return Array.LastIndexOf(_elements, item, startIndex, count);
