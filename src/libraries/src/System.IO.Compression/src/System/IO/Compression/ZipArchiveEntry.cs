@@ -355,7 +355,7 @@ namespace System.IO.Compression
         // Only allow opening ZipArchives with large ZipArchiveEntries in update mode when running in a 64-bit process.
         // This is for compatibility with old behavior that threw an exception for all process bitnesses, because this
         // will not work in a 32-bit process.
-        private bool AllowLargeZipArchiveEntriesInUpdateMode { get { return Marshal.SizeOf(new IntPtr()) >= 4; } }
+        private static readonly bool s_allowLargeZipArchiveEntriesInUpdateMode = IntPtr.Size > 4;
 
         internal Boolean EverOpenedForWrite { get { return _everOpenedForWrite; } }
 
@@ -800,7 +800,7 @@ namespace System.IO.Compression
                 {
                     if (_compressedSize > Int32.MaxValue)
                     {
-                        if (!AllowLargeZipArchiveEntriesInUpdateMode)
+                        if (!s_allowLargeZipArchiveEntriesInUpdateMode)
                         {
                             message = SR.EntryTooLarge;
                             return false;
@@ -947,14 +947,9 @@ namespace System.IO.Compression
                     if (_uncompressedSize == 0)
                         CompressionMethod = CompressionMethodValues.Stored;
                     WriteLocalFileHeader(false);
-                    // we just want to copy the compressed bytes straight over, but the stream apis
-                    // don't handle larger than 32 bit values, so we just wrap it in a stream
                     foreach (Byte[] compressedBytes in _compressedBytes)
                     {
-                        using (MemoryStream compressedStream = new MemoryStream(compressedBytes))
-                        {
-                            compressedStream.CopyTo(_archive.ArchiveStream);
-                        }
+                        _archive.ArchiveStream.Write(compressedBytes, 0, compressedBytes.Length);
                     }
                 }
             }
