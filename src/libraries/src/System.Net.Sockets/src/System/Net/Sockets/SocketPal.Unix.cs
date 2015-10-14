@@ -1324,59 +1324,48 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError SetMulticastOption(SafeCloseSocket handle, SocketOptionName optionName, MulticastOption optionValue)
         {
-            int optLevel, optName;
-            GetPlatformOptionInfo(SocketOptionLevel.IP, optionName, out optLevel, out optName);
+            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership);
 
-            var mreqn = new Interop.libc.ip_mreqn {
-                imr_multiaddr = new Interop.libc.in_addr {
-                    s_addr = unchecked((uint)optionValue.Group.GetAddress())
-                }
+            Interop.Sys.MulticastOption optName = optionName == SocketOptionName.AddMembership ?
+                Interop.Sys.MulticastOption.MULTICAST_ADD :
+                Interop.Sys.MulticastOption.MULTICAST_DROP;
+
+            var opt = new Interop.Sys.IPv4MulticastOption {
+                MulticastAddress = unchecked((uint)optionValue.Group.GetAddress()),
+                LocalAddress = unchecked((uint)optionValue.LocalAddress.GetAddress()),
+                InterfaceIndex = optionValue.InterfaceIndex
             };
-            if (optionValue.LocalAddress != null)
-            {
-                mreqn.imr_address.s_addr = unchecked((uint)optionValue.LocalAddress.GetAddress());
-            }
-            else
-            {
-                // TODO: what is the endianness of ipv6mr_ifindex?
-                mreqn.imr_ifindex = optionValue.InterfaceIndex;
-            }
 
-            int err = Interop.libc.setsockopt(handle.FileDescriptor, optLevel, optName, &mreqn, (uint)sizeof(Interop.libc.ip_mreqn));
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            Interop.Error err = Interop.Sys.SetIPv4MulticastOption(handle.FileDescriptor, optName, &opt);
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError SetIPv6MulticastOption(SafeCloseSocket handle, SocketOptionName optionName, IPv6MulticastOption optionValue)
         {
-            int optLevel, optName;
-            GetPlatformOptionInfo(SocketOptionLevel.IPv6, optionName, out optLevel, out optName);
+            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership);
 
-            var mreq = new Interop.libc.ipv6_mreq {
-                // TODO: what is the endianness of ipv6mr_ifindex?
-                ipv6mr_ifindex = checked((int)optionValue.InterfaceIndex)
+            Interop.Sys.MulticastOption optName = optionName == SocketOptionName.AddMembership ?
+                Interop.Sys.MulticastOption.MULTICAST_ADD :
+                Interop.Sys.MulticastOption.MULTICAST_DROP;
+
+            var opt = new Interop.Sys.IPv6MulticastOption {
+                Address = optionValue.Group.GetNativeIPAddress(),
+                InterfaceIndex = (int)optionValue.InterfaceIndex
             };
 
-            byte[] multicastAddress = optionValue.Group.GetAddressBytes();
-            Debug.Assert(multicastAddress.Length == sizeof(Interop.libc.in6_addr));
-
-            for (int i = 0; i < multicastAddress.Length; i++)
-            {
-                mreq.ipv6mr_multiaddr.s6_addr[i] = multicastAddress[i];
-            }
-
-            int err = Interop.libc.setsockopt(handle.FileDescriptor, optLevel, optName, &mreq, (uint)sizeof(Interop.libc.ipv6_mreq));
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            Interop.Error err = Interop.Sys.SetIPv6MulticastOption(handle.FileDescriptor, optName, &opt);
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError SetLingerOption(SafeCloseSocket handle, LingerOption optionValue)
         {
-            var linger = new Interop.libc.linger {
-                l_onoff = optionValue.Enabled ? 1 : 0,
-                l_linger = optionValue.LingerTime
+            var opt = new Interop.Sys.LingerOption {
+                OnOff = optionValue.Enabled ? 1 : 0,
+                Seconds = optionValue.LingerTime
             };
 
-            int err = Interop.libc.setsockopt(handle.FileDescriptor, Interop.libc.SOL_SOCKET, Interop.libc.SO_LINGER, &linger, (uint)sizeof(Interop.libc.linger));
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            Interop.Error err = Interop.Sys.SetLingerOption(handle.FileDescriptor, &opt);
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError GetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
@@ -1433,60 +1422,60 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError GetMulticastOption(SafeCloseSocket handle, SocketOptionName optionName, out MulticastOption optionValue)
         {
-            int optLevel, optName;
-            GetPlatformOptionInfo(SocketOptionLevel.IP, optionName, out optLevel, out optName);
+            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership);
 
-            var mreqn = new Interop.libc.ip_mreqn();
-            var optLen = (uint)sizeof(Interop.libc.ip_mreqn);
-            int err = Interop.libc.getsockopt(handle.FileDescriptor, optLevel, optName, &mreqn, &optLen);
-            if (err == -1)
+            Interop.Sys.MulticastOption optName = optionName == SocketOptionName.AddMembership ?
+                Interop.Sys.MulticastOption.MULTICAST_ADD :
+                Interop.Sys.MulticastOption.MULTICAST_DROP;
+
+            Interop.Sys.IPv4MulticastOption opt;
+            Interop.Error err = Interop.Sys.GetIPv4MulticastOption(handle.FileDescriptor, optName, &opt);
+            if (err != Interop.Error.SUCCESS)
             {
                 optionValue = default(MulticastOption);
-                return GetLastSocketError();
+                return GetSocketErrorForErrorCode(err);
             }
 
-            var multicastAddress = new IPAddress((long)mreqn.imr_multiaddr.s_addr);
-            var multicastInterface = new IPAddress((long)mreqn.imr_address.s_addr);
-            optionValue = new MulticastOption(multicastAddress, multicastInterface);
+            var multicastAddress = new IPAddress((long)opt.MulticastAddress);
+            var localAddress = new IPAddress((long)opt.LocalAddress);
+            optionValue = new MulticastOption(multicastAddress, localAddress) {
+                InterfaceIndex = opt.InterfaceIndex
+            };
+
             return SocketError.Success;
         }
 
         public static unsafe SocketError GetIPv6MulticastOption(SafeCloseSocket handle, SocketOptionName optionName, out IPv6MulticastOption optionValue)
         {
-            int optLevel, optName;
-            GetPlatformOptionInfo(SocketOptionLevel.IPv6, optionName, out optLevel, out optName);
+            Debug.Assert(optionName == SocketOptionName.AddMembership || optionName == SocketOptionName.DropMembership);
 
-            var mreq = new Interop.libc.ipv6_mreq();
-            var optLen = (uint)sizeof(Interop.libc.ipv6_mreq);
-            int err = Interop.libc.getsockopt(handle.FileDescriptor, optLevel, optName, &mreq, &optLen);
-            if (err == -1)
+            Interop.Sys.MulticastOption optName = optionName == SocketOptionName.AddMembership ?
+                Interop.Sys.MulticastOption.MULTICAST_ADD :
+                Interop.Sys.MulticastOption.MULTICAST_DROP;
+
+            Interop.Sys.IPv6MulticastOption opt;
+            Interop.Error err = Interop.Sys.GetIPv6MulticastOption(handle.FileDescriptor, optName, &opt);
+            if (err != Interop.Error.SUCCESS)
             {
                 optionValue = default(IPv6MulticastOption);
-                return GetLastSocketError();
+                return GetSocketErrorForErrorCode(err);
             }
 
-            var multicastAddress = new byte[sizeof(Interop.libc.in6_addr)];
-            for (int i = 0; i < multicastAddress.Length; i++)
-            {
-                multicastAddress[i] = mreq.ipv6mr_multiaddr.s6_addr[i];
-            }
-
-            optionValue = new IPv6MulticastOption(new IPAddress(multicastAddress), mreq.ipv6mr_ifindex);
+            optionValue = new IPv6MulticastOption(opt.Address.GetIPAddress(), opt.InterfaceIndex);
             return SocketError.Success;
         }
 
         public static unsafe SocketError GetLingerOption(SafeCloseSocket handle, out LingerOption optionValue)
         {
-            var linger = new Interop.libc.linger();
-            var optLen = (uint)sizeof(Interop.libc.linger);
-            int err = Interop.libc.getsockopt(handle.FileDescriptor, Interop.libc.SOL_SOCKET, Interop.libc.SO_LINGER, &linger, &optLen);
-            if (err == -1)
+            var opt = new Interop.Sys.LingerOption();
+            Interop.Error err = Interop.Sys.GetLingerOption(handle.FileDescriptor, &opt);
+            if (err != Interop.Error.SUCCESS)
             {
                 optionValue = default(LingerOption);
-                return GetLastSocketError();
+                return GetSocketErrorForErrorCode(err);
             }
 
-            optionValue = new LingerOption(linger.l_onoff != 0, linger.l_linger);
+            optionValue = new LingerOption(opt.OnOff != 0, opt.Seconds);
             return SocketError.Success;
         }
 
