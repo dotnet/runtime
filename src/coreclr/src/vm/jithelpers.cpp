@@ -2988,6 +2988,74 @@ HCIMPLEND
 //
 //========================================================================
 
+#include <optsmallperfcritical.h>
+
+//*************************************************************
+// Allocation fast path for typical objects
+//
+HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
+{
+    FCALL_CONTRACT;
+
+    do
+    {
+        _ASSERTE(GCHeap::UseAllocationContexts());
+
+        // Instead of doing elaborate overflow checks, we just limit the number of elements. This will avoid all overflow
+        // problems, as well as making sure big string objects are correctly allocated in the big object heap.
+        if (stringLength >= (LARGE_OBJECT_SIZE - 256) / sizeof(WCHAR))
+        {
+            break;
+        }
+
+        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
+        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
+        // some reshuffling of intermediate values into nonvolatile registers around the call.
+        Thread *thread = GetThread();
+
+        SIZE_T totalSize = StringObject::GetSize(stringLength);
+
+        // The method table's base size includes space for a terminating null character
+        _ASSERTE(totalSize >= g_pStringClass->GetBaseSize());
+        _ASSERTE((totalSize - g_pStringClass->GetBaseSize()) / sizeof(WCHAR) == stringLength);
+
+        SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
+        _ASSERTE(alignedTotalSize >= totalSize);
+        totalSize = alignedTotalSize;
+
+        alloc_context *allocContext = thread->GetAllocContext();
+        BYTE *allocPtr = allocContext->alloc_ptr;
+        _ASSERTE(allocPtr <= allocContext->alloc_limit);
+        if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+        {
+            break;
+        }
+        allocContext->alloc_ptr = allocPtr + totalSize;
+
+        _ASSERTE(allocPtr != nullptr);
+        StringObject *stringObject = reinterpret_cast<StringObject *>(allocPtr);
+        stringObject->SetMethodTable(g_pStringClass);
+        stringObject->SetStringLength(stringLength);
+        _ASSERTE(stringObject->GetBuffer()[stringLength] == W('\0'));
+
+#if CHECK_APP_DOMAIN_LEAKS
+        if (g_pConfig->AppDomainLeaks())
+        {
+            stringObject->SetAppDomain();
+        }
+#endif // CHECK_APP_DOMAIN_LEAKS
+
+        return stringObject;
+    } while (false);
+
+    // Tail call to the slow helper
+    ENDFORBIDGC();
+    return HCCALL1(FramedAllocateString, stringLength);
+}
+HCIMPLEND
+
+#include <optdefault.h>
+
 /*********************************************************************/
 /* We don't use HCIMPL macros because this is not a real helper call */
 /* This function just needs mangled arguments like a helper call     */
