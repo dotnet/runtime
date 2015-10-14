@@ -4,7 +4,7 @@
 //
 
 /*
- * GCENV.CPP 
+ * GCENV.EE.CPP 
  *
  * GCToEEInterface implementation
  *
@@ -36,7 +36,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     ThreadSuspend::SuspendEE((ThreadSuspend::SUSPEND_REASON)reason);
 }
 
-void GCToEEInterface::RestartEE(BOOL bFinishedGC)
+void GCToEEInterface::RestartEE(bool bFinishedGC)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -428,7 +428,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     return SWA_CONTINUE;
 }
 
-VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2)
+VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
 {
     CONTRACTL
     {
@@ -725,4 +725,22 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
     {
         fn(pThread->GetAllocContext(), param);
     }
+}
+
+bool GCToEEInterface::IsPreemptiveGCDisabled(Thread * pThread)
+{
+    WRAPPER_NO_CONTRACT;
+    return !!pThread->PreemptiveGCDisabled();
+}
+
+void GCToEEInterface::EnablePreemptiveGC(Thread * pThread)
+{
+    WRAPPER_NO_CONTRACT;
+    pThread->EnablePreemptiveGC();
+}
+
+void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
+{
+    WRAPPER_NO_CONTRACT;
+    pThread->DisablePreemptiveGC();
 }

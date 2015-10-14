@@ -298,7 +298,7 @@ void HashMap::Init(DWORD cbInitialSize, Compare* pCompare, BOOL fAsyncMode, Lock
         m_pfnLockOwner = pLock->lockOwnerFunc;
     }
     if (m_pfnLockOwner == NULL) {
-        m_writerThreadId.SetThreadId();
+        m_writerThreadId.SetToCurrentThread();
     }
 #endif // _DEBUG
 }
@@ -1079,7 +1079,7 @@ BOOL HashMap::OwnLock()
     DEBUG_ONLY_FUNCTION;
 
     if (m_pfnLockOwner == NULL) {
-        return m_writerThreadId.IsSameThread();
+        return m_writerThreadId.IsCurrentThread();
     }
     else {
         BOOL ret = m_pfnLockOwner(m_lockData);

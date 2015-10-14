@@ -1008,7 +1008,7 @@ class SyncBlockCache
     // return sync block to cache or delete, called from GC
     void    GCDeleteSyncBlock(SyncBlock *sb);
 
-    void    GCWeakPtrScan(HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2);
+    void    GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
 
     void    GCDone(BOOL demoting, int max_gen);
 

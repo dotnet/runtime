@@ -261,7 +261,7 @@ public:
 #ifdef CROSSGEN_COMPILE
         return TRUE;
 #else
-        return m_holderthreadid.IsSameThread();
+        return m_holderthreadid.IsCurrentThread();
 #endif
     }
     
