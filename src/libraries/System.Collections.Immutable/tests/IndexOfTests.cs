@@ -9,16 +9,6 @@ namespace System.Collections.Immutable.Tests
 {
     public static class IndexOfTests
     {
-        public static void SimpleIndexOfBaselineTest<T>(Func<T, IList> collectionFactory, T item, object other)
-        {
-            IList bclList = new List<T> { item };
-            IList testedList = collectionFactory(item);
-
-            int expected = bclList.IndexOf(other);
-            int actual = testedList.IndexOf(other);
-            Assert.Equal(expected, actual);
-        }
-
         public static void IndexOfTest<TCollection>(
             Func<IEnumerable<int>, TCollection> factory,
             Func<TCollection, int, int> indexOfItem,
