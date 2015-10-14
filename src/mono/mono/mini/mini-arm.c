@@ -1173,47 +1173,17 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 
 #endif /* #ifndef DISABLE_JIT */
 
-#ifndef __GNUC_PREREQ
-#define __GNUC_PREREQ(maj, min) (0)
-#endif
-
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
-#if defined(__native_client__)
+#if defined(MONO_CROSS_COMPILE) || defined(__native_client__)
   // For Native Client we don't have to flush i-cache here,
   // as it's being done by dyncode interface.
-#else
-
-#ifdef MONO_CROSS_COMPILE
 #elif __APPLE__
 	sys_icache_invalidate (code, size);
-#elif __GNUC_PREREQ(4, 3)
-    __builtin___clear_cache (code, code + size);
-#elif __GNUC_PREREQ(4, 1)
-	__clear_cache (code, code + size);
-#elif defined(PLATFORM_ANDROID)
-	const int syscall = 0xf0002;
-	__asm __volatile (
-		"mov	 r0, %0\n"			
-		"mov	 r1, %1\n"
-		"mov	 r7, %2\n"
-		"mov     r2, #0x0\n"
-		"svc     0x00000000\n"
-		:
-		:	"r" (code), "r" (code + size), "r" (syscall)
-		:	"r0", "r1", "r7", "r2"
-		);
 #else
-	__asm __volatile ("mov r0, %0\n"
-			"mov r1, %1\n"
-			"mov r2, %2\n"
-			"swi 0x9f0002       @ sys_cacheflush"
-			: /* no outputs */
-			: "r" (code), "r" (code + size), "r" (0)
-			: "r0", "r1", "r3" );
+    __builtin___clear_cache (code, code + size);
 #endif
-#endif /* !__native_client__ */
 }
 
 typedef enum {
