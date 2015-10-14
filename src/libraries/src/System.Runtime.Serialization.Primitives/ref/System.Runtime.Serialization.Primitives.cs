@@ -70,6 +70,12 @@ namespace System.Runtime.Serialization
         public InvalidDataContractException(string message) { }
         public InvalidDataContractException(string message, System.Exception innerException) { }
     }
+    public partial interface ISerializationSurrogateProvider
+    {
+        object GetDeserializedObject(object obj, System.Type targetType);
+        object GetObjectToSerialize(object obj, System.Type targetType);
+        System.Type GetSurrogateType(System.Type type);
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(12), Inherited = true, AllowMultiple = true)]
     public sealed partial class KnownTypeAttribute : System.Attribute
     {
