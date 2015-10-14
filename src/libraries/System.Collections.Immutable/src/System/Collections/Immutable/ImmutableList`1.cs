@@ -1146,7 +1146,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The index.</param>
         /// <param name="item">The item.</param>
-        /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         void IList<T>.Insert(int index, T item)
         {
             throw new NotSupportedException();
@@ -1156,7 +1156,7 @@ namespace System.Collections.Immutable
         /// Removes the value at the specified index.
         /// </summary>
         /// <param name="index">The index.</param>
-        /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
+        /// <exception cref="NotSupportedException">Always thrown.</exception>
         void IList<T>.RemoveAt(int index)
         {
             throw new NotSupportedException();
