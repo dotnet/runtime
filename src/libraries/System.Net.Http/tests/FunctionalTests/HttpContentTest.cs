@@ -392,7 +392,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue(3343, PlatformID.AnyUnix)]
         public async Task ReadAsStringAsync_SetInvalidCharset_ThrowsInvalidOperationException()
         {
             string sourceString = "some string";
