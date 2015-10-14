@@ -9,4 +9,3 @@
 Shims the d2i_RSAPublicKey method and makes it easier to invoke from managed code.
 */
 extern "C" RSA* DecodeRsaPublicKey(const unsigned char* buf, int32_t len);
-
