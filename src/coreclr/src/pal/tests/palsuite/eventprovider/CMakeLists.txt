@@ -10,13 +10,14 @@ set(SOURCES
 include_directories(${COREPAL_SOURCE_DIR}/prebuilt/inc)
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 
-
 add_executable(eventprovidertest
     ${SOURCES}
     )
 set(EVENT_PROVIDER_DEPENDENCIES "")
 set(EVENT_PROVIDER_LINKER_OTPTIONS "")  
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+
+    add_definitions(-DFEATURE_EVENT_TRACE=1)
 
     list(APPEND EVENT_PROVIDER_DEPENDENCIES 
         eventprovider

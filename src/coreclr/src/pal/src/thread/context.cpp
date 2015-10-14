@@ -220,7 +220,6 @@ BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
     
     bRet = TRUE;
 #if HAVE_BSD_REGS_T
-EXIT :
     if (regFd != -1)
     {
         close(regFd);
