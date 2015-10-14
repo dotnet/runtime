@@ -1201,6 +1201,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void GreaterThanOrEqualAnyByte() { TestVectorGreaterThanOrEqualAny<Byte>(); }
         [Fact]
+        [ActiveIssue(3262)]
         public void GreaterThanOrEqualAnySByte() { TestVectorGreaterThanOrEqualAny<SByte>(); }
         [Fact]
         public void GreaterThanOrEqualAnyUInt16() { TestVectorGreaterThanOrEqualAny<UInt16>(); }
@@ -1256,6 +1257,7 @@ namespace System.Numerics.Tests
         [Fact]
         public void GreaterThanOrEqualAllByte() { TestVectorGreaterThanOrEqualAll<Byte>(); }
         [Fact]
+        [ActiveIssue(3262)]
         public void GreaterThanOrEqualAllSByte() { TestVectorGreaterThanOrEqualAll<SByte>(); }
         [Fact]
         public void GreaterThanOrEqualAllUInt16() { TestVectorGreaterThanOrEqualAll<UInt16>(); }
