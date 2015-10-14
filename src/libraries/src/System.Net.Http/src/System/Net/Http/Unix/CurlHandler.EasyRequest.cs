@@ -264,7 +264,8 @@ namespace System.Net.Http
                 SetCurlOption(CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
                 VerboseTrace("Set proxy: " + proxyUri.ToString());
 
-                NetworkCredential credentials = GetCredentials(_handler.Proxy.Credentials, _requestMessage.RequestUri);
+                KeyValuePair<NetworkCredential, ulong> credentialScheme = GetCredentials(_handler.Proxy.Credentials, _requestMessage.RequestUri);
+                NetworkCredential credentials = credentialScheme.Key;
                 if (credentials != null)
                 {
                     if (string.IsNullOrEmpty(credentials.UserName))
@@ -280,20 +281,22 @@ namespace System.Net.Http
                 }
             }
 
-            internal void SetCredentialsOptions(NetworkCredential credentials)
+            internal void SetCredentialsOptions(KeyValuePair<NetworkCredential, ulong> credentialSchemePair)
             {
-                if (credentials == null)
+                if (credentialSchemePair.Key == null)
                 {
                     _networkCredential = null;
                     return;
                 }
 
+                NetworkCredential credentials = credentialSchemePair.Key;
+                ulong authScheme = credentialSchemePair.Value;
                 string userName = string.IsNullOrEmpty(credentials.Domain) ?
                     credentials.UserName :
                     string.Format("{0}\\{1}", credentials.Domain, credentials.UserName);
 
                 SetCurlOption(CURLoption.CURLOPT_USERNAME, userName);
-                SetCurlOption(CURLoption.CURLOPT_HTTPAUTH, CURLAUTH.AuthAny);
+                SetCurlOption(CURLoption.CURLOPT_HTTPAUTH, authScheme);
                 if (credentials.Password != null)
                 {
                     SetCurlOption(CURLoption.CURLOPT_PASSWORD, credentials.Password);
