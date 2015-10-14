@@ -7,7 +7,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
-using Validation;
 
 namespace System.Collections.Immutable
 {
@@ -774,7 +773,7 @@ namespace System.Collections.Immutable
 
                 if (_root == null || (_stack != null && !_stack.IsOwned(ref this)))
                 {
-                    Validation.Requires.FailObjectDisposed(this);
+                    Requires.FailObjectDisposed(this);
                 }
             }
 

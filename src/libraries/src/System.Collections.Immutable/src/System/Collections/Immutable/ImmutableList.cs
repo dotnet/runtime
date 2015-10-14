@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using Validation;
 
 namespace System.Collections.Immutable
 {
