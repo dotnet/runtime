@@ -3408,8 +3408,6 @@ bool Lowering::IndirsAreEquivalent(GenTreePtr candidate, GenTreePtr storeInd)
     if (pTreeA->OperGet() != pTreeB->OperGet())
         return false;
 
-    assert(genActualType(candidate->gtType) == genActualType(storeInd->gtType));
-
     if (genTypeSize(candidate->gtType) != genTypeSize(storeInd->gtType))
         return false;
 
