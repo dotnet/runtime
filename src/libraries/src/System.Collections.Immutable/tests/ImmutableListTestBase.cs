@@ -11,6 +11,10 @@ namespace System.Collections.Immutable.Tests
 {
     public abstract class ImmutableListTestBase : SimpleElementImmutablesTestBase
     {
+        protected static readonly Func<IList, object, object> IndexOfFunc = (l, v) => l.IndexOf(v);
+        protected static readonly Func<IList, object, object> ContainsFunc = (l, v) => l.Contains(v);
+        protected static readonly Func<IList, object, object> RemoveFunc = (l, v) => { l.Remove(v); return l.Count; };
+
         internal abstract IImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list);
 
         [Fact]
@@ -221,25 +225,55 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void IList_IndexOf_NullArgument()
         {
-            this.AssertIndexOfBaseline(1, (string)null);
-            this.AssertIndexOfBaseline("item", (string)null);
+            this.AssertIListBaseline(IndexOfFunc, 1, null);
+            this.AssertIListBaseline(IndexOfFunc, "item", null);
+            this.AssertIListBaseline(IndexOfFunc, new int?(1), null);
+            this.AssertIListBaseline(IndexOfFunc, new int?(), null);
         }
 
         [Fact]
         public void IList_IndexOf_ArgTypeMismatch()
         {
-            this.AssertIndexOfBaseline("first item", new object());
-            this.AssertIndexOfBaseline(1, 1.0);
+            this.AssertIListBaseline(IndexOfFunc, "first item", new object());
+            this.AssertIListBaseline(IndexOfFunc, 1, 1.0);
 
-            this.AssertIndexOfBaseline("first item", (object)null);
-            this.AssertIndexOfBaseline(1, (string)null);
+            this.AssertIListBaseline(IndexOfFunc, new int?(1), 1);
+            this.AssertIListBaseline(IndexOfFunc, new int?(1), new int?(1));
+            this.AssertIListBaseline(IndexOfFunc, new int?(1), string.Empty);
         }
 
         [Fact]
         public void IList_IndexOf_EqualsOverride()
         {
-            this.AssertIndexOfBaseline(new ProgrammaticEquals(v => v is string), "foo");
-            this.AssertIndexOfBaseline(new ProgrammaticEquals(v => v is string), 3);
+            this.AssertIListBaseline(IndexOfFunc, new ProgrammaticEquals(v => v is string), "foo");
+            this.AssertIListBaseline(IndexOfFunc, new ProgrammaticEquals(v => v is string), 3);
+        }
+
+        [Fact]
+        public void IList_Contains_NullArgument()
+        {
+            this.AssertIListBaseline(ContainsFunc, 1, null);
+            this.AssertIListBaseline(ContainsFunc, "item", null);
+            this.AssertIListBaseline(ContainsFunc, new int?(1), null);
+            this.AssertIListBaseline(ContainsFunc, new int?(), null);
+        }
+
+        [Fact]
+        public void IList_Contains_ArgTypeMismatch()
+        {
+            this.AssertIListBaseline(ContainsFunc, "first item", new object());
+            this.AssertIListBaseline(ContainsFunc, 1, 1.0);
+
+            this.AssertIListBaseline(ContainsFunc, new int?(1), 1);
+            this.AssertIListBaseline(ContainsFunc, new int?(1), new int?(1));
+            this.AssertIListBaseline(ContainsFunc, new int?(1), string.Empty);
+        }
+
+        [Fact]
+        public void IList_Contains_EqualsOverride()
+        {
+            this.AssertIListBaseline(ContainsFunc, new ProgrammaticEquals(v => v is string), "foo");
+            this.AssertIListBaseline(ContainsFunc, new ProgrammaticEquals(v => v is string), 3);
         }
 
         [Fact]
@@ -437,6 +471,36 @@ namespace System.Collections.Immutable.Tests
 
         protected abstract List<T> SortTestHelper<T>(ImmutableList<T> list, int index, int count, IComparer<T> comparer);
 
+        protected void AssertIListBaselineBothDirections<T1, T2>(Func<IList, object, object> operation, T1 item, T2 other)
+        {
+            this.AssertIListBaseline(operation, item, other);
+            this.AssertIListBaseline(operation, other, item);
+        }
+
+        /// <summary>
+        /// Asserts that the <see cref="ImmutableList{T}"/> or <see cref="ImmutableList{T}.Builder"/>'s
+        /// implementation of <see cref="IList"/> behave the same way <see cref="List{T}"/> does.
+        /// </summary>
+        /// <typeparam name="T">The type of the element for one collection to test with.</typeparam>
+        /// <param name="operation">
+        /// The <see cref="IList"/> operation to perform.
+        /// The function is provided with the <see cref="IList"/> implementation to test
+        /// and the item to use as the argument to the operation.
+        /// The function should return some equatable value by which to compare the effects
+        /// of the operation across <see cref="IList"/> implementations.
+        /// </param>
+        /// <param name="item">The item to add to the collection.</param>
+        /// <param name="other">The item to pass to the <paramref name="operation"/> function as the second parameter.</param>
+        protected void AssertIListBaseline<T>(Func<IList, object, object> operation, T item, object other)
+        {
+            IList bclList = new List<T> { item };
+            IList testedList = (IList)this.GetListQuery(ImmutableList.Create(item));
+
+            object expected = operation(bclList, other);
+            object actual = operation(testedList, other);
+            Assert.Equal(expected, actual);
+        }
+
         private void TrueForAllTestHelper<T>(ImmutableList<T> list, Predicate<T> test)
         {
             var bclList = list.ToList();
@@ -445,20 +509,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(expected, actual);
         }
 
-        private void AssertIndexOfBaseline<T1, T2>(T1 item, T2 other)
-        {
-            IndexOfTests.SimpleIndexOfBaselineTest(
-                i => (IList)this.GetListQuery(ImmutableList.Create(i)),
-                item,
-                other);
-
-            IndexOfTests.SimpleIndexOfBaselineTest(
-                i => (IList)this.GetListQuery(ImmutableList.Create(i)),
-                other,
-                item);
-        }
-
-        private class ProgrammaticEquals
+        protected class ProgrammaticEquals
         {
             private readonly Func<object, bool> equalsCallback;
 

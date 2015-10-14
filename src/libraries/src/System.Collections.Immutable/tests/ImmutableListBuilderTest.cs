@@ -301,6 +301,33 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IList_Remove_NullArgument()
+        {
+            this.AssertIListBaseline(RemoveFunc, 1, null);
+            this.AssertIListBaseline(RemoveFunc, "item", null);
+            this.AssertIListBaseline(RemoveFunc, new int?(1), null);
+            this.AssertIListBaseline(RemoveFunc, new int?(), null);
+        }
+
+        [Fact]
+        public void IList_Remove_ArgTypeMismatch()
+        {
+            this.AssertIListBaseline(RemoveFunc, "first item", new object());
+            this.AssertIListBaseline(RemoveFunc, 1, 1.0);
+
+            this.AssertIListBaseline(RemoveFunc, new int?(1), 1);
+            this.AssertIListBaseline(RemoveFunc, new int?(1), new int?(1));
+            this.AssertIListBaseline(RemoveFunc, new int?(1), string.Empty);
+        }
+
+        [Fact]
+        public void IList_Remove_EqualsOverride()
+        {
+            this.AssertIListBaseline(RemoveFunc, new ProgrammaticEquals(v => v is string), "foo");
+            this.AssertIListBaseline(RemoveFunc, new ProgrammaticEquals(v => v is string), 3);
+        }
+
+        [Fact]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableList.CreateBuilder<int>());
