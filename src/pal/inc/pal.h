@@ -3547,6 +3547,7 @@ SetErrorMode(
 #define MEM_RESERVE                     0x2000
 #define MEM_DECOMMIT                    0x4000
 #define MEM_RELEASE                     0x8000
+#define MEM_RESET                       0x80000
 #define MEM_FREE                        0x10000
 #define MEM_PRIVATE                     0x20000
 #define MEM_MAPPED                      0x40000

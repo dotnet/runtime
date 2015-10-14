@@ -103,7 +103,8 @@
     <CppCompile Include="$(VmSourcesDir)\FusionSink.cpp" Condition="'$(FeatureFusion)' == 'true'"/>
     <CppCompile Include="$(VmSourcesDir)\FusionBind.cpp" Condition="'$(FeatureFusion)' == 'true'"/>
     <CppCompile Include="$(VmSourcesDir)\GCDecode.cpp" />
-    <CppCompile Include="$(VmSourcesDir)\gcenv.cpp" />
+    <CppCompile Include="$(VmSourcesDir)\gcenv.ee.cpp" />
+    <CppCompile Include="$(VmSourcesDir)\gcenv.os.cpp" />
     <CppCompile Include="$(VmSourcesDir)\gchelpers.cpp" />
     <CppCompile Include="$(VmSourcesDir)\gchost.cpp" />
     <CppCompile Include="$(VmSourcesDir)\genericdict.cpp" />

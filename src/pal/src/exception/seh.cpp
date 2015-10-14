@@ -77,20 +77,16 @@ Return value :
 BOOL 
 SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
 {
-    BOOL bRet = FALSE;
-
 #if !HAVE_MACH_EXCEPTIONS
     if (!SEHInitializeSignals())
     {
         ERROR("SEHInitializeSignals failed!\n");
         SEHCleanup();
-        goto SEHInitializeExit;
+        return FALSE;
     }
 #endif
-    bRet = TRUE;
 
-SEHInitializeExit:
-    return bRet;
+    return TRUE;
 }
 
 /*++

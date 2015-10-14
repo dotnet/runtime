@@ -480,7 +480,7 @@ DWORD Thread::ResumeThread()
     DWORD res = ::ResumeThread(m_ThreadHandleForResume);
     _ASSERTE (res != 0 && "Thread is not previously suspended");
 #ifdef _DEBUG_IMPL
-    _ASSERTE (!m_Creater.IsSameThread());
+    _ASSERTE (!m_Creater.IsCurrentThread());
     if ((res != (DWORD)-1) && (res != 0))
     {
         Thread * pCurThread = GetThread();
@@ -3102,7 +3102,7 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
 
 
         _ASSERTE(ThreadStore::s_pThreadStore->m_holderthreadid.IsUnknown());
-        ThreadStore::s_pThreadStore->m_holderthreadid.SetThreadId();
+        ThreadStore::s_pThreadStore->m_holderthreadid.SetToCurrentThread();
 
         LOG((LF_SYNC, INFO3, "Locked thread store\n"));
 
@@ -3147,12 +3147,12 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
         // If Thread object has been destroyed, we need to reset the ownership info in Crst.
         _ASSERTE(!bThreadDestroyed || GetThread() == NULL);
         if (bThreadDestroyed) {
-            ThreadStore::s_pThreadStore->m_Crst.m_holderthreadid.SetThreadId();
+            ThreadStore::s_pThreadStore->m_Crst.m_holderthreadid.SetToCurrentThread();
         }
 #endif
 
         ThreadStore::s_pThreadStore->m_HoldingThread = NULL;
-        ThreadStore::s_pThreadStore->m_holderthreadid.ResetThreadId();
+        ThreadStore::s_pThreadStore->m_holderthreadid.Clear();
         ThreadStore::s_pThreadStore->Leave();
 
         Thread::EndThreadAffinity();

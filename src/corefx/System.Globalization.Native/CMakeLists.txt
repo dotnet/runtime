@@ -1,5 +1,6 @@
 
 project(System.Globalization.Native)
+include(CheckCXXSourceCompiles)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 

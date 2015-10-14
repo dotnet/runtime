@@ -1348,7 +1348,7 @@ void SyncBlockCache::GCDeleteSyncBlock(SyncBlock *psb)
     m_FreeBlockList = &psb->m_Link;
 }
 
-void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2)
+void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
 {
     CONTRACTL
     {
