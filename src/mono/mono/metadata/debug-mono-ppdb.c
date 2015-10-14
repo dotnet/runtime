@@ -59,7 +59,7 @@ typedef struct {
 } PdbStreamHeader;
 
 static gboolean
-get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age)
+get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp)
 {
 	MonoPEDirEntry *debug_dir_entry;
 	ImageDebugDirectory *debug_dir;
@@ -77,6 +77,7 @@ get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age)
 		if (dir->signature == 0x53445352) {
 			memcpy (out_guid, dir->guid, 16);
 			*out_age = dir->age;
+			*out_timestamp = debug_dir->time_date_stamp;
 			return TRUE;
 		}
 	}
@@ -92,6 +93,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	MonoImageOpenStatus status;
 	guint8 pe_guid [16];
 	gint32 pe_age;
+	gint32 pe_timestamp;
 	MonoPPDBFile *ppdb;
 
 	if (raw_contents) {
@@ -118,12 +120,13 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	 * The same id is stored in the Debug Directory of the PE file, and in the
 	 * #Pdb stream in the ppdb file.
 	 */
-	if (get_pe_debug_guid (image, pe_guid, &pe_age)) {
+	if (get_pe_debug_guid (image, pe_guid, &pe_age, &pe_timestamp)) {
 		PdbStreamHeader *pdb_stream = (PdbStreamHeader*)ppdb_image->heap_pdb.data;
 
 		g_assert (pdb_stream);
 
-		if (memcmp (pe_guid, pdb_stream->guid, 16) != 0) {
+		/* The pdb id is a concentation of the pe guid and the timestamp */
+		if (memcmp (pe_guid, pdb_stream->guid, 16) != 0 || memcmp (&pe_timestamp, pdb_stream->guid + 16, 4) != 0) {
 			g_warning ("Symbol file %s doesn't match image %s", ppdb_image->name,
 					   image->name);
 			mono_image_close (ppdb_image);
