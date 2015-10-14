@@ -88,4 +88,3 @@ extern "C" void Asn1OctetStringFree(ASN1_STRING* a);
 Direct shim to ASN1_STRING_free.
 */
 extern "C" void Asn1StringFree(ASN1_STRING* a);
-

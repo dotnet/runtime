@@ -102,4 +102,3 @@ extern "C" void Asn1StringFree(ASN1_STRING* a)
 {
     ASN1_STRING_free(a);
 }
-
