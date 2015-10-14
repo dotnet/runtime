@@ -26,6 +26,10 @@
 
 #define JAPANESE_LOCALE_AND_CALENDAR "ja_JP@calendar=japanese"
 
+const UChar UDAT_MONTH_DAY_UCHAR[] = {'M', 'M', 'M', 'M', 'd', '\0'};
+const UChar UDAT_YEAR_NUM_MONTH_DAY_UCHAR[] = {'y', 'M', 'd', '\0'};
+const UChar UDAT_YEAR_MONTH_UCHAR[] = {'y', 'M', 'M', 'M', 'M', '\0'};
+
 /*
 * These values should be kept in sync with System.Globalization.CalendarId
 */
@@ -247,15 +251,13 @@ Gets the Month-Day DateTime pattern for the specified locale.
 CalendarDataResult GetMonthDayPattern(Locale& locale, UChar* sMonthDay, int32_t stringCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
-    LocalPointer<DateTimePatternGenerator> generator(DateTimePatternGenerator::createInstance(locale, err));
+    UDateTimePatternGenerator* pGenerator = udatpg_open(locale.getName(), &err);
+    UDateTimePatternGeneratorHolder generatorHolder(pGenerator, err);
+
     if (U_FAILURE(err))
         return GetCalendarDataResult(err);
 
-    UnicodeString monthDayPattern = generator->getBestPattern(UnicodeString(UDAT_MONTH_DAY), err);
-    if (U_FAILURE(err))
-        return GetCalendarDataResult(err);
-
-    monthDayPattern.extract(sMonthDay, stringCapacity, err);
+    udatpg_getBestPattern(pGenerator, UDAT_MONTH_DAY_UCHAR, -1, sMonthDay, stringCapacity, &err);
 
     return GetCalendarDataResult(err);
 }
@@ -342,23 +344,37 @@ Gets the DateTime pattern for the specified skeleton and invokes the callback
 with the retrieved value.
 */
 bool InvokeCallbackForDateTimePattern(Locale& locale,
-                                      const char* patternSkeleton,
+                                      const UChar* patternSkeleton,
                                       EnumCalendarInfoCallback callback,
                                       const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
-    LocalPointer<DateTimePatternGenerator> generator(DateTimePatternGenerator::createInstance(locale, err));
+    UDateTimePatternGenerator* pGenerator = udatpg_open(locale.getName(), &err);
+    UDateTimePatternGeneratorHolder generatorHolder(pGenerator, err);
+
     if (U_FAILURE(err))
         return false;
 
-    UnicodeString pattern = generator->getBestPattern(UnicodeString(patternSkeleton), err);
-    if (U_SUCCESS(err))
+    UErrorCode ignore = U_ZERO_ERROR;
+    int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, nullptr, 0, &ignore);
+
+    UChar* bestPattern = (UChar*)calloc(patternLen + 1, sizeof(UChar));
+
+    if (bestPattern == nullptr)
     {
-        callback(pattern.getTerminatedBuffer(), context);
-        return true;
+        return false;
     }
 
-    return false;
+    udatpg_getBestPattern(pGenerator, patternSkeleton, -1, bestPattern, patternLen + 1, &err);
+
+    if (U_SUCCESS(err))
+    {
+        callback(bestPattern, context);
+    }
+
+    free(bestPattern);
+
+    return U_SUCCESS(err);
 }
 
 /*
@@ -504,7 +520,7 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
             // ShortDates to map kShort and kMedium in ICU, but also adding the "yMd"
             // skeleton as well, as this
             // closely matches what is used on Windows
-            return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_NUM_MONTH_DAY, callback, context) &&
+            return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_NUM_MONTH_DAY_UCHAR, callback, context) &&
                    InvokeCallbackForDatePattern(locale, DateFormat::kShort, callback, context) &&
                    InvokeCallbackForDatePattern(locale, DateFormat::kMedium, callback, context);
         case LongDates:
@@ -512,7 +528,7 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
             return InvokeCallbackForDatePattern(locale, DateFormat::kFull, callback, context) &&
                    InvokeCallbackForDatePattern(locale, DateFormat::kLong, callback, context);
         case YearMonths:
-            return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_MONTH, callback, context);
+            return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_MONTH_UCHAR, callback, context);
         case DayNames:
             return EnumWeekdays(
                 locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::WIDE, callback, context);
