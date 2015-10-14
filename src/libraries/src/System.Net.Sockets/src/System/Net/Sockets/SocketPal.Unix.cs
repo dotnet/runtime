@@ -470,108 +470,20 @@ namespace System.Net.Sockets
             }
         }
 
-        private static unsafe int AlignControlMessageSize(int size)
+        private static unsafe IPPacketInformation GetIPPacketInformation(Interop.libc.msghdr* msghdr, bool isIPv4, bool isIPv6)
         {
-            return (size + sizeof(void*) - 1) & ~(sizeof(void*) - 1);
-        }
-
-        private static unsafe Interop.libc.cmsghdr* GetNextControlMessage(byte* cmsgBuffer, int cmsgBufferLen, Interop.libc.cmsghdr* cmsg)
-        {
-            if ((int)cmsg->cmsg_len < sizeof(Interop.libc.cmsghdr))
-            {
-                return null;
-            }
-
-            // Calculate the size of the current control message aligned out to the closest
-            // word boundary.
-            int cmsgSize = AlignControlMessageSize((int)cmsg->cmsg_len);
-
-            // Move to the next control message. If its boundaries lie outside the message
-            // buffer, ignore it.
-            cmsg = (Interop.libc.cmsghdr*)((byte*)cmsg + cmsgSize);
-
-            byte* lastByte = cmsgBuffer + cmsgBufferLen;
-            if ((byte*)cmsg + 1 > lastByte)
-            {
-                return null;
-            }
-
-            cmsgSize = AlignControlMessageSize((int)cmsg->cmsg_len);
-            if ((byte*)cmsg + cmsgSize > lastByte)
-            {
-                return null;
-            }
-
-            return cmsg;
-        }
-
-        private static unsafe IPPacketInformation GetIPv4PacketInformation(Interop.libc.cmsghdr* cmsghdr)
-        {
-            if ((int)cmsghdr->cmsg_len < sizeof(Interop.libc.in_pktinfo))
+            if (!isIPv4 && !isIPv6)
             {
                 return default(IPPacketInformation);
             }
 
-            var in_pktinfo = (Interop.libc.in_pktinfo*)&cmsghdr[1];
-            return new IPPacketInformation(new IPAddress((long)in_pktinfo->ipi_addr.s_addr), in_pktinfo->ipi_ifindex);
-        }
-
-        private static unsafe IPPacketInformation GetIPv6PacketInformation(Interop.libc.cmsghdr* cmsghdr)
-        {
-            if ((int)cmsghdr->cmsg_len < sizeof(Interop.libc.in6_pktinfo))
+            Interop.Sys.IPPacketInformation nativePacketInfo;
+            if (!Interop.Sys.TryGetIPPacketInformation((byte*)msghdr, isIPv4, &nativePacketInfo))
             {
                 return default(IPPacketInformation);
             }
 
-            var in6_pktinfo = (Interop.libc.in6_pktinfo*)&cmsghdr[1];
-
-            var address = new byte[sizeof(Interop.libc.in6_addr)];
-            for (int i = 0; i < address.Length; i++)
-            {
-                address[i] = in6_pktinfo->ipi6_addr.s6_addr[i];
-            }
-
-            return new IPPacketInformation(new IPAddress(address), in6_pktinfo->ipi6_ifindex);
-        }
-
-        public static unsafe IPPacketInformation GetIPPacketInformation(byte* cmsgBuffer, int cmsgBufferLen, bool isIPv4, bool isIPv6)
-        {
-            if ((!isIPv4 && !isIPv6) || cmsgBufferLen < sizeof(Interop.libc.cmsghdr))
-            {
-                return default(IPPacketInformation);
-            }
-
-            var cmsghdr = (Interop.libc.cmsghdr*)cmsgBuffer;
-            if (isIPv4)
-            {
-                // Look for an appropriate message.
-                while (cmsghdr->cmsg_level != Interop.libc.IPPROTO_IP || cmsghdr->cmsg_type != Interop.libc.IP_PKTINFO)
-                {
-                    cmsghdr = GetNextControlMessage(cmsgBuffer, cmsgBufferLen, cmsghdr);
-                    if (cmsghdr == null)
-                    {
-                        return default(IPPacketInformation);
-                    }
-                }
-
-                return GetIPv4PacketInformation(cmsghdr);
-            }
-            else
-            {
-                Debug.Assert(isIPv6);
-
-                // Look for an appropriate message.
-                while (cmsghdr->cmsg_level != Interop.libc.IPPROTO_IPV6 || cmsghdr->cmsg_type != Interop.libc.IPV6_PKTINFO)
-                {
-                    cmsghdr = GetNextControlMessage(cmsgBuffer, cmsgBufferLen, cmsghdr);
-                    if (cmsghdr == null)
-                    {
-                        return default(IPPacketInformation);
-                    }
-                }
-
-                return GetIPv6PacketInformation(cmsghdr);
-            }
+            return new IPPacketInformation(nativePacketInfo.Address.GetIPAddress(), nativePacketInfo.InterfaceIndex);
         }
 
         public static SafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
@@ -848,12 +760,12 @@ namespace System.Net.Sockets
         {
             Debug.Assert(socketAddress != null);
 
-            int cmsgBufferLen =
-                (isIPv4 ? AlignControlMessageSize(sizeof(Interop.libc.cmsghdr) + sizeof(Interop.libc.in_pktinfo)) : 0) +
-                (isIPv6 ? AlignControlMessageSize(sizeof(Interop.libc.cmsghdr) + sizeof(Interop.libc.in6_pktinfo)) : 0);
+            int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(isIPv4, isIPv6);
             var cmsgBuffer = stackalloc byte[cmsgBufferLen];
 
             var sockAddrLen = (uint)socketAddressLen;
+
+            Interop.libc.msghdr msghdr;
 
             int received;
             fixed (byte* rawSocketAddress = socketAddress)
@@ -866,14 +778,14 @@ namespace System.Net.Sockets
                     iov_len = (IntPtr)count
                 };
 
-                var msghdr = new Interop.libc.msghdr(sockAddr, sockAddrLen, &iov, 1, cmsgBuffer, cmsgBufferLen, 0);
+                msghdr = new Interop.libc.msghdr(sockAddr, sockAddrLen, &iov, 1, cmsgBuffer, cmsgBufferLen, 0);
                 received = (int)Interop.libc.recvmsg(fd, &msghdr, flags);
                 receivedFlags = msghdr.msg_flags;
                 sockAddrLen = msghdr.msg_namelen;
                 cmsgBufferLen = (int)msghdr.msg_controllen;
             }
 
-            ipPacketInformation = GetIPPacketInformation(cmsgBuffer, cmsgBufferLen, isIPv4, isIPv6);
+            ipPacketInformation = GetIPPacketInformation(&msghdr, isIPv4, isIPv6);
 
             if (received == -1)
             {

@@ -42,6 +42,10 @@ else ()
     message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
 endif ()
 
+if (APPLE)
+    add_definitions(-D__APPLE_USE_RFC_3542)
+endif ()
+
 include(configure.cmake)
 
 add_subdirectory(System.Native)
