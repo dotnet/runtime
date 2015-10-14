@@ -26,7 +26,11 @@ namespace System.Runtime.Tests
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < 10000; i++)
-                        testString.ToCharArray();
+                    {
+                        testString.ToCharArray(); testString.ToCharArray(); testString.ToCharArray();
+                        testString.ToCharArray(); testString.ToCharArray(); testString.ToCharArray();
+                        testString.ToCharArray(); testString.ToCharArray(); testString.ToCharArray();
+                    }
         }
 
         [Benchmark]

@@ -43,12 +43,6 @@ For the time being, perf tests should reside within their own "Performance" fold
 
 Start by adding the following lines to the tests csproj:
 ```
-  <!-- Performance tests require v5.0 portable tools -->  
-  <PropertyGroup Condition="'$(RunPerfTestsForProject)' == 'true'">  
-    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>  
-    <TargetFrameworkProfile />  
-  </PropertyGroup>  
-
  <!-- Performance Tests -->  
   <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">  
     <Compile Include="Performance\Perf.Dictionary.cs" />  
@@ -63,7 +57,7 @@ Start by adding the following lines to the tests csproj:
 Next, the project.json for the tests directory also needs to import the perf stuff:
 
 ```
-    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0022",  
+    "Microsoft.DotNet.xunit.performance": "1.0.0-*",
     "xunit": "2.1.0",  
     "xunit.netcore.extensions": "1.0.0-prerelease-*"  
 ```

@@ -9,23 +9,27 @@ namespace XmlDocumentTests.XmlNodeTests
 {
     public class Perf_XmlNode
     {
+        private const int innerIterations = 10000;
+
         [Benchmark]
         public void GetAttributes()
         {
+            // Setup
             XmlAttributeCollection attr;
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<a attr1='test' attr2='test2' />");
+            XmlNode node = doc.DocumentElement;
+
             foreach (var iteration in Benchmark.Iterations)
             {
-                // Setup
-                XmlDocument doc = new XmlDocument();
-                doc.LoadXml("<a attr1='test' attr2='test2' />");
-                XmlNode node = doc.DocumentElement;
-
-                // Actual perf testing
                 using (iteration.StartMeasurement())
                 {
-                    attr = node.Attributes; attr = node.Attributes; attr = node.Attributes;
-                    attr = node.Attributes; attr = node.Attributes; attr = node.Attributes;
-                    attr = node.Attributes; attr = node.Attributes; attr = node.Attributes;
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        attr = node.Attributes; attr = node.Attributes; attr = node.Attributes;
+                        attr = node.Attributes; attr = node.Attributes; attr = node.Attributes;
+                        attr = node.Attributes; attr = node.Attributes; attr = node.Attributes;
+                    }
                 }
             }
         }
@@ -33,20 +37,22 @@ namespace XmlDocumentTests.XmlNodeTests
         [Benchmark]
         public void GetValue()
         {
+            // Setup
             string value;
+            var doc = new XmlDocument();
+            doc.LoadXml("<a attr1='test' attr2='test2' />");
+            XmlNode node = doc.DocumentElement;
+
             foreach (var iteration in Benchmark.Iterations)
             {
-                // Setup
-                var doc = new XmlDocument();
-                doc.LoadXml("<a attr1='test' attr2='test2' />");
-                XmlNode node = doc.DocumentElement;
-
-                // Actual perf testing
                 using (iteration.StartMeasurement())
                 {
-                    value = node.Value; value = node.Value; value = node.Value;
-                    value = node.Value; value = node.Value; value = node.Value;
-                    value = node.Value; value = node.Value; value = node.Value;
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        value = node.Value; value = node.Value; value = node.Value;
+                        value = node.Value; value = node.Value; value = node.Value;
+                        value = node.Value; value = node.Value; value = node.Value;
+                    }
                 }
             }
         }

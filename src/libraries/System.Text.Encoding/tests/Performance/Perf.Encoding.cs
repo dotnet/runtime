@@ -4,28 +4,106 @@
 using System.Text;
 using Xunit;
 using Microsoft.Xunit.Performance;
+using System.Collections.Generic;
 
-namespace System.Text.EncodingTests
+namespace System.Text.Tests
 {
     public class Perf_Encoding
     {
-        [Benchmark]
-        [InlineData(1000)]
-        [InlineData(10000)]
-        [InlineData(100000)]
-        [InlineData(1000000)]
-        public void GetBytes_str(int size)
+        public static IEnumerable<object[]> EncodingSizeData()
         {
-            Encoding enc = Encoding.UTF8;
+            int[] sizes = new int[] { 10000, 1000000 };
+            string[] encs = new string[] { "utf-8", "ascii" };
+            foreach (int size in sizes)
+                foreach (string enc in encs)
+                    yield return new object[] { size, enc };
+        }
+
+        [Benchmark]
+        [MemberData("EncodingSizeData")]
+        public void GetBytes(int size, string encName)
+        {
+            const int innerIterations = 100;
+            Encoding enc = Encoding.GetEncoding(encName);
             PerfUtils utils = new PerfUtils();
             string toEncode = utils.CreateString(size);
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i < 100; i++)
+                    for (int i = 0; i < innerIterations; i++)
                     {
                         enc.GetBytes(toEncode); enc.GetBytes(toEncode); enc.GetBytes(toEncode);
                         enc.GetBytes(toEncode); enc.GetBytes(toEncode); enc.GetBytes(toEncode);
                         enc.GetBytes(toEncode); enc.GetBytes(toEncode); enc.GetBytes(toEncode);
+                    }
+        }
+
+        [Benchmark]
+        [MemberData("EncodingSizeData")]
+        public void GetString(int size, string encName)
+        {
+            const int innerIterations = 100;
+            Encoding enc = Encoding.GetEncoding(encName);
+            PerfUtils utils = new PerfUtils();
+            byte[] bytes = enc.GetBytes(utils.CreateString(size));
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        enc.GetString(bytes); enc.GetString(bytes); enc.GetString(bytes);
+                        enc.GetString(bytes); enc.GetString(bytes); enc.GetString(bytes);
+                        enc.GetString(bytes); enc.GetString(bytes); enc.GetString(bytes);
+                    }
+        }
+
+        [Benchmark]
+        [MemberData("EncodingSizeData")]
+        public void GetChars(int size, string encName)
+        {
+            const int innerIterations = 100;
+            Encoding enc = Encoding.GetEncoding(encName);
+            PerfUtils utils = new PerfUtils();
+            byte[] bytes = enc.GetBytes(utils.CreateString(size));
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        enc.GetChars(bytes); enc.GetChars(bytes); enc.GetChars(bytes);
+                        enc.GetChars(bytes); enc.GetChars(bytes); enc.GetChars(bytes);
+                        enc.GetChars(bytes); enc.GetChars(bytes); enc.GetChars(bytes);
+                    }
+        }
+
+        [Benchmark]
+        [MemberData("EncodingSizeData")]
+        public void GetEncoder(int size, string encName)
+        {
+            const int innerIterations = 10000;
+            Encoding enc = Encoding.GetEncoding(encName);
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        enc.GetEncoder(); enc.GetEncoder(); enc.GetEncoder();
+                        enc.GetEncoder(); enc.GetEncoder(); enc.GetEncoder();
+                        enc.GetEncoder(); enc.GetEncoder(); enc.GetEncoder();
+                    }
+        }
+
+        [Benchmark]
+        [MemberData("EncodingSizeData")]
+        public void GetByteCount(int size, string encName)
+        {
+            const int innerIterations = 100;
+            Encoding enc = Encoding.GetEncoding(encName);
+            PerfUtils utils = new PerfUtils();
+            char[] chars = utils.CreateString(size).ToCharArray();
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        enc.GetByteCount(chars); enc.GetByteCount(chars); enc.GetByteCount(chars);
+                        enc.GetByteCount(chars); enc.GetByteCount(chars); enc.GetByteCount(chars);
+                        enc.GetByteCount(chars); enc.GetByteCount(chars); enc.GetByteCount(chars);
                     }
         }
     }

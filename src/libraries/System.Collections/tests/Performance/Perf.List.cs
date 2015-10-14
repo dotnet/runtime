@@ -186,6 +186,22 @@ namespace System.Collections.Tests
         [InlineData(1000)]
         [InlineData(10000)]
         [InlineData(100000)]
+        public void SetCapacity(int size)
+        {
+            List<object> list = CreateList(size);
+            foreach (var iteration in Benchmark.Iterations)
+                using (iteration.StartMeasurement())
+                    for (int i = 0; i < 100; i++)
+                    {
+                        // Capacity set back and forth between size+1 and size+2
+                        list.Capacity = size + (i % 2) + 1;
+                    }
+        }
+
+        [Benchmark]
+        [InlineData(1000)]
+        [InlineData(10000)]
+        [InlineData(100000)]
         public void ToArray(int size)
         {
             List<object> list = CreateList(size);

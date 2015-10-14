@@ -15,7 +15,6 @@ namespace System.ConsoleTests
     /// Perf tests for Console are chosen based on which functions have PAL code. They are:
     /// 
     /// - OpenStandardInput, OpenStandardOutput, OpenStandardError
-    /// - InputEncoding, OutputEncoding
     /// - ForegroundColor, BackgroundColor, ResetColor
     /// </summary>
     public class Perf_Console
@@ -83,6 +82,69 @@ namespace System.ConsoleTests
                 }
                 foreach (Stream s in streams)
                     s.Dispose();
+            }
+        }
+
+        [Benchmark]
+        public void ForegroundColor()
+        {
+            const int innerIterations = 1000;
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Black; Console.ForegroundColor = ConsoleColor.Blue;
+                        Console.ForegroundColor = ConsoleColor.Cyan; Console.ForegroundColor = ConsoleColor.DarkBlue;
+                        Console.ForegroundColor = ConsoleColor.DarkGray; Console.ForegroundColor = ConsoleColor.Red;
+                        Console.ForegroundColor = ConsoleColor.DarkGreen; Console.ForegroundColor = ConsoleColor.White;
+                    }
+                }
+            }
+            Console.ResetColor();
+        }
+
+        [Benchmark]
+        public void BackgroundColor()
+        {
+            const int innerIterations = 1000;
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        Console.BackgroundColor = ConsoleColor.Black; Console.BackgroundColor = ConsoleColor.Blue;
+                        Console.BackgroundColor = ConsoleColor.Cyan; Console.BackgroundColor = ConsoleColor.DarkBlue;
+                        Console.BackgroundColor = ConsoleColor.DarkGray; Console.BackgroundColor = ConsoleColor.Red;
+                        Console.BackgroundColor = ConsoleColor.DarkGreen; Console.BackgroundColor = ConsoleColor.White;
+                    }
+                }
+            }
+            Console.ResetColor();
+}
+
+        [Benchmark]
+        public void ResetColor()
+        {
+            const int innerIterations = 1000;
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkRed; Console.BackgroundColor = ConsoleColor.Cyan;
+                        Console.ResetColor();
+                        Console.ForegroundColor = ConsoleColor.DarkRed; Console.BackgroundColor = ConsoleColor.Cyan;
+                        Console.ResetColor();
+                        Console.ForegroundColor = ConsoleColor.DarkRed; Console.BackgroundColor = ConsoleColor.Cyan;
+                        Console.ResetColor();
+                        Console.ForegroundColor = ConsoleColor.DarkRed; Console.BackgroundColor = ConsoleColor.Cyan;
+                        Console.ResetColor();
+                    }
+                }
             }
         }
     }
