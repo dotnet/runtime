@@ -41,7 +41,23 @@ namespace System.Net
 
                     using (SafeX509Handle certHandle = Interop.libcrypto.X509_dup(certificate.Handle))
                     {
-                        hostnameMatch = Interop.Crypto.CheckX509Hostname(certHandle, hostName, hostName.Length);
+                        IPAddress hostnameAsIp;
+
+                        if (IPAddress.TryParse(hostName, out hostnameAsIp))
+                        {
+                            byte[] addressBytes = hostnameAsIp.GetAddressBytes();
+
+                            hostnameMatch = Interop.Crypto.CheckX509IpAddress(
+                                certHandle,
+                                addressBytes,
+                                addressBytes.Length,
+                                hostName,
+                                hostName.Length);
+                        }
+                        else
+                        {
+                            hostnameMatch = Interop.Crypto.CheckX509Hostname(certHandle, hostName, hostName.Length);
+                        }
                     }
 
                     if (hostnameMatch != 1)
