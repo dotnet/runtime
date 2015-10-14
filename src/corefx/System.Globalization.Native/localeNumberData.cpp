@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "locale.hpp"
+#include "holders.h"
 
 #include "unicode/calendar.h"
 #include "unicode/decimfmt.h"
@@ -442,11 +443,13 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
         case FirstWeekOfYear:
         {
             // corresponds to DateTimeFormat.CalendarWeekRule
-            LocalPointer<Calendar> calendar(Calendar::createInstance(locale, status));
+            UCalendar* pCal = ucal_open(nullptr, 0, locale.getName(), UCAL_TRADITIONAL, &status);
+            UCalendarHolder calHolder(pCal, status);
+
             if (U_SUCCESS(status))
             {
                 // values correspond to LOCALE_IFIRSTWEEKOFYEAR
-                int minDaysInWeek = calendar->getMinimalDaysInFirstWeek();
+                int minDaysInWeek = ucal_getAttribute(pCal, UCAL_MINIMAL_DAYS_IN_FIRST_WEEK);
                 if (minDaysInWeek == 1)
                 {
                     *value = CalendarWeekRule::FirstDay;
@@ -483,10 +486,12 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
         }
         case FirstDayofWeek:
         {
-            LocalPointer<Calendar> pcalendar(Calendar::createInstance(locale, status));
+            UCalendar* pCal = ucal_open(nullptr, 0, locale.getName(), UCAL_TRADITIONAL, &status);
+            UCalendarHolder calHolder(pCal, status);
+
             if (U_SUCCESS(status))
             {
-                *value = pcalendar->getFirstDayOfWeek(status) - 1; // .NET is 0-based and ICU is 1-based
+                *value = ucal_getAttribute(pCal, UCAL_FIRST_DAY_OF_WEEK) - 1; // .NET is 0-based and ICU is 1-based
             }
             break;
         }
