@@ -102,56 +102,56 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     }
 }
 
-void CLREventStatic::CreateManualEvent(bool bInitialState) 
-{ 
-    m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL); 
+void CLREventStatic::CreateManualEvent(bool bInitialState)
+{
+    m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL);
     m_fInitialized = true;
 }
 
-void CLREventStatic::CreateAutoEvent(bool bInitialState) 
-{ 
-    m_hEvent = CreateEventW(NULL, FALSE, bInitialState, NULL); 
+void CLREventStatic::CreateAutoEvent(bool bInitialState)
+{
+    m_hEvent = CreateEventW(NULL, FALSE, bInitialState, NULL);
     m_fInitialized = true;
 }
 
-void CLREventStatic::CreateOSManualEvent(bool bInitialState) 
-{ 
-    m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL); 
+void CLREventStatic::CreateOSManualEvent(bool bInitialState)
+{
+    m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL);
     m_fInitialized = true;
 }
 
-void CLREventStatic::CreateOSAutoEvent (bool bInitialState) 
-{ 
-    m_hEvent = CreateEventW(NULL, FALSE, bInitialState, NULL); 
+void CLREventStatic::CreateOSAutoEvent(bool bInitialState)
+{
+    m_hEvent = CreateEventW(NULL, FALSE, bInitialState, NULL);
     m_fInitialized = true;
 }
 
-void CLREventStatic::CloseEvent() 
-{ 
+void CLREventStatic::CloseEvent()
+{
     if (m_fInitialized && m_hEvent != INVALID_HANDLE_VALUE)
-    { 
+    {
         CloseHandle(m_hEvent);
         m_hEvent = INVALID_HANDLE_VALUE;
     }
 }
 
-bool CLREventStatic::IsValid() const 
-{ 
-    return m_fInitialized && m_hEvent != INVALID_HANDLE_VALUE; 
+bool CLREventStatic::IsValid() const
+{
+    return m_fInitialized && m_hEvent != INVALID_HANDLE_VALUE;
 }
 
-bool CLREventStatic::Set() 
-{ 
+bool CLREventStatic::Set()
+{
     if (!m_fInitialized)
         return false;
-    return !!SetEvent(m_hEvent); 
+    return !!SetEvent(m_hEvent);
 }
 
-bool CLREventStatic::Reset() 
-{ 
+bool CLREventStatic::Reset()
+{
     if (!m_fInitialized)
         return false;
-    return !!ResetEvent(m_hEvent); 
+    return !!ResetEvent(m_hEvent);
 }
 
 uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
@@ -161,7 +161,7 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
     if (m_fInitialized)
     {
         bool        disablePreemptive = false;
-        Thread *    pCurThread  = GetThread();
+        Thread *    pCurThread = GetThread();
 
         if (NULL != pCurThread)
         {
@@ -172,7 +172,7 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
             }
         }
 
-        result = WaitForSingleObjectEx(m_hEvent, dwMilliseconds, bAlertable); 
+        result = WaitForSingleObjectEx(m_hEvent, dwMilliseconds, bAlertable);
 
         if (disablePreemptive)
         {
@@ -228,8 +228,6 @@ ClrVirtualProtect(
 
 MethodTable * g_pFreeObjectMethodTable;
 
-EEConfig * g_pConfig;
-
 GCSystemInfo g_SystemInfo;
 
 void InitializeSystemInfo()
@@ -246,95 +244,9 @@ int32_t g_TrapReturningThreads;
 
 bool g_fFinalizerRunOnShutDown;
 
-__declspec(thread) Thread * pCurrentThread;
-
-Thread * GetThread()
-{
-    return pCurrentThread;
-}
-
-Thread * g_pThreadList = NULL;
-
-Thread * ThreadStore::GetThreadList(Thread * pThread)
-{
-    if (pThread == NULL)
-        return g_pThreadList;
-
-    return pThread->m_pNext;
-}
-
-void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
-{
-    // TODO: Locks
-
-    Thread * pThread = new Thread();
-    pThread->GetAllocContext()->init();
-    pCurrentThread = pThread;
-
-    pThread->m_pNext = g_pThreadList;
-    g_pThreadList = pThread;
-}
-
 void DestroyThread(Thread * pThread)
 {
     // TODO: Implement
-}
-
-void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
-{
-    GCHeap::GetGCHeap()->SetGCInProgress(TRUE);
-
-    // TODO: Implement
-}
-
-void GCToEEInterface::RestartEE(bool bFinishedGC)
-{
-    // TODO: Implement
-
-    GCHeap::GetGCHeap()->SetGCInProgress(FALSE);
-}
-
-void GCToEEInterface::ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
-{
-    // TODO: Implement - Scan stack roots on given thread
-}
-
-void GCToEEInterface::ScanStaticGCRefsOpportunistically(promote_func* fn, ScanContext* sc)
-{
-}
-
-void GCToEEInterface::GcStartWork(int condemned, int max_gen)
-{
-}
-
-void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
-{
-}
-
-void GCToEEInterface::GcBeforeBGCSweepWork()
-{
-}
-
-void GCToEEInterface::GcDone(int condemned)
-{
-}
-
-void FinalizerThread::EnableFinalization()
-{
-    // Signal to finalizer thread that there are objects to finalize
-    // TODO: Implement for finalization
-}
-
-bool PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext)
-{
-    // TODO: Implement for background GC
-    return false;
-}
-
-bool IsGCSpecialThread()
-{
-    // TODO: Implement for background GC
-    return false;
 }
 
 bool PalHasCapability(PalCapability capability)
@@ -342,3 +254,4 @@ bool PalHasCapability(PalCapability capability)
     // TODO: Implement for background GC
     return false;
 }
+

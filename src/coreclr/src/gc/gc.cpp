@@ -1442,12 +1442,12 @@ void WaitLongerNoInstru (int i)
 {
     // every 8th attempt:
     Thread *pCurThread = GetThread();
-    BOOL bToggleGC = FALSE;
+    bool bToggleGC = false;
     if (pCurThread)
     {
-        bToggleGC = pCurThread->PreemptiveGCDisabled();
+        bToggleGC = GCToEEInterface::IsPreemptiveGCDisabled(pCurThread);
         if (bToggleGC)
-            pCurThread->EnablePreemptiveGC();
+            GCToEEInterface::EnablePreemptiveGC(pCurThread);
     }
 
     // if we're waiting for gc to finish, we should block immediately
@@ -1473,10 +1473,10 @@ void WaitLongerNoInstru (int i)
     {
         if (bToggleGC || g_TrapReturningThreads)
         {
-            pCurThread->DisablePreemptiveGC();
+            GCToEEInterface::DisablePreemptiveGC(pCurThread);
             if (!bToggleGC)
             {
-                pCurThread->EnablePreemptiveGC();
+                GCToEEInterface::EnablePreemptiveGC(pCurThread);
             }
         }
     }
@@ -1609,13 +1609,13 @@ void WaitLonger (int i
 
     // every 8th attempt:
     Thread *pCurThread = GetThread();
-    BOOL bToggleGC = FALSE;
+    bool bToggleGC = false;
     if (pCurThread)
     {
-        bToggleGC = pCurThread->PreemptiveGCDisabled();
+        bToggleGC = GCToEEInterface::IsPreemptiveGCDisabled(pCurThread);
         if (bToggleGC)
         {
-            pCurThread->EnablePreemptiveGC();
+            GCToEEInterface::EnablePreemptiveGC(pCurThread);
         }
         else
         {
@@ -1657,7 +1657,7 @@ void WaitLonger (int i
 #ifdef SYNCHRONIZATION_STATS
             (spin_lock->num_disable_preemptive_w)++;
 #endif //SYNCHRONIZATION_STATS
-            pCurThread->DisablePreemptiveGC();
+            GCToEEInterface::DisablePreemptiveGC(pCurThread);
         }
     }
 }
@@ -1735,13 +1735,13 @@ static void leave_spin_lock (GCSpinLock * spin_lock)
 
 BOOL gc_heap::enable_preemptive (Thread* current_thread)
 {
-    BOOL cooperative_mode = FALSE;
+    bool cooperative_mode = false;
     if (current_thread)
     {
-        cooperative_mode = current_thread->PreemptiveGCDisabled();
+        cooperative_mode = GCToEEInterface::IsPreemptiveGCDisabled(current_thread);
         if (cooperative_mode)
         {
-            current_thread->EnablePreemptiveGC();    
+            GCToEEInterface::EnablePreemptiveGC(current_thread);
         }
     }
 
@@ -1754,7 +1754,7 @@ void gc_heap::disable_preemptive (Thread* current_thread, BOOL restore_cooperati
     {
         if (restore_cooperative)
         {
-            current_thread->DisablePreemptiveGC(); 
+            GCToEEInterface::DisablePreemptiveGC(current_thread);
         }
     }
 }
@@ -24371,7 +24371,7 @@ DWORD __stdcall gc_heap::bgc_thread_stub (void* arg)
     // since now GC threads can be managed threads.
     ClrFlsSetThreadType (ThreadType_GC);
     assert (heap->bgc_thread != NULL);
-    heap->bgc_thread->SetGCSpecial(true);
+    GCToEEInterface::SetGCSpecial(heap->bgc_thread);
     STRESS_LOG_RESERVE_MEM (GC_STRESSLOG_MULTIPLY);
 
     // We commit the thread's entire stack to ensure we're robust in low memory conditions.
@@ -24607,10 +24607,10 @@ void gc_heap::allow_fgc()
 {
     assert (bgc_thread == GetThread());
 
-    if (bgc_thread->PreemptiveGCDisabled() && bgc_thread->CatchAtSafePoint())
+    if (GCToEEInterface::IsPreemptiveGCDisabled(bgc_thread) && GCToEEInterface::CatchAtSafePoint(bgc_thread))
     {
-        bgc_thread->EnablePreemptiveGC();
-        bgc_thread->DisablePreemptiveGC();
+        GCToEEInterface::EnablePreemptiveGC(bgc_thread);
+        GCToEEInterface::DisablePreemptiveGC(bgc_thread);
     }
 }
 
@@ -33419,11 +33419,6 @@ void GCHeap::Relocate (Object** ppObject, ScanContext* sc,
     STRESS_LOG_ROOT_RELOCATE(ppObject, object, pheader, ((!(flags & GC_CALL_INTERIOR)) ? ((Object*)object)->GetGCSafeMethodTable() : 0));
 }
 
-/*static*/ BOOL GCHeap::IsLargeObject(MethodTable *mt)
-{
-    return mt->GetBaseSize() >= LARGE_OBJECT_SIZE;
-}
-
 /*static*/ BOOL GCHeap::IsObjectInFixedHeap(Object *pObj)
 {
     // For now we simply look at the size of the object to determine if it in the
@@ -34432,9 +34427,9 @@ void gc_heap::do_pre_gc()
     {
 #ifdef BACKGROUND_GC
         full_gc_counts[gc_type_background]++;
-#ifdef STRESS_HEAP
+#if defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
         GCHeap::gc_stress_fgcs_in_bgc = 0;
-#endif // STRESS_HEAP
+#endif // STRESS_HEAP && !FEATURE_REDHAWK
 #endif // BACKGROUND_GC
     }
     else
@@ -35397,7 +35392,7 @@ void CFinalize::EnterFinalizeLock()
 {
     _ASSERTE(dbgOnly_IsSpecialEEThread() ||
              GetThread() == 0 ||
-             GetThread()->PreemptiveGCDisabled());
+             GCToEEInterface::IsPreemptiveGCDisabled(GetThread()));
 
 retry:
     if (FastInterlockExchange (&lock, 0) >= 0)
@@ -35424,7 +35419,7 @@ void CFinalize::LeaveFinalizeLock()
 {
     _ASSERTE(dbgOnly_IsSpecialEEThread() ||
              GetThread() == 0 ||
-             GetThread()->PreemptiveGCDisabled());
+             GCToEEInterface::IsPreemptiveGCDisabled(GetThread()));
 
 #ifdef _DEBUG
     lockowner_threadid = (DWORD) -1;
