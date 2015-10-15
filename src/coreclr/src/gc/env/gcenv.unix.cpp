@@ -116,52 +116,52 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     }
 }
 
-void CLREventStatic::CreateManualEvent(bool bInitialState) 
-{ 
+void CLREventStatic::CreateManualEvent(bool bInitialState)
+{
     // TODO: Implement
     m_fInitialized = true;
 }
 
-void CLREventStatic::CreateAutoEvent(bool bInitialState) 
-{ 
+void CLREventStatic::CreateAutoEvent(bool bInitialState)
+{
     // TODO: Implement
     m_fInitialized = true;
 }
 
-void CLREventStatic::CreateOSManualEvent(bool bInitialState) 
-{ 
+void CLREventStatic::CreateOSManualEvent(bool bInitialState)
+{
     CreateManualEvent(bInitialState);
 }
 
-void CLREventStatic::CreateOSAutoEvent (bool bInitialState) 
-{ 
+void CLREventStatic::CreateOSAutoEvent (bool bInitialState)
+{
     CreateAutoEvent(bInitialState);
 }
 
-void CLREventStatic::CloseEvent() 
-{ 
+void CLREventStatic::CloseEvent()
+{
     if (m_fInitialized)
-    { 
+    {
         // TODO: Implement
         m_fInitialized = false;
     }
 }
 
-bool CLREventStatic::IsValid() const 
-{ 
+bool CLREventStatic::IsValid() const
+{
     return m_fInitialized; 
 }
 
-bool CLREventStatic::Set() 
-{ 
+bool CLREventStatic::Set()
+{
     if (!m_fInitialized)
         return false;
     // TODO: Implement
     return true; 
 }
 
-bool CLREventStatic::Reset() 
-{ 
+bool CLREventStatic::Reset()
+{
     if (!m_fInitialized)
         return false;
     // TODO: Implement
@@ -314,8 +314,6 @@ ClrVirtualProtect(
 
 MethodTable * g_pFreeObjectMethodTable;
 
-EEConfig * g_pConfig;
-
 GCSystemInfo g_SystemInfo;
 
 void InitializeSystemInfo()
@@ -370,61 +368,10 @@ void DestroyThread(Thread * pThread)
     // TODO: Implement
 }
 
-void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
-{
-    GCHeap::GetGCHeap()->SetGCInProgress(TRUE);
-
-    // TODO: Implement
-}
-
-void GCToEEInterface::RestartEE(bool bFinishedGC)
-{
-    // TODO: Implement
-
-    GCHeap::GetGCHeap()->SetGCInProgress(FALSE);
-}
-
-void GCToEEInterface::ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
-{
-    // TODO: Implement - Scan stack roots on given thread
-}
-
-void GCToEEInterface::ScanStaticGCRefsOpportunistically(promote_func* fn, ScanContext* sc)
-{
-}
-
-void GCToEEInterface::GcStartWork(int condemned, int max_gen)
-{
-}
-
-void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
-{
-}
-
-void GCToEEInterface::GcBeforeBGCSweepWork()
-{
-}
-
-void GCToEEInterface::GcDone(int condemned)
-{
-}
-
 void FinalizerThread::EnableFinalization()
 {
     // Signal to finalizer thread that there are objects to finalize
     // TODO: Implement for finalization
-}
-
-bool PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext)
-{
-    // TODO: Implement for background GC
-    return false;
-}
-
-bool IsGCSpecialThread()
-{
-    // TODO: Implement for background GC
-    return false;
 }
 
 bool PalHasCapability(PalCapability capability)

@@ -675,16 +675,16 @@ void gc_heap::fire_etw_pin_object_event (BYTE* object, BYTE** ppObject)
 DWORD gc_heap::user_thread_wait (CLREvent *event, BOOL no_mode_change, int time_out_ms)
 {
     Thread* pCurThread = NULL;
-    BOOL mode = FALSE;
+    bool mode = false;
     DWORD dwWaitResult = NOERROR;
     
     if (!no_mode_change)
     {
         pCurThread = GetThread();
-        mode = pCurThread ? pCurThread->PreemptiveGCDisabled() : FALSE;
+        mode = pCurThread ? GCToEEInterface::IsPreemptiveGCDisabled(pCurThread) : false;
         if (mode)
         {
-            pCurThread->EnablePreemptiveGC();
+            GCToEEInterface::EnablePreemptiveGC(pCurThread);
         }
     }
 
@@ -692,7 +692,7 @@ DWORD gc_heap::user_thread_wait (CLREvent *event, BOOL no_mode_change, int time_
 
     if (!no_mode_change && mode)
     {
-        pCurThread->DisablePreemptiveGC();
+        GCToEEInterface::DisablePreemptiveGC(pCurThread);
     }
 
     return dwWaitResult;
@@ -787,7 +787,7 @@ DWORD WINAPI gc_heap::rh_bgc_thread_stub(void * pContext)
     // should not be acquired as part of this operation. This is necessary because this thread is created in
     // the context of a garbage collection and the lock is already held by the GC.
     ASSERT(GCHeap::GetGCHeap()->IsGCInProgress());
-    ThreadStore::AttachCurrentThread(false);
+    GCToEEInterface::AttachCurrentThread();
 
     // Inform the GC which Thread* we are.
     pStartContext->m_pRealContext->bgc_thread = GetThread();
@@ -798,4 +798,54 @@ DWORD WINAPI gc_heap::rh_bgc_thread_stub(void * pContext)
 
 #endif // BACKGROUND_GC && FEATURE_REDHAWK
 
+#ifdef FEATURE_BASICFREEZE
+segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
+{
+    heap_segment * seg = new (nothrow) heap_segment;
+    if (!seg)
+    {
+        return NULL;
+    }
+
+    BYTE* base_mem = (BYTE*)pseginfo->pvMem;
+    heap_segment_mem(seg) = base_mem + pseginfo->ibFirstObject;
+    heap_segment_allocated(seg) = base_mem + pseginfo->ibAllocated;
+    heap_segment_committed(seg) = base_mem + pseginfo->ibCommit;
+    heap_segment_reserved(seg) = base_mem + pseginfo->ibReserved;
+    heap_segment_next(seg) = 0;
+    heap_segment_used(seg) = heap_segment_allocated(seg);
+    heap_segment_plan_allocated(seg) = 0;
+    seg->flags = heap_segment_flags_readonly;
+
+#if defined (MULTIPLE_HEAPS) && !defined (ISOLATED_HEAPS)
+    gc_heap* heap = gc_heap::g_heaps[0];
+    heap_segment_heap(seg) = heap;
+#else
+    gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS && !ISOLATED_HEAPS
+
+    if (heap->insert_ro_segment(seg) == FALSE)
+    {
+        delete seg;
+        return NULL;
+    }
+
+    return reinterpret_cast< segment_handle >(seg);
+}
+
+void GCHeap::UnregisterFrozenSegment(segment_handle seg)
+{
+#if defined (MULTIPLE_HEAPS) && !defined (ISOLATED_HEAPS)
+    gc_heap* heap = gc_heap::g_heaps[0];
+#else
+    gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS && !ISOLATED_HEAPS
+
+    heap->remove_ro_segment(reinterpret_cast<heap_segment*>(seg));
+}
+#endif // FEATURE_BASICFREEZE
+
+
 #endif // !DACCESS_COMPILE
+
+
