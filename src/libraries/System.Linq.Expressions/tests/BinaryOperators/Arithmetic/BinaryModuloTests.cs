@@ -617,5 +617,48 @@ namespace Tests.ExpressionCompiler.Binary
         }
 
         #endregion
+
+        [Fact]
+        public static void CannotReduce()
+        {
+            Expression exp = Expression.Modulo(Expression.Constant(0), Expression.Constant(0));
+            Assert.False(exp.CanReduce);
+            Assert.Same(exp, exp.Reduce());
+            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+        }
+
+        [Fact]
+        public static void ThrowsOnLeftNull()
+        {
+            Assert.Throws<ArgumentNullException>("left", () => Expression.Modulo(null, Expression.Constant("")));
+        }
+
+        [Fact]
+        public static void ThrowsOnRightNull()
+        {
+            Assert.Throws<ArgumentNullException>("right", () => Expression.Modulo(Expression.Constant(""), null));
+        }
+
+        private static class Unreadable<T>
+        {
+            public static T WriteOnly
+            {
+                set { }
+            }
+        }
+
+        [Fact]
+        public static void ThrowsOnLeftUnreadable()
+        {
+            Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
+            Assert.Throws<ArgumentException>("left", () => Expression.Modulo(value, Expression.Constant(1)));
+        }
+
+        [Fact]
+        public static void ThrowsOnRightUnreadable()
+        {
+            Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
+            Assert.Throws<ArgumentException>("right", () => Expression.Modulo(Expression.Constant(1), value));
+        }
     }
 }
