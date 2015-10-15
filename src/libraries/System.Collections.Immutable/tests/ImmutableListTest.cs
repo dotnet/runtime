@@ -605,14 +605,15 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void RemoveRangeArrayTest()
         {
+            Assert.True(ImmutableList<int>.Empty.RemoveRange(0, 0).IsEmpty);
+
             var list = ImmutableList.Create(1, 2, 3);
             Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveRange(-1, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveRange(0, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveRange(4, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveRange(0, 4));
             Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveRange(2, 2));
-            list.RemoveRange(3, 0);
-            Assert.Equal(3, list.Count);
+            Assert.Equal(list, list.RemoveRange(3, 0));
         }
 
         [Fact]
