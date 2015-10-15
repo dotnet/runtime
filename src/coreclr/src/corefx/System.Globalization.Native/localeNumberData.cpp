@@ -6,6 +6,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <vector>
 
 #include "locale.hpp"
 #include "holders.h"
@@ -64,7 +65,7 @@ NormalizeNumericPattern
 Returns a numeric string pattern in a format that we can match against the
 appropriate managed pattern.
 */
-void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* destPattern, bool isNegative)
+std::string NormalizeNumericPattern(const UChar* srcPattern, bool isNegative)
 {
     // A srcPattern example: "#,##0.00 C;(#,##0.00 C)" but where C is the
     // international currency symbol (UCHAR_CURRENCY)
@@ -72,11 +73,20 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
     // separated by a semicolon
     // A destPattern example: "(C n)" where C represents the currency symbol, and
     // n is the number
-    destPattern->remove();
+    std::string destPattern;
 
     int iStart = 0;
-    int iEnd = srcPattern->length() - 1;
-    int32_t iNegativePatternStart = srcPattern->indexOf(UCHAR_SEMICOLON);
+    int iEnd = u_strlen(srcPattern);
+    int32_t iNegativePatternStart = -1;
+
+    for (int i = iStart; i < iEnd; i++)
+    {
+        if (srcPattern[i] == ';')
+        {
+            iNegativePatternStart = i;
+        }
+    }
+
     if (iNegativePatternStart >= 0)
     {
         if (isNegative)
@@ -96,14 +106,14 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
 
     for (int i = iStart; i <= iEnd; i++)
     {
-        UChar ch = srcPattern->charAt(i);
+        UChar ch = srcPattern[i];
         switch (ch)
         {
             case UCHAR_DIGIT:
                 if (!digitAdded)
                 {
                     digitAdded = true;
-                    destPattern->append('n');
+                    destPattern.push_back('n');
                 }
                 break;
 
@@ -111,7 +121,7 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
                 if (!currencyAdded)
                 {
                     currencyAdded = true;
-                    destPattern->append('C');
+                    destPattern.push_back('C');
                 }
                 break;
 
@@ -120,7 +130,7 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
                 if (!spaceAdded)
                 {
                     spaceAdded = true;
-                    destPattern->append(UCHAR_SPACE);
+                    destPattern.push_back(' ');
                 }
                 else
                 {
@@ -132,11 +142,11 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
             case UCHAR_OPENPAREN:
             case UCHAR_CLOSEPAREN:
                 minusAdded = true;
-                destPattern->append(ch);
+                destPattern.push_back(static_cast<char>(ch));
                 break;
 
             case UCHAR_PERCENT:
-                destPattern->append(ch);
+                destPattern.push_back('%');
                 break;
         }
     }
@@ -145,8 +155,10 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
     // minus sign
     if (isNegative && !minusAdded)
     {
-        destPattern->insert(0, UCHAR_MINUS);
+        destPattern.insert(destPattern.begin(), '-');
     }
+
+    return destPattern;
 }
 
 /*
@@ -157,30 +169,35 @@ Determines the pattern from the decimalFormat and returns the matching pattern's
 index from patterns[].
 Returns index -1 if no pattern is found.
 */
-int GetNumericPattern(DecimalFormat* decimalFormat, const char* patterns[], int patternsCount, bool isNegative)
+int GetNumericPattern(const UNumberFormat* pNumberFormat, const char* patterns[], int patternsCount, bool isNegative)
 {
     const int INVALID_FORMAT = -1;
     const int MAX_DOTNET_NUMERIC_PATTERN_LENGTH = 6; // example: "(C n)" plus terminator
-    char charPattern[MAX_DOTNET_NUMERIC_PATTERN_LENGTH] = {0};
 
-    UnicodeString icuPattern;
-    decimalFormat->toPattern(icuPattern);
+    UErrorCode ignore = U_ZERO_ERROR;
+    int32_t icuPatternLength = unum_toPattern(pNumberFormat, false, nullptr, 0, &ignore);
 
-    UnicodeString normalizedPattern;
-    NormalizeNumericPattern(&icuPattern, &normalizedPattern, isNegative);
+    std::vector<UChar> icuPattern(icuPatternLength + 1, '\0');
+
+    UErrorCode err = U_ZERO_ERROR;
+
+    unum_toPattern(pNumberFormat, false, icuPattern.data(), icuPattern.size(), &err);
+
+    assert(U_SUCCESS(err));
+
+    std::string normalizedPattern = NormalizeNumericPattern(icuPattern.data(), isNegative);
 
     assert(normalizedPattern.length() > 0);
     assert(normalizedPattern.length() < MAX_DOTNET_NUMERIC_PATTERN_LENGTH);
+
     if (normalizedPattern.length() == 0 || normalizedPattern.length() >= MAX_DOTNET_NUMERIC_PATTERN_LENGTH)
     {
         return INVALID_FORMAT;
     }
 
-    u_UCharsToChars(normalizedPattern.getTerminatedBuffer(), charPattern, normalizedPattern.length() + 1);
-
     for (int i = 0; i < patternsCount; i++)
     {
-        if (strcmp(charPattern, patterns[i]) == 0)
+        if (strcmp(normalizedPattern.c_str(), patterns[i]) == 0)
         {
             return i;
         }
@@ -218,19 +235,17 @@ int GetCurrencyNegativePattern(const Locale& locale)
                                      "(n C)"};
     UErrorCode status = U_ZERO_ERROR;
 
-    LocalPointer<NumberFormat> format(NumberFormat::createInstance(locale, UNUM_CURRENCY, status));
+    UNumberFormat* pFormat = unum_open(UNUM_CURRENCY, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
+
     assert(U_SUCCESS(status));
+
     if (U_SUCCESS(status))
     {
-        DecimalFormat* decimalFormat = dynamic_cast<DecimalFormat*>(format.getAlias());
-        assert(decimalFormat != NULL);
-        if (decimalFormat != NULL)
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), true);
+        if (value >= 0)
         {
-            int value = GetNumericPattern(decimalFormat, Patterns, ARRAY_LENGTH(Patterns), true);
-            if (value >= 0)
-            {
-                return value;
-            }
+            return value;
         }
     }
 
@@ -250,19 +265,17 @@ int GetCurrencyPositivePattern(const Locale& locale)
     static const char* Patterns[] = {"Cn", "nC", "C n", "n C"};
     UErrorCode status = U_ZERO_ERROR;
 
-    LocalPointer<NumberFormat> format(NumberFormat::createInstance(locale, UNUM_CURRENCY, status));
+    UNumberFormat* pFormat = unum_open(UNUM_CURRENCY, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
+
     assert(U_SUCCESS(status));
+
     if (U_SUCCESS(status))
     {
-        DecimalFormat* decimalFormat = dynamic_cast<DecimalFormat*>(format.getAlias());
-        assert(decimalFormat != NULL);
-        if (decimalFormat != NULL)
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), false);
+        if (value >= 0)
         {
-            int value = GetNumericPattern(decimalFormat, Patterns, ARRAY_LENGTH(Patterns), false);
-            if (value >= 0)
-            {
-                return value;
-            }
+            return value;
         }
     }
 
@@ -282,19 +295,17 @@ int GetNumberNegativePattern(const Locale& locale)
     static const char* Patterns[] = {"(n)", "-n", "- n", "n-", "n -"};
     UErrorCode status = U_ZERO_ERROR;
 
-    LocalPointer<NumberFormat> format(NumberFormat::createInstance(locale, UNUM_DECIMAL, status));
+    UNumberFormat* pFormat = unum_open(UNUM_DECIMAL, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
+
     assert(U_SUCCESS(status));
+
     if (U_SUCCESS(status))
     {
-        DecimalFormat* decimalFormat = dynamic_cast<DecimalFormat*>(format.getAlias());
-        assert(decimalFormat != NULL);
-        if (decimalFormat != NULL)
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), true);
+        if (value >= 0)
         {
-            int value = GetNumericPattern(decimalFormat, Patterns, ARRAY_LENGTH(Patterns), true);
-            if (value >= 0)
-            {
-                return value;
-            }
+            return value;
         }
     }
 
@@ -315,19 +326,17 @@ int GetPercentNegativePattern(const Locale& locale)
         "-n %", "-n%", "-%n", "%-n", "%n-", "n-%", "n%-", "-% n", "n %-", "% n-", "% -n", "n- %"};
     UErrorCode status = U_ZERO_ERROR;
 
-    LocalPointer<NumberFormat> format(NumberFormat::createInstance(locale, UNUM_PERCENT, status));
+    UNumberFormat* pFormat = unum_open(UNUM_PERCENT, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
+
     assert(U_SUCCESS(status));
+
     if (U_SUCCESS(status))
     {
-        DecimalFormat* decimalFormat = dynamic_cast<DecimalFormat*>(format.getAlias());
-        assert(decimalFormat != NULL);
-        if (decimalFormat != NULL)
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), true);
+        if (value >= 0)
         {
-            int value = GetNumericPattern(decimalFormat, Patterns, ARRAY_LENGTH(Patterns), true);
-            if (value >= 0)
-            {
-                return value;
-            }
+            return value;
         }
     }
 
@@ -347,19 +356,17 @@ int GetPercentPositivePattern(const Locale& locale)
     static const char* Patterns[] = {"n %", "n%", "%n", "% n"};
     UErrorCode status = U_ZERO_ERROR;
 
-    LocalPointer<NumberFormat> format(NumberFormat::createInstance(locale, UNUM_PERCENT, status));
+    UNumberFormat* pFormat = unum_open(UNUM_PERCENT, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
+
     assert(U_SUCCESS(status));
+
     if (U_SUCCESS(status))
     {
-        DecimalFormat* decimalFormat = dynamic_cast<DecimalFormat*>(format.getAlias());
-        assert(decimalFormat != NULL);
-        if (decimalFormat != NULL)
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), false);
+        if (value >= 0)
         {
-            int value = GetNumericPattern(decimalFormat, Patterns, ARRAY_LENGTH(Patterns), false);
-            if (value >= 0)
-            {
-                return value;
-            }
+            return value;
         }
     }
 
