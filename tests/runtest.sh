@@ -35,6 +35,7 @@ function print_usage {
     echo '  --runFailingTestsOnly        : Run only the tests that are disabled on this platform due to unexpected failures.'
     echo '                                 Failing tests are listed in coreclr/tests/failingTestsOutsideWindows.txt, one per'
     echo '                                 line, as paths to .sh files relative to the directory specified by --testRootDir.'
+    echo '  --disableEventLogging        : Disable the events logged by both VM and Managed Code'
     echo '  --sequential                 : Run tests sequentially (default is to run in parallel).'
     echo '  -v, --verbose                : Show output from each test.'
     echo '  -h|--help                    : Show usage information.'
@@ -548,6 +549,7 @@ coreClrBinDir=
 mscorlibDir=
 coreFxBinDir=
 coreFxNativeBinDir=
+((disableEventLogging = 0))
 
 # Handle arguments
 verbose=0
@@ -591,6 +593,9 @@ do
         --runFailingTestsOnly)
             ((runFailingTestsOnly = 1))
             ;;
+        --disableEventLogging)
+            ((disableEventLogging = 1))
+            ;;
         --sequential)
             ((maxProcesses = 1))
             ;;
@@ -601,6 +606,10 @@ do
             ;;
     esac
 done
+
+if (( disableEventLogging == 0)); then
+        export COMPlus_EnableEventLog=1
+fi
 
 if [ -z "$testRootDir" ]; then
     echo "--testRootDir is required."

@@ -14,15 +14,15 @@ This file is generated using the logic from <root>/src/inc/genXplatLttng.pl
 #define TRACEPOINT_DEFINE
 #define TRACEPOINT_PROBE_DYNAMIC_LINKAGE
 #include "lttng/tpdotnetruntimestress.h"
-extern "C" BOOL  EventEnabledStressLogEvent(){ return TRUE;}
-extern "C" ULONG  FireEtwStressLogEvent(
+extern "C" BOOL  EventXplatEnabledStressLogEvent(){ return TRUE;}
+extern "C" ULONG  FireEtXplatStressLogEvent(
                   const unsigned int Facility,
                   const unsigned char LogLevel,
                   LPCSTR Message
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledStressLogEvent()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledStressLogEvent()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -37,8 +37,8 @@ extern "C" ULONG  FireEtwStressLogEvent(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledStressLogEvent_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwStressLogEvent_V1(
+extern "C" BOOL  EventXplatEnabledStressLogEvent_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatStressLogEvent_V1(
                   const unsigned int Facility,
                   const unsigned char LogLevel,
                   LPCSTR Message,
@@ -46,7 +46,7 @@ extern "C" ULONG  FireEtwStressLogEvent_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledStressLogEvent_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledStressLogEvent_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -62,8 +62,8 @@ extern "C" ULONG  FireEtwStressLogEvent_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledCLRStackWalkStress(){ return TRUE;}
-extern "C" ULONG  FireEtwCLRStackWalkStress(
+extern "C" BOOL  EventXplatEnabledCLRStackWalkStress(){ return TRUE;}
+extern "C" ULONG  FireEtXplatCLRStackWalkStress(
                   const unsigned short ClrInstanceID,
                   const unsigned char Reserved1,
                   const unsigned char Reserved2,
@@ -72,7 +72,7 @@ extern "C" ULONG  FireEtwCLRStackWalkStress(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledCLRStackWalkStress()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledCLRStackWalkStress()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
