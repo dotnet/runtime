@@ -497,8 +497,8 @@ FCFuncStart(gMetaDataImport)
     FCFuncElement("_GetDefaultValue", MetaDataImport::GetDefaultValue) 
     FCFuncElement("_GetName", MetaDataImport::GetName) 
     FCFuncElement("_GetUserString", MetaDataImport::GetUserString) 
-#ifndef FEATURE_CORECLR
     FCFuncElement("_GetScopeProps", MetaDataImport::GetScopeProps)  
+#ifndef FEATURE_CORECLR
     FCFuncElement("_GetClassLayout", MetaDataImport::GetClassLayout) 
     FCFuncElement("_GetSignatureFromToken", MetaDataImport::GetSignatureFromToken) 
 #endif // FEATURE_CORECLR
