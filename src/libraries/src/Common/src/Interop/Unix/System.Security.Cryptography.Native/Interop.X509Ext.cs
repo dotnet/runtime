@@ -12,6 +12,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative)]
         internal static extern SafeX509ExtensionHandle X509ExtensionCreateByObj(
             SafeAsn1ObjectHandle oid,
+            [MarshalAs(UnmanagedType.Bool)] bool isCritical,
             SafeAsn1OctetStringHandle data);
 
         [DllImport(Libraries.CryptoNative)]
