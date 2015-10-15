@@ -70,4 +70,19 @@
     
   </PropertyGroup>
   
+  <!-- Which tests shall we build? Default: Priority 0 tests.
+    At the command-line, the user can specify /p:CLRTestPriorityToBuild=2 (for example), and
+    all tests with CLRTestPriority 2, 1 AND 0 will build. 
+    
+    Consequently, specifying CLRTestPriorityToBuild=1 will build all tests with CLRTestPriority 1 and 0.
+    
+    CLRTestPriority = 0 will build only priority 0 cases. 
+  
+    In other words, the CLRTestPriority cases of 0 are *essential* testcases. The higher the value,
+    the less priority we give them.
+   -->
+  <PropertyGroup>
+    <CLRTestPriorityToBuild>1</CLRTestPriorityToBuild>
+  </PropertyGroup>
+  
 </Project>

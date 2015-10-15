@@ -26,8 +26,11 @@ WARNING:   When setting properties based on their current state (for example:
   <Target
     Name="GetExecuteCmdFullPath"
     Returns="$(ExecuteCmdFullPath)">
-    <PropertyGroup>
-        <ExecuteCmdFullPath>$(OutputPath)\$(AssemblyName).cmd</ExecuteCmdFullPath>
+    <PropertyGroup Condition="$(GenerateRunScript)">
+        <ExecuteCmdFullPath>$(OutputPath)\$(MSBuildProjectName).cmd</ExecuteCmdFullPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="!$(GenerateRunScript)">
+        <ExecuteCmdFullPath>$(OutputPath)\$(MSBuildProjectName).$(OutputType)</ExecuteCmdFullPath>
     </PropertyGroup>
   </Target>
 
@@ -44,7 +47,7 @@ WARNING:   When setting properties based on their current state (for example:
   -->
   <Target Name="GenerateBatchExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
-    Outputs="$(OutputPath)\$(AssemblyName).cmd">
+    Outputs="$(OutputPath)\$(MSBuildProjectName).cmd">
 
     <PropertyGroup>
     
@@ -76,7 +79,7 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
     </PropertyGroup>
   
     <ItemGroup Condition="$(_CLRTestNeedsToRun)">
-      <Clean Include="$(OutputPath)\$(AssemblyName).cmd"/>
+      <Clean Include="$(OutputPath)\$(MSBuildProjectName).cmd"/>
 
       <BatchCLRTestExecutionScriptArgument Include="debug">
         <HasParam>true</HasParam>
@@ -98,11 +101,13 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
       <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
     </MSBuild>
     
-    <PropertyGroup>
-      <!-- Calculate the thing we're going to run -->
-      <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' != 'True'">"$(AssemblyName).exe"</_CLRTestRunFile>
-
-      <!-- TODO: make this better? -->
+    <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
+    
+    <PropertyGroup> 
+      <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'true'">"$(_CLRTestToRunFileFullPath)"</_CLRTestRunFile>
+      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And $(_CLRTestNeedsProjectToRun) ">"%CORE_ROOT%\corerun.exe" $(_CLRTestToRunFileFullPath)</_CLRTestRunFile>
+   
+      <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'false'">"$(MSBuildProjectName).exe"</_CLRTestRunFile>
       <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And !$(_CLRTestNeedsProjectToRun) ">"%CORE_ROOT%\corerun.exe" $(_CLRTestRunFile)</_CLRTestRunFile>
 
       <BatchCLRTestLaunchCmds Condition=" '$(BatchCLRTestLaunchCmds)'=='' "><![CDATA[
@@ -189,17 +194,17 @@ REM The __TestEnv variable may be used to specify something to run before the te
 IF NOT "%__TestEnv%"=="" call %__TestEnv%
 
 REM Precommands
-$(_CLRTestPreCommands)
+$(CLRTestBatchPreCommands)
 REM Launch
 $(BatchCLRTestLaunchCmds)
 REM PostCommands
-$(_CLRTestPostCommands)
+$(CLRTestBatchPostCommands)
 $(BatchCLRTestExitCodeCheck)
       ]]></_CLRTestExecutionScriptText>
     </PropertyGroup>
     <!-- Write the file -->
     <WriteLinesToFile
-      File="$(OutputPath)\$(AssemblyName).cmd"
+      File="$(OutputPath)\$(MSBuildProjectName).cmd"
       Lines="$(_CLRTestExecutionScriptText)"
       Overwrite="true" />
   </Target>

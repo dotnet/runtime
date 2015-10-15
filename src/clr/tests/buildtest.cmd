@@ -133,7 +133,7 @@ exit /b 1
 
 REM Build CoreCLR
 :BuildTestNativeComponents
-%_msbuildexe% "%__NativeTestIntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__TestNativeBuildLog%"
+%_msbuildexe% "%__NativeTestIntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=diagnostic;LogFile="%__TestNativeBuildLog%"
 IF NOT ERRORLEVEL 1 goto PerformManagedTestBuild
 echo Native component build failed. Refer !__TestNativeBuildLog! for details.
 exit /b 1
@@ -187,7 +187,7 @@ exit /b %ERRORLEVEL%
 
 :build
 
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diagnostic;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
 IF ERRORLEVEL 1 echo Test build failed. Refer to !__TestManagedBuildLog! for details && exit /b 1
 exit /b 0
 

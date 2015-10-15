@@ -1,5 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 using System;
@@ -49,15 +51,15 @@ public enum LoggingLevels
 /// </summary>
 public class ReliabilityConfig : IEnumerable, IEnumerator
 {
-    ArrayList testSet = new ArrayList();					// this is the set of <Test... > tags we find.  There may be multiple test runs in one
+    private ArrayList _testSet = new ArrayList();					// this is the set of <Test... > tags we find.  There may be multiple test runs in one
     // config file.
-    ReliabilityTestSet curTestSet;							// The test set we're currently filling in...
-    int index = -1;											// Current test set index
+    private ReliabilityTestSet _curTestSet;							// The test set we're currently filling in...
+    private int _index = -1;											// Current test set index
 
     // Toplevel tags for all config files
-    const string configHost = "Host";
-    const string configInclude = "Include";
-    const string configIncludes = "Includes";
+    private const string configHost = "Host";
+    private const string configInclude = "Include";
+    private const string configIncludes = "Includes";
 
     internal class RFConfigOptions
     {
@@ -71,76 +73,76 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
     }
 
     // Various tags for the concurrent test configuration file.
-    const string concurrentConfigTest = "Test";
-    const string concurrentConfigAssembly = "Assembly";
-    const string configTestMinimumCPU = "minimumCPU";
-    const string configTestMinimumCPUStaggered = "minimumCPUStaggered";
-    const string configInstallDetours = "installDetours";
-    const string configLoggingLevel = "loggingLevel";
-    const string configTestMinimumMem = "minimumMem";
-    const string configTestMinimumTests = "minimumTests";
-    const string configTestMaximumTests = "maximumTests";    
-    const string configTestDisableLogging = "disableLogging";
-    const string configEnablePerfCounters = "enablePerfCounters";
-    const string configDefaultDebugger = "defaultDebugger";
-    const string configDefaultDebuggerOptions = "defaultDebuggerOptions";
-    const string configDefaultTestStartMode = "defaultTestLoader";
-    const string configResultReporting = "resultReporting";
-    const string configResultReportingUrl = "resultReportingUrl";
-    const string configResultReportingBvtCategory = "resultBvtCategory";
-    const string configULAppDomainUnloadPercent = "ulAppDomainUnloadPercent";
-    const string configULGeneralUnloadPercent = "ulGeneralUnloadPercent";
-    const string configULAssemblyLoadPercent = "ulAssemblyLoadPercent";
-    const string configULWaitTime = "ulWaitTime";
-    const string configCcFailMail = "ccFailMail";
-    const string configAppDomainLoaderMode = "appDomainLoaderMode";
-    const string configRoundRobinAppDomainCount = "numAppDomains";
+    private const string concurrentConfigTest = "Test";
+    private const string concurrentConfigAssembly = "Assembly";
+    private const string configTestMinimumCPU = "minimumCPU";
+    private const string configTestMinimumCPUStaggered = "minimumCPUStaggered";
+    private const string configInstallDetours = "installDetours";
+    private const string configLoggingLevel = "loggingLevel";
+    private const string configTestMinimumMem = "minimumMem";
+    private const string configTestMinimumTests = "minimumTests";
+    private const string configTestMaximumTests = "maximumTests";
+    private const string configTestDisableLogging = "disableLogging";
+    private const string configEnablePerfCounters = "enablePerfCounters";
+    private const string configDefaultDebugger = "defaultDebugger";
+    private const string configDefaultDebuggerOptions = "defaultDebuggerOptions";
+    private const string configDefaultTestStartMode = "defaultTestLoader";
+    private const string configResultReporting = "resultReporting";
+    private const string configResultReportingUrl = "resultReportingUrl";
+    private const string configResultReportingBvtCategory = "resultBvtCategory";
+    private const string configULAppDomainUnloadPercent = "ulAppDomainUnloadPercent";
+    private const string configULGeneralUnloadPercent = "ulGeneralUnloadPercent";
+    private const string configULAssemblyLoadPercent = "ulAssemblyLoadPercent";
+    private const string configULWaitTime = "ulWaitTime";
+    private const string configCcFailMail = "ccFailMail";
+    private const string configAppDomainLoaderMode = "appDomainLoaderMode";
+    private const string configRoundRobinAppDomainCount = "numAppDomains";
     // Attributes for the <Assembly ...> tag
-    const string configAssemblyName = "id";
-    const string configAssemblyFilename = "filename";
-    const string configAssemblySuccessCode = "successCode";
-    const string configAssemblyEntryPoint = "entryPoint";
-    const string configAssemblyArguments = "arguments";
-    const string configAssemblyConcurrentCopies = "concurrentCopies";
-    const string configAssemblyBasePath = "basePath";
-    const string configAssemblyStatus = "status";
-    const string configAssemblyStatusDisabled = "disabled";
-    const string configAssemblyDebugger = "debugger";                 // "none", "cdb.exe", "windbg.exe", etc...  only w/ Process.Start test starter
-    const string configAssemblyDebuggerOptions = "debuggerOptions";   // cmd line options for debugger - only w/ Process.Start test starter
-    const string configAssemblySmartNetGuid = "guid";
-    const string configAssemblyDuration = "expectedDuration";
-    const string configAssemblyRequiresSDK = "requiresSDK";
-    const string configAssemblyTestLoader = "testLoader";
-    const string configAssemblyTestAttributes = "testAttrs";
-    const string configAssemblyTestOwner = "testOwner";
-    const string configAssemblyTestGroup = "group";
-    const string configAssemblyPreCommand = "precommand";
-    const string configAssemblyPostCommand = "postcommand";
-    const string configAssemblyCustomAction = "customAction";
+    private const string configAssemblyName = "id";
+    private const string configAssemblyFilename = "filename";
+    private const string configAssemblySuccessCode = "successCode";
+    private const string configAssemblyEntryPoint = "entryPoint";
+    private const string configAssemblyArguments = "arguments";
+    private const string configAssemblyConcurrentCopies = "concurrentCopies";
+    private const string configAssemblyBasePath = "basePath";
+    private const string configAssemblyStatus = "status";
+    private const string configAssemblyStatusDisabled = "disabled";
+    private const string configAssemblyDebugger = "debugger";                 // "none", "cdb.exe", "windbg.exe", etc...  only w/ Process.Start test starter
+    private const string configAssemblyDebuggerOptions = "debuggerOptions";   // cmd line options for debugger - only w/ Process.Start test starter
+    private const string configAssemblySmartNetGuid = "guid";
+    private const string configAssemblyDuration = "expectedDuration";
+    private const string configAssemblyRequiresSDK = "requiresSDK";
+    private const string configAssemblyTestLoader = "testLoader";
+    private const string configAssemblyTestAttributes = "testAttrs";
+    private const string configAssemblyTestOwner = "testOwner";
+    private const string configAssemblyTestGroup = "group";
+    private const string configAssemblyPreCommand = "precommand";
+    private const string configAssemblyPostCommand = "postcommand";
+    private const string configAssemblyCustomAction = "customAction";
 
 
-    const string configPercentPassIsPass = "percentPassIsPass";
+    private const string configPercentPassIsPass = "percentPassIsPass";
 
     // Attributes for the <Include ...> tag
-    const string configIncludeFilename = "filename";
+    private const string configIncludeFilename = "filename";
 
     // Attributes for the <Discovery ...> tag
-    const string configDiscovery = "Discovery";
-    const string configDiscoveryPath = "path";
+    private const string configDiscovery = "Discovery";
+    private const string configDiscoveryPath = "path";
 
     // Attributes related to debug mode...
-    const string debugConfigIncludeInlined = "INLINE";
+    private const string debugConfigIncludeInlined = "INLINE";
 
     // Test start modes
-    const string configTestStartModeAppDomainLoader = "appDomainLoader";
-    const string configTestStartModeProcessLoader = "processLoader";
-    const string configTestStartModeTaskLoader = "taskLoader";
+    private const string configTestStartModeAppDomainLoader = "appDomainLoader";
+    private const string configTestStartModeProcessLoader = "processLoader";
+    private const string configTestStartModeTaskLoader = "taskLoader";
 
     // APp domain loader modes
-    const string configAppDomainLoaderModeFullIsolation = "fullIsolation";
-    const string configAppDomainLoaderModeNormal = "normal";
-    const string configAppDomainLoaderModeRoundRobin = "roundRobin";
-    const string configAppDomainLoaderModeLazy = "lazy";
+    private const string configAppDomainLoaderModeFullIsolation = "fullIsolation";
+    private const string configAppDomainLoaderModeNormal = "normal";
+    private const string configAppDomainLoaderModeRoundRobin = "roundRobin";
+    private const string configAppDomainLoaderModeLazy = "lazy";
 
 
     /// <summary>
@@ -161,8 +163,8 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
         else if (value == "false" || value == "0" || value == "no")
         {
             return false;
-        }        
-        throw new Exception(String.Format("Unknown option value for {0}: {1}",configSettingName, value));        
+        }
+        throw new Exception(String.Format("Unknown option value for {0}: {1}", configSettingName, value));
     }
 
 
@@ -195,7 +197,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
     /// <summary>
     /// Given a test configfile we find the tests that we actually want to run.
     /// </summary>
-    void GetTestsToRun(string testConfig)
+    private void GetTestsToRun(string testConfig)
     {
         int totalDepth = 0;							// used for debugging mode so we can keep proper indentation.
         ArrayList foundTests = new ArrayList();		// the array of tests we've found.			
@@ -314,7 +316,6 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                             case configHost:
                                 if (testLevelStack.Count == 0) // we'll skip this tag when it shows up in an included file.
                                 {
-
                                     testLevelStack.Push(configHost);
                                     while (currentXML.MoveToNextAttribute())
                                     {
@@ -348,17 +349,17 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                 }
 
                                 // save any info we've gathered about tests into the current test set
-                                if (curTestSet != null && foundTests != null && foundTests.Count > 0)
+                                if (_curTestSet != null && foundTests != null && foundTests.Count > 0)
                                 {
-                                    curTestSet.Tests = (ReliabilityTest[])foundTests.ToArray(typeof(ReliabilityTest));
-                                    curTestSet.DiscoveryPaths = (string[])discoveryPaths.ToArray(typeof(string));
+                                    _curTestSet.Tests = (ReliabilityTest[])foundTests.ToArray(typeof(ReliabilityTest));
+                                    _curTestSet.DiscoveryPaths = (string[])discoveryPaths.ToArray(typeof(string));
                                     discoveryPaths.Clear();
                                     foundTests.Clear();
                                 }
 
                                 testLevelStack.Push(concurrentConfigTest);
 
-                                curTestSet = new ReliabilityTestSet();
+                                _curTestSet = new ReliabilityTestSet();
 
                                 while (currentXML.MoveToNextAttribute())
                                 {
@@ -366,38 +367,38 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                     switch (currentXML.Name)
                                     {
                                         case "maximumTestRuns":
-                                            curTestSet.MaximumLoops = Convert.ToInt32(currentXML.Value);
+                                            _curTestSet.MaximumLoops = Convert.ToInt32(currentXML.Value);
                                             break;
                                         case "maximumExecutionTime":
                                             string timeValue = currentXML.Value;
-                                            curTestSet.MaximumTime = ConvertTimeValueToTestRunTime(timeValue);
+                                            _curTestSet.MaximumTime = ConvertTimeValueToTestRunTime(timeValue);
                                             break;
                                         case "id":
-                                            curTestSet.FriendlyName = currentXML.Value;
+                                            _curTestSet.FriendlyName = currentXML.Value;
                                             break;
                                         case "xmlns:xsi":
                                         case "xmlns:xsd":
                                             break;
                                         case configTestMinimumMem:
-                                            curTestSet.MinPercentMem = Convert.ToInt32(currentXML.Value);
+                                            _curTestSet.MinPercentMem = Convert.ToInt32(currentXML.Value);
                                             break;
                                         case configLoggingLevel:
-                                            curTestSet.LoggingLevel = (LoggingLevels)Convert.ToInt32(currentXML.Value.ToString(), 16);
+                                            _curTestSet.LoggingLevel = (LoggingLevels)Convert.ToInt32(currentXML.Value.ToString(), 16);
                                             break;
                                         case configTestMinimumCPUStaggered:
-                                            curTestSet.MinPercentCPUStaggered = currentXML.Value;
+                                            _curTestSet.MinPercentCPUStaggered = currentXML.Value;
                                             break;
                                         case configTestMinimumCPU:
-                                            curTestSet.MinPercentCPU = Convert.ToInt32(currentXML.Value);
+                                            _curTestSet.MinPercentCPU = Convert.ToInt32(currentXML.Value);
                                             break;
                                         case configInstallDetours:
                                             if (currentXML.Value == "true" || currentXML.Value == "1" || currentXML.Value == "yes")
                                             {
-                                                curTestSet.InstallDetours = true;
+                                                _curTestSet.InstallDetours = true;
                                             }
                                             else if (currentXML.Value == "false" || currentXML.Value == "0" || currentXML.Value == "no")
                                             {
-                                                curTestSet.InstallDetours = false;
+                                                _curTestSet.InstallDetours = false;
                                             }
                                             else
                                             {
@@ -405,7 +406,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             }
                                             break;
                                         case configTestMinimumTests:
-                                            curTestSet.MinTestsRunning = Convert.ToInt32(currentXML.Value);
+                                            _curTestSet.MinTestsRunning = Convert.ToInt32(currentXML.Value);
                                             break;
 
                                         case RFConfigOptions.RFConfigOptions_Test_MinMaxTestsUseCPUCount:
@@ -414,45 +415,45 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                                 int CPUCount = Convert.ToInt32(Environment.GetEnvironmentVariable("NUMBER_OF_PROCESSORS"));
                                                 if (CPUCount <= 0)
                                                     throw new Exception("Invalid Value when reading NUMBER_OF_PROCESSORS: {0}" + CPUCount);
-                                                curTestSet.MinTestsRunning = CPUCount;
-                                                curTestSet.MaxTestsRunning = (int)(CPUCount * 1.5);
+                                                _curTestSet.MinTestsRunning = CPUCount;
+                                                _curTestSet.MaxTestsRunning = (int)(CPUCount * 1.5);
                                             }
                                             break;
                                         case RFConfigOptions.RFConfigOptions_Test_SuppressConsoleOutputFromTests:
-                                            curTestSet.SuppressConsoleOutputFromTests = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_SuppressConsoleOutputFromTests);
+                                            _curTestSet.SuppressConsoleOutputFromTests = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_SuppressConsoleOutputFromTests);
                                             break;
-                                            
+
                                         case RFConfigOptions.RFConfigOptions_Test_DebugBreakOnHang:
-                                            curTestSet.DebugBreakOnTestHang = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_DebugBreakOnHang);
+                                            _curTestSet.DebugBreakOnTestHang = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_DebugBreakOnHang);
                                             break;
 
                                         case RFConfigOptions.RFConfigOptions_Test_DebugBreakOnBadTest:
-                                            curTestSet.DebugBreakOnBadTest = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_DebugBreakOnBadTest);
+                                            _curTestSet.DebugBreakOnBadTest = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_DebugBreakOnBadTest);
                                             break;
 
                                         case RFConfigOptions.RFConfigOptions_Test_DebugBreakOnOutOfMemory:
-                                            curTestSet.DebugBreakOnOutOfMemory = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_DebugBreakOnOutOfMemory);
+                                            _curTestSet.DebugBreakOnOutOfMemory = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_DebugBreakOnOutOfMemory);
                                             break;
 
                                         case RFConfigOptions.RFConfigOptions_Test_DebugBreakOnPathTooLong:
-                                            curTestSet.DebugBreakOnPathTooLong = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_DebugBreakOnPathTooLong);
+                                            _curTestSet.DebugBreakOnPathTooLong = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_DebugBreakOnPathTooLong);
                                             break;
-                                        
+
                                         case RFConfigOptions.RFConfigOptions_Test_DebugBreakOnMissingTest:
-                                            curTestSet.DebugBreakOnMissingTest = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_DebugBreakOnMissingTest);
+                                            _curTestSet.DebugBreakOnMissingTest = GetTrueFalseOptionValue(currentXML.Value, RFConfigOptions.RFConfigOptions_Test_DebugBreakOnMissingTest);
                                             break;
 
                                         case configResultReporting:
-                                            curTestSet.ReportResults = GetTrueFalseOptionValue(currentXML.Value, configResultReporting);
+                                            _curTestSet.ReportResults = GetTrueFalseOptionValue(currentXML.Value, configResultReporting);
                                             break;
 
                                         case configResultReportingUrl:
-                                            curTestSet.ReportResultsTo = currentXML.Value;
+                                            _curTestSet.ReportResultsTo = currentXML.Value;
                                             break;
                                         case configResultReportingBvtCategory:
                                             try
                                             {
-                                                curTestSet.BvtCategory = new Guid(currentXML.Value);
+                                                _curTestSet.BvtCategory = new Guid(currentXML.Value);
                                             }
                                             catch (FormatException)
                                             {
@@ -460,31 +461,31 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             }
                                             break;
                                         case configTestMaximumTests:
-                                            curTestSet.MaxTestsRunning = Convert.ToInt32(currentXML.Value);
+                                            _curTestSet.MaxTestsRunning = Convert.ToInt32(currentXML.Value);
                                             break;
                                         case configTestDisableLogging:
-                                            curTestSet.DisableLogging = GetTrueFalseOptionValue(currentXML.Value, configTestDisableLogging);
+                                            _curTestSet.DisableLogging = GetTrueFalseOptionValue(currentXML.Value, configTestDisableLogging);
                                             break;
 
                                         case configEnablePerfCounters:
-                                            curTestSet.EnablePerfCounters = GetTrueFalseOptionValue(currentXML.Value, configEnablePerfCounters);
+                                            _curTestSet.EnablePerfCounters = GetTrueFalseOptionValue(currentXML.Value, configEnablePerfCounters);
                                             break;
 
                                         case configDefaultTestStartMode:
                                             switch (currentXML.Value)
                                             {
                                                 case configTestStartModeAppDomainLoader:
-                                                    if (null != curTestSet.DefaultDebugger || null != curTestSet.DefaultDebuggerOptions)
+                                                    if (null != _curTestSet.DefaultDebugger || null != _curTestSet.DefaultDebuggerOptions)
                                                     {
                                                         throw new Exception(String.Format("{0} specified with default debugger or debugger options.  If you want a debugger per test please use {1}=\"{2}\" ",
                                                             configTestStartModeAppDomainLoader,
                                                             configDefaultTestStartMode,
                                                             configTestStartModeProcessLoader));
                                                     }
-                                                    curTestSet.DefaultTestStartMode = TestStartModeEnum.AppDomainLoader;
+                                                    _curTestSet.DefaultTestStartMode = TestStartModeEnum.AppDomainLoader;
                                                     break;
                                                 case configTestStartModeProcessLoader:
-                                                    curTestSet.DefaultTestStartMode = TestStartModeEnum.ProcessLoader;
+                                                    _curTestSet.DefaultTestStartMode = TestStartModeEnum.ProcessLoader;
                                                     break;
                                                 default:
                                                     throw new Exception(String.Format("Unknown test starter {0} specified!", currentXML.Value));
@@ -493,8 +494,8 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                         case configRoundRobinAppDomainCount:
                                             try
                                             {
-                                                curTestSet.NumAppDomains = Convert.ToInt32(currentXML.Value);
-                                                if (curTestSet.NumAppDomains <= 0)
+                                                _curTestSet.NumAppDomains = Convert.ToInt32(currentXML.Value);
+                                                if (_curTestSet.NumAppDomains <= 0)
                                                 {
                                                     throw new Exception("Number of app domains must be greater than zero!");
                                                 }
@@ -508,16 +509,16 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             switch (currentXML.Value)
                                             {
                                                 case configAppDomainLoaderModeFullIsolation:
-                                                    curTestSet.AppDomainLoaderMode = AppDomainLoaderMode.FullIsolation;
+                                                    _curTestSet.AppDomainLoaderMode = AppDomainLoaderMode.FullIsolation;
                                                     break;
                                                 case configAppDomainLoaderModeNormal:
-                                                    curTestSet.AppDomainLoaderMode = AppDomainLoaderMode.Normal;
+                                                    _curTestSet.AppDomainLoaderMode = AppDomainLoaderMode.Normal;
                                                     break;
                                                 case configAppDomainLoaderModeRoundRobin:
-                                                    curTestSet.AppDomainLoaderMode = AppDomainLoaderMode.RoundRobin;
+                                                    _curTestSet.AppDomainLoaderMode = AppDomainLoaderMode.RoundRobin;
                                                     break;
                                                 case configAppDomainLoaderModeLazy:
-                                                    curTestSet.AppDomainLoaderMode = AppDomainLoaderMode.Lazy;
+                                                    _curTestSet.AppDomainLoaderMode = AppDomainLoaderMode.Lazy;
                                                     break;
 
                                                 default:
@@ -525,21 +526,21 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             }
                                             break;
                                         case configPercentPassIsPass:
-                                            curTestSet.PercentPassIsPass = Convert.ToInt32(currentXML.Value);
+                                            _curTestSet.PercentPassIsPass = Convert.ToInt32(currentXML.Value);
                                             break;
 
                                         case configDefaultDebugger:
                                             if (currentXML.Value.Length >= 7 && currentXML.Value.Substring(currentXML.Value.Length - 7).ToLower() == "cdb.exe")
                                             {
-                                                curTestSet.DefaultDebugger = currentXML.Value;
+                                                _curTestSet.DefaultDebugger = currentXML.Value;
                                             }
                                             else if (currentXML.Value.Length >= 10 && currentXML.Value.Substring(currentXML.Value.Length - 7).ToLower() == "windbg.exe")
                                             {
-                                                curTestSet.DefaultDebugger = currentXML.Value;
+                                                _curTestSet.DefaultDebugger = currentXML.Value;
                                             }
                                             else if (currentXML.Value.ToLower() == "none")
                                             {
-                                                curTestSet.DefaultDebugger = String.Empty;
+                                                _curTestSet.DefaultDebugger = String.Empty;
                                             }
                                             else
                                             {
@@ -547,22 +548,22 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             }
                                             break;
                                         case configDefaultDebuggerOptions:
-                                            curTestSet.DefaultDebuggerOptions = Environment.ExpandEnvironmentVariables(currentXML.Value);
+                                            _curTestSet.DefaultDebuggerOptions = Environment.ExpandEnvironmentVariables(currentXML.Value);
                                             break;
                                         case configULAssemblyLoadPercent:
-                                            curTestSet.ULAssemblyLoadPercent = Convert.ToInt32(currentXML.Value);
+                                            _curTestSet.ULAssemblyLoadPercent = Convert.ToInt32(currentXML.Value);
                                             break;
                                         case configULAppDomainUnloadPercent:
-                                            curTestSet.ULAppDomainUnloadPercent = Convert.ToInt32(currentXML.Value);
+                                            _curTestSet.ULAppDomainUnloadPercent = Convert.ToInt32(currentXML.Value);
                                             break;
                                         case configULGeneralUnloadPercent:
-                                            curTestSet.ULGeneralUnloadPercent = Convert.ToInt32(currentXML.Value);
+                                            _curTestSet.ULGeneralUnloadPercent = Convert.ToInt32(currentXML.Value);
                                             break;
                                         case configULWaitTime:
-                                            curTestSet.ULWaitTime = Convert.ToInt32(currentXML.Value);
+                                            _curTestSet.ULWaitTime = Convert.ToInt32(currentXML.Value);
                                             break;
                                         case configCcFailMail:
-                                            curTestSet.CCFailMail = currentXML.Value;
+                                            _curTestSet.CCFailMail = currentXML.Value;
                                             break;
                                         default:
                                             throw new Exception("Unknown attribute (" + currentXML.Name + ") on " + concurrentConfigTest + " tag!");
@@ -572,13 +573,13 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                 // Check to see if any of the test attribute environment variables are set,
                                 // If so, then use the environment variables.
                                 if ((Environment.GetEnvironmentVariable("TIMELIMIT") != null) && (Environment.GetEnvironmentVariable("TIMELIMIT") != ""))
-                                    curTestSet.MaximumTime = ConvertTimeValueToTestRunTime(Environment.GetEnvironmentVariable("TIMELIMIT"));
+                                    _curTestSet.MaximumTime = ConvertTimeValueToTestRunTime(Environment.GetEnvironmentVariable("TIMELIMIT"));
 
                                 if ((Environment.GetEnvironmentVariable("MINCPU") != null) && (Environment.GetEnvironmentVariable("MINCPU") != ""))
-                                    curTestSet.MinPercentCPU = Convert.ToInt32(Environment.GetEnvironmentVariable("MINCPU"));
+                                    _curTestSet.MinPercentCPU = Convert.ToInt32(Environment.GetEnvironmentVariable("MINCPU"));
 
 
-                                testSet.Add(curTestSet);
+                                _testSet.Add(_curTestSet);
                                 break;
                             case configDiscovery:
                                 if (testLevelStack.Count == 0 || (string)testLevelStack.Peek() != concurrentConfigTest)
@@ -617,33 +618,33 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                 }
                                 testLevelStack.Push(concurrentConfigAssembly);
 
-                                ReliabilityTest rt = new ReliabilityTest(curTestSet.SuppressConsoleOutputFromTests);
-                                rt.TestStartMode = curTestSet.DefaultTestStartMode;
+                                ReliabilityTest rt = new ReliabilityTest(_curTestSet.SuppressConsoleOutputFromTests);
+                                rt.TestStartMode = _curTestSet.DefaultTestStartMode;
 
                                 // first we need to setup any default options which are set globally on
                                 // the test start mode.
-                                if (null != curTestSet.DefaultDebugger)
+                                if (null != _curTestSet.DefaultDebugger)
                                 {
-                                    if (curTestSet.DefaultTestStartMode != TestStartModeEnum.ProcessLoader)
+                                    if (_curTestSet.DefaultTestStartMode != TestStartModeEnum.ProcessLoader)
                                     {
                                         throw new Exception(String.Format("{0} specified with default debugger or debugger options.  If you want a debugger per test please use {1}=\"{2}\" ",
                                             configTestStartModeAppDomainLoader,
                                             configDefaultTestStartMode,
                                             configTestStartModeProcessLoader));
                                     }
-                                    rt.Debugger = curTestSet.DefaultDebugger;
+                                    rt.Debugger = _curTestSet.DefaultDebugger;
                                 }
 
-                                if (null != curTestSet.DefaultDebuggerOptions)
+                                if (null != _curTestSet.DefaultDebuggerOptions)
                                 {
-                                    if (curTestSet.DefaultTestStartMode != TestStartModeEnum.ProcessLoader)
+                                    if (_curTestSet.DefaultTestStartMode != TestStartModeEnum.ProcessLoader)
                                     {
                                         throw new Exception(String.Format("{0} specified with default debugger or debugger options.  If you want a debugger per test please use {1}=\"{2}\" ",
                                             configTestStartModeAppDomainLoader,
                                             configDefaultTestStartMode,
                                             configTestStartModeProcessLoader));
                                     }
-                                    rt.DebuggerOptions = curTestSet.DefaultDebuggerOptions;
+                                    rt.DebuggerOptions = _curTestSet.DefaultDebuggerOptions;
                                 }
 
 
@@ -701,7 +702,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             }
                                             break;
                                         case configAssemblyDebugger:
-                                            if (TestStartModeEnum.ProcessLoader != curTestSet.DefaultTestStartMode)
+                                            if (TestStartModeEnum.ProcessLoader != _curTestSet.DefaultTestStartMode)
                                             {
                                                 throw new Exception(String.Format("{0} can only be set for test sets with {1}=\"{2}\" set.",
                                                     configAssemblyDebugger,
@@ -727,7 +728,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             }
                                             break;
                                         case configAssemblyDebuggerOptions:
-                                            if (TestStartModeEnum.ProcessLoader != curTestSet.DefaultTestStartMode)
+                                            if (TestStartModeEnum.ProcessLoader != _curTestSet.DefaultTestStartMode)
                                             {
                                                 throw new Exception(String.Format("{0} can only be set for test sets with {1}=\"{2}\" set.",
                                                     configAssemblyDebuggerOptions,
@@ -818,7 +819,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             for (i = 0; i < foundTests.Count; i++)
                                             {
                                                 ReliabilityTest test = foundTests[i] as ReliabilityTest;
-                                                Debug.Assert(test != null, "Non reliability test in foundTests array!");                                                
+                                                Debug.Assert(test != null, "Non reliability test in foundTests array!");
                                                 if (null != test.Group)
                                                 {
                                                     string curGroupName = test.Group[0].ToString();
@@ -834,7 +835,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                             if (rt.Group == null)
                                             {
                                                 // this is the first test in this group
-                                                rt.Group = new List<ReliabilityTest>();                                                
+                                                rt.Group = new List<ReliabilityTest>();
                                                 rt.Group.Add(rt);
                                             }
                                             break;
@@ -878,7 +879,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                 }
 
                                 int testCopies = 1;
-                                if (curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.FullIsolation)
+                                if (_curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.FullIsolation)
                                 {
                                     // in this mode each copy of the test is ran in it's own app domain,
                                     // fully isolated from all other copies of the test.  If the user
@@ -886,7 +887,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                     testCopies = rt.ConcurrentCopies;
                                     rt.ConcurrentCopies = 1;
                                 }
-                                else if (curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.RoundRobin)
+                                else if (_curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.RoundRobin)
                                 {
                                     // In this mode each test is ran in an app domain w/ other tests.
                                     testCopies = rt.ConcurrentCopies;
@@ -970,10 +971,10 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
             } // end of while(currentXML.Read())
         } while (xmlFileStack.Count > 0);
 
-        if (curTestSet != null && foundTests != null && foundTests.Count > 0)
+        if (_curTestSet != null && foundTests != null && foundTests.Count > 0)
         {
-            curTestSet.Tests = (ReliabilityTest[])foundTests.ToArray(typeof(ReliabilityTest));
-            curTestSet.DiscoveryPaths = (string[])discoveryPaths.ToArray(typeof(string));
+            _curTestSet.Tests = (ReliabilityTest[])foundTests.ToArray(typeof(ReliabilityTest));
+            _curTestSet.DiscoveryPaths = (string[])discoveryPaths.ToArray(typeof(string));
             discoveryPaths.Clear();
             foundTests.Clear();
         }
@@ -1016,7 +1017,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
     /// <summary>
     /// given a path with a filename on it we remove the filename (to get just the base path).
     /// </summary>
-    string stripFilenameFromPath(string path)
+    private string stripFilenameFromPath(string path)
     {
         string trimmedPath = path.Trim();
 
@@ -1061,9 +1062,9 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
     {
         get
         {
-            if (index < testSet.Count && index >= 0)
+            if (_index < _testSet.Count && _index >= 0)
             {
-                return (testSet[index]);
+                return (_testSet[_index]);
             }
 
             throw new InvalidOperationException();
@@ -1076,8 +1077,8 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
     /// <returns></returns>
     public bool MoveNext()
     {
-        index++;
-        if (index >= testSet.Count)
+        _index++;
+        if (_index >= _testSet.Count)
         {
             return (false);
         }
@@ -1090,7 +1091,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
     /// </summary>
     public void Reset()
     {
-        index = 0;
+        _index = 0;
     }
 
 
@@ -1119,7 +1120,6 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
     {
         Console.WriteLine(output);
     }
-
 }
 
 [Flags]
