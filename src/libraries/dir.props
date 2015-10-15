@@ -30,7 +30,7 @@
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
-    <SourceDir>$(ProjectDir)src/</SourceDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
 
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
