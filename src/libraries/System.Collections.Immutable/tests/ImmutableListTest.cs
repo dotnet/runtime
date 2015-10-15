@@ -535,6 +535,15 @@ namespace System.Collections.Immutable.Tests
             var newAge = new Person { Name = "Andrew", Age = 21 };
             var updatedList = list.Replace(newAge, newAge, new NameOnlyEqualityComparer());
             Assert.Equal(newAge.Age, updatedList[0].Age);
+
+            // Try again with a null equality comparer, which should use the default EQ.
+            updatedList = list.Replace(list[0], newAge);
+            Assert.NotSame(list, updatedList);
+
+            // Finally, try one last time using the interface implementation.
+            IImmutableList<Person> iface = list;
+            var updatedIface = iface.Replace(list[0], newAge);
+            Assert.NotSame(iface, updatedIface);
         }
 
         [Fact]

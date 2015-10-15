@@ -1005,6 +1005,18 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void ReplaceWithEqualityComparerTest()
+        {
+            var updatedArray = s_manyElements.Replace(2, 10, null);
+            Assert.Equal(new[] { 1, 10, 3 }, updatedArray);
+
+            // Finally, try one last time using the interface implementation.
+            IImmutableList<int> iface = s_manyElements;
+            var updatedIFace = iface.Replace(2, 10, null);
+            Assert.Equal(new[] { 1, 10, 3 }, updatedIFace);
+        }
+
+        [Fact]
         public void ReplaceMissingThrowsTest()
         {
             Assert.Throws<ArgumentException>(() => s_empty.Replace(5, 3));
