@@ -282,6 +282,12 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void Sort_NullComparison_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => this.SortTestHelper(ImmutableList<int>.Empty, (Comparison<int>)null));
+        }
+
+        [Fact]
         public void SortTest()
         {
             var scenarios = new[] {
@@ -304,7 +310,13 @@ namespace System.Collections.Immutable.Tests
                 Assert.Equal<int>(expected, actual);
 
                 expected = scenario.ToList();
-                IComparer<int> comparer = Comparer<int>.Default;
+                IComparer<int> comparer = null;
+                expected.Sort(comparer);
+                actual = this.SortTestHelper(scenario, comparer);
+                Assert.Equal<int>(expected, actual);
+
+                expected = scenario.ToList();
+                comparer = Comparer<int>.Create(comparison);
                 expected.Sort(comparer);
                 actual = this.SortTestHelper(scenario, comparer);
                 Assert.Equal<int>(expected, actual);
@@ -314,7 +326,7 @@ namespace System.Collections.Immutable.Tests
                     for (int j = 0; j < scenario.Count - i; j++)
                     {
                         expected = scenario.ToList();
-                        comparer = Comparer<int>.Default;
+                        comparer = null;
                         expected.Sort(i, j, comparer);
                         actual = this.SortTestHelper(scenario, i, j, comparer);
                         Assert.Equal<int>(expected, actual);

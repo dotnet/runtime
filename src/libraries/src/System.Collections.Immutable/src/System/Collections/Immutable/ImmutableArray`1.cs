@@ -329,14 +329,16 @@ namespace System.Collections.Immutable
         /// <param name="item">The item to search for.</param>
         /// <param name="startIndex">The index at which to begin the search.</param>
         /// <param name="count">The number of elements to search.</param>
-        /// <param name="equalityComparer">The equality comparer to use in the search.</param>
+        /// <param name="equalityComparer">
+        /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+        /// </param>
         /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
         [Pure]
         public int IndexOf(T item, int startIndex, int count, IEqualityComparer<T> equalityComparer)
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            Requires.NotNull(equalityComparer, "equalityComparer");
 
             if (count == 0 && startIndex == 0)
             {
@@ -346,6 +348,7 @@ namespace System.Collections.Immutable
             Requires.Range(startIndex >= 0 && startIndex < self.Length, "startIndex");
             Requires.Range(count >= 0 && startIndex + count <= self.Length, "count");
 
+            equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
             {
                 return Array.IndexOf(self.array, item, startIndex, count);
@@ -425,7 +428,6 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            Requires.NotNull(equalityComparer, "equalityComparer");
 
             if (startIndex == 0 && count == 0)
             {
@@ -435,6 +437,7 @@ namespace System.Collections.Immutable
             Requires.Range(startIndex >= 0 && startIndex < self.Length, "startIndex");
             Requires.Range(count >= 0 && startIndex - count + 1 >= 0, "count");
 
+            equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
             {
                 return Array.LastIndexOf(self.array, item, startIndex, count);
@@ -683,6 +686,7 @@ namespace System.Collections.Immutable
         /// <param name="newValue">The element to replace the old element with.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>The new list -- even if the value being replaced is equal to the new value for that position.</returns>
         /// <exception cref="ArgumentException">Thrown when the old value does not exist in the list.</exception>
@@ -718,6 +722,7 @@ namespace System.Collections.Immutable
         /// <param name="item">The item to remove.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>The new array.</returns>
         [Pure]
@@ -785,6 +790,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to remove if matches are found in this list.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>
         /// A new list with the elements removed.
@@ -795,7 +801,6 @@ namespace System.Collections.Immutable
             var self = this;
             self.ThrowNullRefIfNotInitialized();
             Requires.NotNull(items, "items");
-            Requires.NotNull(equalityComparer, "equalityComparer");
 
             var indexesToRemove = new SortedSet<int>();
             foreach (var item in items)
@@ -948,7 +953,7 @@ namespace System.Collections.Immutable
                 {
                     comparer = Comparer<T>.Default;
                 }
-            
+
                 // Avoid copying the entire array when the array is already sorted.
                 bool outOfOrder = false;
                 for (int i = index + 1; i < index + count; i++)
@@ -1297,7 +1302,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See <see cref="IImmutableList{T}"/>
         /// </summary>
-        [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.Replace(T oldValue, T newValue, IEqualityComparer<T> equalityComparer)
         {
             var self = this;

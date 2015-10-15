@@ -317,6 +317,19 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void Remove_NullEqualityComparer()
+        {
+            var collection = ImmutableList.Create(1, 2, 3);
+            var modified = collection.Remove(2, null);
+            Assert.Equal(new[] { 1, 3 }, modified);
+
+            // Try again through the explicit interface implementation.
+            IImmutableList<int> collectionIface = collection;
+            var modified2 = collectionIface.Remove(2, null);
+            Assert.Equal(new[] { 1, 3 }, modified2);
+        }
+
+        [Fact]
         public void RemoveTest()
         {
             ImmutableList<int> list = ImmutableList<int>.Empty;
@@ -522,6 +535,15 @@ namespace System.Collections.Immutable.Tests
             var newAge = new Person { Name = "Andrew", Age = 21 };
             var updatedList = list.Replace(newAge, newAge, new NameOnlyEqualityComparer());
             Assert.Equal(newAge.Age, updatedList[0].Age);
+
+            // Try again with a null equality comparer, which should use the default EQ.
+            updatedList = list.Replace(list[0], newAge);
+            Assert.NotSame(list, updatedList);
+
+            // Finally, try one last time using the interface implementation.
+            IImmutableList<Person> iface = list;
+            var updatedIface = iface.Replace(list[0], newAge);
+            Assert.NotSame(iface, updatedIface);
         }
 
         [Fact]
@@ -591,6 +613,15 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveRange(2, 2));
             list.RemoveRange(3, 0);
             Assert.Equal(3, list.Count);
+        }
+
+        [Fact]
+        public void RemoveRange_EnumerableEqualityComparer_AcceptsNullEQ()
+        {
+            var list = ImmutableList.Create(1, 2, 3);
+            var removed2eq = list.RemoveRange(new[] { 2 }, null);
+            Assert.Equal(2, removed2eq.Count);
+            Assert.Equal(new[] { 1, 3 }, removed2eq);
         }
 
         [Fact]
