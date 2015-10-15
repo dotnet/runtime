@@ -19,8 +19,8 @@ namespace System.Net.Sockets
             Interop.Error afErr = Interop.Sys.SetAddressFamily(sockAddr, socketAddressLen, (int)AddressFamily.Unspecified);
             Debug.Assert(afErr == Interop.Error.SUCCESS, "PrimeForNextConnectAttempt: failed to set address family");
 
-            int err = Interop.libc.connect(fileDescriptor, sockAddr, (uint)socketAddressLen);
-            Debug.Assert(err == 0, "PrimeForNextConnectAttempt: failed to disassociate socket after failed connect()");
+            Interop.Error err = Interop.Sys.Connect(fileDescriptor, sockAddr, socketAddressLen);
+            Debug.Assert(err == Interop.Error.SUCCESS, "PrimeForNextConnectAttempt: failed to disassociate socket after failed connect()");
         }
 
         public static void SetReceivingDualModeIPv4PacketInformation(Socket socket)

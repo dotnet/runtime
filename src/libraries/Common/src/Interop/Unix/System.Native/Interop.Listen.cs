@@ -4,13 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
-using socklen_t = System.UInt32;
-
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        public static extern unsafe int setsockopt(int sockfd, int level, int optname, void* optval, socklen_t optlen);
+        [DllImport(Libraries.SystemNative)]
+        internal static extern Error Listen(int socket, int backlog);
     }
 }
