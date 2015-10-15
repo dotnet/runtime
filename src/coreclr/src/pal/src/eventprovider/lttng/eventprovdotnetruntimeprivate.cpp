@@ -14,13 +14,13 @@ This file is generated using the logic from <root>/src/inc/genXplatLttng.pl
 #define TRACEPOINT_DEFINE
 #define TRACEPOINT_PROBE_DYNAMIC_LINKAGE
 #include "lttng/tpdotnetruntimeprivate.h"
-extern "C" BOOL  EventEnabledGCDecision(){ return TRUE;}
-extern "C" ULONG  FireEtwGCDecision(
+extern "C" BOOL  EventXplatEnabledGCDecision(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCDecision(
                   const BOOL DoCompact
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCDecision()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCDecision()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -33,14 +33,14 @@ extern "C" ULONG  FireEtwGCDecision(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCDecision_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCDecision_V1(
+extern "C" BOOL  EventXplatEnabledGCDecision_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCDecision_V1(
                   const BOOL DoCompact,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCDecision_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCDecision_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -54,15 +54,15 @@ extern "C" ULONG  FireEtwGCDecision_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCSettings(){ return TRUE;}
-extern "C" ULONG  FireEtwGCSettings(
+extern "C" BOOL  EventXplatEnabledGCSettings(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCSettings(
                   const unsigned __int64 SegmentSize,
                   const unsigned __int64 LargeObjectSegmentSize,
                   const BOOL ServerGC
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCSettings()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCSettings()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -77,8 +77,8 @@ extern "C" ULONG  FireEtwGCSettings(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCSettings_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCSettings_V1(
+extern "C" BOOL  EventXplatEnabledGCSettings_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCSettings_V1(
                   const unsigned __int64 SegmentSize,
                   const unsigned __int64 LargeObjectSegmentSize,
                   const BOOL ServerGC,
@@ -86,7 +86,7 @@ extern "C" ULONG  FireEtwGCSettings_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCSettings_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCSettings_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -102,15 +102,15 @@ extern "C" ULONG  FireEtwGCSettings_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCOptimized(){ return TRUE;}
-extern "C" ULONG  FireEtwGCOptimized(
+extern "C" BOOL  EventXplatEnabledGCOptimized(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCOptimized(
                   const unsigned __int64 DesiredAllocation,
                   const unsigned __int64 NewAllocation,
                   const unsigned int GenerationNumber
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCOptimized()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCOptimized()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -125,8 +125,8 @@ extern "C" ULONG  FireEtwGCOptimized(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCOptimized_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCOptimized_V1(
+extern "C" BOOL  EventXplatEnabledGCOptimized_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCOptimized_V1(
                   const unsigned __int64 DesiredAllocation,
                   const unsigned __int64 NewAllocation,
                   const unsigned int GenerationNumber,
@@ -134,7 +134,7 @@ extern "C" ULONG  FireEtwGCOptimized_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCOptimized_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCOptimized_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -150,12 +150,12 @@ extern "C" ULONG  FireEtwGCOptimized_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCPerHeapHistory(){ return TRUE;}
-extern "C" ULONG  FireEtwGCPerHeapHistory(
+extern "C" BOOL  EventXplatEnabledGCPerHeapHistory(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCPerHeapHistory(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCPerHeapHistory()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCPerHeapHistory()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -167,13 +167,13 @@ extern "C" ULONG  FireEtwGCPerHeapHistory(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCPerHeapHistory_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCPerHeapHistory_V1(
+extern "C" BOOL  EventXplatEnabledGCPerHeapHistory_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCPerHeapHistory_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCPerHeapHistory_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCPerHeapHistory_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -186,8 +186,8 @@ extern "C" ULONG  FireEtwGCPerHeapHistory_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCGlobalHeapHistory(){ return TRUE;}
-extern "C" ULONG  FireEtwGCGlobalHeapHistory(
+extern "C" BOOL  EventXplatEnabledGCGlobalHeapHistory(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCGlobalHeapHistory(
                   const unsigned __int64 FinalYoungestDesired,
                   const signed int NumHeaps,
                   const unsigned int CondemnedGeneration,
@@ -197,7 +197,7 @@ extern "C" ULONG  FireEtwGCGlobalHeapHistory(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCGlobalHeapHistory()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCGlobalHeapHistory()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -215,8 +215,8 @@ extern "C" ULONG  FireEtwGCGlobalHeapHistory(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCGlobalHeapHistory_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCGlobalHeapHistory_V1(
+extern "C" BOOL  EventXplatEnabledGCGlobalHeapHistory_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCGlobalHeapHistory_V1(
                   const unsigned __int64 FinalYoungestDesired,
                   const signed int NumHeaps,
                   const unsigned int CondemnedGeneration,
@@ -227,7 +227,7 @@ extern "C" ULONG  FireEtwGCGlobalHeapHistory_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCGlobalHeapHistory_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCGlobalHeapHistory_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -246,15 +246,15 @@ extern "C" ULONG  FireEtwGCGlobalHeapHistory_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCJoin(){ return TRUE;}
-extern "C" ULONG  FireEtwGCJoin(
+extern "C" BOOL  EventXplatEnabledGCJoin(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCJoin(
                   const unsigned int Heap,
                   const unsigned int JoinTime,
                   const unsigned int JoinType
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCJoin()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCJoin()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -269,8 +269,8 @@ extern "C" ULONG  FireEtwGCJoin(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCJoin_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCJoin_V1(
+extern "C" BOOL  EventXplatEnabledGCJoin_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCJoin_V1(
                   const unsigned int Heap,
                   const unsigned int JoinTime,
                   const unsigned int JoinType,
@@ -278,7 +278,7 @@ extern "C" ULONG  FireEtwGCJoin_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCJoin_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCJoin_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -294,13 +294,13 @@ extern "C" ULONG  FireEtwGCJoin_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvGCMarkStackRoots(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvGCMarkStackRoots(
+extern "C" BOOL  EventXplatEnabledPrvGCMarkStackRoots(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvGCMarkStackRoots(
                   const unsigned int HeapNum
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvGCMarkStackRoots()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvGCMarkStackRoots()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -313,14 +313,14 @@ extern "C" ULONG  FireEtwPrvGCMarkStackRoots(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvGCMarkStackRoots_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvGCMarkStackRoots_V1(
+extern "C" BOOL  EventXplatEnabledPrvGCMarkStackRoots_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvGCMarkStackRoots_V1(
                   const unsigned int HeapNum,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvGCMarkStackRoots_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvGCMarkStackRoots_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -334,13 +334,13 @@ extern "C" ULONG  FireEtwPrvGCMarkStackRoots_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvGCMarkFinalizeQueueRoots(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvGCMarkFinalizeQueueRoots(
+extern "C" BOOL  EventXplatEnabledPrvGCMarkFinalizeQueueRoots(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvGCMarkFinalizeQueueRoots(
                   const unsigned int HeapNum
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvGCMarkFinalizeQueueRoots()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvGCMarkFinalizeQueueRoots()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -353,14 +353,14 @@ extern "C" ULONG  FireEtwPrvGCMarkFinalizeQueueRoots(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvGCMarkFinalizeQueueRoots_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvGCMarkFinalizeQueueRoots_V1(
+extern "C" BOOL  EventXplatEnabledPrvGCMarkFinalizeQueueRoots_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvGCMarkFinalizeQueueRoots_V1(
                   const unsigned int HeapNum,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvGCMarkFinalizeQueueRoots_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvGCMarkFinalizeQueueRoots_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -374,13 +374,13 @@ extern "C" ULONG  FireEtwPrvGCMarkFinalizeQueueRoots_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvGCMarkHandles(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvGCMarkHandles(
+extern "C" BOOL  EventXplatEnabledPrvGCMarkHandles(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvGCMarkHandles(
                   const unsigned int HeapNum
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvGCMarkHandles()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvGCMarkHandles()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -393,14 +393,14 @@ extern "C" ULONG  FireEtwPrvGCMarkHandles(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvGCMarkHandles_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvGCMarkHandles_V1(
+extern "C" BOOL  EventXplatEnabledPrvGCMarkHandles_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvGCMarkHandles_V1(
                   const unsigned int HeapNum,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvGCMarkHandles_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvGCMarkHandles_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -414,13 +414,13 @@ extern "C" ULONG  FireEtwPrvGCMarkHandles_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvGCMarkCards(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvGCMarkCards(
+extern "C" BOOL  EventXplatEnabledPrvGCMarkCards(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvGCMarkCards(
                   const unsigned int HeapNum
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvGCMarkCards()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvGCMarkCards()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -433,14 +433,14 @@ extern "C" ULONG  FireEtwPrvGCMarkCards(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvGCMarkCards_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvGCMarkCards_V1(
+extern "C" BOOL  EventXplatEnabledPrvGCMarkCards_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvGCMarkCards_V1(
                   const unsigned int HeapNum,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvGCMarkCards_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvGCMarkCards_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -454,13 +454,13 @@ extern "C" ULONG  FireEtwPrvGCMarkCards_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGCBegin(){ return TRUE;}
-extern "C" ULONG  FireEtwBGCBegin(
+extern "C" BOOL  EventXplatEnabledBGCBegin(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGCBegin(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGCBegin()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGCBegin()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -473,13 +473,13 @@ extern "C" ULONG  FireEtwBGCBegin(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGC1stNonConEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBGC1stNonConEnd(
+extern "C" BOOL  EventXplatEnabledBGC1stNonConEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGC1stNonConEnd(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGC1stNonConEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGC1stNonConEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -492,13 +492,13 @@ extern "C" ULONG  FireEtwBGC1stNonConEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGC1stConEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBGC1stConEnd(
+extern "C" BOOL  EventXplatEnabledBGC1stConEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGC1stConEnd(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGC1stConEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGC1stConEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -511,13 +511,13 @@ extern "C" ULONG  FireEtwBGC1stConEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGC2ndNonConBegin(){ return TRUE;}
-extern "C" ULONG  FireEtwBGC2ndNonConBegin(
+extern "C" BOOL  EventXplatEnabledBGC2ndNonConBegin(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGC2ndNonConBegin(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGC2ndNonConBegin()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGC2ndNonConBegin()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -530,13 +530,13 @@ extern "C" ULONG  FireEtwBGC2ndNonConBegin(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGC2ndNonConEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBGC2ndNonConEnd(
+extern "C" BOOL  EventXplatEnabledBGC2ndNonConEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGC2ndNonConEnd(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGC2ndNonConEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGC2ndNonConEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -549,13 +549,13 @@ extern "C" ULONG  FireEtwBGC2ndNonConEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGC2ndConBegin(){ return TRUE;}
-extern "C" ULONG  FireEtwBGC2ndConBegin(
+extern "C" BOOL  EventXplatEnabledBGC2ndConBegin(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGC2ndConBegin(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGC2ndConBegin()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGC2ndConBegin()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -568,13 +568,13 @@ extern "C" ULONG  FireEtwBGC2ndConBegin(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGC2ndConEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBGC2ndConEnd(
+extern "C" BOOL  EventXplatEnabledBGC2ndConEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGC2ndConEnd(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGC2ndConEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGC2ndConEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -587,13 +587,13 @@ extern "C" ULONG  FireEtwBGC2ndConEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGCPlanEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBGCPlanEnd(
+extern "C" BOOL  EventXplatEnabledBGCPlanEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGCPlanEnd(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGCPlanEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGCPlanEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -606,13 +606,13 @@ extern "C" ULONG  FireEtwBGCPlanEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGCSweepEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBGCSweepEnd(
+extern "C" BOOL  EventXplatEnabledBGCSweepEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGCSweepEnd(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGCSweepEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGCSweepEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -625,14 +625,14 @@ extern "C" ULONG  FireEtwBGCSweepEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGCDrainMark(){ return TRUE;}
-extern "C" ULONG  FireEtwBGCDrainMark(
+extern "C" BOOL  EventXplatEnabledBGCDrainMark(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGCDrainMark(
                   const unsigned __int64 Objects,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGCDrainMark()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGCDrainMark()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -646,8 +646,8 @@ extern "C" ULONG  FireEtwBGCDrainMark(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGCRevisit(){ return TRUE;}
-extern "C" ULONG  FireEtwBGCRevisit(
+extern "C" BOOL  EventXplatEnabledBGCRevisit(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGCRevisit(
                   const unsigned __int64 Pages,
                   const unsigned __int64 Objects,
                   const unsigned int IsLarge,
@@ -655,7 +655,7 @@ extern "C" ULONG  FireEtwBGCRevisit(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGCRevisit()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGCRevisit()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -671,8 +671,8 @@ extern "C" ULONG  FireEtwBGCRevisit(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGCOverflow(){ return TRUE;}
-extern "C" ULONG  FireEtwBGCOverflow(
+extern "C" BOOL  EventXplatEnabledBGCOverflow(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGCOverflow(
                   const unsigned __int64 Min,
                   const unsigned __int64 Max,
                   const unsigned __int64 Objects,
@@ -681,7 +681,7 @@ extern "C" ULONG  FireEtwBGCOverflow(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGCOverflow()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGCOverflow()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -698,14 +698,14 @@ extern "C" ULONG  FireEtwBGCOverflow(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGCAllocWaitBegin(){ return TRUE;}
-extern "C" ULONG  FireEtwBGCAllocWaitBegin(
+extern "C" BOOL  EventXplatEnabledBGCAllocWaitBegin(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGCAllocWaitBegin(
                   const unsigned int Reason,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGCAllocWaitBegin()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGCAllocWaitBegin()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -719,14 +719,14 @@ extern "C" ULONG  FireEtwBGCAllocWaitBegin(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBGCAllocWaitEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBGCAllocWaitEnd(
+extern "C" BOOL  EventXplatEnabledBGCAllocWaitEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBGCAllocWaitEnd(
                   const unsigned int Reason,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBGCAllocWaitEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBGCAllocWaitEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -740,14 +740,14 @@ extern "C" ULONG  FireEtwBGCAllocWaitEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCFullNotify(){ return TRUE;}
-extern "C" ULONG  FireEtwGCFullNotify(
+extern "C" BOOL  EventXplatEnabledGCFullNotify(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCFullNotify(
                   const unsigned int GenNumber,
                   const unsigned int IsAlloc
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCFullNotify()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCFullNotify()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -761,15 +761,15 @@ extern "C" ULONG  FireEtwGCFullNotify(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCFullNotify_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCFullNotify_V1(
+extern "C" BOOL  EventXplatEnabledGCFullNotify_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCFullNotify_V1(
                   const unsigned int GenNumber,
                   const unsigned int IsAlloc,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCFullNotify_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCFullNotify_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -784,12 +784,12 @@ extern "C" ULONG  FireEtwGCFullNotify_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEStartupStart(){ return TRUE;}
-extern "C" ULONG  FireEtwEEStartupStart(
+extern "C" BOOL  EventXplatEnabledEEStartupStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEStartupStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEStartupStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEStartupStart()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -801,13 +801,13 @@ extern "C" ULONG  FireEtwEEStartupStart(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEStartupStart_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwEEStartupStart_V1(
+extern "C" BOOL  EventXplatEnabledEEStartupStart_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEStartupStart_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEStartupStart_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEStartupStart_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -820,12 +820,12 @@ extern "C" ULONG  FireEtwEEStartupStart_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEStartupEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwEEStartupEnd(
+extern "C" BOOL  EventXplatEnabledEEStartupEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEStartupEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEStartupEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEStartupEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -837,13 +837,13 @@ extern "C" ULONG  FireEtwEEStartupEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEStartupEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwEEStartupEnd_V1(
+extern "C" BOOL  EventXplatEnabledEEStartupEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEStartupEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEStartupEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEStartupEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -856,12 +856,12 @@ extern "C" ULONG  FireEtwEEStartupEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEConfigSetup(){ return TRUE;}
-extern "C" ULONG  FireEtwEEConfigSetup(
+extern "C" BOOL  EventXplatEnabledEEConfigSetup(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEConfigSetup(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEConfigSetup()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEConfigSetup()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -873,13 +873,13 @@ extern "C" ULONG  FireEtwEEConfigSetup(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEConfigSetup_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwEEConfigSetup_V1(
+extern "C" BOOL  EventXplatEnabledEEConfigSetup_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEConfigSetup_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEConfigSetup_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEConfigSetup_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -892,12 +892,12 @@ extern "C" ULONG  FireEtwEEConfigSetup_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEConfigSetupEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwEEConfigSetupEnd(
+extern "C" BOOL  EventXplatEnabledEEConfigSetupEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEConfigSetupEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEConfigSetupEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEConfigSetupEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -909,13 +909,13 @@ extern "C" ULONG  FireEtwEEConfigSetupEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEConfigSetupEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwEEConfigSetupEnd_V1(
+extern "C" BOOL  EventXplatEnabledEEConfigSetupEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEConfigSetupEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEConfigSetupEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEConfigSetupEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -928,12 +928,12 @@ extern "C" ULONG  FireEtwEEConfigSetupEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLdSysBases(){ return TRUE;}
-extern "C" ULONG  FireEtwLdSysBases(
+extern "C" BOOL  EventXplatEnabledLdSysBases(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLdSysBases(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLdSysBases()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLdSysBases()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -945,13 +945,13 @@ extern "C" ULONG  FireEtwLdSysBases(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLdSysBases_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwLdSysBases_V1(
+extern "C" BOOL  EventXplatEnabledLdSysBases_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLdSysBases_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLdSysBases_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLdSysBases_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -964,12 +964,12 @@ extern "C" ULONG  FireEtwLdSysBases_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLdSysBasesEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwLdSysBasesEnd(
+extern "C" BOOL  EventXplatEnabledLdSysBasesEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLdSysBasesEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLdSysBasesEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLdSysBasesEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -981,13 +981,13 @@ extern "C" ULONG  FireEtwLdSysBasesEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLdSysBasesEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwLdSysBasesEnd_V1(
+extern "C" BOOL  EventXplatEnabledLdSysBasesEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLdSysBasesEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLdSysBasesEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLdSysBasesEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1000,12 +1000,12 @@ extern "C" ULONG  FireEtwLdSysBasesEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExecExe(){ return TRUE;}
-extern "C" ULONG  FireEtwExecExe(
+extern "C" BOOL  EventXplatEnabledExecExe(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExecExe(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExecExe()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExecExe()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1017,13 +1017,13 @@ extern "C" ULONG  FireEtwExecExe(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExecExe_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwExecExe_V1(
+extern "C" BOOL  EventXplatEnabledExecExe_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExecExe_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExecExe_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExecExe_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1036,12 +1036,12 @@ extern "C" ULONG  FireEtwExecExe_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExecExeEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwExecExeEnd(
+extern "C" BOOL  EventXplatEnabledExecExeEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExecExeEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExecExeEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExecExeEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1053,13 +1053,13 @@ extern "C" ULONG  FireEtwExecExeEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExecExeEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwExecExeEnd_V1(
+extern "C" BOOL  EventXplatEnabledExecExeEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExecExeEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExecExeEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExecExeEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1072,12 +1072,12 @@ extern "C" ULONG  FireEtwExecExeEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMain(){ return TRUE;}
-extern "C" ULONG  FireEtwMain(
+extern "C" BOOL  EventXplatEnabledMain(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMain(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMain()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMain()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1089,13 +1089,13 @@ extern "C" ULONG  FireEtwMain(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMain_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwMain_V1(
+extern "C" BOOL  EventXplatEnabledMain_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMain_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMain_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMain_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1108,12 +1108,12 @@ extern "C" ULONG  FireEtwMain_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMainEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwMainEnd(
+extern "C" BOOL  EventXplatEnabledMainEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMainEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMainEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMainEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1125,13 +1125,13 @@ extern "C" ULONG  FireEtwMainEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMainEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwMainEnd_V1(
+extern "C" BOOL  EventXplatEnabledMainEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMainEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMainEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMainEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1144,12 +1144,12 @@ extern "C" ULONG  FireEtwMainEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledApplyPolicyStart(){ return TRUE;}
-extern "C" ULONG  FireEtwApplyPolicyStart(
+extern "C" BOOL  EventXplatEnabledApplyPolicyStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatApplyPolicyStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledApplyPolicyStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledApplyPolicyStart()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1161,13 +1161,13 @@ extern "C" ULONG  FireEtwApplyPolicyStart(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledApplyPolicyStart_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwApplyPolicyStart_V1(
+extern "C" BOOL  EventXplatEnabledApplyPolicyStart_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatApplyPolicyStart_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledApplyPolicyStart_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledApplyPolicyStart_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1180,12 +1180,12 @@ extern "C" ULONG  FireEtwApplyPolicyStart_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledApplyPolicyEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwApplyPolicyEnd(
+extern "C" BOOL  EventXplatEnabledApplyPolicyEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatApplyPolicyEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledApplyPolicyEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledApplyPolicyEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1197,13 +1197,13 @@ extern "C" ULONG  FireEtwApplyPolicyEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledApplyPolicyEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwApplyPolicyEnd_V1(
+extern "C" BOOL  EventXplatEnabledApplyPolicyEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatApplyPolicyEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledApplyPolicyEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledApplyPolicyEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1216,12 +1216,12 @@ extern "C" ULONG  FireEtwApplyPolicyEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLdLibShFolder(){ return TRUE;}
-extern "C" ULONG  FireEtwLdLibShFolder(
+extern "C" BOOL  EventXplatEnabledLdLibShFolder(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLdLibShFolder(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLdLibShFolder()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLdLibShFolder()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1233,13 +1233,13 @@ extern "C" ULONG  FireEtwLdLibShFolder(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLdLibShFolder_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwLdLibShFolder_V1(
+extern "C" BOOL  EventXplatEnabledLdLibShFolder_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLdLibShFolder_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLdLibShFolder_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLdLibShFolder_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1252,12 +1252,12 @@ extern "C" ULONG  FireEtwLdLibShFolder_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLdLibShFolderEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwLdLibShFolderEnd(
+extern "C" BOOL  EventXplatEnabledLdLibShFolderEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLdLibShFolderEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLdLibShFolderEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLdLibShFolderEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1269,13 +1269,13 @@ extern "C" ULONG  FireEtwLdLibShFolderEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLdLibShFolderEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwLdLibShFolderEnd_V1(
+extern "C" BOOL  EventXplatEnabledLdLibShFolderEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLdLibShFolderEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLdLibShFolderEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLdLibShFolderEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1288,12 +1288,12 @@ extern "C" ULONG  FireEtwLdLibShFolderEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrestubWorker(){ return TRUE;}
-extern "C" ULONG  FireEtwPrestubWorker(
+extern "C" BOOL  EventXplatEnabledPrestubWorker(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrestubWorker(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrestubWorker()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrestubWorker()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1305,13 +1305,13 @@ extern "C" ULONG  FireEtwPrestubWorker(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrestubWorker_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwPrestubWorker_V1(
+extern "C" BOOL  EventXplatEnabledPrestubWorker_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrestubWorker_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrestubWorker_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrestubWorker_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1324,12 +1324,12 @@ extern "C" ULONG  FireEtwPrestubWorker_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrestubWorkerEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwPrestubWorkerEnd(
+extern "C" BOOL  EventXplatEnabledPrestubWorkerEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrestubWorkerEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrestubWorkerEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrestubWorkerEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1341,13 +1341,13 @@ extern "C" ULONG  FireEtwPrestubWorkerEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrestubWorkerEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwPrestubWorkerEnd_V1(
+extern "C" BOOL  EventXplatEnabledPrestubWorkerEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrestubWorkerEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrestubWorkerEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrestubWorkerEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1360,12 +1360,12 @@ extern "C" ULONG  FireEtwPrestubWorkerEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGetInstallationStart(){ return TRUE;}
-extern "C" ULONG  FireEtwGetInstallationStart(
+extern "C" BOOL  EventXplatEnabledGetInstallationStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGetInstallationStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGetInstallationStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGetInstallationStart()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1377,13 +1377,13 @@ extern "C" ULONG  FireEtwGetInstallationStart(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGetInstallationStart_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGetInstallationStart_V1(
+extern "C" BOOL  EventXplatEnabledGetInstallationStart_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGetInstallationStart_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGetInstallationStart_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGetInstallationStart_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1396,12 +1396,12 @@ extern "C" ULONG  FireEtwGetInstallationStart_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGetInstallationEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwGetInstallationEnd(
+extern "C" BOOL  EventXplatEnabledGetInstallationEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGetInstallationEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGetInstallationEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGetInstallationEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1413,13 +1413,13 @@ extern "C" ULONG  FireEtwGetInstallationEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGetInstallationEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGetInstallationEnd_V1(
+extern "C" BOOL  EventXplatEnabledGetInstallationEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGetInstallationEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGetInstallationEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGetInstallationEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1432,12 +1432,12 @@ extern "C" ULONG  FireEtwGetInstallationEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledOpenHModule(){ return TRUE;}
-extern "C" ULONG  FireEtwOpenHModule(
+extern "C" BOOL  EventXplatEnabledOpenHModule(){ return TRUE;}
+extern "C" ULONG  FireEtXplatOpenHModule(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledOpenHModule()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledOpenHModule()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1449,13 +1449,13 @@ extern "C" ULONG  FireEtwOpenHModule(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledOpenHModule_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwOpenHModule_V1(
+extern "C" BOOL  EventXplatEnabledOpenHModule_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatOpenHModule_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledOpenHModule_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledOpenHModule_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1468,12 +1468,12 @@ extern "C" ULONG  FireEtwOpenHModule_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledOpenHModuleEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwOpenHModuleEnd(
+extern "C" BOOL  EventXplatEnabledOpenHModuleEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatOpenHModuleEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledOpenHModuleEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledOpenHModuleEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1485,13 +1485,13 @@ extern "C" ULONG  FireEtwOpenHModuleEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledOpenHModuleEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwOpenHModuleEnd_V1(
+extern "C" BOOL  EventXplatEnabledOpenHModuleEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatOpenHModuleEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledOpenHModuleEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledOpenHModuleEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1504,12 +1504,12 @@ extern "C" ULONG  FireEtwOpenHModuleEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExplicitBindStart(){ return TRUE;}
-extern "C" ULONG  FireEtwExplicitBindStart(
+extern "C" BOOL  EventXplatEnabledExplicitBindStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExplicitBindStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExplicitBindStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExplicitBindStart()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1521,13 +1521,13 @@ extern "C" ULONG  FireEtwExplicitBindStart(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExplicitBindStart_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwExplicitBindStart_V1(
+extern "C" BOOL  EventXplatEnabledExplicitBindStart_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExplicitBindStart_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExplicitBindStart_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExplicitBindStart_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1540,12 +1540,12 @@ extern "C" ULONG  FireEtwExplicitBindStart_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExplicitBindEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwExplicitBindEnd(
+extern "C" BOOL  EventXplatEnabledExplicitBindEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExplicitBindEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExplicitBindEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExplicitBindEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1557,13 +1557,13 @@ extern "C" ULONG  FireEtwExplicitBindEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExplicitBindEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwExplicitBindEnd_V1(
+extern "C" BOOL  EventXplatEnabledExplicitBindEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExplicitBindEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExplicitBindEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExplicitBindEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1576,12 +1576,12 @@ extern "C" ULONG  FireEtwExplicitBindEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledParseXml(){ return TRUE;}
-extern "C" ULONG  FireEtwParseXml(
+extern "C" BOOL  EventXplatEnabledParseXml(){ return TRUE;}
+extern "C" ULONG  FireEtXplatParseXml(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledParseXml()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledParseXml()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1593,13 +1593,13 @@ extern "C" ULONG  FireEtwParseXml(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledParseXml_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwParseXml_V1(
+extern "C" BOOL  EventXplatEnabledParseXml_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatParseXml_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledParseXml_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledParseXml_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1612,12 +1612,12 @@ extern "C" ULONG  FireEtwParseXml_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledParseXmlEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwParseXmlEnd(
+extern "C" BOOL  EventXplatEnabledParseXmlEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatParseXmlEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledParseXmlEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledParseXmlEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1629,13 +1629,13 @@ extern "C" ULONG  FireEtwParseXmlEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledParseXmlEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwParseXmlEnd_V1(
+extern "C" BOOL  EventXplatEnabledParseXmlEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatParseXmlEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledParseXmlEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledParseXmlEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1648,12 +1648,12 @@ extern "C" ULONG  FireEtwParseXmlEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledInitDefaultDomain(){ return TRUE;}
-extern "C" ULONG  FireEtwInitDefaultDomain(
+extern "C" BOOL  EventXplatEnabledInitDefaultDomain(){ return TRUE;}
+extern "C" ULONG  FireEtXplatInitDefaultDomain(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledInitDefaultDomain()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledInitDefaultDomain()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1665,13 +1665,13 @@ extern "C" ULONG  FireEtwInitDefaultDomain(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledInitDefaultDomain_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwInitDefaultDomain_V1(
+extern "C" BOOL  EventXplatEnabledInitDefaultDomain_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatInitDefaultDomain_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledInitDefaultDomain_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledInitDefaultDomain_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1684,12 +1684,12 @@ extern "C" ULONG  FireEtwInitDefaultDomain_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledInitDefaultDomainEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwInitDefaultDomainEnd(
+extern "C" BOOL  EventXplatEnabledInitDefaultDomainEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatInitDefaultDomainEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledInitDefaultDomainEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledInitDefaultDomainEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1701,13 +1701,13 @@ extern "C" ULONG  FireEtwInitDefaultDomainEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledInitDefaultDomainEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwInitDefaultDomainEnd_V1(
+extern "C" BOOL  EventXplatEnabledInitDefaultDomainEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatInitDefaultDomainEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledInitDefaultDomainEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledInitDefaultDomainEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1720,12 +1720,12 @@ extern "C" ULONG  FireEtwInitDefaultDomainEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledInitSecurity(){ return TRUE;}
-extern "C" ULONG  FireEtwInitSecurity(
+extern "C" BOOL  EventXplatEnabledInitSecurity(){ return TRUE;}
+extern "C" ULONG  FireEtXplatInitSecurity(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledInitSecurity()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledInitSecurity()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1737,13 +1737,13 @@ extern "C" ULONG  FireEtwInitSecurity(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledInitSecurity_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwInitSecurity_V1(
+extern "C" BOOL  EventXplatEnabledInitSecurity_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatInitSecurity_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledInitSecurity_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledInitSecurity_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1756,12 +1756,12 @@ extern "C" ULONG  FireEtwInitSecurity_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledInitSecurityEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwInitSecurityEnd(
+extern "C" BOOL  EventXplatEnabledInitSecurityEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatInitSecurityEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledInitSecurityEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledInitSecurityEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1773,13 +1773,13 @@ extern "C" ULONG  FireEtwInitSecurityEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledInitSecurityEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwInitSecurityEnd_V1(
+extern "C" BOOL  EventXplatEnabledInitSecurityEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatInitSecurityEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledInitSecurityEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledInitSecurityEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1792,12 +1792,12 @@ extern "C" ULONG  FireEtwInitSecurityEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAllowBindingRedirs(){ return TRUE;}
-extern "C" ULONG  FireEtwAllowBindingRedirs(
+extern "C" BOOL  EventXplatEnabledAllowBindingRedirs(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAllowBindingRedirs(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAllowBindingRedirs()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAllowBindingRedirs()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1809,13 +1809,13 @@ extern "C" ULONG  FireEtwAllowBindingRedirs(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAllowBindingRedirs_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwAllowBindingRedirs_V1(
+extern "C" BOOL  EventXplatEnabledAllowBindingRedirs_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAllowBindingRedirs_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAllowBindingRedirs_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAllowBindingRedirs_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1828,12 +1828,12 @@ extern "C" ULONG  FireEtwAllowBindingRedirs_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAllowBindingRedirsEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwAllowBindingRedirsEnd(
+extern "C" BOOL  EventXplatEnabledAllowBindingRedirsEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAllowBindingRedirsEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAllowBindingRedirsEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAllowBindingRedirsEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1845,13 +1845,13 @@ extern "C" ULONG  FireEtwAllowBindingRedirsEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAllowBindingRedirsEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwAllowBindingRedirsEnd_V1(
+extern "C" BOOL  EventXplatEnabledAllowBindingRedirsEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAllowBindingRedirsEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAllowBindingRedirsEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAllowBindingRedirsEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1864,12 +1864,12 @@ extern "C" ULONG  FireEtwAllowBindingRedirsEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEConfigSync(){ return TRUE;}
-extern "C" ULONG  FireEtwEEConfigSync(
+extern "C" BOOL  EventXplatEnabledEEConfigSync(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEConfigSync(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEConfigSync()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEConfigSync()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1881,13 +1881,13 @@ extern "C" ULONG  FireEtwEEConfigSync(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEConfigSync_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwEEConfigSync_V1(
+extern "C" BOOL  EventXplatEnabledEEConfigSync_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEConfigSync_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEConfigSync_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEConfigSync_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1900,12 +1900,12 @@ extern "C" ULONG  FireEtwEEConfigSync_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEConfigSyncEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwEEConfigSyncEnd(
+extern "C" BOOL  EventXplatEnabledEEConfigSyncEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEConfigSyncEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEConfigSyncEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEConfigSyncEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1917,13 +1917,13 @@ extern "C" ULONG  FireEtwEEConfigSyncEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEEConfigSyncEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwEEConfigSyncEnd_V1(
+extern "C" BOOL  EventXplatEnabledEEConfigSyncEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEEConfigSyncEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEEConfigSyncEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEEConfigSyncEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1936,12 +1936,12 @@ extern "C" ULONG  FireEtwEEConfigSyncEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionBinding(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionBinding(
+extern "C" BOOL  EventXplatEnabledFusionBinding(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionBinding(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionBinding()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionBinding()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1953,13 +1953,13 @@ extern "C" ULONG  FireEtwFusionBinding(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionBinding_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionBinding_V1(
+extern "C" BOOL  EventXplatEnabledFusionBinding_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionBinding_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionBinding_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionBinding_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1972,12 +1972,12 @@ extern "C" ULONG  FireEtwFusionBinding_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionBindingEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionBindingEnd(
+extern "C" BOOL  EventXplatEnabledFusionBindingEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionBindingEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionBindingEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionBindingEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1989,13 +1989,13 @@ extern "C" ULONG  FireEtwFusionBindingEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionBindingEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionBindingEnd_V1(
+extern "C" BOOL  EventXplatEnabledFusionBindingEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionBindingEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionBindingEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionBindingEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2008,12 +2008,12 @@ extern "C" ULONG  FireEtwFusionBindingEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderCatchCall(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderCatchCall(
+extern "C" BOOL  EventXplatEnabledLoaderCatchCall(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderCatchCall(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderCatchCall()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderCatchCall()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2025,13 +2025,13 @@ extern "C" ULONG  FireEtwLoaderCatchCall(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderCatchCall_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderCatchCall_V1(
+extern "C" BOOL  EventXplatEnabledLoaderCatchCall_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderCatchCall_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderCatchCall_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderCatchCall_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2044,12 +2044,12 @@ extern "C" ULONG  FireEtwLoaderCatchCall_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderCatchCallEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderCatchCallEnd(
+extern "C" BOOL  EventXplatEnabledLoaderCatchCallEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderCatchCallEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderCatchCallEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderCatchCallEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2061,13 +2061,13 @@ extern "C" ULONG  FireEtwLoaderCatchCallEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderCatchCallEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderCatchCallEnd_V1(
+extern "C" BOOL  EventXplatEnabledLoaderCatchCallEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderCatchCallEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderCatchCallEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderCatchCallEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2080,12 +2080,12 @@ extern "C" ULONG  FireEtwLoaderCatchCallEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionInit(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionInit(
+extern "C" BOOL  EventXplatEnabledFusionInit(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionInit(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionInit()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionInit()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2097,13 +2097,13 @@ extern "C" ULONG  FireEtwFusionInit(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionInit_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionInit_V1(
+extern "C" BOOL  EventXplatEnabledFusionInit_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionInit_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionInit_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionInit_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2116,12 +2116,12 @@ extern "C" ULONG  FireEtwFusionInit_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionInitEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionInitEnd(
+extern "C" BOOL  EventXplatEnabledFusionInitEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionInitEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionInitEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionInitEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2133,13 +2133,13 @@ extern "C" ULONG  FireEtwFusionInitEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionInitEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionInitEnd_V1(
+extern "C" BOOL  EventXplatEnabledFusionInitEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionInitEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionInitEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionInitEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2152,12 +2152,12 @@ extern "C" ULONG  FireEtwFusionInitEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionAppCtx(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionAppCtx(
+extern "C" BOOL  EventXplatEnabledFusionAppCtx(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionAppCtx(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionAppCtx()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionAppCtx()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2169,13 +2169,13 @@ extern "C" ULONG  FireEtwFusionAppCtx(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionAppCtx_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionAppCtx_V1(
+extern "C" BOOL  EventXplatEnabledFusionAppCtx_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionAppCtx_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionAppCtx_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionAppCtx_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2188,12 +2188,12 @@ extern "C" ULONG  FireEtwFusionAppCtx_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionAppCtxEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionAppCtxEnd(
+extern "C" BOOL  EventXplatEnabledFusionAppCtxEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionAppCtxEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionAppCtxEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionAppCtxEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2205,13 +2205,13 @@ extern "C" ULONG  FireEtwFusionAppCtxEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionAppCtxEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionAppCtxEnd_V1(
+extern "C" BOOL  EventXplatEnabledFusionAppCtxEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionAppCtxEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionAppCtxEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionAppCtxEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2224,12 +2224,12 @@ extern "C" ULONG  FireEtwFusionAppCtxEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusion2EE(){ return TRUE;}
-extern "C" ULONG  FireEtwFusion2EE(
+extern "C" BOOL  EventXplatEnabledFusion2EE(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusion2EE(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusion2EE()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusion2EE()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2241,13 +2241,13 @@ extern "C" ULONG  FireEtwFusion2EE(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusion2EE_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwFusion2EE_V1(
+extern "C" BOOL  EventXplatEnabledFusion2EE_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusion2EE_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusion2EE_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusion2EE_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2260,12 +2260,12 @@ extern "C" ULONG  FireEtwFusion2EE_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusion2EEEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwFusion2EEEnd(
+extern "C" BOOL  EventXplatEnabledFusion2EEEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusion2EEEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusion2EEEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusion2EEEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2277,13 +2277,13 @@ extern "C" ULONG  FireEtwFusion2EEEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusion2EEEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwFusion2EEEnd_V1(
+extern "C" BOOL  EventXplatEnabledFusion2EEEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusion2EEEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusion2EEEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusion2EEEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2296,12 +2296,12 @@ extern "C" ULONG  FireEtwFusion2EEEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledSecurityCatchCall(){ return TRUE;}
-extern "C" ULONG  FireEtwSecurityCatchCall(
+extern "C" BOOL  EventXplatEnabledSecurityCatchCall(){ return TRUE;}
+extern "C" ULONG  FireEtXplatSecurityCatchCall(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledSecurityCatchCall()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledSecurityCatchCall()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2313,13 +2313,13 @@ extern "C" ULONG  FireEtwSecurityCatchCall(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledSecurityCatchCall_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwSecurityCatchCall_V1(
+extern "C" BOOL  EventXplatEnabledSecurityCatchCall_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatSecurityCatchCall_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledSecurityCatchCall_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledSecurityCatchCall_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2332,12 +2332,12 @@ extern "C" ULONG  FireEtwSecurityCatchCall_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledSecurityCatchCallEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwSecurityCatchCallEnd(
+extern "C" BOOL  EventXplatEnabledSecurityCatchCallEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatSecurityCatchCallEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledSecurityCatchCallEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledSecurityCatchCallEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2349,13 +2349,13 @@ extern "C" ULONG  FireEtwSecurityCatchCallEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledSecurityCatchCallEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwSecurityCatchCallEnd_V1(
+extern "C" BOOL  EventXplatEnabledSecurityCatchCallEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatSecurityCatchCallEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledSecurityCatchCallEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledSecurityCatchCallEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2368,8 +2368,8 @@ extern "C" ULONG  FireEtwSecurityCatchCallEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledCLRStackWalkPrivate(){ return TRUE;}
-extern "C" ULONG  FireEtwCLRStackWalkPrivate(
+extern "C" BOOL  EventXplatEnabledCLRStackWalkPrivate(){ return TRUE;}
+extern "C" ULONG  FireEtXplatCLRStackWalkPrivate(
                   const unsigned short ClrInstanceID,
                   const unsigned char Reserved1,
                   const unsigned char Reserved2,
@@ -2378,7 +2378,7 @@ extern "C" ULONG  FireEtwCLRStackWalkPrivate(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledCLRStackWalkPrivate()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledCLRStackWalkPrivate()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2395,8 +2395,8 @@ extern "C" ULONG  FireEtwCLRStackWalkPrivate(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleRangeLoadPrivate(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleRangeLoadPrivate(
+extern "C" BOOL  EventXplatEnabledModuleRangeLoadPrivate(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleRangeLoadPrivate(
                   const unsigned short ClrInstanceID,
                   const unsigned __int64 ModuleID,
                   const unsigned int RangeBegin,
@@ -2407,7 +2407,7 @@ extern "C" ULONG  FireEtwModuleRangeLoadPrivate(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleRangeLoadPrivate()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleRangeLoadPrivate()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2426,8 +2426,8 @@ extern "C" ULONG  FireEtwModuleRangeLoadPrivate(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBindingPolicyPhaseStart(){ return TRUE;}
-extern "C" ULONG  FireEtwBindingPolicyPhaseStart(
+extern "C" BOOL  EventXplatEnabledBindingPolicyPhaseStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBindingPolicyPhaseStart(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2438,12 +2438,12 @@ extern "C" ULONG  FireEtwBindingPolicyPhaseStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBindingPolicyPhaseStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBindingPolicyPhaseStart()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -2480,8 +2480,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBindingPolicyPhaseEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBindingPolicyPhaseEnd(
+extern "C" BOOL  EventXplatEnabledBindingPolicyPhaseEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBindingPolicyPhaseEnd(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2492,12 +2492,12 @@ extern "C" ULONG  FireEtwBindingPolicyPhaseEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBindingPolicyPhaseEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBindingPolicyPhaseEnd()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -2534,8 +2534,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBindingNgenPhaseStart(){ return TRUE;}
-extern "C" ULONG  FireEtwBindingNgenPhaseStart(
+extern "C" BOOL  EventXplatEnabledBindingNgenPhaseStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBindingNgenPhaseStart(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2546,12 +2546,12 @@ extern "C" ULONG  FireEtwBindingNgenPhaseStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBindingNgenPhaseStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBindingNgenPhaseStart()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -2588,8 +2588,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBindingNgenPhaseEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBindingNgenPhaseEnd(
+extern "C" BOOL  EventXplatEnabledBindingNgenPhaseEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBindingNgenPhaseEnd(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2600,12 +2600,12 @@ extern "C" ULONG  FireEtwBindingNgenPhaseEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBindingNgenPhaseEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBindingNgenPhaseEnd()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -2642,8 +2642,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBindingLookupAndProbingPhaseStart(){ return TRUE;}
-extern "C" ULONG  FireEtwBindingLookupAndProbingPhaseStart(
+extern "C" BOOL  EventXplatEnabledBindingLookupAndProbingPhaseStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBindingLookupAndProbingPhaseStart(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2654,12 +2654,12 @@ extern "C" ULONG  FireEtwBindingLookupAndProbingPhaseStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBindingLookupAndProbingPhaseStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBindingLookupAndProbingPhaseStart()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -2696,8 +2696,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBindingLookupAndProbingPhaseEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBindingLookupAndProbingPhaseEnd(
+extern "C" BOOL  EventXplatEnabledBindingLookupAndProbingPhaseEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBindingLookupAndProbingPhaseEnd(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2708,12 +2708,12 @@ extern "C" ULONG  FireEtwBindingLookupAndProbingPhaseEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBindingLookupAndProbingPhaseEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBindingLookupAndProbingPhaseEnd()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -2750,8 +2750,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderPhaseStart(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderPhaseStart(
+extern "C" BOOL  EventXplatEnabledLoaderPhaseStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderPhaseStart(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2762,12 +2762,12 @@ extern "C" ULONG  FireEtwLoaderPhaseStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderPhaseStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderPhaseStart()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -2804,8 +2804,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderPhaseEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderPhaseEnd(
+extern "C" BOOL  EventXplatEnabledLoaderPhaseEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderPhaseEnd(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2816,12 +2816,12 @@ extern "C" ULONG  FireEtwLoaderPhaseEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderPhaseEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderPhaseEnd()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -2858,8 +2858,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBindingPhaseStart(){ return TRUE;}
-extern "C" ULONG  FireEtwBindingPhaseStart(
+extern "C" BOOL  EventXplatEnabledBindingPhaseStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBindingPhaseStart(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2870,12 +2870,12 @@ extern "C" ULONG  FireEtwBindingPhaseStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBindingPhaseStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBindingPhaseStart()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -2912,8 +2912,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBindingPhaseEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBindingPhaseEnd(
+extern "C" BOOL  EventXplatEnabledBindingPhaseEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBindingPhaseEnd(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2924,12 +2924,12 @@ extern "C" ULONG  FireEtwBindingPhaseEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBindingPhaseEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBindingPhaseEnd()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -2966,8 +2966,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBindingDownloadPhaseStart(){ return TRUE;}
-extern "C" ULONG  FireEtwBindingDownloadPhaseStart(
+extern "C" BOOL  EventXplatEnabledBindingDownloadPhaseStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBindingDownloadPhaseStart(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -2978,12 +2978,12 @@ extern "C" ULONG  FireEtwBindingDownloadPhaseStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBindingDownloadPhaseStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBindingDownloadPhaseStart()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -3020,8 +3020,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBindingDownloadPhaseEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwBindingDownloadPhaseEnd(
+extern "C" BOOL  EventXplatEnabledBindingDownloadPhaseEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBindingDownloadPhaseEnd(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -3032,12 +3032,12 @@ extern "C" ULONG  FireEtwBindingDownloadPhaseEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBindingDownloadPhaseEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBindingDownloadPhaseEnd()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -3074,8 +3074,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderAssemblyInitPhaseStart(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderAssemblyInitPhaseStart(
+extern "C" BOOL  EventXplatEnabledLoaderAssemblyInitPhaseStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderAssemblyInitPhaseStart(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -3086,12 +3086,12 @@ extern "C" ULONG  FireEtwLoaderAssemblyInitPhaseStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderAssemblyInitPhaseStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderAssemblyInitPhaseStart()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -3128,8 +3128,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderAssemblyInitPhaseEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderAssemblyInitPhaseEnd(
+extern "C" BOOL  EventXplatEnabledLoaderAssemblyInitPhaseEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderAssemblyInitPhaseEnd(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -3140,12 +3140,12 @@ extern "C" ULONG  FireEtwLoaderAssemblyInitPhaseEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderAssemblyInitPhaseEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderAssemblyInitPhaseEnd()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -3182,8 +3182,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderMappingPhaseStart(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderMappingPhaseStart(
+extern "C" BOOL  EventXplatEnabledLoaderMappingPhaseStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderMappingPhaseStart(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -3194,12 +3194,12 @@ extern "C" ULONG  FireEtwLoaderMappingPhaseStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderMappingPhaseStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderMappingPhaseStart()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -3236,8 +3236,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderMappingPhaseEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderMappingPhaseEnd(
+extern "C" BOOL  EventXplatEnabledLoaderMappingPhaseEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderMappingPhaseEnd(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -3248,12 +3248,12 @@ extern "C" ULONG  FireEtwLoaderMappingPhaseEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderMappingPhaseEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderMappingPhaseEnd()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -3290,8 +3290,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderDeliverEventsPhaseStart(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderDeliverEventsPhaseStart(
+extern "C" BOOL  EventXplatEnabledLoaderDeliverEventsPhaseStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderDeliverEventsPhaseStart(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -3302,12 +3302,12 @@ extern "C" ULONG  FireEtwLoaderDeliverEventsPhaseStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderDeliverEventsPhaseStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderDeliverEventsPhaseStart()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -3344,8 +3344,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledLoaderDeliverEventsPhaseEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwLoaderDeliverEventsPhaseEnd(
+extern "C" BOOL  EventXplatEnabledLoaderDeliverEventsPhaseEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatLoaderDeliverEventsPhaseEnd(
                   const unsigned int AppDomainID,
                   const unsigned int LoadContextID,
                   const unsigned int FromLoaderCache,
@@ -3356,12 +3356,12 @@ extern "C" ULONG  FireEtwLoaderDeliverEventsPhaseEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledLoaderDeliverEventsPhaseEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledLoaderDeliverEventsPhaseEnd()){ return ERROR_SUCCESS;};
     INT AssemblyCodebase_path_size = -1;
-    INT AssemblyCodebase_full_name_path_size = PAL_wcslen(AssemblyCodebase) + 1;
+    INT AssemblyCodebase_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyCodebase, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyCodebase_full_name=NULL;
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyCodebase_full_name = (CHAR*)malloc(AssemblyCodebase_full_name_path_size*sizeof(CHAR));
@@ -3398,8 +3398,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEvidenceGenerated(){ return TRUE;}
-extern "C" ULONG  FireEtwEvidenceGenerated(
+extern "C" BOOL  EventXplatEnabledEvidenceGenerated(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEvidenceGenerated(
                   const unsigned int Type,
                   const unsigned int AppDomain,
                   PCWSTR ILImage,
@@ -3407,9 +3407,9 @@ extern "C" ULONG  FireEtwEvidenceGenerated(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEvidenceGenerated()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEvidenceGenerated()){ return ERROR_SUCCESS;};
     INT ILImage_path_size = -1;
-    INT ILImage_full_name_path_size = PAL_wcslen(ILImage) + 1;
+    INT ILImage_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ILImage, -1, NULL, 0, NULL, NULL );
     CHAR* ILImage_full_name=NULL;
 
     ILImage_full_name = (CHAR*)malloc(ILImage_full_name_path_size*sizeof(CHAR));
@@ -3435,17 +3435,17 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleTransparencyComputationStart(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleTransparencyComputationStart(
+extern "C" BOOL  EventXplatEnabledModuleTransparencyComputationStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleTransparencyComputationStart(
                   PCWSTR Module,
                   const unsigned int AppDomainID,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleTransparencyComputationStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleTransparencyComputationStart()){ return ERROR_SUCCESS;};
     INT Module_path_size = -1;
-    INT Module_full_name_path_size = PAL_wcslen(Module) + 1;
+    INT Module_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Module, -1, NULL, 0, NULL, NULL );
     CHAR* Module_full_name=NULL;
 
     Module_full_name = (CHAR*)malloc(Module_full_name_path_size*sizeof(CHAR));
@@ -3470,8 +3470,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleTransparencyComputationEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleTransparencyComputationEnd(
+extern "C" BOOL  EventXplatEnabledModuleTransparencyComputationEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleTransparencyComputationEnd(
                   PCWSTR Module,
                   const unsigned int AppDomainID,
                   const BOOL IsAllCritical,
@@ -3483,9 +3483,9 @@ extern "C" ULONG  FireEtwModuleTransparencyComputationEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleTransparencyComputationEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleTransparencyComputationEnd()){ return ERROR_SUCCESS;};
     INT Module_path_size = -1;
-    INT Module_full_name_path_size = PAL_wcslen(Module) + 1;
+    INT Module_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Module, -1, NULL, 0, NULL, NULL );
     CHAR* Module_full_name=NULL;
 
     Module_full_name = (CHAR*)malloc(Module_full_name_path_size*sizeof(CHAR));
@@ -3515,8 +3515,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledTypeTransparencyComputationStart(){ return TRUE;}
-extern "C" ULONG  FireEtwTypeTransparencyComputationStart(
+extern "C" BOOL  EventXplatEnabledTypeTransparencyComputationStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatTypeTransparencyComputationStart(
                   PCWSTR Type,
                   PCWSTR Module,
                   const unsigned int AppDomainID,
@@ -3524,12 +3524,12 @@ extern "C" ULONG  FireEtwTypeTransparencyComputationStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledTypeTransparencyComputationStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledTypeTransparencyComputationStart()){ return ERROR_SUCCESS;};
     INT Type_path_size = -1;
-    INT Type_full_name_path_size = PAL_wcslen(Type) + 1;
+    INT Type_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Type, -1, NULL, 0, NULL, NULL );
     CHAR* Type_full_name=NULL;
     INT Module_path_size = -1;
-    INT Module_full_name_path_size = PAL_wcslen(Module) + 1;
+    INT Module_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Module, -1, NULL, 0, NULL, NULL );
     CHAR* Module_full_name=NULL;
 
     Type_full_name = (CHAR*)malloc(Type_full_name_path_size*sizeof(CHAR));
@@ -3563,8 +3563,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledTypeTransparencyComputationEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwTypeTransparencyComputationEnd(
+extern "C" BOOL  EventXplatEnabledTypeTransparencyComputationEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatTypeTransparencyComputationEnd(
                   PCWSTR Type,
                   PCWSTR Module,
                   const unsigned int AppDomainID,
@@ -3576,12 +3576,12 @@ extern "C" ULONG  FireEtwTypeTransparencyComputationEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledTypeTransparencyComputationEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledTypeTransparencyComputationEnd()){ return ERROR_SUCCESS;};
     INT Type_path_size = -1;
-    INT Type_full_name_path_size = PAL_wcslen(Type) + 1;
+    INT Type_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Type, -1, NULL, 0, NULL, NULL );
     CHAR* Type_full_name=NULL;
     INT Module_path_size = -1;
-    INT Module_full_name_path_size = PAL_wcslen(Module) + 1;
+    INT Module_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Module, -1, NULL, 0, NULL, NULL );
     CHAR* Module_full_name=NULL;
 
     Type_full_name = (CHAR*)malloc(Type_full_name_path_size*sizeof(CHAR));
@@ -3619,8 +3619,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodTransparencyComputationStart(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodTransparencyComputationStart(
+extern "C" BOOL  EventXplatEnabledMethodTransparencyComputationStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodTransparencyComputationStart(
                   PCWSTR Method,
                   PCWSTR Module,
                   const unsigned int AppDomainID,
@@ -3628,12 +3628,12 @@ extern "C" ULONG  FireEtwMethodTransparencyComputationStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodTransparencyComputationStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodTransparencyComputationStart()){ return ERROR_SUCCESS;};
     INT Method_path_size = -1;
-    INT Method_full_name_path_size = PAL_wcslen(Method) + 1;
+    INT Method_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Method, -1, NULL, 0, NULL, NULL );
     CHAR* Method_full_name=NULL;
     INT Module_path_size = -1;
-    INT Module_full_name_path_size = PAL_wcslen(Module) + 1;
+    INT Module_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Module, -1, NULL, 0, NULL, NULL );
     CHAR* Module_full_name=NULL;
 
     Method_full_name = (CHAR*)malloc(Method_full_name_path_size*sizeof(CHAR));
@@ -3667,8 +3667,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodTransparencyComputationEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodTransparencyComputationEnd(
+extern "C" BOOL  EventXplatEnabledMethodTransparencyComputationEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodTransparencyComputationEnd(
                   PCWSTR Method,
                   PCWSTR Module,
                   const unsigned int AppDomainID,
@@ -3678,12 +3678,12 @@ extern "C" ULONG  FireEtwMethodTransparencyComputationEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodTransparencyComputationEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodTransparencyComputationEnd()){ return ERROR_SUCCESS;};
     INT Method_path_size = -1;
-    INT Method_full_name_path_size = PAL_wcslen(Method) + 1;
+    INT Method_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Method, -1, NULL, 0, NULL, NULL );
     CHAR* Method_full_name=NULL;
     INT Module_path_size = -1;
-    INT Module_full_name_path_size = PAL_wcslen(Module) + 1;
+    INT Module_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Module, -1, NULL, 0, NULL, NULL );
     CHAR* Module_full_name=NULL;
 
     Method_full_name = (CHAR*)malloc(Method_full_name_path_size*sizeof(CHAR));
@@ -3719,8 +3719,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFieldTransparencyComputationStart(){ return TRUE;}
-extern "C" ULONG  FireEtwFieldTransparencyComputationStart(
+extern "C" BOOL  EventXplatEnabledFieldTransparencyComputationStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFieldTransparencyComputationStart(
                   PCWSTR Field,
                   PCWSTR Module,
                   const unsigned int AppDomainID,
@@ -3728,12 +3728,12 @@ extern "C" ULONG  FireEtwFieldTransparencyComputationStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFieldTransparencyComputationStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFieldTransparencyComputationStart()){ return ERROR_SUCCESS;};
     INT Field_path_size = -1;
-    INT Field_full_name_path_size = PAL_wcslen(Field) + 1;
+    INT Field_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Field, -1, NULL, 0, NULL, NULL );
     CHAR* Field_full_name=NULL;
     INT Module_path_size = -1;
-    INT Module_full_name_path_size = PAL_wcslen(Module) + 1;
+    INT Module_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Module, -1, NULL, 0, NULL, NULL );
     CHAR* Module_full_name=NULL;
 
     Field_full_name = (CHAR*)malloc(Field_full_name_path_size*sizeof(CHAR));
@@ -3767,8 +3767,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFieldTransparencyComputationEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwFieldTransparencyComputationEnd(
+extern "C" BOOL  EventXplatEnabledFieldTransparencyComputationEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFieldTransparencyComputationEnd(
                   PCWSTR Field,
                   PCWSTR Module,
                   const unsigned int AppDomainID,
@@ -3778,12 +3778,12 @@ extern "C" ULONG  FireEtwFieldTransparencyComputationEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFieldTransparencyComputationEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFieldTransparencyComputationEnd()){ return ERROR_SUCCESS;};
     INT Field_path_size = -1;
-    INT Field_full_name_path_size = PAL_wcslen(Field) + 1;
+    INT Field_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Field, -1, NULL, 0, NULL, NULL );
     CHAR* Field_full_name=NULL;
     INT Module_path_size = -1;
-    INT Module_full_name_path_size = PAL_wcslen(Module) + 1;
+    INT Module_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Module, -1, NULL, 0, NULL, NULL );
     CHAR* Module_full_name=NULL;
 
     Field_full_name = (CHAR*)malloc(Field_full_name_path_size*sizeof(CHAR));
@@ -3819,8 +3819,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledTokenTransparencyComputationStart(){ return TRUE;}
-extern "C" ULONG  FireEtwTokenTransparencyComputationStart(
+extern "C" BOOL  EventXplatEnabledTokenTransparencyComputationStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatTokenTransparencyComputationStart(
                   const unsigned int Token,
                   PCWSTR Module,
                   const unsigned int AppDomainID,
@@ -3828,9 +3828,9 @@ extern "C" ULONG  FireEtwTokenTransparencyComputationStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledTokenTransparencyComputationStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledTokenTransparencyComputationStart()){ return ERROR_SUCCESS;};
     INT Module_path_size = -1;
-    INT Module_full_name_path_size = PAL_wcslen(Module) + 1;
+    INT Module_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Module, -1, NULL, 0, NULL, NULL );
     CHAR* Module_full_name=NULL;
 
     Module_full_name = (CHAR*)malloc(Module_full_name_path_size*sizeof(CHAR));
@@ -3856,8 +3856,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledTokenTransparencyComputationEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwTokenTransparencyComputationEnd(
+extern "C" BOOL  EventXplatEnabledTokenTransparencyComputationEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatTokenTransparencyComputationEnd(
                   const unsigned int Token,
                   PCWSTR Module,
                   const unsigned int AppDomainID,
@@ -3867,9 +3867,9 @@ extern "C" ULONG  FireEtwTokenTransparencyComputationEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledTokenTransparencyComputationEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledTokenTransparencyComputationEnd()){ return ERROR_SUCCESS;};
     INT Module_path_size = -1;
-    INT Module_full_name_path_size = PAL_wcslen(Module) + 1;
+    INT Module_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Module, -1, NULL, 0, NULL, NULL );
     CHAR* Module_full_name=NULL;
 
     Module_full_name = (CHAR*)malloc(Module_full_name_path_size*sizeof(CHAR));
@@ -3897,8 +3897,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledNgenBindEvent(){ return TRUE;}
-extern "C" ULONG  FireEtwNgenBindEvent(
+extern "C" BOOL  EventXplatEnabledNgenBindEvent(){ return TRUE;}
+extern "C" ULONG  FireEtXplatNgenBindEvent(
                   const unsigned short ClrInstanceID,
                   const unsigned __int64 BindingID,
                   const unsigned int ReasonCode,
@@ -3906,9 +3906,9 @@ extern "C" ULONG  FireEtwNgenBindEvent(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledNgenBindEvent()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledNgenBindEvent()){ return ERROR_SUCCESS;};
     INT AssemblyName_path_size = -1;
-    INT AssemblyName_full_name_path_size = PAL_wcslen(AssemblyName) + 1;
+    INT AssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* AssemblyName_full_name=NULL;
 
     AssemblyName_full_name = (CHAR*)malloc(AssemblyName_full_name_path_size*sizeof(CHAR));
@@ -3934,8 +3934,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFailFast(){ return TRUE;}
-extern "C" ULONG  FireEtwFailFast(
+extern "C" BOOL  EventXplatEnabledFailFast(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFailFast(
                   PCWSTR FailFastUserMessage,
                   const void* FailedEIP,
                   const unsigned int OSExitCode,
@@ -3944,9 +3944,9 @@ extern "C" ULONG  FireEtwFailFast(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFailFast()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFailFast()){ return ERROR_SUCCESS;};
     INT FailFastUserMessage_path_size = -1;
-    INT FailFastUserMessage_full_name_path_size = PAL_wcslen(FailFastUserMessage) + 1;
+    INT FailFastUserMessage_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, FailFastUserMessage, -1, NULL, 0, NULL, NULL );
     CHAR* FailFastUserMessage_full_name=NULL;
 
     FailFastUserMessage_full_name = (CHAR*)malloc(FailFastUserMessage_full_name_path_size*sizeof(CHAR));
@@ -3973,8 +3973,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvFinalizeObject(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvFinalizeObject(
+extern "C" BOOL  EventXplatEnabledPrvFinalizeObject(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvFinalizeObject(
                   const void* TypeID,
                   const void* ObjectID,
                   const unsigned short ClrInstanceID,
@@ -3982,9 +3982,9 @@ extern "C" ULONG  FireEtwPrvFinalizeObject(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvFinalizeObject()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvFinalizeObject()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4010,8 +4010,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledCCWRefCountChange(){ return TRUE;}
-extern "C" ULONG  FireEtwCCWRefCountChange(
+extern "C" BOOL  EventXplatEnabledCCWRefCountChange(){ return TRUE;}
+extern "C" ULONG  FireEtXplatCCWRefCountChange(
                   const void* HandleID,
                   const void* ObjectID,
                   const void* COMInterfacePointer,
@@ -4024,9 +4024,9 @@ extern "C" ULONG  FireEtwCCWRefCountChange(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledCCWRefCountChange()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledCCWRefCountChange()){ return ERROR_SUCCESS;};
     INT Operation_path_size = -1;
-    INT Operation_full_name_path_size = PAL_wcslen(Operation) + 1;
+    INT Operation_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Operation, -1, NULL, 0, NULL, NULL );
     CHAR* Operation_full_name=NULL;
 
     Operation_full_name = (CHAR*)malloc(Operation_full_name_path_size*sizeof(CHAR));
@@ -4057,8 +4057,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvSetGCHandle(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvSetGCHandle(
+extern "C" BOOL  EventXplatEnabledPrvSetGCHandle(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvSetGCHandle(
                   const void* HandleID,
                   const void* ObjectID,
                   const unsigned int Kind,
@@ -4068,7 +4068,7 @@ extern "C" ULONG  FireEtwPrvSetGCHandle(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvSetGCHandle()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvSetGCHandle()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -4086,14 +4086,14 @@ extern "C" ULONG  FireEtwPrvSetGCHandle(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPrvDestroyGCHandle(){ return TRUE;}
-extern "C" ULONG  FireEtwPrvDestroyGCHandle(
+extern "C" BOOL  EventXplatEnabledPrvDestroyGCHandle(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPrvDestroyGCHandle(
                   const void* HandleID,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPrvDestroyGCHandle()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPrvDestroyGCHandle()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -4107,17 +4107,17 @@ extern "C" ULONG  FireEtwPrvDestroyGCHandle(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionMessageEvent(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionMessageEvent(
+extern "C" BOOL  EventXplatEnabledFusionMessageEvent(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionMessageEvent(
                   const unsigned short ClrInstanceID,
                   const BOOL Prepend,
                   PCWSTR Message
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionMessageEvent()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionMessageEvent()){ return ERROR_SUCCESS;};
     INT Message_path_size = -1;
-    INT Message_full_name_path_size = PAL_wcslen(Message) + 1;
+    INT Message_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Message, -1, NULL, 0, NULL, NULL );
     CHAR* Message_full_name=NULL;
 
     Message_full_name = (CHAR*)malloc(Message_full_name_path_size*sizeof(CHAR));
@@ -4142,15 +4142,15 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFusionErrorCodeEvent(){ return TRUE;}
-extern "C" ULONG  FireEtwFusionErrorCodeEvent(
+extern "C" BOOL  EventXplatEnabledFusionErrorCodeEvent(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFusionErrorCodeEvent(
                   const unsigned short ClrInstanceID,
                   const unsigned int Category,
                   const unsigned int ErrorCode
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFusionErrorCodeEvent()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFusionErrorCodeEvent()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -4165,8 +4165,8 @@ extern "C" ULONG  FireEtwFusionErrorCodeEvent(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPinPlugAtGCTime(){ return TRUE;}
-extern "C" ULONG  FireEtwPinPlugAtGCTime(
+extern "C" BOOL  EventXplatEnabledPinPlugAtGCTime(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPinPlugAtGCTime(
                   const void* PlugStart,
                   const void* PlugEnd,
                   const void* GapBeforeSize,
@@ -4174,7 +4174,7 @@ extern "C" ULONG  FireEtwPinPlugAtGCTime(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPinPlugAtGCTime()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPinPlugAtGCTime()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -4190,8 +4190,8 @@ extern "C" ULONG  FireEtwPinPlugAtGCTime(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAllocRequest(){ return TRUE;}
-extern "C" ULONG  FireEtwAllocRequest(
+extern "C" BOOL  EventXplatEnabledAllocRequest(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAllocRequest(
                   const void* LoaderHeapPtr,
                   const void* MemoryAddress,
                   const unsigned int RequestSize,
@@ -4201,7 +4201,7 @@ extern "C" ULONG  FireEtwAllocRequest(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAllocRequest()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAllocRequest()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -4219,8 +4219,8 @@ extern "C" ULONG  FireEtwAllocRequest(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMulticoreJit(){ return TRUE;}
-extern "C" ULONG  FireEtwMulticoreJit(
+extern "C" BOOL  EventXplatEnabledMulticoreJit(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMulticoreJit(
                   const unsigned short ClrInstanceID,
                   PCWSTR String1,
                   PCWSTR String2,
@@ -4230,12 +4230,12 @@ extern "C" ULONG  FireEtwMulticoreJit(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMulticoreJit()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMulticoreJit()){ return ERROR_SUCCESS;};
     INT String1_path_size = -1;
-    INT String1_full_name_path_size = PAL_wcslen(String1) + 1;
+    INT String1_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, String1, -1, NULL, 0, NULL, NULL );
     CHAR* String1_full_name=NULL;
     INT String2_path_size = -1;
-    INT String2_full_name_path_size = PAL_wcslen(String2) + 1;
+    INT String2_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, String2, -1, NULL, 0, NULL, NULL );
     CHAR* String2_full_name=NULL;
 
     String1_full_name = (CHAR*)malloc(String1_full_name_path_size*sizeof(CHAR));
@@ -4271,15 +4271,15 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMulticoreJitMethodCodeReturned(){ return TRUE;}
-extern "C" ULONG  FireEtwMulticoreJitMethodCodeReturned(
+extern "C" BOOL  EventXplatEnabledMulticoreJitMethodCodeReturned(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMulticoreJitMethodCodeReturned(
                   const unsigned short ClrInstanceID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMulticoreJitMethodCodeReturned()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMulticoreJitMethodCodeReturned()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -4294,16 +4294,16 @@ extern "C" ULONG  FireEtwMulticoreJitMethodCodeReturned(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledIInspectableRuntimeClassName(){ return TRUE;}
-extern "C" ULONG  FireEtwIInspectableRuntimeClassName(
+extern "C" BOOL  EventXplatEnabledIInspectableRuntimeClassName(){ return TRUE;}
+extern "C" ULONG  FireEtXplatIInspectableRuntimeClassName(
                   PCWSTR TypeName,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledIInspectableRuntimeClassName()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledIInspectableRuntimeClassName()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4327,20 +4327,20 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledWinRTUnbox(){ return TRUE;}
-extern "C" ULONG  FireEtwWinRTUnbox(
+extern "C" BOOL  EventXplatEnabledWinRTUnbox(){ return TRUE;}
+extern "C" ULONG  FireEtXplatWinRTUnbox(
                   PCWSTR TypeName,
                   PCWSTR SecondTypeName,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledWinRTUnbox()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledWinRTUnbox()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
     INT SecondTypeName_path_size = -1;
-    INT SecondTypeName_full_name_path_size = PAL_wcslen(SecondTypeName) + 1;
+    INT SecondTypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, SecondTypeName, -1, NULL, 0, NULL, NULL );
     CHAR* SecondTypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4373,16 +4373,16 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledCreateRCW(){ return TRUE;}
-extern "C" ULONG  FireEtwCreateRCW(
+extern "C" BOOL  EventXplatEnabledCreateRCW(){ return TRUE;}
+extern "C" ULONG  FireEtXplatCreateRCW(
                   PCWSTR TypeName,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledCreateRCW()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledCreateRCW()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4406,8 +4406,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledRCWVariance(){ return TRUE;}
-extern "C" ULONG  FireEtwRCWVariance(
+extern "C" BOOL  EventXplatEnabledRCWVariance(){ return TRUE;}
+extern "C" ULONG  FireEtXplatRCWVariance(
                   PCWSTR TypeName,
                   PCWSTR InterfaceTypeName,
                   PCWSTR VariantInterfaceTypeName,
@@ -4415,15 +4415,15 @@ extern "C" ULONG  FireEtwRCWVariance(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledRCWVariance()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledRCWVariance()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
     INT InterfaceTypeName_path_size = -1;
-    INT InterfaceTypeName_full_name_path_size = PAL_wcslen(InterfaceTypeName) + 1;
+    INT InterfaceTypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InterfaceTypeName, -1, NULL, 0, NULL, NULL );
     CHAR* InterfaceTypeName_full_name=NULL;
     INT VariantInterfaceTypeName_path_size = -1;
-    INT VariantInterfaceTypeName_full_name_path_size = PAL_wcslen(VariantInterfaceTypeName) + 1;
+    INT VariantInterfaceTypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, VariantInterfaceTypeName, -1, NULL, 0, NULL, NULL );
     CHAR* VariantInterfaceTypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4465,20 +4465,20 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledRCWIEnumerableCasting(){ return TRUE;}
-extern "C" ULONG  FireEtwRCWIEnumerableCasting(
+extern "C" BOOL  EventXplatEnabledRCWIEnumerableCasting(){ return TRUE;}
+extern "C" ULONG  FireEtXplatRCWIEnumerableCasting(
                   PCWSTR TypeName,
                   PCWSTR SecondTypeName,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledRCWIEnumerableCasting()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledRCWIEnumerableCasting()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
     INT SecondTypeName_path_size = -1;
-    INT SecondTypeName_full_name_path_size = PAL_wcslen(SecondTypeName) + 1;
+    INT SecondTypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, SecondTypeName, -1, NULL, 0, NULL, NULL );
     CHAR* SecondTypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4511,16 +4511,16 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledCreateCCW(){ return TRUE;}
-extern "C" ULONG  FireEtwCreateCCW(
+extern "C" BOOL  EventXplatEnabledCreateCCW(){ return TRUE;}
+extern "C" ULONG  FireEtXplatCreateCCW(
                   PCWSTR TypeName,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledCreateCCW()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledCreateCCW()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4544,8 +4544,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledCCWVariance(){ return TRUE;}
-extern "C" ULONG  FireEtwCCWVariance(
+extern "C" BOOL  EventXplatEnabledCCWVariance(){ return TRUE;}
+extern "C" ULONG  FireEtXplatCCWVariance(
                   PCWSTR TypeName,
                   PCWSTR InterfaceTypeName,
                   PCWSTR VariantInterfaceTypeName,
@@ -4553,15 +4553,15 @@ extern "C" ULONG  FireEtwCCWVariance(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledCCWVariance()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledCCWVariance()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
     INT InterfaceTypeName_path_size = -1;
-    INT InterfaceTypeName_full_name_path_size = PAL_wcslen(InterfaceTypeName) + 1;
+    INT InterfaceTypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InterfaceTypeName, -1, NULL, 0, NULL, NULL );
     CHAR* InterfaceTypeName_full_name=NULL;
     INT VariantInterfaceTypeName_path_size = -1;
-    INT VariantInterfaceTypeName_full_name_path_size = PAL_wcslen(VariantInterfaceTypeName) + 1;
+    INT VariantInterfaceTypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, VariantInterfaceTypeName, -1, NULL, 0, NULL, NULL );
     CHAR* VariantInterfaceTypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4603,17 +4603,17 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledObjectVariantMarshallingToNative(){ return TRUE;}
-extern "C" ULONG  FireEtwObjectVariantMarshallingToNative(
+extern "C" BOOL  EventXplatEnabledObjectVariantMarshallingToNative(){ return TRUE;}
+extern "C" ULONG  FireEtXplatObjectVariantMarshallingToNative(
                   PCWSTR TypeName,
                   const signed int Int1,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledObjectVariantMarshallingToNative()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledObjectVariantMarshallingToNative()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4638,20 +4638,20 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGetTypeFromGUID(){ return TRUE;}
-extern "C" ULONG  FireEtwGetTypeFromGUID(
+extern "C" BOOL  EventXplatEnabledGetTypeFromGUID(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGetTypeFromGUID(
                   PCWSTR TypeName,
                   PCWSTR SecondTypeName,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGetTypeFromGUID()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGetTypeFromGUID()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
     INT SecondTypeName_path_size = -1;
-    INT SecondTypeName_full_name_path_size = PAL_wcslen(SecondTypeName) + 1;
+    INT SecondTypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, SecondTypeName, -1, NULL, 0, NULL, NULL );
     CHAR* SecondTypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4684,20 +4684,20 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGetTypeFromProgID(){ return TRUE;}
-extern "C" ULONG  FireEtwGetTypeFromProgID(
+extern "C" BOOL  EventXplatEnabledGetTypeFromProgID(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGetTypeFromProgID(
                   PCWSTR TypeName,
                   PCWSTR SecondTypeName,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGetTypeFromProgID()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGetTypeFromProgID()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
     INT SecondTypeName_path_size = -1;
-    INT SecondTypeName_full_name_path_size = PAL_wcslen(SecondTypeName) + 1;
+    INT SecondTypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, SecondTypeName, -1, NULL, 0, NULL, NULL );
     CHAR* SecondTypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4730,20 +4730,20 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledConvertToCallbackEtw(){ return TRUE;}
-extern "C" ULONG  FireEtwConvertToCallbackEtw(
+extern "C" BOOL  EventXplatEnabledConvertToCallbackEtw(){ return TRUE;}
+extern "C" ULONG  FireEtXplatConvertToCallbackEtw(
                   PCWSTR TypeName,
                   PCWSTR SecondTypeName,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledConvertToCallbackEtw()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledConvertToCallbackEtw()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
     INT SecondTypeName_path_size = -1;
-    INT SecondTypeName_full_name_path_size = PAL_wcslen(SecondTypeName) + 1;
+    INT SecondTypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, SecondTypeName, -1, NULL, 0, NULL, NULL );
     CHAR* SecondTypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -4776,13 +4776,13 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBeginCreateManagedReference(){ return TRUE;}
-extern "C" ULONG  FireEtwBeginCreateManagedReference(
+extern "C" BOOL  EventXplatEnabledBeginCreateManagedReference(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBeginCreateManagedReference(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBeginCreateManagedReference()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBeginCreateManagedReference()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -4795,13 +4795,13 @@ extern "C" ULONG  FireEtwBeginCreateManagedReference(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledEndCreateManagedReference(){ return TRUE;}
-extern "C" ULONG  FireEtwEndCreateManagedReference(
+extern "C" BOOL  EventXplatEnabledEndCreateManagedReference(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEndCreateManagedReference(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledEndCreateManagedReference()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledEndCreateManagedReference()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -4814,17 +4814,17 @@ extern "C" ULONG  FireEtwEndCreateManagedReference(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledObjectVariantMarshallingToManaged(){ return TRUE;}
-extern "C" ULONG  FireEtwObjectVariantMarshallingToManaged(
+extern "C" BOOL  EventXplatEnabledObjectVariantMarshallingToManaged(){ return TRUE;}
+extern "C" ULONG  FireEtXplatObjectVariantMarshallingToManaged(
                   PCWSTR TypeName,
                   const signed int Int1,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledObjectVariantMarshallingToManaged()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledObjectVariantMarshallingToManaged()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));

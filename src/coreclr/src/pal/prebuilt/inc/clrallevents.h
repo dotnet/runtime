@@ -10,48 +10,92 @@ This file is generated using the logic from <root>/src/inc/genXplatEtw.pl
 
 ******************************************************************/
 
-extern "C" BOOL  EventEnabledGCStart();
-extern "C" ULONG   FireEtwGCStart(
+#include "clrxplatevents.h"
+inline BOOL EventEnabledGCStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCStart();}
+
+inline ULONG FireEtwGCStart(
                   const unsigned int  Count,
                   const unsigned int  Reason
-);
-extern "C" BOOL  EventEnabledGCStart_V1();
-extern "C" ULONG   FireEtwGCStart_V1(
+)
+{
+                  if (!EventEnabledGCStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCStart(Count,Reason);
+}
+
+inline BOOL EventEnabledGCStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCStart_V1();}
+
+inline ULONG FireEtwGCStart_V1(
                   const unsigned int  Count,
                   const unsigned int  Depth,
                   const unsigned int  Reason,
                   const unsigned int  Type,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCStart_V2();
-extern "C" ULONG   FireEtwGCStart_V2(
+)
+{
+                  if (!EventEnabledGCStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCStart_V1(Count,Depth,Reason,Type,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCStart_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCStart_V2();}
+
+inline ULONG FireEtwGCStart_V2(
                   const unsigned int  Count,
                   const unsigned int  Depth,
                   const unsigned int  Reason,
                   const unsigned int  Type,
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ClientSequenceNumber
-);
-extern "C" BOOL  EventEnabledGCEnd();
-extern "C" ULONG   FireEtwGCEnd(
+)
+{
+                  if (!EventEnabledGCStart_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCStart_V2(Count,Depth,Reason,Type,ClrInstanceID,ClientSequenceNumber);
+}
+
+inline BOOL EventEnabledGCEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCEnd();}
+
+inline ULONG FireEtwGCEnd(
                   const unsigned int  Count,
                   const unsigned short  Depth
-);
-extern "C" BOOL  EventEnabledGCEnd_V1();
-extern "C" ULONG   FireEtwGCEnd_V1(
+)
+{
+                  if (!EventEnabledGCEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCEnd(Count,Depth);
+}
+
+inline BOOL EventEnabledGCEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCEnd_V1();}
+
+inline ULONG FireEtwGCEnd_V1(
                   const unsigned int  Count,
                   const unsigned int  Depth,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCRestartEEEnd();
-extern "C" ULONG   FireEtwGCRestartEEEnd(
-);
-extern "C" BOOL  EventEnabledGCRestartEEEnd_V1();
-extern "C" ULONG   FireEtwGCRestartEEEnd_V1(
+)
+{
+                  if (!EventEnabledGCEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCEnd_V1(Count,Depth,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCRestartEEEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCRestartEEEnd();}
+
+inline ULONG FireEtwGCRestartEEEnd(
+)
+{
+                  if (!EventEnabledGCRestartEEEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCRestartEEEnd();
+}
+
+inline BOOL EventEnabledGCRestartEEEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCRestartEEEnd_V1();}
+
+inline ULONG FireEtwGCRestartEEEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCHeapStats();
-extern "C" ULONG   FireEtwGCHeapStats(
+)
+{
+                  if (!EventEnabledGCRestartEEEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCRestartEEEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCHeapStats() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCHeapStats();}
+
+inline ULONG FireEtwGCHeapStats(
                   const unsigned __int64  GenerationSize0,
                   const unsigned __int64  TotalPromotedSize0,
                   const unsigned __int64  GenerationSize1,
@@ -65,9 +109,15 @@ extern "C" ULONG   FireEtwGCHeapStats(
                   const unsigned int  PinnedObjectCount,
                   const unsigned int  SinkBlockCount,
                   const unsigned int  GCHandleCount
-);
-extern "C" BOOL  EventEnabledGCHeapStats_V1();
-extern "C" ULONG   FireEtwGCHeapStats_V1(
+)
+{
+                  if (!EventEnabledGCHeapStats()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCHeapStats(GenerationSize0,TotalPromotedSize0,GenerationSize1,TotalPromotedSize1,GenerationSize2,TotalPromotedSize2,GenerationSize3,TotalPromotedSize3,FinalizationPromotedSize,FinalizationPromotedCount,PinnedObjectCount,SinkBlockCount,GCHandleCount);
+}
+
+inline BOOL EventEnabledGCHeapStats_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCHeapStats_V1();}
+
+inline ULONG FireEtwGCHeapStats_V1(
                   const unsigned __int64  GenerationSize0,
                   const unsigned __int64  TotalPromotedSize0,
                   const unsigned __int64  GenerationSize1,
@@ -82,66 +132,144 @@ extern "C" ULONG   FireEtwGCHeapStats_V1(
                   const unsigned int  SinkBlockCount,
                   const unsigned int  GCHandleCount,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCCreateSegment();
-extern "C" ULONG   FireEtwGCCreateSegment(
+)
+{
+                  if (!EventEnabledGCHeapStats_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCHeapStats_V1(GenerationSize0,TotalPromotedSize0,GenerationSize1,TotalPromotedSize1,GenerationSize2,TotalPromotedSize2,GenerationSize3,TotalPromotedSize3,FinalizationPromotedSize,FinalizationPromotedCount,PinnedObjectCount,SinkBlockCount,GCHandleCount,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCCreateSegment() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCCreateSegment();}
+
+inline ULONG FireEtwGCCreateSegment(
                   const unsigned __int64  Address,
                   const unsigned __int64  Size,
                   const unsigned int  Type
-);
-extern "C" BOOL  EventEnabledGCCreateSegment_V1();
-extern "C" ULONG   FireEtwGCCreateSegment_V1(
+)
+{
+                  if (!EventEnabledGCCreateSegment()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCCreateSegment(Address,Size,Type);
+}
+
+inline BOOL EventEnabledGCCreateSegment_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCCreateSegment_V1();}
+
+inline ULONG FireEtwGCCreateSegment_V1(
                   const unsigned __int64  Address,
                   const unsigned __int64  Size,
                   const unsigned int  Type,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCFreeSegment();
-extern "C" ULONG   FireEtwGCFreeSegment(
+)
+{
+                  if (!EventEnabledGCCreateSegment_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCCreateSegment_V1(Address,Size,Type,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCFreeSegment() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCFreeSegment();}
+
+inline ULONG FireEtwGCFreeSegment(
                   const unsigned __int64  Address
-);
-extern "C" BOOL  EventEnabledGCFreeSegment_V1();
-extern "C" ULONG   FireEtwGCFreeSegment_V1(
+)
+{
+                  if (!EventEnabledGCFreeSegment()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCFreeSegment(Address);
+}
+
+inline BOOL EventEnabledGCFreeSegment_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCFreeSegment_V1();}
+
+inline ULONG FireEtwGCFreeSegment_V1(
                   const unsigned __int64  Address,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCRestartEEBegin();
-extern "C" ULONG   FireEtwGCRestartEEBegin(
-);
-extern "C" BOOL  EventEnabledGCRestartEEBegin_V1();
-extern "C" ULONG   FireEtwGCRestartEEBegin_V1(
+)
+{
+                  if (!EventEnabledGCFreeSegment_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCFreeSegment_V1(Address,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCRestartEEBegin() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCRestartEEBegin();}
+
+inline ULONG FireEtwGCRestartEEBegin(
+)
+{
+                  if (!EventEnabledGCRestartEEBegin()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCRestartEEBegin();
+}
+
+inline BOOL EventEnabledGCRestartEEBegin_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCRestartEEBegin_V1();}
+
+inline ULONG FireEtwGCRestartEEBegin_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCSuspendEEEnd();
-extern "C" ULONG   FireEtwGCSuspendEEEnd(
-);
-extern "C" BOOL  EventEnabledGCSuspendEEEnd_V1();
-extern "C" ULONG   FireEtwGCSuspendEEEnd_V1(
+)
+{
+                  if (!EventEnabledGCRestartEEBegin_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCRestartEEBegin_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCSuspendEEEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCSuspendEEEnd();}
+
+inline ULONG FireEtwGCSuspendEEEnd(
+)
+{
+                  if (!EventEnabledGCSuspendEEEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCSuspendEEEnd();
+}
+
+inline BOOL EventEnabledGCSuspendEEEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCSuspendEEEnd_V1();}
+
+inline ULONG FireEtwGCSuspendEEEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCSuspendEEBegin();
-extern "C" ULONG   FireEtwGCSuspendEEBegin(
+)
+{
+                  if (!EventEnabledGCSuspendEEEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCSuspendEEEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCSuspendEEBegin() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCSuspendEEBegin();}
+
+inline ULONG FireEtwGCSuspendEEBegin(
                   const unsigned short  Reason
-);
-extern "C" BOOL  EventEnabledGCSuspendEEBegin_V1();
-extern "C" ULONG   FireEtwGCSuspendEEBegin_V1(
+)
+{
+                  if (!EventEnabledGCSuspendEEBegin()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCSuspendEEBegin(Reason);
+}
+
+inline BOOL EventEnabledGCSuspendEEBegin_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCSuspendEEBegin_V1();}
+
+inline ULONG FireEtwGCSuspendEEBegin_V1(
                   const unsigned int  Reason,
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCAllocationTick();
-extern "C" ULONG   FireEtwGCAllocationTick(
+)
+{
+                  if (!EventEnabledGCSuspendEEBegin_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCSuspendEEBegin_V1(Reason,Count,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCAllocationTick() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCAllocationTick();}
+
+inline ULONG FireEtwGCAllocationTick(
                   const unsigned int  AllocationAmount,
                   const unsigned int  AllocationKind
-);
-extern "C" BOOL  EventEnabledGCAllocationTick_V1();
-extern "C" ULONG   FireEtwGCAllocationTick_V1(
+)
+{
+                  if (!EventEnabledGCAllocationTick()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCAllocationTick(AllocationAmount,AllocationKind);
+}
+
+inline BOOL EventEnabledGCAllocationTick_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCAllocationTick_V1();}
+
+inline ULONG FireEtwGCAllocationTick_V1(
                   const unsigned int  AllocationAmount,
                   const unsigned int  AllocationKind,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCAllocationTick_V2();
-extern "C" ULONG   FireEtwGCAllocationTick_V2(
+)
+{
+                  if (!EventEnabledGCAllocationTick_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCAllocationTick_V1(AllocationAmount,AllocationKind,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCAllocationTick_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCAllocationTick_V2();}
+
+inline ULONG FireEtwGCAllocationTick_V2(
                   const unsigned int  AllocationAmount,
                   const unsigned int  AllocationKind,
                   const unsigned short  ClrInstanceID,
@@ -149,9 +277,15 @@ extern "C" ULONG   FireEtwGCAllocationTick_V2(
                   const void*  TypeID,
                   PCWSTR  TypeName,
                   const unsigned int  HeapIndex
-);
-extern "C" BOOL  EventEnabledGCAllocationTick_V3();
-extern "C" ULONG   FireEtwGCAllocationTick_V3(
+)
+{
+                  if (!EventEnabledGCAllocationTick_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCAllocationTick_V2(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex);
+}
+
+inline BOOL EventEnabledGCAllocationTick_V3() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCAllocationTick_V3();}
+
+inline ULONG FireEtwGCAllocationTick_V3(
                   const unsigned int  AllocationAmount,
                   const unsigned int  AllocationKind,
                   const unsigned short  ClrInstanceID,
@@ -160,303 +294,609 @@ extern "C" ULONG   FireEtwGCAllocationTick_V3(
                   PCWSTR  TypeName,
                   const unsigned int  HeapIndex,
                   const void*  Address
-);
-extern "C" BOOL  EventEnabledGCCreateConcurrentThread();
-extern "C" ULONG   FireEtwGCCreateConcurrentThread(
-);
-extern "C" BOOL  EventEnabledGCCreateConcurrentThread_V1();
-extern "C" ULONG   FireEtwGCCreateConcurrentThread_V1(
+)
+{
+                  if (!EventEnabledGCAllocationTick_V3()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCAllocationTick_V3(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex,Address);
+}
+
+inline BOOL EventEnabledGCCreateConcurrentThread() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCCreateConcurrentThread();}
+
+inline ULONG FireEtwGCCreateConcurrentThread(
+)
+{
+                  if (!EventEnabledGCCreateConcurrentThread()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCCreateConcurrentThread();
+}
+
+inline BOOL EventEnabledGCCreateConcurrentThread_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCCreateConcurrentThread_V1();}
+
+inline ULONG FireEtwGCCreateConcurrentThread_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCTerminateConcurrentThread();
-extern "C" ULONG   FireEtwGCTerminateConcurrentThread(
-);
-extern "C" BOOL  EventEnabledGCTerminateConcurrentThread_V1();
-extern "C" ULONG   FireEtwGCTerminateConcurrentThread_V1(
+)
+{
+                  if (!EventEnabledGCCreateConcurrentThread_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCCreateConcurrentThread_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCTerminateConcurrentThread() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCTerminateConcurrentThread();}
+
+inline ULONG FireEtwGCTerminateConcurrentThread(
+)
+{
+                  if (!EventEnabledGCTerminateConcurrentThread()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCTerminateConcurrentThread();
+}
+
+inline BOOL EventEnabledGCTerminateConcurrentThread_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCTerminateConcurrentThread_V1();}
+
+inline ULONG FireEtwGCTerminateConcurrentThread_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCFinalizersEnd();
-extern "C" ULONG   FireEtwGCFinalizersEnd(
+)
+{
+                  if (!EventEnabledGCTerminateConcurrentThread_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCTerminateConcurrentThread_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCFinalizersEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCFinalizersEnd();}
+
+inline ULONG FireEtwGCFinalizersEnd(
                   const unsigned int  Count
-);
-extern "C" BOOL  EventEnabledGCFinalizersEnd_V1();
-extern "C" ULONG   FireEtwGCFinalizersEnd_V1(
+)
+{
+                  if (!EventEnabledGCFinalizersEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCFinalizersEnd(Count);
+}
+
+inline BOOL EventEnabledGCFinalizersEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCFinalizersEnd_V1();}
+
+inline ULONG FireEtwGCFinalizersEnd_V1(
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCFinalizersBegin();
-extern "C" ULONG   FireEtwGCFinalizersBegin(
-);
-extern "C" BOOL  EventEnabledGCFinalizersBegin_V1();
-extern "C" ULONG   FireEtwGCFinalizersBegin_V1(
+)
+{
+                  if (!EventEnabledGCFinalizersEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCFinalizersEnd_V1(Count,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCFinalizersBegin() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCFinalizersBegin();}
+
+inline ULONG FireEtwGCFinalizersBegin(
+)
+{
+                  if (!EventEnabledGCFinalizersBegin()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCFinalizersBegin();
+}
+
+inline BOOL EventEnabledGCFinalizersBegin_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCFinalizersBegin_V1();}
+
+inline ULONG FireEtwGCFinalizersBegin_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBulkType();
-extern "C" ULONG   FireEtwBulkType(
+)
+{
+                  if (!EventEnabledGCFinalizersBegin_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCFinalizersBegin_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledBulkType() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBulkType();}
+
+inline ULONG FireEtwBulkType(
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID,
                   const ULONG  Arg2_Struct_Len_,
                   const void* Arg2_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledGCBulkRootEdge();
-extern "C" ULONG   FireEtwGCBulkRootEdge(
+)
+{
+                  if (!EventEnabledBulkType()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBulkType(Count,ClrInstanceID,Arg2_Struct_Len_,Arg2_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledGCBulkRootEdge() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCBulkRootEdge();}
+
+inline ULONG FireEtwGCBulkRootEdge(
                   const unsigned int  Index,
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID,
                   const ULONG  Arg3_Struct_Len_,
                   const void* Arg3_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledGCBulkRootConditionalWeakTableElementEdge();
-extern "C" ULONG   FireEtwGCBulkRootConditionalWeakTableElementEdge(
+)
+{
+                  if (!EventEnabledGCBulkRootEdge()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCBulkRootEdge(Index,Count,ClrInstanceID,Arg3_Struct_Len_,Arg3_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledGCBulkRootConditionalWeakTableElementEdge() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCBulkRootConditionalWeakTableElementEdge();}
+
+inline ULONG FireEtwGCBulkRootConditionalWeakTableElementEdge(
                   const unsigned int  Index,
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID,
                   const ULONG  Arg3_Struct_Len_,
                   const void* Arg3_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledGCBulkNode();
-extern "C" ULONG   FireEtwGCBulkNode(
+)
+{
+                  if (!EventEnabledGCBulkRootConditionalWeakTableElementEdge()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCBulkRootConditionalWeakTableElementEdge(Index,Count,ClrInstanceID,Arg3_Struct_Len_,Arg3_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledGCBulkNode() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCBulkNode();}
+
+inline ULONG FireEtwGCBulkNode(
                   const unsigned int  Index,
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID,
                   const ULONG  Arg3_Struct_Len_,
                   const void* Arg3_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledGCBulkEdge();
-extern "C" ULONG   FireEtwGCBulkEdge(
+)
+{
+                  if (!EventEnabledGCBulkNode()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCBulkNode(Index,Count,ClrInstanceID,Arg3_Struct_Len_,Arg3_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledGCBulkEdge() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCBulkEdge();}
+
+inline ULONG FireEtwGCBulkEdge(
                   const unsigned int  Index,
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID,
                   const ULONG  Arg3_Struct_Len_,
                   const void* Arg3_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledGCSampledObjectAllocationHigh();
-extern "C" ULONG   FireEtwGCSampledObjectAllocationHigh(
+)
+{
+                  if (!EventEnabledGCBulkEdge()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCBulkEdge(Index,Count,ClrInstanceID,Arg3_Struct_Len_,Arg3_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledGCSampledObjectAllocationHigh() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCSampledObjectAllocationHigh();}
+
+inline ULONG FireEtwGCSampledObjectAllocationHigh(
                   const void*  Address,
                   const void*  TypeID,
                   const unsigned int  ObjectCountForTypeSample,
                   const unsigned __int64  TotalSizeForTypeSample,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCBulkSurvivingObjectRanges();
-extern "C" ULONG   FireEtwGCBulkSurvivingObjectRanges(
+)
+{
+                  if (!EventEnabledGCSampledObjectAllocationHigh()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCSampledObjectAllocationHigh(Address,TypeID,ObjectCountForTypeSample,TotalSizeForTypeSample,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCBulkSurvivingObjectRanges() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCBulkSurvivingObjectRanges();}
+
+inline ULONG FireEtwGCBulkSurvivingObjectRanges(
                   const unsigned int  Index,
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID,
                   const ULONG  Arg3_Struct_Len_,
                   const void* Arg3_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledGCBulkMovedObjectRanges();
-extern "C" ULONG   FireEtwGCBulkMovedObjectRanges(
+)
+{
+                  if (!EventEnabledGCBulkSurvivingObjectRanges()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCBulkSurvivingObjectRanges(Index,Count,ClrInstanceID,Arg3_Struct_Len_,Arg3_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledGCBulkMovedObjectRanges() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCBulkMovedObjectRanges();}
+
+inline ULONG FireEtwGCBulkMovedObjectRanges(
                   const unsigned int  Index,
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID,
                   const ULONG  Arg3_Struct_Len_,
                   const void* Arg3_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledGCGenerationRange();
-extern "C" ULONG   FireEtwGCGenerationRange(
+)
+{
+                  if (!EventEnabledGCBulkMovedObjectRanges()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCBulkMovedObjectRanges(Index,Count,ClrInstanceID,Arg3_Struct_Len_,Arg3_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledGCGenerationRange() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCGenerationRange();}
+
+inline ULONG FireEtwGCGenerationRange(
                   const unsigned char  Generation,
                   const void*  RangeStart,
                   const unsigned __int64  RangeUsedLength,
                   const unsigned __int64  RangeReservedLength,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCMarkStackRoots();
-extern "C" ULONG   FireEtwGCMarkStackRoots(
+)
+{
+                  if (!EventEnabledGCGenerationRange()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCGenerationRange(Generation,RangeStart,RangeUsedLength,RangeReservedLength,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCMarkStackRoots() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCMarkStackRoots();}
+
+inline ULONG FireEtwGCMarkStackRoots(
                   const unsigned int  HeapNum,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCMarkFinalizeQueueRoots();
-extern "C" ULONG   FireEtwGCMarkFinalizeQueueRoots(
+)
+{
+                  if (!EventEnabledGCMarkStackRoots()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCMarkStackRoots(HeapNum,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCMarkFinalizeQueueRoots() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCMarkFinalizeQueueRoots();}
+
+inline ULONG FireEtwGCMarkFinalizeQueueRoots(
                   const unsigned int  HeapNum,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCMarkHandles();
-extern "C" ULONG   FireEtwGCMarkHandles(
+)
+{
+                  if (!EventEnabledGCMarkFinalizeQueueRoots()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCMarkFinalizeQueueRoots(HeapNum,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCMarkHandles() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCMarkHandles();}
+
+inline ULONG FireEtwGCMarkHandles(
                   const unsigned int  HeapNum,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCMarkOlderGenerationRoots();
-extern "C" ULONG   FireEtwGCMarkOlderGenerationRoots(
+)
+{
+                  if (!EventEnabledGCMarkHandles()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCMarkHandles(HeapNum,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCMarkOlderGenerationRoots() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCMarkOlderGenerationRoots();}
+
+inline ULONG FireEtwGCMarkOlderGenerationRoots(
                   const unsigned int  HeapNum,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFinalizeObject();
-extern "C" ULONG   FireEtwFinalizeObject(
+)
+{
+                  if (!EventEnabledGCMarkOlderGenerationRoots()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCMarkOlderGenerationRoots(HeapNum,ClrInstanceID);
+}
+
+inline BOOL EventEnabledFinalizeObject() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFinalizeObject();}
+
+inline ULONG FireEtwFinalizeObject(
                   const void*  TypeID,
                   const void*  ObjectID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledSetGCHandle();
-extern "C" ULONG   FireEtwSetGCHandle(
+)
+{
+                  if (!EventEnabledFinalizeObject()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFinalizeObject(TypeID,ObjectID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledSetGCHandle() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledSetGCHandle();}
+
+inline ULONG FireEtwSetGCHandle(
                   const void*  HandleID,
                   const void*  ObjectID,
                   const unsigned int  Kind,
                   const unsigned int  Generation,
                   const unsigned __int64  AppDomainID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledDestroyGCHandle();
-extern "C" ULONG   FireEtwDestroyGCHandle(
+)
+{
+                  if (!EventEnabledSetGCHandle()) {return ERROR_SUCCESS;}
+                  return FireEtXplatSetGCHandle(HandleID,ObjectID,Kind,Generation,AppDomainID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledDestroyGCHandle() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDestroyGCHandle();}
+
+inline ULONG FireEtwDestroyGCHandle(
                   const void*  HandleID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCSampledObjectAllocationLow();
-extern "C" ULONG   FireEtwGCSampledObjectAllocationLow(
+)
+{
+                  if (!EventEnabledDestroyGCHandle()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDestroyGCHandle(HandleID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCSampledObjectAllocationLow() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCSampledObjectAllocationLow();}
+
+inline ULONG FireEtwGCSampledObjectAllocationLow(
                   const void*  Address,
                   const void*  TypeID,
                   const unsigned int  ObjectCountForTypeSample,
                   const unsigned __int64  TotalSizeForTypeSample,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledPinObjectAtGCTime();
-extern "C" ULONG   FireEtwPinObjectAtGCTime(
+)
+{
+                  if (!EventEnabledGCSampledObjectAllocationLow()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCSampledObjectAllocationLow(Address,TypeID,ObjectCountForTypeSample,TotalSizeForTypeSample,ClrInstanceID);
+}
+
+inline BOOL EventEnabledPinObjectAtGCTime() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPinObjectAtGCTime();}
+
+inline ULONG FireEtwPinObjectAtGCTime(
                   const void*  HandleID,
                   const void*  ObjectID,
                   const unsigned __int64  ObjectSize,
                   PCWSTR  TypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCTriggered();
-extern "C" ULONG   FireEtwGCTriggered(
+)
+{
+                  if (!EventEnabledPinObjectAtGCTime()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPinObjectAtGCTime(HandleID,ObjectID,ObjectSize,TypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCTriggered() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCTriggered();}
+
+inline ULONG FireEtwGCTriggered(
                   const unsigned int  Reason,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCBulkRootCCW();
-extern "C" ULONG   FireEtwGCBulkRootCCW(
+)
+{
+                  if (!EventEnabledGCTriggered()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCTriggered(Reason,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCBulkRootCCW() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCBulkRootCCW();}
+
+inline ULONG FireEtwGCBulkRootCCW(
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID,
                   const ULONG  Arg2_Struct_Len_,
                   const void* Arg2_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledGCBulkRCW();
-extern "C" ULONG   FireEtwGCBulkRCW(
+)
+{
+                  if (!EventEnabledGCBulkRootCCW()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCBulkRootCCW(Count,ClrInstanceID,Arg2_Struct_Len_,Arg2_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledGCBulkRCW() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCBulkRCW();}
+
+inline ULONG FireEtwGCBulkRCW(
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID,
                   const ULONG  Arg2_Struct_Len_,
                   const void* Arg2_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledGCBulkRootStaticVar();
-extern "C" ULONG   FireEtwGCBulkRootStaticVar(
+)
+{
+                  if (!EventEnabledGCBulkRCW()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCBulkRCW(Count,ClrInstanceID,Arg2_Struct_Len_,Arg2_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledGCBulkRootStaticVar() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCBulkRootStaticVar();}
+
+inline ULONG FireEtwGCBulkRootStaticVar(
                   const unsigned int  Count,
                   const unsigned __int64  AppDomainID,
                   const unsigned short  ClrInstanceID,
                   const ULONG  Arg3_Struct_Len_,
                   const void* Arg3_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledWorkerThreadCreate();
-extern "C" ULONG   FireEtwWorkerThreadCreate(
+)
+{
+                  if (!EventEnabledGCBulkRootStaticVar()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCBulkRootStaticVar(Count,AppDomainID,ClrInstanceID,Arg3_Struct_Len_,Arg3_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledWorkerThreadCreate() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledWorkerThreadCreate();}
+
+inline ULONG FireEtwWorkerThreadCreate(
                   const unsigned int  WorkerThreadCount,
                   const unsigned int  RetiredWorkerThreads
-);
-extern "C" BOOL  EventEnabledWorkerThreadTerminate();
-extern "C" ULONG   FireEtwWorkerThreadTerminate(
+)
+{
+                  if (!EventEnabledWorkerThreadCreate()) {return ERROR_SUCCESS;}
+                  return FireEtXplatWorkerThreadCreate(WorkerThreadCount,RetiredWorkerThreads);
+}
+
+inline BOOL EventEnabledWorkerThreadTerminate() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledWorkerThreadTerminate();}
+
+inline ULONG FireEtwWorkerThreadTerminate(
                   const unsigned int  WorkerThreadCount,
                   const unsigned int  RetiredWorkerThreads
-);
-extern "C" BOOL  EventEnabledWorkerThreadRetire();
-extern "C" ULONG   FireEtwWorkerThreadRetire(
+)
+{
+                  if (!EventEnabledWorkerThreadTerminate()) {return ERROR_SUCCESS;}
+                  return FireEtXplatWorkerThreadTerminate(WorkerThreadCount,RetiredWorkerThreads);
+}
+
+inline BOOL EventEnabledWorkerThreadRetire() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledWorkerThreadRetire();}
+
+inline ULONG FireEtwWorkerThreadRetire(
                   const unsigned int  WorkerThreadCount,
                   const unsigned int  RetiredWorkerThreads
-);
-extern "C" BOOL  EventEnabledWorkerThreadUnretire();
-extern "C" ULONG   FireEtwWorkerThreadUnretire(
+)
+{
+                  if (!EventEnabledWorkerThreadRetire()) {return ERROR_SUCCESS;}
+                  return FireEtXplatWorkerThreadRetire(WorkerThreadCount,RetiredWorkerThreads);
+}
+
+inline BOOL EventEnabledWorkerThreadUnretire() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledWorkerThreadUnretire();}
+
+inline ULONG FireEtwWorkerThreadUnretire(
                   const unsigned int  WorkerThreadCount,
                   const unsigned int  RetiredWorkerThreads
-);
-extern "C" BOOL  EventEnabledIOThreadCreate();
-extern "C" ULONG   FireEtwIOThreadCreate(
+)
+{
+                  if (!EventEnabledWorkerThreadUnretire()) {return ERROR_SUCCESS;}
+                  return FireEtXplatWorkerThreadUnretire(WorkerThreadCount,RetiredWorkerThreads);
+}
+
+inline BOOL EventEnabledIOThreadCreate() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledIOThreadCreate();}
+
+inline ULONG FireEtwIOThreadCreate(
                   const unsigned int  IOThreadCount,
                   const unsigned int  RetiredIOThreads
-);
-extern "C" BOOL  EventEnabledIOThreadCreate_V1();
-extern "C" ULONG   FireEtwIOThreadCreate_V1(
+)
+{
+                  if (!EventEnabledIOThreadCreate()) {return ERROR_SUCCESS;}
+                  return FireEtXplatIOThreadCreate(IOThreadCount,RetiredIOThreads);
+}
+
+inline BOOL EventEnabledIOThreadCreate_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledIOThreadCreate_V1();}
+
+inline ULONG FireEtwIOThreadCreate_V1(
                   const unsigned int  IOThreadCount,
                   const unsigned int  RetiredIOThreads,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledIOThreadTerminate();
-extern "C" ULONG   FireEtwIOThreadTerminate(
+)
+{
+                  if (!EventEnabledIOThreadCreate_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatIOThreadCreate_V1(IOThreadCount,RetiredIOThreads,ClrInstanceID);
+}
+
+inline BOOL EventEnabledIOThreadTerminate() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledIOThreadTerminate();}
+
+inline ULONG FireEtwIOThreadTerminate(
                   const unsigned int  IOThreadCount,
                   const unsigned int  RetiredIOThreads
-);
-extern "C" BOOL  EventEnabledIOThreadTerminate_V1();
-extern "C" ULONG   FireEtwIOThreadTerminate_V1(
+)
+{
+                  if (!EventEnabledIOThreadTerminate()) {return ERROR_SUCCESS;}
+                  return FireEtXplatIOThreadTerminate(IOThreadCount,RetiredIOThreads);
+}
+
+inline BOOL EventEnabledIOThreadTerminate_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledIOThreadTerminate_V1();}
+
+inline ULONG FireEtwIOThreadTerminate_V1(
                   const unsigned int  IOThreadCount,
                   const unsigned int  RetiredIOThreads,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledIOThreadRetire();
-extern "C" ULONG   FireEtwIOThreadRetire(
+)
+{
+                  if (!EventEnabledIOThreadTerminate_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatIOThreadTerminate_V1(IOThreadCount,RetiredIOThreads,ClrInstanceID);
+}
+
+inline BOOL EventEnabledIOThreadRetire() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledIOThreadRetire();}
+
+inline ULONG FireEtwIOThreadRetire(
                   const unsigned int  IOThreadCount,
                   const unsigned int  RetiredIOThreads
-);
-extern "C" BOOL  EventEnabledIOThreadRetire_V1();
-extern "C" ULONG   FireEtwIOThreadRetire_V1(
+)
+{
+                  if (!EventEnabledIOThreadRetire()) {return ERROR_SUCCESS;}
+                  return FireEtXplatIOThreadRetire(IOThreadCount,RetiredIOThreads);
+}
+
+inline BOOL EventEnabledIOThreadRetire_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledIOThreadRetire_V1();}
+
+inline ULONG FireEtwIOThreadRetire_V1(
                   const unsigned int  IOThreadCount,
                   const unsigned int  RetiredIOThreads,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledIOThreadUnretire();
-extern "C" ULONG   FireEtwIOThreadUnretire(
+)
+{
+                  if (!EventEnabledIOThreadRetire_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatIOThreadRetire_V1(IOThreadCount,RetiredIOThreads,ClrInstanceID);
+}
+
+inline BOOL EventEnabledIOThreadUnretire() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledIOThreadUnretire();}
+
+inline ULONG FireEtwIOThreadUnretire(
                   const unsigned int  IOThreadCount,
                   const unsigned int  RetiredIOThreads
-);
-extern "C" BOOL  EventEnabledIOThreadUnretire_V1();
-extern "C" ULONG   FireEtwIOThreadUnretire_V1(
+)
+{
+                  if (!EventEnabledIOThreadUnretire()) {return ERROR_SUCCESS;}
+                  return FireEtXplatIOThreadUnretire(IOThreadCount,RetiredIOThreads);
+}
+
+inline BOOL EventEnabledIOThreadUnretire_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledIOThreadUnretire_V1();}
+
+inline ULONG FireEtwIOThreadUnretire_V1(
                   const unsigned int  IOThreadCount,
                   const unsigned int  RetiredIOThreads,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadpoolSuspensionSuspendThread();
-extern "C" ULONG   FireEtwThreadpoolSuspensionSuspendThread(
+)
+{
+                  if (!EventEnabledIOThreadUnretire_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatIOThreadUnretire_V1(IOThreadCount,RetiredIOThreads,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadpoolSuspensionSuspendThread() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadpoolSuspensionSuspendThread();}
+
+inline ULONG FireEtwThreadpoolSuspensionSuspendThread(
                   const unsigned int  ClrThreadID,
                   const unsigned int  CpuUtilization
-);
-extern "C" BOOL  EventEnabledThreadpoolSuspensionResumeThread();
-extern "C" ULONG   FireEtwThreadpoolSuspensionResumeThread(
+)
+{
+                  if (!EventEnabledThreadpoolSuspensionSuspendThread()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadpoolSuspensionSuspendThread(ClrThreadID,CpuUtilization);
+}
+
+inline BOOL EventEnabledThreadpoolSuspensionResumeThread() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadpoolSuspensionResumeThread();}
+
+inline ULONG FireEtwThreadpoolSuspensionResumeThread(
                   const unsigned int  ClrThreadID,
                   const unsigned int  CpuUtilization
-);
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadStart();
-extern "C" ULONG   FireEtwThreadPoolWorkerThreadStart(
+)
+{
+                  if (!EventEnabledThreadpoolSuspensionResumeThread()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadpoolSuspensionResumeThread(ClrThreadID,CpuUtilization);
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolWorkerThreadStart();}
+
+inline ULONG FireEtwThreadPoolWorkerThreadStart(
                   const unsigned int  ActiveWorkerThreadCount,
                   const unsigned int  RetiredWorkerThreadCount,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadStop();
-extern "C" ULONG   FireEtwThreadPoolWorkerThreadStop(
+)
+{
+                  if (!EventEnabledThreadPoolWorkerThreadStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadStop() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolWorkerThreadStop();}
+
+inline ULONG FireEtwThreadPoolWorkerThreadStop(
                   const unsigned int  ActiveWorkerThreadCount,
                   const unsigned int  RetiredWorkerThreadCount,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadRetirementStart();
-extern "C" ULONG   FireEtwThreadPoolWorkerThreadRetirementStart(
+)
+{
+                  if (!EventEnabledThreadPoolWorkerThreadStop()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolWorkerThreadStop(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadRetirementStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolWorkerThreadRetirementStart();}
+
+inline ULONG FireEtwThreadPoolWorkerThreadRetirementStart(
                   const unsigned int  ActiveWorkerThreadCount,
                   const unsigned int  RetiredWorkerThreadCount,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadRetirementStop();
-extern "C" ULONG   FireEtwThreadPoolWorkerThreadRetirementStop(
+)
+{
+                  if (!EventEnabledThreadPoolWorkerThreadRetirementStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolWorkerThreadRetirementStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadRetirementStop() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolWorkerThreadRetirementStop();}
+
+inline ULONG FireEtwThreadPoolWorkerThreadRetirementStop(
                   const unsigned int  ActiveWorkerThreadCount,
                   const unsigned int  RetiredWorkerThreadCount,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadAdjustmentSample();
-extern "C" ULONG   FireEtwThreadPoolWorkerThreadAdjustmentSample(
+)
+{
+                  if (!EventEnabledThreadPoolWorkerThreadRetirementStop()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolWorkerThreadRetirementStop(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadAdjustmentSample() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolWorkerThreadAdjustmentSample();}
+
+inline ULONG FireEtwThreadPoolWorkerThreadAdjustmentSample(
                   const double  Throughput,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadAdjustmentAdjustment();
-extern "C" ULONG   FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
+)
+{
+                  if (!EventEnabledThreadPoolWorkerThreadAdjustmentSample()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolWorkerThreadAdjustmentSample(Throughput,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadAdjustmentAdjustment() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolWorkerThreadAdjustmentAdjustment();}
+
+inline ULONG FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
                   const double  AverageThroughput,
                   const unsigned int  NewWorkerThreadCount,
                   const unsigned int  Reason,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadAdjustmentStats();
-extern "C" ULONG   FireEtwThreadPoolWorkerThreadAdjustmentStats(
+)
+{
+                  if (!EventEnabledThreadPoolWorkerThreadAdjustmentAdjustment()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput,NewWorkerThreadCount,Reason,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadAdjustmentStats() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolWorkerThreadAdjustmentStats();}
+
+inline ULONG FireEtwThreadPoolWorkerThreadAdjustmentStats(
                   const double  Duration,
                   const double  Throughput,
                   const double  ThreadWave,
@@ -468,159 +908,327 @@ extern "C" ULONG   FireEtwThreadPoolWorkerThreadAdjustmentStats(
                   const double  NewControlSetting,
                   const unsigned short  NewThreadWaveMagnitude,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadWait();
-extern "C" ULONG   FireEtwThreadPoolWorkerThreadWait(
+)
+{
+                  if (!EventEnabledThreadPoolWorkerThreadAdjustmentStats()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolWorkerThreadAdjustmentStats(Duration,Throughput,ThreadWave,ThroughputWave,ThroughputErrorEstimate,AverageThroughputErrorEstimate,ThroughputRatio,Confidence,NewControlSetting,NewThreadWaveMagnitude,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadWait() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolWorkerThreadWait();}
+
+inline ULONG FireEtwThreadPoolWorkerThreadWait(
                   const unsigned int  ActiveWorkerThreadCount,
                   const unsigned int  RetiredWorkerThreadCount,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolWorkingThreadCount();
-extern "C" ULONG   FireEtwThreadPoolWorkingThreadCount(
+)
+{
+                  if (!EventEnabledThreadPoolWorkerThreadWait()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolWorkerThreadWait(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolWorkingThreadCount() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolWorkingThreadCount();}
+
+inline ULONG FireEtwThreadPoolWorkingThreadCount(
                   const unsigned int  Count,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolEnqueue();
-extern "C" ULONG   FireEtwThreadPoolEnqueue(
+)
+{
+                  if (!EventEnabledThreadPoolWorkingThreadCount()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolWorkingThreadCount(Count,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolEnqueue() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolEnqueue();}
+
+inline ULONG FireEtwThreadPoolEnqueue(
                   const void*  WorkID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolDequeue();
-extern "C" ULONG   FireEtwThreadPoolDequeue(
+)
+{
+                  if (!EventEnabledThreadPoolEnqueue()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolEnqueue(WorkID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolDequeue() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolDequeue();}
+
+inline ULONG FireEtwThreadPoolDequeue(
                   const void*  WorkID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolIOEnqueue();
-extern "C" ULONG   FireEtwThreadPoolIOEnqueue(
+)
+{
+                  if (!EventEnabledThreadPoolDequeue()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolDequeue(WorkID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolIOEnqueue() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolIOEnqueue();}
+
+inline ULONG FireEtwThreadPoolIOEnqueue(
                   const void*  NativeOverlapped,
                   const void*  Overlapped,
                   const BOOL  MultiDequeues,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolIODequeue();
-extern "C" ULONG   FireEtwThreadPoolIODequeue(
+)
+{
+                  if (!EventEnabledThreadPoolIOEnqueue()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolIOEnqueue(NativeOverlapped,Overlapped,MultiDequeues,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolIODequeue() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolIODequeue();}
+
+inline ULONG FireEtwThreadPoolIODequeue(
                   const void*  NativeOverlapped,
                   const void*  Overlapped,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadPoolIOPack();
-extern "C" ULONG   FireEtwThreadPoolIOPack(
+)
+{
+                  if (!EventEnabledThreadPoolIODequeue()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolIODequeue(NativeOverlapped,Overlapped,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadPoolIOPack() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadPoolIOPack();}
+
+inline ULONG FireEtwThreadPoolIOPack(
                   const void*  NativeOverlapped,
                   const void*  Overlapped,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadCreating();
-extern "C" ULONG   FireEtwThreadCreating(
+)
+{
+                  if (!EventEnabledThreadPoolIOPack()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadPoolIOPack(NativeOverlapped,Overlapped,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadCreating() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadCreating();}
+
+inline ULONG FireEtwThreadCreating(
                   const void*  ID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadRunning();
-extern "C" ULONG   FireEtwThreadRunning(
+)
+{
+                  if (!EventEnabledThreadCreating()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadCreating(ID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadRunning() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadRunning();}
+
+inline ULONG FireEtwThreadRunning(
                   const void*  ID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledExceptionThrown();
-extern "C" ULONG   FireEtwExceptionThrown(
-);
-extern "C" BOOL  EventEnabledExceptionThrown_V1();
-extern "C" ULONG   FireEtwExceptionThrown_V1(
+)
+{
+                  if (!EventEnabledThreadRunning()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadRunning(ID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledExceptionThrown() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExceptionThrown();}
+
+inline ULONG FireEtwExceptionThrown(
+)
+{
+                  if (!EventEnabledExceptionThrown()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExceptionThrown();
+}
+
+inline BOOL EventEnabledExceptionThrown_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExceptionThrown_V1();}
+
+inline ULONG FireEtwExceptionThrown_V1(
                   PCWSTR  ExceptionType,
                   PCWSTR  ExceptionMessage,
                   const void*  ExceptionEIP,
                   const unsigned int  ExceptionHRESULT,
                   const unsigned short  ExceptionFlags,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledExceptionCatchStart();
-extern "C" ULONG   FireEtwExceptionCatchStart(
+)
+{
+                  if (!EventEnabledExceptionThrown_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExceptionThrown_V1(ExceptionType,ExceptionMessage,ExceptionEIP,ExceptionHRESULT,ExceptionFlags,ClrInstanceID);
+}
+
+inline BOOL EventEnabledExceptionCatchStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExceptionCatchStart();}
+
+inline ULONG FireEtwExceptionCatchStart(
                   const unsigned __int64  EntryEIP,
                   const unsigned __int64  MethodID,
                   PCWSTR  MethodName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledExceptionCatchStop();
-extern "C" ULONG   FireEtwExceptionCatchStop(
-);
-extern "C" BOOL  EventEnabledExceptionFinallyStart();
-extern "C" ULONG   FireEtwExceptionFinallyStart(
+)
+{
+                  if (!EventEnabledExceptionCatchStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExceptionCatchStart(EntryEIP,MethodID,MethodName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledExceptionCatchStop() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExceptionCatchStop();}
+
+inline ULONG FireEtwExceptionCatchStop(
+)
+{
+                  if (!EventEnabledExceptionCatchStop()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExceptionCatchStop();
+}
+
+inline BOOL EventEnabledExceptionFinallyStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExceptionFinallyStart();}
+
+inline ULONG FireEtwExceptionFinallyStart(
                   const unsigned __int64  EntryEIP,
                   const unsigned __int64  MethodID,
                   PCWSTR  MethodName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledExceptionFinallyStop();
-extern "C" ULONG   FireEtwExceptionFinallyStop(
-);
-extern "C" BOOL  EventEnabledExceptionFilterStart();
-extern "C" ULONG   FireEtwExceptionFilterStart(
+)
+{
+                  if (!EventEnabledExceptionFinallyStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExceptionFinallyStart(EntryEIP,MethodID,MethodName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledExceptionFinallyStop() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExceptionFinallyStop();}
+
+inline ULONG FireEtwExceptionFinallyStop(
+)
+{
+                  if (!EventEnabledExceptionFinallyStop()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExceptionFinallyStop();
+}
+
+inline BOOL EventEnabledExceptionFilterStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExceptionFilterStart();}
+
+inline ULONG FireEtwExceptionFilterStart(
                   const unsigned __int64  EntryEIP,
                   const unsigned __int64  MethodID,
                   PCWSTR  MethodName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledExceptionFilterStop();
-extern "C" ULONG   FireEtwExceptionFilterStop(
-);
-extern "C" BOOL  EventEnabledExceptionThrownStop();
-extern "C" ULONG   FireEtwExceptionThrownStop(
-);
-extern "C" BOOL  EventEnabledContention();
-extern "C" ULONG   FireEtwContention(
-);
-extern "C" BOOL  EventEnabledContentionStart_V1();
-extern "C" ULONG   FireEtwContentionStart_V1(
+)
+{
+                  if (!EventEnabledExceptionFilterStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExceptionFilterStart(EntryEIP,MethodID,MethodName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledExceptionFilterStop() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExceptionFilterStop();}
+
+inline ULONG FireEtwExceptionFilterStop(
+)
+{
+                  if (!EventEnabledExceptionFilterStop()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExceptionFilterStop();
+}
+
+inline BOOL EventEnabledExceptionThrownStop() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExceptionThrownStop();}
+
+inline ULONG FireEtwExceptionThrownStop(
+)
+{
+                  if (!EventEnabledExceptionThrownStop()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExceptionThrownStop();
+}
+
+inline BOOL EventEnabledContention() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledContention();}
+
+inline ULONG FireEtwContention(
+)
+{
+                  if (!EventEnabledContention()) {return ERROR_SUCCESS;}
+                  return FireEtXplatContention();
+}
+
+inline BOOL EventEnabledContentionStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledContentionStart_V1();}
+
+inline ULONG FireEtwContentionStart_V1(
                   const unsigned char  ContentionFlags,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledContentionStop();
-extern "C" ULONG   FireEtwContentionStop(
+)
+{
+                  if (!EventEnabledContentionStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatContentionStart_V1(ContentionFlags,ClrInstanceID);
+}
+
+inline BOOL EventEnabledContentionStop() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledContentionStop();}
+
+inline ULONG FireEtwContentionStop(
                   const unsigned char  ContentionFlags,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledCLRStackWalk();
-extern "C" ULONG   FireEtwCLRStackWalk(
+)
+{
+                  if (!EventEnabledContentionStop()) {return ERROR_SUCCESS;}
+                  return FireEtXplatContentionStop(ContentionFlags,ClrInstanceID);
+}
+
+inline BOOL EventEnabledCLRStackWalk() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledCLRStackWalk();}
+
+inline ULONG FireEtwCLRStackWalk(
                   const unsigned short  ClrInstanceID,
                   const unsigned char  Reserved1,
                   const unsigned char  Reserved2,
                   const unsigned int  FrameCount,
                   const void** Stack
-);
-extern "C" BOOL  EventEnabledAppDomainMemAllocated();
-extern "C" ULONG   FireEtwAppDomainMemAllocated(
+)
+{
+                  if (!EventEnabledCLRStackWalk()) {return ERROR_SUCCESS;}
+                  return FireEtXplatCLRStackWalk(ClrInstanceID,Reserved1,Reserved2,FrameCount,Stack);
+}
+
+inline BOOL EventEnabledAppDomainMemAllocated() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAppDomainMemAllocated();}
+
+inline ULONG FireEtwAppDomainMemAllocated(
                   const unsigned __int64  AppDomainID,
                   const unsigned __int64  Allocated,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAppDomainMemSurvived();
-extern "C" ULONG   FireEtwAppDomainMemSurvived(
+)
+{
+                  if (!EventEnabledAppDomainMemAllocated()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAppDomainMemAllocated(AppDomainID,Allocated,ClrInstanceID);
+}
+
+inline BOOL EventEnabledAppDomainMemSurvived() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAppDomainMemSurvived();}
+
+inline ULONG FireEtwAppDomainMemSurvived(
                   const unsigned __int64  AppDomainID,
                   const unsigned __int64  Survived,
                   const unsigned __int64  ProcessSurvived,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadCreated();
-extern "C" ULONG   FireEtwThreadCreated(
+)
+{
+                  if (!EventEnabledAppDomainMemSurvived()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAppDomainMemSurvived(AppDomainID,Survived,ProcessSurvived,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadCreated() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadCreated();}
+
+inline ULONG FireEtwThreadCreated(
                   const unsigned __int64  ManagedThreadID,
                   const unsigned __int64  AppDomainID,
                   const unsigned int  Flags,
                   const unsigned int  ManagedThreadIndex,
                   const unsigned int  OSThreadID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadTerminated();
-extern "C" ULONG   FireEtwThreadTerminated(
+)
+{
+                  if (!EventEnabledThreadCreated()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadCreated(ManagedThreadID,AppDomainID,Flags,ManagedThreadIndex,OSThreadID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadTerminated() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadTerminated();}
+
+inline ULONG FireEtwThreadTerminated(
                   const unsigned __int64  ManagedThreadID,
                   const unsigned __int64  AppDomainID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadDomainEnter();
-extern "C" ULONG   FireEtwThreadDomainEnter(
+)
+{
+                  if (!EventEnabledThreadTerminated()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadTerminated(ManagedThreadID,AppDomainID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadDomainEnter() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadDomainEnter();}
+
+inline ULONG FireEtwThreadDomainEnter(
                   const unsigned __int64  ManagedThreadID,
                   const unsigned __int64  AppDomainID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledILStubGenerated();
-extern "C" ULONG   FireEtwILStubGenerated(
+)
+{
+                  if (!EventEnabledThreadDomainEnter()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadDomainEnter(ManagedThreadID,AppDomainID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledILStubGenerated() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledILStubGenerated();}
+
+inline ULONG FireEtwILStubGenerated(
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  StubMethodID,
@@ -632,9 +1240,15 @@ extern "C" ULONG   FireEtwILStubGenerated(
                   PCWSTR  NativeMethodSignature,
                   PCWSTR  StubMethodSignature,
                   PCWSTR  StubMethodILCode
-);
-extern "C" BOOL  EventEnabledILStubCacheHit();
-extern "C" ULONG   FireEtwILStubCacheHit(
+)
+{
+                  if (!EventEnabledILStubGenerated()) {return ERROR_SUCCESS;}
+                  return FireEtXplatILStubGenerated(ClrInstanceID,ModuleID,StubMethodID,StubFlags,ManagedInteropMethodToken,ManagedInteropMethodNamespace,ManagedInteropMethodName,ManagedInteropMethodSignature,NativeMethodSignature,StubMethodSignature,StubMethodILCode);
+}
+
+inline BOOL EventEnabledILStubCacheHit() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledILStubCacheHit();}
+
+inline ULONG FireEtwILStubCacheHit(
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  StubMethodID,
@@ -642,33 +1256,63 @@ extern "C" ULONG   FireEtwILStubCacheHit(
                   PCWSTR  ManagedInteropMethodNamespace,
                   PCWSTR  ManagedInteropMethodName,
                   PCWSTR  ManagedInteropMethodSignature
-);
-extern "C" BOOL  EventEnabledDCStartCompleteV2();
-extern "C" ULONG   FireEtwDCStartCompleteV2(
-);
-extern "C" BOOL  EventEnabledDCEndCompleteV2();
-extern "C" ULONG   FireEtwDCEndCompleteV2(
-);
-extern "C" BOOL  EventEnabledMethodDCStartV2();
-extern "C" ULONG   FireEtwMethodDCStartV2(
+)
+{
+                  if (!EventEnabledILStubCacheHit()) {return ERROR_SUCCESS;}
+                  return FireEtXplatILStubCacheHit(ClrInstanceID,ModuleID,StubMethodID,ManagedInteropMethodToken,ManagedInteropMethodNamespace,ManagedInteropMethodName,ManagedInteropMethodSignature);
+}
+
+inline BOOL EventEnabledDCStartCompleteV2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDCStartCompleteV2();}
+
+inline ULONG FireEtwDCStartCompleteV2(
+)
+{
+                  if (!EventEnabledDCStartCompleteV2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDCStartCompleteV2();
+}
+
+inline BOOL EventEnabledDCEndCompleteV2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDCEndCompleteV2();}
+
+inline ULONG FireEtwDCEndCompleteV2(
+)
+{
+                  if (!EventEnabledDCEndCompleteV2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDCEndCompleteV2();
+}
+
+inline BOOL EventEnabledMethodDCStartV2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCStartV2();}
+
+inline ULONG FireEtwMethodDCStartV2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
                   const unsigned int  MethodSize,
                   const unsigned int  MethodToken,
                   const unsigned int  MethodFlags
-);
-extern "C" BOOL  EventEnabledMethodDCEndV2();
-extern "C" ULONG   FireEtwMethodDCEndV2(
+)
+{
+                  if (!EventEnabledMethodDCStartV2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCStartV2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags);
+}
+
+inline BOOL EventEnabledMethodDCEndV2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCEndV2();}
+
+inline ULONG FireEtwMethodDCEndV2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
                   const unsigned int  MethodSize,
                   const unsigned int  MethodToken,
                   const unsigned int  MethodFlags
-);
-extern "C" BOOL  EventEnabledMethodDCStartVerboseV2();
-extern "C" ULONG   FireEtwMethodDCStartVerboseV2(
+)
+{
+                  if (!EventEnabledMethodDCEndV2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCEndV2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags);
+}
+
+inline BOOL EventEnabledMethodDCStartVerboseV2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCStartVerboseV2();}
+
+inline ULONG FireEtwMethodDCStartVerboseV2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -678,9 +1322,15 @@ extern "C" ULONG   FireEtwMethodDCStartVerboseV2(
                   PCWSTR  MethodNamespace,
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature
-);
-extern "C" BOOL  EventEnabledMethodDCEndVerboseV2();
-extern "C" ULONG   FireEtwMethodDCEndVerboseV2(
+)
+{
+                  if (!EventEnabledMethodDCStartVerboseV2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCStartVerboseV2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature);
+}
+
+inline BOOL EventEnabledMethodDCEndVerboseV2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCEndVerboseV2();}
+
+inline ULONG FireEtwMethodDCEndVerboseV2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -690,18 +1340,30 @@ extern "C" ULONG   FireEtwMethodDCEndVerboseV2(
                   PCWSTR  MethodNamespace,
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature
-);
-extern "C" BOOL  EventEnabledMethodLoad();
-extern "C" ULONG   FireEtwMethodLoad(
+)
+{
+                  if (!EventEnabledMethodDCEndVerboseV2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCEndVerboseV2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature);
+}
+
+inline BOOL EventEnabledMethodLoad() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodLoad();}
+
+inline ULONG FireEtwMethodLoad(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
                   const unsigned int  MethodSize,
                   const unsigned int  MethodToken,
                   const unsigned int  MethodFlags
-);
-extern "C" BOOL  EventEnabledMethodLoad_V1();
-extern "C" ULONG   FireEtwMethodLoad_V1(
+)
+{
+                  if (!EventEnabledMethodLoad()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodLoad(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags);
+}
+
+inline BOOL EventEnabledMethodLoad_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodLoad_V1();}
+
+inline ULONG FireEtwMethodLoad_V1(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -709,9 +1371,15 @@ extern "C" ULONG   FireEtwMethodLoad_V1(
                   const unsigned int  MethodToken,
                   const unsigned int  MethodFlags,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodLoad_V2();
-extern "C" ULONG   FireEtwMethodLoad_V2(
+)
+{
+                  if (!EventEnabledMethodLoad_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodLoad_V1(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodLoad_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodLoad_V2();}
+
+inline ULONG FireEtwMethodLoad_V2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -720,18 +1388,30 @@ extern "C" ULONG   FireEtwMethodLoad_V2(
                   const unsigned int  MethodFlags,
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ReJITID
-);
-extern "C" BOOL  EventEnabledMethodUnload();
-extern "C" ULONG   FireEtwMethodUnload(
+)
+{
+                  if (!EventEnabledMethodLoad_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodLoad_V2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,ClrInstanceID,ReJITID);
+}
+
+inline BOOL EventEnabledMethodUnload() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodUnload();}
+
+inline ULONG FireEtwMethodUnload(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
                   const unsigned int  MethodSize,
                   const unsigned int  MethodToken,
                   const unsigned int  MethodFlags
-);
-extern "C" BOOL  EventEnabledMethodUnload_V1();
-extern "C" ULONG   FireEtwMethodUnload_V1(
+)
+{
+                  if (!EventEnabledMethodUnload()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodUnload(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags);
+}
+
+inline BOOL EventEnabledMethodUnload_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodUnload_V1();}
+
+inline ULONG FireEtwMethodUnload_V1(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -739,9 +1419,15 @@ extern "C" ULONG   FireEtwMethodUnload_V1(
                   const unsigned int  MethodToken,
                   const unsigned int  MethodFlags,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodUnload_V2();
-extern "C" ULONG   FireEtwMethodUnload_V2(
+)
+{
+                  if (!EventEnabledMethodUnload_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodUnload_V1(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodUnload_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodUnload_V2();}
+
+inline ULONG FireEtwMethodUnload_V2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -750,9 +1436,15 @@ extern "C" ULONG   FireEtwMethodUnload_V2(
                   const unsigned int  MethodFlags,
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ReJITID
-);
-extern "C" BOOL  EventEnabledMethodLoadVerbose();
-extern "C" ULONG   FireEtwMethodLoadVerbose(
+)
+{
+                  if (!EventEnabledMethodUnload_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodUnload_V2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,ClrInstanceID,ReJITID);
+}
+
+inline BOOL EventEnabledMethodLoadVerbose() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodLoadVerbose();}
+
+inline ULONG FireEtwMethodLoadVerbose(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -762,9 +1454,15 @@ extern "C" ULONG   FireEtwMethodLoadVerbose(
                   PCWSTR  MethodNamespace,
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature
-);
-extern "C" BOOL  EventEnabledMethodLoadVerbose_V1();
-extern "C" ULONG   FireEtwMethodLoadVerbose_V1(
+)
+{
+                  if (!EventEnabledMethodLoadVerbose()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodLoadVerbose(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature);
+}
+
+inline BOOL EventEnabledMethodLoadVerbose_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodLoadVerbose_V1();}
+
+inline ULONG FireEtwMethodLoadVerbose_V1(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -775,9 +1473,15 @@ extern "C" ULONG   FireEtwMethodLoadVerbose_V1(
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodLoadVerbose_V2();
-extern "C" ULONG   FireEtwMethodLoadVerbose_V2(
+)
+{
+                  if (!EventEnabledMethodLoadVerbose_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodLoadVerbose_V1(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodLoadVerbose_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodLoadVerbose_V2();}
+
+inline ULONG FireEtwMethodLoadVerbose_V2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -789,9 +1493,15 @@ extern "C" ULONG   FireEtwMethodLoadVerbose_V2(
                   PCWSTR  MethodSignature,
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ReJITID
-);
-extern "C" BOOL  EventEnabledMethodUnloadVerbose();
-extern "C" ULONG   FireEtwMethodUnloadVerbose(
+)
+{
+                  if (!EventEnabledMethodLoadVerbose_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodLoadVerbose_V2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature,ClrInstanceID,ReJITID);
+}
+
+inline BOOL EventEnabledMethodUnloadVerbose() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodUnloadVerbose();}
+
+inline ULONG FireEtwMethodUnloadVerbose(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -801,9 +1511,15 @@ extern "C" ULONG   FireEtwMethodUnloadVerbose(
                   PCWSTR  MethodNamespace,
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature
-);
-extern "C" BOOL  EventEnabledMethodUnloadVerbose_V1();
-extern "C" ULONG   FireEtwMethodUnloadVerbose_V1(
+)
+{
+                  if (!EventEnabledMethodUnloadVerbose()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodUnloadVerbose(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature);
+}
+
+inline BOOL EventEnabledMethodUnloadVerbose_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodUnloadVerbose_V1();}
+
+inline ULONG FireEtwMethodUnloadVerbose_V1(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -814,9 +1530,15 @@ extern "C" ULONG   FireEtwMethodUnloadVerbose_V1(
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodUnloadVerbose_V2();
-extern "C" ULONG   FireEtwMethodUnloadVerbose_V2(
+)
+{
+                  if (!EventEnabledMethodUnloadVerbose_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodUnloadVerbose_V1(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodUnloadVerbose_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodUnloadVerbose_V2();}
+
+inline ULONG FireEtwMethodUnloadVerbose_V2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -828,9 +1550,15 @@ extern "C" ULONG   FireEtwMethodUnloadVerbose_V2(
                   PCWSTR  MethodSignature,
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ReJITID
-);
-extern "C" BOOL  EventEnabledMethodJittingStarted();
-extern "C" ULONG   FireEtwMethodJittingStarted(
+)
+{
+                  if (!EventEnabledMethodUnloadVerbose_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodUnloadVerbose_V2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature,ClrInstanceID,ReJITID);
+}
+
+inline BOOL EventEnabledMethodJittingStarted() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodJittingStarted();}
+
+inline ULONG FireEtwMethodJittingStarted(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned int  MethodToken,
@@ -838,9 +1566,15 @@ extern "C" ULONG   FireEtwMethodJittingStarted(
                   PCWSTR  MethodNamespace,
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature
-);
-extern "C" BOOL  EventEnabledMethodJittingStarted_V1();
-extern "C" ULONG   FireEtwMethodJittingStarted_V1(
+)
+{
+                  if (!EventEnabledMethodJittingStarted()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodJittingStarted(MethodID,ModuleID,MethodToken,MethodILSize,MethodNamespace,MethodName,MethodSignature);
+}
+
+inline BOOL EventEnabledMethodJittingStarted_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodJittingStarted_V1();}
+
+inline ULONG FireEtwMethodJittingStarted_V1(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned int  MethodToken,
@@ -849,9 +1583,15 @@ extern "C" ULONG   FireEtwMethodJittingStarted_V1(
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodJitInliningSucceeded();
-extern "C" ULONG   FireEtwMethodJitInliningSucceeded(
+)
+{
+                  if (!EventEnabledMethodJittingStarted_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodJittingStarted_V1(MethodID,ModuleID,MethodToken,MethodILSize,MethodNamespace,MethodName,MethodSignature,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodJitInliningSucceeded() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodJitInliningSucceeded();}
+
+inline ULONG FireEtwMethodJitInliningSucceeded(
                   PCWSTR  MethodBeingCompiledNamespace,
                   PCWSTR  MethodBeingCompiledName,
                   PCWSTR  MethodBeingCompiledNameSignature,
@@ -862,9 +1602,15 @@ extern "C" ULONG   FireEtwMethodJitInliningSucceeded(
                   PCWSTR  InlineeName,
                   PCWSTR  InlineeNameSignature,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodJitInliningFailed();
-extern "C" ULONG   FireEtwMethodJitInliningFailed(
+)
+{
+                  if (!EventEnabledMethodJitInliningSucceeded()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodJitInliningSucceeded(MethodBeingCompiledNamespace,MethodBeingCompiledName,MethodBeingCompiledNameSignature,InlinerNamespace,InlinerName,InlinerNameSignature,InlineeNamespace,InlineeName,InlineeNameSignature,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodJitInliningFailed() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodJitInliningFailed();}
+
+inline ULONG FireEtwMethodJitInliningFailed(
                   PCWSTR  MethodBeingCompiledNamespace,
                   PCWSTR  MethodBeingCompiledName,
                   PCWSTR  MethodBeingCompiledNameSignature,
@@ -877,9 +1623,15 @@ extern "C" ULONG   FireEtwMethodJitInliningFailed(
                   const BOOL  FailAlways,
                   LPCSTR  FailReason,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodJitTailCallSucceeded();
-extern "C" ULONG   FireEtwMethodJitTailCallSucceeded(
+)
+{
+                  if (!EventEnabledMethodJitInliningFailed()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodJitInliningFailed(MethodBeingCompiledNamespace,MethodBeingCompiledName,MethodBeingCompiledNameSignature,InlinerNamespace,InlinerName,InlinerNameSignature,InlineeNamespace,InlineeName,InlineeNameSignature,FailAlways,FailReason,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodJitTailCallSucceeded() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodJitTailCallSucceeded();}
+
+inline ULONG FireEtwMethodJitTailCallSucceeded(
                   PCWSTR  MethodBeingCompiledNamespace,
                   PCWSTR  MethodBeingCompiledName,
                   PCWSTR  MethodBeingCompiledNameSignature,
@@ -892,9 +1644,15 @@ extern "C" ULONG   FireEtwMethodJitTailCallSucceeded(
                   const BOOL  TailPrefix,
                   const unsigned int  TailCallType,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodJitTailCallFailed();
-extern "C" ULONG   FireEtwMethodJitTailCallFailed(
+)
+{
+                  if (!EventEnabledMethodJitTailCallSucceeded()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodJitTailCallSucceeded(MethodBeingCompiledNamespace,MethodBeingCompiledName,MethodBeingCompiledNameSignature,CallerNamespace,CallerName,CallerNameSignature,CalleeNamespace,CalleeName,CalleeNameSignature,TailPrefix,TailCallType,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodJitTailCallFailed() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodJitTailCallFailed();}
+
+inline ULONG FireEtwMethodJitTailCallFailed(
                   PCWSTR  MethodBeingCompiledNamespace,
                   PCWSTR  MethodBeingCompiledName,
                   PCWSTR  MethodBeingCompiledNameSignature,
@@ -907,9 +1665,15 @@ extern "C" ULONG   FireEtwMethodJitTailCallFailed(
                   const BOOL  TailPrefix,
                   LPCSTR  FailReason,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodILToNativeMap();
-extern "C" ULONG   FireEtwMethodILToNativeMap(
+)
+{
+                  if (!EventEnabledMethodJitTailCallFailed()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodJitTailCallFailed(MethodBeingCompiledNamespace,MethodBeingCompiledName,MethodBeingCompiledNameSignature,CallerNamespace,CallerName,CallerNameSignature,CalleeNamespace,CalleeName,CalleeNameSignature,TailPrefix,FailReason,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodILToNativeMap() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodILToNativeMap();}
+
+inline ULONG FireEtwMethodILToNativeMap(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ReJITID,
                   const unsigned char  MethodExtent,
@@ -917,27 +1681,45 @@ extern "C" ULONG   FireEtwMethodILToNativeMap(
                   const unsigned int* ILOffsets,
                   const unsigned int* NativeOffsets,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleDCStartV2();
-extern "C" ULONG   FireEtwModuleDCStartV2(
+)
+{
+                  if (!EventEnabledMethodILToNativeMap()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodILToNativeMap(MethodID,ReJITID,MethodExtent,CountOfMapEntries,ILOffsets,NativeOffsets,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleDCStartV2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleDCStartV2();}
+
+inline ULONG FireEtwModuleDCStartV2(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
                   const unsigned int  Reserved1,
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath
-);
-extern "C" BOOL  EventEnabledModuleDCEndV2();
-extern "C" ULONG   FireEtwModuleDCEndV2(
+)
+{
+                  if (!EventEnabledModuleDCStartV2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleDCStartV2(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath);
+}
+
+inline BOOL EventEnabledModuleDCEndV2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleDCEndV2();}
+
+inline ULONG FireEtwModuleDCEndV2(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
                   const unsigned int  Reserved1,
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath
-);
-extern "C" BOOL  EventEnabledDomainModuleLoad();
-extern "C" ULONG   FireEtwDomainModuleLoad(
+)
+{
+                  if (!EventEnabledModuleDCEndV2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleDCEndV2(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath);
+}
+
+inline BOOL EventEnabledDomainModuleLoad() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDomainModuleLoad();}
+
+inline ULONG FireEtwDomainModuleLoad(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
@@ -945,9 +1727,15 @@ extern "C" ULONG   FireEtwDomainModuleLoad(
                   const unsigned int  Reserved1,
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath
-);
-extern "C" BOOL  EventEnabledDomainModuleLoad_V1();
-extern "C" ULONG   FireEtwDomainModuleLoad_V1(
+)
+{
+                  if (!EventEnabledDomainModuleLoad()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDomainModuleLoad(ModuleID,AssemblyID,AppDomainID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath);
+}
+
+inline BOOL EventEnabledDomainModuleLoad_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDomainModuleLoad_V1();}
+
+inline ULONG FireEtwDomainModuleLoad_V1(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
@@ -956,18 +1744,30 @@ extern "C" ULONG   FireEtwDomainModuleLoad_V1(
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleLoad();
-extern "C" ULONG   FireEtwModuleLoad(
+)
+{
+                  if (!EventEnabledDomainModuleLoad_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDomainModuleLoad_V1(ModuleID,AssemblyID,AppDomainID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleLoad() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleLoad();}
+
+inline ULONG FireEtwModuleLoad(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
                   const unsigned int  Reserved1,
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath
-);
-extern "C" BOOL  EventEnabledModuleLoad_V1();
-extern "C" ULONG   FireEtwModuleLoad_V1(
+)
+{
+                  if (!EventEnabledModuleLoad()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleLoad(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath);
+}
+
+inline BOOL EventEnabledModuleLoad_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleLoad_V1();}
+
+inline ULONG FireEtwModuleLoad_V1(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
@@ -975,9 +1775,15 @@ extern "C" ULONG   FireEtwModuleLoad_V1(
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleLoad_V2();
-extern "C" ULONG   FireEtwModuleLoad_V2(
+)
+{
+                  if (!EventEnabledModuleLoad_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleLoad_V1(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleLoad_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleLoad_V2();}
+
+inline ULONG FireEtwModuleLoad_V2(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
@@ -991,18 +1797,30 @@ extern "C" ULONG   FireEtwModuleLoad_V2(
                   const GUID* NativePdbSignature,
                   const unsigned int  NativePdbAge,
                   PCWSTR  NativePdbBuildPath
-);
-extern "C" BOOL  EventEnabledModuleUnload();
-extern "C" ULONG   FireEtwModuleUnload(
+)
+{
+                  if (!EventEnabledModuleLoad_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleLoad_V2(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID,ManagedPdbSignature,ManagedPdbAge,ManagedPdbBuildPath,NativePdbSignature,NativePdbAge,NativePdbBuildPath);
+}
+
+inline BOOL EventEnabledModuleUnload() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleUnload();}
+
+inline ULONG FireEtwModuleUnload(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
                   const unsigned int  Reserved1,
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath
-);
-extern "C" BOOL  EventEnabledModuleUnload_V1();
-extern "C" ULONG   FireEtwModuleUnload_V1(
+)
+{
+                  if (!EventEnabledModuleUnload()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleUnload(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath);
+}
+
+inline BOOL EventEnabledModuleUnload_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleUnload_V1();}
+
+inline ULONG FireEtwModuleUnload_V1(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
@@ -1010,9 +1828,15 @@ extern "C" ULONG   FireEtwModuleUnload_V1(
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleUnload_V2();
-extern "C" ULONG   FireEtwModuleUnload_V2(
+)
+{
+                  if (!EventEnabledModuleUnload_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleUnload_V1(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleUnload_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleUnload_V2();}
+
+inline ULONG FireEtwModuleUnload_V2(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
@@ -1026,129 +1850,237 @@ extern "C" ULONG   FireEtwModuleUnload_V2(
                   const GUID* NativePdbSignature,
                   const unsigned int  NativePdbAge,
                   PCWSTR  NativePdbBuildPath
-);
-extern "C" BOOL  EventEnabledAssemblyLoad();
-extern "C" ULONG   FireEtwAssemblyLoad(
+)
+{
+                  if (!EventEnabledModuleUnload_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleUnload_V2(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID,ManagedPdbSignature,ManagedPdbAge,ManagedPdbBuildPath,NativePdbSignature,NativePdbAge,NativePdbBuildPath);
+}
+
+inline BOOL EventEnabledAssemblyLoad() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAssemblyLoad();}
+
+inline ULONG FireEtwAssemblyLoad(
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AssemblyFlags,
                   PCWSTR  FullyQualifiedAssemblyName
-);
-extern "C" BOOL  EventEnabledAssemblyLoad_V1();
-extern "C" ULONG   FireEtwAssemblyLoad_V1(
+)
+{
+                  if (!EventEnabledAssemblyLoad()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAssemblyLoad(AssemblyID,AppDomainID,AssemblyFlags,FullyQualifiedAssemblyName);
+}
+
+inline BOOL EventEnabledAssemblyLoad_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAssemblyLoad_V1();}
+
+inline ULONG FireEtwAssemblyLoad_V1(
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
                   const unsigned __int64  BindingID,
                   const unsigned int  AssemblyFlags,
                   PCWSTR  FullyQualifiedAssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAssemblyUnload();
-extern "C" ULONG   FireEtwAssemblyUnload(
+)
+{
+                  if (!EventEnabledAssemblyLoad_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAssemblyLoad_V1(AssemblyID,AppDomainID,BindingID,AssemblyFlags,FullyQualifiedAssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledAssemblyUnload() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAssemblyUnload();}
+
+inline ULONG FireEtwAssemblyUnload(
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AssemblyFlags,
                   PCWSTR  FullyQualifiedAssemblyName
-);
-extern "C" BOOL  EventEnabledAssemblyUnload_V1();
-extern "C" ULONG   FireEtwAssemblyUnload_V1(
+)
+{
+                  if (!EventEnabledAssemblyUnload()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAssemblyUnload(AssemblyID,AppDomainID,AssemblyFlags,FullyQualifiedAssemblyName);
+}
+
+inline BOOL EventEnabledAssemblyUnload_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAssemblyUnload_V1();}
+
+inline ULONG FireEtwAssemblyUnload_V1(
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
                   const unsigned __int64  BindingID,
                   const unsigned int  AssemblyFlags,
                   PCWSTR  FullyQualifiedAssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAppDomainLoad();
-extern "C" ULONG   FireEtwAppDomainLoad(
+)
+{
+                  if (!EventEnabledAssemblyUnload_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAssemblyUnload_V1(AssemblyID,AppDomainID,BindingID,AssemblyFlags,FullyQualifiedAssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledAppDomainLoad() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAppDomainLoad();}
+
+inline ULONG FireEtwAppDomainLoad(
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AppDomainFlags,
                   PCWSTR  AppDomainName
-);
-extern "C" BOOL  EventEnabledAppDomainLoad_V1();
-extern "C" ULONG   FireEtwAppDomainLoad_V1(
+)
+{
+                  if (!EventEnabledAppDomainLoad()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAppDomainLoad(AppDomainID,AppDomainFlags,AppDomainName);
+}
+
+inline BOOL EventEnabledAppDomainLoad_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAppDomainLoad_V1();}
+
+inline ULONG FireEtwAppDomainLoad_V1(
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AppDomainFlags,
                   PCWSTR  AppDomainName,
                   const unsigned int  AppDomainIndex,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAppDomainUnload();
-extern "C" ULONG   FireEtwAppDomainUnload(
+)
+{
+                  if (!EventEnabledAppDomainLoad_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAppDomainLoad_V1(AppDomainID,AppDomainFlags,AppDomainName,AppDomainIndex,ClrInstanceID);
+}
+
+inline BOOL EventEnabledAppDomainUnload() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAppDomainUnload();}
+
+inline ULONG FireEtwAppDomainUnload(
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AppDomainFlags,
                   PCWSTR  AppDomainName
-);
-extern "C" BOOL  EventEnabledAppDomainUnload_V1();
-extern "C" ULONG   FireEtwAppDomainUnload_V1(
+)
+{
+                  if (!EventEnabledAppDomainUnload()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAppDomainUnload(AppDomainID,AppDomainFlags,AppDomainName);
+}
+
+inline BOOL EventEnabledAppDomainUnload_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAppDomainUnload_V1();}
+
+inline ULONG FireEtwAppDomainUnload_V1(
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AppDomainFlags,
                   PCWSTR  AppDomainName,
                   const unsigned int  AppDomainIndex,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleRangeLoad();
-extern "C" ULONG   FireEtwModuleRangeLoad(
+)
+{
+                  if (!EventEnabledAppDomainUnload_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAppDomainUnload_V1(AppDomainID,AppDomainFlags,AppDomainName,AppDomainIndex,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleRangeLoad() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleRangeLoad();}
+
+inline ULONG FireEtwModuleRangeLoad(
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ModuleID,
                   const unsigned int  RangeBegin,
                   const unsigned int  RangeSize,
                   const unsigned char  RangeType
-);
-extern "C" BOOL  EventEnabledStrongNameVerificationStart();
-extern "C" ULONG   FireEtwStrongNameVerificationStart(
+)
+{
+                  if (!EventEnabledModuleRangeLoad()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleRangeLoad(ClrInstanceID,ModuleID,RangeBegin,RangeSize,RangeType);
+}
+
+inline BOOL EventEnabledStrongNameVerificationStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledStrongNameVerificationStart();}
+
+inline ULONG FireEtwStrongNameVerificationStart(
                   const unsigned int  VerificationFlags,
                   const unsigned int  ErrorCode,
                   PCWSTR  FullyQualifiedAssemblyName
-);
-extern "C" BOOL  EventEnabledStrongNameVerificationStart_V1();
-extern "C" ULONG   FireEtwStrongNameVerificationStart_V1(
+)
+{
+                  if (!EventEnabledStrongNameVerificationStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatStrongNameVerificationStart(VerificationFlags,ErrorCode,FullyQualifiedAssemblyName);
+}
+
+inline BOOL EventEnabledStrongNameVerificationStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledStrongNameVerificationStart_V1();}
+
+inline ULONG FireEtwStrongNameVerificationStart_V1(
                   const unsigned int  VerificationFlags,
                   const unsigned int  ErrorCode,
                   PCWSTR  FullyQualifiedAssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledStrongNameVerificationStop();
-extern "C" ULONG   FireEtwStrongNameVerificationStop(
+)
+{
+                  if (!EventEnabledStrongNameVerificationStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatStrongNameVerificationStart_V1(VerificationFlags,ErrorCode,FullyQualifiedAssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledStrongNameVerificationStop() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledStrongNameVerificationStop();}
+
+inline ULONG FireEtwStrongNameVerificationStop(
                   const unsigned int  VerificationFlags,
                   const unsigned int  ErrorCode,
                   PCWSTR  FullyQualifiedAssemblyName
-);
-extern "C" BOOL  EventEnabledStrongNameVerificationStop_V1();
-extern "C" ULONG   FireEtwStrongNameVerificationStop_V1(
+)
+{
+                  if (!EventEnabledStrongNameVerificationStop()) {return ERROR_SUCCESS;}
+                  return FireEtXplatStrongNameVerificationStop(VerificationFlags,ErrorCode,FullyQualifiedAssemblyName);
+}
+
+inline BOOL EventEnabledStrongNameVerificationStop_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledStrongNameVerificationStop_V1();}
+
+inline ULONG FireEtwStrongNameVerificationStop_V1(
                   const unsigned int  VerificationFlags,
                   const unsigned int  ErrorCode,
                   PCWSTR  FullyQualifiedAssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAuthenticodeVerificationStart();
-extern "C" ULONG   FireEtwAuthenticodeVerificationStart(
+)
+{
+                  if (!EventEnabledStrongNameVerificationStop_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatStrongNameVerificationStop_V1(VerificationFlags,ErrorCode,FullyQualifiedAssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledAuthenticodeVerificationStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAuthenticodeVerificationStart();}
+
+inline ULONG FireEtwAuthenticodeVerificationStart(
                   const unsigned int  VerificationFlags,
                   const unsigned int  ErrorCode,
                   PCWSTR  ModulePath
-);
-extern "C" BOOL  EventEnabledAuthenticodeVerificationStart_V1();
-extern "C" ULONG   FireEtwAuthenticodeVerificationStart_V1(
+)
+{
+                  if (!EventEnabledAuthenticodeVerificationStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAuthenticodeVerificationStart(VerificationFlags,ErrorCode,ModulePath);
+}
+
+inline BOOL EventEnabledAuthenticodeVerificationStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAuthenticodeVerificationStart_V1();}
+
+inline ULONG FireEtwAuthenticodeVerificationStart_V1(
                   const unsigned int  VerificationFlags,
                   const unsigned int  ErrorCode,
                   PCWSTR  ModulePath,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAuthenticodeVerificationStop();
-extern "C" ULONG   FireEtwAuthenticodeVerificationStop(
+)
+{
+                  if (!EventEnabledAuthenticodeVerificationStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAuthenticodeVerificationStart_V1(VerificationFlags,ErrorCode,ModulePath,ClrInstanceID);
+}
+
+inline BOOL EventEnabledAuthenticodeVerificationStop() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAuthenticodeVerificationStop();}
+
+inline ULONG FireEtwAuthenticodeVerificationStop(
                   const unsigned int  VerificationFlags,
                   const unsigned int  ErrorCode,
                   PCWSTR  ModulePath
-);
-extern "C" BOOL  EventEnabledAuthenticodeVerificationStop_V1();
-extern "C" ULONG   FireEtwAuthenticodeVerificationStop_V1(
+)
+{
+                  if (!EventEnabledAuthenticodeVerificationStop()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAuthenticodeVerificationStop(VerificationFlags,ErrorCode,ModulePath);
+}
+
+inline BOOL EventEnabledAuthenticodeVerificationStop_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAuthenticodeVerificationStop_V1();}
+
+inline ULONG FireEtwAuthenticodeVerificationStop_V1(
                   const unsigned int  VerificationFlags,
                   const unsigned int  ErrorCode,
                   PCWSTR  ModulePath,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledRuntimeInformationStart();
-extern "C" ULONG   FireEtwRuntimeInformationStart(
+)
+{
+                  if (!EventEnabledAuthenticodeVerificationStop_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAuthenticodeVerificationStop_V1(VerificationFlags,ErrorCode,ModulePath,ClrInstanceID);
+}
+
+inline BOOL EventEnabledRuntimeInformationStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledRuntimeInformationStart();}
+
+inline ULONG FireEtwRuntimeInformationStart(
                   const unsigned short  ClrInstanceID,
                   const unsigned short  Sku,
                   const unsigned short  BclMajorVersion,
@@ -1164,34 +2096,64 @@ extern "C" ULONG   FireEtwRuntimeInformationStart(
                   PCWSTR  CommandLine,
                   const GUID* ComObjectGuid,
                   PCWSTR  RuntimeDllPath
-);
-extern "C" BOOL  EventEnabledIncreaseMemoryPressure();
-extern "C" ULONG   FireEtwIncreaseMemoryPressure(
+)
+{
+                  if (!EventEnabledRuntimeInformationStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatRuntimeInformationStart(ClrInstanceID,Sku,BclMajorVersion,BclMinorVersion,BclBuildNumber,BclQfeNumber,VMMajorVersion,VMMinorVersion,VMBuildNumber,VMQfeNumber,StartupFlags,StartupMode,CommandLine,ComObjectGuid,RuntimeDllPath);
+}
+
+inline BOOL EventEnabledIncreaseMemoryPressure() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledIncreaseMemoryPressure();}
+
+inline ULONG FireEtwIncreaseMemoryPressure(
                   const unsigned __int64  BytesAllocated,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledDecreaseMemoryPressure();
-extern "C" ULONG   FireEtwDecreaseMemoryPressure(
+)
+{
+                  if (!EventEnabledIncreaseMemoryPressure()) {return ERROR_SUCCESS;}
+                  return FireEtXplatIncreaseMemoryPressure(BytesAllocated,ClrInstanceID);
+}
+
+inline BOOL EventEnabledDecreaseMemoryPressure() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDecreaseMemoryPressure();}
+
+inline ULONG FireEtwDecreaseMemoryPressure(
                   const unsigned __int64  BytesFreed,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCMarkWithType();
-extern "C" ULONG   FireEtwGCMarkWithType(
+)
+{
+                  if (!EventEnabledDecreaseMemoryPressure()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDecreaseMemoryPressure(BytesFreed,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCMarkWithType() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCMarkWithType();}
+
+inline ULONG FireEtwGCMarkWithType(
                   const unsigned int  HeapNum,
                   const unsigned short  ClrInstanceID,
                   const unsigned int  Type,
                   const unsigned __int64  Bytes
-);
-extern "C" BOOL  EventEnabledGCJoin_V2();
-extern "C" ULONG   FireEtwGCJoin_V2(
+)
+{
+                  if (!EventEnabledGCMarkWithType()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCMarkWithType(HeapNum,ClrInstanceID,Type,Bytes);
+}
+
+inline BOOL EventEnabledGCJoin_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCJoin_V2();}
+
+inline ULONG FireEtwGCJoin_V2(
                   const unsigned int  Heap,
                   const unsigned int  JoinTime,
                   const unsigned int  JoinType,
                   const unsigned short  ClrInstanceID,
                   const unsigned int  JoinID
-);
-extern "C" BOOL  EventEnabledGCPerHeapHistory_V3();
-extern "C" ULONG   FireEtwGCPerHeapHistory_V3(
+)
+{
+                  if (!EventEnabledGCJoin_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCJoin_V2(Heap,JoinTime,JoinType,ClrInstanceID,JoinID);
+}
+
+inline BOOL EventEnabledGCPerHeapHistory_V3() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCPerHeapHistory_V3();}
+
+inline ULONG FireEtwGCPerHeapHistory_V3(
                   const unsigned short  ClrInstanceID,
                   const void*  FreeListAllocated,
                   const void*  FreeListRejected,
@@ -1209,9 +2171,15 @@ extern "C" ULONG   FireEtwGCPerHeapHistory_V3(
                   const unsigned int  Count,
                   const ULONG  Arg15_Struct_Len_,
                   const void* Arg15_Struct_Pointer_
-);
-extern "C" BOOL  EventEnabledGCGlobalHeapHistory_V2();
-extern "C" ULONG   FireEtwGCGlobalHeapHistory_V2(
+)
+{
+                  if (!EventEnabledGCPerHeapHistory_V3()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCPerHeapHistory_V3(ClrInstanceID,FreeListAllocated,FreeListRejected,EndOfSegAllocated,CondemnedAllocated,PinnedAllocated,PinnedAllocatedAdvance,RunningFreeListEfficiency,CondemnReasons0,CondemnReasons1,CompactMechanisms,ExpandMechanisms,HeapIndex,ExtraGen0Commit,Count,Arg15_Struct_Len_,Arg15_Struct_Pointer_);
+}
+
+inline BOOL EventEnabledGCGlobalHeapHistory_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCGlobalHeapHistory_V2();}
+
+inline ULONG FireEtwGCGlobalHeapHistory_V2(
                   const unsigned __int64  FinalYoungestDesired,
                   const signed int  NumHeaps,
                   const unsigned int  CondemnedGeneration,
@@ -1221,47 +2189,95 @@ extern "C" ULONG   FireEtwGCGlobalHeapHistory_V2(
                   const unsigned short  ClrInstanceID,
                   const unsigned int  PauseMode,
                   const unsigned int  MemoryPressure
-);
-extern "C" BOOL  EventEnabledDebugIPCEventStart();
-extern "C" ULONG   FireEtwDebugIPCEventStart(
-);
-extern "C" BOOL  EventEnabledDebugIPCEventEnd();
-extern "C" ULONG   FireEtwDebugIPCEventEnd(
-);
-extern "C" BOOL  EventEnabledDebugExceptionProcessingStart();
-extern "C" ULONG   FireEtwDebugExceptionProcessingStart(
-);
-extern "C" BOOL  EventEnabledDebugExceptionProcessingEnd();
-extern "C" ULONG   FireEtwDebugExceptionProcessingEnd(
-);
-extern "C" BOOL  EventEnabledCodeSymbols();
-extern "C" ULONG   FireEtwCodeSymbols(
+)
+{
+                  if (!EventEnabledGCGlobalHeapHistory_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCGlobalHeapHistory_V2(FinalYoungestDesired,NumHeaps,CondemnedGeneration,Gen0ReductionCount,Reason,GlobalMechanisms,ClrInstanceID,PauseMode,MemoryPressure);
+}
+
+inline BOOL EventEnabledDebugIPCEventStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDebugIPCEventStart();}
+
+inline ULONG FireEtwDebugIPCEventStart(
+)
+{
+                  if (!EventEnabledDebugIPCEventStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDebugIPCEventStart();
+}
+
+inline BOOL EventEnabledDebugIPCEventEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDebugIPCEventEnd();}
+
+inline ULONG FireEtwDebugIPCEventEnd(
+)
+{
+                  if (!EventEnabledDebugIPCEventEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDebugIPCEventEnd();
+}
+
+inline BOOL EventEnabledDebugExceptionProcessingStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDebugExceptionProcessingStart();}
+
+inline ULONG FireEtwDebugExceptionProcessingStart(
+)
+{
+                  if (!EventEnabledDebugExceptionProcessingStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDebugExceptionProcessingStart();
+}
+
+inline BOOL EventEnabledDebugExceptionProcessingEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDebugExceptionProcessingEnd();}
+
+inline ULONG FireEtwDebugExceptionProcessingEnd(
+)
+{
+                  if (!EventEnabledDebugExceptionProcessingEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDebugExceptionProcessingEnd();
+}
+
+inline BOOL EventEnabledCodeSymbols() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledCodeSymbols();}
+
+inline ULONG FireEtwCodeSymbols(
                   const unsigned __int64  ModuleId,
                   const unsigned short  TotalChunks,
                   const unsigned short  ChunkNumber,
                   const unsigned int  ChunkLength,
                   const BYTE* Chunk,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledCLRStackWalkDCStart();
-extern "C" ULONG   FireEtwCLRStackWalkDCStart(
+)
+{
+                  if (!EventEnabledCodeSymbols()) {return ERROR_SUCCESS;}
+                  return FireEtXplatCodeSymbols(ModuleId,TotalChunks,ChunkNumber,ChunkLength,Chunk,ClrInstanceID);
+}
+
+inline BOOL EventEnabledCLRStackWalkDCStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledCLRStackWalkDCStart();}
+
+inline ULONG FireEtwCLRStackWalkDCStart(
                   const unsigned short  ClrInstanceID,
                   const unsigned char  Reserved1,
                   const unsigned char  Reserved2,
                   const unsigned int  FrameCount,
                   const void** Stack
-);
-extern "C" BOOL  EventEnabledMethodDCStart();
-extern "C" ULONG   FireEtwMethodDCStart(
+)
+{
+                  if (!EventEnabledCLRStackWalkDCStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatCLRStackWalkDCStart(ClrInstanceID,Reserved1,Reserved2,FrameCount,Stack);
+}
+
+inline BOOL EventEnabledMethodDCStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCStart();}
+
+inline ULONG FireEtwMethodDCStart(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
                   const unsigned int  MethodSize,
                   const unsigned int  MethodToken,
                   const unsigned int  MethodFlags
-);
-extern "C" BOOL  EventEnabledMethodDCStart_V1();
-extern "C" ULONG   FireEtwMethodDCStart_V1(
+)
+{
+                  if (!EventEnabledMethodDCStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCStart(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags);
+}
+
+inline BOOL EventEnabledMethodDCStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCStart_V1();}
+
+inline ULONG FireEtwMethodDCStart_V1(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -1269,9 +2285,15 @@ extern "C" ULONG   FireEtwMethodDCStart_V1(
                   const unsigned int  MethodToken,
                   const unsigned int  MethodFlags,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodDCStart_V2();
-extern "C" ULONG   FireEtwMethodDCStart_V2(
+)
+{
+                  if (!EventEnabledMethodDCStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCStart_V1(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodDCStart_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCStart_V2();}
+
+inline ULONG FireEtwMethodDCStart_V2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -1280,18 +2302,30 @@ extern "C" ULONG   FireEtwMethodDCStart_V2(
                   const unsigned int  MethodFlags,
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ReJITID
-);
-extern "C" BOOL  EventEnabledMethodDCEnd();
-extern "C" ULONG   FireEtwMethodDCEnd(
+)
+{
+                  if (!EventEnabledMethodDCStart_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCStart_V2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,ClrInstanceID,ReJITID);
+}
+
+inline BOOL EventEnabledMethodDCEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCEnd();}
+
+inline ULONG FireEtwMethodDCEnd(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
                   const unsigned int  MethodSize,
                   const unsigned int  MethodToken,
                   const unsigned int  MethodFlags
-);
-extern "C" BOOL  EventEnabledMethodDCEnd_V1();
-extern "C" ULONG   FireEtwMethodDCEnd_V1(
+)
+{
+                  if (!EventEnabledMethodDCEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCEnd(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags);
+}
+
+inline BOOL EventEnabledMethodDCEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCEnd_V1();}
+
+inline ULONG FireEtwMethodDCEnd_V1(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -1299,9 +2333,15 @@ extern "C" ULONG   FireEtwMethodDCEnd_V1(
                   const unsigned int  MethodToken,
                   const unsigned int  MethodFlags,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodDCEnd_V2();
-extern "C" ULONG   FireEtwMethodDCEnd_V2(
+)
+{
+                  if (!EventEnabledMethodDCEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCEnd_V1(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodDCEnd_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCEnd_V2();}
+
+inline ULONG FireEtwMethodDCEnd_V2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -1310,9 +2350,15 @@ extern "C" ULONG   FireEtwMethodDCEnd_V2(
                   const unsigned int  MethodFlags,
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ReJITID
-);
-extern "C" BOOL  EventEnabledMethodDCStartVerbose();
-extern "C" ULONG   FireEtwMethodDCStartVerbose(
+)
+{
+                  if (!EventEnabledMethodDCEnd_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCEnd_V2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,ClrInstanceID,ReJITID);
+}
+
+inline BOOL EventEnabledMethodDCStartVerbose() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCStartVerbose();}
+
+inline ULONG FireEtwMethodDCStartVerbose(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -1322,9 +2368,15 @@ extern "C" ULONG   FireEtwMethodDCStartVerbose(
                   PCWSTR  MethodNamespace,
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature
-);
-extern "C" BOOL  EventEnabledMethodDCStartVerbose_V1();
-extern "C" ULONG   FireEtwMethodDCStartVerbose_V1(
+)
+{
+                  if (!EventEnabledMethodDCStartVerbose()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCStartVerbose(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature);
+}
+
+inline BOOL EventEnabledMethodDCStartVerbose_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCStartVerbose_V1();}
+
+inline ULONG FireEtwMethodDCStartVerbose_V1(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -1335,9 +2387,15 @@ extern "C" ULONG   FireEtwMethodDCStartVerbose_V1(
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodDCStartVerbose_V2();
-extern "C" ULONG   FireEtwMethodDCStartVerbose_V2(
+)
+{
+                  if (!EventEnabledMethodDCStartVerbose_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCStartVerbose_V1(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodDCStartVerbose_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCStartVerbose_V2();}
+
+inline ULONG FireEtwMethodDCStartVerbose_V2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -1349,9 +2407,15 @@ extern "C" ULONG   FireEtwMethodDCStartVerbose_V2(
                   PCWSTR  MethodSignature,
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ReJITID
-);
-extern "C" BOOL  EventEnabledMethodDCEndVerbose();
-extern "C" ULONG   FireEtwMethodDCEndVerbose(
+)
+{
+                  if (!EventEnabledMethodDCStartVerbose_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCStartVerbose_V2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature,ClrInstanceID,ReJITID);
+}
+
+inline BOOL EventEnabledMethodDCEndVerbose() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCEndVerbose();}
+
+inline ULONG FireEtwMethodDCEndVerbose(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -1361,9 +2425,15 @@ extern "C" ULONG   FireEtwMethodDCEndVerbose(
                   PCWSTR  MethodNamespace,
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature
-);
-extern "C" BOOL  EventEnabledMethodDCEndVerbose_V1();
-extern "C" ULONG   FireEtwMethodDCEndVerbose_V1(
+)
+{
+                  if (!EventEnabledMethodDCEndVerbose()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCEndVerbose(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature);
+}
+
+inline BOOL EventEnabledMethodDCEndVerbose_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCEndVerbose_V1();}
+
+inline ULONG FireEtwMethodDCEndVerbose_V1(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -1374,9 +2444,15 @@ extern "C" ULONG   FireEtwMethodDCEndVerbose_V1(
                   PCWSTR  MethodName,
                   PCWSTR  MethodSignature,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodDCEndVerbose_V2();
-extern "C" ULONG   FireEtwMethodDCEndVerbose_V2(
+)
+{
+                  if (!EventEnabledMethodDCEndVerbose_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCEndVerbose_V1(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodDCEndVerbose_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCEndVerbose_V2();}
+
+inline ULONG FireEtwMethodDCEndVerbose_V2(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodStartAddress,
@@ -1388,37 +2464,91 @@ extern "C" ULONG   FireEtwMethodDCEndVerbose_V2(
                   PCWSTR  MethodSignature,
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ReJITID
-);
-extern "C" BOOL  EventEnabledDCStartComplete();
-extern "C" ULONG   FireEtwDCStartComplete(
-);
-extern "C" BOOL  EventEnabledDCStartComplete_V1();
-extern "C" ULONG   FireEtwDCStartComplete_V1(
+)
+{
+                  if (!EventEnabledMethodDCEndVerbose_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCEndVerbose_V2(MethodID,ModuleID,MethodStartAddress,MethodSize,MethodToken,MethodFlags,MethodNamespace,MethodName,MethodSignature,ClrInstanceID,ReJITID);
+}
+
+inline BOOL EventEnabledDCStartComplete() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDCStartComplete();}
+
+inline ULONG FireEtwDCStartComplete(
+)
+{
+                  if (!EventEnabledDCStartComplete()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDCStartComplete();
+}
+
+inline BOOL EventEnabledDCStartComplete_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDCStartComplete_V1();}
+
+inline ULONG FireEtwDCStartComplete_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledDCEndComplete();
-extern "C" ULONG   FireEtwDCEndComplete(
-);
-extern "C" BOOL  EventEnabledDCEndComplete_V1();
-extern "C" ULONG   FireEtwDCEndComplete_V1(
+)
+{
+                  if (!EventEnabledDCStartComplete_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDCStartComplete_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledDCEndComplete() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDCEndComplete();}
+
+inline ULONG FireEtwDCEndComplete(
+)
+{
+                  if (!EventEnabledDCEndComplete()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDCEndComplete();
+}
+
+inline BOOL EventEnabledDCEndComplete_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDCEndComplete_V1();}
+
+inline ULONG FireEtwDCEndComplete_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledDCStartInit();
-extern "C" ULONG   FireEtwDCStartInit(
-);
-extern "C" BOOL  EventEnabledDCStartInit_V1();
-extern "C" ULONG   FireEtwDCStartInit_V1(
+)
+{
+                  if (!EventEnabledDCEndComplete_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDCEndComplete_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledDCStartInit() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDCStartInit();}
+
+inline ULONG FireEtwDCStartInit(
+)
+{
+                  if (!EventEnabledDCStartInit()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDCStartInit();
+}
+
+inline BOOL EventEnabledDCStartInit_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDCStartInit_V1();}
+
+inline ULONG FireEtwDCStartInit_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledDCEndInit();
-extern "C" ULONG   FireEtwDCEndInit(
-);
-extern "C" BOOL  EventEnabledDCEndInit_V1();
-extern "C" ULONG   FireEtwDCEndInit_V1(
+)
+{
+                  if (!EventEnabledDCStartInit_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDCStartInit_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledDCEndInit() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDCEndInit();}
+
+inline ULONG FireEtwDCEndInit(
+)
+{
+                  if (!EventEnabledDCEndInit()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDCEndInit();
+}
+
+inline BOOL EventEnabledDCEndInit_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDCEndInit_V1();}
+
+inline ULONG FireEtwDCEndInit_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodDCStartILToNativeMap();
-extern "C" ULONG   FireEtwMethodDCStartILToNativeMap(
+)
+{
+                  if (!EventEnabledDCEndInit_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDCEndInit_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodDCStartILToNativeMap() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCStartILToNativeMap();}
+
+inline ULONG FireEtwMethodDCStartILToNativeMap(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ReJITID,
                   const unsigned char  MethodExtent,
@@ -1426,9 +2556,15 @@ extern "C" ULONG   FireEtwMethodDCStartILToNativeMap(
                   const unsigned int* ILOffsets,
                   const unsigned int* NativeOffsets,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodDCEndILToNativeMap();
-extern "C" ULONG   FireEtwMethodDCEndILToNativeMap(
+)
+{
+                  if (!EventEnabledMethodDCStartILToNativeMap()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCStartILToNativeMap(MethodID,ReJITID,MethodExtent,CountOfMapEntries,ILOffsets,NativeOffsets,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodDCEndILToNativeMap() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodDCEndILToNativeMap();}
+
+inline ULONG FireEtwMethodDCEndILToNativeMap(
                   const unsigned __int64  MethodID,
                   const unsigned __int64  ReJITID,
                   const unsigned char  MethodExtent,
@@ -1436,9 +2572,15 @@ extern "C" ULONG   FireEtwMethodDCEndILToNativeMap(
                   const unsigned int* ILOffsets,
                   const unsigned int* NativeOffsets,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledDomainModuleDCStart();
-extern "C" ULONG   FireEtwDomainModuleDCStart(
+)
+{
+                  if (!EventEnabledMethodDCEndILToNativeMap()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodDCEndILToNativeMap(MethodID,ReJITID,MethodExtent,CountOfMapEntries,ILOffsets,NativeOffsets,ClrInstanceID);
+}
+
+inline BOOL EventEnabledDomainModuleDCStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDomainModuleDCStart();}
+
+inline ULONG FireEtwDomainModuleDCStart(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
@@ -1446,9 +2588,15 @@ extern "C" ULONG   FireEtwDomainModuleDCStart(
                   const unsigned int  Reserved1,
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath
-);
-extern "C" BOOL  EventEnabledDomainModuleDCStart_V1();
-extern "C" ULONG   FireEtwDomainModuleDCStart_V1(
+)
+{
+                  if (!EventEnabledDomainModuleDCStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDomainModuleDCStart(ModuleID,AssemblyID,AppDomainID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath);
+}
+
+inline BOOL EventEnabledDomainModuleDCStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDomainModuleDCStart_V1();}
+
+inline ULONG FireEtwDomainModuleDCStart_V1(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
@@ -1457,9 +2605,15 @@ extern "C" ULONG   FireEtwDomainModuleDCStart_V1(
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledDomainModuleDCEnd();
-extern "C" ULONG   FireEtwDomainModuleDCEnd(
+)
+{
+                  if (!EventEnabledDomainModuleDCStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDomainModuleDCStart_V1(ModuleID,AssemblyID,AppDomainID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID);
+}
+
+inline BOOL EventEnabledDomainModuleDCEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDomainModuleDCEnd();}
+
+inline ULONG FireEtwDomainModuleDCEnd(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
@@ -1467,9 +2621,15 @@ extern "C" ULONG   FireEtwDomainModuleDCEnd(
                   const unsigned int  Reserved1,
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath
-);
-extern "C" BOOL  EventEnabledDomainModuleDCEnd_V1();
-extern "C" ULONG   FireEtwDomainModuleDCEnd_V1(
+)
+{
+                  if (!EventEnabledDomainModuleDCEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDomainModuleDCEnd(ModuleID,AssemblyID,AppDomainID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath);
+}
+
+inline BOOL EventEnabledDomainModuleDCEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledDomainModuleDCEnd_V1();}
+
+inline ULONG FireEtwDomainModuleDCEnd_V1(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
@@ -1478,18 +2638,30 @@ extern "C" ULONG   FireEtwDomainModuleDCEnd_V1(
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleDCStart();
-extern "C" ULONG   FireEtwModuleDCStart(
+)
+{
+                  if (!EventEnabledDomainModuleDCEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatDomainModuleDCEnd_V1(ModuleID,AssemblyID,AppDomainID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleDCStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleDCStart();}
+
+inline ULONG FireEtwModuleDCStart(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
                   const unsigned int  Reserved1,
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath
-);
-extern "C" BOOL  EventEnabledModuleDCStart_V1();
-extern "C" ULONG   FireEtwModuleDCStart_V1(
+)
+{
+                  if (!EventEnabledModuleDCStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleDCStart(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath);
+}
+
+inline BOOL EventEnabledModuleDCStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleDCStart_V1();}
+
+inline ULONG FireEtwModuleDCStart_V1(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
@@ -1497,9 +2669,15 @@ extern "C" ULONG   FireEtwModuleDCStart_V1(
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleDCStart_V2();
-extern "C" ULONG   FireEtwModuleDCStart_V2(
+)
+{
+                  if (!EventEnabledModuleDCStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleDCStart_V1(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleDCStart_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleDCStart_V2();}
+
+inline ULONG FireEtwModuleDCStart_V2(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
@@ -1513,18 +2691,30 @@ extern "C" ULONG   FireEtwModuleDCStart_V2(
                   const GUID* NativePdbSignature,
                   const unsigned int  NativePdbAge,
                   PCWSTR  NativePdbBuildPath
-);
-extern "C" BOOL  EventEnabledModuleDCEnd();
-extern "C" ULONG   FireEtwModuleDCEnd(
+)
+{
+                  if (!EventEnabledModuleDCStart_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleDCStart_V2(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID,ManagedPdbSignature,ManagedPdbAge,ManagedPdbBuildPath,NativePdbSignature,NativePdbAge,NativePdbBuildPath);
+}
+
+inline BOOL EventEnabledModuleDCEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleDCEnd();}
+
+inline ULONG FireEtwModuleDCEnd(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
                   const unsigned int  Reserved1,
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath
-);
-extern "C" BOOL  EventEnabledModuleDCEnd_V1();
-extern "C" ULONG   FireEtwModuleDCEnd_V1(
+)
+{
+                  if (!EventEnabledModuleDCEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleDCEnd(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath);
+}
+
+inline BOOL EventEnabledModuleDCEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleDCEnd_V1();}
+
+inline ULONG FireEtwModuleDCEnd_V1(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
@@ -1532,9 +2722,15 @@ extern "C" ULONG   FireEtwModuleDCEnd_V1(
                   PCWSTR  ModuleILPath,
                   PCWSTR  ModuleNativePath,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleDCEnd_V2();
-extern "C" ULONG   FireEtwModuleDCEnd_V2(
+)
+{
+                  if (!EventEnabledModuleDCEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleDCEnd_V1(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleDCEnd_V2() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleDCEnd_V2();}
+
+inline ULONG FireEtwModuleDCEnd_V2(
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  AssemblyID,
                   const unsigned int  ModuleFlags,
@@ -1548,94 +2744,166 @@ extern "C" ULONG   FireEtwModuleDCEnd_V2(
                   const GUID* NativePdbSignature,
                   const unsigned int  NativePdbAge,
                   PCWSTR  NativePdbBuildPath
-);
-extern "C" BOOL  EventEnabledAssemblyDCStart();
-extern "C" ULONG   FireEtwAssemblyDCStart(
+)
+{
+                  if (!EventEnabledModuleDCEnd_V2()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleDCEnd_V2(ModuleID,AssemblyID,ModuleFlags,Reserved1,ModuleILPath,ModuleNativePath,ClrInstanceID,ManagedPdbSignature,ManagedPdbAge,ManagedPdbBuildPath,NativePdbSignature,NativePdbAge,NativePdbBuildPath);
+}
+
+inline BOOL EventEnabledAssemblyDCStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAssemblyDCStart();}
+
+inline ULONG FireEtwAssemblyDCStart(
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AssemblyFlags,
                   PCWSTR  FullyQualifiedAssemblyName
-);
-extern "C" BOOL  EventEnabledAssemblyDCStart_V1();
-extern "C" ULONG   FireEtwAssemblyDCStart_V1(
+)
+{
+                  if (!EventEnabledAssemblyDCStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAssemblyDCStart(AssemblyID,AppDomainID,AssemblyFlags,FullyQualifiedAssemblyName);
+}
+
+inline BOOL EventEnabledAssemblyDCStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAssemblyDCStart_V1();}
+
+inline ULONG FireEtwAssemblyDCStart_V1(
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
                   const unsigned __int64  BindingID,
                   const unsigned int  AssemblyFlags,
                   PCWSTR  FullyQualifiedAssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAssemblyDCEnd();
-extern "C" ULONG   FireEtwAssemblyDCEnd(
+)
+{
+                  if (!EventEnabledAssemblyDCStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAssemblyDCStart_V1(AssemblyID,AppDomainID,BindingID,AssemblyFlags,FullyQualifiedAssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledAssemblyDCEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAssemblyDCEnd();}
+
+inline ULONG FireEtwAssemblyDCEnd(
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AssemblyFlags,
                   PCWSTR  FullyQualifiedAssemblyName
-);
-extern "C" BOOL  EventEnabledAssemblyDCEnd_V1();
-extern "C" ULONG   FireEtwAssemblyDCEnd_V1(
+)
+{
+                  if (!EventEnabledAssemblyDCEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAssemblyDCEnd(AssemblyID,AppDomainID,AssemblyFlags,FullyQualifiedAssemblyName);
+}
+
+inline BOOL EventEnabledAssemblyDCEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAssemblyDCEnd_V1();}
+
+inline ULONG FireEtwAssemblyDCEnd_V1(
                   const unsigned __int64  AssemblyID,
                   const unsigned __int64  AppDomainID,
                   const unsigned __int64  BindingID,
                   const unsigned int  AssemblyFlags,
                   PCWSTR  FullyQualifiedAssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAppDomainDCStart();
-extern "C" ULONG   FireEtwAppDomainDCStart(
+)
+{
+                  if (!EventEnabledAssemblyDCEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAssemblyDCEnd_V1(AssemblyID,AppDomainID,BindingID,AssemblyFlags,FullyQualifiedAssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledAppDomainDCStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAppDomainDCStart();}
+
+inline ULONG FireEtwAppDomainDCStart(
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AppDomainFlags,
                   PCWSTR  AppDomainName
-);
-extern "C" BOOL  EventEnabledAppDomainDCStart_V1();
-extern "C" ULONG   FireEtwAppDomainDCStart_V1(
+)
+{
+                  if (!EventEnabledAppDomainDCStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAppDomainDCStart(AppDomainID,AppDomainFlags,AppDomainName);
+}
+
+inline BOOL EventEnabledAppDomainDCStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAppDomainDCStart_V1();}
+
+inline ULONG FireEtwAppDomainDCStart_V1(
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AppDomainFlags,
                   PCWSTR  AppDomainName,
                   const unsigned int  AppDomainIndex,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAppDomainDCEnd();
-extern "C" ULONG   FireEtwAppDomainDCEnd(
+)
+{
+                  if (!EventEnabledAppDomainDCStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAppDomainDCStart_V1(AppDomainID,AppDomainFlags,AppDomainName,AppDomainIndex,ClrInstanceID);
+}
+
+inline BOOL EventEnabledAppDomainDCEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAppDomainDCEnd();}
+
+inline ULONG FireEtwAppDomainDCEnd(
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AppDomainFlags,
                   PCWSTR  AppDomainName
-);
-extern "C" BOOL  EventEnabledAppDomainDCEnd_V1();
-extern "C" ULONG   FireEtwAppDomainDCEnd_V1(
+)
+{
+                  if (!EventEnabledAppDomainDCEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAppDomainDCEnd(AppDomainID,AppDomainFlags,AppDomainName);
+}
+
+inline BOOL EventEnabledAppDomainDCEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAppDomainDCEnd_V1();}
+
+inline ULONG FireEtwAppDomainDCEnd_V1(
                   const unsigned __int64  AppDomainID,
                   const unsigned int  AppDomainFlags,
                   PCWSTR  AppDomainName,
                   const unsigned int  AppDomainIndex,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledThreadDC();
-extern "C" ULONG   FireEtwThreadDC(
+)
+{
+                  if (!EventEnabledAppDomainDCEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAppDomainDCEnd_V1(AppDomainID,AppDomainFlags,AppDomainName,AppDomainIndex,ClrInstanceID);
+}
+
+inline BOOL EventEnabledThreadDC() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledThreadDC();}
+
+inline ULONG FireEtwThreadDC(
                   const unsigned __int64  ManagedThreadID,
                   const unsigned __int64  AppDomainID,
                   const unsigned int  Flags,
                   const unsigned int  ManagedThreadIndex,
                   const unsigned int  OSThreadID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleRangeDCStart();
-extern "C" ULONG   FireEtwModuleRangeDCStart(
+)
+{
+                  if (!EventEnabledThreadDC()) {return ERROR_SUCCESS;}
+                  return FireEtXplatThreadDC(ManagedThreadID,AppDomainID,Flags,ManagedThreadIndex,OSThreadID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleRangeDCStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleRangeDCStart();}
+
+inline ULONG FireEtwModuleRangeDCStart(
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ModuleID,
                   const unsigned int  RangeBegin,
                   const unsigned int  RangeSize,
                   const unsigned char  RangeType
-);
-extern "C" BOOL  EventEnabledModuleRangeDCEnd();
-extern "C" ULONG   FireEtwModuleRangeDCEnd(
+)
+{
+                  if (!EventEnabledModuleRangeDCStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleRangeDCStart(ClrInstanceID,ModuleID,RangeBegin,RangeSize,RangeType);
+}
+
+inline BOOL EventEnabledModuleRangeDCEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleRangeDCEnd();}
+
+inline ULONG FireEtwModuleRangeDCEnd(
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ModuleID,
                   const unsigned int  RangeBegin,
                   const unsigned int  RangeSize,
                   const unsigned char  RangeType
-);
-extern "C" BOOL  EventEnabledRuntimeInformationDCStart();
-extern "C" ULONG   FireEtwRuntimeInformationDCStart(
+)
+{
+                  if (!EventEnabledModuleRangeDCEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleRangeDCEnd(ClrInstanceID,ModuleID,RangeBegin,RangeSize,RangeType);
+}
+
+inline BOOL EventEnabledRuntimeInformationDCStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledRuntimeInformationDCStart();}
+
+inline ULONG FireEtwRuntimeInformationDCStart(
                   const unsigned short  ClrInstanceID,
                   const unsigned short  Sku,
                   const unsigned short  BclMajorVersion,
@@ -1651,81 +2919,159 @@ extern "C" ULONG   FireEtwRuntimeInformationDCStart(
                   PCWSTR  CommandLine,
                   const GUID* ComObjectGuid,
                   PCWSTR  RuntimeDllPath
-);
-extern "C" BOOL  EventEnabledStressLogEvent();
-extern "C" ULONG   FireEtwStressLogEvent(
+)
+{
+                  if (!EventEnabledRuntimeInformationDCStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatRuntimeInformationDCStart(ClrInstanceID,Sku,BclMajorVersion,BclMinorVersion,BclBuildNumber,BclQfeNumber,VMMajorVersion,VMMinorVersion,VMBuildNumber,VMQfeNumber,StartupFlags,StartupMode,CommandLine,ComObjectGuid,RuntimeDllPath);
+}
+
+inline BOOL EventEnabledStressLogEvent() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledStressLogEvent();}
+
+inline ULONG FireEtwStressLogEvent(
                   const unsigned int  Facility,
                   const unsigned char  LogLevel,
                   LPCSTR  Message
-);
-extern "C" BOOL  EventEnabledStressLogEvent_V1();
-extern "C" ULONG   FireEtwStressLogEvent_V1(
+)
+{
+                  if (!EventEnabledStressLogEvent()) {return ERROR_SUCCESS;}
+                  return FireEtXplatStressLogEvent(Facility,LogLevel,Message);
+}
+
+inline BOOL EventEnabledStressLogEvent_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledStressLogEvent_V1();}
+
+inline ULONG FireEtwStressLogEvent_V1(
                   const unsigned int  Facility,
                   const unsigned char  LogLevel,
                   LPCSTR  Message,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledCLRStackWalkStress();
-extern "C" ULONG   FireEtwCLRStackWalkStress(
+)
+{
+                  if (!EventEnabledStressLogEvent_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatStressLogEvent_V1(Facility,LogLevel,Message,ClrInstanceID);
+}
+
+inline BOOL EventEnabledCLRStackWalkStress() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledCLRStackWalkStress();}
+
+inline ULONG FireEtwCLRStackWalkStress(
                   const unsigned short  ClrInstanceID,
                   const unsigned char  Reserved1,
                   const unsigned char  Reserved2,
                   const unsigned int  FrameCount,
                   const void** Stack
-);
-extern "C" BOOL  EventEnabledGCDecision();
-extern "C" ULONG   FireEtwGCDecision(
+)
+{
+                  if (!EventEnabledCLRStackWalkStress()) {return ERROR_SUCCESS;}
+                  return FireEtXplatCLRStackWalkStress(ClrInstanceID,Reserved1,Reserved2,FrameCount,Stack);
+}
+
+inline BOOL EventEnabledGCDecision() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCDecision();}
+
+inline ULONG FireEtwGCDecision(
                   const BOOL  DoCompact
-);
-extern "C" BOOL  EventEnabledGCDecision_V1();
-extern "C" ULONG   FireEtwGCDecision_V1(
+)
+{
+                  if (!EventEnabledGCDecision()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCDecision(DoCompact);
+}
+
+inline BOOL EventEnabledGCDecision_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCDecision_V1();}
+
+inline ULONG FireEtwGCDecision_V1(
                   const BOOL  DoCompact,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCSettings();
-extern "C" ULONG   FireEtwGCSettings(
+)
+{
+                  if (!EventEnabledGCDecision_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCDecision_V1(DoCompact,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCSettings() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCSettings();}
+
+inline ULONG FireEtwGCSettings(
                   const unsigned __int64  SegmentSize,
                   const unsigned __int64  LargeObjectSegmentSize,
                   const BOOL  ServerGC
-);
-extern "C" BOOL  EventEnabledGCSettings_V1();
-extern "C" ULONG   FireEtwGCSettings_V1(
+)
+{
+                  if (!EventEnabledGCSettings()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCSettings(SegmentSize,LargeObjectSegmentSize,ServerGC);
+}
+
+inline BOOL EventEnabledGCSettings_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCSettings_V1();}
+
+inline ULONG FireEtwGCSettings_V1(
                   const unsigned __int64  SegmentSize,
                   const unsigned __int64  LargeObjectSegmentSize,
                   const BOOL  ServerGC,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCOptimized();
-extern "C" ULONG   FireEtwGCOptimized(
+)
+{
+                  if (!EventEnabledGCSettings_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCSettings_V1(SegmentSize,LargeObjectSegmentSize,ServerGC,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCOptimized() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCOptimized();}
+
+inline ULONG FireEtwGCOptimized(
                   const unsigned __int64  DesiredAllocation,
                   const unsigned __int64  NewAllocation,
                   const unsigned int  GenerationNumber
-);
-extern "C" BOOL  EventEnabledGCOptimized_V1();
-extern "C" ULONG   FireEtwGCOptimized_V1(
+)
+{
+                  if (!EventEnabledGCOptimized()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCOptimized(DesiredAllocation,NewAllocation,GenerationNumber);
+}
+
+inline BOOL EventEnabledGCOptimized_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCOptimized_V1();}
+
+inline ULONG FireEtwGCOptimized_V1(
                   const unsigned __int64  DesiredAllocation,
                   const unsigned __int64  NewAllocation,
                   const unsigned int  GenerationNumber,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCPerHeapHistory();
-extern "C" ULONG   FireEtwGCPerHeapHistory(
-);
-extern "C" BOOL  EventEnabledGCPerHeapHistory_V1();
-extern "C" ULONG   FireEtwGCPerHeapHistory_V1(
+)
+{
+                  if (!EventEnabledGCOptimized_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCOptimized_V1(DesiredAllocation,NewAllocation,GenerationNumber,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCPerHeapHistory() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCPerHeapHistory();}
+
+inline ULONG FireEtwGCPerHeapHistory(
+)
+{
+                  if (!EventEnabledGCPerHeapHistory()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCPerHeapHistory();
+}
+
+inline BOOL EventEnabledGCPerHeapHistory_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCPerHeapHistory_V1();}
+
+inline ULONG FireEtwGCPerHeapHistory_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCGlobalHeapHistory();
-extern "C" ULONG   FireEtwGCGlobalHeapHistory(
+)
+{
+                  if (!EventEnabledGCPerHeapHistory_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCPerHeapHistory_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCGlobalHeapHistory() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCGlobalHeapHistory();}
+
+inline ULONG FireEtwGCGlobalHeapHistory(
                   const unsigned __int64  FinalYoungestDesired,
                   const signed int  NumHeaps,
                   const unsigned int  CondemnedGeneration,
                   const unsigned int  Gen0ReductionCount,
                   const unsigned int  Reason,
                   const unsigned int  GlobalMechanisms
-);
-extern "C" BOOL  EventEnabledGCGlobalHeapHistory_V1();
-extern "C" ULONG   FireEtwGCGlobalHeapHistory_V1(
+)
+{
+                  if (!EventEnabledGCGlobalHeapHistory()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCGlobalHeapHistory(FinalYoungestDesired,NumHeaps,CondemnedGeneration,Gen0ReductionCount,Reason,GlobalMechanisms);
+}
+
+inline BOOL EventEnabledGCGlobalHeapHistory_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCGlobalHeapHistory_V1();}
+
+inline ULONG FireEtwGCGlobalHeapHistory_V1(
                   const unsigned __int64  FinalYoungestDesired,
                   const signed int  NumHeaps,
                   const unsigned int  CondemnedGeneration,
@@ -1733,451 +3079,1147 @@ extern "C" ULONG   FireEtwGCGlobalHeapHistory_V1(
                   const unsigned int  Reason,
                   const unsigned int  GlobalMechanisms,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCJoin();
-extern "C" ULONG   FireEtwGCJoin(
+)
+{
+                  if (!EventEnabledGCGlobalHeapHistory_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCGlobalHeapHistory_V1(FinalYoungestDesired,NumHeaps,CondemnedGeneration,Gen0ReductionCount,Reason,GlobalMechanisms,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCJoin() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCJoin();}
+
+inline ULONG FireEtwGCJoin(
                   const unsigned int  Heap,
                   const unsigned int  JoinTime,
                   const unsigned int  JoinType
-);
-extern "C" BOOL  EventEnabledGCJoin_V1();
-extern "C" ULONG   FireEtwGCJoin_V1(
+)
+{
+                  if (!EventEnabledGCJoin()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCJoin(Heap,JoinTime,JoinType);
+}
+
+inline BOOL EventEnabledGCJoin_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCJoin_V1();}
+
+inline ULONG FireEtwGCJoin_V1(
                   const unsigned int  Heap,
                   const unsigned int  JoinTime,
                   const unsigned int  JoinType,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledPrvGCMarkStackRoots();
-extern "C" ULONG   FireEtwPrvGCMarkStackRoots(
+)
+{
+                  if (!EventEnabledGCJoin_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCJoin_V1(Heap,JoinTime,JoinType,ClrInstanceID);
+}
+
+inline BOOL EventEnabledPrvGCMarkStackRoots() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvGCMarkStackRoots();}
+
+inline ULONG FireEtwPrvGCMarkStackRoots(
                   const unsigned int  HeapNum
-);
-extern "C" BOOL  EventEnabledPrvGCMarkStackRoots_V1();
-extern "C" ULONG   FireEtwPrvGCMarkStackRoots_V1(
+)
+{
+                  if (!EventEnabledPrvGCMarkStackRoots()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvGCMarkStackRoots(HeapNum);
+}
+
+inline BOOL EventEnabledPrvGCMarkStackRoots_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvGCMarkStackRoots_V1();}
+
+inline ULONG FireEtwPrvGCMarkStackRoots_V1(
                   const unsigned int  HeapNum,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledPrvGCMarkFinalizeQueueRoots();
-extern "C" ULONG   FireEtwPrvGCMarkFinalizeQueueRoots(
+)
+{
+                  if (!EventEnabledPrvGCMarkStackRoots_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvGCMarkStackRoots_V1(HeapNum,ClrInstanceID);
+}
+
+inline BOOL EventEnabledPrvGCMarkFinalizeQueueRoots() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvGCMarkFinalizeQueueRoots();}
+
+inline ULONG FireEtwPrvGCMarkFinalizeQueueRoots(
                   const unsigned int  HeapNum
-);
-extern "C" BOOL  EventEnabledPrvGCMarkFinalizeQueueRoots_V1();
-extern "C" ULONG   FireEtwPrvGCMarkFinalizeQueueRoots_V1(
+)
+{
+                  if (!EventEnabledPrvGCMarkFinalizeQueueRoots()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvGCMarkFinalizeQueueRoots(HeapNum);
+}
+
+inline BOOL EventEnabledPrvGCMarkFinalizeQueueRoots_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvGCMarkFinalizeQueueRoots_V1();}
+
+inline ULONG FireEtwPrvGCMarkFinalizeQueueRoots_V1(
                   const unsigned int  HeapNum,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledPrvGCMarkHandles();
-extern "C" ULONG   FireEtwPrvGCMarkHandles(
+)
+{
+                  if (!EventEnabledPrvGCMarkFinalizeQueueRoots_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvGCMarkFinalizeQueueRoots_V1(HeapNum,ClrInstanceID);
+}
+
+inline BOOL EventEnabledPrvGCMarkHandles() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvGCMarkHandles();}
+
+inline ULONG FireEtwPrvGCMarkHandles(
                   const unsigned int  HeapNum
-);
-extern "C" BOOL  EventEnabledPrvGCMarkHandles_V1();
-extern "C" ULONG   FireEtwPrvGCMarkHandles_V1(
+)
+{
+                  if (!EventEnabledPrvGCMarkHandles()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvGCMarkHandles(HeapNum);
+}
+
+inline BOOL EventEnabledPrvGCMarkHandles_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvGCMarkHandles_V1();}
+
+inline ULONG FireEtwPrvGCMarkHandles_V1(
                   const unsigned int  HeapNum,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledPrvGCMarkCards();
-extern "C" ULONG   FireEtwPrvGCMarkCards(
+)
+{
+                  if (!EventEnabledPrvGCMarkHandles_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvGCMarkHandles_V1(HeapNum,ClrInstanceID);
+}
+
+inline BOOL EventEnabledPrvGCMarkCards() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvGCMarkCards();}
+
+inline ULONG FireEtwPrvGCMarkCards(
                   const unsigned int  HeapNum
-);
-extern "C" BOOL  EventEnabledPrvGCMarkCards_V1();
-extern "C" ULONG   FireEtwPrvGCMarkCards_V1(
+)
+{
+                  if (!EventEnabledPrvGCMarkCards()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvGCMarkCards(HeapNum);
+}
+
+inline BOOL EventEnabledPrvGCMarkCards_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvGCMarkCards_V1();}
+
+inline ULONG FireEtwPrvGCMarkCards_V1(
                   const unsigned int  HeapNum,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGCBegin();
-extern "C" ULONG   FireEtwBGCBegin(
+)
+{
+                  if (!EventEnabledPrvGCMarkCards_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvGCMarkCards_V1(HeapNum,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGCBegin() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGCBegin();}
+
+inline ULONG FireEtwBGCBegin(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGC1stNonConEnd();
-extern "C" ULONG   FireEtwBGC1stNonConEnd(
+)
+{
+                  if (!EventEnabledBGCBegin()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGCBegin(ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGC1stNonConEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGC1stNonConEnd();}
+
+inline ULONG FireEtwBGC1stNonConEnd(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGC1stConEnd();
-extern "C" ULONG   FireEtwBGC1stConEnd(
+)
+{
+                  if (!EventEnabledBGC1stNonConEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGC1stNonConEnd(ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGC1stConEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGC1stConEnd();}
+
+inline ULONG FireEtwBGC1stConEnd(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGC2ndNonConBegin();
-extern "C" ULONG   FireEtwBGC2ndNonConBegin(
+)
+{
+                  if (!EventEnabledBGC1stConEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGC1stConEnd(ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGC2ndNonConBegin() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGC2ndNonConBegin();}
+
+inline ULONG FireEtwBGC2ndNonConBegin(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGC2ndNonConEnd();
-extern "C" ULONG   FireEtwBGC2ndNonConEnd(
+)
+{
+                  if (!EventEnabledBGC2ndNonConBegin()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGC2ndNonConBegin(ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGC2ndNonConEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGC2ndNonConEnd();}
+
+inline ULONG FireEtwBGC2ndNonConEnd(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGC2ndConBegin();
-extern "C" ULONG   FireEtwBGC2ndConBegin(
+)
+{
+                  if (!EventEnabledBGC2ndNonConEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGC2ndNonConEnd(ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGC2ndConBegin() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGC2ndConBegin();}
+
+inline ULONG FireEtwBGC2ndConBegin(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGC2ndConEnd();
-extern "C" ULONG   FireEtwBGC2ndConEnd(
+)
+{
+                  if (!EventEnabledBGC2ndConBegin()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGC2ndConBegin(ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGC2ndConEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGC2ndConEnd();}
+
+inline ULONG FireEtwBGC2ndConEnd(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGCPlanEnd();
-extern "C" ULONG   FireEtwBGCPlanEnd(
+)
+{
+                  if (!EventEnabledBGC2ndConEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGC2ndConEnd(ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGCPlanEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGCPlanEnd();}
+
+inline ULONG FireEtwBGCPlanEnd(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGCSweepEnd();
-extern "C" ULONG   FireEtwBGCSweepEnd(
+)
+{
+                  if (!EventEnabledBGCPlanEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGCPlanEnd(ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGCSweepEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGCSweepEnd();}
+
+inline ULONG FireEtwBGCSweepEnd(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGCDrainMark();
-extern "C" ULONG   FireEtwBGCDrainMark(
+)
+{
+                  if (!EventEnabledBGCSweepEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGCSweepEnd(ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGCDrainMark() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGCDrainMark();}
+
+inline ULONG FireEtwBGCDrainMark(
                   const unsigned __int64  Objects,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGCRevisit();
-extern "C" ULONG   FireEtwBGCRevisit(
+)
+{
+                  if (!EventEnabledBGCDrainMark()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGCDrainMark(Objects,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGCRevisit() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGCRevisit();}
+
+inline ULONG FireEtwBGCRevisit(
                   const unsigned __int64  Pages,
                   const unsigned __int64  Objects,
                   const unsigned int  IsLarge,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGCOverflow();
-extern "C" ULONG   FireEtwBGCOverflow(
+)
+{
+                  if (!EventEnabledBGCRevisit()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGCRevisit(Pages,Objects,IsLarge,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGCOverflow() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGCOverflow();}
+
+inline ULONG FireEtwBGCOverflow(
                   const unsigned __int64  Min,
                   const unsigned __int64  Max,
                   const unsigned __int64  Objects,
                   const unsigned int  IsLarge,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGCAllocWaitBegin();
-extern "C" ULONG   FireEtwBGCAllocWaitBegin(
+)
+{
+                  if (!EventEnabledBGCOverflow()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGCOverflow(Min,Max,Objects,IsLarge,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGCAllocWaitBegin() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGCAllocWaitBegin();}
+
+inline ULONG FireEtwBGCAllocWaitBegin(
                   const unsigned int  Reason,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBGCAllocWaitEnd();
-extern "C" ULONG   FireEtwBGCAllocWaitEnd(
+)
+{
+                  if (!EventEnabledBGCAllocWaitBegin()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGCAllocWaitBegin(Reason,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBGCAllocWaitEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBGCAllocWaitEnd();}
+
+inline ULONG FireEtwBGCAllocWaitEnd(
                   const unsigned int  Reason,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGCFullNotify();
-extern "C" ULONG   FireEtwGCFullNotify(
+)
+{
+                  if (!EventEnabledBGCAllocWaitEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBGCAllocWaitEnd(Reason,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGCFullNotify() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCFullNotify();}
+
+inline ULONG FireEtwGCFullNotify(
                   const unsigned int  GenNumber,
                   const unsigned int  IsAlloc
-);
-extern "C" BOOL  EventEnabledGCFullNotify_V1();
-extern "C" ULONG   FireEtwGCFullNotify_V1(
+)
+{
+                  if (!EventEnabledGCFullNotify()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCFullNotify(GenNumber,IsAlloc);
+}
+
+inline BOOL EventEnabledGCFullNotify_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCFullNotify_V1();}
+
+inline ULONG FireEtwGCFullNotify_V1(
                   const unsigned int  GenNumber,
                   const unsigned int  IsAlloc,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledEEStartupStart();
-extern "C" ULONG   FireEtwEEStartupStart(
-);
-extern "C" BOOL  EventEnabledEEStartupStart_V1();
-extern "C" ULONG   FireEtwEEStartupStart_V1(
+)
+{
+                  if (!EventEnabledGCFullNotify_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGCFullNotify_V1(GenNumber,IsAlloc,ClrInstanceID);
+}
+
+inline BOOL EventEnabledEEStartupStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEStartupStart();}
+
+inline ULONG FireEtwEEStartupStart(
+)
+{
+                  if (!EventEnabledEEStartupStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEStartupStart();
+}
+
+inline BOOL EventEnabledEEStartupStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEStartupStart_V1();}
+
+inline ULONG FireEtwEEStartupStart_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledEEStartupEnd();
-extern "C" ULONG   FireEtwEEStartupEnd(
-);
-extern "C" BOOL  EventEnabledEEStartupEnd_V1();
-extern "C" ULONG   FireEtwEEStartupEnd_V1(
+)
+{
+                  if (!EventEnabledEEStartupStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEStartupStart_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledEEStartupEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEStartupEnd();}
+
+inline ULONG FireEtwEEStartupEnd(
+)
+{
+                  if (!EventEnabledEEStartupEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEStartupEnd();
+}
+
+inline BOOL EventEnabledEEStartupEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEStartupEnd_V1();}
+
+inline ULONG FireEtwEEStartupEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledEEConfigSetup();
-extern "C" ULONG   FireEtwEEConfigSetup(
-);
-extern "C" BOOL  EventEnabledEEConfigSetup_V1();
-extern "C" ULONG   FireEtwEEConfigSetup_V1(
+)
+{
+                  if (!EventEnabledEEStartupEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEStartupEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledEEConfigSetup() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEConfigSetup();}
+
+inline ULONG FireEtwEEConfigSetup(
+)
+{
+                  if (!EventEnabledEEConfigSetup()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEConfigSetup();
+}
+
+inline BOOL EventEnabledEEConfigSetup_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEConfigSetup_V1();}
+
+inline ULONG FireEtwEEConfigSetup_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledEEConfigSetupEnd();
-extern "C" ULONG   FireEtwEEConfigSetupEnd(
-);
-extern "C" BOOL  EventEnabledEEConfigSetupEnd_V1();
-extern "C" ULONG   FireEtwEEConfigSetupEnd_V1(
+)
+{
+                  if (!EventEnabledEEConfigSetup_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEConfigSetup_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledEEConfigSetupEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEConfigSetupEnd();}
+
+inline ULONG FireEtwEEConfigSetupEnd(
+)
+{
+                  if (!EventEnabledEEConfigSetupEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEConfigSetupEnd();
+}
+
+inline BOOL EventEnabledEEConfigSetupEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEConfigSetupEnd_V1();}
+
+inline ULONG FireEtwEEConfigSetupEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLdSysBases();
-extern "C" ULONG   FireEtwLdSysBases(
-);
-extern "C" BOOL  EventEnabledLdSysBases_V1();
-extern "C" ULONG   FireEtwLdSysBases_V1(
+)
+{
+                  if (!EventEnabledEEConfigSetupEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEConfigSetupEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledLdSysBases() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLdSysBases();}
+
+inline ULONG FireEtwLdSysBases(
+)
+{
+                  if (!EventEnabledLdSysBases()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLdSysBases();
+}
+
+inline BOOL EventEnabledLdSysBases_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLdSysBases_V1();}
+
+inline ULONG FireEtwLdSysBases_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLdSysBasesEnd();
-extern "C" ULONG   FireEtwLdSysBasesEnd(
-);
-extern "C" BOOL  EventEnabledLdSysBasesEnd_V1();
-extern "C" ULONG   FireEtwLdSysBasesEnd_V1(
+)
+{
+                  if (!EventEnabledLdSysBases_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLdSysBases_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledLdSysBasesEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLdSysBasesEnd();}
+
+inline ULONG FireEtwLdSysBasesEnd(
+)
+{
+                  if (!EventEnabledLdSysBasesEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLdSysBasesEnd();
+}
+
+inline BOOL EventEnabledLdSysBasesEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLdSysBasesEnd_V1();}
+
+inline ULONG FireEtwLdSysBasesEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledExecExe();
-extern "C" ULONG   FireEtwExecExe(
-);
-extern "C" BOOL  EventEnabledExecExe_V1();
-extern "C" ULONG   FireEtwExecExe_V1(
+)
+{
+                  if (!EventEnabledLdSysBasesEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLdSysBasesEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledExecExe() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExecExe();}
+
+inline ULONG FireEtwExecExe(
+)
+{
+                  if (!EventEnabledExecExe()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExecExe();
+}
+
+inline BOOL EventEnabledExecExe_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExecExe_V1();}
+
+inline ULONG FireEtwExecExe_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledExecExeEnd();
-extern "C" ULONG   FireEtwExecExeEnd(
-);
-extern "C" BOOL  EventEnabledExecExeEnd_V1();
-extern "C" ULONG   FireEtwExecExeEnd_V1(
+)
+{
+                  if (!EventEnabledExecExe_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExecExe_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledExecExeEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExecExeEnd();}
+
+inline ULONG FireEtwExecExeEnd(
+)
+{
+                  if (!EventEnabledExecExeEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExecExeEnd();
+}
+
+inline BOOL EventEnabledExecExeEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExecExeEnd_V1();}
+
+inline ULONG FireEtwExecExeEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMain();
-extern "C" ULONG   FireEtwMain(
-);
-extern "C" BOOL  EventEnabledMain_V1();
-extern "C" ULONG   FireEtwMain_V1(
+)
+{
+                  if (!EventEnabledExecExeEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExecExeEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledMain() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMain();}
+
+inline ULONG FireEtwMain(
+)
+{
+                  if (!EventEnabledMain()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMain();
+}
+
+inline BOOL EventEnabledMain_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMain_V1();}
+
+inline ULONG FireEtwMain_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMainEnd();
-extern "C" ULONG   FireEtwMainEnd(
-);
-extern "C" BOOL  EventEnabledMainEnd_V1();
-extern "C" ULONG   FireEtwMainEnd_V1(
+)
+{
+                  if (!EventEnabledMain_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMain_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledMainEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMainEnd();}
+
+inline ULONG FireEtwMainEnd(
+)
+{
+                  if (!EventEnabledMainEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMainEnd();
+}
+
+inline BOOL EventEnabledMainEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMainEnd_V1();}
+
+inline ULONG FireEtwMainEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledApplyPolicyStart();
-extern "C" ULONG   FireEtwApplyPolicyStart(
-);
-extern "C" BOOL  EventEnabledApplyPolicyStart_V1();
-extern "C" ULONG   FireEtwApplyPolicyStart_V1(
+)
+{
+                  if (!EventEnabledMainEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMainEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledApplyPolicyStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledApplyPolicyStart();}
+
+inline ULONG FireEtwApplyPolicyStart(
+)
+{
+                  if (!EventEnabledApplyPolicyStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatApplyPolicyStart();
+}
+
+inline BOOL EventEnabledApplyPolicyStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledApplyPolicyStart_V1();}
+
+inline ULONG FireEtwApplyPolicyStart_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledApplyPolicyEnd();
-extern "C" ULONG   FireEtwApplyPolicyEnd(
-);
-extern "C" BOOL  EventEnabledApplyPolicyEnd_V1();
-extern "C" ULONG   FireEtwApplyPolicyEnd_V1(
+)
+{
+                  if (!EventEnabledApplyPolicyStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatApplyPolicyStart_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledApplyPolicyEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledApplyPolicyEnd();}
+
+inline ULONG FireEtwApplyPolicyEnd(
+)
+{
+                  if (!EventEnabledApplyPolicyEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatApplyPolicyEnd();
+}
+
+inline BOOL EventEnabledApplyPolicyEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledApplyPolicyEnd_V1();}
+
+inline ULONG FireEtwApplyPolicyEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLdLibShFolder();
-extern "C" ULONG   FireEtwLdLibShFolder(
-);
-extern "C" BOOL  EventEnabledLdLibShFolder_V1();
-extern "C" ULONG   FireEtwLdLibShFolder_V1(
+)
+{
+                  if (!EventEnabledApplyPolicyEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatApplyPolicyEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledLdLibShFolder() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLdLibShFolder();}
+
+inline ULONG FireEtwLdLibShFolder(
+)
+{
+                  if (!EventEnabledLdLibShFolder()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLdLibShFolder();
+}
+
+inline BOOL EventEnabledLdLibShFolder_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLdLibShFolder_V1();}
+
+inline ULONG FireEtwLdLibShFolder_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLdLibShFolderEnd();
-extern "C" ULONG   FireEtwLdLibShFolderEnd(
-);
-extern "C" BOOL  EventEnabledLdLibShFolderEnd_V1();
-extern "C" ULONG   FireEtwLdLibShFolderEnd_V1(
+)
+{
+                  if (!EventEnabledLdLibShFolder_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLdLibShFolder_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledLdLibShFolderEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLdLibShFolderEnd();}
+
+inline ULONG FireEtwLdLibShFolderEnd(
+)
+{
+                  if (!EventEnabledLdLibShFolderEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLdLibShFolderEnd();
+}
+
+inline BOOL EventEnabledLdLibShFolderEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLdLibShFolderEnd_V1();}
+
+inline ULONG FireEtwLdLibShFolderEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledPrestubWorker();
-extern "C" ULONG   FireEtwPrestubWorker(
-);
-extern "C" BOOL  EventEnabledPrestubWorker_V1();
-extern "C" ULONG   FireEtwPrestubWorker_V1(
+)
+{
+                  if (!EventEnabledLdLibShFolderEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLdLibShFolderEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledPrestubWorker() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrestubWorker();}
+
+inline ULONG FireEtwPrestubWorker(
+)
+{
+                  if (!EventEnabledPrestubWorker()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrestubWorker();
+}
+
+inline BOOL EventEnabledPrestubWorker_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrestubWorker_V1();}
+
+inline ULONG FireEtwPrestubWorker_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledPrestubWorkerEnd();
-extern "C" ULONG   FireEtwPrestubWorkerEnd(
-);
-extern "C" BOOL  EventEnabledPrestubWorkerEnd_V1();
-extern "C" ULONG   FireEtwPrestubWorkerEnd_V1(
+)
+{
+                  if (!EventEnabledPrestubWorker_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrestubWorker_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledPrestubWorkerEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrestubWorkerEnd();}
+
+inline ULONG FireEtwPrestubWorkerEnd(
+)
+{
+                  if (!EventEnabledPrestubWorkerEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrestubWorkerEnd();
+}
+
+inline BOOL EventEnabledPrestubWorkerEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrestubWorkerEnd_V1();}
+
+inline ULONG FireEtwPrestubWorkerEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGetInstallationStart();
-extern "C" ULONG   FireEtwGetInstallationStart(
-);
-extern "C" BOOL  EventEnabledGetInstallationStart_V1();
-extern "C" ULONG   FireEtwGetInstallationStart_V1(
+)
+{
+                  if (!EventEnabledPrestubWorkerEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrestubWorkerEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledGetInstallationStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGetInstallationStart();}
+
+inline ULONG FireEtwGetInstallationStart(
+)
+{
+                  if (!EventEnabledGetInstallationStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGetInstallationStart();
+}
+
+inline BOOL EventEnabledGetInstallationStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGetInstallationStart_V1();}
+
+inline ULONG FireEtwGetInstallationStart_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGetInstallationEnd();
-extern "C" ULONG   FireEtwGetInstallationEnd(
-);
-extern "C" BOOL  EventEnabledGetInstallationEnd_V1();
-extern "C" ULONG   FireEtwGetInstallationEnd_V1(
+)
+{
+                  if (!EventEnabledGetInstallationStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGetInstallationStart_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledGetInstallationEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGetInstallationEnd();}
+
+inline ULONG FireEtwGetInstallationEnd(
+)
+{
+                  if (!EventEnabledGetInstallationEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGetInstallationEnd();
+}
+
+inline BOOL EventEnabledGetInstallationEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGetInstallationEnd_V1();}
+
+inline ULONG FireEtwGetInstallationEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledOpenHModule();
-extern "C" ULONG   FireEtwOpenHModule(
-);
-extern "C" BOOL  EventEnabledOpenHModule_V1();
-extern "C" ULONG   FireEtwOpenHModule_V1(
+)
+{
+                  if (!EventEnabledGetInstallationEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGetInstallationEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledOpenHModule() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledOpenHModule();}
+
+inline ULONG FireEtwOpenHModule(
+)
+{
+                  if (!EventEnabledOpenHModule()) {return ERROR_SUCCESS;}
+                  return FireEtXplatOpenHModule();
+}
+
+inline BOOL EventEnabledOpenHModule_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledOpenHModule_V1();}
+
+inline ULONG FireEtwOpenHModule_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledOpenHModuleEnd();
-extern "C" ULONG   FireEtwOpenHModuleEnd(
-);
-extern "C" BOOL  EventEnabledOpenHModuleEnd_V1();
-extern "C" ULONG   FireEtwOpenHModuleEnd_V1(
+)
+{
+                  if (!EventEnabledOpenHModule_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatOpenHModule_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledOpenHModuleEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledOpenHModuleEnd();}
+
+inline ULONG FireEtwOpenHModuleEnd(
+)
+{
+                  if (!EventEnabledOpenHModuleEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatOpenHModuleEnd();
+}
+
+inline BOOL EventEnabledOpenHModuleEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledOpenHModuleEnd_V1();}
+
+inline ULONG FireEtwOpenHModuleEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledExplicitBindStart();
-extern "C" ULONG   FireEtwExplicitBindStart(
-);
-extern "C" BOOL  EventEnabledExplicitBindStart_V1();
-extern "C" ULONG   FireEtwExplicitBindStart_V1(
+)
+{
+                  if (!EventEnabledOpenHModuleEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatOpenHModuleEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledExplicitBindStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExplicitBindStart();}
+
+inline ULONG FireEtwExplicitBindStart(
+)
+{
+                  if (!EventEnabledExplicitBindStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExplicitBindStart();
+}
+
+inline BOOL EventEnabledExplicitBindStart_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExplicitBindStart_V1();}
+
+inline ULONG FireEtwExplicitBindStart_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledExplicitBindEnd();
-extern "C" ULONG   FireEtwExplicitBindEnd(
-);
-extern "C" BOOL  EventEnabledExplicitBindEnd_V1();
-extern "C" ULONG   FireEtwExplicitBindEnd_V1(
+)
+{
+                  if (!EventEnabledExplicitBindStart_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExplicitBindStart_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledExplicitBindEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExplicitBindEnd();}
+
+inline ULONG FireEtwExplicitBindEnd(
+)
+{
+                  if (!EventEnabledExplicitBindEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExplicitBindEnd();
+}
+
+inline BOOL EventEnabledExplicitBindEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledExplicitBindEnd_V1();}
+
+inline ULONG FireEtwExplicitBindEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledParseXml();
-extern "C" ULONG   FireEtwParseXml(
-);
-extern "C" BOOL  EventEnabledParseXml_V1();
-extern "C" ULONG   FireEtwParseXml_V1(
+)
+{
+                  if (!EventEnabledExplicitBindEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatExplicitBindEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledParseXml() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledParseXml();}
+
+inline ULONG FireEtwParseXml(
+)
+{
+                  if (!EventEnabledParseXml()) {return ERROR_SUCCESS;}
+                  return FireEtXplatParseXml();
+}
+
+inline BOOL EventEnabledParseXml_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledParseXml_V1();}
+
+inline ULONG FireEtwParseXml_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledParseXmlEnd();
-extern "C" ULONG   FireEtwParseXmlEnd(
-);
-extern "C" BOOL  EventEnabledParseXmlEnd_V1();
-extern "C" ULONG   FireEtwParseXmlEnd_V1(
+)
+{
+                  if (!EventEnabledParseXml_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatParseXml_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledParseXmlEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledParseXmlEnd();}
+
+inline ULONG FireEtwParseXmlEnd(
+)
+{
+                  if (!EventEnabledParseXmlEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatParseXmlEnd();
+}
+
+inline BOOL EventEnabledParseXmlEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledParseXmlEnd_V1();}
+
+inline ULONG FireEtwParseXmlEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledInitDefaultDomain();
-extern "C" ULONG   FireEtwInitDefaultDomain(
-);
-extern "C" BOOL  EventEnabledInitDefaultDomain_V1();
-extern "C" ULONG   FireEtwInitDefaultDomain_V1(
+)
+{
+                  if (!EventEnabledParseXmlEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatParseXmlEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledInitDefaultDomain() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledInitDefaultDomain();}
+
+inline ULONG FireEtwInitDefaultDomain(
+)
+{
+                  if (!EventEnabledInitDefaultDomain()) {return ERROR_SUCCESS;}
+                  return FireEtXplatInitDefaultDomain();
+}
+
+inline BOOL EventEnabledInitDefaultDomain_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledInitDefaultDomain_V1();}
+
+inline ULONG FireEtwInitDefaultDomain_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledInitDefaultDomainEnd();
-extern "C" ULONG   FireEtwInitDefaultDomainEnd(
-);
-extern "C" BOOL  EventEnabledInitDefaultDomainEnd_V1();
-extern "C" ULONG   FireEtwInitDefaultDomainEnd_V1(
+)
+{
+                  if (!EventEnabledInitDefaultDomain_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatInitDefaultDomain_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledInitDefaultDomainEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledInitDefaultDomainEnd();}
+
+inline ULONG FireEtwInitDefaultDomainEnd(
+)
+{
+                  if (!EventEnabledInitDefaultDomainEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatInitDefaultDomainEnd();
+}
+
+inline BOOL EventEnabledInitDefaultDomainEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledInitDefaultDomainEnd_V1();}
+
+inline ULONG FireEtwInitDefaultDomainEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledInitSecurity();
-extern "C" ULONG   FireEtwInitSecurity(
-);
-extern "C" BOOL  EventEnabledInitSecurity_V1();
-extern "C" ULONG   FireEtwInitSecurity_V1(
+)
+{
+                  if (!EventEnabledInitDefaultDomainEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatInitDefaultDomainEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledInitSecurity() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledInitSecurity();}
+
+inline ULONG FireEtwInitSecurity(
+)
+{
+                  if (!EventEnabledInitSecurity()) {return ERROR_SUCCESS;}
+                  return FireEtXplatInitSecurity();
+}
+
+inline BOOL EventEnabledInitSecurity_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledInitSecurity_V1();}
+
+inline ULONG FireEtwInitSecurity_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledInitSecurityEnd();
-extern "C" ULONG   FireEtwInitSecurityEnd(
-);
-extern "C" BOOL  EventEnabledInitSecurityEnd_V1();
-extern "C" ULONG   FireEtwInitSecurityEnd_V1(
+)
+{
+                  if (!EventEnabledInitSecurity_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatInitSecurity_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledInitSecurityEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledInitSecurityEnd();}
+
+inline ULONG FireEtwInitSecurityEnd(
+)
+{
+                  if (!EventEnabledInitSecurityEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatInitSecurityEnd();
+}
+
+inline BOOL EventEnabledInitSecurityEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledInitSecurityEnd_V1();}
+
+inline ULONG FireEtwInitSecurityEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAllowBindingRedirs();
-extern "C" ULONG   FireEtwAllowBindingRedirs(
-);
-extern "C" BOOL  EventEnabledAllowBindingRedirs_V1();
-extern "C" ULONG   FireEtwAllowBindingRedirs_V1(
+)
+{
+                  if (!EventEnabledInitSecurityEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatInitSecurityEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledAllowBindingRedirs() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAllowBindingRedirs();}
+
+inline ULONG FireEtwAllowBindingRedirs(
+)
+{
+                  if (!EventEnabledAllowBindingRedirs()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAllowBindingRedirs();
+}
+
+inline BOOL EventEnabledAllowBindingRedirs_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAllowBindingRedirs_V1();}
+
+inline ULONG FireEtwAllowBindingRedirs_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAllowBindingRedirsEnd();
-extern "C" ULONG   FireEtwAllowBindingRedirsEnd(
-);
-extern "C" BOOL  EventEnabledAllowBindingRedirsEnd_V1();
-extern "C" ULONG   FireEtwAllowBindingRedirsEnd_V1(
+)
+{
+                  if (!EventEnabledAllowBindingRedirs_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAllowBindingRedirs_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledAllowBindingRedirsEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAllowBindingRedirsEnd();}
+
+inline ULONG FireEtwAllowBindingRedirsEnd(
+)
+{
+                  if (!EventEnabledAllowBindingRedirsEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAllowBindingRedirsEnd();
+}
+
+inline BOOL EventEnabledAllowBindingRedirsEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAllowBindingRedirsEnd_V1();}
+
+inline ULONG FireEtwAllowBindingRedirsEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledEEConfigSync();
-extern "C" ULONG   FireEtwEEConfigSync(
-);
-extern "C" BOOL  EventEnabledEEConfigSync_V1();
-extern "C" ULONG   FireEtwEEConfigSync_V1(
+)
+{
+                  if (!EventEnabledAllowBindingRedirsEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAllowBindingRedirsEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledEEConfigSync() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEConfigSync();}
+
+inline ULONG FireEtwEEConfigSync(
+)
+{
+                  if (!EventEnabledEEConfigSync()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEConfigSync();
+}
+
+inline BOOL EventEnabledEEConfigSync_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEConfigSync_V1();}
+
+inline ULONG FireEtwEEConfigSync_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledEEConfigSyncEnd();
-extern "C" ULONG   FireEtwEEConfigSyncEnd(
-);
-extern "C" BOOL  EventEnabledEEConfigSyncEnd_V1();
-extern "C" ULONG   FireEtwEEConfigSyncEnd_V1(
+)
+{
+                  if (!EventEnabledEEConfigSync_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEConfigSync_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledEEConfigSyncEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEConfigSyncEnd();}
+
+inline ULONG FireEtwEEConfigSyncEnd(
+)
+{
+                  if (!EventEnabledEEConfigSyncEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEConfigSyncEnd();
+}
+
+inline BOOL EventEnabledEEConfigSyncEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEEConfigSyncEnd_V1();}
+
+inline ULONG FireEtwEEConfigSyncEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFusionBinding();
-extern "C" ULONG   FireEtwFusionBinding(
-);
-extern "C" BOOL  EventEnabledFusionBinding_V1();
-extern "C" ULONG   FireEtwFusionBinding_V1(
+)
+{
+                  if (!EventEnabledEEConfigSyncEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEEConfigSyncEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledFusionBinding() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionBinding();}
+
+inline ULONG FireEtwFusionBinding(
+)
+{
+                  if (!EventEnabledFusionBinding()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionBinding();
+}
+
+inline BOOL EventEnabledFusionBinding_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionBinding_V1();}
+
+inline ULONG FireEtwFusionBinding_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFusionBindingEnd();
-extern "C" ULONG   FireEtwFusionBindingEnd(
-);
-extern "C" BOOL  EventEnabledFusionBindingEnd_V1();
-extern "C" ULONG   FireEtwFusionBindingEnd_V1(
+)
+{
+                  if (!EventEnabledFusionBinding_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionBinding_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledFusionBindingEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionBindingEnd();}
+
+inline ULONG FireEtwFusionBindingEnd(
+)
+{
+                  if (!EventEnabledFusionBindingEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionBindingEnd();
+}
+
+inline BOOL EventEnabledFusionBindingEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionBindingEnd_V1();}
+
+inline ULONG FireEtwFusionBindingEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLoaderCatchCall();
-extern "C" ULONG   FireEtwLoaderCatchCall(
-);
-extern "C" BOOL  EventEnabledLoaderCatchCall_V1();
-extern "C" ULONG   FireEtwLoaderCatchCall_V1(
+)
+{
+                  if (!EventEnabledFusionBindingEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionBindingEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledLoaderCatchCall() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderCatchCall();}
+
+inline ULONG FireEtwLoaderCatchCall(
+)
+{
+                  if (!EventEnabledLoaderCatchCall()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderCatchCall();
+}
+
+inline BOOL EventEnabledLoaderCatchCall_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderCatchCall_V1();}
+
+inline ULONG FireEtwLoaderCatchCall_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLoaderCatchCallEnd();
-extern "C" ULONG   FireEtwLoaderCatchCallEnd(
-);
-extern "C" BOOL  EventEnabledLoaderCatchCallEnd_V1();
-extern "C" ULONG   FireEtwLoaderCatchCallEnd_V1(
+)
+{
+                  if (!EventEnabledLoaderCatchCall_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderCatchCall_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledLoaderCatchCallEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderCatchCallEnd();}
+
+inline ULONG FireEtwLoaderCatchCallEnd(
+)
+{
+                  if (!EventEnabledLoaderCatchCallEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderCatchCallEnd();
+}
+
+inline BOOL EventEnabledLoaderCatchCallEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderCatchCallEnd_V1();}
+
+inline ULONG FireEtwLoaderCatchCallEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFusionInit();
-extern "C" ULONG   FireEtwFusionInit(
-);
-extern "C" BOOL  EventEnabledFusionInit_V1();
-extern "C" ULONG   FireEtwFusionInit_V1(
+)
+{
+                  if (!EventEnabledLoaderCatchCallEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderCatchCallEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledFusionInit() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionInit();}
+
+inline ULONG FireEtwFusionInit(
+)
+{
+                  if (!EventEnabledFusionInit()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionInit();
+}
+
+inline BOOL EventEnabledFusionInit_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionInit_V1();}
+
+inline ULONG FireEtwFusionInit_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFusionInitEnd();
-extern "C" ULONG   FireEtwFusionInitEnd(
-);
-extern "C" BOOL  EventEnabledFusionInitEnd_V1();
-extern "C" ULONG   FireEtwFusionInitEnd_V1(
+)
+{
+                  if (!EventEnabledFusionInit_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionInit_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledFusionInitEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionInitEnd();}
+
+inline ULONG FireEtwFusionInitEnd(
+)
+{
+                  if (!EventEnabledFusionInitEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionInitEnd();
+}
+
+inline BOOL EventEnabledFusionInitEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionInitEnd_V1();}
+
+inline ULONG FireEtwFusionInitEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFusionAppCtx();
-extern "C" ULONG   FireEtwFusionAppCtx(
-);
-extern "C" BOOL  EventEnabledFusionAppCtx_V1();
-extern "C" ULONG   FireEtwFusionAppCtx_V1(
+)
+{
+                  if (!EventEnabledFusionInitEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionInitEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledFusionAppCtx() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionAppCtx();}
+
+inline ULONG FireEtwFusionAppCtx(
+)
+{
+                  if (!EventEnabledFusionAppCtx()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionAppCtx();
+}
+
+inline BOOL EventEnabledFusionAppCtx_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionAppCtx_V1();}
+
+inline ULONG FireEtwFusionAppCtx_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFusionAppCtxEnd();
-extern "C" ULONG   FireEtwFusionAppCtxEnd(
-);
-extern "C" BOOL  EventEnabledFusionAppCtxEnd_V1();
-extern "C" ULONG   FireEtwFusionAppCtxEnd_V1(
+)
+{
+                  if (!EventEnabledFusionAppCtx_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionAppCtx_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledFusionAppCtxEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionAppCtxEnd();}
+
+inline ULONG FireEtwFusionAppCtxEnd(
+)
+{
+                  if (!EventEnabledFusionAppCtxEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionAppCtxEnd();
+}
+
+inline BOOL EventEnabledFusionAppCtxEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionAppCtxEnd_V1();}
+
+inline ULONG FireEtwFusionAppCtxEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFusion2EE();
-extern "C" ULONG   FireEtwFusion2EE(
-);
-extern "C" BOOL  EventEnabledFusion2EE_V1();
-extern "C" ULONG   FireEtwFusion2EE_V1(
+)
+{
+                  if (!EventEnabledFusionAppCtxEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionAppCtxEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledFusion2EE() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusion2EE();}
+
+inline ULONG FireEtwFusion2EE(
+)
+{
+                  if (!EventEnabledFusion2EE()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusion2EE();
+}
+
+inline BOOL EventEnabledFusion2EE_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusion2EE_V1();}
+
+inline ULONG FireEtwFusion2EE_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFusion2EEEnd();
-extern "C" ULONG   FireEtwFusion2EEEnd(
-);
-extern "C" BOOL  EventEnabledFusion2EEEnd_V1();
-extern "C" ULONG   FireEtwFusion2EEEnd_V1(
+)
+{
+                  if (!EventEnabledFusion2EE_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusion2EE_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledFusion2EEEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusion2EEEnd();}
+
+inline ULONG FireEtwFusion2EEEnd(
+)
+{
+                  if (!EventEnabledFusion2EEEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusion2EEEnd();
+}
+
+inline BOOL EventEnabledFusion2EEEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusion2EEEnd_V1();}
+
+inline ULONG FireEtwFusion2EEEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledSecurityCatchCall();
-extern "C" ULONG   FireEtwSecurityCatchCall(
-);
-extern "C" BOOL  EventEnabledSecurityCatchCall_V1();
-extern "C" ULONG   FireEtwSecurityCatchCall_V1(
+)
+{
+                  if (!EventEnabledFusion2EEEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusion2EEEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledSecurityCatchCall() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledSecurityCatchCall();}
+
+inline ULONG FireEtwSecurityCatchCall(
+)
+{
+                  if (!EventEnabledSecurityCatchCall()) {return ERROR_SUCCESS;}
+                  return FireEtXplatSecurityCatchCall();
+}
+
+inline BOOL EventEnabledSecurityCatchCall_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledSecurityCatchCall_V1();}
+
+inline ULONG FireEtwSecurityCatchCall_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledSecurityCatchCallEnd();
-extern "C" ULONG   FireEtwSecurityCatchCallEnd(
-);
-extern "C" BOOL  EventEnabledSecurityCatchCallEnd_V1();
-extern "C" ULONG   FireEtwSecurityCatchCallEnd_V1(
+)
+{
+                  if (!EventEnabledSecurityCatchCall_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatSecurityCatchCall_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledSecurityCatchCallEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledSecurityCatchCallEnd();}
+
+inline ULONG FireEtwSecurityCatchCallEnd(
+)
+{
+                  if (!EventEnabledSecurityCatchCallEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatSecurityCatchCallEnd();
+}
+
+inline BOOL EventEnabledSecurityCatchCallEnd_V1() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledSecurityCatchCallEnd_V1();}
+
+inline ULONG FireEtwSecurityCatchCallEnd_V1(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledCLRStackWalkPrivate();
-extern "C" ULONG   FireEtwCLRStackWalkPrivate(
+)
+{
+                  if (!EventEnabledSecurityCatchCallEnd_V1()) {return ERROR_SUCCESS;}
+                  return FireEtXplatSecurityCatchCallEnd_V1(ClrInstanceID);
+}
+
+inline BOOL EventEnabledCLRStackWalkPrivate() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledCLRStackWalkPrivate();}
+
+inline ULONG FireEtwCLRStackWalkPrivate(
                   const unsigned short  ClrInstanceID,
                   const unsigned char  Reserved1,
                   const unsigned char  Reserved2,
                   const unsigned int  FrameCount,
                   const void** Stack
-);
-extern "C" BOOL  EventEnabledModuleRangeLoadPrivate();
-extern "C" ULONG   FireEtwModuleRangeLoadPrivate(
+)
+{
+                  if (!EventEnabledCLRStackWalkPrivate()) {return ERROR_SUCCESS;}
+                  return FireEtXplatCLRStackWalkPrivate(ClrInstanceID,Reserved1,Reserved2,FrameCount,Stack);
+}
+
+inline BOOL EventEnabledModuleRangeLoadPrivate() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleRangeLoadPrivate();}
+
+inline ULONG FireEtwModuleRangeLoadPrivate(
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ModuleID,
                   const unsigned int  RangeBegin,
@@ -2185,9 +4227,15 @@ extern "C" ULONG   FireEtwModuleRangeLoadPrivate(
                   const unsigned char  RangeType,
                   const unsigned char  IBCType,
                   const unsigned short  SectionType
-);
-extern "C" BOOL  EventEnabledBindingPolicyPhaseStart();
-extern "C" ULONG   FireEtwBindingPolicyPhaseStart(
+)
+{
+                  if (!EventEnabledModuleRangeLoadPrivate()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleRangeLoadPrivate(ClrInstanceID,ModuleID,RangeBegin,RangeSize,RangeType,IBCType,SectionType);
+}
+
+inline BOOL EventEnabledBindingPolicyPhaseStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBindingPolicyPhaseStart();}
+
+inline ULONG FireEtwBindingPolicyPhaseStart(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2195,9 +4243,15 @@ extern "C" ULONG   FireEtwBindingPolicyPhaseStart(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBindingPolicyPhaseEnd();
-extern "C" ULONG   FireEtwBindingPolicyPhaseEnd(
+)
+{
+                  if (!EventEnabledBindingPolicyPhaseStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBindingPolicyPhaseStart(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBindingPolicyPhaseEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBindingPolicyPhaseEnd();}
+
+inline ULONG FireEtwBindingPolicyPhaseEnd(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2205,9 +4259,15 @@ extern "C" ULONG   FireEtwBindingPolicyPhaseEnd(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBindingNgenPhaseStart();
-extern "C" ULONG   FireEtwBindingNgenPhaseStart(
+)
+{
+                  if (!EventEnabledBindingPolicyPhaseEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBindingPolicyPhaseEnd(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBindingNgenPhaseStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBindingNgenPhaseStart();}
+
+inline ULONG FireEtwBindingNgenPhaseStart(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2215,9 +4275,15 @@ extern "C" ULONG   FireEtwBindingNgenPhaseStart(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBindingNgenPhaseEnd();
-extern "C" ULONG   FireEtwBindingNgenPhaseEnd(
+)
+{
+                  if (!EventEnabledBindingNgenPhaseStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBindingNgenPhaseStart(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBindingNgenPhaseEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBindingNgenPhaseEnd();}
+
+inline ULONG FireEtwBindingNgenPhaseEnd(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2225,9 +4291,15 @@ extern "C" ULONG   FireEtwBindingNgenPhaseEnd(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBindingLookupAndProbingPhaseStart();
-extern "C" ULONG   FireEtwBindingLookupAndProbingPhaseStart(
+)
+{
+                  if (!EventEnabledBindingNgenPhaseEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBindingNgenPhaseEnd(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBindingLookupAndProbingPhaseStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBindingLookupAndProbingPhaseStart();}
+
+inline ULONG FireEtwBindingLookupAndProbingPhaseStart(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2235,9 +4307,15 @@ extern "C" ULONG   FireEtwBindingLookupAndProbingPhaseStart(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBindingLookupAndProbingPhaseEnd();
-extern "C" ULONG   FireEtwBindingLookupAndProbingPhaseEnd(
+)
+{
+                  if (!EventEnabledBindingLookupAndProbingPhaseStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBindingLookupAndProbingPhaseStart(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBindingLookupAndProbingPhaseEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBindingLookupAndProbingPhaseEnd();}
+
+inline ULONG FireEtwBindingLookupAndProbingPhaseEnd(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2245,9 +4323,15 @@ extern "C" ULONG   FireEtwBindingLookupAndProbingPhaseEnd(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLoaderPhaseStart();
-extern "C" ULONG   FireEtwLoaderPhaseStart(
+)
+{
+                  if (!EventEnabledBindingLookupAndProbingPhaseEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBindingLookupAndProbingPhaseEnd(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledLoaderPhaseStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderPhaseStart();}
+
+inline ULONG FireEtwLoaderPhaseStart(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2255,9 +4339,15 @@ extern "C" ULONG   FireEtwLoaderPhaseStart(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLoaderPhaseEnd();
-extern "C" ULONG   FireEtwLoaderPhaseEnd(
+)
+{
+                  if (!EventEnabledLoaderPhaseStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderPhaseStart(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledLoaderPhaseEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderPhaseEnd();}
+
+inline ULONG FireEtwLoaderPhaseEnd(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2265,9 +4355,15 @@ extern "C" ULONG   FireEtwLoaderPhaseEnd(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBindingPhaseStart();
-extern "C" ULONG   FireEtwBindingPhaseStart(
+)
+{
+                  if (!EventEnabledLoaderPhaseEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderPhaseEnd(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBindingPhaseStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBindingPhaseStart();}
+
+inline ULONG FireEtwBindingPhaseStart(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2275,9 +4371,15 @@ extern "C" ULONG   FireEtwBindingPhaseStart(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBindingPhaseEnd();
-extern "C" ULONG   FireEtwBindingPhaseEnd(
+)
+{
+                  if (!EventEnabledBindingPhaseStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBindingPhaseStart(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBindingPhaseEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBindingPhaseEnd();}
+
+inline ULONG FireEtwBindingPhaseEnd(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2285,9 +4387,15 @@ extern "C" ULONG   FireEtwBindingPhaseEnd(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBindingDownloadPhaseStart();
-extern "C" ULONG   FireEtwBindingDownloadPhaseStart(
+)
+{
+                  if (!EventEnabledBindingPhaseEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBindingPhaseEnd(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBindingDownloadPhaseStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBindingDownloadPhaseStart();}
+
+inline ULONG FireEtwBindingDownloadPhaseStart(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2295,9 +4403,15 @@ extern "C" ULONG   FireEtwBindingDownloadPhaseStart(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBindingDownloadPhaseEnd();
-extern "C" ULONG   FireEtwBindingDownloadPhaseEnd(
+)
+{
+                  if (!EventEnabledBindingDownloadPhaseStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBindingDownloadPhaseStart(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBindingDownloadPhaseEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBindingDownloadPhaseEnd();}
+
+inline ULONG FireEtwBindingDownloadPhaseEnd(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2305,9 +4419,15 @@ extern "C" ULONG   FireEtwBindingDownloadPhaseEnd(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLoaderAssemblyInitPhaseStart();
-extern "C" ULONG   FireEtwLoaderAssemblyInitPhaseStart(
+)
+{
+                  if (!EventEnabledBindingDownloadPhaseEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBindingDownloadPhaseEnd(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledLoaderAssemblyInitPhaseStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderAssemblyInitPhaseStart();}
+
+inline ULONG FireEtwLoaderAssemblyInitPhaseStart(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2315,9 +4435,15 @@ extern "C" ULONG   FireEtwLoaderAssemblyInitPhaseStart(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLoaderAssemblyInitPhaseEnd();
-extern "C" ULONG   FireEtwLoaderAssemblyInitPhaseEnd(
+)
+{
+                  if (!EventEnabledLoaderAssemblyInitPhaseStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderAssemblyInitPhaseStart(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledLoaderAssemblyInitPhaseEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderAssemblyInitPhaseEnd();}
+
+inline ULONG FireEtwLoaderAssemblyInitPhaseEnd(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2325,9 +4451,15 @@ extern "C" ULONG   FireEtwLoaderAssemblyInitPhaseEnd(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLoaderMappingPhaseStart();
-extern "C" ULONG   FireEtwLoaderMappingPhaseStart(
+)
+{
+                  if (!EventEnabledLoaderAssemblyInitPhaseEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderAssemblyInitPhaseEnd(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledLoaderMappingPhaseStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderMappingPhaseStart();}
+
+inline ULONG FireEtwLoaderMappingPhaseStart(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2335,9 +4467,15 @@ extern "C" ULONG   FireEtwLoaderMappingPhaseStart(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLoaderMappingPhaseEnd();
-extern "C" ULONG   FireEtwLoaderMappingPhaseEnd(
+)
+{
+                  if (!EventEnabledLoaderMappingPhaseStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderMappingPhaseStart(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledLoaderMappingPhaseEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderMappingPhaseEnd();}
+
+inline ULONG FireEtwLoaderMappingPhaseEnd(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2345,9 +4483,15 @@ extern "C" ULONG   FireEtwLoaderMappingPhaseEnd(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLoaderDeliverEventsPhaseStart();
-extern "C" ULONG   FireEtwLoaderDeliverEventsPhaseStart(
+)
+{
+                  if (!EventEnabledLoaderMappingPhaseEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderMappingPhaseEnd(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledLoaderDeliverEventsPhaseStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderDeliverEventsPhaseStart();}
+
+inline ULONG FireEtwLoaderDeliverEventsPhaseStart(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2355,9 +4499,15 @@ extern "C" ULONG   FireEtwLoaderDeliverEventsPhaseStart(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledLoaderDeliverEventsPhaseEnd();
-extern "C" ULONG   FireEtwLoaderDeliverEventsPhaseEnd(
+)
+{
+                  if (!EventEnabledLoaderDeliverEventsPhaseStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderDeliverEventsPhaseStart(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledLoaderDeliverEventsPhaseEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledLoaderDeliverEventsPhaseEnd();}
+
+inline ULONG FireEtwLoaderDeliverEventsPhaseEnd(
                   const unsigned int  AppDomainID,
                   const unsigned int  LoadContextID,
                   const unsigned int  FromLoaderCache,
@@ -2365,22 +4515,40 @@ extern "C" ULONG   FireEtwLoaderDeliverEventsPhaseEnd(
                   PCWSTR  AssemblyCodebase,
                   PCWSTR  AssemblyName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledEvidenceGenerated();
-extern "C" ULONG   FireEtwEvidenceGenerated(
+)
+{
+                  if (!EventEnabledLoaderDeliverEventsPhaseEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatLoaderDeliverEventsPhaseEnd(AppDomainID,LoadContextID,FromLoaderCache,DynamicLoad,AssemblyCodebase,AssemblyName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledEvidenceGenerated() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEvidenceGenerated();}
+
+inline ULONG FireEtwEvidenceGenerated(
                   const unsigned int  Type,
                   const unsigned int  AppDomain,
                   PCWSTR  ILImage,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleTransparencyComputationStart();
-extern "C" ULONG   FireEtwModuleTransparencyComputationStart(
+)
+{
+                  if (!EventEnabledEvidenceGenerated()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEvidenceGenerated(Type,AppDomain,ILImage,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleTransparencyComputationStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleTransparencyComputationStart();}
+
+inline ULONG FireEtwModuleTransparencyComputationStart(
                   PCWSTR  Module,
                   const unsigned int  AppDomainID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledModuleTransparencyComputationEnd();
-extern "C" ULONG   FireEtwModuleTransparencyComputationEnd(
+)
+{
+                  if (!EventEnabledModuleTransparencyComputationStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleTransparencyComputationStart(Module,AppDomainID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledModuleTransparencyComputationEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledModuleTransparencyComputationEnd();}
+
+inline ULONG FireEtwModuleTransparencyComputationEnd(
                   PCWSTR  Module,
                   const unsigned int  AppDomainID,
                   const BOOL  IsAllCritical,
@@ -2389,16 +4557,28 @@ extern "C" ULONG   FireEtwModuleTransparencyComputationEnd(
                   const BOOL  IsOpportunisticallyCritical,
                   const unsigned int  SecurityRuleSet,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledTypeTransparencyComputationStart();
-extern "C" ULONG   FireEtwTypeTransparencyComputationStart(
+)
+{
+                  if (!EventEnabledModuleTransparencyComputationEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatModuleTransparencyComputationEnd(Module,AppDomainID,IsAllCritical,IsAllTransparent,IsTreatAsSafe,IsOpportunisticallyCritical,SecurityRuleSet,ClrInstanceID);
+}
+
+inline BOOL EventEnabledTypeTransparencyComputationStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledTypeTransparencyComputationStart();}
+
+inline ULONG FireEtwTypeTransparencyComputationStart(
                   PCWSTR  Type,
                   PCWSTR  Module,
                   const unsigned int  AppDomainID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledTypeTransparencyComputationEnd();
-extern "C" ULONG   FireEtwTypeTransparencyComputationEnd(
+)
+{
+                  if (!EventEnabledTypeTransparencyComputationStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatTypeTransparencyComputationStart(Type,Module,AppDomainID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledTypeTransparencyComputationEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledTypeTransparencyComputationEnd();}
+
+inline ULONG FireEtwTypeTransparencyComputationEnd(
                   PCWSTR  Type,
                   PCWSTR  Module,
                   const unsigned int  AppDomainID,
@@ -2407,79 +4587,139 @@ extern "C" ULONG   FireEtwTypeTransparencyComputationEnd(
                   const BOOL  IsCritical,
                   const BOOL  IsTreatAsSafe,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodTransparencyComputationStart();
-extern "C" ULONG   FireEtwMethodTransparencyComputationStart(
+)
+{
+                  if (!EventEnabledTypeTransparencyComputationEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatTypeTransparencyComputationEnd(Type,Module,AppDomainID,IsAllCritical,IsAllTransparent,IsCritical,IsTreatAsSafe,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodTransparencyComputationStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodTransparencyComputationStart();}
+
+inline ULONG FireEtwMethodTransparencyComputationStart(
                   PCWSTR  Method,
                   PCWSTR  Module,
                   const unsigned int  AppDomainID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMethodTransparencyComputationEnd();
-extern "C" ULONG   FireEtwMethodTransparencyComputationEnd(
+)
+{
+                  if (!EventEnabledMethodTransparencyComputationStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodTransparencyComputationStart(Method,Module,AppDomainID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMethodTransparencyComputationEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMethodTransparencyComputationEnd();}
+
+inline ULONG FireEtwMethodTransparencyComputationEnd(
                   PCWSTR  Method,
                   PCWSTR  Module,
                   const unsigned int  AppDomainID,
                   const BOOL  IsCritical,
                   const BOOL  IsTreatAsSafe,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFieldTransparencyComputationStart();
-extern "C" ULONG   FireEtwFieldTransparencyComputationStart(
+)
+{
+                  if (!EventEnabledMethodTransparencyComputationEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMethodTransparencyComputationEnd(Method,Module,AppDomainID,IsCritical,IsTreatAsSafe,ClrInstanceID);
+}
+
+inline BOOL EventEnabledFieldTransparencyComputationStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFieldTransparencyComputationStart();}
+
+inline ULONG FireEtwFieldTransparencyComputationStart(
                   PCWSTR  Field,
                   PCWSTR  Module,
                   const unsigned int  AppDomainID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFieldTransparencyComputationEnd();
-extern "C" ULONG   FireEtwFieldTransparencyComputationEnd(
+)
+{
+                  if (!EventEnabledFieldTransparencyComputationStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFieldTransparencyComputationStart(Field,Module,AppDomainID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledFieldTransparencyComputationEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFieldTransparencyComputationEnd();}
+
+inline ULONG FireEtwFieldTransparencyComputationEnd(
                   PCWSTR  Field,
                   PCWSTR  Module,
                   const unsigned int  AppDomainID,
                   const BOOL  IsCritical,
                   const BOOL  IsTreatAsSafe,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledTokenTransparencyComputationStart();
-extern "C" ULONG   FireEtwTokenTransparencyComputationStart(
+)
+{
+                  if (!EventEnabledFieldTransparencyComputationEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFieldTransparencyComputationEnd(Field,Module,AppDomainID,IsCritical,IsTreatAsSafe,ClrInstanceID);
+}
+
+inline BOOL EventEnabledTokenTransparencyComputationStart() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledTokenTransparencyComputationStart();}
+
+inline ULONG FireEtwTokenTransparencyComputationStart(
                   const unsigned int  Token,
                   PCWSTR  Module,
                   const unsigned int  AppDomainID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledTokenTransparencyComputationEnd();
-extern "C" ULONG   FireEtwTokenTransparencyComputationEnd(
+)
+{
+                  if (!EventEnabledTokenTransparencyComputationStart()) {return ERROR_SUCCESS;}
+                  return FireEtXplatTokenTransparencyComputationStart(Token,Module,AppDomainID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledTokenTransparencyComputationEnd() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledTokenTransparencyComputationEnd();}
+
+inline ULONG FireEtwTokenTransparencyComputationEnd(
                   const unsigned int  Token,
                   PCWSTR  Module,
                   const unsigned int  AppDomainID,
                   const BOOL  IsCritical,
                   const BOOL  IsTreatAsSafe,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledNgenBindEvent();
-extern "C" ULONG   FireEtwNgenBindEvent(
+)
+{
+                  if (!EventEnabledTokenTransparencyComputationEnd()) {return ERROR_SUCCESS;}
+                  return FireEtXplatTokenTransparencyComputationEnd(Token,Module,AppDomainID,IsCritical,IsTreatAsSafe,ClrInstanceID);
+}
+
+inline BOOL EventEnabledNgenBindEvent() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledNgenBindEvent();}
+
+inline ULONG FireEtwNgenBindEvent(
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  BindingID,
                   const unsigned int  ReasonCode,
                   PCWSTR  AssemblyName
-);
-extern "C" BOOL  EventEnabledFailFast();
-extern "C" ULONG   FireEtwFailFast(
+)
+{
+                  if (!EventEnabledNgenBindEvent()) {return ERROR_SUCCESS;}
+                  return FireEtXplatNgenBindEvent(ClrInstanceID,BindingID,ReasonCode,AssemblyName);
+}
+
+inline BOOL EventEnabledFailFast() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFailFast();}
+
+inline ULONG FireEtwFailFast(
                   PCWSTR  FailFastUserMessage,
                   const void*  FailedEIP,
                   const unsigned int  OSExitCode,
                   const unsigned int  ClrExitCode,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledPrvFinalizeObject();
-extern "C" ULONG   FireEtwPrvFinalizeObject(
+)
+{
+                  if (!EventEnabledFailFast()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFailFast(FailFastUserMessage,FailedEIP,OSExitCode,ClrExitCode,ClrInstanceID);
+}
+
+inline BOOL EventEnabledPrvFinalizeObject() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvFinalizeObject();}
+
+inline ULONG FireEtwPrvFinalizeObject(
                   const void*  TypeID,
                   const void*  ObjectID,
                   const unsigned short  ClrInstanceID,
                   PCWSTR  TypeName
-);
-extern "C" BOOL  EventEnabledCCWRefCountChange();
-extern "C" ULONG   FireEtwCCWRefCountChange(
+)
+{
+                  if (!EventEnabledPrvFinalizeObject()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvFinalizeObject(TypeID,ObjectID,ClrInstanceID,TypeName);
+}
+
+inline BOOL EventEnabledCCWRefCountChange() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledCCWRefCountChange();}
+
+inline ULONG FireEtwCCWRefCountChange(
                   const void*  HandleID,
                   const void*  ObjectID,
                   const void*  COMInterfacePointer,
@@ -2489,140 +4729,277 @@ extern "C" ULONG   FireEtwCCWRefCountChange(
                   LPCSTR  NameSpace,
                   PCWSTR  Operation,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledPrvSetGCHandle();
-extern "C" ULONG   FireEtwPrvSetGCHandle(
+)
+{
+                  if (!EventEnabledCCWRefCountChange()) {return ERROR_SUCCESS;}
+                  return FireEtXplatCCWRefCountChange(HandleID,ObjectID,COMInterfacePointer,NewRefCount,AppDomainID,ClassName,NameSpace,Operation,ClrInstanceID);
+}
+
+inline BOOL EventEnabledPrvSetGCHandle() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvSetGCHandle();}
+
+inline ULONG FireEtwPrvSetGCHandle(
                   const void*  HandleID,
                   const void*  ObjectID,
                   const unsigned int  Kind,
                   const unsigned int  Generation,
                   const unsigned __int64  AppDomainID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledPrvDestroyGCHandle();
-extern "C" ULONG   FireEtwPrvDestroyGCHandle(
+)
+{
+                  if (!EventEnabledPrvSetGCHandle()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvSetGCHandle(HandleID,ObjectID,Kind,Generation,AppDomainID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledPrvDestroyGCHandle() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPrvDestroyGCHandle();}
+
+inline ULONG FireEtwPrvDestroyGCHandle(
                   const void*  HandleID,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledFusionMessageEvent();
-extern "C" ULONG   FireEtwFusionMessageEvent(
+)
+{
+                  if (!EventEnabledPrvDestroyGCHandle()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPrvDestroyGCHandle(HandleID,ClrInstanceID);
+}
+
+inline BOOL EventEnabledFusionMessageEvent() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionMessageEvent();}
+
+inline ULONG FireEtwFusionMessageEvent(
                   const unsigned short  ClrInstanceID,
                   const BOOL  Prepend,
                   PCWSTR  Message
-);
-extern "C" BOOL  EventEnabledFusionErrorCodeEvent();
-extern "C" ULONG   FireEtwFusionErrorCodeEvent(
+)
+{
+                  if (!EventEnabledFusionMessageEvent()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionMessageEvent(ClrInstanceID,Prepend,Message);
+}
+
+inline BOOL EventEnabledFusionErrorCodeEvent() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledFusionErrorCodeEvent();}
+
+inline ULONG FireEtwFusionErrorCodeEvent(
                   const unsigned short  ClrInstanceID,
                   const unsigned int  Category,
                   const unsigned int  ErrorCode
-);
-extern "C" BOOL  EventEnabledPinPlugAtGCTime();
-extern "C" ULONG   FireEtwPinPlugAtGCTime(
+)
+{
+                  if (!EventEnabledFusionErrorCodeEvent()) {return ERROR_SUCCESS;}
+                  return FireEtXplatFusionErrorCodeEvent(ClrInstanceID,Category,ErrorCode);
+}
+
+inline BOOL EventEnabledPinPlugAtGCTime() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledPinPlugAtGCTime();}
+
+inline ULONG FireEtwPinPlugAtGCTime(
                   const void*  PlugStart,
                   const void*  PlugEnd,
                   const void*  GapBeforeSize,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledAllocRequest();
-extern "C" ULONG   FireEtwAllocRequest(
+)
+{
+                  if (!EventEnabledPinPlugAtGCTime()) {return ERROR_SUCCESS;}
+                  return FireEtXplatPinPlugAtGCTime(PlugStart,PlugEnd,GapBeforeSize,ClrInstanceID);
+}
+
+inline BOOL EventEnabledAllocRequest() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledAllocRequest();}
+
+inline ULONG FireEtwAllocRequest(
                   const void*  LoaderHeapPtr,
                   const void*  MemoryAddress,
                   const unsigned int  RequestSize,
                   const unsigned int  Unused1,
                   const unsigned __int64  Unused2,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledMulticoreJit();
-extern "C" ULONG   FireEtwMulticoreJit(
+)
+{
+                  if (!EventEnabledAllocRequest()) {return ERROR_SUCCESS;}
+                  return FireEtXplatAllocRequest(LoaderHeapPtr,MemoryAddress,RequestSize,Unused1,Unused2,ClrInstanceID);
+}
+
+inline BOOL EventEnabledMulticoreJit() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMulticoreJit();}
+
+inline ULONG FireEtwMulticoreJit(
                   const unsigned short  ClrInstanceID,
                   PCWSTR  String1,
                   PCWSTR  String2,
                   const signed int  Int1,
                   const signed int  Int2,
                   const signed int  Int3
-);
-extern "C" BOOL  EventEnabledMulticoreJitMethodCodeReturned();
-extern "C" ULONG   FireEtwMulticoreJitMethodCodeReturned(
+)
+{
+                  if (!EventEnabledMulticoreJit()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMulticoreJit(ClrInstanceID,String1,String2,Int1,Int2,Int3);
+}
+
+inline BOOL EventEnabledMulticoreJitMethodCodeReturned() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledMulticoreJitMethodCodeReturned();}
+
+inline ULONG FireEtwMulticoreJitMethodCodeReturned(
                   const unsigned short  ClrInstanceID,
                   const unsigned __int64  ModuleID,
                   const unsigned __int64  MethodID
-);
-extern "C" BOOL  EventEnabledIInspectableRuntimeClassName();
-extern "C" ULONG   FireEtwIInspectableRuntimeClassName(
+)
+{
+                  if (!EventEnabledMulticoreJitMethodCodeReturned()) {return ERROR_SUCCESS;}
+                  return FireEtXplatMulticoreJitMethodCodeReturned(ClrInstanceID,ModuleID,MethodID);
+}
+
+inline BOOL EventEnabledIInspectableRuntimeClassName() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledIInspectableRuntimeClassName();}
+
+inline ULONG FireEtwIInspectableRuntimeClassName(
                   PCWSTR  TypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledWinRTUnbox();
-extern "C" ULONG   FireEtwWinRTUnbox(
+)
+{
+                  if (!EventEnabledIInspectableRuntimeClassName()) {return ERROR_SUCCESS;}
+                  return FireEtXplatIInspectableRuntimeClassName(TypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledWinRTUnbox() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledWinRTUnbox();}
+
+inline ULONG FireEtwWinRTUnbox(
                   PCWSTR  TypeName,
                   PCWSTR  SecondTypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledCreateRCW();
-extern "C" ULONG   FireEtwCreateRCW(
+)
+{
+                  if (!EventEnabledWinRTUnbox()) {return ERROR_SUCCESS;}
+                  return FireEtXplatWinRTUnbox(TypeName,SecondTypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledCreateRCW() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledCreateRCW();}
+
+inline ULONG FireEtwCreateRCW(
                   PCWSTR  TypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledRCWVariance();
-extern "C" ULONG   FireEtwRCWVariance(
+)
+{
+                  if (!EventEnabledCreateRCW()) {return ERROR_SUCCESS;}
+                  return FireEtXplatCreateRCW(TypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledRCWVariance() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledRCWVariance();}
+
+inline ULONG FireEtwRCWVariance(
                   PCWSTR  TypeName,
                   PCWSTR  InterfaceTypeName,
                   PCWSTR  VariantInterfaceTypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledRCWIEnumerableCasting();
-extern "C" ULONG   FireEtwRCWIEnumerableCasting(
+)
+{
+                  if (!EventEnabledRCWVariance()) {return ERROR_SUCCESS;}
+                  return FireEtXplatRCWVariance(TypeName,InterfaceTypeName,VariantInterfaceTypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledRCWIEnumerableCasting() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledRCWIEnumerableCasting();}
+
+inline ULONG FireEtwRCWIEnumerableCasting(
                   PCWSTR  TypeName,
                   PCWSTR  SecondTypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledCreateCCW();
-extern "C" ULONG   FireEtwCreateCCW(
+)
+{
+                  if (!EventEnabledRCWIEnumerableCasting()) {return ERROR_SUCCESS;}
+                  return FireEtXplatRCWIEnumerableCasting(TypeName,SecondTypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledCreateCCW() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledCreateCCW();}
+
+inline ULONG FireEtwCreateCCW(
                   PCWSTR  TypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledCCWVariance();
-extern "C" ULONG   FireEtwCCWVariance(
+)
+{
+                  if (!EventEnabledCreateCCW()) {return ERROR_SUCCESS;}
+                  return FireEtXplatCreateCCW(TypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledCCWVariance() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledCCWVariance();}
+
+inline ULONG FireEtwCCWVariance(
                   PCWSTR  TypeName,
                   PCWSTR  InterfaceTypeName,
                   PCWSTR  VariantInterfaceTypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledObjectVariantMarshallingToNative();
-extern "C" ULONG   FireEtwObjectVariantMarshallingToNative(
+)
+{
+                  if (!EventEnabledCCWVariance()) {return ERROR_SUCCESS;}
+                  return FireEtXplatCCWVariance(TypeName,InterfaceTypeName,VariantInterfaceTypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledObjectVariantMarshallingToNative() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledObjectVariantMarshallingToNative();}
+
+inline ULONG FireEtwObjectVariantMarshallingToNative(
                   PCWSTR  TypeName,
                   const signed int  Int1,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGetTypeFromGUID();
-extern "C" ULONG   FireEtwGetTypeFromGUID(
+)
+{
+                  if (!EventEnabledObjectVariantMarshallingToNative()) {return ERROR_SUCCESS;}
+                  return FireEtXplatObjectVariantMarshallingToNative(TypeName,Int1,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGetTypeFromGUID() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGetTypeFromGUID();}
+
+inline ULONG FireEtwGetTypeFromGUID(
                   PCWSTR  TypeName,
                   PCWSTR  SecondTypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledGetTypeFromProgID();
-extern "C" ULONG   FireEtwGetTypeFromProgID(
+)
+{
+                  if (!EventEnabledGetTypeFromGUID()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGetTypeFromGUID(TypeName,SecondTypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledGetTypeFromProgID() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGetTypeFromProgID();}
+
+inline ULONG FireEtwGetTypeFromProgID(
                   PCWSTR  TypeName,
                   PCWSTR  SecondTypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledConvertToCallbackEtw();
-extern "C" ULONG   FireEtwConvertToCallbackEtw(
+)
+{
+                  if (!EventEnabledGetTypeFromProgID()) {return ERROR_SUCCESS;}
+                  return FireEtXplatGetTypeFromProgID(TypeName,SecondTypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledConvertToCallbackEtw() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledConvertToCallbackEtw();}
+
+inline ULONG FireEtwConvertToCallbackEtw(
                   PCWSTR  TypeName,
                   PCWSTR  SecondTypeName,
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledBeginCreateManagedReference();
-extern "C" ULONG   FireEtwBeginCreateManagedReference(
+)
+{
+                  if (!EventEnabledConvertToCallbackEtw()) {return ERROR_SUCCESS;}
+                  return FireEtXplatConvertToCallbackEtw(TypeName,SecondTypeName,ClrInstanceID);
+}
+
+inline BOOL EventEnabledBeginCreateManagedReference() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledBeginCreateManagedReference();}
+
+inline ULONG FireEtwBeginCreateManagedReference(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledEndCreateManagedReference();
-extern "C" ULONG   FireEtwEndCreateManagedReference(
+)
+{
+                  if (!EventEnabledBeginCreateManagedReference()) {return ERROR_SUCCESS;}
+                  return FireEtXplatBeginCreateManagedReference(ClrInstanceID);
+}
+
+inline BOOL EventEnabledEndCreateManagedReference() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledEndCreateManagedReference();}
+
+inline ULONG FireEtwEndCreateManagedReference(
                   const unsigned short  ClrInstanceID
-);
-extern "C" BOOL  EventEnabledObjectVariantMarshallingToManaged();
-extern "C" ULONG   FireEtwObjectVariantMarshallingToManaged(
+)
+{
+                  if (!EventEnabledEndCreateManagedReference()) {return ERROR_SUCCESS;}
+                  return FireEtXplatEndCreateManagedReference(ClrInstanceID);
+}
+
+inline BOOL EventEnabledObjectVariantMarshallingToManaged() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledObjectVariantMarshallingToManaged();}
+
+inline ULONG FireEtwObjectVariantMarshallingToManaged(
                   PCWSTR  TypeName,
                   const signed int  Int1,
                   const unsigned short  ClrInstanceID
-);
+)
+{
+                  if (!EventEnabledObjectVariantMarshallingToManaged()) {return ERROR_SUCCESS;}
+                  return FireEtXplatObjectVariantMarshallingToManaged(TypeName,Int1,ClrInstanceID);
+}
+
