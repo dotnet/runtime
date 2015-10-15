@@ -116,6 +116,7 @@ namespace System.Collections.Immutable
         /// <param name="value">The value to remove.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>A new list with the element removed, or this list if the element is not in this list.</returns>
         [Pure]

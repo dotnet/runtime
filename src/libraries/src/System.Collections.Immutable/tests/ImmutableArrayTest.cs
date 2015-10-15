@@ -837,6 +837,18 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void Remove_NullEqualityComparer()
+        {
+            var modified = s_manyElements.Remove(2, null);
+            Assert.Equal(new[] { 1, 3 }, modified);
+
+            // Try again through the explicit interface implementation.
+            IImmutableList<int> boxedCollection = s_manyElements;
+            var modified2 = boxedCollection.Remove(2, null);
+            Assert.Equal(new[] { 1, 3 }, modified2);
+        }
+
+        [Fact]
         public void Remove()
         {
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.Remove(5));
@@ -1316,11 +1328,11 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<ArgumentNullException>(() => ImmutableArray.BinarySearch(default(ImmutableArray<int>), value));
 
             Assert.Equal(
-                Array.BinarySearch(array, value), 
+                Array.BinarySearch(array, value),
                 ImmutableArray.BinarySearch(ImmutableArray.Create(array), value));
 
             Assert.Equal(
-                Array.BinarySearch(array, value, Comparer<int>.Default), 
+                Array.BinarySearch(array, value, Comparer<int>.Default),
                 ImmutableArray.BinarySearch(ImmutableArray.Create(array), value, Comparer<int>.Default));
 
             Assert.Equal(
