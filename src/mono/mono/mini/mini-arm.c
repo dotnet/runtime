@@ -1552,7 +1552,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		}
 	}
 
-	DEBUG(printf("params: %d\n", sig->param_count));
+	DEBUG(g_print("params: %d\n", sig->param_count));
 	for (i = pstart; i < sig->param_count; ++i) {
 		ArgInfo *ainfo = &cinfo->args [n];
 
@@ -1564,9 +1564,9 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			/* Emit the signature cookie just before the implicit arguments */
 			add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
 		}
-		DEBUG(printf("param %d: ", i));
+		DEBUG(g_print("param %d: ", i));
 		if (sig->params [i]->byref) {
-                        DEBUG(printf("byref\n"));
+                        DEBUG(g_print("byref\n"));
 			add_general (&gr, &stack_size, ainfo, TRUE);
 			n++;
 			continue;
@@ -1653,7 +1653,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				else
 					size = mini_type_stack_size_full (t, &align, FALSE);
 			}
-			DEBUG(printf ("load %d bytes struct\n", size));
+			DEBUG(g_print ("load %d bytes struct\n", size));
 			align_size = size;
 			nwords = 0;
 			align_size += (sizeof (gpointer) - 1);
@@ -1741,7 +1741,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	}
 
 	/* align stack size to 8 */
-	DEBUG (printf ("      stack size: %d (%d)\n", (stack_size + 15) & ~15, stack_size));
+	DEBUG (g_print ("      stack size: %d (%d)\n", (stack_size + 15) & ~15, stack_size));
 	stack_size = (stack_size + 7) & ~7;
 
 	cinfo->stack_usage = stack_size;
@@ -1964,7 +1964,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		ins->opcode = OP_REGOFFSET;
 		ins->inst_basereg = cfg->frame_reg;
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
-			printf ("vret_addr =");
+			g_print ("vret_addr =");
 			mono_print_ins (cfg->vret_addr);
 		}
 		offset += sizeof(gpointer);
@@ -2127,7 +2127,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			/* These arguments are saved to the stack in the prolog */
 			ins->inst_offset = offset;
 			if (cfg->verbose_level >= 2)
-				printf ("arg %d allocated to %s+0x%0x.\n", i, mono_arch_regname (ins->inst_basereg), (int)ins->inst_offset);
+				g_print ("arg %d allocated to %s+0x%0x.\n", i, mono_arch_regname (ins->inst_basereg), (int)ins->inst_offset);
 			// FIXME:
 			offset += 32;
 			break;
@@ -2196,7 +2196,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cinfo->ret.storage == RegTypeStructByAddr) {
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
-			printf ("vret_addr = ");
+			g_print ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
 		}
 	}
@@ -3279,7 +3279,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_DELETE_INS (bb, ins);
 					continue;
 				} else {
-					//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
+					//static int c = 0; g_print ("MATCHX %s %d\n", cfg->method->name,c++);
 					ins->opcode = OP_MOVE;
 					ins->sreg1 = last_ins->sreg1;
 				}
@@ -3320,7 +3320,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 						|| last_ins->opcode == OP_STORE_MEMBASE_IMM) &&
 				   ins->inst_basereg == last_ins->inst_destbasereg &&
 				   ins->inst_offset == last_ins->inst_offset) {
-				//static int c = 0; printf ("MATCHX %s %d\n", cfg->method->name,c++);
+				//static int c = 0; g_print ("MATCHX %s %d\n", cfg->method->name,c++);
 				ins->opcode = OP_ICONST;
 				ins->inst_c0 = last_ins->inst_imm;
 				g_assert_not_reached (); // check this rule
@@ -3883,7 +3883,7 @@ handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 			}
 		}
 
-		//printf ("THUNK: %p %p %p\n", code, target, target_thunk);
+		//g_print ("THUNK: %p %p %p\n", code, target, target_thunk);
 
 		if (!target_thunk) {
 			mono_mini_arch_unlock ();
