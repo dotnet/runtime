@@ -76,11 +76,21 @@ namespace System.Net
             streamSizes = new StreamSizes(Interop.libssl.SslSizes.HEADER_SIZE, Interop.libssl.SslSizes.TRAILER_SIZE, Interop.libssl.SslSizes.SSL3_RT_MAX_PLAIN_LENGTH);
         }
 
-        public static void QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
+        public static int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
         {
+            string protocolVersion;
             connectionInfo = null;
-            Interop.libssl.SSL_CIPHER cipher = Interop.OpenSsl.GetConnectionInfo(securityContext.SslContext);
-            connectionInfo =  new SslConnectionInfo(cipher);
+            try
+            {
+                Interop.libssl.SSL_CIPHER cipher = Interop.OpenSsl.GetConnectionInfo(securityContext.SslContext, out protocolVersion);
+                connectionInfo =  new SslConnectionInfo(cipher, protocolVersion);
+               
+                return 0;
+            }
+            catch
+            {
+                return -1;
+            }
         }
 
         private static long GetOptions(SslProtocols protocols)
