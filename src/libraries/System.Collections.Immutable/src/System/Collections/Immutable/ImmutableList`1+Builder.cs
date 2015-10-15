@@ -639,7 +639,10 @@ namespace System.Collections.Immutable
             /// <param name="count">
             /// The number of elements in the section to search.
             /// </param>
-            /// <param name="equalityComparer">The equality comparer to use in the search.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
             /// <returns>
             /// The zero-based index of the first occurrence of item within the range of
             /// elements in the ImmutableList&lt;T&gt; that starts at index and
@@ -648,8 +651,6 @@ namespace System.Collections.Immutable
             [Pure]
             public int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
             {
-                Requires.NotNull(equalityComparer, "equalityComparer");
-
                 return _root.IndexOf(item, index, count, equalityComparer);
             }
 
@@ -867,8 +868,9 @@ namespace System.Collections.Immutable
             /// the specified System.Comparison&lt;T&gt;.
             /// </summary>
             /// <param name="comparison">
-            /// The System.Comparison&lt;T&gt; to use when comparing elements.
+            /// The <see cref="Comparison{T}"/> to use when comparing elements.
             /// </param>
+            /// <exception cref="ArgumentNullException"><paramref name="comparison"/> is null.</exception>
             public void Sort(Comparison<T> comparison)
             {
                 Requires.NotNull(comparison, "comparison");
@@ -880,12 +882,11 @@ namespace System.Collections.Immutable
             /// the specified comparer.
             /// </summary>
             /// <param name="comparer">
-            /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
-            /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+            /// The <see cref="IComparer{T}"/> implementation to use when comparing
+            /// elements, or null to use <see cref="Comparer{T}.Default"/>.
             /// </param>
             public void Sort(IComparer<T> comparer)
             {
-                Requires.NotNull(comparer, "comparer");
                 this.Root = this.Root.Sort(comparer);
             }
 
@@ -900,15 +901,14 @@ namespace System.Collections.Immutable
             /// The length of the range to sort.
             /// </param>
             /// <param name="comparer">
-            /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
-            /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+            /// The <see cref="IComparer{T}"/> implementation to use when comparing
+            /// elements, or null to use <see cref="Comparer{T}.Default"/>.
             /// </param>
             public void Sort(int index, int count, IComparer<T> comparer)
             {
                 Requires.Range(index >= 0, "index");
                 Requires.Range(count >= 0, "count");
                 Requires.Range(index + count <= this.Count, "count");
-                Requires.NotNull(comparer, "comparer");
                 this.Root = this.Root.Sort(index, count, comparer);
             }
 

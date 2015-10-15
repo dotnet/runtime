@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
     public interface IImmutableList<T> : IReadOnlyList<T>
     {
         /// <summary>
-        /// Gets an empty list that retains the same sort or unordered semantics that this instance has.
+        /// Gets an empty list that retains the same sort semantics that this instance has.
         /// </summary>
         [Pure]
         IImmutableList<T> Clear();
@@ -42,6 +42,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
@@ -65,6 +66,7 @@ namespace System.Collections.Immutable
         /// <param name="count">The number of elements in the section to search.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of <paramref name="item"/> within the range of elements
@@ -114,6 +116,7 @@ namespace System.Collections.Immutable
         /// <param name="value">The value to remove.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>A new list with the element removed, or this list if the element is not in this list.</returns>
         [Pure]
@@ -139,6 +142,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to remove if matches are found in this list.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>
         /// A new list with the elements removed.
@@ -181,6 +185,7 @@ namespace System.Collections.Immutable
         /// <param name="newValue">The element to replace the old element with.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>The new list -- even if the value being replaced is equal to the new value for that position.</returns>
         /// <exception cref="ArgumentException">Thrown when the old value does not exist in the list.</exception>
