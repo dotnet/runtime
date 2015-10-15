@@ -1250,7 +1250,7 @@ public static unsafe class StringTests
     }
 
     [Fact]
-    public static void TestToLowerToUpper()
+    public static void TestToLowerToUpper_Basic()
     {
         //@todo: Add tests for ToLower/Upper(CultureInfo) when we have better support for
         // getting more than just the invariant culture. In any case, ToLower() and ToUpper()
@@ -1270,6 +1270,32 @@ public static unsafe class StringTests
         Assert.Equal("HELLO", s);
 
         return;
+    }
+
+    [Fact]
+    public static void TestToLowerToUpperInvariant_ASCII()
+    {
+        char[] asciiChars = new char[128];
+        char[] asciiCharsUpper = new char[128];
+        char[] asciiCharsLower = new char[128];
+
+        for (int i = 0; i < asciiChars.Length; i++)  
+        {
+            char c = (char)i;
+            asciiChars[i] = c;  
+
+            // Purposefully avoiding char.ToUpper/ToLower here so as not  
+            // to use the same thing we're testing.  
+            asciiCharsLower[i] = (c >= 'A' && c <= 'Z') ? (char)(c - 'A' + 'a') : c;
+            asciiCharsUpper[i] = (c >= 'a' && c <= 'z') ? (char)(c - 'a' + 'A') : c;
+        }
+
+        string ascii = new string(asciiChars);
+        string asciiLower = new string(asciiCharsLower);
+        string asciiUpper = new string(asciiCharsUpper);
+
+        Assert.Equal(asciiLower, ascii.ToLowerInvariant());
+        Assert.Equal(asciiUpper, ascii.ToUpperInvariant());
     }
 
     [Fact]
