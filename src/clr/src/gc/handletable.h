@@ -84,6 +84,7 @@ void            HndDestroyHandles(HHANDLETABLE hTable, UINT uType, const OBJECTH
  * owner data associated with handles
  */
 void            HndSetHandleExtraInfo(OBJECTHANDLE handle, UINT uType, LPARAM lExtraInfo);
+LPARAM          HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, UINT uType, LPARAM lOldExtraInfo, LPARAM lNewExtraInfo);
 #endif // !DACCESS_COMPILE
 
 LPARAM          HndGetHandleExtraInfo(OBJECTHANDLE handle);
