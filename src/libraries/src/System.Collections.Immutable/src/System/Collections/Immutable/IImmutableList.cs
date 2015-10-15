@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
     public interface IImmutableList<T> : IReadOnlyList<T>
     {
         /// <summary>
-        /// Gets an empty list that retains the same sort or unordered semantics that this instance has.
+        /// Gets an empty list that retains the same sort semantics that this instance has.
         /// </summary>
         [Pure]
         IImmutableList<T> Clear();

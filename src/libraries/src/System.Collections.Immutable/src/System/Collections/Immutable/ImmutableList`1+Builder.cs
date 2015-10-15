@@ -868,8 +868,9 @@ namespace System.Collections.Immutable
             /// the specified System.Comparison&lt;T&gt;.
             /// </summary>
             /// <param name="comparison">
-            /// The System.Comparison&lt;T&gt; to use when comparing elements.
+            /// The <see cref="Comparison{T}"/> to use when comparing elements.
             /// </param>
+            /// <exception cref="ArgumentNullException"><paramref name="comparison"/> is null.</exception>
             public void Sort(Comparison<T> comparison)
             {
                 Requires.NotNull(comparison, "comparison");
@@ -881,12 +882,11 @@ namespace System.Collections.Immutable
             /// the specified comparer.
             /// </summary>
             /// <param name="comparer">
-            /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
-            /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+            /// The <see cref="IComparer{T}"/> implementation to use when comparing
+            /// elements, or null to use <see cref="Comparer{T}.Default"/>.
             /// </param>
             public void Sort(IComparer<T> comparer)
             {
-                Requires.NotNull(comparer, "comparer");
                 this.Root = this.Root.Sort(comparer);
             }
 
@@ -901,15 +901,14 @@ namespace System.Collections.Immutable
             /// The length of the range to sort.
             /// </param>
             /// <param name="comparer">
-            /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
-            /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+            /// The <see cref="IComparer{T}"/> implementation to use when comparing
+            /// elements, or null to use <see cref="Comparer{T}.Default"/>.
             /// </param>
             public void Sort(int index, int count, IComparer<T> comparer)
             {
                 Requires.Range(index >= 0, "index");
                 Requires.Range(count >= 0, "count");
                 Requires.Range(index + count <= this.Count, "count");
-                Requires.NotNull(comparer, "comparer");
                 this.Root = this.Root.Sort(index, count, comparer);
             }
 

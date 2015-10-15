@@ -521,6 +521,7 @@ namespace System.Collections.Immutable
         /// The <see cref="Comparison{T}"/> to use when comparing elements.
         /// </param>
         /// <returns>The sorted list.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="comparison"/> is null.</exception>
         [Pure]
         public ImmutableList<T> Sort(Comparison<T> comparison)
         {
@@ -541,7 +542,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableList<T> Sort(IComparer<T> comparer)
         {
-            Requires.NotNull(comparer, "comparer");
             Contract.Ensures(Contract.Result<ImmutableList<T>>() != null);
             return this.Wrap(_root.Sort(comparer));
         }
@@ -567,7 +567,6 @@ namespace System.Collections.Immutable
             Requires.Range(index >= 0, "index");
             Requires.Range(count >= 0, "count");
             Requires.Range(index + count <= this.Count, "count");
-            Requires.NotNull(comparer, "comparer");
             Contract.Ensures(Contract.Result<ImmutableList<T>>() != null);
 
             return this.Wrap(_root.Sort(index, count, comparer));
@@ -2331,7 +2330,6 @@ namespace System.Collections.Immutable
             /// <returns>The sorted list.</returns>
             internal Node Sort(IComparer<T> comparer)
             {
-                Requires.NotNull(comparer, "comparer");
                 Contract.Ensures(Contract.Result<Node>() != null);
                 return this.Sort(0, this.Count, comparer);
             }
@@ -2356,7 +2354,6 @@ namespace System.Collections.Immutable
                 Requires.Range(index >= 0, "index");
                 Requires.Range(count >= 0, "count");
                 Requires.Argument(index + count <= this.Count);
-                Requires.NotNull(comparer, "comparer");
 
                 // PERF: Eventually this might be reimplemented in a way that does not require allocating an array.
                 var array = new T[this.Count];
