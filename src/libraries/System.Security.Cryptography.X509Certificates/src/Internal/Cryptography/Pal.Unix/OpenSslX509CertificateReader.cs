@@ -26,7 +26,7 @@ namespace Internal.Cryptography.Pal
         {
             // X509_check_purpose has the effect of populating the sha1_hash value,
             // and other "initialize" type things.
-            bool init = Interop.libcrypto.X509_check_purpose(handle, -1, 0);
+            bool init = Interop.Crypto.X509CheckPurpose(handle, -1, 0);
 
             if (!init)
             {
@@ -99,7 +99,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                IntPtr serialNumberPtr = Interop.libcrypto.X509_get_serialNumber(_cert);
+                IntPtr serialNumberPtr = Interop.Crypto.X509GetSerialNumber(_cert);
                 byte[] serial = Interop.Crypto.GetAsn1StringBytes(serialNumberPtr);
 
                 // Windows returns this in BigInteger Little-Endian,
@@ -134,9 +134,15 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public unsafe byte[] RawData
+        public byte[] RawData
         {
-            get { return Interop.libcrypto.OpenSslI2D(Interop.libcrypto.i2d_X509, _cert); }
+            get
+            {
+                return Interop.Crypto.OpenSslEnocde(
+                    Interop.Crypto.GetX509DerSize,
+                    Interop.Crypto.EncodeX509,
+                    _cert);
+            }
         }
 
         public int Version
@@ -174,7 +180,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (_subjectName == null)
                 {
-                    _subjectName = Interop.Crypto.LoadX500Name(Interop.libcrypto.X509_get_subject_name(_cert));
+                    _subjectName = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetSubjectName(_cert));
                 }
 
                 return _subjectName;
@@ -187,7 +193,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (_issuerName == null)
                 {
-                    _issuerName = Interop.Crypto.LoadX500Name(Interop.libcrypto.X509_get_issuer_name(_cert));
+                    _issuerName = Interop.Crypto.LoadX500Name(Interop.Crypto.X509GetIssuerName(_cert));
                 }
 
                 return _issuerName;
@@ -198,28 +204,28 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                int extensionCount = Interop.libcrypto.X509_get_ext_count(_cert);
+                int extensionCount = Interop.Crypto.X509GetExtCount(_cert);
                 X509Extension[] extensions = new X509Extension[extensionCount];
 
                 for (int i = 0; i < extensionCount; i++)
                 {
-                    IntPtr ext = Interop.libcrypto.X509_get_ext(_cert, i);
+                    IntPtr ext = Interop.Crypto.X509GetExt(_cert, i);
 
                     Interop.Crypto.CheckValidOpenSslHandle(ext);
 
-                    IntPtr oidPtr = Interop.libcrypto.X509_EXTENSION_get_object(ext);
+                    IntPtr oidPtr = Interop.Crypto.X509ExtensionGetOid(ext);
 
                     Interop.Crypto.CheckValidOpenSslHandle(oidPtr);
 
                     string oidValue = Interop.Crypto.GetOidValue(oidPtr);
                     Oid oid = new Oid(oidValue);
 
-                    IntPtr dataPtr = Interop.libcrypto.X509_EXTENSION_get_data(ext);
+                    IntPtr dataPtr = Interop.Crypto.X509ExtensionGetData(ext);
 
                     Interop.Crypto.CheckValidOpenSslHandle(dataPtr);
 
                     byte[] extData = Interop.Crypto.GetAsn1StringBytes(dataPtr);
-                    bool critical = Interop.libcrypto.X509_EXTENSION_get_critical(ext);
+                    bool critical = Interop.Crypto.X509ExtensionGetCritical(ext);
 
                     extensions[i] = new X509Extension(oid, extData, critical);
                 }
@@ -325,7 +331,7 @@ namespace Internal.Cryptography.Pal
 
         internal OpenSslX509CertificateReader DuplicateHandles()
         {
-            SafeX509Handle certHandle = Interop.libcrypto.X509_dup(_cert);
+            SafeX509Handle certHandle = Interop.Crypto.X509Duplicate(_cert);
             OpenSslX509CertificateReader duplicate = new OpenSslX509CertificateReader(certHandle);
 
             if (_privateKey != null)

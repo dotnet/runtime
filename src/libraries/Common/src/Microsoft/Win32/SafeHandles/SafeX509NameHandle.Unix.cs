@@ -17,7 +17,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.X509_NAME_free(handle);
+            Interop.Crypto.X509NameDestroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }

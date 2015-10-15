@@ -39,7 +39,7 @@ namespace System.Net
                 {
                     int hostnameMatch;
 
-                    using (SafeX509Handle certHandle = Interop.libcrypto.X509_dup(remoteCertificate.Handle))
+                    using (SafeX509Handle certHandle = Interop.Crypto.X509Duplicate(remoteCertificate.Handle))
                     {
                         IPAddress hostnameAsIp;
 
