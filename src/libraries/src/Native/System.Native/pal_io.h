@@ -623,8 +623,16 @@ extern "C" void Sync();
 extern "C" int32_t Write(int32_t fd, const void* buffer, int32_t bufferSize);
 
 /**
-* Gets the windows size of the terminal
-*
-* Returns 0 on success; otherwise, returns errorNo.
-*/
+ * Gets the windows size of the terminal
+ *
+ * Returns 0 on success; otherwise, returns errorNo.
+ */
 extern "C" int32_t GetWindowSize(WinSize* windowsSize);
+
+/**
+ * Gets whether the specified file descriptor is for a terminal.
+ *
+ * Returns 1 if the file descriptor is referring to a terminal;
+ * otherwise returns 0 and sets errno.
+ */
+extern "C" int32_t IsATty(int filedes);
