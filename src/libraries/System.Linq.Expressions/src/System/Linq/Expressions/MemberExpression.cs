@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 
@@ -61,6 +62,7 @@ namespace System.Linq.Expressions
             get { return ExpressionType.MemberAccess; }
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         internal virtual MemberInfo GetMember()
         {
             throw ContractUtils.Unreachable;

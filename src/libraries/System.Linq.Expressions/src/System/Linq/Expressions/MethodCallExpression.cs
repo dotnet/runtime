@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -89,6 +90,7 @@ namespace System.Linq.Expressions
             return Expression.Call(@object, Method, arguments);
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         internal virtual ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             throw ContractUtils.Unreachable;
@@ -110,6 +112,7 @@ namespace System.Linq.Expressions
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
         /// subclass of MethodCallExpression which is being used. 
         /// </summary>
+        [ExcludeFromCodeCoverage] // Unreachable
         internal virtual MethodCallExpression Rewrite(Expression instance, IList<Expression> args)
         {
             throw ContractUtils.Unreachable;
@@ -117,11 +120,13 @@ namespace System.Linq.Expressions
 
         #region IArgumentProvider Members
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public virtual Expression GetArgument(int index)
         {
             throw ContractUtils.Unreachable;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public virtual int ArgumentCount
         {
             get { throw ContractUtils.Unreachable; }
