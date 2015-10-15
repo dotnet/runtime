@@ -1,5 +1,4 @@
 Interop/ICastable/Castable.sh
-Interop/ReversePInvoke/Marshalling/MarshalBoolArray.sh
 JIT/Directed/lifetime/lifetime2.sh
 JIT/Directed/newarr/newarr.sh
 JIT/Directed/PREFIX/unaligned/1/arglist.sh
