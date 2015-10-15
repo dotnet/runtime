@@ -83,6 +83,8 @@ typedef struct {
 	gboolean llvm_only;
 	GHashTable *idx_to_lmethod;
 	GHashTable *idx_to_unbox_tramp;
+	/* Maps a MonoMethod to LLVM instructions representing it */
+	GHashTable *method_to_callers;
 	LLVMContextRef context;
 	LLVMValueRef sentinel_exception;
 } MonoLLVMModule;
@@ -153,6 +155,7 @@ typedef struct {
 	GSList **nested_in;
 	LLVMValueRef ex_var;
 	GHashTable *exc_meta;
+	GHashTable *method_to_callers;
 } EmitContext;
 
 typedef struct {
@@ -2894,6 +2897,17 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				callee = get_callee (ctx, llvm_sig, MONO_PATCH_INFO_METHOD, call->method);
 				if (!callee)
 					LLVM_FAILURE (ctx, "can't encode patch");
+
+				if (cfg->llvm_only && call->method->klass->image->assembly == ctx->lmodule->assembly) {
+					/*
+					 * Collect instructions representing the callee into a hash so they can be replaced
+					 * by the llvm method for the callee if the callee turns out to be direct
+					 * callable. Currently this only requires it to not fail llvm compilation.
+					 */
+					GSList *l = g_hash_table_lookup (ctx->method_to_callers, call->method);
+					l = g_slist_prepend (l, callee);
+					g_hash_table_insert (ctx->method_to_callers, call->method, l);
+				}
 			} else {
 				callee = LLVMAddFunction (module, "", llvm_sig);
  
@@ -5960,6 +5974,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	ctx->values = values;
 	ctx->region_to_handler = g_hash_table_new (NULL, NULL);
 	ctx->clause_to_handler = g_hash_table_new (NULL, NULL);
+	ctx->method_to_callers = g_hash_table_new (NULL, NULL);
  
 	if (cfg->compile_aot) {
 		ctx->lmodule = &aot_module;
@@ -6345,10 +6360,31 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		}
 	}
 
+	if (cfg->llvm_only) {
+		GHashTableIter iter;
+		MonoMethod *method;
+		GSList *callers, *l, *l2;
+
+		/*
+		 * Add the contents of ctx->method_to_callers to lmodule->method_to_callers.
+		 * We can't do this earlier, as it contains llvm instructions which can be
+		 * freed if compilation fails.
+		 * FIXME: Get rid of this when all methods can be llvm compiled.
+		 */
+		g_hash_table_iter_init (&iter, ctx->method_to_callers);
+		while (g_hash_table_iter_next (&iter, (void**)&method, (void**)&callers)) {
+			for (l = callers; l; l = l->next) {
+				l2 = g_hash_table_lookup (ctx->lmodule->method_to_callers, method);
+				l2 = g_slist_prepend (l2, l->data);
+				g_hash_table_insert (ctx->lmodule->method_to_callers, method, l2);
+			}
+		}
+	}
+
 	if (cfg->verbose_level > 1)
 		mono_llvm_dump_value (method);
 
-	if (cfg->compile_aot)
+	if (cfg->compile_aot && !cfg->llvm_only)
 		mark_as_used (ctx->lmodule, method);
 
 	if (cfg->compile_aot) {
@@ -7088,6 +7124,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	lmodule->method_to_lmethod = g_hash_table_new (NULL, NULL);
 	lmodule->idx_to_lmethod = g_hash_table_new (NULL, NULL);
 	lmodule->idx_to_unbox_tramp = g_hash_table_new (NULL, NULL);
+	lmodule->method_to_callers = g_hash_table_new (NULL, NULL);
 }
 
 static LLVMValueRef
@@ -7370,6 +7407,32 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 	emit_llvm_used (&aot_module);
 	emit_dbg_info (&aot_module, filename, cu_name);
 	emit_aot_file_info (&aot_module);
+
+	/*
+	 * Replace GOT entries for directly callable methods with the methods themselves.
+	 * It would be easier to implement this by predefining all methods before compiling
+	 * their bodies, but that couldn't handle the case when a method fails to compile
+	 * with llvm.
+	 */
+	if (aot_module.llvm_only) {
+		GHashTableIter iter;
+		MonoMethod *method;
+		GSList *callers, *l;
+
+		g_hash_table_iter_init (&iter, aot_module.method_to_callers);
+		while (g_hash_table_iter_next (&iter, (void**)&method, (void**)&callers)) {
+			LLVMValueRef lmethod;
+
+			lmethod = g_hash_table_lookup (module->method_to_lmethod, method);
+			if (lmethod) {
+				for (l = callers; l; l = l->next) {
+					LLVMValueRef caller = l->data;
+
+					mono_llvm_replace_uses_of (caller, lmethod);
+				}
+			}
+		}
+	}
 
 	/* Replace PLT entries for directly callable methods with the methods themselves */
 	{
