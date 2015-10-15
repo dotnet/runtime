@@ -197,13 +197,12 @@ namespace System.Net.Sockets
 
             public static unsafe InnerSafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
             {
-                int af = SocketPal.GetPlatformAddressFamily(addressFamily);
-                int sock = SocketPal.GetPlatformSocketType(socketType);
-                int pt = (int)protocolType;
-
-                int fd = Interop.libc.socket(af, sock, pt);
-                if (fd != -1)
+                int fd;
+                Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
+                if (error == Interop.Error.SUCCESS)
                 {
+                    Debug.Assert(fd != -1);
+
                     // The socket was created successfully; make it non-blocking and enable
                     // IPV6_V6ONLY by default for AF_INET6 sockets.
                     int err = Interop.Sys.Fcntl.SetIsNonBlocking(fd, 1);
@@ -215,7 +214,7 @@ namespace System.Net.Sockets
                     else if (addressFamily == AddressFamily.InterNetworkV6)
                     {
                         int on = 1;
-                        Interop.Error error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
+                        error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
                         if (error != Interop.Error.SUCCESS)
                         {
                             Interop.Sys.Close(fd);

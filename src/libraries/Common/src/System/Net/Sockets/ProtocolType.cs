@@ -1,7 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#if SYSTEM_NET_SOCKETS_DLL
 namespace System.Net.Sockets
+#else
+namespace System.Net.Internals
+#endif
 {
     // Specifies the protocols that the Socket class supports.
     public enum ProtocolType
