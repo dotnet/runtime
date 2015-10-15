@@ -1,4 +1,9 @@
+
+
+using System;
 // Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
@@ -10,62 +15,59 @@
 /*to make all the cyclic single linked lists become memory leaks.
 /******************************************************************/
 
-namespace SingLink {
-    using System;
-
+namespace SingLink
+{
     public class SingLinkStay
     {
+        internal SingLink[] Mv_Sing;
 
-        internal SingLink []Mv_Sing;
-
-        public static int Main(System.String [] Args)
+        public static int Main(System.String[] Args)
         {
             int iRep = 0;
             int iObj = 0;
 
             Console.WriteLine("Test should return with ExitCode 100 ...");
-            switch( Args.Length )
+            switch (Args.Length)
             {
-               case 1:
-                   if (!Int32.TryParse( Args[0], out iRep ))
-                   {
-                       iRep = 100;
-                   }
-               break;
-               case 2:
-                   if (!Int32.TryParse( Args[0], out iRep ))
-                   {
-                       iRep = 100;
-                   }
-                   if (!Int32.TryParse( Args[1], out iObj ))
-                   {
-                       iObj = 10;
-                   }
-               break;
-               default:
-                   iRep = 100;
-                   iObj = 10;
-               break;
+                case 1:
+                    if (!Int32.TryParse(Args[0], out iRep))
+                    {
+                        iRep = 100;
+                    }
+                    break;
+                case 2:
+                    if (!Int32.TryParse(Args[0], out iRep))
+                    {
+                        iRep = 100;
+                    }
+                    if (!Int32.TryParse(Args[1], out iObj))
+                    {
+                        iObj = 10;
+                    }
+                    break;
+                default:
+                    iRep = 100;
+                    iObj = 10;
+                    break;
             }
 
             SingLinkStay Mv_Leak = new SingLinkStay();
-            if(Mv_Leak.runTest(iRep, iObj ))
+            if (Mv_Leak.runTest(iRep, iObj))
             {
-                Console.WriteLine( "Test Passed" );
+                Console.WriteLine("Test Passed");
                 return 100;
             }
             else
             {
-                Console.WriteLine( "Test Failed" );
+                Console.WriteLine("Test Failed");
                 return 1;
             }
-
         }
 
 
         public bool runTest(int iRep, int iObj)
         {
-            for(int i=0; i<20; i++)
+            for (int i = 0; i < 20; i++)
             {
                 SetLink(iRep, iObj);
                 MakeLeak(iRep);
@@ -76,9 +78,8 @@ namespace SingLink {
 
         public void SetLink(int iRep, int iObj)
         {
-
             Mv_Sing = new SingLink[iRep];
-            for(int i=0; i<iRep; i++)
+            for (int i = 0; i < iRep; i++)
             {
                 Mv_Sing[i] = new SingLink(iObj);
             }
@@ -87,12 +88,11 @@ namespace SingLink {
 
         public void MakeLeak(int iRep)
         {
-            for(int i=0; i<iRep; i++)
+            for (int i = 0; i < iRep; i++)
             {
                 Mv_Sing[i] = null;
             }
         }
-
     }
 
     public class LinkNode

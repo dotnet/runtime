@@ -1,5 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 /*
@@ -10,25 +12,22 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-public class GCUtil 
+public class GCUtil
 {
-
     public static List<GCHandle> list = new List<GCHandle>();
-    public static List<byte[]> blist = new  List<byte[]>();
+    public static List<byte[]> blist = new List<byte[]>();
     public static List<GCHandle> list2 = new List<GCHandle>();
-    public static List<byte[]> blist2 = new  List<byte[]>();
+    public static List<byte[]> blist2 = new List<byte[]>();
 
-    
+
     public static void Alloc(int numNodes, int percentPinned)
     {
-
-        for (int i=0; i<numNodes; i++)
+        for (int i = 0; i < numNodes; i++)
         {
-
             byte[] b = new byte[10];
             b[0] = 0xC;
 
-            if (i % ((int)(numNodes*(100/percentPinned))) ==0)
+            if (i % ((int)(numNodes * (100 / percentPinned))) == 0)
             {
                 list.Add(GCHandle.Alloc(b, GCHandleType.Pinned));
             }
@@ -37,7 +36,7 @@ public class GCUtil
         }
     }
 
-    
+
     public static void FreePins()
     {
         foreach (GCHandle gch in list)
@@ -48,24 +47,22 @@ public class GCUtil
         blist.Clear();
     }
 
-    
+
     public static void FreeNonPins()
     {
         blist.Clear();
     }
 
 
-    
+
     public static void Alloc2(int numNodes, int percentPinned)
     {
-
-        for (int i=0; i<numNodes; i++)
+        for (int i = 0; i < numNodes; i++)
         {
-
             byte[] b = new byte[10];
             b[0] = 0xC;
 
-            if (i % ((int)(numNodes*(100/percentPinned))) ==0)
+            if (i % ((int)(numNodes * (100 / percentPinned))) == 0)
             {
                 list2.Add(GCHandle.Alloc(b, GCHandleType.Pinned));
             }
@@ -75,7 +72,7 @@ public class GCUtil
     }
 
 
-    
+
     public static void FreePins2()
     {
         foreach (GCHandle gch in list2)
@@ -87,16 +84,16 @@ public class GCUtil
     }
 
 
-    
+
     public static void FreeNonPins2()
     {
         blist2.Clear();
     }
 
-    
-    public static void AllocWithGaps() 
+
+    public static void AllocWithGaps()
     {
-        for (int i=0; i<1024*1024; i++)
+        for (int i = 0; i < 1024 * 1024; i++)
         {
             byte[] unpinned = new byte[50];
             byte[] pinned = new byte[10];
@@ -108,24 +105,20 @@ public class GCUtil
 
 public class Test
 {
-    public static int Main(System.String [] Args)
+    public static int Main(System.String[] Args)
     {
         Console.WriteLine("First Alloc");
-        GCUtil.Alloc(1024*1024*4, 30);
+        GCUtil.Alloc(1024 * 1024 * 4, 30);
         GCUtil.FreeNonPins();
         GC.Collect();
 
         Console.WriteLine("Second Alloc");
-        GCUtil.Alloc(1024*1024*4, 50);
+        GCUtil.Alloc(1024 * 1024 * 4, 50);
         GCUtil.FreeNonPins();
         GC.Collect();
         GCUtil.FreePins();
 
         Console.WriteLine("Test passed");
         return 100;
-
     }
-
-   
-
 }

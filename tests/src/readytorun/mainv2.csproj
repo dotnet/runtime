@@ -4,7 +4,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>mainv2</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{840300BB-0DD2-4BD3-A3C1-51C92DD4ADAD}</ProjectGuid>
     <OutputType>exe</OutputType>
@@ -16,6 +15,7 @@
     <RestorePackages>true</RestorePackages>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <DefineConstants>$(DefineConstants);STATIC;CORECLR</DefineConstants>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
@@ -28,9 +28,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="testv1\testv1.csproj">
-       <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
-    </ProjectReference>
+    <ProjectReference Include="testv1\test.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="main.cs" />
@@ -48,14 +46,14 @@
     </Reference>
   </ItemGroup>
   <PropertyGroup>
-    <_CLRTestPreCommands><![CDATA[
-$(_CLRTestPreCommands)
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
 IF not exist NI mkdir NI
 COPY /Y testv1\test.dll test.dll
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\mainv2.ni.exe mainv2.exe
 COPY /Y testv2\test.dll test.dll
 %Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out NI\test.ni.dll test.dll 
-]]></_CLRTestPreCommands>
+]]></CLRTestBatchPreCommands>
   </PropertyGroup>  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

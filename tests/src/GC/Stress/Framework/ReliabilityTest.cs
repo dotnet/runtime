@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 using System;
@@ -17,44 +19,44 @@ using System.Reflection;
 /// and then uses this hashtable to pull out the actual tests which we want to run (from the test config file) by the ID attribute
 /// on each test specified.
 /// </summary>
-public class ReliabilityTest 
+public class ReliabilityTest
 #if !PROJECTK_BUILD
     : ICloneable
 #endif
 {
-    private bool suppressConsoleOutput = false;
+    private bool _suppressConsoleOutput = false;
 
-    private string assembly, debugger, debuggerOptions;
-    private string basePath;
+    private string _assembly,_debugger,_debuggerOptions;
+    private string _basePath;
 #if PROJECTK_BUILD
-    private MethodInfo entryPointMethod = null;
+    private MethodInfo _entryPointMethod = null;
 #endif    
-    private string refOrID;
-    private string arguments;
-    private string entryPoint;
-    private int successCode = 0;
-    private int runCount = 0;
+    private string _refOrID;
+    private string _arguments;
+    private string _entryPoint;
+    private int _successCode = 0;
+    private int _runCount = 0;
 #if !PROJECTK_BUILD
     private AppDomain appDomain;
 #endif
-    private Object testObject;
-    private int concurrentCopies = 1;
-    private int runningCount = 0;
-    private int expectedDuration = -1;
-    private bool requiresSDK = false, hasFailed = false;
-    private Guid guid = Guid.Empty;
-    TestStartModeEnum testStartMode = TestStartModeEnum.AppDomainLoader;
-    DateTime startTime = DateTime.Now;
-    string testOwner = null;
-    private string resultFilename = null;
-    private List<ReliabilityTest> group;
-    private List<string> preCommands;
-    private List<string> postCommands;
-    private int appDomainIndex = 0;
-    private TestAttributes testAttrs = TestAttributes.None;
-    private CustomActionType customAction = CustomActionType.None;
-    bool testLoadFailed = false;
-    int index;
+    private Object _testObject;
+    private int _concurrentCopies = 1;
+    private int _runningCount = 0;
+    private int _expectedDuration = -1;
+    private bool _requiresSDK = false,_hasFailed = false;
+    private Guid _guid = Guid.Empty;
+    private TestStartModeEnum _testStartMode = TestStartModeEnum.AppDomainLoader;
+    private DateTime _startTime = DateTime.Now;
+    private string _testOwner = null;
+    private string _resultFilename = null;
+    private List<ReliabilityTest> _group;
+    private List<string> _preCommands;
+    private List<string> _postCommands;
+    private int _appDomainIndex = 0;
+    private TestAttributes _testAttrs = TestAttributes.None;
+    private CustomActionType _customAction = CustomActionType.None;
+    private bool _testLoadFailed = false;
+    private int _index;
 
     public ReliabilityTest(bool suppressConsoleOutput)
     {
@@ -63,30 +65,30 @@ public class ReliabilityTest
 
     public void TestStarted()
     {
-        Interlocked.Increment(ref runCount);
-        Interlocked.Increment(ref runningCount);        
+        Interlocked.Increment(ref _runCount);
+        Interlocked.Increment(ref _runningCount);
     }
 
     public void TestStopped()
     {
-        Interlocked.Decrement(ref runningCount);
+        Interlocked.Decrement(ref _runningCount);
     }
 
     public bool SuppressConsoleOutput
     {
-        get { return suppressConsoleOutput; }
-        set { suppressConsoleOutput = value; }
+        get { return _suppressConsoleOutput; }
+        set { _suppressConsoleOutput = value; }
     }
 
     public DateTime StartTime
     {
         get
         {
-            return (startTime);
+            return (_startTime);
         }
         set
         {
-            startTime = value;
+            _startTime = value;
         }
     }
 
@@ -94,11 +96,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (testAttrs);
+            return (_testAttrs);
         }
         set
         {
-            testAttrs = value;
+            _testAttrs = value;
         }
     }
 
@@ -106,11 +108,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (concurrentCopies);
+            return (_concurrentCopies);
         }
         set
         {
-            concurrentCopies = value;
+            _concurrentCopies = value;
         }
     }
 
@@ -121,11 +123,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (runningCount);
+            return (_runningCount);
         }
         set
         {
-            runningCount = value;
+            _runningCount = value;
         }
     }
 
@@ -133,11 +135,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (testObject);
+            return (_testObject);
         }
         set
         {
-            testObject = value;
+            _testObject = value;
         }
     }
 
@@ -145,11 +147,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (testLoadFailed);
+            return (_testLoadFailed);
         }
         set
         {
-            testLoadFailed = value;
+            _testLoadFailed = value;
         }
     }
 
@@ -170,66 +172,66 @@ public class ReliabilityTest
     {
         get
         {
-            return (assembly);
+            return (_assembly);
         }
         set
         {
-            assembly = value;
+            _assembly = value;
         }
     }
     public string RefOrID
     {
         get
         {
-            return (refOrID);
+            return (_refOrID);
         }
         set
         {
-            refOrID = value;
+            _refOrID = value;
         }
     }
     public string Arguments
     {
         get
         {
-            return (arguments);
+            return (_arguments);
         }
         set
         {
-            arguments = value;
+            _arguments = value;
         }
     }
 
     public string[] GetSplitArguments()
     {
-        if (arguments == null)
+        if (_arguments == null)
         {
             return (null);
         }
         //TODO: Handle quotes intelligently.
-        return (arguments.Split(' '));
+        return (_arguments.Split(' '));
     }
 
     public string EntryPoint
     {
         get
         {
-            return (entryPoint);
+            return (_entryPoint);
         }
         set
         {
-            entryPoint = value;
+            _entryPoint = value;
         }
     }
     public int SuccessCode
     {
         get
         {
-            return (successCode);
+            return (_successCode);
         }
         set
         {
-            successCode = value;
+            _successCode = value;
         }
     }
 
@@ -240,11 +242,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (runCount);
+            return (_runCount);
         }
         set
         {
-            runCount = value;
+            _runCount = value;
         }
     }
 
@@ -252,11 +254,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (requiresSDK);
+            return (_requiresSDK);
         }
         set
         {
-            requiresSDK = value;
+            _requiresSDK = value;
         }
     }
 
@@ -265,11 +267,11 @@ public class ReliabilityTest
     {
         get
         {
-            return entryPointMethod;
+            return _entryPointMethod;
         }
         set
         {
-            entryPointMethod = value;
+            _entryPointMethod = value;
         }
     }
 #endif 
@@ -278,7 +280,7 @@ public class ReliabilityTest
     {
         get
         {
-            if (basePath == null)
+            if (_basePath == null)
             {
 #if PROJECTK_BUILD
                 string strBVTRoot = Environment.GetEnvironmentVariable("BVT_ROOT");
@@ -291,18 +293,18 @@ public class ReliabilityTest
 #endif
             }
 
-            if (basePath.Length > 0)
+            if (_basePath.Length > 0)
             {
-                if (basePath[basePath.Length - 1] != '\\')
+                if (_basePath[_basePath.Length - 1] != '\\')
                 {
-                    basePath = basePath + "\\";
+                    _basePath = _basePath + "\\";
                 }
             }
-            return (basePath);
+            return (_basePath);
         }
         set
         {
-            basePath = value;
+            _basePath = value;
         }
     }
 
@@ -313,15 +315,15 @@ public class ReliabilityTest
     {
         get
         {
-            if (debugger == null || debugger == String.Empty)
+            if (_debugger == null || _debugger == String.Empty)
             {
-                return (debugger);
+                return (_debugger);
             }
 
             // first, check the current directory
             string curDir = Directory.GetCurrentDirectory();
             string theAnswer;
-            if (File.Exists(theAnswer = String.Format("{0}\\{1}", curDir, debugger)))
+            if (File.Exists(theAnswer = String.Format("{0}\\{1}", curDir, _debugger)))
             {
                 return (theAnswer);
             }
@@ -330,22 +332,22 @@ public class ReliabilityTest
             string path = Environment.GetEnvironmentVariable("PATH");
             if (path == null)
             {
-                return (debugger);
+                return (_debugger);
             }
 
             string[] splitPath = path.Split(new char[] { ';' });
             foreach (string curPath in splitPath)
             {
-                if (File.Exists(theAnswer = String.Format("{0}\\{1}", curPath, debugger)))
+                if (File.Exists(theAnswer = String.Format("{0}\\{1}", curPath, _debugger)))
                 {
                     return (theAnswer);
                 }
             }
-            return (debugger);
+            return (_debugger);
         }
         set
         {
-            debugger = value;
+            _debugger = value;
         }
     }
 
@@ -353,11 +355,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (debuggerOptions);
+            return (_debuggerOptions);
         }
         set
         {
-            debuggerOptions = value;
+            _debuggerOptions = value;
         }
     }
 
@@ -366,11 +368,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (expectedDuration);
+            return (_expectedDuration);
         }
         set
         {
-            expectedDuration = value;
+            _expectedDuration = value;
         }
     }
 
@@ -378,11 +380,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (testStartMode);
+            return (_testStartMode);
         }
         set
         {
-            testStartMode = value;
+            _testStartMode = value;
         }
     }
 
@@ -390,11 +392,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (guid);
+            return (_guid);
         }
         set
         {
-            guid = value;
+            _guid = value;
         }
     }
 
@@ -402,11 +404,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (testOwner);
+            return (_testOwner);
         }
         set
         {
-            testOwner = value;
+            _testOwner = value;
         }
     }
 
@@ -417,36 +419,36 @@ public class ReliabilityTest
     {
         get
         {
-            return (resultFilename);
+            return (_resultFilename);
         }
         set
         {
-            resultFilename = value;
+            _resultFilename = value;
         }
     }
-    
+
     public List<ReliabilityTest> Group
     {
         get
         {
-            return (group);
+            return (_group);
         }
         set
         {
-            group = value;
+            _group = value;
         }
     }
-     
+
 
     public List<string> PreCommands
     {
         get
         {
-            return (preCommands);
+            return (_preCommands);
         }
         set
         {
-            preCommands = value;
+            _preCommands = value;
         }
     }
 
@@ -454,23 +456,23 @@ public class ReliabilityTest
     {
         get
         {
-            return (postCommands);
+            return (_postCommands);
         }
         set
         {
-            postCommands = value;
+            _postCommands = value;
         }
     }
-    
+
     public bool HasFailed
     {
         get
         {
-            return (hasFailed);
+            return (_hasFailed);
         }
         set
         {
-            hasFailed = value;
+            _hasFailed = value;
         }
     }
 
@@ -478,11 +480,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (this.appDomainIndex);
+            return (_appDomainIndex);
         }
         set
         {
-            appDomainIndex = value;
+            _appDomainIndex = value;
         }
     }
 
@@ -490,11 +492,11 @@ public class ReliabilityTest
     {
         get
         {
-            return (index);
+            return (_index);
         }
         set
         {
-            index = value;
+            _index = value;
         }
     }
 
@@ -502,17 +504,17 @@ public class ReliabilityTest
     {
         get
         {
-            return (customAction);
+            return (_customAction);
         }
         set
         {
-            customAction = value;
+            _customAction = value;
         }
     }
 
     public override string ToString()
     {
-        return ("Ref/ID: " + refOrID + " Assembly: " + assembly + " Arguments: " + arguments + " SuccessCode: " + successCode.ToString());
+        return ("Ref/ID: " + _refOrID + " Assembly: " + _assembly + " Arguments: " + _arguments + " SuccessCode: " + _successCode.ToString());
     }
 
     public object Clone()
