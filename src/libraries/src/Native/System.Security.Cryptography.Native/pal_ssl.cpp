@@ -140,6 +140,25 @@ extern "C" const char* SslGetVersion(SSL* ssl)
     return SSL_get_version(ssl);
 }
 
+extern "C" int32_t SslGetFinished(SSL* ssl, void* buf, int32_t count)
+{
+	size_t result = SSL_get_finished(ssl, buf, size_t(count));
+	assert(result <= INT32_MAX);
+	return static_cast<int32_t>(result);
+}
+
+extern "C" int32_t SslGetPeerFinished(SSL* ssl, void* buf, int32_t count)
+{
+	size_t result = SSL_get_peer_finished(ssl, buf, size_t(count));
+	assert(result <= INT32_MAX);
+	return static_cast<int32_t>(result);
+}
+
+extern "C" bool SslSessionReused(SSL* ssl)
+{
+	return SSL_session_reused(ssl) == 1;
+}
+
 /*
 The values used in OpenSSL for SSL_CIPHER algorithm_enc.
 */
