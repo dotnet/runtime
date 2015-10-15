@@ -102,31 +102,21 @@ UErrorCode GetDigitSymbol(const Locale& locale,
 Function:
 GetLocaleInfoAmPm
 
-Obtains the value of a DateFormatSymbols Am or Pm string
+Obtains the value of the AM or PM string for a locale.
 */
 UErrorCode GetLocaleInfoAmPm(const Locale& locale, bool am, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
-    LocalPointer<DateFormatSymbols> dateFormatSymbols(new DateFormatSymbols(locale, status));
-    if (dateFormatSymbols == NULL)
-    {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
+    UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale.getName(), nullptr, 0, nullptr, 0, &status);
+    UDateFormatHolder formatHolder(pFormat, status);
 
     if (U_FAILURE(status))
     {
         return status;
     }
 
-    int32_t count = 0;
-    const UnicodeString* tempStr = dateFormatSymbols->getAmPmStrings(count);
-    int offset = am ? 0 : 1;
-    if (offset >= count)
-    {
-        return U_INTERNAL_PROGRAM_ERROR;
-    }
+    udat_getSymbols(pFormat, UDAT_AM_PMS, am ? 0 : 1, value, valueLength, &status);
 
-    tempStr[offset].extract(value, valueLength, status);
     return status;
 }
 
