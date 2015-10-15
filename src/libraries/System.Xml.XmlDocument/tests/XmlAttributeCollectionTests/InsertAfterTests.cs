@@ -229,5 +229,51 @@ namespace XmlDocumentTests.XmlAttributeCollectionTests
             Assert.Same(anotherAttr2, target[1]);
             Assert.Same(newAttr, target[2]);
         }
+
+        [Fact]
+        public void InsertAfterReplacesDupRefAttr()
+        {
+            const string attributeName = "existingAttr";
+            const string attributeUri = "some:existingUri";
+            XmlDocument doc = CreateDocumentWithElement();
+            XmlElement element = doc.DocumentElement;
+            XmlAttribute anotherAttr1 = element.Attributes.Append(doc.CreateAttribute("attr1", "some:uri1"));
+            XmlAttribute anotherAttr2 = element.Attributes.Append(doc.CreateAttribute("attr2", "some:uri2"));
+            XmlAttribute refAttr = element.Attributes.Append(doc.CreateAttribute(attributeName, attributeUri)); //dup
+            XmlAttribute anotherAttr3 = element.Attributes.Append(doc.CreateAttribute("attr3", "some:uri3"));
+            XmlAttribute newAttr = doc.CreateAttribute(attributeName, attributeUri);
+
+            XmlAttributeCollection target = element.Attributes;
+            target.InsertAfter(newAttr, refAttr);
+
+            Assert.Equal(4, target.Count);
+            Assert.Same(anotherAttr1, target[0]);
+            Assert.Same(anotherAttr2, target[1]);
+            Assert.Same(newAttr, target[2]);
+            Assert.Same(anotherAttr3, target[3]);
+        }
+
+        [Fact]
+        public void InsertAfterRemovesDupRefAttrAfterAttrAndTheRef()
+        {
+            const string attributeName = "existingAttr";
+            const string attributeUri = "some:existingUri";
+            XmlDocument doc = CreateDocumentWithElement();
+            XmlElement element = doc.DocumentElement;
+            XmlAttribute refAttr = element.Attributes.Append(doc.CreateAttribute("attr1", "some:uri1"));
+            XmlAttribute anotherAttr2 = element.Attributes.Append(doc.CreateAttribute("attr2", "some:uri2"));
+            element.Attributes.Append(doc.CreateAttribute(attributeName, attributeUri)); //dup
+            XmlAttribute anotherAttr3 = element.Attributes.Append(doc.CreateAttribute("attr3", "some:uri3"));
+            XmlAttribute newAttr = doc.CreateAttribute(attributeName, attributeUri);
+
+            XmlAttributeCollection target = element.Attributes;
+            target.InsertAfter(newAttr, refAttr);
+
+            Assert.Equal(4, target.Count);
+            Assert.Same(refAttr, target[0]);
+            Assert.Same(newAttr, target[1]);
+            Assert.Same(anotherAttr2, target[2]);
+            Assert.Same(anotherAttr3, target[3]);  
+        }
     }
 }
