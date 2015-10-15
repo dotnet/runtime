@@ -2,16 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Text;
-
-using socklen_t = System.UInt32;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        public static extern unsafe int getpeername(int sockfd, byte* addr, socklen_t* addrlen);
+        [DllImport(Libraries.SystemNative)]
+        internal static extern Error Shutdown(int socket, SocketShutdown how);
     }
 }
