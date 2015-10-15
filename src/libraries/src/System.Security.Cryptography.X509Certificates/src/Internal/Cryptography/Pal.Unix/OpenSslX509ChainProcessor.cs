@@ -58,8 +58,8 @@ namespace Internal.Cryptography.Pal
             // Cryptography.X509Store. So read this with OpenSSL eyes, not CAPI/CNG eyes.
             //
             // (If you need to think of it as an X509Store, it's a volatile memory store)
-            using (SafeX509StoreHandle store = Interop.libcrypto.X509_STORE_new())
-            using (SafeX509StoreCtxHandle storeCtx = Interop.libcrypto.X509_STORE_CTX_new())
+            using (SafeX509StoreHandle store = Interop.Crypto.X509StoreCreate())
+            using (SafeX509StoreCtxHandle storeCtx = Interop.Crypto.X509StoreCtxCreate())
             {
                 Interop.Crypto.CheckValidOpenSslHandle(store);
                 Interop.Crypto.CheckValidOpenSslHandle(storeCtx);
@@ -70,7 +70,7 @@ namespace Internal.Cryptography.Pal
                 {
                     OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)cert.Pal;
 
-                    if (!Interop.libcrypto.X509_STORE_add_cert(store, pal.SafeHandle))
+                    if (!Interop.Crypto.X509StoreAddCert(store, pal.SafeHandle))
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
@@ -92,14 +92,7 @@ namespace Internal.Cryptography.Pal
 
                 if (revocationMode != X509RevocationMode.NoCheck)
                 {
-                    Interop.libcrypto.X509VerifyFlags vfyFlags = Interop.libcrypto.X509VerifyFlags.X509_V_FLAG_CRL_CHECK;
-
-                    if (revocationFlag != X509RevocationFlag.EndCertificateOnly)
-                    {
-                        vfyFlags |= Interop.libcrypto.X509VerifyFlags.X509_V_FLAG_CRL_CHECK_ALL;
-                    }
-
-                    if (!Interop.libcrypto.X509_STORE_set_flags(store, vfyFlags))
+                    if (!Interop.Crypto.X509StoreSetRevocationFlag(store, revocationFlag))
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
@@ -110,30 +103,30 @@ namespace Internal.Cryptography.Pal
 
                 SafeX509Handle leafHandle = ((OpenSslX509CertificateReader)leaf.Pal).SafeHandle;
 
-                if (!Interop.libcrypto.X509_STORE_CTX_init(storeCtx, store, leafHandle, IntPtr.Zero))
+                if (!Interop.Crypto.X509StoreCtxInit(storeCtx, store, leafHandle))
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
                 Interop.Crypto.SetX509ChainVerifyTime(storeCtx, verificationTime);
 
-                int verify = Interop.libcrypto.X509_verify_cert(storeCtx);
+                int verify = Interop.Crypto.X509VerifyCert(storeCtx);
 
                 if (verify < 0)
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
-                using (SafeX509StackHandle chainStack = Interop.libcrypto.X509_STORE_CTX_get1_chain(storeCtx))
+                using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(storeCtx))
                 {
                     int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
                     int errorDepth = -1;
-                    Interop.libcrypto.X509VerifyStatusCode errorCode = 0;
+                    Interop.Crypto.X509VerifyStatusCode errorCode = 0;
 
                     if (verify == 0)
                     {
-                        errorCode = Interop.libcrypto.X509_STORE_CTX_get_error(storeCtx);
-                        errorDepth = Interop.libcrypto.X509_STORE_CTX_get_error_depth(storeCtx);
+                        errorCode = Interop.Crypto.X509StoreCtxGetError(storeCtx);
+                        errorDepth = Interop.Crypto.X509StoreCtxGetErrorDepth(storeCtx);
                     }
 
                     elements = new X509ChainElement[chainSize];
@@ -168,7 +161,7 @@ namespace Internal.Cryptography.Pal
                                 !systemTrusted.Contains(elementCert))
                             {
                                 AddElementStatus(
-                                    Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_UNTRUSTED,
+                                    Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_UNTRUSTED,
                                     status,
                                     overallStatus);
                             }
@@ -240,7 +233,7 @@ namespace Internal.Cryptography.Pal
         }
 
         private static void AddElementStatus(
-            Interop.libcrypto.X509VerifyStatusCode errorCode,
+            Interop.Crypto.X509VerifyStatusCode errorCode,
             List<X509ChainStatus> elementStatus,
             List<X509ChainStatus> overallStatus)
         {
@@ -264,7 +257,7 @@ namespace Internal.Cryptography.Pal
             X509ChainStatus chainStatus = new X509ChainStatus
             {
                 Status = MapVerifyErrorToChainStatus(errorCode),
-                StatusInformation = Interop.libcrypto.X509_verify_cert_error_string(errorCode),
+                StatusInformation = Interop.Crypto.GetX509VerifyCertErrorString(errorCode),
             };
 
             elementStatus.Add(chainStatus);
@@ -286,76 +279,76 @@ namespace Internal.Cryptography.Pal
             list.Add(status);
         }
 
-        private static X509ChainStatusFlags MapVerifyErrorToChainStatus(Interop.libcrypto.X509VerifyStatusCode code)
+        private static X509ChainStatusFlags MapVerifyErrorToChainStatus(Interop.Crypto.X509VerifyStatusCode code)
         {
             switch (code)
             {
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_OK:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_OK:
                     return X509ChainStatusFlags.NoError;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_NOT_YET_VALID:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_HAS_EXPIRED:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_NOT_YET_VALID:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_HAS_EXPIRED:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
                     return X509ChainStatusFlags.NotTimeValid;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_REVOKED:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_REVOKED:
                     return X509ChainStatusFlags.Revoked;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_SIGNATURE_FAILURE:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_SIGNATURE_FAILURE:
                     return X509ChainStatusFlags.NotSignatureValid;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_UNTRUSTED:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_UNTRUSTED:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
                     return X509ChainStatusFlags.UntrustedRoot;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CRL_HAS_EXPIRED:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_HAS_EXPIRED:
                     return X509ChainStatusFlags.OfflineRevocation;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CRL_NOT_YET_VALID:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CRL_SIGNATURE_FAILURE:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_KEYUSAGE_NO_CRL_SIGN:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL_ISSUER:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_UNHANDLED_CRITICAL_CRL_EXTENSION:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_NOT_YET_VALID:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_SIGNATURE_FAILURE:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CRL_LAST_UPDATE_FIELD:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_ERROR_IN_CRL_NEXT_UPDATE_FIELD:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_KEYUSAGE_NO_CRL_SIGN:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_CRL_ISSUER:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNHANDLED_CRITICAL_CRL_EXTENSION:
                     return X509ChainStatusFlags.RevocationStatusUnknown;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_INVALID_EXTENSION:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_INVALID_EXTENSION:
                     return X509ChainStatusFlags.InvalidExtension;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
                     return X509ChainStatusFlags.PartialChain;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_INVALID_PURPOSE:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_INVALID_PURPOSE:
                     return X509ChainStatusFlags.NotValidForUsage;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_INVALID_CA:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_INVALID_NON_CA:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_PATH_LENGTH_EXCEEDED:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_INVALID_CA:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_INVALID_NON_CA:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_PATH_LENGTH_EXCEEDED:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_KEYUSAGE_NO_DIGITAL_SIGNATURE:
                     return X509ChainStatusFlags.InvalidBasicConstraints;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_INVALID_POLICY_EXTENSION:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_NO_EXPLICIT_POLICY:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_INVALID_POLICY_EXTENSION:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_NO_EXPLICIT_POLICY:
                     return X509ChainStatusFlags.InvalidPolicyConstraints;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_REJECTED:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_REJECTED:
                     return X509ChainStatusFlags.ExplicitDistrust;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION:
                     return X509ChainStatusFlags.HasNotSupportedCriticalExtension;
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_CHAIN_TOO_LONG:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_CHAIN_TOO_LONG:
                     throw new CryptographicException();
 
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_OUT_OF_MEM:
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_OUT_OF_MEM:
                     throw new OutOfMemoryException();
 
                 default:
@@ -462,7 +455,7 @@ namespace Internal.Cryptography.Pal
                 {
                     SafeX509Handle candidateHandle = ((OpenSslX509CertificateReader)candidate.Pal).SafeHandle;
 
-                    int issuerError = Interop.libcrypto.X509_check_issued(candidateHandle, certHandle);
+                    int issuerError = Interop.Crypto.X509CheckIssued(candidateHandle, certHandle);
 
                     if (issuerError == 0)
                     {

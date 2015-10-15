@@ -16,7 +16,7 @@ namespace Internal.Cryptography.Pal
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Arg_InvalidHandle, "handle");
 
-            return new OpenSslX509CertificateReader(Interop.libcrypto.X509_dup(handle));
+            return new OpenSslX509CertificateReader(Interop.Crypto.X509Duplicate(handle));
         }
 
         public static ICertificatePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
@@ -137,7 +137,7 @@ namespace Internal.Cryptography.Pal
 
         internal static bool TryReadX509Pem(SafeBioHandle bio, out ICertificatePal certPal)
         {
-            SafeX509Handle cert = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            SafeX509Handle cert = Interop.Crypto.PemReadX509FromBio(bio);
 
             if (cert.IsInvalid)
             {
@@ -151,23 +151,13 @@ namespace Internal.Cryptography.Pal
 
         internal static bool TryReadX509Pem(byte[] rawData, out ICertificatePal certPal)
         {
-            SafeX509Handle certHandle;
             using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
 
                 Interop.Crypto.BioWrite(bio, rawData, rawData.Length);
-                certHandle = Interop.libcrypto.PEM_read_bio_X509_AUX(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                return TryReadX509Pem(bio, out certPal);
             }
-
-            if (certHandle.IsInvalid)
-            {
-                certPal = null;
-                return false;
-            }
-
-            certPal = new OpenSslX509CertificateReader(certHandle);
-            return true;
         }
 
         internal static bool TryReadX509Der(SafeBioHandle bio, out ICertificatePal fromBio)

@@ -52,7 +52,7 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.Crypto.BioWrite(bio, data, data.Length);
 
-                handle = Interop.libcrypto.PEM_read_bio_X509_CRL(bio);
+                handle = Interop.Crypto.PemReadBioX509Crl(bio);
 
                 if (!handle.IsInvalid)
                 {
