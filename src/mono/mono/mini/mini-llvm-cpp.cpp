@@ -467,6 +467,18 @@ mono_llvm_set_is_constant (LLVMValueRef global_var)
 	unwrap<GlobalVariable>(global_var)->setConstant (true);
 }
 
+void
+mono_llvm_set_preserveall_cc (LLVMValueRef func)
+{
+	unwrap<Function>(func)->setCallingConv (CallingConv::PreserveAll);
+}
+
+void
+mono_llvm_set_call_preserveall_cc (LLVMValueRef func)
+{
+	unwrap<CallInst>(func)->setCallingConv (CallingConv::PreserveAll);
+}
+
 static cl::list<const PassInfo*, bool, PassNameParser>
 PassList(cl::desc("Optimizations available:"));
 

@@ -9695,6 +9695,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	/* PLT offset 0 is reserved for the PLT trampoline */
 	acfg->plt_offset = 1;
+	add_preinit_got_slots (acfg);
 
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
@@ -9702,8 +9703,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		mono_llvm_create_aot_module (acfg->image->assembly, acfg->global_prefix, TRUE, acfg->aot_opts.static_link, acfg->aot_opts.llvm_only);
 	}
 #endif
-
-	add_preinit_got_slots (acfg);
 
 	TV_GETTIME (atv);
 
