@@ -10,6 +10,7 @@
 #include <functional>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
@@ -947,4 +948,390 @@ extern "C" Error SendMessage(int32_t socket, MessageHeader* messageHeader, int32
 
     *sent = 0;
     return ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error Accept(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, int32_t* acceptedSocket)
+{
+    if (socketAddress == nullptr || socketAddressLen == nullptr || acceptedSocket == nullptr || *socketAddressLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    socklen_t addrLen = static_cast<socklen_t>(*socketAddressLen);
+    int accepted = accept(socket, reinterpret_cast<sockaddr*>(socketAddress), &addrLen);
+    if (accepted == -1)
+    {
+        *acceptedSocket = -1;
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    assert(addrLen <= static_cast<socklen_t>(*socketAddressLen));
+    *socketAddressLen = static_cast<int32_t>(addrLen);
+    *acceptedSocket = accepted;
+    return PAL_SUCCESS;
+}
+
+extern "C" Error Bind(int32_t socket, uint8_t* socketAddress, int32_t socketAddressLen)
+{
+    if (socketAddress == nullptr || socketAddressLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    int err = bind(socket, reinterpret_cast<sockaddr*>(socketAddress), static_cast<socklen_t>(socketAddressLen));
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error Connect(int32_t socket, uint8_t* socketAddress, int32_t socketAddressLen)
+{
+    if (socketAddress == nullptr || socketAddressLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    int err = connect(socket, reinterpret_cast<sockaddr*>(socketAddress), static_cast<socklen_t>(socketAddressLen));
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error GetPeerName(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen)
+{
+    if (socketAddress == nullptr || socketAddressLen == nullptr || *socketAddressLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    socklen_t addrLen = static_cast<socklen_t>(*socketAddressLen);
+    int err = getpeername(socket, reinterpret_cast<sockaddr*>(socketAddress), &addrLen);
+    if (err != 0)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    assert(addrLen <= static_cast<socklen_t>(*socketAddressLen));
+    *socketAddressLen = static_cast<int32_t>(addrLen);
+    return PAL_SUCCESS;
+}
+
+extern "C" Error GetSockName(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen)
+{
+    if (socketAddress == nullptr || socketAddressLen == nullptr || *socketAddressLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    socklen_t addrLen = static_cast<socklen_t>(*socketAddressLen);
+    int err = getsockname(socket, reinterpret_cast<sockaddr*>(socketAddress), &addrLen);
+    if (err != 0)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    assert(addrLen <= static_cast<socklen_t>(*socketAddressLen));
+    *socketAddressLen = static_cast<int32_t>(addrLen);
+    return PAL_SUCCESS;
+}
+
+extern "C" Error Listen(int32_t socket, int32_t backlog)
+{
+    int err = listen(socket, backlog);
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error Shutdown(int32_t socket, int32_t socketShutdown)
+{
+    int how;
+    switch (socketShutdown)
+    {
+        case PAL_SHUT_READ:
+            how = SHUT_RD;
+            break;
+
+        case PAL_SHUT_WRITE:
+            how = SHUT_WR;
+            break;
+
+        case PAL_SHUT_BOTH:
+            how = SHUT_RDWR;
+            break;
+
+        default:
+            return PAL_EINVAL;
+    }
+
+    int err = shutdown(socket, how);
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error GetSocketErrorOption(int32_t socket, Error* error)
+{
+    if (error == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    int socketErrno;
+    socklen_t optLen = sizeof(socketErrno);
+    int err = getsockopt(socket, SOL_SOCKET, SO_ERROR, &socketErrno, &optLen);
+    if (err != 0)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    assert(optLen == sizeof(socketErrno));
+    *error = ConvertErrorPlatformToPal(socketErrno);
+    return PAL_SUCCESS;
+}
+
+static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketOptionLevel, int& optLevel, int& optName)
+{
+    switch (socketOptionName)
+    {
+        case PAL_SOL_SOCKET:
+            optLevel = SOL_SOCKET;
+
+            switch (socketOptionLevel)
+            {
+                case PAL_SO_DEBUG:
+                    optName = SO_DEBUG;
+                    return true;
+
+                case PAL_SO_ACCEPTCONN:
+                    optName = SO_ACCEPTCONN;
+                    return true;
+
+                case PAL_SO_REUSEADDR:
+                    optName = SO_REUSEADDR;
+                    return true;
+
+                case PAL_SO_KEEPALIVE:
+                    optName = SO_KEEPALIVE;
+                    return true;
+
+                case PAL_SO_DONTROUTE:
+                    optName = SO_DONTROUTE;
+                    return true;
+
+                case PAL_SO_BROADCAST:
+                    optName = SO_BROADCAST;
+                    return true;
+
+                // case PAL_SO_USELOOPBACK:
+
+                case PAL_SO_LINGER:
+                    optName = SO_LINGER;
+                    return true;
+
+                case PAL_SO_OOBINLINE:
+                    optName = SO_OOBINLINE;
+                    return true;
+
+                // case PAL_SO_DONTLINGER:
+
+                // case PAL_SO_EXCLUSIVEADDRUSE:
+
+                case PAL_SO_SNDBUF:
+                    optName = SO_SNDBUF;
+                    return true;
+
+                case PAL_SO_RCVBUF:
+                    optName = SO_RCVBUF;
+                    return true;
+
+                case PAL_SO_SNDLOWAT:
+                    optName = SO_SNDLOWAT;
+                    return true;
+
+                case PAL_SO_RCVLOWAT:
+                    optName = SO_RCVLOWAT;
+                    return true;
+
+                case PAL_SO_SNDTIMEO:
+                    optName = SO_SNDTIMEO;
+                    return true;
+
+                case PAL_SO_RCVTIMEO:
+                    optName = SO_RCVTIMEO;
+                    return true;
+
+                case PAL_SO_ERROR:
+                    optName = SO_ERROR;
+                    return true;
+
+                case PAL_SO_TYPE:
+                    optName = SO_TYPE;
+                    return true;
+
+                // case PAL_SO_MAXCONN:
+
+                default:
+                    return false;
+            }
+
+        case PAL_SOL_IP:
+            optLevel = IPPROTO_IP;
+
+            switch (socketOptionLevel)
+            {
+                case PAL_SO_IP_OPTIONS:
+                    optName = IP_OPTIONS;
+                    return true;
+
+                case PAL_SO_IP_HDRINCL:
+                    optName = IP_HDRINCL;
+                    return true;
+
+                case PAL_SO_IP_TOS:
+                    optName = IP_TOS;
+                    return true;
+
+                case PAL_SO_IP_TTL:
+                    optName = IP_TTL;
+                    return true;
+
+                case PAL_SO_IP_MULTICAST_IF:
+                    optName = IP_MULTICAST_IF;
+                    return true;
+
+                case PAL_SO_IP_MULTICAST_TTL:
+                    optName = IP_MULTICAST_TTL;
+                    return true;
+
+                case PAL_SO_IP_MULTICAST_LOOP:
+                    optName = IP_MULTICAST_LOOP;
+                    return true;
+
+                case PAL_SO_IP_ADD_MEMBERSHIP:
+                    optName = IP_ADD_MEMBERSHIP;
+                    return true;
+
+                case PAL_SO_IP_DROP_MEMBERSHIP:
+                    optName = IP_DROP_MEMBERSHIP;
+                    return true;
+
+                // case PAL_SO_IP_DONTFRAGMENT:
+
+                case PAL_SO_IP_ADD_SOURCE_MEMBERSHIP:
+                    optName = IP_ADD_SOURCE_MEMBERSHIP;
+                    return true;
+
+                case PAL_SO_IP_DROP_SOURCE_MEMBERSHIP:
+                    optName = IP_DROP_SOURCE_MEMBERSHIP;
+                    return true;
+
+                case PAL_SO_IP_BLOCK_SOURCE:
+                    optName = IP_BLOCK_SOURCE;
+                    return true;
+
+                case PAL_SO_IP_UNBLOCK_SOURCE:
+                    optName = IP_UNBLOCK_SOURCE;
+                    return true;
+
+                case PAL_SO_IP_PKTINFO:
+                    optName = IP_PKTINFO;
+                    return true;
+
+                default:
+                    return false;
+            }
+
+        case PAL_SOL_IPV6:
+            optLevel = IPPROTO_IPV6;
+
+            switch (socketOptionLevel)
+            {
+                case PAL_SO_IPV6_HOPLIMIT:
+                    optName = IPV6_HOPLIMIT;
+                    return true;
+
+                // case PAL_SO_IPV6_PROTECTION_LEVEL:
+
+                case PAL_SO_IPV6_V6ONLY:
+                    optName = IPV6_V6ONLY;
+                    return true;
+
+                case PAL_SO_IP_PKTINFO:
+                    optName = IPV6_RECVPKTINFO;
+                    return true;
+
+                default:
+                    return false;
+            }
+
+        case PAL_SOL_TCP:
+            optLevel = IPPROTO_TCP;
+
+            switch (socketOptionLevel)
+            {
+                case PAL_SO_TCP_NODELAY:
+                    optName = TCP_NODELAY;
+                    return true;
+
+                // case PAL_SO_TCP_BSDURGENT:
+
+                default:
+                    return false;
+            }
+
+        case PAL_SOL_UDP:
+            optLevel = IPPROTO_UDP;
+
+            switch (socketOptionLevel)
+            {
+                // case PAL_SO_UDP_NOCHECKSUM:
+
+                // case PAL_SO_UDP_CHECKSUM_COVERAGE:
+
+                // case PAL_SO_UDP_UPDATEACCEPTCONTEXT:
+
+                // case PAL_SO_UDP_UPDATECONNECTCONTEXT:
+
+                default:
+                    return false;
+            }
+
+        default:
+            return false;
+    }
+}
+
+extern "C" Error GetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
+{
+    if (optionLen == nullptr || *optionLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    int optLevel, optName;
+    if (!TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, optLevel, optName))
+    {
+        return PAL_ENOTSUP;
+    }
+
+    auto optLen = static_cast<socklen_t>(*optionLen);
+    int err = getsockopt(socket, optLevel, optName, optionValue, &optLen);
+    if (err != 0)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    assert(optLen <= static_cast<socklen_t>(*optionLen));
+    *optionLen = static_cast<int32_t>(optLen);
+    return PAL_SUCCESS;
+}
+
+extern "C" Error SetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen)
+{
+    if (optionLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    int optLevel, optName;
+    if (!TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, optLevel, optName))
+    {
+        return PAL_ENOTSUP;
+    }
+
+    int err = setsockopt(socket, optLevel, optName, optionValue, static_cast<socklen_t>(optionLen));
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
 }

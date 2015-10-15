@@ -215,8 +215,8 @@ namespace System.Net.Sockets
                     else if (addressFamily == AddressFamily.InterNetworkV6)
                     {
                         int on = 1;
-                        err = Interop.libc.setsockopt(fd, Interop.libc.IPPROTO_IPV6, Interop.libc.IPV6_V6ONLY, &on, (uint)sizeof(int));
-                        if (err != 0)
+                        Interop.Error error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
+                        if (error != Interop.Error.SUCCESS)
                         {
                             Interop.Sys.Close(fd);
                             fd = -1;

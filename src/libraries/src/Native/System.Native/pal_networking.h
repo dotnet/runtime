@@ -64,6 +64,95 @@ enum MulticastOption : int32_t
     PAL_MULTICAST_DROP = 1 // IP{,V6}_DROP_MEMBERSHIP
 };
 
+/*
+ * Socket shutdown modes.
+ *
+ * NOTE: these values are taken from System.Net.SocketShutdown.
+ */
+enum SocketShutdown : int32_t
+{
+    PAL_SHUT_READ = 0,  // SHUT_RD
+    PAL_SHUT_WRITE = 1, // SHUT_WR
+    PAL_SHUT_BOTH = 2,  // SHUT_RDWR
+};
+
+/*
+ * Socket option levels.
+ *
+ * NOTE: these values are taken from System.Net.SocketOptionLevel.
+ */
+enum SocketOptionLevel : int32_t
+{
+    PAL_SOL_SOCKET = 0xffff,
+    PAL_SOL_IP = 0,
+    PAL_SOL_IPV6 = 41,
+    PAL_SOL_TCP = 6,
+    PAL_SOL_UDP = 17,
+};
+
+/*
+ * Socket option names.
+ *
+ * NOTE: these values are taken from System.Net.SocketOptionName. Only values that are known to be usable on all target
+ *       platforms are represented here. Unsupported values are present as commented-out entries.
+ */
+enum SocketOptionName : int32_t
+{
+    // Names for level PAL_SOL_SOCKET
+    PAL_SO_DEBUG = 0x0001,
+    PAL_SO_ACCEPTCONN = 0x0002,
+    PAL_SO_REUSEADDR = 0x0004,
+    PAL_SO_KEEPALIVE = 0x0008,
+    PAL_SO_DONTROUTE = 0x0010,
+    PAL_SO_BROADCAST = 0x0020,
+    // PAL_SO_USELOOPBACK = 0x0040,
+    PAL_SO_LINGER = 0x0080,
+    PAL_SO_OOBINLINE = 0x0100,
+    //PAL_SO_DONTLINGER = ~PAL_SO_LINGER,
+    //PAL_SO_EXCLUSIVEADDRUSE = ~PAL_SO_REUSEADDR,
+    PAL_SO_SNDBUF = 0x1001,
+    PAL_SO_RCVBUF = 0x1002,
+    PAL_SO_SNDLOWAT = 0x1003,
+    PAL_SO_RCVLOWAT = 0x1004,
+    PAL_SO_SNDTIMEO = 0x1005,
+    PAL_SO_RCVTIMEO = 0x1006,
+    PAL_SO_ERROR = 0x1007,
+    PAL_SO_TYPE = 0x1008,
+    // PAL_SO_MAXCONN = 0x7fffffff,
+
+    // Names for level PAL_SOL_IP
+    PAL_SO_IP_OPTIONS = 1,
+    PAL_SO_IP_HDRINCL = 2,
+    PAL_SO_IP_TOS = 3,
+    PAL_SO_IP_TTL = 4,
+    PAL_SO_IP_MULTICAST_IF = 9,
+    PAL_SO_IP_MULTICAST_TTL = 10,
+    PAL_SO_IP_MULTICAST_LOOP = 11,
+    PAL_SO_IP_ADD_MEMBERSHIP = 12,
+    PAL_SO_IP_DROP_MEMBERSHIP = 13,
+    // PAL_SO_IP_DONTFRAGMENT = 14,
+    PAL_SO_IP_ADD_SOURCE_MEMBERSHIP = 15,
+    PAL_SO_IP_DROP_SOURCE_MEMBERSHIP = 16,
+    PAL_SO_IP_BLOCK_SOURCE = 17,
+    PAL_SO_IP_UNBLOCK_SOURCE = 18,
+    PAL_SO_IP_PKTINFO = 19,
+
+    // Names for PAL_SOL_IPV6
+    PAL_SO_IPV6_HOPLIMIT = 21,
+    // PAL_SO_IPV6_PROTECTION_LEVEL = 23,
+    PAL_SO_IPV6_V6ONLY = 27,
+
+    // Names for PAL_SOL_TCP
+    PAL_SO_TCP_NODELAY = 1,
+    // PAL_SO_TCP_BSDURGENT = 2,
+
+    // Names for PAL_SOL_UDP
+    // PAL_SO_UDP_NOCHECKSUM = 1,
+    // PAL_SO_UDP_CHECKSUM_COVERAGE = 20,
+    // PAL_SO_UDP_UPDATEACCEPTCONTEXT = 0x700b,
+    // PAL_SO_UDP_UPDATECONNECTCONTEXT = 0x7010,
+};
+
 /**
  * IP address sizes.
  */
@@ -205,3 +294,23 @@ extern "C" Error SetLingerOption(int32_t socket, LingerOption* option);
 extern "C" Error ReceiveMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
 
 extern "C" Error SendMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);
+
+extern "C" Error Accept(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, int32_t* acceptedSocket);
+
+extern "C" Error Bind(int32_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
+
+extern "C" Error Connect(int32_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
+
+extern "C" Error GetPeerName(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
+
+extern "C" Error GetSockName(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
+
+extern "C" Error Listen(int32_t socket, int32_t backlog);
+
+extern "C" Error Shutdown(int32_t socket, int32_t socketShutdown);
+
+extern "C" Error GetSocketErrorOption(int32_t socket, Error* error);
+
+extern "C" Error GetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
+
+extern "C" Error SetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
