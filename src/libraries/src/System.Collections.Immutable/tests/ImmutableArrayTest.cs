@@ -863,11 +863,12 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void RemoveRange()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => s_empty.RemoveRange(0, 0));
+            Assert.Equal(s_empty, s_empty.RemoveRange(0, 0));
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(0, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => s_emptyDefault.RemoveRange(-1, 0));
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(0, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => s_oneElement.RemoveRange(1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => s_oneElement.RemoveRange(2, 0));
+            Assert.Equal(s_oneElement, s_oneElement.RemoveRange(1, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => s_empty.RemoveRange(-1, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => s_oneElement.RemoveRange(0, 2));
             Assert.Throws<ArgumentOutOfRangeException>(() => s_oneElement.RemoveRange(0, -1));
