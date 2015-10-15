@@ -10,11 +10,11 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        internal delegate int GetI2DSizeFunc<in THandle>(THandle handle);
+        internal delegate int GetEncodedSizeFunc<in THandle>(THandle handle);
 
-        internal delegate int I2DFunc<in THandle>(THandle handle, byte[] buf);
+        internal delegate int EncodeFunc<in THandle>(THandle handle, byte[] buf);
 
-        internal static byte[] OpenSslI2D<THandle>(GetI2DSizeFunc<THandle> getSize, I2DFunc<THandle> i2d, THandle handle)
+        internal static byte[] OpenSslEnocde<THandle>(GetEncodedSizeFunc<THandle> getSize, EncodeFunc<THandle> encode, THandle handle)
             where THandle : SafeHandle
         {
             int size = getSize(handle);
@@ -26,7 +26,7 @@ internal static partial class Interop
 
             byte[] data = new byte[size];
 
-            int size2 = i2d(handle, data);
+            int size2 = encode(handle, data);
             Debug.Assert(size == size2);
 
             return data;

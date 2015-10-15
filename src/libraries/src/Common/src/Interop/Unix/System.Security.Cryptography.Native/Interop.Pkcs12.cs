@@ -14,7 +14,7 @@ internal static partial class Interop
         internal static unsafe extern SafePkcs12Handle DecodePkcs12(byte[] buf, int len);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern SafePkcs12Handle D2IPkcs12Bio(SafeBioHandle bio);
+        internal static extern SafePkcs12Handle DecodePkcs12FromBio(SafeBioHandle bio);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern void Pkcs12Destroy(IntPtr p12);
@@ -30,7 +30,7 @@ internal static partial class Interop
         internal static extern int GetPkcs12DerSize(SafePkcs12Handle p12);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern int I2DPkcs12(SafePkcs12Handle p12, byte[] buf);
+        internal static extern int EncodePkcs12(SafePkcs12Handle p12, byte[] buf);
 
         [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.Bool)]

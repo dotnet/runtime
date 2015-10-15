@@ -33,7 +33,7 @@ extern "C" void Pkcs7Destroy(PKCS7* p7)
     }
 }
 
-extern "C" int32_t GetPkcs7Certificates(PKCS7* p7, STACK_OF(X509) * *certs)
+extern "C" int32_t GetPkcs7Certificates(PKCS7* p7, X509Stack** certs)
 {
     if (!p7 || !certs)
     {

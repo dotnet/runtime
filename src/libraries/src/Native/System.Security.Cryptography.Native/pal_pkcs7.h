@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#include "pal_types.h"
+#include "pal_crypto_types.h"
 
 #include <openssl/pkcs7.h>
 
@@ -51,4 +51,4 @@ Return values:
 1 when the file format is understood, and *certs is assigned to the
 certificate contents of the structure.
 */
-extern "C" int32_t GetPkcs7Certificates(PKCS7* p7, STACK_OF(X509) * *certs);
+extern "C" int32_t GetPkcs7Certificates(PKCS7* p7, X509Stack** certs);
