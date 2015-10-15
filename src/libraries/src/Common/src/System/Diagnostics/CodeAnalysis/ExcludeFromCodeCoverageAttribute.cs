@@ -3,6 +3,7 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
+    [Conditional("DEBUG")] // don't bloat release assemblies
     [AttributeUsage(AttributeTargets.All, Inherited = false, AllowMultiple = false)]
     internal sealed class ExcludeFromCodeCoverageAttribute : Attribute
     {
