@@ -2540,12 +2540,6 @@ emit_init_method (EmitContext *ctx)
 	LLVMBuilderRef builder = ctx->builder;
 	MonoCompile *cfg = ctx->cfg;
 
-	//
-	// FIXME: The call is not a trampoline, so it clobbers argument registers
-	// FIXME: Optimize
-	// FIXME: Add an aot option for this
-	//
-
 	ctx->lmodule->max_inited_idx = MAX (ctx->lmodule->max_inited_idx, cfg->method_index);
 	ctx->lmodule->max_method_idx = MAX (ctx->lmodule->max_method_idx, cfg->method_index);
 
