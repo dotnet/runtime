@@ -270,7 +270,7 @@ def static getBuildJobName(def configuration, def os) {
                 Utilities.addPRTestSCM(newJob, project)
                 Utilities.addStandardPRParameters(newJob, project)
             }
-            Utilties.addStandardOptions(newJob)
+            Utilities.addStandardOptions(newJob)
             Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
             
             // Create a build flow to join together the build and tests required to run this
