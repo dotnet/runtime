@@ -36,7 +36,7 @@ namespace Internal.Cryptography.Pal
 
         public static bool TryRead(SafeBioHandle fileBio, out OpenSslPkcs12Reader pkcs12Reader)
         {
-            SafePkcs12Handle p12 = Interop.libcrypto.d2i_PKCS12_bio(fileBio, IntPtr.Zero);
+            SafePkcs12Handle p12 = Interop.Crypto.DecodePkcs12FromBio(fileBio);
 
             if (!p12.IsInvalid)
             {
@@ -76,7 +76,7 @@ namespace Internal.Cryptography.Pal
 
         public void Decrypt(string password)
         {
-            bool parsed = Interop.libcrypto.PKCS12_parse(
+            bool parsed = Interop.Crypto.Pkcs12Parse(
                 _pkcs12Handle,
                 password,
                 out _evpPkeyHandle,
