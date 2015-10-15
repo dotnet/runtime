@@ -26,18 +26,6 @@ extern "C"
 {
 #endif // __cplusplus
 
-#define PAL_SHLIB_PREFIX "lib"
-
-#if __APPLE__
-#define PAL_SHLIB_SUFFIX ".dylib"
-#elif _AIX
-#define PAL_SHLIB_SUFFIX ".a"
-#elif _HPUX_
-#define PAL_SHLIB_SUFFIX ".sl"
-#else
-#define PAL_SHLIB_SUFFIX ".so"
-#endif
-
 typedef BOOL (__stdcall *PDLLMAIN)(HINSTANCE, DWORD, LPVOID);   /* entry point of module */
 typedef HINSTANCE (PALAPI *PREGISTER_MODULE)(LPCSTR);           /* used to create the HINSTANCE for above DLLMain entry point */
 typedef VOID (PALAPI *PUNREGISTER_MODULE)(HINSTANCE);           /* used to cleanup the HINSTANCE for above DLLMain entry point */
