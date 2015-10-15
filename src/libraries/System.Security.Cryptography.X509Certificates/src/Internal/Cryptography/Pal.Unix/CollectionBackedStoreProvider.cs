@@ -111,29 +111,21 @@ namespace Internal.Cryptography.Pal
                     privateCertKeyHandle = InvalidPKeyHandle;
                 }
 
-                using (SafePkcs12Handle pkcs12 = Interop.libcrypto.PKCS12_create(
+                using (SafePkcs12Handle pkcs12 = Interop.Crypto.Pkcs12Create(
                     password,
-                    null,
                     privateCertKeyHandle,
                     privateCertHandle,
-                    publicCerts,
-                    Interop.Crypto.NID_undef,
-                    Interop.Crypto.NID_undef,
-                    Interop.libcrypto.PKCS12_DEFAULT_ITER,
-                    Interop.libcrypto.PKCS12_DEFAULT_ITER,
-                    0))
+                    publicCerts))
                 {
                     if (pkcs12.IsInvalid)
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
-                    unsafe
-                    {
-                        return Interop.libcrypto.OpenSslI2D(
-                            (handle, b) => Interop.libcrypto.i2d_PKCS12(handle, b),
+                        return Interop.Crypto.OpenSslI2D(
+                            Interop.Crypto.GetPkcs12DerSize,
+                            Interop.Crypto.I2DPkcs12,
                             pkcs12);
-                    }
                 }
             }
         }

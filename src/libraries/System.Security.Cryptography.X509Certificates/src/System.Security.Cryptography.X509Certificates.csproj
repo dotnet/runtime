@@ -197,6 +197,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.i2d.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.i2d.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
     </Compile>
@@ -217,9 +220,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Pkcs12.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.Pkcs12.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Rsa.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.Rsa.cs</Link>

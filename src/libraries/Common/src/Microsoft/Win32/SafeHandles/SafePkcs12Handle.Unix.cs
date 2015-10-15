@@ -15,7 +15,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.PKCS12_free(handle);
+            Interop.Crypto.Pkcs12Destroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }

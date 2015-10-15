@@ -51,4 +51,4 @@ Return values:
 1 when the file format is understood, and *certs is assigned to the
 certificate contents of the structure.
 */
-extern "C" int32_t GetPkcs7Certificates(PKCS7* p7, STACK_OF(X509)** certs);
+extern "C" int32_t GetPkcs7Certificates(PKCS7* p7, STACK_OF(X509) * *certs);
