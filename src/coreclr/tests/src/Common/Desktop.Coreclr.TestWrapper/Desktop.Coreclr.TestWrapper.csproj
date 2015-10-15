@@ -12,6 +12,7 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <SkipSigning>true</SkipSigning>
     <FileAlignment>512</FileAlignment>
+    <CLRTestKind>BuildOnly</CLRTestKind>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
