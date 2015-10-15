@@ -6964,7 +6964,7 @@ HINSTANCE NDirect::LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTrack
         {
             W("mscorpe.dll"), W("mscorpe")
         };
-                
+
         for (int i = 0; i < COUNTOF(rgSxSAwareDlls); i++)
         {
             if (SString::_wcsicmp(wszLibName, rgSxSAwareDlls[i]) == 0)
@@ -7004,6 +7004,29 @@ HINSTANCE NDirect::LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTrack
     }
 #endif // FEATURE_CORESYSTEM && !FEATURE_PAL
 
+#ifdef FEATURE_PAL
+    // P/Invokes are often declared with variations on the actual library name.
+    // For example, it's common to leave off the extension/suffix of the library
+    // even if it has one, or to leave off a prefix like "lib" even if it has one
+    // (both of these are typically done to smooth over cross-platform differences). 
+    // We try to dlopen with such variations on the original.
+    const char* const prefixSuffixCombinations[] =
+    {
+        "%s%s%s",     // prefix+name+suffix
+        "%.0s%s%.0s", // name
+        "%.0s%s%s",   // name+suffix
+        "%s%s%.0s",   // prefix+name
+    };
+
+    const int NUMBER_OF_LIB_NAME_VARIATIONS = COUNTOF(prefixSuffixCombinations);
+
+    SString libNameVariations[NUMBER_OF_LIB_NAME_VARIATIONS];
+    for (int i = 0; i < NUMBER_OF_LIB_NAME_VARIATIONS; i++)
+    {
+        libNameVariations[i].Printf(prefixSuffixCombinations[i], PAL_SHLIB_PREFIX, name, PAL_SHLIB_SUFFIX);
+    }
+#endif // FEATURE_PAL
+
     DWORD dllImportSearchPathFlag = 0;
     BOOL searchAssemblyDirectory = TRUE;
     if (hmod == NULL)
@@ -7032,7 +7055,7 @@ HINSTANCE NDirect::LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTrack
                 attributeIsFound = TRUE;
             }
         }
-                
+
         if (!attributeIsFound)
         {
             CheckUnificationList(pMD, &dllImportSearchPathFlag, &searchAssemblyDirectory);
@@ -7058,29 +7081,40 @@ HINSTANCE NDirect::LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTrack
             Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
 
             SString path = pAssembly->GetManifestFile()->GetPath();
-            SString::Iterator i = path.End();
 
-            if (PEAssembly::FindLastPathSeparator(path, i))
+            SString::Iterator lastPathSeparatorIter = path.End();
+            if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
             {
-                i++;
-                path.Truncate(i);
+                lastPathSeparatorIter++;
+                path.Truncate(lastPathSeparatorIter);
 
+#ifdef FEATURE_PAL
+                for (int i = 0; i < NUMBER_OF_LIB_NAME_VARIATIONS; i++)
+                {
+                    SString fullLibPathMaybe(path);
+                    fullLibPathMaybe.Append(libNameVariations[i]);
+
+                    hmod = LocalLoadLibraryHelper(fullLibPathMaybe, loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker);
+                    if (hmod != NULL)
+                        break;
+                }
+#else // FEATURE_PAL
                 path.Append(wszLibName);
-
                 hmod = LocalLoadLibraryHelper(path, loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker);
+#endif
             }
 
 #ifndef FEATURE_CORECLR
             if (hmod == NULL)
-            {                
+            {
                 // Try to load the DLL alongside the assembly where the PInvoke was 
                 // declared using the codebase of the assembly. This is required for download
                 // and shadow copy scenarios.
                 const WCHAR* ptr;
-                SString codebase;                                            
+                SString codebase;
                 pAssembly->GetCodeBase(codebase);
                 DWORD dwCodebaseLength = codebase.GetCount();
-                                            
+
                 // Strip off the protocol
                 for (ptr = codebase.GetUnicode(); *ptr && *ptr != W(':'); ptr++);
 
@@ -7090,7 +7124,7 @@ HINSTANCE NDirect::LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTrack
                     SString pathFromCodebase;
 
                     // After finding the colon move forward until no more forward slashes
-                    for(ptr++; *ptr && *ptr == W('/'); ptr++);
+                    for (ptr++; *ptr && *ptr == W('/'); ptr++);
                     if (*ptr) 
                     {
                         // Calculate the number of characters we are interested in
@@ -7103,9 +7137,9 @@ HINSTANCE NDirect::LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTrack
 
                             if (tail > ptr) 
                             {
-                                for(;ptr <= tail; ptr++) 
+                                for (;ptr <= tail; ptr++) 
                                 {
-                                    if(*ptr == W('/')) 
+                                    if (*ptr == W('/')) 
                                         pathFromCodebase.Append(W('\\'));
                                     else
                                         pathFromCodebase.Append(*ptr);
@@ -7129,24 +7163,47 @@ HINSTANCE NDirect::LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTrack
 #ifdef FEATURE_CORECLR
     if (hmod == NULL && pDomain->HasNativeDllSearchDirectories())
     {
-        AppDomain::PathIterator i = pDomain->IterateNativeDllSearchDirectories();
-        while (hmod == NULL && i.Next())
+        AppDomain::PathIterator pathIter = pDomain->IterateNativeDllSearchDirectories();
+        while (hmod == NULL && pathIter.Next())
         {
-            SString qualifiedPath(*(i.GetPath()));
+#ifdef FEATURE_PAL
+            for (int i = 0; i < NUMBER_OF_LIB_NAME_VARIATIONS; i++)
+            {
+                SString qualifiedPath(*(pathIter.GetPath()));
+                qualifiedPath.Append(libNameVariations[i]);
+
+                if (!Path::IsRelative(qualifiedPath))
+                {
+                    hmod = LocalLoadLibraryHelper(qualifiedPath, loadWithAlteredPathFlags, pErrorTracker);
+                    if (hmod != NULL)
+                        break;
+                }
+            }
+#else // FEATURE_PAL
+            SString qualifiedPath(*(pathIter.GetPath()));
             qualifiedPath.Append(wszLibName);
             if (!Path::IsRelative(qualifiedPath))
             {
                 hmod = LocalLoadLibraryHelper(qualifiedPath, loadWithAlteredPathFlags, pErrorTracker);
             }
+#endif
         }
     }
 #endif // FEATURE_CORECLR
 
-    // Do we really need to do this. This call searches the application directory
-    // instead of the location for the library.
-    if(hmod == NULL)
+    // This call searches the application directory instead of the location for the library.
+    if (hmod == NULL)
     {
+#ifdef FEATURE_PAL
+        for (int i = 0; i < NUMBER_OF_LIB_NAME_VARIATIONS; i++)
+        {
+            hmod = LocalLoadLibraryHelper(libNameVariations[i], dllImportSearchPathFlag, pErrorTracker);
+            if (hmod != NULL)
+                break;
+        }
+#else // FEATURE_PAL
         hmod = LocalLoadLibraryHelper(wszLibName, dllImportSearchPathFlag, pErrorTracker);
+#endif
     }
 
     // This may be an assembly name
@@ -7386,7 +7443,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
             //
 
             if (!pMD->GetModule()->GetSecurityDescriptor()->CanCallUnmanagedCode())
-            	Security::ThrowSecurityException(g_SecurityPermissionClassName, SPFLAGSUNMANAGEDCODE);
+                Security::ThrowSecurityException(g_SecurityPermissionClassName, SPFLAGSUNMANAGEDCODE);
 
             if (!pMD->IsZapped())
             {
@@ -7401,7 +7458,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 
             pMD->CheckRestore();
 
-        	NDirect::NDirectLink(pMD);
+            NDirect::NDirectLink(pMD);
         }
     }
 
