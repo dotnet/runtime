@@ -258,20 +258,20 @@ def static getBuildJobName(def configuration, def os) {
     --coreFxBinDir='\${WORKSPACE}/bin/Linux.AnyCPU.Debug' \\
     --coreFxNativeBinDir='\${WORKSPACE}/bin/Linux.x64.Debug'""")
                 }
-                
-                if (!isPR) {
-                    // Add rolling job options
-                    Utilities.addScm(newJob, project)
-                    Utilities.addStandardNonPRParameters(newJob)
-                }
-                else {
-                    // Add PR job options
-                    Utilities.addPRTestSCM(newJob, project)
-                    Utilities.addStandardPRParameters(newJob, project)
-                }
-                Utilties.addStandardOptions(newJob)
-                Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
             }
+            
+            if (!isPR) {
+                // Add rolling job options
+                Utilities.addScm(newJob, project)
+                Utilities.addStandardNonPRParameters(newJob)
+            }
+            else {
+                // Add PR job options
+                Utilities.addPRTestSCM(newJob, project)
+                Utilities.addStandardPRParameters(newJob, project)
+            }
+            Utilties.addStandardOptions(newJob)
+            Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
             
             // Create a build flow to join together the build and tests required to run this
             // test.
