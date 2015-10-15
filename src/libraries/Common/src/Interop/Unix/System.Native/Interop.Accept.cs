@@ -4,13 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
-using socklen_t = System.UInt32;
-
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        public static extern unsafe int accept(int sockfd, byte* addr, socklen_t* addrlen);
+        [DllImport(Libraries.SystemNative)]
+        internal static extern unsafe Error Accept(int socket, byte* socketAddress, int* socketAddressLen, int* acceptedFd);
     }
 }

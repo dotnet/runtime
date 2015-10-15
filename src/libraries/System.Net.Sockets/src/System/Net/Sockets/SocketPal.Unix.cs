@@ -451,25 +451,6 @@ namespace System.Net.Sockets
             }
         }
 
-        public static int GetPlatformSocketShutdown(SocketShutdown how)
-        {
-            switch (how)
-            {
-                case SocketShutdown.Receive:
-                    return Interop.libc.SHUT_RD;
-
-                case SocketShutdown.Send:
-                    return Interop.libc.SHUT_WR;
-
-                case SocketShutdown.Both:
-                    return Interop.libc.SHUT_RDWR;
-
-                default:
-                    // TODO: rethink this
-                    return (int)how;
-            }
-        }
-
         private static unsafe IPPacketInformation GetIPPacketInformation(Interop.Sys.MessageHeader* messageHeader, bool isIPv4, bool isIPv6)
         {
             if (!isIPv4 && !isIPv6)
@@ -836,19 +817,22 @@ namespace System.Net.Sockets
         public static unsafe bool TryCompleteAccept(int fileDescriptor, byte[] socketAddress, ref int socketAddressLen, out int acceptedFd, out SocketError errorCode)
         {
             int fd;
-            uint sockAddrLen = (uint)socketAddressLen;
+            Interop.Error errno;
+            int sockAddrLen = socketAddressLen;
             fixed (byte* rawSocketAddress = socketAddress)
             {
-                fd = Interop.libc.accept(fileDescriptor, (byte*)rawSocketAddress, &sockAddrLen);
+                errno = Interop.Sys.Accept(fileDescriptor, rawSocketAddress, &sockAddrLen, &fd);
             }
 
-            if (fd != -1)
+            if (errno == Interop.Error.SUCCESS)
             {
+                Debug.Assert(fd != -1);
+
                 // If the accept completed successfully, ensure that the accepted socket is non-blocking.
                 int err = Interop.Sys.Fcntl.SetIsNonBlocking(fd, 1);
                 if (err == 0)
                 {
-                    socketAddressLen = (int)sockAddrLen;
+                    socketAddressLen = sockAddrLen;
                     errorCode = SocketError.Success;
                     acceptedFd = fd;
                 }
@@ -858,12 +842,11 @@ namespace System.Net.Sockets
                     acceptedFd = -1;
                     Interop.Sys.Close(fd);
                 }
+
                 return true;
             }
 
             acceptedFd = -1;
-
-            Interop.Error errno = Interop.Sys.GetLastError();
             if (errno != Interop.Error.EAGAIN && errno != Interop.Error.EWOULDBLOCK)
             {
                 errorCode = GetSocketErrorForErrorCode(errno);
@@ -879,23 +862,21 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddress != null);
             Debug.Assert(socketAddressLen > 0);
 
-            int err;
+            Interop.Error err;
             fixed (byte* rawSocketAddress = socketAddress)
             {
-                var sockAddr = (byte*)rawSocketAddress;
-                err = Interop.libc.connect(fileDescriptor, sockAddr, (uint)socketAddressLen);
+                err = Interop.Sys.Connect(fileDescriptor, rawSocketAddress, socketAddressLen);
             }
 
-            if (err == 0)
+            if (err == Interop.Error.SUCCESS)
             {
                 errorCode = SocketError.Success;
                 return true;
             }
 
-            Interop.Error errno = Interop.Sys.GetLastError();
-            if (errno != Interop.Error.EINPROGRESS)
+            if (err != Interop.Error.EINPROGRESS)
             {
-                errorCode = GetSocketErrorForErrorCode(errno);
+                errorCode = GetSocketErrorForErrorCode(err);
                 return true;
             }
 
@@ -1100,15 +1081,15 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError GetSockName(SafeCloseSocket handle, byte[] buffer, ref int nameLen)
         {
-            int err;
-            uint addrLen = (uint)nameLen;
+            Interop.Error err;
+            int addrLen = nameLen;
             fixed (byte* rawBuffer = buffer)
             {
-                err = Interop.libc.getsockname(handle.FileDescriptor, (byte*)rawBuffer, &addrLen);
+                err = Interop.Sys.GetSockName(handle.FileDescriptor, rawBuffer, &addrLen);
             }
-            nameLen = (int)addrLen;
 
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            nameLen = addrLen;
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError GetAvailable(SafeCloseSocket handle, out int available)
@@ -1122,33 +1103,32 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError GetPeerName(SafeCloseSocket handle, byte[] buffer, ref int nameLen)
         {
-            int err;
-            uint addrLen = (uint)nameLen;
+            Interop.Error err;
+            int addrLen = nameLen;
             fixed (byte* rawBuffer = buffer)
             {
-                err = Interop.libc.getpeername(handle.FileDescriptor, (byte*)rawBuffer, &addrLen);
+                err = Interop.Sys.GetPeerName(handle.FileDescriptor, rawBuffer, &addrLen);
             }
-            nameLen = (int)addrLen;
 
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            nameLen = addrLen;
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError Bind(SafeCloseSocket handle, byte[] buffer, int nameLen)
         {
-            int err;
+            Interop.Error err;
             fixed (byte* rawBuffer = buffer)
             {
-                err = Interop.libc.bind(handle.FileDescriptor, (byte*)rawBuffer, (uint)nameLen);
+                err = Interop.Sys.Bind(handle.FileDescriptor, rawBuffer, nameLen);
             }
 
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static SocketError Listen(SafeCloseSocket handle, int backlog)
         {
-            int err = Interop.libc.listen(handle.FileDescriptor, backlog);
-
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            Interop.Error err = Interop.Sys.Listen(handle.FileDescriptor, backlog);
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static SafeCloseSocket Accept(SafeCloseSocket handle, byte[] buffer, ref int nameLen)
@@ -1613,23 +1593,21 @@ namespace System.Net.Sockets
 
         public static SocketError Shutdown(SafeCloseSocket handle, bool isConnected, bool isDisconnected, SocketShutdown how)
         {
-            int err = Interop.libc.shutdown(handle.FileDescriptor, GetPlatformSocketShutdown(how));
-            if (err != -1)
+            Interop.Error err = Interop.Sys.Shutdown(handle.FileDescriptor, how);
+            if (err == Interop.Error.SUCCESS)
             {
                 return SocketError.Success;
             }
-
-            Interop.Error errno = Interop.Sys.GetLastError();
 
             // If shutdown returns ENOTCONN and we think that this socket has ever been connected,
             // ignore the error. This can happen for TCP connections if the underlying connection
             // has reached the CLOSE state. Ignoring the error matches Winsock behavior.
-            if (errno == Interop.Error.ENOTCONN && (isConnected || isDisconnected))
+            if (err == Interop.Error.ENOTCONN && (isConnected || isDisconnected))
             {
                 return SocketError.Success;
             }
 
-            return GetSocketErrorForErrorCode(errno);
+            return GetSocketErrorForErrorCode(err);
         }
 
         public static SocketError ConnectAsync(Socket socket, SafeCloseSocket handle, byte[] socketAddress, int socketAddressLen, ConnectOverlappedAsyncResult asyncResult)

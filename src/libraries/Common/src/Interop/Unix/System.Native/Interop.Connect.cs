@@ -3,13 +3,12 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        public static extern int listen(int sockfd, int backlog);
+        [DllImport(Libraries.SystemNative)]
+        internal static extern unsafe Error Connect(int socket, byte* socketAddress, int socketAddressLen);
     }
 }

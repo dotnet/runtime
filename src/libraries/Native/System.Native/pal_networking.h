@@ -64,6 +64,18 @@ enum MulticastOption : int32_t
     PAL_MULTICAST_DROP = 1 // IP{,V6}_DROP_MEMBERSHIP
 };
 
+/*
+ * Socket shutdown modes.
+ *
+ * NOTE: these values are taken from System.Net.SocketShutdown.
+ */
+enum SocketShutdown : int32_t
+{
+    PAL_SHUT_READ = 0,  // SHUT_RD
+    PAL_SHUT_WRITE = 1, // SHUT_WR
+    PAL_SHUT_BOTH = 2,  // SHUT_RDWR
+};
+
 /**
  * IP address sizes.
  */
@@ -205,3 +217,17 @@ extern "C" Error SetLingerOption(int32_t socket, LingerOption* option);
 extern "C" Error ReceiveMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received);
 
 extern "C" Error SendMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent);
+
+extern "C" Error Accept(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, int32_t* acceptedSocket);
+
+extern "C" Error Bind(int32_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
+
+extern "C" Error Connect(int32_t socket, uint8_t* socketAddress, int32_t socketAddressLen);
+
+extern "C" Error GetPeerName(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
+
+extern "C" Error GetSockName(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen);
+
+extern "C" Error Listen(int32_t socket, int32_t backlog);
+
+extern "C" Error Shutdown(int32_t socket, int32_t socketShutdown);

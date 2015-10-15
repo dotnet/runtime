@@ -948,3 +948,115 @@ extern "C" Error SendMessage(int32_t socket, MessageHeader* messageHeader, int32
     *sent = 0;
     return ConvertErrorPlatformToPal(errno);
 }
+
+extern "C" Error Accept(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen, int32_t* acceptedSocket)
+{
+    if (socketAddress == nullptr || socketAddressLen == nullptr || acceptedSocket == nullptr || *socketAddressLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    socklen_t addrLen;
+    int accepted = accept(socket, reinterpret_cast<sockaddr*>(socketAddress), &addrLen);
+    if (accepted == -1)
+    {
+        *acceptedSocket = -1;
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    assert(addrLen <= static_cast<socklen_t>(*socketAddressLen));
+    *socketAddressLen = static_cast<int32_t>(addrLen);
+    *acceptedSocket = accepted;
+    return PAL_SUCCESS;
+}
+
+extern "C" Error Bind(int32_t socket, uint8_t* socketAddress, int32_t socketAddressLen)
+{
+    if (socketAddress == nullptr || socketAddressLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    int err = bind(socket, reinterpret_cast<sockaddr*>(socketAddress), static_cast<socklen_t>(socketAddressLen));
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error Connect(int32_t socket, uint8_t* socketAddress, int32_t socketAddressLen)
+{
+    if (socketAddress == nullptr || socketAddressLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    int err = connect(socket, reinterpret_cast<sockaddr*>(socketAddress), static_cast<socklen_t>(socketAddressLen));
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error GetPeerName(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen)
+{
+    if (socketAddress == nullptr || socketAddressLen == nullptr || *socketAddressLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    socklen_t addrLen;
+    int err = getpeername(socket, reinterpret_cast<sockaddr*>(socketAddress), &addrLen);
+    if (err != 0)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    assert(addrLen <= static_cast<socklen_t>(*socketAddressLen));
+    *socketAddressLen = static_cast<int32_t>(addrLen);
+    return PAL_SUCCESS;
+}
+
+extern "C" Error GetSockName(int32_t socket, uint8_t* socketAddress, int32_t* socketAddressLen)
+{
+    if (socketAddress == nullptr || socketAddressLen == nullptr || *socketAddressLen < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    socklen_t addrLen;
+    int err = getsockname(socket, reinterpret_cast<sockaddr*>(socketAddress), &addrLen);
+    if (err != 0)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    assert(addrLen <= static_cast<socklen_t>(*socketAddressLen));
+    *socketAddressLen = static_cast<int32_t>(addrLen);
+    return PAL_SUCCESS;
+}
+
+extern "C" Error Listen(int32_t socket, int32_t backlog)
+{
+    int err = listen(socket, backlog);
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" Error Shutdown(int32_t socket, int32_t socketShutdown)
+{
+    int how;
+    switch (socketShutdown)
+    {
+        case PAL_SHUT_READ:
+            how = SHUT_RD;
+            break;
+
+        case PAL_SHUT_WRITE:
+            how = SHUT_WR;
+            break;
+
+        case PAL_SHUT_BOTH:
+            how = SHUT_RDWR;
+            break;
+
+        default:
+            return PAL_EINVAL;
+    }
+
+    int err = shutdown(socket, how);
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
