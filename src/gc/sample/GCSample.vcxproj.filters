@@ -23,9 +23,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="common.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GCSample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -50,13 +47,19 @@
     <ClCompile Include="..\gcscan.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gcenv.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\gceewks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\gccommon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\env\gcenv.windows.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\env\common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gcenv.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

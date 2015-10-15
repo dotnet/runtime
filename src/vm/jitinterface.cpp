@@ -6269,7 +6269,7 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT)
         _ASSERTE(helper == CORINFO_HELP_NEWFAST);
     }
     else
-    if (GCHeap::IsLargeObject(pMT) ||
+    if ((pMT->GetBaseSize() >= LARGE_OBJECT_SIZE) || 
         pMT->HasFinalizer())
     {
         // Use slow helper

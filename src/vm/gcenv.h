@@ -99,10 +99,38 @@ public:
     // post-gc callback.
     static void GcDone(int condemned);
 
+    // Promote refcounted handle callback
+    static bool RefCountedHandleCallbacks(Object * pObject);
+
     // Sync block cache management
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2);
     static void SyncBlockCacheDemote(int max_gen);
     static void SyncBlockCachePromotionsGranted(int max_gen);
+
+    // Thread functions
+    static bool IsPreemptiveGCDisabled(Thread * pThread)
+    {
+        WRAPPER_NO_CONTRACT;
+        return !!pThread->PreemptiveGCDisabled();
+    }
+
+    static void EnablePreemptiveGC(Thread * pThread)
+    {
+        WRAPPER_NO_CONTRACT;
+        pThread->EnablePreemptiveGC();
+    }
+
+    static void DisablePreemptiveGC(Thread * pThread)
+    {
+        WRAPPER_NO_CONTRACT;
+        pThread->DisablePreemptiveGC();
+    }
+
+    static void SetGCSpecial(Thread * pThread);
+    static alloc_context * GetAllocContext(Thread * pThread);
+    static bool CatchAtSafePoint(Thread * pThread);
+
+    static Thread * GetThreadList(Thread * pThread);
 };
 
 #endif // GCENV_H_
