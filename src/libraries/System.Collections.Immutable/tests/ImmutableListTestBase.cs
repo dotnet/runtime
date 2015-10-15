@@ -316,7 +316,7 @@ namespace System.Collections.Immutable.Tests
                 Assert.Equal<int>(expected, actual);
 
                 expected = scenario.ToList();
-                comparer = new CustomComparer<int>(comparison);
+                comparer = Comparer<int>.Create(comparison);
                 expected.Sort(comparer);
                 actual = this.SortTestHelper(scenario, comparer);
                 Assert.Equal<int>(expected, actual);
@@ -430,21 +430,6 @@ namespace System.Collections.Immutable.Tests
             var expected = bclList.TrueForAll(test);
             var actual = this.GetListQuery(list).TrueForAll(test);
             Assert.Equal(expected, actual);
-        }
-
-        private class CustomComparer<T> : IComparer<T>
-        {
-            private readonly Comparison<T> comparison;
-
-            internal CustomComparer(Comparison<T> comparison)
-            {
-                this.comparison = comparison;
-            }
-
-            public int Compare(T x, T y)
-            {
-                return this.comparison(x, y);
-            }
         }
     }
 }
