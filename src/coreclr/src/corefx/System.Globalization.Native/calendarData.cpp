@@ -316,24 +316,35 @@ Gets the ICU date pattern for the specified locale and EStyle and invokes the
 callback with the result.
 */
 bool InvokeCallbackForDatePattern(Locale& locale,
-                                  DateFormat::EStyle style,
+                                  UDateFormatStyle style,
                                   EnumCalendarInfoCallback callback,
                                   const void* context)
 {
-    LocalPointer<DateFormat> dateFormat(DateFormat::createDateInstance(style, locale));
-    if (dateFormat.isNull())
+    UErrorCode err = U_ZERO_ERROR;
+    UDateFormat* pFormat = udat_open(UDAT_NONE, style, locale.getName(), nullptr, 0, nullptr, 0, &err);
+    UDateFormatHolder formatHolder(pFormat, err);
+
+    if (U_FAILURE(err))
         return false;
 
-    // cast to SimpleDateFormat so we can call toPattern()
-    SimpleDateFormat* sdf = dynamic_cast<SimpleDateFormat*>(dateFormat.getAlias());
-    if (sdf == NULL)
+    UErrorCode ignore = U_ZERO_ERROR;
+    int32_t patternLen = udat_toPattern(pFormat, false, nullptr, 0, &ignore);
+
+    UChar* pattern = (UChar*)calloc(patternLen + 1, sizeof(UChar));
+
+    if (pattern == nullptr)
         return false;
 
-    UnicodeString pattern;
-    sdf->toPattern(pattern);
+    udat_toPattern(pFormat, false, pattern, patternLen + 1, &err);
 
-    callback(pattern.getTerminatedBuffer(), context);
-    return true;
+    if (U_SUCCESS(err))
+    {
+        callback(pattern, context);
+    }
+
+    free(pattern);
+
+    return U_SUCCESS(err);
 }
 
 /*
@@ -521,12 +532,12 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
             // skeleton as well, as this
             // closely matches what is used on Windows
             return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_NUM_MONTH_DAY_UCHAR, callback, context) &&
-                   InvokeCallbackForDatePattern(locale, DateFormat::kShort, callback, context) &&
-                   InvokeCallbackForDatePattern(locale, DateFormat::kMedium, callback, context);
+                   InvokeCallbackForDatePattern(locale, UDAT_SHORT, callback, context) &&
+                   InvokeCallbackForDatePattern(locale, UDAT_MEDIUM, callback, context);
         case LongDates:
             // LongDates map to kFull and kLong in ICU.
-            return InvokeCallbackForDatePattern(locale, DateFormat::kFull, callback, context) &&
-                   InvokeCallbackForDatePattern(locale, DateFormat::kLong, callback, context);
+            return InvokeCallbackForDatePattern(locale, UDAT_FULL, callback, context) &&
+                   InvokeCallbackForDatePattern(locale, UDAT_LONG, callback, context);
         case YearMonths:
             return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_MONTH_UCHAR, callback, context);
         case DayNames:
