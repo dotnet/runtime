@@ -813,3 +813,8 @@ extern "C" int32_t GetWindowSize(WinSize* windowSize)
     return -1;
 #endif
 }
+
+extern "C" int32_t IsATty(int fd)
+{
+	return isatty(fd);
+}
