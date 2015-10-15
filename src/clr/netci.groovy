@@ -300,17 +300,17 @@ build(params + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number,
             }
             
             if (isPR) {
-                Utilities.addPRTestSCM(linuxFlowJob, project)
-                Utilities.addStandardPRParameters(linuxFlowJob, project)
-                Utilities.addGithubPRTrigger(linuxFlowJob, "Linux ${configuration} Build and Test")
+                Utilities.addPRTestSCM(newFlowJob, project)
+                Utilities.addStandardPRParameters(newFlowJob, project)
+                Utilities.addGithubPRTrigger(newFlowJob, "Linux ${configuration} Build and Test", '@dotnet-bot test linux')
             }
             else {
-                Utilities.addScm(linuxFlowJob, project)
-                Utilities.addStandardNonPRParameters(linuxFlowJob)
-                Utilities.addGithubPushTrigger(linuxFlowJob)
+                Utilities.addScm(newFlowJob, project)
+                Utilities.addStandardNonPRParameters(newFlowJob)
+                Utilities.addGithubPushTrigger(newFlowJob)
             }
             
-            Utilities.addStandardOptions(linuxFlowJob)
+            Utilities.addStandardOptions(newFlowJob)
         }
     }
 }
