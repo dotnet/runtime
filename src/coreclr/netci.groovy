@@ -308,7 +308,6 @@ build(params + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number,
             else {
                 Utilities.addScm(newFlowJob, project)
                 Utilities.addStandardNonPRParameters(newFlowJob)
-                Utilities.addGithubPushTrigger(newFlowJob)
             }
             
             Utilities.addStandardOptions(newFlowJob)
