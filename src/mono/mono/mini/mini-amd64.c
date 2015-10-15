@@ -1054,22 +1054,14 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			break;
 		}
 		/* fall through */
-#if defined( __native_client_codegen__ )
-	case MONO_TYPE_TYPEDBYREF:
-#endif
-	case MONO_TYPE_VALUETYPE: {
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_TYPEDBYREF: {
 		guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
 		add_valuetype (sig, &cinfo->ret, ret_type, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
 		g_assert (cinfo->ret.storage != ArgInIReg);
 		break;
 	}
-#if !defined( __native_client_codegen__ )
-	case MONO_TYPE_TYPEDBYREF:
-		/* Same as a valuetype with size 24 */
-		cinfo->ret.storage = ArgValuetypeAddrInIReg;
-		break;
-#endif
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		g_assert (mini_is_gsharedvt_type (ret_type));
@@ -2291,22 +2283,16 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			guint32 align;
 			guint32 size;
 
-			if (t->type == MONO_TYPE_TYPEDBYREF) {
-				size = sizeof (MonoTypedRef);
-				align = sizeof (gpointer);
-			}
+			if (sig->pinvoke)
+				size = mono_type_native_stack_size (t, &align);
 			else {
-				if (sig->pinvoke)
-					size = mono_type_native_stack_size (t, &align);
-				else {
-					/*
-					 * Other backends use mono_type_stack_size (), but that
-					 * aligns the size to 8, which is larger than the size of
-					 * the source, leading to reads of invalid memory if the
-					 * source is at the end of address space.
-					 */
-					size = mono_class_value_size (mono_class_from_mono_type (t), &align);
-				}
+				/*
+				 * Other backends use mono_type_stack_size (), but that
+				 * aligns the size to 8, which is larger than the size of
+				 * the source, leading to reads of invalid memory if the
+				 * source is at the end of address space.
+				 */
+				size = mono_class_value_size (mono_class_from_mono_type (t), &align);
 			}
 
 			if (size >= 10000) {
