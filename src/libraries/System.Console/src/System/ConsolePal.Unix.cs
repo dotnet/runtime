@@ -64,13 +64,13 @@ namespace System
         public static void ResetColor()
         {
             // We only want to reset colors if we're targeting a TTY device
-            if (IsConsoleOutRedirected)
+            if (Console.IsOutputRedirected)
                 return;
 
             string resetFormat = TerminalColorInfo.Instance.ResetFormat;
             if (resetFormat != null)
             {
-                Console.Write(resetFormat);
+                WriteStdoutAnsiString(resetFormat);
             }
         }
 
@@ -94,47 +94,26 @@ namespace System
             }
             set
             {
-                if (IsConsoleOutRedirected) return;
+                if (Console.IsOutputRedirected)
+                    return;
+
                 string formatString = value ?
                     TerminalBasicInfo.Instance.CursorVisibleFormat :
                     TerminalBasicInfo.Instance.CursorInvisibleFormat;
                 if (!string.IsNullOrEmpty(formatString))
                 {
-                    Console.Write(formatString);
+                    WriteStdoutAnsiString(formatString);
                 }
-            }
-        }
-        /// By default we assume that the stream is redirected
-        /// unless it is a character device.
-        /// </summary>
-        private static bool IsConsoleOutRedirected
-        {
-            get
-            {
-                SyncTextWriter stw = Console.Out as SyncTextWriter;
-                if (stw != null)
-                {
-                    StreamWriter sw = stw._out as StreamWriter;
-                    if (sw != null)
-                    {
-                        UnixConsoleStream ucs = sw.BaseStream as UnixConsoleStream;
-                        if (ucs != null)
-                        {
-                            // If handle is not to a character device, we must be redirected:
-                            return (ucs._handleType & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFCHR;
-                        }
-                    }
-                }
-                return true;
             }
         }
 
+        /// <summary>
+        /// Gets whether the specified file descriptor was redirected.
+        /// It's considered redirected if it doesn't refer to a terminal.
+        /// </summary>
         private static bool IsHandleRedirected(int fd)
         {
-            Interop.Sys.FileStatus buf;
-            return (Interop.Sys.FStat((int)fd, out buf) != 0)
-                 ? false
-                 : (buf.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFCHR;
+            return !Interop.Sys.IsATty(fd);
         }
 
         /// <summary>
@@ -237,7 +216,7 @@ namespace System
             // Changing the color involves writing an ANSI character sequence out to the output stream.
             // We only want to do this if we know that sequence will be interpreted by the output.
             // rather than simply displayed visibly.
-            if (IsConsoleOutRedirected)
+            if (Console.IsOutputRedirected)
                 return;
 
             // See if we've already cached a format string for this foreground/background
@@ -246,7 +225,7 @@ namespace System
             string evaluatedString = s_fgbgAndColorStrings[fgbgIndex, ccValue]; // benign race
             if (evaluatedString != null)
             {
-                Console.Write(evaluatedString);
+                WriteStdoutAnsiString(evaluatedString);
                 return;
             }
 
@@ -260,7 +239,7 @@ namespace System
                     int ansiCode = _consoleColorToAnsiCode[ccValue] % maxColors;
                     evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);
 
-                    Console.Write(evaluatedString);
+                    WriteStdoutAnsiString(evaluatedString);
 
                     s_fgbgAndColorStrings[fgbgIndex, ccValue] = evaluatedString; // benign race
                 }
@@ -397,6 +376,17 @@ namespace System
                     count -= bytesWritten;
                     offset += bytesWritten;
                 }
+            }
+        }
+
+        /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
+        /// <param name="value">The string to write.</param>
+        private static unsafe void WriteStdoutAnsiString(string value)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(value);
+            lock (Console.Out) // synchronize with other writers
+            {
+                Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, 0, data.Length);
             }
         }
 
