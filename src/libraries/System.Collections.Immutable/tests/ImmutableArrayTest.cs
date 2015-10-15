@@ -1165,6 +1165,7 @@ namespace System.Collections.Immutable.Tests
         {
             var array = ImmutableArray.Create(2, 4, 1, 3);
             Assert.Equal(new[] { 1, 2, 3, 4 }, array.Sort(null));
+            Assert.Equal(new[] { 2, 1, 4, 3 }, array.Sort(1, 2, null));
             Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array unaffected.
         }
 
