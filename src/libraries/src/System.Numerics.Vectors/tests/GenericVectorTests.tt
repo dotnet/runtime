@@ -869,6 +869,9 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
+<# if (type == typeof(SByte)) { #>
+        [ActiveIssue(3262)]
+<# } #>
         public void GreaterThanOrEqualAny<#=type.Name#>() { TestVectorGreaterThanOrEqualAny<<#=type.Name#>>(); }
 <#
     }
@@ -913,6 +916,9 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
+<# if (type == typeof(SByte)) { #>
+        [ActiveIssue(3262)]
+<# } #>
         public void GreaterThanOrEqualAll<#=type.Name#>() { TestVectorGreaterThanOrEqualAll<<#=type.Name#>>(); }
 <#
     }
