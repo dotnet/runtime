@@ -107,9 +107,6 @@ internal static partial class Interop
         private static extern IntPtr GetX509RootStorePath_private();
 
         [DllImport(Libraries.CryptoNative)]
-        private static extern int GetPkcs7Certificates(SafePkcs7Handle p7, out SafeSharedX509StackHandle certs);
-
-        [DllImport(Libraries.CryptoNative)]
         private static extern int SetX509ChainVerifyTime(
             SafeX509StoreCtxHandle ctx,
             int year,
@@ -169,27 +166,6 @@ internal static partial class Interop
             {
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
-        }
-
-        internal static SafeSharedX509StackHandle GetPkcs7Certificates(SafePkcs7Handle p7)
-        {
-            if (p7 == null || p7.IsInvalid)
-            {
-                return SafeSharedX509StackHandle.InvalidHandle;
-            }
-
-            SafeSharedX509StackHandle certs;
-            int result = GetPkcs7Certificates(p7, out certs);
-
-            if (result != 1)
-            {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-
-            // Track the parent relationship for the interior pointer so lifetime is well-managed.
-            certs.SetParent(p7);
-
-            return certs;
         }
 
         private static byte[] GetDynamicBuffer<THandle>(NegativeSizeReadMethod<THandle> method, THandle handle)

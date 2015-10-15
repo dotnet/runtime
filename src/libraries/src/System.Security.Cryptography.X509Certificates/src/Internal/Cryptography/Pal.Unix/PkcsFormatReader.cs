@@ -44,17 +44,15 @@ namespace Internal.Cryptography.Pal
             out ICertificatePal certPal,
             out List<ICertificatePal> certPals)
         {
-            SafePkcs7Handle pkcs7 = Interop.Crypto.DecodePkcs7(rawData, rawData.Length);
-
-            if (pkcs7.IsInvalid)
+            using (SafePkcs7Handle pkcs7 = Interop.Crypto.DecodePkcs7(rawData, rawData.Length))
             {
-                certPal = null;
-                certPals = null;
-                return false;
-            }
+                if (pkcs7.IsInvalid)
+                {
+                    certPal = null;
+                    certPals = null;
+                    return false;
+                }
 
-            using (pkcs7)
-            {
                 return TryReadPkcs7(pkcs7, single, out certPal, out certPals);
             }
         }
@@ -65,17 +63,15 @@ namespace Internal.Cryptography.Pal
             out ICertificatePal certPal,
             out List<ICertificatePal> certPals)
         {
-            SafePkcs7Handle pkcs7 = Interop.libcrypto.d2i_PKCS7_bio(bio, IntPtr.Zero);
-
-            if (pkcs7.IsInvalid)
+            using (SafePkcs7Handle pkcs7 = Interop.Crypto.D2IPkcs7Bio(bio))
             {
-                certPal = null;
-                certPals = null;
-                return false;
-            }
+                if (pkcs7.IsInvalid)
+                {
+                    certPal = null;
+                    certPals = null;
+                    return false;
+                }
 
-            using (pkcs7)
-            {
                 return TryReadPkcs7(pkcs7, single, out certPal, out certPals);
             }
         }
@@ -120,20 +116,7 @@ namespace Internal.Cryptography.Pal
 
                 Interop.Crypto.BioWrite(bio, rawData, rawData.Length);
 
-                SafePkcs7Handle pkcs7 =
-                    Interop.libcrypto.PEM_read_bio_PKCS7(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-
-                if (pkcs7.IsInvalid)
-                {
-                    certPal = null;
-                    certPals = null;
-                    return false;
-                }
-
-                using (pkcs7)
-                {
-                    return TryReadPkcs7(pkcs7, single, out certPal, out certPals);
-                }
+                return TryReadPkcs7Pem(bio, single, out certPal, out certPals);
             }
         }
 
@@ -143,17 +126,15 @@ namespace Internal.Cryptography.Pal
             out ICertificatePal certPal,
             out List<ICertificatePal> certPals)
         {
-            SafePkcs7Handle pkcs7 = Interop.libcrypto.PEM_read_bio_PKCS7(bio, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-
-            if (pkcs7.IsInvalid)
+            using (SafePkcs7Handle pkcs7 = Interop.Crypto.PemReadBioPkcs7(bio))
             {
-                certPal = null;
-                certPals = null;
-                return false;
-            }
+                if (pkcs7.IsInvalid)
+                {
+                    certPal = null;
+                    certPals = null;
+                    return false;
+                }
 
-            using (pkcs7)
-            {
                 return TryReadPkcs7(pkcs7, single, out certPal, out certPals);
             }
         }
@@ -278,7 +259,7 @@ namespace Internal.Cryptography.Pal
             bool single,
             out ICertificatePal readPal,
             out List<ICertificatePal> readCerts)
-        { 
+        {
             pfx.Decrypt(password);
 
             ICertificatePal first = null;
