@@ -119,7 +119,7 @@
  */
 #define HNDTYPE_VARIABLE                        (4)
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
 /*
  * REFCOUNTED HANDLES
  *
@@ -131,7 +131,7 @@
  *
  */
 #define HNDTYPE_REFCOUNTED                      (5)
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
 
 
 /*
@@ -149,7 +149,7 @@
  *
  *
  */
-#define HNDTYPE_DEPENDENT		                     (6)
+#define HNDTYPE_DEPENDENT                            (6)
 
 /*
  * PINNED HANDLES for asynchronous operation
@@ -439,7 +439,9 @@ inline void DestroyDependentHandle(OBJECTHANDLE handle)
 #ifndef DACCESS_COMPILE
 
 OBJECTHANDLE CreateVariableHandle(HHANDLETABLE hTable, OBJECTREF object, UINT type);
+UINT         GetVariableHandleType(OBJECTHANDLE handle);
 void         UpdateVariableHandleType(OBJECTHANDLE handle, UINT type);
+UINT         CompareExchangeVariableHandleType(OBJECTHANDLE handle, UINT oldType, UINT newType);
 
 inline void  DestroyVariableHandle(OBJECTHANDLE handle)
 {
