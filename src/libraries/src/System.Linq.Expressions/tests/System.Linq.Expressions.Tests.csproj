@@ -44,6 +44,8 @@
     <Compile Include="BinaryOperators\Arithmetic\BinaryNullablePowerTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinaryNullableSubtractTests.cs" />
     <Compile Include="BinaryOperators\Arithmetic\BinarySubtractTests.cs" />
+    <Compile Include="BinaryOperators\Assignment\Assign.cs" />
+    <Compile Include="BinaryOperators\Assignment\OpAssign.cs" />
     <Compile Include="BinaryOperators\Bitwise\BinaryAndTests.cs" />
     <Compile Include="BinaryOperators\Bitwise\BinaryExclusiveOrTests.cs" />
     <Compile Include="BinaryOperators\Bitwise\BinaryNullableAndTests.cs" />
@@ -64,8 +66,12 @@
     <Compile Include="BinaryOperators\Comparison\BinaryNullableLessThanOrEqualTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryNullableLessThanTests.cs" />
     <Compile Include="BinaryOperators\Comparison\BinaryNullableNotEqualTests.cs" />
+    <Compile Include="BinaryOperators\GeneralBinaryTests.cs" />
     <Compile Include="BinaryOperators\Logical\BinaryLogicalTests.cs" />
     <Compile Include="BinaryOperators\Logical\BinaryNullableLogicalTests.cs" />
+    <Compile Include="BinaryOperators\ReferenceComparison\ReferenceEqual.cs" />
+    <Compile Include="BinaryOperators\ReferenceComparison\ReferenceEqualityTests.cs" />
+    <Compile Include="BinaryOperators\ReferenceComparison\ReferenceNotEqual.cs" />
     <Compile Include="Block\BlockFactoryTests.cs" />
     <Compile Include="Call\CallFactoryTests.cs" />
     <Compile Include="Cast\AsNullable.cs" />

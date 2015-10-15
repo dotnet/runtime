@@ -2144,5 +2144,48 @@ namespace Tests.ExpressionCompiler.Binary
         }
 
         #endregion
+
+        [Fact]
+        public static void CannotReduce()
+        {
+            Expression exp = Expression.Coalesce(Expression.Constant(0, typeof(int?)), Expression.Constant(0));
+            Assert.False(exp.CanReduce);
+            Assert.Same(exp, exp.Reduce());
+            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+        }
+
+        [Fact]
+        public static void ThrowsOnLeftNull()
+        {
+            Assert.Throws<ArgumentNullException>("left", () => Expression.Coalesce(null, Expression.Constant("")));
+        }
+
+        [Fact]
+        public static void ThrowsOnRightNull()
+        {
+            Assert.Throws<ArgumentNullException>("right", () => Expression.Coalesce(Expression.Constant(""), null));
+        }
+
+        private static class Unreadable<T>
+        {
+            public static T WriteOnly
+            {
+                set { }
+            }
+        }
+
+        [Fact]
+        public static void ThrowsOnLeftUnreadable()
+        {
+            Expression value = Expression.Property(null, typeof(Unreadable<string>), "WriteOnly");
+            Assert.Throws<ArgumentException>("left", () => Expression.Coalesce(value, Expression.Constant("")));
+        }
+
+        [Fact]
+        public static void ThrowsOnRightUnreadable()
+        {
+            Expression value = Expression.Property(null, typeof(Unreadable<string>), "WriteOnly");
+            Assert.Throws<ArgumentException>("right", () => Expression.Coalesce(Expression.Constant(""), value));
+        }
     }
 }
