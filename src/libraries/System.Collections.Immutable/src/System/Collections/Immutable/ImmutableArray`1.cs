@@ -757,7 +757,7 @@ namespace System.Collections.Immutable
         public ImmutableArray<T> RemoveRange(int index, int length)
         {
             var self = this;
-            Requires.Range(index >= 0 && index < self.Length, "index");
+            Requires.Range(index >= 0 && index <= self.Length, "index");
             Requires.Range(length >= 0 && index + length <= self.Length, "length");
 
             if (length == 0)

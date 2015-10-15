@@ -344,7 +344,7 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableList<T> RemoveRange(int index, int count)
         {
-            Requires.Range(index >= 0 && (index < this.Count || (index == this.Count && count == 0)), "index");
+            Requires.Range(index >= 0 && index <= this.Count, "index");
             Requires.Range(count >= 0 && index + count <= this.Count, "count");
             Contract.Ensures(Contract.Result<ImmutableList<T>>() != null);
 
