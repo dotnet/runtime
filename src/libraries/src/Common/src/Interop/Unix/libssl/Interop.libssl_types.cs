@@ -101,5 +101,57 @@ internal static partial class Interop
         {
             SSL_ST_OK = 3
         }
+
+        internal enum CipherAlgorithm
+        {
+            SSL_DES = 1,
+            SSL_3DES = 2,
+            SSL_RC4 = 4,
+            SSL_RC2 = 8,
+            SSL_IDEA = 16,
+            SSL_eNULL = 32,
+            SSL_AES128 = 64,
+            SSL_AES256 = 128,
+            SSL_CAMELLIA128 = 256,
+            SSL_CAMELLIA256 = 512,
+            SSL_eGOST2814789CNT = 1024,
+            SSL_SEED = 2048,
+            SSL_AES128GCM = 4096,
+            SSL_AES256GCM = 8192
+          
+        }
+
+        internal enum KeyExchangeAlgorithm
+        {
+            SSL_kRSA = 1,
+            /* DH cert, RSA CA cert */
+            SSL_kDHr = 2,
+            /* DH cert, DSA CA cert */
+            SSL_kDHd = 4,
+            /* tmp DH key no DH cert */
+            SSL_kEDH = 8,
+            /* Kerberos5 key exchange */
+            SSL_kKRB5 = 16,
+            /* ECDH cert, RSA CA cert */
+            SSL_kECDHr = 32,
+            /* ECDH cert, ECDSA CA cert */
+            SSL_kECDHe = 64,
+            SSL_kEECDH = 128,
+            SSL_kPSK = 256,
+            SSL_kGOST = 512,
+            SSL_kSRP = 1024,
+        }
+
+        internal enum DataHashAlgorithm
+        {
+            SSL_MD5 = 1,
+            SSL_SHA1 = 2,
+            SSL_GOST94 = 4,
+            SSL_GOST89MAC = 8,
+            SSL_SHA256 = 16,
+            SSL_SHA384 = 32,
+            SSL_AEAD = 64
+        }
+
     }
 }
