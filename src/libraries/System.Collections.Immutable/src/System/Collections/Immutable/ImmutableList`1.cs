@@ -1271,7 +1271,12 @@ namespace System.Collections.Immutable
         /// </returns>
         bool IList.Contains(object value)
         {
-            return this.Contains((T)value);
+            if (IsCompatibleObject(value))
+            {
+                return this.Contains((T)value);
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -1283,7 +1288,12 @@ namespace System.Collections.Immutable
         /// </returns>
         int IList.IndexOf(object value)
         {
-            return this.IndexOf((T)value);
+            if (IsCompatibleObject(value))
+            {
+                return this.IndexOf((T)value);
+            }
+
+            return -1;
         }
 
         /// <summary>
@@ -1409,6 +1419,21 @@ namespace System.Collections.Immutable
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Tests whether a value is one that might be found in this collection.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <returns><c>true</c> if this value might appear in the collection.</returns>
+        /// <devremarks>
+        /// This implementation comes from <see cref="List{T}"/>.
+        /// </devremarks>
+        private static bool IsCompatibleObject(object value)
+        {
+            // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
+            // Note that default(T) is not equal to null for value types except when T is Nullable<U>. 
+            return ((value is T) || (value == null && default(T) == null));
         }
 
         /// <summary>

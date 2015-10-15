@@ -1047,7 +1047,12 @@ namespace System.Collections.Immutable
             /// </returns>
             bool IList.Contains(object value)
             {
-                return this.Contains((T)value);
+                if (IsCompatibleObject(value))
+                {
+                    return this.Contains((T)value);
+                }
+
+                return false;
             }
 
             /// <summary>
@@ -1059,7 +1064,12 @@ namespace System.Collections.Immutable
             /// </returns>
             int IList.IndexOf(object value)
             {
-                return this.IndexOf((T)value);
+                if (IsCompatibleObject(value))
+                {
+                    return this.IndexOf((T)value);
+                }
+
+                return -1;
             }
 
             /// <summary>
@@ -1097,7 +1107,10 @@ namespace System.Collections.Immutable
             /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
             void IList.Remove(object value)
             {
-                this.Remove((T)value);
+                if (IsCompatibleObject(value))
+                {
+                    this.Remove((T)value);
+                }
             }
 
             /// <summary>
