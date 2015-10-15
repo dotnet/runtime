@@ -5,9 +5,9 @@
 
 #include <assert.h>
 
-extern "C" X509_EXTENSION* X509ExtensionCreateByObj(ASN1_OBJECT* obj, ASN1_OCTET_STRING* data)
+extern "C" X509_EXTENSION* X509ExtensionCreateByObj(ASN1_OBJECT* obj, int32_t isCritical, ASN1_OCTET_STRING* data)
 {
-    return X509_EXTENSION_create_by_OBJ(nullptr, obj, /*crit*/ false, data);
+    return X509_EXTENSION_create_by_OBJ(nullptr, obj, isCritical, data);
 }
 
 extern "C" void X509ExtensionDestroy(X509_EXTENSION* a)
@@ -30,6 +30,11 @@ extern "C" int32_t DecodeX509BasicConstraints2Extension(
     int32_t* hasPathLengthConstraint,
     int32_t* pathLengthConstraint)
 {
+    if (!certificateAuthority || !hasPathLengthConstraint || !pathLengthConstraint)
+    {
+        return false;
+    }
+
     *certificateAuthority = false;
     *hasPathLengthConstraint = false;
     *pathLengthConstraint = 0;
