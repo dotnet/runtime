@@ -597,27 +597,22 @@ void showHelp() {
 
 int __cdecl wmain(const int argc, const wchar_t* argv[])
 {
-    auto programPath = _wcsdup(argv[0]);
+    wchar_t* wpgmptr;
+    if (_get_wpgmptr(&wpgmptr) != 0) {
+        ::wprintf(W("Failed to get the path to the current executable"));
+        return -1;
+    }
+    auto programPath = _wcsdup(wpgmptr);
     auto extension = wcsrchr(programPath, '.');
-    if (extension == NULL) {
-        // We were called without the extension so need a bigger buffer
-        size_t pathLen = wcslen(programPath);
-        size_t bufLen = pathLen + 5;
-        wchar_t *newPath = new wchar_t[bufLen];
-        wcscpy_s(newPath, bufLen, programPath);
-        wcscat_s(newPath, bufLen, W(".dll"));
-        programPath = newPath;
+    if (extension == NULL || (wcscmp(extension, L".exe") != 0)) {
+        ::wprintf(W("This executable needs to have 'exe' extension"));
+        return -1;
     }
-    else {
-        extension += 1;
-        if (wcscmp(extension, L"exe") != 0) {
-            ::wprintf(W("This executable needs to have 'exe' extension"));
-            return -1;
-        }
-        extension[0] = 'd';
-        extension[1] = 'l';
-        extension[2] = 'l';
-    }
+
+	// Change the extension from ".exe" to ".dll"
+	extension[1] = 'd';
+	extension[2] = 'l';
+	extension[3] = 'l';
 
     // Parse the options from the command line
     bool verbose = false;
