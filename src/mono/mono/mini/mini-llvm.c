@@ -2390,8 +2390,7 @@ emit_init_icall_wrapper (MonoLLVMModule *lmodule, const char *name, const char *
 	}
 	LLVMSetLinkage (func, LLVMInternalLinkage);
 	LLVMAddFunctionAttr (func, LLVMNoInlineAttribute);
-	// FIXME: This doesn't seem to work
-	//mono_llvm_set_preserveall_cc (func);
+	mono_llvm_set_preserveall_cc (func);
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
 	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
@@ -2536,7 +2535,7 @@ static void
 emit_init_method (EmitContext *ctx)
 {
 	LLVMValueRef indexes [16], args [16], callee;
-	LLVMValueRef inited_var, cmp;
+	LLVMValueRef inited_var, cmp, call;
 	LLVMBasicBlockRef inited_bb, notinited_bb;
 	LLVMBuilderRef builder = ctx->builder;
 	MonoCompile *cfg = ctx->cfg;
@@ -2573,18 +2572,23 @@ emit_init_method (EmitContext *ctx)
 		args [0] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, 0);
 		args [1] = convert (ctx, ctx->rgctx_arg, IntPtrType ());
 		callee = ctx->lmodule->init_method_gshared_rgctx;
-		LLVMBuildCall (builder, callee, args, 2, "");
+		call = LLVMBuildCall (builder, callee, args, 2, "");
 	} else if (cfg->gshared) {
 		args [0] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, 0);
 		args [1] = convert (ctx, ctx->this_arg, ObjRefType ());
 		callee = ctx->lmodule->init_method_gshared_this;
-		LLVMBuildCall (builder, callee, args, 2, "");
+		call = LLVMBuildCall (builder, callee, args, 2, "");
 	} else {
 		args [0] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, 0);
 		callee = ctx->lmodule->init_method;
-		LLVMBuildCall (builder, callee, args, 1, "");
-		//mono_llvm_set_call_preserveall_cc (call);
+		call = LLVMBuildCall (builder, callee, args, 1, "");
 	}
+
+	/*
+	 * This enables llvm to keep arguments in their original registers/
+	 * scratch registers, since the call will not clobber them.
+	 */
+	mono_llvm_set_call_preserveall_cc (call);
 
 	LLVMBuildBr (builder, inited_bb);
 	ctx->bblocks [cfg->bb_entry->block_num].end_bblock = inited_bb;
