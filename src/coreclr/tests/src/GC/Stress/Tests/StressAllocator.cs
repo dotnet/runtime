@@ -1,4 +1,6 @@
-﻿
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Threading;
 using System.Collections.Generic;
@@ -19,10 +21,8 @@ using System.Runtime.InteropServices;
 
 namespace StressAllocator
 {
-
     public class StressAllocator
     {
-  
         //Define the size buckets:
         public struct SizeBucket
         {
@@ -35,7 +35,6 @@ namespace StressAllocator
                 maxsize = max;
                 percentage = percentObj;
             }
-
         }
 
         //Buckets are defined as following:
@@ -101,7 +100,7 @@ namespace StressAllocator
 
         public static System.Diagnostics.Stopwatch stopWatch = new System.Diagnostics.Stopwatch();
         public static Object objLock = new Object();
-        private static bool noLocks = false;  //for the option to not use locks when accessing objects.
+        private static bool s_noLocks = false;  //for the option to not use locks when accessing objects.
 
         //keeping track of status:
         public static UInt64 current_TotalObjCount;
@@ -130,7 +129,7 @@ namespace StressAllocator
         //        return RandomObj.Next(min, max);
         //    }
         //}
-        static ObjectWrapper CreateObject()
+        private static ObjectWrapper CreateObject()
         {
             bool isLOHObject = false;
             //pick a random value for the lifespan, from the min/max lifespan interval
@@ -200,7 +199,6 @@ namespace StressAllocator
 
 
             return myNewObject;
-
         }
 
         /*
@@ -225,8 +223,8 @@ namespace StressAllocator
 
         public static int Main(string[] args)
         {
-//            if (Environment.Is64BitProcess)
-                pointerSize = 8;
+            //            if (Environment.Is64BitProcess)
+            pointerSize = 8;
 
             stopWatch.Start();
 
@@ -238,7 +236,7 @@ namespace StressAllocator
             if (!ParseArgs(args))
                 return 101;
             dummyObject = new ObjectWrapper(0, 0, true, 0);
-            
+
             objectCollection = new ObjArray();
             objectCollection.Init(objCount);
             //One thread is in charge of updating the object age
@@ -259,7 +257,6 @@ namespace StressAllocator
 
                 threadList.Add(thread);
                 thread.Start(i);
-
             }
 
             foreach (Thread t in threadList)
@@ -269,7 +266,6 @@ namespace StressAllocator
             testDone = true;
 
             return 100;
-
         }
 
 
@@ -303,7 +299,7 @@ namespace StressAllocator
             //Console.WriteLine("thread {1}:Number of objects in WR: {0}", WR_All.Count, threadIndex);
             Console.WriteLine("starting steady state");
             //Steady state: objects die and others are created
-       
+
             for (int i = 0; i < countIters; ++i)
             {
                 for (int j = 0; j < objCount; j++)
@@ -312,7 +308,7 @@ namespace StressAllocator
                     int pos = Rand.Next(0, objCount);
                     //Console.WriteLine("pos " + pos);
                     bool ret;
-                    if (noLocks)
+                    if (s_noLocks)
                     {
                         ret = objectCollection.AccessObjectAt(pos);
                     }
@@ -326,7 +322,7 @@ namespace StressAllocator
                     //Console.WriteLine("Thread " + threadIndex + " accessing object at " + pos + " expired= " + ret);
 
 
-                 
+
                 }
 
                 if ((Rand.Next(0, numThreads) != 0))
@@ -336,18 +332,15 @@ namespace StressAllocator
                     //Console.WriteLine("Number of objects in WR: {0}", WR_All.Count);
                 }
 
-                if (outputFrequency > 0 && i>0)
+                if (outputFrequency > 0 && i > 0)
                 {
-                 
-                    if ((i % outputFrequency == 0 || i==countIters-1) && threadIndex == 0)
+                    if ((i % outputFrequency == 0 || i == countIters - 1) && threadIndex == 0)
                     {
                         OutputGCStats(i);
                     }
                 }
-               
             }
             testDone = true;
-
         }
 
         public static void UpdateObjectAge(object threadInfoObj)
@@ -399,7 +392,6 @@ namespace StressAllocator
 
         public static void OutputGCStats(int iterations)
         {
-
             Console.WriteLine("Iterations = {0}", iterations);
             Console.WriteLine("AllocatedMemory = {0} bytes", GC.GetTotalMemory(false));
             Console.WriteLine("Number of objects in collection: {0}", objectCollection.Count);
@@ -453,9 +445,6 @@ namespace StressAllocator
             Console.Write("{0} seconds, ", totalTime.Seconds);
             Console.WriteLine("{0} milliseconds)", totalTime.Milliseconds);
             Console.WriteLine("----------------------------------");
-
-
-
         }
 
         public static void InitializeSizeBuckets()
@@ -557,7 +546,7 @@ namespace StressAllocator
                     }
                     else if (String.Compare(currentArg.ToLower(), "nolocks") == 0)
                     {
-                        noLocks = true;
+                        s_noLocks = true;
                     }
                     else if (String.Compare(currentArg.ToLower(), "timeout") == 0) //seconds; if 0 run forever
                     {
@@ -567,7 +556,7 @@ namespace StressAllocator
                         {
                             timeout = Int64.MaxValue;
                         }
-                    }       
+                    }
                     else if (String.Compare(currentArg.ToLower(), "out") == 0) //output frequency
                     {
                         currentArgValue = args[++i];
@@ -583,7 +572,6 @@ namespace StressAllocator
                         Console.WriteLine("Error! Unexpected argument {0}", currentArg);
                         return false;
                     }
-
                 }
             }
             catch (System.Exception e)
@@ -717,13 +705,10 @@ namespace StressAllocator
                             case 2: //new objects
                                 m_data[fromIndex] = CreateObject();
                                 break;
-
-
                         }
                     }
 
                     WR_All.Add(m_data);
-
                 }
                 else   //pinned
                 {
@@ -734,9 +719,7 @@ namespace StressAllocator
                     }
                     m_pinnedHandle = GCHandle.Alloc(m_pinnedData, GCHandleType.Pinned);
                     WR_All.Add(m_pinnedData);
-
                 }
-
             }
             public void CleanUp()
             {
@@ -750,65 +733,64 @@ namespace StressAllocator
             {
                 CleanUp();
             }
-
         }
 
 
 
-/*
-        /////////////////////////// Collection definition
-        public interface ObjCollection
-        {
-            void Init(int numberOfObjects);
-            ObjectWrapper GetObjectAt(int index);
-            void SetObjectAt(ObjectWrapper o, int index);
+        /*
+                /////////////////////////// Collection definition
+                public interface ObjCollection
+                {
+                    void Init(int numberOfObjects);
+                    ObjectWrapper GetObjectAt(int index);
+                    void SetObjectAt(ObjectWrapper o, int index);
 
-            bool AccessObjectAt(int index);
+                    bool AccessObjectAt(int index);
 
-            int Count
-            {
-                get;
-            }
-            int Size
-            {
-                get;
-            }
-            //One pass through the collection, updates objects'age and removes expired ones
-            void UpdateObjectsAge(long elapsedMsec);
-            void RemoveExpiredObjects();
+                    int Count
+                    {
+                        get;
+                    }
+                    int Size
+                    {
+                        get;
+                    }
+                    //One pass through the collection, updates objects'age and removes expired ones
+                    void UpdateObjectsAge(long elapsedMsec);
+                    void RemoveExpiredObjects();
 
-        }
+                }
 
- * */
+         * */
         public class ObjArray
         {
-            ObjectWrapper[] m_Array;
-            int m_size;
+            private ObjectWrapper[] _array;
+            private int _size;
             public void Init(int numberOfObjects)
             {
-                m_Array = new ObjectWrapper[numberOfObjects];
+                _array = new ObjectWrapper[numberOfObjects];
                 for (int i = 0; i < numberOfObjects; i++)
                 {
-                    m_Array[i] = dummyObject;
+                    _array[i] = dummyObject;
                 }
-                m_size = numberOfObjects;
+                _size = numberOfObjects;
             }
             public void SetObjectAt(ObjectWrapper o, int index)
             {
-                if (index >= m_size)
+                if (index >= _size)
                 {
                     Console.WriteLine("AddObjectAt " + index + " index is out of bounds");
                 }
-                m_Array[index] = o;
+                _array[index] = o;
             }
 
             public bool AccessObjectAt(int index)
             {
-                if (index >= m_size)
+                if (index >= _size)
                     return false;
-                if (/*m_Array[index] == null || */m_Array[index] == dummyObject)
+                if (/*m_Array[index] == null || */_array[index] == dummyObject)
                 {
-                    m_Array[index] = CreateObject();
+                    _array[index] = CreateObject();
                     return true;
                 }
 
@@ -816,14 +798,12 @@ namespace StressAllocator
                 //         {
                 long timeNow = DateTime.Now.Ticks / 10000;
 
-                if ((timeNow - m_Array[index].m_creationTime) > m_Array[index].m_lifeTime)
+                if ((timeNow - _array[index].m_creationTime) > _array[index].m_lifeTime)
                 {
-
                     //    Console.WriteLine("Object age" + (timeNow - m_Array[index].m_creationTime) + "; lifetime=" + m_Array[index].m_lifeTime);
                     //object is expired; put a new one in its place
-                    m_Array[index] = CreateObject();
+                    _array[index] = CreateObject();
                     return true;
-
                 }
                 //      }
 
@@ -831,11 +811,11 @@ namespace StressAllocator
             }
             public ObjectWrapper GetObjectAt(int index)
             {
-                if (index >= m_size)
+                if (index >= _size)
                 {
                     Console.WriteLine("GetObject " + index + " index is out of bounds");
                 }
-                return m_Array[index];
+                return _array[index];
             }
 
             public int Count
@@ -843,9 +823,9 @@ namespace StressAllocator
                 get
                 {
                     int count = 0;
-                    for (int i = 0; i < m_size; i++)
+                    for (int i = 0; i < _size; i++)
                     {
-                        if (m_Array[i] != dummyObject)
+                        if (_array[i] != dummyObject)
                             count++;
                     }
                     return count;
@@ -856,16 +836,16 @@ namespace StressAllocator
             {
                 get
                 {
-                    return m_size;
+                    return _size;
                 }
             }
 
             //One pass through the collection, updates objects'age 
             public void UpdateObjectsAge(long elapsedMsec)
             {
-                for (int i = 0; i < m_size; i++)
+                for (int i = 0; i < _size; i++)
                 {
-                    ObjectWrapper o = m_Array[i];
+                    ObjectWrapper o = _array[i];
                     o.m_age += (int)elapsedMsec;
                 }
             }
@@ -874,76 +854,71 @@ namespace StressAllocator
             //One pass through the collection, removes expired ones
             public void RemoveExpiredObjects()
             {
-                for (int i = 0; i < m_size; i++)
+                for (int i = 0; i < _size; i++)
                 {
-                    if (m_Array[i] != dummyObject)
+                    if (_array[i] != dummyObject)
                     {
-                        if (noLocks)
+                        if (s_noLocks)
                         {
-                            if (m_Array[i].m_age >= m_Array[i].m_lifeTime)
+                            if (_array[i].m_age >= _array[i].m_lifeTime)
                             {
-                                m_Array[i] = dummyObject;
+                                _array[i] = dummyObject;
                             }
                         }
                         else
                         {
                             lock (objLock)
                             {
-                                if (m_Array[i].m_age >= m_Array[i].m_lifeTime)
+                                if (_array[i].m_age >= _array[i].m_lifeTime)
                                 {
-                                    m_Array[i] = dummyObject;
+                                    _array[i] = dummyObject;
                                 }
                             }
                         }
                     }
                 }
-
             }
-
-
-
         }
 
         public class WeakReferenceCollection
         {
-            object WRLock;
-            List<WeakReference> WR;
+            private object _WRLock;
+            private List<WeakReference> _WR;
             public WeakReferenceCollection()
             {
-                WRLock = new Object();
-                WR = new List<WeakReference>();
+                _WRLock = new Object();
+                _WR = new List<WeakReference>();
             }
             public void Add(Object o)
             {
-                lock (WRLock)
+                lock (_WRLock)
                 {
-                    WR.Add(new WeakReference(o));
+                    _WR.Add(new WeakReference(o));
                 }
             }
 
             public Object GetObjectAt(int index)
             {
-                lock (WRLock)
+                lock (_WRLock)
                 {
-                    if (index >= WR.Count)
-                        index = WR.Count - 1;
-                    if (WR[index] == null)
+                    if (index >= _WR.Count)
+                        index = _WR.Count - 1;
+                    if (_WR[index] == null)
                     {
                         Console.WriteLine("WRAll null:" + index);
                         // commented out for coreclr
                         //Environment.Exit(0);
                     }
-                    if (WR[index].IsAlive)
+                    if (_WR[index].IsAlive)
                     {
-                        if (WR[index].Target != null)
+                        if (_WR[index].Target != null)
                         {
-                            Object[] target = WR[index].Target as Object[];
-                            if(target != null)
+                            Object[] target = _WR[index].Target as Object[];
+                            if (target != null)
                             {
                                 return target;
                             }
-                             
-                         }
+                        }
                     }
                     return null;
                 }
@@ -951,11 +926,11 @@ namespace StressAllocator
 
             public void CheckWRAll()
             {
-                lock (WRLock)
+                lock (_WRLock)
                 {
-                    for (int i = 0; i < WR.Count; i++)
+                    for (int i = 0; i < _WR.Count; i++)
                     {
-                        if (WR[i] == null)
+                        if (_WR[i] == null)
                         {
                             Console.WriteLine("null:" + i);
                             // commented out for coreclr
@@ -968,27 +943,25 @@ namespace StressAllocator
             {
                 get
                 {
-                    lock (WRLock)
+                    lock (_WRLock)
                     {
-                        return WR.Count;
+                        return _WR.Count;
                     }
                 }
             }
 
             public void RemoveDeadObjects()
             {
-                lock (WRLock)
+                lock (_WRLock)
                 {
-
-                    int endCollection = WR.Count - 1;
+                    int endCollection = _WR.Count - 1;
                     for (int i = endCollection; i >= 0; i--)
                     {
-                        if (!WR[i].IsAlive)
+                        if (!_WR[i].IsAlive)
                         {
-                            WR.RemoveAt(i);
+                            _WR.RemoveAt(i);
                         }
                     }
-
                 }
             }
             ////Try setting  a reference from an object in the list to the new object
@@ -1032,7 +1005,6 @@ namespace StressAllocator
 
             //}
         }
-
     }
 }
 

@@ -1,42 +1,45 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 // Allocate 120MB of live large objects (2MB at a time) on n threads,
 // where n is the number of processors on the machine.
 //This test must be run with server GC.
+
 using System;
 using System.Threading;
 
-class MyThread
+internal class MyThread
 {
-    private int index;
-    private int AllocPerThreadMB;
+    private int _index;
+    private int _allocPerThreadMB;
 
     public MyThread(int i, int allocPerThreadMB)
     {
-        index = i;
-        AllocPerThreadMB = allocPerThreadMB;
+        _index = i;
+        _allocPerThreadMB = allocPerThreadMB;
     }
 
     public void DoWork()
     {
-        byte[][] largeArray = new byte[AllocPerThreadMB/2][];
-        for (int i = 0; i < AllocPerThreadMB/2; i++)
+        byte[][] largeArray = new byte[_allocPerThreadMB / 2][];
+        for (int i = 0; i < _allocPerThreadMB / 2; i++)
         {
-            largeArray[i] = new byte[2* 1024* 1024];  // 2 MB
-            largeArray[i][i+100] = Convert.ToByte(i);
+            largeArray[i] = new byte[2 * 1024 * 1024];  // 2 MB
+            largeArray[i][i + 100] = Convert.ToByte(i);
         }
         int sum = 0;
-        for (int i=0;i<AllocPerThreadMB/2;i++)
-            sum += Convert.ToInt32(largeArray[i][i+100]);
-        Console.WriteLine("Thread {0}: finished", index);
+        for (int i = 0; i < _allocPerThreadMB / 2; i++)
+            sum += Convert.ToInt32(largeArray[i][i + 100]);
+        Console.WriteLine("Thread {0}: finished", _index);
     }
 }
 
-class B115557
+internal class B115557
 {
-    static int AllocPerThreadMB = 120;
+    private static int s_allocPerThreadMB = 120;
 
     public static int Main(String[] args)
     {
@@ -45,19 +48,19 @@ class B115557
         int ProcCount = Environment.ProcessorCount;
         //if (!Environment.Is64BitProcess && ((AllocPerThreadMB * ProcCount) > 1700))
         {
-                AllocPerThreadMB = 1700 / ProcCount;
+            s_allocPerThreadMB = 1700 / ProcCount;
         }
 
-        Console.WriteLine("Allocating {0}MB per thread...", AllocPerThreadMB);
+        Console.WriteLine("Allocating {0}MB per thread...", s_allocPerThreadMB);
 
         MyThread t;
-        Thread [] threads = new Thread[ProcCount];
+        Thread[] threads = new Thread[ProcCount];
 
         Console.WriteLine("Starting {0} threads...", threads.Length);
 
-        for(int i = 0; i<threads.Length; i++)
+        for (int i = 0; i < threads.Length; i++)
         {
-            t = new MyThread(i, AllocPerThreadMB);
+            t = new MyThread(i, s_allocPerThreadMB);
             threads[i] = new Thread(t.DoWork);
             threads[i].Start();
         }
