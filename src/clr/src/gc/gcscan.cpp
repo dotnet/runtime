@@ -178,11 +178,12 @@ VOID CNameSpace::GcScanRoots(promote_func* fn,  int condemned, int max_gen,
             }
 
             Thread* pThread = NULL;
-            while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+            while ((pThread = GCToEEInterface::GetThreadList(pThread)) != NULL)
             {
                 STRESS_LOG2(LF_GC|LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
 
-                if (GCHeap::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(), sc->thread_number))
+                if (GCHeap::GetGCHeap()->IsThreadUsingAllocationContextHeap(
+                        GCToEEInterface::GetAllocContext(pThread), sc->thread_number))
                 {
                     sc->thread_under_crawl = pThread;
 #ifdef FEATURE_EVENT_TRACE
@@ -324,9 +325,9 @@ void CNameSpace::GcFixAllocContexts (void* arg, void *heap)
     if (GCHeap::UseAllocationContexts())
     {
         Thread  *thread = NULL;
-        while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
+        while ((thread = GCToEEInterface::GetThreadList(thread)) != NULL)
         {
-            GCHeap::GetGCHeap()->FixAllocContext(thread->GetAllocContext(), FALSE, arg, heap);
+            GCHeap::GetGCHeap()->FixAllocContext(GCToEEInterface::GetAllocContext(thread), FALSE, arg, heap);
         }
     }
 }
@@ -338,9 +339,9 @@ void CNameSpace::GcEnumAllocContexts (enum_alloc_context_func* fn)
     if (GCHeap::UseAllocationContexts())
     {
         Thread  *thread = NULL;
-        while ((thread = ThreadStore::GetThreadList(thread)) != NULL)
+        while ((thread = GCToEEInterface::GetThreadList(thread)) != NULL)
         {
-            (*fn) (thread->GetAllocContext());
+            (*fn) (GCToEEInterface::GetAllocContext(thread));
         }
     }
 }
