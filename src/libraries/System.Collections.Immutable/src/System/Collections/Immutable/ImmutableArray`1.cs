@@ -721,6 +721,7 @@ namespace System.Collections.Immutable
         /// <param name="item">The item to remove.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>The new array.</returns>
         [Pure]

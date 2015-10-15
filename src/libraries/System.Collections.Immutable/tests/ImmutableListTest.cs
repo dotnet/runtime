@@ -317,6 +317,19 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void Remove_NullEqualityComparer()
+        {
+            var collection = ImmutableList.Create(1, 2, 3);
+            var modified = collection.Remove(2, null);
+            Assert.Equal(new[] { 1, 3 }, modified);
+
+            // Try again through the explicit interface implementation.
+            IImmutableList<int> collectionIface = collection;
+            var modified2 = collectionIface.Remove(2, null);
+            Assert.Equal(new[] { 1, 3 }, modified2);
+        }
+
+        [Fact]
         public void RemoveTest()
         {
             ImmutableList<int> list = ImmutableList<int>.Empty;
