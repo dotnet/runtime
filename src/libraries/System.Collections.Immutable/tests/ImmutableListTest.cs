@@ -594,6 +594,15 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void RemoveRange_EnumerableEqualityComparer_AcceptsNullEQ()
+        {
+            var list = ImmutableList.Create(1, 2, 3);
+            var removed2eq = list.RemoveRange(new[] { 2 }, null);
+            Assert.Equal(2, removed2eq.Count);
+            Assert.Equal(new[] { 1, 3 }, removed2eq);
+        }
+
+        [Fact]
         public void RemoveRangeEnumerableTest()
         {
             var list = ImmutableList.Create(1, 2, 3);
