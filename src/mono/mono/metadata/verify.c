@@ -2515,6 +2515,12 @@ verify_stack_type_compatibility_full (VerifyContext *ctx, MonoType *type, ILStac
 	if (drop_byref)
 		return verify_type_compatibility_full (ctx, type, mono_type_get_type_byval (candidate), FALSE);
 
+	/* Handle how Roslyn emit fixed statements by encoding it as byref */
+	if (type->byref && candidate->byref && (type->type == MONO_TYPE_I) && !mono_type_is_reference (candidate)) {
+		if (!IS_STRICT_MODE (ctx))
+			return TRUE;
+	}
+
 	return verify_type_compatibility_full (ctx, type, candidate, FALSE);
 }
 
