@@ -23,7 +23,7 @@ internal static partial class Interop
         internal static extern IntPtr TLSv1_1_method();
 
         [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern IntPtr TLSv1_2_method();     
+        internal static extern IntPtr TLSv1_2_method();
 
         [DllImport(Interop.Libraries.LibSsl)]
         internal static extern IntPtr SSL_CTX_new(IntPtr meth);
@@ -122,5 +122,8 @@ internal static partial class Interop
 
             return handle;
         }
+
+        [DllImport(Interop.Libraries.LibSsl)]
+        internal static extern IntPtr SSL_get_version(SafeSslHandle ssl);
     }
 }

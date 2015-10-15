@@ -184,15 +184,17 @@ internal static partial class Interop
             return libssl.SSL_get_peer_cert_chain(context);
         }
 
-        internal static libssl.SSL_CIPHER GetConnectionInfo(SafeSslHandle context)
+        internal static libssl.SSL_CIPHER GetConnectionInfo(SafeSslHandle sslHandle, out string protocolVersion)
         {
-            IntPtr cipherPtr = libssl.SSL_get_current_cipher(context);
+            IntPtr cipherPtr = libssl.SSL_get_current_cipher(sslHandle);
             var cipher = new libssl.SSL_CIPHER();
             if (IntPtr.Zero != cipherPtr)
             {
                 cipher = Marshal.PtrToStructure<libssl.SSL_CIPHER>(cipherPtr);
             }
 
+            IntPtr versionPtr = libssl.SSL_get_version(sslHandle);
+            protocolVersion = Marshal.PtrToStringAnsi(versionPtr);
             return cipher;
         }
 
