@@ -34,7 +34,6 @@
     <Compile Include="System\Net\Sockets\LingerOption.cs" />
     <Compile Include="System\Net\Sockets\MulticastOption.cs" />
     <Compile Include="System\Net\Sockets\NetworkStream.cs" />
-    <Compile Include="System\Net\Sockets\ProtocolType.cs" />
     <Compile Include="System\Net\Sockets\SelectMode.cs" />
     <Compile Include="System\Net\Sockets\SendPacketsElement.cs" />
     <Compile Include="System\Net\Sockets\Socket.cs" />
@@ -145,6 +144,9 @@
     <Compile Include="$(CommonPath)\System\Net\Internals\SocketExceptionFactory.cs">
       <Link>Common\System\Net\Internals\SocketExceptionFactory.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolType.cs">
+      <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
+    </Compile>    
     <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
       <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>    
@@ -336,9 +338,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.select.cs">
       <Link>Interop\Unix\libc\Interop.select.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.socket.cs">
-      <Link>Interop\Unix\libc\Interop.socket.cs</Link>
-    </Compile>
 
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Accept.cs">
       <Link>Interop\Unix\System.Native\Interop.Accept.cs</Link>
@@ -396,6 +395,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Shutdown.cs">
       <Link>Interop\Unix\System.Native\Interop.Shutdown.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Socket.cs">
+      <Link>Interop\Unix\System.Native\Interop.Socket.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
       <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>

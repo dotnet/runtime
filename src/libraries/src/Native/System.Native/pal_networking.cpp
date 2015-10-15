@@ -403,6 +403,62 @@ extern "C" Error GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t
     return PAL_SUCCESS;
 }
 
+static bool TryConvertAddressFamilyPlatformToPal(sa_family_t platformAddressFamily, int32_t* palAddressFamily)
+{
+    assert(palAddressFamily != nullptr);
+
+    switch (platformAddressFamily)
+    {
+        case AF_UNSPEC:
+            *palAddressFamily = PAL_AF_UNSPEC;
+            return true;
+
+        case AF_UNIX:
+            *palAddressFamily = PAL_AF_UNIX;
+            return true;
+
+        case AF_INET:
+            *palAddressFamily = PAL_AF_INET;
+            return true;
+
+        case AF_INET6:
+            *palAddressFamily = PAL_AF_INET6;
+            return true;
+
+        default:
+            *palAddressFamily = platformAddressFamily;
+            return false;
+    }
+}
+
+static bool TryConvertAddressFamilyPalToPlatform(int32_t palAddressFamily, sa_family_t* platformAddressFamily)
+{
+    assert(platformAddressFamily != nullptr);
+
+    switch (palAddressFamily)
+    {
+        case PAL_AF_UNSPEC:
+            *platformAddressFamily = AF_UNSPEC;
+            return true;
+
+        case PAL_AF_UNIX:
+            *platformAddressFamily = AF_UNIX;
+            return true;
+
+        case PAL_AF_INET:
+            *platformAddressFamily = AF_INET;
+            return true;
+
+        case PAL_AF_INET6:
+            *platformAddressFamily = AF_INET6;
+            return true;
+
+        default:
+            *platformAddressFamily = static_cast<sa_family_t>(palAddressFamily);
+            return false;
+    }
+}
+
 extern "C" Error GetAddressFamily(const uint8_t* socketAddress, int32_t socketAddressLen, int32_t* addressFamily)
 {
     if (socketAddress == nullptr || addressFamily == nullptr || socketAddressLen < 0)
@@ -416,27 +472,14 @@ extern "C" Error GetAddressFamily(const uint8_t* socketAddress, int32_t socketAd
         return PAL_EFAULT;
     }
 
-    switch (sockAddr->sa_family)
+    if (!TryConvertAddressFamilyPlatformToPal(sockAddr->sa_family, addressFamily))
     {
-        case AF_UNSPEC:
-            *addressFamily = PAL_AF_UNSPEC;
-            return PAL_SUCCESS;
-
-        case AF_UNIX:
-            *addressFamily = PAL_AF_UNIX;
-            return PAL_SUCCESS;
-
-        case AF_INET:
-            *addressFamily = PAL_AF_INET;
-            return PAL_SUCCESS;
-
-        case AF_INET6:
-            *addressFamily = PAL_AF_INET6;
-            return PAL_SUCCESS;
-
-        default:
-            return PAL_EAFNOSUPPORT;
+        // TODO: we may want to let the address family through transparently if it's
+        //       outside the range of shimmed values.
+        return PAL_EAFNOSUPPORT;
     }
+
+    return PAL_SUCCESS;
 }
 
 extern "C" Error SetAddressFamily(uint8_t* socketAddress, int32_t socketAddressLen, int32_t addressFamily)
@@ -448,27 +491,14 @@ extern "C" Error SetAddressFamily(uint8_t* socketAddress, int32_t socketAddressL
         return PAL_EFAULT;
     }
 
-    switch (addressFamily)
+    if (!TryConvertAddressFamilyPalToPlatform(addressFamily, &sockAddr->sa_family))
     {
-        case PAL_AF_UNSPEC:
-            sockAddr->sa_family = AF_UNSPEC;
-            return PAL_SUCCESS;
-
-        case PAL_AF_UNIX:
-            sockAddr->sa_family = AF_UNIX;
-            return PAL_SUCCESS;
-
-        case PAL_AF_INET:
-            sockAddr->sa_family = AF_INET;
-            return PAL_SUCCESS;
-
-        case PAL_AF_INET6:
-            sockAddr->sa_family = AF_INET6;
-            return PAL_SUCCESS;
-
-        default:
-            return PAL_EAFNOSUPPORT;
+        // TODO: we may want to let the address family through transparently if it's
+        //       outside the range of shimmed values.
+        return PAL_EAFNOSUPPORT;
     }
+
+    return PAL_SUCCESS;
 }
 
 extern "C" Error GetPort(const uint8_t* socketAddress, int32_t socketAddressLen, uint16_t* port)
@@ -1334,4 +1364,78 @@ extern "C" Error SetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t s
 
     int err = setsockopt(socket, optLevel, optName, optionValue, static_cast<socklen_t>(optionLen));
     return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+static bool TryConvertSocketTypePalToPlatform(int32_t palSocketType, int* platformSocketType)
+{
+    assert(platformSocketType != nullptr);
+
+    switch (palSocketType)
+    {
+        case PAL_SOCK_STREAM:
+           *platformSocketType = SOCK_STREAM;
+            return true;
+
+        case PAL_SOCK_DGRAM:
+            *platformSocketType = SOCK_DGRAM;
+            return true;
+
+        case PAL_SOCK_RAW:
+            *platformSocketType = SOCK_RAW;
+            return true;
+
+        case PAL_SOCK_RDM:
+            *platformSocketType = SOCK_RDM;
+            return true;
+
+        case PAL_SOCK_SEQPACKET:
+            *platformSocketType = SOCK_SEQPACKET;
+            return true;
+ 
+        default:
+            *platformSocketType = static_cast<int>(palSocketType);
+            return false;           
+    }
+}
+
+static bool TryConvertProtocolTypePalToPlatform(int32_t palProtocolType, int* platformProtocolType)
+{
+    assert(platformProtocolType != nullptr);
+
+    switch (palProtocolType)
+    {
+        case PAL_PT_TCP:
+            *platformProtocolType = IPPROTO_TCP;
+            return true;
+
+        case PAL_PT_UDP:
+            *platformProtocolType = IPPROTO_UDP;
+            return true;
+
+        default:
+            *platformProtocolType = static_cast<int>(palProtocolType);
+            return false;
+    }
+}
+
+extern "C" Error Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, int32_t* createdSocket)
+{
+    if (createdSocket == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    // NOTE: we do not check for success on any of these calls b/c this API is deliberately
+    //       transparent w.r.t. unmapped values. This allows the use of platform-specific
+    //       address families and protocol types at the expense of potentially confusing
+    //       behavior when PAL and platform values overlap.
+    sa_family_t platformAddressFamily;
+    int platformSocketType, platformProtocolType;
+
+    TryConvertAddressFamilyPalToPlatform(addressFamily, &platformAddressFamily);
+    TryConvertSocketTypePalToPlatform(socketType, &platformSocketType);
+    TryConvertProtocolTypePalToPlatform(protocolType, &platformProtocolType);
+
+    *createdSocket = socket(platformAddressFamily, platformSocketType, platformProtocolType);
+    return *createdSocket != -1 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
 }
