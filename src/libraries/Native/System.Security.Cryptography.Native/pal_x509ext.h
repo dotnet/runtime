@@ -12,7 +12,7 @@ Implemented by calling X509_EXTENSION_create_by_OBJ
 
 Returns new X509_EXTENSION on success, nullptr on failure.
 */
-extern "C" X509_EXTENSION* X509ExtensionCreateByObj(ASN1_OBJECT* obj, ASN1_OCTET_STRING* data);
+extern "C" X509_EXTENSION* X509ExtensionCreateByObj(ASN1_OBJECT* obj, int32_t isCritical, ASN1_OCTET_STRING* data);
 
 /*
 Cleans up and deletes an X509_EXTENSION instance.
