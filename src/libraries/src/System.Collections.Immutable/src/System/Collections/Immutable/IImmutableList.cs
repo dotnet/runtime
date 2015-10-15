@@ -141,6 +141,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to remove if matches are found in this list.</param>
         /// <param name="equalityComparer">
         /// The equality comparer to use in the search.
+        /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
         /// </param>
         /// <returns>
         /// A new list with the elements removed.
