@@ -54,26 +54,20 @@ GetLocaleInfoDecimalFormatSymbol
 
 Obtains the value of a DecimalFormatSymbols
 */
-UErrorCode GetLocaleInfoDecimalFormatSymbol(const Locale& locale,
-                                            DecimalFormatSymbols::ENumberFormatSymbol symbol,
-                                            UChar* value,
-                                            int32_t valueLength)
+UErrorCode
+GetLocaleInfoDecimalFormatSymbol(const Locale& locale, UNumberFormatSymbol symbol, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
-    LocalPointer<DecimalFormatSymbols> decimalsymbols(new DecimalFormatSymbols(locale, status));
-    if (decimalsymbols == NULL)
-    {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
+    UNumberFormat* pFormat = unum_open(UNUM_DECIMAL, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
 
     if (U_FAILURE(status))
     {
         return status;
     }
 
-    UnicodeString s = decimalsymbols->getSymbol(symbol);
+    unum_getSymbol(pFormat, symbol, value, valueLength, &status);
 
-    s.extract(value, valueLength, status);
     return status;
 }
 
@@ -85,7 +79,7 @@ Obtains the value of a Digit DecimalFormatSymbols
 */
 UErrorCode GetDigitSymbol(const Locale& locale,
                           UErrorCode previousStatus,
-                          DecimalFormatSymbols::ENumberFormatSymbol symbol,
+                          UNumberFormatSymbol symbol,
                           int digit,
                           UChar* value,
                           int32_t valueLength)
@@ -175,40 +169,33 @@ GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, 
         case ListSeparator:
         // fall through
         case ThousandSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(
-                locale, DecimalFormatSymbols::kGroupingSeparatorSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case DecimalSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(
-                locale, DecimalFormatSymbols::kDecimalSeparatorSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_DECIMAL_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case Digits:
-            status = GetDigitSymbol(locale, status, DecimalFormatSymbols::kZeroDigitSymbol, 0, value, valueLength);
-            // symbols kOneDigitSymbol to kNineDigitSymbol are contiguous
-            for (int32_t symbol = DecimalFormatSymbols::kOneDigitSymbol;
-                 symbol <= DecimalFormatSymbols::kNineDigitSymbol;
-                 symbol++)
+            status = GetDigitSymbol(locale, status, UNUM_ZERO_DIGIT_SYMBOL, 0, value, valueLength);
+            // symbols UNUM_ONE_DIGIT to UNUM_NINE_DIGIT are contiguous
+            for (int32_t symbol = UNUM_ONE_DIGIT_SYMBOL; symbol <= UNUM_NINE_DIGIT_SYMBOL; symbol++)
             {
-                int charIndex = symbol - DecimalFormatSymbols::kOneDigitSymbol + 1;
+                int charIndex = symbol - UNUM_ONE_DIGIT_SYMBOL + 1;
                 status = GetDigitSymbol(
-                    locale, status, (DecimalFormatSymbols::ENumberFormatSymbol)symbol, charIndex, value, valueLength);
+                    locale, status, static_cast<UNumberFormatSymbol>(symbol), charIndex, value, valueLength);
             }
             break;
         case MonetarySymbol:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kCurrencySymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_CURRENCY_SYMBOL, value, valueLength);
             break;
         case Iso4217MonetarySymbol:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kIntlCurrencySymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INTL_CURRENCY_SYMBOL, value, valueLength);
             break;
         case MonetaryDecimalSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(
-                locale, DecimalFormatSymbols::kMonetarySeparatorSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case MonetaryThousandSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(
-                locale, DecimalFormatSymbols::kMonetaryGroupingSeparatorSymbol, value, valueLength);
+            status =
+                GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case AMDesignator:
             status = GetLocaleInfoAmPm(locale, true, value, valueLength);
@@ -217,12 +204,10 @@ GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, 
             status = GetLocaleInfoAmPm(locale, false, value, valueLength);
             break;
         case PositiveSign:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kPlusSignSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PLUS_SIGN_SYMBOL, value, valueLength);
             break;
         case NegativeSign:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kMinusSignSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MINUS_SIGN_SYMBOL, value, valueLength);
             break;
         case Iso639LanguageName:
             status = u_charsToUChars_safe(locale.getLanguage(), value, valueLength);
@@ -233,11 +218,10 @@ GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, 
             status = u_charsToUChars_safe(locale.getCountry(), value, valueLength);
             break;
         case NaNSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kNaNSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_NAN_SYMBOL, value, valueLength);
             break;
         case PositiveInfinitySymbol:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kInfinitySymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INFINITY_SYMBOL, value, valueLength);
             break;
         case ParentName:
         {
@@ -257,10 +241,10 @@ GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, 
             break;
         }
         case PercentSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kPercentSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERCENT_SYMBOL, value, valueLength);
             break;
         case PerMilleSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kPerMillSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERMILL_SYMBOL, value, valueLength);
             break;
         default:
             status = U_UNSUPPORTED_ERROR;
