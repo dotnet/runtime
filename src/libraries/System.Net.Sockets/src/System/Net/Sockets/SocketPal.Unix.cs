@@ -147,6 +147,18 @@ namespace System.Net.Sockets
             }
         }
 
+        private static SocketError GetSocketOptionErrorForErrorCode(Interop.Error error)
+        {
+            // Interop.Sys.{Get,Set}SockOpt return Interop.Error.ENOTSUP for unsupported
+            // socket options. In this case we want to throw PlatformNotSupportedException.
+            if (error == Interop.Error.ENOTSUP)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            return GetSocketErrorForErrorCode(error);
+        }
+
         public static int GetPlatformAddressFamily(AddressFamily addressFamily)
         {
             switch (addressFamily)
@@ -236,219 +248,6 @@ namespace System.Net.Sockets
                 ((platformSocketFlags & Interop.libc.MSG_OOB) == 0 ? 0 : SocketFlags.OutOfBand) |
                 ((platformSocketFlags & Interop.libc.MSG_PEEK) == 0 ? 0 : SocketFlags.Peek) |
                 ((platformSocketFlags & Interop.libc.MSG_TRUNC) == 0 ? 0 : SocketFlags.Truncated);
-        }
-
-        private static bool GetPlatformOptionInfo(SocketOptionLevel optionLevel, SocketOptionName optionName, out int optLevel, out int optName)
-        {
-            // TODO: determine what option level honors these option names
-            // - SocketOptionName.BsdUrgent
-            // - case SocketOptionName.Expedited
-
-            // TODO: decide how to handle option names that have no corresponding name on *nix
-            switch (optionLevel)
-            {
-                case SocketOptionLevel.Socket:
-                    optLevel = Interop.libc.SOL_SOCKET;
-                    switch (optionName)
-                    {
-                        case SocketOptionName.Debug:
-                            optName = Interop.libc.SO_DEBUG;
-                            break;
-
-                        case SocketOptionName.AcceptConnection:
-                            optName = Interop.libc.SO_ACCEPTCONN;
-                            break;
-
-                        case SocketOptionName.ReuseAddress:
-                            optName = Interop.libc.SO_REUSEADDR;
-                            break;
-
-                        case SocketOptionName.KeepAlive:
-                            optName = Interop.libc.SO_KEEPALIVE;
-                            break;
-
-                        case SocketOptionName.DontRoute:
-                            optName = Interop.libc.SO_DONTROUTE;
-                            break;
-
-                        case SocketOptionName.Broadcast:
-                            optName = Interop.libc.SO_BROADCAST;
-                            break;
-
-                        // SocketOptionName.UseLoopback:
-
-                        case SocketOptionName.Linger:
-                            optName = Interop.libc.SO_LINGER;
-                            break;
-
-                        case SocketOptionName.OutOfBandInline:
-                            optName = Interop.libc.SO_OOBINLINE;
-                            break;
-
-                        // case SocketOptionName.DontLinger
-                        // case SocketOptionName.ExclusiveAddressUse
-
-                        case SocketOptionName.SendBuffer:
-                            optName = Interop.libc.SO_SNDBUF;
-                            break;
-
-                        case SocketOptionName.ReceiveBuffer:
-                            optName = Interop.libc.SO_RCVBUF;
-                            break;
-
-                        case SocketOptionName.SendLowWater:
-                            optName = Interop.libc.SO_SNDLOWAT;
-                            break;
-
-                        case SocketOptionName.ReceiveLowWater:
-                            optName = Interop.libc.SO_RCVLOWAT;
-                            break;
-
-                        case SocketOptionName.SendTimeout:
-                            optName = Interop.libc.SO_SNDTIMEO;
-                            break;
-
-                        case SocketOptionName.ReceiveTimeout:
-                            optName = Interop.libc.SO_RCVTIMEO;
-                            break;
-
-                        case SocketOptionName.Error:
-                            optName = Interop.libc.SO_ERROR;
-                            break;
-
-                        case SocketOptionName.Type:
-                            optName = Interop.libc.SO_TYPE;
-                            break;
-
-                        // case SocketOptionName.MaxConnections
-                        // case SocketOptionName.UpdateAcceptContext:
-                        // case SocketOptionName.UpdateConnectContext:
-
-                        default:
-                            optName = (int)optionName;
-                            return false;
-                    }
-                    return true;
-
-                case SocketOptionLevel.Tcp:
-                    optLevel = Interop.libc.IPPROTO_TCP;
-                    switch (optionName)
-                    {
-                        case SocketOptionName.NoDelay:
-                            optName = Interop.libc.TCP_NODELAY;
-                            break;
-
-                        default:
-                            optName = (int)optionName;
-                            return false;
-                    }
-                    return true;
-
-                case SocketOptionLevel.Udp:
-                    optLevel = Interop.libc.IPPROTO_UDP;
-
-                    // case SocketOptionName.NoChecksum:
-                    // case SocketOptionName.ChecksumCoverage:
-
-                    optName = (int)optionName;
-                    return false;
-
-                case SocketOptionLevel.IP:
-                    optLevel = Interop.libc.IPPROTO_IP;
-                    switch (optionName)
-                    {
-                        case SocketOptionName.IPOptions:
-                            optName = Interop.libc.IP_OPTIONS;
-                            break;
-
-                        case SocketOptionName.HeaderIncluded:
-                            optName = Interop.libc.IP_HDRINCL;
-                            break;
-
-                        case SocketOptionName.TypeOfService:
-                            optName = Interop.libc.IP_TOS;
-                            break;
-
-                        case SocketOptionName.IpTimeToLive:
-                            optName = Interop.libc.IP_TTL;
-                            break;
-
-                        case SocketOptionName.MulticastInterface:
-                            optName = Interop.libc.IP_MULTICAST_IF;
-                            break;
-
-                        case SocketOptionName.MulticastTimeToLive:
-                            optName = Interop.libc.IP_MULTICAST_TTL;
-                            break;
-
-                        case SocketOptionName.MulticastLoopback:
-                            optName = Interop.libc.IP_MULTICAST_LOOP;
-                            break;
-
-                        case SocketOptionName.AddMembership:
-                            optName = Interop.libc.IP_ADD_MEMBERSHIP;
-                            break;
-
-                        case SocketOptionName.DropMembership:
-                            optName = Interop.libc.IP_DROP_MEMBERSHIP;
-                            break;
-
-                        // case SocketOptionName.DontFragment
-
-                        case SocketOptionName.AddSourceMembership:
-                            optName = Interop.libc.IP_ADD_SOURCE_MEMBERSHIP;
-                            break;
-
-                        case SocketOptionName.DropSourceMembership:
-                            optName = Interop.libc.IP_DROP_SOURCE_MEMBERSHIP;
-                            break;
-
-                        case SocketOptionName.BlockSource:
-                            optName = Interop.libc.IP_BLOCK_SOURCE;
-                            break;
-
-                        case SocketOptionName.UnblockSource:
-                            optName = Interop.libc.IP_UNBLOCK_SOURCE;
-                            break;
-
-                        case SocketOptionName.PacketInformation:
-                            optName = Interop.libc.IP_PKTINFO;
-                            break;
-
-                        default:
-                            optName = (int)optionName;
-                            return false;
-                    }
-                    return true;
-
-                case SocketOptionLevel.IPv6:
-                    optLevel = Interop.libc.IPPROTO_IPV6;
-                    switch (optionName)
-                    {
-                        // case SocketOptionName.HopLimit:
-
-                        // case SocketOption.IPProtectionLevel:
-
-                        case SocketOptionName.IPv6Only:
-                            optName = Interop.libc.IPV6_V6ONLY;
-                            break;
-
-                        case SocketOptionName.PacketInformation:
-                            optName = Interop.libc.IPV6_RECVPKTINFO;
-                            break;
-
-                        default:
-                            optName = (int)optionName;
-                            return false;
-                    }
-                    return true;
-
-                default:
-                    // TODO: rethink this
-                    optLevel = (int)optionLevel;
-                    optName = (int)optionName;
-                    return false;
-            }
         }
 
         private static unsafe IPPacketInformation GetIPPacketInformation(Interop.Sys.MessageHeader* messageHeader, bool isIPv4, bool isIPv6)
@@ -890,19 +689,15 @@ namespace System.Net.Sockets
 
         public static unsafe bool TryCompleteConnect(int fileDescriptor, int socketAddressLen, out SocketError errorCode)
         {
-            int socketErrno;
-			var optLen = (uint)sizeof(int);
-            int err = Interop.libc.getsockopt(fileDescriptor, Interop.libc.SOL_SOCKET, Interop.libc.SO_ERROR, &socketErrno, &optLen);
-
-            if (err != 0)
+            Interop.Error socketError;
+            Interop.Error err = Interop.Sys.GetSocketErrorOption(fileDescriptor, &socketError);
+            if (err != Interop.Error.SUCCESS)
             {
-                Debug.Assert(Interop.Sys.GetLastError() == Interop.Error.EBADF);
+                Debug.Assert(err == Interop.Error.EBADF);
                 errorCode = SocketError.SocketError;
                 return true;
             }
-			Debug.Assert(optLen == (uint)sizeof(int));
 
-            Interop.Error socketError = Interop.Sys.ConvertErrorPlatformToPal(socketErrno);
             if (socketError == Interop.Error.SUCCESS)
             {
                 errorCode = SocketError.Success;
@@ -1308,33 +1103,26 @@ namespace System.Net.Sockets
                 }
             }
 
-            int optLevel, optName;
-            GetPlatformOptionInfo(optionLevel, optionName, out optLevel, out optName);
-
-            int err = Interop.libc.setsockopt(handle.FileDescriptor, optLevel, optName, &optionValue, sizeof(int));
-
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            Interop.Error err = Interop.Sys.SetSockOpt(handle.FileDescriptor, optionLevel, optionName, (byte*)&optionValue, sizeof(int));
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketOptionErrorForErrorCode(err);
         }
 
         public static unsafe SocketError SetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
         {
-            int optLevel, optName;
-            GetPlatformOptionInfo(optionLevel, optionName, out optLevel, out optName);
-
-            int err;
+            Interop.Error err;
             if (optionValue == null || optionValue.Length == 0)
             {
-                err = Interop.libc.setsockopt(handle.FileDescriptor, optLevel, optName, null, 0);
+                err = Interop.Sys.SetSockOpt(handle.FileDescriptor, optionLevel, optionName, null, 0);
             }
             else
             {
                 fixed (byte* pinnedValue = optionValue)
                 {
-                    err = Interop.libc.setsockopt(handle.FileDescriptor, optLevel, optName, pinnedValue, (uint)optionValue.Length);
+                    err = Interop.Sys.SetSockOpt(handle.FileDescriptor, optionLevel, optionName, pinnedValue, optionValue.Length);
                 }
             }
 
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketOptionErrorForErrorCode(err);
         }
 
         public static unsafe SocketError SetMulticastOption(SafeCloseSocket handle, SocketOptionName optionName, MulticastOption optionValue)
@@ -1399,40 +1187,39 @@ namespace System.Net.Sockets
                 }
             }
 
-            int optLevel, optName;
-            GetPlatformOptionInfo(optionLevel, optionName, out optLevel, out optName);
-
             int value = 0;
-            var optLen = (uint)sizeof(int);
-            int err = Interop.libc.getsockopt(handle.FileDescriptor, optLevel, optName, &value, &optLen);
-            optionValue = (int)value;
+            int optLen = sizeof(int);
+            Interop.Error err = Interop.Sys.GetSockOpt(handle.FileDescriptor, optionLevel, optionName, (byte*)&value, &optLen);
 
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            optionValue = value;
+            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketOptionErrorForErrorCode(err);
         }
 
         public static unsafe SocketError GetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue, ref int optionLength)
         {
-            int optLevel, optName;
-            GetPlatformOptionInfo(optionLevel, optionName, out optLevel, out optName);
+            int optLen = optionLength;
 
-            uint optLen = (uint)optionLength;
-
-            int err;
+            Interop.Error err;
             if (optionValue == null || optionValue.Length == 0)
             {
                 optLen = 0;
-                err = Interop.libc.getsockopt(handle.FileDescriptor, optLevel, optName, null, &optLen);
+                err = Interop.Sys.GetSockOpt(handle.FileDescriptor, optionLevel, optionName, null, &optLen);
             }
             else
             {
                 fixed (byte* pinnedValue = optionValue)
                 {
-                    err = Interop.libc.getsockopt(handle.FileDescriptor, optLevel, optName, pinnedValue, &optLen);
+                    err = Interop.Sys.GetSockOpt(handle.FileDescriptor, optionLevel, optionName, pinnedValue, &optLen);
                 }
             }
 
-            optionLength = (int)optLen;
-            return err == -1 ? GetLastSocketError() : SocketError.Success;
+            if (err == Interop.Error.SUCCESS)
+            {
+                optionLength = optLen;
+                return SocketError.Success;
+            }
+
+            return GetSocketOptionErrorForErrorCode(err);
         }
 
         public static unsafe SocketError GetMulticastOption(SafeCloseSocket handle, SocketOptionName optionName, out MulticastOption optionValue)
