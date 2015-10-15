@@ -32,6 +32,26 @@ static_assert(PAL_NO_DATA == NO_DATA, "");
 static_assert(PAL_NO_ADDRESS == NO_ADDRESS, "");
 static_assert(sizeof(uint8_t) == sizeof(char), ""); // We make casts from uint8_t to char so make sure it's legal
 
+// NOTE: clang has trouble with offsetof nested inside of static_assert. Instead, store
+//       the necessary field offsets in constants.
+const int OffsetOfIOVectorBase = offsetof(IOVector, Base);
+const int OffsetOfIOVectorCount = offsetof(IOVector, Count);
+const int OffsetOfIovecBase = offsetof(iovec, iov_base);
+const int OffsetOfIovecLen = offsetof(iovec, iov_len);
+
+// We require that IOVector have the same layout as iovec.
+static_assert(sizeof(IOVector) == sizeof(iovec), "");
+static_assert(sizeof(decltype(IOVector::Base)) == sizeof(decltype(iovec::iov_base)), "");
+static_assert(OffsetOfIOVectorBase == OffsetOfIovecBase, "");
+static_assert(sizeof(decltype(IOVector::Count)) == sizeof(decltype(iovec::iov_len)), "");
+static_assert(OffsetOfIOVectorCount == OffsetOfIovecLen, "");
+
+template <typename T>
+static T Min(T left, T right)
+{
+    return left < right ? left : right;
+}
+
 static int IpStringToAddressHelper(const uint8_t* address, const uint8_t* port, bool isIPv6, addrinfo*& info)
 {
     assert(address != nullptr);
@@ -638,6 +658,18 @@ SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* addres
     return PAL_SUCCESS;
 }
 
+static void ConvertMessageHeaderToMsghdr(msghdr* header, const MessageHeader& messageHeader)
+{
+    *header = {
+        .msg_name = messageHeader.SocketAddress,
+        .msg_namelen = static_cast<unsigned int>(messageHeader.SocketAddressLen),
+        .msg_iov = reinterpret_cast<iovec*>(messageHeader.IOVectors),
+        .msg_iovlen = static_cast<decltype(header->msg_iovlen)>(messageHeader.IOVectorCount),
+        .msg_control = messageHeader.ControlBuffer,
+        .msg_controllen = static_cast<decltype(header->msg_controllen)>(messageHeader.ControlBufferLen),
+    };
+}
+
 extern "C" int32_t GetControlMessageBufferSize(int32_t isIPv4, int32_t isIPv6)
 {
     // Note: it is possible that the address family of the socket is neither
@@ -683,20 +715,21 @@ static int32_t GetIPv6PacketInformation(cmsghdr* controlMessage, IPPacketInforma
     return 1;
 }
 
-// NOTE: the messageHeader parameter will be more strongly-typed in the future.
-extern "C" int32_t TryGetIPPacketInformation(uint8_t* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
+extern "C" int32_t
+TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacketInformation* packetInfo)
 {
     if (messageHeader == nullptr || packetInfo == nullptr)
     {
         return 0;
     }
 
-    msghdr* header = reinterpret_cast<msghdr*>(messageHeader);
+    msghdr header;
+    ConvertMessageHeaderToMsghdr(&header, *messageHeader);
 
-    cmsghdr* controlMessage = CMSG_FIRSTHDR(header);
+    cmsghdr* controlMessage = CMSG_FIRSTHDR(&header);
     if (isIPv4 != 0)
     {
-        for (; controlMessage != nullptr; controlMessage = CMSG_NXTHDR(header, controlMessage))
+        for (; controlMessage != nullptr; controlMessage = CMSG_NXTHDR(&header, controlMessage))
         {
             if (controlMessage->cmsg_level == IPPROTO_IP && controlMessage->cmsg_type == IP_PKTINFO)
             {
@@ -706,7 +739,7 @@ extern "C" int32_t TryGetIPPacketInformation(uint8_t* messageHeader, int32_t isI
     }
     else
     {
-        for (; controlMessage != nullptr; controlMessage = CMSG_NXTHDR(header, controlMessage))
+        for (; controlMessage != nullptr; controlMessage = CMSG_NXTHDR(&header, controlMessage))
         {
             if (controlMessage->cmsg_level == IPPROTO_IPV6 && controlMessage->cmsg_type == IPV6_PKTINFO)
             {
@@ -857,4 +890,61 @@ extern "C" Error SetLingerOption(int32_t socket, LingerOption* option)
     linger opt = {.l_onoff = option->OnOff, .l_linger = option->Seconds};
     int err = setsockopt(socket, SOL_SOCKET, SO_LINGER, &opt, sizeof(opt));
     return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+// TODO: shim flags
+extern "C" Error ReceiveMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received)
+{
+    if (messageHeader == nullptr || received == nullptr || messageHeader->SocketAddressLen < 0 ||
+        messageHeader->ControlBufferLen < 0 || messageHeader->IOVectorCount < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    msghdr header;
+    ConvertMessageHeaderToMsghdr(&header, *messageHeader);
+
+    ssize_t res = recvmsg(socket, &header, flags);
+
+    assert(static_cast<int32_t>(header.msg_namelen) <= messageHeader->SocketAddressLen);
+    messageHeader->SocketAddressLen = Min(static_cast<int32_t>(header.msg_namelen), messageHeader->SocketAddressLen);
+    memcpy(messageHeader->SocketAddress, header.msg_name, static_cast<size_t>(messageHeader->SocketAddressLen));
+
+    assert(header.msg_controllen <= static_cast<size_t>(messageHeader->ControlBufferLen));
+    messageHeader->ControlBufferLen = Min(static_cast<int32_t>(header.msg_controllen), messageHeader->ControlBufferLen);
+    memcpy(messageHeader->ControlBuffer, header.msg_control, static_cast<size_t>(messageHeader->ControlBufferLen));
+
+    messageHeader->Flags = header.msg_flags;
+
+    if (res != -1)
+    {
+        *received = res;
+        return PAL_SUCCESS;
+    }
+
+    *received = 0;
+    return ConvertErrorPlatformToPal(errno);
+}
+
+// TODO: shim flags
+extern "C" Error SendMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent)
+{
+    if (messageHeader == nullptr || sent == nullptr || messageHeader->SocketAddressLen < 0 ||
+        messageHeader->ControlBufferLen < 0 || messageHeader->IOVectorCount < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    msghdr header;
+    ConvertMessageHeaderToMsghdr(&header, *messageHeader);
+
+    ssize_t res = sendmsg(socket, &header, flags);
+    if (res != -1)
+    {
+        *sent = res;
+        return PAL_SUCCESS;
+    }
+
+    *sent = 0;
+    return ConvertErrorPlatformToPal(errno);
 }
