@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -18,6 +19,30 @@ internal static partial class Interop
         private static Ssl.SslCtxSetVerifyCallback s_verifyClientCertificate = VerifyClientCertificate;
 
         #region internal methods
+
+        internal static SafeChannelBindingHandle QueryChannelBinding(SafeSslHandle context, ChannelBindingKind bindingType)
+        {
+            SafeChannelBindingHandle bindingHandle;
+            switch (bindingType)
+            {
+                case ChannelBindingKind.Endpoint:
+                    bindingHandle = new SafeChannelBindingHandle(bindingType);
+                    QueryEndPointChannelBinding(context, bindingHandle);
+                    break;
+
+                case ChannelBindingKind.Unique:
+                    bindingHandle = new SafeChannelBindingHandle(bindingType);
+                    QueryUniqueChannelBinding(context, bindingHandle);
+                    break;
+
+                default:
+                    // Keeping parity with windows, we should return null in this case.
+                    bindingHandle = null;
+                    break;
+            }
+
+            return bindingHandle;
+        }
 
         internal static SafeSslHandle AllocateSslContext(SslProtocols protocols, SafeX509Handle certHandle, SafeEvpPKeyHandle certKeyHandle, EncryptionPolicy policy, bool isServer, bool remoteCertRequired)
         {
@@ -219,6 +244,85 @@ internal static partial class Interop
         #endregion
 
         #region private methods
+
+        private static void QueryEndPointChannelBinding(SafeSslHandle context, SafeChannelBindingHandle bindingHandle)
+        {
+            using (SafeX509Handle certSafeHandle = GetPeerCertificate(context))
+            {
+                if (certSafeHandle == null || certSafeHandle.IsInvalid)
+                {
+                    throw CreateSslException(SR.net_ssl_invalid_certificate);
+                }
+
+                bool gotReference = false;
+
+                try
+                {
+                    certSafeHandle.DangerousAddRef(ref gotReference);
+                    using (X509Certificate2 cert = new X509Certificate2(certSafeHandle.DangerousGetHandle()))
+                    using (HashAlgorithm hashAlgo = GetHashForChannelBinding(cert))
+                    {
+                        byte[] bindingHash = hashAlgo.ComputeHash(cert.RawData);
+                        bindingHandle.SetCertHash(bindingHash);
+                    }
+                }
+                finally
+                {
+                    if (gotReference)
+                    {
+                        certSafeHandle.DangerousRelease();
+                    }
+                }
+            }
+        }
+
+        private static void QueryUniqueChannelBinding(SafeSslHandle context, SafeChannelBindingHandle bindingHandle)
+        {
+            bool sessionReused = Ssl.SslSessionReused(context);
+            int certHashLength = context.IsServer ^ sessionReused ?
+                                 Ssl.SslGetPeerFinished(context, bindingHandle.CertHashPtr, bindingHandle.Length) :
+                                 Ssl.SslGetFinished(context, bindingHandle.CertHashPtr, bindingHandle.Length);
+
+            if (0 == certHashLength)
+            {
+                throw CreateSslException(SR.net_ssl_get_channel_binding_token_failed);
+            }
+
+            bindingHandle.SetCertHashLength(certHashLength);
+        }
+
+        private static HashAlgorithm GetHashForChannelBinding(X509Certificate2 cert)
+        {
+            Oid signatureAlgorithm = cert.SignatureAlgorithm;
+            switch (signatureAlgorithm.Value)
+            {
+                // RFC 5929 4.1 says that MD5 and SHA1 both upgrade to EvpSha256 for cbt calculation
+                case "1.2.840.113549.2.5": // MD5
+                case "1.2.840.113549.1.1.4": // MD5RSA
+                case "1.3.14.3.2.26": // SHA1
+                case "1.2.840.10040.4.3": // SHA1DSA
+                case "1.2.840.10045.4.1": // SHA1ECDSA
+                case "1.2.840.113549.1.1.5": // SHA1RSA
+                case "2.16.840.1.101.3.4.2.1": // SHA256
+                case "1.2.840.10045.4.3.2": // SHA256ECDSA
+                case "1.2.840.113549.1.1.11": // SHA256RSA
+                    return SHA256.Create();
+
+                case "2.16.840.1.101.3.4.2.2": // SHA384
+                case "1.2.840.10045.4.3.3": // SHA384ECDSA
+                case "1.2.840.113549.1.1.12": // SHA384RSA
+                    return SHA384.Create();
+
+                case "2.16.840.1.101.3.4.2.3": // SHA512
+                case "1.2.840.10045.4.3.4": // SHA512ECDSA
+                case "1.2.840.113549.1.1.13": // SHA512RSA
+                    return SHA512.Create();
+
+                default:
+                    throw new ArgumentException(signatureAlgorithm.Value);
+            }
+        }
+
         private static IntPtr GetSslMethod(SslProtocols protocols)
         {
             Debug.Assert(protocols != SslProtocols.None, "All protocols are disabled");

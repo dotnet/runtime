@@ -361,3 +361,19 @@ extern "C" void SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list);
 Gets the SSL stream sizes to use.
 */
 extern "C" void GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage);
+
+/*
+Shims the SSL_get_finished method.
+*/
+extern "C" int32_t SslGetFinished(SSL* ssl, void* buf, int32_t count);
+
+/*
+Shims the SSL_get_peer_finished method.
+*/
+extern "C" int32_t SslGetPeerFinished(SSL* ssl, void* buf, int32_t count);
+
+/*
+Returns true/false based on if existing ssl session was re-used or not.
+Shims the SSL_session_reused macro.
+*/
+extern "C" bool SslSessionReused(SSL* ssl);
