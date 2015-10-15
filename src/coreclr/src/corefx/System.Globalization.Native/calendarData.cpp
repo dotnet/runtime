@@ -271,13 +271,11 @@ Gets the native calendar name.
 CalendarDataResult
 GetNativeCalendarName(Locale& locale, CalendarId calendarId, UChar* nativeName, int32_t stringCapacity)
 {
-    LocalPointer<LocaleDisplayNames> displayNames(LocaleDisplayNames::createInstance(locale));
-
-    UnicodeString calendarName;
-    displayNames->keyValueDisplayName("calendar", GetCalendarName(calendarId), calendarName);
-
     UErrorCode err = U_ZERO_ERROR;
-    calendarName.extract(nativeName, stringCapacity, err);
+    ULocaleDisplayNames* pDisplayNames = uldn_open(locale.getName(), ULDN_STANDARD_NAMES, &err);
+    ULocaleDisplayNamesHolder displayNamesHolder(pDisplayNames, err);
+
+    uldn_keyValueDisplayName(pDisplayNames, "calendar", GetCalendarName(calendarId), nativeName, stringCapacity, &err);
 
     return GetCalendarDataResult(err);
 }
