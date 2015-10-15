@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 
@@ -78,16 +79,19 @@ namespace System.Linq.Expressions
             return Expression.Invoke(expression, arguments);
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         internal virtual ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
             throw ContractUtils.Unreachable;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public virtual Expression GetArgument(int index)
         {
             throw ContractUtils.Unreachable;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public virtual int ArgumentCount
         {
             get
@@ -104,6 +108,7 @@ namespace System.Linq.Expressions
             return visitor.VisitInvocation(this);
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         internal virtual InvocationExpression Rewrite(Expression lambda, Expression[] arguments)
         {
             throw ContractUtils.Unreachable;
