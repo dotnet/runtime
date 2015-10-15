@@ -729,13 +729,13 @@ public:
     //------------------------------------------------------------------------
 
     //
-    // spOffset are always relative to the SP of the caller (same as SP at the method entry and exit)
-    // Negative offsets describe GC refs in the local and outgoing areas.
-    // Positive offsets describe GC refs in the scratch area
+    // If spOffset is relative to the current SP, spOffset must be non-negative.
+    // If spOffset is relative to the SP of the caller (same as SP at the method entry and exit)
+    //   Negative offsets describe GC refs in the local and outgoing areas.
+    //   Positive offsets describe GC refs in the scratch area
     // Note that if the dynamic allocation area is resized, the outgoing area will not be valid anymore
     //  Old slots must be declared dead and new ones can be defined.
     //  It's up to the JIT to do the right thing. We don't enforce this.
-    //
 
     GcSlotId GetRegisterSlotId( UINT32 regNum, GcSlotFlags flags );
     GcSlotId GetStackSlotId( INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase = GC_CALLER_SP_REL );
