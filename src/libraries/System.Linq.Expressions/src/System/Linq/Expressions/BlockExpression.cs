@@ -672,9 +672,13 @@ namespace System.Linq.Expressions
             get { return _block.ExpressionCount; }
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public bool IsReadOnly
         {
-            get { return true; }
+            get
+            {
+                throw ContractUtils.Unreachable;
+            }
         }
 
         [ExcludeFromCodeCoverage] // Unreachable
