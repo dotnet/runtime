@@ -2518,8 +2518,9 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 		} else {
 			encode_value (par->gshared_constraint ? 1 : 0, p, &p);
 			if (par->gshared_constraint) {
+				MonoGSharedGenericParam *gpar = (MonoGSharedGenericParam*)par;
 				encode_type (acfg, par->gshared_constraint, p, &p);
-				encode_klass_ref (acfg, mono_class_from_generic_parameter (par->parent, NULL, klass->byval_arg.type == MONO_TYPE_MVAR), p, &p);
+				encode_klass_ref (acfg, mono_class_from_generic_parameter (gpar->parent, NULL, klass->byval_arg.type == MONO_TYPE_MVAR), p, &p);
 			}
 		}
 	} else if (klass->byval_arg.type == MONO_TYPE_PTR) {

@@ -2769,7 +2769,7 @@ MonoType*
 mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 {
 	MonoGenericParam *par = t->data.generic_param;
-	MonoGenericParam *copy;
+	MonoGSharedGenericParam *copy;
 	SharedGParam key;
 	MonoType *res;
 	MonoImage *image = NULL;
@@ -2799,24 +2799,24 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 		mono_image_unlock (image);
 		if (res)
 			return res;
-		copy = mono_image_alloc0 (image, sizeof (MonoGenericParamFull));
-		memcpy (copy, par, sizeof (MonoGenericParamFull));
+		copy = mono_image_alloc0 (image, sizeof (MonoGSharedGenericParam));
+		memcpy (&copy->param, par, sizeof (MonoGenericParamFull));
 		name = get_shared_gparam_name (constraint->type, ((MonoGenericParamFull*)copy)->info.name);
-		((MonoGenericParamFull*)copy)->info.name = mono_image_strdup (image, name);
+		copy->param.info.name = mono_image_strdup (image, name);
 		g_free (name);
 	} else {
 		/* mono_generic_param_name () expects this to be a MonoGenericParamFull */
-		copy = (MonoGenericParam*)g_new0 (MonoGenericParamFull, 1);
-		memcpy (copy, par, sizeof (MonoGenericParam));
+		copy = g_new0 (MonoGSharedGenericParam, 1);
+		memcpy (&copy->param, par, sizeof (MonoGenericParam));
 	}
-	copy->owner = NULL;
+	copy->param.param.owner = NULL;
 	// FIXME:
-	copy->image = image ? image : mono_defaults.corlib;
+	copy->param.param.image = image ? image : mono_defaults.corlib;
 
-	copy->gshared_constraint = constraint;
+	copy->param.param.gshared_constraint = constraint;
 	copy->parent = par;
 	res = mono_metadata_type_dup (NULL, t);
-	res->data.generic_param = copy;
+	res->data.generic_param = (MonoGenericParam*)copy;
 
 	if (image) {
 		SharedGParam *dkey;

@@ -338,6 +338,12 @@ typedef struct {
 	MonoCodeManager *code_mp;
 } MonoJitDynamicMethodInfo;
 
+/* An extension of MonoGenericParamFull used in generic sharing */
+typedef struct {
+	MonoGenericParamFull param;
+	MonoGenericParam *parent;
+} MonoGSharedGenericParam;
+
 #define domain_jit_info(domain) ((MonoJitDomainInfo*)((domain)->runtime_info))
 
 /* Contains a list of ips which needs to be patched when a method is compiled */

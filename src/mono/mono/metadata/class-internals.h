@@ -570,11 +570,6 @@ struct _MonoGenericParam {
 	 * sharing.
 	 */
 	MonoType *gshared_constraint;
-	/*
-	 * If gshared_constraint is != NULL, then this is the generic param this param is
-	 * created from.
-	 */
-	MonoGenericParam *parent;
 	/* 
 	 * If owner is NULL, or owner is 'owned' by this gparam,
 	 * then this is the image whose mempool this struct was allocated from.
