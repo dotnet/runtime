@@ -32,6 +32,7 @@
     <Compile Include="Assembly\Assembly_GetTypeTests.cs" />
     <Compile Include="Assembly\Assembly_IsDynamicTests.cs" />
     <Compile Include="Assembly\Assembly_LoadTests.cs" />
+    <Compile Include="Assembly\Assembly_LocationTests.cs" />
     <Compile Include="Assembly\Assembly_ModulesTests.cs" />
     <Compile Include="Assembly\Assembly_ToStringTests.cs" />
     <Compile Include="Common\ReflectionTestData.cs" />
@@ -91,6 +92,14 @@
     <EmbeddedResource Include="ManifestResourceInfo\ResourceTextFile.txt">
       <LogicalName>ResourceTextFile.txt</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ref\System.Reflection.csproj">
+      <Project>{446de6f0-47a0-4c2f-a918-768a76ccf461}</Project>
+      <Name>System.Reflection</Name>
+      <!-- Don't copy the reference assembly to output -->
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
