@@ -98,6 +98,13 @@ check_struct_has_member(
     "sys/select.h"
     HAVE_PRIVATE_FDS_BITS)
 
+check_function_exists(
+    epoll_create1
+    HAVE_EPOLL)
+
+check_function_exists(
+    kqueue
+    HAVE_KQUEUE)
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     set (CMAKE_REQUIRED_LIBRARIES rt)

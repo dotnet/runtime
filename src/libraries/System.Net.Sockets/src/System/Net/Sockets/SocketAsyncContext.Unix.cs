@@ -372,7 +372,7 @@ namespace System.Net.Sockets
         private OperationQueue<SendOperation> _sendQueue;
         private OperationQueue<AcceptOrConnectOperation> _acceptOrConnectQueue;
         private SocketAsyncEngine _engine;
-        private SocketAsyncEvents _registeredEvents;
+        private Interop.Sys.SocketEvents _registeredEvents;
 
         // These locks are hierarchical: _closeLock must be acquired before _queueLock in order
         // to prevent deadlock.
@@ -385,13 +385,13 @@ namespace System.Net.Sockets
             _engine = engine;
         }
 
-        private void Register(SocketAsyncEvents events)
+        private void Register(Interop.Sys.SocketEvents events)
         {
             Debug.Assert(Monitor.IsEntered(_queueLock));
-            Debug.Assert(!_handle.IsAllocated || _registeredEvents != SocketAsyncEvents.None);
-            Debug.Assert((_registeredEvents & events) == SocketAsyncEvents.None);
+            Debug.Assert(!_handle.IsAllocated || _registeredEvents != Interop.Sys.SocketEvents.None);
+            Debug.Assert((_registeredEvents & events) == Interop.Sys.SocketEvents.None);
 
-            if (_registeredEvents == SocketAsyncEvents.None)
+            if (_registeredEvents == Interop.Sys.SocketEvents.None)
             {
                 Debug.Assert(!_handle.IsAllocated);
                 _handle = GCHandle.Alloc(this, GCHandleType.Normal);
@@ -402,7 +402,7 @@ namespace System.Net.Sockets
             Interop.Error errorCode;
             if (!_engine.TryRegister(_fileDescriptor, _registeredEvents, events, _handle, out errorCode))
             {
-                if (_registeredEvents == SocketAsyncEvents.None)
+                if (_registeredEvents == Interop.Sys.SocketEvents.None)
                 {
                     _handle.Free();
                 }
@@ -417,10 +417,10 @@ namespace System.Net.Sockets
         private void UnregisterRead()
         {
             Debug.Assert(Monitor.IsEntered(_queueLock));
-            Debug.Assert((_registeredEvents & SocketAsyncEvents.Read) != SocketAsyncEvents.None);
+            Debug.Assert((_registeredEvents & Interop.Sys.SocketEvents.Read) != Interop.Sys.SocketEvents.None);
 
-            SocketAsyncEvents events = _registeredEvents & ~SocketAsyncEvents.Read;
-            if (events == SocketAsyncEvents.None)
+            Interop.Sys.SocketEvents events = _registeredEvents & ~Interop.Sys.SocketEvents.Read;
+            if (events == Interop.Sys.SocketEvents.None)
             {
                 Unregister();
             }
@@ -443,18 +443,18 @@ namespace System.Net.Sockets
         {
             Debug.Assert(Monitor.IsEntered(_queueLock));
 
-            if (_registeredEvents == SocketAsyncEvents.None)
+            if (_registeredEvents == Interop.Sys.SocketEvents.None)
             {
                 Debug.Assert(!_handle.IsAllocated);
                 return;
             }
 
             Interop.Error errorCode;
-            bool unregistered = _engine.TryRegister(_fileDescriptor, _registeredEvents, SocketAsyncEvents.None, _handle, out errorCode);
-            _registeredEvents = (SocketAsyncEvents)(-1);
+            bool unregistered = _engine.TryRegister(_fileDescriptor, _registeredEvents, Interop.Sys.SocketEvents.None, _handle, out errorCode);
+            _registeredEvents = (Interop.Sys.SocketEvents)(-1);
             if (unregistered)
             {
-                _registeredEvents = SocketAsyncEvents.None;
+                _registeredEvents = Interop.Sys.SocketEvents.None;
                 _handle.Free();
             }
             else
@@ -481,7 +481,7 @@ namespace System.Net.Sockets
 
                 Unregister();
 
-                // TODO: assert that queues are all empty if _registeredEvents was SocketAsyncEvents.None?
+                // TODO: assert that queues are all empty if _registeredEvents was Interop.Sys.SocketEvents.None?
             }
 
             // TODO: the error codes on these operations may need to be changed to account for
@@ -523,7 +523,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private bool TryBeginOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, SocketAsyncEvents events, out bool isStopped)
+        private bool TryBeginOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, Interop.Sys.SocketEvents events, out bool isStopped)
             where TOperation : AsyncOperation
         {
             lock (_queueLock)
@@ -543,7 +543,7 @@ namespace System.Net.Sockets
                         return false;
                 }
 
-                if ((_registeredEvents & events) == SocketAsyncEvents.None)
+                if ((_registeredEvents & events) == Interop.Sys.SocketEvents.None)
                 {
                     Register(events);
                 }
@@ -587,7 +587,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, SocketAsyncEvents.Read, out isStopped))
+                while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
                 {
                     if (isStopped)
                     {
@@ -646,7 +646,7 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, SocketAsyncEvents.Read, out isStopped))
+            while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
             {
                 if (isStopped)
                 {
@@ -687,7 +687,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, SocketAsyncEvents.Write, out isStopped))
+                while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
                 {
                     if (isStopped)
                     {
@@ -728,7 +728,7 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, SocketAsyncEvents.Write, out isStopped))
+            while (!TryBeginOperation(ref _acceptOrConnectQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
             {
                 if (isStopped)
                 {
@@ -785,7 +785,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _receiveQueue, operation, SocketAsyncEvents.Read, out isStopped))
+                while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
                 {
                     if (isStopped)
                     {
@@ -843,7 +843,7 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _receiveQueue, operation, SocketAsyncEvents.Read, out isStopped))
+            while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
             {
                 if (isStopped)
                 {
@@ -897,7 +897,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _receiveQueue, operation, SocketAsyncEvents.Read, out isStopped))
+                while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
                 {
                     if (isStopped)
                     {
@@ -953,7 +953,7 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _receiveQueue, operation, SocketAsyncEvents.Read, out isStopped))
+            while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
             {
                 if (isStopped)
                 {
@@ -1002,7 +1002,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _receiveQueue, operation, SocketAsyncEvents.Read, out isStopped))
+                while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
                 {
                     if (isStopped)
                     {
@@ -1068,7 +1068,7 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _receiveQueue, operation, SocketAsyncEvents.Read, out isStopped))
+            while (!TryBeginOperation(ref _receiveQueue, operation, Interop.Sys.SocketEvents.Read, out isStopped))
             {
                 if (isStopped)
                 {
@@ -1122,7 +1122,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _sendQueue, operation, SocketAsyncEvents.Write, out isStopped))
+                while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
                 {
                     if (isStopped)
                     {
@@ -1173,7 +1173,7 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _sendQueue, operation, SocketAsyncEvents.Write, out isStopped))
+            while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
             {
                 if (isStopped)
                 {
@@ -1229,7 +1229,7 @@ namespace System.Net.Sockets
                 };
 
                 bool isStopped;
-                while (!TryBeginOperation(ref _sendQueue, operation, SocketAsyncEvents.Write, out isStopped))
+                while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
                 {
                     if (isStopped)
                     {
@@ -1282,7 +1282,7 @@ namespace System.Net.Sockets
             };
 
             bool isStopped;
-            while (!TryBeginOperation(ref _sendQueue, operation, SocketAsyncEvents.Write, out isStopped))
+            while (!TryBeginOperation(ref _sendQueue, operation, Interop.Sys.SocketEvents.Write, out isStopped))
             {
                 if (isStopped)
                 {
@@ -1301,13 +1301,13 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public unsafe void HandleEvents(SocketAsyncEvents events)
+        public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
         {
             Debug.Assert(!Monitor.IsEntered(_queueLock) || Monitor.IsEntered(_closeLock), "Lock ordering violation");
 
             lock (_closeLock)
             {
-                if (_registeredEvents == (SocketAsyncEvents)(-1))
+                if (_registeredEvents == (Interop.Sys.SocketEvents)(-1))
                 {
                     // This can happen if a previous attempt at unregistration did not succeed.
                     // Retry the unregistration.
@@ -1322,21 +1322,21 @@ namespace System.Net.Sockets
                     }
                 }
 
-                if ((events & SocketAsyncEvents.Error) != 0)
+                if ((events & Interop.Sys.SocketEvents.Error) != 0)
                 {
                     // Set the Read and Write flags as well; the processing for these events
                     // will pick up the error.
-                    events |= SocketAsyncEvents.Read | SocketAsyncEvents.Write;
+                    events |= Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write;
                 }
 
-                if ((events & SocketAsyncEvents.Close) != 0)
+                if ((events & Interop.Sys.SocketEvents.Close) != 0)
                 {
                     // Drain queues and unregister this fd, then return.
                     CloseInner();
                     return;
                 }
 
-                if ((events & SocketAsyncEvents.ReadClose) != 0)
+                if ((events & Interop.Sys.SocketEvents.ReadClose) != 0)
                 {
                     // Drain read queue and unregister read operations
                     Debug.Assert(_acceptOrConnectQueue.IsEmpty, "{Accept,Connect} queue should be empty before ReadClose");
@@ -1361,14 +1361,14 @@ namespace System.Net.Sockets
                     }
 
                     // Any data left in the socket has been received above; skip further processing.
-                    events &= ~SocketAsyncEvents.Read;
+                    events &= ~Interop.Sys.SocketEvents.Read;
                 }
 
                 // TODO: optimize locking and completions:
                 // - Dequeues (and therefore locking) for multiple contiguous operations can be combined
                 // - Contiguous completions can happen in a single thread
 
-                if ((events & SocketAsyncEvents.Read) != 0)
+                if ((events & Interop.Sys.SocketEvents.Read) != 0)
                 {
                     AcceptOrConnectOperation acceptTail;
                     TransferOperation receiveTail;
@@ -1410,7 +1410,7 @@ namespace System.Net.Sockets
                     }
                 }
 
-                if ((events & SocketAsyncEvents.Write) != 0)
+                if ((events & Interop.Sys.SocketEvents.Write) != 0)
                 {
                     AcceptOrConnectOperation connectTail;
                     SendOperation sendTail;
