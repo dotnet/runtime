@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [skipmscorlib] [skiptests]"
+    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [skipcoreclr] [skipmscorlib] [skiptests]"
     echo "BuildArch can be: x64, ARM"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
@@ -11,6 +11,7 @@ usage()
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
+    echo "skipcoreclr - do not build CoreCLR."
     echo "skipmscorlib - do not build mscorlib.dll even if mono is installed."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
 
@@ -57,6 +58,11 @@ check_prereqs()
 
 build_coreclr()
 {
+    if [ $__SkipCoreCLR == 1 ]; then
+        echo "Skipping CoreCLR build."
+        return
+    fi
+
     # All set to commence the build
 
     echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType"
@@ -152,7 +158,7 @@ build_mscorlib()
     esac
 
     # Invoke MSBuild
-    mono "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__MSBuildBuildArch /p:__BuildType=$__BuildType /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:ToolNugetRuntimeId=$_ToolNugetRuntimeId
+    mono "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__MSBuildBuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:ToolNugetRuntimeId=$_ToolNugetRuntimeId
 
     if [ $? -ne 0 ]; then
         echo "Failed to build mscorlib."
@@ -213,6 +219,7 @@ __RootBinDir="$__ProjectDir/bin"
 __LogsDir="$__RootBinDir/Logs"
 __UnprocessedBuildArgs=
 __MSBCleanBuildArgs=
+__SkipCoreCLR=false
 __SkipMSCorLib=false
 __CleanBuild=false
 __VerboseBuild=false
@@ -273,6 +280,9 @@ for i in "$@"
         clang3.7)
         __ClangMajorVersion=3
         __ClangMinorVersion=7
+        ;;
+        skipcoreclr)
+        __SkipCoreCLR=1
         ;;
         skipmscorlib)
         __SkipMSCorLib=1
