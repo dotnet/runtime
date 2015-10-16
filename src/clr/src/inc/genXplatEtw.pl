@@ -300,7 +300,7 @@ sub GenerateclrEtwDummy
     return $clretmEvents;
 }
 #generates the header file which is used by the VM as entry point to the logging Functions
-sub GenerateclrallEvents
+sub GenerateclrXplatEvents
 {
     my ($rTemplateNodes,$allTemplatemap,$allAbstractTemplateTypes,$allTemplateVarProps,$alleventname) = @_;
     my @rTemplateNodes        = @$rTemplateNodes ;
@@ -315,9 +315,9 @@ sub GenerateclrallEvents
         my $templateName = $reventNode->getAttribute('template');
 
         #generate EventEnabled
-        $clrallEvents = $clrallEvents."extern \"C\" BOOL  EventEnabled$eventName();\n";
+        $clrallEvents = $clrallEvents."extern \"C\" BOOL EventXplatEnabled$eventName();\n";
         #generate FireEtw functions
-        my $fnptype = "extern \"C\" ULONG   FireEtw$eventName(\n";
+        my $fnptype = "extern \"C\" ULONG   FireEtXplat$eventName(\n";
         my $line    = "";
         if ($templateName ne '')
         {
@@ -343,16 +343,73 @@ sub GenerateclrallEvents
     }
     return $clrallEvents;
 }
+sub GenerateclrallEvents
+{
+    my ($rTemplateNodes,$allTemplatemap,$allAbstractTemplateTypes,$allTemplateVarProps,$alleventname) = @_;
+    my @rTemplateNodes           = @$rTemplateNodes ;
+    my @alleventname             = @$alleventname ;
+    my %allTemplatemap           = %$allTemplatemap;
+    my %allAbstractTemplateTypes = %$allAbstractTemplateTypes;
+    my %allTemplateVarProps      = %$allTemplateVarProps;
+    my $clrallEvents;
+    foreach my $reventNode (@alleventname)
+    {
+        my $eventName    = $reventNode->getAttribute('symbol');
+        my $templateName = $reventNode->getAttribute('template');
+
+        #generate EventEnabled
+        $clrallEvents = $clrallEvents."inline BOOL EventEnabled$eventName() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabled$eventName();}\n\n";
+        #generate FireEtw functions
+        my $fnptype     = "inline ULONG FireEtw$eventName(\n";
+        my $fnbody      = $lindent."if (!EventEnabled$eventName()) {return ERROR_SUCCESS;}\n";
+        my $line        = "";
+
+        if ($templateName ne '')
+        {
+            foreach my $subtemplates (@{$allTemplatemap{$templateName}})
+            {
+                my $fnSignature = $allAbstractTemplateTypes{$subtemplates};
+
+                foreach  my $params (@$fnSignature)
+                {
+                    my $wintypeName = $params->{"type"};
+                    my $typewName   = $palDataTypeMapping{$wintypeName} || die "no mapping for $wintypeName";
+                    my $winCount    = $params->{"count"};
+                    my $countw      = $palDataTypeMapping{$winCount} || die "no mapping for $winCount";
+                    $fnptype           = $fnptype.$lindent.$typewName.$countw." ";
+                    $fnptype           = $fnptype.$params->{"var"};
+                    $fnptype           = $fnptype.",\n";
+                }
+                #fnsignature
+                foreach  my $params (@$fnSignature)
+                {
+                    $line        = $line.$params->{"var"};
+                    $line        = $line.",";
+                }
+
+            }
+            $line    =~ s/,+$//;
+            $fnptype =~ s/,+$//;
+        }
+
+        $fnptype      = $fnptype.")\n{\n";
+        $fnbody       = $fnbody.$lindent."return FireEtXplat$eventName(".$line.");\n";
+        $fnbody       = $fnbody."}\n\n";
+        
+        $clrallEvents = $clrallEvents.$fnptype.$fnbody;
+    }
+    return $clrallEvents;
+}
 
 # Generates PAL tests that are used for sanity checking of the Logging Functions
 sub GenerateclralltestEvents
 {
     my ($rTemplateNodes,$allTemplatemap,$allAbstractTemplateTypes,$allTemplateVarProps,$alleventname) = @_;
-    my @rTemplateNodes        = @$rTemplateNodes ;
-    my @alleventname          = @$alleventname ;
-    my %allTemplatemap        = %$allTemplatemap;
+    my @rTemplateNodes           = @$rTemplateNodes ;
+    my @alleventname             = @$alleventname ;
+    my %allTemplatemap           = %$allTemplatemap;
     my %allAbstractTemplateTypes = %$allAbstractTemplateTypes;
-    my %allTemplateVarProps   = %$allTemplateVarProps;
+    my %allTemplateVarProps      = %$allTemplateVarProps;
     my $clrallTestEvents;
     foreach my $reventNode (@alleventname)
     {
@@ -360,9 +417,9 @@ sub GenerateclralltestEvents
         my $templateName = $reventNode->getAttribute('template');
 
         #generate EventEnabled
-        $clrallTestEvents = $clrallTestEvents." EventEnabled$eventName();\n";
+        $clrallTestEvents = $clrallTestEvents." EventXplatEnabled$eventName();\n";
         #generate FireEtw functions
-        my $fnptype = "Error |= FireEtw$eventName(\n";
+        my $fnptype = "Error |= FireEtXplat$eventName(\n";
         my $line="";
         if ($templateName ne '')
         {
@@ -421,7 +478,7 @@ sub WriteTestProlog
 **
 **===================================================================*/
 #include <palsuite.h>
-#include <clrallevents.h>
+#include <clrxplatevents.h>
 
 typedef struct _Struct1 {
         ULONG   Data1;
@@ -492,19 +549,23 @@ sub GeneratePlformIndFiles
     my $sClrEtwAllMan    = $_[0]; #the manifest 
     my $rParser          = new XML::DOM::Parser;
     my $rClrEtwAllMan    = $rParser->parsefile($sClrEtwAllMan);
+    my $clrxplatevents     = "$FindBin::Bin/../pal/prebuilt/inc/clrxplatevents.h";
     my $clrallevents     = "$FindBin::Bin/../pal/prebuilt/inc/clrallevents.h";
     my $clretwdummy      = "$FindBin::Bin/../pal/prebuilt/inc/etmdummy.h";
     my $clralltestevents = "$FindBin::Bin/../pal/tests/palsuite/eventprovider/clralltestevents.cpp";
 
     open(clrallEvents,     ">$clrallevents") || die "Cannot open $clrallevents\n";
+    open(clrXplatEvents,   ">$clrxplatevents") || die "Cannot open $clrxplatevents\n";
     open(clrEtwDummy,      ">$clretwdummy") || die "Cannot open $clretwdummy\n";
     open(clrallTestEvents, ">$clralltestevents") || die "Cannot open $clrallevents\n";
     
     print clrallEvents     $stdprolog;
+    print clrXplatEvents   $stdprolog;
     print clrEtwDummy      $stdprolog;
     print clrallTestEvents $stdprolog;
     print clrallTestEvents WriteTestProlog();
-    
+    print clrallEvents  "#include \"clrxplatevents.h\"\n";
+ 
     foreach my $rProviderNode ($rClrEtwAllMan->getElementsByTagName('provider'))
     {
         my @rTemplateNodes = $rProviderNode->getElementsByTagName('template');
@@ -517,8 +578,11 @@ sub GeneratePlformIndFiles
         my %allAbstractTemplateTypes = %$allAbstractTemplateTypes;
         my %allTemplateVarProps      = %$allTemplateVarProps;
 
-#pal: create clrallevents.h
+#vm header: 
         print clrallEvents GenerateclrallEvents(\@rTemplateNodes,\%allTemplatemap,\%allAbstractTemplateTypes,\%allTemplateVarProps,\@alleventname);
+
+#pal: create clrallevents.h
+        print clrXplatEvents GenerateclrXplatEvents(\@rTemplateNodes,\%allTemplatemap,\%allAbstractTemplateTypes,\%allTemplateVarProps,\@alleventname);
 
 #pal: create etmdummy.h
         print clrEtwDummy GenerateclrEtwDummy(\@rTemplateNodes,\%allTemplatemap,\%allAbstractTemplateTypes,\%allTemplateVarProps,\@alleventname);
@@ -530,6 +594,7 @@ sub GeneratePlformIndFiles
     print clrallTestEvents WriteTestEpilog();
 
     close(clrallEvents);
+    close(clrXplatEvents);
     close(clrallTestEvents);
     $rClrEtwAllMan->dispose;
 }
