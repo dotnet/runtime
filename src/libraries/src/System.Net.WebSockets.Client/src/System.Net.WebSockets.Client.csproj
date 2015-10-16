@@ -16,6 +16,7 @@
   <ItemGroup>
     <Compile Include="System\Net\Http\WinHttpException.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
+    <Compile Include="System\Net\WebSockets\ClientWebSocket.Windows.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketMessageTypeAdapter.cs" />
     <Compile Include="System\Net\WebSockets\WinHttpWebSocket.cs" />
