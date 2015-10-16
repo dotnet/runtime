@@ -201,37 +201,9 @@ public class TestRunner
 			info.RedirectStandardError = true;
 			Process p = new Process ();
 			p.StartInfo = info;
-			p.EnableRaisingEvents = true;
 
 			ProcessData data = new ProcessData ();
 			data.test = test;
-
-			p.Exited += delegate (object sender, EventArgs e) {
-				// Anon methods share some of their state, so we can't use
-				// variables which change during the loop (test, p)
-				Process dead = (Process)sender;
-
-				lock (monitor) {
-					if (dead.ExitCode == 0) {
-						if (concurrency == 1)
-							Console.WriteLine ("passed.");
-						else
-							Console.Write (".");
-						passed.Add(process_data [dead]);
-						npassed ++;
-					} else {
-						if (concurrency == 1)
-							Console.WriteLine ("failed.");
-						else
-							Console.Write ("F");
-						failed.Add (process_data [dead]);
-						nfailed ++;
-					}
-					processes.Remove (dead);
-					terminated.Add (dead);
-					Monitor.Pulse (monitor);
-				}
-			};
 
 			string log_prefix = "";
 			if (opt_set != null)
@@ -296,6 +268,33 @@ public class TestRunner
 
 			p.BeginOutputReadLine ();
 			p.BeginErrorReadLine ();
+
+			ThreadPool.QueueUserWorkItem (o => {
+				Process process = (Process) o;
+
+				process.WaitForExit ();
+
+				lock (monitor) {
+					if (process.ExitCode == 0) {
+						if (concurrency == 1)
+							Console.WriteLine ("passed.");
+						else
+							Console.Write (".");
+						passed.Add(process_data [process]);
+						npassed ++;
+					} else {
+						if (concurrency == 1)
+							Console.WriteLine ("failed.");
+						else
+							Console.Write ("F");
+						failed.Add (process_data [process]);
+						nfailed ++;
+					}
+					processes.Remove (process);
+					terminated.Add (process);
+					Monitor.Pulse (monitor);
+				}
+			}, p);
 		}
 
 		bool timed_out = false;
