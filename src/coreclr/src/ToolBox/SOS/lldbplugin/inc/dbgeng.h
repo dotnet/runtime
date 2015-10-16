@@ -457,6 +457,11 @@ public:
     // Evaluates a lldb expression into a value.
     virtual DWORD_PTR GetExpression(
         /* [in] */ PCSTR exp) = 0;
+
+    virtual HRESULT VirtualUnwind(
+        /* [in] */ DWORD threadID,
+        /* [in] */ ULONG32 contextSize,
+        /* [in, out, size_is(contextSize)] */ PBYTE context) = 0;
 };
 
 typedef class IDebugClient* PDEBUG_CLIENT;

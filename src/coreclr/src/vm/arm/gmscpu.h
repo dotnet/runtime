@@ -82,6 +82,7 @@ struct LazyMachState : public MachState {
     void setLazyStateFromUnwind(MachState* copy);
     static void unwindLazyState(LazyMachState* baseState,
                                 MachState* lazyState,
+                                DWORD threadId,
                                 int funCallDepth = 1,
                                 HostCallPreference hostCallPreference = AllowHostCalls);
 

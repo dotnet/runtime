@@ -68,22 +68,30 @@ ULONG STDMETHODCALLTYPE ShimDataTarget::Release()
     return ref;
 }
 
-
 //---------------------------------------------------------------------------------------
 //
 // Get the OS Process ID that this DataTarget is for.
 //
 // Return Value: 
 //     The OS PID of the process this data target is representing.
-HRESULT STDMETHODCALLTYPE ShimDataTarget::GetPid(DWORD *pdwProcessId)
+DWORD ShimDataTarget::GetPid()
 {
-    if (pdwProcessId == NULL)  
-    {
-        return E_INVALIDARG;
-    }
+    return m_processId;
+}
 
-    *pdwProcessId = m_processId;
-    return S_OK;
+//---------------------------------------------------------------------------------------
+//
+// Unwind the stack to the next frame.
+//
+// Return Value: 
+//     context and contextPointers filled in with the next frame
+//
+HRESULT STDMETHODCALLTYPE ShimDataTarget::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
+{
+#ifndef FEATURE_PAL
+    _ASSERTE(!"ShimDataTarget::VirtualUnwind NOT IMPLEMENTED");
+#endif 
+    return E_NOTIMPL;
 }
 
 //---------------------------------------------------------------------------------------
