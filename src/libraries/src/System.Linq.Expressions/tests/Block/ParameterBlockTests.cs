@@ -156,22 +156,11 @@ namespace System.Linq.Expressions.Test
 
         [Theory]
         [MemberData("ConstantValuesAndSizes")]
-        [ActiveIssue(3881)]
         public void InvalidExpressionIndex(object value, int blockSize)
         {
             BlockExpression block = Expression.Block(SingleParameter, PadBlock(blockSize - 1, Expression.Constant(value, value.GetType())));
-            Assert.Throws<ArgumentOutOfRangeException>(() => block.Expressions[-1]);
-            Assert.Throws<ArgumentOutOfRangeException>(() => block.Expressions[blockSize]);
-        }
-
-        // Remove below if issue blocking above is fixed.
-        [Theory]
-        [MemberData("ConstantValuesAndSizes")]
-        public void InvalidExpressionIndexVaryingExceptin(object value, int blockSize)
-        {
-            BlockExpression block = Expression.Block(SingleParameter, PadBlock(blockSize - 1, Expression.Constant(value, value.GetType())));
-            Assert.ThrowsAny<Exception>(() => block.Expressions[-1]);
-            Assert.ThrowsAny<Exception>(() => block.Expressions[blockSize]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => block.Expressions[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => block.Expressions[blockSize]);
         }
 
         // See https://github.com/dotnet/corefx/issues/3043
