@@ -14,15 +14,20 @@ namespace System.Net.Sockets.Tests
 
         public static object[][] DualModeFailureInputs = {
             new object[] { SocketType.Dgram, ProtocolType.Tcp },
-            new object[] { SocketType.Raw, ProtocolType.Tcp },
+
             new object[] { SocketType.Rdm, ProtocolType.Tcp },
             new object[] { SocketType.Seqpacket, ProtocolType.Tcp },
             new object[] { SocketType.Unknown, ProtocolType.Tcp },
-            new object[] { SocketType.Raw, ProtocolType.Udp },
             new object[] { SocketType.Rdm, ProtocolType.Udp },
             new object[] { SocketType.Seqpacket, ProtocolType.Udp },
             new object[] { SocketType.Stream, ProtocolType.Udp },
             new object[] { SocketType.Unknown, ProtocolType.Udp },
+/*
+    Disabling these test cases because it actually passes in some cases
+    see https://github.com/dotnet/corefx/issues/3726
+            new object[] { SocketType.Raw, ProtocolType.Tcp },
+            new object[] { SocketType.Raw, ProtocolType.Udp },
+*/
         };
 
         [Theory, MemberData("DualModeSuccessInputs")]
@@ -58,15 +63,19 @@ namespace System.Net.Sockets.Tests
             new object[] { AddressFamily.Unknown, SocketType.Stream, ProtocolType.Tcp },
             new object[] { AddressFamily.Unknown, SocketType.Dgram, ProtocolType.Udp },
             new object[] { AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Tcp },
-            new object[] { AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Tcp },
             new object[] { AddressFamily.InterNetwork, SocketType.Rdm, ProtocolType.Tcp },
             new object[] { AddressFamily.InterNetwork, SocketType.Seqpacket, ProtocolType.Tcp },
             new object[] { AddressFamily.InterNetwork, SocketType.Unknown, ProtocolType.Tcp },
-            new object[] { AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Udp },
             new object[] { AddressFamily.InterNetwork, SocketType.Rdm, ProtocolType.Udp },
             new object[] { AddressFamily.InterNetwork, SocketType.Seqpacket, ProtocolType.Udp },
             new object[] { AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Udp },
             new object[] { AddressFamily.InterNetwork, SocketType.Unknown, ProtocolType.Udp },
+/*
+    Disabling these test cases because it actually passes in some cases
+    see https://github.com/dotnet/corefx/issues/3726
+            new object[] { AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Tcp },
+            new object[] { AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Udp },
+*/
         };
 
         [Theory, MemberData("CtorFailureInputs")]
