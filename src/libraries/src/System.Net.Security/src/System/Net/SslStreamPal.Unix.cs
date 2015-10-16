@@ -123,6 +123,28 @@ namespace System.Net
             return retVal;
         }
 
+        private static string GetCipherString(EncryptionPolicy encryptionPolicy)
+        {
+            string cipherString = null;
+
+            switch (encryptionPolicy)
+            {
+                case EncryptionPolicy.RequireEncryption:
+                    cipherString = Interop.libssl.CipherString.AllExceptNull;
+                    break;
+
+                case EncryptionPolicy.AllowNoEncryption:
+                    cipherString = Interop.libssl.CipherString.AllIncludingNull;
+                    break;
+
+                case EncryptionPolicy.NoEncryption:
+                    cipherString = Interop.libssl.CipherString.Null;
+                    break;
+            }
+
+            return cipherString;
+        }
+
         private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context,
             SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool isServer, bool remoteCertRequired)
         {
@@ -133,7 +155,8 @@ namespace System.Net
                 if ((null == context) || context.IsInvalid)
                 {
                     long options = GetOptions(credential.Protocols);
-                    context = new SafeDeleteContext(credential, options, isServer, remoteCertRequired);
+                    string encryptionPolicy = GetCipherString(credential.Policy);
+                    context = new SafeDeleteContext(credential, options, encryptionPolicy, isServer, remoteCertRequired);
                 }
 
                 IntPtr inputPtr = IntPtr.Zero, outputPtr = IntPtr.Zero;

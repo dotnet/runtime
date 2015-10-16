@@ -363,4 +363,7 @@
   <data name="net_ssl_write_bio_failed_error" xml:space="preserve">
     <value>SSL Write BIO failed with OpenSSL error - {0}.</value>
   </data>
+  <data name="net_ssl_x509Name_push_failed_error" xml:space="preserve">
+    <value>Failed to push X509_NAME into stack.</value>
+  </data>
 </root>
