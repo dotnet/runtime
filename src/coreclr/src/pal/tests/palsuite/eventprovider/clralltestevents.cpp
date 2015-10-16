@@ -19,7 +19,7 @@ This file is generated using the logic from <root>/src/inc/genXplatEtw.pl
 **
 **===================================================================*/
 #include <palsuite.h>
-#include <clrallevents.h>
+#include <clrxplatevents.h>
 
 typedef struct _Struct1 {
         ULONG   Data1;
@@ -58,21 +58,21 @@ int __cdecl main(int argc, char **argv)
 #if defined(FEATURE_EVENT_TRACE)
     Trace("\n Starting functional  eventing APIs tests  \n");
 
- EventEnabledGCStart();
-Error |= FireEtwGCStart(
+ EventXplatEnabledGCStart();
+Error |= FireEtXplatGCStart(
 2,
 win_UInt32
 );
- EventEnabledGCStart_V1();
-Error |= FireEtwGCStart_V1(
+ EventXplatEnabledGCStart_V1();
+Error |= FireEtXplatGCStart_V1(
 2,
 win_UInt32,
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCStart_V2();
-Error |= FireEtwGCStart_V2(
+ EventXplatEnabledGCStart_V2();
+Error |= FireEtXplatGCStart_V2(
 2,
 win_UInt32,
 win_UInt32,
@@ -80,26 +80,26 @@ win_UInt32,
 win_UInt16,
 win_UInt64
 );
- EventEnabledGCEnd();
-Error |= FireEtwGCEnd(
+ EventXplatEnabledGCEnd();
+Error |= FireEtXplatGCEnd(
 2,
 win_UInt16
 );
- EventEnabledGCEnd_V1();
-Error |= FireEtwGCEnd_V1(
+ EventXplatEnabledGCEnd_V1();
+Error |= FireEtXplatGCEnd_V1(
 2,
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCRestartEEEnd();
-Error |= FireEtwGCRestartEEEnd(
+ EventXplatEnabledGCRestartEEEnd();
+Error |= FireEtXplatGCRestartEEEnd(
 );
- EventEnabledGCRestartEEEnd_V1();
-Error |= FireEtwGCRestartEEEnd_V1(
+ EventXplatEnabledGCRestartEEEnd_V1();
+Error |= FireEtXplatGCRestartEEEnd_V1(
 win_UInt16
 );
- EventEnabledGCHeapStats();
-Error |= FireEtwGCHeapStats(
+ EventXplatEnabledGCHeapStats();
+Error |= FireEtXplatGCHeapStats(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -114,8 +114,8 @@ win_UInt32,
 win_UInt32,
 win_UInt32
 );
- EventEnabledGCHeapStats_V1();
-Error |= FireEtwGCHeapStats_V1(
+ EventXplatEnabledGCHeapStats_V1();
+Error |= FireEtXplatGCHeapStats_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -131,65 +131,65 @@ win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCCreateSegment();
-Error |= FireEtwGCCreateSegment(
+ EventXplatEnabledGCCreateSegment();
+Error |= FireEtXplatGCCreateSegment(
 win_UInt64,
 win_UInt64,
 win_UInt32
 );
- EventEnabledGCCreateSegment_V1();
-Error |= FireEtwGCCreateSegment_V1(
+ EventXplatEnabledGCCreateSegment_V1();
+Error |= FireEtXplatGCCreateSegment_V1(
 win_UInt64,
 win_UInt64,
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCFreeSegment();
-Error |= FireEtwGCFreeSegment(
+ EventXplatEnabledGCFreeSegment();
+Error |= FireEtXplatGCFreeSegment(
 win_UInt64
 );
- EventEnabledGCFreeSegment_V1();
-Error |= FireEtwGCFreeSegment_V1(
+ EventXplatEnabledGCFreeSegment_V1();
+Error |= FireEtXplatGCFreeSegment_V1(
 win_UInt64,
 win_UInt16
 );
- EventEnabledGCRestartEEBegin();
-Error |= FireEtwGCRestartEEBegin(
+ EventXplatEnabledGCRestartEEBegin();
+Error |= FireEtXplatGCRestartEEBegin(
 );
- EventEnabledGCRestartEEBegin_V1();
-Error |= FireEtwGCRestartEEBegin_V1(
+ EventXplatEnabledGCRestartEEBegin_V1();
+Error |= FireEtXplatGCRestartEEBegin_V1(
 win_UInt16
 );
- EventEnabledGCSuspendEEEnd();
-Error |= FireEtwGCSuspendEEEnd(
+ EventXplatEnabledGCSuspendEEEnd();
+Error |= FireEtXplatGCSuspendEEEnd(
 );
- EventEnabledGCSuspendEEEnd_V1();
-Error |= FireEtwGCSuspendEEEnd_V1(
+ EventXplatEnabledGCSuspendEEEnd_V1();
+Error |= FireEtXplatGCSuspendEEEnd_V1(
 win_UInt16
 );
- EventEnabledGCSuspendEEBegin();
-Error |= FireEtwGCSuspendEEBegin(
+ EventXplatEnabledGCSuspendEEBegin();
+Error |= FireEtXplatGCSuspendEEBegin(
 win_UInt16
 );
- EventEnabledGCSuspendEEBegin_V1();
-Error |= FireEtwGCSuspendEEBegin_V1(
+ EventXplatEnabledGCSuspendEEBegin_V1();
+Error |= FireEtXplatGCSuspendEEBegin_V1(
 win_UInt32,
 2,
 win_UInt16
 );
- EventEnabledGCAllocationTick();
-Error |= FireEtwGCAllocationTick(
+ EventXplatEnabledGCAllocationTick();
+Error |= FireEtXplatGCAllocationTick(
 win_UInt32,
 win_UInt32
 );
- EventEnabledGCAllocationTick_V1();
-Error |= FireEtwGCAllocationTick_V1(
+ EventXplatEnabledGCAllocationTick_V1();
+Error |= FireEtXplatGCAllocationTick_V1(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCAllocationTick_V2();
-Error |= FireEtwGCAllocationTick_V2(
+ EventXplatEnabledGCAllocationTick_V2();
+Error |= FireEtXplatGCAllocationTick_V2(
 win_UInt32,
 win_UInt32,
 win_UInt16,
@@ -198,8 +198,8 @@ win_UInt64,
 W(" Testing UnicodeString "),
 win_UInt32
 );
- EventEnabledGCAllocationTick_V3();
-Error |= FireEtwGCAllocationTick_V3(
+ EventXplatEnabledGCAllocationTick_V3();
+Error |= FireEtXplatGCAllocationTick_V3(
 win_UInt32,
 win_UInt32,
 win_UInt16,
@@ -209,302 +209,302 @@ W(" Testing UnicodeString "),
 win_UInt32,
 (const void*)var11
 );
- EventEnabledGCCreateConcurrentThread();
-Error |= FireEtwGCCreateConcurrentThread(
+ EventXplatEnabledGCCreateConcurrentThread();
+Error |= FireEtXplatGCCreateConcurrentThread(
 );
- EventEnabledGCCreateConcurrentThread_V1();
-Error |= FireEtwGCCreateConcurrentThread_V1(
+ EventXplatEnabledGCCreateConcurrentThread_V1();
+Error |= FireEtXplatGCCreateConcurrentThread_V1(
 win_UInt16
 );
- EventEnabledGCTerminateConcurrentThread();
-Error |= FireEtwGCTerminateConcurrentThread(
+ EventXplatEnabledGCTerminateConcurrentThread();
+Error |= FireEtXplatGCTerminateConcurrentThread(
 );
- EventEnabledGCTerminateConcurrentThread_V1();
-Error |= FireEtwGCTerminateConcurrentThread_V1(
+ EventXplatEnabledGCTerminateConcurrentThread_V1();
+Error |= FireEtXplatGCTerminateConcurrentThread_V1(
 win_UInt16
 );
- EventEnabledGCFinalizersEnd();
-Error |= FireEtwGCFinalizersEnd(
+ EventXplatEnabledGCFinalizersEnd();
+Error |= FireEtXplatGCFinalizersEnd(
 2
 );
- EventEnabledGCFinalizersEnd_V1();
-Error |= FireEtwGCFinalizersEnd_V1(
+ EventXplatEnabledGCFinalizersEnd_V1();
+Error |= FireEtXplatGCFinalizersEnd_V1(
 2,
 win_UInt16
 );
- EventEnabledGCFinalizersBegin();
-Error |= FireEtwGCFinalizersBegin(
+ EventXplatEnabledGCFinalizersBegin();
+Error |= FireEtXplatGCFinalizersBegin(
 );
- EventEnabledGCFinalizersBegin_V1();
-Error |= FireEtwGCFinalizersBegin_V1(
+ EventXplatEnabledGCFinalizersBegin_V1();
+Error |= FireEtXplatGCFinalizersBegin_V1(
 win_UInt16
 );
- EventEnabledBulkType();
-Error |= FireEtwBulkType(
+ EventXplatEnabledBulkType();
+Error |= FireEtXplatBulkType(
 2,
 win_UInt16,
 win_ULong,
 &win_Struct
 );
- EventEnabledGCBulkRootEdge();
-Error |= FireEtwGCBulkRootEdge(
+ EventXplatEnabledGCBulkRootEdge();
+Error |= FireEtXplatGCBulkRootEdge(
 win_UInt32,
 2,
 win_UInt16,
 win_ULong,
 &win_Struct
 );
- EventEnabledGCBulkRootConditionalWeakTableElementEdge();
-Error |= FireEtwGCBulkRootConditionalWeakTableElementEdge(
+ EventXplatEnabledGCBulkRootConditionalWeakTableElementEdge();
+Error |= FireEtXplatGCBulkRootConditionalWeakTableElementEdge(
 win_UInt32,
 2,
 win_UInt16,
 win_ULong,
 &win_Struct
 );
- EventEnabledGCBulkNode();
-Error |= FireEtwGCBulkNode(
+ EventXplatEnabledGCBulkNode();
+Error |= FireEtXplatGCBulkNode(
 win_UInt32,
 2,
 win_UInt16,
 win_ULong,
 &win_Struct
 );
- EventEnabledGCBulkEdge();
-Error |= FireEtwGCBulkEdge(
+ EventXplatEnabledGCBulkEdge();
+Error |= FireEtXplatGCBulkEdge(
 win_UInt32,
 2,
 win_UInt16,
 win_ULong,
 &win_Struct
 );
- EventEnabledGCSampledObjectAllocationHigh();
-Error |= FireEtwGCSampledObjectAllocationHigh(
+ EventXplatEnabledGCSampledObjectAllocationHigh();
+Error |= FireEtXplatGCSampledObjectAllocationHigh(
 (const void*)var11,
 (const void*)var11,
 win_UInt32,
 win_UInt64,
 win_UInt16
 );
- EventEnabledGCBulkSurvivingObjectRanges();
-Error |= FireEtwGCBulkSurvivingObjectRanges(
+ EventXplatEnabledGCBulkSurvivingObjectRanges();
+Error |= FireEtXplatGCBulkSurvivingObjectRanges(
 win_UInt32,
 2,
 win_UInt16,
 win_ULong,
 &win_Struct
 );
- EventEnabledGCBulkMovedObjectRanges();
-Error |= FireEtwGCBulkMovedObjectRanges(
+ EventXplatEnabledGCBulkMovedObjectRanges();
+Error |= FireEtXplatGCBulkMovedObjectRanges(
 win_UInt32,
 2,
 win_UInt16,
 win_ULong,
 &win_Struct
 );
- EventEnabledGCGenerationRange();
-Error |= FireEtwGCGenerationRange(
+ EventXplatEnabledGCGenerationRange();
+Error |= FireEtXplatGCGenerationRange(
 win_UInt8,
 (const void*)var11,
 win_UInt64,
 win_UInt64,
 win_UInt16
 );
- EventEnabledGCMarkStackRoots();
-Error |= FireEtwGCMarkStackRoots(
+ EventXplatEnabledGCMarkStackRoots();
+Error |= FireEtXplatGCMarkStackRoots(
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCMarkFinalizeQueueRoots();
-Error |= FireEtwGCMarkFinalizeQueueRoots(
+ EventXplatEnabledGCMarkFinalizeQueueRoots();
+Error |= FireEtXplatGCMarkFinalizeQueueRoots(
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCMarkHandles();
-Error |= FireEtwGCMarkHandles(
+ EventXplatEnabledGCMarkHandles();
+Error |= FireEtXplatGCMarkHandles(
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCMarkOlderGenerationRoots();
-Error |= FireEtwGCMarkOlderGenerationRoots(
+ EventXplatEnabledGCMarkOlderGenerationRoots();
+Error |= FireEtXplatGCMarkOlderGenerationRoots(
 win_UInt32,
 win_UInt16
 );
- EventEnabledFinalizeObject();
-Error |= FireEtwFinalizeObject(
+ EventXplatEnabledFinalizeObject();
+Error |= FireEtXplatFinalizeObject(
 (const void*)var11,
 (const void*)var11,
 win_UInt16
 );
- EventEnabledSetGCHandle();
-Error |= FireEtwSetGCHandle(
+ EventXplatEnabledSetGCHandle();
+Error |= FireEtXplatSetGCHandle(
 (const void*)var11,
 (const void*)var11,
 win_UInt32,
-win_UInt32,
-win_UInt64,
-win_UInt16
-);
- EventEnabledDestroyGCHandle();
-Error |= FireEtwDestroyGCHandle(
-(const void*)var11,
-win_UInt16
-);
- EventEnabledGCSampledObjectAllocationLow();
-Error |= FireEtwGCSampledObjectAllocationLow(
-(const void*)var11,
-(const void*)var11,
 win_UInt32,
 win_UInt64,
 win_UInt16
 );
- EventEnabledPinObjectAtGCTime();
-Error |= FireEtwPinObjectAtGCTime(
+ EventXplatEnabledDestroyGCHandle();
+Error |= FireEtXplatDestroyGCHandle(
+(const void*)var11,
+win_UInt16
+);
+ EventXplatEnabledGCSampledObjectAllocationLow();
+Error |= FireEtXplatGCSampledObjectAllocationLow(
+(const void*)var11,
+(const void*)var11,
+win_UInt32,
+win_UInt64,
+win_UInt16
+);
+ EventXplatEnabledPinObjectAtGCTime();
+Error |= FireEtXplatPinObjectAtGCTime(
 (const void*)var11,
 (const void*)var11,
 win_UInt64,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledGCTriggered();
-Error |= FireEtwGCTriggered(
+ EventXplatEnabledGCTriggered();
+Error |= FireEtXplatGCTriggered(
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCBulkRootCCW();
-Error |= FireEtwGCBulkRootCCW(
+ EventXplatEnabledGCBulkRootCCW();
+Error |= FireEtXplatGCBulkRootCCW(
 2,
 win_UInt16,
 win_ULong,
 &win_Struct
 );
- EventEnabledGCBulkRCW();
-Error |= FireEtwGCBulkRCW(
+ EventXplatEnabledGCBulkRCW();
+Error |= FireEtXplatGCBulkRCW(
 2,
 win_UInt16,
 win_ULong,
 &win_Struct
 );
- EventEnabledGCBulkRootStaticVar();
-Error |= FireEtwGCBulkRootStaticVar(
+ EventXplatEnabledGCBulkRootStaticVar();
+Error |= FireEtXplatGCBulkRootStaticVar(
 2,
 win_UInt64,
 win_UInt16,
 win_ULong,
 &win_Struct
 );
- EventEnabledWorkerThreadCreate();
-Error |= FireEtwWorkerThreadCreate(
+ EventXplatEnabledWorkerThreadCreate();
+Error |= FireEtXplatWorkerThreadCreate(
 win_UInt32,
 win_UInt32
 );
- EventEnabledWorkerThreadTerminate();
-Error |= FireEtwWorkerThreadTerminate(
+ EventXplatEnabledWorkerThreadTerminate();
+Error |= FireEtXplatWorkerThreadTerminate(
 win_UInt32,
 win_UInt32
 );
- EventEnabledWorkerThreadRetire();
-Error |= FireEtwWorkerThreadRetire(
+ EventXplatEnabledWorkerThreadRetire();
+Error |= FireEtXplatWorkerThreadRetire(
 win_UInt32,
 win_UInt32
 );
- EventEnabledWorkerThreadUnretire();
-Error |= FireEtwWorkerThreadUnretire(
+ EventXplatEnabledWorkerThreadUnretire();
+Error |= FireEtXplatWorkerThreadUnretire(
 win_UInt32,
 win_UInt32
 );
- EventEnabledIOThreadCreate();
-Error |= FireEtwIOThreadCreate(
+ EventXplatEnabledIOThreadCreate();
+Error |= FireEtXplatIOThreadCreate(
 win_UInt32,
 win_UInt32
 );
- EventEnabledIOThreadCreate_V1();
-Error |= FireEtwIOThreadCreate_V1(
+ EventXplatEnabledIOThreadCreate_V1();
+Error |= FireEtXplatIOThreadCreate_V1(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledIOThreadTerminate();
-Error |= FireEtwIOThreadTerminate(
+ EventXplatEnabledIOThreadTerminate();
+Error |= FireEtXplatIOThreadTerminate(
 win_UInt32,
 win_UInt32
 );
- EventEnabledIOThreadTerminate_V1();
-Error |= FireEtwIOThreadTerminate_V1(
+ EventXplatEnabledIOThreadTerminate_V1();
+Error |= FireEtXplatIOThreadTerminate_V1(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledIOThreadRetire();
-Error |= FireEtwIOThreadRetire(
+ EventXplatEnabledIOThreadRetire();
+Error |= FireEtXplatIOThreadRetire(
 win_UInt32,
 win_UInt32
 );
- EventEnabledIOThreadRetire_V1();
-Error |= FireEtwIOThreadRetire_V1(
+ EventXplatEnabledIOThreadRetire_V1();
+Error |= FireEtXplatIOThreadRetire_V1(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledIOThreadUnretire();
-Error |= FireEtwIOThreadUnretire(
+ EventXplatEnabledIOThreadUnretire();
+Error |= FireEtXplatIOThreadUnretire(
 win_UInt32,
 win_UInt32
 );
- EventEnabledIOThreadUnretire_V1();
-Error |= FireEtwIOThreadUnretire_V1(
+ EventXplatEnabledIOThreadUnretire_V1();
+Error |= FireEtXplatIOThreadUnretire_V1(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledThreadpoolSuspensionSuspendThread();
-Error |= FireEtwThreadpoolSuspensionSuspendThread(
+ EventXplatEnabledThreadpoolSuspensionSuspendThread();
+Error |= FireEtXplatThreadpoolSuspensionSuspendThread(
 win_UInt32,
 win_UInt32
 );
- EventEnabledThreadpoolSuspensionResumeThread();
-Error |= FireEtwThreadpoolSuspensionResumeThread(
+ EventXplatEnabledThreadpoolSuspensionResumeThread();
+Error |= FireEtXplatThreadpoolSuspensionResumeThread(
 win_UInt32,
 win_UInt32
 );
- EventEnabledThreadPoolWorkerThreadStart();
-Error |= FireEtwThreadPoolWorkerThreadStart(
+ EventXplatEnabledThreadPoolWorkerThreadStart();
+Error |= FireEtXplatThreadPoolWorkerThreadStart(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledThreadPoolWorkerThreadStop();
-Error |= FireEtwThreadPoolWorkerThreadStop(
+ EventXplatEnabledThreadPoolWorkerThreadStop();
+Error |= FireEtXplatThreadPoolWorkerThreadStop(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledThreadPoolWorkerThreadRetirementStart();
-Error |= FireEtwThreadPoolWorkerThreadRetirementStart(
+ EventXplatEnabledThreadPoolWorkerThreadRetirementStart();
+Error |= FireEtXplatThreadPoolWorkerThreadRetirementStart(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledThreadPoolWorkerThreadRetirementStop();
-Error |= FireEtwThreadPoolWorkerThreadRetirementStop(
+ EventXplatEnabledThreadPoolWorkerThreadRetirementStop();
+Error |= FireEtXplatThreadPoolWorkerThreadRetirementStop(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledThreadPoolWorkerThreadAdjustmentSample();
-Error |= FireEtwThreadPoolWorkerThreadAdjustmentSample(
+ EventXplatEnabledThreadPoolWorkerThreadAdjustmentSample();
+Error |= FireEtXplatThreadPoolWorkerThreadAdjustmentSample(
 win_Double,
 win_UInt16
 );
- EventEnabledThreadPoolWorkerThreadAdjustmentAdjustment();
-Error |= FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
+ EventXplatEnabledThreadPoolWorkerThreadAdjustmentAdjustment();
+Error |= FireEtXplatThreadPoolWorkerThreadAdjustmentAdjustment(
 win_Double,
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledThreadPoolWorkerThreadAdjustmentStats();
-Error |= FireEtwThreadPoolWorkerThreadAdjustmentStats(
+ EventXplatEnabledThreadPoolWorkerThreadAdjustmentStats();
+Error |= FireEtXplatThreadPoolWorkerThreadAdjustmentStats(
 win_Double,
 win_Double,
 win_Double,
@@ -517,61 +517,61 @@ win_Double,
 win_UInt16,
 win_UInt16
 );
- EventEnabledThreadPoolWorkerThreadWait();
-Error |= FireEtwThreadPoolWorkerThreadWait(
+ EventXplatEnabledThreadPoolWorkerThreadWait();
+Error |= FireEtXplatThreadPoolWorkerThreadWait(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledThreadPoolWorkingThreadCount();
-Error |= FireEtwThreadPoolWorkingThreadCount(
+ EventXplatEnabledThreadPoolWorkingThreadCount();
+Error |= FireEtXplatThreadPoolWorkingThreadCount(
 2,
 win_UInt16
 );
- EventEnabledThreadPoolEnqueue();
-Error |= FireEtwThreadPoolEnqueue(
+ EventXplatEnabledThreadPoolEnqueue();
+Error |= FireEtXplatThreadPoolEnqueue(
 (const void*)var11,
 win_UInt16
 );
- EventEnabledThreadPoolDequeue();
-Error |= FireEtwThreadPoolDequeue(
+ EventXplatEnabledThreadPoolDequeue();
+Error |= FireEtXplatThreadPoolDequeue(
 (const void*)var11,
 win_UInt16
 );
- EventEnabledThreadPoolIOEnqueue();
-Error |= FireEtwThreadPoolIOEnqueue(
+ EventXplatEnabledThreadPoolIOEnqueue();
+Error |= FireEtXplatThreadPoolIOEnqueue(
 (const void*)var11,
 (const void*)var11,
 win_Boolean,
 win_UInt16
 );
- EventEnabledThreadPoolIODequeue();
-Error |= FireEtwThreadPoolIODequeue(
+ EventXplatEnabledThreadPoolIODequeue();
+Error |= FireEtXplatThreadPoolIODequeue(
 (const void*)var11,
 (const void*)var11,
 win_UInt16
 );
- EventEnabledThreadPoolIOPack();
-Error |= FireEtwThreadPoolIOPack(
+ EventXplatEnabledThreadPoolIOPack();
+Error |= FireEtXplatThreadPoolIOPack(
 (const void*)var11,
 (const void*)var11,
 win_UInt16
 );
- EventEnabledThreadCreating();
-Error |= FireEtwThreadCreating(
+ EventXplatEnabledThreadCreating();
+Error |= FireEtXplatThreadCreating(
 (const void*)var11,
 win_UInt16
 );
- EventEnabledThreadRunning();
-Error |= FireEtwThreadRunning(
+ EventXplatEnabledThreadRunning();
+Error |= FireEtXplatThreadRunning(
 (const void*)var11,
 win_UInt16
 );
- EventEnabledExceptionThrown();
-Error |= FireEtwExceptionThrown(
+ EventXplatEnabledExceptionThrown();
+Error |= FireEtXplatExceptionThrown(
 );
- EventEnabledExceptionThrown_V1();
-Error |= FireEtwExceptionThrown_V1(
+ EventXplatEnabledExceptionThrown_V1();
+Error |= FireEtXplatExceptionThrown_V1(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 (const void*)var11,
@@ -579,75 +579,75 @@ win_UInt32,
 win_UInt16,
 win_UInt16
 );
- EventEnabledExceptionCatchStart();
-Error |= FireEtwExceptionCatchStart(
+ EventXplatEnabledExceptionCatchStart();
+Error |= FireEtXplatExceptionCatchStart(
 win_UInt64,
 win_UInt64,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledExceptionCatchStop();
-Error |= FireEtwExceptionCatchStop(
+ EventXplatEnabledExceptionCatchStop();
+Error |= FireEtXplatExceptionCatchStop(
 );
- EventEnabledExceptionFinallyStart();
-Error |= FireEtwExceptionFinallyStart(
+ EventXplatEnabledExceptionFinallyStart();
+Error |= FireEtXplatExceptionFinallyStart(
 win_UInt64,
 win_UInt64,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledExceptionFinallyStop();
-Error |= FireEtwExceptionFinallyStop(
+ EventXplatEnabledExceptionFinallyStop();
+Error |= FireEtXplatExceptionFinallyStop(
 );
- EventEnabledExceptionFilterStart();
-Error |= FireEtwExceptionFilterStart(
+ EventXplatEnabledExceptionFilterStart();
+Error |= FireEtXplatExceptionFilterStart(
 win_UInt64,
 win_UInt64,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledExceptionFilterStop();
-Error |= FireEtwExceptionFilterStop(
+ EventXplatEnabledExceptionFilterStop();
+Error |= FireEtXplatExceptionFilterStop(
 );
- EventEnabledExceptionThrownStop();
-Error |= FireEtwExceptionThrownStop(
+ EventXplatEnabledExceptionThrownStop();
+Error |= FireEtXplatExceptionThrownStop(
 );
- EventEnabledContention();
-Error |= FireEtwContention(
+ EventXplatEnabledContention();
+Error |= FireEtXplatContention(
 );
- EventEnabledContentionStart_V1();
-Error |= FireEtwContentionStart_V1(
+ EventXplatEnabledContentionStart_V1();
+Error |= FireEtXplatContentionStart_V1(
 win_UInt8,
 win_UInt16
 );
- EventEnabledContentionStop();
-Error |= FireEtwContentionStop(
+ EventXplatEnabledContentionStop();
+Error |= FireEtXplatContentionStop(
 win_UInt8,
 win_UInt16
 );
- EventEnabledCLRStackWalk();
-Error |= FireEtwCLRStackWalk(
+ EventXplatEnabledCLRStackWalk();
+Error |= FireEtXplatCLRStackWalk(
 win_UInt16,
 win_UInt8,
 win_UInt8,
 win_UInt32,
 (const void**)&var11
 );
- EventEnabledAppDomainMemAllocated();
-Error |= FireEtwAppDomainMemAllocated(
+ EventXplatEnabledAppDomainMemAllocated();
+Error |= FireEtXplatAppDomainMemAllocated(
 win_UInt64,
 win_UInt64,
 win_UInt16
 );
- EventEnabledAppDomainMemSurvived();
-Error |= FireEtwAppDomainMemSurvived(
+ EventXplatEnabledAppDomainMemSurvived();
+Error |= FireEtXplatAppDomainMemSurvived(
 win_UInt64,
 win_UInt64,
 win_UInt64,
 win_UInt16
 );
- EventEnabledThreadCreated();
-Error |= FireEtwThreadCreated(
+ EventXplatEnabledThreadCreated();
+Error |= FireEtXplatThreadCreated(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -655,20 +655,20 @@ win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledThreadTerminated();
-Error |= FireEtwThreadTerminated(
+ EventXplatEnabledThreadTerminated();
+Error |= FireEtXplatThreadTerminated(
 win_UInt64,
 win_UInt64,
 win_UInt16
 );
- EventEnabledThreadDomainEnter();
-Error |= FireEtwThreadDomainEnter(
+ EventXplatEnabledThreadDomainEnter();
+Error |= FireEtXplatThreadDomainEnter(
 win_UInt64,
 win_UInt64,
 win_UInt16
 );
- EventEnabledILStubGenerated();
-Error |= FireEtwILStubGenerated(
+ EventXplatEnabledILStubGenerated();
+Error |= FireEtXplatILStubGenerated(
 win_UInt16,
 win_UInt64,
 win_UInt64,
@@ -681,8 +681,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledILStubCacheHit();
-Error |= FireEtwILStubCacheHit(
+ EventXplatEnabledILStubCacheHit();
+Error |= FireEtXplatILStubCacheHit(
 win_UInt16,
 win_UInt64,
 win_UInt64,
@@ -691,14 +691,14 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledDCStartCompleteV2();
-Error |= FireEtwDCStartCompleteV2(
+ EventXplatEnabledDCStartCompleteV2();
+Error |= FireEtXplatDCStartCompleteV2(
 );
- EventEnabledDCEndCompleteV2();
-Error |= FireEtwDCEndCompleteV2(
+ EventXplatEnabledDCEndCompleteV2();
+Error |= FireEtXplatDCEndCompleteV2(
 );
- EventEnabledMethodDCStartV2();
-Error |= FireEtwMethodDCStartV2(
+ EventXplatEnabledMethodDCStartV2();
+Error |= FireEtXplatMethodDCStartV2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -706,8 +706,8 @@ win_UInt32,
 win_UInt32,
 win_UInt32
 );
- EventEnabledMethodDCEndV2();
-Error |= FireEtwMethodDCEndV2(
+ EventXplatEnabledMethodDCEndV2();
+Error |= FireEtXplatMethodDCEndV2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -715,8 +715,8 @@ win_UInt32,
 win_UInt32,
 win_UInt32
 );
- EventEnabledMethodDCStartVerboseV2();
-Error |= FireEtwMethodDCStartVerboseV2(
+ EventXplatEnabledMethodDCStartVerboseV2();
+Error |= FireEtXplatMethodDCStartVerboseV2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -727,8 +727,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledMethodDCEndVerboseV2();
-Error |= FireEtwMethodDCEndVerboseV2(
+ EventXplatEnabledMethodDCEndVerboseV2();
+Error |= FireEtXplatMethodDCEndVerboseV2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -739,8 +739,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledMethodLoad();
-Error |= FireEtwMethodLoad(
+ EventXplatEnabledMethodLoad();
+Error |= FireEtXplatMethodLoad(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -748,8 +748,8 @@ win_UInt32,
 win_UInt32,
 win_UInt32
 );
- EventEnabledMethodLoad_V1();
-Error |= FireEtwMethodLoad_V1(
+ EventXplatEnabledMethodLoad_V1();
+Error |= FireEtXplatMethodLoad_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -758,8 +758,8 @@ win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledMethodLoad_V2();
-Error |= FireEtwMethodLoad_V2(
+ EventXplatEnabledMethodLoad_V2();
+Error |= FireEtXplatMethodLoad_V2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -769,8 +769,8 @@ win_UInt32,
 win_UInt16,
 win_UInt64
 );
- EventEnabledMethodUnload();
-Error |= FireEtwMethodUnload(
+ EventXplatEnabledMethodUnload();
+Error |= FireEtXplatMethodUnload(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -778,8 +778,8 @@ win_UInt32,
 win_UInt32,
 win_UInt32
 );
- EventEnabledMethodUnload_V1();
-Error |= FireEtwMethodUnload_V1(
+ EventXplatEnabledMethodUnload_V1();
+Error |= FireEtXplatMethodUnload_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -788,8 +788,8 @@ win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledMethodUnload_V2();
-Error |= FireEtwMethodUnload_V2(
+ EventXplatEnabledMethodUnload_V2();
+Error |= FireEtXplatMethodUnload_V2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -799,8 +799,8 @@ win_UInt32,
 win_UInt16,
 win_UInt64
 );
- EventEnabledMethodLoadVerbose();
-Error |= FireEtwMethodLoadVerbose(
+ EventXplatEnabledMethodLoadVerbose();
+Error |= FireEtXplatMethodLoadVerbose(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -811,8 +811,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledMethodLoadVerbose_V1();
-Error |= FireEtwMethodLoadVerbose_V1(
+ EventXplatEnabledMethodLoadVerbose_V1();
+Error |= FireEtXplatMethodLoadVerbose_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -824,47 +824,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledMethodLoadVerbose_V2();
-Error |= FireEtwMethodLoadVerbose_V2(
-win_UInt64,
-win_UInt64,
-win_UInt64,
-win_UInt32,
-win_UInt32,
-win_UInt32,
-W(" Testing UnicodeString "),
-W(" Testing UnicodeString "),
-W(" Testing UnicodeString "),
-win_UInt16,
-win_UInt64
-);
- EventEnabledMethodUnloadVerbose();
-Error |= FireEtwMethodUnloadVerbose(
-win_UInt64,
-win_UInt64,
-win_UInt64,
-win_UInt32,
-win_UInt32,
-win_UInt32,
-W(" Testing UnicodeString "),
-W(" Testing UnicodeString "),
-W(" Testing UnicodeString ")
-);
- EventEnabledMethodUnloadVerbose_V1();
-Error |= FireEtwMethodUnloadVerbose_V1(
-win_UInt64,
-win_UInt64,
-win_UInt64,
-win_UInt32,
-win_UInt32,
-win_UInt32,
-W(" Testing UnicodeString "),
-W(" Testing UnicodeString "),
-W(" Testing UnicodeString "),
-win_UInt16
-);
- EventEnabledMethodUnloadVerbose_V2();
-Error |= FireEtwMethodUnloadVerbose_V2(
+ EventXplatEnabledMethodLoadVerbose_V2();
+Error |= FireEtXplatMethodLoadVerbose_V2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -877,8 +838,47 @@ W(" Testing UnicodeString "),
 win_UInt16,
 win_UInt64
 );
- EventEnabledMethodJittingStarted();
-Error |= FireEtwMethodJittingStarted(
+ EventXplatEnabledMethodUnloadVerbose();
+Error |= FireEtXplatMethodUnloadVerbose(
+win_UInt64,
+win_UInt64,
+win_UInt64,
+win_UInt32,
+win_UInt32,
+win_UInt32,
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString ")
+);
+ EventXplatEnabledMethodUnloadVerbose_V1();
+Error |= FireEtXplatMethodUnloadVerbose_V1(
+win_UInt64,
+win_UInt64,
+win_UInt64,
+win_UInt32,
+win_UInt32,
+win_UInt32,
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+win_UInt16
+);
+ EventXplatEnabledMethodUnloadVerbose_V2();
+Error |= FireEtXplatMethodUnloadVerbose_V2(
+win_UInt64,
+win_UInt64,
+win_UInt64,
+win_UInt32,
+win_UInt32,
+win_UInt32,
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+win_UInt16,
+win_UInt64
+);
+ EventXplatEnabledMethodJittingStarted();
+Error |= FireEtXplatMethodJittingStarted(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -887,8 +887,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledMethodJittingStarted_V1();
-Error |= FireEtwMethodJittingStarted_V1(
+ EventXplatEnabledMethodJittingStarted_V1();
+Error |= FireEtXplatMethodJittingStarted_V1(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -898,8 +898,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledMethodJitInliningSucceeded();
-Error |= FireEtwMethodJitInliningSucceeded(
+ EventXplatEnabledMethodJitInliningSucceeded();
+Error |= FireEtXplatMethodJitInliningSucceeded(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
@@ -911,8 +911,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledMethodJitInliningFailed();
-Error |= FireEtwMethodJitInliningFailed(
+ EventXplatEnabledMethodJitInliningFailed();
+Error |= FireEtXplatMethodJitInliningFailed(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
@@ -926,8 +926,8 @@ win_Boolean,
 " Testing AniString ",
 win_UInt16
 );
- EventEnabledMethodJitTailCallSucceeded();
-Error |= FireEtwMethodJitTailCallSucceeded(
+ EventXplatEnabledMethodJitTailCallSucceeded();
+Error |= FireEtXplatMethodJitTailCallSucceeded(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
@@ -941,8 +941,8 @@ win_Boolean,
 win_UInt32,
 win_UInt16
 );
- EventEnabledMethodJitTailCallFailed();
-Error |= FireEtwMethodJitTailCallFailed(
+ EventXplatEnabledMethodJitTailCallFailed();
+Error |= FireEtXplatMethodJitTailCallFailed(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
@@ -956,8 +956,8 @@ win_Boolean,
 " Testing AniString ",
 win_UInt16
 );
- EventEnabledMethodILToNativeMap();
-Error |= FireEtwMethodILToNativeMap(
+ EventXplatEnabledMethodILToNativeMap();
+Error |= FireEtXplatMethodILToNativeMap(
 win_UInt64,
 win_UInt64,
 win_UInt8,
@@ -966,8 +966,8 @@ win_UInt16,
 &win_UInt32,
 win_UInt16
 );
- EventEnabledModuleDCStartV2();
-Error |= FireEtwModuleDCStartV2(
+ EventXplatEnabledModuleDCStartV2();
+Error |= FireEtXplatModuleDCStartV2(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -975,8 +975,8 @@ win_UInt32,
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledModuleDCEndV2();
-Error |= FireEtwModuleDCEndV2(
+ EventXplatEnabledModuleDCEndV2();
+Error |= FireEtXplatModuleDCEndV2(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -984,8 +984,8 @@ win_UInt32,
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledDomainModuleLoad();
-Error |= FireEtwDomainModuleLoad(
+ EventXplatEnabledDomainModuleLoad();
+Error |= FireEtXplatDomainModuleLoad(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -994,8 +994,8 @@ win_UInt32,
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledDomainModuleLoad_V1();
-Error |= FireEtwDomainModuleLoad_V1(
+ EventXplatEnabledDomainModuleLoad_V1();
+Error |= FireEtXplatDomainModuleLoad_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1005,8 +1005,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledModuleLoad();
-Error |= FireEtwModuleLoad(
+ EventXplatEnabledModuleLoad();
+Error |= FireEtXplatModuleLoad(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1014,8 +1014,8 @@ win_UInt32,
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledModuleLoad_V1();
-Error |= FireEtwModuleLoad_V1(
+ EventXplatEnabledModuleLoad_V1();
+Error |= FireEtXplatModuleLoad_V1(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1024,8 +1024,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledModuleLoad_V2();
-Error |= FireEtwModuleLoad_V2(
+ EventXplatEnabledModuleLoad_V2();
+Error |= FireEtXplatModuleLoad_V2(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1040,8 +1040,8 @@ W(" Testing UnicodeString "),
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledModuleUnload();
-Error |= FireEtwModuleUnload(
+ EventXplatEnabledModuleUnload();
+Error |= FireEtXplatModuleUnload(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1049,8 +1049,8 @@ win_UInt32,
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledModuleUnload_V1();
-Error |= FireEtwModuleUnload_V1(
+ EventXplatEnabledModuleUnload_V1();
+Error |= FireEtXplatModuleUnload_V1(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1059,8 +1059,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledModuleUnload_V2();
-Error |= FireEtwModuleUnload_V2(
+ EventXplatEnabledModuleUnload_V2();
+Error |= FireEtXplatModuleUnload_V2(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1075,15 +1075,15 @@ W(" Testing UnicodeString "),
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAssemblyLoad();
-Error |= FireEtwAssemblyLoad(
+ EventXplatEnabledAssemblyLoad();
+Error |= FireEtXplatAssemblyLoad(
 win_UInt64,
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAssemblyLoad_V1();
-Error |= FireEtwAssemblyLoad_V1(
+ EventXplatEnabledAssemblyLoad_V1();
+Error |= FireEtXplatAssemblyLoad_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1091,15 +1091,15 @@ win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledAssemblyUnload();
-Error |= FireEtwAssemblyUnload(
+ EventXplatEnabledAssemblyUnload();
+Error |= FireEtXplatAssemblyUnload(
 win_UInt64,
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAssemblyUnload_V1();
-Error |= FireEtwAssemblyUnload_V1(
+ EventXplatEnabledAssemblyUnload_V1();
+Error |= FireEtXplatAssemblyUnload_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1107,96 +1107,96 @@ win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledAppDomainLoad();
-Error |= FireEtwAppDomainLoad(
+ EventXplatEnabledAppDomainLoad();
+Error |= FireEtXplatAppDomainLoad(
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAppDomainLoad_V1();
-Error |= FireEtwAppDomainLoad_V1(
+ EventXplatEnabledAppDomainLoad_V1();
+Error |= FireEtXplatAppDomainLoad_V1(
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt32,
 win_UInt16
 );
- EventEnabledAppDomainUnload();
-Error |= FireEtwAppDomainUnload(
+ EventXplatEnabledAppDomainUnload();
+Error |= FireEtXplatAppDomainUnload(
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAppDomainUnload_V1();
-Error |= FireEtwAppDomainUnload_V1(
+ EventXplatEnabledAppDomainUnload_V1();
+Error |= FireEtXplatAppDomainUnload_V1(
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt32,
 win_UInt16
 );
- EventEnabledModuleRangeLoad();
-Error |= FireEtwModuleRangeLoad(
+ EventXplatEnabledModuleRangeLoad();
+Error |= FireEtXplatModuleRangeLoad(
 win_UInt16,
 win_UInt64,
 win_UInt32,
 win_UInt32,
 win_UInt8
 );
- EventEnabledStrongNameVerificationStart();
-Error |= FireEtwStrongNameVerificationStart(
+ EventXplatEnabledStrongNameVerificationStart();
+Error |= FireEtXplatStrongNameVerificationStart(
 win_UInt32,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledStrongNameVerificationStart_V1();
-Error |= FireEtwStrongNameVerificationStart_V1(
+ EventXplatEnabledStrongNameVerificationStart_V1();
+Error |= FireEtXplatStrongNameVerificationStart_V1(
 win_UInt32,
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledStrongNameVerificationStop();
-Error |= FireEtwStrongNameVerificationStop(
+ EventXplatEnabledStrongNameVerificationStop();
+Error |= FireEtXplatStrongNameVerificationStop(
 win_UInt32,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledStrongNameVerificationStop_V1();
-Error |= FireEtwStrongNameVerificationStop_V1(
+ EventXplatEnabledStrongNameVerificationStop_V1();
+Error |= FireEtXplatStrongNameVerificationStop_V1(
 win_UInt32,
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledAuthenticodeVerificationStart();
-Error |= FireEtwAuthenticodeVerificationStart(
+ EventXplatEnabledAuthenticodeVerificationStart();
+Error |= FireEtXplatAuthenticodeVerificationStart(
 win_UInt32,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAuthenticodeVerificationStart_V1();
-Error |= FireEtwAuthenticodeVerificationStart_V1(
+ EventXplatEnabledAuthenticodeVerificationStart_V1();
+Error |= FireEtXplatAuthenticodeVerificationStart_V1(
 win_UInt32,
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledAuthenticodeVerificationStop();
-Error |= FireEtwAuthenticodeVerificationStop(
+ EventXplatEnabledAuthenticodeVerificationStop();
+Error |= FireEtXplatAuthenticodeVerificationStop(
 win_UInt32,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAuthenticodeVerificationStop_V1();
-Error |= FireEtwAuthenticodeVerificationStop_V1(
+ EventXplatEnabledAuthenticodeVerificationStop_V1();
+Error |= FireEtXplatAuthenticodeVerificationStop_V1(
 win_UInt32,
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledRuntimeInformationStart();
-Error |= FireEtwRuntimeInformationStart(
+ EventXplatEnabledRuntimeInformationStart();
+Error |= FireEtXplatRuntimeInformationStart(
 win_UInt16,
 win_UInt16,
 win_UInt16,
@@ -1213,33 +1213,33 @@ W(" Testing UnicodeString "),
 &myGuid,
 W(" Testing UnicodeString ")
 );
- EventEnabledIncreaseMemoryPressure();
-Error |= FireEtwIncreaseMemoryPressure(
+ EventXplatEnabledIncreaseMemoryPressure();
+Error |= FireEtXplatIncreaseMemoryPressure(
 win_UInt64,
 win_UInt16
 );
- EventEnabledDecreaseMemoryPressure();
-Error |= FireEtwDecreaseMemoryPressure(
+ EventXplatEnabledDecreaseMemoryPressure();
+Error |= FireEtXplatDecreaseMemoryPressure(
 win_UInt64,
 win_UInt16
 );
- EventEnabledGCMarkWithType();
-Error |= FireEtwGCMarkWithType(
+ EventXplatEnabledGCMarkWithType();
+Error |= FireEtXplatGCMarkWithType(
 win_UInt32,
 win_UInt16,
 win_UInt32,
 win_UInt64
 );
- EventEnabledGCJoin_V2();
-Error |= FireEtwGCJoin_V2(
+ EventXplatEnabledGCJoin_V2();
+Error |= FireEtXplatGCJoin_V2(
 win_UInt32,
 win_UInt32,
 win_UInt32,
 win_UInt16,
 win_UInt32
 );
- EventEnabledGCPerHeapHistory_V3();
-Error |= FireEtwGCPerHeapHistory_V3(
+ EventXplatEnabledGCPerHeapHistory_V3();
+Error |= FireEtXplatGCPerHeapHistory_V3(
 win_UInt16,
 (const void*)var11,
 (const void*)var11,
@@ -1258,8 +1258,8 @@ win_UInt32,
 win_ULong,
 &win_Struct
 );
- EventEnabledGCGlobalHeapHistory_V2();
-Error |= FireEtwGCGlobalHeapHistory_V2(
+ EventXplatEnabledGCGlobalHeapHistory_V2();
+Error |= FireEtXplatGCGlobalHeapHistory_V2(
 win_UInt64,
 win_Int32,
 win_UInt32,
@@ -1270,20 +1270,20 @@ win_UInt16,
 win_UInt32,
 win_UInt32
 );
- EventEnabledDebugIPCEventStart();
-Error |= FireEtwDebugIPCEventStart(
+ EventXplatEnabledDebugIPCEventStart();
+Error |= FireEtXplatDebugIPCEventStart(
 );
- EventEnabledDebugIPCEventEnd();
-Error |= FireEtwDebugIPCEventEnd(
+ EventXplatEnabledDebugIPCEventEnd();
+Error |= FireEtXplatDebugIPCEventEnd(
 );
- EventEnabledDebugExceptionProcessingStart();
-Error |= FireEtwDebugExceptionProcessingStart(
+ EventXplatEnabledDebugExceptionProcessingStart();
+Error |= FireEtXplatDebugExceptionProcessingStart(
 );
- EventEnabledDebugExceptionProcessingEnd();
-Error |= FireEtwDebugExceptionProcessingEnd(
+ EventXplatEnabledDebugExceptionProcessingEnd();
+Error |= FireEtXplatDebugExceptionProcessingEnd(
 );
- EventEnabledCodeSymbols();
-Error |= FireEtwCodeSymbols(
+ EventXplatEnabledCodeSymbols();
+Error |= FireEtXplatCodeSymbols(
 win_UInt64,
 win_UInt16,
 win_UInt16,
@@ -1291,16 +1291,16 @@ win_UInt32,
 win_Binary,
 win_UInt16
 );
- EventEnabledCLRStackWalkDCStart();
-Error |= FireEtwCLRStackWalkDCStart(
+ EventXplatEnabledCLRStackWalkDCStart();
+Error |= FireEtXplatCLRStackWalkDCStart(
 win_UInt16,
 win_UInt8,
 win_UInt8,
 win_UInt32,
 (const void**)&var11
 );
- EventEnabledMethodDCStart();
-Error |= FireEtwMethodDCStart(
+ EventXplatEnabledMethodDCStart();
+Error |= FireEtXplatMethodDCStart(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1308,8 +1308,8 @@ win_UInt32,
 win_UInt32,
 win_UInt32
 );
- EventEnabledMethodDCStart_V1();
-Error |= FireEtwMethodDCStart_V1(
+ EventXplatEnabledMethodDCStart_V1();
+Error |= FireEtXplatMethodDCStart_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1318,8 +1318,8 @@ win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledMethodDCStart_V2();
-Error |= FireEtwMethodDCStart_V2(
+ EventXplatEnabledMethodDCStart_V2();
+Error |= FireEtXplatMethodDCStart_V2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1329,8 +1329,8 @@ win_UInt32,
 win_UInt16,
 win_UInt64
 );
- EventEnabledMethodDCEnd();
-Error |= FireEtwMethodDCEnd(
+ EventXplatEnabledMethodDCEnd();
+Error |= FireEtXplatMethodDCEnd(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1338,8 +1338,8 @@ win_UInt32,
 win_UInt32,
 win_UInt32
 );
- EventEnabledMethodDCEnd_V1();
-Error |= FireEtwMethodDCEnd_V1(
+ EventXplatEnabledMethodDCEnd_V1();
+Error |= FireEtXplatMethodDCEnd_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1348,8 +1348,8 @@ win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledMethodDCEnd_V2();
-Error |= FireEtwMethodDCEnd_V2(
+ EventXplatEnabledMethodDCEnd_V2();
+Error |= FireEtXplatMethodDCEnd_V2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1359,8 +1359,8 @@ win_UInt32,
 win_UInt16,
 win_UInt64
 );
- EventEnabledMethodDCStartVerbose();
-Error |= FireEtwMethodDCStartVerbose(
+ EventXplatEnabledMethodDCStartVerbose();
+Error |= FireEtXplatMethodDCStartVerbose(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1371,8 +1371,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledMethodDCStartVerbose_V1();
-Error |= FireEtwMethodDCStartVerbose_V1(
+ EventXplatEnabledMethodDCStartVerbose_V1();
+Error |= FireEtXplatMethodDCStartVerbose_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1384,8 +1384,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledMethodDCStartVerbose_V2();
-Error |= FireEtwMethodDCStartVerbose_V2(
+ EventXplatEnabledMethodDCStartVerbose_V2();
+Error |= FireEtXplatMethodDCStartVerbose_V2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1398,8 +1398,8 @@ W(" Testing UnicodeString "),
 win_UInt16,
 win_UInt64
 );
- EventEnabledMethodDCEndVerbose();
-Error |= FireEtwMethodDCEndVerbose(
+ EventXplatEnabledMethodDCEndVerbose();
+Error |= FireEtXplatMethodDCEndVerbose(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1410,8 +1410,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledMethodDCEndVerbose_V1();
-Error |= FireEtwMethodDCEndVerbose_V1(
+ EventXplatEnabledMethodDCEndVerbose_V1();
+Error |= FireEtXplatMethodDCEndVerbose_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1423,8 +1423,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledMethodDCEndVerbose_V2();
-Error |= FireEtwMethodDCEndVerbose_V2(
+ EventXplatEnabledMethodDCEndVerbose_V2();
+Error |= FireEtXplatMethodDCEndVerbose_V2(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1437,36 +1437,36 @@ W(" Testing UnicodeString "),
 win_UInt16,
 win_UInt64
 );
- EventEnabledDCStartComplete();
-Error |= FireEtwDCStartComplete(
+ EventXplatEnabledDCStartComplete();
+Error |= FireEtXplatDCStartComplete(
 );
- EventEnabledDCStartComplete_V1();
-Error |= FireEtwDCStartComplete_V1(
+ EventXplatEnabledDCStartComplete_V1();
+Error |= FireEtXplatDCStartComplete_V1(
 win_UInt16
 );
- EventEnabledDCEndComplete();
-Error |= FireEtwDCEndComplete(
+ EventXplatEnabledDCEndComplete();
+Error |= FireEtXplatDCEndComplete(
 );
- EventEnabledDCEndComplete_V1();
-Error |= FireEtwDCEndComplete_V1(
+ EventXplatEnabledDCEndComplete_V1();
+Error |= FireEtXplatDCEndComplete_V1(
 win_UInt16
 );
- EventEnabledDCStartInit();
-Error |= FireEtwDCStartInit(
+ EventXplatEnabledDCStartInit();
+Error |= FireEtXplatDCStartInit(
 );
- EventEnabledDCStartInit_V1();
-Error |= FireEtwDCStartInit_V1(
+ EventXplatEnabledDCStartInit_V1();
+Error |= FireEtXplatDCStartInit_V1(
 win_UInt16
 );
- EventEnabledDCEndInit();
-Error |= FireEtwDCEndInit(
+ EventXplatEnabledDCEndInit();
+Error |= FireEtXplatDCEndInit(
 );
- EventEnabledDCEndInit_V1();
-Error |= FireEtwDCEndInit_V1(
+ EventXplatEnabledDCEndInit_V1();
+Error |= FireEtXplatDCEndInit_V1(
 win_UInt16
 );
- EventEnabledMethodDCStartILToNativeMap();
-Error |= FireEtwMethodDCStartILToNativeMap(
+ EventXplatEnabledMethodDCStartILToNativeMap();
+Error |= FireEtXplatMethodDCStartILToNativeMap(
 win_UInt64,
 win_UInt64,
 win_UInt8,
@@ -1475,8 +1475,8 @@ win_UInt16,
 &win_UInt32,
 win_UInt16
 );
- EventEnabledMethodDCEndILToNativeMap();
-Error |= FireEtwMethodDCEndILToNativeMap(
+ EventXplatEnabledMethodDCEndILToNativeMap();
+Error |= FireEtXplatMethodDCEndILToNativeMap(
 win_UInt64,
 win_UInt64,
 win_UInt8,
@@ -1485,8 +1485,8 @@ win_UInt16,
 &win_UInt32,
 win_UInt16
 );
- EventEnabledDomainModuleDCStart();
-Error |= FireEtwDomainModuleDCStart(
+ EventXplatEnabledDomainModuleDCStart();
+Error |= FireEtXplatDomainModuleDCStart(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1495,8 +1495,8 @@ win_UInt32,
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledDomainModuleDCStart_V1();
-Error |= FireEtwDomainModuleDCStart_V1(
+ EventXplatEnabledDomainModuleDCStart_V1();
+Error |= FireEtXplatDomainModuleDCStart_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1506,8 +1506,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledDomainModuleDCEnd();
-Error |= FireEtwDomainModuleDCEnd(
+ EventXplatEnabledDomainModuleDCEnd();
+Error |= FireEtXplatDomainModuleDCEnd(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1516,8 +1516,8 @@ win_UInt32,
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledDomainModuleDCEnd_V1();
-Error |= FireEtwDomainModuleDCEnd_V1(
+ EventXplatEnabledDomainModuleDCEnd_V1();
+Error |= FireEtXplatDomainModuleDCEnd_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1527,8 +1527,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledModuleDCStart();
-Error |= FireEtwModuleDCStart(
+ EventXplatEnabledModuleDCStart();
+Error |= FireEtXplatModuleDCStart(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1536,8 +1536,8 @@ win_UInt32,
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledModuleDCStart_V1();
-Error |= FireEtwModuleDCStart_V1(
+ EventXplatEnabledModuleDCStart_V1();
+Error |= FireEtXplatModuleDCStart_V1(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1546,8 +1546,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledModuleDCStart_V2();
-Error |= FireEtwModuleDCStart_V2(
+ EventXplatEnabledModuleDCStart_V2();
+Error |= FireEtXplatModuleDCStart_V2(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1562,8 +1562,8 @@ W(" Testing UnicodeString "),
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledModuleDCEnd();
-Error |= FireEtwModuleDCEnd(
+ EventXplatEnabledModuleDCEnd();
+Error |= FireEtXplatModuleDCEnd(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1571,8 +1571,8 @@ win_UInt32,
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString ")
 );
- EventEnabledModuleDCEnd_V1();
-Error |= FireEtwModuleDCEnd_V1(
+ EventXplatEnabledModuleDCEnd_V1();
+Error |= FireEtXplatModuleDCEnd_V1(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1581,8 +1581,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledModuleDCEnd_V2();
-Error |= FireEtwModuleDCEnd_V2(
+ EventXplatEnabledModuleDCEnd_V2();
+Error |= FireEtXplatModuleDCEnd_V2(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1597,15 +1597,15 @@ W(" Testing UnicodeString "),
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAssemblyDCStart();
-Error |= FireEtwAssemblyDCStart(
+ EventXplatEnabledAssemblyDCStart();
+Error |= FireEtXplatAssemblyDCStart(
 win_UInt64,
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAssemblyDCStart_V1();
-Error |= FireEtwAssemblyDCStart_V1(
+ EventXplatEnabledAssemblyDCStart_V1();
+Error |= FireEtXplatAssemblyDCStart_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1613,15 +1613,15 @@ win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledAssemblyDCEnd();
-Error |= FireEtwAssemblyDCEnd(
+ EventXplatEnabledAssemblyDCEnd();
+Error |= FireEtXplatAssemblyDCEnd(
 win_UInt64,
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAssemblyDCEnd_V1();
-Error |= FireEtwAssemblyDCEnd_V1(
+ EventXplatEnabledAssemblyDCEnd_V1();
+Error |= FireEtXplatAssemblyDCEnd_V1(
 win_UInt64,
 win_UInt64,
 win_UInt64,
@@ -1629,36 +1629,36 @@ win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledAppDomainDCStart();
-Error |= FireEtwAppDomainDCStart(
+ EventXplatEnabledAppDomainDCStart();
+Error |= FireEtXplatAppDomainDCStart(
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAppDomainDCStart_V1();
-Error |= FireEtwAppDomainDCStart_V1(
+ EventXplatEnabledAppDomainDCStart_V1();
+Error |= FireEtXplatAppDomainDCStart_V1(
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt32,
 win_UInt16
 );
- EventEnabledAppDomainDCEnd();
-Error |= FireEtwAppDomainDCEnd(
+ EventXplatEnabledAppDomainDCEnd();
+Error |= FireEtXplatAppDomainDCEnd(
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledAppDomainDCEnd_V1();
-Error |= FireEtwAppDomainDCEnd_V1(
+ EventXplatEnabledAppDomainDCEnd_V1();
+Error |= FireEtXplatAppDomainDCEnd_V1(
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt32,
 win_UInt16
 );
- EventEnabledThreadDC();
-Error |= FireEtwThreadDC(
+ EventXplatEnabledThreadDC();
+Error |= FireEtXplatThreadDC(
 win_UInt64,
 win_UInt64,
 win_UInt32,
@@ -1666,24 +1666,24 @@ win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledModuleRangeDCStart();
-Error |= FireEtwModuleRangeDCStart(
+ EventXplatEnabledModuleRangeDCStart();
+Error |= FireEtXplatModuleRangeDCStart(
 win_UInt16,
 win_UInt64,
 win_UInt32,
 win_UInt32,
 win_UInt8
 );
- EventEnabledModuleRangeDCEnd();
-Error |= FireEtwModuleRangeDCEnd(
+ EventXplatEnabledModuleRangeDCEnd();
+Error |= FireEtXplatModuleRangeDCEnd(
 win_UInt16,
 win_UInt64,
 win_UInt32,
 win_UInt32,
 win_UInt8
 );
- EventEnabledRuntimeInformationDCStart();
-Error |= FireEtwRuntimeInformationDCStart(
+ EventXplatEnabledRuntimeInformationDCStart();
+Error |= FireEtXplatRuntimeInformationDCStart(
 win_UInt16,
 win_UInt16,
 win_UInt16,
@@ -1700,71 +1700,71 @@ W(" Testing UnicodeString "),
 &myGuid,
 W(" Testing UnicodeString ")
 );
- EventEnabledStressLogEvent();
-Error |= FireEtwStressLogEvent(
+ EventXplatEnabledStressLogEvent();
+Error |= FireEtXplatStressLogEvent(
 win_UInt32,
 win_UInt8,
 " Testing AniString "
 );
- EventEnabledStressLogEvent_V1();
-Error |= FireEtwStressLogEvent_V1(
+ EventXplatEnabledStressLogEvent_V1();
+Error |= FireEtXplatStressLogEvent_V1(
 win_UInt32,
 win_UInt8,
 " Testing AniString ",
 win_UInt16
 );
- EventEnabledCLRStackWalkStress();
-Error |= FireEtwCLRStackWalkStress(
+ EventXplatEnabledCLRStackWalkStress();
+Error |= FireEtXplatCLRStackWalkStress(
 win_UInt16,
 win_UInt8,
 win_UInt8,
 win_UInt32,
 (const void**)&var11
 );
- EventEnabledGCDecision();
-Error |= FireEtwGCDecision(
+ EventXplatEnabledGCDecision();
+Error |= FireEtXplatGCDecision(
 win_Boolean
 );
- EventEnabledGCDecision_V1();
-Error |= FireEtwGCDecision_V1(
+ EventXplatEnabledGCDecision_V1();
+Error |= FireEtXplatGCDecision_V1(
 win_Boolean,
 win_UInt16
 );
- EventEnabledGCSettings();
-Error |= FireEtwGCSettings(
+ EventXplatEnabledGCSettings();
+Error |= FireEtXplatGCSettings(
 win_UInt64,
 win_UInt64,
 win_Boolean
 );
- EventEnabledGCSettings_V1();
-Error |= FireEtwGCSettings_V1(
+ EventXplatEnabledGCSettings_V1();
+Error |= FireEtXplatGCSettings_V1(
 win_UInt64,
 win_UInt64,
 win_Boolean,
 win_UInt16
 );
- EventEnabledGCOptimized();
-Error |= FireEtwGCOptimized(
+ EventXplatEnabledGCOptimized();
+Error |= FireEtXplatGCOptimized(
 win_UInt64,
 win_UInt64,
 win_UInt32
 );
- EventEnabledGCOptimized_V1();
-Error |= FireEtwGCOptimized_V1(
+ EventXplatEnabledGCOptimized_V1();
+Error |= FireEtXplatGCOptimized_V1(
 win_UInt64,
 win_UInt64,
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCPerHeapHistory();
-Error |= FireEtwGCPerHeapHistory(
+ EventXplatEnabledGCPerHeapHistory();
+Error |= FireEtXplatGCPerHeapHistory(
 );
- EventEnabledGCPerHeapHistory_V1();
-Error |= FireEtwGCPerHeapHistory_V1(
+ EventXplatEnabledGCPerHeapHistory_V1();
+Error |= FireEtXplatGCPerHeapHistory_V1(
 win_UInt16
 );
- EventEnabledGCGlobalHeapHistory();
-Error |= FireEtwGCGlobalHeapHistory(
+ EventXplatEnabledGCGlobalHeapHistory();
+Error |= FireEtXplatGCGlobalHeapHistory(
 win_UInt64,
 win_Int32,
 win_UInt32,
@@ -1772,8 +1772,8 @@ win_UInt32,
 win_UInt32,
 win_UInt32
 );
- EventEnabledGCGlobalHeapHistory_V1();
-Error |= FireEtwGCGlobalHeapHistory_V1(
+ EventXplatEnabledGCGlobalHeapHistory_V1();
+Error |= FireEtXplatGCGlobalHeapHistory_V1(
 win_UInt64,
 win_Int32,
 win_UInt32,
@@ -1782,450 +1782,450 @@ win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCJoin();
-Error |= FireEtwGCJoin(
+ EventXplatEnabledGCJoin();
+Error |= FireEtXplatGCJoin(
 win_UInt32,
 win_UInt32,
 win_UInt32
 );
- EventEnabledGCJoin_V1();
-Error |= FireEtwGCJoin_V1(
+ EventXplatEnabledGCJoin_V1();
+Error |= FireEtXplatGCJoin_V1(
 win_UInt32,
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledPrvGCMarkStackRoots();
-Error |= FireEtwPrvGCMarkStackRoots(
+ EventXplatEnabledPrvGCMarkStackRoots();
+Error |= FireEtXplatPrvGCMarkStackRoots(
 win_UInt32
 );
- EventEnabledPrvGCMarkStackRoots_V1();
-Error |= FireEtwPrvGCMarkStackRoots_V1(
+ EventXplatEnabledPrvGCMarkStackRoots_V1();
+Error |= FireEtXplatPrvGCMarkStackRoots_V1(
 win_UInt32,
 win_UInt16
 );
- EventEnabledPrvGCMarkFinalizeQueueRoots();
-Error |= FireEtwPrvGCMarkFinalizeQueueRoots(
+ EventXplatEnabledPrvGCMarkFinalizeQueueRoots();
+Error |= FireEtXplatPrvGCMarkFinalizeQueueRoots(
 win_UInt32
 );
- EventEnabledPrvGCMarkFinalizeQueueRoots_V1();
-Error |= FireEtwPrvGCMarkFinalizeQueueRoots_V1(
+ EventXplatEnabledPrvGCMarkFinalizeQueueRoots_V1();
+Error |= FireEtXplatPrvGCMarkFinalizeQueueRoots_V1(
 win_UInt32,
 win_UInt16
 );
- EventEnabledPrvGCMarkHandles();
-Error |= FireEtwPrvGCMarkHandles(
+ EventXplatEnabledPrvGCMarkHandles();
+Error |= FireEtXplatPrvGCMarkHandles(
 win_UInt32
 );
- EventEnabledPrvGCMarkHandles_V1();
-Error |= FireEtwPrvGCMarkHandles_V1(
+ EventXplatEnabledPrvGCMarkHandles_V1();
+Error |= FireEtXplatPrvGCMarkHandles_V1(
 win_UInt32,
 win_UInt16
 );
- EventEnabledPrvGCMarkCards();
-Error |= FireEtwPrvGCMarkCards(
+ EventXplatEnabledPrvGCMarkCards();
+Error |= FireEtXplatPrvGCMarkCards(
 win_UInt32
 );
- EventEnabledPrvGCMarkCards_V1();
-Error |= FireEtwPrvGCMarkCards_V1(
+ EventXplatEnabledPrvGCMarkCards_V1();
+Error |= FireEtXplatPrvGCMarkCards_V1(
 win_UInt32,
 win_UInt16
 );
- EventEnabledBGCBegin();
-Error |= FireEtwBGCBegin(
+ EventXplatEnabledBGCBegin();
+Error |= FireEtXplatBGCBegin(
 win_UInt16
 );
- EventEnabledBGC1stNonConEnd();
-Error |= FireEtwBGC1stNonConEnd(
+ EventXplatEnabledBGC1stNonConEnd();
+Error |= FireEtXplatBGC1stNonConEnd(
 win_UInt16
 );
- EventEnabledBGC1stConEnd();
-Error |= FireEtwBGC1stConEnd(
+ EventXplatEnabledBGC1stConEnd();
+Error |= FireEtXplatBGC1stConEnd(
 win_UInt16
 );
- EventEnabledBGC2ndNonConBegin();
-Error |= FireEtwBGC2ndNonConBegin(
+ EventXplatEnabledBGC2ndNonConBegin();
+Error |= FireEtXplatBGC2ndNonConBegin(
 win_UInt16
 );
- EventEnabledBGC2ndNonConEnd();
-Error |= FireEtwBGC2ndNonConEnd(
+ EventXplatEnabledBGC2ndNonConEnd();
+Error |= FireEtXplatBGC2ndNonConEnd(
 win_UInt16
 );
- EventEnabledBGC2ndConBegin();
-Error |= FireEtwBGC2ndConBegin(
+ EventXplatEnabledBGC2ndConBegin();
+Error |= FireEtXplatBGC2ndConBegin(
 win_UInt16
 );
- EventEnabledBGC2ndConEnd();
-Error |= FireEtwBGC2ndConEnd(
+ EventXplatEnabledBGC2ndConEnd();
+Error |= FireEtXplatBGC2ndConEnd(
 win_UInt16
 );
- EventEnabledBGCPlanEnd();
-Error |= FireEtwBGCPlanEnd(
+ EventXplatEnabledBGCPlanEnd();
+Error |= FireEtXplatBGCPlanEnd(
 win_UInt16
 );
- EventEnabledBGCSweepEnd();
-Error |= FireEtwBGCSweepEnd(
+ EventXplatEnabledBGCSweepEnd();
+Error |= FireEtXplatBGCSweepEnd(
 win_UInt16
 );
- EventEnabledBGCDrainMark();
-Error |= FireEtwBGCDrainMark(
+ EventXplatEnabledBGCDrainMark();
+Error |= FireEtXplatBGCDrainMark(
 win_UInt64,
 win_UInt16
 );
- EventEnabledBGCRevisit();
-Error |= FireEtwBGCRevisit(
-win_UInt64,
-win_UInt64,
-win_UInt32,
-win_UInt16
-);
- EventEnabledBGCOverflow();
-Error |= FireEtwBGCOverflow(
-win_UInt64,
+ EventXplatEnabledBGCRevisit();
+Error |= FireEtXplatBGCRevisit(
 win_UInt64,
 win_UInt64,
 win_UInt32,
 win_UInt16
 );
- EventEnabledBGCAllocWaitBegin();
-Error |= FireEtwBGCAllocWaitBegin(
+ EventXplatEnabledBGCOverflow();
+Error |= FireEtXplatBGCOverflow(
+win_UInt64,
+win_UInt64,
+win_UInt64,
 win_UInt32,
 win_UInt16
 );
- EventEnabledBGCAllocWaitEnd();
-Error |= FireEtwBGCAllocWaitEnd(
+ EventXplatEnabledBGCAllocWaitBegin();
+Error |= FireEtXplatBGCAllocWaitBegin(
 win_UInt32,
 win_UInt16
 );
- EventEnabledGCFullNotify();
-Error |= FireEtwGCFullNotify(
+ EventXplatEnabledBGCAllocWaitEnd();
+Error |= FireEtXplatBGCAllocWaitEnd(
+win_UInt32,
+win_UInt16
+);
+ EventXplatEnabledGCFullNotify();
+Error |= FireEtXplatGCFullNotify(
 win_UInt32,
 win_UInt32
 );
- EventEnabledGCFullNotify_V1();
-Error |= FireEtwGCFullNotify_V1(
+ EventXplatEnabledGCFullNotify_V1();
+Error |= FireEtXplatGCFullNotify_V1(
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledEEStartupStart();
-Error |= FireEtwEEStartupStart(
+ EventXplatEnabledEEStartupStart();
+Error |= FireEtXplatEEStartupStart(
 );
- EventEnabledEEStartupStart_V1();
-Error |= FireEtwEEStartupStart_V1(
+ EventXplatEnabledEEStartupStart_V1();
+Error |= FireEtXplatEEStartupStart_V1(
 win_UInt16
 );
- EventEnabledEEStartupEnd();
-Error |= FireEtwEEStartupEnd(
+ EventXplatEnabledEEStartupEnd();
+Error |= FireEtXplatEEStartupEnd(
 );
- EventEnabledEEStartupEnd_V1();
-Error |= FireEtwEEStartupEnd_V1(
+ EventXplatEnabledEEStartupEnd_V1();
+Error |= FireEtXplatEEStartupEnd_V1(
 win_UInt16
 );
- EventEnabledEEConfigSetup();
-Error |= FireEtwEEConfigSetup(
+ EventXplatEnabledEEConfigSetup();
+Error |= FireEtXplatEEConfigSetup(
 );
- EventEnabledEEConfigSetup_V1();
-Error |= FireEtwEEConfigSetup_V1(
+ EventXplatEnabledEEConfigSetup_V1();
+Error |= FireEtXplatEEConfigSetup_V1(
 win_UInt16
 );
- EventEnabledEEConfigSetupEnd();
-Error |= FireEtwEEConfigSetupEnd(
+ EventXplatEnabledEEConfigSetupEnd();
+Error |= FireEtXplatEEConfigSetupEnd(
 );
- EventEnabledEEConfigSetupEnd_V1();
-Error |= FireEtwEEConfigSetupEnd_V1(
+ EventXplatEnabledEEConfigSetupEnd_V1();
+Error |= FireEtXplatEEConfigSetupEnd_V1(
 win_UInt16
 );
- EventEnabledLdSysBases();
-Error |= FireEtwLdSysBases(
+ EventXplatEnabledLdSysBases();
+Error |= FireEtXplatLdSysBases(
 );
- EventEnabledLdSysBases_V1();
-Error |= FireEtwLdSysBases_V1(
+ EventXplatEnabledLdSysBases_V1();
+Error |= FireEtXplatLdSysBases_V1(
 win_UInt16
 );
- EventEnabledLdSysBasesEnd();
-Error |= FireEtwLdSysBasesEnd(
+ EventXplatEnabledLdSysBasesEnd();
+Error |= FireEtXplatLdSysBasesEnd(
 );
- EventEnabledLdSysBasesEnd_V1();
-Error |= FireEtwLdSysBasesEnd_V1(
+ EventXplatEnabledLdSysBasesEnd_V1();
+Error |= FireEtXplatLdSysBasesEnd_V1(
 win_UInt16
 );
- EventEnabledExecExe();
-Error |= FireEtwExecExe(
+ EventXplatEnabledExecExe();
+Error |= FireEtXplatExecExe(
 );
- EventEnabledExecExe_V1();
-Error |= FireEtwExecExe_V1(
+ EventXplatEnabledExecExe_V1();
+Error |= FireEtXplatExecExe_V1(
 win_UInt16
 );
- EventEnabledExecExeEnd();
-Error |= FireEtwExecExeEnd(
+ EventXplatEnabledExecExeEnd();
+Error |= FireEtXplatExecExeEnd(
 );
- EventEnabledExecExeEnd_V1();
-Error |= FireEtwExecExeEnd_V1(
+ EventXplatEnabledExecExeEnd_V1();
+Error |= FireEtXplatExecExeEnd_V1(
 win_UInt16
 );
- EventEnabledMain();
-Error |= FireEtwMain(
+ EventXplatEnabledMain();
+Error |= FireEtXplatMain(
 );
- EventEnabledMain_V1();
-Error |= FireEtwMain_V1(
+ EventXplatEnabledMain_V1();
+Error |= FireEtXplatMain_V1(
 win_UInt16
 );
- EventEnabledMainEnd();
-Error |= FireEtwMainEnd(
+ EventXplatEnabledMainEnd();
+Error |= FireEtXplatMainEnd(
 );
- EventEnabledMainEnd_V1();
-Error |= FireEtwMainEnd_V1(
+ EventXplatEnabledMainEnd_V1();
+Error |= FireEtXplatMainEnd_V1(
 win_UInt16
 );
- EventEnabledApplyPolicyStart();
-Error |= FireEtwApplyPolicyStart(
+ EventXplatEnabledApplyPolicyStart();
+Error |= FireEtXplatApplyPolicyStart(
 );
- EventEnabledApplyPolicyStart_V1();
-Error |= FireEtwApplyPolicyStart_V1(
+ EventXplatEnabledApplyPolicyStart_V1();
+Error |= FireEtXplatApplyPolicyStart_V1(
 win_UInt16
 );
- EventEnabledApplyPolicyEnd();
-Error |= FireEtwApplyPolicyEnd(
+ EventXplatEnabledApplyPolicyEnd();
+Error |= FireEtXplatApplyPolicyEnd(
 );
- EventEnabledApplyPolicyEnd_V1();
-Error |= FireEtwApplyPolicyEnd_V1(
+ EventXplatEnabledApplyPolicyEnd_V1();
+Error |= FireEtXplatApplyPolicyEnd_V1(
 win_UInt16
 );
- EventEnabledLdLibShFolder();
-Error |= FireEtwLdLibShFolder(
+ EventXplatEnabledLdLibShFolder();
+Error |= FireEtXplatLdLibShFolder(
 );
- EventEnabledLdLibShFolder_V1();
-Error |= FireEtwLdLibShFolder_V1(
+ EventXplatEnabledLdLibShFolder_V1();
+Error |= FireEtXplatLdLibShFolder_V1(
 win_UInt16
 );
- EventEnabledLdLibShFolderEnd();
-Error |= FireEtwLdLibShFolderEnd(
+ EventXplatEnabledLdLibShFolderEnd();
+Error |= FireEtXplatLdLibShFolderEnd(
 );
- EventEnabledLdLibShFolderEnd_V1();
-Error |= FireEtwLdLibShFolderEnd_V1(
+ EventXplatEnabledLdLibShFolderEnd_V1();
+Error |= FireEtXplatLdLibShFolderEnd_V1(
 win_UInt16
 );
- EventEnabledPrestubWorker();
-Error |= FireEtwPrestubWorker(
+ EventXplatEnabledPrestubWorker();
+Error |= FireEtXplatPrestubWorker(
 );
- EventEnabledPrestubWorker_V1();
-Error |= FireEtwPrestubWorker_V1(
+ EventXplatEnabledPrestubWorker_V1();
+Error |= FireEtXplatPrestubWorker_V1(
 win_UInt16
 );
- EventEnabledPrestubWorkerEnd();
-Error |= FireEtwPrestubWorkerEnd(
+ EventXplatEnabledPrestubWorkerEnd();
+Error |= FireEtXplatPrestubWorkerEnd(
 );
- EventEnabledPrestubWorkerEnd_V1();
-Error |= FireEtwPrestubWorkerEnd_V1(
+ EventXplatEnabledPrestubWorkerEnd_V1();
+Error |= FireEtXplatPrestubWorkerEnd_V1(
 win_UInt16
 );
- EventEnabledGetInstallationStart();
-Error |= FireEtwGetInstallationStart(
+ EventXplatEnabledGetInstallationStart();
+Error |= FireEtXplatGetInstallationStart(
 );
- EventEnabledGetInstallationStart_V1();
-Error |= FireEtwGetInstallationStart_V1(
+ EventXplatEnabledGetInstallationStart_V1();
+Error |= FireEtXplatGetInstallationStart_V1(
 win_UInt16
 );
- EventEnabledGetInstallationEnd();
-Error |= FireEtwGetInstallationEnd(
+ EventXplatEnabledGetInstallationEnd();
+Error |= FireEtXplatGetInstallationEnd(
 );
- EventEnabledGetInstallationEnd_V1();
-Error |= FireEtwGetInstallationEnd_V1(
+ EventXplatEnabledGetInstallationEnd_V1();
+Error |= FireEtXplatGetInstallationEnd_V1(
 win_UInt16
 );
- EventEnabledOpenHModule();
-Error |= FireEtwOpenHModule(
+ EventXplatEnabledOpenHModule();
+Error |= FireEtXplatOpenHModule(
 );
- EventEnabledOpenHModule_V1();
-Error |= FireEtwOpenHModule_V1(
+ EventXplatEnabledOpenHModule_V1();
+Error |= FireEtXplatOpenHModule_V1(
 win_UInt16
 );
- EventEnabledOpenHModuleEnd();
-Error |= FireEtwOpenHModuleEnd(
+ EventXplatEnabledOpenHModuleEnd();
+Error |= FireEtXplatOpenHModuleEnd(
 );
- EventEnabledOpenHModuleEnd_V1();
-Error |= FireEtwOpenHModuleEnd_V1(
+ EventXplatEnabledOpenHModuleEnd_V1();
+Error |= FireEtXplatOpenHModuleEnd_V1(
 win_UInt16
 );
- EventEnabledExplicitBindStart();
-Error |= FireEtwExplicitBindStart(
+ EventXplatEnabledExplicitBindStart();
+Error |= FireEtXplatExplicitBindStart(
 );
- EventEnabledExplicitBindStart_V1();
-Error |= FireEtwExplicitBindStart_V1(
+ EventXplatEnabledExplicitBindStart_V1();
+Error |= FireEtXplatExplicitBindStart_V1(
 win_UInt16
 );
- EventEnabledExplicitBindEnd();
-Error |= FireEtwExplicitBindEnd(
+ EventXplatEnabledExplicitBindEnd();
+Error |= FireEtXplatExplicitBindEnd(
 );
- EventEnabledExplicitBindEnd_V1();
-Error |= FireEtwExplicitBindEnd_V1(
+ EventXplatEnabledExplicitBindEnd_V1();
+Error |= FireEtXplatExplicitBindEnd_V1(
 win_UInt16
 );
- EventEnabledParseXml();
-Error |= FireEtwParseXml(
+ EventXplatEnabledParseXml();
+Error |= FireEtXplatParseXml(
 );
- EventEnabledParseXml_V1();
-Error |= FireEtwParseXml_V1(
+ EventXplatEnabledParseXml_V1();
+Error |= FireEtXplatParseXml_V1(
 win_UInt16
 );
- EventEnabledParseXmlEnd();
-Error |= FireEtwParseXmlEnd(
+ EventXplatEnabledParseXmlEnd();
+Error |= FireEtXplatParseXmlEnd(
 );
- EventEnabledParseXmlEnd_V1();
-Error |= FireEtwParseXmlEnd_V1(
+ EventXplatEnabledParseXmlEnd_V1();
+Error |= FireEtXplatParseXmlEnd_V1(
 win_UInt16
 );
- EventEnabledInitDefaultDomain();
-Error |= FireEtwInitDefaultDomain(
+ EventXplatEnabledInitDefaultDomain();
+Error |= FireEtXplatInitDefaultDomain(
 );
- EventEnabledInitDefaultDomain_V1();
-Error |= FireEtwInitDefaultDomain_V1(
+ EventXplatEnabledInitDefaultDomain_V1();
+Error |= FireEtXplatInitDefaultDomain_V1(
 win_UInt16
 );
- EventEnabledInitDefaultDomainEnd();
-Error |= FireEtwInitDefaultDomainEnd(
+ EventXplatEnabledInitDefaultDomainEnd();
+Error |= FireEtXplatInitDefaultDomainEnd(
 );
- EventEnabledInitDefaultDomainEnd_V1();
-Error |= FireEtwInitDefaultDomainEnd_V1(
+ EventXplatEnabledInitDefaultDomainEnd_V1();
+Error |= FireEtXplatInitDefaultDomainEnd_V1(
 win_UInt16
 );
- EventEnabledInitSecurity();
-Error |= FireEtwInitSecurity(
+ EventXplatEnabledInitSecurity();
+Error |= FireEtXplatInitSecurity(
 );
- EventEnabledInitSecurity_V1();
-Error |= FireEtwInitSecurity_V1(
+ EventXplatEnabledInitSecurity_V1();
+Error |= FireEtXplatInitSecurity_V1(
 win_UInt16
 );
- EventEnabledInitSecurityEnd();
-Error |= FireEtwInitSecurityEnd(
+ EventXplatEnabledInitSecurityEnd();
+Error |= FireEtXplatInitSecurityEnd(
 );
- EventEnabledInitSecurityEnd_V1();
-Error |= FireEtwInitSecurityEnd_V1(
+ EventXplatEnabledInitSecurityEnd_V1();
+Error |= FireEtXplatInitSecurityEnd_V1(
 win_UInt16
 );
- EventEnabledAllowBindingRedirs();
-Error |= FireEtwAllowBindingRedirs(
+ EventXplatEnabledAllowBindingRedirs();
+Error |= FireEtXplatAllowBindingRedirs(
 );
- EventEnabledAllowBindingRedirs_V1();
-Error |= FireEtwAllowBindingRedirs_V1(
+ EventXplatEnabledAllowBindingRedirs_V1();
+Error |= FireEtXplatAllowBindingRedirs_V1(
 win_UInt16
 );
- EventEnabledAllowBindingRedirsEnd();
-Error |= FireEtwAllowBindingRedirsEnd(
+ EventXplatEnabledAllowBindingRedirsEnd();
+Error |= FireEtXplatAllowBindingRedirsEnd(
 );
- EventEnabledAllowBindingRedirsEnd_V1();
-Error |= FireEtwAllowBindingRedirsEnd_V1(
+ EventXplatEnabledAllowBindingRedirsEnd_V1();
+Error |= FireEtXplatAllowBindingRedirsEnd_V1(
 win_UInt16
 );
- EventEnabledEEConfigSync();
-Error |= FireEtwEEConfigSync(
+ EventXplatEnabledEEConfigSync();
+Error |= FireEtXplatEEConfigSync(
 );
- EventEnabledEEConfigSync_V1();
-Error |= FireEtwEEConfigSync_V1(
+ EventXplatEnabledEEConfigSync_V1();
+Error |= FireEtXplatEEConfigSync_V1(
 win_UInt16
 );
- EventEnabledEEConfigSyncEnd();
-Error |= FireEtwEEConfigSyncEnd(
+ EventXplatEnabledEEConfigSyncEnd();
+Error |= FireEtXplatEEConfigSyncEnd(
 );
- EventEnabledEEConfigSyncEnd_V1();
-Error |= FireEtwEEConfigSyncEnd_V1(
+ EventXplatEnabledEEConfigSyncEnd_V1();
+Error |= FireEtXplatEEConfigSyncEnd_V1(
 win_UInt16
 );
- EventEnabledFusionBinding();
-Error |= FireEtwFusionBinding(
+ EventXplatEnabledFusionBinding();
+Error |= FireEtXplatFusionBinding(
 );
- EventEnabledFusionBinding_V1();
-Error |= FireEtwFusionBinding_V1(
+ EventXplatEnabledFusionBinding_V1();
+Error |= FireEtXplatFusionBinding_V1(
 win_UInt16
 );
- EventEnabledFusionBindingEnd();
-Error |= FireEtwFusionBindingEnd(
+ EventXplatEnabledFusionBindingEnd();
+Error |= FireEtXplatFusionBindingEnd(
 );
- EventEnabledFusionBindingEnd_V1();
-Error |= FireEtwFusionBindingEnd_V1(
+ EventXplatEnabledFusionBindingEnd_V1();
+Error |= FireEtXplatFusionBindingEnd_V1(
 win_UInt16
 );
- EventEnabledLoaderCatchCall();
-Error |= FireEtwLoaderCatchCall(
+ EventXplatEnabledLoaderCatchCall();
+Error |= FireEtXplatLoaderCatchCall(
 );
- EventEnabledLoaderCatchCall_V1();
-Error |= FireEtwLoaderCatchCall_V1(
+ EventXplatEnabledLoaderCatchCall_V1();
+Error |= FireEtXplatLoaderCatchCall_V1(
 win_UInt16
 );
- EventEnabledLoaderCatchCallEnd();
-Error |= FireEtwLoaderCatchCallEnd(
+ EventXplatEnabledLoaderCatchCallEnd();
+Error |= FireEtXplatLoaderCatchCallEnd(
 );
- EventEnabledLoaderCatchCallEnd_V1();
-Error |= FireEtwLoaderCatchCallEnd_V1(
+ EventXplatEnabledLoaderCatchCallEnd_V1();
+Error |= FireEtXplatLoaderCatchCallEnd_V1(
 win_UInt16
 );
- EventEnabledFusionInit();
-Error |= FireEtwFusionInit(
+ EventXplatEnabledFusionInit();
+Error |= FireEtXplatFusionInit(
 );
- EventEnabledFusionInit_V1();
-Error |= FireEtwFusionInit_V1(
+ EventXplatEnabledFusionInit_V1();
+Error |= FireEtXplatFusionInit_V1(
 win_UInt16
 );
- EventEnabledFusionInitEnd();
-Error |= FireEtwFusionInitEnd(
+ EventXplatEnabledFusionInitEnd();
+Error |= FireEtXplatFusionInitEnd(
 );
- EventEnabledFusionInitEnd_V1();
-Error |= FireEtwFusionInitEnd_V1(
+ EventXplatEnabledFusionInitEnd_V1();
+Error |= FireEtXplatFusionInitEnd_V1(
 win_UInt16
 );
- EventEnabledFusionAppCtx();
-Error |= FireEtwFusionAppCtx(
+ EventXplatEnabledFusionAppCtx();
+Error |= FireEtXplatFusionAppCtx(
 );
- EventEnabledFusionAppCtx_V1();
-Error |= FireEtwFusionAppCtx_V1(
+ EventXplatEnabledFusionAppCtx_V1();
+Error |= FireEtXplatFusionAppCtx_V1(
 win_UInt16
 );
- EventEnabledFusionAppCtxEnd();
-Error |= FireEtwFusionAppCtxEnd(
+ EventXplatEnabledFusionAppCtxEnd();
+Error |= FireEtXplatFusionAppCtxEnd(
 );
- EventEnabledFusionAppCtxEnd_V1();
-Error |= FireEtwFusionAppCtxEnd_V1(
+ EventXplatEnabledFusionAppCtxEnd_V1();
+Error |= FireEtXplatFusionAppCtxEnd_V1(
 win_UInt16
 );
- EventEnabledFusion2EE();
-Error |= FireEtwFusion2EE(
+ EventXplatEnabledFusion2EE();
+Error |= FireEtXplatFusion2EE(
 );
- EventEnabledFusion2EE_V1();
-Error |= FireEtwFusion2EE_V1(
+ EventXplatEnabledFusion2EE_V1();
+Error |= FireEtXplatFusion2EE_V1(
 win_UInt16
 );
- EventEnabledFusion2EEEnd();
-Error |= FireEtwFusion2EEEnd(
+ EventXplatEnabledFusion2EEEnd();
+Error |= FireEtXplatFusion2EEEnd(
 );
- EventEnabledFusion2EEEnd_V1();
-Error |= FireEtwFusion2EEEnd_V1(
+ EventXplatEnabledFusion2EEEnd_V1();
+Error |= FireEtXplatFusion2EEEnd_V1(
 win_UInt16
 );
- EventEnabledSecurityCatchCall();
-Error |= FireEtwSecurityCatchCall(
+ EventXplatEnabledSecurityCatchCall();
+Error |= FireEtXplatSecurityCatchCall(
 );
- EventEnabledSecurityCatchCall_V1();
-Error |= FireEtwSecurityCatchCall_V1(
+ EventXplatEnabledSecurityCatchCall_V1();
+Error |= FireEtXplatSecurityCatchCall_V1(
 win_UInt16
 );
- EventEnabledSecurityCatchCallEnd();
-Error |= FireEtwSecurityCatchCallEnd(
+ EventXplatEnabledSecurityCatchCallEnd();
+Error |= FireEtXplatSecurityCatchCallEnd(
 );
- EventEnabledSecurityCatchCallEnd_V1();
-Error |= FireEtwSecurityCatchCallEnd_V1(
+ EventXplatEnabledSecurityCatchCallEnd_V1();
+Error |= FireEtXplatSecurityCatchCallEnd_V1(
 win_UInt16
 );
- EventEnabledCLRStackWalkPrivate();
-Error |= FireEtwCLRStackWalkPrivate(
+ EventXplatEnabledCLRStackWalkPrivate();
+Error |= FireEtXplatCLRStackWalkPrivate(
 win_UInt16,
 win_UInt8,
 win_UInt8,
 win_UInt32,
 (const void**)&var11
 );
- EventEnabledModuleRangeLoadPrivate();
-Error |= FireEtwModuleRangeLoadPrivate(
+ EventXplatEnabledModuleRangeLoadPrivate();
+Error |= FireEtXplatModuleRangeLoadPrivate(
 win_UInt16,
 win_UInt64,
 win_UInt32,
@@ -2234,8 +2234,8 @@ win_UInt8,
 win_UInt8,
 win_UInt16
 );
- EventEnabledBindingPolicyPhaseStart();
-Error |= FireEtwBindingPolicyPhaseStart(
+ EventXplatEnabledBindingPolicyPhaseStart();
+Error |= FireEtXplatBindingPolicyPhaseStart(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2244,8 +2244,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledBindingPolicyPhaseEnd();
-Error |= FireEtwBindingPolicyPhaseEnd(
+ EventXplatEnabledBindingPolicyPhaseEnd();
+Error |= FireEtXplatBindingPolicyPhaseEnd(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2254,8 +2254,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledBindingNgenPhaseStart();
-Error |= FireEtwBindingNgenPhaseStart(
+ EventXplatEnabledBindingNgenPhaseStart();
+Error |= FireEtXplatBindingNgenPhaseStart(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2264,8 +2264,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledBindingNgenPhaseEnd();
-Error |= FireEtwBindingNgenPhaseEnd(
+ EventXplatEnabledBindingNgenPhaseEnd();
+Error |= FireEtXplatBindingNgenPhaseEnd(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2274,8 +2274,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledBindingLookupAndProbingPhaseStart();
-Error |= FireEtwBindingLookupAndProbingPhaseStart(
+ EventXplatEnabledBindingLookupAndProbingPhaseStart();
+Error |= FireEtXplatBindingLookupAndProbingPhaseStart(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2284,8 +2284,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledBindingLookupAndProbingPhaseEnd();
-Error |= FireEtwBindingLookupAndProbingPhaseEnd(
+ EventXplatEnabledBindingLookupAndProbingPhaseEnd();
+Error |= FireEtXplatBindingLookupAndProbingPhaseEnd(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2294,8 +2294,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledLoaderPhaseStart();
-Error |= FireEtwLoaderPhaseStart(
+ EventXplatEnabledLoaderPhaseStart();
+Error |= FireEtXplatLoaderPhaseStart(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2304,8 +2304,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledLoaderPhaseEnd();
-Error |= FireEtwLoaderPhaseEnd(
+ EventXplatEnabledLoaderPhaseEnd();
+Error |= FireEtXplatLoaderPhaseEnd(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2314,8 +2314,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledBindingPhaseStart();
-Error |= FireEtwBindingPhaseStart(
+ EventXplatEnabledBindingPhaseStart();
+Error |= FireEtXplatBindingPhaseStart(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2324,8 +2324,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledBindingPhaseEnd();
-Error |= FireEtwBindingPhaseEnd(
+ EventXplatEnabledBindingPhaseEnd();
+Error |= FireEtXplatBindingPhaseEnd(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2334,8 +2334,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledBindingDownloadPhaseStart();
-Error |= FireEtwBindingDownloadPhaseStart(
+ EventXplatEnabledBindingDownloadPhaseStart();
+Error |= FireEtXplatBindingDownloadPhaseStart(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2344,8 +2344,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledBindingDownloadPhaseEnd();
-Error |= FireEtwBindingDownloadPhaseEnd(
+ EventXplatEnabledBindingDownloadPhaseEnd();
+Error |= FireEtXplatBindingDownloadPhaseEnd(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2354,8 +2354,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledLoaderAssemblyInitPhaseStart();
-Error |= FireEtwLoaderAssemblyInitPhaseStart(
+ EventXplatEnabledLoaderAssemblyInitPhaseStart();
+Error |= FireEtXplatLoaderAssemblyInitPhaseStart(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2364,8 +2364,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledLoaderAssemblyInitPhaseEnd();
-Error |= FireEtwLoaderAssemblyInitPhaseEnd(
+ EventXplatEnabledLoaderAssemblyInitPhaseEnd();
+Error |= FireEtXplatLoaderAssemblyInitPhaseEnd(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2374,8 +2374,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledLoaderMappingPhaseStart();
-Error |= FireEtwLoaderMappingPhaseStart(
+ EventXplatEnabledLoaderMappingPhaseStart();
+Error |= FireEtXplatLoaderMappingPhaseStart(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2384,8 +2384,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledLoaderMappingPhaseEnd();
-Error |= FireEtwLoaderMappingPhaseEnd(
+ EventXplatEnabledLoaderMappingPhaseEnd();
+Error |= FireEtXplatLoaderMappingPhaseEnd(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2394,8 +2394,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledLoaderDeliverEventsPhaseStart();
-Error |= FireEtwLoaderDeliverEventsPhaseStart(
+ EventXplatEnabledLoaderDeliverEventsPhaseStart();
+Error |= FireEtXplatLoaderDeliverEventsPhaseStart(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2404,8 +2404,8 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledLoaderDeliverEventsPhaseEnd();
-Error |= FireEtwLoaderDeliverEventsPhaseEnd(
+ EventXplatEnabledLoaderDeliverEventsPhaseEnd();
+Error |= FireEtXplatLoaderDeliverEventsPhaseEnd(
 win_UInt32,
 win_UInt32,
 win_UInt32,
@@ -2414,21 +2414,21 @@ W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledEvidenceGenerated();
-Error |= FireEtwEvidenceGenerated(
+ EventXplatEnabledEvidenceGenerated();
+Error |= FireEtXplatEvidenceGenerated(
 win_UInt32,
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledModuleTransparencyComputationStart();
-Error |= FireEtwModuleTransparencyComputationStart(
+ EventXplatEnabledModuleTransparencyComputationStart();
+Error |= FireEtXplatModuleTransparencyComputationStart(
 W(" Testing UnicodeString "),
 win_UInt32,
 win_UInt16
 );
- EventEnabledModuleTransparencyComputationEnd();
-Error |= FireEtwModuleTransparencyComputationEnd(
+ EventXplatEnabledModuleTransparencyComputationEnd();
+Error |= FireEtXplatModuleTransparencyComputationEnd(
 W(" Testing UnicodeString "),
 win_UInt32,
 win_Boolean,
@@ -2438,15 +2438,15 @@ win_Boolean,
 win_UInt32,
 win_UInt16
 );
- EventEnabledTypeTransparencyComputationStart();
-Error |= FireEtwTypeTransparencyComputationStart(
+ EventXplatEnabledTypeTransparencyComputationStart();
+Error |= FireEtXplatTypeTransparencyComputationStart(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt32,
 win_UInt16
 );
- EventEnabledTypeTransparencyComputationEnd();
-Error |= FireEtwTypeTransparencyComputationEnd(
+ EventXplatEnabledTypeTransparencyComputationEnd();
+Error |= FireEtXplatTypeTransparencyComputationEnd(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt32,
@@ -2456,31 +2456,15 @@ win_Boolean,
 win_Boolean,
 win_UInt16
 );
- EventEnabledMethodTransparencyComputationStart();
-Error |= FireEtwMethodTransparencyComputationStart(
+ EventXplatEnabledMethodTransparencyComputationStart();
+Error |= FireEtXplatMethodTransparencyComputationStart(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt32,
 win_UInt16
 );
- EventEnabledMethodTransparencyComputationEnd();
-Error |= FireEtwMethodTransparencyComputationEnd(
-W(" Testing UnicodeString "),
-W(" Testing UnicodeString "),
-win_UInt32,
-win_Boolean,
-win_Boolean,
-win_UInt16
-);
- EventEnabledFieldTransparencyComputationStart();
-Error |= FireEtwFieldTransparencyComputationStart(
-W(" Testing UnicodeString "),
-W(" Testing UnicodeString "),
-win_UInt32,
-win_UInt16
-);
- EventEnabledFieldTransparencyComputationEnd();
-Error |= FireEtwFieldTransparencyComputationEnd(
+ EventXplatEnabledMethodTransparencyComputationEnd();
+Error |= FireEtXplatMethodTransparencyComputationEnd(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt32,
@@ -2488,15 +2472,31 @@ win_Boolean,
 win_Boolean,
 win_UInt16
 );
- EventEnabledTokenTransparencyComputationStart();
-Error |= FireEtwTokenTransparencyComputationStart(
+ EventXplatEnabledFieldTransparencyComputationStart();
+Error |= FireEtXplatFieldTransparencyComputationStart(
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+win_UInt32,
+win_UInt16
+);
+ EventXplatEnabledFieldTransparencyComputationEnd();
+Error |= FireEtXplatFieldTransparencyComputationEnd(
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+win_UInt32,
+win_Boolean,
+win_Boolean,
+win_UInt16
+);
+ EventXplatEnabledTokenTransparencyComputationStart();
+Error |= FireEtXplatTokenTransparencyComputationStart(
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt32,
 win_UInt16
 );
- EventEnabledTokenTransparencyComputationEnd();
-Error |= FireEtwTokenTransparencyComputationEnd(
+ EventXplatEnabledTokenTransparencyComputationEnd();
+Error |= FireEtXplatTokenTransparencyComputationEnd(
 win_UInt32,
 W(" Testing UnicodeString "),
 win_UInt32,
@@ -2504,30 +2504,30 @@ win_Boolean,
 win_Boolean,
 win_UInt16
 );
- EventEnabledNgenBindEvent();
-Error |= FireEtwNgenBindEvent(
+ EventXplatEnabledNgenBindEvent();
+Error |= FireEtXplatNgenBindEvent(
 win_UInt16,
 win_UInt64,
 win_UInt32,
 W(" Testing UnicodeString ")
 );
- EventEnabledFailFast();
-Error |= FireEtwFailFast(
+ EventXplatEnabledFailFast();
+Error |= FireEtXplatFailFast(
 W(" Testing UnicodeString "),
 (const void*)var11,
 win_UInt32,
 win_UInt32,
 win_UInt16
 );
- EventEnabledPrvFinalizeObject();
-Error |= FireEtwPrvFinalizeObject(
+ EventXplatEnabledPrvFinalizeObject();
+Error |= FireEtXplatPrvFinalizeObject(
 (const void*)var11,
 (const void*)var11,
 win_UInt16,
 W(" Testing UnicodeString ")
 );
- EventEnabledCCWRefCountChange();
-Error |= FireEtwCCWRefCountChange(
+ EventXplatEnabledCCWRefCountChange();
+Error |= FireEtXplatCCWRefCountChange(
 (const void*)var11,
 (const void*)var11,
 (const void*)var11,
@@ -2538,8 +2538,8 @@ win_UInt64,
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledPrvSetGCHandle();
-Error |= FireEtwPrvSetGCHandle(
+ EventXplatEnabledPrvSetGCHandle();
+Error |= FireEtXplatPrvSetGCHandle(
 (const void*)var11,
 (const void*)var11,
 win_UInt32,
@@ -2547,32 +2547,32 @@ win_UInt32,
 win_UInt64,
 win_UInt16
 );
- EventEnabledPrvDestroyGCHandle();
-Error |= FireEtwPrvDestroyGCHandle(
+ EventXplatEnabledPrvDestroyGCHandle();
+Error |= FireEtXplatPrvDestroyGCHandle(
 (const void*)var11,
 win_UInt16
 );
- EventEnabledFusionMessageEvent();
-Error |= FireEtwFusionMessageEvent(
+ EventXplatEnabledFusionMessageEvent();
+Error |= FireEtXplatFusionMessageEvent(
 win_UInt16,
 win_Boolean,
 W(" Testing UnicodeString ")
 );
- EventEnabledFusionErrorCodeEvent();
-Error |= FireEtwFusionErrorCodeEvent(
+ EventXplatEnabledFusionErrorCodeEvent();
+Error |= FireEtXplatFusionErrorCodeEvent(
 win_UInt16,
 win_UInt32,
 win_UInt32
 );
- EventEnabledPinPlugAtGCTime();
-Error |= FireEtwPinPlugAtGCTime(
+ EventXplatEnabledPinPlugAtGCTime();
+Error |= FireEtXplatPinPlugAtGCTime(
 (const void*)var11,
 (const void*)var11,
 (const void*)var11,
 win_UInt16
 );
- EventEnabledAllocRequest();
-Error |= FireEtwAllocRequest(
+ EventXplatEnabledAllocRequest();
+Error |= FireEtXplatAllocRequest(
 (const void*)var11,
 (const void*)var11,
 win_UInt32,
@@ -2580,8 +2580,8 @@ win_UInt32,
 win_UInt64,
 win_UInt16
 );
- EventEnabledMulticoreJit();
-Error |= FireEtwMulticoreJit(
+ EventXplatEnabledMulticoreJit();
+Error |= FireEtXplatMulticoreJit(
 win_UInt16,
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
@@ -2589,87 +2589,87 @@ win_Int32,
 win_Int32,
 win_Int32
 );
- EventEnabledMulticoreJitMethodCodeReturned();
-Error |= FireEtwMulticoreJitMethodCodeReturned(
+ EventXplatEnabledMulticoreJitMethodCodeReturned();
+Error |= FireEtXplatMulticoreJitMethodCodeReturned(
 win_UInt16,
 win_UInt64,
 win_UInt64
 );
- EventEnabledIInspectableRuntimeClassName();
-Error |= FireEtwIInspectableRuntimeClassName(
+ EventXplatEnabledIInspectableRuntimeClassName();
+Error |= FireEtXplatIInspectableRuntimeClassName(
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledWinRTUnbox();
-Error |= FireEtwWinRTUnbox(
-W(" Testing UnicodeString "),
-W(" Testing UnicodeString "),
-win_UInt16
-);
- EventEnabledCreateRCW();
-Error |= FireEtwCreateRCW(
-W(" Testing UnicodeString "),
-win_UInt16
-);
- EventEnabledRCWVariance();
-Error |= FireEtwRCWVariance(
-W(" Testing UnicodeString "),
+ EventXplatEnabledWinRTUnbox();
+Error |= FireEtXplatWinRTUnbox(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledRCWIEnumerableCasting();
-Error |= FireEtwRCWIEnumerableCasting(
-W(" Testing UnicodeString "),
-W(" Testing UnicodeString "),
-win_UInt16
-);
- EventEnabledCreateCCW();
-Error |= FireEtwCreateCCW(
+ EventXplatEnabledCreateRCW();
+Error |= FireEtXplatCreateRCW(
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledCCWVariance();
-Error |= FireEtwCCWVariance(
+ EventXplatEnabledRCWVariance();
+Error |= FireEtXplatRCWVariance(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledObjectVariantMarshallingToNative();
-Error |= FireEtwObjectVariantMarshallingToNative(
+ EventXplatEnabledRCWIEnumerableCasting();
+Error |= FireEtXplatRCWIEnumerableCasting(
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+win_UInt16
+);
+ EventXplatEnabledCreateCCW();
+Error |= FireEtXplatCreateCCW(
+W(" Testing UnicodeString "),
+win_UInt16
+);
+ EventXplatEnabledCCWVariance();
+Error |= FireEtXplatCCWVariance(
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+win_UInt16
+);
+ EventXplatEnabledObjectVariantMarshallingToNative();
+Error |= FireEtXplatObjectVariantMarshallingToNative(
 W(" Testing UnicodeString "),
 win_Int32,
 win_UInt16
 );
- EventEnabledGetTypeFromGUID();
-Error |= FireEtwGetTypeFromGUID(
+ EventXplatEnabledGetTypeFromGUID();
+Error |= FireEtXplatGetTypeFromGUID(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledGetTypeFromProgID();
-Error |= FireEtwGetTypeFromProgID(
+ EventXplatEnabledGetTypeFromProgID();
+Error |= FireEtXplatGetTypeFromProgID(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledConvertToCallbackEtw();
-Error |= FireEtwConvertToCallbackEtw(
+ EventXplatEnabledConvertToCallbackEtw();
+Error |= FireEtXplatConvertToCallbackEtw(
 W(" Testing UnicodeString "),
 W(" Testing UnicodeString "),
 win_UInt16
 );
- EventEnabledBeginCreateManagedReference();
-Error |= FireEtwBeginCreateManagedReference(
+ EventXplatEnabledBeginCreateManagedReference();
+Error |= FireEtXplatBeginCreateManagedReference(
 win_UInt16
 );
- EventEnabledEndCreateManagedReference();
-Error |= FireEtwEndCreateManagedReference(
+ EventXplatEnabledEndCreateManagedReference();
+Error |= FireEtXplatEndCreateManagedReference(
 win_UInt16
 );
- EventEnabledObjectVariantMarshallingToManaged();
-Error |= FireEtwObjectVariantMarshallingToManaged(
+ EventXplatEnabledObjectVariantMarshallingToManaged();
+Error |= FireEtXplatObjectVariantMarshallingToManaged(
 W(" Testing UnicodeString "),
 win_Int32,
 win_UInt16

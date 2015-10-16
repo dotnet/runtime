@@ -14,14 +14,14 @@ This file is generated using the logic from <root>/src/inc/genXplatLttng.pl
 #define TRACEPOINT_DEFINE
 #define TRACEPOINT_PROBE_DYNAMIC_LINKAGE
 #include "lttng/tpdotnetruntime.h"
-extern "C" BOOL  EventEnabledGCStart(){ return TRUE;}
-extern "C" ULONG  FireEtwGCStart(
+extern "C" BOOL  EventXplatEnabledGCStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCStart(
                   const unsigned int Count,
                   const unsigned int Reason
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCStart()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -35,8 +35,8 @@ extern "C" ULONG  FireEtwGCStart(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCStart_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCStart_V1(
+extern "C" BOOL  EventXplatEnabledGCStart_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCStart_V1(
                   const unsigned int Count,
                   const unsigned int Depth,
                   const unsigned int Reason,
@@ -45,7 +45,7 @@ extern "C" ULONG  FireEtwGCStart_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCStart_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCStart_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -62,8 +62,8 @@ extern "C" ULONG  FireEtwGCStart_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCStart_V2(){ return TRUE;}
-extern "C" ULONG  FireEtwGCStart_V2(
+extern "C" BOOL  EventXplatEnabledGCStart_V2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCStart_V2(
                   const unsigned int Count,
                   const unsigned int Depth,
                   const unsigned int Reason,
@@ -73,7 +73,7 @@ extern "C" ULONG  FireEtwGCStart_V2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCStart_V2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCStart_V2()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -91,14 +91,14 @@ extern "C" ULONG  FireEtwGCStart_V2(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwGCEnd(
+extern "C" BOOL  EventXplatEnabledGCEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCEnd(
                   const unsigned int Count,
                   const unsigned short Depth
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -112,15 +112,15 @@ extern "C" ULONG  FireEtwGCEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCEnd_V1(
+extern "C" BOOL  EventXplatEnabledGCEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCEnd_V1(
                   const unsigned int Count,
                   const unsigned int Depth,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -135,12 +135,12 @@ extern "C" ULONG  FireEtwGCEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCRestartEEEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwGCRestartEEEnd(
+extern "C" BOOL  EventXplatEnabledGCRestartEEEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCRestartEEEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCRestartEEEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCRestartEEEnd()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -151,13 +151,13 @@ extern "C" ULONG  FireEtwGCRestartEEEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCRestartEEEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCRestartEEEnd_V1(
+extern "C" BOOL  EventXplatEnabledGCRestartEEEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCRestartEEEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCRestartEEEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCRestartEEEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -170,8 +170,8 @@ extern "C" ULONG  FireEtwGCRestartEEEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCHeapStats(){ return TRUE;}
-extern "C" ULONG  FireEtwGCHeapStats(
+extern "C" BOOL  EventXplatEnabledGCHeapStats(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCHeapStats(
                   const unsigned __int64 GenerationSize0,
                   const unsigned __int64 TotalPromotedSize0,
                   const unsigned __int64 GenerationSize1,
@@ -188,7 +188,7 @@ extern "C" ULONG  FireEtwGCHeapStats(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCHeapStats()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCHeapStats()){ return ERROR_SUCCESS;};
 
                                                     
      tracepoint(
@@ -218,8 +218,8 @@ extern "C" ULONG  FireEtwGCHeapStats(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCHeapStats_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCHeapStats_V1(
+extern "C" BOOL  EventXplatEnabledGCHeapStats_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCHeapStats_V1(
                   const unsigned __int64 GenerationSize0,
                   const unsigned __int64 TotalPromotedSize0,
                   const unsigned __int64 GenerationSize1,
@@ -237,7 +237,7 @@ extern "C" ULONG  FireEtwGCHeapStats_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCHeapStats_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCHeapStats_V1()){ return ERROR_SUCCESS;};
 
                                                     
      tracepoint(
@@ -268,15 +268,15 @@ extern "C" ULONG  FireEtwGCHeapStats_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCCreateSegment(){ return TRUE;}
-extern "C" ULONG  FireEtwGCCreateSegment(
+extern "C" BOOL  EventXplatEnabledGCCreateSegment(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCCreateSegment(
                   const unsigned __int64 Address,
                   const unsigned __int64 Size,
                   const unsigned int Type
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCCreateSegment()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCCreateSegment()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -291,8 +291,8 @@ extern "C" ULONG  FireEtwGCCreateSegment(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCCreateSegment_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCCreateSegment_V1(
+extern "C" BOOL  EventXplatEnabledGCCreateSegment_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCCreateSegment_V1(
                   const unsigned __int64 Address,
                   const unsigned __int64 Size,
                   const unsigned int Type,
@@ -300,7 +300,7 @@ extern "C" ULONG  FireEtwGCCreateSegment_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCCreateSegment_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCCreateSegment_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -316,13 +316,13 @@ extern "C" ULONG  FireEtwGCCreateSegment_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCFreeSegment(){ return TRUE;}
-extern "C" ULONG  FireEtwGCFreeSegment(
+extern "C" BOOL  EventXplatEnabledGCFreeSegment(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCFreeSegment(
                   const unsigned __int64 Address
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCFreeSegment()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCFreeSegment()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -335,14 +335,14 @@ extern "C" ULONG  FireEtwGCFreeSegment(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCFreeSegment_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCFreeSegment_V1(
+extern "C" BOOL  EventXplatEnabledGCFreeSegment_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCFreeSegment_V1(
                   const unsigned __int64 Address,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCFreeSegment_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCFreeSegment_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -356,12 +356,12 @@ extern "C" ULONG  FireEtwGCFreeSegment_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCRestartEEBegin(){ return TRUE;}
-extern "C" ULONG  FireEtwGCRestartEEBegin(
+extern "C" BOOL  EventXplatEnabledGCRestartEEBegin(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCRestartEEBegin(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCRestartEEBegin()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCRestartEEBegin()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -372,13 +372,13 @@ extern "C" ULONG  FireEtwGCRestartEEBegin(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCRestartEEBegin_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCRestartEEBegin_V1(
+extern "C" BOOL  EventXplatEnabledGCRestartEEBegin_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCRestartEEBegin_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCRestartEEBegin_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCRestartEEBegin_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -391,12 +391,12 @@ extern "C" ULONG  FireEtwGCRestartEEBegin_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCSuspendEEEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwGCSuspendEEEnd(
+extern "C" BOOL  EventXplatEnabledGCSuspendEEEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCSuspendEEEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCSuspendEEEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCSuspendEEEnd()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -407,13 +407,13 @@ extern "C" ULONG  FireEtwGCSuspendEEEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCSuspendEEEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCSuspendEEEnd_V1(
+extern "C" BOOL  EventXplatEnabledGCSuspendEEEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCSuspendEEEnd_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCSuspendEEEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCSuspendEEEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -426,13 +426,13 @@ extern "C" ULONG  FireEtwGCSuspendEEEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCSuspendEEBegin(){ return TRUE;}
-extern "C" ULONG  FireEtwGCSuspendEEBegin(
+extern "C" BOOL  EventXplatEnabledGCSuspendEEBegin(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCSuspendEEBegin(
                   const unsigned short Reason
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCSuspendEEBegin()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCSuspendEEBegin()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -445,15 +445,15 @@ extern "C" ULONG  FireEtwGCSuspendEEBegin(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCSuspendEEBegin_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCSuspendEEBegin_V1(
+extern "C" BOOL  EventXplatEnabledGCSuspendEEBegin_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCSuspendEEBegin_V1(
                   const unsigned int Reason,
                   const unsigned int Count,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCSuspendEEBegin_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCSuspendEEBegin_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -468,14 +468,14 @@ extern "C" ULONG  FireEtwGCSuspendEEBegin_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCAllocationTick(){ return TRUE;}
-extern "C" ULONG  FireEtwGCAllocationTick(
+extern "C" BOOL  EventXplatEnabledGCAllocationTick(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCAllocationTick(
                   const unsigned int AllocationAmount,
                   const unsigned int AllocationKind
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCAllocationTick()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCAllocationTick()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -489,15 +489,15 @@ extern "C" ULONG  FireEtwGCAllocationTick(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCAllocationTick_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCAllocationTick_V1(
+extern "C" BOOL  EventXplatEnabledGCAllocationTick_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCAllocationTick_V1(
                   const unsigned int AllocationAmount,
                   const unsigned int AllocationKind,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCAllocationTick_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCAllocationTick_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -512,8 +512,8 @@ extern "C" ULONG  FireEtwGCAllocationTick_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCAllocationTick_V2(){ return TRUE;}
-extern "C" ULONG  FireEtwGCAllocationTick_V2(
+extern "C" BOOL  EventXplatEnabledGCAllocationTick_V2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCAllocationTick_V2(
                   const unsigned int AllocationAmount,
                   const unsigned int AllocationKind,
                   const unsigned short ClrInstanceID,
@@ -524,9 +524,9 @@ extern "C" ULONG  FireEtwGCAllocationTick_V2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCAllocationTick_V2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCAllocationTick_V2()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -555,8 +555,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCAllocationTick_V3(){ return TRUE;}
-extern "C" ULONG  FireEtwGCAllocationTick_V3(
+extern "C" BOOL  EventXplatEnabledGCAllocationTick_V3(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCAllocationTick_V3(
                   const unsigned int AllocationAmount,
                   const unsigned int AllocationKind,
                   const unsigned short ClrInstanceID,
@@ -568,9 +568,9 @@ extern "C" ULONG  FireEtwGCAllocationTick_V3(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCAllocationTick_V3()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCAllocationTick_V3()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -600,12 +600,12 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCCreateConcurrentThread(){ return TRUE;}
-extern "C" ULONG  FireEtwGCCreateConcurrentThread(
+extern "C" BOOL  EventXplatEnabledGCCreateConcurrentThread(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCCreateConcurrentThread(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCCreateConcurrentThread()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCCreateConcurrentThread()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -616,13 +616,13 @@ extern "C" ULONG  FireEtwGCCreateConcurrentThread(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCCreateConcurrentThread_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCCreateConcurrentThread_V1(
+extern "C" BOOL  EventXplatEnabledGCCreateConcurrentThread_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCCreateConcurrentThread_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCCreateConcurrentThread_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCCreateConcurrentThread_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -635,12 +635,12 @@ extern "C" ULONG  FireEtwGCCreateConcurrentThread_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCTerminateConcurrentThread(){ return TRUE;}
-extern "C" ULONG  FireEtwGCTerminateConcurrentThread(
+extern "C" BOOL  EventXplatEnabledGCTerminateConcurrentThread(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCTerminateConcurrentThread(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCTerminateConcurrentThread()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCTerminateConcurrentThread()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -651,13 +651,13 @@ extern "C" ULONG  FireEtwGCTerminateConcurrentThread(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCTerminateConcurrentThread_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCTerminateConcurrentThread_V1(
+extern "C" BOOL  EventXplatEnabledGCTerminateConcurrentThread_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCTerminateConcurrentThread_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCTerminateConcurrentThread_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCTerminateConcurrentThread_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -670,13 +670,13 @@ extern "C" ULONG  FireEtwGCTerminateConcurrentThread_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCFinalizersEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwGCFinalizersEnd(
+extern "C" BOOL  EventXplatEnabledGCFinalizersEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCFinalizersEnd(
                   const unsigned int Count
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCFinalizersEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCFinalizersEnd()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -689,14 +689,14 @@ extern "C" ULONG  FireEtwGCFinalizersEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCFinalizersEnd_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCFinalizersEnd_V1(
+extern "C" BOOL  EventXplatEnabledGCFinalizersEnd_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCFinalizersEnd_V1(
                   const unsigned int Count,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCFinalizersEnd_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCFinalizersEnd_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -710,12 +710,12 @@ extern "C" ULONG  FireEtwGCFinalizersEnd_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCFinalizersBegin(){ return TRUE;}
-extern "C" ULONG  FireEtwGCFinalizersBegin(
+extern "C" BOOL  EventXplatEnabledGCFinalizersBegin(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCFinalizersBegin(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCFinalizersBegin()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCFinalizersBegin()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -726,13 +726,13 @@ extern "C" ULONG  FireEtwGCFinalizersBegin(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCFinalizersBegin_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwGCFinalizersBegin_V1(
+extern "C" BOOL  EventXplatEnabledGCFinalizersBegin_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCFinalizersBegin_V1(
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCFinalizersBegin_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCFinalizersBegin_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -745,8 +745,8 @@ extern "C" ULONG  FireEtwGCFinalizersBegin_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledBulkType(){ return TRUE;}
-extern "C" ULONG  FireEtwBulkType(
+extern "C" BOOL  EventXplatEnabledBulkType(){ return TRUE;}
+extern "C" ULONG  FireEtXplatBulkType(
                   const unsigned int Count,
                   const unsigned short ClrInstanceID,
                   const ULONG Arg2_Struct_Len_,
@@ -754,7 +754,7 @@ extern "C" ULONG  FireEtwBulkType(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledBulkType()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledBulkType()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -770,8 +770,8 @@ extern "C" ULONG  FireEtwBulkType(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCBulkRootEdge(){ return TRUE;}
-extern "C" ULONG  FireEtwGCBulkRootEdge(
+extern "C" BOOL  EventXplatEnabledGCBulkRootEdge(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCBulkRootEdge(
                   const unsigned int Index,
                   const unsigned int Count,
                   const unsigned short ClrInstanceID,
@@ -780,7 +780,7 @@ extern "C" ULONG  FireEtwGCBulkRootEdge(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCBulkRootEdge()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCBulkRootEdge()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -797,8 +797,8 @@ extern "C" ULONG  FireEtwGCBulkRootEdge(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCBulkRootConditionalWeakTableElementEdge(){ return TRUE;}
-extern "C" ULONG  FireEtwGCBulkRootConditionalWeakTableElementEdge(
+extern "C" BOOL  EventXplatEnabledGCBulkRootConditionalWeakTableElementEdge(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCBulkRootConditionalWeakTableElementEdge(
                   const unsigned int Index,
                   const unsigned int Count,
                   const unsigned short ClrInstanceID,
@@ -807,7 +807,7 @@ extern "C" ULONG  FireEtwGCBulkRootConditionalWeakTableElementEdge(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCBulkRootConditionalWeakTableElementEdge()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCBulkRootConditionalWeakTableElementEdge()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -824,8 +824,8 @@ extern "C" ULONG  FireEtwGCBulkRootConditionalWeakTableElementEdge(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCBulkNode(){ return TRUE;}
-extern "C" ULONG  FireEtwGCBulkNode(
+extern "C" BOOL  EventXplatEnabledGCBulkNode(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCBulkNode(
                   const unsigned int Index,
                   const unsigned int Count,
                   const unsigned short ClrInstanceID,
@@ -834,7 +834,7 @@ extern "C" ULONG  FireEtwGCBulkNode(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCBulkNode()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCBulkNode()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -851,8 +851,8 @@ extern "C" ULONG  FireEtwGCBulkNode(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCBulkEdge(){ return TRUE;}
-extern "C" ULONG  FireEtwGCBulkEdge(
+extern "C" BOOL  EventXplatEnabledGCBulkEdge(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCBulkEdge(
                   const unsigned int Index,
                   const unsigned int Count,
                   const unsigned short ClrInstanceID,
@@ -861,7 +861,7 @@ extern "C" ULONG  FireEtwGCBulkEdge(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCBulkEdge()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCBulkEdge()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -878,8 +878,8 @@ extern "C" ULONG  FireEtwGCBulkEdge(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCSampledObjectAllocationHigh(){ return TRUE;}
-extern "C" ULONG  FireEtwGCSampledObjectAllocationHigh(
+extern "C" BOOL  EventXplatEnabledGCSampledObjectAllocationHigh(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCSampledObjectAllocationHigh(
                   const void* Address,
                   const void* TypeID,
                   const unsigned int ObjectCountForTypeSample,
@@ -888,7 +888,7 @@ extern "C" ULONG  FireEtwGCSampledObjectAllocationHigh(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCSampledObjectAllocationHigh()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCSampledObjectAllocationHigh()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -905,8 +905,8 @@ extern "C" ULONG  FireEtwGCSampledObjectAllocationHigh(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCBulkSurvivingObjectRanges(){ return TRUE;}
-extern "C" ULONG  FireEtwGCBulkSurvivingObjectRanges(
+extern "C" BOOL  EventXplatEnabledGCBulkSurvivingObjectRanges(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCBulkSurvivingObjectRanges(
                   const unsigned int Index,
                   const unsigned int Count,
                   const unsigned short ClrInstanceID,
@@ -915,7 +915,7 @@ extern "C" ULONG  FireEtwGCBulkSurvivingObjectRanges(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCBulkSurvivingObjectRanges()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCBulkSurvivingObjectRanges()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -932,8 +932,8 @@ extern "C" ULONG  FireEtwGCBulkSurvivingObjectRanges(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCBulkMovedObjectRanges(){ return TRUE;}
-extern "C" ULONG  FireEtwGCBulkMovedObjectRanges(
+extern "C" BOOL  EventXplatEnabledGCBulkMovedObjectRanges(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCBulkMovedObjectRanges(
                   const unsigned int Index,
                   const unsigned int Count,
                   const unsigned short ClrInstanceID,
@@ -942,7 +942,7 @@ extern "C" ULONG  FireEtwGCBulkMovedObjectRanges(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCBulkMovedObjectRanges()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCBulkMovedObjectRanges()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -959,8 +959,8 @@ extern "C" ULONG  FireEtwGCBulkMovedObjectRanges(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCGenerationRange(){ return TRUE;}
-extern "C" ULONG  FireEtwGCGenerationRange(
+extern "C" BOOL  EventXplatEnabledGCGenerationRange(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCGenerationRange(
                   const unsigned char Generation,
                   const void* RangeStart,
                   const unsigned __int64 RangeUsedLength,
@@ -969,7 +969,7 @@ extern "C" ULONG  FireEtwGCGenerationRange(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCGenerationRange()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCGenerationRange()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -986,14 +986,14 @@ extern "C" ULONG  FireEtwGCGenerationRange(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCMarkStackRoots(){ return TRUE;}
-extern "C" ULONG  FireEtwGCMarkStackRoots(
+extern "C" BOOL  EventXplatEnabledGCMarkStackRoots(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCMarkStackRoots(
                   const unsigned int HeapNum,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCMarkStackRoots()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCMarkStackRoots()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1007,14 +1007,14 @@ extern "C" ULONG  FireEtwGCMarkStackRoots(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCMarkFinalizeQueueRoots(){ return TRUE;}
-extern "C" ULONG  FireEtwGCMarkFinalizeQueueRoots(
+extern "C" BOOL  EventXplatEnabledGCMarkFinalizeQueueRoots(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCMarkFinalizeQueueRoots(
                   const unsigned int HeapNum,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCMarkFinalizeQueueRoots()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCMarkFinalizeQueueRoots()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1028,14 +1028,14 @@ extern "C" ULONG  FireEtwGCMarkFinalizeQueueRoots(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCMarkHandles(){ return TRUE;}
-extern "C" ULONG  FireEtwGCMarkHandles(
+extern "C" BOOL  EventXplatEnabledGCMarkHandles(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCMarkHandles(
                   const unsigned int HeapNum,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCMarkHandles()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCMarkHandles()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1049,14 +1049,14 @@ extern "C" ULONG  FireEtwGCMarkHandles(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCMarkOlderGenerationRoots(){ return TRUE;}
-extern "C" ULONG  FireEtwGCMarkOlderGenerationRoots(
+extern "C" BOOL  EventXplatEnabledGCMarkOlderGenerationRoots(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCMarkOlderGenerationRoots(
                   const unsigned int HeapNum,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCMarkOlderGenerationRoots()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCMarkOlderGenerationRoots()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1070,15 +1070,15 @@ extern "C" ULONG  FireEtwGCMarkOlderGenerationRoots(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledFinalizeObject(){ return TRUE;}
-extern "C" ULONG  FireEtwFinalizeObject(
+extern "C" BOOL  EventXplatEnabledFinalizeObject(){ return TRUE;}
+extern "C" ULONG  FireEtXplatFinalizeObject(
                   const void* TypeID,
                   const void* ObjectID,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledFinalizeObject()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledFinalizeObject()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1093,8 +1093,8 @@ extern "C" ULONG  FireEtwFinalizeObject(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledSetGCHandle(){ return TRUE;}
-extern "C" ULONG  FireEtwSetGCHandle(
+extern "C" BOOL  EventXplatEnabledSetGCHandle(){ return TRUE;}
+extern "C" ULONG  FireEtXplatSetGCHandle(
                   const void* HandleID,
                   const void* ObjectID,
                   const unsigned int Kind,
@@ -1104,7 +1104,7 @@ extern "C" ULONG  FireEtwSetGCHandle(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledSetGCHandle()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledSetGCHandle()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1122,14 +1122,14 @@ extern "C" ULONG  FireEtwSetGCHandle(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledDestroyGCHandle(){ return TRUE;}
-extern "C" ULONG  FireEtwDestroyGCHandle(
+extern "C" BOOL  EventXplatEnabledDestroyGCHandle(){ return TRUE;}
+extern "C" ULONG  FireEtXplatDestroyGCHandle(
                   const void* HandleID,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledDestroyGCHandle()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledDestroyGCHandle()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1143,8 +1143,8 @@ extern "C" ULONG  FireEtwDestroyGCHandle(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCSampledObjectAllocationLow(){ return TRUE;}
-extern "C" ULONG  FireEtwGCSampledObjectAllocationLow(
+extern "C" BOOL  EventXplatEnabledGCSampledObjectAllocationLow(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCSampledObjectAllocationLow(
                   const void* Address,
                   const void* TypeID,
                   const unsigned int ObjectCountForTypeSample,
@@ -1153,7 +1153,7 @@ extern "C" ULONG  FireEtwGCSampledObjectAllocationLow(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCSampledObjectAllocationLow()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCSampledObjectAllocationLow()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1170,8 +1170,8 @@ extern "C" ULONG  FireEtwGCSampledObjectAllocationLow(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledPinObjectAtGCTime(){ return TRUE;}
-extern "C" ULONG  FireEtwPinObjectAtGCTime(
+extern "C" BOOL  EventXplatEnabledPinObjectAtGCTime(){ return TRUE;}
+extern "C" ULONG  FireEtXplatPinObjectAtGCTime(
                   const void* HandleID,
                   const void* ObjectID,
                   const unsigned __int64 ObjectSize,
@@ -1180,9 +1180,9 @@ extern "C" ULONG  FireEtwPinObjectAtGCTime(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledPinObjectAtGCTime()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledPinObjectAtGCTime()){ return ERROR_SUCCESS;};
     INT TypeName_path_size = -1;
-    INT TypeName_full_name_path_size = PAL_wcslen(TypeName) + 1;
+    INT TypeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, TypeName, -1, NULL, 0, NULL, NULL );
     CHAR* TypeName_full_name=NULL;
 
     TypeName_full_name = (CHAR*)malloc(TypeName_full_name_path_size*sizeof(CHAR));
@@ -1209,14 +1209,14 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCTriggered(){ return TRUE;}
-extern "C" ULONG  FireEtwGCTriggered(
+extern "C" BOOL  EventXplatEnabledGCTriggered(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCTriggered(
                   const unsigned int Reason,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCTriggered()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCTriggered()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1230,8 +1230,8 @@ extern "C" ULONG  FireEtwGCTriggered(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCBulkRootCCW(){ return TRUE;}
-extern "C" ULONG  FireEtwGCBulkRootCCW(
+extern "C" BOOL  EventXplatEnabledGCBulkRootCCW(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCBulkRootCCW(
                   const unsigned int Count,
                   const unsigned short ClrInstanceID,
                   const ULONG Arg2_Struct_Len_,
@@ -1239,7 +1239,7 @@ extern "C" ULONG  FireEtwGCBulkRootCCW(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCBulkRootCCW()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCBulkRootCCW()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1255,8 +1255,8 @@ extern "C" ULONG  FireEtwGCBulkRootCCW(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCBulkRCW(){ return TRUE;}
-extern "C" ULONG  FireEtwGCBulkRCW(
+extern "C" BOOL  EventXplatEnabledGCBulkRCW(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCBulkRCW(
                   const unsigned int Count,
                   const unsigned short ClrInstanceID,
                   const ULONG Arg2_Struct_Len_,
@@ -1264,7 +1264,7 @@ extern "C" ULONG  FireEtwGCBulkRCW(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCBulkRCW()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCBulkRCW()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1280,8 +1280,8 @@ extern "C" ULONG  FireEtwGCBulkRCW(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCBulkRootStaticVar(){ return TRUE;}
-extern "C" ULONG  FireEtwGCBulkRootStaticVar(
+extern "C" BOOL  EventXplatEnabledGCBulkRootStaticVar(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCBulkRootStaticVar(
                   const unsigned int Count,
                   const unsigned __int64 AppDomainID,
                   const unsigned short ClrInstanceID,
@@ -1290,7 +1290,7 @@ extern "C" ULONG  FireEtwGCBulkRootStaticVar(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCBulkRootStaticVar()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCBulkRootStaticVar()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1307,14 +1307,14 @@ extern "C" ULONG  FireEtwGCBulkRootStaticVar(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledWorkerThreadCreate(){ return TRUE;}
-extern "C" ULONG  FireEtwWorkerThreadCreate(
+extern "C" BOOL  EventXplatEnabledWorkerThreadCreate(){ return TRUE;}
+extern "C" ULONG  FireEtXplatWorkerThreadCreate(
                   const unsigned int WorkerThreadCount,
                   const unsigned int RetiredWorkerThreads
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledWorkerThreadCreate()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledWorkerThreadCreate()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1328,14 +1328,14 @@ extern "C" ULONG  FireEtwWorkerThreadCreate(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledWorkerThreadTerminate(){ return TRUE;}
-extern "C" ULONG  FireEtwWorkerThreadTerminate(
+extern "C" BOOL  EventXplatEnabledWorkerThreadTerminate(){ return TRUE;}
+extern "C" ULONG  FireEtXplatWorkerThreadTerminate(
                   const unsigned int WorkerThreadCount,
                   const unsigned int RetiredWorkerThreads
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledWorkerThreadTerminate()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledWorkerThreadTerminate()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1349,14 +1349,14 @@ extern "C" ULONG  FireEtwWorkerThreadTerminate(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledWorkerThreadRetire(){ return TRUE;}
-extern "C" ULONG  FireEtwWorkerThreadRetire(
+extern "C" BOOL  EventXplatEnabledWorkerThreadRetire(){ return TRUE;}
+extern "C" ULONG  FireEtXplatWorkerThreadRetire(
                   const unsigned int WorkerThreadCount,
                   const unsigned int RetiredWorkerThreads
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledWorkerThreadRetire()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledWorkerThreadRetire()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1370,14 +1370,14 @@ extern "C" ULONG  FireEtwWorkerThreadRetire(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledWorkerThreadUnretire(){ return TRUE;}
-extern "C" ULONG  FireEtwWorkerThreadUnretire(
+extern "C" BOOL  EventXplatEnabledWorkerThreadUnretire(){ return TRUE;}
+extern "C" ULONG  FireEtXplatWorkerThreadUnretire(
                   const unsigned int WorkerThreadCount,
                   const unsigned int RetiredWorkerThreads
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledWorkerThreadUnretire()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledWorkerThreadUnretire()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1391,14 +1391,14 @@ extern "C" ULONG  FireEtwWorkerThreadUnretire(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledIOThreadCreate(){ return TRUE;}
-extern "C" ULONG  FireEtwIOThreadCreate(
+extern "C" BOOL  EventXplatEnabledIOThreadCreate(){ return TRUE;}
+extern "C" ULONG  FireEtXplatIOThreadCreate(
                   const unsigned int IOThreadCount,
                   const unsigned int RetiredIOThreads
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledIOThreadCreate()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledIOThreadCreate()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1412,15 +1412,15 @@ extern "C" ULONG  FireEtwIOThreadCreate(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledIOThreadCreate_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwIOThreadCreate_V1(
+extern "C" BOOL  EventXplatEnabledIOThreadCreate_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatIOThreadCreate_V1(
                   const unsigned int IOThreadCount,
                   const unsigned int RetiredIOThreads,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledIOThreadCreate_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledIOThreadCreate_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1435,14 +1435,14 @@ extern "C" ULONG  FireEtwIOThreadCreate_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledIOThreadTerminate(){ return TRUE;}
-extern "C" ULONG  FireEtwIOThreadTerminate(
+extern "C" BOOL  EventXplatEnabledIOThreadTerminate(){ return TRUE;}
+extern "C" ULONG  FireEtXplatIOThreadTerminate(
                   const unsigned int IOThreadCount,
                   const unsigned int RetiredIOThreads
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledIOThreadTerminate()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledIOThreadTerminate()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1456,15 +1456,15 @@ extern "C" ULONG  FireEtwIOThreadTerminate(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledIOThreadTerminate_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwIOThreadTerminate_V1(
+extern "C" BOOL  EventXplatEnabledIOThreadTerminate_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatIOThreadTerminate_V1(
                   const unsigned int IOThreadCount,
                   const unsigned int RetiredIOThreads,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledIOThreadTerminate_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledIOThreadTerminate_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1479,14 +1479,14 @@ extern "C" ULONG  FireEtwIOThreadTerminate_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledIOThreadRetire(){ return TRUE;}
-extern "C" ULONG  FireEtwIOThreadRetire(
+extern "C" BOOL  EventXplatEnabledIOThreadRetire(){ return TRUE;}
+extern "C" ULONG  FireEtXplatIOThreadRetire(
                   const unsigned int IOThreadCount,
                   const unsigned int RetiredIOThreads
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledIOThreadRetire()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledIOThreadRetire()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1500,15 +1500,15 @@ extern "C" ULONG  FireEtwIOThreadRetire(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledIOThreadRetire_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwIOThreadRetire_V1(
+extern "C" BOOL  EventXplatEnabledIOThreadRetire_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatIOThreadRetire_V1(
                   const unsigned int IOThreadCount,
                   const unsigned int RetiredIOThreads,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledIOThreadRetire_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledIOThreadRetire_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1523,14 +1523,14 @@ extern "C" ULONG  FireEtwIOThreadRetire_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledIOThreadUnretire(){ return TRUE;}
-extern "C" ULONG  FireEtwIOThreadUnretire(
+extern "C" BOOL  EventXplatEnabledIOThreadUnretire(){ return TRUE;}
+extern "C" ULONG  FireEtXplatIOThreadUnretire(
                   const unsigned int IOThreadCount,
                   const unsigned int RetiredIOThreads
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledIOThreadUnretire()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledIOThreadUnretire()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1544,15 +1544,15 @@ extern "C" ULONG  FireEtwIOThreadUnretire(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledIOThreadUnretire_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwIOThreadUnretire_V1(
+extern "C" BOOL  EventXplatEnabledIOThreadUnretire_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatIOThreadUnretire_V1(
                   const unsigned int IOThreadCount,
                   const unsigned int RetiredIOThreads,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledIOThreadUnretire_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledIOThreadUnretire_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1567,14 +1567,14 @@ extern "C" ULONG  FireEtwIOThreadUnretire_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadpoolSuspensionSuspendThread(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadpoolSuspensionSuspendThread(
+extern "C" BOOL  EventXplatEnabledThreadpoolSuspensionSuspendThread(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadpoolSuspensionSuspendThread(
                   const unsigned int ClrThreadID,
                   const unsigned int CpuUtilization
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadpoolSuspensionSuspendThread()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadpoolSuspensionSuspendThread()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1588,14 +1588,14 @@ extern "C" ULONG  FireEtwThreadpoolSuspensionSuspendThread(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadpoolSuspensionResumeThread(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadpoolSuspensionResumeThread(
+extern "C" BOOL  EventXplatEnabledThreadpoolSuspensionResumeThread(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadpoolSuspensionResumeThread(
                   const unsigned int ClrThreadID,
                   const unsigned int CpuUtilization
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadpoolSuspensionResumeThread()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadpoolSuspensionResumeThread()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1609,15 +1609,15 @@ extern "C" ULONG  FireEtwThreadpoolSuspensionResumeThread(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadStart(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolWorkerThreadStart(
+extern "C" BOOL  EventXplatEnabledThreadPoolWorkerThreadStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolWorkerThreadStart(
                   const unsigned int ActiveWorkerThreadCount,
                   const unsigned int RetiredWorkerThreadCount,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolWorkerThreadStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolWorkerThreadStart()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1632,15 +1632,15 @@ extern "C" ULONG  FireEtwThreadPoolWorkerThreadStart(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadStop(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolWorkerThreadStop(
+extern "C" BOOL  EventXplatEnabledThreadPoolWorkerThreadStop(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolWorkerThreadStop(
                   const unsigned int ActiveWorkerThreadCount,
                   const unsigned int RetiredWorkerThreadCount,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolWorkerThreadStop()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolWorkerThreadStop()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1655,15 +1655,15 @@ extern "C" ULONG  FireEtwThreadPoolWorkerThreadStop(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadRetirementStart(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolWorkerThreadRetirementStart(
+extern "C" BOOL  EventXplatEnabledThreadPoolWorkerThreadRetirementStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolWorkerThreadRetirementStart(
                   const unsigned int ActiveWorkerThreadCount,
                   const unsigned int RetiredWorkerThreadCount,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolWorkerThreadRetirementStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolWorkerThreadRetirementStart()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1678,15 +1678,15 @@ extern "C" ULONG  FireEtwThreadPoolWorkerThreadRetirementStart(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadRetirementStop(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolWorkerThreadRetirementStop(
+extern "C" BOOL  EventXplatEnabledThreadPoolWorkerThreadRetirementStop(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolWorkerThreadRetirementStop(
                   const unsigned int ActiveWorkerThreadCount,
                   const unsigned int RetiredWorkerThreadCount,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolWorkerThreadRetirementStop()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolWorkerThreadRetirementStop()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1701,14 +1701,14 @@ extern "C" ULONG  FireEtwThreadPoolWorkerThreadRetirementStop(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadAdjustmentSample(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolWorkerThreadAdjustmentSample(
+extern "C" BOOL  EventXplatEnabledThreadPoolWorkerThreadAdjustmentSample(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolWorkerThreadAdjustmentSample(
                   const double Throughput,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolWorkerThreadAdjustmentSample()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolWorkerThreadAdjustmentSample()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1722,8 +1722,8 @@ extern "C" ULONG  FireEtwThreadPoolWorkerThreadAdjustmentSample(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadAdjustmentAdjustment(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
+extern "C" BOOL  EventXplatEnabledThreadPoolWorkerThreadAdjustmentAdjustment(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolWorkerThreadAdjustmentAdjustment(
                   const double AverageThroughput,
                   const unsigned int NewWorkerThreadCount,
                   const unsigned int Reason,
@@ -1731,7 +1731,7 @@ extern "C" ULONG  FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolWorkerThreadAdjustmentAdjustment()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolWorkerThreadAdjustmentAdjustment()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1747,8 +1747,8 @@ extern "C" ULONG  FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadAdjustmentStats(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolWorkerThreadAdjustmentStats(
+extern "C" BOOL  EventXplatEnabledThreadPoolWorkerThreadAdjustmentStats(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolWorkerThreadAdjustmentStats(
                   const double Duration,
                   const double Throughput,
                   const double ThreadWave,
@@ -1763,7 +1763,7 @@ extern "C" ULONG  FireEtwThreadPoolWorkerThreadAdjustmentStats(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolWorkerThreadAdjustmentStats()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolWorkerThreadAdjustmentStats()){ return ERROR_SUCCESS;};
 
                                                     
      tracepoint(
@@ -1791,15 +1791,15 @@ extern "C" ULONG  FireEtwThreadPoolWorkerThreadAdjustmentStats(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolWorkerThreadWait(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolWorkerThreadWait(
+extern "C" BOOL  EventXplatEnabledThreadPoolWorkerThreadWait(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolWorkerThreadWait(
                   const unsigned int ActiveWorkerThreadCount,
                   const unsigned int RetiredWorkerThreadCount,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolWorkerThreadWait()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolWorkerThreadWait()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1814,14 +1814,14 @@ extern "C" ULONG  FireEtwThreadPoolWorkerThreadWait(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolWorkingThreadCount(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolWorkingThreadCount(
+extern "C" BOOL  EventXplatEnabledThreadPoolWorkingThreadCount(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolWorkingThreadCount(
                   const unsigned int Count,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolWorkingThreadCount()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolWorkingThreadCount()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1835,14 +1835,14 @@ extern "C" ULONG  FireEtwThreadPoolWorkingThreadCount(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolEnqueue(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolEnqueue(
+extern "C" BOOL  EventXplatEnabledThreadPoolEnqueue(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolEnqueue(
                   const void* WorkID,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolEnqueue()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolEnqueue()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1856,14 +1856,14 @@ extern "C" ULONG  FireEtwThreadPoolEnqueue(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolDequeue(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolDequeue(
+extern "C" BOOL  EventXplatEnabledThreadPoolDequeue(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolDequeue(
                   const void* WorkID,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolDequeue()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolDequeue()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1877,8 +1877,8 @@ extern "C" ULONG  FireEtwThreadPoolDequeue(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolIOEnqueue(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolIOEnqueue(
+extern "C" BOOL  EventXplatEnabledThreadPoolIOEnqueue(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolIOEnqueue(
                   const void* NativeOverlapped,
                   const void* Overlapped,
                   const BOOL MultiDequeues,
@@ -1886,7 +1886,7 @@ extern "C" ULONG  FireEtwThreadPoolIOEnqueue(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolIOEnqueue()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolIOEnqueue()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1902,15 +1902,15 @@ extern "C" ULONG  FireEtwThreadPoolIOEnqueue(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolIODequeue(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolIODequeue(
+extern "C" BOOL  EventXplatEnabledThreadPoolIODequeue(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolIODequeue(
                   const void* NativeOverlapped,
                   const void* Overlapped,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolIODequeue()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolIODequeue()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1925,15 +1925,15 @@ extern "C" ULONG  FireEtwThreadPoolIODequeue(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadPoolIOPack(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadPoolIOPack(
+extern "C" BOOL  EventXplatEnabledThreadPoolIOPack(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadPoolIOPack(
                   const void* NativeOverlapped,
                   const void* Overlapped,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadPoolIOPack()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadPoolIOPack()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1948,14 +1948,14 @@ extern "C" ULONG  FireEtwThreadPoolIOPack(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadCreating(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadCreating(
+extern "C" BOOL  EventXplatEnabledThreadCreating(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadCreating(
                   const void* ID,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadCreating()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadCreating()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1969,14 +1969,14 @@ extern "C" ULONG  FireEtwThreadCreating(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadRunning(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadRunning(
+extern "C" BOOL  EventXplatEnabledThreadRunning(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadRunning(
                   const void* ID,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadRunning()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadRunning()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -1990,12 +1990,12 @@ extern "C" ULONG  FireEtwThreadRunning(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExceptionThrown(){ return TRUE;}
-extern "C" ULONG  FireEtwExceptionThrown(
+extern "C" BOOL  EventXplatEnabledExceptionThrown(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExceptionThrown(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExceptionThrown()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExceptionThrown()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -2006,8 +2006,8 @@ extern "C" ULONG  FireEtwExceptionThrown(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExceptionThrown_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwExceptionThrown_V1(
+extern "C" BOOL  EventXplatEnabledExceptionThrown_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExceptionThrown_V1(
                   PCWSTR ExceptionType,
                   PCWSTR ExceptionMessage,
                   const void* ExceptionEIP,
@@ -2017,12 +2017,12 @@ extern "C" ULONG  FireEtwExceptionThrown_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExceptionThrown_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExceptionThrown_V1()){ return ERROR_SUCCESS;};
     INT ExceptionType_path_size = -1;
-    INT ExceptionType_full_name_path_size = PAL_wcslen(ExceptionType) + 1;
+    INT ExceptionType_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ExceptionType, -1, NULL, 0, NULL, NULL );
     CHAR* ExceptionType_full_name=NULL;
     INT ExceptionMessage_path_size = -1;
-    INT ExceptionMessage_full_name_path_size = PAL_wcslen(ExceptionMessage) + 1;
+    INT ExceptionMessage_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ExceptionMessage, -1, NULL, 0, NULL, NULL );
     CHAR* ExceptionMessage_full_name=NULL;
 
     ExceptionType_full_name = (CHAR*)malloc(ExceptionType_full_name_path_size*sizeof(CHAR));
@@ -2058,8 +2058,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExceptionCatchStart(){ return TRUE;}
-extern "C" ULONG  FireEtwExceptionCatchStart(
+extern "C" BOOL  EventXplatEnabledExceptionCatchStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExceptionCatchStart(
                   const unsigned __int64 EntryEIP,
                   const unsigned __int64 MethodID,
                   PCWSTR MethodName,
@@ -2067,9 +2067,9 @@ extern "C" ULONG  FireEtwExceptionCatchStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExceptionCatchStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExceptionCatchStart()){ return ERROR_SUCCESS;};
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
 
     MethodName_full_name = (CHAR*)malloc(MethodName_full_name_path_size*sizeof(CHAR));
@@ -2095,12 +2095,12 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExceptionCatchStop(){ return TRUE;}
-extern "C" ULONG  FireEtwExceptionCatchStop(
+extern "C" BOOL  EventXplatEnabledExceptionCatchStop(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExceptionCatchStop(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExceptionCatchStop()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExceptionCatchStop()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -2111,8 +2111,8 @@ extern "C" ULONG  FireEtwExceptionCatchStop(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExceptionFinallyStart(){ return TRUE;}
-extern "C" ULONG  FireEtwExceptionFinallyStart(
+extern "C" BOOL  EventXplatEnabledExceptionFinallyStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExceptionFinallyStart(
                   const unsigned __int64 EntryEIP,
                   const unsigned __int64 MethodID,
                   PCWSTR MethodName,
@@ -2120,9 +2120,9 @@ extern "C" ULONG  FireEtwExceptionFinallyStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExceptionFinallyStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExceptionFinallyStart()){ return ERROR_SUCCESS;};
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
 
     MethodName_full_name = (CHAR*)malloc(MethodName_full_name_path_size*sizeof(CHAR));
@@ -2148,12 +2148,12 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExceptionFinallyStop(){ return TRUE;}
-extern "C" ULONG  FireEtwExceptionFinallyStop(
+extern "C" BOOL  EventXplatEnabledExceptionFinallyStop(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExceptionFinallyStop(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExceptionFinallyStop()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExceptionFinallyStop()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -2164,8 +2164,8 @@ extern "C" ULONG  FireEtwExceptionFinallyStop(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExceptionFilterStart(){ return TRUE;}
-extern "C" ULONG  FireEtwExceptionFilterStart(
+extern "C" BOOL  EventXplatEnabledExceptionFilterStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExceptionFilterStart(
                   const unsigned __int64 EntryEIP,
                   const unsigned __int64 MethodID,
                   PCWSTR MethodName,
@@ -2173,9 +2173,9 @@ extern "C" ULONG  FireEtwExceptionFilterStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExceptionFilterStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExceptionFilterStart()){ return ERROR_SUCCESS;};
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
 
     MethodName_full_name = (CHAR*)malloc(MethodName_full_name_path_size*sizeof(CHAR));
@@ -2201,12 +2201,12 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExceptionFilterStop(){ return TRUE;}
-extern "C" ULONG  FireEtwExceptionFilterStop(
+extern "C" BOOL  EventXplatEnabledExceptionFilterStop(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExceptionFilterStop(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExceptionFilterStop()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExceptionFilterStop()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -2217,12 +2217,12 @@ extern "C" ULONG  FireEtwExceptionFilterStop(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledExceptionThrownStop(){ return TRUE;}
-extern "C" ULONG  FireEtwExceptionThrownStop(
+extern "C" BOOL  EventXplatEnabledExceptionThrownStop(){ return TRUE;}
+extern "C" ULONG  FireEtXplatExceptionThrownStop(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledExceptionThrownStop()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledExceptionThrownStop()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -2233,12 +2233,12 @@ extern "C" ULONG  FireEtwExceptionThrownStop(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledContention(){ return TRUE;}
-extern "C" ULONG  FireEtwContention(
+extern "C" BOOL  EventXplatEnabledContention(){ return TRUE;}
+extern "C" ULONG  FireEtXplatContention(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledContention()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledContention()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -2249,14 +2249,14 @@ extern "C" ULONG  FireEtwContention(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledContentionStart_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwContentionStart_V1(
+extern "C" BOOL  EventXplatEnabledContentionStart_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatContentionStart_V1(
                   const unsigned char ContentionFlags,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledContentionStart_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledContentionStart_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2270,14 +2270,14 @@ extern "C" ULONG  FireEtwContentionStart_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledContentionStop(){ return TRUE;}
-extern "C" ULONG  FireEtwContentionStop(
+extern "C" BOOL  EventXplatEnabledContentionStop(){ return TRUE;}
+extern "C" ULONG  FireEtXplatContentionStop(
                   const unsigned char ContentionFlags,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledContentionStop()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledContentionStop()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2291,8 +2291,8 @@ extern "C" ULONG  FireEtwContentionStop(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledCLRStackWalk(){ return TRUE;}
-extern "C" ULONG  FireEtwCLRStackWalk(
+extern "C" BOOL  EventXplatEnabledCLRStackWalk(){ return TRUE;}
+extern "C" ULONG  FireEtXplatCLRStackWalk(
                   const unsigned short ClrInstanceID,
                   const unsigned char Reserved1,
                   const unsigned char Reserved2,
@@ -2301,7 +2301,7 @@ extern "C" ULONG  FireEtwCLRStackWalk(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledCLRStackWalk()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledCLRStackWalk()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2318,15 +2318,15 @@ extern "C" ULONG  FireEtwCLRStackWalk(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAppDomainMemAllocated(){ return TRUE;}
-extern "C" ULONG  FireEtwAppDomainMemAllocated(
+extern "C" BOOL  EventXplatEnabledAppDomainMemAllocated(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAppDomainMemAllocated(
                   const unsigned __int64 AppDomainID,
                   const unsigned __int64 Allocated,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAppDomainMemAllocated()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAppDomainMemAllocated()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2341,8 +2341,8 @@ extern "C" ULONG  FireEtwAppDomainMemAllocated(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAppDomainMemSurvived(){ return TRUE;}
-extern "C" ULONG  FireEtwAppDomainMemSurvived(
+extern "C" BOOL  EventXplatEnabledAppDomainMemSurvived(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAppDomainMemSurvived(
                   const unsigned __int64 AppDomainID,
                   const unsigned __int64 Survived,
                   const unsigned __int64 ProcessSurvived,
@@ -2350,7 +2350,7 @@ extern "C" ULONG  FireEtwAppDomainMemSurvived(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAppDomainMemSurvived()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAppDomainMemSurvived()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2366,8 +2366,8 @@ extern "C" ULONG  FireEtwAppDomainMemSurvived(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadCreated(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadCreated(
+extern "C" BOOL  EventXplatEnabledThreadCreated(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadCreated(
                   const unsigned __int64 ManagedThreadID,
                   const unsigned __int64 AppDomainID,
                   const unsigned int Flags,
@@ -2377,7 +2377,7 @@ extern "C" ULONG  FireEtwThreadCreated(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadCreated()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadCreated()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2395,15 +2395,15 @@ extern "C" ULONG  FireEtwThreadCreated(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadTerminated(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadTerminated(
+extern "C" BOOL  EventXplatEnabledThreadTerminated(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadTerminated(
                   const unsigned __int64 ManagedThreadID,
                   const unsigned __int64 AppDomainID,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadTerminated()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadTerminated()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2418,15 +2418,15 @@ extern "C" ULONG  FireEtwThreadTerminated(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledThreadDomainEnter(){ return TRUE;}
-extern "C" ULONG  FireEtwThreadDomainEnter(
+extern "C" BOOL  EventXplatEnabledThreadDomainEnter(){ return TRUE;}
+extern "C" ULONG  FireEtXplatThreadDomainEnter(
                   const unsigned __int64 ManagedThreadID,
                   const unsigned __int64 AppDomainID,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledThreadDomainEnter()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledThreadDomainEnter()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2441,8 +2441,8 @@ extern "C" ULONG  FireEtwThreadDomainEnter(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledILStubGenerated(){ return TRUE;}
-extern "C" ULONG  FireEtwILStubGenerated(
+extern "C" BOOL  EventXplatEnabledILStubGenerated(){ return TRUE;}
+extern "C" ULONG  FireEtXplatILStubGenerated(
                   const unsigned short ClrInstanceID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 StubMethodID,
@@ -2457,24 +2457,24 @@ extern "C" ULONG  FireEtwILStubGenerated(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledILStubGenerated()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledILStubGenerated()){ return ERROR_SUCCESS;};
     INT ManagedInteropMethodNamespace_path_size = -1;
-    INT ManagedInteropMethodNamespace_full_name_path_size = PAL_wcslen(ManagedInteropMethodNamespace) + 1;
+    INT ManagedInteropMethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ManagedInteropMethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* ManagedInteropMethodNamespace_full_name=NULL;
     INT ManagedInteropMethodName_path_size = -1;
-    INT ManagedInteropMethodName_full_name_path_size = PAL_wcslen(ManagedInteropMethodName) + 1;
+    INT ManagedInteropMethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ManagedInteropMethodName, -1, NULL, 0, NULL, NULL );
     CHAR* ManagedInteropMethodName_full_name=NULL;
     INT ManagedInteropMethodSignature_path_size = -1;
-    INT ManagedInteropMethodSignature_full_name_path_size = PAL_wcslen(ManagedInteropMethodSignature) + 1;
+    INT ManagedInteropMethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ManagedInteropMethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* ManagedInteropMethodSignature_full_name=NULL;
     INT NativeMethodSignature_path_size = -1;
-    INT NativeMethodSignature_full_name_path_size = PAL_wcslen(NativeMethodSignature) + 1;
+    INT NativeMethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, NativeMethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* NativeMethodSignature_full_name=NULL;
     INT StubMethodSignature_path_size = -1;
-    INT StubMethodSignature_full_name_path_size = PAL_wcslen(StubMethodSignature) + 1;
+    INT StubMethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, StubMethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* StubMethodSignature_full_name=NULL;
     INT StubMethodILCode_path_size = -1;
-    INT StubMethodILCode_full_name_path_size = PAL_wcslen(StubMethodILCode) + 1;
+    INT StubMethodILCode_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, StubMethodILCode, -1, NULL, 0, NULL, NULL );
     CHAR* StubMethodILCode_full_name=NULL;
 
     ManagedInteropMethodNamespace_full_name = (CHAR*)malloc(ManagedInteropMethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -2552,8 +2552,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledILStubCacheHit(){ return TRUE;}
-extern "C" ULONG  FireEtwILStubCacheHit(
+extern "C" BOOL  EventXplatEnabledILStubCacheHit(){ return TRUE;}
+extern "C" ULONG  FireEtXplatILStubCacheHit(
                   const unsigned short ClrInstanceID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 StubMethodID,
@@ -2564,15 +2564,15 @@ extern "C" ULONG  FireEtwILStubCacheHit(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledILStubCacheHit()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledILStubCacheHit()){ return ERROR_SUCCESS;};
     INT ManagedInteropMethodNamespace_path_size = -1;
-    INT ManagedInteropMethodNamespace_full_name_path_size = PAL_wcslen(ManagedInteropMethodNamespace) + 1;
+    INT ManagedInteropMethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ManagedInteropMethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* ManagedInteropMethodNamespace_full_name=NULL;
     INT ManagedInteropMethodName_path_size = -1;
-    INT ManagedInteropMethodName_full_name_path_size = PAL_wcslen(ManagedInteropMethodName) + 1;
+    INT ManagedInteropMethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ManagedInteropMethodName, -1, NULL, 0, NULL, NULL );
     CHAR* ManagedInteropMethodName_full_name=NULL;
     INT ManagedInteropMethodSignature_path_size = -1;
-    INT ManagedInteropMethodSignature_full_name_path_size = PAL_wcslen(ManagedInteropMethodSignature) + 1;
+    INT ManagedInteropMethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ManagedInteropMethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* ManagedInteropMethodSignature_full_name=NULL;
 
     ManagedInteropMethodNamespace_full_name = (CHAR*)malloc(ManagedInteropMethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -2617,12 +2617,12 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledDCStartCompleteV2(){ return TRUE;}
-extern "C" ULONG  FireEtwDCStartCompleteV2(
+extern "C" BOOL  EventXplatEnabledDCStartCompleteV2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatDCStartCompleteV2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledDCStartCompleteV2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledDCStartCompleteV2()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -2633,12 +2633,12 @@ extern "C" ULONG  FireEtwDCStartCompleteV2(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledDCEndCompleteV2(){ return TRUE;}
-extern "C" ULONG  FireEtwDCEndCompleteV2(
+extern "C" BOOL  EventXplatEnabledDCEndCompleteV2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatDCEndCompleteV2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledDCEndCompleteV2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledDCEndCompleteV2()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -2649,8 +2649,8 @@ extern "C" ULONG  FireEtwDCEndCompleteV2(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodDCStartV2(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodDCStartV2(
+extern "C" BOOL  EventXplatEnabledMethodDCStartV2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodDCStartV2(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -2660,7 +2660,7 @@ extern "C" ULONG  FireEtwMethodDCStartV2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodDCStartV2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodDCStartV2()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2678,8 +2678,8 @@ extern "C" ULONG  FireEtwMethodDCStartV2(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodDCEndV2(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodDCEndV2(
+extern "C" BOOL  EventXplatEnabledMethodDCEndV2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodDCEndV2(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -2689,7 +2689,7 @@ extern "C" ULONG  FireEtwMethodDCEndV2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodDCEndV2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodDCEndV2()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2707,8 +2707,8 @@ extern "C" ULONG  FireEtwMethodDCEndV2(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodDCStartVerboseV2(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodDCStartVerboseV2(
+extern "C" BOOL  EventXplatEnabledMethodDCStartVerboseV2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodDCStartVerboseV2(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -2721,15 +2721,15 @@ extern "C" ULONG  FireEtwMethodDCStartVerboseV2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodDCStartVerboseV2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodDCStartVerboseV2()){ return ERROR_SUCCESS;};
     INT MethodNamespace_path_size = -1;
-    INT MethodNamespace_full_name_path_size = PAL_wcslen(MethodNamespace) + 1;
+    INT MethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodNamespace_full_name=NULL;
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
     INT MethodSignature_path_size = -1;
-    INT MethodSignature_full_name_path_size = PAL_wcslen(MethodSignature) + 1;
+    INT MethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodSignature_full_name=NULL;
 
     MethodNamespace_full_name = (CHAR*)malloc(MethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -2776,8 +2776,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodDCEndVerboseV2(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodDCEndVerboseV2(
+extern "C" BOOL  EventXplatEnabledMethodDCEndVerboseV2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodDCEndVerboseV2(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -2790,15 +2790,15 @@ extern "C" ULONG  FireEtwMethodDCEndVerboseV2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodDCEndVerboseV2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodDCEndVerboseV2()){ return ERROR_SUCCESS;};
     INT MethodNamespace_path_size = -1;
-    INT MethodNamespace_full_name_path_size = PAL_wcslen(MethodNamespace) + 1;
+    INT MethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodNamespace_full_name=NULL;
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
     INT MethodSignature_path_size = -1;
-    INT MethodSignature_full_name_path_size = PAL_wcslen(MethodSignature) + 1;
+    INT MethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodSignature_full_name=NULL;
 
     MethodNamespace_full_name = (CHAR*)malloc(MethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -2845,8 +2845,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodLoad(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodLoad(
+extern "C" BOOL  EventXplatEnabledMethodLoad(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodLoad(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -2856,7 +2856,7 @@ extern "C" ULONG  FireEtwMethodLoad(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodLoad()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodLoad()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2874,8 +2874,8 @@ extern "C" ULONG  FireEtwMethodLoad(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodLoad_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodLoad_V1(
+extern "C" BOOL  EventXplatEnabledMethodLoad_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodLoad_V1(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -2886,7 +2886,7 @@ extern "C" ULONG  FireEtwMethodLoad_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodLoad_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodLoad_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2905,8 +2905,8 @@ extern "C" ULONG  FireEtwMethodLoad_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodLoad_V2(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodLoad_V2(
+extern "C" BOOL  EventXplatEnabledMethodLoad_V2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodLoad_V2(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -2918,7 +2918,7 @@ extern "C" ULONG  FireEtwMethodLoad_V2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodLoad_V2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodLoad_V2()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2938,8 +2938,8 @@ extern "C" ULONG  FireEtwMethodLoad_V2(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodUnload(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodUnload(
+extern "C" BOOL  EventXplatEnabledMethodUnload(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodUnload(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -2949,7 +2949,7 @@ extern "C" ULONG  FireEtwMethodUnload(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodUnload()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodUnload()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2967,8 +2967,8 @@ extern "C" ULONG  FireEtwMethodUnload(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodUnload_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodUnload_V1(
+extern "C" BOOL  EventXplatEnabledMethodUnload_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodUnload_V1(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -2979,7 +2979,7 @@ extern "C" ULONG  FireEtwMethodUnload_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodUnload_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodUnload_V1()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -2998,8 +2998,8 @@ extern "C" ULONG  FireEtwMethodUnload_V1(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodUnload_V2(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodUnload_V2(
+extern "C" BOOL  EventXplatEnabledMethodUnload_V2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodUnload_V2(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -3011,7 +3011,7 @@ extern "C" ULONG  FireEtwMethodUnload_V2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodUnload_V2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodUnload_V2()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -3031,8 +3031,8 @@ extern "C" ULONG  FireEtwMethodUnload_V2(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodLoadVerbose(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodLoadVerbose(
+extern "C" BOOL  EventXplatEnabledMethodLoadVerbose(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodLoadVerbose(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -3045,15 +3045,15 @@ extern "C" ULONG  FireEtwMethodLoadVerbose(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodLoadVerbose()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodLoadVerbose()){ return ERROR_SUCCESS;};
     INT MethodNamespace_path_size = -1;
-    INT MethodNamespace_full_name_path_size = PAL_wcslen(MethodNamespace) + 1;
+    INT MethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodNamespace_full_name=NULL;
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
     INT MethodSignature_path_size = -1;
-    INT MethodSignature_full_name_path_size = PAL_wcslen(MethodSignature) + 1;
+    INT MethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodSignature_full_name=NULL;
 
     MethodNamespace_full_name = (CHAR*)malloc(MethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -3100,8 +3100,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodLoadVerbose_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodLoadVerbose_V1(
+extern "C" BOOL  EventXplatEnabledMethodLoadVerbose_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodLoadVerbose_V1(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -3115,15 +3115,15 @@ extern "C" ULONG  FireEtwMethodLoadVerbose_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodLoadVerbose_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodLoadVerbose_V1()){ return ERROR_SUCCESS;};
     INT MethodNamespace_path_size = -1;
-    INT MethodNamespace_full_name_path_size = PAL_wcslen(MethodNamespace) + 1;
+    INT MethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodNamespace_full_name=NULL;
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
     INT MethodSignature_path_size = -1;
-    INT MethodSignature_full_name_path_size = PAL_wcslen(MethodSignature) + 1;
+    INT MethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodSignature_full_name=NULL;
 
     MethodNamespace_full_name = (CHAR*)malloc(MethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -3171,8 +3171,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodLoadVerbose_V2(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodLoadVerbose_V2(
+extern "C" BOOL  EventXplatEnabledMethodLoadVerbose_V2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodLoadVerbose_V2(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -3187,15 +3187,15 @@ extern "C" ULONG  FireEtwMethodLoadVerbose_V2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodLoadVerbose_V2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodLoadVerbose_V2()){ return ERROR_SUCCESS;};
     INT MethodNamespace_path_size = -1;
-    INT MethodNamespace_full_name_path_size = PAL_wcslen(MethodNamespace) + 1;
+    INT MethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodNamespace_full_name=NULL;
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
     INT MethodSignature_path_size = -1;
-    INT MethodSignature_full_name_path_size = PAL_wcslen(MethodSignature) + 1;
+    INT MethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodSignature_full_name=NULL;
 
     MethodNamespace_full_name = (CHAR*)malloc(MethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -3249,8 +3249,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodUnloadVerbose(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodUnloadVerbose(
+extern "C" BOOL  EventXplatEnabledMethodUnloadVerbose(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodUnloadVerbose(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -3263,15 +3263,15 @@ extern "C" ULONG  FireEtwMethodUnloadVerbose(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodUnloadVerbose()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodUnloadVerbose()){ return ERROR_SUCCESS;};
     INT MethodNamespace_path_size = -1;
-    INT MethodNamespace_full_name_path_size = PAL_wcslen(MethodNamespace) + 1;
+    INT MethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodNamespace_full_name=NULL;
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
     INT MethodSignature_path_size = -1;
-    INT MethodSignature_full_name_path_size = PAL_wcslen(MethodSignature) + 1;
+    INT MethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodSignature_full_name=NULL;
 
     MethodNamespace_full_name = (CHAR*)malloc(MethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -3318,8 +3318,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodUnloadVerbose_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodUnloadVerbose_V1(
+extern "C" BOOL  EventXplatEnabledMethodUnloadVerbose_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodUnloadVerbose_V1(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -3333,15 +3333,15 @@ extern "C" ULONG  FireEtwMethodUnloadVerbose_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodUnloadVerbose_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodUnloadVerbose_V1()){ return ERROR_SUCCESS;};
     INT MethodNamespace_path_size = -1;
-    INT MethodNamespace_full_name_path_size = PAL_wcslen(MethodNamespace) + 1;
+    INT MethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodNamespace_full_name=NULL;
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
     INT MethodSignature_path_size = -1;
-    INT MethodSignature_full_name_path_size = PAL_wcslen(MethodSignature) + 1;
+    INT MethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodSignature_full_name=NULL;
 
     MethodNamespace_full_name = (CHAR*)malloc(MethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -3389,8 +3389,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodUnloadVerbose_V2(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodUnloadVerbose_V2(
+extern "C" BOOL  EventXplatEnabledMethodUnloadVerbose_V2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodUnloadVerbose_V2(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 MethodStartAddress,
@@ -3405,15 +3405,15 @@ extern "C" ULONG  FireEtwMethodUnloadVerbose_V2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodUnloadVerbose_V2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodUnloadVerbose_V2()){ return ERROR_SUCCESS;};
     INT MethodNamespace_path_size = -1;
-    INT MethodNamespace_full_name_path_size = PAL_wcslen(MethodNamespace) + 1;
+    INT MethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodNamespace_full_name=NULL;
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
     INT MethodSignature_path_size = -1;
-    INT MethodSignature_full_name_path_size = PAL_wcslen(MethodSignature) + 1;
+    INT MethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodSignature_full_name=NULL;
 
     MethodNamespace_full_name = (CHAR*)malloc(MethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -3467,8 +3467,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodJittingStarted(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodJittingStarted(
+extern "C" BOOL  EventXplatEnabledMethodJittingStarted(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodJittingStarted(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned int MethodToken,
@@ -3479,15 +3479,15 @@ extern "C" ULONG  FireEtwMethodJittingStarted(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodJittingStarted()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodJittingStarted()){ return ERROR_SUCCESS;};
     INT MethodNamespace_path_size = -1;
-    INT MethodNamespace_full_name_path_size = PAL_wcslen(MethodNamespace) + 1;
+    INT MethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodNamespace_full_name=NULL;
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
     INT MethodSignature_path_size = -1;
-    INT MethodSignature_full_name_path_size = PAL_wcslen(MethodSignature) + 1;
+    INT MethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodSignature_full_name=NULL;
 
     MethodNamespace_full_name = (CHAR*)malloc(MethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -3532,8 +3532,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodJittingStarted_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodJittingStarted_V1(
+extern "C" BOOL  EventXplatEnabledMethodJittingStarted_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodJittingStarted_V1(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ModuleID,
                   const unsigned int MethodToken,
@@ -3545,15 +3545,15 @@ extern "C" ULONG  FireEtwMethodJittingStarted_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodJittingStarted_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodJittingStarted_V1()){ return ERROR_SUCCESS;};
     INT MethodNamespace_path_size = -1;
-    INT MethodNamespace_full_name_path_size = PAL_wcslen(MethodNamespace) + 1;
+    INT MethodNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodNamespace_full_name=NULL;
     INT MethodName_path_size = -1;
-    INT MethodName_full_name_path_size = PAL_wcslen(MethodName) + 1;
+    INT MethodName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodName_full_name=NULL;
     INT MethodSignature_path_size = -1;
-    INT MethodSignature_full_name_path_size = PAL_wcslen(MethodSignature) + 1;
+    INT MethodSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodSignature_full_name=NULL;
 
     MethodNamespace_full_name = (CHAR*)malloc(MethodNamespace_full_name_path_size*sizeof(CHAR));
@@ -3599,8 +3599,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodJitInliningSucceeded(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodJitInliningSucceeded(
+extern "C" BOOL  EventXplatEnabledMethodJitInliningSucceeded(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodJitInliningSucceeded(
                   PCWSTR MethodBeingCompiledNamespace,
                   PCWSTR MethodBeingCompiledName,
                   PCWSTR MethodBeingCompiledNameSignature,
@@ -3614,33 +3614,33 @@ extern "C" ULONG  FireEtwMethodJitInliningSucceeded(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodJitInliningSucceeded()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodJitInliningSucceeded()){ return ERROR_SUCCESS;};
     INT MethodBeingCompiledNamespace_path_size = -1;
-    INT MethodBeingCompiledNamespace_full_name_path_size = PAL_wcslen(MethodBeingCompiledNamespace) + 1;
+    INT MethodBeingCompiledNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledNamespace_full_name=NULL;
     INT MethodBeingCompiledName_path_size = -1;
-    INT MethodBeingCompiledName_full_name_path_size = PAL_wcslen(MethodBeingCompiledName) + 1;
+    INT MethodBeingCompiledName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledName_full_name=NULL;
     INT MethodBeingCompiledNameSignature_path_size = -1;
-    INT MethodBeingCompiledNameSignature_full_name_path_size = PAL_wcslen(MethodBeingCompiledNameSignature) + 1;
+    INT MethodBeingCompiledNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledNameSignature_full_name=NULL;
     INT InlinerNamespace_path_size = -1;
-    INT InlinerNamespace_full_name_path_size = PAL_wcslen(InlinerNamespace) + 1;
+    INT InlinerNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlinerNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* InlinerNamespace_full_name=NULL;
     INT InlinerName_path_size = -1;
-    INT InlinerName_full_name_path_size = PAL_wcslen(InlinerName) + 1;
+    INT InlinerName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlinerName, -1, NULL, 0, NULL, NULL );
     CHAR* InlinerName_full_name=NULL;
     INT InlinerNameSignature_path_size = -1;
-    INT InlinerNameSignature_full_name_path_size = PAL_wcslen(InlinerNameSignature) + 1;
+    INT InlinerNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlinerNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* InlinerNameSignature_full_name=NULL;
     INT InlineeNamespace_path_size = -1;
-    INT InlineeNamespace_full_name_path_size = PAL_wcslen(InlineeNamespace) + 1;
+    INT InlineeNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlineeNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* InlineeNamespace_full_name=NULL;
     INT InlineeName_path_size = -1;
-    INT InlineeName_full_name_path_size = PAL_wcslen(InlineeName) + 1;
+    INT InlineeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlineeName, -1, NULL, 0, NULL, NULL );
     CHAR* InlineeName_full_name=NULL;
     INT InlineeNameSignature_path_size = -1;
-    INT InlineeNameSignature_full_name_path_size = PAL_wcslen(InlineeNameSignature) + 1;
+    INT InlineeNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlineeNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* InlineeNameSignature_full_name=NULL;
 
     MethodBeingCompiledNamespace_full_name = (CHAR*)malloc(MethodBeingCompiledNamespace_full_name_path_size*sizeof(CHAR));
@@ -3736,8 +3736,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodJitInliningFailed(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodJitInliningFailed(
+extern "C" BOOL  EventXplatEnabledMethodJitInliningFailed(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodJitInliningFailed(
                   PCWSTR MethodBeingCompiledNamespace,
                   PCWSTR MethodBeingCompiledName,
                   PCWSTR MethodBeingCompiledNameSignature,
@@ -3753,33 +3753,33 @@ extern "C" ULONG  FireEtwMethodJitInliningFailed(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodJitInliningFailed()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodJitInliningFailed()){ return ERROR_SUCCESS;};
     INT MethodBeingCompiledNamespace_path_size = -1;
-    INT MethodBeingCompiledNamespace_full_name_path_size = PAL_wcslen(MethodBeingCompiledNamespace) + 1;
+    INT MethodBeingCompiledNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledNamespace_full_name=NULL;
     INT MethodBeingCompiledName_path_size = -1;
-    INT MethodBeingCompiledName_full_name_path_size = PAL_wcslen(MethodBeingCompiledName) + 1;
+    INT MethodBeingCompiledName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledName_full_name=NULL;
     INT MethodBeingCompiledNameSignature_path_size = -1;
-    INT MethodBeingCompiledNameSignature_full_name_path_size = PAL_wcslen(MethodBeingCompiledNameSignature) + 1;
+    INT MethodBeingCompiledNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledNameSignature_full_name=NULL;
     INT InlinerNamespace_path_size = -1;
-    INT InlinerNamespace_full_name_path_size = PAL_wcslen(InlinerNamespace) + 1;
+    INT InlinerNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlinerNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* InlinerNamespace_full_name=NULL;
     INT InlinerName_path_size = -1;
-    INT InlinerName_full_name_path_size = PAL_wcslen(InlinerName) + 1;
+    INT InlinerName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlinerName, -1, NULL, 0, NULL, NULL );
     CHAR* InlinerName_full_name=NULL;
     INT InlinerNameSignature_path_size = -1;
-    INT InlinerNameSignature_full_name_path_size = PAL_wcslen(InlinerNameSignature) + 1;
+    INT InlinerNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlinerNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* InlinerNameSignature_full_name=NULL;
     INT InlineeNamespace_path_size = -1;
-    INT InlineeNamespace_full_name_path_size = PAL_wcslen(InlineeNamespace) + 1;
+    INT InlineeNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlineeNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* InlineeNamespace_full_name=NULL;
     INT InlineeName_path_size = -1;
-    INT InlineeName_full_name_path_size = PAL_wcslen(InlineeName) + 1;
+    INT InlineeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlineeName, -1, NULL, 0, NULL, NULL );
     CHAR* InlineeName_full_name=NULL;
     INT InlineeNameSignature_path_size = -1;
-    INT InlineeNameSignature_full_name_path_size = PAL_wcslen(InlineeNameSignature) + 1;
+    INT InlineeNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, InlineeNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* InlineeNameSignature_full_name=NULL;
 
     MethodBeingCompiledNamespace_full_name = (CHAR*)malloc(MethodBeingCompiledNamespace_full_name_path_size*sizeof(CHAR));
@@ -3882,8 +3882,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodJitTailCallSucceeded(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodJitTailCallSucceeded(
+extern "C" BOOL  EventXplatEnabledMethodJitTailCallSucceeded(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodJitTailCallSucceeded(
                   PCWSTR MethodBeingCompiledNamespace,
                   PCWSTR MethodBeingCompiledName,
                   PCWSTR MethodBeingCompiledNameSignature,
@@ -3899,33 +3899,33 @@ extern "C" ULONG  FireEtwMethodJitTailCallSucceeded(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodJitTailCallSucceeded()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodJitTailCallSucceeded()){ return ERROR_SUCCESS;};
     INT MethodBeingCompiledNamespace_path_size = -1;
-    INT MethodBeingCompiledNamespace_full_name_path_size = PAL_wcslen(MethodBeingCompiledNamespace) + 1;
+    INT MethodBeingCompiledNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledNamespace_full_name=NULL;
     INT MethodBeingCompiledName_path_size = -1;
-    INT MethodBeingCompiledName_full_name_path_size = PAL_wcslen(MethodBeingCompiledName) + 1;
+    INT MethodBeingCompiledName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledName_full_name=NULL;
     INT MethodBeingCompiledNameSignature_path_size = -1;
-    INT MethodBeingCompiledNameSignature_full_name_path_size = PAL_wcslen(MethodBeingCompiledNameSignature) + 1;
+    INT MethodBeingCompiledNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledNameSignature_full_name=NULL;
     INT CallerNamespace_path_size = -1;
-    INT CallerNamespace_full_name_path_size = PAL_wcslen(CallerNamespace) + 1;
+    INT CallerNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CallerNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* CallerNamespace_full_name=NULL;
     INT CallerName_path_size = -1;
-    INT CallerName_full_name_path_size = PAL_wcslen(CallerName) + 1;
+    INT CallerName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CallerName, -1, NULL, 0, NULL, NULL );
     CHAR* CallerName_full_name=NULL;
     INT CallerNameSignature_path_size = -1;
-    INT CallerNameSignature_full_name_path_size = PAL_wcslen(CallerNameSignature) + 1;
+    INT CallerNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CallerNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* CallerNameSignature_full_name=NULL;
     INT CalleeNamespace_path_size = -1;
-    INT CalleeNamespace_full_name_path_size = PAL_wcslen(CalleeNamespace) + 1;
+    INT CalleeNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CalleeNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* CalleeNamespace_full_name=NULL;
     INT CalleeName_path_size = -1;
-    INT CalleeName_full_name_path_size = PAL_wcslen(CalleeName) + 1;
+    INT CalleeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CalleeName, -1, NULL, 0, NULL, NULL );
     CHAR* CalleeName_full_name=NULL;
     INT CalleeNameSignature_path_size = -1;
-    INT CalleeNameSignature_full_name_path_size = PAL_wcslen(CalleeNameSignature) + 1;
+    INT CalleeNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CalleeNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* CalleeNameSignature_full_name=NULL;
 
     MethodBeingCompiledNamespace_full_name = (CHAR*)malloc(MethodBeingCompiledNamespace_full_name_path_size*sizeof(CHAR));
@@ -4028,8 +4028,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodJitTailCallFailed(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodJitTailCallFailed(
+extern "C" BOOL  EventXplatEnabledMethodJitTailCallFailed(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodJitTailCallFailed(
                   PCWSTR MethodBeingCompiledNamespace,
                   PCWSTR MethodBeingCompiledName,
                   PCWSTR MethodBeingCompiledNameSignature,
@@ -4045,33 +4045,33 @@ extern "C" ULONG  FireEtwMethodJitTailCallFailed(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodJitTailCallFailed()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodJitTailCallFailed()){ return ERROR_SUCCESS;};
     INT MethodBeingCompiledNamespace_path_size = -1;
-    INT MethodBeingCompiledNamespace_full_name_path_size = PAL_wcslen(MethodBeingCompiledNamespace) + 1;
+    INT MethodBeingCompiledNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledNamespace_full_name=NULL;
     INT MethodBeingCompiledName_path_size = -1;
-    INT MethodBeingCompiledName_full_name_path_size = PAL_wcslen(MethodBeingCompiledName) + 1;
+    INT MethodBeingCompiledName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledName, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledName_full_name=NULL;
     INT MethodBeingCompiledNameSignature_path_size = -1;
-    INT MethodBeingCompiledNameSignature_full_name_path_size = PAL_wcslen(MethodBeingCompiledNameSignature) + 1;
+    INT MethodBeingCompiledNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, MethodBeingCompiledNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* MethodBeingCompiledNameSignature_full_name=NULL;
     INT CallerNamespace_path_size = -1;
-    INT CallerNamespace_full_name_path_size = PAL_wcslen(CallerNamespace) + 1;
+    INT CallerNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CallerNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* CallerNamespace_full_name=NULL;
     INT CallerName_path_size = -1;
-    INT CallerName_full_name_path_size = PAL_wcslen(CallerName) + 1;
+    INT CallerName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CallerName, -1, NULL, 0, NULL, NULL );
     CHAR* CallerName_full_name=NULL;
     INT CallerNameSignature_path_size = -1;
-    INT CallerNameSignature_full_name_path_size = PAL_wcslen(CallerNameSignature) + 1;
+    INT CallerNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CallerNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* CallerNameSignature_full_name=NULL;
     INT CalleeNamespace_path_size = -1;
-    INT CalleeNamespace_full_name_path_size = PAL_wcslen(CalleeNamespace) + 1;
+    INT CalleeNamespace_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CalleeNamespace, -1, NULL, 0, NULL, NULL );
     CHAR* CalleeNamespace_full_name=NULL;
     INT CalleeName_path_size = -1;
-    INT CalleeName_full_name_path_size = PAL_wcslen(CalleeName) + 1;
+    INT CalleeName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CalleeName, -1, NULL, 0, NULL, NULL );
     CHAR* CalleeName_full_name=NULL;
     INT CalleeNameSignature_path_size = -1;
-    INT CalleeNameSignature_full_name_path_size = PAL_wcslen(CalleeNameSignature) + 1;
+    INT CalleeNameSignature_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CalleeNameSignature, -1, NULL, 0, NULL, NULL );
     CHAR* CalleeNameSignature_full_name=NULL;
 
     MethodBeingCompiledNamespace_full_name = (CHAR*)malloc(MethodBeingCompiledNamespace_full_name_path_size*sizeof(CHAR));
@@ -4174,8 +4174,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledMethodILToNativeMap(){ return TRUE;}
-extern "C" ULONG  FireEtwMethodILToNativeMap(
+extern "C" BOOL  EventXplatEnabledMethodILToNativeMap(){ return TRUE;}
+extern "C" ULONG  FireEtXplatMethodILToNativeMap(
                   const unsigned __int64 MethodID,
                   const unsigned __int64 ReJITID,
                   const unsigned char MethodExtent,
@@ -4186,7 +4186,7 @@ extern "C" ULONG  FireEtwMethodILToNativeMap(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledMethodILToNativeMap()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledMethodILToNativeMap()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -4205,8 +4205,8 @@ extern "C" ULONG  FireEtwMethodILToNativeMap(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleDCStartV2(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleDCStartV2(
+extern "C" BOOL  EventXplatEnabledModuleDCStartV2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleDCStartV2(
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 AssemblyID,
                   const unsigned int ModuleFlags,
@@ -4216,12 +4216,12 @@ extern "C" ULONG  FireEtwModuleDCStartV2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleDCStartV2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleDCStartV2()){ return ERROR_SUCCESS;};
     INT ModuleILPath_path_size = -1;
-    INT ModuleILPath_full_name_path_size = PAL_wcslen(ModuleILPath) + 1;
+    INT ModuleILPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleILPath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleILPath_full_name=NULL;
     INT ModuleNativePath_path_size = -1;
-    INT ModuleNativePath_full_name_path_size = PAL_wcslen(ModuleNativePath) + 1;
+    INT ModuleNativePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleNativePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleNativePath_full_name=NULL;
 
     ModuleILPath_full_name = (CHAR*)malloc(ModuleILPath_full_name_path_size*sizeof(CHAR));
@@ -4257,8 +4257,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleDCEndV2(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleDCEndV2(
+extern "C" BOOL  EventXplatEnabledModuleDCEndV2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleDCEndV2(
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 AssemblyID,
                   const unsigned int ModuleFlags,
@@ -4268,12 +4268,12 @@ extern "C" ULONG  FireEtwModuleDCEndV2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleDCEndV2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleDCEndV2()){ return ERROR_SUCCESS;};
     INT ModuleILPath_path_size = -1;
-    INT ModuleILPath_full_name_path_size = PAL_wcslen(ModuleILPath) + 1;
+    INT ModuleILPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleILPath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleILPath_full_name=NULL;
     INT ModuleNativePath_path_size = -1;
-    INT ModuleNativePath_full_name_path_size = PAL_wcslen(ModuleNativePath) + 1;
+    INT ModuleNativePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleNativePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleNativePath_full_name=NULL;
 
     ModuleILPath_full_name = (CHAR*)malloc(ModuleILPath_full_name_path_size*sizeof(CHAR));
@@ -4309,8 +4309,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledDomainModuleLoad(){ return TRUE;}
-extern "C" ULONG  FireEtwDomainModuleLoad(
+extern "C" BOOL  EventXplatEnabledDomainModuleLoad(){ return TRUE;}
+extern "C" ULONG  FireEtXplatDomainModuleLoad(
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 AssemblyID,
                   const unsigned __int64 AppDomainID,
@@ -4321,12 +4321,12 @@ extern "C" ULONG  FireEtwDomainModuleLoad(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledDomainModuleLoad()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledDomainModuleLoad()){ return ERROR_SUCCESS;};
     INT ModuleILPath_path_size = -1;
-    INT ModuleILPath_full_name_path_size = PAL_wcslen(ModuleILPath) + 1;
+    INT ModuleILPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleILPath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleILPath_full_name=NULL;
     INT ModuleNativePath_path_size = -1;
-    INT ModuleNativePath_full_name_path_size = PAL_wcslen(ModuleNativePath) + 1;
+    INT ModuleNativePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleNativePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleNativePath_full_name=NULL;
 
     ModuleILPath_full_name = (CHAR*)malloc(ModuleILPath_full_name_path_size*sizeof(CHAR));
@@ -4363,8 +4363,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledDomainModuleLoad_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwDomainModuleLoad_V1(
+extern "C" BOOL  EventXplatEnabledDomainModuleLoad_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatDomainModuleLoad_V1(
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 AssemblyID,
                   const unsigned __int64 AppDomainID,
@@ -4376,12 +4376,12 @@ extern "C" ULONG  FireEtwDomainModuleLoad_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledDomainModuleLoad_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledDomainModuleLoad_V1()){ return ERROR_SUCCESS;};
     INT ModuleILPath_path_size = -1;
-    INT ModuleILPath_full_name_path_size = PAL_wcslen(ModuleILPath) + 1;
+    INT ModuleILPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleILPath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleILPath_full_name=NULL;
     INT ModuleNativePath_path_size = -1;
-    INT ModuleNativePath_full_name_path_size = PAL_wcslen(ModuleNativePath) + 1;
+    INT ModuleNativePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleNativePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleNativePath_full_name=NULL;
 
     ModuleILPath_full_name = (CHAR*)malloc(ModuleILPath_full_name_path_size*sizeof(CHAR));
@@ -4419,8 +4419,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleLoad(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleLoad(
+extern "C" BOOL  EventXplatEnabledModuleLoad(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleLoad(
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 AssemblyID,
                   const unsigned int ModuleFlags,
@@ -4430,12 +4430,12 @@ extern "C" ULONG  FireEtwModuleLoad(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleLoad()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleLoad()){ return ERROR_SUCCESS;};
     INT ModuleILPath_path_size = -1;
-    INT ModuleILPath_full_name_path_size = PAL_wcslen(ModuleILPath) + 1;
+    INT ModuleILPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleILPath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleILPath_full_name=NULL;
     INT ModuleNativePath_path_size = -1;
-    INT ModuleNativePath_full_name_path_size = PAL_wcslen(ModuleNativePath) + 1;
+    INT ModuleNativePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleNativePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleNativePath_full_name=NULL;
 
     ModuleILPath_full_name = (CHAR*)malloc(ModuleILPath_full_name_path_size*sizeof(CHAR));
@@ -4471,8 +4471,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleLoad_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleLoad_V1(
+extern "C" BOOL  EventXplatEnabledModuleLoad_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleLoad_V1(
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 AssemblyID,
                   const unsigned int ModuleFlags,
@@ -4483,12 +4483,12 @@ extern "C" ULONG  FireEtwModuleLoad_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleLoad_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleLoad_V1()){ return ERROR_SUCCESS;};
     INT ModuleILPath_path_size = -1;
-    INT ModuleILPath_full_name_path_size = PAL_wcslen(ModuleILPath) + 1;
+    INT ModuleILPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleILPath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleILPath_full_name=NULL;
     INT ModuleNativePath_path_size = -1;
-    INT ModuleNativePath_full_name_path_size = PAL_wcslen(ModuleNativePath) + 1;
+    INT ModuleNativePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleNativePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleNativePath_full_name=NULL;
 
     ModuleILPath_full_name = (CHAR*)malloc(ModuleILPath_full_name_path_size*sizeof(CHAR));
@@ -4525,8 +4525,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleLoad_V2(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleLoad_V2(
+extern "C" BOOL  EventXplatEnabledModuleLoad_V2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleLoad_V2(
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 AssemblyID,
                   const unsigned int ModuleFlags,
@@ -4543,18 +4543,18 @@ extern "C" ULONG  FireEtwModuleLoad_V2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleLoad_V2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleLoad_V2()){ return ERROR_SUCCESS;};
     INT ModuleILPath_path_size = -1;
-    INT ModuleILPath_full_name_path_size = PAL_wcslen(ModuleILPath) + 1;
+    INT ModuleILPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleILPath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleILPath_full_name=NULL;
     INT ModuleNativePath_path_size = -1;
-    INT ModuleNativePath_full_name_path_size = PAL_wcslen(ModuleNativePath) + 1;
+    INT ModuleNativePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleNativePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleNativePath_full_name=NULL;
     INT ManagedPdbBuildPath_path_size = -1;
-    INT ManagedPdbBuildPath_full_name_path_size = PAL_wcslen(ManagedPdbBuildPath) + 1;
+    INT ManagedPdbBuildPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ManagedPdbBuildPath, -1, NULL, 0, NULL, NULL );
     CHAR* ManagedPdbBuildPath_full_name=NULL;
     INT NativePdbBuildPath_path_size = -1;
-    INT NativePdbBuildPath_full_name_path_size = PAL_wcslen(NativePdbBuildPath) + 1;
+    INT NativePdbBuildPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, NativePdbBuildPath, -1, NULL, 0, NULL, NULL );
     CHAR* NativePdbBuildPath_full_name=NULL;
 
     ModuleILPath_full_name = (CHAR*)malloc(ModuleILPath_full_name_path_size*sizeof(CHAR));
@@ -4618,8 +4618,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleUnload(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleUnload(
+extern "C" BOOL  EventXplatEnabledModuleUnload(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleUnload(
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 AssemblyID,
                   const unsigned int ModuleFlags,
@@ -4629,12 +4629,12 @@ extern "C" ULONG  FireEtwModuleUnload(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleUnload()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleUnload()){ return ERROR_SUCCESS;};
     INT ModuleILPath_path_size = -1;
-    INT ModuleILPath_full_name_path_size = PAL_wcslen(ModuleILPath) + 1;
+    INT ModuleILPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleILPath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleILPath_full_name=NULL;
     INT ModuleNativePath_path_size = -1;
-    INT ModuleNativePath_full_name_path_size = PAL_wcslen(ModuleNativePath) + 1;
+    INT ModuleNativePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleNativePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleNativePath_full_name=NULL;
 
     ModuleILPath_full_name = (CHAR*)malloc(ModuleILPath_full_name_path_size*sizeof(CHAR));
@@ -4670,8 +4670,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleUnload_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleUnload_V1(
+extern "C" BOOL  EventXplatEnabledModuleUnload_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleUnload_V1(
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 AssemblyID,
                   const unsigned int ModuleFlags,
@@ -4682,12 +4682,12 @@ extern "C" ULONG  FireEtwModuleUnload_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleUnload_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleUnload_V1()){ return ERROR_SUCCESS;};
     INT ModuleILPath_path_size = -1;
-    INT ModuleILPath_full_name_path_size = PAL_wcslen(ModuleILPath) + 1;
+    INT ModuleILPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleILPath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleILPath_full_name=NULL;
     INT ModuleNativePath_path_size = -1;
-    INT ModuleNativePath_full_name_path_size = PAL_wcslen(ModuleNativePath) + 1;
+    INT ModuleNativePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleNativePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleNativePath_full_name=NULL;
 
     ModuleILPath_full_name = (CHAR*)malloc(ModuleILPath_full_name_path_size*sizeof(CHAR));
@@ -4724,8 +4724,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleUnload_V2(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleUnload_V2(
+extern "C" BOOL  EventXplatEnabledModuleUnload_V2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleUnload_V2(
                   const unsigned __int64 ModuleID,
                   const unsigned __int64 AssemblyID,
                   const unsigned int ModuleFlags,
@@ -4742,18 +4742,18 @@ extern "C" ULONG  FireEtwModuleUnload_V2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleUnload_V2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleUnload_V2()){ return ERROR_SUCCESS;};
     INT ModuleILPath_path_size = -1;
-    INT ModuleILPath_full_name_path_size = PAL_wcslen(ModuleILPath) + 1;
+    INT ModuleILPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleILPath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleILPath_full_name=NULL;
     INT ModuleNativePath_path_size = -1;
-    INT ModuleNativePath_full_name_path_size = PAL_wcslen(ModuleNativePath) + 1;
+    INT ModuleNativePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModuleNativePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModuleNativePath_full_name=NULL;
     INT ManagedPdbBuildPath_path_size = -1;
-    INT ManagedPdbBuildPath_full_name_path_size = PAL_wcslen(ManagedPdbBuildPath) + 1;
+    INT ManagedPdbBuildPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ManagedPdbBuildPath, -1, NULL, 0, NULL, NULL );
     CHAR* ManagedPdbBuildPath_full_name=NULL;
     INT NativePdbBuildPath_path_size = -1;
-    INT NativePdbBuildPath_full_name_path_size = PAL_wcslen(NativePdbBuildPath) + 1;
+    INT NativePdbBuildPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, NativePdbBuildPath, -1, NULL, 0, NULL, NULL );
     CHAR* NativePdbBuildPath_full_name=NULL;
 
     ModuleILPath_full_name = (CHAR*)malloc(ModuleILPath_full_name_path_size*sizeof(CHAR));
@@ -4817,8 +4817,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAssemblyLoad(){ return TRUE;}
-extern "C" ULONG  FireEtwAssemblyLoad(
+extern "C" BOOL  EventXplatEnabledAssemblyLoad(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAssemblyLoad(
                   const unsigned __int64 AssemblyID,
                   const unsigned __int64 AppDomainID,
                   const unsigned int AssemblyFlags,
@@ -4826,9 +4826,9 @@ extern "C" ULONG  FireEtwAssemblyLoad(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAssemblyLoad()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAssemblyLoad()){ return ERROR_SUCCESS;};
     INT FullyQualifiedAssemblyName_path_size = -1;
-    INT FullyQualifiedAssemblyName_full_name_path_size = PAL_wcslen(FullyQualifiedAssemblyName) + 1;
+    INT FullyQualifiedAssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, FullyQualifiedAssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* FullyQualifiedAssemblyName_full_name=NULL;
 
     FullyQualifiedAssemblyName_full_name = (CHAR*)malloc(FullyQualifiedAssemblyName_full_name_path_size*sizeof(CHAR));
@@ -4854,8 +4854,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAssemblyLoad_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwAssemblyLoad_V1(
+extern "C" BOOL  EventXplatEnabledAssemblyLoad_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAssemblyLoad_V1(
                   const unsigned __int64 AssemblyID,
                   const unsigned __int64 AppDomainID,
                   const unsigned __int64 BindingID,
@@ -4865,9 +4865,9 @@ extern "C" ULONG  FireEtwAssemblyLoad_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAssemblyLoad_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAssemblyLoad_V1()){ return ERROR_SUCCESS;};
     INT FullyQualifiedAssemblyName_path_size = -1;
-    INT FullyQualifiedAssemblyName_full_name_path_size = PAL_wcslen(FullyQualifiedAssemblyName) + 1;
+    INT FullyQualifiedAssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, FullyQualifiedAssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* FullyQualifiedAssemblyName_full_name=NULL;
 
     FullyQualifiedAssemblyName_full_name = (CHAR*)malloc(FullyQualifiedAssemblyName_full_name_path_size*sizeof(CHAR));
@@ -4895,8 +4895,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAssemblyUnload(){ return TRUE;}
-extern "C" ULONG  FireEtwAssemblyUnload(
+extern "C" BOOL  EventXplatEnabledAssemblyUnload(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAssemblyUnload(
                   const unsigned __int64 AssemblyID,
                   const unsigned __int64 AppDomainID,
                   const unsigned int AssemblyFlags,
@@ -4904,9 +4904,9 @@ extern "C" ULONG  FireEtwAssemblyUnload(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAssemblyUnload()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAssemblyUnload()){ return ERROR_SUCCESS;};
     INT FullyQualifiedAssemblyName_path_size = -1;
-    INT FullyQualifiedAssemblyName_full_name_path_size = PAL_wcslen(FullyQualifiedAssemblyName) + 1;
+    INT FullyQualifiedAssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, FullyQualifiedAssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* FullyQualifiedAssemblyName_full_name=NULL;
 
     FullyQualifiedAssemblyName_full_name = (CHAR*)malloc(FullyQualifiedAssemblyName_full_name_path_size*sizeof(CHAR));
@@ -4932,8 +4932,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAssemblyUnload_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwAssemblyUnload_V1(
+extern "C" BOOL  EventXplatEnabledAssemblyUnload_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAssemblyUnload_V1(
                   const unsigned __int64 AssemblyID,
                   const unsigned __int64 AppDomainID,
                   const unsigned __int64 BindingID,
@@ -4943,9 +4943,9 @@ extern "C" ULONG  FireEtwAssemblyUnload_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAssemblyUnload_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAssemblyUnload_V1()){ return ERROR_SUCCESS;};
     INT FullyQualifiedAssemblyName_path_size = -1;
-    INT FullyQualifiedAssemblyName_full_name_path_size = PAL_wcslen(FullyQualifiedAssemblyName) + 1;
+    INT FullyQualifiedAssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, FullyQualifiedAssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* FullyQualifiedAssemblyName_full_name=NULL;
 
     FullyQualifiedAssemblyName_full_name = (CHAR*)malloc(FullyQualifiedAssemblyName_full_name_path_size*sizeof(CHAR));
@@ -4973,17 +4973,17 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAppDomainLoad(){ return TRUE;}
-extern "C" ULONG  FireEtwAppDomainLoad(
+extern "C" BOOL  EventXplatEnabledAppDomainLoad(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAppDomainLoad(
                   const unsigned __int64 AppDomainID,
                   const unsigned int AppDomainFlags,
                   PCWSTR AppDomainName
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAppDomainLoad()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAppDomainLoad()){ return ERROR_SUCCESS;};
     INT AppDomainName_path_size = -1;
-    INT AppDomainName_full_name_path_size = PAL_wcslen(AppDomainName) + 1;
+    INT AppDomainName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AppDomainName, -1, NULL, 0, NULL, NULL );
     CHAR* AppDomainName_full_name=NULL;
 
     AppDomainName_full_name = (CHAR*)malloc(AppDomainName_full_name_path_size*sizeof(CHAR));
@@ -5008,8 +5008,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAppDomainLoad_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwAppDomainLoad_V1(
+extern "C" BOOL  EventXplatEnabledAppDomainLoad_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAppDomainLoad_V1(
                   const unsigned __int64 AppDomainID,
                   const unsigned int AppDomainFlags,
                   PCWSTR AppDomainName,
@@ -5018,9 +5018,9 @@ extern "C" ULONG  FireEtwAppDomainLoad_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAppDomainLoad_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAppDomainLoad_V1()){ return ERROR_SUCCESS;};
     INT AppDomainName_path_size = -1;
-    INT AppDomainName_full_name_path_size = PAL_wcslen(AppDomainName) + 1;
+    INT AppDomainName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AppDomainName, -1, NULL, 0, NULL, NULL );
     CHAR* AppDomainName_full_name=NULL;
 
     AppDomainName_full_name = (CHAR*)malloc(AppDomainName_full_name_path_size*sizeof(CHAR));
@@ -5047,17 +5047,17 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAppDomainUnload(){ return TRUE;}
-extern "C" ULONG  FireEtwAppDomainUnload(
+extern "C" BOOL  EventXplatEnabledAppDomainUnload(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAppDomainUnload(
                   const unsigned __int64 AppDomainID,
                   const unsigned int AppDomainFlags,
                   PCWSTR AppDomainName
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAppDomainUnload()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAppDomainUnload()){ return ERROR_SUCCESS;};
     INT AppDomainName_path_size = -1;
-    INT AppDomainName_full_name_path_size = PAL_wcslen(AppDomainName) + 1;
+    INT AppDomainName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AppDomainName, -1, NULL, 0, NULL, NULL );
     CHAR* AppDomainName_full_name=NULL;
 
     AppDomainName_full_name = (CHAR*)malloc(AppDomainName_full_name_path_size*sizeof(CHAR));
@@ -5082,8 +5082,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAppDomainUnload_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwAppDomainUnload_V1(
+extern "C" BOOL  EventXplatEnabledAppDomainUnload_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAppDomainUnload_V1(
                   const unsigned __int64 AppDomainID,
                   const unsigned int AppDomainFlags,
                   PCWSTR AppDomainName,
@@ -5092,9 +5092,9 @@ extern "C" ULONG  FireEtwAppDomainUnload_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAppDomainUnload_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAppDomainUnload_V1()){ return ERROR_SUCCESS;};
     INT AppDomainName_path_size = -1;
-    INT AppDomainName_full_name_path_size = PAL_wcslen(AppDomainName) + 1;
+    INT AppDomainName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, AppDomainName, -1, NULL, 0, NULL, NULL );
     CHAR* AppDomainName_full_name=NULL;
 
     AppDomainName_full_name = (CHAR*)malloc(AppDomainName_full_name_path_size*sizeof(CHAR));
@@ -5121,8 +5121,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledModuleRangeLoad(){ return TRUE;}
-extern "C" ULONG  FireEtwModuleRangeLoad(
+extern "C" BOOL  EventXplatEnabledModuleRangeLoad(){ return TRUE;}
+extern "C" ULONG  FireEtXplatModuleRangeLoad(
                   const unsigned short ClrInstanceID,
                   const unsigned __int64 ModuleID,
                   const unsigned int RangeBegin,
@@ -5131,7 +5131,7 @@ extern "C" ULONG  FireEtwModuleRangeLoad(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledModuleRangeLoad()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledModuleRangeLoad()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -5148,17 +5148,17 @@ extern "C" ULONG  FireEtwModuleRangeLoad(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledStrongNameVerificationStart(){ return TRUE;}
-extern "C" ULONG  FireEtwStrongNameVerificationStart(
+extern "C" BOOL  EventXplatEnabledStrongNameVerificationStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatStrongNameVerificationStart(
                   const unsigned int VerificationFlags,
                   const unsigned int ErrorCode,
                   PCWSTR FullyQualifiedAssemblyName
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledStrongNameVerificationStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledStrongNameVerificationStart()){ return ERROR_SUCCESS;};
     INT FullyQualifiedAssemblyName_path_size = -1;
-    INT FullyQualifiedAssemblyName_full_name_path_size = PAL_wcslen(FullyQualifiedAssemblyName) + 1;
+    INT FullyQualifiedAssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, FullyQualifiedAssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* FullyQualifiedAssemblyName_full_name=NULL;
 
     FullyQualifiedAssemblyName_full_name = (CHAR*)malloc(FullyQualifiedAssemblyName_full_name_path_size*sizeof(CHAR));
@@ -5183,8 +5183,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledStrongNameVerificationStart_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwStrongNameVerificationStart_V1(
+extern "C" BOOL  EventXplatEnabledStrongNameVerificationStart_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatStrongNameVerificationStart_V1(
                   const unsigned int VerificationFlags,
                   const unsigned int ErrorCode,
                   PCWSTR FullyQualifiedAssemblyName,
@@ -5192,9 +5192,9 @@ extern "C" ULONG  FireEtwStrongNameVerificationStart_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledStrongNameVerificationStart_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledStrongNameVerificationStart_V1()){ return ERROR_SUCCESS;};
     INT FullyQualifiedAssemblyName_path_size = -1;
-    INT FullyQualifiedAssemblyName_full_name_path_size = PAL_wcslen(FullyQualifiedAssemblyName) + 1;
+    INT FullyQualifiedAssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, FullyQualifiedAssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* FullyQualifiedAssemblyName_full_name=NULL;
 
     FullyQualifiedAssemblyName_full_name = (CHAR*)malloc(FullyQualifiedAssemblyName_full_name_path_size*sizeof(CHAR));
@@ -5220,17 +5220,17 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledStrongNameVerificationStop(){ return TRUE;}
-extern "C" ULONG  FireEtwStrongNameVerificationStop(
+extern "C" BOOL  EventXplatEnabledStrongNameVerificationStop(){ return TRUE;}
+extern "C" ULONG  FireEtXplatStrongNameVerificationStop(
                   const unsigned int VerificationFlags,
                   const unsigned int ErrorCode,
                   PCWSTR FullyQualifiedAssemblyName
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledStrongNameVerificationStop()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledStrongNameVerificationStop()){ return ERROR_SUCCESS;};
     INT FullyQualifiedAssemblyName_path_size = -1;
-    INT FullyQualifiedAssemblyName_full_name_path_size = PAL_wcslen(FullyQualifiedAssemblyName) + 1;
+    INT FullyQualifiedAssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, FullyQualifiedAssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* FullyQualifiedAssemblyName_full_name=NULL;
 
     FullyQualifiedAssemblyName_full_name = (CHAR*)malloc(FullyQualifiedAssemblyName_full_name_path_size*sizeof(CHAR));
@@ -5255,8 +5255,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledStrongNameVerificationStop_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwStrongNameVerificationStop_V1(
+extern "C" BOOL  EventXplatEnabledStrongNameVerificationStop_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatStrongNameVerificationStop_V1(
                   const unsigned int VerificationFlags,
                   const unsigned int ErrorCode,
                   PCWSTR FullyQualifiedAssemblyName,
@@ -5264,9 +5264,9 @@ extern "C" ULONG  FireEtwStrongNameVerificationStop_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledStrongNameVerificationStop_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledStrongNameVerificationStop_V1()){ return ERROR_SUCCESS;};
     INT FullyQualifiedAssemblyName_path_size = -1;
-    INT FullyQualifiedAssemblyName_full_name_path_size = PAL_wcslen(FullyQualifiedAssemblyName) + 1;
+    INT FullyQualifiedAssemblyName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, FullyQualifiedAssemblyName, -1, NULL, 0, NULL, NULL );
     CHAR* FullyQualifiedAssemblyName_full_name=NULL;
 
     FullyQualifiedAssemblyName_full_name = (CHAR*)malloc(FullyQualifiedAssemblyName_full_name_path_size*sizeof(CHAR));
@@ -5292,17 +5292,17 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAuthenticodeVerificationStart(){ return TRUE;}
-extern "C" ULONG  FireEtwAuthenticodeVerificationStart(
+extern "C" BOOL  EventXplatEnabledAuthenticodeVerificationStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAuthenticodeVerificationStart(
                   const unsigned int VerificationFlags,
                   const unsigned int ErrorCode,
                   PCWSTR ModulePath
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAuthenticodeVerificationStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAuthenticodeVerificationStart()){ return ERROR_SUCCESS;};
     INT ModulePath_path_size = -1;
-    INT ModulePath_full_name_path_size = PAL_wcslen(ModulePath) + 1;
+    INT ModulePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModulePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModulePath_full_name=NULL;
 
     ModulePath_full_name = (CHAR*)malloc(ModulePath_full_name_path_size*sizeof(CHAR));
@@ -5327,8 +5327,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAuthenticodeVerificationStart_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwAuthenticodeVerificationStart_V1(
+extern "C" BOOL  EventXplatEnabledAuthenticodeVerificationStart_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAuthenticodeVerificationStart_V1(
                   const unsigned int VerificationFlags,
                   const unsigned int ErrorCode,
                   PCWSTR ModulePath,
@@ -5336,9 +5336,9 @@ extern "C" ULONG  FireEtwAuthenticodeVerificationStart_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAuthenticodeVerificationStart_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAuthenticodeVerificationStart_V1()){ return ERROR_SUCCESS;};
     INT ModulePath_path_size = -1;
-    INT ModulePath_full_name_path_size = PAL_wcslen(ModulePath) + 1;
+    INT ModulePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModulePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModulePath_full_name=NULL;
 
     ModulePath_full_name = (CHAR*)malloc(ModulePath_full_name_path_size*sizeof(CHAR));
@@ -5364,17 +5364,17 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAuthenticodeVerificationStop(){ return TRUE;}
-extern "C" ULONG  FireEtwAuthenticodeVerificationStop(
+extern "C" BOOL  EventXplatEnabledAuthenticodeVerificationStop(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAuthenticodeVerificationStop(
                   const unsigned int VerificationFlags,
                   const unsigned int ErrorCode,
                   PCWSTR ModulePath
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAuthenticodeVerificationStop()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAuthenticodeVerificationStop()){ return ERROR_SUCCESS;};
     INT ModulePath_path_size = -1;
-    INT ModulePath_full_name_path_size = PAL_wcslen(ModulePath) + 1;
+    INT ModulePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModulePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModulePath_full_name=NULL;
 
     ModulePath_full_name = (CHAR*)malloc(ModulePath_full_name_path_size*sizeof(CHAR));
@@ -5399,8 +5399,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledAuthenticodeVerificationStop_V1(){ return TRUE;}
-extern "C" ULONG  FireEtwAuthenticodeVerificationStop_V1(
+extern "C" BOOL  EventXplatEnabledAuthenticodeVerificationStop_V1(){ return TRUE;}
+extern "C" ULONG  FireEtXplatAuthenticodeVerificationStop_V1(
                   const unsigned int VerificationFlags,
                   const unsigned int ErrorCode,
                   PCWSTR ModulePath,
@@ -5408,9 +5408,9 @@ extern "C" ULONG  FireEtwAuthenticodeVerificationStop_V1(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledAuthenticodeVerificationStop_V1()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledAuthenticodeVerificationStop_V1()){ return ERROR_SUCCESS;};
     INT ModulePath_path_size = -1;
-    INT ModulePath_full_name_path_size = PAL_wcslen(ModulePath) + 1;
+    INT ModulePath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, ModulePath, -1, NULL, 0, NULL, NULL );
     CHAR* ModulePath_full_name=NULL;
 
     ModulePath_full_name = (CHAR*)malloc(ModulePath_full_name_path_size*sizeof(CHAR));
@@ -5436,8 +5436,8 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledRuntimeInformationStart(){ return TRUE;}
-extern "C" ULONG  FireEtwRuntimeInformationStart(
+extern "C" BOOL  EventXplatEnabledRuntimeInformationStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatRuntimeInformationStart(
                   const unsigned short ClrInstanceID,
                   const unsigned short Sku,
                   const unsigned short BclMajorVersion,
@@ -5456,12 +5456,12 @@ extern "C" ULONG  FireEtwRuntimeInformationStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledRuntimeInformationStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledRuntimeInformationStart()){ return ERROR_SUCCESS;};
     INT CommandLine_path_size = -1;
-    INT CommandLine_full_name_path_size = PAL_wcslen(CommandLine) + 1;
+    INT CommandLine_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, CommandLine, -1, NULL, 0, NULL, NULL );
     CHAR* CommandLine_full_name=NULL;
     INT RuntimeDllPath_path_size = -1;
-    INT RuntimeDllPath_full_name_path_size = PAL_wcslen(RuntimeDllPath) + 1;
+    INT RuntimeDllPath_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, RuntimeDllPath, -1, NULL, 0, NULL, NULL );
     CHAR* RuntimeDllPath_full_name=NULL;
 
     CommandLine_full_name = (CHAR*)malloc(CommandLine_full_name_path_size*sizeof(CHAR));
@@ -5511,14 +5511,14 @@ LExit:
 
 return Error;
 }
-extern "C" BOOL  EventEnabledIncreaseMemoryPressure(){ return TRUE;}
-extern "C" ULONG  FireEtwIncreaseMemoryPressure(
+extern "C" BOOL  EventXplatEnabledIncreaseMemoryPressure(){ return TRUE;}
+extern "C" ULONG  FireEtXplatIncreaseMemoryPressure(
                   const unsigned __int64 BytesAllocated,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledIncreaseMemoryPressure()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledIncreaseMemoryPressure()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -5532,14 +5532,14 @@ extern "C" ULONG  FireEtwIncreaseMemoryPressure(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledDecreaseMemoryPressure(){ return TRUE;}
-extern "C" ULONG  FireEtwDecreaseMemoryPressure(
+extern "C" BOOL  EventXplatEnabledDecreaseMemoryPressure(){ return TRUE;}
+extern "C" ULONG  FireEtXplatDecreaseMemoryPressure(
                   const unsigned __int64 BytesFreed,
                   const unsigned short ClrInstanceID
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledDecreaseMemoryPressure()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledDecreaseMemoryPressure()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -5553,8 +5553,8 @@ extern "C" ULONG  FireEtwDecreaseMemoryPressure(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCMarkWithType(){ return TRUE;}
-extern "C" ULONG  FireEtwGCMarkWithType(
+extern "C" BOOL  EventXplatEnabledGCMarkWithType(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCMarkWithType(
                   const unsigned int HeapNum,
                   const unsigned short ClrInstanceID,
                   const unsigned int Type,
@@ -5562,7 +5562,7 @@ extern "C" ULONG  FireEtwGCMarkWithType(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCMarkWithType()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCMarkWithType()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -5578,8 +5578,8 @@ extern "C" ULONG  FireEtwGCMarkWithType(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCJoin_V2(){ return TRUE;}
-extern "C" ULONG  FireEtwGCJoin_V2(
+extern "C" BOOL  EventXplatEnabledGCJoin_V2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCJoin_V2(
                   const unsigned int Heap,
                   const unsigned int JoinTime,
                   const unsigned int JoinType,
@@ -5588,7 +5588,7 @@ extern "C" ULONG  FireEtwGCJoin_V2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCJoin_V2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCJoin_V2()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -5605,8 +5605,8 @@ extern "C" ULONG  FireEtwGCJoin_V2(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCPerHeapHistory_V3(){ return TRUE;}
-extern "C" ULONG  FireEtwGCPerHeapHistory_V3(
+extern "C" BOOL  EventXplatEnabledGCPerHeapHistory_V3(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCPerHeapHistory_V3(
                   const unsigned short ClrInstanceID,
                   const void* FreeListAllocated,
                   const void* FreeListRejected,
@@ -5627,7 +5627,7 @@ extern "C" ULONG  FireEtwGCPerHeapHistory_V3(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCPerHeapHistory_V3()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCPerHeapHistory_V3()){ return ERROR_SUCCESS;};
 
                                                     
      tracepoint(
@@ -5661,8 +5661,8 @@ extern "C" ULONG  FireEtwGCPerHeapHistory_V3(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledGCGlobalHeapHistory_V2(){ return TRUE;}
-extern "C" ULONG  FireEtwGCGlobalHeapHistory_V2(
+extern "C" BOOL  EventXplatEnabledGCGlobalHeapHistory_V2(){ return TRUE;}
+extern "C" ULONG  FireEtXplatGCGlobalHeapHistory_V2(
                   const unsigned __int64 FinalYoungestDesired,
                   const signed int NumHeaps,
                   const unsigned int CondemnedGeneration,
@@ -5675,7 +5675,7 @@ extern "C" ULONG  FireEtwGCGlobalHeapHistory_V2(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledGCGlobalHeapHistory_V2()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledGCGlobalHeapHistory_V2()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(
@@ -5696,12 +5696,12 @@ extern "C" ULONG  FireEtwGCGlobalHeapHistory_V2(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledDebugIPCEventStart(){ return TRUE;}
-extern "C" ULONG  FireEtwDebugIPCEventStart(
+extern "C" BOOL  EventXplatEnabledDebugIPCEventStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatDebugIPCEventStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledDebugIPCEventStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledDebugIPCEventStart()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -5712,12 +5712,12 @@ extern "C" ULONG  FireEtwDebugIPCEventStart(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledDebugIPCEventEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwDebugIPCEventEnd(
+extern "C" BOOL  EventXplatEnabledDebugIPCEventEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatDebugIPCEventEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledDebugIPCEventEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledDebugIPCEventEnd()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -5728,12 +5728,12 @@ extern "C" ULONG  FireEtwDebugIPCEventEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledDebugExceptionProcessingStart(){ return TRUE;}
-extern "C" ULONG  FireEtwDebugExceptionProcessingStart(
+extern "C" BOOL  EventXplatEnabledDebugExceptionProcessingStart(){ return TRUE;}
+extern "C" ULONG  FireEtXplatDebugExceptionProcessingStart(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledDebugExceptionProcessingStart()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledDebugExceptionProcessingStart()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -5744,12 +5744,12 @@ extern "C" ULONG  FireEtwDebugExceptionProcessingStart(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledDebugExceptionProcessingEnd(){ return TRUE;}
-extern "C" ULONG  FireEtwDebugExceptionProcessingEnd(
+extern "C" BOOL  EventXplatEnabledDebugExceptionProcessingEnd(){ return TRUE;}
+extern "C" ULONG  FireEtXplatDebugExceptionProcessingEnd(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledDebugExceptionProcessingEnd()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledDebugExceptionProcessingEnd()){ return ERROR_SUCCESS;};
                                 
      tracepoint(
         DotNETRuntime,
@@ -5760,8 +5760,8 @@ extern "C" ULONG  FireEtwDebugExceptionProcessingEnd(
 
 return Error;
 }
-extern "C" BOOL  EventEnabledCodeSymbols(){ return TRUE;}
-extern "C" ULONG  FireEtwCodeSymbols(
+extern "C" BOOL  EventXplatEnabledCodeSymbols(){ return TRUE;}
+extern "C" ULONG  FireEtXplatCodeSymbols(
                   const unsigned __int64 ModuleId,
                   const unsigned short TotalChunks,
                   const unsigned short ChunkNumber,
@@ -5771,7 +5771,7 @@ extern "C" ULONG  FireEtwCodeSymbols(
 )
 {
   ULONG Error = ERROR_WRITE_FAULT;
-    if (!EventEnabledCodeSymbols()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabledCodeSymbols()){ return ERROR_SUCCESS;};
 
                                 
      tracepoint(

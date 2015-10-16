@@ -296,10 +296,10 @@ sub GenerateLttngTpProvider
         my $eventName    = $reventNode->getAttribute('symbol');
         my $templateName = $reventNode->getAttribute('template');
 
-        #generate EventEnabled
-        $lTTngImpl  = $lTTngImpl."extern \"C\" BOOL  EventEnabled$eventName(){ return TRUE;}\n";
+        #generate EventXplatEnabled
+        $lTTngImpl  = $lTTngImpl."extern \"C\" BOOL  EventXplatEnabled$eventName(){ return TRUE;}\n";
         #generate FireEtw functions
-        my $fnptype     = "extern \"C\" ULONG  FireEtw$eventName(\n";
+        my $fnptype     = "extern \"C\" ULONG  FireEtXplat$eventName(\n";
         my $linefnptype = "";
 
         if ( $templateName ne "")
@@ -330,7 +330,7 @@ sub GenerateLttngTpProvider
         $lTTngImpl = $lTTngImpl.$fnptype;
 #start of fn body
         $lTTngImpl = $lTTngImpl.<<FN_PROLOG;
-    if (!EventEnabled$eventName()){ return ERROR_SUCCESS;};
+    if (!EventXplatEnabled$eventName()){ return ERROR_SUCCESS;};
 FN_PROLOG
         my $linefnbody = "";
         if ($templateName ne '')
@@ -348,7 +348,7 @@ FN_PROLOG
                         my $paramname = $params->{"var"};
                         $lTTngImpl    = $lTTngImpl.<<UTFCODE_INIT;
     INT $paramname\_path_size = -1;
-    INT $paramname\_full_name_path_size = PAL_wcslen($paramname) + 1;
+    INT $paramname\_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, $paramname, -1, NULL, 0, NULL, NULL );
     CHAR* $paramname\_full_name=NULL;
 UTFCODE_INIT
                     }

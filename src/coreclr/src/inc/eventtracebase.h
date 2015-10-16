@@ -283,8 +283,17 @@ extern "C" {
 
 #elif defined(__LINUX__)
 
+#include "clrconfig.h"
+ class XplatEventLogger
+{
+    public:
+        inline static BOOL  IsEventLoggingEnabled()
+        {
+            static ConfigDWORD configEventLogging;
+            return configEventLogging.val(CLRConfig::EXTERNAL_EnableEventLog);
+        }
+};
 #include "clrallevents.h"
-
 #else
 #error "A tracing System has not been enabled for this Platform"
 #endif //!FEATURE_PAL

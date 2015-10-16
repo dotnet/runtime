@@ -6,7 +6,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_definitions(-DPAL_STDCPP_COMPAT=1)
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
-include_directories(${COREPAL_SOURCE_DIR}/src/eventprovider)
 
 add_library(eventprovider
     STATIC
