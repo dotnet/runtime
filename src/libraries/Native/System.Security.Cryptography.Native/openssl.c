@@ -1265,29 +1265,6 @@ PushX509StackField(
 
 /*
 Function:
-UpRefEvpPkey
-
-Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader when
-duplicating a private key context as part of duplicating the Pal object
-
-Return values:
-The number (as of this call) of references to the EVP_PKEY. Anything less than
-2 is an error, because the key is already in the process of being freed.
-*/
-int
-UpRefEvpPkey(
-    EVP_PKEY* pkey)
-{
-    if (!pkey)
-    {
-        return 0;
-    }
-
-    return CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
-}
-
-/*
-Function:
 GetRandomBytes
 
 Puts num cryptographically strong pseudo-random bytes into buf.

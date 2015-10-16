@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             SafeEcKeyHandle currentKey = _key.Value;
-            SafeEvpPKeyHandle pkeyHandle = Interop.libcrypto.EVP_PKEY_new();
+            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 
             try
             {
