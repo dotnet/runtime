@@ -18,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.RSA_free(handle);
+            Interop.Crypto.RsaDestroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }
@@ -36,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
             // that we don't lose a tracked reference in low-memory situations.
             SafeRsaHandle safeHandle = new SafeRsaHandle();
 
-            if (!Interop.libcrypto.RSA_up_ref(handle))
+            if (!Interop.Crypto.RsaUpRef(handle))
             {
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
