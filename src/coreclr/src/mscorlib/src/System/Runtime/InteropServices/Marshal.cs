@@ -1869,6 +1869,40 @@ namespace System.Runtime.InteropServices
             return pNewMem;
         }
 
+        //====================================================================
+        // BSTR allocation and dealocation.
+        //====================================================================      
+        [System.Security.SecurityCritical]  // auto-generated_required
+        public static void FreeBSTR(IntPtr ptr)
+        {
+            if (IsNotWin32Atom(ptr))
+            {
+                Win32Native.SysFreeString(ptr);
+            }
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated_required
+        public static IntPtr StringToBSTR(String s)
+        {
+            if (s == null)
+                return IntPtr.Zero;
+
+            // Overflow checking
+            if (s.Length + 1 < s.Length)
+                throw new ArgumentOutOfRangeException("s");
+
+            IntPtr bstr = Win32Native.SysAllocStringLen(s, s.Length);
+            if (bstr == IntPtr.Zero)
+                throw new OutOfMemoryException();
+
+            return bstr;
+        }
+
+        [System.Security.SecurityCritical]  // auto-generated_required
+        public static String PtrToStringBSTR(IntPtr ptr)
+        {
+            return PtrToStringUni(ptr, (int)Win32Native.SysStringLen(ptr));
+        }
 
 #if FEATURE_COMINTEROP
         //====================================================================
@@ -2094,40 +2128,6 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         public static extern int /* ULONG */ Release(IntPtr /* IUnknown */ pUnk );
-
-        //====================================================================
-        // BSTR allocation and dealocation.
-        //====================================================================      
-        [System.Security.SecurityCritical]  // auto-generated_required
-        public static void FreeBSTR(IntPtr ptr)
-        {
-            if (IsNotWin32Atom(ptr)) {
-                Win32Native.SysFreeString(ptr);
-            }
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated_required
-        public static IntPtr StringToBSTR(String s)
-        {
-            if (s == null) 
-                return IntPtr.Zero;
-
-            // Overflow checking
-            if (s.Length+1 < s.Length)
-                throw new ArgumentOutOfRangeException("s");
-
-            IntPtr bstr = Win32Native.SysAllocStringLen(s, s.Length);
-            if (bstr == IntPtr.Zero)
-                throw new OutOfMemoryException();
-
-            return bstr;
-        }
-
-        [System.Security.SecurityCritical]  // auto-generated_required
-        public static String PtrToStringBSTR(IntPtr ptr)
-        {
-            return PtrToStringUni(ptr, (int)Win32Native.SysStringLen(ptr));
-        }
 
         [System.Security.SecurityCritical]  // auto-generated_required
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
