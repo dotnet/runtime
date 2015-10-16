@@ -68,14 +68,18 @@ namespace System.Net.Sockets
             return CreateSocket(InnerSafeCloseSocket.CreateSocket(fileDescriptor));
         }
 
-        public unsafe static SafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+        public unsafe static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeCloseSocket socket)
         {
-            return CreateSocket(InnerSafeCloseSocket.CreateSocket(addressFamily, socketType, protocolType));
+            SocketError errorCode;
+            socket = CreateSocket(InnerSafeCloseSocket.CreateSocket(addressFamily, socketType, protocolType, out errorCode));
+            return errorCode;
         }
 
-        public unsafe static SafeCloseSocket Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressSize)
+        public unsafe static SocketError Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressSize, out SafeCloseSocket socket)
         {
-            return CreateSocket(InnerSafeCloseSocket.Accept(socketHandle, socketAddress, ref socketAddressSize));
+            SocketError errorCode;
+            socket = CreateSocket(InnerSafeCloseSocket.Accept(socketHandle, socketAddress, ref socketAddressSize, out errorCode));
+            return errorCode;
         }
 
         private void InnerReleaseHandle()
@@ -195,13 +199,15 @@ namespace System.Net.Sockets
                 return res;
             }
 
-            public static unsafe InnerSafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+            public static unsafe InnerSafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SocketError errorCode)
             {
                 int fd;
                 Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
                 if (error == Interop.Error.SUCCESS)
                 {
                     Debug.Assert(fd != -1);
+
+                    errorCode = SocketError.Success;
 
                     // The socket was created successfully; make it non-blocking and enable
                     // IPV6_V6ONLY by default for AF_INET6 sockets.
@@ -210,6 +216,7 @@ namespace System.Net.Sockets
                     {
                         Interop.Sys.Close(fd);
                         fd = -1;
+                        errorCode = SocketError.SocketError;
                     }
                     else if (addressFamily == AddressFamily.InterNetworkV6)
                     {
@@ -219,8 +226,13 @@ namespace System.Net.Sockets
                         {
                             Interop.Sys.Close(fd);
                             fd = -1;
+                            errorCode = SocketPal.GetSocketErrorForErrorCode(error);
                         }
                     }
+                }
+                else
+                {
+                    errorCode = SocketPal.GetSocketErrorForErrorCode(error);
                 }
 
                 var res = new InnerSafeCloseSocket();
@@ -228,17 +240,16 @@ namespace System.Net.Sockets
                 return res;
             }
 
-            public static unsafe InnerSafeCloseSocket Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressLen)
+            public static unsafe InnerSafeCloseSocket Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressLen, out SocketError errorCode)
             {
                 int acceptedFd;
                 if (!socketHandle.IsNonBlocking)
                 {
-                    socketHandle.AsyncContext.Accept(socketAddress, ref socketAddressLen, -1, out acceptedFd);
+                    errorCode = socketHandle.AsyncContext.Accept(socketAddress, ref socketAddressLen, -1, out acceptedFd);
                 }
                 else
                 {
-                    SocketError unused;
-                    SocketPal.TryCompleteAccept(socketHandle.FileDescriptor, socketAddress, ref socketAddressLen, out acceptedFd, out unused);
+                    SocketPal.TryCompleteAccept(socketHandle.FileDescriptor, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode);
                 }
 
                 var res = new InnerSafeCloseSocket();

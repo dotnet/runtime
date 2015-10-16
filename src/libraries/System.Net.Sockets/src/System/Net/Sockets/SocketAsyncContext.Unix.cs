@@ -178,9 +178,9 @@ namespace System.Net.Sockets
             public byte[] Buffer;
             public int Offset;
             public int Count;
-            public int Flags;
+            public SocketFlags Flags;
             public int BytesTransferred;
-            public int ReceivedFlags;
+            public SocketFlags ReceivedFlags;
 
             protected sealed override void Abort() { }
         }
@@ -190,9 +190,9 @@ namespace System.Net.Sockets
             public IList<ArraySegment<byte>> Buffers;
             public int BufferIndex;
 
-            public Action<int, byte[], int, int, SocketError> Callback
+            public Action<int, byte[], int, SocketFlags, SocketError> Callback
             {
-                private get { return (Action<int, byte[], int, int, SocketError>)CallbackOrEvent; }
+                private get { return (Action<int, byte[], int, SocketFlags, SocketError>)CallbackOrEvent; }
                 set { CallbackOrEvent = value; }
             }
 
@@ -224,9 +224,9 @@ namespace System.Net.Sockets
             public bool IsIPv6;
             public IPPacketInformation IPPacketInformation;
 
-            public Action<int, byte[], int, int, IPPacketInformation, SocketError> Callback
+            public Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> Callback
             {
-                private get { return (Action<int, byte[], int, int, IPPacketInformation, SocketError>)CallbackOrEvent; }
+                private get { return (Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>)CallbackOrEvent; }
                 set { CallbackOrEvent = value; }
             }
 
@@ -747,22 +747,22 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Receive(byte[] buffer, int offset, int count, ref int flags, int timeout, out int bytesReceived)
+        public SocketError Receive(byte[] buffer, int offset, int count, ref SocketFlags flags, int timeout, out int bytesReceived)
         {
             int socketAddressLen = 0;
             return ReceiveFrom(buffer, offset, count, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
         }
 
-        public SocketError ReceiveAsync(byte[] buffer, int offset, int count, int flags, Action<int, byte[], int, int, SocketError> callback)
+        public SocketError ReceiveAsync(byte[] buffer, int offset, int count, SocketFlags flags, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             return ReceiveFromAsync(buffer, offset, count, flags, null, 0, callback);
         }
 
-        public SocketError ReceiveFrom(byte[] buffer, int offset, int count, ref int flags, byte[] socketAddress, ref int socketAddressLen, int timeout, out int bytesReceived)
+        public SocketError ReceiveFrom(byte[] buffer, int offset, int count, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, int timeout, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0);
 
-            int receivedFlags;
+            SocketFlags receivedFlags;
             SocketError errorCode;
             if (SocketPal.TryCompleteReceiveFrom(_fileDescriptor, buffer, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
@@ -812,10 +812,10 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError ReceiveFromAsync(byte[] buffer, int offset, int count, int flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, int, SocketError> callback)
+        public SocketError ReceiveFromAsync(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             int bytesReceived;
-            int receivedFlags;
+            SocketFlags receivedFlags;
             SocketError errorCode;
             if (SocketPal.TryCompleteReceiveFrom(_fileDescriptor, buffer, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
@@ -823,7 +823,7 @@ namespace System.Net.Sockets
                 {
                     ThreadPool.QueueUserWorkItem(args =>
                     {
-                        var tup = (Tuple<Action<int, byte[], int, int, SocketError>, int, byte[], int, int>)args;
+                        var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int, SocketFlags>)args;
                         tup.Item1(tup.Item2, tup.Item3, tup.Item4, tup.Item5, SocketError.Success);
                     }, Tuple.Create(callback, bytesReceived, socketAddress, socketAddressLen, receivedFlags));
                 }
@@ -862,21 +862,21 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Receive(IList<ArraySegment<byte>> buffers, ref int flags, int timeout, out int bytesReceived)
+        public SocketError Receive(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, int timeout, out int bytesReceived)
         {
             return ReceiveFrom(buffers, ref flags, null, 0, timeout, out bytesReceived);
         }
 
-        public SocketError ReceiveAsync(IList<ArraySegment<byte>> buffers, int flags, Action<int, byte[], int, int, SocketError> callback)
+        public SocketError ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             return ReceiveFromAsync(buffers, flags, null, 0, callback);
         }
 
-        public SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref int flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesReceived)
+        public SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0);
 
-            int receivedFlags;
+            SocketFlags receivedFlags;
             SocketError errorCode;
             if (SocketPal.TryCompleteReceiveFrom(_fileDescriptor, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
@@ -924,10 +924,10 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError ReceiveFromAsync(IList<ArraySegment<byte>> buffers, int flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, int, SocketError> callback)
+        public SocketError ReceiveFromAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             int bytesReceived;
-            int receivedFlags;
+            SocketFlags receivedFlags;
             SocketError errorCode;
             if (SocketPal.TryCompleteReceiveFrom(_fileDescriptor, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
@@ -935,7 +935,7 @@ namespace System.Net.Sockets
                 {
                     ThreadPool.QueueUserWorkItem(args =>
                     {
-                        var tup = (Tuple<Action<int, byte[], int, int, SocketError>, int, byte[], int, int>)args;
+                        var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int, SocketFlags>)args;
                         tup.Item1(tup.Item2, tup.Item3, tup.Item4, tup.Item5, SocketError.Success);
                     }, Tuple.Create(callback, bytesReceived, socketAddress, socketAddressLen, receivedFlags));
                 }
@@ -972,11 +972,11 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError ReceiveMessageFrom(byte[] buffer, int offset, int count, ref int flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
+        public SocketError ReceiveMessageFrom(byte[] buffer, int offset, int count, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0);
 
-            int receivedFlags;
+            SocketFlags receivedFlags;
             SocketError errorCode;
             if (SocketPal.TryCompleteReceiveMessageFrom(_fileDescriptor, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
             {
@@ -1033,10 +1033,10 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError ReceiveMessageFromAsync(byte[] buffer, int offset, int count, int flags, byte[] socketAddress, int socketAddressLen, bool isIPv4, bool isIPv6, Action<int, byte[], int, int, IPPacketInformation, SocketError> callback)
+        public SocketError ReceiveMessageFromAsync(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, bool isIPv4, bool isIPv6, Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> callback)
         {
             int bytesReceived;
-            int receivedFlags;
+            SocketFlags receivedFlags;
             IPPacketInformation ipPacketInformation;
             SocketError errorCode;
             if (SocketPal.TryCompleteReceiveMessageFrom(_fileDescriptor, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
@@ -1045,7 +1045,7 @@ namespace System.Net.Sockets
                 {
                     ThreadPool.QueueUserWorkItem(args =>
                     {
-                        var tup = (Tuple<Action<int, byte[], int, int, IPPacketInformation, SocketError>, int, byte[], int, int, IPPacketInformation>)args;
+                        var tup = (Tuple<Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>, int, byte[], int, SocketFlags, IPPacketInformation>)args;
                         tup.Item1(tup.Item2, tup.Item3, tup.Item4, tup.Item5, tup.Item6, SocketError.Success);
                     }, Tuple.Create(callback, bytesReceived, socketAddress, socketAddressLen, receivedFlags, ipPacketInformation));
                 }
@@ -1087,17 +1087,17 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Send(byte[] buffer, int offset, int count, int flags, int timeout, out int bytesSent)
+        public SocketError Send(byte[] buffer, int offset, int count, SocketFlags flags, int timeout, out int bytesSent)
         {
             return SendTo(buffer, offset, count, flags, null, 0, timeout, out bytesSent);
         }
 
-        public SocketError SendAsync(byte[] buffer, int offset, int count, int flags, Action<int, byte[], int, int, SocketError> callback)
+        public SocketError SendAsync(byte[] buffer, int offset, int count, SocketFlags flags, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             return SendToAsync(buffer, offset, count, flags, null, 0, callback);
         }
 
-        public SocketError SendTo(byte[] buffer, int offset, int count, int flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0);
 
@@ -1144,7 +1144,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError SendToAsync(byte[] buffer, int offset, int count, int flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, int, SocketError> callback)
+        public SocketError SendToAsync(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             int bytesSent = 0;
             SocketError errorCode;
@@ -1154,7 +1154,7 @@ namespace System.Net.Sockets
                 {
                     ThreadPool.QueueUserWorkItem(args =>
                     {
-                        var tup = (Tuple<Action<int, byte[], int, int, SocketError>, int, byte[], int>)args;
+                        var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int>)args;
                         tup.Item1(tup.Item2, tup.Item3, tup.Item4, 0, SocketError.Success);
                     }, Tuple.Create(callback, bytesSent, socketAddress, socketAddressLen));
                 }
@@ -1192,17 +1192,17 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError Send(IList<ArraySegment<byte>> buffers, int flags, int timeout, out int bytesSent)
+        public SocketError Send(IList<ArraySegment<byte>> buffers, SocketFlags flags, int timeout, out int bytesSent)
         {
             return SendTo(buffers, flags, null, 0, timeout, out bytesSent);
         }
 
-        public SocketError SendAsync(IList<ArraySegment<byte>> buffers, int flags, Action<int, byte[], int, int, SocketError> callback)
+        public SocketError SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             return SendToAsync(buffers, flags, null, 0, callback);
         }
 
-        public SocketError SendTo(IList<ArraySegment<byte>> buffers, int flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0);
 
@@ -1251,7 +1251,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, int flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, int, SocketError> callback)
+        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, int socketAddressLen, Action<int, byte[], int, SocketFlags, SocketError> callback)
         {
             int bufferIndex = 0;
             int offset = 0;
@@ -1263,8 +1263,8 @@ namespace System.Net.Sockets
                 {
                     ThreadPool.QueueUserWorkItem(args =>
                     {
-                        var tup = (Tuple<Action<int, byte[], int, int, SocketError>, int, byte[], int>)args;
-                        tup.Item1(tup.Item2, tup.Item3, tup.Item4, 0, SocketError.Success);
+                        var tup = (Tuple<Action<int, byte[], int, SocketFlags, SocketError>, int, byte[], int>)args;
+                        tup.Item1(tup.Item2, tup.Item3, tup.Item4, SocketFlags.None, SocketError.Success);
                     }, Tuple.Create(callback, bytesSent, socketAddress, socketAddressLen));
                 }
                 return errorCode;

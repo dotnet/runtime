@@ -177,6 +177,21 @@ enum SocketOptionName : int32_t
     // PAL_SO_UDP_UPDATEACCEPTCONTEXT = 0x700b,
     // PAL_SO_UDP_UPDATECONNECTCONTEXT = 0x7010,
 };
+/*
+ * Socket flags.
+ *
+ * NOTE: these values are taken from System.Net.SocketFlags. Only values that are known to be usable on all target
+ *       platforms are represented here. Unsupported values are present as commented-out entries.
+ */
+
+enum SocketFlags : int32_t
+{
+    PAL_MSG_OOB = 0x0001,       // SocketFlags.OutOfBand
+    PAL_MSG_PEEK = 0x0002,      // SocketFlags.Peek
+    PAL_MSG_DONTROUTE = 0x0004, // SocketFlags.DontRoute
+    PAL_MSG_TRUNC = 0x0100,     // SocketFlags.Truncated
+    PAL_MSG_CTRUNC = 0x0200,    // SocketFlags.ControlDataTruncated
+};
 
 /**
  * IP address sizes.
@@ -248,6 +263,18 @@ struct MessageHeader
     int32_t IOVectorCount;
     int32_t ControlBufferLen;
     int32_t Flags;
+};
+
+// FdSet constants.
+enum
+{
+    PAL_FDSET_MAX_FDS = 1024,
+    PAL_FDSET_NFD_BITS = 8 * sizeof(uint32_t)
+};
+
+struct FdSet
+{
+    uint32_t Bits[PAL_FDSET_MAX_FDS / PAL_FDSET_NFD_BITS];
 };
 
 /**
@@ -341,3 +368,7 @@ extern "C" Error GetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t s
 extern "C" Error SetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
 
 extern "C" Error Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, int32_t* createdSocket);
+
+extern "C" Error Select(int32_t fdCount, FdSet* readFdSet, FdSet* writeFdSet, FdSet* errorFdSet, int32_t microseconds, int32_t* selected);
+
+extern "C" Error GetBytesAvailable(int32_t socket, int32_t* available);
