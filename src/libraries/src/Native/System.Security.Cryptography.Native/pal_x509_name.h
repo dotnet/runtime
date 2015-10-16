@@ -6,25 +6,6 @@
 #include <openssl/x509.h>
 
 /*
-These values should be kept in sync with System.Security.Cryptography.X509Certificates.X500DistinguishedNameFlags
-*/
-enum X500DistinguishedNameFlags : int32_t
-{
-    None = 0x0000,
-    Reversed = 0x0001,
-
-    UseSemicolons = 0x0010,
-    DoNotUsePlusSign = 0x0020,
-    DoNotUseQuotes = 0x0040,
-    UseCommas = 0x0080,
-    UseNewLines = 0x0100,
-
-    UseUTF8Encoding = 0x1000,
-    UseT61Encoding = 0x2000,
-    ForceUTF8Encoding = 0x4000,
-};
-
-/*
 Function:
 GetX509NameStackFieldCount
 
@@ -33,9 +14,6 @@ Direct shim to sk_X509_NAME_num
 extern "C" int32_t GetX509NameStackFieldCount(X509NameStack* sk);
 
 /*
-Function:
-GetX509NameStackField
-
 Direct shim to sk_X509_NAME_value
 */
 extern "C" X509_NAME* GetX509NameStackField(X509NameStack* sk, int32_t loc);
@@ -55,21 +33,6 @@ The given X509_NAME pointer is invalid after this call.
 Always succeeds.
 */
 extern "C" void X509NameDestroy(X509_NAME* a);
-
-/*
-Prints the X509_NAME into the BIO using a format that is acceptable
-for use in "Find*" functions.
-
-Returns the number of bytes written to the BIO.
-*/
-extern "C" int32_t X509NamePrintForFind(BIO* out, X509_NAME* nm);
-
-/*
-Prints the X509_NAME into the BIO using the specified format.
-
-Returns the number of bytes written to the BIO.
-*/
-extern "C" int32_t X509NamePrintEx(BIO* out, X509_NAME* nm, X500DistinguishedNameFlags flags);
 
 /*
 Function:
@@ -106,3 +69,22 @@ Direct shim to X509_NAME_dup
 */
 extern "C" X509_NAME* DuplicateX509Name(X509_NAME* x509Name);
 
+/*
+Direct shim to X509_NAME_entry_count
+*/
+extern "C" int32_t GetX509NameEntryCount(X509_NAME* x509Name);
+
+/*
+Direct shim to X509_NAME_get_entry
+*/
+extern "C" X509_NAME_ENTRY* GetX509NameEntry(X509_NAME* x509Name, int32_t loc);
+
+/*
+Direct shim to X509_NAME_ENTRY_get_object
+*/
+extern "C" ASN1_OBJECT* GetX509NameEntryOid(X509_NAME_ENTRY* nameEntry);
+
+/*
+Direct shim to X509_NAME_ENTRY_get_data
+*/
+extern "C" ASN1_STRING* GetX509NameEntryData(X509_NAME_ENTRY* nameEntry);

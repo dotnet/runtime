@@ -46,10 +46,7 @@ namespace Internal.Cryptography.Pal
             FindCore(
                 cert =>
                 {
-                    string formedSubject = OpenSslX509Encoder.X500DistinguishedNameDecode(
-                        cert.SubjectName.RawData,
-                        X500DistinguishedNameFlags.None,
-                        useFindFormat: true);
+                    string formedSubject = X500NameEncoder.X500DistinguishedNameDecode(cert.SubjectName.RawData, false, X500DistinguishedNameFlags.None);
 
                     return formedSubject.IndexOf(subjectName, StringComparison.OrdinalIgnoreCase) >= 0;
                 });
@@ -65,10 +62,7 @@ namespace Internal.Cryptography.Pal
             FindCore(
                 cert =>
                 {
-                    string formedIssuer = OpenSslX509Encoder.X500DistinguishedNameDecode(
-                        cert.IssuerName.RawData,
-                        X500DistinguishedNameFlags.None,
-                        useFindFormat: true);
+                    string formedIssuer = X500NameEncoder.X500DistinguishedNameDecode(cert.IssuerName.RawData, false, X500DistinguishedNameFlags.None);
 
                     return formedIssuer.IndexOf(issuerName, StringComparison.OrdinalIgnoreCase) >= 0;
                 });

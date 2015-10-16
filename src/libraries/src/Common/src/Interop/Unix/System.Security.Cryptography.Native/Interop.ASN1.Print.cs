@@ -16,7 +16,10 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative)]
         private static extern int Asn1StringPrintEx(SafeBioHandle bio, SafeAsn1StringHandle str, Asn1StringPrintFlags flags);
 
-        internal static unsafe string DerStringToManagedString(byte[] derString)
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int Asn1StringPrintEx(SafeBioHandle bio, SafeSharedAsn1StringHandle str, Asn1StringPrintFlags flags);
+
+        internal static string DerStringToManagedString(byte[] derString)
         {
             SafeAsn1StringHandle asn1String = DecodeAsn1TypeBytes(derString, derString.Length, AnyTextStringType);
 
@@ -25,16 +28,36 @@ internal static partial class Interop
                 return null;
             }
 
+            using (asn1String)
+            {
+                return Asn1StringToManagedString(
+                    asn1String,
+                    (bio, str, flags) => Asn1StringPrintEx(bio, str, flags));
+            }
+        }
+
+        internal static string Asn1StringToManagedString(SafeSharedAsn1StringHandle asn1String)
+        {
+            CheckValidOpenSslHandle(asn1String);
+
+            return Asn1StringToManagedString(
+                asn1String,
+                (bio, str, flags) => Asn1StringPrintEx(bio, str, flags));
+        }
+
+        private static string Asn1StringToManagedString<THandle>(
+            THandle asn1String,
+            Func<SafeBioHandle, THandle, Asn1StringPrintFlags, int> asn1StringPrintEx)
+        {
             byte[] utf8Bytes;
 
-            using (asn1String)
             using (SafeBioHandle bio = CreateMemoryBio())
             {
-                int len = Asn1StringPrintEx(bio, asn1String, Asn1StringPrintFlags.ASN1_STRFLGS_UTF8_CONVERT);
+                int len = asn1StringPrintEx(bio, asn1String, Asn1StringPrintFlags.ASN1_STRFLGS_UTF8_CONVERT);
 
                 if (len < 0)
                 {
-                    throw Crypto.CreateOpenSslCryptographicException();
+                    throw CreateOpenSslCryptographicException();
                 }
 
                 int bioSize = GetMemoryBioSize(bio);
@@ -44,7 +67,7 @@ internal static partial class Interop
 
                 if (read < 0)
                 {
-                    throw Crypto.CreateOpenSslCryptographicException();
+                    throw CreateOpenSslCryptographicException();
                 }
             }
 
