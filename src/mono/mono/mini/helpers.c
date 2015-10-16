@@ -66,7 +66,7 @@ opnames[] = {
 #endif /* DISABLE_LOGGING */
 
 #if defined(__i386__) || defined(__x86_64__)
-#ifndef TARGET_ARM64
+#if !defined(TARGET_ARM64) && !defined(__APPLE__)
 #define emit_debug_info  TRUE
 #else
 #define emit_debug_info  FALSE
