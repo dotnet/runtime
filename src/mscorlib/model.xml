@@ -3569,6 +3569,7 @@
       <Member Name="get_FullName" />
       <Member Name="get_ImageRuntimeVersion" Condition="FEATURE_LEGACYNETCF" />
       <Member Name="get_IsDynamic" />
+      <Member Name="get_Location" />
       <Member Name="get_ManifestModule" />
       <Member Name="get_CustomAttributes" />
       <Member Name="get_Modules" />
@@ -3614,6 +3615,7 @@
       <Member MemberType="Property" Name="EntryPoint" Condition="FEATURE_LEGACYNETCF" />
       <Member MemberType="Property" Name="FullName" />
       <Member MemberType="Property" Name="ImageRuntimeVersion" Condition="FEATURE_LEGACYNETCF" />
+      <Member MemberType="Property" Name="Location" />
       <Member MemberType="Property" Name="ManifestModule" />
       <Member Status="ImplRoot" MemberType="Event" Name="ModuleResolve" />
     </Type>
