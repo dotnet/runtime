@@ -1,51 +1,48 @@
-API Review Process
-==================
+# API Review Process
 
-The .NET Framework has a long standing history of taking API usability extremely seriously. Thus, we generally review every single API that is added to the product. This page discusses how we conduct API reviews for components that are open sourced.
+The .NET Framework has a long standing history of taking API usability extremely seriously. Thus, we generally review every single API that is added to the product. This page discusses how we conduct design reviews for components that are open sourced.
 
-## Process Goals
+## Which APIs should be reviewed?
 
-The key goals are:
+The rule of thumb is that we (**corefx**) review every API that is being added to the `System.*` namespaces. In some cases, we also review APIs that are added to other namespaces, such as `Microsoft`. We mostly do this for high impact APIs, such as Roslyn, and when both the owner of the technology and we feel there is win-win for both sides if we review the APIs. However, we can't scale to review all APIs being added to .NET.
 
-* **Designed for GitHub**. In order to be sustainable and not be a hurdle for contributors the API review process must feel natural to folks familiar with GitHub.
-
-* **Efficiency**. Performing API reviews requires looping in a set of experts. We want to conduct API reviews in an agile fashion without randomizing the reviewers or community members.
-
-* **Transparency**. We can use the same process for both internal as well as external contributors. This allows contributors to benefit from the results of API reviews even if the implementer isn't external.
-
-## Overall Process
-
-GitHub is generally based around the pull-request model. The idea is that contributors perform their changes in their own fork and submit a pull request against our repository.
-
-For trivial code changes, such as typo fixes, we want folks to directly submit a pull request rather than opening an issue. However, for bug fixes or feature work, we want contributors to first start a discussion by creating an issue.
-
-For work that involves adding new APIs we'd like the issue to contain what we call a *speclet*. The speclet should provide a rough sketch of how the APIs are intended to be used, with sample code that shows typical scenarios. The goal isn't to be complete but rather to illustrate the direction so that readers can judge whether the proposal is sound. Here is [a good example](https://github.com/dotnet/corefx/issues/271).
+## Process
 
 ![API Review Process](../images/api-review-process.png)
 
 ## Steps
 
-* **Contributor opens an issue**. The issue description should contain a speclet that represents a sketch of the new APIs, including samples on how the APIs are being used. The goal isn't to get a complete API list, but a good handle on how the new APIs would roughly look like and in what scenarios they are being used. Here is [a good example](https://github.com/dotnet/corefx/issues/271).
+1. **Requester files an issue**. The issue description should contain a speclet that represents a sketch of the new APIs, including samples on how the APIs are being used. The goal isn't to get a complete API list, but a good handle on how the new APIs would roughly look like and in what scenarios they are being used. Here is [a good example](https://github.com/dotnet/corefx/issues/271).
 
-* **Community discusses the proposal**. If changes are necessary, the contributor is encouraged to edit the issue description. This allows folks joining later to understand the most recent proposal. To avoid confusion, the contributor should maintain a tiny change log, like a bolded "Updates:" followed by a bullet point list of the updates that were being made.
+2. **We assign an owner**. We'll assign a dedicated owner from our side that
+sponsors the issue. This is usually the area owner for which the API proposal or design change request was filed for.
 
-* **Issue is tagged as "Accepting PRs"**. Once the contributor and project owner agree on the overall shape and direction, the project owner tags the issue as "Accepting PRs". The contributor should indicate whether they will be providing the PR or only contributed the idea.
+3. **Discussion**. The goal of the discussion is to help the assignee to make a
+decision whether we want to pursue the proposal or not. In this phase, the goal
+isn't necessarily to perform an in-depth review; rather, we want to make sure
+that the proposal is actionable, i.e. has a concrete design, a sketch of the
+APIs and some code samples that show how it should be used. If changes are necessary, the requester is encouraged to edit the issue description. This allows folks joining later to understand the most recent proposal. To avoid confusion, the requester should maintain a tiny change log, like a bolded "Updates:" followed by a bullet point list of the updates that were being made.
 
-* **Coding**. The contributor is implementing the APIs as discussed. Minor deviations are OK, but if during the implementation the design starts to take a major shift, the contributor is encouraged to go back to the issue and raise the concerns with the current proposal.
+4. **Owner makes decision**. When the owner believes enough information is available to make a decision, she will update the issue accordingly:
 
-* **Pull request is being created**. Once the contributor believes the implementation is ready for review, she creates a pull request, referencing the issue created in the first step. In order to call dips, you can also create the PR before it's completely ready. Use checkboxes to indicate which areas are still missing so that we know it's not ready for review yet. [Here is a good example](https://github.com/dotnet/corefx/pull/316). At this time, if any new API are being added to a type that has shipped in the full .NET Framework, submit the pull request to the *future* branch. See [Branching Guide](branching-guide.md).
+    * **Mark for review**. If the owner believes the proposal is actionable, she will label the issue with `api-ready-for-review`.
+    * **Close as not actionable**. In case the issue didn't get enough traction to be distilled into a concrete proposal, she will close the issue.
+    * **Close as won't fix as proposed**. Sometimes, the issue that is raised is a good one but the owner thinks the concrete proposal is not the right way to tackle the problem. In most cases, the owner will try to steer the discussion in a direction that results in a design that we believe is appropriate. However, for some proposals the problem is at the heart of the design which can't easily be changed without starting a new proposal. In those cases, the owner will close the issue and explain the issue the design has.
+    * **Close as won't fix**. Similarly, if proposal is taking the product in a direction we simply don't want to go, the issue might also get closed. In that case, the problem isn't the proposed design but in the issue itself.
 
-* **Pull request is being reviewed**. The community reviews the code for the pull request. The review should focus on the code changes and architecture - not the APIs themselves. Once at least two project owners give their OK, the PR is considered good to go.
+5. **API gets reviewed**. The group conducting the review is called *FXDC*, which stands for *framework design core*. In the review, we'll take notes and provide feedback. After the review, we'll publish the notes in the [API Review repository](https://github.com/dotnet/apireviews). A good example is the [review of immutable collections](https://github.com/dotnet/apireviews/tree/master/2015-01-07-immutable). Multiple outcomes are possible:
 
-* **Pull is tagged as "Needs API Review"**. The project owner then marks the pull request as "Needs API Review".
+    * **Approved**. In this case the label `api-ready-for-review` is replaced
+    with `api-approved`.
+    * **Needs work**. In case we believe the proposal isn't ready yet, we'll
+    replace the label `api-ready-for-review` with `api-needs-work`.
+    * **Rejected**. In case we believe the proposal isn't a direction we want to go after, we simply write a comment and close the issue.
 
-* **API review**. Using the information in the pull request we'll create an APIX file that constitutes the API delta. The API review board meets multiple times a week to review all PRs that are tagged as needing an API review.
+## Pull requests
 
-* **API review notes are being published**. After the review, we'll publish the notes in the [API Review repository](https://github.com/dotnet/apireviews). A good example is the [review of immutable collections](https://github.com/dotnet/apireviews/tree/master/2015-01-07-immutable).
+Pull requests against **corefx** shouldn't be submitted before getting approval. Also, we don't want to get work in progress (WIP). The reason being that we want to reduce the number pending PRs so that we can focus on the work the community expects we take action on.
 
-* **Pull request is updated with the results of the API Review**. Once the API review is complete, the project owner uploads the notes and API HTML diff, including all comments. The project owner also updates the PR accordingly, with either a call to action to address some concerns or a good to go indicator.
-
-* **Pull request is merged**. When there are no issues - or the issues were addressed by the contributor, the PR is merged.
+If you want to collaborate with other people on the design, feel free to perform the work in a branch in your own fork. If you want to track your TODOs in the description of a PR, you can always submit a PR against your own fork. Also, feel free to advertise your PR by linking it from from the issue you filed against **corefx** in the first step above.
 
 ## API Design Guidelines
 
