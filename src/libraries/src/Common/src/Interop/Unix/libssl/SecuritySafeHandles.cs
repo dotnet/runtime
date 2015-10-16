@@ -81,6 +81,11 @@ namespace System.Net.Security
             get { return _protocols; }
         }
 
+        internal EncryptionPolicy Policy
+        {
+            get { return _policy; }
+        }
+
         public SafeFreeCredentials(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy)
             : base(IntPtr.Zero, true)
         {
@@ -205,7 +210,7 @@ namespace System.Net.Security
             }
         }
 
-        public SafeDeleteContext(SafeFreeCredentials credential, long options, bool isServer, bool remoteCertRequired)
+        public SafeDeleteContext(SafeFreeCredentials credential, long options, string encryptionPolicy, bool isServer, bool remoteCertRequired)
             : base(IntPtr.Zero, true)
         {
             Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteContext");
@@ -224,6 +229,7 @@ namespace System.Net.Security
                     options,
                     credential.CertHandle,
                     credential.CertKeyHandle,
+                    encryptionPolicy,
                     isServer,
                     remoteCertRequired);
             }
