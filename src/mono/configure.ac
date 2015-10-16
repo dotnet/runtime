@@ -743,7 +743,8 @@ AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsy
 AC_DEFINE_UNQUOTED(DISABLED_FEATURES, "$DISABLED_FEATURES", [String of disabled features])
 
 if test "x$mono_feature_disable_aot" = "xyes"; then
-	AC_DEFINE(DISABLE_AOT_COMPILER, 1, [Disable AOT Compiler])
+	AC_DEFINE(DISABLE_AOT, 1, [Disable AOT Compiler])
+	enable_system_aot=no
 	AC_MSG_NOTICE([Disabled AOT compiler])
 fi
 

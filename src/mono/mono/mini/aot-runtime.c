@@ -5434,6 +5434,33 @@ mono_aot_init (void)
 {
 }
 
+void
+mono_aot_cleanup (void)
+{
+}
+
+guint32
+mono_aot_find_method_index (MonoMethod *method)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+void
+mono_aot_init_llvm_method (gpointer aot_module, guint32 method_index)
+{
+}
+
+void
+mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, MonoObject *this)
+{
+}
+
+void
+mono_aot_init_gshared_method_rgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
+{
+}
+
 gpointer
 mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 {
@@ -5516,6 +5543,13 @@ mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr)
 }
 
 gpointer
+mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
 mono_aot_get_trampoline (const char *name)
 {
 	g_assert_not_reached ();
@@ -5542,6 +5576,29 @@ mono_aot_get_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem
 	g_assert_not_reached ();
 	return NULL;
 }	
+
+gpointer
+mono_aot_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+void
+mono_aot_set_make_unreadable (gboolean unreadable)
+{
+}
+
+gboolean
+mono_aot_is_pagefault (void *ptr)
+{
+	return FALSE;
+}
+
+void
+mono_aot_handle_pagefault (void *ptr)
+{
+}
 
 guint8*
 mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
