@@ -184,8 +184,7 @@ namespace System.Linq.Expressions
                 case ExpressionType.ExclusiveOrAssign:
                     return ExpressionType.ExclusiveOr;
                 default:
-                    // must be an error
-                    throw Error.InvalidOperation("op");
+                    throw ContractUtils.Unreachable;
             }
         }
 

@@ -737,5 +737,48 @@ namespace Tests.ExpressionCompiler.Binary
         }
 
         #endregion
+
+        [Fact]
+        public static void CannotReduce()
+        {
+            Expression exp = Expression.LessThanOrEqual(Expression.Constant(0), Expression.Constant(0));
+            Assert.False(exp.CanReduce);
+            Assert.Same(exp, exp.Reduce());
+            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+        }
+
+        [Fact]
+        public static void ThrowsOnLeftNull()
+        {
+            Assert.Throws<ArgumentNullException>("left", () => Expression.LessThanOrEqual(null, Expression.Constant(0)));
+        }
+
+        [Fact]
+        public static void ThrowsOnRightNull()
+        {
+            Assert.Throws<ArgumentNullException>("right", () => Expression.LessThanOrEqual(Expression.Constant(0), null));
+        }
+
+        private static class Unreadable<T>
+        {
+            public static T WriteOnly
+            {
+                set { }
+            }
+        }
+
+        [Fact]
+        public static void ThrowsOnLeftUnreadable()
+        {
+            Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
+            Assert.Throws<ArgumentException>("left", () => Expression.LessThanOrEqual(value, Expression.Constant(1)));
+        }
+
+        [Fact]
+        public static void ThrowsOnRightUnreadable()
+        {
+            Expression value = Expression.Property(null, typeof(Unreadable<int>), "WriteOnly");
+            Assert.Throws<ArgumentException>("right", () => Expression.LessThanOrEqual(Expression.Constant(1), value));
+        }
     }
 }
