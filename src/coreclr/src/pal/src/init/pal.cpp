@@ -756,7 +756,6 @@ Parameters :
 void 
 PALCommonCleanup(BOOL full_cleanup)
 {
-    CPalThread *pThread = InternalGetCurrentThread();
     static bool done = false;
 
     if (!done)
