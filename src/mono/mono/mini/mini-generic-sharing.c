@@ -2761,12 +2761,12 @@ shared_gparam_equal (gconstpointer ka, gconstpointer kb)
 }
 
 /*
- * get_shared_gparam:
+ * mini_get_shared_gparam:
  *
- *   Create an anonymous gparam with a type variable with a constraint which encodes which types can match it.
+ *   Create an anonymous gparam from T with a constraint which encodes which types can match it.
  */
-static MonoType*
-get_shared_gparam (MonoType *t, MonoType *constraint)
+MonoType*
+mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 {
 	MonoGenericParam *par = t->data.generic_param;
 	MonoGenericParam *copy;
@@ -2784,6 +2784,10 @@ get_shared_gparam (MonoType *t, MonoType *constraint)
 	if (par->owner && par->owner->image) {
 		image = par->owner->image;
 
+		/*
+		 * Need a cache to ensure the newly created gparam
+		 * is unique wrt T/CONSTRAINT.
+		 */
 		mono_image_lock (image);
 		if (!image->gshared_types) {
 			image->gshared_types_len = MONO_TYPE_INTERNAL;
@@ -2810,6 +2814,7 @@ get_shared_gparam (MonoType *t, MonoType *constraint)
 	copy->image = image ? image : mono_defaults.corlib;
 
 	copy->gshared_constraint = constraint;
+	copy->parent = par;
 	res = mono_metadata_type_dup (NULL, t);
 	res->data.generic_param = copy;
 
@@ -2850,7 +2855,7 @@ get_shared_type (MonoType *t, MonoType *type)
 
 		k = mono_class_inflate_generic_class (gclass->container_class, &context);
 
-		return get_shared_gparam (t, &k->byval_arg);
+		return mini_get_shared_gparam (t, &k->byval_arg);
 	} else if (MONO_TYPE_ISSTRUCT (type)) {
 		return type;
 	}
@@ -2863,7 +2868,7 @@ get_shared_type (MonoType *t, MonoType *type)
 		ttype = MONO_TYPE_OBJECT;
 	} else if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
 		if (type->data.generic_param->gshared_constraint)
-			return get_shared_gparam (t, type->data.generic_param->gshared_constraint);
+			return mini_get_shared_gparam (t, type->data.generic_param->gshared_constraint);
 		ttype = MONO_TYPE_OBJECT;
 	}
 
@@ -2875,7 +2880,7 @@ get_shared_type (MonoType *t, MonoType *type)
 		t2.type = ttype;
 		klass = mono_class_from_mono_type (&t2);
 
-		return get_shared_gparam (t, &klass->byval_arg);
+		return mini_get_shared_gparam (t, &klass->byval_arg);
 	}
 }
 
@@ -2883,7 +2888,7 @@ static MonoType*
 get_gsharedvt_type (MonoType *t)
 {
 	/* Use TypeHandle as the constraint type since its a valuetype */
-	return get_shared_gparam (t, &mono_defaults.typehandle_class->byval_arg);
+	return mini_get_shared_gparam (t, &mono_defaults.typehandle_class->byval_arg);
 }
 
 static MonoGenericInst*

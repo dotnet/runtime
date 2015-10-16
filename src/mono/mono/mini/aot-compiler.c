@@ -2518,20 +2518,8 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 		} else {
 			encode_value (par->gshared_constraint ? 1 : 0, p, &p);
 			if (par->gshared_constraint) {
-				const char *name;
-
 				encode_type (acfg, par->gshared_constraint, p, &p);
-
-				name = mono_generic_param_name (par);
-				if (name) {
-					int len = strlen (name);
-
-					encode_value (len, p, &p);
-					memcpy (p, name, len);
-					p += len;
-				} else {
-					encode_value (0, p, &p);
-				}
+				encode_klass_ref (acfg, mono_class_from_generic_parameter (par->parent, NULL, klass->byval_arg.type == MONO_TYPE_MVAR), p, &p);
 			}
 		}
 	} else if (klass->byval_arg.type == MONO_TYPE_PTR) {

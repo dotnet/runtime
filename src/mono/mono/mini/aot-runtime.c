@@ -478,6 +478,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		MonoType *gshared_constraint = NULL;
 		char *par_name = NULL;
 
+		t = NULL;
 		if (has_container) {
 			gboolean is_method = decode_value (p, &p);
 			
@@ -501,44 +502,45 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		} else {
 			gboolean has_gshared_constraint = decode_value (p, &p);
 			if (has_gshared_constraint) {
-				int len;
+				MonoClass *par_klass;
 
 				gshared_constraint = decode_type (module, p, &p);
 				if (!gshared_constraint)
 					return NULL;
 
-				len = decode_value (p, &p);
-				if (len) {
-					par_name = mono_image_alloc (module->assembly->image, len + 1);
-					memcpy (par_name, p, len);
-					p += len;
-					par_name [len] = '\0';
-				}
+				par_klass = decode_klass_ref (module, p, &p);
+				if (!par_klass)
+					return NULL;
+
+				t = mini_get_shared_gparam (&par_klass->byval_arg, gshared_constraint);
 			}
 		}
 
-		t = g_new0 (MonoType, 1);
-		t->type = type;
-		if (container) {
-			t->data.generic_param = mono_generic_container_get_param (container, num);
-			g_assert (gshared_constraint == NULL);
+		if (t) {
+			klass = mono_class_from_mono_type (t);
 		} else {
-			/* Anonymous */
-			MonoGenericParam *par = (MonoGenericParam*)mono_image_alloc0 (module->assembly->image, sizeof (MonoGenericParamFull));
-			par->num = num;
-			par->gshared_constraint = gshared_constraint;
-			// FIXME:
-			par->image = mono_defaults.corlib;
-			t->data.generic_param = par;
-			if (par_name)
-				((MonoGenericParamFull*)par)->info.name = par_name;
+			t = g_new0 (MonoType, 1);
+			t->type = type;
+			if (container) {
+				t->data.generic_param = mono_generic_container_get_param (container, num);
+				g_assert (gshared_constraint == NULL);
+			} else {
+				/* Anonymous */
+				MonoGenericParam *par = (MonoGenericParam*)mono_image_alloc0 (module->assembly->image, sizeof (MonoGenericParamFull));
+				par->num = num;
+				par->gshared_constraint = gshared_constraint;
+				// FIXME:
+				par->image = mono_defaults.corlib;
+				t->data.generic_param = par;
+				if (par_name)
+					((MonoGenericParamFull*)par)->info.name = par_name;
+			}
+			// FIXME: Maybe use types directly to avoid
+			// the overhead of creating MonoClass-es
+			klass = mono_class_from_mono_type (t);
+
+			g_free (t);
 		}
-
-		// FIXME: Maybe use types directly to avoid
-		// the overhead of creating MonoClass-es
-		klass = mono_class_from_mono_type (t);
-
-		g_free (t);
 		break;
 	}
 	case MONO_AOT_TYPEREF_ARRAY:
