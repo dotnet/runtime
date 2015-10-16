@@ -2728,19 +2728,14 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 	}
 }
 
-typedef struct {
-	MonoGenericParam *par;
-	MonoType *constraint;
-} SharedGParam;
-
 static guint
 shared_gparam_hash (gconstpointer data)
 {
-	SharedGParam *p = (SharedGParam*)data;
+	MonoGSharedGenericParam *p = (MonoGSharedGenericParam*)data;
 	guint hash;
 
-	hash = mono_metadata_generic_param_hash (p->par);
-	hash = ((hash << 5) - hash) ^ mono_metadata_type_hash (p->constraint);
+	hash = mono_metadata_generic_param_hash (p->parent);
+	hash = ((hash << 5) - hash) ^ mono_metadata_type_hash (p->param.param.gshared_constraint);
 
 	return hash;
 }
@@ -2748,14 +2743,14 @@ shared_gparam_hash (gconstpointer data)
 static gboolean
 shared_gparam_equal (gconstpointer ka, gconstpointer kb)
 {
-	SharedGParam *p1 = (SharedGParam*)ka;
-	SharedGParam *p2 = (SharedGParam*)kb;
+	MonoGSharedGenericParam *p1 = (MonoGSharedGenericParam*)ka;
+	MonoGSharedGenericParam *p2 = (MonoGSharedGenericParam*)kb;
 
 	if (p1 == p2)
 		return TRUE;
-	if (p1->par != p2->par)
+	if (p1->parent != p2->parent)
 		return FALSE;
-	if (!mono_metadata_type_equal (p1->constraint, p2->constraint))
+	if (!mono_metadata_type_equal (p1->param.param.gshared_constraint, p2->param.param.gshared_constraint))
 		return FALSE;
 	return TRUE;
 }
@@ -2769,15 +2764,14 @@ MonoType*
 mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 {
 	MonoGenericParam *par = t->data.generic_param;
-	MonoGSharedGenericParam *copy;
-	SharedGParam key;
+	MonoGSharedGenericParam *copy, key;
 	MonoType *res;
 	MonoImage *image = NULL;
 	char *name;
 
 	memset (&key, 0, sizeof (key));
-	key.par = par;
-	key.constraint = constraint;
+	key.parent = par;
+	key.param.param.gshared_constraint = constraint;
 
 	g_assert (mono_generic_param_info (par));
 	/* image might not be set for sre */
@@ -2819,15 +2813,9 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	res->data.generic_param = (MonoGenericParam*)copy;
 
 	if (image) {
-		SharedGParam *dkey;
-
-		dkey = mono_image_alloc0 (image, sizeof (SharedGParam));
-		dkey->par = par;
-		dkey->constraint = constraint;
-
 		mono_image_lock (image);
 		/* Duplicates are ok */
-		g_hash_table_insert (image->gshared_types [constraint->type], dkey, res);
+		g_hash_table_insert (image->gshared_types [constraint->type], copy, res);
 		mono_image_unlock (image);
 	}
 
