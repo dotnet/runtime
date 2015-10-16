@@ -6,15 +6,16 @@
 #include "pal_utilities.h"
 
 #include <arpa/inet.h>
-#include <assert.h>
-#include <functional>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
-#include <vector>
+#include <alloca.h>
 #include <errno.h>
+#include <assert.h>
+#include <vector>
 
 #if !defined(IPV6_ADD_MEMBERSHIP) && defined(IPV6_JOIN_GROUP)
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
@@ -46,6 +47,9 @@ static_assert(sizeof(decltype(IOVector::Base)) == sizeof(decltype(iovec::iov_bas
 static_assert(OffsetOfIOVectorBase == OffsetOfIovecBase, "");
 static_assert(sizeof(decltype(IOVector::Count)) == sizeof(decltype(iovec::iov_len)), "");
 static_assert(OffsetOfIOVectorCount == OffsetOfIovecLen, "");
+
+// We require that FDSET_MAX_FDS is less than or equal to FD_SETSIZE.
+static_assert(PAL_FDSET_MAX_FDS <= FD_SETSIZE, "");
 
 template <typename T>
 static T Min(T left, T right)
@@ -923,7 +927,46 @@ extern "C" Error SetLingerOption(int32_t socket, LingerOption* option)
     return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
 }
 
-// TODO: shim flags
+static bool ConvertSocketFlagsPalToPlatform(int32_t palFlags, int& platformFlags)
+{
+    const int32_t SupportedFlagsMask = PAL_MSG_OOB |
+        PAL_MSG_PEEK |
+        PAL_MSG_DONTROUTE |
+        PAL_MSG_TRUNC |
+        PAL_MSG_CTRUNC;
+
+    if ((palFlags & ~SupportedFlagsMask) != 0)
+    {
+        // TODO: we may want to simply mask off unsupported flags.
+        return false;
+    }
+
+    platformFlags = ((palFlags & PAL_MSG_OOB) == 0 ? 0 : MSG_OOB) |
+        ((palFlags & PAL_MSG_PEEK) == 0 ? 0 : MSG_PEEK) |
+        ((palFlags & PAL_MSG_DONTROUTE) == 0 ? 0 : MSG_DONTROUTE) |
+        ((palFlags & PAL_MSG_TRUNC) == 0 ? 0 : MSG_TRUNC) |
+        ((palFlags & PAL_MSG_CTRUNC) == 0 ? 0 : MSG_CTRUNC);
+
+    return true;
+}
+
+static int32_t ConvertSocketFlagsPlatformToPal(int platformFlags)
+{
+    const int SupportedFlagsMask = MSG_OOB |
+        MSG_PEEK |
+        MSG_DONTROUTE |
+        MSG_TRUNC |
+        MSG_CTRUNC;
+
+    platformFlags &= SupportedFlagsMask;
+
+    return ((platformFlags & MSG_OOB) == 0 ? 0 : PAL_MSG_OOB) |
+        ((platformFlags & MSG_PEEK) == 0 ? 0 : PAL_MSG_PEEK) |
+        ((platformFlags & MSG_DONTROUTE) == 0 ? 0 : PAL_MSG_DONTROUTE) |
+        ((platformFlags & MSG_TRUNC) == 0 ? 0 : PAL_MSG_TRUNC) |
+        ((platformFlags & MSG_CTRUNC) == 0 ? 0 : PAL_MSG_CTRUNC);
+}
+
 extern "C" Error ReceiveMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* received)
 {
     if (messageHeader == nullptr || received == nullptr || messageHeader->SocketAddressLen < 0 ||
@@ -932,10 +975,16 @@ extern "C" Error ReceiveMessage(int32_t socket, MessageHeader* messageHeader, in
         return PAL_EFAULT;
     }
 
+    int socketFlags;
+    if (!ConvertSocketFlagsPalToPlatform(flags, socketFlags))
+    {
+        return PAL_ENOTSUP;
+    }
+
     msghdr header;
     ConvertMessageHeaderToMsghdr(&header, *messageHeader);
 
-    ssize_t res = recvmsg(socket, &header, flags);
+    ssize_t res = recvmsg(socket, &header, socketFlags);
 
     assert(static_cast<int32_t>(header.msg_namelen) <= messageHeader->SocketAddressLen);
     messageHeader->SocketAddressLen = Min(static_cast<int32_t>(header.msg_namelen), messageHeader->SocketAddressLen);
@@ -945,7 +994,7 @@ extern "C" Error ReceiveMessage(int32_t socket, MessageHeader* messageHeader, in
     messageHeader->ControlBufferLen = Min(static_cast<int32_t>(header.msg_controllen), messageHeader->ControlBufferLen);
     memcpy(messageHeader->ControlBuffer, header.msg_control, static_cast<size_t>(messageHeader->ControlBufferLen));
 
-    messageHeader->Flags = header.msg_flags;
+    messageHeader->Flags = ConvertSocketFlagsPlatformToPal(header.msg_flags);
 
     if (res != -1)
     {
@@ -957,13 +1006,18 @@ extern "C" Error ReceiveMessage(int32_t socket, MessageHeader* messageHeader, in
     return ConvertErrorPlatformToPal(errno);
 }
 
-// TODO: shim flags
 extern "C" Error SendMessage(int32_t socket, MessageHeader* messageHeader, int32_t flags, int64_t* sent)
 {
     if (messageHeader == nullptr || sent == nullptr || messageHeader->SocketAddressLen < 0 ||
         messageHeader->ControlBufferLen < 0 || messageHeader->IOVectorCount < 0)
     {
         return PAL_EFAULT;
+    }
+
+    int socketFlags;
+    if (!ConvertSocketFlagsPalToPlatform(flags, socketFlags))
+    {
+        return PAL_ENOTSUP;
     }
 
     msghdr header;
@@ -1438,4 +1492,156 @@ extern "C" Error Socket(int32_t addressFamily, int32_t socketType, int32_t proto
 
     *createdSocket = socket(platformAddressFamily, platformSocketType, platformProtocolType);
     return *createdSocket != -1 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+static void ConvertFdSetPlatformToPal(FdSet& palSet, fd_set& platformSet, int32_t fdCount)
+{
+    assert(fdCount >= 0);
+
+#if !HAVE_FDS_BITS && !HAVE_PRIVATE_FDS_BITS
+    for (int i = 0; i < fdCount; i++)
+    {
+        int word = i / static_cast<int>(PAL_FDSET_NFD_BITS);
+        int bit = i % static_cast<int>(PAL_FDSET_NFD_BITS);
+        if ((palSet.Bits[word] & (1 << bit)) == 0)
+        {
+            FD_SET(i, &platformSet);
+        }
+        else
+        {
+            FD_CLR(i, &platformSet);
+        }
+    }
+#else
+
+    size_t bytesToCopy = static_cast<size_t>((fdCount / 8) + ((fdCount % 8) == 0 ? 1 : 0));
+
+    uint8_t* dest;
+#if HAVE_FDS_BITS
+    dest = reinterpret_cast<uint8_t*>(&platformSet.fds_bits[0]);
+#elif HAVE_PRIVATE_FDS_BITS
+    dest = reinterpret_cast<uint8_t*>(&platformSet.__fds_bits[0]);
+#endif
+
+    memcpy(dest, &palSet.Bits[0], bytesToCopy);
+#endif
+}
+
+static void ConvertFdSetPalToPlatform(fd_set& platformSet, FdSet& palSet, int32_t fdCount)
+{
+    assert(fdCount >= 0);
+
+#if !HAVE_FDS_BITS && !HAVE_PRIVATE_FDS_BITS
+    for (int i = 0; i < fdCount; i++)
+    {
+        uint32_t* word = &palSet.Bits[i / static_cast<int>(PAL_FDSET_NFD_BITS)];
+        uint32_t mask = 1 << (i % static_cast<int>(PAL_FDSET_NFD_BITS));
+
+        if (FD_ISSET(i, &platformSet))
+        {
+            *word |= mask;
+        }
+        else
+        {
+            *word &= ~mask;
+        }
+    }
+#else
+    size_t bytesToCopy = static_cast<size_t>((fdCount / 8) + ((fdCount % 8) == 0 ? 1 : 0));
+
+    uint8_t* source;
+#if HAVE_FDS_BITS
+    source = reinterpret_cast<uint8_t*>(&platformSet.fds_bits[0]);
+#elif HAVE_PRIVATE_FDS_BITS
+    source = reinterpret_cast<uint8_t*>(&platformSet.__fds_bits[0]);
+#endif
+
+    memcpy(&palSet.Bits[0], source, bytesToCopy);
+#endif
+}
+
+extern "C" Error Select(int32_t fdCount, FdSet* readFdSet, FdSet* writeFdSet, FdSet* errorFdSet, int32_t microseconds, int32_t* selected)
+{
+    if (selected == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    if (fdCount < 0 || fdCount > PAL_FDSET_MAX_FDS || microseconds < -1)
+    {
+        return PAL_EINVAL;
+    }
+
+    fd_set* readFds = nullptr;
+    fd_set* writeFds = nullptr;
+    fd_set* errorFds = nullptr;
+    timeval* timeout = nullptr;
+    timeval tv;
+
+    if (readFdSet != nullptr)
+    {
+        readFds = reinterpret_cast<fd_set*>(alloca(sizeof(fd_set)));
+        ConvertFdSetPalToPlatform(*readFds, *readFdSet, fdCount);
+    }
+
+    if (writeFdSet != nullptr)
+    {
+        writeFds = reinterpret_cast<fd_set*>(alloca(sizeof(fd_set)));
+        ConvertFdSetPalToPlatform(*writeFds, *writeFdSet, fdCount);
+    }
+
+    if (errorFdSet != nullptr)
+    {
+        errorFds = reinterpret_cast<fd_set*>(alloca(sizeof(fd_set)));
+        ConvertFdSetPalToPlatform(*errorFds, *errorFdSet, fdCount);
+    }
+
+    if (microseconds != -1)
+    {
+        tv.tv_sec = microseconds / 1000000;
+        tv.tv_usec = microseconds % 1000000;
+        timeout = &tv;
+    }
+
+    int rv = select(fdCount, readFds, writeFds, errorFds, timeout);
+    if (rv == -1)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    if (readFdSet != nullptr)
+    {
+        ConvertFdSetPlatformToPal(*writeFdSet, *writeFds, fdCount);
+    }
+
+    if (writeFdSet != nullptr)
+    {
+        ConvertFdSetPlatformToPal(*writeFdSet, *writeFds, fdCount);
+    }
+
+    if (errorFdSet != nullptr)
+    {
+        ConvertFdSetPlatformToPal(*errorFdSet, *errorFds, fdCount);
+    }
+
+    *selected = rv;
+    return PAL_SUCCESS;
+}
+
+extern "C" Error GetBytesAvailable(int32_t socket, int32_t* available)
+{
+    if (available == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    int avail;
+    int err = ioctl(socket, FIONREAD, &avail);
+    if (err == -1)
+    {
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    *available = static_cast<int32_t>(avail);
+    return PAL_SUCCESS;
 }

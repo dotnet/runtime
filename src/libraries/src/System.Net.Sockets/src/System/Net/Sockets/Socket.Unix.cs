@@ -16,7 +16,7 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
-        internal static int FillFdSetFromSocketList(ref Interop.libc.fd_set fdset, IList socketList)
+        internal static int FillFdSetFromSocketList(ref Interop.Sys.FdSet fdset, IList socketList)
         {
             if (socketList == null || socketList.Count == 0)
             {
@@ -46,7 +46,7 @@ namespace System.Net.Sockets
 
         // Transform the list socketList such that the only sockets left are those
         // with a file descriptor contained in the array "fileDescriptorArray".
-        internal static void FilterSocketListUsingFdSet(ref Interop.libc.fd_set fdset, IList socketList)
+        internal static void FilterSocketListUsingFdSet(ref Interop.Sys.FdSet fdset, IList socketList)
         {
             if (socketList == null || socketList.Count == 0)
             {
