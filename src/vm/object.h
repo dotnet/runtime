@@ -20,6 +20,7 @@
 #include "specialstatics.h"
 #include "sstring.h"
 #include "daccess.h"
+#include "fcall.h"
 
 extern "C" void __fastcall ZeroMemoryInGCHeap(void*, size_t);
 
@@ -745,8 +746,8 @@ class ArrayBase : public Object
     friend class Object;
     friend OBJECTREF AllocateArrayEx(TypeHandle arrayClass, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap DEBUG_ARG(BOOL bDontSetAppDomain)); 
     friend OBJECTREF FastAllocatePrimitiveArray(MethodTable* arrayType, DWORD cElements, BOOL bAllocateInLargeHeap);
-    friend Object *JIT_NewArr1VC_MP_FastPortable(CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
-    friend Object *JIT_NewArr1OBJ_MP_FastPortable(CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
+    friend FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+    friend FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend struct _DacGlobals;
