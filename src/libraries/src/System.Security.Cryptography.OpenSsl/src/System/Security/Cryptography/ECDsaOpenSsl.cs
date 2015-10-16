@@ -278,7 +278,7 @@ namespace System.Security.Cryptography
 
         private static int GetKeySize(SafeEcKeyHandle ecKeyHandle)
         {
-            int nid = Interop.libcrypto.EcKeyGetCurveName(ecKeyHandle);
+            int nid = Interop.Crypto.EcKeyGetCurveName(ecKeyHandle);
             int keySize = 0;
 
             for (int i = 0; i < s_supportedAlgorithms.Length; i++)
@@ -307,11 +307,11 @@ namespace System.Security.Cryptography
                 if (keySize == s_supportedAlgorithms[i].KeySize)
                 {
                     int nid = s_supportedAlgorithms[i].Nid;
-                    SafeEcKeyHandle key = Interop.libcrypto.EC_KEY_new_by_curve_name(nid);
+                    SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByCurveName(nid);
                     if (key == null || key.IsInvalid)
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
 
-                    if (!Interop.libcrypto.EC_KEY_generate_key(key))
+                    if (!Interop.Crypto.EcKeyGenerateKey(key))
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
 
                     return key;

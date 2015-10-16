@@ -37,9 +37,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Rsa.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.Rsa.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EcKey.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.EcKey.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EcDsa.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.EcDsa.cs</Link>
     </Compile>
@@ -48,6 +45,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Bignum.cs"</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs"</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs"</Link>
