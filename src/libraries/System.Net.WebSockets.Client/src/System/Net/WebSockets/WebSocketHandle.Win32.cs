@@ -1,7 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,9 +15,18 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.WebSockets
 {
-    public sealed partial class ClientWebSocket : WebSocket
+    internal partial struct WebSocketHandle
     {
-        partial void CheckPlatformSupport()
+        private const string WebSocketAvailableApiCheck = "WinHttpWebSocketCompleteUpgrade";
+
+        private readonly WinHttpWebSocket _webSocket;
+
+        public static WebSocketHandle Create()
+        {
+            return new WebSocketHandle(new WinHttpWebSocket());
+        }
+
+        public static void CheckPlatformSupport()
         {
             bool isPlatformSupported = false;
 
@@ -25,22 +40,17 @@ namespace System.Net.WebSockets
                 WebSocketValidate.ThrowPlatformNotSupportedException();
             }
         }
-        
-        private Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken)
-        {
-            var winHttpWebSocket = new WinHttpWebSocket();
-            _innerWebSocket = winHttpWebSocket;
 
+        private WebSocketHandle(WinHttpWebSocket webSocket)
+        {
+            _webSocket = webSocket;
+        }
+        
+        public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
+        {
             try
             {
-                // Change internal state to 'connected' to enable the other methods
-                if ((InternalState)Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != InternalState.Connecting)
-                {
-                    // Aborted/Disposed during connect.
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
-
-                return winHttpWebSocket.ConnectAsync(uri, cancellationToken, _options);
+                await _webSocket.ConnectAsync(uri, cancellationToken, options);
             }
             catch (Win32Exception ex)
             {
@@ -51,14 +61,6 @@ namespace System.Net.WebSockets
                 }
                 throw wex;
             }
-            catch (Exception ex)
-            {
-                if (Logging.On)
-                {
-                    Logging.Exception(Logging.WebSockets, this, "ConnectAsync", ex);
-                }
-                throw;
-            }
         }
-    }        
+    }
 }
