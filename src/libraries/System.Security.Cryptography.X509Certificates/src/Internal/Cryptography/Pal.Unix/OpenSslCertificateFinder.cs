@@ -43,14 +43,13 @@ namespace Internal.Cryptography.Pal
 
         public void FindBySubjectName(string subjectName)
         {
-            const OpenSslX509Encoder.OpenSslX09NameFormatFlags formatFlags =
-                OpenSslX509Encoder.OpenSslX09NameFormatFlags.XN_FLAG_FN_NONE |
-                OpenSslX509Encoder.OpenSslX09NameFormatFlags.XN_FLAG_SEP_CPLUS_SPC;
-
             FindCore(
                 cert =>
                 {
-                    string formedSubject = OpenSslX509Encoder.X500DistinguishedNameDecode(cert.SubjectName.RawData, formatFlags);
+                    string formedSubject = OpenSslX509Encoder.X500DistinguishedNameDecode(
+                        cert.SubjectName.RawData,
+                        X500DistinguishedNameFlags.None,
+                        useFindFormat: true);
 
                     return formedSubject.IndexOf(subjectName, StringComparison.OrdinalIgnoreCase) >= 0;
                 });
@@ -63,14 +62,13 @@ namespace Internal.Cryptography.Pal
 
         public void FindByIssuerName(string issuerName)
         {
-            const OpenSslX509Encoder.OpenSslX09NameFormatFlags formatFlags =
-                OpenSslX509Encoder.OpenSslX09NameFormatFlags.XN_FLAG_FN_NONE |
-                OpenSslX509Encoder.OpenSslX09NameFormatFlags.XN_FLAG_SEP_CPLUS_SPC;
-
             FindCore(
                 cert =>
                 {
-                    string formedIssuer = OpenSslX509Encoder.X500DistinguishedNameDecode(cert.IssuerName.RawData, formatFlags);
+                    string formedIssuer = OpenSslX509Encoder.X500DistinguishedNameDecode(
+                        cert.IssuerName.RawData,
+                        X500DistinguishedNameFlags.None,
+                        useFindFormat: true);
 
                     return formedIssuer.IndexOf(issuerName, StringComparison.OrdinalIgnoreCase) >= 0;
                 });

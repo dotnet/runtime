@@ -83,7 +83,7 @@ namespace Internal.Cryptography.Pal
                     }
                     else
                     {
-                        using (SafeX509Handle certHandle = Interop.libcrypto.X509_dup(cert.Handle))
+                        using (SafeX509Handle certHandle = Interop.Crypto.X509Duplicate(cert.Handle))
                         {
                             if (!Interop.Crypto.PushX509StackField(publicCerts, certHandle))
                             {

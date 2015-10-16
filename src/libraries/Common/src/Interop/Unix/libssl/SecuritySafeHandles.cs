@@ -112,7 +112,7 @@ namespace System.Net.Security
 
                 Debug.Assert(_certKeyHandle != null, "Failed to extract a private key handle");
 
-                _certHandle = Interop.libcrypto.X509_dup(cert.Handle);
+                _certHandle = Interop.Crypto.X509Duplicate(cert.Handle);
                 Interop.Crypto.CheckValidOpenSslHandle(_certHandle);
             }
 
