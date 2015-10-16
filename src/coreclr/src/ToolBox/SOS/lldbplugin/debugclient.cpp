@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include "sosplugin.h"
 #include <string.h>
-#include <dbgtargetcontext.h>
 #include <string>
 
 ULONG g_currentThreadIndex = -1;
@@ -708,8 +707,8 @@ DebugClient::GetModuleDirectory(
 // Internal function
 ULONG64
 DebugClient::GetModuleBase(
-    lldb::SBTarget target,
-    lldb::SBModule module)
+    /* const */ lldb::SBTarget& target,
+    /* const */ lldb::SBModule& module)
 {
     // Find the first section with an valid base address
     int numSections = module.GetNumSections();
@@ -922,6 +921,19 @@ DebugClient::GetThreadContextById(
     dtcontext = (DT_CONTEXT*)context;
     dtcontext->ContextFlags = contextFlags;
 
+    GetContextFromFrame(frame, dtcontext);
+    hr = S_OK;
+
+exit:
+    return hr;
+}
+
+// Internal function
+void
+DebugClient::GetContextFromFrame(
+    /* const */ lldb::SBFrame& frame,
+    DT_CONTEXT *dtcontext)
+{
 #ifdef DBG_TARGET_AMD64
     dtcontext->Rip = frame.GetPC();
     dtcontext->Rsp = frame.GetSP();
@@ -969,28 +981,18 @@ DebugClient::GetThreadContextById(
     dtcontext->R11 = GetRegister(frame, "r11");
     dtcontext->R12 = GetRegister(frame, "r12");
 #endif
-
-    hr = S_OK;
-
-exit:
-    return hr;
 }
 
 // Internal function
 DWORD_PTR 
-DebugClient::GetRegister(lldb::SBFrame frame, const char *name)
+DebugClient::GetRegister(
+    /* const */ lldb::SBFrame& frame,
+    const char *name)
 {
     lldb::SBValue regValue = frame.FindRegister(name);
 
     lldb::SBError error;
     DWORD_PTR result = regValue.GetValueAsUnsigned(error);
-
-#ifdef _DEBUG
-    if (!regValue.IsValid() || error.Fail())
-    {
-        Output(DEBUG_OUTPUT_ERROR, "Invalid register name '%s'\n", name);
-    }
-#endif
 
     return result;
 }
@@ -1115,7 +1117,7 @@ DebugClient::GetExpression(
 // Internal function
 DWORD_PTR 
 DebugClient::GetExpression(
-    lldb::SBFrame frame,
+    /* const */ lldb::SBFrame& frame,
     lldb::SBError& error,
     PCSTR exp)
 {
@@ -1128,6 +1130,70 @@ DebugClient::GetExpression(
     }
 
     return result;
+}
+
+HRESULT 
+DebugClient::VirtualUnwind(
+    DWORD threadID,
+    ULONG32 contextSize,
+    PBYTE context)
+{
+    lldb::SBProcess process;
+    lldb::SBThread thread;
+
+    if (context == NULL || contextSize < sizeof(DT_CONTEXT))
+    {
+        return E_FAIL;
+    }
+
+    process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    thread = process.GetThreadByID(threadID);
+    if (!thread.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    DT_CONTEXT *dtcontext = (DT_CONTEXT*)context;
+    lldb::SBFrame frameFound;
+
+#ifdef DBG_TARGET_AMD64
+    DWORD64 spToFind = dtcontext->Rsp;
+#elif DBG_TARGET_ARM
+    DWORD spToFind = dtcontext->Sp;
+#endif
+    
+    int numFrames = thread.GetNumFrames();
+    for (int i = 0; i < numFrames; i++)
+    {
+        lldb::SBFrame frame = thread.GetFrameAtIndex(i);
+        if (!frame.IsValid())
+        {
+            break;
+        }
+
+        lldb::addr_t sp = frame.GetSP();
+
+        if (sp == spToFind && (i + 1) < numFrames)
+        {
+            // Get next frame after finding the match
+            frameFound = thread.GetFrameAtIndex(i + 1);
+            break;
+        }
+    }
+
+    if (!frameFound.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    GetContextFromFrame(frameFound, dtcontext);
+
+    return S_OK;
 }
 
 //----------------------------------------------------------------------------

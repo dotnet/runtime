@@ -85,6 +85,8 @@ public:
 
     // ICorDebugDataTarget4
 
-    virtual HRESULT STDMETHODCALLTYPE GetPid(
-        /* [out] */ DWORD *pdwProcessId);
+    virtual HRESULT STDMETHODCALLTYPE VirtualUnwind(
+        /* [in] */ DWORD threadId,
+        /* [in] */ ULONG32 contextSize,
+        /* [in, out, size_is(contextSize)] */ PBYTE context);
 };
