@@ -123,7 +123,7 @@ public class FileVersionInfoTest
             ProductBuildPart = 0,
             ProductMajorPart = 1,
             ProductMinorPart = 0,
-            ProductName = "Unkown_Product_Name",
+            ProductName = "Unknown_Product_Name",
             ProductPrivatePart = 1,
             ProductVersion = "1.0.0.1",
             SpecialBuild = "",
