@@ -281,6 +281,11 @@ namespace Internal.Cryptography.Pal
                     {
                         first = certPal;
                     }
+                    else if (certPal.HasPrivateKey && !first.HasPrivateKey)
+                    {
+                        first.Dispose();
+                        first = certPal;
+                    }
                     else
                     {
                         certPal.Dispose();
