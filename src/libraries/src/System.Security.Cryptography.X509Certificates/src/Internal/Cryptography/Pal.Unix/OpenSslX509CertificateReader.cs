@@ -251,10 +251,7 @@ namespace Internal.Cryptography.Pal
                 return null;
             }
 
-            using (SafeRsaHandle rsaHandle = Interop.libcrypto.EVP_PKEY_get1_RSA(_privateKey))
-            {
-                return new RSAOpenSsl(rsaHandle.DangerousGetHandle());
-            }
+            return new RSAOpenSsl(_privateKey);
         }
 
         public ECDsa GetECDsaPublicKey()
