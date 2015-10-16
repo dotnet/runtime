@@ -3,18 +3,17 @@
 
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-    internal static partial class libcrypto
+    internal static partial class Crypto
     {
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern SafeEcKeyHandle EVP_PKEY_get1_EC_KEY(SafeEvpPKeyHandle pkey);
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern SafeEcKeyHandle EvpPkeyGetEcKey(SafeEvpPKeyHandle pkey);
 
-        [DllImport(Libraries.LibCrypto)]
+        [DllImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EVP_PKEY_set1_EC_KEY(SafeEvpPKeyHandle pkey, SafeEcKeyHandle rsa);
+        internal static extern bool EvpPkeySetEcKey(SafeEvpPKeyHandle pkey, SafeEcKeyHandle key);
     }
 }

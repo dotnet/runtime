@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, "pkeyHandle");
 
             // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
-            SafeEcKeyHandle ecKey = Interop.libcrypto.EVP_PKEY_get1_EC_KEY(pkeyHandle);
+            SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
 
             if (ecKey.IsInvalid)
             {
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
                 // Wrapping our key in an EVP_PKEY will up_ref our key.
                 // When the EVP_PKEY is Disposed it will down_ref the key.
                 // So everything should be copacetic.
-                if (!Interop.libcrypto.EVP_PKEY_set1_EC_KEY(pkeyHandle, currentKey))
+                if (!Interop.Crypto.EvpPkeySetEcKey(pkeyHandle, currentKey))
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
