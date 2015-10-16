@@ -893,7 +893,7 @@ namespace System.Linq.Expressions
             }
 
             var expressionList = expressions.ToReadOnly();
-            return BlockCore(expressionList.Last().Type, variableList, expressionList);
+            return BlockCore(null, variableList, expressionList);
         }
 
         /// <summary>
@@ -935,29 +935,30 @@ namespace System.Linq.Expressions
             RequiresCanRead(expressionList, "expressions");
             ValidateVariables(variableList, "variables");
 
-            Expression last = expressionList.Last();
-            if (type != typeof(void))
+            if (type != null)
             {
-                if (!TypeUtils.AreReferenceAssignable(type, last.Type))
+                Expression last = expressionList.Last();
+                if (type != typeof(void))
                 {
-                    throw Error.ArgumentTypesMustMatch();
+                    if (!TypeUtils.AreReferenceAssignable(type, last.Type))
+                    {
+                        throw Error.ArgumentTypesMustMatch();
+                    }
+                }
+
+                if (!TypeUtils.AreEquivalent(type, last.Type))
+                {
+                    return new ScopeWithType(variableList, expressionList, type);
                 }
             }
 
-            if (!TypeUtils.AreEquivalent(type, last.Type))
+            if (expressionList.Count == 1)
             {
-                return new ScopeWithType(variableList, expressionList, type);
+                return new Scope1(variableList, expressionList[0]);
             }
             else
             {
-                if (expressionList.Count == 1)
-                {
-                    return new Scope1(variableList, expressionList[0]);
-                }
-                else
-                {
-                    return new ScopeN(variableList, expressionList);
-                }
+                return new ScopeN(variableList, expressionList);
             }
         }
 
