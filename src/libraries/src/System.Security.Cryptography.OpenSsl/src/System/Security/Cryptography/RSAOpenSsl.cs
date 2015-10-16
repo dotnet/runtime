@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
 
             // Set base.KeySize to avoid throwing an extra Lazy at the GC when
             // using something other than the default keysize.
-            base.KeySize = BitsPerByte * Interop.libcrypto.RSA_size(rsaHandle);
+            base.KeySize = BitsPerByte * Interop.Crypto.RsaSize(rsaHandle);
             _key = new Lazy<SafeRsaHandle>(() => rsaHandle);
         }
 
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography
             }
 
             // Set base.KeySize rather than this.KeySize to avoid an unnecessary Lazy<> allocation.
-            base.KeySize = BitsPerByte * Interop.libcrypto.RSA_size(rsa);
+            base.KeySize = BitsPerByte * Interop.Crypto.RsaSize(rsa);
             _key = new Lazy<SafeRsaHandle>(() => rsa);
         }
 
@@ -155,38 +155,31 @@ namespace System.Security.Cryptography
             if (padding == null)
                 throw new ArgumentNullException("padding");
 
-            Interop.libcrypto.OpenSslRsaPadding openSslPadding;
-
+            bool useOaepPadding;
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
-                openSslPadding = Interop.libcrypto.OpenSslRsaPadding.RSA_PKCS1_PADDING;
+                useOaepPadding = false;
             }
             else if (padding == RSAEncryptionPadding.OaepSHA1)
             {
-                openSslPadding = Interop.libcrypto.OpenSslRsaPadding.RSA_PKCS1_OAEP_PADDING;
+                useOaepPadding = true;
             }
             else
             {
                 throw PaddingModeNotSupported();
             }
 
-            return Decrypt(data, openSslPadding);
-        }
-
-        private byte[] Decrypt(byte[] data, Interop.libcrypto.OpenSslRsaPadding padding)
-        {
             SafeRsaHandle key = _key.Value;
-
             CheckInvalidKey(key);
 
-            byte[] buf = new byte[Interop.libcrypto.RSA_size(key)];
+            byte[] buf = new byte[Interop.Crypto.RsaSize(key)];
 
-            int returnValue = Interop.libcrypto.RSA_private_decrypt(
+            int returnValue = Interop.Crypto.RsaPrivateDecrypt(
                 data.Length,
                 data,
                 buf,
                 key,
-                padding);
+                useOaepPadding);
 
             CheckReturn(returnValue);
 
@@ -214,38 +207,31 @@ namespace System.Security.Cryptography
             if (padding == null)
                 throw new ArgumentNullException("padding");
 
-            Interop.libcrypto.OpenSslRsaPadding openSslPadding;
-
+            bool useOaepPadding;
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
-                openSslPadding = Interop.libcrypto.OpenSslRsaPadding.RSA_PKCS1_PADDING;
+                useOaepPadding = false;
             }
             else if (padding == RSAEncryptionPadding.OaepSHA1)
             {
-                openSslPadding = Interop.libcrypto.OpenSslRsaPadding.RSA_PKCS1_OAEP_PADDING;
+                useOaepPadding = true;
             }
             else
             {
                 throw PaddingModeNotSupported();
             }
 
-            return Encrypt(data, openSslPadding);
-        }
-
-        private byte[] Encrypt(byte[] data, Interop.libcrypto.OpenSslRsaPadding padding)
-        {
             SafeRsaHandle key = _key.Value;
-
             CheckInvalidKey(key);
 
-            byte[] buf = new byte[Interop.libcrypto.RSA_size(key)];
+            byte[] buf = new byte[Interop.Crypto.RsaSize(key)];
 
-            int returnValue = Interop.libcrypto.RSA_public_encrypt(
+            int returnValue = Interop.Crypto.RsaPublicEncrypt(
                 data.Length,
                 data,
                 buf,
                 key,
-                padding);
+                useOaepPadding);
 
             CheckReturn(returnValue);
 
@@ -274,7 +260,7 @@ namespace System.Security.Cryptography
         {
             ValidateParameters(ref parameters);
 
-            SafeRsaHandle key = Interop.libcrypto.RSA_new();
+            SafeRsaHandle key = Interop.Crypto.RsaCreate();
             bool imported = false;
 
             Interop.Crypto.CheckValidOpenSslHandle(key);
@@ -312,7 +298,7 @@ namespace System.Security.Cryptography
 
             // Set base.KeySize directly, since we don't want to free the key
             // (which we would do if the keysize changed on import)
-            base.KeySize = BitsPerByte * Interop.libcrypto.RSA_size(key);
+            base.KeySize = BitsPerByte * Interop.Crypto.RsaSize(key);
         }
 
         protected override void Dispose(bool disposing)
@@ -403,7 +389,7 @@ namespace System.Security.Cryptography
 
         private SafeRsaHandle GenerateKey()
         {
-            SafeRsaHandle key = Interop.libcrypto.RSA_new();
+            SafeRsaHandle key = Interop.Crypto.RsaCreate();
             bool generated = false;
 
             Interop.Crypto.CheckValidOpenSslHandle(key);
@@ -415,11 +401,10 @@ namespace System.Security.Cryptography
                     // The documentation for RSA_generate_key_ex does not say that it returns only
                     // 0 or 1, so the call marshalls it back as a full Int32 and checks for a value
                     // of 1 explicitly.
-                    int response = Interop.libcrypto.RSA_generate_key_ex(
+                    int response = Interop.Crypto.RsaGenerateKeyEx(
                         key,
                         KeySize,
-                        exponent,
-                        IntPtr.Zero);
+                        exponent);
 
                     CheckBoolReturn(response);
                     generated = true;
@@ -464,10 +449,10 @@ namespace System.Security.Cryptography
         {
             int algorithmNid = GetAlgorithmNid(hashAlgorithmName);
             SafeRsaHandle rsa = _key.Value;
-            byte[] signature = new byte[Interop.libcrypto.RSA_size(rsa)];
+            byte[] signature = new byte[Interop.Crypto.RsaSize(rsa)];
             int signatureSize;
 
-            bool success = Interop.libcrypto.RSA_sign(
+            bool success = Interop.Crypto.RsaSign(
                 algorithmNid,
                 hash,
                 hash.Length,
@@ -513,7 +498,7 @@ namespace System.Security.Cryptography
             int algorithmNid = GetAlgorithmNid(hashAlgorithmName);
             SafeRsaHandle rsa = _key.Value;
 
-            return Interop.libcrypto.RSA_verify(
+            return Interop.Crypto.RsaVerify(
                 algorithmNid,
                 hash,
                 hash.Length,
@@ -547,6 +532,5 @@ namespace System.Security.Cryptography
         {
             return new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
         }
-
     }
 }

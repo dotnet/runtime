@@ -15,35 +15,7 @@ internal static partial class Interop
 {
     internal static partial class libcrypto
     {
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern SafeRsaHandle RSA_new();
 
-        [DllImport(Libraries.LibCrypto)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool RSA_up_ref(IntPtr rsa);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern void RSA_free(IntPtr rsa);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal extern static int RSA_public_encrypt(int flen, byte[] from, byte[] to, SafeRsaHandle rsa, OpenSslRsaPadding padding);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal extern static int RSA_private_decrypt(int flen, byte[] from, byte[] to, SafeRsaHandle rsa, OpenSslRsaPadding padding);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern int RSA_size(SafeRsaHandle rsa);
-
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern int RSA_generate_key_ex(SafeRsaHandle rsa, int bits, SafeBignumHandle e, IntPtr zero);
-
-        [DllImport(Libraries.LibCrypto)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool RSA_sign(int type, byte[] m, int m_len, byte[] sigret, out int siglen, SafeRsaHandle rsa);
-
-        [DllImport(Libraries.LibCrypto)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool RSA_verify(int type, byte[] m, int m_len, byte[] sigbuf, int siglen, SafeRsaHandle rsa);
 
         internal static unsafe RSAParameters ExportRsaParameters(SafeRsaHandle key, bool includePrivateParameters)
         {
@@ -64,7 +36,7 @@ internal static partial class Interop
                 key.DangerousAddRef(ref addedRef);
                 RSA_ST* rsaStructure = (RSA_ST*)key.DangerousGetHandle();
 
-                int modulusSize = RSA_size(key);
+                int modulusSize = Crypto.RsaSize(key);
 
                 // RSACryptoServiceProvider expects P, DP, Q, DQ, and InverseQ to all
                 // be padded up to half the modulus size.
@@ -95,17 +67,6 @@ internal static partial class Interop
             }
 
             return rsaParameters;
-        }
-
-        internal enum OpenSslRsaPadding
-        {
-            Invalid,
-            RSA_PKCS1_PADDING = 1,
-            RSA_SSLV23_PADDING = 2,
-            RSA_NO_PADDING = 3,
-            RSA_PKCS1_OAEP_PADDING = 4,
-            RSA_X931_PADDING = 5,
-            RSA_PKCS1_PSS_PADDING = 6,
         }
 
         [StructLayout(LayoutKind.Sequential)]
