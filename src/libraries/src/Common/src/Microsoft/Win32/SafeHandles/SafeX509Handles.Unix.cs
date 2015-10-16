@@ -21,7 +21,7 @@ namespace Microsoft.Win32.SafeHandles
         [SecurityCritical]
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.X509_free(handle);
+            Interop.Crypto.X509Destroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }
@@ -42,7 +42,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.X509_CRL_free(handle);
+            Interop.Crypto.X509CrlDestroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }
@@ -63,7 +63,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.X509_STORE_free(handle);
+            Interop.Crypto.X509StoreDestory(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }
@@ -73,6 +73,7 @@ namespace Microsoft.Win32.SafeHandles
             get { return handle == IntPtr.Zero; }
         }
     }
+
     [SecurityCritical]
     internal sealed class SafeX509StoreCtxHandle : SafeHandle
     {
@@ -88,7 +89,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.X509_STORE_CTX_free(handle);
+            Interop.Crypto.X509StoreCtxDestroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }

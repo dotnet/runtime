@@ -104,7 +104,7 @@ namespace Internal.Cryptography.Pal
                     if (certPtr != IntPtr.Zero)
                     {
                         // The STACK_OF(X509) still needs to be cleaned up, so duplicate the handle out of it.
-                        certs.Add(new OpenSslX509CertificateReader(Interop.libcrypto.X509_dup(certPtr)));
+                        certs.Add(new OpenSslX509CertificateReader(Interop.Crypto.X509Duplicate(certPtr)));
                     }
                 }
             }

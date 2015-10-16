@@ -277,7 +277,7 @@ internal static partial class Interop
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
-                    using (SafeX509StackHandle chainStack = libcrypto.X509_STORE_CTX_get1_chain(storeHandle))
+                    using (SafeX509StackHandle chainStack = Crypto.X509StoreCtxGetChain(storeHandle))
                     {
                         if (chainStack.IsInvalid)
                         {
@@ -334,9 +334,9 @@ internal static partial class Interop
                         continue;
                     }
 
-                    using (SafeX509Handle certHandle = libcrypto.X509_dup(certificate.Handle))
+                    using (SafeX509Handle certHandle = Crypto.X509Duplicate(certificate.Handle))
                     {
-                        using (SafeX509NameHandle nameHandle = Crypto.DuplicateX509Name(libcrypto.X509_get_issuer_name(certHandle)))
+                        using (SafeX509NameHandle nameHandle = Crypto.DuplicateX509Name(Crypto.X509GetIssuerName(certHandle)))
                         {
                             if (Crypto.PushX509NameStackField(nameStack, nameHandle))
                             {

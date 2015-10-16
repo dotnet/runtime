@@ -54,7 +54,7 @@ namespace Internal.Cryptography.Pal
 
                 // X509_STORE_add_crl will increase the refcount on the CRL object, so we should still
                 // dispose our copy.
-                using (SafeX509CrlHandle crl = Interop.libcrypto.PEM_read_bio_X509_CRL(bio))
+                using (SafeX509CrlHandle crl = Interop.Crypto.PemReadBioX509Crl(bio))
                 {
                     if (crl.IsInvalid)
                     {
@@ -84,7 +84,7 @@ namespace Internal.Cryptography.Pal
 
                     // TODO (#3063): Check the return value of X509_STORE_add_crl, and throw on any error other
                     // than X509_R_CERT_ALREADY_IN_HASH_TABLE
-                    Interop.libcrypto.X509_STORE_add_crl(store, crl);
+                    Interop.Crypto.X509StoreAddCrl(store, crl);
 
                     return true;
                 }
@@ -112,7 +112,7 @@ namespace Internal.Cryptography.Pal
                 {
                     // TODO (#3063): Check the return value of X509_STORE_add_crl, and throw on any error other
                     // than X509_R_CERT_ALREADY_IN_HASH_TABLE
-                    Interop.libcrypto.X509_STORE_add_crl(store, crl);
+                    Interop.Crypto.X509StoreAddCrl(store, crl);
 
                     // Saving the CRL to the disk is just a performance optimization for later requests to not
                     // need to use the network again, so failure to save shouldn't throw an exception or mark
@@ -125,7 +125,7 @@ namespace Internal.Cryptography.Pal
                         {
                             if (!bio.IsInvalid)
                             {
-                                Interop.libcrypto.PEM_write_bio_X509_CRL(bio, crl);
+                                Interop.Crypto.PemWriteBioX509Crl(bio, crl);
                             }
                         }
                     }
@@ -144,9 +144,9 @@ namespace Internal.Cryptography.Pal
                 X509Persistence.CryptographyFeatureName,
                 X509Persistence.CrlsSubFeatureName);
 
-            // X509_issuer_name_hash returns "unsigned long", which is marshalled as UIntPtr.
+            // X509_issuer_name_hash returns "unsigned long", which is marshalled as ulong.
             // But it only sets 32 bits worth of data, so force it down to uint just... in case.
-            ulong persistentHashLong = Interop.libcrypto.X509_issuer_name_hash(pal.SafeHandle).ToUInt64();
+            ulong persistentHashLong = Interop.Crypto.X509IssuerNameHash(pal.SafeHandle);
             uint persistentHash = unchecked((uint)persistentHashLong);
 
             // OpenSSL's hashed filename algorithm is the 8-character hex version of the 32-bit value
