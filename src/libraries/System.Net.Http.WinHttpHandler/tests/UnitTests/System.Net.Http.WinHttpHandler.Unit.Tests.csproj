@@ -38,11 +38,20 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
+      <Link>Common\System\Net\HttpVersion.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
+      <Link>Common\System\Net\UriScheme.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
       <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\CertificateHelper.cs">
-      <Link>ProductionCode\CertificateHelper.cs</Link>
+    <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs">
+      <Link>ProductionCode\WinHttpAuthHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\WinHttpCertificateHelper.cs">
+      <Link>ProductionCode\WinHttpCertificateHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpChannelBinding.cs">
       <Link>ProductionCode\WinHttpChannelBinding.cs</Link>
@@ -53,11 +62,23 @@
     <Compile Include="..\..\src\System\Net\Http\WinHttpHandler.cs">
       <Link>ProductionCode\WinHttpHandler.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\WinHttpRequestCallback.cs">
+      <Link>ProductionCode\WinHttpRequestCallback.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\WinHttpRequestState.cs">
+      <Link>ProductionCode\WinHttpRequestState.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpRequestStream.cs">
       <Link>ProductionCode\WinHttpRequestStream.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\WinHttpResponseParser.cs">
+      <Link>ProductionCode\WinHttpResponseParser.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpResponseStream.cs">
       <Link>ProductionCode\WinHttpResponseStream.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\WinHttpTraceHelper.cs">
+      <Link>ProductionCode\WinHttpTraceHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs">
       <Link>ProductionCode\WinHttpTransportContext.cs</Link>

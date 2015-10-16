@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -17,18 +18,13 @@ using Xunit;
 
 namespace System.Net.Http.WinHttpHandlerUnitTests
 {
-    public class WinHttpHandlerTest : IDisposable
+    public class WinHttpHandlerTest
     {
         private const string FakeProxy = "http://proxy.contoso.com";
-
+        
         public WinHttpHandlerTest()
         {
             TestControl.ResetAll();
-        }
-
-        public void Dispose()
-        {
-            TestControl.ResponseDelayCompletedEvent.WaitOne();
         }
 
         [Fact]
@@ -160,7 +156,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public async Task CookieUsePolicy_UseSpecifiedCookieContainerAndNullContainer_ThrowsInvalidOperationException()
+        public async void CookieUsePolicy_UseSpecifiedCookieContainerAndNullContainer_ThrowsInvalidOperationException()
         {
             var handler = new WinHttpHandler();
             Assert.Null(handler.CookieContainer);
@@ -794,8 +790,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public async Task SendAsync_SlowPostRequestWithTimedCancellation_ExpectTaskCanceledException()
         {
             var handler = new WinHttpHandler();
-            TestControl.ResponseDelayTime = 500;
-            CancellationTokenSource cts = new CancellationTokenSource(100);
+            TestControl.WinHttpReceiveResponse.Delay = 5000;
+            CancellationTokenSource cts = new CancellationTokenSource(50);
             var client = new HttpClient(handler);
             var request = new HttpRequestMessage(HttpMethod.Post, TestServer.FakeServerEndpoint);
             var content = new StringContent(new String('a', 1000));
@@ -809,8 +805,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public async Task SendAsync_SlowGetRequestWithTimedCancellation_ExpectTaskCanceledException()
         {
             var handler = new WinHttpHandler();
-            TestControl.ResponseDelayTime = 500;
-            CancellationTokenSource cts = new CancellationTokenSource(100);
+            TestControl.WinHttpReceiveResponse.Delay = 5000;
+            CancellationTokenSource cts = new CancellationTokenSource(50);
             var client = new HttpClient(handler);
             var request = new HttpRequestMessage(HttpMethod.Get, TestServer.FakeServerEndpoint);
             
@@ -838,7 +834,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             var client = new HttpClient(handler);
             var request = new HttpRequestMessage(HttpMethod.Get, TestServer.FakeServerEndpoint);
 
-            TestControl.Fail.WinHttpOpen = true;
+            TestControl.WinHttpOpen.ErrorWithApiCall = true;
 
             Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
             Assert.Equal(typeof(WinHttpException), ex.InnerException.GetType());
