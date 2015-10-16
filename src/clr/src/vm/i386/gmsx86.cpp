@@ -339,6 +339,7 @@ static bool shouldEnterCall(PTR_BYTE ip) {
 //
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* lazyState,
+                                    DWORD threadId,
                                     int funCallDepth /* = 1 */,
                                     HostCallPreference hostCallPreference /* = (HostCallPreference)(-1) */)
 {

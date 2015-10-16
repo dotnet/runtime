@@ -36,6 +36,9 @@ public:
     // is unavailable because it's running
     void SetError(HRESULT hr);
 
+    // Get the OS Process ID that this DataTarget is for.
+    DWORD GetPid();
+
     //
     // IUnknown.
     //
@@ -86,8 +89,8 @@ public:
     // ICorDebugDataTarget4
     //    
 
-    // Get the OS Process ID that this DataTarget is for.
-    virtual HRESULT STDMETHODCALLTYPE GetPid(DWORD *pdwProcessId); 
+    // Unwind to the next stack frame
+    virtual HRESULT STDMETHODCALLTYPE VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context);
 
 protected:
     // Pid of the target process.
