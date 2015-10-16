@@ -29,6 +29,13 @@
       <Link>ProductionCode\System\Net\NameResolutionUtilities.cs</Link>
     </Compile>
 
+    <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolType.cs">
+      <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
+      <Link>Common\System\Net\Sockets\SocketType.cs</Link>
+    </Compile>
+
     <Compile Include="$(CommonPath)\System\Net\IPEndPointStatics.cs">
       <Link>Common\System\Net\IPEndPointStatics.cs</Link>
     </Compile>
@@ -62,9 +69,6 @@
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)\System\Net\Internals\IPAddressExtensions.cs">
       <Link>Common\System\Net\Internals\IPAddressExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
-      <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>
 
     <!-- Interop -->
@@ -148,9 +152,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.hostent.cs">
       <Link>Interop\Unix\libc\Interop.hostent.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.socket.cs">
-      <Link>Interop\Unix\libc\Interop.socket.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
@@ -165,6 +166,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.IPAddress.cs">
       <Link>Interop\Unix\System.Native\Interop.IPAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Socket.cs">
+      <Link>Interop\Unix\System.Native\Interop.Socket.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
       <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>

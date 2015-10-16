@@ -159,51 +159,6 @@ namespace System.Net.Sockets
             return GetSocketErrorForErrorCode(error);
         }
 
-        public static int GetPlatformAddressFamily(AddressFamily addressFamily)
-        {
-            switch (addressFamily)
-            {
-                case AddressFamily.Unspecified:
-                    return Interop.libc.AF_UNSPEC;
-
-                case AddressFamily.Unix:
-                    return Interop.libc.AF_UNIX;
-
-                case AddressFamily.InterNetwork:
-                    return Interop.libc.AF_INET;
-
-                case AddressFamily.InterNetworkV6:
-                    return Interop.libc.AF_INET6;
-
-                default:
-                    return (int)addressFamily;
-            }
-        }
-
-        public static int GetPlatformSocketType(SocketType socketType)
-        {
-            switch (socketType)
-            {
-                case SocketType.Stream:
-                    return Interop.libc.SOCK_STREAM;
-
-                case SocketType.Dgram:
-                    return Interop.libc.SOCK_DGRAM;
-
-                case SocketType.Raw:
-                    return Interop.libc.SOCK_RAW;
-
-                case SocketType.Rdm:
-                    return Interop.libc.SOCK_RDM;
-
-                case SocketType.Seqpacket:
-                    return Interop.libc.SOCK_SEQPACKET;
-
-                default:
-                    return (int)socketType;
-            }
-        }
-
         public static int GetPlatformSocketFlags(SocketFlags socketFlags)
         {
             const SocketFlags StandardFlagsMask = 
