@@ -136,9 +136,9 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException("hash");
 
             SafeEcKeyHandle key = _key.Value;
-            int signatureLength = Interop.libcrypto.ECDSA_size(key);
+            int signatureLength = Interop.Crypto.EcDsaSize(key);
             byte[] signature = new byte[signatureLength];
-            if (!Interop.libcrypto.ECDSA_sign(0, hash, hash.Length, signature, ref signatureLength, key))
+            if (!Interop.Crypto.EcDsaSign(hash, hash.Length, signature, ref signatureLength, key))
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
 
             byte[] converted = ConvertToApiFormat(signature, 0, signatureLength);
@@ -168,7 +168,7 @@ namespace System.Security.Cryptography
             byte[] openSslFormat = ConvertToOpenSslFormat(signature);
 
             SafeEcKeyHandle key = _key.Value;
-            int verifyResult = Interop.libcrypto.ECDSA_verify(0, hash, hash.Length, openSslFormat, openSslFormat.Length, key);
+            int verifyResult = Interop.Crypto.EcDsaVerify(hash, hash.Length, openSslFormat, openSslFormat.Length, key);
             return verifyResult == 1;
         }
 
