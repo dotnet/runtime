@@ -41,10 +41,7 @@ internal static partial class Interop
         internal static extern void X509NameDestroy(IntPtr a);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern int X509NamePrintForFind(SafeBioHandle @out, SafeX509NameHandle nm);
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern int X509NamePrintEx(SafeBioHandle @out, SafeX509NameHandle nm, X500DistinguishedNameFlags flags);
+        internal static extern int GetX509NameEntryCount(SafeX509NameHandle x509Name);
 
         internal static X500DistinguishedName LoadX500Name(SafeSharedX509NameHandle namePtr)
         {

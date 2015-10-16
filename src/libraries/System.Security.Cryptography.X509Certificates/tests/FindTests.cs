@@ -237,7 +237,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("CN=Microsoft Corporation,     OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US    ")]
         [InlineData("    CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
-        [ActiveIssue(1985, PlatformID.AnyUnix)]
         public static void TestDistinguishedSubjectName_NoMatch(string distinguishedSubjectName)
         {
             RunZeroMatchTest(X509FindType.FindBySubjectDistinguishedName, distinguishedSubjectName);
@@ -247,7 +246,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("CN=microsoft corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("cn=microsoft corporation, ou=mopr, o=microsoft corporation, l=redmond, s=washington, c=us")]
-        [ActiveIssue(1985, PlatformID.AnyUnix)]
         public static void TestDistinguishedSubjectName_Match(string distinguishedSubjectName)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySubjectDistinguishedName, distinguishedSubjectName);
@@ -281,7 +279,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("CN=Microsoft Code Signing PCA,     O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US    ")]
         [InlineData("    CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
-        [ActiveIssue(1985, PlatformID.AnyUnix)]
         public static void TestDistinguishedIssuerName_NoMatch(string issuerDistinguishedName)
         {
             RunZeroMatchTest(X509FindType.FindByIssuerDistinguishedName, issuerDistinguishedName);
@@ -291,7 +288,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("CN=microsoft Code signing pca, O=Microsoft Corporation, L=Redmond, S=Washington, C=US")]
         [InlineData("cn=microsoft code signing pca, o=microsoft corporation, l=redmond, s=washington, c=us")]
-        [ActiveIssue(1985, PlatformID.AnyUnix)]
         public static void TestDistinguishedIssuerName_Match(string issuerDistinguishedName)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindByIssuerDistinguishedName, issuerDistinguishedName);

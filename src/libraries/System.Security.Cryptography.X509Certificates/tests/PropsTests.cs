@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.Equal(
-                    TestData.NormalizeX500String("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
+                    "CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
                     c.Issuer);
             }
         }
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.Equal(
-                    TestData.NormalizeX500String("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
+                    "CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
                     c.Subject);
             }
         }
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.Equal(
-                    TestData.NormalizeX500String("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
+                    "CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
                     c.SubjectName.Name);
             }
         }
@@ -231,7 +231,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.Equal(
-                    TestData.NormalizeX500String("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
+                    "CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
                     c.IssuerName.Name);
 
             }
