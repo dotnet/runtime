@@ -9,23 +9,15 @@ using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
-    [Flags]
-    internal enum SocketAsyncEvents
+    internal sealed unsafe class SocketAsyncEngine
     {
-        None = 0,
-        Read = 1,
-        Write = 2,
-        ReadClose = 4,
-        Close = 8,
-        Error = 16
-    }
+        private const int EventBufferCount = 64;
 
-    internal sealed class SocketAsyncEngine
-    {
         private static SocketAsyncEngine _engine;
         private static readonly object _initLock = new object();
 
-        private readonly SocketAsyncEngineBackend _backend;
+        private readonly int _port;
+        private readonly Interop.Sys.SocketEvent* _buffer;
 
         public static SocketAsyncEngine Instance
         {
@@ -37,15 +29,30 @@ namespace System.Net.Sockets
                     {
                         if (_engine == null)
                         {
-                            var engine = new SocketAsyncEngine(SocketAsyncEngineBackend.Create());
+                            int port;
+                            Interop.Error err = Interop.Sys.CreateSocketEventPort(&port);
+                            if (err != Interop.Error.SUCCESS)
+                            {
+                                throw new InternalException();
+                            }
+
+                            Interop.Sys.SocketEvent* buffer;
+                            err = Interop.Sys.CreateSocketEventBuffer(EventBufferCount, &buffer);
+                            if (err != Interop.Error.SUCCESS)
+                            {
+                                Interop.Sys.CloseSocketEventPort(port);
+                                throw new InternalException();
+                            }
+
+                            var engine = new SocketAsyncEngine(port, buffer);
                             Task.Factory.StartNew(o =>
                             {
-                                SocketAsyncEngineBackend backend = ((SocketAsyncEngine)o)._backend;
+                                var eng = (SocketAsyncEngine)o;
                                 for (;;)
                                 {
                                     try
                                     {
-                                        backend.EventLoop();
+                                        eng.EventLoop();
                                     }
                                     catch (Exception e)
                                     {
@@ -63,19 +70,49 @@ namespace System.Net.Sockets
             }
         }
 
-        private SocketAsyncEngine(SocketAsyncEngineBackend backend)
+        private SocketAsyncEngine(int port, Interop.Sys.SocketEvent* buffer)
         {
-            _backend = backend;
+            _port = port;
+            _buffer = buffer;
         }
 
-        public bool TryRegister(int fileDescriptor, SocketAsyncEvents current, SocketAsyncEvents events, GCHandle handle, out Interop.Error error)
+        private void EventLoop()
+        {
+            for (;;)
+            {
+                int numEvents = EventBufferCount;
+                Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, _buffer, &numEvents);
+                if (err != Interop.Error.SUCCESS)
+                {
+                    throw new InternalException();
+                }
+
+                // The native shim is responsible for ensuring this condition.
+                Debug.Assert(numEvents > 0);
+
+                for (int i = 0; i < numEvents; i++)
+                {
+                    var handle = (GCHandle)(IntPtr)_buffer[i].Data;
+                    var context = (SocketAsyncContext)handle.Target;
+
+                    if (context != null)
+                    {
+                        context.HandleEvents(_buffer[i].Events);
+                    }
+                }
+            }
+        }
+
+        public bool TryRegister(int fileDescriptor, Interop.Sys.SocketEvents current, Interop.Sys.SocketEvents events, GCHandle handle, out Interop.Error error)
         {
             if (current == events)
             {
                 error = Interop.Error.SUCCESS;
                 return true;
             }
-            return _backend.TryRegister(fileDescriptor, current, events, handle, out error);
+
+            error = Interop.Sys.TryChangeSocketEventRegistration(_port, fileDescriptor, current, events, (IntPtr)handle);
+            return error == Interop.Error.SUCCESS;
         }
     }
 }

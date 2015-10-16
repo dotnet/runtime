@@ -177,6 +177,7 @@ enum SocketOptionName : int32_t
     // PAL_SO_UDP_UPDATEACCEPTCONTEXT = 0x700b,
     // PAL_SO_UDP_UPDATECONNECTCONTEXT = 0x7010,
 };
+
 /*
  * Socket flags.
  *
@@ -191,6 +192,19 @@ enum SocketFlags : int32_t
     PAL_MSG_DONTROUTE = 0x0004, // SocketFlags.DontRoute
     PAL_MSG_TRUNC = 0x0100,     // SocketFlags.Truncated
     PAL_MSG_CTRUNC = 0x0200,    // SocketFlags.ControlDataTruncated
+};
+
+/*
+ * Socket async events.
+ */
+enum SocketEvents : int32_t
+{
+    PAL_SA_NONE = 0x00,
+    PAL_SA_READ = 0x01,
+    PAL_SA_WRITE = 0x02,
+    PAL_SA_READCLOSE = 0x04,
+    PAL_SA_CLOSE = 0x08,
+    PAL_SA_ERROR = 0x10,
 };
 
 /**
@@ -275,6 +289,13 @@ enum
 struct FdSet
 {
     uint32_t Bits[PAL_FDSET_MAX_FDS / PAL_FDSET_NFD_BITS];
+};
+
+struct SocketEvent
+{
+    uintptr_t Data;           // User data for this event
+    SocketEvents Events; // Event flags
+    uint32_t Padding;         // Pad out to 8-byte alignment
 };
 
 /**
@@ -372,3 +393,15 @@ extern "C" Error Socket(int32_t addressFamily, int32_t socketType, int32_t proto
 extern "C" Error Select(int32_t fdCount, FdSet* readFdSet, FdSet* writeFdSet, FdSet* errorFdSet, int32_t microseconds, int32_t* selected);
 
 extern "C" Error GetBytesAvailable(int32_t socket, int32_t* available);
+
+extern "C" Error CreateSocketEventPort(int32_t* port);
+
+extern "C" Error CloseSocketEventPort(int32_t port);
+
+extern "C" Error CreateSocketEventBuffer(int32_t count, SocketEvent** buffer);
+
+extern "C" Error FreeSocketEventBuffer(SocketEvent* buffer);
+
+extern "C" Error TryChangeSocketEventRegistration(int32_t port, int32_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
+
+extern "C" Error WaitForSocketEvents(int32_t port, SocketEvent* buffer, int32_t* count);

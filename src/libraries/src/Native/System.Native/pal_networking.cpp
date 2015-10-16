@@ -5,16 +5,23 @@
 #include "pal_networking.h"
 #include "pal_utilities.h"
 
-#include <stdlib.h>
 #include <arpa/inet.h>
+#include <assert.h>
+#if HAVE_EPOLL
+#include <sys/epoll.h>
+#elif HAVE_KQUEUE
+#include <sys/types.h>
+#include <sys/event.h>
+#include <sys/time.h>
+#endif
+#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <sys/socket.h>
+#include <stdlib.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <unistd.h>
-#include <errno.h>
-#include <assert.h>
 #include <vector>
 
 #if HAVE_ALLOCA_H
@@ -56,10 +63,17 @@ static_assert(OffsetOfIOVectorCount == OffsetOfIovecLen, "");
 static_assert(PAL_FDSET_MAX_FDS <= FD_SETSIZE, "");
 
 template <typename T>
-static T Min(T left, T right)
+constexpr T Min(T left, T right)
 {
     return left < right ? left : right;
 }
+
+template <typename T>
+constexpr T Max(T left, T right)
+{
+    return left > right ? left : right;
+}
+
 
 static int IpStringToAddressHelper(const uint8_t* address, const uint8_t* port, bool isIPv6, addrinfo*& info)
 {
@@ -1652,4 +1666,350 @@ extern "C" Error GetBytesAvailable(int32_t socket, int32_t* available)
 
     *available = static_cast<int32_t>(avail);
     return PAL_SUCCESS;
+}
+
+#if HAVE_EPOLL
+
+const size_t SocketEventBufferElementSize = Max(sizeof(epoll_event), sizeof(SocketEvent));
+
+static SocketEvents GetSocketEvents(uint32_t events)
+{
+    int asyncEvents = (((events & EPOLLIN) != 0) ? PAL_SA_READ : 0) |
+        (((events & EPOLLOUT) != 0) ? PAL_SA_WRITE : 0) |
+        (((events & EPOLLRDHUP) != 0) ? PAL_SA_READCLOSE : 0) |
+        (((events & EPOLLHUP) != 0) ? PAL_SA_CLOSE : 0) |
+        (((events & EPOLLERR) != 0) ? PAL_SA_ERROR : 0);
+
+    return static_cast<SocketEvents>(asyncEvents);
+}
+
+static uint32_t GetEPollEvents(SocketEvents events)
+{
+     return (((events & PAL_SA_READ) != 0) ? EPOLLIN : 0) |
+        (((events & PAL_SA_WRITE) != 0) ? EPOLLOUT : 0) |
+        (((events & PAL_SA_READCLOSE) != 0) ? EPOLLRDHUP : 0) |
+        (((events & PAL_SA_CLOSE) != 0) ? EPOLLHUP : 0) |
+        (((events & PAL_SA_ERROR) != 0) ? EPOLLERR : 0);
+}
+
+static Error CreateSocketEventPortInner(int32_t* port)
+{
+    assert(port != nullptr);
+
+    int epollFd = epoll_create1(EPOLL_CLOEXEC);
+    if (epollFd == -1)
+    {
+        *port = -1;
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    *port = epollFd;
+    return PAL_SUCCESS;
+}
+
+static Error CloseSocketEventPortInner(int32_t port)
+{
+    int err = close(port);
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+static Error TryChangeSocketEventRegistrationInner(int32_t port, int32_t socket, SocketEvents currentEvents, SocketEvents newEvents, uintptr_t data)
+{
+    assert(currentEvents != newEvents);
+
+    int op = EPOLL_CTL_MOD;
+    if (currentEvents == PAL_SA_NONE)
+    {
+        op = EPOLL_CTL_ADD;
+    }
+    else if (newEvents == PAL_SA_NONE)
+    {
+        op = EPOLL_CTL_DEL;
+    }
+
+    epoll_event evt = {
+        .events = GetEPollEvents(newEvents) | EPOLLET,
+        .data = { .ptr = reinterpret_cast<void*>(data) }
+    };
+    int err = epoll_ctl(port, op, socket, &evt);
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+static void ConvertEventEPollToSocketAsync(SocketEvent* sae, epoll_event* epoll)
+{
+    assert(sae != nullptr);
+    assert(epoll != nullptr);
+
+    // epoll does not play well with disconnected connection-oriented sockets, frequently
+    // reporting spurious EPOLLHUP events. Fortunately, EPOLLHUP may be handled as an
+    // EPOLLIN | EPOLLOUT event: the usual processing for these events will recognize and
+    // handle the HUP condition.
+    uint32_t events = epoll->events;
+    if ((events & EPOLLHUP) != 0)
+    {
+        events = (events & ~EPOLLHUP) | EPOLLIN | EPOLLOUT;
+    }
+
+    *sae = {
+        .Data = reinterpret_cast<uintptr_t>(epoll->data.ptr),
+        .Events = GetSocketEvents(events)
+    };
+}
+
+static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t* count)
+{
+    assert(buffer != nullptr);
+    assert(count != nullptr);
+    assert(*count >= 0);
+
+    auto* events = reinterpret_cast<epoll_event*>(buffer);
+    int numEvents = epoll_wait(port, events, *count, -1);
+    if (numEvents == -1)
+    {
+        *count = 0;
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    // We should never see 0 events. Given an infinite timeout, epoll_wait will never return
+    // 0 events even if there are no file descriptors registered with the epoll fd. In
+    // that case, the wait will block until a file descriptor is added and an event occurs
+    // on the added file descriptor.
+    assert(numEvents != 0);
+    assert(numEvents < *count);
+
+    if (sizeof(epoll_event) < sizeof(SocketEvent))
+    {
+        // Copy backwards to avoid overwriting earlier data.
+        for (int i = numEvents - 1; i >= 0; i--)
+        {
+            // This copy is made deliberately to avoid overwriting data.
+            epoll_event evt = events[i];
+            ConvertEventEPollToSocketAsync(&buffer[i], &evt);
+        }
+    }
+    else
+    {
+        // Copy forwards for better cache behavior
+        for (int i = 0; i < numEvents; i++)
+        {
+            // This copy is made deliberately to avoid overwriting data.
+            epoll_event evt = events[i];
+            ConvertEventEPollToSocketAsync(&buffer[i], &evt);
+        }
+    }
+
+    *count = numEvents;
+    return PAL_SUCCESS;
+}
+
+#elif HAVE_KQUEUE
+
+static_assert(sizeof(SocketEvent) <= sizeof(kevent64_s), "");
+const size_t SocketEventBufferElementSize = sizeof(kevent64_s);
+
+static SocketEvents GetSocketEvents(int16_t filter, uint16_t flags)
+{
+    int32_t events;
+    switch (filter)
+    {
+        case EVFILT_READ:
+            events = PAL_SA_READ;
+            if ((flags & EV_EOF) != 0)
+            {
+                events |= PAL_SA_READCLOSE;
+            }
+            break;
+
+        case EVFILT_WRITE:
+            events = PAL_SA_WRITE;
+
+            // kqueue does not play well with disconnected connection-oriented sockets, frequently
+            // reporting spurious EOF events. Fortunately, EOF may be handled as an EVFILT_READ |
+            // EVFILT_WRITE event: the usual processing for these events will recognize and
+            // handle the EOF condition.
+            if ((flags & EV_EOF) != 0)
+            {
+                events |= PAL_SA_READ;
+            }
+            break;
+
+        default:
+            assert(false && "unexpected kqueue filter type");
+            return PAL_SA_NONE;
+    }
+
+    if ((flags & EV_ERROR) != 0)
+    {
+        events |= PAL_SA_ERROR;
+    }
+
+    return static_cast<SocketEvents>(events);
+};
+
+static Error CreateSocketEventPortInner(int32_t* port)
+{
+    assert(port != nullptr);
+
+    int kqueueFd = kqueue();
+    if (kqueueFd == -1)
+    {
+        *port = -1;
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    *port = kqueueFd;
+    return PAL_SUCCESS;
+}
+
+static Error CloseSocketEventPortInner(int32_t port)
+{
+    int err = close(port);
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+static Error TryChangeSocketEventRegistrationInner(int32_t port, int32_t socket, SocketEvents currentEvents, SocketEvents newEvents, uintptr_t data)
+{
+    const uint16_t AddFlags = EV_ADD | EV_CLEAR | EV_RECEIPT;
+    const uint16_t RemoveFlags = EV_DELETE | EV_RECEIPT;
+
+    assert(currentEvents != newEvents);
+
+    int32_t changes = currentEvents ^ newEvents;
+    bool readChanged = (changes & PAL_SA_READ) != 0;
+    bool writeChanged = (changes & PAL_SA_WRITE) != 0;
+
+    kevent64_s events[2];
+
+    int i = 0;
+    if (readChanged)
+    {
+        events[i++] =  {
+            .ident = static_cast<uint64_t>(socket),
+            .filter = EVFILT_READ,
+            .flags = (newEvents & PAL_SA_READ) == 0 ? RemoveFlags : AddFlags,
+            .udata = data
+        };
+    }
+
+    if (writeChanged)
+    {
+        events[i++] = {
+            .ident = static_cast<uint64_t>(socket),
+            .filter = EVFILT_WRITE,
+            .flags = (newEvents & PAL_SA_WRITE) == 0 ? RemoveFlags : AddFlags,
+            .udata = data
+        };
+    }
+
+    int err = kevent64(port, events, i, nullptr, 0, 0, nullptr);
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t* count)
+{
+    assert(buffer != nullptr);
+    assert(count != nullptr);
+    assert(*count >= 0);
+
+    auto* events = reinterpret_cast<kevent64_s*>(buffer);
+    int numEvents = kevent64(port, nullptr, 0, events, *count, 0, nullptr);
+    if (numEvents == -1)
+    {
+        *count = -1;
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    // We should never see 0 events. Given an infinite timeout, kevent64 will never return
+    // 0 events even if there are no file descriptors registered with the kqueue fd. In
+    // that case, the wait will block until a file descriptor is added and an event occurs
+    // on the added file descriptor.
+    assert(numEvents != 0);
+    assert(numEvents < *count);
+
+    for (int i = 0; i < numEvents; i++)
+    {
+        // This copy is made deliberately to avoid overwriting data.
+        kevent64_s evt = events[i];
+        buffer[i] = {
+            .Data = static_cast<uintptr_t>(evt.udata),
+            .Events = GetSocketEvents(evt.filter, evt.flags)
+        };
+    }
+
+    *count = numEvents;
+    return PAL_SUCCESS;
+}
+
+#else
+#error Asynchronous sockets require epoll or kqueue support.
+#endif
+
+extern "C" Error CreateSocketEventPort(int32_t* port)
+{
+    if (port == nullptr)
+    {
+        return PAL_EFAULT;
+    }
+
+    return CreateSocketEventPortInner(port);
+}
+
+extern "C" Error CloseSocketEventPort(int32_t port)
+{
+    return CloseSocketEventPortInner(port);
+}
+
+extern "C" Error CreateSocketEventBuffer(int32_t count, SocketEvent** buffer)
+{
+    if (buffer == nullptr || count < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    void* b = malloc(SocketEventBufferElementSize * static_cast<size_t>(count));
+    if (b == nullptr)
+    {
+        *buffer = nullptr;
+        return PAL_ENOMEM;
+    }
+
+    *buffer = reinterpret_cast<SocketEvent*>(b);
+    return PAL_SUCCESS;
+}
+
+extern "C" Error FreeSocketEventBuffer(SocketEvent* buffer)
+{
+    free(buffer);
+    return PAL_SUCCESS;
+}
+
+extern "C" Error TryChangeSocketEventRegistration(int32_t port, int32_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data)
+{
+    const int32_t SupportedEvents = PAL_SA_READ |
+        PAL_SA_WRITE |
+        PAL_SA_READCLOSE |
+        PAL_SA_CLOSE |
+        PAL_SA_ERROR;
+
+    if ((currentEvents & ~SupportedEvents) != 0 || (newEvents & ~SupportedEvents) != 0)
+    {
+        return PAL_EINVAL;
+    }
+
+    if (currentEvents == newEvents)
+    {
+        return PAL_SUCCESS;
+    }
+
+    return TryChangeSocketEventRegistrationInner(port, socket, static_cast<SocketEvents>(currentEvents), static_cast<SocketEvents>(newEvents), data);
+}
+
+extern "C" Error WaitForSocketEvents(int32_t port, SocketEvent* buffer, int32_t* count)
+{
+    if (buffer == nullptr || count == nullptr || *count < 0)
+    {
+        return PAL_EFAULT;
+    }
+
+    return WaitForSocketEventsInner(port, buffer, count);
 }
