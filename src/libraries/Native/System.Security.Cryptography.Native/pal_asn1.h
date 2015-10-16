@@ -83,3 +83,16 @@ extern "C" void Asn1OctetStringFree(ASN1_STRING* a);
 Direct shim to ASN1_STRING_free.
 */
 extern "C" void Asn1StringFree(ASN1_STRING* a);
+
+/*
+Returns the number of bytes it will take to convert
+the ASN1_INTEGER to a DER format.
+*/
+extern "C" int32_t GetAsn1IntegerDerSize(ASN1_INTEGER* i);
+
+/*
+Shims the i2d_ASN1_INTEGER method.
+
+Returns the number of bytes written to buf.
+*/
+extern "C" int32_t EncodeAsn1Integer(ASN1_INTEGER* i, uint8_t* buf);

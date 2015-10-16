@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO;
 using Test.Cryptography;
 using Xunit;
 
@@ -31,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void TestSerial()
+        public static void TestSerialBytes()
         {
             byte[] expectedSerialBytes = "b00000000100dd9f3bd08b0aaf11b000000033".HexToByteArray();
             string expectedSerialString = "33000000B011AF0A8BD03B9FDD0001000000B0";
@@ -42,6 +43,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(expectedSerialBytes, serial);
 
                 Assert.Equal(expectedSerialString, c.SerialNumber);
+            }
+        }
+
+        [Theory]
+        // Nice, normal serial number.
+        [InlineData("microsoft.cer", "2A98A8770374E7B34195EBE04D9B17F6")]
+        // Positive serial number which requires a padding byte to be interpreted positive.
+        [InlineData("test.cer", "00D01E4090000046520000000100000004")]
+        // Negative serial number.
+        //   RFC 2459: INTEGER
+        //   RFC 3280: INTEGER, MUST be positive.
+        //   RFC 5280: INTEGER, MUST be positive, MUST be 20 bytes or less.
+        //       Readers SHOULD handle negative values.
+        //       (Presumably readers also "should" handle long values created under the previous rules)
+        [InlineData("My.cer", "D5B5BC1C458A558845BFF51CB4DFF31C")]
+        public static void TestSerialString(string fileName, string expectedSerial)
+        {
+            using (var c = new X509Certificate2(Path.Combine("TestData", fileName)))
+            {
+                Assert.Equal(expectedSerial, c.SerialNumber);
             }
         }
 

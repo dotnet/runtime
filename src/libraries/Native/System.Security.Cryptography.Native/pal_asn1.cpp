@@ -97,3 +97,13 @@ extern "C" void Asn1StringFree(ASN1_STRING* a)
 {
     ASN1_STRING_free(a);
 }
+
+extern "C" int32_t GetAsn1IntegerDerSize(ASN1_INTEGER* i)
+{
+    return i2d_ASN1_INTEGER(i, nullptr);
+}
+
+extern "C" int32_t EncodeAsn1Integer(ASN1_INTEGER* i, uint8_t* buf)
+{
+    return i2d_ASN1_INTEGER(i, &buf);
+}
