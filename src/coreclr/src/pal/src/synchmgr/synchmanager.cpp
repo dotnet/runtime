@@ -1836,7 +1836,7 @@ namespace CorUnix
     PAL_ERROR CPalSynchronizationManager::Shutdown(
         CPalThread *pthrCurrent,
         bool fFullCleanup)
-    {        
+    {
         PAL_ERROR palErr = NO_ERROR;
         CPalSynchronizationManager * pSynchManager = GetInstance();
 
@@ -1845,7 +1845,7 @@ namespace CorUnix
             _ASSERT_MSG((LONG)SynchMgrStatusRunning != s_lInitStatus,
                         "Synchronization Manager: Shutdown called with no "
                         "prior PrepareForShutdown call");
-            
+
             ERROR("Unexpected initialization status found "
                   "in Shutdown [expected=%d current=%d]\n", 
                   (int)SynchMgrStatusShuttingDown, s_lInitStatus.Load());
@@ -1865,14 +1865,14 @@ namespace CorUnix
             pSynchManager->m_cacheThreadApcInfoNodes.Flush(pthrCurrent);
             pSynchManager->m_cacheOwnedObjectsListNodes.Flush(pthrCurrent);
 
-            InternalDeleteCriticalSection(&s_csSynchProcessLock);            
-            InternalDeleteCriticalSection(&s_csMonitoredProcessesLock);            
+            InternalDeleteCriticalSection(&s_csSynchProcessLock);
+            InternalDeleteCriticalSection(&s_csMonitoredProcessesLock);
         }
-                   
+
         s_lInitStatus = (LONG)SynchMgrStatusIdle;
         s_pObjSynchMgr = NULL;
-        
-    S_exit:        
+
+    S_exit:
         return palErr;
     }
 
