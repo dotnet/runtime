@@ -6,7 +6,7 @@ Project("{BB2D2F6C-0445-43D4-84A9-DF5B4931FA19}") = "System.Net.Http.WinHttpHand
 EndProject
 Project("{BB2D2F6C-0445-43D4-84A9-DF5B4931FA19}") = "System.Net.Http.WinHttpHandler.Unit.Tests", "tests\UnitTests\System.Net.Http.WinHttpHandler.Unit.Tests.csproj", "{A2ECDEDB-12B7-402C-9230-152B7601179F}"
 EndProject
-Project("{BB2D2F6C-0445-43D4-84A9-DF5B4931FA19}") = "System.Net.Http.WinHttpHandler.Tests", "tests\FunctionalTests\System.Net.Http.WinHttpHandler.Tests.csproj", "{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}"
+Project("{BB2D2F6C-0445-43D4-84A9-DF5B4931FA19}") = "System.Net.Http.WinHttpHandler.Functional.Tests", "tests\FunctionalTests\System.Net.Http.WinHttpHandler.Functional.Tests.csproj", "{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}"
 EndProject
 
 Global
