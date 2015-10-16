@@ -369,7 +369,7 @@ type_to_simd_type (int type)
 }
 
 static LLVMTypeRef
-create_llvm_type_for_type (MonoClass *klass)
+create_llvm_type_for_type (MonoLLVMModule *lmodule, MonoClass *klass)
 {
 	int i, size, nfields, esize;
 	LLVMTypeRef *eltypes;
@@ -397,7 +397,7 @@ create_llvm_type_for_type (MonoClass *klass)
 	}
 
 	name = mono_type_full_name (&klass->byval_arg);
-	ltype = LLVMStructCreateNamed (aot_module.context, name);
+	ltype = LLVMStructCreateNamed (lmodule->context, name);
 	LLVMStructSetBody (ltype, eltypes, size, FALSE);
 	g_free (eltypes);
 	g_free (name);
@@ -476,7 +476,7 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 
 		ltype = (LLVMTypeRef)g_hash_table_lookup (ctx->lmodule->llvm_types, klass);
 		if (!ltype) {
-			ltype = create_llvm_type_for_type (klass);
+			ltype = create_llvm_type_for_type (ctx->lmodule, klass);
 			g_hash_table_insert (ctx->lmodule->llvm_types, klass, ltype);
 		}
 		return ltype;
@@ -6975,6 +6975,7 @@ mono_llvm_init (void)
 static void
 init_jit_module (MonoDomain *domain)
 {
+	MonoJitICallInfo *info;
 	MonoJitDomainInfo *dinfo;
 	MonoLLVMModule *module;
 	char *name;
@@ -6994,6 +6995,7 @@ init_jit_module (MonoDomain *domain)
 
 	name = g_strdup_printf ("mono-%s", domain->friendly_name);
 	module->module = LLVMModuleCreateWithName (name);
+	module->context = LLVMGetGlobalContext ();
 
 	module->mono_ee = mono_llvm_create_ee (LLVMCreateModuleProviderForExistingModule (module->module), alloc_cb, emitted_cb, exception_cb, dlsym_cb, &module->ee);
 
@@ -7001,6 +7003,10 @@ init_jit_module (MonoDomain *domain)
 	add_types (module);
 
 	module->llvm_types = g_hash_table_new (NULL, NULL);
+
+	info = mono_find_jit_icall_by_name ("llvm_resume_unwind_trampoline");
+	g_assert (info);
+	LLVMAddGlobalMapping (module->ee, LLVMGetNamedFunction (module->module, "llvm_resume_unwind_trampoline"), (void*)info->func);
 
 	mono_memory_barrier ();
 
