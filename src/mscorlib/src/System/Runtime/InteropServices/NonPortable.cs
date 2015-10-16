@@ -50,12 +50,6 @@ namespace System.Runtime.InteropServices
         }
 
         [System.Security.SecurityCriticalAttribute]
-        public static void FreeBSTR(System.IntPtr ptr)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        [System.Security.SecurityCriticalAttribute]
         public static System.IntPtr GetComInterfaceForObject(object o, System.Type T)
         {
             throw new PlatformNotSupportedException();
@@ -150,12 +144,6 @@ namespace System.Runtime.InteropServices
         }
 
         [System.Security.SecurityCriticalAttribute]
-        public static string PtrToStringBSTR(System.IntPtr ptr)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        [System.Security.SecurityCriticalAttribute]
         public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv)
         {
             throw new PlatformNotSupportedException();
@@ -169,12 +157,6 @@ namespace System.Runtime.InteropServices
 
         [System.Security.SecurityCriticalAttribute]
         public static int ReleaseComObject(object o)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        [System.Security.SecurityCriticalAttribute]
-        public static System.IntPtr StringToBSTR(string s)
         {
             throw new PlatformNotSupportedException();
         }
