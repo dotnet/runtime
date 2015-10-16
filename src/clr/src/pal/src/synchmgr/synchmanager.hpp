@@ -605,7 +605,6 @@ namespace CorUnix
             CPalThread * pthrCurrent);
         static PAL_ERROR StartWorker(CPalThread * pthrCurrent);
         static PAL_ERROR PrepareForShutdown(void);
-        static PAL_ERROR Shutdown(CPalThread *pthrCurrent, bool fFullCleanup);
 
     public:
         virtual ~CPalSynchronizationManager();
