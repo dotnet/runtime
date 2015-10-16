@@ -14,13 +14,13 @@ namespace System.Net.Sockets
             return _socketAddressSize;
         }
 
-        public void CompletionCallback(int numBytes, byte[] socketAddress, int socketAddressSize, int receivedFlags, IPPacketInformation ipPacketInformation, SocketError errorCode)
+        public void CompletionCallback(int numBytes, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, IPPacketInformation ipPacketInformation, SocketError errorCode)
         {
             Debug.Assert(_socketAddress != null);
             Debug.Assert(socketAddress == null || _socketAddress.Buffer == socketAddress);
 
             _socketAddressSize = socketAddressSize;
-            _socketFlags = SocketPal.GetSocketFlags(receivedFlags);
+            _socketFlags = receivedFlags;
             _ipPacketInformation = ipPacketInformation;
 
             base.CompletionCallback(numBytes, errorCode);

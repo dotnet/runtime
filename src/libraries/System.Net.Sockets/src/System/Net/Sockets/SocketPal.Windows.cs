@@ -35,9 +35,10 @@ namespace System.Net.Sockets
             return (SocketError)Marshal.GetLastWin32Error();
         }
 
-        public static SafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+        public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeCloseSocket socket)
         {
-            return SafeCloseSocket.CreateWSASocket(addressFamily, socketType, protocolType);
+            socket = SafeCloseSocket.CreateWSASocket(addressFamily, socketType, protocolType);
+            return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
         }
 
         public static unsafe SafeCloseSocket CreateSocket(SocketInformation socketInformation, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType)
@@ -124,9 +125,10 @@ namespace System.Net.Sockets
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SafeCloseSocket Accept(SafeCloseSocket handle, byte[] buffer, ref int nameLen)
+        public static SocketError Accept(SafeCloseSocket handle, byte[] buffer, ref int nameLen, out SafeCloseSocket socket)
         {
-            return SafeCloseSocket.Accept(handle, buffer, ref nameLen);
+            socket = SafeCloseSocket.Accept(handle, buffer, ref nameLen);
+            return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
         }
 
         public static SocketError Connect(SafeCloseSocket handle, byte[] peerAddress, int peerAddressLen)
@@ -685,11 +687,11 @@ namespace System.Net.Sockets
             if ((SocketError)socketCount == SocketError.SocketError)
             {
                 status = false;
-                return SocketError.SocketError;
+                return GetLastSocketError();
             }
 
             status = (int)fileDescriptorSet[0] != 0 && fileDescriptorSet[1] == rawHandle;
-            return (SocketError)socketCount;
+            return SocketError.Success;
         }
 
         public static SocketError Select(IList checkRead, IList checkWrite, IList checkError, int microseconds)
@@ -739,14 +741,14 @@ namespace System.Net.Sockets
 
             if ((SocketError)socketCount == SocketError.SocketError)
             {
-                return SocketError.SocketError;
+                return GetLastSocketError();
             }
 
             Socket.SelectFileDescriptor(checkRead, readfileDescriptorSet);
             Socket.SelectFileDescriptor(checkWrite, writefileDescriptorSet);
             Socket.SelectFileDescriptor(checkError, errfileDescriptorSet);
 
-            return (SocketError)socketCount;
+            return SocketError.Success;
         }
 
         public static SocketError Shutdown(SafeCloseSocket handle, bool isConnected, bool isDisconnected, SocketShutdown how)

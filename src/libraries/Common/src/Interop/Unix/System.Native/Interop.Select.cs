@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        public static extern unsafe int select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, timeval* timeout);
+        [DllImport(Libraries.SystemNative)]
+        internal static extern unsafe Error Select(int fdCount, FdSet* readFds, FdSet* writeFds, FdSet* errorFds, int microseconds, int* selected);
     }
 }

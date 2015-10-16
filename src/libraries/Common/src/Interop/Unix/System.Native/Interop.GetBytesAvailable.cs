@@ -3,18 +3,12 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Text;
-
-using size_t = System.IntPtr;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-		public unsafe struct iovec
-		{
-			public void* iov_base;
-			public size_t iov_len;
-		}
+        [DllImport(Libraries.SystemNative)]
+        internal static extern unsafe Error GetBytesAvailable(int socket, int* available);
     }
 }

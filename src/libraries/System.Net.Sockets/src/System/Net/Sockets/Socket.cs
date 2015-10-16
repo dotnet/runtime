@@ -94,12 +94,16 @@ namespace System.Net.Sockets
 
             InitializeSockets();
 
-            _handle = SocketPal.CreateSocket(addressFamily, socketType, protocolType);
-            if (_handle.IsInvalid)
+            SocketError errorCode = SocketPal.CreateSocket(addressFamily, socketType, protocolType, out _handle);
+            if (errorCode != SocketError.Success)
             {
+                Debug.Assert(_handle.IsInvalid);
+
                 // Failed to create the socket, throw.
-                throw new SocketException((int)SocketPal.GetLastSocketError());
+                throw new SocketException((int)errorCode);
             }
+
+            Debug.Assert(!_handle.IsInvalid);
 
             _addressFamily = addressFamily;
             _socketType = socketType;
@@ -1214,16 +1218,20 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
 
             // This may throw ObjectDisposedException.
-            SafeCloseSocket acceptedSocketHandle = SocketPal.Accept(
+            SafeCloseSocket acceptedSocketHandle;
+            SocketError errorCode = SocketPal.Accept(
                 _handle,
                 socketAddress.Buffer,
-                ref socketAddress.InternalSize);
+                ref socketAddress.InternalSize,
+                out acceptedSocketHandle);
 
             // Throw an appropriate SocketException if the native call fails.
-            if (acceptedSocketHandle.IsInvalid)
+            if (errorCode != SocketError.Success)
             {
+                Debug.Assert(acceptedSocketHandle.IsInvalid);
+
                 // Update the internal state of this socket according to the error before throwing.
-                SocketException socketException = new SocketException((int)SocketPal.GetLastSocketError());
+                SocketException socketException = new SocketException((int)errorCode);
                 UpdateStatusAfterSocketError(socketException);
                 if (s_loggingEnabled)
                 {
@@ -1231,6 +1239,8 @@ namespace System.Net.Sockets
                 }
                 throw socketException;
             }
+
+            Debug.Assert(!acceptedSocketHandle.IsInvalid);
 
             Socket socket = CreateAcceptSocket(acceptedSocketHandle, _rightEndPoint.Create(socketAddress));
             if (s_loggingEnabled)
@@ -2272,10 +2282,10 @@ namespace System.Net.Sockets
             GlobalLog.Print("Socket#" + Logging.HashString(this) + "::Poll() Interop.Winsock.select returns socketCount:" + (int)errorCode);
 
             // Throw an appropriate SocketException if the native call fails.
-            if (errorCode == SocketError.SocketError)
+            if (errorCode != SocketError.Success)
             {
                 // Update the internal state of this socket according to the error before throwing.
-                SocketException socketException = new SocketException((int)SocketPal.GetLastSocketError());
+                SocketException socketException = new SocketException((int)errorCode);
                 UpdateStatusAfterSocketError(socketException);
                 if (s_loggingEnabled)
                 {
@@ -2312,9 +2322,9 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketPal.Select(checkRead, checkWrite, checkError, microSeconds);
 
             // Throw an appropriate SocketException if the native call fails.
-            if (errorCode == SocketError.SocketError)
+            if (errorCode != SocketError.Success)
             {
-                throw new SocketException((int)SocketPal.GetLastSocketError());
+                throw new SocketException((int)errorCode);
             }
         }
 
@@ -5382,7 +5392,7 @@ namespace System.Net.Sockets
                     {
                         bool willBlock;
                         errorCode = SocketPal.SetBlocking(_handle, false, out willBlock);
-                        GlobalLog.Print("SafeCloseSocket::Dispose(handle:" + _handle.DangerousGetHandle().ToString("x") + ") ioctlsocket(FIONBIO):" + (errorCode == SocketError.SocketError ? SocketPal.GetLastSocketError() : errorCode).ToString());
+                        GlobalLog.Print("SafeCloseSocket::Dispose(handle:" + _handle.DangerousGetHandle().ToString("x") + ") ioctlsocket(FIONBIO):" + errorCode.ToString());
                     }
 
                     if (timeout < 0)
@@ -5395,7 +5405,7 @@ namespace System.Net.Sockets
                     {
                         // Since our timeout is in ms and linger is in seconds, implement our own sortof linger here.
                         errorCode = SocketPal.Shutdown(_handle, _isConnected, _isDisconnected, SocketShutdown.Send);
-                        GlobalLog.Print("SafeCloseSocket::Dispose(handle:" + _handle.DangerousGetHandle().ToString("x") + ") shutdown():" + (errorCode == SocketError.SocketError ? SocketPal.GetLastSocketError() : errorCode).ToString());
+                        GlobalLog.Print("SafeCloseSocket::Dispose(handle:" + _handle.DangerousGetHandle().ToString("x") + ") shutdown():" + errorCode.ToString());
 
                         // This should give us a timeout in milliseconds.
                         errorCode = SocketPal.SetSockOpt(
@@ -5403,7 +5413,7 @@ namespace System.Net.Sockets
                             SocketOptionLevel.Socket,
                             SocketOptionName.ReceiveTimeout,
                             timeout);
-                        GlobalLog.Print("SafeCloseSocket::Dispose(handle:" + _handle.DangerousGetHandle().ToString("x") + ") setsockopt():" + (errorCode == SocketError.SocketError ? SocketPal.GetLastSocketError() : errorCode).ToString());
+                        GlobalLog.Print("SafeCloseSocket::Dispose(handle:" + _handle.DangerousGetHandle().ToString("x") + ") setsockopt():" + errorCode.ToString());
 
                         if (errorCode != SocketError.Success)
                         {
@@ -5425,7 +5435,7 @@ namespace System.Net.Sockets
                                 // We got a FIN or data.  Use ioctlsocket to find out which.
                                 int dataAvailable = 0;
                                 errorCode = SocketPal.GetAvailable(_handle, out dataAvailable);
-                                GlobalLog.Print("SafeCloseSocket::Dispose(handle:" + _handle.DangerousGetHandle().ToString("x") + ") ioctlsocket(FIONREAD):" + (errorCode == SocketError.SocketError ? SocketPal.GetLastSocketError() : errorCode).ToString());
+                                GlobalLog.Print("SafeCloseSocket::Dispose(handle:" + _handle.DangerousGetHandle().ToString("x") + ") ioctlsocket(FIONREAD):" + errorCode.ToString());
 
                                 if (errorCode != SocketError.Success || dataAvailable != 0)
                                 {

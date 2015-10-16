@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Net.Sockets;
 
 internal static partial class Interop
 {
@@ -21,7 +22,7 @@ internal static partial class Interop
             public int SocketAddressLen;
             public int IOVectorCount;
             public int ControlBufferLen;
-            public int Flags;
+            public SocketFlags Flags;
         }
     }
 }
