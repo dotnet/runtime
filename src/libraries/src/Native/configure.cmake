@@ -81,6 +81,18 @@ check_cxx_source_compiles(
     "
     HAVE_GNU_STRERROR_R)
 
+check_struct_has_member(
+    "struct fd_set"
+    fds_bits
+    "sys/select.h"
+    HAVE_FDS_BITS)
+
+check_struct_has_member(
+    "struct fd_set"
+    __fds_bits
+    "sys/select.h"
+    HAVE_PRIVATE_FDS_BITS)
+
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     set (CMAKE_REQUIRED_LIBRARIES rt)

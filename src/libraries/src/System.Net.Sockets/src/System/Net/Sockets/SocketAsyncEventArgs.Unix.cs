@@ -96,11 +96,11 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException();
         }
 
-        private void TransferCompletionCallback(int bytesTransferred, byte[] socketAddress, int socketAddressSize, int receivedFlags, SocketError socketError)
+        private void TransferCompletionCallback(int bytesTransferred, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
         {
             Debug.Assert(socketAddress == null || socketAddress == _socketAddress.Buffer);
             _socketAddressSize = socketAddressSize;
-            _receivedFlags = SocketPal.GetSocketFlags(receivedFlags);
+            _receivedFlags = receivedFlags;
 
             CompletionCallback(bytesTransferred, socketError);
         }
@@ -113,16 +113,14 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationReceive(SafeCloseSocket handle, out SocketFlags flags, out int bytesTransferred)
         {
-            int platformFlags = SocketPal.GetPlatformSocketFlags(_socketFlags);
-
             SocketError errorCode;
             if (_buffer != null)
             {
-                errorCode = handle.AsyncContext.ReceiveAsync(_buffer, _offset, _count, platformFlags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveAsync(_buffer, _offset, _count, _socketFlags, TransferCompletionCallback);
             }
             else
             {
-                errorCode = handle.AsyncContext.ReceiveAsync(_bufferList, platformFlags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveAsync(_bufferList, _socketFlags, TransferCompletionCallback);
             }
 
             flags = _socketFlags;
@@ -138,16 +136,14 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationReceiveFrom(SafeCloseSocket handle, out SocketFlags flags, out int bytesTransferred)
         {
-            int platformFlags = SocketPal.GetPlatformSocketFlags(_socketFlags);
-
             SocketError errorCode;
             if (_buffer != null)
             {
-                errorCode = handle.AsyncContext.ReceiveFromAsync(_buffer, _offset, _count, platformFlags, _socketAddress.Buffer, _socketAddress.Size, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveFromAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, _socketAddress.Size, TransferCompletionCallback);
             }
             else
             {
-                errorCode = handle.AsyncContext.ReceiveFromAsync(_bufferList, platformFlags, _socketAddress.Buffer, _socketAddress.Size, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveFromAsync(_bufferList, _socketFlags, _socketAddress.Buffer, _socketAddress.Size, TransferCompletionCallback);
             }
 
             flags = _socketFlags;
@@ -162,13 +158,13 @@ namespace System.Net.Sockets
             _socketAddressSize = 0;
         }
 
-        private void ReceiveMessageFromCompletionCallback(int bytesTransferred, byte[] socketAddress, int socketAddressSize, int receivedFlags, IPPacketInformation ipPacketInformation, SocketError errorCode)
+        private void ReceiveMessageFromCompletionCallback(int bytesTransferred, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, IPPacketInformation ipPacketInformation, SocketError errorCode)
         {
             Debug.Assert(_socketAddress != null);
             Debug.Assert(socketAddress == null || _socketAddress.Buffer == socketAddress);
 
             _socketAddressSize = socketAddressSize;
-            _receivedFlags = SocketPal.GetSocketFlags(receivedFlags);
+            _receivedFlags = receivedFlags;
             _receiveMessageFromPacketInfo = ipPacketInformation;
 
             CompletionCallback(bytesTransferred, errorCode);
@@ -176,13 +172,11 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationReceiveMessageFrom(Socket socket, SafeCloseSocket handle, out int bytesTransferred)
         {
-            int platformFlags = SocketPal.GetPlatformSocketFlags(_socketFlags);
-
             bool isIPv4, isIPv6;
             Socket.GetIPProtocolInformation(socket.AddressFamily, _socketAddress, out isIPv4, out isIPv6);
 
             bytesTransferred = 0;
-            return handle.AsyncContext.ReceiveMessageFromAsync(_buffer, _offset, _count, platformFlags, _socketAddress.Buffer, _socketAddress.Size, isIPv4, isIPv6, ReceiveMessageFromCompletionCallback);
+            return handle.AsyncContext.ReceiveMessageFromAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, _socketAddress.Size, isIPv4, isIPv6, ReceiveMessageFromCompletionCallback);
         }
 
         private void InnerStartOperationSend()
@@ -193,16 +187,14 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationSend(SafeCloseSocket handle, out int bytesTransferred)
         {
-            int platformFlags = SocketPal.GetPlatformSocketFlags(_socketFlags);
-
             SocketError errorCode;
             if (_buffer != null)
             {
-                errorCode = handle.AsyncContext.SendAsync(_buffer, _offset, _count, platformFlags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendAsync(_buffer, _offset, _count, _socketFlags, TransferCompletionCallback);
             }
             else
             {
-                errorCode = handle.AsyncContext.SendAsync(_bufferList, platformFlags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendAsync(_bufferList, _socketFlags, TransferCompletionCallback);
             }
 
             bytesTransferred = 0;
@@ -227,16 +219,14 @@ namespace System.Net.Sockets
 
         internal SocketError DoOperationSendTo(SafeCloseSocket handle, out int bytesTransferred)
         {
-            int platformFlags = SocketPal.GetPlatformSocketFlags(_socketFlags);
-
             SocketError errorCode;
             if (_buffer != null)
             {
-                errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, platformFlags, _socketAddress.Buffer, _socketAddress.Size, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, _socketAddress.Size, TransferCompletionCallback);
             }
             else
             {
-                errorCode = handle.AsyncContext.SendToAsync(_bufferList, platformFlags, _socketAddress.Buffer, _socketAddress.Size, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendToAsync(_bufferList, _socketFlags, _socketAddress.Buffer, _socketAddress.Size, TransferCompletionCallback);
             }
 
             bytesTransferred = 0;
