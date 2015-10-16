@@ -272,10 +272,7 @@ namespace Internal.Cryptography.Pal
                 return null;
             }
 
-            using (SafeEcKeyHandle ecKeyHandle = Interop.libcrypto.EVP_PKEY_get1_EC_KEY(_privateKey))
-            {
-                return new ECDsaOpenSsl(ecKeyHandle.DangerousGetHandle());
-            }
+            return new ECDsaOpenSsl(_privateKey);
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
