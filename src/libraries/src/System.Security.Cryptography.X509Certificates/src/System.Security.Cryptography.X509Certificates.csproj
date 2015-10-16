@@ -165,9 +165,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.CURLcode.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.CURLcode.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.EvpPkey.Rsa.cs</Link>
     </Compile>

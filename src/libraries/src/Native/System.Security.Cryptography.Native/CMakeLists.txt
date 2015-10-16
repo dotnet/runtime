@@ -26,6 +26,7 @@ set(NATIVECRYPTO_SOURCES
     pal_eckey.cpp
     pal_err.cpp
     pal_evp.cpp
+    pal_evp_pkey.cpp
     pal_evp_cipher.cpp
     pal_hmac.cpp
     pal_pkcs12.cpp
