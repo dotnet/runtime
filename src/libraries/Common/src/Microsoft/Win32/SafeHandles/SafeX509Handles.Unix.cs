@@ -81,6 +81,11 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
+        internal SafeX509StoreCtxHandle(IntPtr handle, bool ownsHandle) :
+            base(handle, ownsHandle)
+        {
+        }
+
         protected override bool ReleaseHandle()
         {
             Interop.libcrypto.X509_STORE_CTX_free(handle);
