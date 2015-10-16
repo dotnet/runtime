@@ -99,8 +99,8 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                IntPtr serialNumberPtr = Interop.Crypto.X509GetSerialNumber(_cert);
-                byte[] serial = Interop.Crypto.GetAsn1StringBytes(serialNumberPtr);
+                SafeSharedAsn1IntegerHandle serialNumber = Interop.Crypto.X509GetSerialNumber(_cert);
+                byte[] serial = Interop.Crypto.GetAsn1IntegerBytes(serialNumber);
 
                 // Windows returns this in BigInteger Little-Endian,
                 // OpenSSL returns this in BigInteger Big-Endian.
