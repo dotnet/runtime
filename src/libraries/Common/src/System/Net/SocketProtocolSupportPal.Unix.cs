@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Net.Internals;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -51,31 +52,13 @@ namespace System.Net
             }
         }
 
-        private static bool IsProtocolSupported(AddressFamily af)
+        private static unsafe bool IsProtocolSupported(AddressFamily af)
         {
-            int family;
-            switch (af)
-            {
-                case AddressFamily.InterNetwork:
-                    family = Interop.libc.AF_INET;
-                    break;
-                case AddressFamily.InterNetworkV6:
-                    family = Interop.libc.AF_INET6;
-                    break;
-                default:
-                    Debug.Fail("Invalid address family: " + af.ToString());
-                    throw new ArgumentException("af");
-            }
-
             int socket = -1;
             try
             {
-                socket = Interop.libc.socket(family, Interop.libc.SOCK_DGRAM, 0);
-                if (socket == -1)
-                {
-                    return Interop.Sys.GetLastError() != Interop.Error.EAFNOSUPPORT;
-                }
-                return true;
+                Interop.Error err = Interop.Sys.Socket(af, SocketType.Dgram, (ProtocolType)0, &socket);
+                return err != Interop.Error.EAFNOSUPPORT;
             }
             finally
             {

@@ -58,6 +58,31 @@ enum AddressFamily : int32_t
     PAL_AF_INET6 = 23, // System.Net.AddressFamily.InterNetworkV6
 };
 
+/*
+ * Socket types.
+ *
+ * NOTE: these values are taken from System.Net.SocketType.
+ */
+enum SocketType : int32_t
+{
+    PAL_SOCK_STREAM = 1,    // System.Net.SocketType.Stream
+    PAL_SOCK_DGRAM = 2,     // System.Net.SocketType.Dgram
+    PAL_SOCK_RAW = 3,       // System.Net.SocketType.Raw
+    PAL_SOCK_RDM = 4,       // System.Net.SocketType.Rdm
+    PAL_SOCK_SEQPACKET = 5, // System.Net.SocketType.SeqPacket
+};
+
+/*
+ * Protocol types.
+ *
+ * NOTE: these values are taken from System.Net.ProtocolType.
+ */
+enum ProtocolType : int32_t
+{
+    PAL_PT_TCP = 6,  // System.Net.ProtocolType.Tcp
+    PAL_PT_UDP = 17, // System.Net.ProtocolType.Udp
+};
+
 enum MulticastOption : int32_t
 {
     PAL_MULTICAST_ADD = 0, // IP{,V6}_ADD_MEMBERSHIP
@@ -314,3 +339,5 @@ extern "C" Error GetSocketErrorOption(int32_t socket, Error* error);
 extern "C" Error GetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
 
 extern "C" Error SetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
+
+extern "C" Error Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, int32_t* createdSocket);
