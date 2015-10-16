@@ -756,11 +756,11 @@ Parameters :
 void 
 PALCommonCleanup(BOOL full_cleanup)
 {
-    static bool done = false;
+    static bool cleanupDone = false;
 
-    if (!done)
+    if (!cleanupDone)
     {
-        done = true;
+        cleanupDone = true;
 
         PALSetShutdownIntent();
 
@@ -773,15 +773,6 @@ PALCommonCleanup(BOOL full_cleanup)
 #ifdef _DEBUG
         PROCDumpThreadList();
 #endif
-
-        TRACE("About to suspend every other thread\n");
-
-        /* prevent other threads from acquiring signaled objects */
-        PROCCondemnOtherThreads();
-        /* prevent other threads from using services we're shutting down */
-        PROCSuspendOtherThreads();
-
-        TRACE("Every other thread suspended until exit\n");
     }
 }
 
