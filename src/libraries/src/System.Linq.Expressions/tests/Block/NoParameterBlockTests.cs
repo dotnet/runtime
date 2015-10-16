@@ -206,7 +206,6 @@ namespace System.Linq.Expressions.Test
         [Theory]
         [MemberData("BlockSizes")]
         [ActiveIssue(3909)]
-        [ActiveIssue(3908)]
         public void NullExpressionInExpressionList(int size)
         {
             List<Expression> expressionList = Enumerable.Range(0, size).Select(i => (Expression)Expression.Constant(1)).ToList();
@@ -332,7 +331,6 @@ namespace System.Linq.Expressions.Test
         }
 
         [Fact]
-        [ActiveIssue(3882)]
         public void EmptyBlockWithParametersNotAllowed()
         {
             Assert.Throws<ArgumentException>("expressions", () => Expression.Block(Enumerable.Repeat<ParameterExpression>(Expression.Parameter(typeof(int)), 1)));
@@ -342,7 +340,6 @@ namespace System.Linq.Expressions.Test
         }
 
         // If https://github.com/dotnet/corefx/issues/3043 is ever actioned, this case would still be prohibited.
-
         [Fact]
         public void EmptyBlockWithNonVoidTypeNotAllowed()
         {
@@ -351,7 +348,6 @@ namespace System.Linq.Expressions.Test
         }
 
         [Fact]
-        [ActiveIssue(3882)]
         public void EmptyBlockWithParametersAndNonVoidTypeNotAllowed()
         {
             Assert.Throws<ArgumentException>("expressions", () => Expression.Block(typeof(int), Enumerable.Repeat<ParameterExpression>(Expression.Parameter(typeof(int)), 1)));
