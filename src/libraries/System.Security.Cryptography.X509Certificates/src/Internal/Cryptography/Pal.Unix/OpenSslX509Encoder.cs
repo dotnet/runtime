@@ -187,12 +187,8 @@ namespace Internal.Cryptography.Pal
 
         internal static byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
         {
-            using (SafeAsn1OctetStringHandle octetString = Interop.Crypto.DecodeAsn1OctetString(encoded, encoded.Length))
-            {
-                Interop.Crypto.CheckValidOpenSslHandle(octetString);
-
-                return Interop.Crypto.GetAsn1StringBytes(octetString.DangerousGetHandle());
-            }
+            DerSequenceReader reader = DerSequenceReader.CreateForPayload(encoded);
+            return reader.ReadOctetString();
         }
 
         public byte[] ComputeCapiSha1OfPublicKey(PublicKey key)
