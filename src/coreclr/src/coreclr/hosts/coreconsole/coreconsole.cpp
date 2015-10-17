@@ -595,24 +595,25 @@ void showHelp() {
 		);
 }
 
+static wchar_t programPath[MAX_LONGPATH];
+
 int __cdecl wmain(const int argc, const wchar_t* argv[])
 {
-    wchar_t* wpgmptr;
-    if (_get_wpgmptr(&wpgmptr) != 0) {
+    DWORD dwModuleFileName = GetModuleFileName(NULL, programPath, MAX_LONGPATH);
+    if (dwModuleFileName == 0 || dwModuleFileName >= MAX_LONGPATH) {
         ::wprintf(W("Failed to get the path to the current executable"));
         return -1;
     }
-    auto programPath = _wcsdup(wpgmptr);
     auto extension = wcsrchr(programPath, '.');
     if (extension == NULL || (wcscmp(extension, L".exe") != 0)) {
         ::wprintf(W("This executable needs to have 'exe' extension"));
         return -1;
     }
 
-	// Change the extension from ".exe" to ".dll"
-	extension[1] = 'd';
-	extension[2] = 'l';
-	extension[3] = 'l';
+    // Change the extension from ".exe" to ".dll"
+    extension[1] = 'd';
+    extension[2] = 'l';
+    extension[3] = 'l';
 
     // Parse the options from the command line
     bool verbose = false;
