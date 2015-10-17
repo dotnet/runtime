@@ -55,14 +55,10 @@ internal static partial class Interop
         {
             CheckValidOpenSslHandle(sk);
 
-            SafeSharedX509NameHandle handle = GetX509NameStackField_private(sk, loc);
-
-            if (!handle.IsInvalid)
-            {
-                handle.SetParent(sk);
-            }
-
-            return handle;
+            return SafeInteriorHandle.OpenInteriorHandle(
+                (handle, i) => GetX509NameStackField_private(handle, i),
+                sk,
+                loc);
         }
     }
 }
