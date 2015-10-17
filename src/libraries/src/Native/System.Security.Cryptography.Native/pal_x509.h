@@ -262,3 +262,16 @@ Shims the PEM_read_bio_X509_CRL method.
 The new X509_CRL instance.
 */
 extern "C" X509_CRL* PemReadBioX509Crl(BIO* bio);
+
+/*
+Returns the number of bytes it will take to convert the SubjectPublicKeyInfo
+portion of the X509 to DER format.
+*/
+extern "C" int32_t GetX509SubjectPublicKeyInfoDerSize(X509* x);
+
+/*
+Shims the i2d_X509_PUBKEY method, providing X509_get_X509_PUBKEY(x) as the input.
+
+Returns the number of bytes written to buf.
+*/
+extern "C" int32_t EncodeX509SubjectPublicKeyInfo(X509* x, uint8_t* buf);

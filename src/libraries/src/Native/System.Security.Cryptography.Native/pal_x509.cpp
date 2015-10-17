@@ -3,6 +3,7 @@
 
 #include "pal_x509.h"
 
+#include <assert.h>
 #include <openssl/pem.h>
 #include <openssl/x509v3.h>
 
@@ -251,4 +252,26 @@ extern "C" int32_t PemWriteBioX509Crl(BIO* bio, X509_CRL* crl)
 extern "C" X509_CRL* PemReadBioX509Crl(BIO* bio)
 {
     return PEM_read_bio_X509_CRL(bio, nullptr, nullptr, nullptr);
+}
+
+extern "C" int32_t GetX509SubjectPublicKeyInfoDerSize(X509* x509)
+{
+    if (!x509)
+    {
+        return 0;
+    }
+
+    // X509_get_X509_PUBKEY returns an interior pointer, so should not be freed
+    return i2d_X509_PUBKEY(X509_get_X509_PUBKEY(x509), nullptr);
+}
+
+extern "C" int32_t EncodeX509SubjectPublicKeyInfo(X509* x509, uint8_t* buf)
+{
+    if (!x509)
+    {
+        return 0;
+    }
+
+    // X509_get_X509_PUBKEY returns an interior pointer, so should not be freed
+    return i2d_X509_PUBKEY(X509_get_X509_PUBKEY(x509), &buf);
 }
