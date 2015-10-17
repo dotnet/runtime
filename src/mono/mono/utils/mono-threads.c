@@ -1192,7 +1192,11 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 
 	if (ms == INFINITE) {
 		do {
+#ifdef HOST_WIN32
+			Sleep (G_MAXUINT32);
+#else
 			sleep (G_MAXUINT32);
+#endif
 		} while (1);
 	} else {
 		int ret;
