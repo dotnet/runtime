@@ -32,6 +32,7 @@
 #cmakedefine01 HAVE_ECHO
 #cmakedefine01 HAVE_ICANON
 #cmakedefine01 HAVE_TCSANOW
+#cmakedefine01 HAVE_IN_PKTINFO
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5
