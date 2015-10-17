@@ -1,21 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Microsoft.Win32.SafeHandles;
-
 namespace System.Net.WebSockets
 {
-    public sealed class ClientWebSocket : WebSocket
+    public sealed partial class ClientWebSocket : WebSocket
     {
         private enum InternalState
         {
@@ -28,7 +20,7 @@ namespace System.Net.WebSockets
         private const string WebSocketAvailableApiCheck = "WinHttpWebSocketCompleteUpgrade";
 
         private readonly ClientWebSocketOptions _options;
-        private WinHttpWebSocket _innerWebSocket;
+        private WebSocket _innerWebSocket;
         private readonly CancellationTokenSource _cts;
 
         // NOTE: this is really an InternalState value, but Interlocked doesn't support
@@ -154,40 +146,6 @@ namespace System.Net.WebSockets
             return ConnectAsyncCore(uri, cancellationToken);
         }
 
-        private Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken)
-        {
-            _innerWebSocket = new WinHttpWebSocket();
-
-            try
-            {
-                // Change internal state to 'connected' to enable the other methods
-                if ((InternalState)Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != InternalState.Connecting)
-                {
-                    // Aborted/Disposed during connect.
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
-
-                return _innerWebSocket.ConnectAsync(uri, cancellationToken, _options);
-            }
-            catch (Win32Exception ex)
-            {
-                WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, ex);
-                if (Logging.On)
-                {
-                    Logging.Exception(Logging.WebSockets, this, "ConnectAsync", wex);
-                }
-                throw wex;
-            }
-            catch (Exception ex)
-            {
-                if (Logging.On)
-                {
-                    Logging.Exception(Logging.WebSockets, this, "ConnectAsync", ex);
-                }
-                throw;
-            }
-        }
-
         public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage,
             CancellationToken cancellationToken)
         {
@@ -274,20 +232,7 @@ namespace System.Net.WebSockets
                 throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
             }
         }
-
-        private void CheckPlatformSupport()
-        {
-            bool isPlatformSupported = false;
-
-            using (SafeLibraryHandle libHandle = Interop.mincore.LoadLibraryExW(Interop.Libraries.WinHttp, IntPtr.Zero, 0))
-            {
-                isPlatformSupported = Interop.mincore.GetProcAddress(libHandle, WebSocketAvailableApiCheck) != IntPtr.Zero;
-            }
-
-            if (!isPlatformSupported)
-            {
-                WebSocketValidate.ThrowPlatformNotSupportedException();
-            }
-        }
+        
+        partial void CheckPlatformSupport();
     }
 }
