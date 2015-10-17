@@ -14,10 +14,10 @@ namespace System.Collections.Tests
         /// </summary>
         public static List<object> CreateList(int size)
         {
-            PerfUtils utils = new PerfUtils(24565653);
+            Random rand = new Random(24565653);
             List<object> list = new List<object>();
             for (int i = 0; i < size; i++)
-                list.Add(utils.CreateString(100));
+                list.Add(rand.Next());
             return list;
         }
 
@@ -35,8 +35,8 @@ namespace System.Collections.Tests
                 {
                     for (int i = 0; i < 10000; i++)
                     {
-                        copyList.Add("TestString1"); copyList.Add("TestString2"); copyList.Add("TestString3"); copyList.Add("TestString4");
-                        copyList.Add("TestString5"); copyList.Add("TestString6"); copyList.Add("TestString7"); copyList.Add("TestString8");
+                        copyList.Add(123555); copyList.Add(123555); copyList.Add(123555); copyList.Add(123555);
+                        copyList.Add(123555); copyList.Add(123555); copyList.Add(123555); copyList.Add(123555);
                     }
                 }
             }
