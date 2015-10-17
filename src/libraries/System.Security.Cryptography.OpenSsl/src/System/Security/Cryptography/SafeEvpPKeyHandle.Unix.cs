@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
 
         protected override bool ReleaseHandle()
         {
-            Interop.libcrypto.EVP_PKEY_free(handle);
+            Interop.Crypto.EvpPkeyDestroy(handle);
             SetHandle(IntPtr.Zero);
             return true;
         }

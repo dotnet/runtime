@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, "pkeyHandle");
 
             // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
-            SafeEcKeyHandle ecKey = Interop.libcrypto.EVP_PKEY_get1_EC_KEY(pkeyHandle);
+            SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
 
             if (ecKey.IsInvalid)
             {
@@ -80,14 +80,14 @@ namespace System.Security.Cryptography
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             SafeEcKeyHandle currentKey = _key.Value;
-            SafeEvpPKeyHandle pkeyHandle = Interop.libcrypto.EVP_PKEY_new();
+            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 
             try
             {
                 // Wrapping our key in an EVP_PKEY will up_ref our key.
                 // When the EVP_PKEY is Disposed it will down_ref the key.
                 // So everything should be copacetic.
-                if (!Interop.libcrypto.EVP_PKEY_set1_EC_KEY(pkeyHandle, currentKey))
+                if (!Interop.Crypto.EvpPkeySetEcKey(pkeyHandle, currentKey))
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
@@ -136,9 +136,9 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException("hash");
 
             SafeEcKeyHandle key = _key.Value;
-            int signatureLength = Interop.libcrypto.ECDSA_size(key);
+            int signatureLength = Interop.Crypto.EcDsaSize(key);
             byte[] signature = new byte[signatureLength];
-            if (!Interop.libcrypto.ECDSA_sign(0, hash, hash.Length, signature, ref signatureLength, key))
+            if (!Interop.Crypto.EcDsaSign(hash, hash.Length, signature, ref signatureLength, key))
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
 
             byte[] converted = ConvertToApiFormat(signature, 0, signatureLength);
@@ -168,7 +168,7 @@ namespace System.Security.Cryptography
             byte[] openSslFormat = ConvertToOpenSslFormat(signature);
 
             SafeEcKeyHandle key = _key.Value;
-            int verifyResult = Interop.libcrypto.ECDSA_verify(0, hash, hash.Length, openSslFormat, openSslFormat.Length, key);
+            int verifyResult = Interop.Crypto.EcDsaVerify(hash, hash.Length, openSslFormat, openSslFormat.Length, key);
             return verifyResult == 1;
         }
 
@@ -278,7 +278,7 @@ namespace System.Security.Cryptography
 
         private static int GetKeySize(SafeEcKeyHandle ecKeyHandle)
         {
-            int nid = Interop.libcrypto.EcKeyGetCurveName(ecKeyHandle);
+            int nid = Interop.Crypto.EcKeyGetCurveName(ecKeyHandle);
             int keySize = 0;
 
             for (int i = 0; i < s_supportedAlgorithms.Length; i++)
@@ -307,11 +307,11 @@ namespace System.Security.Cryptography
                 if (keySize == s_supportedAlgorithms[i].KeySize)
                 {
                     int nid = s_supportedAlgorithms[i].Nid;
-                    SafeEcKeyHandle key = Interop.libcrypto.EC_KEY_new_by_curve_name(nid);
+                    SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByCurveName(nid);
                     if (key == null || key.IsInvalid)
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
 
-                    if (!Interop.libcrypto.EC_KEY_generate_key(key))
+                    if (!Interop.Crypto.EcKeyGenerateKey(key))
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
 
                     return key;
