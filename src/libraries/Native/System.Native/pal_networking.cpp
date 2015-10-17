@@ -5,6 +5,7 @@
 #include "pal_networking.h"
 #include "pal_utilities.h"
 
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -12,10 +13,13 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include <alloca.h>
 #include <errno.h>
 #include <assert.h>
 #include <vector>
+
+#if HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 
 #if !defined(IPV6_ADD_MEMBERSHIP) && defined(IPV6_JOIN_GROUP)
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
@@ -124,12 +128,16 @@ static int32_t ConvertGetAddrInfoAndGetNameInfoErrorsToPal(int32_t error)
             return PAL_EAI_AGAIN;
         case EAI_BADFLAGS:
             return PAL_EAI_BADFLAGS;
+#ifdef EAI_FAIL
         case EAI_FAIL:
             return PAL_EAI_FAIL;
+#endif
         case EAI_FAMILY:
             return PAL_EAI_FAMILY;
         case EAI_NONAME:
+#ifdef EAI_NODATA
         case EAI_NODATA:
+#endif
             return PAL_EAI_NONAME;
     }
 
