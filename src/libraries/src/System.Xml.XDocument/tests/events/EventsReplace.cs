@@ -2,16 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Linq;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml.Linq;
-using Microsoft.Test.ModuleCore;
 using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class FunctionalTests
     {
         public partial class EventsTests
         {
@@ -40,7 +38,7 @@ namespace CoreXml.Test.XLinq
                             docHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+                        Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
                     }
                 }
 
@@ -68,8 +66,8 @@ namespace CoreXml.Test.XLinq
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
                         }
                         undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+                        Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                        Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
                     }
                 }
             }
@@ -95,12 +93,12 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper docHelper = new EventsHelper(xDoc))
                         {
                             xDoc.ReplaceNodes(newValue);
-                            TestLog.Compare(xDoc.Nodes().Count() == 1, "Not all content were removed");
-                            TestLog.Compare(Object.ReferenceEquals(xDoc.FirstNode, newValue), "Did not replace correctly");
+                            Assert.True(xDoc.Nodes().Count() == 1, "Not all content were removed");
+                            Assert.True(Object.ReferenceEquals(xDoc.FirstNode, newValue), "Did not replace correctly");
                             docHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+                        Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
                     }
                 }
 
@@ -125,15 +123,15 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(xElem))
                         {
                             xElem.ReplaceNodes(newValue);
-                            TestLog.Compare(xElem.Nodes().Count() == 1, "Did not replace correctly");
-                            TestLog.Compare(Object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
-                            TestLog.Compare(xElem.HasAttributes, "ReplaceNodes removed attributes");
+                            Assert.True(xElem.Nodes().Count() == 1, "Did not replace correctly");
+                            Assert.True(Object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
+                            Assert.True(xElem.HasAttributes, "ReplaceNodes removed attributes");
                             xElem.Verify();
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
                         }
                         undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+                        Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                        Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
                     }
                 }
 
@@ -158,7 +156,7 @@ namespace CoreXml.Test.XLinq
                                 eHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Remove, XObjectChange.Remove, XObjectChange.Add });
                             }
                             undo.Undo();
-                            TestLog.Compare(XNode.DeepEquals(xElem, xElemOriginal), "Undo did not work!");
+                            Assert.True(XNode.DeepEquals(xElem, xElemOriginal), "Undo did not work!");
                         }
                     }
                 }
@@ -178,7 +176,7 @@ namespace CoreXml.Test.XLinq
                             eHelper.Verify(XObjectChange.Add, newValue.ToArray());
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xElem, xElemOriginal), "Undo did not work!");
+                        Assert.True(XNode.DeepEquals(xElem, xElemOriginal), "Undo did not work!");
                     }
                 }
             }
@@ -203,13 +201,13 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(xElem))
                         {
                             xElem.ReplaceAttributes(new XAttribute("a", "aa"));
-                            TestLog.Compare(XObject.ReferenceEquals(xElem.FirstAttribute, xElem.LastAttribute), "Did not replace attributes correctly");
+                            Assert.True(XObject.ReferenceEquals(xElem.FirstAttribute, xElem.LastAttribute), "Did not replace attributes correctly");
                             xElem.Verify();
                             eHelper.Verify(content.Length + 1);
                         }
                         undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+                        Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                        Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
                     }
                 }
             }
@@ -243,15 +241,15 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(xElem))
                         {
                             xElem.ReplaceAll(newValue);
-                            TestLog.Compare(xElem.Nodes().Count() == 1, "Did not replace correctly");
-                            TestLog.Compare(Object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
-                            TestLog.Compare(!xElem.HasAttributes, "ReplaceAll did not remove attributes");
+                            Assert.True(xElem.Nodes().Count() == 1, "Did not replace correctly");
+                            Assert.True(Object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
+                            Assert.True(!xElem.HasAttributes, "ReplaceAll did not remove attributes");
                             xElem.Verify();
                             eHelper.Verify(toReplace.Length + 1);
                         }
                         undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+                        Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                        Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
                     }
                 }
 
@@ -277,8 +275,8 @@ namespace CoreXml.Test.XLinq
                             toReplace.Verify();
                         }
                         undo.Undo();
-                        TestLog.Compare(toReplace.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(toReplace.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+                        Assert.True(toReplace.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                        Assert.True(toReplace.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
                     }
                 }
             }
