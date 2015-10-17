@@ -86,6 +86,11 @@
     <Compile Include="Constant\ConstantTests.cs" />
     <Compile Include="Convert\ConvertCheckedTests.cs" />
     <Compile Include="Convert\ConvertTests.cs" />
+    <Compile Include="Goto\Break.cs" />
+    <Compile Include="Goto\Continue.cs" />
+    <Compile Include="Goto\Goto.cs" />
+    <Compile Include="Goto\GotoExpressionTests.cs" />
+    <Compile Include="Goto\Return.cs" />
     <Compile Include="HelperTypes.cs" />
     <Compile Include="Invoke\InvocationTests.cs" />
     <Compile Include="Invoke\InvokeFactoryTests.cs" />
