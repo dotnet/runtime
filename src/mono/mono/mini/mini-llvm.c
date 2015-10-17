@@ -1214,6 +1214,12 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			} else if (cinfo->ret.pair_storage [0] == LLVMArgNone && cinfo->ret.pair_storage [1] == LLVMArgNone) {
 				/* Empty struct */
 				ret_type = LLVMVoidType ();
+			} else if (cinfo->ret.pair_storage [0] == LLVMArgInIReg && cinfo->ret.pair_storage [1] == LLVMArgInIReg) {
+				LLVMTypeRef members [2];
+
+				members [0] = IntPtrType ();
+				members [1] = IntPtrType ();
+				ret_type = LLVMStructType (members, 2, FALSE);
 			} else {
 				g_assert_not_reached ();
 			}
@@ -2668,7 +2674,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		MonoInst *var = cfg->varinfo [i];
 		LLVMTypeRef vtype;
 
-		if (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || mini_type_is_vtype (var->inst_vtype)) {
+		if (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || (mini_type_is_vtype (var->inst_vtype) && !MONO_CLASS_IS_SIMD (ctx->cfg, var->klass))) {
 			vtype = type_to_llvm_type (ctx, var->inst_vtype);
 			CHECK_FAILURE (ctx);
 			/* Could be already created by an OP_VPHI */
@@ -3866,20 +3872,43 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			switch (linfo->ret.storage) {
 			case LLVMArgVtypeInReg: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (LLVMGetElementType (LLVMTypeOf (method)));
-				LLVMValueRef part1, retval;
-				int size;
+				LLVMValueRef val, addr, retval;
+				int i;
 
-				size = get_vtype_size (sig->ret);
+				retval = LLVMGetUndef (ret_type);
 
-				g_assert (addresses [ins->sreg1]);
+				if (!addresses [ins->sreg1]) {
+					/*
+					 * The return type is an LLVM vector type, have to convert between it and the
+					 * real return type which is a struct type.
+					 */
+					g_assert (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (sig->ret)));
+					/* Convert to 2xi64 first */
+					val = LLVMBuildBitCast (builder, values [ins->sreg1], LLVMVectorType (IntPtrType (), 2), "");
 
-				g_assert (linfo->ret.pair_storage [0] == LLVMArgInIReg);
-				g_assert (linfo->ret.pair_storage [1] == LLVMArgNone);
-					
-				part1 = convert (ctx, LLVMBuildLoad (builder, LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (LLVMIntType (size * 8), 0), ""), ""), IntPtrType ());
+					for (i = 0; i < 2; ++i) {
+						if (linfo->ret.pair_storage [i] == LLVMArgInIReg) {
+							retval = LLVMBuildInsertValue (builder, retval, LLVMBuildExtractElement (builder, val, LLVMConstInt (LLVMInt32Type (), i, FALSE), ""), i, "");
+						} else {
+							g_assert (linfo->ret.pair_storage [i] == LLVMArgNone);
+						}
+					}
+				} else {
+					addr = LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), "");
+					for (i = 0; i < 2; ++i) {
+						if (linfo->ret.pair_storage [i] == LLVMArgInIReg) {
+							LLVMValueRef indexes [2], part_addr;
 
-				retval = LLVMBuildInsertValue (builder, LLVMGetUndef (ret_type), part1, 0, "");
+							indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+							indexes [1] = LLVMConstInt (LLVMInt32Type (), i, FALSE);
+							part_addr = LLVMBuildGEP (builder, addr, indexes, 2, "");
 
+							retval = LLVMBuildInsertValue (builder, retval, LLVMBuildLoad (builder, part_addr, ""), i, "");
+						} else {
+							g_assert (linfo->ret.pair_storage [i] == LLVMArgNone);
+						}
+					}
+				}
 				LLVMBuildRet (builder, retval);
 				break;
 			}
