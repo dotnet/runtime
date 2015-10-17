@@ -316,7 +316,7 @@ namespace System.Net.WebSockets
                             uint ret = Interop.WinHttp.WinHttpWebSocketSend(
                                 _operation.WebSocketHandle,
                                 bufferType,
-                                Marshal.UnsafeAddrOfPinnedArrayElement(buffer.Array, buffer.Offset),
+                                buffer.Count > 0 ? Marshal.UnsafeAddrOfPinnedArrayElement(buffer.Array, buffer.Offset) : IntPtr.Zero,
                                 (uint)buffer.Count);
 
                             if (Interop.WinHttp.ERROR_SUCCESS != ret)
