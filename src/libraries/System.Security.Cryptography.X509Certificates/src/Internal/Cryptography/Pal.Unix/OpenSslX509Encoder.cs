@@ -5,8 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-
 using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
@@ -29,44 +27,7 @@ namespace Internal.Cryptography.Pal
 
         public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flags)
         {
-            return X500DistinguishedNameDecode(encodedDistinguishedName, flags, false);
-        }
-
-        internal static string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flags, bool useFindFormat)
-        {
-            using (SafeX509NameHandle x509Name = Interop.Crypto.DecodeX509Name(encodedDistinguishedName, encodedDistinguishedName.Length))
-            {
-                Interop.Crypto.CheckValidOpenSslHandle(x509Name);
-
-                using (SafeBioHandle bioHandle = Interop.Crypto.CreateMemoryBio())
-                {
-                    Interop.Crypto.CheckValidOpenSslHandle(bioHandle);
-
-                    int written;
-
-                    if (useFindFormat)
-                    {
-                        written = Interop.Crypto.X509NamePrintForFind(bioHandle, x509Name);
-                    }
-                    else
-                    {
-                        written = Interop.Crypto.X509NamePrintEx(bioHandle, x509Name, flags);
-                    }
-
-                    // X509_NAME_print_ex returns how many bytes were written into the buffer.
-                    // BIO_gets wants to ensure that the response is NULL-terminated.
-                    // So add one to leave space for the NULL.
-                    StringBuilder builder = new StringBuilder(written + 1);
-                    int read = Interop.Crypto.BioGets(bioHandle, builder, builder.Capacity);
-
-                    if (read < 0)
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-
-                    return builder.ToString();
-                }
-            }
+            return X500NameEncoder.X500DistinguishedNameDecode(encodedDistinguishedName, true, flags);
         }
 
         public byte[] X500DistinguishedNameEncode(string distinguishedName, X500DistinguishedNameFlags flag)

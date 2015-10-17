@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 string issuer = c.Issuer;
 
                 Assert.Equal(
-                    TestData.NormalizeX500String("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
+                    "CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
                     issuer);
             }
         }
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 string subject = c.Subject;
 
                 Assert.Equal(
-                    TestData.NormalizeX500String("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
+                    "CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
                     subject);
             }
         }

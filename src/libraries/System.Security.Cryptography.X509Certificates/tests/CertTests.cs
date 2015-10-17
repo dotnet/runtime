@@ -9,11 +9,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class CertTests
     {
         [Fact]
-        [ActiveIssue(1985, PlatformID.AnyUnix)]
         public static void X509CertTest()
         {
-            string certSubject = TestData.NormalizeX500String(
-                @"CN=Microsoft Corporate Root Authority, OU=ITG, O=Microsoft, L=Redmond, S=WA, C=US, E=pkit@microsoft.com");
+            string certSubject = @"CN=Microsoft Corporate Root Authority, OU=ITG, O=Microsoft, L=Redmond, S=WA, C=US, E=pkit@microsoft.com";
 
             using (X509Certificate cert = new X509Certificate(Path.Combine("TestData", "microsoft.cer")))
             {
@@ -49,11 +47,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1985, PlatformID.AnyUnix)]
+        [ActiveIssue(3893, PlatformID.AnyUnix)]
         public static void X509Cert2Test()
         {
-            string certName = TestData.NormalizeX500String(
-                @"E=admin@digsigtrust.com, CN=ABA.ECOM Root CA, O=""ABA.ECOM, INC."", L=Washington, S=DC, C=US");
+            string certName = @"E=admin@digsigtrust.com, CN=ABA.ECOM Root CA, O=""ABA.ECOM, INC."", L=Washington, S=DC, C=US";
 
             DateTime notBefore = new DateTime(1999, 7, 12, 17, 33, 53, DateTimeKind.Utc).ToLocalTime();
             DateTime notAfter = new DateTime(2009, 7, 9, 17, 33, 53, DateTimeKind.Utc).ToLocalTime();

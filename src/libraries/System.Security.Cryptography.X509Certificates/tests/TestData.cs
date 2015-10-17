@@ -1132,20 +1132,5 @@ WQndXd9du7pKZJi5yiJbbjaLlJE7/CTeayvZomsZK5VzBLiVMekC/8kbVLI3uyKL
             public byte[] QY;
             public byte[] D;
         }
-    
-        internal static string NormalizeX500String(string expected)
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return expected;
-            }
-
-            // Windows calls OID(2.5.4.8) "S", which matches ITU X.520.
-            // OpenSSL calls it "ST", because RFC1327 calls "S" surname.
-            // 
-            // This provides a test mitigation for issue 1985, allowing the
-            // thrust of the test to proceed with this one known problem.
-            return expected.Replace(" S=", " ST=");
-        }
     }
 }

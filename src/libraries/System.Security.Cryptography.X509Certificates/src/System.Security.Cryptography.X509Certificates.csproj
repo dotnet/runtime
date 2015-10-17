@@ -150,6 +150,7 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509StoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\PkcsFormatReader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X509Pal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X509Persistence.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -217,6 +218,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509NameEntry.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509NameEntry.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Rsa.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.Rsa.cs</Link>

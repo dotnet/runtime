@@ -64,6 +64,9 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs</Link>
     </Compile>
