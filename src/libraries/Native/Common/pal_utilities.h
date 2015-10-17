@@ -7,6 +7,7 @@
 #include "pal_config.h"
 
 #include <assert.h>
+#include <limits>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -41,14 +42,29 @@ template <typename F, typename T>
 using ReplaceVoidResultOf = EnableIf<std::is_void<ResultOf<F>>::value, T>;
 
 /**
- * Cast a positive value typed as a signed integer to the
- * appropriately sized unsigned integer type.
+ * Cast an unsigned integer value to the appropriately sized signed integer type.
  *
- * We use this when we've already ensured that the value is positive,
- * but we don't want to cast to a specific unsigned type as that could
+ * We use this when we've already ensured that the value is within the
+ * signed range, but we don't want to cast to a specific signed type as that could
  * inadvertently defeat the compiler's narrowing conversion warnings
  * (which we treat as error).
  */
+template <typename T>
+inline typename std::make_signed<T>::type SignedCast(T value)
+{
+    assert(value <= std::numeric_limits<typename std::make_signed<T>::type>::max());
+    return static_cast<typename std::make_signed<T>::type>(value);
+}
+
+/**
+* Cast a positive value typed as a signed integer to the
+* appropriately sized unsigned integer type.
+*
+* We use this when we've already ensured that the value is positive,
+* but we don't want to cast to a specific unsigned type as that could
+* inadvertently defeat the compiler's narrowing conversion warnings
+* (which we treat as error).
+*/
 template <typename T>
 inline typename std::make_unsigned<T>::type UnsignedCast(T value)
 {

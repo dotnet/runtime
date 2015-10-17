@@ -24,14 +24,10 @@ Always succeeds.
 extern "C" void EvpPkeyDestroy(EVP_PKEY* pkey);
 
 /*
-Function:
-UpRefEvpPkey
-
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader when
-duplicating a private key context as part of duplicating the Pal object
+duplicating a private key context as part of duplicating the Pal object.
 
-Return values:
-The number (as of this call) of references to the EVP_PKEY. Anything less than
+Returns the number (as of this call) of references to the EVP_PKEY. Anything less than
 2 is an error, because the key is already in the process of being freed.
 */
 extern "C" int32_t UpRefEvpPkey(EVP_PKEY* pkey);

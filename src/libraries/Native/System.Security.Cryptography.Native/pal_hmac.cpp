@@ -106,7 +106,6 @@ extern "C" int32_t HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len)
 
     unsigned int unsignedLen = UnsignedCast(*len);
     int ret = HmacCall(HMAC_Final, ctx, md, &unsignedLen);
-    assert(unsignedLen <= INT32_MAX);
-    *len = static_cast<int32_t>(unsignedLen);
+    *len = SignedCast(unsignedLen);
     return ret;
 }

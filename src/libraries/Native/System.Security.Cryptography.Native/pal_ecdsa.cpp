@@ -13,8 +13,7 @@ extern "C" int32_t EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint8_t* sig,
 
     unsigned int unsignedSigLength = UnsignedCast(*siglen);
     int ret = ECDSA_sign(0, dgst, dgstlen, sig, &unsignedSigLength, key);
-    assert(unsignedSigLength <= INT32_MAX);
-    *siglen = static_cast<int32_t>(unsignedSigLength);
+    *siglen = SignedCast(unsignedSigLength);
     return ret;
 }
 
