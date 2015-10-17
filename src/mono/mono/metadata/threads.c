@@ -3140,44 +3140,34 @@ void mono_thread_suspend_all_other_threads (void)
 	}
 }
 
+typedef struct {
+	MonoInternalThread *thread;
+	MonoStackFrameInfo *frames;
+	int nframes, max_frames;
+} ThreadDumpUserData;
+
 static gboolean thread_dump_requested;
 
-static G_GNUC_UNUSED gboolean
-print_stack_frame_to_string (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
+/* This needs to be async safe */
+static gboolean
+collect_frame (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
-	GString *p = (GString*)data;
-	MonoMethod *method = NULL;
-	if (frame->type == FRAME_TYPE_MANAGED)
-		method = mono_jit_info_get_method (frame->ji);
+	ThreadDumpUserData *ud = data;
 
-	if (method) {
-		gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, frame->domain);
-		g_string_append_printf (p, "  %s\n", location);
-		g_free (location);
-	} else
-		g_string_append_printf (p, "  at <unknown> <0x%05x>\n", frame->native_offset);
+	if (ud->nframes < ud->max_frames) {
+		memcpy (&ud->frames [ud->nframes], frame, sizeof (MonoStackFrameInfo));
+		ud->nframes ++;
+	}
 
 	return FALSE;
 }
 
+/* This needs to be async safe */
 static SuspendThreadResult
-print_thread_dump (MonoThreadInfo *info, gpointer ud)
+get_thread_dump (MonoThreadInfo *info, gpointer ud)
 {
-	MonoInternalThread *thread = ud;
-	GString* text = g_string_new (0);
-	char *name;
-	GError *error = NULL;
-
-	if (thread->name) {
-		name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, &error);
-		g_assert (!error);
-		g_string_append_printf (text, "\n\"%s\"", name);
-		g_free (name);
-	}
-	else if (thread->threadpool_thread)
-		g_string_append (text, "\n\"<threadpool thread>\"");
-	else
-		g_string_append (text, "\n\"<unnamed thread>\"");
+	ThreadDumpUserData *user_data = ud;
+	MonoInternalThread *thread = user_data->thread;
 
 #if 0
 /* This no longer works with remote unwinding */
@@ -3188,7 +3178,64 @@ print_thread_dump (MonoThreadInfo *info, gpointer ud)
 #endif
 #endif
 
-	mono_get_eh_callbacks ()->mono_walk_stack_with_state (print_stack_frame_to_string, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, text);
+	if (thread == mono_thread_internal_current ())
+		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (collect_frame, NULL, MONO_UNWIND_SIGNAL_SAFE, ud);
+	else
+		mono_get_eh_callbacks ()->mono_walk_stack_with_state (collect_frame, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, ud);
+
+	return MonoResumeThread;
+}
+
+static void
+dump_thread (gpointer key, gpointer value, gpointer user)
+{
+	ThreadDumpUserData *ud = user;
+	MonoInternalThread *thread = value;
+	GString* text = g_string_new (0);
+	char *name;
+	GError *error = NULL;
+	int i;
+
+	ud->thread = thread;
+	ud->nframes = 0;
+
+	/* Collect frames for the thread */
+	if (thread == mono_thread_internal_current ()) {
+		get_thread_dump (mono_thread_info_current (), ud);
+	} else {
+		mono_thread_info_safe_suspend_and_run (thread_get_tid (thread), FALSE, get_thread_dump, ud);
+	}
+
+	/*
+	 * Do all the non async-safe work outside of get_thread_dump.
+	 */
+	if (thread->name) {
+		name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, &error);
+		g_assert (!error);
+		g_string_append_printf (text, "\n\"%s\"", name);
+		g_free (name);
+	}
+	else if (thread->threadpool_thread) {
+		g_string_append (text, "\n\"<threadpool thread>\"");
+	} else {
+		g_string_append (text, "\n\"<unnamed thread>\"");
+	}
+
+	for (i = 0; i < ud->nframes; ++i) {
+		MonoStackFrameInfo *frame = &ud->frames [i];
+		MonoMethod *method = NULL;
+
+		if (frame->type == FRAME_TYPE_MANAGED)
+			method = mono_jit_info_get_method (frame->ji);
+
+		if (method) {
+			gchar *location = mono_debug_print_stack_frame (method, frame->native_offset, frame->domain);
+			g_string_append_printf (text, "  %s\n", location);
+			g_free (location);
+		} else {
+			g_string_append_printf (text, "  at <unknown> <0x%05x>\n", frame->native_offset);
+		}
+	}
 
 	fprintf (stdout, "%s", text->str);
 
@@ -3198,47 +3245,25 @@ print_thread_dump (MonoThreadInfo *info, gpointer ud)
 
 	g_string_free (text, TRUE);
 	fflush (stdout);
-	return MonoResumeThread;
-}
-
-static void
-dump_thread (gpointer key, gpointer value, gpointer user)
-{
-	MonoInternalThread *thread = (MonoInternalThread *)value;
-
-	if (thread == mono_thread_internal_current ())
-		return;
-
-	/*
-	FIXME This still can hang if we stop a thread during malloc.
-	FIXME This can hang if we suspend on a critical method and the GC kicks in. A fix might be to have function
-	that takes a callback and runs it with the target suspended.
-	We probably should loop a bit around trying to get it to either managed code
-	or WSJ state.
-	*/
-	mono_thread_info_safe_suspend_and_run (thread_get_tid (thread), FALSE, print_thread_dump, thread);
 }
 
 void
 mono_threads_perform_thread_dump (void)
 {
+	ThreadDumpUserData ud;
+
 	if (!thread_dump_requested)
 		return;
 
 	printf ("Full thread dump:\n");
 
-	/* We take the loader lock and the root domain lock as to increase our odds of not deadlocking if
-	something needs then in the process.
-	*/
-	mono_loader_lock ();
-	mono_domain_lock (mono_get_root_domain ());
+	memset (&ud, 0, sizeof (ud));
+	ud.frames = g_new0 (MonoStackFrameInfo, 256);
+	ud.max_frames = 256;
 
 	mono_threads_lock ();
-	mono_g_hash_table_foreach (threads, dump_thread, NULL);
+	mono_g_hash_table_foreach (threads, dump_thread, &ud);
 	mono_threads_unlock ();
-
-	mono_domain_unlock (mono_get_root_domain ());
-	mono_loader_unlock ();
 
 	thread_dump_requested = FALSE;
 }
