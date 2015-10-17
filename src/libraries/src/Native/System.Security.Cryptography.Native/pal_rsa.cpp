@@ -72,3 +72,77 @@ extern "C" int32_t RsaVerify(int32_t type, const uint8_t* m, int32_t m_len, uint
 {
     return RSA_verify(type, m, UnsignedCast(m_len), sigbuf, UnsignedCast(siglen), rsa);
 }
+
+extern "C" void GetRsaParameters(const RSA* rsa,
+                                 BIGNUM** n,
+                                 BIGNUM** e,
+                                 BIGNUM** d,
+                                 BIGNUM** p,
+                                 BIGNUM** dmp1,
+                                 BIGNUM** q,
+                                 BIGNUM** dmq1,
+                                 BIGNUM** iqmp)
+{
+    if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
+    {
+        return;
+    }
+
+    *n = rsa->n;
+    *e = rsa->e;
+    *d = rsa->d;
+    *p = rsa->p;
+    *dmp1 = rsa->dmp1;
+    *q = rsa->q;
+    *dmq1 = rsa->dmq1;
+    *iqmp = rsa->iqmp;
+}
+
+static void SetRsaParameter(BIGNUM** rsaFieldAddress, uint8_t* buffer, int32_t bufferLength)
+{
+    if (rsaFieldAddress)
+    {
+        if (!buffer || !bufferLength)
+        {
+            *rsaFieldAddress = nullptr;
+        }
+        else
+        {
+            BIGNUM* bigNum = BN_bin2bn(buffer, bufferLength, nullptr);
+            *rsaFieldAddress = bigNum;
+        }
+    }
+}
+
+extern "C" void SetRsaParameters(RSA* rsa,
+                                 uint8_t* n,
+                                 int32_t nLength,
+                                 uint8_t* e,
+                                 int32_t eLength,
+                                 uint8_t* d,
+                                 int32_t dLength,
+                                 uint8_t* p,
+                                 int32_t pLength,
+                                 uint8_t* dmp1,
+                                 int32_t dmp1Length,
+                                 uint8_t* q,
+                                 int32_t qLength,
+                                 uint8_t* dmq1,
+                                 int32_t dmq1Length,
+                                 uint8_t* iqmp,
+                                 int32_t iqmpLength)
+{
+    if (!rsa)
+    {
+        return;
+    }
+
+    SetRsaParameter(&rsa->n, n, nLength);
+    SetRsaParameter(&rsa->e, e, eLength);
+    SetRsaParameter(&rsa->d, d, dLength);
+    SetRsaParameter(&rsa->p, p, pLength);
+    SetRsaParameter(&rsa->dmp1, dmp1, dmp1Length);
+    SetRsaParameter(&rsa->q, q, qLength);
+    SetRsaParameter(&rsa->dmq1, dmq1, dmq1Length);
+    SetRsaParameter(&rsa->iqmp, iqmp, iqmpLength);
+}

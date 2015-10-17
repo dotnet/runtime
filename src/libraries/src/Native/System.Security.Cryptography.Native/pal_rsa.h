@@ -76,3 +76,37 @@ Shims the RSA_verify method.
 Returns 1 upon success, otherwise 0.
 */
 extern "C" int32_t RsaVerify(int32_t type, const uint8_t* m, int32_t m_len, uint8_t* sigbuf, int32_t siglen, RSA* rsa);
+
+/*
+Gets all the parameters from the RSA instance.
+*/
+extern "C" void GetRsaParameters(const RSA* rsa,
+                                 BIGNUM** n,
+                                 BIGNUM** e,
+                                 BIGNUM** d,
+                                 BIGNUM** p,
+                                 BIGNUM** dmp1,
+                                 BIGNUM** q,
+                                 BIGNUM** dmq1,
+                                 BIGNUM** iqmp);
+
+/*
+Sets all the parameters on the RSA instance.
+*/
+extern "C" void SetRsaParameters(RSA* rsa,
+                                 uint8_t* n,
+                                 int32_t nLength,
+                                 uint8_t* e,
+                                 int32_t eLength,
+                                 uint8_t* d,
+                                 int32_t dLength,
+                                 uint8_t* p,
+                                 int32_t pLength,
+                                 uint8_t* dmp1,
+                                 int32_t dmp1Length,
+                                 uint8_t* q,
+                                 int32_t qLength,
+                                 uint8_t* dmq1,
+                                 int32_t dmq1Length,
+                                 uint8_t* iqmp,
+                                 int32_t iqmpLength);

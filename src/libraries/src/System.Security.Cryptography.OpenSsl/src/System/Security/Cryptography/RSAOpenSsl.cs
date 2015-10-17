@@ -245,7 +245,7 @@ namespace System.Security.Cryptography
 
             CheckInvalidKey(key);
 
-            RSAParameters rsaParameters = Interop.libcrypto.ExportRsaParameters(key, includePrivateParameters);
+            RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, includePrivateParameters);
             bool hasPrivateKey = rsaParameters.D != null;
 
             if (hasPrivateKey != includePrivateParameters || !HasConsistentPrivateKey(ref rsaParameters))
@@ -256,7 +256,7 @@ namespace System.Security.Cryptography
             return rsaParameters;
         }
         
-        public override unsafe void ImportParameters(RSAParameters parameters)
+        public override void ImportParameters(RSAParameters parameters)
         {
             ValidateParameters(ref parameters);
 
@@ -267,21 +267,24 @@ namespace System.Security.Cryptography
 
             try
             {
-                Interop.libcrypto.RSA_ST* rsaStructure = (Interop.libcrypto.RSA_ST*)key.DangerousGetHandle();
-
-                // RSA_free is going to take care of freeing any of these as long as they successfully
-                // get assigned.
-
-                // CreateBignumPtr returns IntPtr.Zero for null input, so this just does the right thing
-                // on a public-key-only set of RSAParameters.
-                rsaStructure->n = Interop.Crypto.CreateBignumPtr(parameters.Modulus);
-                rsaStructure->e = Interop.Crypto.CreateBignumPtr(parameters.Exponent);
-                rsaStructure->d = Interop.Crypto.CreateBignumPtr(parameters.D);
-                rsaStructure->p = Interop.Crypto.CreateBignumPtr(parameters.P);
-                rsaStructure->dmp1 = Interop.Crypto.CreateBignumPtr(parameters.DP);
-                rsaStructure->q = Interop.Crypto.CreateBignumPtr(parameters.Q);
-                rsaStructure->dmq1 = Interop.Crypto.CreateBignumPtr(parameters.DQ);
-                rsaStructure->iqmp = Interop.Crypto.CreateBignumPtr(parameters.InverseQ);
+                Interop.Crypto.SetRsaParameters(
+                    key,
+                    parameters.Modulus,
+                    parameters.Modulus != null ? parameters.Modulus.Length : 0,
+                    parameters.Exponent,
+                    parameters.Exponent != null ? parameters.Exponent.Length : 0,
+                    parameters.D,
+                    parameters.D != null ? parameters.D.Length : 0,
+                    parameters.P,
+                    parameters.P != null ? parameters.P.Length : 0,
+                    parameters.DP, 
+                    parameters.DP != null ? parameters.DP.Length : 0,
+                    parameters.Q,
+                    parameters.Q != null ? parameters.Q.Length : 0,
+                    parameters.DQ, 
+                    parameters.DQ != null ? parameters.DQ.Length : 0,
+                    parameters.InverseQ,
+                    parameters.InverseQ != null ? parameters.InverseQ.Length : 0);
 
                 imported = true;
             }
