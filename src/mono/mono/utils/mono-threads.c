@@ -1214,6 +1214,8 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 		do {
 			ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
 		} while (ret != 0);
+#elif HOST_WIN32
+		Sleep (ms);
 #else
 		struct timespec req, rem;
 
