@@ -5,17 +5,18 @@ using System;
 using System.Linq;
 using System.Xml.Linq;
 using Microsoft.Test.ModuleCore;
+using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class FunctionalTests
     {
-        public partial class EventsTests : XLinqTestCase
+        public partial class EventsTests
         {
-            public partial class EventsXObjectValue : EventsBase
+            public class EventsXObjectValue
             {
-                //[Variation(Priority = 0, Desc = "XText - change value")]
-                public void XTextValue()
+                [Fact]
+                public void XTextChangeValue()
                 {
                     XText toChange = new XText("Original Value");
                     String newValue = "New Value";
@@ -40,8 +41,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 0, Desc = "XCData - change value")]
-                public void XCDataValue()
+                [Fact]
+                public void XCDataChangeValue()
                 {
                     XCData toChange = new XCData("Original Value");
                     String newValue = "New Value";
@@ -66,8 +67,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 0, Desc = "XComment - change value")]
-                public void XCommentValue()
+                [Fact]
+                public void XCommentChangeValue()
                 {
                     XComment toChange = new XComment("Original Value");
                     String newValue = "New Value";
@@ -92,8 +93,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 0, Desc = "XProcessingInstruction - change value")]
-                public void XPIValue()
+                [Fact]
+                public void XProcessingInstructionChangeValue()
                 {
                     XProcessingInstruction toChange = new XProcessingInstruction("target", "Original Value");
                     String newValue = "New Value";
@@ -118,8 +119,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 0, Desc = "XDocumentType - change public Id")]
-                public void XDocTypePublicID()
+                [Fact]
+                public void XDocumentTypeChangePublicId()
                 {
                     XDocumentType toChange = new XDocumentType("root", "", "", "");
                     XDocument xDoc = new XDocument(toChange);
@@ -136,8 +137,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 0, Desc = "XDocumentType - change system Id")]
-                public void XDocTypeSystemID()
+                [Fact]
+                public void XDocumentTypeChangeSystemId()
                 {
                     XDocumentType toChange = new XDocumentType("root", "", "", "");
                     XDocument xDoc = new XDocument(toChange);
@@ -154,8 +155,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 0, Desc = "XDocumentType - change internal subset")]
-                public void XDocTypeInternalSubset()
+                [Fact]
+                public void XDocumentTypeChangeInternalSubset()
                 {
                     XDocumentType toChange = new XDocumentType("root", "", "", "");
                     XDocument xDoc = new XDocument(toChange);
@@ -173,28 +174,19 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class EventsXElementValue : EventsBase
+            public class EventsXElementValue
             {
-                protected override void DetermineChildren()
+                public static object[][] ExecuteXElementVariationParams = new object[][] {
+                    new object[] { new XElement("element"), "newValue" },
+                    new object[] { new XElement("element", "value"), "newValue" },
+                    new object[] { new XElement("element", new XAttribute("a", "aa")), "newValue" },
+                    new object[] { new XElement("parent", new XElement("child", "child text")), "newValue" },
+                    new object[] { new XElement("root", InputSpace.GetElement(100, 10).DescendantNodes()), "newValue" }
+                };
+                [Theory, MemberData("ExecuteXElementVariationParams")]
+                public void ExecuteXElementVariation(XElement toChange, String newValue)
                 {
-                    VariationsForXElement(ExecuteXElementVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForXElement(TestFunc func)
-                {
-                    AddChild(func, 0, "Empty element", new XElement("element"), "newValue");
-                    AddChild(func, 0, "Element with string", new XElement("element", "value"), "newValue");
-                    AddChild(func, 0, "Element with attributes", new XElement("element", new XAttribute("a", "aa")), "newValue");
-                    AddChild(func, 0, "Element with nodes", new XElement("parent", new XElement("child", "child text")), "newValue");
-                    AddChild(func, 1, "Element with IEnumerable of XNodes", new XElement("root", InputSpace.GetElement(100, 10).DescendantNodes()), "newValue");
-                }
-
-                public void ExecuteXElementVariation()
-                {
-                    XElement toChange = Variation.Params[0] as XElement;
                     int count = toChange.Nodes().Count();
-                    String newValue = Variation.Params[1] as String;
                     XElement xElem = new XElement("root", toChange);
                     XElement xElemOriginal = new XElement(xElem);
                     using (UndoManager undo = new UndoManager(xElem))
@@ -214,25 +206,16 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class EventsXAttributeValue : EventsBase
+            public class EventsXAttributeValue
             {
-                protected override void DetermineChildren()
+                public static object[][] ExecuteXAttributeVariationParams = new object[][] {
+                    new object[] { new XAttribute("xxx", ""), "newValue" },
+                    new object[] { new XAttribute("xxx", "yyy"), "newValue" },
+                    new object[] { new XAttribute("{a}xxx", "a_yyy"), "newValue" }
+                };
+                [Theory, MemberData("ExecuteXAttributeVariationParams")]
+                public void ExecuteXAttributeVariation(XAttribute toChange, string newValue)
                 {
-                    VariationsForXAttribute(ExecuteXAttributeVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForXAttribute(TestFunc func)
-                {
-                    AddChild(func, 0, "Attribute with empty string as value", new XAttribute("xxx", ""), "newValue");
-                    AddChild(func, 0, "Attribute with value", new XAttribute("xxx", "yyy"), "newValue");
-                    AddChild(func, 0, "Attribute with namespace and value", new XAttribute("{a}xxx", "a_yyy"), "newValue");
-                }
-
-                public void ExecuteXAttributeVariation()
-                {
-                    XAttribute toChange = Variation.Params[0] as XAttribute;
-                    String newValue = Variation.Params[1] as String;
                     XElement xElem = new XElement("root", toChange);
                     XElement xElemOriginal = new XElement(xElem);
                     using (UndoManager undo = new UndoManager(xElem))
@@ -252,25 +235,16 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class EventsXAttributeSetValue : EventsBase
+            public class EventsXAttributeSetValue
             {
-                protected override void DetermineChildren()
+                public static object[][] ExecuteXAttributeVariationParams = new object[][] {
+                    new object[] { new XAttribute("xxx", ""), "newValue" },
+                    new object[] { new XAttribute("xxx", "yyy"), "newValue" },
+                    new object[] { new XAttribute("{a}xxx", "a_yyy"), "newValue" }
+                };
+                [Theory, MemberData("ExecuteXAttributeVariationParams")]
+                public void ExecuteXAttributeVariation(XAttribute toChange, object newValue)
                 {
-                    VariationsForXAttribute(ExecuteXAttributeVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForXAttribute(TestFunc func)
-                {
-                    AddChild(func, 0, "Empty value, string", new XAttribute("xxx", ""), "newValue");
-                    AddChild(func, 0, "String, String", new XAttribute("xxx", "yyy"), "newValue");
-                    AddChild(func, 0, "Attribute with namespace, String", new XAttribute("{a}xxx", "a_yyy"), "newValue");
-                }
-
-                public void ExecuteXAttributeVariation()
-                {
-                    XAttribute toChange = Variation.Params[0] as XAttribute;
-                    Object newValue = Variation.Params[1];
                     XElement xElem = new XElement("root", toChange);
                     XElement xElemOriginal = new XElement(xElem);
                     using (UndoManager undo = new UndoManager(xElem))
@@ -290,28 +264,19 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class EventsXElementSetValue : EventsBase
+            public class EventsXElementSetValue
             {
-                protected override void DetermineChildren()
+                public static object[][] ExecuteXElementVariationParams = new object[][] {
+                    new object[] { new XElement("element"), "newValue" },
+                    new object[] { new XElement("element", "value"), "newValue" },
+                    new object[] { new XElement("element", new XAttribute("a", "aa")), "newValue" },
+                    new object[] { new XElement("parent", new XElement("child", "child text")), "newValue" },
+                    new object[] { new XElement("root", InputSpace.GetElement(100, 10).DescendantNodes()), "newValue" }
+                };
+                [Theory, MemberData("ExecuteXElementVariationParams")]
+                public void ExecuteXElementVariation(XElement toChange, object newValue)
                 {
-                    VariationsForXElement(ExecuteXElementVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForXElement(TestFunc func)
-                {
-                    AddChild(func, 0, "Empty element, String", new XElement("element"), "newValue");
-                    AddChild(func, 0, "String, String", new XElement("element", "value"), "newValue");
-                    AddChild(func, 0, "Element with attributes, String", new XElement("element", new XAttribute("a", "aa")), "newValue");
-                    AddChild(func, 0, "Element with child, String", new XElement("parent", new XElement("child", "child text")), "newValue");
-                    AddChild(func, 1, "Element with nodes", new XElement("root", InputSpace.GetElement(100, 10).DescendantNodes()), "newValue");
-                }
-
-                public void ExecuteXElementVariation()
-                {
-                    XElement toChange = Variation.Params[0] as XElement;
                     int count = toChange.Nodes().Count();
-                    Object newValue = Variation.Params[1];
                     XElement xElemOriginal = new XElement(toChange);
                     using (UndoManager undo = new UndoManager(toChange))
                     {
@@ -330,25 +295,16 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class EventsXElementSetAttributeValue : EventsBase
+            public class EventsXElementSetAttributeValue
             {
-                protected override void DetermineChildren()
+                public static object[][] ExecuteXAttributeVariationParams = new object[][] {
+                    new object[] { new XAttribute("xxx", ""), "newValue" },
+                    new object[] { new XAttribute("xxx", "yyy"), "newValue" },
+                    new object[] { new XAttribute("{a}xxx", "a_yyy"), "newValue" }
+                };
+                [Theory, MemberData("ExecuteXAttributeVariationParams")]
+                public void ExecuteXAttributeVariation(XAttribute toChange, object newValue)
                 {
-                    VariationsForXAttribute(ExecuteXAttributeVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForXAttribute(TestFunc func)
-                {
-                    AddChild(func, 0, "Empty value, string", new XAttribute("xxx", ""), "newValue");
-                    AddChild(func, 0, "String, String", new XAttribute("xxx", "yyy"), "newValue");
-                    AddChild(func, 0, "Attribute with namespace, String", new XAttribute("{a}xxx", "a_yyy"), "newValue");
-                }
-
-                public void ExecuteXAttributeVariation()
-                {
-                    XAttribute toChange = Variation.Params[0] as XAttribute;
-                    Object newValue = Variation.Params[1];
                     XElement xElem = new XElement("root", toChange);
                     XElement xElemOriginal = new XElement(xElem);
                     using (UndoManager undo = new UndoManager(xElem))
@@ -368,47 +324,18 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class EventsXElementSetElementValue : EventsBase
+            public class EventsXElementSetElementValue
             {
-                protected override void DetermineChildren()
+                public static object[][] ExecuteAddVariationParams = new object[][] {
+                    new object[] { null, new XElement("element") },
+                    new object[] { new XComment("comment"), new XElement("element", "value") },
+                    new object[] { new XCData("cdata"), new XElement("element", new XAttribute("a", "aa")) },
+                    new object[] { new XAttribute("a", "aa"), new XElement("parent", new XElement("child", "child text")) },
+                    new object[] { new XElement("element"), new XElement("nodes", InputSpace.GetElement(100, 10).DescendantNodes()) }
+                };
+                [Theory, MemberData("ExecuteAddVariationParams")]
+                public void ExecuteAddVariation(XObject content, XElement toAdd)
                 {
-                    VariationsForAdd(ExecuteAddVariation);
-                    VariationsForRemove(ExecuteRemoveVariation);
-                    VariationsForValue(ExecuteValueVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForAdd(TestFunc func)
-                {
-                    AddChild(func, 1, "Add - Empty element", null, new XElement("element"));
-                    AddChild(func, 0, "Add - Element with value", new XComment("comment"), new XElement("element", "value"));
-                    AddChild(func, 0, "Add - Element with attribute", new XCData("cdata"), new XElement("element", new XAttribute("a", "aa")));
-                    AddChild(func, 0, "Add - Element with child", new XAttribute("a", "aa"), new XElement("parent", new XElement("child", "child text")));
-                    AddChild(func, 1, "Add - Element with nodes", new XElement("element"), new XElement("nodes", InputSpace.GetElement(100, 10).DescendantNodes()));
-                }
-
-                void VariationsForRemove(TestFunc func)
-                {
-                    AddChild(func, 1, "Remove - Empty element", new XElement("element"));
-                    AddChild(func, 0, "Remove - Element with value", new XElement("element", "value"));
-                    AddChild(func, 0, "Remove - Element with attribute", new XElement("element", new XAttribute("a", "aa")));
-                    AddChild(func, 0, "Remove - Element with child", new XElement("parent", new XElement("child", "child text")));
-                    AddChild(func, 1, "Remove - Element with nodes", new XElement("nodes", InputSpace.GetElement(100, 10).DescendantNodes()));
-                }
-
-                void VariationsForValue(TestFunc func)
-                {
-                    AddChild(func, 1, "Value - Empty element", new XElement("element"), (double)10);
-                    AddChild(func, 0, "Value - Element with value", new XElement("element", "value"), "newValue");
-                    AddChild(func, 0, "Value - Element with attribute", new XElement("element", new XAttribute("a", "aa")), System.DateTime.Now);
-                    AddChild(func, 0, "Value - Element with child", new XElement("parent", new XElement("child", "child text")), "Windows 8");
-                    AddChild(func, 1, "Value - Element with nodes", new XElement("nodes", InputSpace.GetElement(100, 10).DescendantNodes()), "StackTrace");//Environment.StackTrace);
-                }
-
-                public void ExecuteAddVariation()
-                {
-                    XObject content = Variation.Params[0] as XObject;
-                    XElement toAdd = Variation.Params[1] as XElement;
                     XElement xElem = new XElement("root", content);
                     XElement xElemOriginal = new XElement(xElem);
                     using (UndoManager undo = new UndoManager(xElem))
@@ -426,9 +353,16 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                public void ExecuteRemoveVariation()
+                public static object[][] ExecuteRemoveVariationParams = new object[][] {
+                    new object[] { new XElement("element") },
+                    new object[] { new XElement("element", "value") },
+                    new object[] { new XElement("element", new XAttribute("a", "aa")) },
+                    new object[] { new XElement("parent", new XElement("child", "child text")) },
+                    new object[] { new XElement("nodes", InputSpace.GetElement(100, 10).DescendantNodes()) }
+                };
+                [Theory, MemberData("ExecuteRemoveVariationParams")]
+                public void ExecuteRemoveVariation(XElement content)
                 {
-                    XElement content = Variation.Params[0] as XElement;
                     XElement xElem = new XElement("root", content);
                     XElement xElemOriginal = new XElement(xElem);
                     using (UndoManager undo = new UndoManager(xElem))
@@ -446,11 +380,17 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                public void ExecuteValueVariation()
+                public static object[][] ExecuteValueVariationParams = new object[][] {
+                    new object[] { new XElement("element"), (double)10 },
+                    new object[] { new XElement("element", "value"), "newValue" },
+                    new object[] { new XElement("element", new XAttribute("a", "aa")), System.DateTime.Now },
+                    new object[] { new XElement("parent", new XElement("child", "child text")), "Windows 8" },
+                    new object[] { new XElement("nodes", InputSpace.GetElement(100, 10).DescendantNodes()), "StackTrace" }
+                };
+                [Theory, MemberData("ExecuteValueVariationParams")]
+                public void ExecuteValueVariation(XElement content, object newValue)
                 {
-                    XElement content = Variation.Params[0] as XElement;
                     int count = content.Nodes().Count();
-                    Object newValue = Variation.Params[1];
                     XElement xElem = new XElement("root", content);
                     XElement xElemOriginal = new XElement(xElem);
                     using (UndoManager undo = new UndoManager(xElem))

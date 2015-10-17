@@ -5,31 +5,23 @@ using System;
 using System.Linq;
 using System.Xml.Linq;
 using Microsoft.Test.ModuleCore;
+using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class FunctionalTests
     {
-        public partial class EventsTests : XLinqTestCase
+        public partial class EventsTests
         {
-            public partial class EventsXElementName : EventsBase
+            public class EventsXElementName
             {
-                protected override void DetermineChildren()
+                public static object[][] ExecuteXElementVariationParams = new object[][] {
+                    new object[] { new XElement("element"), (XName)"newName" },
+                    new object[] { new XElement("parent", new XElement("child", "child text")), (XName)"{b}newName" },
+                };
+                [Theory, MemberData("ExecuteXElementVariationParams")]
+                public void ExecuteXElementVariation(XElement toChange, XName newName)
                 {
-                    VariationsForXElement(ExecuteXElementVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForXElement(TestFunc func)
-                {
-                    AddChild(func, 0, "XElement - Empty element without namespace", new XElement("element"), (XName)"newName");
-                    AddChild(func, 0, "XElement - Element with namespace", new XElement("parent", new XElement("child", "child text")), (XName)"{b}newName");
-                }
-
-                public void ExecuteXElementVariation()
-                {
-                    XElement toChange = Variation.Params[0] as XElement;
-                    XName newName = (XName)Variation.Params[1];
                     XElement original = new XElement(toChange);
                     using (UndoManager undo = new UndoManager(toChange))
                     {
@@ -46,8 +38,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 0, Desc = "XProcessingInstruction - Name")]
-                public void PIVariation()
+                [Fact]
+                public void XProcessingInstructionPIVariation()
                 {
                     XProcessingInstruction toChange = new XProcessingInstruction("target", "data");
                     XProcessingInstruction original = new XProcessingInstruction(toChange);
@@ -65,8 +57,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 0, Desc = "XDocumentType - Name")]
-                public void DocTypeVariation()
+                [Fact]
+                public void XDocumentTypeDocTypeVariation()
                 {
                     XDocumentType toChange = new XDocumentType("root", "", "", "");
                     XDocumentType original = new XDocumentType(toChange);
@@ -79,13 +71,13 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class EventsSpecialCases : EventsBase
+            public class EventsSpecialCases
             {
                 public void ChangingDelegate(object sender, XObjectChangeEventArgs e) { }
                 public void ChangedDelegate(object sender, XObjectChangeEventArgs e) { }
 
-                //[Variation(Priority = 1, Desc = "Adding, Removing null listeners")]
-                public void XElementRemoveNullEventListner()
+                [Fact]
+                public void AddingRemovingNullListenersXElementRemoveNullEventListner()
                 {
                     XDocument xDoc = new XDocument(InputSpace.GetElement(10, 10));
                     EventHandler<XObjectChangeEventArgs> d1 = ChangingDelegate;
@@ -110,8 +102,8 @@ namespace CoreXml.Test.XLinq
                     xDoc.Changed -= new EventHandler<XObjectChangeEventArgs>(d2);
                 }
 
-                //[Variation(Priority = 1, Desc = "Remove both event listeners")]
-                public void XElementRemoveBothEventListners()
+                [Fact]
+                public void RemoveBothEventListenersXElementRemoveBothEventListners()
                 {
                     XDocument xDoc = new XDocument(InputSpace.GetElement(10, 10));
                     EventHandler<XObjectChangeEventArgs> d1 = ChangingDelegate;
@@ -135,8 +127,8 @@ namespace CoreXml.Test.XLinq
                     xDoc.Changing -= new EventHandler<XObjectChangeEventArgs>(d1);
                 }
 
-                //[Variation(Priority = 1, Desc = "Add Changed listner in pre-event")]
-                public void AddListnerInPreEvent()
+                [Fact]
+                public void AddChangedListnerInPreEventAddListnerInPreEvent()
                 {
                     XElement element = XElement.Parse("<root></root>");
                     element.Changing += new EventHandler<XObjectChangeEventArgs>(
@@ -150,8 +142,8 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(element.Element("Add") != null, "Did not add the element");
                 }
 
-                //[Variation(Priority = 1, Desc = "Add and remove event listners")]
-                public void XElementAddRemoveEventListners()
+                [Fact]
+                public void AddAndRemoveEventListnersXElementAddRemoveEventListners()
                 {
                     XDocument xDoc = new XDocument(InputSpace.GetElement(10, 10));
                     EventsHelper docHelper = new EventsHelper(xDoc);
@@ -165,8 +157,8 @@ namespace CoreXml.Test.XLinq
                     docHelper.Verify(XObjectChange.Add);
                 }
 
-                //[Variation(Priority = 1, Desc = "Attach listners at each level, nested elements")]
-                public void XElementAttachAtEachLevel()
+                [Fact]
+                public void AttachListnersAtEachLevelNestedElementsXElementAttachAtEachLevel()
                 {
                     XDocument xDoc = new XDocument(XElement.Parse(@"<a>a<b>b<c>c<d>c<e>e<f>f</f></e></d></c></b></a>"));
                     EventsHelper[] listeners = new EventsHelper[xDoc.Descendants().Count()];
@@ -186,8 +178,8 @@ namespace CoreXml.Test.XLinq
                         e.Verify(XObjectChange.Add);
                 }
 
-                //[Variation(Priority = 2, Desc = "Exception in PRE Event Handler")]
-                public void XElementPreException()
+                [Fact]
+                public void ExceptionInPREEventHandlerXElementPreException()
                 {
                     XDocument xDoc = new XDocument(InputSpace.GetElement(10, 10));
                     XElement toChange = xDoc.Descendants().ElementAt(5);
@@ -217,8 +209,8 @@ namespace CoreXml.Test.XLinq
                     throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation(Priority = 2, Desc = "Exception in POST Event Handler")]
-                public void XElementPostException()
+                [Fact]
+                public void ExceptionInPOSTEventHandlerXElementPostException()
                 {
                     XDocument xDoc = new XDocument(InputSpace.GetElement(10, 10));
                     XElement toChange = xDoc.Descendants().ElementAt(5);
