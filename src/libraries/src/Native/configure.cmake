@@ -1,13 +1,18 @@
-include(CheckFunctionExists)
-include(CheckStructHasMember)
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
+include(CheckFunctionExists)
+include(CheckIncludeFiles)
 include(CheckPrototypeDefinition)
+include(CheckStructHasMember)
 include(CheckSymbolExists)
 
 #CMake does not include /usr/local/include into the include search path
 #thus add it manually. This is required on FreeBSD.
 include_directories(SYSTEM /usr/local/include)
+
+check_include_files(
+    alloca.h
+    HAVE_ALLOCA_H)
 
 check_function_exists(
     stat64
