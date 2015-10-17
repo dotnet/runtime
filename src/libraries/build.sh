@@ -210,6 +210,7 @@ case $OSName in
 
     FreeBSD)
         __HostOS=FreeBSD
+        __TestNugetRuntimeId=osx.10.10-x64
         ;;
 
     *)
