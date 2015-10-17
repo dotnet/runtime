@@ -68,14 +68,14 @@ Shims the RSA_sign method.
 
 Returns 1 upon success, otherwise 0.
 */
-extern "C" int32_t RsaSign(int32_t type, const uint8_t* m, int32_t m_len, uint8_t* sigret, int32_t* siglen, RSA* rsa);
+extern "C" int32_t RsaSign(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa);
 
 /*
 Shims the RSA_verify method.
 
 Returns 1 upon success, otherwise 0.
 */
-extern "C" int32_t RsaVerify(int32_t type, const uint8_t* m, int32_t m_len, uint8_t* sigbuf, int32_t siglen, RSA* rsa);
+extern "C" int32_t RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa);
 
 /*
 Gets all the parameters from the RSA instance.

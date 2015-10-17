@@ -54,23 +54,24 @@ extern "C" int32_t RsaGenerateKeyEx(RSA* rsa, int32_t bits, BIGNUM* e)
     return RSA_generate_key_ex(rsa, bits, e, nullptr);
 }
 
-extern "C" int32_t RsaSign(int32_t type, const uint8_t* m, int32_t m_len, uint8_t* sigret, int32_t* siglen, RSA* rsa)
+extern "C" int32_t RsaSign(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa)
 {
     if (!siglen)
     {
+        assert(false);
         return 0;
     }
 
     unsigned int unsignedSigLen = 0;
-    int32_t ret = RSA_sign(type, m, UnsignedCast(m_len), sigret, &unsignedSigLen, rsa);
+    int32_t ret = RSA_sign(type, m, UnsignedCast(mlen), sigret, &unsignedSigLen, rsa);
     assert(unsignedSigLen <= INT32_MAX);
     *siglen = static_cast<int32_t>(unsignedSigLen);
     return ret;
 }
 
-extern "C" int32_t RsaVerify(int32_t type, const uint8_t* m, int32_t m_len, uint8_t* sigbuf, int32_t siglen, RSA* rsa)
+extern "C" int32_t RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa)
 {
-    return RSA_verify(type, m, UnsignedCast(m_len), sigbuf, UnsignedCast(siglen), rsa);
+    return RSA_verify(type, m, UnsignedCast(mlen), sigbuf, UnsignedCast(siglen), rsa);
 }
 
 extern "C" void GetRsaParameters(const RSA* rsa,
@@ -85,6 +86,7 @@ extern "C" void GetRsaParameters(const RSA* rsa,
 {
     if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
     {
+        assert(false);
         return;
     }
 
@@ -100,6 +102,7 @@ extern "C" void GetRsaParameters(const RSA* rsa,
 
 static void SetRsaParameter(BIGNUM** rsaFieldAddress, uint8_t* buffer, int32_t bufferLength)
 {
+    assert(rsaFieldAddress != nullptr);
     if (rsaFieldAddress)
     {
         if (!buffer || !bufferLength)
@@ -134,6 +137,7 @@ extern "C" void SetRsaParameters(RSA* rsa,
 {
     if (!rsa)
     {
+        assert(false);
         return;
     }
 
