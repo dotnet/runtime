@@ -7,13 +7,13 @@ using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-    internal static partial class libcrypto
+    internal static partial class Crypto
     {
-        [DllImport(Libraries.LibCrypto)]
-        internal static extern SafeRsaHandle EVP_PKEY_get1_RSA(SafeEvpPKeyHandle pkey);
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern SafeRsaHandle EvpPkeyGetRsa(SafeEvpPKeyHandle pkey);
 
-        [DllImport(Libraries.LibCrypto)]
+        [DllImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool EVP_PKEY_set1_RSA(SafeEvpPKeyHandle pkey, SafeRsaHandle rsa);
+        internal static extern bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, SafeRsaHandle rsa);
     }
 }

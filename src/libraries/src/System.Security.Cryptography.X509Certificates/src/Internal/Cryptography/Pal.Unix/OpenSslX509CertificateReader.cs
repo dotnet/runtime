@@ -251,10 +251,7 @@ namespace Internal.Cryptography.Pal
                 return null;
             }
 
-            using (SafeRsaHandle rsaHandle = Interop.libcrypto.EVP_PKEY_get1_RSA(_privateKey))
-            {
-                return new RSAOpenSsl(rsaHandle.DangerousGetHandle());
-            }
+            return new RSAOpenSsl(_privateKey);
         }
 
         public ECDsa GetECDsaPublicKey()
@@ -272,10 +269,7 @@ namespace Internal.Cryptography.Pal
                 return null;
             }
 
-            using (SafeEcKeyHandle ecKeyHandle = Interop.libcrypto.EVP_PKEY_get1_EC_KEY(_privateKey))
-            {
-                return new ECDsaOpenSsl(ecKeyHandle.DangerousGetHandle());
-            }
+            return new ECDsaOpenSsl(_privateKey);
         }
 
         public string GetNameInfo(X509NameType nameType, bool forIssuer)
