@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Test.ModuleCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +9,7 @@ using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
-    public partial class FunctionalTests : TestModule
+    public partial class FunctionalTests
     {
         public partial class EventsTests
         {
@@ -38,13 +37,13 @@ namespace CoreXml.Test.XLinq
                             using (EventsHelper nodeHelper = new EventsHelper(contextNode))
                             {
                                 contextNode.AddBeforeSelf(toAdd);
-                                TestLog.Compare(toAddList.SequenceEqual(contextNode.NodesBeforeSelf(), XNode.EqualityComparer), "Nodes not added correctly!");
+                                Assert.True(toAddList.SequenceEqual(contextNode.NodesBeforeSelf(), XNode.EqualityComparer), "Nodes not added correctly!");
                                 nodeHelper.Verify(0);
                             }
                             docHelper.Verify(XObjectChange.Add, toAdd);
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+                        Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
                     }
                 }
 
@@ -71,14 +70,14 @@ namespace CoreXml.Test.XLinq
                             using (EventsHelper nodeHelper = new EventsHelper(contextNode))
                             {
                                 contextNode.AddBeforeSelf(toAdd);
-                                TestLog.Compare(toAddList.SequenceEqual(contextNode.NodesBeforeSelf(), XNode.EqualityComparer), "Nodes not added correctly!");
+                                Assert.True(toAddList.SequenceEqual(contextNode.NodesBeforeSelf(), XNode.EqualityComparer), "Nodes not added correctly!");
                                 nodeHelper.Verify(0);
                             }
                             elemHelper.Verify(XObjectChange.Add, toAdd);
                         }
                         undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+                        Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                        Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
                     }
                 }
 
@@ -102,13 +101,13 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             n.AddBeforeSelf("text0");
-                            TestLog.Compare(elem.Value, "text0text2", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text0text2");
                             n.AddBeforeSelf("text1");
-                            TestLog.Compare(elem.Value, "text0text1text2", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text0text1text2");
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Add, XObjectChange.Value });
                         }
                         undo.Undo();
-                        TestLog.Compare(elem.Value, "text2", "Undo did not work");
+                        Assert.Equal(elem.Value, "text2");
                     }
                 }
 
@@ -123,11 +122,11 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             n.AddBeforeSelf("text0", "text1");
-                            TestLog.Compare(elem.Value, "text0text1text2", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text0text1text2");
                             eHelper.Verify(XObjectChange.Add);
                         }
                         undo.Undo();
-                        TestLog.Compare(elem.Value, "text2", "Undo did not work");
+                        Assert.Equal(elem.Value, "text2");
                     }
                 }
             }
@@ -156,13 +155,13 @@ namespace CoreXml.Test.XLinq
                             using (EventsHelper nodeHelper = new EventsHelper(contextNode))
                             {
                                 contextNode.AddAfterSelf(toAdd);
-                                TestLog.Compare(toAddList.SequenceEqual(contextNode.NodesAfterSelf(), XNode.EqualityComparer), "Nodes not added correctly!");
+                                Assert.True(toAddList.SequenceEqual(contextNode.NodesAfterSelf(), XNode.EqualityComparer), "Nodes not added correctly!");
                                 nodeHelper.Verify(0);
                             }
                             docHelper.Verify(XObjectChange.Add, toAdd);
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+                        Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
                     }
                 }
 
@@ -189,14 +188,14 @@ namespace CoreXml.Test.XLinq
                             using (EventsHelper nodeHelper = new EventsHelper(contextNode))
                             {
                                 contextNode.AddAfterSelf(toAdd);
-                                TestLog.Compare(toAddList.SequenceEqual(contextNode.NodesAfterSelf(), XNode.EqualityComparer), "Nodes not added correctly!");
+                                Assert.True(toAddList.SequenceEqual(contextNode.NodesAfterSelf(), XNode.EqualityComparer), "Nodes not added correctly!");
                                 nodeHelper.Verify(0);
                             }
                             elemHelper.Verify(XObjectChange.Add, toAdd);
                         }
                         undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+                        Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                        Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
                     }
                 }
 
@@ -220,13 +219,13 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             n.AddAfterSelf("text0");
-                            TestLog.Compare(elem.Value, "text2text0", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text2text0");
                             n.AddAfterSelf("text1");
-                            TestLog.Compare(elem.Value, "text2text0text1", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text2text0text1");
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Value, XObjectChange.Value });
                         }
                         undo.Undo();
-                        TestLog.Compare(elem.Value, "text2", "Undo did not work");
+                        Assert.Equal(elem.Value, "text2");
                     }
                 }
 
@@ -241,11 +240,11 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             n.AddAfterSelf("text0", "text1");
-                            TestLog.Compare(elem.Value, "text2text0text1", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text2text0text1");
                             eHelper.Verify(XObjectChange.Value);
                         }
                         undo.Undo();
-                        TestLog.Compare(elem.Value, "text2", "Undo did not work");
+                        Assert.Equal(elem.Value, "text2");
                     }
                 }
             }
@@ -279,11 +278,11 @@ namespace CoreXml.Test.XLinq
                         {
                             xDoc.AddFirst(toAdd);
                             allNodes = contextNode == null ? xDoc.Nodes() : contextNode.NodesBeforeSelf();
-                            TestLog.Compare(toAddList.SequenceEqual(allNodes, XNode.EqualityComparer), "Nodes not added correctly!");
+                            Assert.True(toAddList.SequenceEqual(allNodes, XNode.EqualityComparer), "Nodes not added correctly!");
                             docHelper.Verify(XObjectChange.Add, toAdd);
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+                        Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
                     }
                 }
 
@@ -316,12 +315,12 @@ namespace CoreXml.Test.XLinq
                         {
                             xElem.AddFirst(toAdd);
                             allNodes = contextNode == null ? xElem.Nodes() : contextNode.NodesBeforeSelf();
-                            TestLog.Compare(toAddList.SequenceEqual(allNodes, XNode.EqualityComparer), "Nodes not added correctly!");
+                            Assert.True(toAddList.SequenceEqual(allNodes, XNode.EqualityComparer), "Nodes not added correctly!");
                             elemHelper.Verify(XObjectChange.Add, toAdd);
                         }
                         undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+                        Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                        Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
                     }
                 }
 
@@ -344,13 +343,13 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             elem.AddFirst("text0");
-                            TestLog.Compare(elem.Value, "text0text2", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text0text2");
                             elem.AddFirst("text1");
-                            TestLog.Compare(elem.Value, "text1text0text2", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text1text0text2");
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Add, XObjectChange.Add });
                         }
                         undo.Undo();
-                        TestLog.Compare(elem.Value, "text2", "Undo did not work");
+                        Assert.Equal(elem.Value, "text2");
                     }
                 }
 
@@ -364,11 +363,11 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             elem.AddFirst("text0", "text1");
-                            TestLog.Compare(elem.Value, "text0text1text2", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text0text1text2");
                             eHelper.Verify(XObjectChange.Add);
                         }
                         undo.Undo();
-                        TestLog.Compare(elem.Value, "text2", "Undo did not work");
+                        Assert.Equal(elem.Value, "text2");
                     }
                 }
 
@@ -387,17 +386,8 @@ namespace CoreXml.Test.XLinq
                             }
                         });
 
-                    try
-                    {
-                        element.AddFirst("");
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        element.Verify();
-                        return;
-                    }
-
-                    throw new TestFailedException("Should have thrown an InvalidOperationException");
+                    Assert.Throws<InvalidOperationException>(() => { element.AddFirst(""); });
+                    element.Verify();
                 }
 
                 [Fact]
@@ -417,18 +407,9 @@ namespace CoreXml.Test.XLinq
                             }
                         });
 
-                    try
-                    {
-                        element.AddFirst(child);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        element.Verify();
-                        TestLog.Compare(element.Element("Add") == null, "Added the element, operation should have been aborted");
-                        return;
-                    }
-
-                    throw new TestFailedException("Should have thrown an InvalidOperationException");
+                    Assert.Throws<InvalidOperationException>(() => { element.AddFirst(child); });
+                    element.Verify();
+                    Assert.Null(element.Element("Add"));
                 }
             }
 
@@ -461,11 +442,11 @@ namespace CoreXml.Test.XLinq
                         {
                             xDoc.Add(toAdd);
                             allNodes = contextNode == null ? xDoc.Nodes() : contextNode.NodesAfterSelf();
-                            TestLog.Compare(toAddList.SequenceEqual(allNodes, XNode.EqualityComparer), "Nodes not added correctly!");
+                            Assert.True(toAddList.SequenceEqual(allNodes, XNode.EqualityComparer), "Nodes not added correctly!");
                             docHelper.Verify(XObjectChange.Add, toAdd);
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+                        Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
                     }
                 }
 
@@ -498,12 +479,12 @@ namespace CoreXml.Test.XLinq
                         {
                             xElem.Add(toAdd);
                             allNodes = contextNode == null ? xElem.Nodes() : contextNode.NodesAfterSelf();
-                            TestLog.Compare(toAddList.SequenceEqual(allNodes, XNode.EqualityComparer), "Nodes not added correctly!");
+                            Assert.True(toAddList.SequenceEqual(allNodes, XNode.EqualityComparer), "Nodes not added correctly!");
                             elemHelper.Verify(XObjectChange.Add, toAdd);
                         }
                         undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+                        Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                        Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
                     }
                 }
 
@@ -528,12 +509,12 @@ namespace CoreXml.Test.XLinq
                         {
                             xElem.Add(toAdd);
                             allNodes = contextNode == null ? xElem.Attributes() : xElem.Attributes().Skip(1);
-                            TestLog.Compare(toAddList.SequenceEqual(allNodes, Helpers.MyAttributeComparer), "Attributes not added correctly!");
+                            Assert.True(toAddList.SequenceEqual(allNodes, Helpers.MyAttributeComparer), "Attributes not added correctly!");
                             elemHelper.Verify(XObjectChange.Add, toAdd);
                         }
                         undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+                        Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                        Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
                     }
                 }
 
@@ -558,7 +539,7 @@ namespace CoreXml.Test.XLinq
                             }
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+                        Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
                     }
                 }
 
@@ -583,7 +564,7 @@ namespace CoreXml.Test.XLinq
                             }
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+                        Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
                     }
                 }
 
@@ -601,7 +582,7 @@ namespace CoreXml.Test.XLinq
                             eHelper.Verify(0);
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(elem, xElemOriginal), "Undo did not work!");
+                        Assert.True(XNode.DeepEquals(elem, xElemOriginal), "Undo did not work!");
                     }
                 }
 
@@ -615,13 +596,13 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             elem.Add("text0");
-                            TestLog.Compare(elem.Value, "text2text0", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text2text0");
                             elem.Add("text1");
-                            TestLog.Compare(elem.Value, "text2text0text1", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text2text0text1");
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Value, XObjectChange.Value });
                         }
                         undo.Undo();
-                        TestLog.Compare(elem.Value, "text2", "Undo did not work");
+                        Assert.Equal(elem.Value, "text2");
                     }
                 }
 
@@ -636,11 +617,11 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             elem.Add("text0", "text1");
-                            TestLog.Compare(elem.Value, "text2text0text1", "Did not concat text nodes correctly");
+                            Assert.Equal(elem.Value, "text2text0text1");
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Value, XObjectChange.Value });
                         }
                         undo.Undo();
-                        TestLog.Compare(elem.Value, "text2", "Undo did not work");
+                        Assert.Equal(elem.Value, "text2");
                     }
                 }
 
@@ -659,17 +640,8 @@ namespace CoreXml.Test.XLinq
                             }
                         });
 
-                    try
-                    {
-                        element.Add("");
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        element.Verify();
-                        return;
-                    }
-
-                    throw new TestFailedException("Should have thrown an InvalidOperationException");
+                    Assert.Throws<InvalidOperationException>(() => { element.Add(""); });
+                    element.Verify();
                 }
 
                 [Fact]
@@ -689,18 +661,9 @@ namespace CoreXml.Test.XLinq
                             }
                         });
 
-                    try
-                    {
-                        element.Add(child);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        element.Verify();
-                        TestLog.Compare(element.Element("Add") == null, "Added the element, operation should have been aborted");
-                        return;
-                    }
-
-                    throw new TestFailedException("Should have thrown an InvalidOperationException");
+                    Assert.Throws<InvalidOperationException>(() => { element.Add(child); });
+                    element.Verify();
+                    Assert.Null(element.Element("Add"));
                 }
 
                 [Fact]
@@ -720,18 +683,9 @@ namespace CoreXml.Test.XLinq
                             }
                         });
 
-                    try
-                    {
-                        element.Add(child);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        element.Verify();
-                        TestLog.Compare(element.Attribute("Add") == null, "Added the attribute, operation should have been aborted");
-                        return;
-                    }
-
-                    throw new TestFailedException("Should have thrown an InvalidOperationException");
+                    Assert.Throws<InvalidOperationException>(() => { element.Add(child); });
+                    element.Verify();
+                    Assert.Null(element.Attribute("Add"));
                 }
             }
         }

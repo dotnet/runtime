@@ -4,7 +4,6 @@
 using System;
 using System.Linq;
 using System.Xml.Linq;
-using Microsoft.Test.ModuleCore;
 using Xunit;
 
 namespace CoreXml.Test.XLinq
@@ -29,12 +28,12 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(toChange))
                         {
                             toChange.Name = newName;
-                            TestLog.Compare(newName.Namespace == toChange.Name.Namespace, "Namespace did not change");
-                            TestLog.Compare(newName.LocalName == toChange.Name.LocalName, "LocalName did not change");
+                            Assert.True(newName.Namespace == toChange.Name.Namespace, "Namespace did not change");
+                            Assert.True(newName.LocalName == toChange.Name.LocalName, "LocalName did not change");
                             eHelper.Verify(XObjectChange.Name, toChange);
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(toChange, original), "Undo did not work");
+                        Assert.True(XNode.DeepEquals(toChange, original), "Undo did not work");
                     }
                 }
 
@@ -49,11 +48,11 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(toChange))
                         {
                             toChange.Target = "newTarget";
-                            TestLog.Compare(toChange.Target.Equals("newTarget"), "Name did not change");
+                            Assert.True(toChange.Target.Equals("newTarget"), "Name did not change");
                             eHelper.Verify(XObjectChange.Name, toChange);
                         }
                         undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(toChange, original), "Undo did not work");
+                        Assert.True(XNode.DeepEquals(toChange, original), "Undo did not work");
                     }
                 }
 
@@ -65,7 +64,7 @@ namespace CoreXml.Test.XLinq
                     using (EventsHelper eHelper = new EventsHelper(toChange))
                     {
                         toChange.Name = "newName";
-                        TestLog.Compare(toChange.Name.Equals("newName"), "Name did not change");
+                        Assert.True(toChange.Name.Equals("newName"), "Name did not change");
                         eHelper.Verify(XObjectChange.Name, toChange);
                     }
                 }
@@ -139,7 +138,7 @@ namespace CoreXml.Test.XLinq
 
                     element.Add(new XElement("Add", "Me"));
                     element.Verify();
-                    TestLog.Compare(element.Element("Add") != null, "Did not add the element");
+                    Assert.True(element.Element("Add") != null, "Did not add the element");
                 }
 
                 [Fact]
@@ -196,17 +195,9 @@ namespace CoreXml.Test.XLinq
                            // This should never be called
                        });
 
-                    try
-                    {
-                        toChange.Add(new XElement("Add", "Me"));
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        xDoc.Root.Verify();
-                        TestLog.Compare(toChange.Element("Add") == null, "Added the element, operation should have been aborted");
-                        return;
-                    }
-                    throw new TestException(TestResult.Failed, "");
+                    Assert.Throws<InvalidOperationException>(() => { toChange.Add(new XElement("Add", "Me")); });
+                    xDoc.Root.Verify();
+                    Assert.Null(toChange.Element("Add"));
                 }
 
                 [Fact]
@@ -227,17 +218,9 @@ namespace CoreXml.Test.XLinq
                            throw new InvalidOperationException("This should be propagated and operation should perform");
                        });
 
-                    try
-                    {
-                        toChange.Add(new XElement("Add", "Me"));
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        xDoc.Root.Verify();
-                        TestLog.Compare(toChange.Element("Add") != null, "Did not add the element, operation should have completed");
-                        return;
-                    }
-                    throw new TestException(TestResult.Failed, "");
+                    Assert.Throws<InvalidOperationException>(() => { toChange.Add(new XElement("Add", "Me")); });
+                    xDoc.Root.Verify();
+                    Assert.NotNull(toChange.Element("Add"));
                 }
             }
         }
