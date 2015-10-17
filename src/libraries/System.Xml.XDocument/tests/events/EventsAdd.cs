@@ -1,71 +1,32 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Linq;
-using System.Collections;
-using System.Collections.Generic;
-using System.Xml.Linq;
 using Microsoft.Test.ModuleCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Xml.Linq;
+using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
     public partial class FunctionalTests : TestModule
     {
-        public partial class EventsTests : XLinqTestCase
+        public partial class EventsTests
         {
-            //////////////////////////////////////////////////////////////////////////////////////////////////////
-            /// <summary>
-            /// EventsBaseClass: Base class that allows the dynamic addition of variations.  This makes it more
-            /// flexiable to add dynamic params to the variation.
-            /// </summary>
-            //////////////////////////////////////////////////////////////////////////////////////////////////////
-            public partial class EventsBase : XLinqTestCase
+            public class EventsAddBeforeSelf
             {
-                public void AddChild(TestFunc myFunction, int priority, string description, params object[] paramList)
+                public static object[][] ExecuteXDocumentVariationParams = new object[][] {
+                    new object[] { new XNode[] { new XElement("element") }, new XComment("Comment") },
+                    new object[] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data") },
+                    new object[] { new XNode[] { new XDocumentType("root", "", "", "") }, new XElement("root") },
+                    new object[] { new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" ") },
+                    new object[] { new XNode[] { new XComment("Comment") }, new XDocumentType("root", "", "", "") },
+                    new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") }
+                };
+                [Theory, MemberData("ExecuteXDocumentVariationParams")]
+                public void ExecuteXDocumentVariation(XNode[] toAdd, XNode contextNode)
                 {
-                    TestVariation myVariation = new TestVariation(myFunction);
-                    VariationAttribute myAttribute = new VariationAttribute(description, paramList);
-                    myAttribute.Priority = priority;
-                    myVariation.Attribute = myAttribute;
-                    this.AddChild(myVariation);
-                }
-            }
-
-            public partial class EventsAddBeforeSelf : EventsBase
-            {
-                protected override void DetermineChildren()
-                {
-                    VariationsForXDocument(ExecuteXDocumentVariation);
-                    VariationsForXElement(ExecuteXElementVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForXDocument(TestFunc func)
-                {
-                    AddChild(func, 0, "XDocument - empty element before comment", new XNode[] { new XElement("element") }, new XComment("Comment"));
-                    AddChild(func, 0, "XDocument - element before PI", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data"));
-                    AddChild(func, 0, "XDocument - document type before element", new XNode[] { new XDocumentType("root", "", "", "") }, new XElement("root"));
-                    AddChild(func, 0, "XDocument - PI before text", new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" "));
-                    AddChild(func, 0, "XDocument - comment before document type", new XNode[] { new XComment("Comment") }, new XDocumentType("root", "", "", ""));
-                    AddChild(func, 1, "XDocument - text before text", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" "));
-                }
-
-                void VariationsForXElement(TestFunc func)
-                {
-                    AddChild(func, 0, "XElement - empty element before text", new XNode[] { new XElement("element") }, new XText("some text"));
-                    AddChild(func, 0, "XElement - element before PI", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data"));
-                    AddChild(func, 0, "XElement - CData before element", new XNode[] { new XCData("x+y >= z-m") }, new XElement("child"));
-                    AddChild(func, 0, "XElement - PI before text", new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" "));
-                    AddChild(func, 0, "XElement - comment before CData", new XNode[] { new XComment("Comment") }, new XCData("x+y >= z-m"));
-                    AddChild(func, 1, "XElement - text before empty text", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" "));
-                    AddChild(func, 1, "XElement - IEnumerable of XNodes", InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText(".."));
-                }
-
-                public void ExecuteXDocumentVariation()
-                {
-                    XNode[] toAdd = Variation.Params[0] as XNode[];
-                    XNode contextNode = Variation.Params[1] as XNode;
                     IEnumerable<XNode> toAddList = toAdd.OfType<XNode>();
                     XDocument xDoc = new XDocument(contextNode);
                     XDocument xDocOriginal = new XDocument(xDoc);
@@ -87,10 +48,18 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                public void ExecuteXElementVariation()
+                public static object[][] ExecuteXElementVariationParams = new object[][] {
+                    new object[] { new XNode[] { new XElement("element") }, new XText("some text") },
+                    new object[] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data") },
+                    new object[] { new XNode[] { new XCData("x+y >= z-m") }, new XElement("child") },
+                    new object[] { new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" ") },
+                    new object[] { new XNode[] { new XComment("Comment") }, new XCData("x+y >= z-m") },
+                    new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") },
+                    new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText("..") }
+                };
+                [Theory, MemberData("ExecuteXElementVariationParams")]
+                public void ExecuteXElementVariation(XNode[] toAdd, XNode contextNode)
                 {
-                    XNode[] toAdd = Variation.Params[0] as XNode[];
-                    XNode contextNode = Variation.Params[1] as XNode;
                     IEnumerable<XNode> toAddList = toAdd.OfType<XNode>();
                     XElement xElem = new XElement("root", contextNode);
                     XElement xElemOriginal = new XElement(xElem);
@@ -113,8 +82,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Add null")]
-                public void AddNull()
+                [Fact]
+                public void XDocumentAddNull()
                 {
                     XElement xElem = new XElement("root", "text");
                     EventsHelper elemHelper = new EventsHelper(xElem);
@@ -122,8 +91,8 @@ namespace CoreXml.Test.XLinq
                     elemHelper.Verify(0);
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Working on the text nodes 1.")]
-                public void WorkOnTextNodes1()
+                [Fact]
+                public void XElementWorkOnTextNodes1()
                 {
                     XElement elem = new XElement("A", "text2");
                     XNode n = elem.FirstNode;
@@ -143,8 +112,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Working on the text nodes 2.")]
-                public void WorkOnTextNodes2()
+                [Fact]
+                public void XElementWorkOnTextNodes2()
                 {
                     XElement elem = new XElement("A", "text2");
                     XNode n = elem.FirstNode;
@@ -163,40 +132,19 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class EventsAddAfterSelf : EventsBase
+            public class EventsAddAfterSelf
             {
-                protected override void DetermineChildren()
+                public static object[][] ExecuteXDocumentVariationParams = new object[][] {
+                    new object [] { new XNode[] { new XElement("element") }, new XComment("Comment") },
+                    new object [] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data") },
+                    new object [] { new XNode[] { new XDocumentType("root", "", "", "") }, new XText(" ") },
+                    new object [] { new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" ") },
+                    new object [] { new XNode[] { new XComment("Comment") }, new XElement("root") },
+                    new object [] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") }
+                };
+                [Theory, MemberData("ExecuteXDocumentVariationParams")]
+                public void ExecuteXDocumentVariation(XNode[] toAdd, XNode contextNode)
                 {
-                    VariationsForXDocument(ExecuteXDocumentVariation);
-                    VariationsForXElement(ExecuteXElementVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForXDocument(TestFunc func)
-                {
-                    AddChild(func, 0, "XDocument - empty element after comment", new XNode[] { new XElement("element") }, new XComment("Comment"));
-                    AddChild(func, 0, "XDocument - element after PI", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data"));
-                    AddChild(func, 0, "XDocument - document type after text", new XNode[] { new XDocumentType("root", "", "", "") }, new XText(" "));
-                    AddChild(func, 0, "XDocument - PI after text", new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" "));
-                    AddChild(func, 0, "XDocument - comment after element", new XNode[] { new XComment("Comment") }, new XElement("root"));
-                    AddChild(func, 1, "XDocument - text after text", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" "));
-                }
-
-                void VariationsForXElement(TestFunc func)
-                {
-                    AddChild(func, 0, "XElement - empty element after text", new XNode[] { new XElement("element") }, new XText("some text"));
-                    AddChild(func, 0, "XElement - element after PI", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data"));
-                    AddChild(func, 0, "XElement - CData after element", new XNode[] { new XCData("x+y >= z-m") }, new XElement("child"));
-                    AddChild(func, 0, "XElement - PI after text", new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" "));
-                    AddChild(func, 0, "XElement - comment after CData", new XNode[] { new XComment("Comment") }, new XCData("x+y >= z-m"));
-                    AddChild(func, 1, "XElement - text after empty text", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" "));
-                    AddChild(func, 1, "XElement - IEnumerable of XNodes", InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText(".."));
-                }
-
-                public void ExecuteXDocumentVariation()
-                {
-                    XNode[] toAdd = Variation.Params[0] as XNode[];
-                    XNode contextNode = Variation.Params[1] as XNode;
                     IEnumerable<XNode> toAddList = toAdd.OfType<XNode>();
                     XDocument xDoc = new XDocument(contextNode);
                     XDocument xDocOriginal = new XDocument(xDoc);
@@ -218,10 +166,18 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                public void ExecuteXElementVariation()
+                public static object[][] ExecuteXElementVariationParams = new object[][] {
+                    new object[] { new XNode[] { new XElement("element") }, new XText("some text") },
+                    new object[] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data") },
+                    new object[] { new XNode[] { new XCData("x+y >= z-m") }, new XElement("child") },
+                    new object[] { new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" ") },
+                    new object[] { new XNode[] { new XComment("Comment") }, new XCData("x+y >= z-m") },
+                    new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") },
+                    new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText("..")  }
+                };
+                [Theory, MemberData("ExecuteXElementVariationParams")]
+                public void ExecuteXElementVariation(XNode[] toAdd, XNode contextNode)
                 {
-                    XNode[] toAdd = Variation.Params[0] as XNode[];
-                    XNode contextNode = Variation.Params[1] as XNode;
                     IEnumerable<XNode> toAddList = toAdd.OfType<XNode>();
                     XElement xElem = new XElement("root", contextNode);
                     XElement xElemOriginal = new XElement(xElem);
@@ -244,8 +200,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement-Add null")]
-                public void AddNull()
+                [Fact]
+                public void XElementAddNull()
                 {
                     XElement xElem = new XElement("root", "text");
                     EventsHelper elemHelper = new EventsHelper(xElem);
@@ -253,8 +209,8 @@ namespace CoreXml.Test.XLinq
                     elemHelper.Verify(0);
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Working on the text nodes 1.")]
-                public void WorkOnTextNodes1()
+                [Fact]
+                public void XElementWorkOnTextNodes1()
                 {
                     XElement elem = new XElement("A", "text2");
                     XNode n = elem.FirstNode;
@@ -274,8 +230,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Working on the text nodes 2.")]
-                public void WorkOnTextNodes2()
+                [Fact]
+                public void XElementWorkOnTextNodes2()
                 {
                     XElement elem = new XElement("A", "text2");
                     XNode n = elem.FirstNode;
@@ -294,53 +250,25 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class EventsAddFirst : EventsBase
+            public class EventsAddFirst
             {
-                protected override void DetermineChildren()
+                public static object[][] ExecuteXDocumentVariationParams = new object[][] {
+                    new object [] { new XNode[] { new XElement("element") }, null },
+                    new object [] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, null },
+                    new object [] { new XNode[] { new XDocumentType("root", "", "", "") }, null },
+                    new object [] { new XNode[] { new XProcessingInstruction("PI", "Data") }, null },
+                    new object [] { new XNode[] { new XComment("Comment") }, null },
+                    new object [] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, null },
+                    new object [] { new XNode[] { new XElement("element") }, new XComment("Comment") },
+                    new object [] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data") },
+                    new object [] { new XNode[] { new XDocumentType("root", "", "", "") }, new XText(" ") },
+                    new object [] { new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" ") },
+                    new object [] { new XNode[] { new XComment("Comment") }, new XElement("root") },
+                    new object [] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") }
+                };
+                [Theory, MemberData("ExecuteXDocumentVariationParams")]
+                public void ExecuteXDocumentVariation(XNode[] toAdd, XNode contextNode)
                 {
-                    VariationsForXDocument(ExecuteXDocumentVariation);
-                    VariationsForXElement(ExecuteXElementVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForXDocument(TestFunc func)
-                {
-                    AddChild(func, 1, "XDocument - empty element in empty doc", new XNode[] { new XElement("element") }, null);
-                    AddChild(func, 0, "XDocument - element in empty doc", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, null);
-                    AddChild(func, 0, "XDocument - document type in empty doc", new XNode[] { new XDocumentType("root", "", "", "") }, null);
-                    AddChild(func, 0, "XDocument - PI in empty doc", new XNode[] { new XProcessingInstruction("PI", "Data") }, null);
-                    AddChild(func, 0, "XDocument - comment in empty doc", new XNode[] { new XComment("Comment") }, null);
-                    AddChild(func, 0, "XDocument - text in empty doc", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, null);
-                    AddChild(func, 0, "XDocument - empty element in doc with comment", new XNode[] { new XElement("element") }, new XComment("Comment"));
-                    AddChild(func, 0, "XDocument - element in doc with PI", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data"));
-                    AddChild(func, 0, "XDocument - document type in doc with text", new XNode[] { new XDocumentType("root", "", "", "") }, new XText(" "));
-                    AddChild(func, 0, "XDocument - PI in doc with text", new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" "));
-                    AddChild(func, 0, "XDocument - comment in doc with element", new XNode[] { new XComment("Comment") }, new XElement("root"));
-                    AddChild(func, 1, "XDocument - text in doc with empty text", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" "));
-                }
-
-                void VariationsForXElement(TestFunc func)
-                {
-                    AddChild(func, 1, "XElement - empty element in empty element", new XNode[] { new XElement("element") }, null);
-                    AddChild(func, 0, "XElement - element in empty element", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, null);
-                    AddChild(func, 0, "XElement - CData in empty element", new XNode[] { new XCData("x+y >= z-m") }, null);
-                    AddChild(func, 0, "XElement - PI in empty element", new XNode[] { new XProcessingInstruction("PI", "Data") }, null);
-                    AddChild(func, 0, "XElement - comment in empty element", new XNode[] { new XComment("Comment") }, null);
-                    AddChild(func, 0, "XElement - text in empty element", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, null);
-                    AddChild(func, 1, "XElement - IEnumerable of XNodes in empty element", InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), null);
-                    AddChild(func, 0, "XElement - empty element in element with text", new XNode[] { new XElement("element") }, new XText("some text"));
-                    AddChild(func, 0, "XElement - element in element with PI", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data"));
-                    AddChild(func, 0, "XElement - CData in element with child element", new XNode[] { new XCData("x+y >= z-m") }, new XElement("child"));
-                    AddChild(func, 0, "XElement - PI in element with text", new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" "));
-                    AddChild(func, 0, "XElement - comment in element with CData", new XNode[] { new XComment("Comment") }, new XCData("x+y >= z-m"));
-                    AddChild(func, 1, "XElement - text in element with empty text", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" "));
-                    AddChild(func, 1, "XElement - IEnumerable of XNodes in element with text", InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText(".."));
-                }
-
-                public void ExecuteXDocumentVariation()
-                {
-                    XNode[] toAdd = Variation.Params[0] as XNode[];
-                    XNode contextNode = Variation.Params[1] as XNode;
                     IEnumerable<XNode> allNodes, toAddList = toAdd.OfType<XNode>();
                     XDocument xDoc = contextNode == null ? new XDocument() : new XDocument(contextNode);
                     XDocument xDocOriginal = new XDocument(xDoc);
@@ -359,10 +287,25 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                public void ExecuteXElementVariation()
+                public static object[][] ExecuteXElementVariationParams = new object[][] {
+                    new object[] { new XNode[] { new XElement("element") }, null },
+                    new object[] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, null },
+                    new object[] { new XNode[] { new XCData("x+y >= z-m") }, null },
+                    new object[] { new XNode[] { new XProcessingInstruction("PI", "Data") }, null },
+                    new object[] { new XNode[] { new XComment("Comment") }, null },
+                    new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, null },
+                    new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), null },
+                    new object[] { new XNode[] { new XElement("element") }, new XText("some text") },
+                    new object[] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data") },
+                    new object[] { new XNode[] { new XCData("x+y >= z-m") }, new XElement("child") },
+                    new object[] { new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" ") },
+                    new object[] { new XNode[] { new XComment("Comment") }, new XCData("x+y >= z-m") },
+                    new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") },
+                    new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText("..") }
+                };
+                [Theory, MemberData("ExecuteXElementVariationParams")]
+                public void ExecuteXElementVariation(XNode[] toAdd, XNode contextNode)
                 {
-                    XNode[] toAdd = Variation.Params[0] as XNode[];
-                    XNode contextNode = Variation.Params[1] as XNode;
                     IEnumerable<XNode> allNodes, toAddList = toAdd.OfType<XNode>();
                     XElement xElem = contextNode == null ? new XElement("root") : new XElement("root", contextNode);
                     XElement xElemOriginal = new XElement(xElem);
@@ -382,8 +325,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Add null")]
-                public void AddNull()
+                [Fact]
+                public void XElementAddNull()
                 {
                     XElement xElem = new XElement("root", "text");
                     EventsHelper elemHelper = new EventsHelper(xElem);
@@ -391,8 +334,8 @@ namespace CoreXml.Test.XLinq
                     elemHelper.Verify(0);
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Working on the text nodes 1.")]
-                public void WorkOnTextNodes1()
+                [Fact]
+                public void XElementWorkOnTextNodes1()
                 {
                     XElement elem = new XElement("A", "text2");
                     using (UndoManager undo = new UndoManager(elem))
@@ -411,8 +354,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Working on the text nodes 2.")]
-                public void WorkOnTextNodes2()
+                [Fact]
+                public void XElementWorkOnTextNodes2()
                 {
                     XElement elem = new XElement("A", "text2");
                     using (UndoManager undo = new UndoManager(elem))
@@ -429,8 +372,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Change content in the pre-event handler")]
-                public void StringContent()
+                [Fact]
+                public void XElementStringContent()
                 {
                     bool firstTime = true;
                     XElement element = XElement.Parse("<root/>");
@@ -457,8 +400,8 @@ namespace CoreXml.Test.XLinq
                     throw new TestFailedException("Should have thrown an InvalidOperationException");
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Change xnode's parent in the pre-event handler")]
-                public void ParentedXNode()
+                [Fact]
+                public void XElementParentedXNode()
                 {
                     bool firstTime = true;
                     XElement element = XElement.Parse("<root></root>");
@@ -489,64 +432,25 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class EventsAdd : EventsBase
+            public class EventsAdd
             {
-                protected override void DetermineChildren()
+                public static object[][] ExecuteXDocumentVariationParams = new object[][] {
+                    new object[] { new XNode[] { new XElement("element") }, null },
+                    new object[] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, null },
+                    new object[] { new XNode[] { new XDocumentType("root", "", "", "") }, null },
+                    new object[] { new XNode[] { new XProcessingInstruction("PI", "Data") }, null },
+                    new object[] { new XNode[] { new XComment("Comment") }, null },
+                    new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, null },
+                    new object[] { new XNode[] { new XElement("element") }, new XComment("Comment") },
+                    new object[] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data") },
+                    new object[] { new XNode[] { new XDocumentType("root", "", "", "") }, new XText(" ") },
+                    new object[] { new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" ") },
+                    new object[] { new XNode[] { new XComment("Comment") }, new XElement("root") },
+                    new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") }
+                };
+                [Theory, MemberData("ExecuteXDocumentVariationParams")]
+                public void ExecuteXDocumentVariation(XNode[] toAdd, XNode contextNode)
                 {
-                    VariationsForXDocument(ExecuteXDocumentVariation);
-                    VariationsForXElement(ExecuteXElementVariation);
-                    VariationsForXAttribute(ExecuteXAttributeVariation);
-                    base.DetermineChildren();
-                }
-
-                void VariationsForXDocument(TestFunc func)
-                {
-                    AddChild(func, 1, "XDocument - empty element in empty doc", new XNode[] { new XElement("element") }, null);
-                    AddChild(func, 0, "XDocument - element in empty doc", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, null);
-                    AddChild(func, 0, "XDocument - document type in empty doc", new XNode[] { new XDocumentType("root", "", "", "") }, null);
-                    AddChild(func, 0, "XDocument - PI in empty doc", new XNode[] { new XProcessingInstruction("PI", "Data") }, null);
-                    AddChild(func, 0, "XDocument - comment in empty doc", new XNode[] { new XComment("Comment") }, null);
-                    AddChild(func, 0, "XDocument - text in empty doc", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, null);
-                    AddChild(func, 0, "XDocument - empty element in doc with comment", new XNode[] { new XElement("element") }, new XComment("Comment"));
-                    AddChild(func, 0, "XDocument - element in doc with PI", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data"));
-                    AddChild(func, 0, "XDocument - document type in doc with text", new XNode[] { new XDocumentType("root", "", "", "") }, new XText(" "));
-                    AddChild(func, 0, "XDocument - PI in doc with text", new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" "));
-                    AddChild(func, 0, "XDocument - comment in doc with element", new XNode[] { new XComment("Comment") }, new XElement("root"));
-                    AddChild(func, 1, "XDocument - text in doc with empty text", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" "));
-                }
-
-                void VariationsForXElement(TestFunc func)
-                {
-                    AddChild(func, 1, "XElement - empty element in empty element", new XNode[] { new XElement("element") }, null);
-                    AddChild(func, 0, "XElement - element in empty element", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, null);
-                    AddChild(func, 0, "XElement - CData in empty element", new XNode[] { new XCData("x+y >= z-m") }, null);
-                    AddChild(func, 0, "XElement - PI in empty element", new XNode[] { new XProcessingInstruction("PI", "Data") }, null);
-                    AddChild(func, 0, "XElement - comment in empty element", new XNode[] { new XComment("Comment") }, null);
-                    AddChild(func, 0, "XElement - text in empty element", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, null);
-                    AddChild(func, 1, "XElement - IEnumerable of XNodes in empty element", InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), null);
-                    AddChild(func, 0, "XElement - empty element in element with text", new XNode[] { new XElement("element") }, new XText("some text"));
-                    AddChild(func, 0, "XElement - element in element with PI", new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data"));
-                    AddChild(func, 0, "XElement - CData in element with child element", new XNode[] { new XCData("x+y >= z-m") }, new XElement("child"));
-                    AddChild(func, 0, "XElement - PI in element with text", new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" "));
-                    AddChild(func, 0, "XElement - comment in element with CData", new XNode[] { new XComment("Comment") }, new XCData("x+y >= z-m"));
-                    AddChild(func, 0, "XElement - text in element with empty text", new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" "));
-                    AddChild(func, 1, "XElement - IEnumerable of XNodes in element with text", InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText(".."));
-                }
-
-                void VariationsForXAttribute(TestFunc func)
-                {
-                    AddChild(func, 0, "XAttribute - attribute in element with no attributes", new XAttribute[] { new XAttribute("xxx", "yyy") }, null);
-                    AddChild(func, 0, "XAttribute - attribute with namespace in element with no attributes", new XAttribute[] { new XAttribute("{a}xxx", "a_yyy") }, null);
-                    AddChild(func, 1, "XAttribute - IEnumerable of XAttributes in element with no attributes", InputSpace.GetElement(100, 10).Attributes().ToArray(), null);
-                    AddChild(func, 0, "XAttribute - attribute in element with attribute", new XAttribute[] { new XAttribute("xxx", "yyy") }, new XAttribute("a", "aa"));
-                    AddChild(func, 0, "XAttribute - attribute with namespace in element with attributes", new XAttribute[] { new XAttribute("{b}xxx", "b_yyy") }, new XAttribute("a", "aa"));
-                    AddChild(func, 1, "XAttribute - IEnumerable of XAttributes in element with no attributes", InputSpace.GetElement(100, 10).Attributes().ToArray(), new XAttribute("a", "aa"));
-                }
-
-                public void ExecuteXDocumentVariation()
-                {
-                    XNode[] toAdd = Variation.Params[0] as XNode[];
-                    XNode contextNode = Variation.Params[1] as XNode;
                     IEnumerable<XNode> allNodes, toAddList = toAdd.OfType<XNode>();
                     XDocument xDoc = contextNode == null ? new XDocument() : new XDocument(contextNode);
                     XDocument xDocOriginal = new XDocument(xDoc);
@@ -565,10 +469,25 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                public void ExecuteXElementVariation()
+                public static object[][] VariationsForXElementParams = new object[][] {
+                    new object[] { new XNode[] { new XElement("element") }, null },
+                    new object[] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, null },
+                    new object[] { new XNode[] { new XCData("x+y >= z-m") }, null },
+                    new object[] { new XNode[] { new XProcessingInstruction("PI", "Data") }, null },
+                    new object[] { new XNode[] { new XComment("Comment") }, null },
+                    new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, null },
+                    new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), null },
+                    new object[] { new XNode[] { new XElement("element") }, new XText("some text") },
+                    new object[] { new XNode[] { new XElement("parent", new XElement("child", "child text")) }, new XProcessingInstruction("PI", "Data") },
+                    new object[] { new XNode[] { new XCData("x+y >= z-m") }, new XElement("child") },
+                    new object[] { new XNode[] { new XProcessingInstruction("PI", "Data") }, new XText(" ") },
+                    new object[] { new XNode[] { new XComment("Comment") }, new XCData("x+y >= z-m") },
+                    new object[] { new XNode[] { new XText(""), new XText(" "), new XText("\t") }, new XText(" ") },
+                    new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray(), new XText("..") }
+                };
+                [Theory, MemberData("VariationsForXElementParams")]
+                public void ExecuteXElementVariation(XNode[] toAdd, XNode contextNode)
                 {
-                    XNode[] toAdd = Variation.Params[0] as XNode[];
-                    XNode contextNode = Variation.Params[1] as XNode;
                     IEnumerable<XNode> allNodes, toAddList = toAdd.OfType<XNode>();
                     XElement xElem = contextNode == null ? new XElement("root") : new XElement("root", contextNode);
                     XElement xElemOriginal = new XElement(xElem);
@@ -588,10 +507,17 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                public void ExecuteXAttributeVariation()
+                public static object[][] ExecuteXAttributeVariationParams = new object[][] {
+                    new object[] { new XAttribute[] { new XAttribute("xxx", "yyy") }, null },
+                    new object[] { new XAttribute[] { new XAttribute("{a}xxx", "a_yyy") }, null },
+                    new object[] { InputSpace.GetElement(100, 10).Attributes().ToArray(), null },
+                    new object[] { new XAttribute[] { new XAttribute("xxx", "yyy") }, new XAttribute("a", "aa") },
+                    new object[] { new XAttribute[] { new XAttribute("{b}xxx", "b_yyy") }, new XAttribute("a", "aa") },
+                    new object[] { InputSpace.GetElement(100, 10).Attributes().ToArray(), new XAttribute("a", "aa") }
+                };
+                [Theory, MemberData("ExecuteXAttributeVariationParams")]
+                public void ExecuteXAttributeVariation(XAttribute[] toAdd, XAttribute contextNode)
                 {
-                    XAttribute[] toAdd = Variation.Params[0] as XAttribute[];
-                    XAttribute contextNode = Variation.Params[1] as XAttribute;
                     IEnumerable<XAttribute> allNodes, toAddList = toAdd.OfType<XAttribute>();
                     XElement xElem = contextNode == null ? new XElement("root") : new XElement("root", contextNode);
                     XElement xElemOriginal = new XElement(xElem);
@@ -611,8 +537,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XAttribute - Add at each level, nested elements")]
-                public void XAttributeAddAtDeepLevel()
+                [Fact]
+                public void XAttributeXAttributeAddAtDeepLevel()
                 {
                     XDocument xDoc = new XDocument(InputSpace.GetAttributeElement(100, 10));
                     XDocument xDocOriginal = new XDocument(xDoc);
@@ -636,8 +562,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Add at each level, nested elements")]
-                public void XElementAddAtDeepLevel()
+                [Fact]
+                public void XElementXElementAddAtDeepLevel()
                 {
                     XDocument xDoc = new XDocument(InputSpace.GetElement(100, 10));
                     XDocument xDocOriginal = new XDocument(xDoc);
@@ -661,8 +587,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Text node incarnation.")]
-                public void WorkTextNodes()
+                [Fact]
+                public void XElementWorkTextNodes()
                 {
                     XElement elem = new XElement("A", "text2");
                     XElement xElemOriginal = new XElement(elem);
@@ -679,8 +605,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Working on the text nodes 1.")]
-                public void WorkOnTextNodes1()
+                [Fact]
+                public void XElementWorkOnTextNodes1()
                 {
                     XElement elem = new XElement("A", "text2");
                     using (UndoManager undo = new UndoManager(elem))
@@ -699,8 +625,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Working on the text nodes 2.")]
-                public void WorkOnTextNodes2()
+                [Fact]
+                public void XElementWorkOnTextNodes2()
                 {
                     XElement elem = new XElement("A", "text2");
                     XElement xElemOriginal = new XElement(elem);
@@ -718,8 +644,8 @@ namespace CoreXml.Test.XLinq
                     }
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Change content in the pre-event handler")]
-                public void StringContent()
+                [Fact]
+                public void XElementStringContent()
                 {
                     bool firstTime = true;
                     XElement element = XElement.Parse("<root/>");
@@ -746,8 +672,8 @@ namespace CoreXml.Test.XLinq
                     throw new TestFailedException("Should have thrown an InvalidOperationException");
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Change xnode's parent in the pre-event handler")]
-                public void ParentedXNode()
+                [Fact]
+                public void XElementParentedXNode()
                 {
                     bool firstTime = true;
                     XElement element = XElement.Parse("<root></root>");
@@ -777,8 +703,8 @@ namespace CoreXml.Test.XLinq
                     throw new TestFailedException("Should have thrown an InvalidOperationException");
                 }
 
-                //[Variation(Priority = 1, Desc = "XElement - Change attribute's parent in the pre-event handler")]
-                public void ParentedAttribute()
+                [Fact]
+                public void XElementParentedAttribute()
                 {
                     bool firstTime = true;
                     XElement element = XElement.Parse("<root></root>");
