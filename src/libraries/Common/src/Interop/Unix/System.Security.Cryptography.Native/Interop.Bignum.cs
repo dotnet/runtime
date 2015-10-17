@@ -21,7 +21,7 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative)]
         private static extern int GetBigNumBytes(SafeBignumHandle a);
 
-        internal static IntPtr CreateBignumPtr(byte[] bigEndianValue)
+        private static IntPtr CreateBignumPtr(byte[] bigEndianValue)
         {
             if (bigEndianValue == null)
             {

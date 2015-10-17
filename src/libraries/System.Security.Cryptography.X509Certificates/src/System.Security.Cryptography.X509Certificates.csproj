@@ -213,9 +213,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509NameEntry.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509NameEntry.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Rsa.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.Rsa.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.SafeCurlHandle.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.SafeCurlHandle.cs</Link>
     </Compile>
