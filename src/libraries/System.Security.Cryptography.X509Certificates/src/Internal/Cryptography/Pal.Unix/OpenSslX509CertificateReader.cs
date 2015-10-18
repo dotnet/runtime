@@ -138,7 +138,7 @@ namespace Internal.Cryptography.Pal
         {
             get
             {
-                return Interop.Crypto.OpenSslEnocde(
+                return Interop.Crypto.OpenSslEncode(
                     Interop.Crypto.GetX509DerSize,
                     Interop.Crypto.EncodeX509,
                     _cert);

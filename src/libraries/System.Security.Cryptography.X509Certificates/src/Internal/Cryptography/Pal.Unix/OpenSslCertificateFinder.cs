@@ -266,7 +266,7 @@ namespace Internal.Cryptography.Pal
 
                         using (HashAlgorithm hash = SHA1.Create())
                         {
-                            byte[] publicKeyInfoBytes = Interop.Crypto.OpenSslEnocde(
+                            byte[] publicKeyInfoBytes = Interop.Crypto.OpenSslEncode(
                                 Interop.Crypto.GetX509SubjectPublicKeyInfoDerSize,
                                 Interop.Crypto.EncodeX509SubjectPublicKeyInfo,
                                 certPal.SafeHandle);
