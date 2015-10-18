@@ -85,6 +85,8 @@ gboolean mono_using_xdebug;
 #define mono_jit_unlock() mono_mutex_unlock (&jit_mutex)
 static mono_mutex_t jit_mutex;
 
+MonoBackend *current_backend;
+
 #ifndef DISABLE_JIT
 
 gpointer
@@ -2086,7 +2088,7 @@ mono_create_tls_get_offset (MonoCompile *cfg, int offset)
 {
 	MonoInst* ins;
 
-	if (!cfg->have_tls_get)
+	if (!cfg->backend->have_tls_get)
 		return NULL;
 
 	if (offset == -1)
@@ -2101,11 +2103,11 @@ mono_create_tls_get_offset (MonoCompile *cfg, int offset)
 gboolean
 mini_tls_get_supported (MonoCompile *cfg, MonoTlsKey key)
 {
-	if (!cfg->have_tls_get)
+	if (!cfg->backend->have_tls_get)
 		return FALSE;
 
 	if (cfg->compile_aot)
-		return cfg->have_tls_get_reg;
+		return cfg->backend->have_tls_get_reg;
 	else
 		return mini_get_tls_offset (key) != -1;
 }
@@ -2113,7 +2115,7 @@ mini_tls_get_supported (MonoCompile *cfg, MonoTlsKey key)
 MonoInst*
 mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 {
-	if (!cfg->have_tls_get)
+	if (!cfg->backend->have_tls_get)
 		return NULL;
 
 	/*
@@ -2121,7 +2123,7 @@ mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 	 * use a different opcode.
 	 */
 	if (cfg->compile_aot) {
-		if (cfg->have_tls_get_reg) {
+		if (cfg->backend->have_tls_get_reg) {
 			MonoInst *ins, *c;
 
 			EMIT_NEW_TLS_OFFSETCONST (cfg, c, key);
@@ -2908,7 +2910,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				 * Extend the try block backwards to include parts of the previous call
 				 * instruction.
 				 */
-				ei->try_start = (guint8*)ei->try_start - cfg->monitor_enter_adjustment;
+				ei->try_start = (guint8*)ei->try_start - cfg->backend->monitor_enter_adjustment;
 			}
 			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
 			g_assert (tblock);
@@ -3166,62 +3168,61 @@ mono_insert_safepoints (MonoCompile *cfg)
 #endif
 
 static void
-init_compile (MonoCompile *cfg)
+init_backend (MonoBackend *backend)
 {
 #ifdef MONO_ARCH_NEED_GOT_VAR
-	if (cfg->compile_aot)
-		cfg->need_got_var = 1;
+	backend->need_got_var = 1;
 #endif
 #ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
-	cfg->have_card_table_wb = 1;
+	backend->have_card_table_wb = 1;
 #endif
 #ifdef MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT
-	cfg->have_op_generic_class_init = 1;
+	backend->have_op_generic_class_init = 1;
 #endif
 #ifdef MONO_ARCH_EMULATE_MUL_DIV
-	cfg->emulate_mul_div = 1;
+	backend->emulate_mul_div = 1;
 #endif
 #ifdef MONO_ARCH_EMULATE_DIV
-	cfg->emulate_div = 1;
+	backend->emulate_div = 1;
 #endif
 #if !defined(MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS)
-	cfg->emulate_long_shift_opts = 1;
+	backend->emulate_long_shift_opts = 1;
 #endif
 #ifdef MONO_ARCH_HAVE_OBJC_GET_SELECTOR
-	cfg->have_objc_get_selector = 1;
+	backend->have_objc_get_selector = 1;
 #endif
 #ifdef MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK
-	cfg->have_generalized_imt_thunk = 1;
+	backend->have_generalized_imt_thunk = 1;
 #endif
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
-	cfg->gshared_supported = 1;
+	backend->gshared_supported = 1;
 #endif
 	if (MONO_ARCH_HAVE_TLS_GET)
-		cfg->have_tls_get = 1;
+		backend->have_tls_get = 1;
 #ifdef MONO_ARCH_HAVE_TLS_GET_REG
-		cfg->have_tls_get_reg = 1;
+		backend->have_tls_get_reg = 1;
 #endif
 	if (MONO_ARCH_USE_FPSTACK)
-		cfg->use_fpstack = 1;
+		backend->use_fpstack = 1;
 #ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
-	cfg->have_liverange_ops = 1;
+	backend->have_liverange_ops = 1;
 #endif
 #ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
-	cfg->have_op_tail_call = 1;
+	backend->have_op_tail_call = 1;
 #endif
 #ifndef MONO_ARCH_MONITOR_ENTER_ADJUSTMENT
-	cfg->monitor_enter_adjustment = 1;
+	backend->monitor_enter_adjustment = 1;
 #else
-	cfg->monitor_enter_adjustment = MONO_ARCH_MONITOR_ENTER_ADJUSTMENT;
+	backend->monitor_enter_adjustment = MONO_ARCH_MONITOR_ENTER_ADJUSTMENT;
 #endif
 #if defined(__mono_ilp32__)
-	cfg->ilp32 = 1;
+	backend->ilp32 = 1;
 #endif
 #ifdef MONO_ARCH_HAVE_DUMMY_INIT
-	cfg->have_dummy_init = 1;
+	backend->have_dummy_init = 1;
 #endif
 #ifdef MONO_ARCH_DYN_CALL_PARAM_AREA
-	cfg->dyn_call_param_area = MONO_ARCH_DYN_CALL_PARAM_AREA;
+	backend->dyn_call_param_area = MONO_ARCH_DYN_CALL_PARAM_AREA;
 #endif
 }
 
@@ -3333,6 +3334,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->gen_seq_points = debug_options.gen_seq_points_compact_data || debug_options.gen_sdb_seq_points;
 	cfg->gen_sdb_seq_points = debug_options.gen_sdb_seq_points;
 	cfg->llvm_only = (flags & JIT_FLAG_LLVM_ONLY) != 0;
+	cfg->backend = current_backend;
 
 #ifdef PLATFORM_ANDROID
 	if (cfg->method->wrapper_type != MONO_WRAPPER_NONE) {
@@ -3364,8 +3366,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		cfg->opt &= ~MONO_OPT_SIMD;
 	cfg->r4fp = (cfg->opt & MONO_OPT_FLOAT32) ? 1 : 0;
 	cfg->r4_stack_type = cfg->r4fp ? STACK_R4 : STACK_R8;
-
-	init_compile (cfg);
 
 	if (cfg->gen_seq_points)
 		cfg->seq_points = g_ptr_array_new ();
@@ -4461,6 +4461,10 @@ void
 mini_jit_init (void)
 {
 	mono_mutex_init_recursive (&jit_mutex);
+#ifndef DISABLE_JIT
+	current_backend = g_new0 (MonoBackend, 1);
+	init_backend (current_backend);
+#endif
 }
 
 void

@@ -1373,6 +1373,29 @@ enum {
 	MONO_OPT_LAST
 };
 
+/*
+ * This structure represents a JIT backend.
+ */
+typedef struct {
+	guint            have_card_table_wb : 1;
+	guint            have_op_generic_class_init : 1;
+	guint            emulate_mul_div : 1;
+	guint            emulate_div : 1;
+	guint            emulate_long_shift_opts : 1;
+	guint            have_objc_get_selector : 1;
+	guint            have_generalized_imt_thunk : 1;
+	guint            have_tls_get : 1;
+	guint            have_tls_get_reg : 1;
+	guint            have_liverange_ops: 1;
+	guint            have_op_tail_call : 1;
+	guint            have_dummy_init : 1;
+	guint            gshared_supported : 1;
+	guint            use_fpstack : 1;
+	guint            ilp32 : 1;
+	int              monitor_enter_adjustment;
+	int              dyn_call_param_area;
+} MonoBackend;
+
 /* Flags for mini_method_compile () */
 typedef enum {
 	/* Whenever to run cctors during JITting */
@@ -1453,6 +1476,8 @@ typedef struct {
 	MonoMethod      *current_method; /* The method currently processed by method_to_ir () */
 	MonoMethod      *method_to_register; /* The method to register in JIT info tables */
 	MonoGenericContext *generic_context;
+
+	MonoBackend *backend;
 
 	/* 
 	 * This variable represents the hidden argument holding the vtype
@@ -1594,23 +1619,6 @@ typedef struct {
 	guint            r4fp : 1;
 	guint            llvm_only : 1;
 	guint            need_got_var : 1;
-	guint            have_card_table_wb : 1;
-	guint            have_op_generic_class_init : 1;
-	guint            emulate_mul_div : 1;
-	guint            emulate_div : 1;
-	guint            emulate_long_shift_opts : 1;
-	guint            have_objc_get_selector : 1;
-	guint            have_generalized_imt_thunk : 1;
-	guint            have_tls_get : 1;
-	guint            have_tls_get_reg : 1;
-	guint            have_liverange_ops: 1;
-	guint            have_op_tail_call : 1;
-	guint            have_dummy_init : 1;
-	guint            gshared_supported : 1;
-	guint            use_fpstack : 1;
-	guint            ilp32 : 1;
-	int              monitor_enter_adjustment;
-	int              dyn_call_param_area;
 	int              r4_stack_type;
 	gpointer         debug_info;
 	guint32          lmf_offset;
