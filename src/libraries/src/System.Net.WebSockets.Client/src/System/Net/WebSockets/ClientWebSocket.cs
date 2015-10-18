@@ -17,10 +17,8 @@ namespace System.Net.WebSockets
             Disposed = 3
         }
 
-        private const string WebSocketAvailableApiCheck = "WinHttpWebSocketCompleteUpgrade";
-
         private readonly ClientWebSocketOptions _options;
-        private WebSocket _innerWebSocket;
+        private WebSocketHandle _innerWebSocket;
         private readonly CancellationTokenSource _cts;
 
         // NOTE: this is really an InternalState value, but Interlocked doesn't support
@@ -34,7 +32,7 @@ namespace System.Net.WebSockets
                 Logging.Enter(Logging.WebSockets, this, ".ctor", null);
             }
 
-            CheckPlatformSupport();
+            WebSocketHandle.CheckPlatformSupport();
 
             _state = (int)InternalState.Created;
             _options = new ClientWebSocketOptions();
@@ -60,7 +58,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if (_innerWebSocket != null)
+                if (_innerWebSocket.IsValid)
                 {
                     return _innerWebSocket.CloseStatus;
                 }
@@ -72,7 +70,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if (_innerWebSocket != null)
+                if (_innerWebSocket.IsValid)
                 {
                     return _innerWebSocket.CloseStatusDescription;
                 }
@@ -84,7 +82,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if (_innerWebSocket != null)
+                if (_innerWebSocket.IsValid)
                 {
                     return _innerWebSocket.SubProtocol;
                 }
@@ -97,7 +95,7 @@ namespace System.Net.WebSockets
             get
             {
                 // state == Connected or Disposed
-                if (_innerWebSocket != null)
+                if (_innerWebSocket.IsValid)
                 {
                     return _innerWebSocket.State;
                 }
@@ -144,6 +142,31 @@ namespace System.Net.WebSockets
             _options.SetToReadOnly();
 
             return ConnectAsyncCore(uri, cancellationToken);
+        }
+
+        private async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken)
+        {
+            _innerWebSocket = WebSocketHandle.Create();
+
+            try
+            {
+                // Change internal state to 'connected' to enable the other methods
+                if ((InternalState)Interlocked.CompareExchange(ref _state, (int)InternalState.Connected, (int)InternalState.Connecting) != InternalState.Connecting)
+                {
+                    // Aborted/Disposed during connect.
+                    throw new ObjectDisposedException(GetType().FullName);
+                }
+
+                await _innerWebSocket.ConnectAsyncCore(uri, cancellationToken, _options).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                if (Logging.On)
+                {
+                    Logging.Exception(Logging.WebSockets, this, "ConnectAsync", ex);
+                }
+                throw;
+            }
         }
 
         public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage,
@@ -198,7 +221,7 @@ namespace System.Net.WebSockets
             {
                 return;
             }
-            if (_innerWebSocket != null)
+            if (_innerWebSocket.IsValid)
             {
                 _innerWebSocket.Abort();
             }
@@ -215,7 +238,7 @@ namespace System.Net.WebSockets
             }
             _cts.Cancel(false);
             _cts.Dispose();
-            if (_innerWebSocket != null)
+            if (_innerWebSocket.IsValid)
             {
                 _innerWebSocket.Dispose();
             }
@@ -232,7 +255,5 @@ namespace System.Net.WebSockets
                 throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
             }
         }
-        
-        partial void CheckPlatformSupport();
     }
 }
