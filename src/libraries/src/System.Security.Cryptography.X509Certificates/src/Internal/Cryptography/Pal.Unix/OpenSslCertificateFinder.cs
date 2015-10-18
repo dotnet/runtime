@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
@@ -243,15 +244,36 @@ namespace Internal.Cryptography.Pal
                 cert =>
                 {
                     X509Extension ext = FindExtension(cert, Oids.SubjectKeyIdentifier);
+                    byte[] certKeyId;
 
-                    if (ext == null)
+                    if (ext != null)
                     {
-                        return false;
+                        // The extension exposes the value as a hexadecimal string, or we can decode here.
+                        // Enough parsing has gone on, let's decode.
+                        certKeyId = OpenSslX509Encoder.DecodeX509SubjectKeyIdentifierExtension(ext.RawData);
                     }
+                    else
+                    {
+                        // The Desktop/Windows version of this method use CertGetCertificateContextProperty
+                        // with a property ID of CERT_KEY_IDENTIFIER_PROP_ID.
+                        //
+                        // MSDN says that when there's no extension, this method takes the SHA-1 of the
+                        // SubjectPublicKeyInfo block, and returns that.
+                        //
+                        // https://msdn.microsoft.com/en-us/library/windows/desktop/aa376079%28v=vs.85%29.aspx
 
-                    // The extension exposes the value as a hexadecimal string, or we can decode here.
-                    // Enough parsing has gone on, let's decode.
-                    byte[] certKeyId = OpenSslX509Encoder.DecodeX509SubjectKeyIdentifierExtension(ext.RawData);
+                        OpenSslX509CertificateReader certPal = (OpenSslX509CertificateReader)cert.Pal;
+
+                        using (HashAlgorithm hash = SHA1.Create())
+                        {
+                            byte[] publicKeyInfoBytes = Interop.Crypto.OpenSslEnocde(
+                                Interop.Crypto.GetX509SubjectPublicKeyInfoDerSize,
+                                Interop.Crypto.EncodeX509SubjectPublicKeyInfo,
+                                certPal.SafeHandle);
+
+                            certKeyId = hash.ComputeHash(publicKeyInfoBytes);
+                        }
+                    }
 
                     return keyIdentifier.ContentsEqual(certKeyId);
                 });

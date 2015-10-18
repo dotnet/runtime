@@ -146,6 +146,12 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative)]
         internal static extern SafeX509CrlHandle PemReadBioX509Crl(SafeBioHandle bio);
 
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int GetX509SubjectPublicKeyInfoDerSize(SafeX509Handle x509);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int EncodeX509SubjectPublicKeyInfo(SafeX509Handle x509, byte[] buf);
+
         internal enum X509VerifyStatusCode : int
         {
             X509_V_OK = 0,

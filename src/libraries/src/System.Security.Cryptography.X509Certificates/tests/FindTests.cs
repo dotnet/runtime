@@ -588,8 +588,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(3099, PlatformID.AnyUnix)]
-        public static void TestBySubjectKeyIdentifier_MatchA()
+        public static void TestBySubjectKeyIdentifier_UsingFallback()
         {
             RunSingleMatchTest_PfxCer(
                 X509FindType.FindBySubjectKeyIdentifier,
@@ -611,7 +610,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("597 1A6 5A3 34D DA9 807 80F F84 1EB E87 F97 232 41F 2")]
         // Non-symmetric whitespace is allowed
         [InlineData("    5971A65   A334DDA980780FF84  1EBE87F97           23241F   2")]
-        public static void TestBySubjectKeyIdentifier_MatchB(string subjectKeyIdentifier)
+        public static void TestBySubjectKeyIdentifier_ExtensionPresent(string subjectKeyIdentifier)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySubjectKeyIdentifier, subjectKeyIdentifier);
         }
@@ -625,7 +624,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("59 71 A6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 p9 72 32 41 F2")]
         // Compat: A non-hex character as the low nybble makes the whole byte FF.
         [InlineData("59 71 A6 5A 33 4D DA 98 07 80 0p 84 1E BE 87 F9 72 32 41 F2")]
-        public static void TestBySubjectKeyIdentifier_MatchB_Compat(string subjectKeyIdentifier)
+        public static void TestBySubjectKeyIdentifier_Compat(string subjectKeyIdentifier)
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySubjectKeyIdentifier, subjectKeyIdentifier);
         }
