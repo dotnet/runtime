@@ -1595,6 +1595,18 @@ typedef struct {
 	guint            gsharedvt : 1;
 	guint            r4fp : 1;
 	guint            llvm_only : 1;
+	guint            need_got_var : 1;
+	guint            have_card_table_wb : 1;
+	guint            have_op_generic_class_init : 1;
+	guint            emulate_mul_div : 1;
+	guint            emulate_div : 1;
+	guint            emulate_long_shift_opts : 1;
+	guint            have_objc_get_selector : 1;
+	guint            have_generalized_imt_thunk : 1;
+	guint            have_tls_get : 1;
+	guint            have_liverange_ops: 1;
+	guint            gshared_supported : 1;
+	guint            use_fpstack : 1;
 	int              r4_stack_type;
 	gpointer         debug_info;
 	guint32          lmf_offset;
