@@ -32,7 +32,7 @@ internal static partial class Interop
             // So to ensure we're getting a set of bytes compatible with BigInteger (though with the
             // wrong endianness here), DER encode it, then use the DER reader to skip past the tag
             // and length.
-            byte[] derEncoded = OpenSslEnocde(
+            byte[] derEncoded = OpenSslEncode(
                 handle => GetAsn1IntegerDerSize(handle),
                 (handle, buf) => EncodeAsn1Integer(handle, buf),
                 asn1Integer);
