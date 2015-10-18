@@ -168,6 +168,12 @@
   <data name="Cryptography_InvalidStoreHandle" xml:space="preserve">
     <value>The store handle is invalid.</value>
   </data>
+  <data name="Cryptography_Unix_X509_MachineStoresReadOnly" xml:space="preserve">
+    <value>Unix LocalMachine X509Stores are read-only for all users.</value>
+  </data>
+  <data name="Cryptography_Unix_X509_MachineStoresRootOnly" xml:space="preserve">
+    <value>Unix LocalMachine X509Store is limited to the Root and CertificateAuthority stores.</value>
+  </data>
   <data name="Cryptography_X509_ExportFailed" xml:space="preserve">
     <value>The certificate export operation failed.</value>
   </data>
