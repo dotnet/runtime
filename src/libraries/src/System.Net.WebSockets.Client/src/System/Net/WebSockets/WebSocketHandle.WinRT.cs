@@ -37,7 +37,7 @@ namespace System.Net.WebSockets
         {
             try
             {
-                await rtWebSocket.ConnectAsync(uri, cancellationToken, options);
+                await rtWebSocket.ConnectAsync(uri, cancellationToken, options).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

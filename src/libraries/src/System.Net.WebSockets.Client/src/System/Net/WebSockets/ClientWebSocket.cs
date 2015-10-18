@@ -157,7 +157,7 @@ namespace System.Net.WebSockets
                     throw new ObjectDisposedException(GetType().FullName);
                 }
 
-                await _innerWebSocket.ConnectAsyncCore(uri, cancellationToken, _options);
+                await _innerWebSocket.ConnectAsyncCore(uri, cancellationToken, _options).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
