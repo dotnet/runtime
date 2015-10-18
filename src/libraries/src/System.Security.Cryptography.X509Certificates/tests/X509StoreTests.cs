@@ -135,5 +135,46 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.ThrowsAny<CryptographicException>(() => store.Remove(cert));
             }
         }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public static void OpenMachineMyStore_Supported()
+        {
+            using (X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
+            {
+                store.Open(OpenFlags.ReadOnly);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public static void OpenMachineMyStore_NotSupported()
+        {
+            using (X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => store.Open(OpenFlags.ReadOnly));
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [InlineData(OpenFlags.ReadOnly, false)]
+        [InlineData(OpenFlags.MaxAllowed, false)]
+        [InlineData(OpenFlags.ReadWrite, true)]
+        public static void OpenMachineRootStore_Permissions(OpenFlags permissions, bool shouldThrow)
+        {
+            using (X509Store store = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
+            {
+                if (shouldThrow)
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => store.Open(permissions));
+                }
+                else
+                {
+                    // Assert.DoesNotThrow
+                    store.Open(permissions);
+                }
+            }
+        }
     }
 }

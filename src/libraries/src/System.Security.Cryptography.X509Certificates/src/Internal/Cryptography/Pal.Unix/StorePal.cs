@@ -136,9 +136,7 @@ namespace Internal.Cryptography.Pal
 
             if (openFlags.HasFlag(OpenFlags.ReadWrite))
             {
-                // TODO (#2206): Support CurrentUser persisted stores
-                // (they'd not be very useful without the ability to add/remove content)
-                throw new NotImplementedException();
+                throw new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresReadOnly);
             }
 
             // The static store approach here is making an optimization based on not
@@ -165,8 +163,7 @@ namespace Internal.Cryptography.Pal
                 return CloneStore(s_machineIntermediateStore);
             }
 
-            // TODO (#2207): Support the rest of the stores, or throw PlatformNotSupportedException.
-            throw new NotImplementedException();
+            throw new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresRootOnly);
         }
 
         private static IStorePal SingleCertToStorePal(ICertificatePal singleCert)
