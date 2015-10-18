@@ -449,17 +449,6 @@ namespace CoreXml.Test.XLinq
             }
         }
 
-        public static int IndexOf<T>(this IEnumerable<T> iter, T node)
-        {
-            int pos = 0;
-            foreach (T n in iter)
-            {
-                if ((n == null && node == null) || n.Equals(node)) return pos;
-                pos++;
-            }
-            return -1;
-        }
-
         public static bool CheckDTDAfterElement(this IEnumerable<object> newNodes)
         {
             bool wasElement = false;
