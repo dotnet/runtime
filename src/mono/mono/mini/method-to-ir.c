@@ -1227,16 +1227,12 @@ mono_get_domainvar (MonoCompile *cfg)
 MonoInst *
 mono_get_got_var (MonoCompile *cfg)
 {
-#ifdef MONO_ARCH_NEED_GOT_VAR
-	if (!cfg->compile_aot)
+	if (!cfg->need_got_var)
 		return NULL;
 	if (!cfg->got_var) {
 		cfg->got_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 	}
 	return cfg->got_var;
-#else
-	return NULL;
-#endif
 }
 
 static MonoInst *
@@ -2454,7 +2450,7 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoMethod *method, Mon
 #ifdef ENABLE_LLVM
 		call->imt_arg_reg = method_reg;
 #endif
-	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
+		mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
 		return;
 	}
 
@@ -3154,7 +3150,6 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 	MonoInst *dummy_use;
 	int nursery_shift_bits;
 	size_t nursery_size;
-	gboolean has_card_table_wb = FALSE;
 
 	if (!cfg->gen_write_barriers)
 		return;
@@ -3163,11 +3158,7 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 
 	mono_gc_get_nursery (&nursery_shift_bits, &nursery_size);
 
-#ifdef MONO_ARCH_HAVE_CARD_TABLE_WBARRIER
-	has_card_table_wb = TRUE;
-#endif
-
-	if (has_card_table_wb && !cfg->compile_aot && card_table && nursery_shift_bits > 0 && !COMPILE_LLVM (cfg)) {
+	if (cfg->have_card_table_wb && !cfg->compile_aot && card_table && nursery_shift_bits > 0 && !COMPILE_LLVM (cfg)) {
 		MonoInst *wbarrier;
 
 		MONO_INST_NEW (cfg, wbarrier, OP_CARD_TABLE_WBARRIER);
@@ -3811,7 +3802,6 @@ emit_class_init (MonoCompile *cfg, MonoClass *klass)
 {
 	MonoInst *vtable_arg;
 	int context_used;
-	gboolean use_op_generic_class_init = FALSE;
 
 	context_used = mini_class_check_context_used (cfg, klass);
 
@@ -3826,12 +3816,7 @@ emit_class_init (MonoCompile *cfg, MonoClass *klass)
 		EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
 	}
 
-#ifdef MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT
-	if (!COMPILE_LLVM (cfg))
-		use_op_generic_class_init = TRUE;
-#endif
-
-	if (use_op_generic_class_init) {
+	if (!COMPILE_LLVM (cfg) && cfg->have_op_generic_class_init) {
 		MonoInst *ins;
 
 		/*
@@ -6658,8 +6643,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				!strcmp (cmethod->klass->name_space, "ObjCRuntime") &&
 				!strcmp (cmethod->klass->name, "Selector"))
 			   ) {
-#ifdef MONO_ARCH_HAVE_OBJC_GET_SELECTOR
-		if (!strcmp (cmethod->name, "GetHandle") && fsig->param_count == 1 &&
+		if (cfg->have_objc_get_selector &&
+			!strcmp (cmethod->name, "GetHandle") && fsig->param_count == 1 &&
 		    (args [0]->opcode == OP_GOT_ENTRY || args [0]->opcode == OP_AOTCONST) &&
 		    cfg->compile_aot) {
 			MonoInst *pi;
@@ -6689,7 +6674,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		}
-#endif
 	}
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
