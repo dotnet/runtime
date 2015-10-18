@@ -50,7 +50,7 @@ namespace System.Net.WebSockets
         {
             try
             {
-                await _webSocket.ConnectAsync(uri, cancellationToken, options);
+                await _webSocket.ConnectAsync(uri, cancellationToken, options).ConfigureAwait(false);
             }
             catch (Win32Exception ex)
             {
