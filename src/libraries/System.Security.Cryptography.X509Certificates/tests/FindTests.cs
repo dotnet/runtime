@@ -476,7 +476,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(3099, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_Decimal()
         {
             // Decimal string is an allowed input format.
@@ -486,7 +485,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(3099, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_DecimalLeadingZeros()
         {
             // Checking that leading zeros are ignored.
@@ -507,7 +505,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(3099, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_Hex()
         {
             // Hex string is also an allowed input format.
@@ -517,7 +514,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(3099, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_HexIgnoreCase()
         {
             // Hex string is also an allowed input format and case-blind
@@ -527,7 +523,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(3099, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_HexLeadingZeros()
         {
             // Checking that leading zeros are ignored.
