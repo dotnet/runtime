@@ -7,7 +7,7 @@
     <ProjectGuid>{D24E2563-7A46-4368-94D4-B3A39E9EF1B5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XDocument.Properties.Tests</AssemblyName>
-    <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
+    <RootNamespace>System.Xml.Linq.Tests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
