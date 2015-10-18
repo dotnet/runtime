@@ -35,8 +35,6 @@
 #include <mono/utils/mono-conc-hashtable.h>
 #include <mono/utils/mono-signal-handler.h>
 
-#define MONO_BREAKPOINT_ARRAY_SIZE 64
-
 #include "mini-arch.h"
 #include "regalloc.h"
 #include "mini-unwind.h"
@@ -1604,9 +1602,15 @@ typedef struct {
 	guint            have_objc_get_selector : 1;
 	guint            have_generalized_imt_thunk : 1;
 	guint            have_tls_get : 1;
+	guint            have_tls_get_reg : 1;
 	guint            have_liverange_ops: 1;
+	guint            have_op_tail_call : 1;
+	guint            have_dummy_init : 1;
 	guint            gshared_supported : 1;
 	guint            use_fpstack : 1;
+	guint            ilp32 : 1;
+	int              monitor_enter_adjustment;
+	int              dyn_call_param_area;
 	int              r4_stack_type;
 	gpointer         debug_info;
 	guint32          lmf_offset;
@@ -3022,34 +3026,8 @@ void MONO_SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler);
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler) ;
 gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 
-#ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
-#define ARCH_HAVE_OP_TAIL_CALL 1
-#else
-#define ARCH_HAVE_OP_TAIL_CALL 0
-#endif
-
 #ifndef MONO_ARCH_HAVE_TLS_GET
 #define MONO_ARCH_HAVE_TLS_GET 0
-#endif
-
-#ifdef MONO_ARCH_HAVE_TLS_GET_REG
-#define ARCH_HAVE_TLS_GET_REG 1
-#else
-#define ARCH_HAVE_TLS_GET_REG 0
-#endif
-
-#ifdef MONO_ARCH_EMULATE_MUL_DIV
-#define ARCH_EMULATE_MUL_DIV 1
-#else
-#define ARCH_EMULATE_MUL_DIV 0
-#endif
-
-#ifndef MONO_ARCH_MONITOR_ENTER_ADJUSTMENT
-#define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT 1
-#endif
-
-#ifndef MONO_ARCH_DYN_CALL_PARAM_AREA
-#define MONO_ARCH_DYN_CALL_PARAM_AREA 0
 #endif
 
 #ifdef MONO_ARCH_VARARG_ICALLS
@@ -3058,22 +3036,10 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 #define ARCH_VARARG_ICALLS 0
 #endif
 
-#ifdef MONO_ARCH_HAVE_DUMMY_INIT
-#define ARCH_HAVE_DUMMY_INIT 1
-#else
-#define ARCH_HAVE_DUMMY_INIT 0
-#endif
-
 #ifdef MONO_CROSS_COMPILE
 #define MONO_IS_CROSS_COMPILE 1
 #else
 #define MONO_IS_CROSS_COMPILE 0
-#endif
-
-#if defined(__mono_ilp32__)
-#define MONO_IS_ILP32 1
-#else
-#define MONO_IS_ILP32 0
 #endif
 
 #endif /* __MONO_MINI_H__ */

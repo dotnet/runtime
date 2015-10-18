@@ -76,7 +76,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 
 		if (COMPILE_LLVM (cfg))
 			break;
-		if (MONO_IS_ILP32 && SIZEOF_REGISTER == 8)
+		if (cfg->ilp32 && SIZEOF_REGISTER == 8)
 			opcode = OP_LADDCC;
 		else
 			opcode = OP_ADDCC;
@@ -90,7 +90,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 
 		if (COMPILE_LLVM (cfg))
 			break;
-		if (MONO_IS_ILP32 && SIZEOF_REGISTER == 8)
+		if (cfg->ilp32 && SIZEOF_REGISTER == 8)
 			opcode = OP_LADDCC;
 		else
 			opcode = OP_ADDCC;
@@ -105,7 +105,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 
 		if (COMPILE_LLVM (cfg))
 			break;
-		if (MONO_IS_ILP32 && SIZEOF_REGISTER == 8)
+		if (cfg->ilp32 && SIZEOF_REGISTER == 8)
 			opcode = OP_LSUBCC;
 		else
 			opcode = OP_SUBCC;
@@ -119,7 +119,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 
 		if (COMPILE_LLVM (cfg))
 			break;
-		if (MONO_IS_ILP32 && SIZEOF_REGISTER == 8)
+		if (cfg->ilp32 && SIZEOF_REGISTER == 8)
 			opcode = OP_LSUBCC;
 		else
 			opcode = OP_SUBCC;

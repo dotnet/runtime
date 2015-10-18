@@ -2086,7 +2086,7 @@ mono_create_tls_get_offset (MonoCompile *cfg, int offset)
 {
 	MonoInst* ins;
 
-	if (!MONO_ARCH_HAVE_TLS_GET)
+	if (!cfg->have_tls_get)
 		return NULL;
 
 	if (offset == -1)
@@ -2101,11 +2101,11 @@ mono_create_tls_get_offset (MonoCompile *cfg, int offset)
 gboolean
 mini_tls_get_supported (MonoCompile *cfg, MonoTlsKey key)
 {
-	if (!MONO_ARCH_HAVE_TLS_GET)
+	if (!cfg->have_tls_get)
 		return FALSE;
 
 	if (cfg->compile_aot)
-		return ARCH_HAVE_TLS_GET_REG;
+		return cfg->have_tls_get_reg;
 	else
 		return mini_get_tls_offset (key) != -1;
 }
@@ -2113,7 +2113,7 @@ mini_tls_get_supported (MonoCompile *cfg, MonoTlsKey key)
 MonoInst*
 mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 {
-	if (!MONO_ARCH_HAVE_TLS_GET)
+	if (!cfg->have_tls_get)
 		return NULL;
 
 	/*
@@ -2121,7 +2121,7 @@ mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 	 * use a different opcode.
 	 */
 	if (cfg->compile_aot) {
-		if (ARCH_HAVE_TLS_GET_REG) {
+		if (cfg->have_tls_get_reg) {
 			MonoInst *ins, *c;
 
 			EMIT_NEW_TLS_OFFSETCONST (cfg, c, key);
@@ -2908,7 +2908,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				 * Extend the try block backwards to include parts of the previous call
 				 * instruction.
 				 */
-				ei->try_start = (guint8*)ei->try_start - MONO_ARCH_MONITOR_ENTER_ADJUSTMENT;
+				ei->try_start = (guint8*)ei->try_start - cfg->monitor_enter_adjustment;
 			}
 			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
 			g_assert (tblock);
@@ -3198,10 +3198,30 @@ init_compile (MonoCompile *cfg)
 #endif
 	if (MONO_ARCH_HAVE_TLS_GET)
 		cfg->have_tls_get = 1;
+#ifdef MONO_ARCH_HAVE_TLS_GET_REG
+		cfg->have_tls_get_reg = 1;
+#endif
 	if (MONO_ARCH_USE_FPSTACK)
 		cfg->use_fpstack = 1;
 #ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
 	cfg->have_liverange_ops = 1;
+#endif
+#ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
+	cfg->have_op_tail_call = 1;
+#endif
+#ifndef MONO_ARCH_MONITOR_ENTER_ADJUSTMENT
+	cfg->monitor_enter_adjustment = 1;
+#else
+	cfg->monitor_enter_adjustment = MONO_ARCH_MONITOR_ENTER_ADJUSTMENT;
+#endif
+#if defined(__mono_ilp32__)
+	cfg->ilp32 = 1;
+#endif
+#ifdef MONO_ARCH_HAVE_DUMMY_INIT
+	cfg->have_dummy_init = 1;
+#endif
+#ifdef MONO_ARCH_DYN_CALL_PARAM_AREA
+	cfg->dyn_call_param_area = MONO_ARCH_DYN_CALL_PARAM_AREA;
 #endif
 }
 

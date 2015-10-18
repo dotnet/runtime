@@ -7874,7 +7874,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	 * (OP_DUMMY_ICONST etc.) which generate no code. These are only supported
 	 * on some platforms.
 	 */
-	if ((cfg->opt & MONO_OPT_UNSAFE) && ARCH_HAVE_DUMMY_INIT)
+	if ((cfg->opt & MONO_OPT_UNSAFE) && cfg->have_dummy_init)
 		init_locals = header->init_locals;
 	else
 		init_locals = TRUE;
@@ -8677,7 +8677,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				link_bblock (cfg, cfg->cbb, end_bblock);
 				ip += 5;
 				break;
-			} else if (ARCH_HAVE_OP_TAIL_CALL) {
+			} else if (cfg->have_op_tail_call) {
 				/* Handle tail calls similarly to calls */
 				DISABLE_AOT (cfg);
 
@@ -9530,7 +9530,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				//printf ("HIT: %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
-				if (ARCH_HAVE_OP_TAIL_CALL) {
+				if (cfg->have_op_tail_call) {
 					/* Handle tail calls similarly to normal calls */
 					tail_call = TRUE;
 				} else {
@@ -12427,7 +12427,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->sreg2 = sp [1]->dreg;
 				MONO_ADD_INS (cfg->cbb, ins);
 
-				cfg->param_area = MAX (cfg->param_area, MONO_ARCH_DYN_CALL_PARAM_AREA);
+				cfg->param_area = MAX (cfg->param_area, cfg->dyn_call_param_area);
 
 				ip += 2;
 				inline_costs += 10 * num_calls++;
