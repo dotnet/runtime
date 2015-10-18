@@ -22,42 +22,28 @@ internal static partial class Interop
         {
             CheckValidOpenSslHandle(x509Name);
 
-            SafeSharedX509NameEntryHandle handle = GetX509NameEntry_private(x509Name, loc);
-
-            if (!handle.IsInvalid)
-            {
-                handle.SetParent(x509Name);
-            }
-
-            return handle;
+            return SafeInteriorHandle.OpenInteriorHandle(
+                (nameHandle, i) => GetX509NameEntry_private(nameHandle, i),
+                x509Name,
+                loc);
         }
 
         internal static SafeSharedAsn1ObjectHandle GetX509NameEntryOid(SafeSharedX509NameEntryHandle nameEntry)
         {
             CheckValidOpenSslHandle(nameEntry);
 
-            SafeSharedAsn1ObjectHandle handle = GetX509NameEntryOid_private(nameEntry);
-
-            if (!handle.IsInvalid)
-            {
-                handle.SetParent(nameEntry);
-            }
-
-            return handle;
+            return SafeInteriorHandle.OpenInteriorHandle(
+                handle => GetX509NameEntryOid_private(handle),
+                nameEntry);
         }
 
         internal static SafeSharedAsn1StringHandle GetX509NameEntryData(SafeSharedX509NameEntryHandle nameEntry)
         {
             CheckValidOpenSslHandle(nameEntry);
 
-            SafeSharedAsn1StringHandle handle = GetX509NameEntryData_private(nameEntry);
-
-            if (!handle.IsInvalid)
-            {
-                handle.SetParent(nameEntry);
-            }
-
-            return handle;
+            return SafeInteriorHandle.OpenInteriorHandle(
+                handle => GetX509NameEntryData_private(handle),
+                nameEntry);
         }
     }
 }

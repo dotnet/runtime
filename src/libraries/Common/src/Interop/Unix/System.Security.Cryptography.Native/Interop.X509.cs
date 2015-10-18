@@ -38,8 +38,17 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative)]
         internal static extern SafeX509Handle PemReadX509FromBio(SafeBioHandle bio);
 
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern IntPtr X509GetSerialNumber(SafeX509Handle x);
+        [DllImport(Libraries.CryptoNative, EntryPoint = "X509GetSerialNumber")]
+        private static extern SafeSharedAsn1IntegerHandle X509GetSerialNumber_private(SafeX509Handle x);
+
+        internal static SafeSharedAsn1IntegerHandle X509GetSerialNumber(SafeX509Handle x)
+        {
+            CheckValidOpenSslHandle(x);
+
+            return SafeInteriorHandle.OpenInteriorHandle(
+                handle => X509GetSerialNumber_private(handle),
+                x);
+        }
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr X509GetIssuerName(SafeX509Handle x);

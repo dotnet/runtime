@@ -98,4 +98,12 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
     }
+
+    internal sealed class SafeSharedAsn1IntegerHandle : SafeInteriorHandle
+    {
+        private SafeSharedAsn1IntegerHandle() :
+            base(IntPtr.Zero, ownsHandle: true)
+        {
+        }
+    }
 }

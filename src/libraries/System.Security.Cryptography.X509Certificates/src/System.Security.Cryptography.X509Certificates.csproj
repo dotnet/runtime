@@ -171,6 +171,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.GetIntegerBytes.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.GetIntegerBytes.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Print.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.Print.cs</Link>
     </Compile>
