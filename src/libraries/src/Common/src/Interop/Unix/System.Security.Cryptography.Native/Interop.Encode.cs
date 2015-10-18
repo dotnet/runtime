@@ -14,7 +14,7 @@ internal static partial class Interop
 
         internal delegate int EncodeFunc<in THandle>(THandle handle, byte[] buf);
 
-        internal static byte[] OpenSslEnocde<THandle>(GetEncodedSizeFunc<THandle> getSize, EncodeFunc<THandle> encode, THandle handle)
+        internal static byte[] OpenSslEncode<THandle>(GetEncodedSizeFunc<THandle> getSize, EncodeFunc<THandle> encode, THandle handle)
             where THandle : SafeHandle
         {
             int size = getSize(handle);

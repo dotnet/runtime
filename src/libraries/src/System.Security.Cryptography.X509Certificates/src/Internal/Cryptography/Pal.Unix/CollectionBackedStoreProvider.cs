@@ -122,7 +122,7 @@ namespace Internal.Cryptography.Pal
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
-                    return Interop.Crypto.OpenSslEnocde(
+                    return Interop.Crypto.OpenSslEncode(
                         Interop.Crypto.GetPkcs12DerSize,
                         Interop.Crypto.EncodePkcs12,
                         pkcs12);
