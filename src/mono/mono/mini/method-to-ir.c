@@ -5441,7 +5441,6 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	return ins;
 }
 
-#ifndef MONO_ARCH_EMULATE_MUL_DIV
 static MonoInst*
 mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, MonoInst *index_ins1, MonoInst *index_ins2)
 {
@@ -5515,7 +5514,6 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 
 	return ins;
 }
-#endif
 
 static MonoInst*
 mini_emit_ldelema_ins (MonoCompile *cfg, MonoMethod *cmethod, MonoInst **sp, unsigned char *ip, gboolean is_set)
@@ -5531,12 +5529,10 @@ mini_emit_ldelema_ins (MonoCompile *cfg, MonoMethod *cmethod, MonoInst **sp, uns
 	if (rank == 1)
 		return mini_emit_ldelema_1_ins (cfg, eclass, sp [0], sp [1], TRUE);
 
-#ifndef MONO_ARCH_EMULATE_MUL_DIV
 	/* emit_ldelema_2 depends on OP_LMUL */
-	if (rank == 2 && (cfg->opt & MONO_OPT_INTRINS) && !mini_is_gsharedvt_variable_klass (eclass)) {
+	if (!cfg->emulate_mul_div && rank == 2 && (cfg->opt & MONO_OPT_INTRINS) && !mini_is_gsharedvt_variable_klass (eclass)) {
 		return mini_emit_ldelema_2_ins (cfg, eclass, sp [0], sp [1], sp [2]);
 	}
-#endif
 
 	if (mini_is_gsharedvt_variable_klass (eclass))
 		element_size = 0;
@@ -5905,8 +5901,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			type_from_op (cfg, ins, NULL, NULL);
 
 			return ins;
-#if !defined(MONO_ARCH_EMULATE_MUL_DIV)
-		} else if (strcmp (cmethod->name, "InternalGetHashCode") == 0 && fsig->param_count == 1 && !mono_gc_is_moving ()) {
+		} else if (!cfg->emulate_mul_div && strcmp (cmethod->name, "InternalGetHashCode") == 0 && fsig->param_count == 1 && !mono_gc_is_moving ()) {
 			int dreg = alloc_ireg (cfg);
 			int t1 = alloc_ireg (cfg);
 	
@@ -5915,7 +5910,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->type = STACK_I4;
 
 			return ins;
-#endif
 		} else if (strcmp (cmethod->name, ".ctor") == 0 && fsig->param_count == 0) {
  			MONO_INST_NEW (cfg, ins, OP_NOP);
 			MONO_ADD_INS (cfg->cbb, ins);
@@ -7607,11 +7601,7 @@ is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmetho
 	gboolean supported_tail_call;
 	int i;
 
-#ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
 	supported_tail_call = mono_arch_tail_call_supported (cfg, mono_method_signature (method), mono_method_signature (cmethod));
-#else
-	supported_tail_call = mono_metadata_signature_equal (mono_method_signature (method), mono_method_signature (cmethod)) && !MONO_TYPE_ISSTRUCT (mono_method_signature (cmethod)->ret);
-#endif
 
 	for (i = 0; i < fsig->param_count; ++i) {
 		if (fsig->params [i]->byref || fsig->params [i]->type == MONO_TYPE_PTR || fsig->params [i]->type == MONO_TYPE_FNPTR)
@@ -9238,7 +9228,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				!cfg->llvm_only) {
 				MonoInst *this_temp, *this_arg_temp, *store;
 				MonoInst *iargs [4];
-				gboolean use_imt = FALSE;
 
 				g_assert (fsig->is_inflated);
 
@@ -9248,12 +9237,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig))
 					GSHAREDVT_FAILURE (*ip);
 
-#if MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK && defined(MONO_ARCH_GSHARED_SUPPORTED)
-				if (cmethod->wrapper_type == MONO_WRAPPER_NONE)
-					use_imt = TRUE;
-#endif
-
-				if (use_imt) {
+				if (cfg->have_generalized_imt_thunk && cfg->gshared_supported && cmethod->wrapper_type == MONO_WRAPPER_NONE) {
 					g_assert (!imt_arg);
 					if (!context_used)
 						g_assert (cmethod->is_inflated);
@@ -12469,7 +12453,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ad_ins = mono_get_domain_intrinsic (cfg);
 				jit_tls_ins = mono_get_jit_tls_intrinsic (cfg);
 
-				if (MONO_ARCH_HAVE_TLS_GET && ad_ins && jit_tls_ins) {
+				if (cfg->have_tls_get && ad_ins && jit_tls_ins) {
 					NEW_BBLOCK (cfg, next_bb);
 					NEW_BBLOCK (cfg, call_bb);
 
@@ -14334,7 +14318,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							 * sregs could use it. So set a flag, and do it after
 							 * the sregs.
 							 */
-							if ((!MONO_ARCH_USE_FPSTACK || ((store_opcode != OP_STORER8_MEMBASE_REG) && (store_opcode != OP_STORER4_MEMBASE_REG))) && !((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
+							if ((!cfg->use_fpstack || ((store_opcode != OP_STORER8_MEMBASE_REG) && (store_opcode != OP_STORER4_MEMBASE_REG))) && !((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
 								dest_has_lvreg = TRUE;
 						}
 					}
@@ -14424,7 +14408,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 
 							sreg = alloc_dreg (cfg, stacktypes [regtype]);
 
-							if ((!MONO_ARCH_USE_FPSTACK || ((load_opcode != OP_LOADR8_MEMBASE) && (load_opcode != OP_LOADR4_MEMBASE))) && !((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && !no_lvreg) {
+							if ((!cfg->use_fpstack || ((load_opcode != OP_LOADR8_MEMBASE) && (load_opcode != OP_LOADR4_MEMBASE))) && !((var)->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && !no_lvreg) {
 								if (var->dreg == prev_dreg) {
 									/*
 									 * sreg refers to the value loaded by the load
@@ -14531,12 +14515,11 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 		}
 	}
 	
-#ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
 	/*
 	 * Emit LIVERANGE_START/LIVERANGE_END opcodes, the backend will implement them
 	 * by storing the current native offset into MonoMethodVar->live_range_start/end.
 	 */
-	if (cfg->compute_precise_live_ranges && cfg->comp_done & MONO_COMP_LIVENESS) {
+	if (cfg->have_liverange_ops && cfg->compute_precise_live_ranges && cfg->comp_done & MONO_COMP_LIVENESS) {
 		for (i = 0; i < cfg->num_varinfo; ++i) {
 			int vreg = MONO_VARINFO (cfg, i)->vreg;
 			MonoInst *ins;
@@ -14558,7 +14541,6 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 			}
 		}
 	}
-#endif
 
 	if (cfg->gsharedvt_locals_var_ins) {
 		/* Nullify if unused */
