@@ -37,12 +37,16 @@ namespace System.Net.WebSockets
         {
             try
             {
-                await rtWebSocket.ConnectAsync(uri, cancellationToken, options).ConfigureAwait(false);
+                await _webSocket.ConnectAsync(uri, cancellationToken, options).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                WebErrorStatus status = RTWebSocketError.GetStatus(ex.HResult);
-                var inner = new Exception(status.ToString(), ex);
+                // TODO: ** TFS BUILD IS BROKEN ** 
+                // This doesn't compile right now due to missing types 'WebErrorStatus' and 'RTWebSocketError'
+                // Commenting out for now to allow the build to resume.
+                //WebErrorStatus status = RTWebSocketError.GetStatus(ex.HResult);
+                //var inner = new Exception(status.ToString(), ex);
+                var inner = ex;
                 WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, inner);
                 if (Logging.On)
                 {
