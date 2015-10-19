@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <vector>
 
 #include "locale.hpp"
 #include "holders.h"
@@ -408,59 +409,59 @@ bool EnumCalendarArray(const UnicodeString* srcArray,
 
 /*
 Function:
-EnumWeekdays
+EnumSymbols
 
-Enumerates all the weekday names of the specified context and width, invoking
-the callback function
-for each weekday name.
+Enumerates of of the symbols of a type for a locale and calendar and invokes a callback
+for each value.
 */
-bool EnumWeekdays(Locale& locale,
-                  CalendarId calendarId,
-                  DateFormatSymbols::DtContextType dtContext,
-                  DateFormatSymbols::DtWidthType dtWidth,
-                  EnumCalendarInfoCallback callback,
-                  const void* context)
+bool EnumSymbols(Locale& locale,
+                 CalendarId calendarId,
+                 UDateFormatSymbolType type,
+                 int32_t startIndex,
+                 EnumCalendarInfoCallback callback,
+                 const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
-    DateFormatSymbols dateFormatSymbols(locale, GetCalendarName(calendarId), err);
+    UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale.getName(), nullptr, 0, nullptr, 0, &err);
+    UDateFormatHolder formatHolder(pFormat, err);
+
     if (U_FAILURE(err))
         return false;
 
-    int32_t daysCount;
-    const UnicodeString* dayNames = dateFormatSymbols.getWeekdays(daysCount, dtContext, dtWidth);
+    Locale localeWithCalendar(locale);
+    localeWithCalendar.setKeywordValue("calendar", GetCalendarName(calendarId), err);
 
-    // ICU returns an empty string for the first/zeroth element in the weekdays
-    // array.
-    // So skip the first element.
-    dayNames++;
-    daysCount--;
-
-    return EnumCalendarArray(dayNames, daysCount, callback, context);
-}
-
-/*
-Function:
-EnumMonths
-
-Enumerates all the month names of the specified context and width, invoking the
-callback function
-for each month name.
-*/
-bool EnumMonths(Locale& locale,
-                CalendarId calendarId,
-                DateFormatSymbols::DtContextType dtContext,
-                DateFormatSymbols::DtWidthType dtWidth,
-                EnumCalendarInfoCallback callback,
-                const void* context)
-{
-    UErrorCode err = U_ZERO_ERROR;
-    DateFormatSymbols dateFormatSymbols(locale, GetCalendarName(calendarId), err);
     if (U_FAILURE(err))
         return false;
 
-    int32_t monthsCount;
-    const UnicodeString* monthNames = dateFormatSymbols.getMonths(monthsCount, dtContext, dtWidth);
-    return EnumCalendarArray(monthNames, monthsCount, callback, context);
+    UCalendar* pCalendar = ucal_open(nullptr, 0, localeWithCalendar.getName(), UCAL_DEFAULT, &err);
+    UCalendarHolder calenderHolder(pCalendar, err);
+
+    if (U_FAILURE(err))
+        return false;
+
+    udat_setCalendar(pFormat, pCalendar);
+
+    int32_t symbolCount = udat_countSymbols(pFormat, type);
+
+    for (int32_t i = startIndex; i < symbolCount; i++)
+    {
+        UErrorCode ignore = U_ZERO_ERROR;
+        int symbolLen = udat_getSymbols(pFormat, type, i, nullptr, 0, &ignore);
+
+        std::vector<UChar> symbolBuf(symbolLen + 1, '\0');
+
+        udat_getSymbols(pFormat, type, i, symbolBuf.data(), symbolBuf.size(), &err);
+
+        assert(U_SUCCESS(err));
+
+        if (U_FAILURE(err))
+            return false;
+
+        callback(symbolBuf.data(), context);
+    }
+
+    return true;
 }
 
 /*
@@ -539,33 +540,23 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
         case YearMonths:
             return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_MONTH_UCHAR, callback, context);
         case DayNames:
-            return EnumWeekdays(
-                locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::WIDE, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_WEEKDAYS, 1, callback, context);
         case AbbrevDayNames:
-            return EnumWeekdays(
-                locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::ABBREVIATED, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORT_WEEKDAYS, 1, callback, context);
         case MonthNames:
-            return EnumMonths(
-                locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::WIDE, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_MONTHS, 0, callback, context);
         case AbbrevMonthNames:
-            return EnumMonths(
-                locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::ABBREVIATED, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORT_MONTHS, 0, callback, context);
         case SuperShortDayNames:
 #ifdef HAVE_DTWIDTHTYPE_SHORT
-            return EnumWeekdays(
-                locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::SHORT, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORTER_WEEKDAYS, 1, callback, context);
 #else
-            // Currently CentOS-7 uses ICU-50 and ::SHORT was added in ICU-51, so use
-            // ::NARROW instead
-            return EnumWeekdays(
-                locale, calendarId, DateFormatSymbols::STANDALONE, DateFormatSymbols::NARROW, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_NARROW_WEEKDAYS, 1, callback, context);
 #endif
         case MonthGenitiveNames:
-            return EnumMonths(
-                locale, calendarId, DateFormatSymbols::FORMAT, DateFormatSymbols::WIDE, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_MONTHS, 0, callback, context);
         case AbbrevMonthGenitiveNames:
-            return EnumMonths(
-                locale, calendarId, DateFormatSymbols::FORMAT, DateFormatSymbols::ABBREVIATED, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_SHORT_MONTHS, 0, callback, context);
         case EraNames:
         case AbbrevEraNames:
             return EnumEraNames(locale, calendarId, dataType, callback, context);
