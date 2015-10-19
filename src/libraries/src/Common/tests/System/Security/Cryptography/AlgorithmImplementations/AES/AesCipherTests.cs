@@ -1,7 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.IO;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Aes.Tests
@@ -154,6 +156,51 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 Buffer.BlockCopy(buffer, 0, actualCipherText, 0, bytesWritten);
 
                 Assert.Equal(expectedSlice, actualCipherText);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue(3952, PlatformID.AnyUnix)]
+        public static void VerifyInPlaceDecryption()
+        {
+            byte[] key = "1ed2f625c187b993256a8b3ccf9dcbfa5b44b4795c731012f70e4e64732efd5d".HexToByteArray();
+            byte[] iv = "47d1e060ba3c8643f9f8b65feeda4b30".HexToByteArray();
+            byte[] plainText = "f238882f6530ae9191c294868feed0b0df4058b322377dec14690c3b6bbf6ad1dd5b7c063a28e2cca2a6dce8cc2e668ea6ce80cee4c1a1a955ff46c530f3801b".HexToByteArray();
+            byte[] cipher = "7c6e1bcd3c30d2fb2d92e3346048307dc6719a6b96a945b4d987af09469ec68f5ca535fab7f596fffa80f7cfaeb26eefaf8d4ca8be190393b2569249d673f042".HexToByteArray();
+
+            using (Aes a = Aes.Create())
+            using (MemoryStream cipherStream = new MemoryStream(cipher))
+            {
+                a.Key = key;
+                a.IV = iv;
+                a.Mode = CipherMode.CBC;
+                a.Padding = PaddingMode.None;
+
+                int blockSizeBytes = a.BlockSize / 8;
+                List<byte> decrypted = new List<byte>(plainText.Length);
+
+                using (ICryptoTransform decryptor = a.CreateDecryptor())
+                {
+                    while (true)
+                    {
+                        byte[] buffer = new byte[blockSizeBytes];
+                        int numRead = cipherStream.Read(buffer, 0, blockSizeBytes);
+
+                        if (numRead == 0)
+                        {
+                            break;
+                        }
+
+                        Assert.Equal(blockSizeBytes, numRead);
+                        int numBytesWritten = decryptor.TransformBlock(buffer, 0, blockSizeBytes, buffer, 0);
+                        Array.Resize(ref buffer, numBytesWritten);
+                        decrypted.AddRange(buffer);
+                    }
+
+                    decrypted.AddRange(decryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0));
+
+                    Assert.Equal(plainText, decrypted.ToArray());
+                }
             }
         }
 
