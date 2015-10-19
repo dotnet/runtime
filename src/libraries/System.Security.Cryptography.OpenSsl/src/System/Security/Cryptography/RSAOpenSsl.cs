@@ -155,20 +155,7 @@ namespace System.Security.Cryptography
             if (padding == null)
                 throw new ArgumentNullException("padding");
 
-            bool useOaepPadding;
-            if (padding == RSAEncryptionPadding.Pkcs1)
-            {
-                useOaepPadding = false;
-            }
-            else if (padding == RSAEncryptionPadding.OaepSHA1)
-            {
-                useOaepPadding = true;
-            }
-            else
-            {
-                throw PaddingModeNotSupported();
-            }
-
+            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding);
             SafeRsaHandle key = _key.Value;
             CheckInvalidKey(key);
 
@@ -179,7 +166,7 @@ namespace System.Security.Cryptography
                 data,
                 buf,
                 key,
-                useOaepPadding);
+                rsaPadding);
 
             CheckReturn(returnValue);
 
@@ -207,20 +194,7 @@ namespace System.Security.Cryptography
             if (padding == null)
                 throw new ArgumentNullException("padding");
 
-            bool useOaepPadding;
-            if (padding == RSAEncryptionPadding.Pkcs1)
-            {
-                useOaepPadding = false;
-            }
-            else if (padding == RSAEncryptionPadding.OaepSHA1)
-            {
-                useOaepPadding = true;
-            }
-            else
-            {
-                throw PaddingModeNotSupported();
-            }
-
+            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding);
             SafeRsaHandle key = _key.Value;
             CheckInvalidKey(key);
 
@@ -231,11 +205,27 @@ namespace System.Security.Cryptography
                 data,
                 buf,
                 key,
-                useOaepPadding);
+                rsaPadding);
 
             CheckReturn(returnValue);
 
             return buf;
+        }
+
+        private static Interop.Crypto.RsaPadding GetInteropPadding(RSAEncryptionPadding padding)
+        {
+            if (padding == RSAEncryptionPadding.Pkcs1)
+            {
+                return Interop.Crypto.RsaPadding.Pkcs1;
+            }
+            else if (padding == RSAEncryptionPadding.OaepSHA1)
+            {
+                return Interop.Crypto.RsaPadding.OaepSHA1;
+            }
+            else
+            {
+                throw PaddingModeNotSupported();
+            }
         }
 
         public override RSAParameters ExportParameters(bool includePrivateParameters)
