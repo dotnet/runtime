@@ -132,7 +132,7 @@ static double PERFComputeStandardDeviation(pal_perf_api_info *api);
 static void PERFPrintProgramHeaderInfo(PERF_FILE * hFile, BOOL completedExecution);
 static BOOL PERFInitProgramInfo(LPWSTR command_line, LPWSTR exe_path);
 static BOOL PERFReadSetting( );
-static void PERFLogFileName(PathCharString destFileString, const char *fileName, const char *suffix, int max_length);
+static void PERFLogFileName(PathCharString * destFileString, const char *fileName, const char *suffix, int max_length);
 static void PERFlushAllLogs();
 static int PERFWriteCounters(pal_perf_api_info * table); 
 static BOOL PERFFlushLog(pal_perf_thread_info * local_buffer, BOOL output_header);
