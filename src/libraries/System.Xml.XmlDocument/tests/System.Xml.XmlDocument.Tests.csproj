@@ -19,6 +19,7 @@
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
+    <Compile Include="XmlDocumentTests\LoadTests.cs" />
     <Compile Include="XmlAttributeCollectionTests\AppendTests.cs" />
     <Compile Include="XmlAttributeCollectionTests\CollectionInterfaceTests.cs" />
     <Compile Include="XmlAttributeCollectionTests\CopyToTests.cs" />
@@ -123,6 +124,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="example.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
