@@ -12,10 +12,9 @@ internal static partial class Interop
     {
         internal sealed class SafeSslContextHandle : SafeHandle
         {
-            public SafeSslContextHandle(IntPtr method)
+            private SafeSslContextHandle()
                 : base(IntPtr.Zero, true)
             {
-                handle = SSL_CTX_new(method);
             }
 
             public override bool IsInvalid
@@ -26,6 +25,7 @@ internal static partial class Interop
             protected override bool ReleaseHandle()
             {
                 SSL_CTX_free(handle);
+                SetHandle(IntPtr.Zero);
                 return true;
             }
         }

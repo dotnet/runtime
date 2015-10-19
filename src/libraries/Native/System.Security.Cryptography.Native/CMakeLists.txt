@@ -17,6 +17,12 @@ if(CRYPTO STREQUAL CRYPTO-NOTFOUND)
     return()
 endif()
 
+find_library(SSL NAMES ssl)  
+if(SSL STREQUAL SSL-NOTFOUND)  
+    message(SEND_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (or the appropriate package for your platform) !!!")  
+    return()  
+endif()  
+
 set(NATIVECRYPTO_SOURCES
     openssl.c
     pal_asn1.cpp
@@ -35,6 +41,7 @@ set(NATIVECRYPTO_SOURCES
     pal_pkcs12.cpp
     pal_pkcs7.cpp
     pal_rsa.cpp
+    pal_ssl.cpp
     pal_x509.cpp
     pal_x509_name.cpp
     pal_x509ext.cpp
@@ -50,6 +57,7 @@ set_target_properties(System.Security.Cryptography.Native PROPERTIES PREFIX "")
 
 target_link_libraries(System.Security.Cryptography.Native
   ${CRYPTO}
+  ${SSL}
 )
 
 install (TARGETS System.Security.Cryptography.Native DESTINATION .)
