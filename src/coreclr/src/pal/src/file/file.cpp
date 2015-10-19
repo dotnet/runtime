@@ -1171,12 +1171,6 @@ DeleteFileA(
 
     pThread = InternalGetCurrentThread();
     length = strlen(lpFileName);
-    if (length >= MAX_LONGPATH)
-    {
-        WARN("lpFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-        pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        goto done;
-    }
 
     lpUnixFileName = lpUnixFileNamePS.OpenStringBuffer(length);
     strcpy_s( lpUnixFileName, lpUnixFileNamePS.GetSizeOf(), lpFileName);
@@ -1428,12 +1422,6 @@ MoveFileExA(
     }
 
     length = strlen(lpExistingFileName);
-    if (length >= MAX_LONGPATH)
-    {
-        WARN("lpExistingFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-        pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        goto done;
-    }
     
     source = sourcePS.OpenStringBuffer(length);
     strcpy_s( source, sourcePS.GetSizeOf(), lpExistingFileName);
@@ -1442,12 +1430,6 @@ MoveFileExA(
     FILEDosToUnixPathA( source );
 
     length = strlen(lpNewFileName);
-    if (length >= MAX_LONGPATH)
-    {
-        WARN("lpNewFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-        pThread->SetLastError(ERROR_FILENAME_EXCED_RANGE);
-        goto done;
-    }
     
     dest = destPS.OpenStringBuffer(length);
     strcpy_s( dest, destPS.GetSizeOf(), lpNewFileName);
@@ -1710,12 +1692,6 @@ GetFileAttributesA(
     }
 
     length = strlen(lpFileName);
-    if (length >= MAX_LONGPATH) 
-    {
-        WARN("lpFileName is larger than MAX_LONGPATH (%d)!\n", MAX_LONGPATH);
-        dwLastError = ERROR_FILENAME_EXCED_RANGE;
-        goto done;
-    }
     
     UnixFileName = UnixFileNamePS.OpenStringBuffer(length);
     strcpy_s( UnixFileName, UnixFileNamePS.GetSizeOf(), lpFileName );
