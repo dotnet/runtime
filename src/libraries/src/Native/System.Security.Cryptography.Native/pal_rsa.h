@@ -89,16 +89,18 @@ extern "C" int32_t RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8
 
 /*
 Gets all the parameters from the RSA instance.
+
+Returns 1 upon success, otherwise 0.
 */
-extern "C" void GetRsaParameters(const RSA* rsa,
-                                 BIGNUM** n,
-                                 BIGNUM** e,
-                                 BIGNUM** d,
-                                 BIGNUM** p,
-                                 BIGNUM** dmp1,
-                                 BIGNUM** q,
-                                 BIGNUM** dmq1,
-                                 BIGNUM** iqmp);
+extern "C" int32_t GetRsaParameters(const RSA* rsa,
+                                    BIGNUM** n,
+                                    BIGNUM** e,
+                                    BIGNUM** d,
+                                    BIGNUM** p,
+                                    BIGNUM** dmp1,
+                                    BIGNUM** q,
+                                    BIGNUM** dmq1,
+                                    BIGNUM** iqmp);
 
 /*
 Sets all the parameters on the RSA instance.

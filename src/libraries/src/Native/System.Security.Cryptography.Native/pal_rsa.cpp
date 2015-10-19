@@ -81,7 +81,7 @@ extern "C" int32_t RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8
     return RSA_verify(type, m, UnsignedCast(mlen), sigbuf, UnsignedCast(siglen), rsa);
 }
 
-extern "C" void GetRsaParameters(const RSA* rsa,
+extern "C" int32_t GetRsaParameters(const RSA* rsa,
                                  BIGNUM** n,
                                  BIGNUM** e,
                                  BIGNUM** d,
@@ -94,7 +94,26 @@ extern "C" void GetRsaParameters(const RSA* rsa,
     if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
     {
         assert(false);
-        return;
+
+        // since these parameters are 'out' parameters in managed code, ensure they are initialized
+        if (n)
+            *n = nullptr;
+        if (e)
+            *e = nullptr;
+        if (d)
+            *d = nullptr;
+        if (p)
+            *p = nullptr;
+        if (dmp1)
+            *dmp1 = nullptr;
+        if (q)
+            *q = nullptr;
+        if (dmq1)
+            *dmq1 = nullptr;
+        if (iqmp)
+            *iqmp = nullptr;
+
+        return 0;
     }
 
     *n = rsa->n;
@@ -105,6 +124,8 @@ extern "C" void GetRsaParameters(const RSA* rsa,
     *q = rsa->q;
     *dmq1 = rsa->dmq1;
     *iqmp = rsa->iqmp;
+
+    return 1;
 }
 
 static void SetRsaParameter(BIGNUM** rsaFieldAddress, uint8_t* buffer, int32_t bufferLength)
