@@ -37,11 +37,11 @@ namespace System.Globalization
 
             string result = string.FastAllocateString(s.Length);
 
-            fixed (char* pResult = result)
+            fixed (char* pSource = s)
             {
-                if (IsAsciiCasingSameAsInvariant && s.IsAscii())
+                fixed (char* pResult = result)
                 {
-                    fixed (char* pSource = s)
+                    if (IsAsciiCasingSameAsInvariant && s.IsAscii())
                     {
                         int length = s.Length;
                         char* a = pSource, b = pResult;
@@ -60,10 +60,10 @@ namespace System.Globalization
                             }
                         }
                     }
-                }
-                else
-                {
-                    Interop.GlobalizationInterop.ChangeCase(s, s.Length, pResult, result.Length, toUpper, m_needsTurkishCasing);
+                    else
+                    {
+                        ChangeCase(pSource, s.Length, pResult, result.Length, toUpper);
+                    }
                 }
             }
 
@@ -75,7 +75,7 @@ namespace System.Globalization
         {
             char dst = default(char);
 
-            Interop.GlobalizationInterop.ChangeCase(&c, 1, &dst, 1, toUpper, m_needsTurkishCasing);
+            ChangeCase(&c, 1, &dst, 1, toUpper);
 
             return dst;
         }
@@ -89,5 +89,24 @@ namespace System.Globalization
             Contract.Assert(localeName != null);
             return CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("i", "I", CompareOptions.IgnoreCase) != 0;
         }
+
+        private bool IsInvariant { get { return m_cultureName.Length == 0; } }
+
+        internal unsafe void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
+        {
+            if (IsInvariant)
+            {
+                Interop.GlobalizationInterop.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+            }
+            else if (m_needsTurkishCasing)
+            {
+                Interop.GlobalizationInterop.ChangeCaseTurkish(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+            }
+            else
+            {
+                Interop.GlobalizationInterop.ChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+            }
+        }
+
     }
 }
