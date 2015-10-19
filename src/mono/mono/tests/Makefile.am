@@ -4,6 +4,9 @@ check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type
 check-full: test-sgen check-local
 check-parallel: compile-tests check-full
 
+check-coreclr:
+	$(MAKE) -C $(mono_build_root)/acceptance-tests check-coreclr
+
 # for backwards compatibility on Wrench
 test-wrench: check-parallel
 
