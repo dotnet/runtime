@@ -55,7 +55,6 @@ namespace System {
         int mj, mk;
     
         //Initialize our Seed array.
-        //This algorithm comes from Numerical Recipes in C (2nd Ed.)
         int subtraction = (Seed == Int32.MinValue) ? Int32.MaxValue : Math.Abs(Seed);
         mj = MSEED - subtraction;
         SeedArray[55]=mj;
