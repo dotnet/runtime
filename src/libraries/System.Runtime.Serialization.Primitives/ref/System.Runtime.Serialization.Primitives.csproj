@@ -4,6 +4,7 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Primitives.cs" />

@@ -9,6 +9,7 @@
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

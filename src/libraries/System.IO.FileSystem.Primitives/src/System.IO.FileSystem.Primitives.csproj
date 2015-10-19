@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.FileSystem.Primitives</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\IO\FileAccess.cs" />

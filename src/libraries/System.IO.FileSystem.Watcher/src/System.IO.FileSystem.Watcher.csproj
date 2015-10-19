@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageTargetFramework>dotnet</PackageTargetFramework>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
