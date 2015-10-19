@@ -6552,6 +6552,9 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			} else if (opcode == OP_LMOVE) {
 				MONO_INST_NEW (cfg, ins, OP_LMOVE);
 				ins->dreg = mono_alloc_lreg (cfg);
+			} else if (opcode == OP_RMOVE) {
+				MONO_INST_NEW (cfg, ins, OP_RMOVE);
+				ins->dreg = mono_alloc_freg (cfg);
 			} else {
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
