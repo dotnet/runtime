@@ -94,7 +94,7 @@ MODSTRUCT exe_module;
 MODSTRUCT *pal_module = NULL;
 
 char * g_szCoreCLRPath = NULL;
-size_t g_cbszCoreCLRPath = (MAX_LONGPATH+1) * sizeof(char);
+size_t g_cbszCoreCLRPath = MAX_LONGPATH * sizeof(char);
 
 int MaxWCharToAcpLength = 3;
 /* static function declarations ***********************************************/
