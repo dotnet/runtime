@@ -8,6 +8,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyVersion>4.0.21.0</AssemblyVersion>
     <OutputType>Library</OutputType>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.InteropServices.cs" />

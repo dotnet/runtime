@@ -4,6 +4,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
+    <!-- requires 5.5 since we needed surface area in Desktop 4.6.1 to support -->
+    <PackageTargetFramework>dotnet5.5</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Diagnostics.Process.cs" />

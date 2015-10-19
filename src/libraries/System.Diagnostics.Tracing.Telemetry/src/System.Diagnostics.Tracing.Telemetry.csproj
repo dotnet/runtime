@@ -9,6 +9,7 @@
     <AssemblyName>System.Diagnostics.Tracing.Telemetry</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+    <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

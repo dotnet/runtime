@@ -13,6 +13,7 @@
     <FileAlignment>512</FileAlignment>
     <DefineConstants>$(DefineConstants);CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
