@@ -95,9 +95,17 @@ int main(const int argc, const char* argv[])
 {
     // Make sure we have a full path for argv[0].
     std::string argv0AbsolutePath;
-    if (!GetAbsolutePath(argv[0], argv0AbsolutePath))
+    std::string entryPointExecutablePath;
+
+    if (!GetEntrypointExecutableAbsolutePath(entryPointExecutablePath))
     {
         perror("Could not get full path to current executable");
+        return -1;
+    }
+
+    if (!GetAbsolutePath(entryPointExecutablePath.c_str(), argv0AbsolutePath))
+    {
+        perror("Could not normalize full path to current executable");
         return -1;
     }
 
