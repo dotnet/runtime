@@ -128,70 +128,70 @@
     
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
-      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs">
-      <Link>Interop\Windows\Crypt32\Interop.certificates.cs</Link>
+      <Link>Common\Interop\Windows\Crypt32\Interop.certificates.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
-      <Link>Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
+      <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseHandle.cs">
-      <Link>Interop\Windows\mincore\Interop.CloseHandle.cs</Link>
+      <Link>Common\Interop\Windows\mincore\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SchProtocols.cs">
-      <Link>Interop\Windows\SChannel\Interop.SchProtocols.cs</Link>
+      <Link>Common\Interop\Windows\SChannel\Interop.SchProtocols.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SecurityStatus.cs">
-      <Link>Interop\Windows\SChannel\Interop.SecurityStatus.cs</Link>
+      <Link>Common\Interop\Windows\SChannel\Interop.SecurityStatus.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\SslConnectionInfo.cs">
-      <Link>Interop\Windows\SChannel\SslConnectionInfo.cs</Link>
+      <Link>Common\Interop\Windows\SChannel\SslConnectionInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.cs">
-      <Link>Interop\Windows\SChannel\UnmanagedCertificateContext.cs</Link>
+      <Link>Common\Interop\Windows\SChannel\UnmanagedCertificateContext.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\Bindings.cs">
-      <Link>Interop\Windows\secur32\Bindings.cs</Link>
+      <Link>Common\Interop\Windows\secur32\Bindings.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\GlobalSSPI.cs">
-      <Link>Interop\Windows\secur32\GlobalSSPI.cs</Link>
+      <Link>Common\Interop\Windows\secur32\GlobalSSPI.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.SSPI.cs">
-      <Link>Interop\Windows\secur32\Interop.SSPI.cs</Link>
+      <Link>Common\Interop\Windows\secur32\Interop.SSPI.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\NegotiationInfo.cs">
-      <Link>Interop\Windows\secur32\NegotiationInfo.cs</Link>
+      <Link>Common\Interop\Windows\secur32\NegotiationInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\NegotiationInfoClass.cs">
-      <Link>Interop\Windows\secur32\NegotiationInfoClass.cs</Link>
+      <Link>Common\Interop\Windows\secur32\NegotiationInfoClass.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecSizes.cs">
-      <Link>Interop\Windows\secur32\SecSizes.cs</Link>
+      <Link>Common\Interop\Windows\secur32\SecSizes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecurityPackageInfo.cs">
-      <Link>Interop\Windows\secur32\SecurityPackageInfo.cs</Link>
+      <Link>Common\Interop\Windows\secur32\SecurityPackageInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecurityPackageInfoClass.cs">
-      <Link>Interop\Windows\secur32\SecurityPackageInfoClass.cs</Link>
+      <Link>Common\Interop\Windows\secur32\SecurityPackageInfoClass.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecuritySafeHandles.cs">
-      <Link>Interop\Windows\secur32\SecuritySafeHandles.cs</Link>
+      <Link>Common\Interop\Windows\secur32\SecuritySafeHandles.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPIAuthType.cs">
-      <Link>Interop\Windows\secur32\SSPIAuthType.cs</Link>
+      <Link>Common\Interop\Windows\secur32\SSPIAuthType.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPIInterface.cs">
-      <Link>Interop\Windows\secur32\SSPIInterface.cs</Link>
+      <Link>Common\Interop\Windows\secur32\SSPIInterface.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPISecureChannelType.cs">
-      <Link>Interop\Windows\secur32\SSPISecureChannelType.cs</Link>
+      <Link>Common\Interop\Windows\secur32\SSPISecureChannelType.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPIWrapper.cs">
-      <Link>Interop\Windows\secur32\SSPIWrapper.cs</Link>
+      <Link>Common\Interop\Windows\secur32\SSPIWrapper.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\secur32\StreamSizes.cs">
-      <Link>Interop\Windows\secur32\StreamSizes.cs</Link>
+      <Link>Common\Interop\Windows\secur32\StreamSizes.cs</Link>
     </Compile>
   </ItemGroup>
   
@@ -201,28 +201,28 @@
 
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
-      <Link>Interop\Unix\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.libssl.cs">
-      <Link>Interop\Unix\libssl\Interop.libssl.cs</Link>
+      <Link>Common\Interop\Unix\libssl\Interop.libssl.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.libssl_types.cs">
-      <Link>Interop\Unix\libssl\Interop.libssl_types.cs</Link>
+      <Link>Common\Interop\Unix\libssl\Interop.libssl_types.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.SafeSslHandle.cs">
-      <Link>Interop\Unix\libssl\Interop.SafeSslHandle.cs</Link>
+      <Link>Common\Interop\Unix\libssl\Interop.SafeSslHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\SecuritySafeHandles.cs">
-      <Link>Interop\Unix\libssl\SecuritySafeHandles.cs</Link>
+      <Link>Common\Interop\Unix\libssl\SecuritySafeHandles.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\StreamSizes.cs">
-      <Link>Interop\Unix\libssl\StreamSizes.cs</Link>
+      <Link>Common\Interop\Unix\libssl\StreamSizes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\SslConnectionInfo.cs">
-      <Link>Interop\Unix\libssl\SslConnectionInfo.cs</Link>
+      <Link>Common\Interop\Unix\libssl\SslConnectionInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.OpenSsl.cs">
-      <Link>Interop\Unix\libssl\Interop.OpenSsl.cs</Link>
+      <Link>Common\Interop\Unix\libssl\Interop.OpenSsl.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
@@ -238,6 +238,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs</Link>

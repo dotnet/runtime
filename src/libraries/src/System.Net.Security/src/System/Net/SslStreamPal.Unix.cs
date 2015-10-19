@@ -159,42 +159,28 @@ namespace System.Net
                     context = new SafeDeleteContext(credential, options, encryptionPolicy, isServer, remoteCertRequired);
                 }
 
-                IntPtr inputPtr = IntPtr.Zero, outputPtr = IntPtr.Zero;
+                byte[] output = null;
                 int outputSize;
                 bool done;
 
                 if (null == inputBuffer)
                 {
-                    done = Interop.OpenSsl.DoSslHandshake(context.SslContext, inputPtr, 0, out outputPtr, out outputSize);
+                    done = Interop.OpenSsl.DoSslHandshake(context.SslContext, null, 0, 0, out output, out outputSize);
                 }
                 else
                 {
-                    unsafe
-                    {
-                        fixed (byte* tokenPtr = inputBuffer.token)
-                        {
-                            inputPtr = new IntPtr(tokenPtr + inputBuffer.offset);
-                            done = Interop.OpenSsl.DoSslHandshake(context.SslContext, inputPtr, inputBuffer.size, out outputPtr, out outputSize);
-                        }
-                    }
+                    done = Interop.OpenSsl.DoSslHandshake(context.SslContext, inputBuffer.token, inputBuffer.offset, inputBuffer.size, out output, out outputSize);
                 }
 
                 outputBuffer.size = outputSize;
                 outputBuffer.offset = 0;
                 if (outputSize > 0)
                 {
-                    outputBuffer.token = new byte[outputBuffer.size];
-                    Marshal.Copy(outputPtr, outputBuffer.token, 0, outputBuffer.size);
+                    outputBuffer.token = output;
                 }
                 else
                 {
                     outputBuffer.token = null;
-                }
-
-                if (outputPtr != IntPtr.Zero)
-                {
-                     Marshal.FreeHGlobal(outputPtr);
-                     outputPtr = IntPtr.Zero;
                 }
 
                 return done ? SecurityStatusPal.OK : SecurityStatusPal.ContinueNeeded;
@@ -205,7 +191,7 @@ namespace System.Net
                 return SecurityStatusPal.InternalError;             
             }
         }
-        
+
         private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteContext securityContext, byte[] buffer, int offset, int size, int headerSize, int trailerSize, bool encrypt, out int resultSize)
         {
             resultSize = 0;
@@ -213,19 +199,12 @@ namespace System.Net
             {
                 Interop.libssl.SslErrorCode errorCode = Interop.libssl.SslErrorCode.SSL_ERROR_NONE;
 
-                unsafe
-                {
-                    fixed (byte* bufferPtr = buffer)
-                    {
-                        IntPtr inputPtr = new IntPtr(bufferPtr);
 
-                        Interop.libssl.SafeSslHandle scHandle = securityContext.SslContext;
+                Interop.libssl.SafeSslHandle scHandle = securityContext.SslContext;
 
-                        resultSize = encrypt ?
-                            Interop.OpenSsl.Encrypt(scHandle, inputPtr, offset, size, buffer.Length, out errorCode) :
-                            Interop.OpenSsl.Decrypt(scHandle, inputPtr, size, out errorCode);
-                    }
-                }
+                resultSize = encrypt ?
+                    Interop.OpenSsl.Encrypt(scHandle, buffer, offset, size, buffer.Length, out errorCode) :
+                    Interop.OpenSsl.Decrypt(scHandle, buffer, size, out errorCode);
 
                 switch (errorCode)
                 {
