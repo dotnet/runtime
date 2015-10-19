@@ -1,0 +1,154 @@
+using System;
+
+// Main test base class, inherits from class in another Dll
+public abstract class M2Base : M2Dll, IM2Bar
+{
+	public static int iConst3 = -3;		// Interface constant.
+	public static int iConst4 = 4;				// Base class constant.
+	public static int iConst5 = 5;
+
+	// Member variables.
+	internal int		m_iVar0;
+	internal int		m_iVar1;
+	internal int		m_iVar2 = 0;
+
+	// Construction
+	public M2Base()
+	{
+	}
+
+	public M2Base(int i)						// M2Dll constructor should be called.
+	{
+		m_iVar0 = i;
+		m_iVar1 = iDllConst1;
+	}
+
+
+	// Member functions.
+	public abstract int BaseVirtual();	// Test abstract base class.
+        public abstract int IM2Super1_2();
+  
+	// IM6Bar methods.
+	public int IM2Super1_1()
+	{
+		return (201);
+	}
+	public int IM2Super2_1()
+	{
+		return (202);
+	}
+	public int IM2Bar_1()
+	{
+		return (203);
+	}
+	public int IM2Super()				// Implements two interface methods.
+	{
+		return (204);
+	}
+};
+
+public interface IM2Foo
+{
+	// Static interface fields.
+	// Interface methods.
+	int		IM2Foo_1();
+	int		IM2Foo_1(int i);
+};
+
+// Main test class.
+public class M2Exe : M2Base, IM2Foo , IM2Dll2
+{
+	// Statics
+	static int iConst1 = 1;				// Interface constant.
+	static int iConst2 = iConst1 + 1;		// Transitive constant.
+	static new int iConst3 = iConst1 + 2;		// Ditto
+	static int iDllConst4 = 4;
+	static int iConst6 = 0;			// Class constant.
+	static int iConst7 = 0;			// Inheritance from interface.
+  //	static int iConst1 ;			// Override.
+
+	// Member variables.
+	int		m_iVar3;
+
+	public M2Exe(){
+		m_iVar3 = M2Exe.iConst3;
+	}
+	// Construction
+	public M2Exe(int i): base(i-999)		// super(i-999);
+	{
+		m_iVar3 = M2Exe.iConst3;	// Member variable using explicit scope.
+	}
+
+	// Class methods.
+	static new int DumpStatics()
+	{
+		Console.WriteLine(iConst1);
+		Console.WriteLine(M2Exe.iConst1);
+		Console.WriteLine(iConst2);
+		Console.WriteLine(M2Exe.iConst3);
+		Console.WriteLine(M2Exe.iConst3);
+		Console.WriteLine(iConst4);
+		Console.WriteLine(iConst5);
+		Console.WriteLine(iConst6);
+		Console.WriteLine(iConst7);
+		M2Dll.DumpStatics();
+		Console.WriteLine(iDllConst4);
+		return (1);
+	}
+
+	// Member functions.
+	public int DumpMembers1()
+	{
+		Console.WriteLine(m_iVar0);
+		Console.WriteLine(m_iVar1);
+		Console.WriteLine(m_iVar2);
+		Console.WriteLine(m_iVar3);
+		DumpMembers();
+		return (m_iVar1 + m_iVar3);
+	}
+
+//BUG: Assert Failure if a function is overloaded
+	public new int DllVirtual()
+	{
+// TODO call the base function
+		return (((M2Base)this).DllVirtual());	// Inherited from M6Dll
+	}
+
+
+        public override int BaseVirtual()
+	{
+		return (50);
+	}
+	public int ExeVirtual()
+	{
+		return (51);
+	}
+	public override int IM2Super1_2()			// Used to implement method of IBar's interface.
+	{
+		return (52);
+	}
+
+	public int IM2Foo_1()
+	{
+		return (80);
+	}
+
+	// IM6Foo methods.
+	public int IM2Foo_1(int i)
+	{
+		return (i);
+	}
+
+
+	// IM2Dll2 methods.
+	public int IM2Dll2_1()
+	{
+		return (81);
+	}
+};
+
+
+
+
+
+

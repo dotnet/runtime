@@ -30,7 +30,6 @@
     <Compile Include="LargeObjectAlloc.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
