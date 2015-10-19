@@ -43,7 +43,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        [ActiveIssue(1965, PlatformID.AnyUnix)]
         public static void TransformStateSeparation()
         {
             byte[] key = "1ed2f625c187b993256a8b3ccf9dcbfa5b44b4795c731012f70e4e64732efd5d".HexToByteArray();
@@ -113,10 +112,10 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] buffer = new byte[count];
             int numRead = input.Read(buffer, 0, count);
             Assert.Equal(count, numRead);
-            int numBytesWritten = transform.TransformBlock(buffer, 0, count, buffer, 0);
-            Array.Resize(ref buffer, numBytesWritten);
-            l.AddRange(buffer);
-            return;
+            byte[] buffer2 = new byte[count];
+            int numBytesWritten = transform.TransformBlock(buffer, 0, count, buffer2, 0);
+            Array.Resize(ref buffer2, numBytesWritten);
+            l.AddRange(buffer2);
         }
 
         [Fact]
