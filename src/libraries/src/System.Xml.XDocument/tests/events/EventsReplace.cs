@@ -2,324 +2,277 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Linq;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml.Linq;
-using Microsoft.Test.ModuleCore;
+using Xunit;
 
-namespace CoreXml.Test.XLinq
+namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
 {
-    public partial class FunctionalTests : TestModule
+    public  class EventsReplaceWith
     {
-        public partial class EventsTests : XLinqTestCase
+        public static object[][] ExecuteXDocumentVariationParams = new object[][] {
+            new object[] { new XElement("element"), new XText(" ") },
+            new object[] { new XElement("element", new XAttribute("a", "aa")), new XText("") },
+            new object[] { new XElement("parent", new XElement("child", "child text")), new XElement("element") },
+            new object[] { new XDocumentType("root", "", "", ""), new XComment("Comment") },
+            new object[] { new XProcessingInstruction("PI", "Data"), new XDocumentType("root", "", "", "") },
+            new object[] { new XComment("Comment"), new XText("\t") },
+            new object[] { new XText(" "), XElement.Parse(@"<a></a>") }
+        };
+        [Theory, MemberData("ExecuteXDocumentVariationParams")]
+        public void ExecuteXDocumentVariation(XNode toReplace, XNode newValue)
         {
-            public partial class EventsReplaceWith : EventsBase
+            XDocument xDoc = new XDocument(toReplace);
+            XDocument xDocOriginal = new XDocument(xDoc);
+            using (UndoManager undo = new UndoManager(xDoc))
             {
-                protected override void DetermineChildren()
+                undo.Group();
+                using (EventsHelper docHelper = new EventsHelper(xDoc))
                 {
-                    VariationsForXDocument(ExecuteXDocumentVariation);
-                    VariationsForXElement(ExecuteXElementVariation);
-                    base.DetermineChildren();
+                    toReplace.ReplaceWith(newValue);
+                    docHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
                 }
+                undo.Undo();
+                Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+            }
+        }
 
-                void VariationsForXDocument(TestFunc func)
+        public static object[][] ExecuteXElementVariationParams = new object[][] {
+            new object[] { new XElement("element"), new XText(" ") },
+            new object[] { new XElement("element", new XAttribute("a", "aa")), new XText("") },
+            new object[] { new XElement("parent", new XElement("child", "child text")), new XElement("element") },
+            new object[] { new XCData("x+y >= z-m"), new XComment("Comment") },
+            new object[] { new XProcessingInstruction("PI", "Data"), new XElement("element", new XAttribute("a", "aa")) },
+            new object[] { new XComment("Comment"), new XText("\t") },
+            new object[] { new XText("\t"), XElement.Parse(@"<a></a>") }
+        };
+        [Theory, MemberData("ExecuteXElementVariationParams")]
+        public void ExecuteXElementVariation(XNode toReplace, XNode newValue)
+        {
+            XElement xElem = new XElement("root", toReplace);
+            XElement xElemOriginal = new XElement(xElem);
+            using (UndoManager undo = new UndoManager(xElem))
+            {
+                undo.Group();
+                using (EventsHelper eHelper = new EventsHelper(xElem))
                 {
-                    AddChild(func, 0, "XDocument - empty element, text", new XElement("element"), new XText(" "));
-                    AddChild(func, 0, "XDocument - element with attribtue, text", new XElement("element", new XAttribute("a", "aa")), new XText(""));
-                    AddChild(func, 0, "XDocument - element, empty element ", new XElement("parent", new XElement("child", "child text")), new XElement("element"));
-                    AddChild(func, 0, "XDocument - document type, comment", new XDocumentType("root", "", "", ""), new XComment("Comment"));
-                    AddChild(func, 0, "XDocument - PI, document type", new XProcessingInstruction("PI", "Data"), new XDocumentType("root", "", "", ""));
-                    AddChild(func, 0, "XDocument - comment, text", new XComment("Comment"), new XText("\t"));
-                    AddChild(func, 0, "XDocument - text node, element", new XText(" "), XElement.Parse(@"<a></a>"));
+                    toReplace.ReplaceWith(newValue);
+                    xElem.Verify();
+                    eHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
                 }
+                undo.Undo();
+                Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+            }
+        }
+    }
 
-                void VariationsForXElement(TestFunc func)
+    public class EventsReplaceNodes
+    {
+        public static object[][] ExecuteXDocumentVariationParams = new object[][] {
+            new object[] { new XElement("element") },
+            new object[] { new XElement("parent", new XElement("child", "child text")) },
+            new object[] { new XDocumentType("root", "", "", "") },
+            new object[] { new XProcessingInstruction("PI", "Data") },
+            new object[] { new XComment("Comment") }
+        };
+        [Theory, MemberData("ExecuteXDocumentVariationParams")]
+        public void ExecuteXDocumentVariation(XNode toReplace)
+        {
+            XNode newValue = new XText(" ");
+            XDocument xDoc = new XDocument(toReplace);
+            XDocument xDocOriginal = new XDocument(xDoc);
+            using (UndoManager undo = new UndoManager(xDoc))
+            {
+                undo.Group();
+                using (EventsHelper docHelper = new EventsHelper(xDoc))
                 {
-                    AddChild(func, 0, "XElement - empty element, text", new XElement("element"), new XText(" "));
-                    AddChild(func, 0, "XElement - element with attribtue, text", new XElement("element", new XAttribute("a", "aa")), new XText(""));
-                    AddChild(func, 0, "XElement - element, empty element", new XElement("parent", new XElement("child", "child text")), new XElement("element"));
-                    AddChild(func, 0, "XElement - CData, comment", new XCData("x+y >= z-m"), new XComment("Comment"));
-                    AddChild(func, 0, "XElement - PI, element with attribute", new XProcessingInstruction("PI", "Data"), new XElement("element", new XAttribute("a", "aa")));
-                    AddChild(func, 0, "XElement - comment, text", new XComment("Comment"), new XText("\t"));
-                    AddChild(func, 0, "XElement - text node, element", new XText("\t"), XElement.Parse(@"<a></a>"));
+                    xDoc.ReplaceNodes(newValue);
+                    Assert.True(xDoc.Nodes().Count() == 1, "Not all content were removed");
+                    Assert.True(Object.ReferenceEquals(xDoc.FirstNode, newValue), "Did not replace correctly");
+                    docHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
                 }
+                undo.Undo();
+                Assert.True(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+            }
+        }
 
-                public void ExecuteXDocumentVariation()
+        public static object[][] ExecuteXElementVariationParams = new object[][] {
+            new object[] { XElement.Parse(@"<a></a>") },
+            new object[] { new XElement("element") },
+            new object[] { new XElement("parent", new XElement("child", "child text")) },
+            new object[] { new XCData("x+y >= z-m") },
+            new object[] { new XProcessingInstruction("PI", "Data") },
+            new object[] { new XComment("Comment") },
+            new object[] { new XText("") }
+        };
+        [Theory, MemberData("ExecuteXElementVariationParams")]
+        public void ExecuteXElementVariation(XNode toReplace)
+        {
+            XNode newValue = new XText("text");
+            XElement xElem = new XElement("root", InputSpace.GetAttributeElement(10, 1000).Elements().Attributes(), toReplace);
+            XElement xElemOriginal = new XElement(xElem);
+            using (UndoManager undo = new UndoManager(xElem))
+            {
+                undo.Group();
+                using (EventsHelper eHelper = new EventsHelper(xElem))
                 {
-                    XNode toReplace = Variation.Params[0] as XNode;
-                    XNode newValue = Variation.Params[1] as XNode;
-                    XDocument xDoc = new XDocument(toReplace);
-                    XDocument xDocOriginal = new XDocument(xDoc);
-                    using (UndoManager undo = new UndoManager(xDoc))
+                    xElem.ReplaceNodes(newValue);
+                    Assert.True(xElem.Nodes().Count() == 1, "Did not replace correctly");
+                    Assert.True(Object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
+                    Assert.True(xElem.HasAttributes, "ReplaceNodes removed attributes");
+                    xElem.Verify();
+                    eHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
+                }
+                undo.Undo();
+                Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+            }
+        }
+
+        [Fact]
+        public void XElementReplaceNodes()
+        {
+            XElement xElem = new XElement(InputSpace.GetElement(1000, 2));
+            int count = xElem.Nodes().Count();
+            XElement xElemOriginal = new XElement(xElem);
+            using (UndoManager undo = new UndoManager(xElem))
+            {
+                undo.Group();
+                using (EventsHelper eHelper = new EventsHelper(xElem))
+                {
+                    foreach (XElement x in xElem.Nodes())
                     {
-                        undo.Group();
-                        using (EventsHelper docHelper = new EventsHelper(xDoc))
+                        using (EventsHelper xHelper = new EventsHelper(x))
                         {
-                            toReplace.ReplaceWith(newValue);
-                            docHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
+                            x.ReplaceNodes("text");
+                            xHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Remove, XObjectChange.Remove, XObjectChange.Add });
                         }
-                        undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
+                        eHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Remove, XObjectChange.Remove, XObjectChange.Add });
                     }
-                }
-
-                public void ExecuteXElementVariation()
-                {
-                    XNode toReplace = Variation.Params[0] as XNode;
-                    XNode newValue = Variation.Params[1] as XNode;
-                    XElement xElem = new XElement("root", toReplace);
-                    XElement xElemOriginal = new XElement(xElem);
-                    using (UndoManager undo = new UndoManager(xElem))
-                    {
-                        undo.Group();
-                        using (EventsHelper eHelper = new EventsHelper(xElem))
-                        {
-                            toReplace.ReplaceWith(newValue);
-                            xElem.Verify();
-                            eHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
-                        }
-                        undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
-                    }
+                    undo.Undo();
+                    Assert.True(XNode.DeepEquals(xElem, xElemOriginal), "Undo did not work!");
                 }
             }
+        }
 
-            public partial class EventsReplaceNodes : EventsBase
+        [Fact]
+        public void XElementReplaceWithIEnumerable()
+        {
+            XElement xElem = new XElement("root");
+            IEnumerable<XNode> newValue = InputSpace.GetElement(1000, 2).DescendantNodes();
+            XElement xElemOriginal = new XElement(xElem);
+            using (UndoManager undo = new UndoManager(xElem))
             {
-                protected override void DetermineChildren()
+                undo.Group();
+                using (EventsHelper eHelper = new EventsHelper(xElem))
                 {
-                    VariationsForXDocument(ExecuteXDocumentVariation);
-                    VariationsForXElement(ExecuteXElementVariation);
-                    base.DetermineChildren();
+                    xElem.ReplaceNodes(newValue);
+                    eHelper.Verify(XObjectChange.Add, newValue.ToArray());
                 }
-
-                void VariationsForXDocument(TestFunc func)
-                {
-                    AddChild(func, 0, "XDocument - empty element", new XElement("element"));
-                    AddChild(func, 0, "XDocument - element with child", new XElement("parent", new XElement("child", "child text")));
-                    AddChild(func, 0, "XDocument - document type", new XDocumentType("root", "", "", ""));
-                    AddChild(func, 0, "XDocument - PI", new XProcessingInstruction("PI", "Data"));
-                    AddChild(func, 0, "XDocument - comment", new XComment("Comment"));
-                }
-
-                void VariationsForXElement(TestFunc func)
-                {
-                    AddChild(func, 0, "XElement - empty element I", XElement.Parse(@"<a></a>"));
-                    AddChild(func, 0, "XElement - empty element II", new XElement("element"));
-                    AddChild(func, 0, "XElement - element with child", new XElement("parent", new XElement("child", "child text")));
-                    AddChild(func, 0, "XElement - CData", new XCData("x+y >= z-m"));
-                    AddChild(func, 0, "XElement - PI", new XProcessingInstruction("PI", "Data"));
-                    AddChild(func, 0, "XElement - comment", new XComment("Comment"));
-                    AddChild(func, 0, "XElement - text nodes", new XText(""));
-                }
-
-                public void ExecuteXDocumentVariation()
-                {
-                    XNode toReplace = Variation.Params[0] as XNode;
-                    XNode newValue = new XText(" ");
-                    XDocument xDoc = new XDocument(toReplace);
-                    XDocument xDocOriginal = new XDocument(xDoc);
-                    using (UndoManager undo = new UndoManager(xDoc))
-                    {
-                        undo.Group();
-                        using (EventsHelper docHelper = new EventsHelper(xDoc))
-                        {
-                            xDoc.ReplaceNodes(newValue);
-                            TestLog.Compare(xDoc.Nodes().Count() == 1, "Not all content were removed");
-                            TestLog.Compare(Object.ReferenceEquals(xDoc.FirstNode, newValue), "Did not replace correctly");
-                            docHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
-                        }
-                        undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xDoc, xDocOriginal), "Undo did not work!");
-                    }
-                }
-
-                public void ExecuteXElementVariation()
-                {
-                    XNode toReplace = Variation.Params[0] as XNode;
-                    XNode newValue = new XText("text");
-                    XElement xElem = new XElement("root", InputSpace.GetAttributeElement(10, 1000).Elements().Attributes(), toReplace);
-                    XElement xElemOriginal = new XElement(xElem);
-                    using (UndoManager undo = new UndoManager(xElem))
-                    {
-                        undo.Group();
-                        using (EventsHelper eHelper = new EventsHelper(xElem))
-                        {
-                            xElem.ReplaceNodes(newValue);
-                            TestLog.Compare(xElem.Nodes().Count() == 1, "Did not replace correctly");
-                            TestLog.Compare(Object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
-                            TestLog.Compare(xElem.HasAttributes, "ReplaceNodes removed attributes");
-                            xElem.Verify();
-                            eHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Add }, new XObject[] { toReplace, newValue });
-                        }
-                        undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
-                    }
-                }
-
-                //[Variation(Priority = 1, Desc = "XElement - Replace Nodes")]
-                public void ReplaceNodes()
-                {
-                    XElement xElem = new XElement(InputSpace.GetElement(1000, 2));
-                    int count = xElem.Nodes().Count();
-                    XElement xElemOriginal = new XElement(xElem);
-                    using (UndoManager undo = new UndoManager(xElem))
-                    {
-                        undo.Group();
-                        using (EventsHelper eHelper = new EventsHelper(xElem))
-                        {
-                            foreach (XElement x in xElem.Nodes())
-                            {
-                                using (EventsHelper xHelper = new EventsHelper(x))
-                                {
-                                    x.ReplaceNodes("text");
-                                    xHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Remove, XObjectChange.Remove, XObjectChange.Add });
-                                }
-                                eHelper.Verify(new XObjectChange[] { XObjectChange.Remove, XObjectChange.Remove, XObjectChange.Remove, XObjectChange.Add });
-                            }
-                            undo.Undo();
-                            TestLog.Compare(XNode.DeepEquals(xElem, xElemOriginal), "Undo did not work!");
-                        }
-                    }
-                }
-
-                //[Variation(Priority = 1, Desc = "XElement - Replace with IEnumerable")]
-                public void ReplaceWithIEnum()
-                {
-                    XElement xElem = new XElement("root");
-                    IEnumerable<XNode> newValue = InputSpace.GetElement(1000, 2).DescendantNodes();
-                    XElement xElemOriginal = new XElement(xElem);
-                    using (UndoManager undo = new UndoManager(xElem))
-                    {
-                        undo.Group();
-                        using (EventsHelper eHelper = new EventsHelper(xElem))
-                        {
-                            xElem.ReplaceNodes(newValue);
-                            eHelper.Verify(XObjectChange.Add, newValue.ToArray());
-                        }
-                        undo.Undo();
-                        TestLog.Compare(XNode.DeepEquals(xElem, xElemOriginal), "Undo did not work!");
-                    }
-                }
+                undo.Undo();
+                Assert.True(XNode.DeepEquals(xElem, xElemOriginal), "Undo did not work!");
             }
+        }
+    }
 
-            public partial class EvensReplaceAttributes : EventsBase
+    public class EvensReplaceAttributes
+    {
+        public static object[][] ExecuteXAttributeVariationParams = new object[][] {
+            new object[] { new XAttribute[] { new XAttribute("xxx", "yyy") } },
+            new object[] { new XAttribute[] { new XAttribute("{a}xxx", "a_yyy") } },
+            new object[] { new XAttribute[] { new XAttribute("xxx", "yyy"), new XAttribute("a", "aa") } },
+            new object[] { new XAttribute[] { new XAttribute("{b}xxx", "b_yyy"), new XAttribute("{a}xxx", "a_yyy") } },
+            new object[] { InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray() }
+        };
+        [Theory, MemberData("ExecuteXAttributeVariationParams")]
+        public void ExecuteXAttributeVariation(XAttribute[] content)
+        {
+            XElement xElem = new XElement("root", content);
+            XElement xElemOriginal = new XElement(xElem);
+            using (UndoManager undo = new UndoManager(xElem))
             {
-                protected override void DetermineChildren()
+                undo.Group();
+                using (EventsHelper eHelper = new EventsHelper(xElem))
                 {
-                    VariationsForXAttribute(ExecuteXAttributeVariation);
-                    base.DetermineChildren();
+                    xElem.ReplaceAttributes(new XAttribute("a", "aa"));
+                    Assert.True(XObject.ReferenceEquals(xElem.FirstAttribute, xElem.LastAttribute), "Did not replace attributes correctly");
+                    xElem.Verify();
+                    eHelper.Verify(content.Length + 1);
                 }
-
-                void VariationsForXAttribute(TestFunc func)
-                {
-                    AddChild(func, 0, "Only attribute", new XAttribute[] { new XAttribute("xxx", "yyy") });
-                    AddChild(func, 0, "Only attribute with namespace", new XAttribute[] { new XAttribute("{a}xxx", "a_yyy") });
-                    AddChild(func, 0, "Mulitple attributes", new XAttribute[] { new XAttribute("xxx", "yyy"), new XAttribute("a", "aa") });
-                    AddChild(func, 0, "Multiple attributes with namespace", new XAttribute[] { new XAttribute("{b}xxx", "b_yyy"), new XAttribute("{a}xxx", "a_yyy") });
-                    AddChild(func, 0, "IEnumerable of XAttributes", InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray());
-                }
-
-                public void ExecuteXAttributeVariation()
-                {
-                    XAttribute[] content = Variation.Params as XAttribute[];
-                    XElement xElem = new XElement("root", content);
-                    XElement xElemOriginal = new XElement(xElem);
-                    using (UndoManager undo = new UndoManager(xElem))
-                    {
-                        undo.Group();
-                        using (EventsHelper eHelper = new EventsHelper(xElem))
-                        {
-                            xElem.ReplaceAttributes(new XAttribute("a", "aa"));
-                            TestLog.Compare(XObject.ReferenceEquals(xElem.FirstAttribute, xElem.LastAttribute), "Did not replace attributes correctly");
-                            xElem.Verify();
-                            eHelper.Verify(content.Length + 1);
-                        }
-                        undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
-                    }
-                }
+                undo.Undo();
+                Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
             }
+        }
+    }
 
-            public partial class EventsReplaceAll : EventsBase
+    public class EventsReplaceAll
+    {
+        public static object[][] ExecuteXElementVariationParams = new object[][] {
+            new object[] { new XObject[] { new XElement("element") } },
+            new object[] { new XObject[] { new XElement("parent", new XElement("child", "child text")) } },
+            new object[] { new XObject[] { new XCData("x+y >= z-m") } },
+            new object[] { new XObject[] { new XProcessingInstruction("PI", "Data") } },
+            new object[] { new XObject[] { new XComment("Comment") } },
+            new object[] { new XObject[] { new XText(""), new XText(" "), new XText("\t") } },
+            new object[] { InputSpace.GetElement(100, 10).DescendantNodes().ToArray() },
+            new object[] { new XObject[] { new XAttribute("xxx", "yyy") } },
+            new object[] { new XObject[] { new XAttribute("{a}xxx", "a_yyy") } },
+            new object[] { new XObject[] { new XAttribute("xxx", "yyy"), new XAttribute("a", "aa") } },
+            new object[] { new XObject[] { new XAttribute("{b}xxx", "b_yyy"), new XAttribute("{a}xxx", "a_yyy") } },
+            new object[] { InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray() },
+            new object[] { new XObject[] { new XAttribute("{b}xxx", "b_yyy"), new XElement("parent", new XElement("child", "child text")) } }
+        };
+        [Theory, MemberData("ExecuteXElementVariationParams")]
+        public void ExecuteXElementVariation(XObject[] toReplace)
+        {
+            XNode newValue = new XText("text");
+            XElement xElem = new XElement("root", toReplace);
+            XElement xElemOriginal = new XElement(xElem);
+            using (UndoManager undo = new UndoManager(xElem))
             {
-                protected override void DetermineChildren()
+                undo.Group();
+                using (EventsHelper eHelper = new EventsHelper(xElem))
                 {
-                    VariationsForXElement(ExecuteXElementVariation);
-                    base.DetermineChildren();
+                    xElem.ReplaceAll(newValue);
+                    Assert.True(xElem.Nodes().Count() == 1, "Did not replace correctly");
+                    Assert.True(Object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
+                    Assert.True(!xElem.HasAttributes, "ReplaceAll did not remove attributes");
+                    xElem.Verify();
+                    eHelper.Verify(toReplace.Length + 1);
                 }
+                undo.Undo();
+                Assert.True(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                Assert.True(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
+            }
+        }
 
-                void VariationsForXElement(TestFunc func)
+        [Fact]
+        public void ElementWithAttributes()
+        {
+            XElement toReplace = new XElement("Automobile",
+                new XAttribute("axles", 2),
+                new XElement("Make", "Ford"),
+                new XElement("Model", "Mustang"),
+                new XElement("Year", "2004"));
+            XElement xElemOriginal = new XElement(toReplace);
+
+            using (UndoManager undo = new UndoManager(toReplace))
+            {
+                undo.Group();
+                using (EventsHelper eHelper = new EventsHelper(toReplace))
                 {
-                    AddChild(func, 1, "XElement - empty element", new XObject[] { new XElement("element") });
-                    AddChild(func, 0, "XElement - element with child", new XObject[] { new XElement("parent", new XElement("child", "child text")) });
-                    AddChild(func, 0, "XElement - CData", new XObject[] { new XCData("x+y >= z-m") });
-                    AddChild(func, 0, "XElement - PI", new XObject[] { new XProcessingInstruction("PI", "Data") });
-                    AddChild(func, 0, "XElement - comment", new XObject[] { new XComment("Comment") });
-                    AddChild(func, 0, "XElement - text nodes", new XObject[] { new XText(""), new XText(" "), new XText("\t") });
-                    AddChild(func, 1, "XElement - IEnumerable of XNodes", InputSpace.GetElement(100, 10).DescendantNodes().ToArray());
-                    AddChild(func, 0, "XAttribute - only attribute", new XObject[] { new XAttribute("xxx", "yyy") });
-                    AddChild(func, 0, "XAttribute - only attribute with namespace", new XObject[] { new XAttribute("{a}xxx", "a_yyy") });
-                    AddChild(func, 0, "XAttribute - mulitple attributes", new XObject[] { new XAttribute("xxx", "yyy"), new XAttribute("a", "aa") });
-                    AddChild(func, 1, "XAttribute - multiple attributes with namespace", new XObject[] { new XAttribute("{b}xxx", "b_yyy"), new XAttribute("{a}xxx", "a_yyy") });
-                    AddChild(func, 1, "XAttribute - IEnumerable of XAttributes", InputSpace.GetAttributeElement(10, 1000).Elements().Attributes().ToArray());
-                    AddChild(func, 1, "Mixed - Nodes and attributes", new XObject[] { new XAttribute("{b}xxx", "b_yyy"), new XElement("parent", new XElement("child", "child text")) });
+                    toReplace.ReplaceAll(new XAttribute("axles", 2),
+                        new XElement("Make", "Chevrolet"),
+                        new XElement("Model", "Impala"),
+                        new XElement("Year", "2006"));
+                    toReplace.Verify();
                 }
-
-                public void ExecuteXElementVariation()
-                {
-                    XObject[] toReplace = Variation.Params as XObject[];
-                    XNode newValue = new XText("text");
-                    XElement xElem = new XElement("root", toReplace);
-                    XElement xElemOriginal = new XElement(xElem);
-                    using (UndoManager undo = new UndoManager(xElem))
-                    {
-                        undo.Group();
-                        using (EventsHelper eHelper = new EventsHelper(xElem))
-                        {
-                            xElem.ReplaceAll(newValue);
-                            TestLog.Compare(xElem.Nodes().Count() == 1, "Did not replace correctly");
-                            TestLog.Compare(Object.ReferenceEquals(xElem.FirstNode, newValue), "Did not replace correctly");
-                            TestLog.Compare(!xElem.HasAttributes, "ReplaceAll did not remove attributes");
-                            xElem.Verify();
-                            eHelper.Verify(toReplace.Length + 1);
-                        }
-                        undo.Undo();
-                        TestLog.Compare(xElem.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(xElem.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
-                    }
-                }
-
-                //[Variation(Priority = 1, Desc = "Element with attributes, with Element with attributes")]
-                public void ElementWithAttributes()
-                {
-                    XElement toReplace = new XElement("Automobile",
-                        new XAttribute("axles", 2),
-                        new XElement("Make", "Ford"),
-                        new XElement("Model", "Mustang"),
-                        new XElement("Year", "2004"));
-                    XElement xElemOriginal = new XElement(toReplace);
-
-                    using (UndoManager undo = new UndoManager(toReplace))
-                    {
-                        undo.Group();
-                        using (EventsHelper eHelper = new EventsHelper(toReplace))
-                        {
-                            toReplace.ReplaceAll(new XAttribute("axles", 2),
-                                new XElement("Make", "Chevrolet"),
-                                new XElement("Model", "Impala"),
-                                new XElement("Year", "2006"));
-                            toReplace.Verify();
-                        }
-                        undo.Undo();
-                        TestLog.Compare(toReplace.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
-                        TestLog.Compare(toReplace.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
-                    }
-                }
+                undo.Undo();
+                Assert.True(toReplace.Nodes().SequenceEqual(xElemOriginal.Nodes(), XNode.EqualityComparer), "Undo did not work!");
+                Assert.True(toReplace.Attributes().EqualsAllAttributes(xElemOriginal.Attributes(), Helpers.MyAttributeComparer), "Undo did not work!");
             }
         }
     }

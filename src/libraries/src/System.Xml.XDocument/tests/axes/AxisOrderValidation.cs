@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using CoreXml.Test.XLinq;
 
 namespace System.Xml.Linq.Tests
 {
