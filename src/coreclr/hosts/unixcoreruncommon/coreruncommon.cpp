@@ -17,8 +17,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-// The name of the CoreCLR native runtime DLL
 #if defined(__APPLE__)
+#include <mach-o/dyld.h>
 static const char * const coreClrDll = "libcoreclr.dylib";
 #else
 static const char * const coreClrDll = "libcoreclr.so";
@@ -49,6 +49,47 @@ typedef int (*ExecuteAssemblyFunction)(
             const char** argv,
             const char* managedAssemblyPath,
             unsigned int* exitCode);
+
+#if defined(__LINUX__)
+#define symlinkEntrypointExecutable "/proc/self/exe"
+#elif !defined(__APPLE__)
+#define symlinkEntrypointExecutable "/proc/curproc/exe"
+#endif
+
+bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
+{
+    bool result = false;
+    
+    entrypointExecutable.clear();
+
+    // Get path to the executable for the current process using
+    // platform specific means.
+#if defined(__LINUX__) || !defined(__APPLE__)
+    
+    // On non-Mac OS, return the symlink that will be resolved by GetAbsolutePath
+    // to fetch the entrypoint EXE absolute path, inclusive of filename.
+    entrypointExecutable.assign(symlinkEntrypointExecutable);
+    result = true;
+#elif defined(__APPLE__)
+    
+    // On Mac, we ask the OS for the absolute path to the entrypoint executable
+    uint32_t lenActualPath = 0;
+    if (_NSGetExecutablePath(nullptr, &lenActualPath) == -1)
+    {
+        // OSX has placed the actual path length in lenActualPath,
+        // so re-attempt the operation
+        std::string resizedPath(lenActualPath, '\0');
+        char *pResizedPath = const_cast<char *>(resizedPath.c_str());
+        if (_NSGetExecutablePath(pResizedPath, &lenActualPath) == 0)
+        {
+            entrypointExecutable.assign(pResizedPath);
+            result = true;
+        }
+    }
+ #endif 
+
+    return result;
+}
 
 bool GetAbsolutePath(const char* path, std::string& absolutePath)
 {
