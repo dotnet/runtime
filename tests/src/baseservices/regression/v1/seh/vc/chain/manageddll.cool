@@ -1,0 +1,7 @@
+
+
+public class ManagedDll {
+
+[System.Runtime.InteropServices.DllImport("unmanaged.dll")]
+	public static extern void UnmanagedCode( int i) ;
+}

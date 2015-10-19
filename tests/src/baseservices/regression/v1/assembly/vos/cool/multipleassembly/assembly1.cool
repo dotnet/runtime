@@ -1,0 +1,70 @@
+using System;
+
+
+public interface IM2Dll
+{
+	int IM2Dll_1();
+};
+
+public interface IM2Dll2
+{
+	// Statics
+
+
+	// Interface methods.
+	int	IM2Dll2_1();
+};
+
+
+public class M2Dll : IM2Dll
+{
+	public static int iDllConst1 = 1;			// A field
+	public static int iDllConst2 = 2;			// A static field.
+	public static int iDllConst3 = 3;
+	int		m_iDllVar0 = 0;
+
+	public static int DumpStatics(){
+		Console.WriteLine(iDllConst1);
+		Console.WriteLine(iDllConst2);
+		return (iDllConst2);
+	}
+
+	public int DumpMembers()
+	{
+		return (m_iDllVar0);
+	}
+
+	public int DllVirtual()
+	{
+		return (1);
+	}
+
+	// IM2Dll_1 methods.
+	public int IM2Dll_1()
+	{
+		return (101);
+	}
+
+
+};
+
+public interface IM2Super1
+{
+
+	// Interface methods.
+		int IM2Super1_1();
+		int IM2Super1_2();
+		int IM2Super();
+};
+
+public interface IM2Super2
+{
+	// Interface methods.
+		int IM2Super2_1();
+};
+
+public interface IM2Bar: IM2Super1, IM2Super2
+{
+	// Interface methods.
+		int IM2Bar_1();
+};
