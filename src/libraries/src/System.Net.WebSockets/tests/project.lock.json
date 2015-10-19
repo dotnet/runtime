@@ -92,7 +92,7 @@
           "ref/dotnet/System.Linq.Expressions.dll": {}
         }
       },
-      "System.Net.WebSockets/4.0.0-beta-23401": {
+      "System.Net.WebSockets/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "Microsoft.Win32.Primitives": "4.0.0",
@@ -383,7 +383,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00102": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00107": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -659,35 +659,35 @@
         "System.Linq.Expressions.nuspec"
       ]
     },
-    "System.Net.WebSockets/4.0.0-beta-23401": {
+    "System.Net.WebSockets/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "b8AOpxlQGD65Y72MxkRc795OZNdlNdre2K+QPkLpLi3TjZufSBpgalayZwHnUYgmS5rL5OPSp83tdsKyegvebg==",
+      "sha512": "2FmfSn6QjWGgepoPaUmThpyTlASx1v/GWU/3Kx4LOIV4cUML3Oy6CeHSx3XA41pWLPTWzRCJ+13EwucrwOvgfQ==",
       "files": [
-        "lib/dotnet/de/System.Net.WebSockets.xml",
-        "lib/dotnet/es/System.Net.WebSockets.xml",
-        "lib/dotnet/fr/System.Net.WebSockets.xml",
-        "lib/dotnet/it/System.Net.WebSockets.xml",
-        "lib/dotnet/ja/System.Net.WebSockets.xml",
-        "lib/dotnet/ko/System.Net.WebSockets.xml",
-        "lib/dotnet/ru/System.Net.WebSockets.xml",
         "lib/dotnet/System.Net.WebSockets.dll",
-        "lib/dotnet/System.Net.WebSockets.xml",
-        "lib/dotnet/zh-hans/System.Net.WebSockets.xml",
-        "lib/dotnet/zh-hant/System.Net.WebSockets.xml",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Net.WebSockets.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Net.WebSockets.xml",
+        "ref/dotnet/es/System.Net.WebSockets.xml",
+        "ref/dotnet/fr/System.Net.WebSockets.xml",
+        "ref/dotnet/it/System.Net.WebSockets.xml",
+        "ref/dotnet/ja/System.Net.WebSockets.xml",
+        "ref/dotnet/ko/System.Net.WebSockets.xml",
+        "ref/dotnet/ru/System.Net.WebSockets.xml",
         "ref/dotnet/System.Net.WebSockets.dll",
+        "ref/dotnet/System.Net.WebSockets.xml",
+        "ref/dotnet/zh-hans/System.Net.WebSockets.xml",
+        "ref/dotnet/zh-hant/System.Net.WebSockets.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Net.WebSockets.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Net.WebSockets.4.0.0-beta-23401.nupkg",
-        "System.Net.WebSockets.4.0.0-beta-23401.nupkg.sha512",
+        "System.Net.WebSockets.4.0.0-beta-23419.nupkg",
+        "System.Net.WebSockets.4.0.0-beta-23419.nupkg.sha512",
         "System.Net.WebSockets.nuspec"
       ]
     },
@@ -1311,14 +1311,14 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00102": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00107": {
       "type": "package",
       "serviceable": true,
-      "sha512": "YOLHpTXiw6lEGbsQ1uQ93BAPKiUtrj4l+Yr1+WGdZShfCtGc3Sq3R9dISIHM49znLo+qDcnmo2oMGJdVZ9YTVg==",
+      "sha512": "xNAxu4vFz7vzM3h5oGvWuvwOb9Z4wGg/yE271uh2/LnrlFeyP2BuFTIIdyLdhg/R85NO6Y4mnU99tPsrWZAOuw==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }

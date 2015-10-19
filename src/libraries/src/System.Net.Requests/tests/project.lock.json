@@ -189,7 +189,7 @@
           "lib/DNXCore50/System.Net.Http.dll": {}
         }
       },
-      "System.Net.Primitives/4.0.11-beta-23401": {
+      "System.Net.Primitives/4.0.11-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -199,7 +199,7 @@
           "ref/dotnet/System.Net.Primitives.dll": {}
         }
       },
-      "System.Net.Requests/4.0.11-beta-23401": {
+      "System.Net.Requests/4.0.11-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -503,7 +503,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00102": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00107": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -946,47 +946,67 @@
         "System.Net.Http.nuspec"
       ]
     },
-    "System.Net.Primitives/4.0.11-beta-23401": {
+    "System.Net.Primitives/4.0.11-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "NzM2xnNe8FdywjQaEq/kesmwQXQ4FeVAm02SbF4v0+x0sJ7BOOFiIq6NWUU/+zBv/h80f1Jfzp/dHgSkrwnxKg==",
+      "sha512": "S+2pg0HBKoXggElrV8VS99A9GFI6uFovlcJHEXgelC4xqvxpdxi4wJdRPvL/ZZWxdtP5xjI/p6BzdUQ59LggEw==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Net.Primitives.xml",
+        "ref/dotnet/es/System.Net.Primitives.xml",
+        "ref/dotnet/fr/System.Net.Primitives.xml",
+        "ref/dotnet/it/System.Net.Primitives.xml",
+        "ref/dotnet/ja/System.Net.Primitives.xml",
+        "ref/dotnet/ko/System.Net.Primitives.xml",
+        "ref/dotnet/ru/System.Net.Primitives.xml",
         "ref/dotnet/System.Net.Primitives.dll",
+        "ref/dotnet/System.Net.Primitives.xml",
+        "ref/dotnet/zh-hans/System.Net.Primitives.xml",
+        "ref/dotnet/zh-hant/System.Net.Primitives.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Net.Primitives.4.0.11-beta-23401.nupkg",
-        "System.Net.Primitives.4.0.11-beta-23401.nupkg.sha512",
+        "System.Net.Primitives.4.0.11-beta-23419.nupkg",
+        "System.Net.Primitives.4.0.11-beta-23419.nupkg.sha512",
         "System.Net.Primitives.nuspec"
       ]
     },
-    "System.Net.Requests/4.0.11-beta-23401": {
+    "System.Net.Requests/4.0.11-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "nJAlX9JtM1zovc4Aemy4AQzbNWmJZmK7dGbJ/z/BOd5L0LXD4DaezPOc7qjPRYach5lkXOb84/Gr/sLHSCj/3A==",
+      "sha512": "eUPv6J1p24DmLadu4PFvUAEOvgXXyOn6Vymay1DaDlgsn3ZlBPin3cdX9o3szKqMzhs76yK34/ejKSZxQd7xrA==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Net.Requests.xml",
+        "ref/dotnet/es/System.Net.Requests.xml",
+        "ref/dotnet/fr/System.Net.Requests.xml",
+        "ref/dotnet/it/System.Net.Requests.xml",
+        "ref/dotnet/ja/System.Net.Requests.xml",
+        "ref/dotnet/ko/System.Net.Requests.xml",
+        "ref/dotnet/ru/System.Net.Requests.xml",
         "ref/dotnet/System.Net.Requests.dll",
+        "ref/dotnet/System.Net.Requests.xml",
+        "ref/dotnet/zh-hans/System.Net.Requests.xml",
+        "ref/dotnet/zh-hant/System.Net.Requests.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Net.Requests.4.0.11-beta-23401.nupkg",
-        "System.Net.Requests.4.0.11-beta-23401.nupkg.sha512",
+        "System.Net.Requests.4.0.11-beta-23419.nupkg",
+        "System.Net.Requests.4.0.11-beta-23419.nupkg.sha512",
         "System.Net.Requests.nuspec"
       ]
     },
@@ -1642,14 +1662,14 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00102": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00107": {
       "type": "package",
       "serviceable": true,
-      "sha512": "YOLHpTXiw6lEGbsQ1uQ93BAPKiUtrj4l+Yr1+WGdZShfCtGc3Sq3R9dISIHM49znLo+qDcnmo2oMGJdVZ9YTVg==",
+      "sha512": "xNAxu4vFz7vzM3h5oGvWuvwOb9Z4wGg/yE271uh2/LnrlFeyP2BuFTIIdyLdhg/R85NO6Y4mnU99tPsrWZAOuw==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }
