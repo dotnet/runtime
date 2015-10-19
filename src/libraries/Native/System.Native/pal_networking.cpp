@@ -5,6 +5,9 @@
 #include "pal_networking.h"
 #include "pal_utilities.h"
 
+#if HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 #include <arpa/inet.h>
 #include <assert.h>
 #if HAVE_EPOLL
@@ -23,10 +26,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
-
-#if HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
 
 #if !defined(IPV6_ADD_MEMBERSHIP) && defined(IPV6_JOIN_GROUP)
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
@@ -500,8 +499,6 @@ extern "C" Error GetAddressFamily(const uint8_t* socketAddress, int32_t socketAd
 
     if (!TryConvertAddressFamilyPlatformToPal(sockAddr->sa_family, addressFamily))
     {
-        // TODO: we may want to let the address family through transparently if it's
-        //       outside the range of shimmed values.
         return PAL_EAFNOSUPPORT;
     }
 
@@ -519,8 +516,6 @@ extern "C" Error SetAddressFamily(uint8_t* socketAddress, int32_t socketAddressL
 
     if (!TryConvertAddressFamilyPalToPlatform(addressFamily, &sockAddr->sa_family))
     {
-        // TODO: we may want to let the address family through transparently if it's
-        //       outside the range of shimmed values.
         return PAL_EAFNOSUPPORT;
     }
 
@@ -1501,16 +1496,26 @@ extern "C" Error Socket(int32_t addressFamily, int32_t socketType, int32_t proto
         return PAL_EFAULT;
     }
 
-    // NOTE: we do not check for success on any of these calls b/c this API is deliberately
-    //       transparent w.r.t. unmapped values. This allows the use of platform-specific
-    //       address families and protocol types at the expense of potentially confusing
-    //       behavior when PAL and platform values overlap.
     sa_family_t platformAddressFamily;
     int platformSocketType, platformProtocolType;
 
-    TryConvertAddressFamilyPalToPlatform(addressFamily, &platformAddressFamily);
-    TryConvertSocketTypePalToPlatform(socketType, &platformSocketType);
-    TryConvertProtocolTypePalToPlatform(protocolType, &platformProtocolType);
+    if (!TryConvertAddressFamilyPalToPlatform(addressFamily, &platformAddressFamily))
+    {
+        *createdSocket = -1;
+        return PAL_EAFNOSUPPORT;
+    }
+
+    if (!TryConvertSocketTypePalToPlatform(socketType, &platformSocketType))
+    {
+        *createdSocket = -1;
+        return PAL_EPROTOTYPE;
+    }
+
+    if (!TryConvertProtocolTypePalToPlatform(protocolType, &platformProtocolType))
+    {
+        *createdSocket = -1;
+        return PAL_EPROTONOSUPPORT;
+    }
 
     *createdSocket = socket(platformAddressFamily, platformSocketType, platformProtocolType);
     return *createdSocket != -1 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
@@ -2012,4 +2017,22 @@ extern "C" Error WaitForSocketEvents(int32_t port, SocketEvent* buffer, int32_t*
     }
 
     return WaitForSocketEventsInner(port, buffer, count);
+}
+
+extern "C" int32_t PlatformSupportsMultipleConnectAttempts()
+{
+#if defined(PLATFORM_SUPPORTS_MULTIPLE_CONNECT_ATTEMPTS)
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+extern "C" int32_t PlatformSupportsDualModeIPv4PacketInfo()
+{
+#if defined(PLATFORM_SUPPORTS_DUAL_MODE_IPV4_PACKET_INFO)
+    return 1;
+#else
+    return 0;
+#endif
 }

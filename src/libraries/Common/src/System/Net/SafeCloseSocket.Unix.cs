@@ -232,6 +232,8 @@ namespace System.Net.Sockets
                 }
                 else
                 {
+                    Debug.Assert(fd == -1);
+
                     errorCode = SocketPal.GetSocketErrorForErrorCode(error);
                 }
 
