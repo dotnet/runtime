@@ -101,13 +101,13 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             n.AddBeforeSelf("text0");
-                            Assert.Equal(elem.Value, "text0text2");
+                            Assert.Equal("text0text2", elem.Value);
                             n.AddBeforeSelf("text1");
-                            Assert.Equal(elem.Value, "text0text1text2");
+                            Assert.Equal("text0text1text2", elem.Value);
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Add, XObjectChange.Value });
                         }
                         undo.Undo();
-                        Assert.Equal(elem.Value, "text2");
+                        Assert.Equal("text2", elem.Value);
                     }
                 }
 
@@ -122,11 +122,11 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             n.AddBeforeSelf("text0", "text1");
-                            Assert.Equal(elem.Value, "text0text1text2");
+                            Assert.Equal("text0text1text2", elem.Value);
                             eHelper.Verify(XObjectChange.Add);
                         }
                         undo.Undo();
-                        Assert.Equal(elem.Value, "text2");
+                        Assert.Equal("text2", elem.Value);
                     }
                 }
             }
@@ -219,13 +219,13 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             n.AddAfterSelf("text0");
-                            Assert.Equal(elem.Value, "text2text0");
+                            Assert.Equal("text2text0", elem.Value);
                             n.AddAfterSelf("text1");
-                            Assert.Equal(elem.Value, "text2text0text1");
+                            Assert.Equal("text2text0text1", elem.Value);
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Value, XObjectChange.Value });
                         }
                         undo.Undo();
-                        Assert.Equal(elem.Value, "text2");
+                        Assert.Equal("text2", elem.Value);
                     }
                 }
 
@@ -240,11 +240,11 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             n.AddAfterSelf("text0", "text1");
-                            Assert.Equal(elem.Value, "text2text0text1");
+                            Assert.Equal("text2text0text1", elem.Value);
                             eHelper.Verify(XObjectChange.Value);
                         }
                         undo.Undo();
-                        Assert.Equal(elem.Value, "text2");
+                        Assert.Equal("text2", elem.Value);
                     }
                 }
             }
@@ -343,13 +343,13 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             elem.AddFirst("text0");
-                            Assert.Equal(elem.Value, "text0text2");
+                            Assert.Equal("text0text2", elem.Value);
                             elem.AddFirst("text1");
-                            Assert.Equal(elem.Value, "text1text0text2");
+                            Assert.Equal("text1text0text2", elem.Value);
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Add, XObjectChange.Add });
                         }
                         undo.Undo();
-                        Assert.Equal(elem.Value, "text2");
+                        Assert.Equal("text2", elem.Value);
                     }
                 }
 
@@ -363,11 +363,11 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             elem.AddFirst("text0", "text1");
-                            Assert.Equal(elem.Value, "text0text1text2");
+                            Assert.Equal("text0text1text2", elem.Value);
                             eHelper.Verify(XObjectChange.Add);
                         }
                         undo.Undo();
-                        Assert.Equal(elem.Value, "text2");
+                        Assert.Equal("text2", elem.Value);
                     }
                 }
 
@@ -596,13 +596,13 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             elem.Add("text0");
-                            Assert.Equal(elem.Value, "text2text0");
+                            Assert.Equal("text2text0", elem.Value);
                             elem.Add("text1");
-                            Assert.Equal(elem.Value, "text2text0text1");
+                            Assert.Equal("text2text0text1", elem.Value);
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Value, XObjectChange.Value });
                         }
                         undo.Undo();
-                        Assert.Equal(elem.Value, "text2");
+                        Assert.Equal("text2", elem.Value);
                     }
                 }
 
@@ -617,11 +617,11 @@ namespace CoreXml.Test.XLinq
                         using (EventsHelper eHelper = new EventsHelper(elem))
                         {
                             elem.Add("text0", "text1");
-                            Assert.Equal(elem.Value, "text2text0text1");
+                            Assert.Equal("text2text0text1", elem.Value);
                             eHelper.Verify(new XObjectChange[] { XObjectChange.Value, XObjectChange.Value });
                         }
                         undo.Undo();
-                        Assert.Equal(elem.Value, "text2");
+                        Assert.Equal("text2", elem.Value);
                     }
                 }
 
