@@ -202,7 +202,7 @@ namespace Internal.Cryptography.Pal
             {
                 Interop.Crypto.CheckValidOpenSslHandle(rsaHandle);
 
-                RSAParameters rsaParameters = Interop.libcrypto.ExportRsaParameters(rsaHandle, false);
+                RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(rsaHandle, false);
                 RSA rsa = new RSAOpenSsl();
                 rsa.ImportParameters(rsaParameters);
                 return rsa;
