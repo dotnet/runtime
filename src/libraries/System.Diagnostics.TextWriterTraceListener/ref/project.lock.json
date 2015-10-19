@@ -3,7 +3,7 @@
   "version": 1,
   "targets": {
     ".NETPlatform,Version=v5.0": {
-      "System.Diagnostics.TraceSource/4.0.0-beta-23401": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -50,25 +50,35 @@
     }
   },
   "libraries": {
-    "System.Diagnostics.TraceSource/4.0.0-beta-23401": {
+    "System.Diagnostics.TraceSource/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "NLH0NEUKOm509sDqQ+OaMitxea7/0wcv2ypLsCb+hW/K8gYDzK9bIvCsAMHN1c0dcEevHGQmGq3VGHnyFuMG+g==",
+      "sha512": "IObrVByj5DdHalCQRrWq3BsCxH16KJG1WSFcEO+gozJYFhhKFho1x+tfqyQn2OS0SzN/IYUehOfAibrwdZiAfA==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Diagnostics.TraceSource.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet/es/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet/fr/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet/it/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet/ja/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet/ko/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet/ru/System.Diagnostics.TraceSource.xml",
         "ref/dotnet/System.Diagnostics.TraceSource.dll",
+        "ref/dotnet/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet/zh-hans/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet/zh-hant/System.Diagnostics.TraceSource.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Diagnostics.TraceSource.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23401.nupkg",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23401.nupkg.sha512",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23419.nupkg",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23419.nupkg.sha512",
         "System.Diagnostics.TraceSource.nuspec"
       ]
     },
