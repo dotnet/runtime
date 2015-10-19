@@ -3,6 +3,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
+#include "pal_types.h"
+
 #include <assert.h>
 #include <limits.h>
 #include <pthread.h>
@@ -45,13 +47,13 @@ A time_t representation of the input date. See also man mktime(3).
 static
 time_t
 MakeTimeT(
-    int year,
-    int month,
-    int day,
-    int hour,
-    int minute,
-    int second,
-    int isDst)
+    int32_t year,
+    int32_t month,
+    int32_t day,
+    int32_t hour,
+    int32_t minute,
+    int32_t second,
+    int32_t isDst)
 {
     struct tm currentTm;
     currentTm.tm_year = year - 1900;
@@ -76,11 +78,11 @@ Return values:
 1: Data was copied
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
-int
+int32_t
 GetX509Thumbprint(
     X509* x509,
-    unsigned char* pBuf,
-    int cBuf)
+    uint8_t* pBuf,
+    int32_t cBuf)
 {
     if (!x509)
     {
@@ -250,11 +252,11 @@ Return values:
 1: Data was copied
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
-int
+int32_t
 GetX509PublicKeyParameterBytes(
     X509* x509,
-    unsigned char* pBuf,
-    int cBuf)
+    uint8_t* pBuf,
+    int32_t cBuf)
 {
     if (!x509 || !x509->cert_info || !x509->cert_info->key || !x509->cert_info->key->algor)
     {
@@ -336,11 +338,11 @@ Remarks:
 
  So this function will really work on all of them.
 */
-int
+int32_t
 GetAsn1StringBytes(
     ASN1_STRING* asn1,
-    unsigned char* pBuf,
-    int cBuf)
+    uint8_t* pBuf,
+    int32_t cBuf)
 {
     if (!asn1 || cBuf < 0)
     {
@@ -375,11 +377,11 @@ Return values:
 1: Data was copied
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
-int
+int32_t
 GetX509NameRawBytes(
     X509_NAME* x509Name,
-    unsigned char* pBuf,
-    int cBuf)
+    uint8_t* pBuf,
+    int32_t cBuf)
 {
     if (!x509Name || !x509Name->bytes || cBuf < 0)
     {
@@ -450,7 +452,7 @@ that particular OID.
 ASN1_OBJECT*
 GetX509EkuField(
     EXTENDED_KEY_USAGE* eku,
-    int loc)
+    int32_t loc)
 {
     return sk_ASN1_OBJECT_value(eku, loc);
 }
@@ -469,8 +471,8 @@ memory-backed BIO structure which contains the answer to the GetNameInfo query
 BIO*
 GetX509NameInfo(
     X509* x509,
-    int nameType,
-    int forIssuer)
+    int32_t nameType,
+    int32_t forIssuer)
 {
     static const char szOidUpn[] = "1.3.6.1.4.1.311.20.2.3";
 
@@ -859,11 +861,11 @@ Return values:
 0 if the hostname is not a match
 Any negative number indicates an error in the arguments.
 */
-int
+int32_t
 CheckX509Hostname(
     X509* x509,
     const char* hostname,
-    int cchHostname)
+    int32_t cchHostname)
 {
     if (!x509)
         return -2;
@@ -948,13 +950,13 @@ Return values:
 0 if the hostname is not a match
 Any negative number indicates an error in the arguments.
 */
-int
+int32_t
 CheckX509IpAddress(
     X509* x509,
-    const unsigned char* addressBytes,
-    int addressBytesLen,
+    const uint8_t* addressBytes,
+    int32_t addressBytesLen,
     const char* hostname,
-    int cchHostname)
+    int32_t cchHostname)
 {
     if (!x509)
         return -2;
@@ -1041,7 +1043,7 @@ Return values:
 0 if the field count cannot be determined, or the count of certificates in STACK_OF(X509)
 Note that 0 does not always indicate an error, merely that GetX509StackField should not be called.
 */
-int
+int32_t
 GetX509StackFieldCount(
     STACK_OF(X509)* stack)
 {
@@ -1092,16 +1094,16 @@ Return values:
 0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or the date inputs don't produce a valid time_t;
 1 on success.
 */
-int
+int32_t
 SetX509ChainVerifyTime(
     X509_STORE_CTX* ctx,
-    int year,
-    int month,
-    int day,
-    int hour,
-    int minute,
-    int second,
-    int isDst)
+    int32_t year,
+    int32_t month,
+    int32_t day,
+    int32_t hour,
+    int32_t minute,
+    int32_t second,
+    int32_t isDst)
 {
     if (!ctx)
     {
@@ -1183,7 +1185,7 @@ behavior on non-file, non-null BIO objects.
 See also:
 OpenSSL's BIO_tell
 */
-int BioTell(
+int32_t BioTell(
     BIO* bio)
 {
     if (!bio)
@@ -1211,9 +1213,9 @@ otherwise unspecified
 See also:
 OpenSSL's BIO_seek
 */
-int BioSeek(
+int32_t BioSeek(
     BIO* bio,
-    int ofs)
+    int32_t ofs)
 {
     if (!bio)
     {
@@ -1250,7 +1252,7 @@ Return values:
 1 on success
 0 on a NULL stack, or an error within sk_X509_push
 */
-int
+int32_t
 PushX509StackField(
     STACK_OF(X509)* stack,
     X509* x509)
@@ -1274,10 +1276,10 @@ Returns a bool to managed code.
 1 for success
 0 for failure
 */
-int
+int32_t
 GetRandomBytes(
-    unsigned char* buf, 
-    int num)
+    uint8_t* buf,
+    int32_t num)
 {
     int ret = RAND_bytes(buf, num);
 
@@ -1297,7 +1299,7 @@ Return values:
 -1 indicates OpenSSL signalled an error, CryptographicException should be raised.
 -2 indicates an error in the input arguments
 */
-int
+int32_t
 LookupFriendlyNameByOid(
     const char* oidValue,
     const char** friendlyName)
@@ -1414,7 +1416,7 @@ Return values:
 0 on success
 non-zero on failure
 */
-int
+int32_t
 EnsureOpenSslInitialized()
 {
     int ret = 0;
@@ -1475,6 +1477,13 @@ EnsureOpenSslInitialized()
         ret = 4;
         goto done;
     }
+
+    // Load the SHA-2 hash algorithms, and anything else not in the default
+    // support set.
+    OPENSSL_add_all_algorithms_conf();
+
+    // Ensure that the error message table is loaded.
+    ERR_load_crypto_strings();
 
 done:
     if (ret != 0)

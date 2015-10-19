@@ -40,7 +40,7 @@ enum Asn1StringPrintFlags : uint64_t
 /*
 Shims the d2i_ASN1_type_bytes method and makes it easier to invoke from managed code.
 */
-extern "C" ASN1_STRING* DecodeAsn1TypeBytes(const unsigned char* buf, int32_t len, Asn1StringTypeFlags type);
+extern "C" ASN1_STRING* DecodeAsn1TypeBytes(const uint8_t* buf, int32_t len, Asn1StringTypeFlags type);
 
 /*
 Direct shim to ASN1_STRING_print_ex.

@@ -8,7 +8,7 @@
 /*
 Shims the d2i_PKCS12 method and makes it easier to invoke from managed code.
 */
-extern "C" PKCS12* DecodePkcs12(const unsigned char* buf, int32_t len);
+extern "C" PKCS12* DecodePkcs12(const uint8_t* buf, int32_t len);
 
 /*
 Shims the d2i_PKCS12_bio method.
@@ -46,7 +46,7 @@ Shims the i2d_PKCS12 method.
 
 Returns the number of bytes written to buf.
 */
-extern "C" int32_t EncodePkcs12(PKCS12* p12, unsigned char* buf);
+extern "C" int32_t EncodePkcs12(PKCS12* p12, uint8_t* buf);
 
 /*
 Shims the PKCS12_parse method.

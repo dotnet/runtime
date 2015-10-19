@@ -23,7 +23,7 @@ extern "C" int32_t X509V3ExtPrint(BIO* out, X509_EXTENSION* ext)
     return X509V3_EXT_print(out, ext, X509V3_EXT_DEFAULT, /*indent*/ 0);
 }
 
-extern "C" int32_t DecodeX509BasicConstraints2Extension(const unsigned char* encoded,
+extern "C" int32_t DecodeX509BasicConstraints2Extension(const uint8_t* encoded,
                                                         int32_t encodedLength,
                                                         int32_t* certificateAuthority,
                                                         int32_t* hasPathLengthConstraint,
@@ -66,7 +66,7 @@ extern "C" int32_t DecodeX509BasicConstraints2Extension(const unsigned char* enc
     return result;
 }
 
-extern "C" EXTENDED_KEY_USAGE* DecodeExtendedKeyUsage(const unsigned char* buf, int32_t len)
+extern "C" EXTENDED_KEY_USAGE* DecodeExtendedKeyUsage(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {

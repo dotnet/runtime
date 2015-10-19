@@ -71,12 +71,12 @@ extern "C" EVP_PKEY* GetX509EvpPublicKey(X509* x509);
 /*
 Shims the d2i_X509_CRL method and makes it easier to invoke from managed code.
 */
-extern "C" X509_CRL* DecodeX509Crl(const unsigned char* buf, int32_t len);
+extern "C" X509_CRL* DecodeX509Crl(const uint8_t* buf, int32_t len);
 
 /*
 Shims the d2i_X509 method and makes it easier to invoke from managed code.
 */
-extern "C" X509* DecodeX509(const unsigned char* buf, int32_t len);
+extern "C" X509* DecodeX509(const uint8_t* buf, int32_t len);
 
 /*
 Returns the number of bytes it will take to convert

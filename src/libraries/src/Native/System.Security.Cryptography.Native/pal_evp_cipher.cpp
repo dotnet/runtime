@@ -9,7 +9,7 @@
 #define SUCCESS 1
 #define KEEP_CURRENT_DIRECTION -1
 
-extern "C" EVP_CIPHER_CTX* EvpCipherCreate(const EVP_CIPHER* type, unsigned char* key, unsigned char* iv, int32_t enc)
+extern "C" EVP_CIPHER_CTX* EvpCipherCreate(const EVP_CIPHER* type, uint8_t* key, unsigned char* iv, int32_t enc)
 {
     std::unique_ptr<EVP_CIPHER_CTX> ctx(new (std::nothrow) EVP_CIPHER_CTX);
     if (ctx == nullptr)
@@ -58,7 +58,7 @@ extern "C" int32_t EvpCipherCtxSetPadding(EVP_CIPHER_CTX* x, int32_t padding)
 }
 
 extern "C" int32_t
-EvpCipherUpdate(EVP_CIPHER_CTX* ctx, unsigned char* out, int32_t* outl, unsigned char* in, int32_t inl)
+EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, unsigned char* in, int32_t inl)
 {
     int outLength;
     int32_t ret = EVP_CipherUpdate(ctx, out, &outLength, in, inl);
@@ -70,7 +70,7 @@ EvpCipherUpdate(EVP_CIPHER_CTX* ctx, unsigned char* out, int32_t* outl, unsigned
     return ret;
 }
 
-extern "C" int32_t EvpCipherFinalEx(EVP_CIPHER_CTX* ctx, unsigned char* outm, int32_t* outl)
+extern "C" int32_t EvpCipherFinalEx(EVP_CIPHER_CTX* ctx, uint8_t* outm, int32_t* outl)
 {
     int outLength;
     int32_t ret = EVP_CipherFinal_ex(ctx, outm, &outLength);

@@ -20,12 +20,12 @@ extern "C" void BigNumDestroy(BIGNUM* a);
 /*
 Shims the BN_bin2bn method.
 */
-extern "C" BIGNUM* BigNumFromBinary(const unsigned char* s, int32_t len);
+extern "C" BIGNUM* BigNumFromBinary(const uint8_t* s, int32_t len);
 
 /*
 Shims the BN_bn2bin method.
 */
-extern "C" int32_t BigNumToBinary(const BIGNUM* a, unsigned char* to);
+extern "C" int32_t BigNumToBinary(const BIGNUM* a, uint8_t* to);
 
 /*
 Returns the number of bytes needed to export a BIGNUM.
