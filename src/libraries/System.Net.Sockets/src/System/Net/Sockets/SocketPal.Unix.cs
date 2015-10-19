@@ -20,6 +20,19 @@ namespace System.Net.Sockets
         // PlatformNotSupportedException instead.
         public const int ProtocolInformationSize = 0;
 
+        public readonly static bool SupportsMultipleConnectAttempts = GetPlatformSupportsMultipleConnectAttempts();
+        private readonly static bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
+
+        private static bool GetPlatformSupportsMultipleConnectAttempts()
+        {
+            return Interop.Sys.PlatformSupportsMultipleConnectAttempts();
+        }
+
+        private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
+        {
+            return Interop.Sys.PlatformSupportsDualModeIPv4PacketInfo();
+        }
+
         public static SocketError GetSocketErrorForErrorCode(Interop.Error errorCode)
         {
             // TODO: audit these using winsock.h
@@ -581,9 +594,21 @@ namespace System.Net.Sockets
             return false;
         }
 
-        // This method is used by systems that may need to reset some socket state before
-        // reusing it for another connect attempt (e.g. Linux).
-        static unsafe partial void PrimeForNextConnectAttempt(int fileDescriptor, int socketAddressLen);
+        private static unsafe void PrimeForNextConnectAttempt(int fileDescriptor, int socketAddressLen)
+        {
+            Debug.Assert(SupportsMultipleConnectAttempts);
+
+            // On some platforms (e.g. Linux), a non-blocking socket that fails a connect() attempt
+            // needs to be kicked with another connect to AF_UNSPEC before further connect() attempts
+            // will return valid errors. Otherwise, further connect() attempts will return ECONNABORTED.
+            
+            var sockAddr = stackalloc byte[socketAddressLen];
+            Interop.Error afErr = Interop.Sys.SetAddressFamily(sockAddr, socketAddressLen, (int)AddressFamily.Unspecified);
+            Debug.Assert(afErr == Interop.Error.SUCCESS, "PrimeForNextConnectAttempt: failed to set address family");
+
+            Interop.Error err = Interop.Sys.Connect(fileDescriptor, sockAddr, socketAddressLen);
+            Debug.Assert(err == Interop.Error.SUCCESS, "PrimeForNextConnectAttempt: failed to disassociate socket after failed connect()");
+        }
 
         public static unsafe bool TryCompleteConnect(int fileDescriptor, int socketAddressLen, out SocketError errorCode)
         {
@@ -608,7 +633,11 @@ namespace System.Net.Sockets
             }
 
             errorCode = GetSocketErrorForErrorCode(socketError);
-            PrimeForNextConnectAttempt(fileDescriptor, socketAddressLen);
+            if (SupportsMultipleConnectAttempts)
+            {
+                PrimeForNextConnectAttempt(fileDescriptor, socketAddressLen);
+            }
+
             return true;
         }
 
@@ -1050,6 +1079,16 @@ namespace System.Net.Sockets
 
             Interop.Error err = Interop.Sys.SetLingerOption(handle.FileDescriptor, &opt);
             return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+        }
+
+        public static void SetReceivingDualModeIPv4PacketInformation(Socket socket)
+        {
+            // NOTE: some platforms (e.g. OS X) do not support receiving IPv4 packet information for packets received
+            //       on dual-mode sockets. On these platforms, this call is a no-op.
+            if (SupportsDualModeIPv4PacketInfo)
+            {
+                socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
+            }
         }
 
         public static unsafe SocketError GetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)

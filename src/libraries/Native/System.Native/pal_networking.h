@@ -405,3 +405,7 @@ extern "C" Error FreeSocketEventBuffer(SocketEvent* buffer);
 extern "C" Error TryChangeSocketEventRegistration(int32_t port, int32_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
 
 extern "C" Error WaitForSocketEvents(int32_t port, SocketEvent* buffer, int32_t* count);
+
+extern "C" int32_t PlatformSupportsMultipleConnectAttempts();
+
+extern "C" int32_t PlatformSupportsDualModeIPv4PacketInfo();

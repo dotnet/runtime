@@ -18,6 +18,9 @@ add_library(System.Native
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     target_link_libraries(System.Native rt)
+
+    add_definitions(-DPLATFORM_SUPPORTS_MULTIPLE_CONNECT_ATTEMPTS)
+    add_definitions(-DPLATFORM_SUPPORTS_DUAL_MODE_IPV4_PACKET_INFO)
 endif ()
 
 install (TARGETS System.Native DESTINATION .)
