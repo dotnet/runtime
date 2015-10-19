@@ -9,7 +9,7 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
 
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
 using System.Linq.Expressions.Compiler;
 #endif 
 
@@ -271,7 +271,7 @@ namespace System.Runtime.CompilerServices
 
         internal T MakeUpdateDelegate()
         {
-#if !FEATURE_CORECLR
+#if !FEATURE_COMPILE
             Type target = typeof(T);
             MethodInfo invoke = target.GetMethod("Invoke");
 
@@ -315,7 +315,7 @@ namespace System.Runtime.CompilerServices
 #endif
         }
 
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
         // This needs to be SafeCritical to allow access to
         // internal types from user code as generic parameters.
         //

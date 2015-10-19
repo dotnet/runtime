@@ -9,7 +9,7 @@ namespace System.Linq.Expressions.Compiler
 {
     internal static partial class DelegateHelpers
     {
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
         private const MethodAttributes CtorAttributes = MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public;
         private const MethodImplAttributes ImplAttributes = MethodImplAttributes.Runtime | MethodImplAttributes.Managed;
         private const MethodAttributes InvokeAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual;
@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static Type MakeNewCustomDelegate(Type[] types)
         {
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
             Type returnType = types[types.Length - 1];
             Type[] parameters = types.RemoveLast();
 

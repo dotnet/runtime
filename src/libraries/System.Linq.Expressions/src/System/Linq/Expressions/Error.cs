@@ -1115,7 +1115,7 @@ namespace System.Linq.Expressions
             return new NotSupportedException();
         }
 
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
         /// <summary>
         /// NotImplementedException with message like "The operator '{0}' is not implemented for type '{1}'"
         /// </summary>

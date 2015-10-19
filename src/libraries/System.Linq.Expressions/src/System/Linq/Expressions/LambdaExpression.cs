@@ -113,16 +113,32 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile()
         {
-#if FEATURE_CORECLR
+            return Compile(preferInterpretation: false);
+        }
+
+        /// <summary>
+        /// Produces a delegate that represents the lambda expression.
+        /// </summary>
+        /// <param name="preferInterpretation">A <see cref="Boolean"/> that indicates if the expression should be compiled to an interpreted form, if available. </param>
+        /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        public Delegate Compile(bool preferInterpretation)
+        {
+#if FEATURE_COMPILE
+#if FEATURE_INTERPRET
+            if (preferInterpretation)
+            {
+                return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+            }
+#endif
             return Compiler.LambdaCompiler.Compile(this);
 #else
             return new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
-#endif 
+#endif
         }
 
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
         internal abstract LambdaExpression Accept(Compiler.StackSpiller spiller);
-#endif 
+#endif
     }
 
     /// <summary>
@@ -146,11 +162,27 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile()
         {
-#if FEATURE_CORECLR
+            return Compile(preferInterpretation: false);
+        }
+
+        /// <summary>
+        /// Produces a delegate that represents the lambda expression.
+        /// </summary>
+        /// <param name="preferInterpretation">A <see cref="Boolean"/> that indicates if the expression should be compiled to an interpreted form, if available. </param>
+        /// <returns>A delegate containing the compiled version of the lambda.</returns>
+        public new TDelegate Compile(bool preferInterpretation)
+        {
+#if FEATURE_COMPILE
+#if FEATURE_INTERPRET
+            if (preferInterpretation)
+            {
+                return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
+            }
+#endif
             return (TDelegate)(object)Compiler.LambdaCompiler.Compile(this);
 #else
             return (TDelegate)(object)new System.Linq.Expressions.Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
-#endif 
+#endif
         }
 
         /// <summary>
@@ -178,7 +210,7 @@ namespace System.Linq.Expressions
             return visitor.VisitLambda(this);
         }
 
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
         internal override LambdaExpression Accept(Compiler.StackSpiller spiller)
         {
             return spiller.Rewrite(this);
@@ -188,10 +220,10 @@ namespace System.Linq.Expressions
         {
             return new Expression<TDelegate>(body, name, tailCall, parameters);
         }
-#endif  
+#endif
     }
 
-#if !FEATURE_CORECLR
+#if !FEATURE_COMPILE
     // Seperate expression creation class to hide the CreateExpressionFunc function from users reflecting on Expression<T>
     public class ExpressionCreator<TDelegate>
     {
@@ -223,7 +255,7 @@ namespace System.Linq.Expressions
             MethodInfo create = null;
             if (!factories.TryGetValue(delegateType, out fastPath))
             {
-#if FEATURE_CORECLR
+#if FEATURE_COMPILE
                 create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic);
 #else
                 create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public);
