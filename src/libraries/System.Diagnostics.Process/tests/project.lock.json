@@ -46,7 +46,7 @@
           "lib/dotnet/Microsoft.Win32.Primitives.dll": {}
         }
       },
-      "Microsoft.Win32.Registry/4.0.0-beta-23409": {
+      "Microsoft.Win32.Registry/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -76,7 +76,7 @@
           "lib/DNXCore50/System.Collections.dll": {}
         }
       },
-      "System.Console/4.0.0-beta-23409": {
+      "System.Console/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -172,7 +172,7 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.IO.Pipes/4.0.0-beta-23409": {
+      "System.IO.Pipes/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -333,7 +333,7 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23409": {
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -373,7 +373,7 @@
           "lib/dotnet/System.Security.Principal.dll": {}
         }
       },
-      "System.Security.Principal.Windows/4.0.0-beta-23409": {
+      "System.Security.Principal.Windows/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.0",
@@ -490,7 +490,7 @@
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.Thread/4.0.0-beta-23409": {
+      "System.Threading.Thread/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -502,7 +502,7 @@
           "lib/DNXCore50/System.Threading.Thread.dll": {}
         }
       },
-      "System.Threading.ThreadPool/4.0.10-beta-23409": {
+      "System.Threading.ThreadPool/4.0.10-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -610,7 +610,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00105": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00107": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -689,15 +689,15 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "Microsoft.Win32.Registry/4.0.0-beta-23409": {
+    "Microsoft.Win32.Registry/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "ec40UVuBPG4ZhPz52DtURzOZB4RqFDinns7v6nXe4kRZuL1cjESWMNtTR9/ZzPad8hcFr12Ny5jFfdHqOHPMNg==",
+      "sha512": "CvWe2EE6PI9c3rXreDQUUhDS7Z6QIbq+H5rKcArDGxV3++OdsL5LPSrHd/NtoGey+rxjedMIfgxgASdM+4a2aQ==",
       "files": [
         "lib/DNXCore50/Microsoft.Win32.Registry.dll",
         "lib/net46/Microsoft.Win32.Registry.dll",
-        "Microsoft.Win32.Registry.4.0.0-beta-23409.nupkg",
-        "Microsoft.Win32.Registry.4.0.0-beta-23409.nupkg.sha512",
+        "Microsoft.Win32.Registry.4.0.0-beta-23419.nupkg",
+        "Microsoft.Win32.Registry.4.0.0-beta-23419.nupkg.sha512",
         "Microsoft.Win32.Registry.nuspec",
         "ref/dotnet/de/Microsoft.Win32.Registry.xml",
         "ref/dotnet/es/Microsoft.Win32.Registry.xml",
@@ -747,10 +747,10 @@
         "System.Collections.nuspec"
       ]
     },
-    "System.Console/4.0.0-beta-23409": {
+    "System.Console/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "dO1UdUadTRQDeU8n99Tabd//6X/yTdp8qDRaZoD7EITou4iqAY9IHRBBImx+9AUkSO0MTYeOcxSl1wcnu3u4gQ==",
+      "sha512": "3qT+FXi8E79ITgXaIPrs/PtlEv9mfWyeqZClbX08/qThv61xM+Ca8J4XyzVnChag7KJdIRTgMG6Ixgq1eI7WsQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -774,8 +774,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Console.4.0.0-beta-23409.nupkg",
-        "System.Console.4.0.0-beta-23409.nupkg.sha512",
+        "System.Console.4.0.0-beta-23419.nupkg",
+        "System.Console.4.0.0-beta-23419.nupkg.sha512",
         "System.Console.nuspec"
       ]
     },
@@ -979,10 +979,10 @@
         "System.IO.FileSystem.Primitives.nuspec"
       ]
     },
-    "System.IO.Pipes/4.0.0-beta-23409": {
+    "System.IO.Pipes/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "xpeTa4vA19OQYFNBS6kXjrlYUm1OzLUGZaxhe4sPd04LngRBh8X4zaXZ/25YXUGvqTkavHddxa8tEDGTumF/aw==",
+      "sha512": "xhgssAFFCEsWPTbWIR40MkVhlEfH+MplocPziicQYFJHivNV/OMSC1qWyi5vsCa2ZfPce6VBpXrT+tToc/CApw==",
       "files": [
         "lib/net46/System.IO.Pipes.dll",
         "ref/dotnet/de/System.IO.Pipes.xml",
@@ -998,8 +998,8 @@
         "ref/dotnet/zh-hant/System.IO.Pipes.xml",
         "ref/net46/System.IO.Pipes.dll",
         "runtime.json",
-        "System.IO.Pipes.4.0.0-beta-23409.nupkg",
-        "System.IO.Pipes.4.0.0-beta-23409.nupkg.sha512",
+        "System.IO.Pipes.4.0.0-beta-23419.nupkg",
+        "System.IO.Pipes.4.0.0-beta-23419.nupkg.sha512",
         "System.IO.Pipes.nuspec"
       ]
     },
@@ -1418,10 +1418,10 @@
         "System.Runtime.InteropServices.nuspec"
       ]
     },
-    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23409": {
+    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "BE5xuM8Lx1Jh2/fonWW6jIB0a6HgpiT+asK9rfdJSwDR7iDHmJ0vOXbreV+CTLOVX/xGDRogIIt50MsN36h0kg==",
+      "sha512": "ctI2Kx4NFvop5FMdjbpsTL6/uiC5G0gO66jD76wRRMGQKaIpI2rigUWnOUx88OXrIb+t2ozJT+rl4eaMD5sPHw==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -1433,8 +1433,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23409.nupkg",
-        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23409.nupkg.sha512",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23419.nupkg",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23419.nupkg.sha512",
         "System.Runtime.InteropServices.RuntimeInformation.nuspec"
       ]
     },
@@ -1503,10 +1503,10 @@
         "System.Security.Principal.nuspec"
       ]
     },
-    "System.Security.Principal.Windows/4.0.0-beta-23409": {
+    "System.Security.Principal.Windows/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "l24CzvkR0FUSmojdk/cXkvPKRqZ2jIJ8h2d440kFwG6yyyJwvOcZkzYDR/XV2npEmls13HcA+KvMsXxmprLn6A==",
+      "sha512": "018pWEoRdCh/TWo3gHh7WJHoj1bV1je39TBxIfrPzCNEPht3LcfeE7g9G4qTs/YXltB/xJsKmnYelTkHIGH7KQ==",
       "files": [
         "lib/DNXCore50/System.Security.Principal.Windows.dll",
         "lib/net46/System.Security.Principal.Windows.dll",
@@ -1522,8 +1522,8 @@
         "ref/dotnet/zh-hans/System.Security.Principal.Windows.xml",
         "ref/dotnet/zh-hant/System.Security.Principal.Windows.xml",
         "ref/net46/System.Security.Principal.Windows.dll",
-        "System.Security.Principal.Windows.4.0.0-beta-23409.nupkg",
-        "System.Security.Principal.Windows.4.0.0-beta-23409.nupkg.sha512",
+        "System.Security.Principal.Windows.4.0.0-beta-23419.nupkg",
+        "System.Security.Principal.Windows.4.0.0-beta-23419.nupkg.sha512",
         "System.Security.Principal.Windows.nuspec"
       ]
     },
@@ -1764,10 +1764,10 @@
         "System.Threading.Tasks.nuspec"
       ]
     },
-    "System.Threading.Thread/4.0.0-beta-23409": {
+    "System.Threading.Thread/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "gtquHsK+pROh1WC8XyxVTypw/b6ukjOUndSyd1+snVER/92IkuklTW9xN6qUE8c+nBNuZO/lNaag0yy7TxnpAQ==",
+      "sha512": "ehZLfca9eUfOahLrlttRSkQXmcz6oa7iwBQ2V2/kzkHeWmiRknJYt1svW0p6I+MltWuR3IweCYZcSdNynUzPiA==",
       "files": [
         "lib/DNXCore50/System.Threading.Thread.dll",
         "lib/MonoAndroid10/_._",
@@ -1791,15 +1791,15 @@
         "ref/net46/System.Threading.Thread.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Threading.Thread.4.0.0-beta-23409.nupkg",
-        "System.Threading.Thread.4.0.0-beta-23409.nupkg.sha512",
+        "System.Threading.Thread.4.0.0-beta-23419.nupkg",
+        "System.Threading.Thread.4.0.0-beta-23419.nupkg.sha512",
         "System.Threading.Thread.nuspec"
       ]
     },
-    "System.Threading.ThreadPool/4.0.10-beta-23409": {
+    "System.Threading.ThreadPool/4.0.10-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "GHQA83v+KePBnQvbHZIHx+AEP1Yi8D9DI3yXMM8PN89sUn+gVi9SuAachqgJ1syJ5b5x9a2wZnF/2z3PXlFsSQ==",
+      "sha512": "JRfB7CY8RBRUpoxIvorzunsT3srW8xAzXsHiB7h5qUT1j8FF8NeVYGF0z+rPOh2bk9lyjH58lr/1R+XnFH/EQg==",
       "files": [
         "lib/DNXCore50/System.Threading.ThreadPool.dll",
         "lib/MonoAndroid10/_._",
@@ -1823,8 +1823,8 @@
         "ref/net46/System.Threading.ThreadPool.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Threading.ThreadPool.4.0.10-beta-23409.nupkg",
-        "System.Threading.ThreadPool.4.0.10-beta-23409.nupkg.sha512",
+        "System.Threading.ThreadPool.4.0.10-beta-23419.nupkg",
+        "System.Threading.ThreadPool.4.0.10-beta-23419.nupkg.sha512",
         "System.Threading.ThreadPool.nuspec"
       ]
     },
@@ -1945,14 +1945,14 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00105": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00107": {
       "type": "package",
       "serviceable": true,
-      "sha512": "EnnGcy9rmSdQ8izHWvYSYVyjQGhbeFH7JeM/L35ZrrPGtYvq5XD3hc1cJPCs+43mXdF9cdqhkt5uTlXYzC+Z8g==",
+      "sha512": "xNAxu4vFz7vzM3h5oGvWuvwOb9Z4wGg/yE271uh2/LnrlFeyP2BuFTIIdyLdhg/R85NO6Y4mnU99tPsrWZAOuw==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00105.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00105.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }

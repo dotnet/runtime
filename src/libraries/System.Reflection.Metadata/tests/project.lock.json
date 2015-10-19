@@ -152,7 +152,7 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.IO.MemoryMappedFiles/4.0.0-beta-23401": {
+      "System.IO.MemoryMappedFiles/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.IO.FileSystem": "4.0.0",
@@ -531,7 +531,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00102": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00107": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -873,25 +873,35 @@
         "System.IO.FileSystem.Primitives.nuspec"
       ]
     },
-    "System.IO.MemoryMappedFiles/4.0.0-beta-23401": {
+    "System.IO.MemoryMappedFiles/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "a6dVZ+SLlU144MjT87w03FFcurMbHTPA68YqBn94musckG0ADH/dTmId6UvMPn+WjqoVPEhXH2gan7JvaqENkw==",
+      "sha512": "2iBTD/dBmA/b5Y1C4W6ZeqgD56dS0AwBgzfmxR9EPvRb+Q8weONZUdySocpWL59MjF/KYEgHJRP9G6KfPe2PDg==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.IO.MemoryMappedFiles.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.IO.MemoryMappedFiles.xml",
+        "ref/dotnet/es/System.IO.MemoryMappedFiles.xml",
+        "ref/dotnet/fr/System.IO.MemoryMappedFiles.xml",
+        "ref/dotnet/it/System.IO.MemoryMappedFiles.xml",
+        "ref/dotnet/ja/System.IO.MemoryMappedFiles.xml",
+        "ref/dotnet/ko/System.IO.MemoryMappedFiles.xml",
+        "ref/dotnet/ru/System.IO.MemoryMappedFiles.xml",
         "ref/dotnet/System.IO.MemoryMappedFiles.dll",
+        "ref/dotnet/System.IO.MemoryMappedFiles.xml",
+        "ref/dotnet/zh-hans/System.IO.MemoryMappedFiles.xml",
+        "ref/dotnet/zh-hant/System.IO.MemoryMappedFiles.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.IO.MemoryMappedFiles.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.IO.MemoryMappedFiles.4.0.0-beta-23401.nupkg",
-        "System.IO.MemoryMappedFiles.4.0.0-beta-23401.nupkg.sha512",
+        "System.IO.MemoryMappedFiles.4.0.0-beta-23419.nupkg",
+        "System.IO.MemoryMappedFiles.4.0.0-beta-23419.nupkg.sha512",
         "System.IO.MemoryMappedFiles.nuspec"
       ]
     },
@@ -1717,14 +1727,14 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00102": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00107": {
       "type": "package",
       "serviceable": true,
-      "sha512": "YOLHpTXiw6lEGbsQ1uQ93BAPKiUtrj4l+Yr1+WGdZShfCtGc3Sq3R9dISIHM49znLo+qDcnmo2oMGJdVZ9YTVg==",
+      "sha512": "xNAxu4vFz7vzM3h5oGvWuvwOb9Z4wGg/yE271uh2/LnrlFeyP2BuFTIIdyLdhg/R85NO6Y4mnU99tPsrWZAOuw==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }

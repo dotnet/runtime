@@ -169,7 +169,7 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.Net.NameResolution/4.0.0-beta-23328": {
+      "System.Net.NameResolution/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Net.Primitives": "4.0.10",
@@ -997,25 +997,35 @@
         "System.IO.FileSystem.Primitives.nuspec"
       ]
     },
-    "System.Net.NameResolution/4.0.0-beta-23328": {
+    "System.Net.NameResolution/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "qUn7O0a8xQdK7FJ+i+E6SLZA8JjyyZ//KSHkmoeECLFlF9dSVuYN/lJ7b0T1zqxF3XzdI1LGv9lC6MbMRIm2ow==",
+      "sha512": "5jQOR90Ql0JgLikkRghCESPGbIjHZ5PDH3ot+XObELSM6vS8uo394u6NfLyF1i1s1BP1BIimR2qoWIn7+F8Q8Q==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Net.NameResolution.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Net.NameResolution.xml",
+        "ref/dotnet/es/System.Net.NameResolution.xml",
+        "ref/dotnet/fr/System.Net.NameResolution.xml",
+        "ref/dotnet/it/System.Net.NameResolution.xml",
+        "ref/dotnet/ja/System.Net.NameResolution.xml",
+        "ref/dotnet/ko/System.Net.NameResolution.xml",
+        "ref/dotnet/ru/System.Net.NameResolution.xml",
         "ref/dotnet/System.Net.NameResolution.dll",
+        "ref/dotnet/System.Net.NameResolution.xml",
+        "ref/dotnet/zh-hans/System.Net.NameResolution.xml",
+        "ref/dotnet/zh-hant/System.Net.NameResolution.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Net.NameResolution.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Net.NameResolution.4.0.0-beta-23328.nupkg",
-        "System.Net.NameResolution.4.0.0-beta-23328.nupkg.sha512",
+        "System.Net.NameResolution.4.0.0-beta-23419.nupkg",
+        "System.Net.NameResolution.4.0.0-beta-23419.nupkg.sha512",
         "System.Net.NameResolution.nuspec"
       ]
     },

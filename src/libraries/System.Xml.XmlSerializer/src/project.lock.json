@@ -353,7 +353,7 @@
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.Thread/4.0.0-beta-23401": {
+      "System.Threading.Thread/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -833,7 +833,7 @@
           "lib/netcore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.Thread/4.0.0-beta-23401": {
+      "System.Threading.Thread/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -1833,10 +1833,10 @@
         "System.Threading.Tasks.nuspec"
       ]
     },
-    "System.Threading.Thread/4.0.0-beta-23401": {
+    "System.Threading.Thread/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "rkyJcFW7yT5BqvyNBbJRPeG9L4T0MBWeG+xfNjI/eJHf5Go217I+09GRK8GAkAmgYwVScVUmVtuLdD4pAUnFMA==",
+      "sha512": "ehZLfca9eUfOahLrlttRSkQXmcz6oa7iwBQ2V2/kzkHeWmiRknJYt1svW0p6I+MltWuR3IweCYZcSdNynUzPiA==",
       "files": [
         "lib/DNXCore50/System.Threading.Thread.dll",
         "lib/MonoAndroid10/_._",
@@ -1844,14 +1844,24 @@
         "lib/net46/System.Threading.Thread.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Threading.Thread.xml",
+        "ref/dotnet/es/System.Threading.Thread.xml",
+        "ref/dotnet/fr/System.Threading.Thread.xml",
+        "ref/dotnet/it/System.Threading.Thread.xml",
+        "ref/dotnet/ja/System.Threading.Thread.xml",
+        "ref/dotnet/ko/System.Threading.Thread.xml",
+        "ref/dotnet/ru/System.Threading.Thread.xml",
         "ref/dotnet/System.Threading.Thread.dll",
+        "ref/dotnet/System.Threading.Thread.xml",
+        "ref/dotnet/zh-hans/System.Threading.Thread.xml",
+        "ref/dotnet/zh-hant/System.Threading.Thread.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Threading.Thread.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Threading.Thread.4.0.0-beta-23401.nupkg",
-        "System.Threading.Thread.4.0.0-beta-23401.nupkg.sha512",
+        "System.Threading.Thread.4.0.0-beta-23419.nupkg",
+        "System.Threading.Thread.4.0.0-beta-23419.nupkg.sha512",
         "System.Threading.Thread.nuspec"
       ]
     },

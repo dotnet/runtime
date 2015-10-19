@@ -70,7 +70,7 @@
           "lib/dotnet/System.ComponentModel.EventBasedAsync.dll": {}
         }
       },
-      "System.Console/4.0.0-beta-23401": {
+      "System.Console/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -204,7 +204,7 @@
           "ref/dotnet/System.Linq.Expressions.dll": {}
         }
       },
-      "System.Net.NameResolution/4.0.0-beta-23401": {
+      "System.Net.NameResolution/4.0.0-beta-23419": {
         "type": "package",
         "dependencies": {
           "System.Net.Primitives": "4.0.10",
@@ -587,7 +587,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00102": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00107": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -792,25 +792,35 @@
         "System.ComponentModel.EventBasedAsync.nuspec"
       ]
     },
-    "System.Console/4.0.0-beta-23401": {
+    "System.Console/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "49zWKpJWl584fCuBYIRg68wk69e2+r5g7K8vlZRijrmXqiMe8Bx0FEap7Dc1rPhTYD06g72P2u5v8QfLLDh4bQ==",
+      "sha512": "3qT+FXi8E79ITgXaIPrs/PtlEv9mfWyeqZClbX08/qThv61xM+Ca8J4XyzVnChag7KJdIRTgMG6Ixgq1eI7WsQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Console.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Console.xml",
+        "ref/dotnet/es/System.Console.xml",
+        "ref/dotnet/fr/System.Console.xml",
+        "ref/dotnet/it/System.Console.xml",
+        "ref/dotnet/ja/System.Console.xml",
+        "ref/dotnet/ko/System.Console.xml",
+        "ref/dotnet/ru/System.Console.xml",
         "ref/dotnet/System.Console.dll",
+        "ref/dotnet/System.Console.xml",
+        "ref/dotnet/zh-hans/System.Console.xml",
+        "ref/dotnet/zh-hant/System.Console.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Console.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Console.4.0.0-beta-23401.nupkg",
-        "System.Console.4.0.0-beta-23401.nupkg.sha512",
+        "System.Console.4.0.0-beta-23419.nupkg",
+        "System.Console.4.0.0-beta-23419.nupkg.sha512",
         "System.Console.nuspec"
       ]
     },
@@ -1129,25 +1139,35 @@
         "System.Linq.Expressions.nuspec"
       ]
     },
-    "System.Net.NameResolution/4.0.0-beta-23401": {
+    "System.Net.NameResolution/4.0.0-beta-23419": {
       "type": "package",
       "serviceable": true,
-      "sha512": "xFxJU/0tL93jkMxBSN0t1uEfFdH6ZhRjU2MrsDQPBuqzV8rNL75qkEBfbzMbtTZiaSqANU2LzbdpFKXRYw/JPA==",
+      "sha512": "5jQOR90Ql0JgLikkRghCESPGbIjHZ5PDH3ot+XObELSM6vS8uo394u6NfLyF1i1s1BP1BIimR2qoWIn7+F8Q8Q==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Net.NameResolution.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Net.NameResolution.xml",
+        "ref/dotnet/es/System.Net.NameResolution.xml",
+        "ref/dotnet/fr/System.Net.NameResolution.xml",
+        "ref/dotnet/it/System.Net.NameResolution.xml",
+        "ref/dotnet/ja/System.Net.NameResolution.xml",
+        "ref/dotnet/ko/System.Net.NameResolution.xml",
+        "ref/dotnet/ru/System.Net.NameResolution.xml",
         "ref/dotnet/System.Net.NameResolution.dll",
+        "ref/dotnet/System.Net.NameResolution.xml",
+        "ref/dotnet/zh-hans/System.Net.NameResolution.xml",
+        "ref/dotnet/zh-hant/System.Net.NameResolution.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Net.NameResolution.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Net.NameResolution.4.0.0-beta-23401.nupkg",
-        "System.Net.NameResolution.4.0.0-beta-23401.nupkg.sha512",
+        "System.Net.NameResolution.4.0.0-beta-23419.nupkg",
+        "System.Net.NameResolution.4.0.0-beta-23419.nupkg.sha512",
         "System.Net.NameResolution.nuspec"
       ]
     },
@@ -1958,14 +1978,14 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00102": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00107": {
       "type": "package",
       "serviceable": true,
-      "sha512": "YOLHpTXiw6lEGbsQ1uQ93BAPKiUtrj4l+Yr1+WGdZShfCtGc3Sq3R9dISIHM49znLo+qDcnmo2oMGJdVZ9YTVg==",
+      "sha512": "xNAxu4vFz7vzM3h5oGvWuvwOb9Z4wGg/yE271uh2/LnrlFeyP2BuFTIIdyLdhg/R85NO6Y4mnU99tPsrWZAOuw==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00102.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }
