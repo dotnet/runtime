@@ -9,6 +9,7 @@
     <AssemblyName>System.Linq.Expressions.Tests</AssemblyName>
     <RootNamespace>System.Linq.Expressions.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -87,6 +88,7 @@
     <Compile Include="Convert\ConvertCheckedTests.cs" />
     <Compile Include="Convert\ConvertTests.cs" />
     <Compile Include="HelperTypes.cs" />
+    <Compile Include="Interpreter\InterpreterTests.cs" />
     <Compile Include="Invoke\InvocationTests.cs" />
     <Compile Include="Invoke\InvokeFactoryTests.cs" />
     <Compile Include="Lambda\LambdaAddNullableTests.cs" />
