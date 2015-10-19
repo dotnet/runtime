@@ -5,6 +5,7 @@
     <ProjectGuid>{7DF3C428-AAD6-41C7-98E6-6CACFD5C391E}</ProjectGuid>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <OutputType>Library</OutputType>
+    <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.DispatchProxy.cs" />
