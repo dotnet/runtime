@@ -3046,10 +3046,4 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 #define ARCH_VARARG_ICALLS 0
 #endif
 
-#ifdef MONO_CROSS_COMPILE
-#define MONO_IS_CROSS_COMPILE 1
-#else
-#define MONO_IS_CROSS_COMPILE 0
-#endif
-
 #endif /* __MONO_MINI_H__ */
