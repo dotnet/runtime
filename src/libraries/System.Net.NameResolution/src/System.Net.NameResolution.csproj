@@ -146,23 +146,25 @@
 
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
-    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
-      <Link>Common\System\Net\Internals\SocketAddressPal.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs">
-      <Link>Common\System\Net\Internals\Interop.CheckedAccess.cs</Link>
-    </Compile>
+
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>Common\System\Net\Internals\ByteOrder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InteropIPAddressExtensions.Unix.cs">
       <Link>Common\System\Net\InteropIPAddressExtensions.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Internals\SocketException.Unix.cs">
-      <Link>Common\System\Net\Internals\SocketException.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
+      <Link>Common\System\Net\Internals\SocketAddressPal.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Unix.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Unix</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Internals\SocketException.Unix.cs">
+      <Link>Common\System\Net\Internals\SocketException.Unix.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs">
+      <Link>Common\System\Net\Internals\Interop.CheckedAccess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
@@ -193,37 +195,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
       <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
-    <Compile Include="System\Net\NameResolutionPal.Linux.cs" />
-
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.gethostbyaddr_r.cs">
-      <Link>Interop\Linux\libc\Interop.gethostbyaddr_r.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.gethostbyname_r.cs">
-      <Link>Interop\Linux\libc\Interop.gethostbyname_r.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sockaddr.cs">
-      <Link>Interop\Linux\libc\Interop.sockaddr.cs</Link>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="System\Net\NameResolutionPal.OSX.cs" />
-
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
-      <Link>Interop\OSX\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.gethostbyaddr.cs">
-      <Link>Interop\OSX\libc\Interop.gethostbyaddr.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.gethostbyname.cs">
-      <Link>Interop\OSX\libc\Interop.gethostbyname.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.sockaddr.cs">
-      <Link>Interop\OSX\libc\Interop.sockaddr.cs</Link>
     </Compile>
   </ItemGroup>
 
