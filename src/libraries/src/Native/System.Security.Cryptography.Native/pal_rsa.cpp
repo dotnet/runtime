@@ -32,16 +32,23 @@ extern "C" RSA* DecodeRsaPublicKey(const uint8_t* buf, int32_t len)
     return d2i_RSAPublicKey(nullptr, &buf, len);
 }
 
-extern "C" int32_t RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, int32_t useOaepPadding)
+static int GetOpenSslPadding(RsaPadding padding)
 {
-    int padding = useOaepPadding ? RSA_PKCS1_OAEP_PADDING : RSA_PKCS1_PADDING;
-    return RSA_public_encrypt(flen, from, to, rsa, padding);
+    assert(padding == Pkcs1 || padding == OaepSHA1);
+
+    return padding == Pkcs1 ? RSA_PKCS1_PADDING : RSA_PKCS1_OAEP_PADDING;
 }
 
-extern "C" int32_t RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, int32_t useOaepPadding)
+extern "C" int32_t RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
-    int padding = useOaepPadding ? RSA_PKCS1_OAEP_PADDING : RSA_PKCS1_PADDING;
-    return RSA_private_decrypt(flen, from, to, rsa, padding);
+    int openSslPadding = GetOpenSslPadding(padding);
+    return RSA_public_encrypt(flen, from, to, rsa, openSslPadding);
+}
+
+extern "C" int32_t RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
+{
+    int openSslPadding = GetOpenSslPadding(padding);
+    return RSA_private_decrypt(flen, from, to, rsa, openSslPadding);
 }
 
 extern "C" int32_t RsaSize(RSA* rsa)

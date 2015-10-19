@@ -6,6 +6,16 @@
 #include <openssl/rsa.h>
 
 /*
+Padding options for RsaPublicEncrypt and RsaPrivateDecrypt.
+These values should be kept in sync with Interop.Crypto.RsaPadding.
+*/
+enum RsaPadding : int32_t
+{
+    Pkcs1 = 0,
+    OaepSHA1 = 1,
+};
+
+/*
 Shims the RSA_new method.
 
 Returns the new RSA instance.
@@ -40,14 +50,14 @@ Shims the RSA_public_encrypt method.
 
 Returns the size of the signature, or -1 on error.
 */
-extern "C" int32_t RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, int32_t useOaepPadding);
+extern "C" int32_t RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding);
 
 /*
 Shims the RSA_private_decrypt method.
 
 Returns the size of the signature, or -1 on error.
 */
-extern "C" int32_t RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, int32_t useOaepPadding);
+extern "C" int32_t RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding);
 
 /*
 Shims the RSA_size method.

@@ -30,7 +30,7 @@ internal static partial class Interop
             byte[] from,
             byte[] to,
             SafeRsaHandle rsa,
-            [MarshalAs(UnmanagedType.Bool)] bool useOaepPadding);
+            RsaPadding padding);
 
         [DllImport(Libraries.CryptoNative)]
         internal extern static int RsaPrivateDecrypt(
@@ -38,7 +38,7 @@ internal static partial class Interop
             byte[] from,
             byte[] to,
             SafeRsaHandle rsa,
-            [MarshalAs(UnmanagedType.Bool)] bool useOaepPadding);
+            RsaPadding padding);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern int RsaSize(SafeRsaHandle rsa);
@@ -124,5 +124,11 @@ internal static partial class Interop
             int dmq1Length,
             byte[] iqmp,
             int iqmpLength);
+
+        internal enum RsaPadding : int
+        {
+            Pkcs1 = 0,
+            OaepSHA1 = 1,
+        }
     }
 }
