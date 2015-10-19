@@ -20,6 +20,8 @@
 #cmakedefine01 HAVE_FDS_BITS
 #cmakedefine01 HAVE_PRIVATE_FDS_BITS
 #cmakedefine01 HAVE_ALLOCA_H
+#cmakedefine01 HAVE_EPOLL
+#cmakedefine01 HAVE_KQUEUE
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

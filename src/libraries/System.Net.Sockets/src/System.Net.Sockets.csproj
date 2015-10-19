@@ -402,48 +402,20 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Socket.cs">
       <Link>Interop\Unix\System.Native\Interop.Socket.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketEvent.cs">
+      <Link>Interop\Unix\System.Native\Interop.SocketEvent.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
       <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
-    <Compile Include="System\Net\Sockets\SocketAsyncEngineBackend.Linux.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Linux.cs" />
-
-    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
-      <Link>Interop\Linux\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.epoll_create1.cs">
-      <Link>Interop\Linux\libc\Interop.epoll_create1.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.epoll_ctl.cs">
-      <Link>Interop\Linux\libc\Interop.epoll_ctl.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.epoll_event.cs">
-      <Link>Interop\Linux\libc\Interop.epoll_event.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.epoll_wait.cs">
-      <Link>Interop\Linux\libc\Interop.epoll_wait.cs</Link>
-    </Compile>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="System\Net\Sockets\SocketAsyncEngineBackend.OSX.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.OSX.cs" />
-
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
-      <Link>Interop\OSX\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.kqueue.cs">
-      <Link>Interop\OSX\libc\Interop.kqueue.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.kevent64.cs">
-      <Link>Interop\OSX\libc\Interop.kevent.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.timespec.cs">
-      <Link>Interop\OSX\libc\Interop.timespec.cs</Link>
-    </Compile>
   </ItemGroup>
    
   <ItemGroup>
