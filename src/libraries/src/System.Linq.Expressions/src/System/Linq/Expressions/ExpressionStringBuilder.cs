@@ -758,9 +758,10 @@ namespace System.Linq.Expressions
         protected override CatchBlock VisitCatchBlock(CatchBlock node)
         {
             Out("catch (" + node.Test.Name);
-            if (node.Variable != null)
+            if (node.Variable != null && !string.IsNullOrEmpty(node.Variable.Name))
             {
-                Out(node.Variable.Name ?? "");
+                Out(' ');
+                Out(node.Variable.Name);
             }
             Out(") { ... }");
             return node;

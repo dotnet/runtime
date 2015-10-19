@@ -501,7 +501,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        [ActiveIssue(3957)]
         public void NamedExceptionCatchToString()
         {
             CatchBlock cb = Expression.Catch(Expression.Variable(typeof(TestException), "ex"), Expression.Empty());
