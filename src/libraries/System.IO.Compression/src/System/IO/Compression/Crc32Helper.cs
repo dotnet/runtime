@@ -12,7 +12,9 @@ namespace System.IO.Compression
 {
     internal static class Crc32Helper
     {
-        // Generated tables for crc calculation.
+        private static readonly bool s_useZlib = IsZlibCrcAvailable();
+
+        // Generated tables for managed crc calculation.
         // Each table n (starting at 0) contains remainders from the long division of 
         // all possible byte values, shifted by an offset of (n * 4 bits).
         // The divisor used is the crc32 standard polynomial 0xEDB88320
@@ -450,14 +452,36 @@ namespace System.IO.Compression
             0x264B06E6u
         };
 
+        private static unsafe bool IsZlibCrcAvailable()
+        {
+            try
+            {
+                // Make a P/Invoke into zlib crc32 to ensure we're able to find and use it.
+                // If we are, then use zlib.
+                Interop.zlib.crc32(0, null, 0);
+                return true;
+            }
+            catch
+            {
+                // Otherwise, fallback to managed implementation if zlib isn't available
+                Debug.Write("zlib unavailable");
+                return false;
+            }
+        }
+
         // Calculate CRC based on the old CRC and the new bytes 
         // See RFC1952 for details.
-        static public uint UpdateCrc32(uint crc32, byte[] buffer, int offset, int length)
+        public static uint UpdateCrc32(uint crc32, byte[] buffer, int offset, int length)
         {
             Debug.Assert((buffer != null) && (offset >= 0) && (length >= 0)
                        && (offset <= buffer.Length - length), "check the caller");
 
-            Debug.Assert(BitConverter.IsLittleEndian, "UpdateCrc32 Expects Little Endian");
+            return s_useZlib ? ZlibCrc32(crc32, buffer, offset, length) : ManagedCrc32(crc32, buffer, offset, length); 
+        }
+
+        private static uint ManagedCrc32(uint crc32, byte[] buffer, int offset, int length)
+        {
+            Debug.Assert(BitConverter.IsLittleEndian, "ManagedCrc32 Expects Little Endian");
 
             uint term1, term2, term3 = 0;
 
@@ -495,5 +519,10 @@ namespace System.IO.Compression
             crc32 ^= 0xFFFFFFFFU;
             return crc32;
         }
+
+        private static uint ZlibCrc32(uint crc32, byte[] buffer, int offset, int length)
+        {
+            return Interop.zlib.crc32(crc32, buffer, offset, length);
+        } 
     }
 }
