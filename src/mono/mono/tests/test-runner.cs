@@ -64,6 +64,7 @@ public class TestRunner
 		// Defaults
 		int concurrency = 1;
 		int timeout = 2 * 60; // in seconds
+		int expectedExitCode = 0;
 
 		DateTime test_start_time = DateTime.UtcNow;
 
@@ -115,6 +116,13 @@ public class TestRunner
 					}
 					foreach (var s in args [i + 1].Split ())
 						opt_sets.Add (s);
+					i += 2;
+				} else if (args [i] == "--expected-exit-code") {
+					if (i + i >= args.Length) {
+						Console.WriteLine ("Missing argument to --expected-exit-code command line option.");
+						return 1;
+					}
+					expectedExitCode = Int32.Parse (args [i + 1]);
 					i += 2;
 				} else {
 					Console.WriteLine ("Unknown command line option: '" + args [i] + "'.");
@@ -275,7 +283,7 @@ public class TestRunner
 				process.WaitForExit ();
 
 				lock (monitor) {
-					if (process.ExitCode == 0) {
+					if (process.ExitCode == expectedExitCode) {
 						if (concurrency == 1)
 							Console.WriteLine ("passed.");
 						else
