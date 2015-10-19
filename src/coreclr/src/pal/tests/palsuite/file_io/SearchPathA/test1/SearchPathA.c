@@ -139,7 +139,7 @@ int __cdecl main(int argc, char *argv[]) {
         Fail ("SearchPathA: ERROR2 -> Did not Find valid file[%s][%s][%d]\n", lpPath, szFileNameExistsWithExt, error);
     }
 
-    /*RemoveAll();*/
+    RemoveAll();
     PAL_Terminate();
     return PASS; 
 }
