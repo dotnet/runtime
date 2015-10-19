@@ -13,7 +13,7 @@ extern "C" X509_NAME* GetX509NameStackField(X509NameStack* sk, int32_t loc)
     return sk_X509_NAME_value(sk, loc);
 }
 
-extern "C" X509_NAME* DecodeX509Name(const unsigned char* buf, int32_t len)
+extern "C" X509_NAME* DecodeX509Name(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {

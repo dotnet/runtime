@@ -41,7 +41,7 @@ Decodes the X509 BASIC_CONSTRAINTS information and fills the out variables:
 Returns 1 if the BASIC_CONSTRAINTS information was successfully decoded,
 otherwise 0.
 */
-extern "C" int32_t DecodeX509BasicConstraints2Extension(const unsigned char* encoded,
+extern "C" int32_t DecodeX509BasicConstraints2Extension(const uint8_t* encoded,
                                                         int32_t encodedLength,
                                                         int32_t* certificateAuthority,
                                                         int32_t* hasPathLengthConstraint,
@@ -50,7 +50,7 @@ extern "C" int32_t DecodeX509BasicConstraints2Extension(const unsigned char* enc
 /*
 Shims the d2i_EXTENDED_KEY_USAGE method and makes it easier to invoke from managed code.
 */
-extern "C" EXTENDED_KEY_USAGE* DecodeExtendedKeyUsage(const unsigned char* buf, int32_t len);
+extern "C" EXTENDED_KEY_USAGE* DecodeExtendedKeyUsage(const uint8_t* buf, int32_t len);
 
 /*
 Cleans up and deletes an EXTENDED_KEY_USAGE instance.

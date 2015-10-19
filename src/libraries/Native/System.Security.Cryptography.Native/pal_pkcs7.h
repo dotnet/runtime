@@ -17,7 +17,7 @@ extern "C" PKCS7* PemReadBioPkcs7(BIO* bp);
 /*
 Shims the d2i_PKCS7 method and makes it easier to invoke from managed code.
 */
-extern "C" PKCS7* DecodePkcs7(const unsigned char* buf, int32_t len);
+extern "C" PKCS7* DecodePkcs7(const uint8_t* buf, int32_t len);
 
 /*
 Reads a PKCS7 instance in DER format from a BIO.

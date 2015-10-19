@@ -46,7 +46,7 @@ EvpDigestFinalEx
 
 Direct shim to EVP_DigestFinal_ex.
 */
-extern "C" int32_t EvpDigestFinalEx(EVP_MD_CTX* ctx, unsigned char* md, uint32_t* s);
+extern "C" int32_t EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s);
 
 /*
 Function:
