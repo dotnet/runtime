@@ -66,7 +66,10 @@ internal static partial class Interop
             }
 
             IntPtr n, e, d, p, dmp1, q, dmq1, iqmp;
-            GetRsaParameters(key, out n, out e, out d, out p, out dmp1, out q, out dmq1, out iqmp);
+            if (!GetRsaParameters(key, out n, out e, out d, out p, out dmp1, out q, out dmq1, out iqmp))
+            {
+                throw new CryptographicException();
+            }
 
             int modulusSize = Crypto.RsaSize(key);
 
@@ -94,7 +97,8 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative)]
-        private static extern void GetRsaParameters(
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetRsaParameters(
             SafeRsaHandle key,
             out IntPtr n,
             out IntPtr e,
