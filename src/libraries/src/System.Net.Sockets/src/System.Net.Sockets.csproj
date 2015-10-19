@@ -386,6 +386,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MulticastOption.cs">
       <Link>Interop\Unix\System.Native\Interop.MulticastOption.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PlatformSocketSupport.cs">
+      <Link>Interop\Unix\System.Native\Interop.PlatformSocketSupport.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ReceiveMessage.cs">
       <Link>Interop\Unix\System.Native\Interop.ReceiveMessage.cs</Link>
     </Compile>
@@ -410,14 +413,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
       <Link>Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
-    <Compile Include="System\Net\Sockets\SocketPal.Linux.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="System\Net\Sockets\SocketPal.OSX.cs" />
   </ItemGroup>
    
   <ItemGroup>
