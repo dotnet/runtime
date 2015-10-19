@@ -10,7 +10,6 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     public static class DecryptorReusabilty
     {
         [Fact]
-        [ActiveIssue(1965, PlatformID.AnyUnix)]
         public static void TestDecryptorReusability()
         {
             byte[] expectedPlainText = new byte[]
@@ -39,14 +38,28 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                         return;
                     }
 
-                    decryptor.TransformBlock(cipher, 0, cipher.Length, output1, 0);
-                    decryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                    int len = decryptor.TransformBlock(cipher, 0, cipher.Length, output1, 0);
+                    byte[] remainder = decryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+
+                    if (len != cipher.Length)
+                    {
+                        Assert.NotNull(remainder);
+                        Assert.Equal(cipher.Length - len, remainder.Length);
+                        Buffer.BlockCopy(remainder, 0, output1, len, remainder.Length);
+                    }
 
                     Assert.Equal(expectedPlainText, output1);
 
                     // Decryptor is now re-initialized, because TransformFinalBlock was called.
-                    decryptor.TransformBlock(cipher, 0, cipher.Length, output2, 0);
-                    decryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                    len = decryptor.TransformBlock(cipher, 0, cipher.Length, output2, 0);
+                    remainder = decryptor.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+
+                    if (len != cipher.Length)
+                    {
+                        Assert.NotNull(remainder);
+                        Assert.Equal(cipher.Length - len, remainder.Length);
+                        Buffer.BlockCopy(remainder, 0, output2, len, remainder.Length);
+                    }
 
                     Assert.Equal(expectedPlainText, output2);
                 }
