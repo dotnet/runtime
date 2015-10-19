@@ -1843,8 +1843,7 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 		return;
 	}	
 
-#if !NO_UNALIGNED_ACCESS
-	if (SIZEOF_REGISTER == 8) {
+	if (!cfg->backend->no_unaligned_access && SIZEOF_REGISTER == 8) {
 		if (offset % 8) {
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, destreg, offset, val_reg);
 			offset += 4;
@@ -1856,7 +1855,6 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 			size -= 8;
 		}
 	}	
-#endif
 
 	while (size >= 4) {
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, destreg, offset, val_reg);
@@ -1898,8 +1896,7 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 		}
 	}
 
-#if !NO_UNALIGNED_ACCESS
-	if (SIZEOF_REGISTER == 8) {
+	if (!cfg->backend->no_unaligned_access && SIZEOF_REGISTER == 8) {
 		while (size >= 8) {
 			cur_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI8_MEMBASE, cur_reg, srcreg, soffset);
@@ -1909,7 +1906,6 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 			size -= 8;
 		}
 	}	
-#endif
 
 	while (size >= 4) {
 		cur_reg = alloc_preg (cfg);
@@ -2658,15 +2654,11 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 static void
 set_rgctx_arg (MonoCompile *cfg, MonoCallInst *call, int rgctx_reg, MonoInst *rgctx_arg)
 {
-#ifdef MONO_ARCH_RGCTX_REG
 	mono_call_inst_add_outarg_reg (cfg, call, rgctx_reg, MONO_ARCH_RGCTX_REG, FALSE);
 	cfg->uses_rgctx_reg = TRUE;
 	call->rgctx_reg = TRUE;
 #ifdef ENABLE_LLVM
 	call->rgctx_arg_reg = rgctx_reg;
-#endif
-#else
-	NOT_IMPLEMENTED;
 #endif
 }	
 
@@ -13518,7 +13510,7 @@ op_to_op_store_membase (int store_opcode, int opcode)
 }
 
 static inline int
-op_to_op_src1_membase (int load_opcode, int opcode)
+op_to_op_src1_membase (MonoCompile *cfg, int load_opcode, int opcode)
 {
 #ifdef TARGET_X86
 	/* FIXME: This has sign extension issues */
@@ -13551,11 +13543,7 @@ op_to_op_src1_membase (int load_opcode, int opcode)
 
 	switch (opcode) {
 	case OP_X86_PUSH:
-#ifdef __mono_ilp32__
-		if (load_opcode == OP_LOADI8_MEMBASE)
-#else
-		if ((load_opcode == OP_LOAD_MEMBASE) || (load_opcode == OP_LOADI8_MEMBASE))
-#endif
+		if ((load_opcode == OP_LOAD_MEMBASE && !cfg->backend->ilp32) || (load_opcode == OP_LOADI8_MEMBASE))
 			return OP_X86_PUSH_MEMBASE;
 		break;
 		/* FIXME: This only works for 32 bit immediates
@@ -13570,13 +13558,9 @@ op_to_op_src1_membase (int load_opcode, int opcode)
 		break;
 	case OP_COMPARE:
 	case OP_LCOMPARE:
-#ifdef __mono_ilp32__
-		if (load_opcode == OP_LOAD_MEMBASE)
+		if (cfg->backend->ilp32 && load_opcode == OP_LOAD_MEMBASE)
 			return OP_AMD64_ICOMPARE_MEMBASE_REG;
-		if (load_opcode == OP_LOADI8_MEMBASE)
-#else
-		if ((load_opcode == OP_LOAD_MEMBASE) || (load_opcode == OP_LOADI8_MEMBASE))
-#endif
+		if ((load_opcode == OP_LOAD_MEMBASE && !cfg->backend->ilp32) || (load_opcode == OP_LOADI8_MEMBASE))
 			return OP_AMD64_COMPARE_MEMBASE_REG;
 		break;
 	case OP_ICOMPARE:
@@ -13590,7 +13574,7 @@ op_to_op_src1_membase (int load_opcode, int opcode)
 }
 
 static inline int
-op_to_op_src2_membase (int load_opcode, int opcode)
+op_to_op_src2_membase (MonoCompile *cfg, int load_opcode, int opcode)
 {
 #ifdef TARGET_X86
 	if (!((load_opcode == OP_LOAD_MEMBASE) || (load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE)))
@@ -13614,11 +13598,7 @@ op_to_op_src2_membase (int load_opcode, int opcode)
 #endif
 
 #ifdef TARGET_AMD64
-#ifdef __mono_ilp32__
-	if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE) ) {
-#else
-	if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE)) {
-#endif
+	if ((load_opcode == OP_LOADI4_MEMBASE) || (load_opcode == OP_LOADU4_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE && cfg->backend->ilp32)) {
 		switch (opcode) {
 		case OP_ICOMPARE:
 			return OP_AMD64_ICOMPARE_REG_MEMBASE;
@@ -13633,11 +13613,7 @@ op_to_op_src2_membase (int load_opcode, int opcode)
 		case OP_IXOR:
 			return OP_X86_XOR_REG_MEMBASE;
 		}
-#ifdef __mono_ilp32__
-	} else if (load_opcode == OP_LOADI8_MEMBASE) {
-#else
-	} else if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE)) {
-#endif
+	} else if ((load_opcode == OP_LOADI8_MEMBASE) || (load_opcode == OP_LOAD_MEMBASE && !cfg->backend->ilp32)) {
 		switch (opcode) {
 		case OP_COMPARE:
 		case OP_LCOMPARE:
@@ -14389,13 +14365,13 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					}
 
 					/* Try to fuse the load into the instruction */
-					if ((srcindex == 0) && (op_to_op_src1_membase (load_opcode, ins->opcode) != -1)) {
-						ins->opcode = op_to_op_src1_membase (load_opcode, ins->opcode);
+					if ((srcindex == 0) && (op_to_op_src1_membase (cfg, load_opcode, ins->opcode) != -1)) {
+						ins->opcode = op_to_op_src1_membase (cfg, load_opcode, ins->opcode);
 						sregs [0] = var->inst_basereg;
 						//mono_inst_set_src_registers (ins, sregs);
 						ins->inst_offset = var->inst_offset;
-					} else if ((srcindex == 1) && (op_to_op_src2_membase (load_opcode, ins->opcode) != -1)) {
-						ins->opcode = op_to_op_src2_membase (load_opcode, ins->opcode);
+					} else if ((srcindex == 1) && (op_to_op_src2_membase (cfg, load_opcode, ins->opcode) != -1)) {
+						ins->opcode = op_to_op_src2_membase (cfg, load_opcode, ins->opcode);
 						sregs [1] = var->inst_basereg;
 						//mono_inst_set_src_registers (ins, sregs);
 						ins->inst_offset = var->inst_offset;

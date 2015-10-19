@@ -2476,11 +2476,8 @@ emit_llvm_code_end (MonoLLVMModule *lmodule)
 static void
 emit_div_check (EmitContext *ctx, LLVMBuilderRef builder, MonoBasicBlock *bb, MonoInst *ins, LLVMValueRef lhs, LLVMValueRef rhs)
 {
-	gboolean need_div_check = FALSE;
+	gboolean need_div_check = ctx->cfg->backend->need_div_check;
 
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-	need_div_check = TRUE;
-#endif
 	if (bb->region)
 		/* LLVM doesn't know that these can throw an exception since they are not called through an intrinsic */
 		need_div_check = TRUE;

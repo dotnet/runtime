@@ -3221,6 +3221,12 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_HAVE_DUMMY_INIT
 	backend->have_dummy_init = 1;
 #endif
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	backend->need_div_check = 1;
+#endif
+#ifdef NO_UNALIGNED_ACCESS
+	backend->no_unaligned_access = 1;
+#endif
 #ifdef MONO_ARCH_DYN_CALL_PARAM_AREA
 	backend->dyn_call_param_area = MONO_ARCH_DYN_CALL_PARAM_AREA;
 #endif
