@@ -106,6 +106,14 @@ check_function_exists(
     kqueue
     HAVE_KQUEUE)
 
+check_function_exists(
+    gethostbyname_r
+    HAVE_GETHOSTBYNAME_R)
+
+check_function_exists(
+    gethostbyaddr_r
+    HAVE_GETHOSTBYADDR_R)
+
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     set (CMAKE_REQUIRED_LIBRARIES rt)
 endif ()

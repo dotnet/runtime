@@ -35,6 +35,12 @@
 #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
 #endif
 
+enum
+{
+    HOST_ENTRY_HANDLE_ADDRINFO = 1,
+    HOST_ENTRY_HANDLE_HOSTENT = 2,
+};
+
 const int INET6_ADDRSTRLEN_MANAGED = 65; // The C# code has a longer max string length
 
 static_assert(PAL_HOST_NOT_FOUND == HOST_NOT_FOUND, "");
@@ -114,13 +120,12 @@ static void ConvertByteArrayToV6SockAddrIn(sockaddr_in6& addr, const uint8_t* bu
     addr.sin6_family = AF_INET6;
 }
 
-static void ConvertByteArrayToSockAddrIn(sockaddr_in& addr, const uint8_t* buffer, int32_t bufferLength)
+static void ConvertByteArrayToInAddr(in_addr& addr, const uint8_t* buffer, int32_t bufferLength)
 {
     assert(bufferLength == NUM_BYTES_IN_IPV4_ADDRESS);
     (void)bufferLength; // Silence compiler warnings about unused variables on release mode
 
-    addr.sin_addr.s_addr = *reinterpret_cast<const uint32_t*>(buffer); // The address comes as network byte order
-    addr.sin_family = AF_INET;
+    addr.s_addr = *reinterpret_cast<const uint32_t*>(buffer); // Send back in network byte order.
 }
 
 static void ConvertInAddrToByteArray(uint8_t* buffer, int32_t bufferLength, const in_addr& addr)
@@ -129,6 +134,13 @@ static void ConvertInAddrToByteArray(uint8_t* buffer, int32_t bufferLength, cons
     (void)bufferLength; // Silence compiler warnings about unused variables on release mode
 
     *reinterpret_cast<uint32_t*>(buffer) = addr.s_addr; // Send back in network byte order.
+}
+
+static void ConvertByteArrayToSockAddrIn(sockaddr_in& addr, const uint8_t* buffer, int32_t bufferLength)
+{
+    ConvertByteArrayToInAddr(addr.sin_addr, buffer, bufferLength);
+
+    addr.sin_family = AF_INET;
 }
 
 static int32_t ConvertGetAddrInfoAndGetNameInfoErrorsToPal(int32_t error)
@@ -267,7 +279,7 @@ extern "C" int32_t GetHostEntryForName(const uint8_t* address, HostEntry* entry)
         return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
     }
 
-    *entry = {.CanonicalName = nullptr, .AddressListHandle = reinterpret_cast<void*>(info), .IPAddressCount = 0};
+    *entry = {.CanonicalName = nullptr, .Aliases = nullptr, .AddressListHandle = reinterpret_cast<void*>(info), .IPAddressCount = 0, .HandleType = HOST_ENTRY_HANDLE_ADDRINFO };
 
     // Find the canonical name for this host (if any) and count the number of IP end points.
     for (addrinfo* ai = info; ai != nullptr; ai = ai->ai_next)
@@ -287,15 +299,211 @@ extern "C" int32_t GetHostEntryForName(const uint8_t* address, HostEntry* entry)
     return PAL_EAI_SUCCESS;
 }
 
-extern "C" int32_t GetNextIPAddress(void** addressListHandle, IPAddress* endPoint)
+static int ConvertGetHostErrorPlatformToPal(int error)
 {
-    if (addressListHandle == nullptr || endPoint == nullptr)
+    switch (error)
     {
-        return PAL_EAI_BADARG;
+        case HOST_NOT_FOUND:
+            return PAL_HOST_NOT_FOUND;
+
+        case TRY_AGAIN:
+            return PAL_TRY_AGAIN;
+
+        case NO_RECOVERY:
+            return PAL_NO_RECOVERY;
+
+        case NO_DATA:
+            return PAL_NO_DATA;
+
+        default:
+            assert(false && "Unknown gethostbyname/gethostbyaddr error code");
+            return PAL_HOST_NOT_FOUND;
+    }
+}
+
+static void ConvertHostEntPlatformToPal(HostEntry& hostEntry, hostent& entry)
+{
+    hostEntry = {
+        .CanonicalName = reinterpret_cast<uint8_t*>(entry.h_name),
+        .Aliases = reinterpret_cast<uint8_t**>(entry.h_aliases),
+        .AddressListHandle = reinterpret_cast<void*>(&entry),
+        .IPAddressCount = 0,
+        .HandleType = HOST_ENTRY_HANDLE_HOSTENT
+    };
+
+    for (int i = 0; entry.h_addr_list[i] != nullptr; i++)
+    {
+        hostEntry.IPAddressCount++;
+    }
+}
+
+#if HAVE_GETHOSTBYNAME_R
+static int GetHostByNameHelper(const uint8_t* hostname, hostent** entry)
+{
+    assert(hostname != nullptr);
+    assert(entry != nullptr);
+
+    size_t scratchLen = 512;
+
+    for (;;)
+    {
+        uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
+        if (buffer == nullptr)
+        {
+            return PAL_NO_MEM;
+        }
+
+        hostent* result = reinterpret_cast<hostent*>(buffer);
+        char* scratch = reinterpret_cast<char*>(&buffer[sizeof(hostent)]);
+
+        int getHostErrno;
+        int err = gethostbyname_r(reinterpret_cast<const char*>(hostname), result, scratch, scratchLen, entry, &getHostErrno);
+        switch (err)
+        {
+            case 0:
+                *entry = result;
+                return 0;
+
+            case ERANGE:
+                free(buffer);
+                scratchLen *= 2;
+                break;
+
+            default:
+                free(buffer);
+                *entry = nullptr;
+                return getHostErrno;
+        }
+    }
+}
+#endif
+
+extern "C" int32_t GetHostByName(const uint8_t* hostname, HostEntry* entry)
+{
+    if (hostname == nullptr || entry == nullptr)
+    {
+        return PAL_BAD_ARG;
     }
 
-    auto* ai = reinterpret_cast<addrinfo*>(*addressListHandle);
-    for (; ai != nullptr; ai = ai->ai_next)
+    hostent* hostEntry = nullptr;
+    int error = 0;
+
+#if defined(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR)
+    hostEntry = gethostbyname(reinterpret_cast<const char*>(hostname));
+    error = h_errno;
+#elif HAVE_GETHOSTBYNAME_R
+    error = GetHostByNameHelper(hostname, &hostEntry);
+#else
+#error Platform does not provide thread-safe gethostbyname
+#endif
+
+    if (hostEntry == nullptr)
+    {
+        return ConvertGetHostErrorPlatformToPal(error);
+    }
+
+    ConvertHostEntPlatformToPal(*entry, *hostEntry);
+    return PAL_SUCCESS;
+}
+
+#if HAVE_GETHOSTBYADDR_R
+static int GetHostByAddrHelper(const uint8_t* addr, const socklen_t addrLen, int type, hostent** entry)
+{
+    assert(addr != nullptr);
+    assert(addrLen >= 0);
+    assert(entry != nullptr);
+
+    size_t scratchLen = 512;
+
+    for (;;)
+    {
+        uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
+        if (buffer == nullptr)
+        {
+            return PAL_NO_MEM;
+        }
+
+        hostent* result = reinterpret_cast<hostent*>(buffer);
+        char* scratch = reinterpret_cast<char*>(&buffer[sizeof(hostent)]);
+
+        int getHostErrno;
+        int err = gethostbyaddr_r(addr, addrLen, type, result, scratch, scratchLen, entry, &getHostErrno);
+        switch (err)
+        {
+            case 0:
+                *entry = result;
+                return 0;
+
+            case ERANGE:
+                free(buffer);
+                scratchLen *= 2;
+                break;
+
+            default:
+                free(buffer);
+                *entry = nullptr;
+                return getHostErrno;
+        }
+    }
+}
+#endif
+
+extern "C" int32_t GetHostByAddress(const IPAddress* address, HostEntry* entry)
+{
+    if (address == nullptr || entry == nullptr)
+    {
+        return PAL_BAD_ARG;
+    }
+
+    uint8_t* addr = nullptr;
+    socklen_t addrLen = 0;
+    int type = AF_UNSPEC;
+
+    in_addr inAddr = {};
+    in6_addr in6Addr = {};
+
+    if (!address->IsIPv6)
+    {
+        ConvertByteArrayToInAddr(inAddr, address->Address, NUM_BYTES_IN_IPV4_ADDRESS);
+        addr = reinterpret_cast<uint8_t*>(&inAddr);
+        addrLen = sizeof(inAddr);
+        type = AF_INET;
+    }
+    else
+    {
+        ConvertByteArrayToIn6Addr(in6Addr, address->Address, NUM_BYTES_IN_IPV6_ADDRESS);
+        addr = reinterpret_cast<uint8_t*>(&in6Addr);
+        addrLen = sizeof(in6Addr);
+        type = AF_INET6;
+    }
+
+    hostent* hostEntry = nullptr;
+    int error = 0;
+
+#if defined(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR)
+    hostEntry = gethostbyaddr(addr, addrLen, type);
+    error = h_errno;
+#elif HAVE_GETHOSTBYADDR_R
+    error = GetHostByAddrHelper(addr, addrLen, type, &hostEntry);
+#else
+#error Platform does not provide thread-safe gethostbyname
+#endif
+
+    if (hostEntry == nullptr)
+    {
+        return ConvertGetHostErrorPlatformToPal(error);
+    }
+
+    ConvertHostEntPlatformToPal(*entry, *hostEntry);
+    return PAL_SUCCESS;
+}
+
+static int32_t GetNextIPAddressFromAddrInfo(addrinfo** info, IPAddress* endPoint)
+{
+    assert(info != nullptr);
+    assert(endPoint != nullptr);
+
+    for (addrinfo* ai = *info; ai != nullptr; ai = ai->ai_next)
     {
         switch (ai->ai_family)
         {
@@ -323,19 +531,97 @@ extern "C" int32_t GetNextIPAddress(void** addressListHandle, IPAddress* endPoin
                 continue;
         }
 
-        *addressListHandle = reinterpret_cast<void*>(ai->ai_next);
+        *info = ai->ai_next;
         return PAL_EAI_SUCCESS;
     }
 
     return PAL_EAI_NOMORE;
 }
 
+static int32_t GetNextIPAddressFromHostEnt(hostent** hostEntry, IPAddress* address)
+{
+    assert(hostEntry != nullptr);
+    assert(address != nullptr);
+
+    hostent* entry = *hostEntry;
+    if (*entry->h_addr_list == nullptr)
+    {
+        return PAL_EAI_NOMORE;
+    }
+
+    switch (entry->h_addrtype)
+    {
+        case AF_INET:
+        {
+            auto* inAddr = reinterpret_cast<in_addr*>(entry->h_addr_list[0]);
+
+            ConvertInAddrToByteArray(address->Address, NUM_BYTES_IN_IPV4_ADDRESS, *inAddr);
+            address->IsIPv6 = 0;
+            break;
+        }
+
+        case AF_INET6:
+        {
+            auto* in6Addr = reinterpret_cast<in6_addr*>(entry->h_addr_list[0]);
+
+            ConvertIn6AddrToByteArray(address->Address, NUM_BYTES_IN_IPV6_ADDRESS, *in6Addr);
+            address->IsIPv6 = 0;
+            address->ScopeId = 0;
+            break;
+        }
+
+        default:
+            return PAL_EAI_NOMORE;
+    }
+
+    entry->h_addr_list = &entry->h_addr_list[1];
+    return PAL_EAI_SUCCESS;
+}
+
+extern "C" int32_t GetNextIPAddress(const HostEntry* hostEntry, void** addressListHandle, IPAddress* endPoint)
+{
+    if (hostEntry == nullptr || addressListHandle == nullptr || endPoint == nullptr)
+    {
+        return PAL_EAI_BADARG;
+    }
+
+    switch (hostEntry->HandleType)
+    {
+        case HOST_ENTRY_HANDLE_ADDRINFO:
+            return GetNextIPAddressFromAddrInfo(reinterpret_cast<addrinfo**>(addressListHandle), endPoint);
+
+        case HOST_ENTRY_HANDLE_HOSTENT:
+            return GetNextIPAddressFromHostEnt(reinterpret_cast<hostent**>(addressListHandle), endPoint);
+            
+        default:
+            return PAL_EAI_BADARG;
+    }
+}
+
 extern "C" void FreeHostEntry(HostEntry* entry)
 {
     if (entry != nullptr)
     {
-        auto* ai = reinterpret_cast<addrinfo*>(entry->AddressListHandle);
-        freeaddrinfo(ai);
+        switch (entry->HandleType)
+        {
+            case HOST_ENTRY_HANDLE_ADDRINFO:
+            {
+                auto* ai = reinterpret_cast<addrinfo*>(entry->AddressListHandle);
+                freeaddrinfo(ai);
+                break;
+            }
+
+            case HOST_ENTRY_HANDLE_HOSTENT:
+            {
+#if !defined(HAS_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR)
+                free(entry->AddressListHandle);
+#endif
+                break;   
+            }
+
+            default:
+                break;
+        }
     }
 }
 

@@ -42,6 +42,8 @@ enum GetHostErrorCodes
     PAL_NO_RECOVERY = 3,
     PAL_NO_DATA = 4,
     PAL_NO_ADDRESS = PAL_NO_DATA,
+    PAL_BAD_ARG = 5,
+    PAL_NO_MEM = 6,
 };
 
 /**
@@ -226,10 +228,11 @@ struct IPAddress
 
 struct HostEntry
 {
-    uint8_t* CanonicalName;  // Canonical Name of the Host
+    uint8_t* CanonicalName;  // Canonical name of the host
+    uint8_t** Aliases;       // List of aliases for the host
     void* AddressListHandle; // Handle for host socket addresses
     int32_t IPAddressCount;  // Number of IP end points in the list
-    int32_t Padding;         // Pad out to 8-byte alignment
+    int32_t HandleType;      // Indicates the type of the handle. Opaque to managed code.
 };
 
 struct IPPacketInformation
@@ -315,7 +318,11 @@ extern "C" int32_t IPAddressToString(const uint8_t* address,
 
 extern "C" int32_t GetHostEntryForName(const uint8_t* address, HostEntry* entry);
 
-extern "C" int32_t GetNextIPAddress(void** addressListHandle, IPAddress* endPoint);
+extern "C" int32_t GetHostByName(const uint8_t* hostname, HostEntry* entry);
+
+extern "C" int32_t GetHostByAddress(const IPAddress* address, HostEntry* entry);
+
+extern "C" int32_t GetNextIPAddress(const HostEntry* entry, void** addressListHandle, IPAddress* endPoint);
 
 extern "C" void FreeHostEntry(HostEntry* entry);
 
