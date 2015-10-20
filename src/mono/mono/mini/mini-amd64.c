@@ -1785,28 +1785,22 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 	 * accessed during the execution of the method. The later makes no sense for the 
 	 * global register allocator, since a variable can be in more than one location.
 	 */
-	if (sig_ret->type != MONO_TYPE_VOID) {
-		switch (cinfo->ret.storage) {
-		case ArgInIReg:
-		case ArgInFloatSSEReg:
-		case ArgInDoubleSSEReg:
-			if ((MONO_TYPE_ISSTRUCT (sig_ret) && !mono_class_from_mono_type (sig_ret)->enumtype) || ((sig_ret->type == MONO_TYPE_TYPEDBYREF) && cinfo->ret.storage == ArgValuetypeAddrInIReg)) {
-				cfg->vret_addr->opcode = OP_REGVAR;
-				cfg->vret_addr->inst_c0 = cinfo->ret.reg;
-			}
-			else {
-				cfg->ret->opcode = OP_REGVAR;
-				cfg->ret->inst_c0 = cinfo->ret.reg;
-			}
-			break;
-		case ArgValuetypeInReg:
-			cfg->ret->opcode = OP_REGOFFSET;
-			cfg->ret->inst_basereg = -1;
-			cfg->ret->inst_offset = -1;
-			break;
-		default:
-			g_assert_not_reached ();
-		}
+	switch (cinfo->ret.storage) {
+	case ArgInIReg:
+	case ArgInFloatSSEReg:
+	case ArgInDoubleSSEReg:
+		cfg->ret->opcode = OP_REGVAR;
+		cfg->ret->inst_c0 = cinfo->ret.reg;
+		break;
+	case ArgValuetypeInReg:
+		cfg->ret->opcode = OP_REGOFFSET;
+		cfg->ret->inst_basereg = -1;
+		cfg->ret->inst_offset = -1;
+		break;
+	case ArgNone:
+		break;
+	default:
+		g_assert_not_reached ();
 	}
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
