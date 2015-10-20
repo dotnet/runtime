@@ -1,10 +1,17 @@
-// Copyright (c) 2015, Intel Corporation
-// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 // File implements Slicing-by-8 CRC Generation, as described in
 // "Novel Table Lookup-Based Algorithms for High-Performance CRC Generation"
 // IEEE TRANSACTIONS ON COMPUTERS, VOL. 57, NO. 11, NOVEMBER 2008
+
+/*
+ * Copyright (c) 2004-2006 Intel Corporation - All Rights Reserved
+ *
+ *
+ * This software program is licensed subject to the BSD License, 
+ * available at http://www.opensource.org/licenses/bsd-license.html.
+ */
 
 using System.Diagnostics;
 
