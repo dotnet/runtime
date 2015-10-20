@@ -328,16 +328,6 @@ GVAL_IMPL_INIT(DWORD, gAppDomainTLSIndex, TLS_OUT_OF_INDEXES);   // index ( (-1)
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_IMPLICIT_TLS
-EXTERN_C Thread* STDCALL GetThread()
-{
-    return gCurrentThreadInfo.m_pThread;
-}
-
-EXTERN_C AppDomain* STDCALL GetAppDomain()
-{
-    return gCurrentThreadInfo.m_pAppDomain;
-}
-
 BOOL SetThread(Thread* t)
 {
 	LIMITED_METHOD_CONTRACT
