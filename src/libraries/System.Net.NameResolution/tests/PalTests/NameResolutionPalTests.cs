@@ -25,7 +25,6 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(hostEntry.Aliases);
         }
 
-        [ActiveIssue(3218, PlatformID.OSX)]
         [Fact]
         public void GetHostByName_HostName()
         {

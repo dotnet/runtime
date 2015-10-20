@@ -613,7 +613,7 @@ extern "C" void FreeHostEntry(HostEntry* entry)
 
             case HOST_ENTRY_HANDLE_HOSTENT:
             {
-#if !defined(HAS_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR)
+#if !HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR
                 free(entry->AddressListHandle);
 #endif
                 break;   
