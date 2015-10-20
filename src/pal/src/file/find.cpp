@@ -737,9 +737,9 @@ static void FILEEscapeSquareBrackets(char *pattern, char *escaped_pattern)
     TRACE("Entering FILEEscapeSquareBrackets: [%p (%s)][%p]\n",
           pattern,pattern,escaped_pattern);
 
-#if !_NO_DEBUG_MESSAGES_          
+#if _ENABLE_DEBUG_MESSAGES_
     char *escaped_pattern_base = escaped_pattern;
-#endif // !_NO_DEBUG_MESSAGES
+#endif // _ENABLE_DEBUG_MESSAGES_
 
     while(*pattern)
     {
