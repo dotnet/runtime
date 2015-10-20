@@ -9,6 +9,7 @@
 #include "unicode/udat.h"
 #include "unicode/unum.h"
 #include "unicode/uldnames.h"
+#include "unicode/ures.h"
 
 // IcuHolder is a template that can manage the lifetime of a raw pointer to ensure that it is cleaned up at the correct
 // time.  The general usage pattern is to aquire some ICU resource via an _open call, then construct a holder using the
@@ -89,9 +90,18 @@ struct ULocaleDisplayNamesCloser
     }
 };
 
+struct UResourceBundleCloser
+{
+    void operator()(UResourceBundle* pResourceBundle) const
+    {
+        ures_close(pResourceBundle);
+    }
+};
+
 typedef IcuHolder<UCalendar, UCalendarCloser> UCalendarHolder;
 typedef IcuHolder<UEnumeration, UEnumerationCloser> UEnumerationHolder;
 typedef IcuHolder<UDateTimePatternGenerator, UDateTimePatternGeneratorCloser> UDateTimePatternGeneratorHolder;
 typedef IcuHolder<UDateFormat, UDateFormatCloser> UDateFormatHolder;
 typedef IcuHolder<UNumberFormat, UNumberFormatCloser> UNumberFormatHolder;
 typedef IcuHolder<ULocaleDisplayNames, ULocaleDisplayNamesCloser> ULocaleDisplayNamesHolder;
+typedef IcuHolder<UResourceBundle, UResourceBundleCloser> UResourceBundleHolder;
