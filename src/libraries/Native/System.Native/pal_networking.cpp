@@ -41,7 +41,10 @@ enum
     HOST_ENTRY_HANDLE_HOSTENT = 2,
 };
 
-const int INET6_ADDRSTRLEN_MANAGED = 65; // The C# code has a longer max string length
+enum
+{
+    INET6_ADDRSTRLEN_MANAGED = 65 // Managed code has a longer max IPv6 string length
+};
 
 static_assert(PAL_HOST_NOT_FOUND == HOST_NOT_FOUND, "");
 static_assert(PAL_TRY_AGAIN == TRY_AGAIN, "");
@@ -112,7 +115,7 @@ static void ConvertIn6AddrToByteArray(uint8_t* buffer, int32_t bufferLength, con
 #endif
 }
 
-static void ConvertByteArrayToV6SockAddrIn(sockaddr_in6& addr, const uint8_t* buffer, int32_t bufferLength)
+static void ConvertByteArrayToSockAddrIn6(sockaddr_in6& addr, const uint8_t* buffer, int32_t bufferLength)
 {
     ConvertByteArrayToIn6Addr(addr.sin6_addr, buffer, bufferLength);
 
@@ -213,12 +216,33 @@ extern "C" int32_t IPv4StringToAddress(const uint8_t* address, uint8_t* buffer, 
     return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
 }
 
+static void AppendScopeIfNecessary(uint8_t* string, int32_t stringLength, uint32_t scope)
+{
+    assert(scope != 0);
+
+    // Find the scope ID, if it exists
+    int i;
+    for (i = 0; i < stringLength && string[i] != '\0'; i++)
+    {
+        if (string[i] == '%')
+        {
+            // Found a scope ID. Assume it's correct and return.
+            return;
+        }
+    }
+
+    auto capacity = static_cast<size_t>(stringLength - i);
+    int n = snprintf(reinterpret_cast<char*>(&string[i]), capacity, "%%%d", scope);
+    assert(static_cast<size_t>(n) < capacity);
+    (void)n; // Silence an unused variable warning in release mode
+}
+
 extern "C" int32_t IPAddressToString(const uint8_t* address,
                                      int32_t addressLength,
                                      bool isIPv6,
                                      uint8_t* string,
                                      int32_t stringLength,
-                                     uint32_t scope /* = 0*/)
+                                     uint32_t scope)
 {
     assert(address != nullptr);
     assert((addressLength == NUM_BYTES_IN_IPV6_ADDRESS) || (addressLength == NUM_BYTES_IN_IPV4_ADDRESS));
@@ -227,39 +251,41 @@ extern "C" int32_t IPAddressToString(const uint8_t* address,
     // These constants differ per platform so the managed side uses the bigger value; therefore, check that
     // the length is between the two lengths
     assert((stringLength >= INET_ADDRSTRLEN) && (stringLength <= INET6_ADDRSTRLEN_MANAGED));
-    (void)addressLength;            // Silence compiler warnings about unused variables on release mode
-    (void)INET6_ADDRSTRLEN_MANAGED; // Silence compiler warnings about unused variables on release mode
 
-    int32_t result;
     socklen_t len = UnsignedCast(stringLength);
 
-    if (isIPv6)
-    {
-        sockaddr_in6 addr = {.sin6_scope_id = scope};
+    sockaddr_in inAddr;
+    sockaddr_in6 in6Addr;
+    const sockaddr* addr;
+    socklen_t addrLen;
 
-        ConvertByteArrayToV6SockAddrIn(addr, address, addressLength);
-        result = getnameinfo(reinterpret_cast<const sockaddr*>(&addr),
-                             sizeof(sockaddr_in6),
-                             reinterpret_cast<char*>(string),
-                             len,
-                             nullptr,
-                             0,
-                             NI_NUMERICHOST);
+    if (!isIPv6)
+    {
+        ConvertByteArrayToSockAddrIn(inAddr, address, addressLength);
+        addr = reinterpret_cast<const sockaddr*>(&inAddr);
+        addrLen = sizeof(inAddr);
     }
     else
     {
-        sockaddr_in addr = {};
-        ConvertByteArrayToSockAddrIn(addr, address, addressLength);
-        result = getnameinfo(reinterpret_cast<const sockaddr*>(&addr),
-                             sizeof(sockaddr_in),
-                             reinterpret_cast<char*>(string),
-                             len,
-                             nullptr,
-                             0,
-                             NI_NUMERICHOST);
+        in6Addr.sin6_scope_id = scope;
+        ConvertByteArrayToSockAddrIn6(in6Addr, address, addressLength);
+        addr = reinterpret_cast<const sockaddr*>(&in6Addr);
+        addrLen = sizeof(in6Addr);
     }
 
-    return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
+    int result = getnameinfo(addr, addrLen, reinterpret_cast<char*>(string), len, nullptr, 0, NI_NUMERICHOST);
+    if (result != 0)
+    {
+        return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
+    }
+
+    // Some platforms do not append unknown scope IDs, but the managed code wants this behavior.
+    if (isIPv6 && scope != 0)
+    {
+        AppendScopeIfNecessary(string, stringLength, scope);
+    }
+
+    return 0;
 }
 
 extern "C" int32_t GetHostEntryForName(const uint8_t* address, HostEntry* entry)
@@ -660,7 +686,7 @@ extern "C" int32_t GetNameInfo(const uint8_t* address,
     if (isIPv6)
     {
         sockaddr_in6 addr = {};
-        ConvertByteArrayToV6SockAddrIn(addr, address, addressLength);
+        ConvertByteArrayToSockAddrIn6(addr, address, addressLength);
         result = getnameinfo(reinterpret_cast<const sockaddr*>(&addr),
                              sizeof(sockaddr_in6),
                              reinterpret_cast<char*>(host),
@@ -988,7 +1014,7 @@ SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* addres
     }
 
     auto* inet6SockAddr = reinterpret_cast<sockaddr_in6*>(sockAddr);
-    ConvertByteArrayToV6SockAddrIn(*inet6SockAddr, address, addressLen);
+    ConvertByteArrayToSockAddrIn6(*inet6SockAddr, address, addressLen);
     inet6SockAddr->sin6_family = AF_INET6;
     inet6SockAddr->sin6_flowinfo = 0;
     inet6SockAddr->sin6_scope_id = scopeId;
