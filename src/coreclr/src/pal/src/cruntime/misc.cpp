@@ -334,19 +334,19 @@ PAL_qsort(void *base, size_t nmemb, size_t size,
 
 /* reset ENTRY nesting level back to zero, qsort will invoke app-defined 
    callbacks and we want their entry traces... */
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
 {
     int old_level;
     old_level = DBG_change_entrylevel(0);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 
     qsort(base,nmemb,size,compar);
 
 /* ...and set nesting level back to what it was */
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
     DBG_change_entrylevel(old_level);
 }
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 
     LOGEXIT("qsort returns\n");
     PERF_EXIT(qsort);
@@ -365,19 +365,19 @@ PAL_bsearch(const void *key, const void *base, size_t nmemb, size_t size,
 
 /* reset ENTRY nesting level back to zero, bsearch will invoke app-defined 
    callbacks and we want their entry traces... */
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
 {
     int old_level;
     old_level = DBG_change_entrylevel(0);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 
     retval = bsearch(key,base,nmemb,size,compar);
 
 /* ...and set nesting level back to what it was */
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
     DBG_change_entrylevel(old_level);
 }
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 
     LOGEXIT("bsearch returns %p\n",retval);
     PERF_EXIT(bsearch);
