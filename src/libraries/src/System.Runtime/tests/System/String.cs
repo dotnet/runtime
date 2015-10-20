@@ -566,70 +566,68 @@ public static unsafe class StringTests
         Assert.Equal(h1, h2);
     }
 
-    [Fact]
-    public static void TestIndexOf()
+    [Theory]
+    [InlineData("Hello", 'l', 0, 5, 2)]
+    [InlineData("Hello", 'x', 0, 5, -1)]
+    [InlineData("Hello", 'l', 1, 4, 2)]
+    [InlineData("Hello", 'l', 3, 2, 3)]
+    [InlineData("Hello", 'l', 4, 1, -1)]
+    [InlineData("Hello", 'x', 1, 4, -1)]
+    [InlineData("Hello", 'l', 3, 0, -1)]
+    [InlineData("Hello", 'l', 0, 2, -1)]
+    [InlineData("Hello", 'l', 0, 3, 2)]
+    [InlineData("Hello", 'l', 4, 1, -1)]
+    [InlineData("Hello", 'x', 1, 4, -1)]
+    public static void TestIndexOf_SingleLetter(string source, char target, int startIndex, int count, int expectedResult)
     {
-        Assert.Equal(2, "Hello".IndexOf('l'));
-        Assert.Equal(-1, "Hello".IndexOf('x'));
+        if (count == source.Length - startIndex)
+        {
+            if (startIndex == 0)
+            {
+                Assert.Equal(expectedResult, source.IndexOf(target));
+                Assert.Equal(expectedResult, source.IndexOf(target.ToString()));
+            }
+            Assert.Equal(expectedResult, source.IndexOf(target, startIndex));
+            Assert.Equal(expectedResult, source.IndexOf(target.ToString(), startIndex));
+        }
+        Assert.Equal(expectedResult, source.IndexOf(target, startIndex, count));
+        Assert.Equal(expectedResult, source.IndexOf(target.ToString(), startIndex, count));
 
-        Assert.Equal(2, "Hello".IndexOf('l', 1));
-        Assert.Equal(3, "Hello".IndexOf('l', 3));
-        Assert.Equal(-1, "Hello".IndexOf('l', 4));
-        Assert.Equal(-1, "Hello".IndexOf('x', 1));
+        Assert.Equal(expectedResult, source.IndexOf(target.ToString(), startIndex, count, StringComparison.CurrentCulture));
+        Assert.Equal(expectedResult, source.IndexOf(target.ToString(), startIndex, count, StringComparison.Ordinal));
+        Assert.Equal(expectedResult, source.IndexOf(target.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase));
+    }
 
-        Assert.Equal(2, "Hello".IndexOf('l', 1, 4));
-        Assert.Equal(3, "Hello".IndexOf('l', 3, 2));
-        Assert.Equal(-1, "Hello".IndexOf('l', 3, 0));
-        Assert.Equal(-1, "Hello".IndexOf('l', 0, 2));
-        Assert.Equal(2, "Hello".IndexOf('l', 0, 3));
-        Assert.Equal(-1, "Hello".IndexOf('l', 4, 1));
-        Assert.Equal(-1, "Hello".IndexOf('x', 1, 4));
+    [Theory]
+    [MemberData("AllSubstringsAndComparisons", new object[] { "abcde" })]
+    public static void TestIndexOf_AllSubstrings(string source, string substring, int i, StringComparison comparison)
+    {
+        bool ignoringCase =
+            comparison == StringComparison.OrdinalIgnoreCase ||
+            comparison == StringComparison.CurrentCultureIgnoreCase;
 
-        Assert.Equal(2, "Hello".IndexOf("llo"));
-        Assert.Equal(-1, "Hello".IndexOf("LLO"));
-        Assert.Equal(2, "Hello".IndexOf("LLO", StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(-1, "Hello".IndexOf("NoWay", StringComparison.CurrentCultureIgnoreCase));
+        // First find the substring.  We should be able to with all comparison types.
+        Assert.Equal(i, source.IndexOf(substring, comparison)); // in the whole string
+        Assert.Equal(i, source.IndexOf(substring, i, comparison)); // starting at substring
+        if (i > 0)
+        {
+            Assert.Equal(i, source.IndexOf(substring, i - 1, comparison)); // starting just before substring
+        }
+        Assert.Equal(-1, source.IndexOf(substring, i + 1, comparison)); // starting just after start of substring
 
-        Assert.Equal(2, "Hello".IndexOf("l", 1));
-        Assert.Equal(3, "Hello".IndexOf("l", 3));
-        Assert.Equal(-1, "Hello".IndexOf("l", 4));
-        Assert.Equal(-1, "Hello".IndexOf("x", 1));
+        // Shouldn't be able to find the substring if the count is less than substring's length
+        Assert.Equal(-1, source.IndexOf(substring, 0, substring.Length - 1, comparison));
 
-        Assert.Equal(2, "Hello".IndexOf("l", 1, 4));
-        Assert.Equal(3, "Hello".IndexOf("l", 3, 2));
-        Assert.Equal(-1, "Hello".IndexOf("l", 3, 0));
-        Assert.Equal(-1, "Hello".IndexOf("l", 0, 2));
-        Assert.Equal(2, "Hello".IndexOf("l", 0, 3));
-        Assert.Equal(-1, "Hello".IndexOf("l", 4, 1));
-        Assert.Equal(-1, "Hello".IndexOf("x", 1, 4));
+        // Now double the source.  Make sure we find the first copy of the substring.
+        int halfLen = source.Length;
+        source += source;
+        Assert.Equal(i, source.IndexOf(substring, comparison));
 
-        Assert.Equal(2, "Hello".IndexOf("l", 1, StringComparison.CurrentCulture));
-        Assert.Equal(3, "Hello".IndexOf("l", 3, StringComparison.CurrentCulture));
-        Assert.Equal(-1, "Hello".IndexOf("l", 4, StringComparison.CurrentCulture));
-        Assert.Equal(-1, "Hello".IndexOf("L", 1, StringComparison.CurrentCulture));
-
-        Assert.Equal(2, "Hello".IndexOf("l", 1, 4, StringComparison.CurrentCulture));
-        Assert.Equal(3, "Hello".IndexOf("l", 3, 2, StringComparison.CurrentCulture));
-        Assert.Equal(-1, "Hello".IndexOf("l", 3, 0, StringComparison.CurrentCulture));
-        Assert.Equal(-1, "Hello".IndexOf("l", 0, 2, StringComparison.CurrentCulture));
-        Assert.Equal(2, "Hello".IndexOf("l", 0, 3, StringComparison.CurrentCulture));
-        Assert.Equal(-1, "Hello".IndexOf("l", 4, 1, StringComparison.CurrentCulture));
-        Assert.Equal(-1, "Hello".IndexOf("L", 1, 4, StringComparison.CurrentCulture));
-
-        Assert.Equal(2, "Hello".IndexOf("l", 1, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(3, "Hello".IndexOf("l", 3, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(-1, "Hello".IndexOf("l", 4, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(2, "Hello".IndexOf("L", 1, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(-1, "Hello".IndexOf("X", 1, StringComparison.CurrentCultureIgnoreCase));
-
-        Assert.Equal(2, "Hello".IndexOf("l", 1, 4, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(3, "Hello".IndexOf("l", 3, 2, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(-1, "Hello".IndexOf("l", 3, 0, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(-1, "Hello".IndexOf("l", 0, 2, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(2, "Hello".IndexOf("l", 0, 3, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(-1, "Hello".IndexOf("l", 4, 1, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(-1, "Hello".IndexOf("X", 1, 4, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Equal(1, "Hello".IndexOf("", 1, 4, StringComparison.CurrentCultureIgnoreCase));
+        // Now change the case of a letter.
+        source = source.ToUpperInvariant();
+        Assert.Equal(
+            ignoringCase ? i : -1,
+            source.IndexOf(substring, comparison));
     }
 
     [Fact]
@@ -1017,126 +1015,74 @@ public static unsafe class StringTests
         Assert.Throws<ArgumentNullException>(() => s = String.Join("--", (IEnumerable<Object>)null));
     }
 
-    [Fact]
-    public static void TestLastIndexOf()
+    [Theory]
+    [InlineData("Hello", 'l', 4, 5, 3)]
+    [InlineData("Hello", 'x', 4, 5, -1)]
+    [InlineData("Hello", 'l', 3, 4, 3)]
+    [InlineData("Hello", 'l', 1, 2, -1)]
+    [InlineData("Hello", 'l', 0, 1, -1)]
+    [InlineData("Hello", 'x', 3, 4, -1)]
+    [InlineData("Hello", 'l', 3, 4, 3)]
+    [InlineData("Hello", 'l', 1, 2, -1)]
+    [InlineData("Hello", 'l', 1, 0, -1)]
+    [InlineData("Hello", 'l', 4, 2, 3)]
+    [InlineData("Hello", 'l', 4, 3, 3)]
+    [InlineData("Hello", 'l', 0, 1, -1)]
+    [InlineData("Hello", 'x', 3, 4, -1)]
+    public static void TestLastIndexOf_SingleLetter(string source, char target, int startIndex, int count, int expectedResult)
     {
-        int i;
-        i = "Hello".LastIndexOf('l');
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf('x');
-        Assert.Equal(-1, i);
+        if (count == source.Length)
+        {
+            if (startIndex == source.Length - 1)
+            {
+                Assert.Equal(expectedResult, source.LastIndexOf(target));
+                Assert.Equal(expectedResult, source.LastIndexOf(target.ToString()));
+            }
+            Assert.Equal(expectedResult, source.LastIndexOf(target, startIndex));
+            Assert.Equal(expectedResult, source.LastIndexOf(target.ToString(), startIndex));
+        }
+        Assert.Equal(expectedResult, source.LastIndexOf(target, startIndex, count));
+        Assert.Equal(expectedResult, source.LastIndexOf(target.ToString(), startIndex, count));
 
-        i = "Hello".LastIndexOf('l', 3);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf('l', 1);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf('l', 0);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf('x', 3);
-        Assert.Equal(-1, i);
+        Assert.Equal(expectedResult, source.LastIndexOf(target.ToString(), startIndex, count, StringComparison.CurrentCulture));
+        Assert.Equal(expectedResult, source.LastIndexOf(target.ToString(), startIndex, count, StringComparison.Ordinal));
+        Assert.Equal(expectedResult, source.LastIndexOf(target.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase));
+    }
 
-        i = "Hello".LastIndexOf('l', 3, 4);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf('l', 1, 2);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf('l', 1, 0);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf('l', 4, 2);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf('l', 4, 3);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf('l', 0, 1);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf('x', 3, 4);
-        Assert.Equal(-1, i);
+    [Theory]
+    [MemberData("AllSubstringsAndComparisons", new object[] { "abcde" })]
+    public static void TestLastIndexOf_AllSubstrings(string source, string substring, int i, StringComparison comparison)
+    {
+        bool ignoringCase =
+            comparison == StringComparison.OrdinalIgnoreCase ||
+            comparison == StringComparison.CurrentCultureIgnoreCase;
 
-        i = "Hello".LastIndexOf("llo");
-        Assert.Equal(2, i);
+        // First find the substring.  We should be able to with all comparison types.
+        Assert.Equal(i, source.LastIndexOf(substring, comparison)); // in the whole string
+        Assert.Equal(i, source.LastIndexOf(substring, i + substring.Length - 1, comparison)); // starting at end of substring
+        Assert.Equal(i, source.LastIndexOf(substring, i + substring.Length, comparison)); // starting just beyond end of substring
+        if (i + substring.Length < source.Length)
+        {
+            Assert.Equal(i, source.LastIndexOf(substring, i + substring.Length + 1, comparison)); // starting a bit more beyond end of substring
+        }
+        if (i + substring.Length > 1)
+        {
+            Assert.Equal(-1, source.LastIndexOf(substring, i + substring.Length - 2, comparison)); // starting before end of substring
+        }
 
-        i = "Hello".LastIndexOf("LLO");
-        Assert.Equal(-1, i);
+        // Shouldn't be able to find the substring if the count is less than substring's length
+        Assert.Equal(-1, source.LastIndexOf(substring, source.Length - 1, substring.Length - 1, comparison));
 
-        i = "Hello".LastIndexOf("LLO", StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(2, i);
+        // Now double the source.  Make sure we find the second copy of the substring.
+        int halfLen = source.Length;
+        source += source;
+        Assert.Equal(halfLen + i, source.LastIndexOf(substring, comparison));
 
-        i = "Hello".LastIndexOf("NoWay", StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(-1, i);
-
-        i = "Hello".LastIndexOf("l", 3);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 0);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("l", 0);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("x", 3);
-        Assert.Equal(-1, i);
-
-        i = "Hello".LastIndexOf("l", 3, 4);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 1, 2);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("l", 1, 0);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("l", 4, 2);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 4, 3);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 0, 1);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("x", 3, 4);
-        Assert.Equal(-1, i);
-
-        i = "Hello".LastIndexOf("l", 3, StringComparison.CurrentCulture);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 1, StringComparison.CurrentCulture);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("l", 0, StringComparison.CurrentCulture);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("L", 3, StringComparison.CurrentCulture);
-        Assert.Equal(-1, i);
-
-        i = "Hello".LastIndexOf("l", 3, 4, StringComparison.CurrentCulture);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 1, 2, StringComparison.CurrentCulture);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("l", 1, 0, StringComparison.CurrentCulture);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("l", 4, 2, StringComparison.CurrentCulture);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 4, 3, StringComparison.CurrentCulture);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 0, 1, StringComparison.CurrentCulture);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("L", 3, 4, StringComparison.CurrentCulture);
-        Assert.Equal(-1, i);
-
-        i = "Hello".LastIndexOf("l", 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 1, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("l", 0, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("L", 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("X", 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(-1, i);
-
-        i = "Hello".LastIndexOf("l", 3, 4, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 1, 2, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("l", 1, 0, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("l", 4, 2, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 4, 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(3, i);
-        i = "Hello".LastIndexOf("l", 0, 1, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("X", 3, 4, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(-1, i);
-        i = "Hello".LastIndexOf("", 3, 4, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(3, i);
+        // Now change the case of a letter.
+        source = source.ToUpperInvariant();
+        Assert.Equal(
+            ignoringCase ? halfLen + i : -1,
+            source.LastIndexOf(substring, comparison));
     }
 
     [Fact]
@@ -1548,6 +1494,19 @@ public static unsafe class StringTests
     {
         int Local_282_0 = String.Compare("{Policy_PS_Nothing}", 0, "<NamedPermissionSets><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022 Name=\u0022FullTrust\u0022 Description=\u0022{Policy_PS_FullTrust}\u0022/><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Everything\u0022 Description=\u0022{Policy_PS_Everything}\u0022><Permission class=\u0022System.Security.Permissions.IsolatedStorageFilePermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.EnvironmentPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.FileIOPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.FileDialogPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.ReflectionPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022Assertion, UnmanagedCode, Execution, ControlThread, ControlEvidence, ControlPolicy, ControlAppDomain, SerializationFormatter, ControlDomainPolicy, ControlPrincipal, RemotingConfiguration, Infrastructure, BindingRedirects\u0022/><Permission class=\u0022System.Security.Permissions.UIPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.SocketPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.WebPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.DnsPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.KeyContainerPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.RegistryPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Drawing.Printing.PrintingPermission, System.Drawing, Version={VERSION}, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Diagnostics.EventLogPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.StorePermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Diagnostics.PerformanceCounterPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Data.OleDb.OleDbPermission, System.Data, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Data.SqlClient.SqlClientPermission, System.Data, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.DataProtectionPermission, System.Security, Version={VERSION}, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/></PermissionSet><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Nothing\u0022 Description=\u0022{Policy_PS_Nothing}\u0022/><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Execution\u0022 Description=\u0022{Policy_PS_Execution}\u0022><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022Execution\u0022/></PermissionSet><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022SkipVerification\u0022 Description=\u0022{Policy_PS_SkipVerification}\u0022><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022SkipVerification\u0022/></PermissionSet></NamedPermissionSets>", 4380, 19, StringComparison.Ordinal);
         Assert.True(Local_282_0 < 0);
+    }
+
+    public static IEnumerable<object[]> AllSubstringsAndComparisons(string source)
+    {
+        var comparisons = new StringComparison[] {
+            StringComparison.CurrentCulture, StringComparison.CurrentCultureIgnoreCase,
+            StringComparison.Ordinal, StringComparison.OrdinalIgnoreCase
+        };
+
+        foreach (StringComparison comparison in comparisons)
+            for (int i = 0; i <= source.Length; i++)
+                for (int subLen = source.Length - i; subLen > 0; subLen--)
+                    yield return new object[] { source, source.Substring(i, subLen), i, comparison };
     }
 
     private static void WithCulture(CultureInfo culture, Action test)
