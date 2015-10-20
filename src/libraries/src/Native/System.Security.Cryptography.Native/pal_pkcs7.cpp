@@ -10,7 +10,7 @@ extern "C" PKCS7* PemReadBioPkcs7(BIO* bp)
     return PEM_read_bio_PKCS7(bp, nullptr, nullptr, nullptr);
 }
 
-extern "C" PKCS7* DecodePkcs7(const unsigned char* buf, int32_t len)
+extern "C" PKCS7* DecodePkcs7(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {

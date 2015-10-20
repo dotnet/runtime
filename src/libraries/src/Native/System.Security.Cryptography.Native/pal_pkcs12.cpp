@@ -3,7 +3,7 @@
 
 #include "pal_pkcs12.h"
 
-extern "C" PKCS12* DecodePkcs12(const unsigned char* buf, int32_t len)
+extern "C" PKCS12* DecodePkcs12(const uint8_t* buf, int32_t len)
 {
     if (!buf || !len)
     {
@@ -37,7 +37,7 @@ extern "C" int32_t GetPkcs12DerSize(PKCS12* p12)
     return i2d_PKCS12(p12, nullptr);
 }
 
-extern "C" int32_t EncodePkcs12(PKCS12* p12, unsigned char* buf)
+extern "C" int32_t EncodePkcs12(PKCS12* p12, uint8_t* buf)
 {
     return i2d_PKCS12(p12, &buf);
 }

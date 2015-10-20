@@ -23,7 +23,7 @@ static_assert(PAL_B_ASN1_SEQUENCE == B_ASN1_SEQUENCE, "");
 
 static_assert(PAL_ASN1_STRFLGS_UTF8_CONVERT == ASN1_STRFLGS_UTF8_CONVERT, "");
 
-extern "C" ASN1_STRING* DecodeAsn1TypeBytes(const unsigned char* buf, int32_t len, Asn1StringTypeFlags type)
+extern "C" ASN1_STRING* DecodeAsn1TypeBytes(const uint8_t* buf, int32_t len, Asn1StringTypeFlags type)
 {
     if (!buf || !len)
     {

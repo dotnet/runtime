@@ -44,7 +44,7 @@ extern "C" int32_t EvpDigestUpdate(EVP_MD_CTX* ctx, const void* d, size_t cnt)
     return EVP_DigestUpdate(ctx, d, cnt);
 }
 
-extern "C" int32_t EvpDigestFinalEx(EVP_MD_CTX* ctx, unsigned char* md, uint32_t* s)
+extern "C" int32_t EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
 {
     unsigned int size;
     int32_t ret = EVP_DigestFinal_ex(ctx, md, &size);
