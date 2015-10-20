@@ -20,15 +20,23 @@ extern "C" const SSL_METHOD* TlsV1Method()
 
 extern "C" const SSL_METHOD* TlsV1_1Method()
 {
+#ifdef HAVE_TLS_V1_1
     return TLSv1_1_method();
+#else
+    return nullptr;
+#endif
 }
 
 extern "C" const SSL_METHOD* TlsV1_2Method()
 {
+#ifdef HAVE_TLS_V1_2
     return TLSv1_2_method();
+#else
+    return nullptr;
+#endif
 }
 
-extern "C" SSL_CTX* SslCtxCreate(const SSL_METHOD* method)
+extern "C" SSL_CTX* SslCtxCreate(SSL_METHOD* method)
 {
     return SSL_CTX_new(method);
 }

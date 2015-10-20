@@ -69,8 +69,9 @@ internal static partial class Interop
             static SslMethods()
             {
                 Debug.Assert(TLSv1_method != IntPtr.Zero, "TLSv1_method is null");
-                Debug.Assert(TLSv1_1_method != IntPtr.Zero, "TLSv1_1_method is null");
-                Debug.Assert(TLSv1_2_method != IntPtr.Zero, "TLSv1_2_method is null");
+                // TLSv1_1_method and TLSv1_2_method do not exist on earlier versions of OpenSSL
+                // Debug.Assert(TLSv1_1_method != IntPtr.Zero, "TLSv1_1_method is null");
+                // Debug.Assert(TLSv1_2_method != IntPtr.Zero, "TLSv1_2_method is null");
                 Debug.Assert(SSLv3_method != IntPtr.Zero, "SSLv3_method is null");
                 Debug.Assert(SSLv23_method != IntPtr.Zero, "SSLv23 method is null");
             }

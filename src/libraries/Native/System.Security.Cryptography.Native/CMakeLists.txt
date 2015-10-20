@@ -11,17 +11,20 @@ add_compile_options(-Wno-cast-align)
 
 add_definitions(-DPIC=1)
 
-find_library(CRYPTO NAMES crypto)
-if(CRYPTO STREQUAL CRYPTO-NOTFOUND)
-    message(SEND_ERROR "!!! Cannot find libcrypto and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (or the appropriate package for your platform) !!!")
-    return()
+find_package(OpenSSL REQUIRED)
+
+# Check which versions of TLS the OpenSSL/ssl library supports
+include(CheckLibraryExists)
+
+CHECK_LIBRARY_EXISTS(${OPENSSL_SSL_LIBRARY} "TLSv1_1_method" "" OPENSSL_TLSV11)
+if (OPENSSL_TLSV11)
+    add_definitions(-DHAVE_TLS_V1_1=1)
 endif()
 
-find_library(SSL NAMES ssl)  
-if(SSL STREQUAL SSL-NOTFOUND)  
-    message(SEND_ERROR "!!! Cannot find libssl and System.Security.Cryptography.Native cannot build without it. Try installing libssl-dev (or the appropriate package for your platform) !!!")  
-    return()  
-endif()  
+CHECK_LIBRARY_EXISTS(${OPENSSL_SSL_LIBRARY} "TLSv1_2_method" "" OPENSSL_TLSV12)
+if (OPENSSL_TLSV12)
+    add_definitions(-DHAVE_TLS_V1_2=1)
+endif()
 
 set(NATIVECRYPTO_SOURCES
     openssl.c
@@ -56,8 +59,8 @@ add_library(System.Security.Cryptography.Native
 set_target_properties(System.Security.Cryptography.Native PROPERTIES PREFIX "")
 
 target_link_libraries(System.Security.Cryptography.Native
-  ${CRYPTO}
-  ${SSL}
+  ${OPENSSL_CRYPTO_LIBRARY}
+  ${OPENSSL_SSL_LIBRARY}
 )
 
 install (TARGETS System.Security.Cryptography.Native DESTINATION .)
