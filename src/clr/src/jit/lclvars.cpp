@@ -103,8 +103,8 @@ void                Compiler::lvaInitTypeRef()
     /* Set compArgsCount and compLocalsCount */
 
     info.compArgsCount      = info.compMethodInfo->args.numArgs;
-
-    /* Is there a 'this' pointer */
+    
+    // Is there a 'this' pointer 
 
     if (!info.compIsStatic)
     {
@@ -133,6 +133,18 @@ void                Compiler::lvaInitTypeRef()
         else
 #endif
         {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+            eeGetSystemVAmd64PassStructInRegisterDescriptor(info.compMethodInfo->args.retTypeClass, &structDesc);
+            if (structDesc.eightByteCount > 1)
+            {
+                info.compRetNativeType = TYP_STRUCT;
+            }
+            else
+            {
+                info.compRetNativeType = getEightByteType(structDesc, 0);
+            }
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
             unsigned size = info.compCompHnd->getClassSize(info.compMethodInfo->args.retTypeClass);
 
             // Check for TYP_STRUCT argument that can fit into a single register
@@ -173,6 +185,7 @@ void                Compiler::lvaInitTypeRef()
                 assert(!"Unexpected size when returning struct by value");
                 break;
             }
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         }
     }
 
@@ -191,7 +204,9 @@ void                Compiler::lvaInitTypeRef()
        calling convention is varargs */
 
     if (info.compIsVarArgs)
+    {
         info.compArgsCount++;
+    }
 
     // Is there an extra parameter used to pass instantiation info to
     // shared generic methods and shared generic struct instance methods?
@@ -356,18 +371,17 @@ void                Compiler::lvaInitArgs(InitVarDscInfo *          varDscInfo)
 
     //----------------------------------------------------------------------
 
-    /* We have set info.compArgsCount in compCompile() */
-
+    // We have set info.compArgsCount in compCompile()
     noway_assert(varDscInfo->varNum == info.compArgsCount);
     assert (varDscInfo->intRegArgNum <= MAX_REG_ARG);
-        
+
     codeGen->intRegState.rsCalleeRegArgNum = varDscInfo->intRegArgNum;
 
 #if !FEATURE_STACK_FP_X87
     codeGen->floatRegState.rsCalleeRegArgNum = varDscInfo->floatRegArgNum;
 #endif // FEATURE_STACK_FP_X87
 
-    /* The total argument size must be aligned. */
+    // The total argument size must be aligned.
     noway_assert((compArgSize % sizeof(void*)) == 0);
 
 #ifdef _TARGET_X86_
@@ -440,6 +454,7 @@ void                Compiler::lvaInitThisPtr(InitVarDscInfo *       varDscInfo)
         }
 #endif
         compArgSize       += TARGET_POINTER_SIZE;
+
         varDscInfo->varNum++;
         varDscInfo->varDsc++;
     }
@@ -449,7 +464,17 @@ void                Compiler::lvaInitThisPtr(InitVarDscInfo *       varDscInfo)
 void                Compiler::lvaInitRetBuffArg(InitVarDscInfo *    varDscInfo)
 {
     LclVarDsc * varDsc = varDscInfo->varDsc;
-    const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo);
+    bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo);
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    if (info.compRetNativeType == TYP_STRUCT)
+    {
+        if (IsRegisterPassable(info.compMethodInfo->args.retTypeClass))
+        {
+            hasRetBuffArg = false;
+        }
+    }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     if (hasRetBuffArg)
     {
@@ -594,7 +619,6 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
             // the type as a float or double.
             argType = hfaType;
         }
-
         if (isRegParamType(argType))
         {
             compArgSize += varDscInfo->alignReg(argType, cAlign) * REGSIZE_BYTES;
@@ -644,19 +668,94 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
         }
 
 #else // !_TARGET_ARM_
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+        if (argType == TYP_STRUCT)
+        {
+            assert(typeHnd != nullptr);
+            eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
+            if (structDesc.passedInRegisters)
+            {
+                unsigned intRegCount = 0;
+                unsigned floatRegCount = 0;
 
-        varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
+                for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
+                {
+                    switch (structDesc.eightByteClassifications[i])
+                    {
+                    case SystemVClassificationTypeInteger:
+                    case SystemVClassificationTypeIntegerReference:
+                        intRegCount++;
+                        break;
+                    case SystemVClassificationTypeSSE:
+                        floatRegCount++;
+                        break;
+                    default:
+                        assert(false && "Invalid eightbyte classification type.");
+                        break;
+                    }
+                }
+
+                if (intRegCount != 0 && !varDscInfo->canEnreg(TYP_INT, intRegCount))
+                {
+                    structDesc.passedInRegisters = false; // No register to enregister the eightbytes.
+                }
+
+                if (floatRegCount != 0 && !varDscInfo->canEnreg(TYP_FLOAT, floatRegCount))
+                {
+                    structDesc.passedInRegisters = false; // No register to enregister the eightbytes.
+                }
+            }
+        }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+        // The final home for this incoming register might be our local stack frame
+        // For System V platforms the final home will always be on the local stack frame.
+        varDsc->lvOnFrame = true;
 
 #endif // !_TARGET_ARM_
 
-        if (varDscInfo->canEnreg(argType, cSlotsToEnregister))
+        bool canPassArgInRegisters = false;
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        if (argType == TYP_STRUCT)
+        {
+            canPassArgInRegisters = structDesc.passedInRegisters;
+        }
+        else
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        {
+            canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
+        }
+
+        if (canPassArgInRegisters) 
         {
             /* Another register argument */
 
             // Allocate the registers we need. allocRegArg() returns the first argument register number of the set.
             // For non-HFA structs, we still "try" to enregister the whole thing; it will just max out if splitting
             // to the stack happens.
-            unsigned firstAllocatedRegArgNum = varDscInfo->allocRegArg(argType, cSlots);
+            unsigned firstAllocatedRegArgNum = 0;
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+            unsigned secondAllocatedRegArgNum = 0;
+            var_types firstEightByteType  = TYP_UNDEF;
+            var_types secondEightByteType = TYP_UNDEF;
+            varDsc->lvOtherArgReg = REG_NA;
+
+            if (argType == TYP_STRUCT)
+            {
+                if (structDesc.eightByteCount >= 1)
+                {
+                    firstEightByteType = getEightByteType(structDesc, 0);
+                    firstAllocatedRegArgNum = varDscInfo->allocRegArg(firstEightByteType, 1);
+                }
+            }
+            else
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+            {
+                firstAllocatedRegArgNum = varDscInfo->allocRegArg(argType, cSlots);
+            }
 
 #ifdef _TARGET_ARM_
             if (isHfaArg)
@@ -668,7 +767,31 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #endif // _TARGET_ARM_
 
             varDsc->lvIsRegArg = 1;
-            varDsc->lvArgReg = genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argType);
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+            if (argType == TYP_STRUCT)
+            {
+                varDsc->lvArgReg = genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType);
+
+                // If there is a second eightbyte, get a register for it too and map the arg to the reg number.
+                if (structDesc.eightByteCount >= 2)
+                {
+                    secondEightByteType = getEightByteType(structDesc, 1);
+                    secondAllocatedRegArgNum = varDscInfo->allocRegArg(secondEightByteType, 1);
+                }
+
+                if (secondEightByteType != TYP_UNDEF)
+                {
+                    varDsc->lvOtherArgReg = genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType);
+                    varDsc->addPrefReg(genRegMask(varDsc->lvOtherArgReg), this);
+                }
+            }
+            else
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING))
+            {
+                varDsc->lvArgReg = genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argType);
+            }
+
             varDsc->setPrefReg(varDsc->lvArgReg, this);
 
 #ifdef _TARGET_ARM_
@@ -682,52 +805,91 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #ifdef  DEBUG
             if  (verbose)
             {
-                printf("Arg #%u    passed in register ", varDscInfo->varNum);
-
-                bool isFloat = varTypeIsFloating(argType);
-                unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->lvArgReg, argType);
-
-                for (unsigned ix = 0; ix < cSlots; ix++, regArgNum++)
+                printf("Arg #%u    passed in register(s) ", varDscInfo->varNum);
+                bool isFloat = false;
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                // In case of one eightbyte struct the type is already normalized earlier.
+                // The varTypeIsFloating(argType) is good for this case.
+                if ((argType == TYP_STRUCT) && (structDesc.eightByteCount >= 1))
                 {
-                    if (ix > 0)
-                        printf(",");
+                    isFloat = varTypeIsFloating(firstEightByteType);
+                }
+                else
+#else // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                {
+                    isFloat = varTypeIsFloating(argType);
+                }
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
-                    if (!isFloat && (regArgNum >= varDscInfo->maxIntRegArgNum)) // a struct has been split between registers and stack
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                if (argType == TYP_STRUCT)
+                {
+                    // Print both registers, just to be clear
+                    if (firstEightByteType == TYP_UNDEF)
                     {
-                        printf(" stack slots:%d", cSlots - ix);
-                        break;
+                        printf("firstEightByte: <not used>");
+                    }
+                    else
+                    {
+                        printf("firstEightByte: %s", getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, firstEightByteType), isFloat));
                     }
 
-#ifdef _TARGET_ARM_
-                    if (isFloat)
+                    if (secondEightByteType == TYP_UNDEF)
                     {
-                        // Print register size prefix
-                        if (argType == TYP_DOUBLE)
-                        {
-                            // Print both registers, just to be clear
-                            printf("%s/%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType),     isFloat), 
-                                            getRegName(genMapRegArgNumToRegNum(regArgNum + 1, argType), isFloat));
+                        printf(", secondEightByte: <not used>");
+                    }
+                    else
+                    {
+                        printf(", secondEightByte: %s", getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, secondEightByteType), varTypeIsFloating(secondEightByteType)));
+                    }
+                }
+                else
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                {
+                    unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->lvArgReg, argType);
 
-                            // doubles take 2 slots
-                            assert(ix + 1 < cSlots);
-                            ++ix;
-                            ++regArgNum;
+                    for (unsigned ix = 0; ix < cSlots; ix++, regArgNum++)
+                    {
+                        if (ix > 0)
+                            printf(",");
+
+                        if (!isFloat && (regArgNum >= varDscInfo->maxIntRegArgNum)) // a struct has been split between registers and stack
+                        {
+                            printf(" stack slots:%d", cSlots - ix);
+                            break;
+                        }
+
+#ifdef _TARGET_ARM_
+                        if (isFloat)
+                        {
+                            // Print register size prefix
+                            if (argType == TYP_DOUBLE)
+                            {
+                                // Print both registers, just to be clear
+                                printf("%s/%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType),     isFloat), 
+                                                getRegName(genMapRegArgNumToRegNum(regArgNum + 1, argType), isFloat));
+
+                                // doubles take 2 slots
+                                assert(ix + 1 < cSlots);
+                                ++ix;
+                                ++regArgNum;
+                            }
+                            else
+                            {
+                                printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType), isFloat));
+                            }
                         }
                         else
+#endif // _TARGET_ARM_
                         {
                             printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType), isFloat));
                         }
-                    }
-                    else
-#endif // _TARGET_ARM_
-                    {
-                        printf("%s", getRegName(genMapRegArgNumToRegNum(regArgNum, argType), isFloat));
                     }
                 }
                 printf("\n");
             }
 #endif // DEBUG
-        } // if canEnreg()
+        } // end if (canPassArgInRegisters) 
         else
         {
 #ifdef _TARGET_ARM_
@@ -739,8 +901,13 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #endif
         }
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // The arg size is returning the number of bytes of the argument. For a struct it could return a size not a multiple of 
+        // TARGET_POINTER_SIZE. The stack allocated space should always be multiple of TARGET_POINTER_SIZE, so round it up.
+        compArgSize += (unsigned)roundUp(argSize, TARGET_POINTER_SIZE);
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         compArgSize += argSize;
-
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         if (info.compIsVarArgs)
         {
 #if defined(_TARGET_X86_)
@@ -807,6 +974,7 @@ void                Compiler::lvaInitGenericsCtxt(InitVarDscInfo *  varDscInfo)
             varDsc->lvArgReg   = genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet());
             varDsc->setPrefReg(varDsc->lvArgReg, this);
             varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
+
             varDscInfo->intRegArgNum++;
 
 #ifdef  DEBUG
@@ -1180,11 +1348,6 @@ void   Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE     typeHnd,
                                          lvaStructPromotionInfo * StructPromotionInfo,
                                          bool                     sortFields)
 {    
-#ifdef UNIX_AMD64_ABI
-    // TODO-Amd64-Unix: For now don't promote structs on Linux.
-    // This should be brought online with the full SystemVStruct passing work.
-    return;
-#endif // UNIX_AMD64_ABI
     assert(eeIsValueClass(typeHnd));
     
     if (typeHnd != StructPromotionInfo->typeHnd)
@@ -2844,14 +3007,21 @@ void                Compiler::lvaMarkLclRefs(GenTreePtr tree)
     }
 #endif // ASSERTION_PROP
 
+    bool allowStructs = false;
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    // On System V the type of the var could be a TYP_STRUCT.
+    allowStructs = varDsc->lvType == TYP_STRUCT;
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
     /* Variables must be used as the same type throughout the method */
-    noway_assert(tiVerificationNeeded ||
-           varDsc->lvType == TYP_UNDEF   || tree->gtType   == TYP_UNKNOWN ||
-           genActualType(varDsc->TypeGet()) == genActualType(tree->gtType) ||
-           (tree->gtType == TYP_BYREF && varDsc->TypeGet() == TYP_I_IMPL)  ||
-           (tree->gtType == TYP_I_IMPL && varDsc->TypeGet() == TYP_BYREF)  ||
-           (tree->gtFlags & GTF_VAR_CAST) ||
-           varTypeIsFloating(varDsc->TypeGet()) && varTypeIsFloating(tree->gtType));
+        noway_assert(tiVerificationNeeded ||
+               varDsc->lvType == TYP_UNDEF   || tree->gtType   == TYP_UNKNOWN ||
+               allowStructs ||
+               genActualType(varDsc->TypeGet()) == genActualType(tree->gtType) ||
+               (tree->gtType == TYP_BYREF && varDsc->TypeGet() == TYP_I_IMPL)  ||
+               (tree->gtType == TYP_I_IMPL && varDsc->TypeGet() == TYP_BYREF)  ||
+               (tree->gtFlags & GTF_VAR_CAST) ||
+               varTypeIsFloating(varDsc->TypeGet()) && varTypeIsFloating(tree->gtType));
 
     /* Remember the type of the reference */
 
@@ -3690,7 +3860,6 @@ void Compiler::lvaFixVirtualFrameOffsets()
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
     }
 #endif //_TARGET_AMD64_
-
     unsigned lclNum;
     LclVarDsc * varDsc;
     for (lclNum = 0, varDsc = lvaTable;
@@ -3735,6 +3904,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         if (doAssignStkOffs)
         {
            varDsc->lvStkOffs += delta;
+
 #if DOUBLE_ALIGN
             if (genDoubleAlign() && !codeGen->isFramePointerUsed())
             {
@@ -3886,11 +4056,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         noway_assert(lclNum == info.compThisArg);
 #ifndef _TARGET_X86_
-#ifdef UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs, &callerArgOffset);
-#else // !UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
-#endif // !UNIX_AMD64_ABI
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
 #endif // _TARGET_X86_
         lclNum++;
     }
@@ -3902,11 +4068,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         noway_assert(lclNum == info.compRetBuffArg);
         noway_assert(lvaTable[lclNum].lvIsRegArg);
 #ifndef _TARGET_X86_
-#ifdef UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs, &callerArgOffset);
-#else // !UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs);
-#endif // !UNIX_AMD64_ABI
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum, REGSIZE_BYTES, argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
 #endif // _TARGET_X86_
         lclNum++;
     }
@@ -3917,20 +4079,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
         noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
-#ifdef UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs, &callerArgOffset);
-#else // UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs);
-#endif // UNIX_AMD64_ABI
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
 
     if (info.compIsVarArgs)
     {
-#ifdef UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs, &callerArgOffset);
-#else // !UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs);
-#endif // !UNIX_AMD64_ABI
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
 
 #endif // USER_ARGS_COME_LAST
@@ -3976,18 +4130,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
         if (lvaIsPreSpilled(preSpillLclNum, preSpillMask))
         {
             unsigned argSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
-#ifdef UNIX_AMD64_ABI
-            argOffs = lvaAssignVirtualFrameOffsetToArg(
-                preSpillLclNum,
-                argSize,
-                argOffs,
-                &callerArgOffset);
-#else // !UNIX_AMD64_ABI
             argOffs = lvaAssignVirtualFrameOffsetToArg(
                 preSpillLclNum,
                 argSize,
                 argOffs);
-#endif // !UNIX_AMD64_ABI
             argLcls++;
 
             // Early out if we can. If size is 8 and base reg is 2, then the mask is 0x1100
@@ -4008,18 +4154,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     {
         if (!lvaIsPreSpilled(stkLclNum, preSpillMask))
         {
-#ifdef UNIX_AMD64_ABI
-            argOffs = lvaAssignVirtualFrameOffsetToArg(
-                stkLclNum,
-                eeGetArgSize(argLst, &info.compMethodInfo->args),
-                argOffs,
-                &callerArgOffset);
-#else // !UNIX_AMD64_ABI
             argOffs = lvaAssignVirtualFrameOffsetToArg(
                 stkLclNum,
                 eeGetArgSize(argLst, &info.compMethodInfo->args),
                 argOffs);
-#endif // !UNIX_AMD64_ABI
             argLcls++;
         }
         argLst = info.compCompHnd->getArgNext(argLst);
@@ -4029,16 +4167,18 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 #else // !_TARGET_ARM_
     for (unsigned i = 0; i < argSigLen; i++)
     {
-#ifdef UNIX_AMD64_ABI
+        unsigned argumentSize = eeGetArgSize(argLst, &info.compMethodInfo->args);
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // On the stack frame the homed arg always takes a full number of slots
+        // for proper stack alignment. Make sure the real struct size is properly rounded up.
+        argumentSize = (unsigned)roundUp(argumentSize, TARGET_POINTER_SIZE);
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
         argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++,
-            eeGetArgSize(argLst, &info.compMethodInfo->args),
-            argOffs,
-            &callerArgOffset);
-#else // !UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++,
-            eeGetArgSize(argLst, &info.compMethodInfo->args),
-            argOffs);
-#endif // UNIX_AMD64_ABI
+            argumentSize,
+            argOffs
+            UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
         argLst = info.compCompHnd->getArgNext(argLst);
     }
 #endif // !_TARGET_ARM_
@@ -4049,25 +4189,128 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
         noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
-#ifdef UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs, &callerArgOffset);
-#else // !UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs);
-#endif // !UNIX_AMD64_ABI
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs, UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
 
     if (info.compIsVarArgs)
     {
-#ifdef UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs, &callerArgOffset);
-#else // !UNIX_AMD64_ABI
-        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs);
-#endif // !UNIX_AMD64_ABI
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs, UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
 
 #endif // USER_ARGS_COME_LAST
 
 }
+
+#ifdef UNIX_AMD64_ABI
+//
+//  lvaAssignVirtualFrameOffsetToArg() : Assign virtual stack offsets to an
+//  individual argument, and return the offset for the next argument.
+//  Note: This method only calculates the initial offset of the stack passed/spilled arguments 
+//  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
+//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existance, 
+//        ret address slot, stack frame padding, alloca instructions, etc. 
+//  Note: This is the implementation for UNIX_AMD64 System V platforms.
+//
+int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs UNIX_AMD64_ABI_ONLY_ARG(int * callerArgOffset))
+{
+    noway_assert(lclNum < info.compArgsCount);
+    noway_assert(argSize);
+
+    if (Target::g_tgtArgOrder == Target::ARG_ORDER_L2R)
+        argOffs -= argSize;
+
+    unsigned fieldVarNum = BAD_VAR_NUM;
+
+    noway_assert(lclNum < lvaCount);
+    LclVarDsc * varDsc = lvaTable + lclNum;
+
+    if (varDsc->lvPromotedStruct())
+    {
+        noway_assert(varDsc->lvFieldCnt == 1);  // We only handle one field here
+        fieldVarNum = varDsc->lvFieldLclStart;
+
+        lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
+
+        if (promotionType == PROMOTION_TYPE_INDEPENDENT)
+        {
+            lclNum = fieldVarNum;
+            noway_assert(lclNum < lvaCount);
+            varDsc = lvaTable + lclNum;
+            assert(varDsc->lvIsStructField);
+        }
+    }
+
+    noway_assert(varDsc->lvIsParam);
+
+    if (varDsc->lvIsRegArg)
+    {
+        // Argument is passed in a register, don't count it
+        // when updating the current offset on the stack.
+
+        if (varDsc->lvOnFrame)
+        {
+            // The offset for args needs to be set only for the stack homed arguments for System V.
+            varDsc->lvStkOffs = argOffs;
+        }
+        else
+        {
+            varDsc->lvStkOffs = 0;
+        }
+    }
+    else
+    {
+        // For Windows AMD64 there are 4 slots for the register passed arguments on the top of the caller's stack. This is where they are always homed.
+        // So, they can be accessed with positive offset.
+        // On System V platforms, if the RA decides to home a register passed arg on the stack,
+        // it creates a stack location on the callee stack (like any other local var.) In such a case, the register passed, stack homed arguments
+        // are accessed using negative offsets and the stack passed arguments are accessed using positive offset (from the caller's stack.)
+        // For  System V platforms if there is no frame pointer the caller stack parameter offset should include the callee allocated space.
+        // If frame register is used, the callee allocated space should not be included for accessing the caller stack parameters.
+        // The last two requirements are met in lvaFixVirtualFrameOffsets method, which fixes the offsets, based on frame pointer existence, 
+        // existence of alloca instructions, ret address pushed, ets.
+
+        varDsc->lvStkOffs = *callerArgOffset;
+        // Structs passed on stack could be of size less than TARGET_POINTER_SIZE.
+        // Make sure they get at least TARGET_POINTER_SIZE on the stack - this is required for alignment.
+        if (varDsc->lvType == TYP_STRUCT)
+        {
+            *callerArgOffset += (int)roundUp(argSize, TARGET_POINTER_SIZE);
+        }
+        else
+        {
+            *callerArgOffset += TARGET_POINTER_SIZE;
+        }
+    }
+
+    // For struct promoted parameters we need to set the offsets for both LclVars.
+    // 
+    // For a dependent promoted struct we also assign the struct fields stack offset 
+    if (varDsc->lvPromotedStruct())
+    {
+        lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
+
+        if (promotionType == PROMOTION_TYPE_DEPENDENT)
+        {
+            noway_assert(varDsc->lvFieldCnt == 1);  // We only handle one field here
+
+            assert(fieldVarNum == varDsc->lvFieldLclStart);
+            lvaTable[fieldVarNum].lvStkOffs = varDsc->lvStkOffs;
+        }
+    }
+    // For an independent promoted struct field we also assign the parent struct stack offset
+    else if (varDsc->lvIsStructField)
+    {
+        noway_assert(varDsc->lvParentLcl < lvaCount);
+        lvaTable[varDsc->lvParentLcl].lvStkOffs = varDsc->lvStkOffs;
+    }
+
+    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
+        argOffs += argSize;
+
+    return argOffs;
+}
+
+#else // !UNIX_AMD64_ABI
 
 //
 //  lvaAssignVirtualFrameOffsetToArg() : Assign virtual stack offsets to an
@@ -4076,12 +4319,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 //  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
 //        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existance, 
 //        ret address slot, stack frame padding, alloca instructions, etc. 
-//
-#ifdef UNIX_AMD64_ABI
-int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs, int * callerArgOffset)
-#else // !UNIX_AMD64_ABI
-int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs)
-#endif // !UNIX_AMD64_ABI
+//  Note: This implementation for all the platforms but UNIX_AMD64 OSs (System V 64 bit.)
+int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs UNIX_AMD64_ABI_ONLY_ARG(int * callerArgOffset))
 {
     noway_assert(lclNum < info.compArgsCount);
     noway_assert(argSize);
@@ -4115,29 +4354,21 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
     if (varDsc->lvIsRegArg)
     {
         /* Argument is passed in a register, don't count it
-         * when updating the current offset on the stack */
+        * when updating the current offset on the stack */
 
 #ifndef _TARGET_ARM_
+#if DEBUG
         noway_assert(argSize == sizeof(void *));
+#endif // DEBUG
 #endif
 
 #if defined(_TARGET_X86_)
         argOffs += sizeof(void *);
 #elif defined(_TARGET_AMD64_)
-#ifdef UNIX_AMD64_ABI
-        if (varDsc->lvOnFrame)
-#endif
-        {
-            // The offset for args needs to be set only for the stack homed arguments for System V.
-            varDsc->lvStkOffs = argOffs;
-            argOffs += sizeof(void *);
-        }
-#ifdef UNIX_AMD64_ABI
-        else 
-        {
-            varDsc->lvStkOffs = 0;
-        }
-#endif
+        // The offset for args needs to be set only for the stack homed arguments for System V.
+        varDsc->lvStkOffs = argOffs;
+        // Register arguments also take stack space.
+        argOffs += sizeof(void *);
 #elif defined(_TARGET_ARM64_)
         // Register arguments don't take stack space.
 #elif defined(_TARGET_ARM_)
@@ -4181,32 +4412,32 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
 
             case TYP_DOUBLE:
             case TYP_LONG:
+            {
+                //
+                // Let's assign offsets to arg1, a double in r2. argOffs has to be 4 not 8.
+                //
+                // ------- CALLER SP -------
+                // r3
+                // r2 double   -- argOffs = 4, but it doesn't need to be skipped, because there is no skipping.
+                // r1 VACookie -- argOffs = 0
+                // -------------------------
+                //
+                // Consider argOffs as if it accounts for number of prespilled registers before the current register.
+                // In the above example, for r2, it is r1 that is prespilled, but since r1 is accounted for by argOffs
+                // being 4, there should have been no skipping. Instead, if we didn't assign r1 to any variable, then
+                // argOffs would still be 0 which implies it is not accounting for r1, equivalently r1 is skipped.
+                //
+                // If prevRegsSize is unaccounted for by a corresponding argOffs, we must have skipped a register.
+                int prevRegsSize = genCountBits(codeGen->regSet.rsMaskPreSpillRegArg & (regMask - 1)) * TARGET_POINTER_SIZE;
+                if (argOffs < prevRegsSize)
                 {
-                    //
-                    // Let's assign offsets to arg1, a double in r2. argOffs has to be 4 not 8.
-                    //
-                    // ------- CALLER SP -------
-                    // r3
-                    // r2 double   -- argOffs = 4, but it doesn't need to be skipped, because there is no skipping.
-                    // r1 VACookie -- argOffs = 0
-                    // -------------------------
-                    //
-                    // Consider argOffs as if it accounts for number of prespilled registers before the current register.
-                    // In the above example, for r2, it is r1 that is prespilled, but since r1 is accounted for by argOffs
-                    // being 4, there should have been no skipping. Instead, if we didn't assign r1 to any variable, then
-                    // argOffs would still be 0 which implies it is not accounting for r1, equivalently r1 is skipped.
-                    //
-                    // If prevRegsSize is unaccounted for by a corresponding argOffs, we must have skipped a register.
-                    int prevRegsSize = genCountBits(codeGen->regSet.rsMaskPreSpillRegArg & (regMask - 1)) * TARGET_POINTER_SIZE;
-                    if (argOffs < prevRegsSize)
-                    {
-                        // We must align up the argOffset to a multiple of 8 to account for skipped registers.
-                        argOffs = roundUp(argOffs, 2*TARGET_POINTER_SIZE);
-                    }
-                    // We should've skipped only a single register.
-                    assert(argOffs == prevRegsSize);
+                    // We must align up the argOffset to a multiple of 8 to account for skipped registers.
+                    argOffs = roundUp(argOffs, 2 * TARGET_POINTER_SIZE);
                 }
-                break;
+                // We should've skipped only a single register.
+                assert(argOffs == prevRegsSize);
+            }
+            break;
 
             default:
                 // No alignment of argOffs required
@@ -4292,16 +4523,16 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
             if (!compIsProfilerHookNeeded())
 #endif
             {
-                bool cond = (info.compIsVarArgs && 
-                             // Does cur stk arg require double alignment?
-                             ((varDsc->lvType == TYP_STRUCT && varDsc->lvStructDoubleAlign) ||
-                              (varDsc->lvType == TYP_DOUBLE) ||
-                              (varDsc->lvType == TYP_LONG))
-                            ) ||
-                            // Did first reg arg require alignment?
-                            (codeGen->regSet.rsMaskPreSpillAlign & genRegMask(REG_ARG_LAST));
+                bool cond = (info.compIsVarArgs &&
+                    // Does cur stk arg require double alignment?
+                    ((varDsc->lvType == TYP_STRUCT && varDsc->lvStructDoubleAlign) ||
+                    (varDsc->lvType == TYP_DOUBLE) ||
+                    (varDsc->lvType == TYP_LONG))
+                    ) ||
+                    // Did first reg arg require alignment?
+                    (codeGen->regSet.rsMaskPreSpillAlign & genRegMask(REG_ARG_LAST));
 
-                noway_assert(cond);                            
+                noway_assert(cond);
                 noway_assert(sizeofPreSpillRegArgs <= argOffs + TARGET_POINTER_SIZE); // at most one register of alignment
             }
             argOffs = sizeofPreSpillRegArgs;
@@ -4321,7 +4552,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
         case TYP_DOUBLE:
         case TYP_LONG:
             // We must align up the argOffset to a multiple of 8
-            argOffs = roundUp(argOffsWithoutPreSpillRegArgs, 2*TARGET_POINTER_SIZE) + sizeofPreSpillRegArgs;
+            argOffs = roundUp(argOffsWithoutPreSpillRegArgs, 2 * TARGET_POINTER_SIZE) + sizeofPreSpillRegArgs;
             break;
 
         default:
@@ -4330,21 +4561,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
         }
 #endif // _TARGET_ARM_
 
-#ifdef UNIX_AMD64_ABI
-        // For Windows there are 4 slots for the register passed arguments on the top of the caller's stack. This is where they are always homed.
-        // So, they can be accessed with positive offset.
-        // On System V platforms, if the RA decides to home a register passed arg on the stack,
-        // it creates a stack location on the callee stack (like any other local var.) In such a case, the register passed, stack homed arguments
-        // are accessed using negative offsets and the stack passed arguments are accessed using positive offset (from the caller's stack.)
-        // For  System V platforms if there is no frame pointer the caller stack parameter offset should include the callee allocated space.
-        // If frame register is used, the callee allocated space should not be included for accessing the caller stack parameters.
-        // The last two requirements are met in lvaFixVirtualFrameOffsets method, which fixes the offsets, based on frame pointer existence, 
-        // existence of alloca instructions, ret address pushed, ets.
-        varDsc->lvStkOffs = *callerArgOffset;
-        *callerArgOffset += TARGET_POINTER_SIZE;
-#else // !UNIX_AMD64_ABI
         varDsc->lvStkOffs = argOffs;
-#endif // !UNIX_AMD64_ABI
     }
 
     // For struct promoted parameters we need to set the offsets for both LclVars.
@@ -4360,31 +4577,31 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
     }
     else
 #endif // !defined(_TARGET_64BIT_)
-    if (varDsc->lvPromotedStruct())
-    {
-        lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
-
-        if (promotionType == PROMOTION_TYPE_DEPENDENT)
+        if (varDsc->lvPromotedStruct())
         {
-            noway_assert(varDsc->lvFieldCnt == 1);  // We only handle one field here
+            lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
 
-            assert(fieldVarNum == varDsc->lvFieldLclStart);
-            lvaTable[fieldVarNum].lvStkOffs = varDsc->lvStkOffs;
+            if (promotionType == PROMOTION_TYPE_DEPENDENT)
+            {
+                noway_assert(varDsc->lvFieldCnt == 1);  // We only handle one field here
+
+                assert(fieldVarNum == varDsc->lvFieldLclStart);
+                lvaTable[fieldVarNum].lvStkOffs = varDsc->lvStkOffs;
+            }
         }
-    }
     // For an independent promoted struct field we also assign the parent struct stack offset
-    else if (varDsc->lvIsStructField)
-    {
-        noway_assert(varDsc->lvParentLcl < lvaCount);
-        lvaTable[varDsc->lvParentLcl].lvStkOffs = varDsc->lvStkOffs;
-    }
+        else if (varDsc->lvIsStructField)
+        {
+            noway_assert(varDsc->lvParentLcl < lvaCount);
+            lvaTable[varDsc->lvParentLcl].lvStkOffs = varDsc->lvStkOffs;
+        }
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L && !varDsc->lvIsRegArg)
         argOffs += argSize;
 
     return argOffs;
 }
-
+#endif // !UNIX_AMD64_ABI
 
 /*****************************************************************************
  *  lvaAssignVirtualFrameOffsetsToLocals() : Assign virtual stack offsets to
@@ -5261,8 +5478,18 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
     {     
         // For promoted struct fields that are params, we will
         // assign their offsets in lvaAssignVirtualFrameOffsetToArg().
+        // This is not true for the System V systems since there is no 
+        // outgoing args space. Assign the dependently promoted fields properly.
         //
-        if (varDsc->lvIsStructField && !varDsc->lvIsParam)
+        if (varDsc->lvIsStructField 
+#ifndef UNIX_AMD64_ABI
+        // For System V platforms there is no outgoing args space. 
+        // A register passed struct arg is homed on the stack in a separate local var.
+        // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg methos.
+        // Make sure the code below is not executed for these structs and the offset is not changed.
+            && !varDsc->lvIsParam
+#endif // UNIX_AMD64_ABI
+            )
         {
             LclVarDsc *      parentvarDsc  = &lvaTable[varDsc->lvParentLcl];
             lvaPromotionType promotionType = lvaGetPromotionType(parentvarDsc);

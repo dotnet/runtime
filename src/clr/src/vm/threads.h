@@ -689,6 +689,9 @@ void InitThreadManager();
 EXTERN_C void __stdcall OnHijackObjectTripThread();                 // hijacked JIT code is returning an objectref
 EXTERN_C void __stdcall OnHijackInteriorPointerTripThread();        // hijacked JIT code is returning a byref
 EXTERN_C void __stdcall OnHijackScalarTripThread();                 // hijacked JIT code is returning a non-objectref, non-FP
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+EXTERN_C void __stdcall OnHijackStructInRegsTripThread();           // hijacked JIT code is returning a struct in registers
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifdef _TARGET_X86_
 EXTERN_C void __stdcall OnHijackFloatingPointTripThread();          // hijacked JIT code is returning an FP value
@@ -1017,6 +1020,9 @@ typedef DWORD (*AppropriateWaitFunc) (void *args, DWORD timeout, DWORD option);
 EXTERN_C void STDCALL OnHijackObjectWorker(HijackArgs * pArgs);
 EXTERN_C void STDCALL OnHijackInteriorPointerWorker(HijackArgs * pArgs);
 EXTERN_C void STDCALL OnHijackScalarWorker(HijackArgs * pArgs);
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+EXTERN_C void STDCALL OnHijackStructInRegsWorker(HijackArgs * pArgs);
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #endif // FEATURE_HIJACK
 
 // This is the code we pass around for Thread.Interrupt, mainly for assertions
@@ -1067,7 +1073,9 @@ class Thread: public IUnknown
     friend void STDCALL OnHijackObjectWorker(HijackArgs *pArgs);
     friend void STDCALL OnHijackInteriorPointerWorker(HijackArgs *pArgs);
     friend void STDCALL OnHijackScalarWorker(HijackArgs *pArgs);
-
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    friend void STDCALL OnHijackStructInRegsWorker(HijackArgs *pArgs);
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #ifdef PLATFORM_UNIX
     friend void PALAPI HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext);
 #endif // PLATFORM_UNIX
@@ -5553,6 +5561,24 @@ public:
         _ASSERTE(pAllLoggedTypes != NULL ? m_pAllLoggedTypes == NULL : TRUE);
         m_pAllLoggedTypes = pAllLoggedTypes;
     }
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+private:
+    EEClass* m_pHijackReturnTypeClass;
+public:
+    EEClass* GetHijackReturnTypeClass()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_pHijackReturnTypeClass;
+    }
+
+    void SetHijackReturnTypeClass(EEClass* pClass)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_pHijackReturnTypeClass = pClass;
+    }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 };
 
 // End of class Thread

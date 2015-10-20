@@ -4001,16 +4001,49 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         {
             // If source is present in register then destination must also be a register
             _ASSERTE(pEntry->dstofs & ShuffleEntry::REGMASK);
+            // Both the srcofs and dstofs must be of the same kind of registers - float or general purpose.
+            _ASSERTE((pEntry->dstofs & ShuffleEntry::FPREGMASK) == (pEntry->srcofs & ShuffleEntry::FPREGMASK));
 
-            X86EmitMovRegReg(c_argRegs[pEntry->dstofs & ShuffleEntry::OFSMASK], c_argRegs[pEntry->srcofs & ShuffleEntry::OFSMASK]);
+            int dstRegIndex = pEntry->dstofs & ShuffleEntry::OFSREGMASK;
+            int srcRegIndex = pEntry->srcofs & ShuffleEntry::OFSREGMASK;
+
+            if (pEntry->srcofs & ShuffleEntry::FPREGMASK) 
+            {
+                // movdqa dstReg, srcReg
+                X64EmitMovXmmXmm((X86Reg)(kXMM0 + dstRegIndex), (X86Reg)(kXMM0 + srcRegIndex));
+            }
+            else
+            {
+                // mov dstReg, srcReg
+                X86EmitMovRegReg(c_argRegs[dstRegIndex], c_argRegs[srcRegIndex]);
+            }
         }
         else if (pEntry->dstofs & ShuffleEntry::REGMASK)
         {
             // source must be on the stack
             _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
 
-            // mov dstreg, [rax + src]
-            X86EmitIndexRegLoad(c_argRegs[pEntry->dstofs & ShuffleEntry::OFSMASK], SCRATCH_REGISTER_X86REG, (pEntry->srcofs + 1) * sizeof(void*));
+            int dstRegIndex = pEntry->dstofs & ShuffleEntry::OFSREGMASK;
+            int srcOffset = (pEntry->srcofs + 1) * sizeof(void*);
+
+            if (pEntry->dstofs & ShuffleEntry::FPREGMASK) 
+            {
+                if (pEntry->dstofs & ShuffleEntry::FPSINGLEMASK)
+                {
+                    // movss dstReg, [rax + src]
+                    X64EmitMovSSFromMem((X86Reg)(kXMM0 + dstRegIndex), SCRATCH_REGISTER_X86REG, srcOffset);
+                }
+                else
+                {
+                    // movsd dstReg, [rax + src]
+                    X64EmitMovSDFromMem((X86Reg)(kXMM0 + dstRegIndex), SCRATCH_REGISTER_X86REG, srcOffset);
+                }
+            }
+            else
+            {
+                // mov dstreg, [rax + src]
+                X86EmitIndexRegLoad(c_argRegs[dstRegIndex], SCRATCH_REGISTER_X86REG, srcOffset);
+            }
         }
         else
         {

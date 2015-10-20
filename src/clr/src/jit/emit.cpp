@@ -5653,8 +5653,9 @@ void                emitter::emitRecordGCcall(BYTE * codePos,
     call->cdGCrefRegs     = (regMaskSmall)emitThisGCrefRegs;
     call->cdByrefRegs     = (regMaskSmall)emitThisByrefRegs;
 #if EMIT_TRACK_STACK_DEPTH
+#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
     noway_assert(FitsIn<USHORT>(emitCurStackLvl / ((unsigned)sizeof(unsigned))));
-    call->cdArgBaseOffset = (USHORT)(emitCurStackLvl / ((unsigned)sizeof(unsigned)));
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #endif
 
     // Append the call descriptor to the list */

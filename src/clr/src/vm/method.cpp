@@ -1396,8 +1396,9 @@ COR_ILMETHOD* MethodDesc::GetILHeader(BOOL fAllowOverrides /*=FALSE*/)
 //*******************************************************************************
 MetaSig::RETURNTYPE MethodDesc::ReturnsObject(
 #ifdef _DEBUG
-    bool supportStringConstructors
+    bool supportStringConstructors,
 #endif
+    MethodTable** pMT
     )
 {
     CONTRACTL
@@ -1439,7 +1440,19 @@ MetaSig::RETURNTYPE MethodDesc::ReturnsObject(
                     if (!thValueType.IsTypeDesc())
                     {
                         MethodTable * pReturnTypeMT = thValueType.AsMethodTable();
-                        if(pReturnTypeMT->ContainsPointers())
+                        if (pMT != NULL)
+                        {
+                            *pMT = pReturnTypeMT;
+                        }
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+                        if (pReturnTypeMT->IsRegPassedStruct())
+                        {
+                            return MetaSig::RETVALUETYPE;
+                        }
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+                        if (pReturnTypeMT->ContainsPointers())
                         {
                             _ASSERTE(pReturnTypeMT->GetNumInstanceFieldBytes() == sizeof(void*));
                             return MetaSig::RETOBJ;
