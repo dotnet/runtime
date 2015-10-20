@@ -21,7 +21,7 @@ extern "C" X509_NAME* GetX509NameStackField(X509NameStack* sk, int32_t loc);
 /*
 Shims the d2i_X509_NAME method and makes it easier to invoke from managed code.
 */
-extern "C" X509_NAME* DecodeX509Name(const unsigned char* buf, int32_t len);
+extern "C" X509_NAME* DecodeX509Name(const uint8_t* buf, int32_t len);
 
 /*
 Cleans up and deletes an X509_NAME instance.
