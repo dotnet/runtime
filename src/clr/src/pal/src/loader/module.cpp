@@ -540,11 +540,11 @@ FreeLibrary(
                 module->lib_name ? module->lib_name : W16_NULLSTRING);
 
 /* reset ENTRY nesting level back to zero while inside the callback... */
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
     {
         int old_level;
         old_level = DBG_change_entrylevel(0);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
     
         {
             // This module may be foreign to our PAL, so leave our PAL.
@@ -562,10 +562,10 @@ FreeLibrary(
             }
         }
 /* ...and set nesting level back to what it was */
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
         DBG_change_entrylevel(old_level);
     }
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
     }
 
     if (module->dl_handle && 0 != dlclose(module->dl_handle))
@@ -1137,11 +1137,11 @@ void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
         {
             if (module->pDllMain)
             {
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
                 /* reset ENTRY nesting level back to zero while inside the callback... */
                 int old_level;
                 old_level = DBG_change_entrylevel(0);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 
                 {
                     // This module may be foreign to our PAL, so leave our PAL.
@@ -1150,10 +1150,10 @@ void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
                     module->pDllMain(module->hinstance, dwReason, lpReserved);
                 }
 
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
                 /* ...and set nesting level back to what it was */
                 DBG_change_entrylevel(old_level);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
             }
         }
 
@@ -1541,11 +1541,11 @@ static HMODULE LOADRegisterLibraryDirect(HMODULE dl_handle, LPCSTR libraryNameOr
 
         BOOL dllMainRetVal;
         {
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
             /* reset ENTRY nesting level back to zero while inside the callback... */
             int old_level;
             old_level = DBG_change_entrylevel(0);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 
             {
                 // This module may be foreign to our PAL, so leave our PAL.
@@ -1554,10 +1554,10 @@ static HMODULE LOADRegisterLibraryDirect(HMODULE dl_handle, LPCSTR libraryNameOr
                 dllMainRetVal = module->pDllMain(module->hinstance, DLL_PROCESS_ATTACH, fDynamic ? NULL : (LPVOID)-1);
             }
 
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
             /* ...and set nesting level back to what it was */
             DBG_change_entrylevel(old_level);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
         }
 
         // If DlMain(DLL_PROCESS_ATTACH) returns FALSE, we must immediately unload the module
@@ -1696,10 +1696,10 @@ we're terminating anyway.
 */
 static void LOAD_SEH_CallDllMain(MODSTRUCT *module, DWORD dwReason, LPVOID lpReserved)
 {
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
     /* reset ENTRY nesting level back to zero while inside the callback... */
     int old_level = DBG_change_entrylevel(0);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
     
     struct Param
     {
@@ -1731,10 +1731,10 @@ static void LOAD_SEH_CallDllMain(MODSTRUCT *module, DWORD dwReason, LPVOID lpRes
     }
     PAL_ENDTRY
 
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
     /* ...and set nesting level back to what it was */
     DBG_change_entrylevel(old_level);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 }
 
 /*++
