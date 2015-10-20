@@ -850,7 +850,7 @@ namespace System.Net.Sockets
                 socketAddress.Buffer,
                 socketAddress.Size);
 
-#if TRAVE
+#if TRACE_VERBOSE
             try
             {
                 GlobalLog.Print("Socket#" + Logging.HashString(this) + "::Bind() SRC:" + Logging.ObjectToString(LocalEndPoint) + " Interop.Winsock.bind returns errorCode:" + errorCode);
@@ -1155,7 +1155,7 @@ namespace System.Net.Sockets
                 _handle,
                 backlog);
 
-#if TRAVE
+#if TRACE_VERBOSE
             try
             {
                 GlobalLog.Print("Socket#" + Logging.HashString(this) + "::Listen() SRC:" + Logging.ObjectToString(LocalEndPoint) + " Interop.Winsock.listen returns errorCode:" + errorCode);
@@ -1309,7 +1309,7 @@ namespace System.Net.Sockets
             int bytesTransferred;
             errorCode = SocketPal.Send(_handle, buffers, socketFlags, out bytesTransferred);
 
-#if TRAVE
+#if TRACE_VERBOSE
             try
             {
                 GlobalLog.Print("Socket#" + Logging.HashString(this) + "::Send() SRC:" + Logging.ObjectToString(LocalEndPoint) + " DST:" + Logging.ObjectToString(RemoteEndPoint) + " Interop.Winsock.send returns errorCode:" + errorCode + " bytesTransferred:" + bytesTransferred);
@@ -1616,7 +1616,7 @@ namespace System.Net.Sockets
                 }
             }
 
-#if TRAVE
+#if TRACE_VERBOSE
             try
             {
                 GlobalLog.Print("Socket#" + Logging.HashString(this) + "::Receive() SRC:" + Logging.ObjectToString(LocalEndPoint) + " DST:" + Logging.ObjectToString(RemoteEndPoint) + " bytesTransferred:" + bytesTransferred);
@@ -1681,7 +1681,7 @@ namespace System.Net.Sockets
             int bytesTransferred;
             errorCode = SocketPal.Receive(_handle, buffers, ref socketFlags, out bytesTransferred);
 
-#if TRAVE
+#if TRACE_VERBOSE
             try
             {
                 GlobalLog.Print("Socket#" + Logging.HashString(this) + "::Receive() SRC:" + Logging.ObjectToString(LocalEndPoint) + " DST:" + Logging.ObjectToString(RemoteEndPoint) + " Interop.Winsock.send returns errorCode:" + errorCode + " bytesTransferred:" + bytesTransferred);
@@ -1715,7 +1715,7 @@ namespace System.Net.Sockets
                 }
             }
 
-#if TRAVE
+#if TRACE_VERBOSE
             try
             {
                 GlobalLog.Print("Socket#" + Logging.HashString(this) + "::Receive() SRC:" + Logging.ObjectToString(LocalEndPoint) + " DST:" + Logging.ObjectToString(RemoteEndPoint) + " bytesTransferred:" + bytesTransferred);
@@ -3613,7 +3613,7 @@ namespace System.Net.Sockets
                 }
             }
 
-#if TRAVE
+#if TRACE_VERBOSE
             try
             {
                 GlobalLog.Print("Socket#" + Logging.HashString(this) + "::EndReceive() SRC:" + Logging.ObjectToString(LocalEndPoint) + " DST:" + Logging.ObjectToString(RemoteEndPoint) + " bytesTransferred:" + bytesTransferred.ToString());
@@ -4298,7 +4298,7 @@ namespace System.Net.Sockets
                 throw socketException;
             }
 
-#if TRAVE
+#if TRACE_VERBOSE
             try
             {
                 GlobalLog.Print("Socket#" + Logging.HashString(this) + "::EndAccept() SRC:" + Logging.ObjectToString(LocalEndPoint) + " acceptedSocket:" + Logging.HashString(socket) + " acceptedSocket.SRC:" + Logging.ObjectToString(socket.LocalEndPoint) + " acceptedSocket.DST:" + Logging.ObjectToString(socket.RemoteEndPoint) + " bytesTransferred:" + bytesTransferred.ToString());
@@ -5282,7 +5282,7 @@ namespace System.Net.Sockets
 
             // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
-#if TRAVE
+#if TRACE_VERBOSE
             try
             {
                 GlobalLog.Print("Socket#" + Logging.HashString(this) + "::InternalConnect() SRC:" + Logging.ObjectToString(LocalEndPoint) + " DST:" + Logging.ObjectToString(RemoteEndPoint) + " Interop.Winsock.WSAConnect returns errorCode:" + errorCode);
@@ -6188,12 +6188,10 @@ namespace System.Net.Sockets
 
         #endregion
 
-#if TRAVE
-        [System.Diagnostics.Conditional("TRAVE")]
+        [System.Diagnostics.Conditional("TRACE_VERBOSE")]
         internal void DebugMembers() {
             GlobalLog.Print("_handle:" + _handle.DangerousGetHandle().ToString("x") );
             GlobalLog.Print("_isConnected: " + _isConnected);
         }
-#endif
     }
 }

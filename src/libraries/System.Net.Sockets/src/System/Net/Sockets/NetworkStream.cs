@@ -1067,16 +1067,15 @@ namespace System.Net.Sockets
                 }
             }
         }
-#if TRAVE
-        [System.Diagnostics.Conditional("TRAVE")]
+
+        [System.Diagnostics.Conditional("TRACE_VERBOSE")]
         internal void DebugMembers()
         {
-            if (m_StreamSocket != null)
+            if (_streamSocket != null)
             {
-                GlobalLog.Print("m_StreamSocket:");
-                m_StreamSocket.DebugMembers();
+                GlobalLog.Print("_streamSocket:");
+                _streamSocket.DebugMembers();
             }
         }
-#endif
     }
 }

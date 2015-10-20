@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace System.Net
 {
-#if !PROJECTN
+#if !NETNative
     ///////////////////////////////////////////////////////////////
     //
     // This is implementation of Safe AllocHGlobal which is turned out
@@ -50,5 +50,5 @@ namespace System.Net
             return UnsafeCommonNativeMethods.LocalFree(handle) == IntPtr.Zero;
         }
     }
-#endif //!PROJECTN
+#endif
 }

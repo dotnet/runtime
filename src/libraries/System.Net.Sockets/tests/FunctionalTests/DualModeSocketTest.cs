@@ -14,12 +14,6 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualMode
     {
-        // TODO: This is a stand-in for an issue that will need to be filed when this code is
-        //       merged into corefx.
-        private const int DummySendToThrowsIssue = 123456;
-        private const int DummyOSXPacketInfoIssue = 123457;
-        private const int DummyLoopbackV6Issue = 123456;
-
         // Ports 8 and 8887 are unassigned as per https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
         private const int UnusedPort = 8;
         private const int UnusedBindablePort = 8887;
@@ -142,7 +136,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(DummyLoopbackV6Issue, PlatformID.AnyUnix)]
+        [ActiveIssue(4002, PlatformID.AnyUnix)]
         public void DualModeSocket_ConnectAsyncDnsEndPointToV6Host_Success()
         {
             DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress.IPv6Loopback, false);
@@ -370,7 +364,7 @@ namespace System.Net.Sockets.Tests
         #region SendTo Async/Event
 
         [Fact] // Base case
-        [ActiveIssue(DummySendToThrowsIssue, PlatformID.AnyUnix)]
+        [ActiveIssue(4003, PlatformID.AnyUnix)]
         public void Socket_SendToAsyncV4IPEndPointToV4Host_Throws()
         {
             Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
@@ -514,7 +508,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(DummyOSXPacketInfoIssue, PlatformID.OSX)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void ReceiveFromAsyncV4BoundToAnyV4_Success()
         {
             ReceiveFromAsync_Helper(IPAddress.Any, IPAddress.Loopback);
