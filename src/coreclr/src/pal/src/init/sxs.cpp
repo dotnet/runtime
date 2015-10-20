@@ -230,7 +230,7 @@ PAL_ReenterForEH()
     }
     else if (!pThread->IsInPal())
     {
-#if !_NO_DEBUG_MESSAGES_                
+#if _ENABLE_DEBUG_MESSAGES_
         DBG_PRINTF(DLI_ENTRY, defdbgchan, TRUE)("PAL_ReenterForEH()\n");
 #endif
 
