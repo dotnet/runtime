@@ -389,26 +389,6 @@ bool InvokeCallbackForDateTimePattern(Locale& locale,
 
 /*
 Function:
-EnumCalendarArray
-
-Enumerates an array of strings and invokes the callback for each value.
-*/
-bool EnumCalendarArray(const UnicodeString* srcArray,
-                       int32_t srcArrayCount,
-                       EnumCalendarInfoCallback callback,
-                       const void* context)
-{
-    for (int i = 0; i < srcArrayCount; i++)
-    {
-        UnicodeString src = srcArray[i];
-        callback(src.getTerminatedBuffer(), context);
-    }
-
-    return true;
-}
-
-/*
-Function:
 EnumSymbols
 
 Enumerates of of the symbols of a type for a locale and calendar and invokes a callback
@@ -464,44 +444,97 @@ bool EnumSymbols(Locale& locale,
     return true;
 }
 
+bool EnumUResourceBundle(const UResourceBundle* bundle, EnumCalendarInfoCallback callback, const void* context)
+{
+    int32_t eraNameCount = ures_getSize(bundle);
+
+    for (int i = 0; i < eraNameCount; i++)
+    {
+        UErrorCode status = U_ZERO_ERROR;
+        int32_t ignore; // We don't care about the length of the string as it is null terminated.
+        const UChar* eraName = ures_getStringByIndex(bundle, i, &ignore, &status);
+
+        if (U_SUCCESS(status))
+        {
+            callback(eraName, context);
+        }
+    }
+
+    return true;
+}
+
 /*
 Function:
-EnumEraNames
+EnumAbbrevEraNames
 
-Enumerates all the era names of the specified locale and calendar, invoking the
-callback function
-for each era name.
+Enumerates all the abbreviated era names of the specified locale and calendar, invoking the
+callback function for each era name.
 */
-bool EnumEraNames(Locale& locale,
-                  CalendarId calendarId,
-                  CalendarDataType dataType,
-                  EnumCalendarInfoCallback callback,
-                  const void* context)
+bool EnumAbbrevEraNames(Locale& locale, CalendarId calendarId, EnumCalendarInfoCallback callback, const void* context)
 {
-    UErrorCode err = U_ZERO_ERROR;
-    const char* calendarName = GetCalendarName(calendarId);
-    DateFormatSymbols dateFormatSymbols(locale, calendarName, err);
-    if (U_FAILURE(err))
-        return false;
+    // The C-API for ICU provides no way to get at the abbreviated era names for a calendar (so we can't use EnumSymbols
+    // here). Instead we will try to walk the ICU resource tables directly and fall back to regular era names if can't
+    // find good data.
+    char localeNameBuf[ULOC_FULLNAME_CAPACITY];
+    char parentNameBuf[ULOC_FULLNAME_CAPACITY];
 
-    int32_t eraNameCount;
-    const UnicodeString* eraNames;
+    char* localeNamePtr = localeNameBuf;
+    char* parentNamePtr = parentNameBuf;
 
-    if (dataType == EraNames)
+    strncpy(localeNamePtr, locale.getName(), ULOC_FULLNAME_CAPACITY);
+
+    while (true)
     {
-        eraNames = dateFormatSymbols.getEras(eraNameCount);
-    }
-    else if (dataType == AbbrevEraNames)
-    {
-        eraNames = dateFormatSymbols.getNarrowEras(eraNameCount);
-    }
-    else
-    {
-        assert(false);
-        return false;
+        UErrorCode status = U_ZERO_ERROR;
+
+        UResourceBundle* rootResBundle = ures_open(nullptr, localeNamePtr, &status);
+        UResourceBundleHolder rootResBundleHolder(rootResBundle, status);
+
+        UResourceBundle* calResBundle = ures_getByKey(rootResBundle, "calendar", nullptr, &status);
+        UResourceBundleHolder calResBundleHolder(calResBundle, status);
+
+        UResourceBundle* targetCalResBundle =
+            ures_getByKey(calResBundle, GetCalendarName(calendarId), nullptr, &status);
+        UResourceBundleHolder targetCalResBundleHolder(targetCalResBundle, status);
+
+        UResourceBundle* erasColResBundle = ures_getByKey(targetCalResBundle, "eras", nullptr, &status);
+        UResourceBundleHolder erasColResBundleHolder(erasColResBundle, status);
+
+        UResourceBundle* erasResBundle = ures_getByKey(erasColResBundle, "narrow", nullptr, &status);
+        UResourceBundleHolder erasResBundleHolder(erasResBundle, status);
+
+        if (U_SUCCESS(status))
+        {
+            EnumUResourceBundle(erasResBundle, callback, context);
+            return true;
+        }
+
+        // Couldn't find the data we need for this locale, we should fallback.
+        if (localeNameBuf[0] == 0x0)
+        {
+            // We are already at the root locale so there is nothing to fall back to, just use the regular eras.
+            break;
+        }
+
+        uloc_getParent(localeNamePtr, parentNamePtr, ULOC_FULLNAME_CAPACITY, &status);
+
+        if (U_FAILURE(status))
+        {
+            // Something bad happened getting the parent name, bail out.
+            break;
+        }
+
+        // Swap localeNamePtr and parentNamePtr, parentNamePtr is what we want to use on the next iteration
+        // and we can use the current localeName as scratch space if we have to fall back on that
+        // iteration.
+
+        char* temp = localeNamePtr;
+        localeNamePtr = parentNamePtr;
+        parentNamePtr = temp;
     }
 
-    return EnumCalendarArray(eraNames, eraNameCount, callback, context);
+    // Walking the resource bundles didn't work, just use the regular eras.
+    return EnumSymbols(locale, calendarId, UDAT_ERAS, 0, callback, context);
 }
 
 /*
@@ -558,8 +591,9 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
         case AbbrevMonthGenitiveNames:
             return EnumSymbols(locale, calendarId, UDAT_SHORT_MONTHS, 0, callback, context);
         case EraNames:
+            return EnumSymbols(locale, calendarId, UDAT_ERAS, 0, callback, context);
         case AbbrevEraNames:
-            return EnumEraNames(locale, calendarId, dataType, callback, context);
+            return EnumAbbrevEraNames(locale, calendarId, callback, context);
         default:
             assert(false);
             return false;
