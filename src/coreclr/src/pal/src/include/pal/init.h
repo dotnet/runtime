@@ -42,14 +42,10 @@ void PALShutdown( void );
 Function:
   PALCommonCleanup
 
-Utility function to free any resource used by the PAL. 
+Utility function to prepare for shutdown.
 
-Parameters :
-    full_cleanup:  TRUE: cleanup only what's needed and leave the rest 
-                         to the OS process cleanup
-                   FALSE: full cleanup 
 --*/
-void PALCommonCleanup( BOOL full_cleanup );
+void PALCommonCleanup();
 
 extern Volatile<INT> init_count;
 
