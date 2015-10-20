@@ -26,9 +26,9 @@ namespace System.Net.Http
         // A GCHandle for this operation object.
         // This is owned by the callback and will be deallocated when the sessionHandle has been closed.
         private GCHandle _operationHandle = new GCHandle();
-        
+
         private volatile bool _disposed = false; // To detect redundant calls.
-        
+
         public WinHttpRequestState()
         {
             TransportContext = new WinHttpTransportContext();
@@ -45,7 +45,7 @@ namespace System.Net.Http
         {
             return GCHandle.ToIntPtr(_operationHandle);
         }
-        
+
         public object Lock
         {
             get
@@ -86,31 +86,40 @@ namespace System.Net.Http
         public ICredentials DefaultProxyCredentials { get; set; }
 
         public bool PreAuthenticate { get; set; }
-        
+
         public HttpStatusCode LastStatusCode { get; set; }
 
         public bool RetryRequest { get; set; }
-        
+
         // Important: do not hold _lock while signaling completion of any of below TaskCompletionSources.
         public TaskCompletionSource<bool> TcsSendRequest { get; set; }
         public TaskCompletionSource<bool> TcsWriteToRequestStream { get; set; }
         public TaskCompletionSource<bool> TcsInternalWriteDataToRequestStream { get; set; }
         public TaskCompletionSource<bool> TcsReceiveResponseHeaders { get; set; }
         public TaskCompletionSource<int> TcsReadFromResponseStream { get; set; }
-        
+
         #region IDisposable Members
         private void Dispose(bool disposing)
         {
+            if (WinHttpTraceHelper.IsTraceEnabled())
+            {
+                WinHttpTraceHelper.Trace(
+                    "WinHttpRequestState.Dispose, GCHandle=0x{0:X}, disposed={1}, disposing={2}",
+                    ToIntPtr(),
+                    _disposed,
+                    disposing);
+            }
+
             // Since there is no finalizer and this class is sealed, the disposing parameter should be TRUE.
             Debug.Assert(disposing, "WinHttpRequestState.Dispose() should have disposing=TRUE");
-            
+
             if (_disposed)
             {
                 return;
             }
-            
+
             _disposed = true;
-            
+
             if (_operationHandle.IsAllocated)
             {
                 _operationHandle.Free();
