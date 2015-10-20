@@ -1316,7 +1316,6 @@ CThreadSuspensionInfo::InitializeSignalSets()
 #endif
     sigaddset(&smDefaultmask, SIGSYS); 
     sigaddset(&smDefaultmask, SIGALRM); 
-    sigaddset(&smDefaultmask, SIGTERM);     
     sigaddset(&smDefaultmask, SIGURG); 
     sigaddset(&smDefaultmask, SIGTSTP); 
     sigaddset(&smDefaultmask, SIGCONT);   
