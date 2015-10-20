@@ -243,6 +243,7 @@ internal static partial class Interop
             bool tls12 = (options & libssl.Options.SSL_OP_NO_TLSv1_2) == 0;
 
             IntPtr method = libssl.SslMethods.SSLv23_method; // default
+            string methodName = "SSLv23_method";
 
             if (!ssl2)
             {
@@ -251,25 +252,29 @@ internal static partial class Interop
                     if (!tls11 && !tls12)
                     {
                         method = libssl.SslMethods.TLSv1_method;
+                        methodName = "TLSv1_method";
                     }
                     else if (!tls10 && !tls12)
                     {
                         method = libssl.SslMethods.TLSv1_1_method;
+                        methodName = "TLSv1_1_method";
                     }
                     else if (!tls10 && !tls11)
                     {
                         method = libssl.SslMethods.TLSv1_2_method;
+                        methodName = "TLSv1_2_method";
                     }
                 }
                 else if (!tls10 && !tls11 && !tls12)
                 {
                     method = libssl.SslMethods.SSLv3_method;
+                    methodName = "SSLv3_method";
                 }
             }
 
             if (IntPtr.Zero == method)
             {
-                throw CreateSslException(SR.net_get_ssl_method_failed);
+                throw new SslException(SR.Format(SR.net_get_ssl_method_failed, methodName));
             }
 
             return method;
@@ -382,17 +387,22 @@ internal static partial class Interop
         }
 
         //TODO (Issue #3362) should we check Bio should retry?
-        private static unsafe int BioWrite(SafeBioHandle bio, byte[] buffer, int offset, int count)
+        private static int BioWrite(SafeBioHandle bio, byte[] buffer, int offset, int count)
         {
-            fixed (byte* bufPtr = buffer)
+            int bytes;
+            unsafe
             {
-                int bytes = Crypto.BioWrite(bio, bufPtr + offset, count);
-                if (bytes != count)
+                fixed (byte* bufPtr = buffer)
                 {
-                    throw CreateSslException(SR.net_ssl_write_bio_failed_error);
+                    bytes = Crypto.BioWrite(bio, bufPtr + offset, count);
                 }
-                return bytes;
             }
+
+            if (bytes != count)
+            {
+                throw CreateSslException(SR.net_ssl_write_bio_failed_error);
+            }
+            return bytes;
         }
 
         private static libssl.SslErrorCode GetSslError(SafeSslHandle context, int result)

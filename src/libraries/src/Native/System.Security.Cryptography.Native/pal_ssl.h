@@ -45,7 +45,7 @@ Shims the SSL_CTX_new method.
 
 Returns the new SSL_CTX instance.
 */
-extern "C" SSL_CTX* SslCtxCreate(const SSL_METHOD* method);
+extern "C" SSL_CTX* SslCtxCreate(SSL_METHOD* method);
 
 /*
 Shims the SSL_write method.

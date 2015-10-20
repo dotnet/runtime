@@ -343,7 +343,7 @@
     <value>Encrypt failed with OpenSSL error - {0}.</value>
   </data>
   <data name="net_get_ssl_method_failed" xml:space="preserve">
-    <value>Failed to get SSL method, OpenSSL error - {0}.</value>
+    <value>Failed to get SSL method '{0}'. Ensure the OpenSSL method exists on the current system.</value>
   </data>
   <data name="net_ssl_check_private_key_failed" xml:space="preserve">
     <value>SSL certificate private key check failed with OpenSSL error - {0}.</value>
