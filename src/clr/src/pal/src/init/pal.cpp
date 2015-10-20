@@ -745,16 +745,11 @@ done:
 Function:
   PALCommonCleanup
 
-Utility function to free any resource used by the PAL. 
+Utility function to prepare for shutdown.
 
-Parameters :
-    step: selects the desired cleanup step
-    full_cleanup:  FALSE: cleanup only what's needed and leave the rest 
-                          to the OS process cleanup
-                   TRUE:  full cleanup 
 --*/
 void 
-PALCommonCleanup(BOOL full_cleanup)
+PALCommonCleanup()
 {
     static bool cleanupDone = false;
 
