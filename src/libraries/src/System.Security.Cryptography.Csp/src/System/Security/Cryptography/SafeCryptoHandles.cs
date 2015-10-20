@@ -5,29 +5,12 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+
 using Internal.NativeCrypto;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-    /// <summary>
-    /// This class helps validate the invalid handles. Look for example 
-    /// in CapiHelper.cs VerifyValidHandle method. 
-    /// </summary>
-    [SecurityCritical]
-    internal abstract class SafeHandleZeroOrMinusOneIsInvalid : SafeHandle
-    {
-        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle)
-            : base(IntPtr.Zero, ownsHandle)
-        {
-        }
-
-        public override bool IsInvalid
-        {
-            [SecurityCritical]
-            get { return handle == IntPtr.Zero || handle == new IntPtr(-1); }
-        }
-    }
-
     //ToDo: Remove before code review - Copied from SafeCryptoHandels.cs
 
     /// <summary>
