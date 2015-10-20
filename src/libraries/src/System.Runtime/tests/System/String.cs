@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using Xunit;
 
 public static unsafe class StringTests
@@ -269,7 +270,6 @@ public static unsafe class StringTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestCompare()
     {
         String.Compare("A", "B");
@@ -630,6 +630,192 @@ public static unsafe class StringTests
         Assert.Equal(-1, "Hello".IndexOf("l", 4, 1, StringComparison.CurrentCultureIgnoreCase));
         Assert.Equal(-1, "Hello".IndexOf("X", 1, 4, StringComparison.CurrentCultureIgnoreCase));
         Assert.Equal(1, "Hello".IndexOf("", 1, 4, StringComparison.CurrentCultureIgnoreCase));
+    }
+
+    [Fact]
+    public static void TestIndexOf_TurkishI()
+    {
+        string source = "Turkish I \u0131s TROUBL\u0130NG!";
+        WithCulture(new CultureInfo("tr-TR"), () =>
+        {
+            string target = "\u0130";
+            Assert.Equal(19, source.IndexOf(target));
+            Assert.Equal(19, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(4, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(19, source.IndexOf(target, StringComparison.Ordinal));
+            Assert.Equal(19, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
+
+            target = "\u0131";
+            Assert.Equal(10, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(8, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(10, source.IndexOf(target, StringComparison.Ordinal));
+            Assert.Equal(10, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
+        });
+        WithCulture(CultureInfo.InvariantCulture, () =>
+        {
+            string target = "\u0130";
+            Assert.Equal(19, source.IndexOf(target));
+            Assert.Equal(19, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(19, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+
+            target = "\u0131";
+            Assert.Equal(10, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(10, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+        });
+        WithCulture(new CultureInfo("en-US"), () =>
+        {
+            string target = "\u0130";
+            Assert.Equal(19, source.IndexOf(target));
+            Assert.Equal(19, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(19, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+
+            target = "\u0131";
+            Assert.Equal(10, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(10, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+        });
+    }
+
+    [Fact]
+    public static void TestLastIndexOf_TurkishI()
+    {
+        string source = "Turkish I \u0131s TROUBL\u0130NG!";
+        WithCulture(new CultureInfo("tr-TR"), () =>
+        {
+            string target = "\u0130";
+            Assert.Equal(19, source.LastIndexOf(target));
+            Assert.Equal(19, source.LastIndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(19, source.LastIndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(19, source.LastIndexOf(target, StringComparison.Ordinal));
+            Assert.Equal(19, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
+
+            target = "\u0131";
+            Assert.Equal(10, source.LastIndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(10, source.LastIndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(10, source.LastIndexOf(target, StringComparison.Ordinal));
+            Assert.Equal(10, source.LastIndexOf(target, StringComparison.OrdinalIgnoreCase));
+        });
+        WithCulture(CultureInfo.InvariantCulture, () =>
+        {
+            string target = "\u0130";
+            Assert.Equal(19, source.LastIndexOf(target));
+            Assert.Equal(19, source.LastIndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(19, source.LastIndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+
+            target = "\u0131";
+            Assert.Equal(10, source.LastIndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(10, source.LastIndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+        });
+        WithCulture(new CultureInfo("en-US"), () =>
+        {
+            string target = "\u0130";
+            Assert.Equal(19, source.LastIndexOf(target));
+            Assert.Equal(19, source.LastIndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(19, source.LastIndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+
+            target = "\u0131";
+            Assert.Equal(10, source.LastIndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(10, source.LastIndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+        });
+    }
+
+    [Fact]
+    public static void TestIndexOf_HungarianDoubleCompression()
+    {
+        string source = "dzsdzs";
+        string target = "ddzs";
+        WithCulture(new CultureInfo("hu-HU"), () =>
+        {
+            // TODO: [ActiveIssue(3972)]
+
+            //Assert.Equal(0, source.IndexOf(target));
+            //Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCulture));
+
+            Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
+            Assert.Equal(-1, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
+        });
+        WithCulture(CultureInfo.InvariantCulture, () =>
+        {
+            Assert.Equal(-1, source.IndexOf(target));
+            Assert.Equal(-1, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(-1, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+        });
+    }
+
+    [Fact]
+    public static void TestIndexOf_EquivalentDiacritics()
+    {
+        string source = "Exhibit a\u0300\u00C0";
+        string target = "\u00C0";
+        WithCulture(new CultureInfo("en-US"), () =>
+        {
+            Assert.Equal(10, source.IndexOf(target));
+            Assert.Equal(10, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(8, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(10, source.IndexOf(target, StringComparison.Ordinal));
+            Assert.Equal(10, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
+        });
+        WithCulture(CultureInfo.InvariantCulture, () =>
+        {
+            Assert.Equal(10, source.IndexOf(target));
+            Assert.Equal(10, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(8, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+        });
+        
+        target = "\u0300";
+        WithCulture(new CultureInfo("en-US"), () =>
+        {
+            // TODO: [ActiveIssue(3973)]
+
+            //Assert.Equal(9, source.IndexOf(target));
+            //Assert.Equal(9, source.IndexOf(target, StringComparison.CurrentCulture));
+            //Assert.Equal(9, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(9, source.IndexOf(target, StringComparison.Ordinal));
+            //Assert.Equal(9, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
+        });
+        WithCulture(CultureInfo.InvariantCulture, () =>
+        {
+            //Assert.Equal(9, source.IndexOf(target));
+            //Assert.Equal(9, source.IndexOf(target, StringComparison.CurrentCulture));
+            //Assert.Equal(9, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+        });
+    }
+
+    [Fact]
+    public static void TestIndexOf_CyrillicE()
+    {
+        string source = "Foo\u0400Bar";
+        string target = "\u0400";
+        WithCulture(new CultureInfo("en-US"), () =>
+        {
+            Assert.Equal(3, source.IndexOf(target));
+            Assert.Equal(3, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(3, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(3, source.IndexOf(target, StringComparison.Ordinal));
+            Assert.Equal(3, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
+        });
+        WithCulture(CultureInfo.InvariantCulture, () =>
+        {
+            Assert.Equal(3, source.IndexOf(target));
+            Assert.Equal(3, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(3, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+        });
+
+        target = "bar";
+        WithCulture(new CultureInfo("en-US"), () =>
+        {
+            Assert.Equal(-1, source.IndexOf(target));
+            Assert.Equal(-1, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(4, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
+            Assert.Equal(4, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
+        });
+        WithCulture(CultureInfo.InvariantCulture, () =>
+        {
+            Assert.Equal(-1, source.IndexOf(target));
+            Assert.Equal(-1, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(4, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+        });
     }
 
     [Fact]
@@ -1273,6 +1459,41 @@ public static unsafe class StringTests
     }
 
     [Fact]
+    public static void TestToLowerToUpper_TurkishI()
+    {
+        WithCulture(new CultureInfo("tr-TR"), () =>
+        {
+            Assert.True("H\u0049 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
+            Assert.True("H\u0130 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
+            Assert.True("H\u0131 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
+
+            Assert.True("H\u0069 World".ToUpper().Equals("H\u0130 WORLD", StringComparison.Ordinal));
+            Assert.True("H\u0130 World".ToUpper().Equals("H\u0130 WORLD", StringComparison.Ordinal));
+            Assert.True("H\u0131 World".ToUpper().Equals("H\u0049 WORLD", StringComparison.Ordinal));
+        });
+        WithCulture(new CultureInfo("en-US"), () =>
+        {
+            Assert.True("H\u0049 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
+            Assert.True("H\u0130 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
+            Assert.True("H\u0131 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
+
+            Assert.True("H\u0069 World".ToUpper().Equals("H\u0049 WORLD", StringComparison.Ordinal));
+            Assert.True("H\u0130 World".ToUpper().Equals("H\u0130 WORLD", StringComparison.Ordinal));
+            Assert.True("H\u0131 World".ToUpper().Equals("H\u0049 WORLD", StringComparison.Ordinal));
+        });
+        WithCulture(CultureInfo.InvariantCulture, () =>
+        {
+            Assert.True("H\u0049 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
+            Assert.True("H\u0130 World".ToLower().Equals("h\u0130 world", StringComparison.Ordinal));
+            Assert.True("H\u0131 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
+
+            Assert.True("H\u0069 World".ToUpper().Equals("H\u0049 WORLD", StringComparison.Ordinal));
+            Assert.True("H\u0130 World".ToUpper().Equals("H\u0130 WORLD", StringComparison.Ordinal));
+            Assert.True("H\u0131 World".ToUpper().Equals("H\u0131 WORLD", StringComparison.Ordinal));
+        });
+    }
+
+    [Fact]
     public static void TestToLowerToUpperInvariant_ASCII()
     {
         char[] asciiChars = new char[128];
@@ -1327,6 +1548,20 @@ public static unsafe class StringTests
     {
         int Local_282_0 = String.Compare("{Policy_PS_Nothing}", 0, "<NamedPermissionSets><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022 Name=\u0022FullTrust\u0022 Description=\u0022{Policy_PS_FullTrust}\u0022/><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Everything\u0022 Description=\u0022{Policy_PS_Everything}\u0022><Permission class=\u0022System.Security.Permissions.IsolatedStorageFilePermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.EnvironmentPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.FileIOPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.FileDialogPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.ReflectionPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022Assertion, UnmanagedCode, Execution, ControlThread, ControlEvidence, ControlPolicy, ControlAppDomain, SerializationFormatter, ControlDomainPolicy, ControlPrincipal, RemotingConfiguration, Infrastructure, BindingRedirects\u0022/><Permission class=\u0022System.Security.Permissions.UIPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.SocketPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.WebPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Net.DnsPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.KeyContainerPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><Permission class=\u0022System.Security.Permissions.RegistryPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Drawing.Printing.PrintingPermission, System.Drawing, Version={VERSION}, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Diagnostics.EventLogPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.StorePermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Diagnostics.PerformanceCounterPermission, System, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Data.OleDb.OleDbPermission, System.Data, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Data.SqlClient.SqlClientPermission, System.Data, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/><IPermission class=\u0022System.Security.Permissions.DataProtectionPermission, System.Security, Version={VERSION}, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a\u0022 version=\u00221\u0022 Unrestricted=\u0022true\u0022/></PermissionSet><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Nothing\u0022 Description=\u0022{Policy_PS_Nothing}\u0022/><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022Execution\u0022 Description=\u0022{Policy_PS_Execution}\u0022><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022Execution\u0022/></PermissionSet><PermissionSet class=\u0022System.Security.NamedPermissionSet\u0022version=\u00221\u0022 Name=\u0022SkipVerification\u0022 Description=\u0022{Policy_PS_SkipVerification}\u0022><Permission class=\u0022System.Security.Permissions.SecurityPermission, mscorlib, Version={VERSION}, Culture=neutral, PublicKeyToken=b77a5c561934e089\u0022version=\u00221\u0022 Flags=\u0022SkipVerification\u0022/></PermissionSet></NamedPermissionSets>", 4380, 19, StringComparison.Ordinal);
         Assert.True(Local_282_0 < 0);
+    }
+
+    private static void WithCulture(CultureInfo culture, Action test)
+    {
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = culture;
+            test();
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+        }
     }
 }
 
