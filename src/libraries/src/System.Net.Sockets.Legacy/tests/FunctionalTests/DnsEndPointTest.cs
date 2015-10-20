@@ -10,10 +10,6 @@ namespace System.Net.Sockets.Tests
 {
     public class DnsEndPointTest
     {
-        // TODO: These constants are fill-ins for issues that need to be opened
-        //       once this code is merged into corefx/master.
-        private const int DummyLoopbackV6Issue = 123456;
-
         // Port 8 is unassigned as per https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
         private const int UnusedPort = 8;
 
@@ -221,7 +217,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(DummyLoopbackV6Issue, PlatformID.AnyUnix)]
+        [ActiveIssue(4002, PlatformID.AnyUnix)]
         public void Socket_StaticConnectAsync_Success()
         {
             Assert.True(Capability.IPv6Support() && Capability.IPv4Support());

@@ -12,7 +12,7 @@ namespace System.Net.Sockets.Performance.Tests
     [Trait("Perf", "true")]
     public class SocketPerformanceAPMTests
     {
-        private const int DummyOSXPerfIssue = 123456;
+        // NOTE: when enabled these tests will probably still fail on OS X due to #4009.
 
         private readonly ITestOutputHelper _log;
 
