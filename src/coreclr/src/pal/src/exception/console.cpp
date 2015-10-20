@@ -340,19 +340,19 @@ void SEHHandleControlEvent(DWORD event, LPVOID eip)
         BOOL handler_retval;
 
 /* reset ENTRY nesting level back to zero while inside the callback... */
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
     {
         int old_level;
         old_level = DBG_change_entrylevel(0);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 
         handler_retval = handler->handler(event);
 
 /* ...and set nesting level back to what it was */
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
         DBG_change_entrylevel(old_level);
     }
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 
         if(handler_retval)
         {
