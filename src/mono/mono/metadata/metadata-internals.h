@@ -164,6 +164,13 @@ struct _MonoTableInfo {
 
 typedef struct _MonoDllMap MonoDllMap;
 
+typedef struct {
+	gboolean (*match) (MonoImage*);
+	gboolean (*load_pe_data) (MonoImage*);
+	gboolean (*load_cli_data) (MonoImage*);
+	gboolean (*load_tables) (MonoImage*);
+} MonoImageLoader;
+
 struct _MonoImage {
 	/*
 	 * The number of assemblies which reference this MonoImage though their 'image'
@@ -364,6 +371,9 @@ struct _MonoImage {
 	GHashTable **gshared_types;
 	/* The length of the above array */
 	int gshared_types_len;
+
+	/* The loader used to load this image */
+	MonoImageLoader *loader;
 
 	/*
 	 * No other runtime locks must be taken while holding this lock.
@@ -636,6 +646,9 @@ mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data);
 
 void
 mono_remove_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data);
+
+void
+mono_install_image_loader (const MonoImageLoader *loader);
 
 void
 mono_image_append_class_to_reflection_info_set (MonoClass *klass);

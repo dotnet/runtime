@@ -59,6 +59,8 @@ static gboolean debug_assembly_unload = FALSE;
 static gboolean mutex_inited;
 static mono_mutex_t images_mutex;
 
+static void install_pe_loader (void);
+
 typedef struct ImageUnloadHook ImageUnloadHook;
 struct ImageUnloadHook {
 	MonoImageUnloadFunc func;
@@ -108,6 +110,14 @@ mono_image_invoke_unload_hook (MonoImage *image)
 
 		hook->func (image, hook->user_data);
 	}
+}
+
+static GSList *image_loaders;
+
+void
+mono_install_image_loader (const MonoImageLoader *loader)
+{
+	image_loaders = g_slist_prepend (image_loaders, (MonoImageLoader*)loader);
 }
 
 /* returns offset relative to image->raw_data */
@@ -193,6 +203,8 @@ mono_images_init (void)
 	loaded_images_refonly_hash = g_hash_table_new (g_str_hash, g_str_equal);
 
 	debug_assembly_unload = g_getenv ("MONO_DEBUG_ASSEMBLY_UNLOAD") != NULL;
+
+	install_pe_loader ();
 
 	mutex_inited = TRUE;
 }
@@ -466,12 +478,13 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			ptr += 4 - (pad % 4);
 	}
 
+	i = ((MonoImageLoader*)image->loader)->load_tables (image);
 	g_assert (image->heap_guid.data);
 	g_assert (image->heap_guid.size >= 16);
 
 	image->guid = mono_guid_to_string ((guint8*)image->heap_guid.data);
 
-	return TRUE;
+	return i;
 }
 
 /*
@@ -841,6 +854,12 @@ do_load_header (MonoImage *image, MonoDotNetHeader *header, int offset)
 gboolean
 mono_image_load_pe_data (MonoImage *image)
 {
+	return ((MonoImageLoader*)image->loader)->load_pe_data (image);
+}
+
+static gboolean
+pe_image_load_pe_data (MonoImage *image)
+{
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
 	MonoMSDOSHeader msdos;
@@ -906,9 +925,17 @@ invalid_image:
 gboolean
 mono_image_load_cli_data (MonoImage *image)
 {
+	return ((MonoImageLoader*)image->loader)->load_cli_data (image);
+}
+
+static gboolean
+pe_image_load_cli_data (MonoImage *image)
+{
 	MonoCLIImageInfo *iinfo;
+	MonoDotNetHeader *header;
 
 	iinfo = image->image_info;
+	header = &iinfo->cli_header;
 
 	/* Load the CLI header */
 	if (!load_cli_header (image, iinfo))
@@ -938,6 +965,33 @@ mono_image_load_names (MonoImage *image)
 	}
 }
 
+static gboolean
+pe_image_load_tables (MonoImage *image)
+{
+	return TRUE;
+}
+
+static gboolean
+pe_image_match (MonoImage *image)
+{
+	if (image->raw_data [0] == 'M' && image->raw_data [1] == 'Z')
+		return TRUE;
+	return FALSE;
+}
+
+static const MonoImageLoader pe_loader = {
+	pe_image_match,
+	pe_image_load_pe_data,
+	pe_image_load_cli_data,
+	pe_image_load_tables,
+};
+
+static void
+install_pe_loader (void)
+{
+	mono_install_image_loader (&pe_loader);
+}
+
 static MonoImage *
 do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		    gboolean care_about_cli, gboolean care_about_pecoff)
@@ -945,6 +999,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
 	GSList *errors = NULL;
+	GSList *l;
 
 	mono_profiler_module_event (image, MONO_PROFILE_START_LOAD);
 
@@ -952,7 +1007,19 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 
 	iinfo = image->image_info;
 	header = &iinfo->cli_header;
-		
+
+	for (l = image_loaders; l; l = l->next) {
+		MonoImageLoader *loader = l->data;
+		if (loader->match (image)) {
+			image->loader = loader;
+			break;
+		}
+	}
+	if (!image->loader) {
+		*status = MONO_IMAGE_IMAGE_INVALID;
+		goto invalid_image;
+	}
+
 	if (status)
 		*status = MONO_IMAGE_IMAGE_INVALID;
 
@@ -960,7 +1027,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		goto done;
 
 	if (!image->metadata_only) {
-		if (!mono_verifier_verify_pe_data (image, &errors))
+		if (image->loader == &pe_loader && !mono_verifier_verify_pe_data (image, &errors))
 			goto invalid_image;
 
 		if (!mono_image_load_pe_data (image))
@@ -971,13 +1038,13 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		goto done;
 	}
 
-	if (!mono_verifier_verify_cli_data (image, &errors))
+	if (image->loader == &pe_loader && !mono_verifier_verify_cli_data (image, &errors))
 		goto invalid_image;
 
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
-	if (!mono_verifier_verify_table_data (image, &errors))
+	if (image->loader == &pe_loader && !mono_verifier_verify_table_data (image, &errors))
 		goto invalid_image;
 
 	mono_image_load_names (image);
