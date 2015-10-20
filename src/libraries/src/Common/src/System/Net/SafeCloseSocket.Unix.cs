@@ -23,7 +23,9 @@ namespace System.Net.Sockets
         {
             get
             {
-                return _innerSocket.AsyncContext;
+                return _innerSocket == null ?
+                    SocketAsyncContext.ClosedAsyncContext :
+                    _innerSocket.AsyncContext;
             }
         }
 
