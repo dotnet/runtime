@@ -142,6 +142,15 @@ namespace System.Net.Http
                 }
             }
 
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                // WriteAsync should be how writes are performed on this stream as
+                // part of HttpContent.CopyToAsync.  However, we implement Write just
+                // in case someone does need to do a synchronous write or has existing
+                // code that does so.
+                WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+            }
+
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 // If no data was provided, we're done.
@@ -205,6 +214,15 @@ namespace System.Net.Http
                         return Task.CompletedTask;
                     }
                 }
+            }
+
+            public override void Flush() { }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                return cancellationToken.IsCancellationRequested ?
+                    Task.FromCanceled(cancellationToken) :
+                    Task.CompletedTask;
             }
 
             protected override void Dispose(bool disposing)
@@ -390,10 +408,10 @@ namespace System.Net.Http
                 set { throw new NotSupportedException(); }
             }
 
-            public override void Flush() { }
-
             public override int Read(byte[] buffer, int offset, int count)
             {
+                // Reading should only be performed by CurlHandler, and it
+                // should always do it with ReadAsync, not Read.
                 throw new NotSupportedException();
             }
 
@@ -403,11 +421,6 @@ namespace System.Net.Http
             }
 
             public override void SetLength(long value)
-            {
-                throw new NotSupportedException();
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
             {
                 throw new NotSupportedException();
             }
