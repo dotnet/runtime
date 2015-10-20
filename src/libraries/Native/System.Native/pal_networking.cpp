@@ -344,13 +344,18 @@ static int GetHostByNameHelper(const uint8_t* hostname, hostent** entry)
     assert(entry != nullptr);
 
     size_t scratchLen = 512;
-    uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
-
-    hostent* result = reinterpret_cast<hostent*>(buffer);
-    char* scratch = reinterpret_cast<char*>(&buffer[sizeof(hostent)]);
 
     for (;;)
     {
+        uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
+        if (buffer == nullptr)
+        {
+            return PAL_NO_MEM;
+        }
+
+        hostent* result = reinterpret_cast<hostent*>(buffer);
+        char* scratch = reinterpret_cast<char*>(&buffer[sizeof(hostent)]);
+
         int getHostErrno;
         int err = gethostbyname_r(reinterpret_cast<const char*>(hostname), result, scratch, scratchLen, entry, &getHostErrno);
         switch (err)
@@ -361,16 +366,7 @@ static int GetHostByNameHelper(const uint8_t* hostname, hostent** entry)
 
             case ERANGE:
                 free(buffer);
-
                 scratchLen *= 2;
-                buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
-                if (buffer == nullptr)
-                {
-                    return PAL_NO_MEM;
-                }
-
-                result = reinterpret_cast<hostent*>(buffer);
-                scratch = reinterpret_cast<char*>(&buffer[sizeof(hostent)]);
                 break;
 
             default:
@@ -418,13 +414,18 @@ static int GetHostByAddrHelper(const uint8_t* addr, const socklen_t addrLen, int
     assert(entry != nullptr);
 
     size_t scratchLen = 512;
-    uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
 
-    hostent* result = reinterpret_cast<hostent*>(buffer);
-    char* scratch = reinterpret_cast<char*>(&buffer[sizeof(hostent)]);
-    
     for (;;)
     {
+        uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
+        if (buffer == nullptr)
+        {
+            return PAL_NO_MEM;
+        }
+
+        hostent* result = reinterpret_cast<hostent*>(buffer);
+        char* scratch = reinterpret_cast<char*>(&buffer[sizeof(hostent)]);
+
         int getHostErrno;
         int err = gethostbyaddr_r(addr, addrLen, type, result, scratch, scratchLen, entry, &getHostErrno);
         switch (err)
@@ -435,16 +436,7 @@ static int GetHostByAddrHelper(const uint8_t* addr, const socklen_t addrLen, int
 
             case ERANGE:
                 free(buffer);
-
                 scratchLen *= 2;
-                buffer = reinterpret_cast<uint8_t*>(malloc(sizeof(hostent) + scratchLen));
-                if (buffer == nullptr)
-                {
-                    return PAL_NO_MEM;
-                }
-
-                result = reinterpret_cast<hostent*>(buffer);
-                scratch = reinterpret_cast<char*>(&buffer[sizeof(hostent)]);
                 break;
 
             default:
