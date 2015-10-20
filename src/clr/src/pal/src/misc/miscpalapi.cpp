@@ -159,51 +159,6 @@ PAL_GetPALDirectoryA(
     return bRet;
 }
 
-// Define _BitScanForward64 and BitScanForward
-// Per MSDN, BitScanForward64 will search the mask data from LSB to MSB for a set bit.
-// If one is found, its bit position is returned in the outPDWORD argument and 1 is returned.
-// Otherwise, 0 is returned.
-//
-// On GCC, the equivalent function is __builtin_ffsl. It returns 1+index of the least
-// significant set bit, or 0 if if mask is zero.
-unsigned char
-PALAPI
-BitScanForward64(
-        IN OUT PDWORD Index,
-        IN UINT64 qwMask)
-{
-    unsigned char bRet = FALSE;
-    int iIndex = __builtin_ffsl(qwMask);
-    if (iIndex != 0)
-    {
-        // Set the Index after deducting unity
-        *Index = (DWORD)(iIndex-1);
-        bRet = TRUE;
-    }
-
-    return bRet;
-}
-
-// On GCC, the equivalent function is __builtin_ffs. It returns 1+index of the least
-// significant set bit, or 0 if if mask is zero.
-unsigned char
-PALAPI
-BitScanForward(
-        IN OUT PDWORD Index,
-        IN UINT wMask)
-{
-    unsigned char bRet = FALSE;
-    int iIndex = __builtin_ffs(wMask);
-    if (iIndex != 0)
-    {
-        // Set the Index after deducting unity
-        *Index = (DWORD)(iIndex-1);
-        bRet = TRUE;
-    }
-    
-    return bRet;
-}
-
 BOOL
 PALAPI
 PAL_Random(

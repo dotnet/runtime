@@ -5198,132 +5198,353 @@ typedef EXCEPTION_DISPOSITION (PALAPI *PVECTORED_EXCEPTION_HANDLER)(
 // significant set bit, or 0 if if mask is zero.
 //
 // The same is true for BitScanForward, except that the GCC function is __builtin_ffs.
-
+EXTERN_C
 PALIMPORT
+inline
 unsigned char
 PALAPI
 BitScanForward(
-             IN OUT PDWORD Index,
-             IN UINT qwMask);
+    IN OUT PDWORD Index,
+    IN UINT qwMask)
+{
+    unsigned char bRet = FALSE;
+    int iIndex = __builtin_ffsl(qwMask);
+    if (iIndex != 0)
+    {
+        // Set the Index after deducting unity
+        *Index = (DWORD)(iIndex - 1);
+        bRet = TRUE;
+    }
 
-PALIMPORT
-LONG
-PALAPI
-InterlockedIncrement(
-             IN OUT LONG volatile *lpAddend);
+    return bRet;
+}
 
+EXTERN_C
 PALIMPORT
-LONG
-PALAPI
-InterlockedDecrement(
-             IN OUT LONG volatile *lpAddend);
-
-PALIMPORT
-LONG
-PALAPI
-InterlockedExchange(
-            IN OUT LONG volatile *Target,
-            IN LONG Value);
-
-PALIMPORT
-LONG
-PALAPI
-InterlockedCompareExchange(
-               IN OUT LONG volatile *Destination,
-               IN LONG Exchange,
-               IN LONG Comperand);
-
-PALIMPORT
-LONG
-PALAPI
-InterlockedCompareExchangeAcquire(
-               IN OUT LONG volatile *Destination,
-               IN LONG Exchange,
-               IN LONG Comperand);
-
-PALIMPORT
-LONG
-PALAPI
-InterlockedCompareExchangeRelease(
-               IN OUT LONG volatile *Destination,
-               IN LONG Exchange,
-               IN LONG Comperand);
-               
-PALIMPORT
-LONG
-PALAPI
-InterlockedExchangeAdd(
-               IN OUT LONG volatile *Addend,
-               IN LONG Value);
-               
-PALIMPORT
-LONG
-PALAPI
-InterlockedAnd(
-               IN OUT LONG volatile *Destination,
-               IN LONG Value);
-
-PALIMPORT
-LONG
-PALAPI
-InterlockedOr(
-              IN OUT LONG volatile *Destination,
-              IN LONG Value);
-
-PALIMPORT
-UCHAR
-PALAPI
-InterlockedBitTestAndReset(
-               IN OUT LONG volatile *Base,
-               IN LONG Bit);
-
-PALIMPORT
-UCHAR
-PALAPI
-InterlockedBitTestAndSet(
-               IN OUT LONG volatile *Base,
-               IN LONG Bit);
-
-PALIMPORT
+inline
 unsigned char
 PALAPI
 BitScanForward64(
-             IN OUT PDWORD Index,
-             IN UINT64 qwMask);
+    IN OUT PDWORD Index,
+    IN UINT64 qwMask)
+{
+    unsigned char bRet = FALSE;
+    int iIndex = __builtin_ffsl(qwMask);
+    if (iIndex != 0)
+    {
+        // Set the Index after deducting unity
+        *Index = (DWORD)(iIndex - 1);
+        bRet = TRUE;
+    }
 
+    return bRet;
+}
+
+/*++
+Function:
+InterlockedIncrement
+
+The InterlockedIncrement function increments (increases by one) the
+value of the specified variable and checks the resulting value. The
+function prevents more than one thread from using the same variable
+simultaneously.
+
+Parameters
+
+lpAddend 
+[in/out] Pointer to the variable to increment. 
+
+Return Values
+
+The return value is the resulting incremented value. 
+
+--*/
+EXTERN_C
 PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedIncrement(
+    IN OUT LONG volatile *lpAddend)
+{
+    return __sync_add_and_fetch(lpAddend, (LONG)1);
+}
+
+EXTERN_C
+PALIMPORT
+inline
 LONGLONG
 PALAPI
 InterlockedIncrement64(
-             IN OUT LONGLONG volatile *lpAddend);
+    IN OUT LONGLONG volatile *lpAddend)
+{
+    return __sync_add_and_fetch(lpAddend, (LONGLONG)1);
+}
 
+/*++
+Function:
+InterlockedDecrement
+
+The InterlockedDecrement function decrements (decreases by one) the
+value of the specified variable and checks the resulting value. The
+function prevents more than one thread from using the same variable
+simultaneously.
+
+Parameters
+
+lpAddend 
+[in/out] Pointer to the variable to decrement. 
+
+Return Values
+
+The return value is the resulting decremented value.
+
+--*/
+EXTERN_C
 PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedDecrement(
+    IN OUT LONG volatile *lpAddend)
+{
+    return __sync_sub_and_fetch(lpAddend, (LONG)1);
+}
+
+EXTERN_C
+PALIMPORT
+inline
 LONGLONG
 PALAPI
 InterlockedDecrement64(
-             IN OUT LONGLONG volatile *lpAddend);
+    IN OUT LONGLONG volatile *lpAddend)
+{
+    return __sync_sub_and_fetch(lpAddend, (LONGLONG)1);
+}
 
+/*++
+Function:
+InterlockedExchange
+
+The InterlockedExchange function atomically exchanges a pair of
+values. The function prevents more than one thread from using the same
+variable simultaneously.
+
+Parameters
+
+Target 
+[in/out] Pointer to the value to exchange. The function sets
+this variable to Value, and returns its prior value.
+Value 
+[in] Specifies a new value for the variable pointed to by Target. 
+
+Return Values
+
+The function returns the initial value pointed to by Target. 
+
+--*/
+EXTERN_C
 PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedExchange(
+    IN OUT LONG volatile *Target,
+    IN LONG Value)
+{
+    return __sync_swap(Target, Value);
+}
+
+EXTERN_C
+PALIMPORT
+inline
 LONGLONG
 PALAPI
 InterlockedExchange64(
-            IN OUT LONGLONG volatile *Target,
-            IN LONGLONG Value);
-            
-PALIMPORT
-LONGLONG
-PALAPI
-InterlockedExchangeAdd64(
-               IN OUT LONGLONG volatile *Addend,
-               IN LONGLONG Value);
+    IN OUT LONGLONG volatile *Target,
+    IN LONGLONG Value)
+{
+    return __sync_swap(Target, Value);
+}
 
+/*++
+Function:
+InterlockedCompareExchange
+
+The InterlockedCompareExchange function performs an atomic comparison
+of the specified values and exchanges the values, based on the outcome
+of the comparison. The function prevents more than one thread from
+using the same variable simultaneously.
+
+If you are exchanging pointer values, this function has been
+superseded by the InterlockedCompareExchangePointer function.
+
+Parameters
+
+Destination     [in/out] Specifies the address of the destination value. The sign is ignored.
+Exchange        [in]     Specifies the exchange value. The sign is ignored.
+Comperand       [in]     Specifies the value to compare to Destination. The sign is ignored.
+
+Return Values
+
+The return value is the initial value of the destination.
+
+--*/
+EXTERN_C
 PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedCompareExchange(
+    IN OUT LONG volatile *Destination,
+    IN LONG Exchange,
+    IN LONG Comperand)
+{
+    return __sync_val_compare_and_swap(
+        Destination, /* The pointer to a variable whose value is to be compared with. */
+        Comperand, /* The value to be compared */
+        Exchange /* The value to be stored */);
+}
+
+EXTERN_C
+PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedCompareExchangeAcquire(
+    IN OUT LONG volatile *Destination,
+    IN LONG Exchange,
+    IN LONG Comperand)
+{
+    // TODO: implement the version with only the acquire semantics
+    return __sync_val_compare_and_swap(
+        Destination, /* The pointer to a variable whose value is to be compared with. */
+        Comperand, /* The value to be compared */
+        Exchange /* The value to be stored */);
+}
+
+EXTERN_C
+PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedCompareExchangeRelease(
+    IN OUT LONG volatile *Destination,
+    IN LONG Exchange,
+    IN LONG Comperand)
+{
+    // TODO: implement the version with only the release semantics
+    return __sync_val_compare_and_swap(
+        Destination, /* The pointer to a variable whose value is to be compared with. */
+        Comperand, /* The value to be compared */
+        Exchange /* The value to be stored */);
+}
+
+// See the 32-bit variant in interlock2.s
+EXTERN_C
+PALIMPORT
+inline
 LONGLONG
 PALAPI
 InterlockedCompareExchange64(
-               IN OUT LONGLONG volatile *Destination,
-               IN LONGLONG Exchange,
-               IN LONGLONG Comperand);
+    IN OUT LONGLONG volatile *Destination,
+    IN LONGLONG Exchange,
+    IN LONGLONG Comperand)
+{
+    return __sync_val_compare_and_swap(
+        Destination, /* The pointer to a variable whose value is to be compared with. */
+        Comperand, /* The value to be compared */
+        Exchange /* The value to be stored */);
+}
+
+/*++
+Function:
+InterlockedExchangeAdd
+
+The InterlockedExchangeAdd function atomically adds the value of 'Value'
+to the variable that 'Addend' points to.
+
+Parameters
+
+lpAddend
+[in/out] Pointer to the variable to to added.
+
+Return Values
+
+The return value is the original value that 'Addend' pointed to.
+
+--*/
+EXTERN_C
+PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedExchangeAdd(
+    IN OUT LONG volatile *Addend,
+    IN LONG Value)
+{
+    return __sync_fetch_and_add(Addend, Value);
+}
+
+EXTERN_C
+PALIMPORT
+inline
+LONGLONG
+PALAPI
+InterlockedExchangeAdd64(
+    IN OUT LONGLONG volatile *Addend,
+    IN LONGLONG Value)
+{
+    return __sync_fetch_and_add(Addend, Value);
+}
+
+EXTERN_C
+PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedAnd(
+    IN OUT LONG volatile *Destination,
+    IN LONG Value)
+{
+    return __sync_fetch_and_and(Destination, Value);
+}
+
+EXTERN_C
+PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedOr(
+    IN OUT LONG volatile *Destination,
+    IN LONG Value)
+{
+    return __sync_fetch_and_or(Destination, Value);
+}
+
+EXTERN_C
+PALIMPORT
+inline
+UCHAR
+PALAPI
+InterlockedBitTestAndReset(
+    IN OUT LONG volatile *Base,
+    IN LONG Bit)
+{
+    return (InterlockedAnd(Base, ~(1 << Bit)) & (1 << Bit)) != 0;
+}
+
+EXTERN_C
+PALIMPORT
+inline
+UCHAR
+PALAPI
+InterlockedBitTestAndSet(
+    IN OUT LONG volatile *Base,
+    IN LONG Bit)
+{
+    return (InterlockedOr(Base, (1 << Bit)) & (1 << Bit)) != 0;
+}
 
 #if defined(BIT64)
 #define InterlockedExchangePointer(Target, Value) \
@@ -5339,11 +5560,23 @@ InterlockedCompareExchange64(
     ((PVOID)(UINT_PTR)InterlockedCompareExchange((PLONG)(UINT_PTR)(Destination), (LONG)(UINT_PTR)(ExChange), (LONG)(UINT_PTR)(Comperand)))
 #endif
 
+/*++
+Function:
+MemoryBarrier
+
+The MemoryBarrier function creates a full memory barrier.
+
+--*/
+EXTERN_C
 PALIMPORT
+inline
 VOID
 PALAPI
 MemoryBarrier(
-    VOID);
+    VOID)
+{
+    __sync_synchronize();
+}
 
 PALIMPORT
 VOID
@@ -5912,13 +6145,47 @@ inline WCHAR *PAL_wcsstr(WCHAR *_S, const WCHAR *_P)
 }
 #endif
 
-PALIMPORT unsigned int __cdecl _rotl(unsigned int, int);
+/*++
+Function:
+_rotl
+
+See MSDN doc.
+--*/
+EXTERN_C
+PALIMPORT
+inline
+unsigned int __cdecl _rotl(unsigned int value, int shift)
+{
+    unsigned int retval = 0;
+
+    shift &= 0x1f;
+    retval = (value << shift) | (value >> (sizeof(int) * CHAR_BIT - shift));
+    return retval;
+}
+
 // On 64 bit unix, make the long an int.
 #ifdef BIT64
 #define _lrotl _rotl
 #endif // BIT64
 
-PALIMPORT unsigned int __cdecl _rotr(unsigned int, int);
+/*++
+Function:
+_rotr
+
+See MSDN doc.
+--*/
+EXTERN_C
+PALIMPORT
+inline
+unsigned int __cdecl _rotr(unsigned int value, int shift)
+{
+    unsigned int retval;
+
+    shift &= 0x1f;
+    retval = (value >> shift) | (value << (sizeof(int) * CHAR_BIT - shift));
+    return retval;
+}
+
 PALIMPORT int __cdecl abs(int);
 PALIMPORT double __cdecl fabs(double); 
 #ifndef PAL_STDCPP_COMPAT
