@@ -25,6 +25,7 @@
     <Compile Include="AssemblyName\CultureName.cs" />
     <Compile Include="Assembly\Assembly_CustomAttributeTests.cs" />
     <Compile Include="Assembly\Assembly_DefinedTypeTests.cs" />
+    <Compile Include="Assembly\Assembly_EntryPointTests.cs" />
     <Compile Include="Assembly\Assembly_EmbeddedFiles.cs" />
     <Compile Include="Assembly\Assembly_EqualsTests.cs" />
     <Compile Include="Assembly\Assembly_ExportedTypesTests.cs" />
@@ -99,6 +100,10 @@
       <Name>System.Reflection</Name>
       <!-- Don't copy the reference assembly to output -->
       <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="TestExe\System.Reflection.Tests.TestExe.csproj">
+      <Project>{8c19b991-41e9-4b38-9602-e19375397f1d}</Project>
+      <Name>System.Reflection.Tests.TestExe</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

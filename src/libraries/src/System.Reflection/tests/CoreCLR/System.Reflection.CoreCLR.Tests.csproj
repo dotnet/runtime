@@ -18,7 +18,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assembly\Assembly_LocationTests.CoreCLR.cs" />
+    <Compile Include="Assembly\AssemblyTests.CoreCLR.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\..\..\Common\tests\Data\TinyAssembly.dll">
@@ -32,6 +32,10 @@
       <Name>System.Reflection</Name>
       <!-- Don't copy the reference assembly to output -->
       <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\TestExe\System.Reflection.Tests.TestExe.csproj">
+      <Project>{8c19b991-41e9-4b38-9602-e19375397f1d}</Project>
+      <Name>System.Reflection.Tests.TestExe</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
