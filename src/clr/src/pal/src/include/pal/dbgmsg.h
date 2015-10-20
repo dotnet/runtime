@@ -136,12 +136,10 @@ Using Debug channels at Run Time
     set to nonzero, channels will be open or closed based on PAL_DBG_CHANNELS
     
     Notes :
-    If _NO_DEBUG_MESSAGES_ was defined at build-time, no debug messages
+    If _ENABLE_DEBUG_MESSAGES_ was not defined at build-time, no debug messages
     will be generated.
-    If _NO_DEBUG_MESSAGES_ was NOT defined, all debug levels will be enabled, 
+    If _ENABLE_DEBUG_MESSAGES_ was defined, all debug levels will be enabled,
     but all channels will be closed by default
-    To define NO_DEBUG_MESSAGES, run the configure script with the parameter
-    --disable-dbgmsg
 
     Another configure option is --enable-appendtraces
     Normally, if the file specified by PAL_API_TRACING exists, its content will
@@ -229,18 +227,8 @@ extern FILE *output_file;
 extern Volatile<BOOL> dbg_master_switch ;
 
 
-/* output macros */
-
-#define SET_DEFAULT_DEBUG_CHANNEL(x) \
-    static const DBG_CHANNEL_ID defdbgchan = DCI_##x
-
-/* Is debug output enabled for the given level and channel? */
-#define DBG_ENABLED(level, channel) (output_file &&                     \
-                                     dbg_master_switch &&               \
-                                     (dbg_channel_flags[channel] & (1 << (level))))
-
 /* conditionnal compilation for other debug messages */
-#if _NO_DEBUG_MESSAGES_
+#if !_ENABLE_DEBUG_MESSAGES_
 
 /* compile out these trace levels; see the definition of NOTRACE */
 #define TRACE     NOTRACE
@@ -256,11 +244,24 @@ extern Volatile<BOOL> dbg_master_switch ;
 #define DBGOUT_(x) NOTRACE
 #define ERROR     NOTRACE
 #define ERROR_(x) NOTRACE
+#define DBG_PRINTF(level, channel, bHeader) NOTRACE
 
 #define CHECK_STACK_ALIGN
 
-#else /* _NO_DEBUG_MESSAGES_ */
+#define SET_DEFAULT_DEBUG_CHANNEL(x)
+#define DBG_ENABLED(level, channel)
 
+#else /* _ENABLE_DEBUG_MESSAGES_ */
+
+/* output macros */
+
+#define SET_DEFAULT_DEBUG_CHANNEL(x) \
+    static const DBG_CHANNEL_ID defdbgchan = DCI_##x
+
+/* Is debug output enabled for the given level and channel? */
+#define DBG_ENABLED(level, channel) (output_file &&                     \
+                                     dbg_master_switch &&               \
+                                     (dbg_channel_flags[channel] & (1 << (level))))
 #define TRACE \
     DBG_PRINTF(DLI_TRACE,defdbgchan,TRUE)
 
@@ -312,16 +313,6 @@ bool DBG_ShouldCheckStackAlignment();
 #define ERROR_(x) \
     DBG_PRINTF(DLI_ERROR,DCI_##x,TRUE)
 
-#endif /* _NO_DEBUG_MESSAGES_ */
-
-/* Use GNU C-specific features if available : __FUNCTION__ pseudo-macro,
-   variable-argument macros */
-#ifdef __GNUC__
-
-/* define NOTRACE as nothing; this will absorb the variable-argument list used
-   in tracing macros */
-#define NOTRACE(args...)
-
 #define DBG_PRINTF(level, channel, bHeader) \
 {\
     if( DBG_ENABLED(level, channel) ) {         \
@@ -330,11 +321,28 @@ bool DBG_ShouldCheckStackAlignment();
         BOOL __bHeader = bHeader;\
         DBG_PRINTF2
 
+#ifdef __GNUC__
 #define DBG_PRINTF2(args...)\
         DBG_printf_gcc(__chanid,__levid,__bHeader,__FUNCTION__,__FILE__,\
                        __LINE__,args);\
     }\
 }
+#else /* __GNUC__ */
+#define DBG_PRINTF2(...)\
+      DBG_printf_c99(__chanid,__levid,__bHeader,__FILE__,__LINE__,__VA_ARGS__);\
+    }\
+}
+#endif /* __GNUC__ */
+
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
+
+/* Use GNU C-specific features if available : __FUNCTION__ pseudo-macro,
+   variable-argument macros */
+#ifdef __GNUC__
+
+/* define NOTRACE as nothing; this will absorb the variable-argument list used
+   in tracing macros */
+#define NOTRACE(args...)
 
 #if defined(__cplusplus) && defined(FEATURE_PAL_SXS)
 #define __ASSERT_ENTER()                                                \
@@ -388,19 +396,6 @@ bool DBG_ShouldCheckStackAlignment();
 /* define NOTRACE as nothing; this will absorb the variable-argument list used
    in tracing macros */
 #define NOTRACE(...)
-
-#define DBG_PRINTF(level, channel, bHeader) \
-{\
-    if( DBG_ENABLED(level, channel) ) {         \
-        DBG_CHANNEL_ID __chanid=channel;\
-        DBG_LEVEL_ID __levid=level;\
-        BOOL __bHeader = bHeader;\
-        DBG_PRINTF2
-
-#define DBG_PRINTF2(...)\
-      DBG_printf_c99(__chanid,__levid,__bHeader,__FILE__,__LINE__,__VA_ARGS__);\
-    }\
-}
 
 #if !defined(_DEBUG)
 

@@ -1,8 +1,6 @@
 #ifndef _PAL_CONFIG_H_INCLUDED
 #define _PAL_CONFIG_H_INCLUDED 1
 
-#define _NO_DEBUG_MESSAGES_ 0
-
 #cmakedefine01 HAVE_IEEEFP_H
 #cmakedefine01 HAVE_ALLOCA_H
 #cmakedefine01 HAVE_SYS_VMPARAM_H
