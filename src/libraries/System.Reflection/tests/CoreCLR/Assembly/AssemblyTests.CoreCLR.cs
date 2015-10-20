@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public class LocationTests
+    public class AssemblyTests
     {
         [Fact]
         public void CurrentAssemblyHasLocation()
@@ -42,9 +42,17 @@ namespace System.Reflection.Tests
             Assert.Throws<NotSupportedException>(() => builder.Location); // wish this were Assert.Empty, but it's long been this way...
         }
 
+        [Fact]
+        public void TestExeEntryPoint()
+        {
+            MethodInfo entryPoint = typeof(TestExe).GetTypeInfo().Assembly.EntryPoint;
+            Assert.NotNull(entryPoint);
+            Assert.Equal(42, entryPoint.Invoke(null, null));
+        }
+
         private static Assembly ThisAssembly()
         {
-            return typeof(LocationTests).GetTypeInfo().Assembly;
+            return typeof(AssemblyTests).GetTypeInfo().Assembly;
         }
 
         private sealed class TestStreamLoadContext : AssemblyLoadContext

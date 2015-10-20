@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection", "ref\Sy
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.CoreCLR.Tests", "tests\CoreCLR\System.Reflection.CoreCLR.Tests.csproj", "{C8049356-559D-4F34-AC17-56F3AE62C897}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Tests.TestExe", "tests\TestExe\System.Reflection.Tests.TestExe.csproj", "{8C19B991-41E9-4B38-9602-E19375397F1D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{C8049356-559D-4F34-AC17-56F3AE62C897}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C8049356-559D-4F34-AC17-56F3AE62C897}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8049356-559D-4F34-AC17-56F3AE62C897}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C19B991-41E9-4B38-9602-E19375397F1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C19B991-41E9-4B38-9602-E19375397F1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C19B991-41E9-4B38-9602-E19375397F1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C19B991-41E9-4B38-9602-E19375397F1D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
