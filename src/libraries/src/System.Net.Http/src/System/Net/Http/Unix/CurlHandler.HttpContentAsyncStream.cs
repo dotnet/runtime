@@ -65,16 +65,23 @@ namespace System.Net.Http
                 _content = content;
             }
 
-            /// <summary>Gets whether the stream is readable.  It is, but it should only be read from by CurlHandler's libcurl callbacks.</summary>
-            public override bool CanRead { get { return true; } }
-
-            /// <summary>Gets whether the stream is writable.  It is, but it should only be written to by HttpContent.CopyToAsync.</summary>
+            /// <summary>Gets whether the stream is writable. It is.</summary>
             public override bool CanWrite { get { return true; } }
+
+            /// <summary>Gets whether the stream is readable.  It's not (at least not through the public Read* methods).</summary>
+            public override bool CanRead { get { return false; } }
             
             /// <summary>Gets whether the stream is seekable. It's not.</summary>
             public override bool CanSeek { get { return false; } }
 
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            /// <summary>
+            /// Reads asynchronously from the data written to the stream.  Since this stream is exposed out
+            /// as an argument to HttpContent.CopyToAsync, and since we don't want that code attempting to read
+            /// from this stream (which will mess with consumption by libcurl's callbacks), we mark the stream
+            /// as CanRead==false and throw NotSupportedExceptions from the public Read* methods, with internal
+            /// usage using this ReadAsyncInternal method instead.
+            /// </summary>
+            internal Task<int> ReadAsyncInternal(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 // If no data was requested, give back 0 bytes.
                 if (count == 0)
@@ -410,8 +417,15 @@ namespace System.Net.Http
 
             public override int Read(byte[] buffer, int offset, int count)
             {
-                // Reading should only be performed by CurlHandler, and it
-                // should always do it with ReadAsync, not Read.
+                // Reading should only be performed by CurlHandler, and it should always do it with 
+                // ReadAsyncInternal, not Read or ReadAsync.
+                throw new NotSupportedException();
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                // Reading should only be performed by CurlHandler, and it should always do it with 
+                // ReadAsyncInternal, not Read or ReadAsync.
                 throw new NotSupportedException();
             }
 
