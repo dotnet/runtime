@@ -408,13 +408,14 @@ bool EnumSymbols(Locale& locale,
     if (U_FAILURE(err))
         return false;
 
-    Locale localeWithCalendar(locale);
-    localeWithCalendar.setKeywordValue("calendar", GetCalendarName(calendarId), err);
+    char localeWithCalendarName[ULOC_FULLNAME_CAPACITY];
+    strncpy(localeWithCalendarName, locale.getName(), ULOC_FULLNAME_CAPACITY);
+    uloc_setKeywordValue("calendar", GetCalendarName(calendarId), localeWithCalendarName, ULOC_FULLNAME_CAPACITY, &err);
 
     if (U_FAILURE(err))
         return false;
 
-    UCalendar* pCalendar = ucal_open(nullptr, 0, localeWithCalendar.getName(), UCAL_DEFAULT, &err);
+    UCalendar* pCalendar = ucal_open(nullptr, 0, localeWithCalendarName, UCAL_DEFAULT, &err);
     UCalendarHolder calenderHolder(pCalendar, err);
 
     if (U_FAILURE(err))
