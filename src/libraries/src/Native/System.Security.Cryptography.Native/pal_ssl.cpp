@@ -42,6 +42,37 @@ extern "C" SSL_CTX* SslCtxCreate(SSL_METHOD* method)
     return SSL_CTX_new(method);
 }
 
+extern "C" int64_t SslCtxCtrl(SSL_CTX* ctx, int32_t cmd, int64_t larg, void* parg)
+{
+    return SSL_CTX_ctrl(ctx, cmd, larg, parg);
+}
+
+extern "C" SSL* SslCreate(SSL_CTX* ctx)
+{
+    return SSL_new(ctx);
+}
+
+extern "C" int32_t SslGetError(SSL* ssl, int32_t ret)
+{
+    return SSL_get_error(ssl, ret);
+}
+
+extern "C" void SslDestroy(SSL* ssl)
+{
+    if (ssl)
+    {
+        SSL_free(ssl);
+    }
+}
+
+extern "C" void SslCtxDestroy(SSL_CTX* ctx)
+{
+    if (ctx)
+    {
+        SSL_CTX_free(ctx);
+    }
+}
+
 extern "C" int32_t SslWrite(SSL* ssl, const void* buf, int32_t num)
 {
     return SSL_write(ssl, buf, num);

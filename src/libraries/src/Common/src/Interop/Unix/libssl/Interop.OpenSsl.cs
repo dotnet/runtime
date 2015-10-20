@@ -9,8 +9,6 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
-using SafeSslHandle = Interop.libssl.SafeSslHandle;
-
 internal static partial class Interop
 {
     internal static class OpenSsl
@@ -25,14 +23,14 @@ internal static partial class Interop
 
             IntPtr method = GetSslMethod(isServer, options);
 
-            using (libssl.SafeSslContextHandle innerContext = Ssl.SslCtxCreate(method))
+            using (SafeSslContextHandle innerContext = Ssl.SslCtxCreate(method))
             {
                 if (innerContext.IsInvalid)
                 {
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
-                libssl.SSL_CTX_ctrl(innerContext, libssl.SSL_CTRL_OPTIONS, options, IntPtr.Zero);
+                Crypto.SslCtxCtrl(innerContext, libssl.SSL_CTRL_OPTIONS, options, IntPtr.Zero);
 
                 libssl.SSL_CTX_set_quiet_shutdown(innerContext, 1);
 
@@ -317,7 +315,7 @@ internal static partial class Interop
             }
         }
 
-        private static void UpdateCAListFromRootStore(libssl.SafeSslContextHandle context)
+        private static void UpdateCAListFromRootStore(SafeSslContextHandle context)
         {
             using (SafeX509NameStackHandle nameStack = Crypto.NewX509NameStack())
             {
@@ -376,7 +374,7 @@ internal static partial class Interop
             if (retVal < 0)
             {
                 //TODO (Issue #3362) check this error
-                libssl.SSL_get_error(context, retVal);
+                Crypto.SslGetError(context, retVal);
             }
         }
 
@@ -421,15 +419,15 @@ internal static partial class Interop
 
         private static libssl.SslErrorCode GetSslError(SafeSslHandle context, int result)
         {
-            libssl.SslErrorCode retVal = libssl.SSL_get_error(context, result);
+            libssl.SslErrorCode retVal = Crypto.SslGetError(context, result);
             if (retVal == libssl.SslErrorCode.SSL_ERROR_SYSCALL)
             {
-                retVal = (libssl.SslErrorCode)libssl.ERR_get_error();
+                retVal = (libssl.SslErrorCode)Crypto.ErrGetError();
             }
             return retVal;
         }
 
-        private static void SetSslCertificate(libssl.SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)
+        private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)
         {
             Debug.Assert(certPtr != null && !certPtr.IsInvalid, "certPtr != null && !certPtr.IsInvalid");
             Debug.Assert(keyPtr != null && !keyPtr.IsInvalid, "keyPtr != null && !keyPtr.IsInvalid");
@@ -459,8 +457,8 @@ internal static partial class Interop
 
         private static SslException CreateSslException(string message)
         {
-            ulong errorVal = libssl.ERR_get_error();
-            string msg = SR.Format(message, Marshal.PtrToStringAnsi(libssl.ERR_reason_error_string(errorVal)));
+            ulong errorVal = Crypto.ErrGetError();
+            string msg = SR.Format(message, Marshal.PtrToStringAnsi(Crypto.ErrReasonErrorString(errorVal)));
             return new SslException(msg, (int)errorVal);
         }
 
@@ -483,7 +481,7 @@ internal static partial class Interop
 
         private static SslException CreateSslException(SafeSslHandle context, string message, int error)
         {
-            return CreateSslException(message, libssl.SSL_get_error(context, error));
+            return CreateSslException(message, Crypto.SslGetError(context, error));
         }
 
         #endregion

@@ -209,9 +209,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.libssl_types.cs">
       <Link>Common\Interop\Unix\libssl\Interop.libssl_types.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.SafeSslHandle.cs">
-      <Link>Common\Interop\Unix\libssl\Interop.SafeSslHandle.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\SecuritySafeHandles.cs">
       <Link>Common\Interop\Unix\libssl\SecuritySafeHandles.cs</Link>
     </Compile>
@@ -271,6 +268,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeSslHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeSslHandle.Unix.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

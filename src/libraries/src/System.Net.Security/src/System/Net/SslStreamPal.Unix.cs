@@ -193,7 +193,7 @@ namespace System.Net
                 Interop.libssl.SslErrorCode errorCode = Interop.libssl.SslErrorCode.SSL_ERROR_NONE;
 
 
-                Interop.libssl.SafeSslHandle scHandle = securityContext.SslContext;
+                SafeSslHandle scHandle = securityContext.SslContext;
 
                 resultSize = encrypt ?
                     Interop.OpenSsl.Encrypt(scHandle, buffer, offset, size, out errorCode) :

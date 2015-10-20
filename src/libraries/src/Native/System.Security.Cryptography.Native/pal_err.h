@@ -4,10 +4,22 @@
 #include <stdint.h>
 
 /*
+Shims the ERR_get_error method.
+*/
+extern "C" uint64_t ErrGetError();
+
+/*
 Shim to ERR_get_error which also returns whether the error
 was caused by an allocation failure.
 */
-extern "C" uint64_t ErrGetError(int32_t* isAllocFailure);
+extern "C" uint64_t ErrGetErrorAlloc(int32_t* isAllocFailure);
+
+/*
+Shims the ERR_reason_error_string method.
+
+Returns the string for the specified error.
+*/
+extern "C" const char* ErrReasonErrorString(uint64_t error);
 
 /*
 Direct shim to ERR_error_string_n.
