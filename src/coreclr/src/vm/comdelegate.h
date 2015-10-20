@@ -211,10 +211,14 @@ void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
 //     signature.
 struct ShuffleEntry
 {
+    // Offset masks and special value
     enum {
-        REGMASK  = 0x8000,
-        OFSMASK  = 0x7fff,
-        SENTINEL = 0xffff,
+        REGMASK      = 0x8000, // Register offset bit
+        FPREGMASK    = 0x4000, // Floating point register bit
+        FPSINGLEMASK = 0x2000, // Single precising floating point register
+        OFSMASK      = 0x7fff, // Mask to get stack offset
+        OFSREGMASK   = 0x1fff, // Mask to get register index
+        SENTINEL     = 0xffff, // Indicates end of shuffle array
     };
 
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
@@ -224,17 +228,11 @@ struct ShuffleEntry
     };
 #else
 
-    // Special values:
-    //  -1       - indicates end of shuffle array: stacksizedelta
-    //             == difference in stack size between virtual and static sigs.
-    //  high bit - indicates a register argument: mask it off and
-    //             the result is an offset into ArgumentRegisters.
-
     UINT16    srcofs;
 
     union {
         UINT16    dstofs;           //if srcofs != SENTINEL
-        UINT16    stacksizedelta;   //if dstofs == SENTINEL
+        UINT16    stacksizedelta;   //if dstofs == SENTINEL, difference in stack size between virtual and static sigs
     };
 #endif // _TARGET_AMD64_
 };

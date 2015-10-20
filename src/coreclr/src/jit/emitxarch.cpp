@@ -3671,7 +3671,8 @@ void                emitter::emitIns_C(instruction  ins,
     }
     else if (ins == INS_pop)
     {
-        emitCurStackLvl -= emitCntStackDepth; assert((int)emitCurStackLvl >= 0);
+        emitCurStackLvl -= emitCntStackDepth;
+        assert((int)emitCurStackLvl >= 0);
     }
 
 #endif // !FEATURE_FIXED_OUT_ARGS
@@ -11010,7 +11011,7 @@ size_t              emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE**
                                 && id->idReg1()   == REG_ESP)
             {
                 assert((size_t)emitGetInsSC(id) < 0x00000000FFFFFFFFLL);
-                emitStackPop (dst, /*isCall*/false, /*callInstrSize*/0, (unsigned)(emitGetInsSC(id) / sizeof(void*)));
+                emitStackPop(dst, /*isCall*/false, /*callInstrSize*/0, (unsigned)(emitGetInsSC(id) / sizeof(void*)));
             }
             break;
 

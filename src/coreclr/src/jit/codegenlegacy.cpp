@@ -12870,7 +12870,7 @@ void                CodeGen::genCodeForBBlist()
         genStackLevel = 0;
 #if FEATURE_STACK_FP_X87
         genResetFPstkLevel();
-#endif //FEATURE_STACK_FP_X87
+#endif // FEATURE_STACK_FP_X87
 
 #if !FEATURE_FIXED_OUT_ARGS
         /* Check for inserted throw blocks and adjust genStackLevel */

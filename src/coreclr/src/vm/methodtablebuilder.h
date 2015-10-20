@@ -2980,6 +2980,15 @@ private:
 
     VOID    CheckForNativeHFA();
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+    // checks whether the struct is enregisterable.
+    void SystemVAmd64CheckForPassStructInRegister();
+    void SystemVAmd64CheckForPassNativeStructInRegister();
+    // Store the eightbyte classification into the EEClass
+    void StoreEightByteClassification(SystemVStructRegisterPassingHelper* helper);
+
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+
     // this accesses the field size which is temporarily stored in m_pMTOfEnclosingClass
     // during class loading. Don't use any other time
     DWORD GetFieldSize(FieldDesc *pFD);

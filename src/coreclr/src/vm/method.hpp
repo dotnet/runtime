@@ -1611,8 +1611,9 @@ public:
     // does this function return an object reference?
     MetaSig::RETURNTYPE ReturnsObject(
 #ifdef _DEBUG 
-    bool supportStringConstructors = false
+        bool supportStringConstructors = false,
 #endif
+        MethodTable** pMT = NULL
         );
 
 

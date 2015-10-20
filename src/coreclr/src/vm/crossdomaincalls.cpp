@@ -1264,7 +1264,7 @@ CrossDomainChannel::BlitAndCall()
             MetaSig mSig(m_pCliMD, thDeclaringType);
             ArgIterator argit(&mSig);
 
-            int    offset;
+            int offset;
             while (TransitionBlock::InvalidOffset != (offset = argit.GetNextOffset()))
             {    
                 int regArgNum = TransitionBlock::GetArgumentIndexFromOffset(offset);
@@ -2068,7 +2068,7 @@ CrossDomainChannel::MarshalAndCall()
     CDC_DETERMINE_DECLARING_TYPE(m_pCliMD, TypeHandle(CTPMethodTable::GetMethodTableBeingProxied(m_pFrame->GetThis())));
     MetaSig mSig(m_pCliMD, thDeclaringType);
     ArgIterator argit(&mSig);
-    int    ofs;
+    int ofs;
 
     // NumFixedArgs() doesn't count the "this" object, but SizeOfFrameArgumentArray() does.
     dwNumArgs = mSig.NumFixedArgs();
@@ -2141,7 +2141,7 @@ CrossDomainChannel::MarshalAndCall()
     TADDR pTransitionBlock = m_pFrame->GetTransitionBlock();
 
     for (int argNum = 0;
-        TransitionBlock::InvalidOffset != (ofs = argit.GetNextOffset());
+         TransitionBlock::InvalidOffset != (ofs = argit.GetNextOffset());
          argNum++
         )
     {

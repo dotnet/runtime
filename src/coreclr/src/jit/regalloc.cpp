@@ -667,7 +667,7 @@ void                Compiler::raSetupArgMasks(RegState *regState)
 #endif // LEGACY_BACKEND
 
 // The code to set the regState for each arg is outlined for shared use
-// by linear scan
+// by linear scan. (It is not shared for System V AMD64 platform.)
 regNumber     Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *argDsc)
 {
     regNumber inArgReg = argDsc->lvArgReg;

@@ -25,6 +25,7 @@
 #include "sigbuilder.h"
 #include "../md/compiler/custattr.h"
 #include <corhlprpriv.h>
+#include "argdestination.h"
 
 /*******************************************************************/
 const CorTypeInfo::CorTypeInfoEntry CorTypeInfo::info[ELEMENT_TYPE_MAX] = 
@@ -4976,11 +4977,28 @@ void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTa
     } while (cur >= last);
 }
 
+void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_MethodTable pMT, ArgDestination *pSrc)
+{
+    WRAPPER_NO_CONTRACT;
+    
+    if (!pMT->ContainsPointers())
+        return;
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)    
+    if (pSrc->IsStructPassedInRegs())
+    {
+        pSrc->ReportPointersFromStructInRegisters(fn, sc, pMT->GetNumInstanceFieldBytes());
+        return;
+    }
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+    ReportPointersFromValueType(fn, sc, pMT, pSrc->GetDestinationAddress());
+}
+
 //------------------------------------------------------------------
 // Perform type-specific GC promotion on the value (based upon the
 // last type retrieved by NextArg()).
 //------------------------------------------------------------------
-VOID MetaSig::GcScanRoots(PTR_VOID pValue,
+VOID MetaSig::GcScanRoots(ArgDestination *pValue,
                           promote_func *fn,
                           ScanContext* sc,
                           promote_carefully_func *fnc)
@@ -4997,7 +5015,7 @@ VOID MetaSig::GcScanRoots(PTR_VOID pValue,
     CONTRACTL_END
 
 
-    PTR_PTR_Object pArgPtr = (PTR_PTR_Object)pValue;
+    PTR_PTR_Object pArgPtr = (PTR_PTR_Object)pValue->GetDestinationAddress();
     if (fnc == NULL)
         fnc = &PromoteCarefully;
 
@@ -5083,7 +5101,7 @@ VOID MetaSig::GcScanRoots(PTR_VOID pValue,
                 }
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 
-                ReportPointersFromValueType(fn, sc, pMT, pArgPtr);
+                ReportPointersFromValueTypeArg(fn, sc, pMT, pValue);
             }
             break;
 
