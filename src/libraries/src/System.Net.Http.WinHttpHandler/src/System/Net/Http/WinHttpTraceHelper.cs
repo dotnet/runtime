@@ -33,7 +33,27 @@ namespace System.Net.Http
             return s_TraceEnabled;
         }
 
-        public static void TraceCallbackStatus(string message, IntPtr handle, bool invokeCallback, uint status)
+        public static void Trace(string message)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            Debug.WriteLine(message);
+        }
+
+        public static void Trace(string format, object arg0, object arg1, object arg2)
+        {
+            if (!IsTraceEnabled())
+            {
+                return;
+            }
+            
+            Debug.WriteLine(format, arg0, arg1, arg2);
+        }
+
+        public static void TraceCallbackStatus(string message, IntPtr handle, IntPtr context, uint status)
         {
             if (!IsTraceEnabled())
             {
@@ -41,10 +61,10 @@ namespace System.Net.Http
             }
 
             Debug.WriteLine(
-                "{0}: handle=0x{1:X}, {2}, {3}",
+                "{0}: handle=0x{1:X}, context=0x{2:X}, {3}",
                 message,
                 handle,
-                invokeCallback ? "processing" : "skipping",
+                context,
                 GetStringFromInternetStatus(status));
         }
 
