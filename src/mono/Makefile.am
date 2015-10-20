@@ -5,15 +5,15 @@ AM_CFLAGS = $(WERROR_CFLAGS)
 MONOTOUCH_SUBDIRS = $(libgc_dir) eglib/src mono
 
 if CROSS_COMPILING
-SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) support data runtime scripts man samples msvc $(docs_dir)
+SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) support data runtime scripts man samples msvc $(docs_dir) acceptance-tests
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
-DIST_SUBDIRS = m4 po $(libgc_dir) eglib mono ikvm-native support data runtime scripts man samples tools msvc docs
+DIST_SUBDIRS = m4 po $(libgc_dir) eglib mono ikvm-native support data runtime scripts man samples tools msvc docs acceptance-tests
 else
-SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) support data runtime scripts man samples msvc $(docs_dir)
+SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) support data runtime scripts man samples msvc $(docs_dir) acceptance-tests
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
-DIST_SUBDIRS = m4 po $(libgc_dir) eglib mono ikvm-native support data runtime scripts man samples tools msvc docs
+DIST_SUBDIRS = m4 po $(libgc_dir) eglib mono ikvm-native support data runtime scripts man samples tools msvc docs acceptance-tests
 endif
 
 all: update_submodules
