@@ -574,6 +574,14 @@ private:
     void             buildUpperVectorRestoreRefPositions(GenTree *tree, LsraLocation currentLoc, VARSET_VALARG_TP liveLargeVectors);
 #endif //FEATURE_SIMD
 
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // For AMD64 on SystemV machines. This method 
+    // is called as replacement for raUpdateRegStateForArg 
+    // that is used on Windows. On System V systems a struct can be passed
+    // partially using registers from the 2 register files.
+    void unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc);
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
     // Update reg state for an incoming register argument
     void            updateRegStateForArg(LclVarDsc* argDsc);
 
@@ -998,7 +1006,6 @@ private:
     // Set of large vector (TYP_SIMD32 on AVX) variables to consider for callee-save registers.
     VARSET_TP           largeVectorCalleeSaveCandidateVars;
 #endif // FEATURE_SIMD
-    
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

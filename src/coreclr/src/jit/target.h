@@ -19,6 +19,12 @@
 #endif
 #endif
 
+#if (defined(FEATURE_CORECLR) && defined(PLATFORM_UNIX))
+#define FEATURE_VARARG    0
+#else // !(defined(FEATURE_CORECLR) && defined(PLATFORM_UNIX))
+#define FEATURE_VARARG    1
+#endif // !(defined(FEATURE_CORECLR) && defined(PLATFORM_UNIX))
+
 /*****************************************************************************/
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
@@ -971,9 +977,27 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define REG_LNGRET               REG_EAX
   #define RBM_LNGRET               RBM_EAX
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    #define REG_INTRET_1           REG_RDX
+    #define RBM_INTRET_1           RBM_RDX
+
+    #define REG_LNGRET_1           REG_RDX
+    #define RBM_LNGRET_1           RBM_RDX
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+
   #define REG_FLOATRET             REG_XMM0
   #define RBM_FLOATRET             RBM_XMM0
+  #define REG_DOUBLERET            REG_XMM0
   #define RBM_DOUBLERET            RBM_XMM0
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#define REG_FLOATRET_1             REG_XMM1
+#define RBM_FLOATRET_1             RBM_XMM1
+
+#define REG_DOUBLERET_1            REG_XMM1
+#define RBM_DOUBLERET_1            RBM_XMM1
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
   #define REG_FPBASE               REG_EBP
   #define RBM_FPBASE               RBM_EBP
@@ -1872,7 +1896,7 @@ extern const regMaskSmall  regMasks[REG_COUNT];
 inline regMaskTP    genRegMask(regNumber reg)
 {
     assert((unsigned)reg < ArrLen(regMasks));
-#if defined _TARGET_AMD64_
+#ifdef _TARGET_AMD64_
     // shift is faster than a L1 hit on modern x86
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK

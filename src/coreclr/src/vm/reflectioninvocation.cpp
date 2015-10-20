@@ -34,6 +34,7 @@
 #endif
 
 #include "dbginterface.h"
+#include "argdestination.h"
 
 // these flags are defined in XXXInfo.cs and only those that are used are replicated here
 #define INVOCATION_FLAGS_UNKNOWN                    0x00000000
@@ -1578,7 +1579,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
         TypeHandle th = gc.pSig->GetArgumentAt(i);
 
-        int    ofs = argit.GetNextOffset();
+        int ofs = argit.GetNextOffset();
         _ASSERTE(ofs != TransitionBlock::InvalidOffset);
 
 #ifdef CALLDESCR_REGTYPEMAP
@@ -1590,16 +1591,22 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
         // least one such argument we point the call worker at the floating point area of the frame (we leave
         // it null otherwise since the worker can perform a useful optimization if it knows no floating point
         // registers need to be set up).
-        if ((ofs < 0) && (callDescrData.pFloatArgumentRegisters == NULL))
+
+        if (TransitionBlock::HasFloatRegister(ofs, argit.GetArgLocDescForStructInRegs()) && 
+            (callDescrData.pFloatArgumentRegisters == NULL))
+        {
             callDescrData.pFloatArgumentRegisters = (FloatArgumentRegisters*) (pTransitionBlock +
-                                                                TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+                                                                               TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+        }
 #endif
 
         UINT structSize = argit.GetArgSize();
 
         bool needsStackCopy = false;
-        PVOID pArgDst = pTransitionBlock + ofs;
 
+        // A boxed Nullable<T> is represented as boxed T. So to pass a Nullable<T> by reference, 
+        // we have to create a Nullable<T> on stack, copy the T into it, then pass it to the callee and
+        // after returning from the call, copy the T out of the Nullable<T> back to the boxed T.
         TypeHandle nullableType = NullableTypeOfByref(th);
         if (!nullableType.IsNull()) {
             th = nullableType;
@@ -1607,16 +1614,20 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             needsStackCopy = true;
         }
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
-        else
-        if (argit.IsArgPassedByRef()) {
+        else if (argit.IsArgPassedByRef()) 
+        {
             needsStackCopy = true;
         }
 #endif
+
+        ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
 
         if(needsStackCopy)
         {
             MethodTable * pMT = th.GetMethodTable();
             _ASSERTE(pMT && pMT->IsValueType());
+
+            PVOID pArgDst = argDest.GetDestinationAddress();
 
             PVOID pStackCopy = _alloca(structSize);
             *(PVOID *)pArgDst = pStackCopy;
@@ -1632,9 +1643,12 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             {
                 pValueClasses = new (_alloca(sizeof(ValueClassInfo))) ValueClassInfo(pStackCopy, pMT, pValueClasses);
             }
+
+            // We need a new ArgDestination that points to the stack copy
+            argDest = ArgDestination(pStackCopy, 0, NULL);
         }
 
-        InvokeUtil::CopyArg(th, &(gc.args->m_Array[i]), pArgDst);
+        InvokeUtil::CopyArg(th, &(gc.args->m_Array[i]), &argDest);
     }
 
     ENDFORBIDGC();

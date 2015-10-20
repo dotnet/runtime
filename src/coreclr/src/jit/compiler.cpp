@@ -2992,7 +2992,6 @@ void                 Compiler::compCompile(void * * methodCodePtr,
                                            unsigned compileFlags)
 {
     hashBv::Init(this);
-
     VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
 
     /* The temp holding the secret stub argument is used by fgImport() when importing the intrinsic. */
@@ -4042,7 +4041,6 @@ int           Compiler::compCompileHelper (CORINFO_MODULE_HANDLE            clas
                                            unsigned                         compileFlags,
                                            CorInfoInstantiationVerification instVerInfo)
     {
-
         CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
 
         info.compCode           = methodInfo->ILCode;
@@ -5026,6 +5024,125 @@ START:
    
     return result;
 }
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+// GetTypeFromClassificationAndSizes:
+//   Returns the type of the eightbyte accounting for the classification and size of the eightbyte.
+//
+// args:
+//   classType: classification type
+//   size: size of the eightbyte.
+//   
+var_types Compiler::GetTypeFromClassificationAndSizes(SystemVClassificationType classType, int size)
+{
+    var_types type = TYP_UNKNOWN;
+    switch (classType)
+    {
+    case SystemVClassificationTypeInteger:
+        if (size == 1)
+        {
+            type = TYP_BYTE;
+        }
+        else if (size <= 2)
+        {
+            type = TYP_SHORT;
+        }
+        else if (size <= 4)
+        {
+            type = TYP_INT;
+        }
+        else if (size <= 8)
+        {
+            type = TYP_LONG;
+        }
+        else
+        {
+            assert(false && "GetTypeFromClassificationAndSizes Invalid Integer classification type.");
+        }
+        break;
+    case SystemVClassificationTypeIntegerReference:
+        type = TYP_REF;
+        break;
+    case SystemVClassificationTypeSSE:
+        if (size <= 4)
+        {
+            type = TYP_FLOAT;
+        }
+        else if (size <= 8)
+        {
+            type = TYP_DOUBLE;
+        }
+        else
+        {
+            assert(false && "GetTypeFromClassificationAndSizes Invalid SSE classification type.");
+        }
+        break;
+
+    default:
+        assert(false && "GetTypeFromClassificationAndSizes Invalid classification type.");
+        break;
+    }
+
+    return type;
+}
+
+// getEightByteType:
+//   Returns the type of the struct description and slot number of the eightbyte.
+//
+// args:
+//   structDesc: struct classification description.
+//   slotNum: eightbyte slot number for the struct.
+//   
+var_types Compiler::getEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc, unsigned slotNum)
+{
+    var_types eightByteType = TYP_UNDEF;
+    unsigned len = structDesc.eightByteSizes[slotNum];
+
+    switch (structDesc.eightByteClassifications[slotNum])
+    {
+    case SystemVClassificationTypeInteger:
+        // See typelist.h for jit type definition. 
+        // All the types of size < 4 bytes are of jit type TYP_INT.
+        if (structDesc.eightByteSizes[slotNum] <= 4)
+        {
+            eightByteType = TYP_INT;
+        }
+        else if (structDesc.eightByteSizes[slotNum] <= 8)
+        {
+            eightByteType = TYP_LONG;
+        }
+        else
+        {
+            assert(false && "getEightByteType Invalid Integer classification type.");
+        }
+        break;
+    case SystemVClassificationTypeIntegerReference:
+        assert(len == REGSIZE_BYTES);
+        eightByteType = TYP_REF;
+        break;
+    case SystemVClassificationTypeSSE:
+        if (structDesc.eightByteSizes[slotNum] <= 4)
+        {
+            eightByteType = TYP_FLOAT;
+        }
+        else if (structDesc.eightByteSizes[slotNum] <= 8)
+        {
+            eightByteType = TYP_DOUBLE;
+        }
+        else
+        {
+            assert(false && "getEightByteType Invalid SSE classification type.");
+        }
+        break;
+    default:
+        assert(false && "getEightByteType Invalid classification type.");
+        break;
+    }
+
+    return eightByteType;
+}
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
 /*****************************************************************************/
 /*****************************************************************************/

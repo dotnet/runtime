@@ -2306,7 +2306,7 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
                 if (!Length)
                 {
                     ASSERT("WideCharToMultiByte failed.  Error is %d\n",
-                          GetLastError());
+                        GetLastError());
                     PERF_EXIT(vfprintf);
                     va_end(ap);
                     return -1;
