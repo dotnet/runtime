@@ -366,6 +366,23 @@ namespace System.Net.Sockets
             }
         }
 
+        private static SocketAsyncContext _closedAsyncContext;
+        public static SocketAsyncContext ClosedAsyncContext
+        {
+            get
+            {
+                if (Volatile.Read(ref _closedAsyncContext) == null)
+                {
+                    var ctx = new SocketAsyncContext(-1, null);
+                    ctx.Close();
+
+                    Volatile.Write(ref _closedAsyncContext, ctx);
+                }
+
+                return _closedAsyncContext;
+            }
+        }
+
         private int _fileDescriptor;
         private GCHandle _handle;
         private OperationQueue<TransferOperation> _receiveQueue;
