@@ -366,20 +366,20 @@ namespace System.Net.Sockets
             }
         }
 
-        private static SocketAsyncContext _closedAsyncContext;
+        private static SocketAsyncContext s_closedAsyncContext;
         public static SocketAsyncContext ClosedAsyncContext
         {
             get
             {
-                if (Volatile.Read(ref _closedAsyncContext) == null)
+                if (Volatile.Read(ref s_closedAsyncContext) == null)
                 {
                     var ctx = new SocketAsyncContext(-1, null);
                     ctx.Close();
 
-                    Volatile.Write(ref _closedAsyncContext, ctx);
+                    Volatile.Write(ref s_closedAsyncContext, ctx);
                 }
 
-                return _closedAsyncContext;
+                return s_closedAsyncContext;
             }
         }
 
