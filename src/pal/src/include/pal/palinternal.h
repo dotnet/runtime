@@ -148,6 +148,12 @@ function_name() to call the system's implementation
    compiling PAL implementation files. */
 #include "config.h"
 
+#ifdef DEBUG
+#define _ENABLE_DEBUG_MESSAGES_ 1
+#else
+#define _ENABLE_DEBUG_MESSAGES_ 0
+#endif
+
 #ifdef PAL_PERF
 #include "pal_perf.h"
 #endif
