@@ -50,6 +50,7 @@ unsigned GetSizeForCorElementType(CorElementType etyp);
 const ElementTypeInfo* GetElementTypeInfo(CorElementType etyp);
 
 class SigBuilder;
+class ArgDestination;
 
 typedef const struct HardCodedMetaSig *LPHARDCODEDMETASIG;
 
@@ -841,7 +842,7 @@ class MetaSig
         // Perform type-specific GC promotion on the value (based upon the
         // last type retrieved by NextArg()).
         //------------------------------------------------------------------
-        VOID GcScanRoots(PTR_VOID pValue, promote_func *fn,
+        VOID GcScanRoots(ArgDestination *pValue, promote_func *fn,
                          ScanContext* sc, promote_carefully_func *fnc = NULL);
 
         //------------------------------------------------------------------
@@ -888,7 +889,7 @@ class MetaSig
         BOOL IsReturnTypeVoid() const;
 
 
-        enum RETURNTYPE {RETOBJ, RETBYREF, RETNONOBJ};
+        enum RETURNTYPE {RETOBJ, RETBYREF, RETNONOBJ, RETVALUETYPE};
 
         CorElementType GetReturnTypeNormalized(TypeHandle * pthValueType = NULL) const;
 

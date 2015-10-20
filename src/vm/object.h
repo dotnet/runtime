@@ -94,6 +94,8 @@ class CtxStaticData;
 class DomainAssembly;
 class AssemblyNative;
 class WaitHandleNative;
+class ArgDestination;
+
 struct RCW;
 
 #if CHECK_APP_DOMAIN_LEAKS
@@ -702,6 +704,7 @@ inline void ClearObjectReference(OBJECTREF* dst)
 // CopyValueClass sets a value class field
 
 void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
+void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
 
 inline void InitValueClass(void *dest, MethodTable *pMT)
 { 
@@ -709,18 +712,24 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
     ZeroMemoryInGCHeap(dest, pMT->GetNumInstanceFieldBytes());
 }
 
+// Initialize value class argument
+void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
+
 #if CHECK_APP_DOMAIN_LEAKS
 
 void SetObjectReferenceChecked(OBJECTREF *dst,OBJECTREF ref, AppDomain *pAppDomain);
 void CopyValueClassChecked(void* dest, void* src, MethodTable *pMT, AppDomain *pAppDomain);
+void CopyValueClassArgChecked(ArgDestination *argDest, void* src, MethodTable *pMT, AppDomain *pAppDomain, int destOffset);
 
 #define SetObjectReference(_d,_r,_a)        SetObjectReferenceChecked(_d, _r, _a)
 #define CopyValueClass(_d,_s,_m,_a)         CopyValueClassChecked(_d,_s,_m,_a)      
+#define CopyValueClassArg(_d,_s,_m,_a,_o)   CopyValueClassArgChecked(_d,_s,_m,_a,_o)      
 
 #else
 
 #define SetObjectReference(_d,_r,_a)        SetObjectReferenceUnchecked(_d, _r)
 #define CopyValueClass(_d,_s,_m,_a)         CopyValueClassUnchecked(_d,_s,_m)       
+#define CopyValueClassArg(_d,_s,_m,_a,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)       
 
 #endif
 
@@ -4649,6 +4658,7 @@ public:
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
+    static BOOL UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return 0; }
 
