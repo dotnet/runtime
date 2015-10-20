@@ -22,6 +22,8 @@
 #cmakedefine01 HAVE_ALLOCA_H
 #cmakedefine01 HAVE_EPOLL
 #cmakedefine01 HAVE_KQUEUE
+#cmakedefine01 HAVE_GETHOSTBYNAME_R
+#cmakedefine01 HAVE_GETHOSTBYADDR_R
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

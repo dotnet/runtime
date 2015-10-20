@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Net.Internals;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -53,18 +54,15 @@ namespace System.Net
             }
         }
 
-        private static unsafe IPHostEntry CreateHostEntry(Interop.libc.hostent* hostent)
+        private static unsafe IPHostEntry CreateIPHostEntry(Interop.Sys.HostEntry hostEntry)
         {
             string hostName = null;
-            if (hostent->h_name != null)
+            if (hostEntry.CanonicalName != null)
             {
-                hostName = Marshal.PtrToStringAnsi((IntPtr)hostent->h_name);
+                hostName = Marshal.PtrToStringAnsi((IntPtr)hostEntry.CanonicalName);
             }
 
-            int numAddresses;
-            for (numAddresses = 0; hostent->h_addr_list[numAddresses] != null; numAddresses++)
-            {
-            }
+            int numAddresses = hostEntry.IPAddressCount;
 
             IPAddress[] ipAddresses;
             if (numAddresses == 0)
@@ -74,15 +72,20 @@ namespace System.Net
             else
             {
                 ipAddresses = new IPAddress[numAddresses];
+
+                void* addressListHandle = hostEntry.AddressListHandle;
+                var nativeIPAddress = default(Interop.Sys.IPAddress);
                 for (int i = 0; i < numAddresses; i++)
                 {
-                    Debug.Assert(hostent->h_addr_list[i] != null);
-                    ipAddresses[i] = new IPAddress(*(int*)hostent->h_addr_list[i]);
+                    int err = Interop.Sys.GetNextIPAddress(&hostEntry, &addressListHandle, &nativeIPAddress);
+                    Debug.Assert(err == 0);
+
+                    ipAddresses[i] = nativeIPAddress.GetIPAddress();
                 }
             }
 
             int numAliases;
-            for (numAliases = 0; hostent->h_aliases[numAliases] != null; numAliases++)
+            for (numAliases = 0; hostEntry.Aliases[numAliases] != null; numAliases++)
             {
             }
 
@@ -96,10 +99,12 @@ namespace System.Net
                 aliases = new string[numAliases];
                 for (int i = 0; i < numAliases; i++)
                 {
-                    Debug.Assert(hostent->h_aliases[i] != null);
-                    aliases[i] = Marshal.PtrToStringAnsi((IntPtr)hostent->h_aliases[i]);
+                    Debug.Assert(hostEntry.Aliases[i] != null);
+                    aliases[i] = Marshal.PtrToStringAnsi((IntPtr)hostEntry.Aliases[i]);
                 }
             }
+
+            Interop.Sys.FreeHostEntry(&hostEntry);
 
             return new IPHostEntry
             {
@@ -107,6 +112,32 @@ namespace System.Net
                 AddressList = ipAddresses,
                 Aliases = aliases
             };
+        }
+
+        public static unsafe IPHostEntry GetHostByName(string hostName)
+        {
+            Interop.Sys.HostEntry entry;
+            int err = Interop.Sys.GetHostByName(hostName, &entry);
+            if (err != 0)
+            {
+                throw new InternalSocketException(GetSocketErrorForErrno(err), err);
+            }
+
+            return CreateIPHostEntry(entry);
+        }
+
+        public static unsafe IPHostEntry GetHostByAddr(IPAddress addr)
+        {
+            // TODO #2891: Optimize this (or decide if this legacy code can be removed):
+            Interop.Sys.IPAddress address = addr.GetNativeIPAddress();
+            Interop.Sys.HostEntry entry;
+            int err = Interop.Sys.GetHostByAddress(&address, &entry);
+            if (err != 0)
+            {
+                throw new InternalSocketException(GetSocketErrorForErrno(err), err);
+            }
+
+            return CreateIPHostEntry(entry);
         }
 
         public static unsafe SocketError TryGetAddrInfo(string name, out IPHostEntry hostinfo, out int nativeErrorCode)
@@ -135,7 +166,7 @@ namespace System.Net
                 var nativeIPAddress = default(Interop.Sys.IPAddress);
                 for (int i = 0; i < entry.IPAddressCount; i++)
                 {
-                    int err = Interop.Sys.GetNextIPAddress(&addressListHandle, &nativeIPAddress);
+                    int err = Interop.Sys.GetNextIPAddress(&entry, &addressListHandle, &nativeIPAddress);
                     Debug.Assert(err == 0);
 
                     hostinfo.AddressList[i] = nativeIPAddress.GetIPAddress();
