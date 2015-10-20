@@ -286,8 +286,6 @@ PERFInitProgramInfo(LPWSTR command_line, LPWSTR exe_path)
     ULONGLONG start_tick;
 #ifndef PLATFORM_UNIX
     time_t tv;
-    WSADATA WsaData;
-    WORD VersionRequested = MAKEWORD(2, 2);
 #else
     struct timeval tv;
 #endif
@@ -299,18 +297,10 @@ PERFInitProgramInfo(LPWSTR command_line, LPWSTR exe_path)
                         program_info.exe_path, PAL_PERF_MAX_LOGLINE-1, NULL, NULL) == 0)
         return FALSE;
 
-#ifndef PLATFORM_UNIX
-/* Windows needs a call to WSAStartup before calling gethostname */
-/* Immediately after gethostname call, we call WSACleanup to prevent */
-/* affecting networking test cases */
-    WSAStartup(VersionRequested, &WsaData);
-#endif
-
     gethostname(program_info.hostname, PAL_PERF_MAX_FUNCTION_NAME);
     program_info.process_id = getpid();
 
 #ifndef PLATFORM_UNIX
-    WSACleanup( );
     time( &tv );
     strcpy(program_info.start_time, ctime( &tv ));
 #else
