@@ -42,10 +42,28 @@
       <Link>Common\System\IO\TaskHelpers.cs</Link>
     </Compile>
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandle.cs">
+      <Link>Common\System\Runtime\InteropServices\SafeHeapHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandleCache.cs">
+      <Link>Common\System\Runtime\InteropServices\SafeHeapHandleCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\NativeBuffer.cs">
+      <Link>Common\System\Runtime\InteropServices\NativeBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\StringBuffer.cs">
+      <Link>Common\System\Runtime\InteropServices\StringBuffer.cs</Link>
+    </Compile>
+    <Compile Include="Tests\System\Runtime\InteropServices\NativeBufferTests.cs" />
+    <Compile Include="Tests\System\Runtime\InteropServices\StringBufferTests.cs" />
+    <Compile Include="Tests\System\Runtime\InteropServices\SafeHeapHandleCacheTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="..\src\System\IO\PathInternal.Windows.cs">
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.StringBuffer.cs">
+      <Link>Common\System\IO\PathInternal.Windows.StringBuffer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
