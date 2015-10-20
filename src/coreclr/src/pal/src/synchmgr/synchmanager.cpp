@@ -1423,11 +1423,11 @@ namespace CorUnix
                 ptainNode = ptainLocalHead;
                 ptainLocalHead = ptainNode->pNext;
 
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
                 // reset ENTRY nesting level back to zero while 
                 // inside the callback ... 
                 int iOldLevel = DBG_change_entrylevel(0);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 
                 TRACE("Calling APC %p with parameter %#x\n",
                       ptainNode->pfnAPC, ptainNode->pfnAPC);
@@ -1435,10 +1435,10 @@ namespace CorUnix
                 // Actual APC call
                 ptainNode->pfnAPC(ptainNode->pAPCData);
 
-#if !_NO_DEBUG_MESSAGES_
+#if _ENABLE_DEBUG_MESSAGES_
                 // ... and set nesting level back to what it was
                 DBG_change_entrylevel(iOldLevel);
-#endif /* !_NO_DEBUG_MESSAGES_ */
+#endif /* _ENABLE_DEBUG_MESSAGES_ */
 
                 iAPCsCalled++;
                 m_cacheThreadApcInfoNodes.Add(pthrCurrent, ptainNode);
