@@ -388,7 +388,7 @@ extern "C" int32_t GetHostByName(const uint8_t* hostname, HostEntry* entry)
     hostent* hostEntry = nullptr;
     int error = 0;
 
-#if defined(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR)
+#if HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR
     hostEntry = gethostbyname(reinterpret_cast<const char*>(hostname));
     error = h_errno;
 #elif HAVE_GETHOSTBYNAME_R
@@ -480,7 +480,7 @@ extern "C" int32_t GetHostByAddress(const IPAddress* address, HostEntry* entry)
     hostent* hostEntry = nullptr;
     int error = 0;
 
-#if defined(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR)
+#if HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR
     hostEntry = gethostbyaddr(addr, addrLen, type);
     error = h_errno;
 #elif HAVE_GETHOSTBYADDR_R
@@ -565,7 +565,7 @@ static int32_t GetNextIPAddressFromHostEnt(hostent** hostEntry, IPAddress* addre
             auto* in6Addr = reinterpret_cast<in6_addr*>(entry->h_addr_list[0]);
 
             ConvertIn6AddrToByteArray(address->Address, NUM_BYTES_IN_IPV6_ADDRESS, *in6Addr);
-            address->IsIPv6 = 0;
+            address->IsIPv6 = 1;
             address->ScopeId = 0;
             break;
         }
@@ -2307,7 +2307,7 @@ extern "C" Error WaitForSocketEvents(int32_t port, SocketEvent* buffer, int32_t*
 
 extern "C" int32_t PlatformSupportsMultipleConnectAttempts()
 {
-#if defined(PLATFORM_SUPPORTS_MULTIPLE_CONNECT_ATTEMPTS)
+#if HAVE_SUPPORT_FOR_MULTIPLE_CONNECT_ATTEMPTS
     return 1;
 #else
     return 0;
@@ -2316,7 +2316,7 @@ extern "C" int32_t PlatformSupportsMultipleConnectAttempts()
 
 extern "C" int32_t PlatformSupportsDualModeIPv4PacketInfo()
 {
-#if defined(PLATFORM_SUPPORTS_DUAL_MODE_IPV4_PACKET_INFO)
+#if HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO
     return 1;
 #else
     return 0;
