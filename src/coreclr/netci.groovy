@@ -196,8 +196,10 @@ def static getBuildJobName(def configuration, def os) {
             def lowerConfiguration = configuration.toLowerCase()
             def osGroup = osGroupMap[os]
             def jobName = getBuildJobName(configuration, os) + "_tst"
-            def inputCoreCLRBuildName = Utilities.getFolderName(project) + '/' + getBuildJobName(configuration, os)
-            def inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + getBuildJobName(configuration, 'windows_nt')
+            def inputCoreCLRBuildName = Utilities.getFolderName(project) + '/' + 
+                Utilities.getFullJobName(project, getBuildJobName(configuration, os), isPR)
+            def inputWindowTestsBuildName = Utilities.getFolderName(project) + '/' + 
+                Utilities.getFullJobName(project, getBuildJobName(configuration, 'windows_nt'), isPR)
             
             def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
                 // Set the label.
@@ -281,16 +283,18 @@ def static getBuildJobName(def configuration, def os) {
             def fullTestJobName = Utilities.getFolderName(project) + '/' + newJob.name
             def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, flowJobName, isPR)) {
                 buildFlow("""
+// Grab the checked out git commit hash so that it can be passed to the child
+// builds.
+gitCommit = build.environment.get('GIT_COMMIT')
 // Build the input jobs in parallel
 parallel (
-    { linuxBuildJob = build(params, '${inputCoreCLRBuildName}') },
-    { windowsBuildJob = build(params, '${inputWindowTestsBuildName}') }
+    { linuxBuildJob = build(params + [GitBranchOrCommit: gitCommit], '${inputCoreCLRBuildName}') },
+    { windowsBuildJob = build(params + [GitBranchOrCommit: gitCommit], '${inputWindowTestsBuildName}') }
 )
 
 // And then build the test build
 build(params + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number, 
-                CORECLR_WINDOWS_BUILD: windowsBuildJob.build.number], 
-      '${fullTestJobName}')    
+                CORECLR_WINDOWS_BUILD: windowsBuildJob.build.number, GitBranchOrCommit: gitCommit], '${fullTestJobName}')    
 """)
 
                 // Needs a workspace
