@@ -1187,6 +1187,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoJumpInfoVirtMethod *info = data;
 		MonoClass *iface_class = info->method->klass;
 		MonoMethod *method;
+		MonoError error;
 		int ioffset, slot;
 		gpointer addr;
 
@@ -1202,6 +1203,8 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		g_assert (slot != -1);
 		g_assert (info->klass->vtable);
 		method = info->klass->vtable [ioffset + slot];
+
+		method = mono_class_inflate_generic_method_checked (method, context, &error);
 
 		addr = mono_compile_method (method);
 		return mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
