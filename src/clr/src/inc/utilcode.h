@@ -3208,8 +3208,16 @@ inline DWORD HashThreeToOne(DWORD a, DWORD b, DWORD c)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // Current implementation taken from lookup3.c, by Bob Jenkins, May 2006
-    
+    /*
+    lookup3.c, by Bob Jenkins, May 2006, Public Domain.
+
+    These are functions for producing 32-bit hashes for hash table lookup.
+    hashword(), hashlittle(), hashlittle2(), hashbig(), mix(), and final() 
+    are externally useful functions.  Routines to test the hash are included 
+    if SELF_TEST is defined.  You can use this free for any purpose.  It's in
+    the public domain.  It has no warranty.
+    */
+
     #define rot32(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
     c ^= b; c -= rot32(b,14);
     a ^= c; a -= rot32(c,11);
