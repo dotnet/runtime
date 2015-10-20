@@ -48,6 +48,49 @@ Returns the new SSL_CTX instance.
 extern "C" SSL_CTX* SslCtxCreate(SSL_METHOD* method);
 
 /*
+Shims the SSL_CTX_ctrl method.
+
+The return value of the SSL_CTX_ctrl() function depends on the command supplied via the cmd parameter.
+*/
+extern "C" int64_t SslCtxCtrl(SSL_CTX* ctx, int32_t cmd, int64_t larg, void* parg);
+
+/*
+Shims the SSL_new method.
+
+Returns the new SSL instance.
+*/
+extern "C" SSL* SslCreate(SSL_CTX* ctx);
+
+/*
+Shims the SSL_get_error method.
+
+Returns the error code for the specified result.
+*/
+extern "C" int32_t SslGetError(SSL* ssl, int32_t ret);
+
+/*
+Cleans up and deletes an SSL instance.
+
+Implemented by calling SSL_free.
+
+No-op if ssl is null.
+The given X509 SSL is invalid after this call.
+Always succeeds.
+*/
+extern "C" void SslDestroy(SSL* ssl);
+
+/*
+Cleans up and deletes an SSL_CTX instance.
+
+Implemented by calling SSL_CTX_free.
+
+No-op if ctx is null.
+The given X509 SSL_CTX is invalid after this call.
+Always succeeds.
+*/
+extern "C" void SslCtxDestroy(SSL_CTX* ctx);
+
+/*
 Shims the SSL_write method.
 
 Returns the positive number of bytes written when successful, 0 or a negative number
