@@ -19,6 +19,7 @@ namespace System.Reflection
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { return default(System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData>); } }
         public abstract System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DefinedTypes { get; }
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { get { return default(System.Collections.Generic.IEnumerable<System.Type>); } }
+        public virtual MethodInfo EntryPoint { get { return default(MethodInfo); } }
         public virtual string FullName { get { return default(string); } }
         public virtual bool IsDynamic { get { return default(bool); } }
         public virtual System.Reflection.Module ManifestModule { get { return default(System.Reflection.Module); } }
