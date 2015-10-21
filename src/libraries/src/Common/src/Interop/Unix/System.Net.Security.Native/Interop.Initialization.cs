@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     // Initialization of libssl threading support is done in a static constructor.
     // This enables a project simply to include this file, and any usage of any of
-    // the libssl functions will trigger initialization of the threading support.
+    // the libssl or Crypto functions will trigger initialization of the threading support.
 
     internal static partial class libssl
     {
@@ -18,11 +18,18 @@ internal static partial class Interop
         }
     }
 
+    internal static partial class Crypto
+    {
+        static partial void InitializeSsl()
+        {
+            SslInitializer.Initialize();
+        }
+    }
+
     internal static class SslInitializer
     {
         static SslInitializer()
         {
-
             CryptoInitializer.Initialize();
 
             //Call ssl specific initializer
