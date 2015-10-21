@@ -466,7 +466,8 @@ retry_state_change:
 		- the thread was previously suspended, which means we should never reach end suspend in the first place.
 		- another suspend happened concurrently, which means the global suspend lock didn't happen.
 		*/
-		g_assert (suspend_count == 1);
+		if (G_UNLIKELY(suspend_count != 1))
+			g_error ("[%p] suspend_count = %d, but must be 1", mono_thread_info_get_tid (info), suspend_count);
 		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_RUNNING, suspend_count - 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("COMPENSATE_FINISH_ASYNC_SUSPEND", info, raw_state, STATE_RUNNING, -1);

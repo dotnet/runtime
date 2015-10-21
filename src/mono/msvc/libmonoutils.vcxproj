@@ -133,7 +133,6 @@
     <ClInclude Include="..\mono\utils\mono-stdlib.h" />
     <ClInclude Include="..\mono\utils\mono-string.h" />
     <ClInclude Include="..\mono\utils\mono-threads.h" />
-    <ClCompile Include="..\mono\utils\mono-threads-posix-signals.h" />
     <ClInclude Include="..\mono\utils\mono-time.h" />
     <ClInclude Include="..\mono\utils\mono-tls.h" />
     <ClInclude Include="..\mono\utils\mono-uri.h" />

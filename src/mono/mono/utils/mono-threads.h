@@ -377,9 +377,6 @@ mono_thread_info_end_self_suspend (void);
 
 //END of new API
 
-gboolean
-mono_thread_info_unified_management_enabled (void);
-
 void
 mono_thread_info_setup_async_call (THREAD_INFO_TYPE *info, void (*target_func)(void*), void *user_data);
 
@@ -640,5 +637,26 @@ void mono_threads_add_to_pending_operation_set (THREAD_INFO_TYPE* info); //XXX r
 gboolean mono_threads_wait_pending_operations (void);
 void mono_threads_begin_global_suspend (void);
 void mono_threads_end_global_suspend (void);
+
+#if defined(USE_POSIX_BACKEND)
+
+typedef enum {
+	MONO_THREADS_POSIX_INIT_SIGNALS_SUSPEND_RESTART,
+	MONO_THREADS_POSIX_INIT_SIGNALS_ABORT,
+} MonoThreadPosixInitSignals;
+
+void
+mono_threads_posix_init_signals (MonoThreadPosixInitSignals signals);
+
+#endif /* defined(USE_POSIX_BACKEND) */
+
+gint
+mono_threads_posix_get_suspend_signal (void);
+
+gint
+mono_threads_posix_get_restart_signal (void);
+
+gint
+mono_threads_posix_get_abort_signal (void);
 
 #endif /* __MONO_THREADS_H__ */

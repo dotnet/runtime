@@ -15,7 +15,6 @@
 #endif
 
 #include "mono-threads.h"
-#include "mono-threads-posix-signals.h"
 
 #if defined(USE_POSIX_BACKEND)
 

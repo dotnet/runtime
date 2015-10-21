@@ -655,11 +655,6 @@ sgen_client_binary_protocol_gray_dequeue (gpointer queue, gpointer cursor, gpoin
 {
 }
 
-int sgen_thread_handshake (BOOL suspend);
-gboolean sgen_suspend_thread (SgenThreadInfo *info);
-gboolean sgen_resume_thread (SgenThreadInfo *info);
-void sgen_wait_for_suspend_ack (int count);
-
 #ifdef HAVE_KW_THREAD
 extern __thread SgenThreadInfo *sgen_thread_info;
 #define TLAB_ACCESS_INIT
