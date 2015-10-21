@@ -10,11 +10,6 @@
 #include "locale.hpp"
 #include "holders.h"
 
-#include <unicode/dtfmtsym.h>
-#include <unicode/smpdtfmt.h>
-#include <unicode/dtptngen.h>
-#include <unicode/locdspnm.h>
-
 #define GREGORIAN_NAME "gregorian"
 #define JAPANESE_NAME "japanese"
 #define BUDDHIST_NAME "buddhist"
