@@ -80,7 +80,7 @@ public:
     static LPVOID NDirectGetEntryPoint(NDirectMethodDesc *pMD, HINSTANCE hMod);
     static HMODULE LoadLibraryFromPath(LPCWSTR libraryPath);
     static HINSTANCE LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
-    
+
 #ifndef FEATURE_CORECLR
     static VOID CheckUnificationList(NDirectMethodDesc * pMD, DWORD * pDllImportSearchPathFlag, BOOL * pSearchAssemblyDirectory);
 #endif // !FEATURE_CORECLR
@@ -132,6 +132,9 @@ public:
 
 private:
     NDirect() {LIMITED_METHOD_CONTRACT;};     // prevent "new"'s on this class
+
+    static HMODULE LoadFromNativeDllSearchDirectories(AppDomain* pDomain, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker);
+    static HMODULE LoadFromPInvokeAssemblyDirectory(NDirectMethodDesc *pMD, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker);
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
     static HMODULE LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pDomain, const wchar_t* wszLibName);

@@ -6666,6 +6666,18 @@ public:
 #define MAKEDLLNAME(x) MAKEDLLNAME_A(x)
 #endif
 
+#define PAL_SHLIB_PREFIX "lib"
+
+#if __APPLE__
+#define PAL_SHLIB_SUFFIX ".dylib"
+#elif _AIX
+#define PAL_SHLIB_SUFFIX ".a"
+#elif _HPUX_
+#define PAL_SHLIB_SUFFIX ".sl"
+#else
+#define PAL_SHLIB_SUFFIX ".so"
+#endif
+
 #define DBG_EXCEPTION_HANDLED            ((DWORD   )0x00010001L)    
 #define DBG_CONTINUE                     ((DWORD   )0x00010002L)    
 #define DBG_EXCEPTION_NOT_HANDLED        ((DWORD   )0x80010001L)    
