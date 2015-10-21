@@ -9,6 +9,7 @@
     <CompileItem Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetModuleHandle.cs" />
+    <CompileItem Include="$(CommonPath)\Interop\Windows\mincore\Interop.HRESULT_FROM_WIN32.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs" />
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp.cs" />
@@ -16,10 +17,10 @@
     <CompileItem Include="$(CommonPath)\System\Net\HttpVersion.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\UriScheme.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Http\WinHttpException.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpAuthHelper.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpCertificateHelper.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpChannelBinding.cs" />
-    <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpException.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpHandler.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpRequestCallback.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpRequestState.cs" />
