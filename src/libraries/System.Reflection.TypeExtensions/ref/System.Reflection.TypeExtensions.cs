@@ -33,9 +33,19 @@ namespace System.Reflection
         public static System.Reflection.MethodInfo GetRemoveMethod(this System.Reflection.EventInfo eventInfo) { return default(System.Reflection.MethodInfo); }
         public static System.Reflection.MethodInfo GetRemoveMethod(this System.Reflection.EventInfo eventInfo, bool nonPublic) { return default(System.Reflection.MethodInfo); }
     }
+    public static partial class MemberInfoExtensions
+    {
+        public static bool HasMetadataToken(this MemberInfo member) { return default(bool); }
+        public static int GetMetadataToken(this MemberInfo member) { return default(int); }
+    }
     public static partial class MethodInfoExtensions
     {
         public static System.Reflection.MethodInfo GetBaseDefinition(this System.Reflection.MethodInfo method) { return default(System.Reflection.MethodInfo); }
+    }
+    public static partial class ModuleExtensions
+    {
+        public static bool HasModuleVersionId(this Module module) { return default(bool); }
+        public static Guid GetModuleVersionId(this Module module) { return default(Guid); }
     }
     public static partial class PropertyInfoExtensions
     {
