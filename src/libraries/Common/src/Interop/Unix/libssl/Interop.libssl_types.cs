@@ -59,11 +59,11 @@ internal static partial class Interop
 
         internal static class SslMethods
         {
-            internal static readonly IntPtr TLSv1_method = Crypto.TlsV1Method();
-            internal static readonly IntPtr TLSv1_1_method = Crypto.TlsV1_1Method();
-            internal static readonly IntPtr TLSv1_2_method = Crypto.TlsV1_2Method();
-            internal static readonly IntPtr SSLv3_method = Crypto.SslV3Method();
-            internal static readonly IntPtr SSLv23_method = Crypto.SslV2_3Method();
+            internal static readonly IntPtr TLSv1_method = Ssl.TlsV1Method();
+            internal static readonly IntPtr TLSv1_1_method = Ssl.TlsV1_1Method();
+            internal static readonly IntPtr TLSv1_2_method = Ssl.TlsV1_2Method();
+            internal static readonly IntPtr SSLv3_method = Ssl.SslV3Method();
+            internal static readonly IntPtr SSLv23_method = Ssl.SslV2_3Method();
 
 #if DEBUG
             static SslMethods()

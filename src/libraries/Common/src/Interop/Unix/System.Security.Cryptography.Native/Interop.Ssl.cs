@@ -7,7 +7,7 @@ using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-    internal static partial class Crypto
+    internal static partial class Ssl
     {
         [DllImport(Interop.Libraries.CryptoNative)]
         internal static extern IntPtr SslV2_3Method();

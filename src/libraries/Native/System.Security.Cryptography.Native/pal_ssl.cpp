@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include "pal_ssl.h"
+#include "pal_crypto_config.h"
 
 extern "C" const SSL_METHOD* SslV2_3Method()
 {
@@ -20,7 +21,7 @@ extern "C" const SSL_METHOD* TlsV1Method()
 
 extern "C" const SSL_METHOD* TlsV1_1Method()
 {
-#ifdef HAVE_TLS_V1_1
+#if HAVE_TLS_V1_1
     return TLSv1_1_method();
 #else
     return nullptr;
@@ -29,7 +30,7 @@ extern "C" const SSL_METHOD* TlsV1_1Method()
 
 extern "C" const SSL_METHOD* TlsV1_2Method()
 {
-#ifdef HAVE_TLS_V1_2
+#if HAVE_TLS_V1_2
     return TLSv1_2_method();
 #else
     return nullptr;
