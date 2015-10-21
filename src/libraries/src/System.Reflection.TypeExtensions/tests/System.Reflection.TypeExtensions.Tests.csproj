@@ -50,9 +50,11 @@
     <Compile Include="MemberInfo\MemberInfoMemberType.cs" />
     <Compile Include="MemberInfo\MemberInfoModule.cs" />
     <Compile Include="MemberInfo\MemberInfoName.cs" />
+    <Compile Include="MemberInfo\MetadataToken.cs" />
     <Compile Include="MethodBase\MethodBaseContainsGenericParameters.cs" />
     <Compile Include="MethodInfo\GetBaseDefinition.cs" />
     <Compile Include="MethodInfo\MethodInfoGetGenericArguments.cs" />
+    <Compile Include="Module\ModuleVersionId.cs" />
     <Compile Include="Nullable\NullableMisc.cs" />
     <Compile Include="PropertyCompat\PropertyCompat.cs" />
     <Compile Include="PropertyInfo\GetAccessors.cs" />
@@ -74,13 +76,18 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ref\System.Reflection.TypeExtensions.csproj">
+      <Project>{da96367e-04d1-4057-997e-aed4a2773f0d}</Project>
+      <Name>System.Reflection.TypeExtensions</Name>
+      <!-- Don't deploy reference assembly -->
+      <Private>false</Private>
+    </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.TypeExtensions.CoreCLR.csproj">
       <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
       <Name>System.Reflection.TypeExtensions.CoreCLR</Name>
+      <!-- Don't reference implementation assembly, but do deploy it. -->
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

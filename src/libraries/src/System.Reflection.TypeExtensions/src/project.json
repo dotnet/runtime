@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.DotNet.CoreCLR": "1.0.0-prerelease"
+    "Microsoft.DotNet.CoreCLR": "1.0.4-prerelease"
   },
   "frameworks": {
     "dnxcore50": {}
