@@ -209,12 +209,14 @@ Returns the list of CalendarIds that are available for the specified locale.
 */
 extern "C" int32_t GetCalendars(const UChar* localeName, CalendarId* calendars, int32_t calendarsCapacity)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode err = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+
+    if (U_FAILURE(err))
         return 0;
 
-    UErrorCode err = U_ZERO_ERROR;
-    UEnumeration* pEnum = ucal_getKeywordValuesForLocale("calendar", locale.getName(), TRUE, &err);
+    UEnumeration* pEnum = ucal_getKeywordValuesForLocale("calendar", locale, TRUE, &err);
     UEnumerationHolder enumHolder(pEnum, err);
 
     if (U_FAILURE(err))
@@ -291,16 +293,19 @@ with the requested value.
 extern "C" CalendarDataResult GetCalendarInfo(
     const UChar* localeName, CalendarId calendarId, CalendarDataType dataType, UChar* result, int32_t resultCapacity)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode err = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+
+    if (U_FAILURE(err))
         return UnknownError;
 
     switch (dataType)
     {
         case NativeName:
-            return GetNativeCalendarName(locale.getName(), calendarId, result, resultCapacity);
+            return GetNativeCalendarName(locale, calendarId, result, resultCapacity);
         case MonthDay:
-            return GetMonthDayPattern(locale.getName(), result, resultCapacity);
+            return GetMonthDayPattern(locale, result, resultCapacity);
         default:
             assert(false);
             return UnknownError;
@@ -557,8 +562,11 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
                                     CalendarDataType dataType,
                                     const void* context)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode err = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+
+    if (U_FAILURE(err))
         return false;
 
     switch (dataType)
@@ -567,38 +575,37 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
             // ShortDates to map kShort and kMedium in ICU, but also adding the "yMd"
             // skeleton as well, as this
             // closely matches what is used on Windows
-            return InvokeCallbackForDateTimePattern(
-                       locale.getName(), UDAT_YEAR_NUM_MONTH_DAY_UCHAR, callback, context) &&
-                   InvokeCallbackForDatePattern(locale.getName(), UDAT_SHORT, callback, context) &&
-                   InvokeCallbackForDatePattern(locale.getName(), UDAT_MEDIUM, callback, context);
+            return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_NUM_MONTH_DAY_UCHAR, callback, context) &&
+                   InvokeCallbackForDatePattern(locale, UDAT_SHORT, callback, context) &&
+                   InvokeCallbackForDatePattern(locale, UDAT_MEDIUM, callback, context);
         case LongDates:
             // LongDates map to kFull and kLong in ICU.
-            return InvokeCallbackForDatePattern(locale.getName(), UDAT_FULL, callback, context) &&
-                   InvokeCallbackForDatePattern(locale.getName(), UDAT_LONG, callback, context);
+            return InvokeCallbackForDatePattern(locale, UDAT_FULL, callback, context) &&
+                   InvokeCallbackForDatePattern(locale, UDAT_LONG, callback, context);
         case YearMonths:
-            return InvokeCallbackForDateTimePattern(locale.getName(), UDAT_YEAR_MONTH_UCHAR, callback, context);
+            return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_MONTH_UCHAR, callback, context);
         case DayNames:
-            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_WEEKDAYS, 1, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_WEEKDAYS, 1, callback, context);
         case AbbrevDayNames:
-            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_SHORT_WEEKDAYS, 1, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORT_WEEKDAYS, 1, callback, context);
         case MonthNames:
-            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_MONTHS, 0, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_MONTHS, 0, callback, context);
         case AbbrevMonthNames:
-            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_SHORT_MONTHS, 0, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORT_MONTHS, 0, callback, context);
         case SuperShortDayNames:
 #ifdef HAVE_DTWIDTHTYPE_SHORT
-            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_SHORTER_WEEKDAYS, 1, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORTER_WEEKDAYS, 1, callback, context);
 #else
-            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_NARROW_WEEKDAYS, 1, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_NARROW_WEEKDAYS, 1, callback, context);
 #endif
         case MonthGenitiveNames:
-            return EnumSymbols(locale.getName(), calendarId, UDAT_MONTHS, 0, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_MONTHS, 0, callback, context);
         case AbbrevMonthGenitiveNames:
-            return EnumSymbols(locale.getName(), calendarId, UDAT_SHORT_MONTHS, 0, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_SHORT_MONTHS, 0, callback, context);
         case EraNames:
-            return EnumSymbols(locale.getName(), calendarId, UDAT_ERAS, 0, callback, context);
+            return EnumSymbols(locale, calendarId, UDAT_ERAS, 0, callback, context);
         case AbbrevEraNames:
-            return EnumAbbrevEraNames(locale.getName(), calendarId, callback, context);
+            return EnumAbbrevEraNames(locale, calendarId, callback, context);
         default:
             assert(false);
             return false;
