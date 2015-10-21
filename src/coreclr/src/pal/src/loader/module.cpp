@@ -1931,7 +1931,14 @@ MODSTRUCT *LOADGetPalLibrary()
         // Make sure it's terminated with a slash.
         if (g_szCoreCLRPath == NULL)
         {
-            g_szCoreCLRPath = new char[g_cbszCoreCLRPath/sizeof(char)];
+            CPalThread* pThread = InternalGetCurrentThread();
+            g_szCoreCLRPath = (char*) InternalMalloc(pThread, g_cbszCoreCLRPath);
+
+            if (g_szCoreCLRPath == NULL)
+            {
+                ERROR("LOADGetPalLibrary: InternalMalloc failed!");
+                goto exit;
+            }
         }
         
         if (strcpy_s(g_szCoreCLRPath, g_cbszCoreCLRPath, info.dli_fname) != SAFECRT_SUCCESS)

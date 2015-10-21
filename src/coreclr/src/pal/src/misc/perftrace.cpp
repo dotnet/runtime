@@ -663,7 +663,8 @@ void
 PERFLogFileName(PathCharString * destFileString, const char *fileName, const char *suffix, int max_length)
 {
     const char *dir_path;
-    char * destFileName = new char[max_length];
+    CPalThread* pThread = InternalGetCurrentThread();
+    char * destFileName = (char*)InternalMalloc(pThread, max_length);
     dir_path = (profile_log_path == NULL) ? "." : profile_log_path;
 
     if (fileName != NULL)
@@ -677,7 +678,7 @@ PERFLogFileName(PathCharString * destFileString, const char *fileName, const cha
     }
     
     destFileString.Set(destFileName);
-    delete [] destFileName;
+    InternalFree(pThread, destFileName);
     destFileName = NULL;
 }
 
@@ -1109,9 +1110,6 @@ PERFFlushLog(pal_perf_thread_info * local_info, BOOL output_header)
         ret = TRUE;
     }
     
-    delete [] fileName;
-    fileName = NULL;
-
     return ret;
 }
 
