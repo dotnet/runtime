@@ -5,7 +5,7 @@
     <UseECMAKey Condition="'$(UseECMAKey)' == ''">true</UseECMAKey>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <PackageTargetFramework>dotnet5.2</PackageTargetFramework>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Compression.cs" />
