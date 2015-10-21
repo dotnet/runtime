@@ -3,7 +3,7 @@
   "version": 1,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.DotNet.CoreCLR/1.0.0-prerelease": {
+      "Microsoft.DotNet.CoreCLR/1.0.4-prerelease": {
         "type": "package",
         "compile": {
           "lib/aspnetcore50/clretwrc.dll": {},
@@ -29,9 +29,9 @@
     }
   },
   "libraries": {
-    "Microsoft.DotNet.CoreCLR/1.0.0-prerelease": {
+    "Microsoft.DotNet.CoreCLR/1.0.4-prerelease": {
       "type": "package",
-      "sha512": "BlrijUF8L3JeGim4Sk6CmvtExjQ5Rh096D2RM2pRQmN57H33WgtX/YLisu/T3UcKJyZ1+llgsYT3Ve2pwaT1mA==",
+      "sha512": "unKPxuxpO9eWDeDryu3zzph3LVHkLqcSH8eyhTzKX9Dxlb/ZSTRoxzKl9WXnl5VIPrvrjoHigl+/qvS66NA+8g==",
       "files": [
         "lib/aspnetcore50/clretwrc.dll",
         "lib/aspnetcore50/coreclr.dll",
@@ -41,15 +41,15 @@
         "lib/aspnetcore50/mscorlib.dll",
         "lib/aspnetcore50/mscorrc.debug.dll",
         "lib/aspnetcore50/mscorrc.dll",
-        "Microsoft.DotNet.CoreCLR.1.0.0-prerelease.nupkg",
-        "Microsoft.DotNet.CoreCLR.1.0.0-prerelease.nupkg.sha512",
+        "Microsoft.DotNet.CoreCLR.1.0.4-prerelease.nupkg",
+        "Microsoft.DotNet.CoreCLR.1.0.4-prerelease.nupkg.sha512",
         "Microsoft.DotNet.CoreCLR.nuspec"
       ]
     }
   },
   "projectFileDependencyGroups": {
     "": [
-      "Microsoft.DotNet.CoreCLR >= 1.0.0-prerelease"
+      "Microsoft.DotNet.CoreCLR >= 1.0.4-prerelease"
     ],
     "DNXCore,Version=v5.0": []
   }
