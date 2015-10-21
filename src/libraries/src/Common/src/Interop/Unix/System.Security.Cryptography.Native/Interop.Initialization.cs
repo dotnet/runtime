@@ -16,10 +16,7 @@ internal static partial class Interop
         static Crypto()
         {
             CryptoInitializer.Initialize();
-            InitializeSsl();
         }
-
-        static partial void InitializeSsl();
     } 
 
     internal static class CryptoInitializer

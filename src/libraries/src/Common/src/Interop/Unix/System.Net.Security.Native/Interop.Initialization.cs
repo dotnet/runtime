@@ -18,9 +18,9 @@ internal static partial class Interop
         }
     }
 
-    internal static partial class Crypto
+    internal static partial class Ssl
     {
-        static partial void InitializeSsl()
+        static Ssl()
         {
             SslInitializer.Initialize();
         }

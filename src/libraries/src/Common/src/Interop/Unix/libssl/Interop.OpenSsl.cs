@@ -25,7 +25,7 @@ internal static partial class Interop
 
             IntPtr method = GetSslMethod(isServer, options);
 
-            using (libssl.SafeSslContextHandle innerContext = Crypto.SslCtxCreate(method))
+            using (libssl.SafeSslContextHandle innerContext = Ssl.SslCtxCreate(method))
             {
                 if (innerContext.IsInvalid)
                 {
@@ -113,8 +113,13 @@ internal static partial class Interop
 
         }
 
-        internal static int Encrypt(SafeSslHandle context, byte[] buffer, int offset, int count, int bufferCapacity, out libssl.SslErrorCode errorCode)
+        internal static int Encrypt(SafeSslHandle context, byte[] buffer, int offset, int count, out libssl.SslErrorCode errorCode)
         {
+            Debug.Assert(buffer != null);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(count >= 0);
+            Debug.Assert(buffer.Length >= offset + count);
+
             errorCode = libssl.SslErrorCode.SSL_ERROR_NONE;
 
             int retVal;
@@ -122,7 +127,7 @@ internal static partial class Interop
             {
                 fixed (byte* fixedBuffer = buffer)
                 {
-                    retVal = Crypto.SslWrite(context, fixedBuffer + offset, count);
+                    retVal = Ssl.SslWrite(context, fixedBuffer + offset, count);
                 }
             }
 
@@ -146,7 +151,7 @@ internal static partial class Interop
             {
                 int capacityNeeded = libssl.BIO_ctrl_pending(context.OutputBio);
 
-                Debug.Assert(bufferCapacity >= capacityNeeded, "Input buffer of size " + bufferCapacity +
+                Debug.Assert(buffer.Length >= capacityNeeded, "Input buffer of size " + buffer.Length +
                                                               " bytes is insufficient since encryption needs " + capacityNeeded + " bytes.");
 
                 retVal = BioRead(context.OutputBio, buffer, capacityNeeded);
@@ -163,7 +168,7 @@ internal static partial class Interop
 
             if (retVal == count)
             {
-                retVal = Crypto.SslRead(context, outBuffer, retVal);
+                retVal = Ssl.SslRead(context, outBuffer, retVal);
 
                 if (retVal > 0)
                 {
@@ -378,6 +383,10 @@ internal static partial class Interop
         //TODO (Issue #3362) should we check Bio should retry?
         private static int BioRead(SafeBioHandle bio, byte[] buffer, int count)
         {
+            Debug.Assert(buffer != null);
+            Debug.Assert(count >= 0);
+            Debug.Assert(buffer.Length >= count);
+
             int bytes = Crypto.BioRead(bio, buffer, count);
             if (bytes != count)
             {
@@ -389,12 +398,17 @@ internal static partial class Interop
         //TODO (Issue #3362) should we check Bio should retry?
         private static int BioWrite(SafeBioHandle bio, byte[] buffer, int offset, int count)
         {
+            Debug.Assert(buffer != null);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(count >= 0);
+            Debug.Assert(buffer.Length >= offset + count);
+
             int bytes;
             unsafe
             {
                 fixed (byte* bufPtr = buffer)
                 {
-                    bytes = Crypto.BioWrite(bio, bufPtr + offset, count);
+                    bytes = Ssl.BioWrite(bio, bufPtr + offset, count);
                 }
             }
 
