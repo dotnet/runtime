@@ -11,11 +11,6 @@
 #include "locale.hpp"
 #include "holders.h"
 
-#include "unicode/dcfmtsym.h" //decimal symbols
-#include "unicode/dtfmtsym.h" //date symbols
-#include "unicode/smpdtfmt.h" //date format
-#include "unicode/localpointer.h"
-
 // Enum that corresponds to managed enum CultureData.LocaleStringData.
 // The numeric values of the enum members match their Win32 counterparts.
 enum LocaleStringData : int32_t

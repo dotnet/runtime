@@ -3,13 +3,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
-#include "unicode/ucal.h"
-#include "unicode/uenum.h"
-#include "unicode/udatpg.h"
-#include "unicode/udat.h"
-#include "unicode/unum.h"
-#include "unicode/uldnames.h"
-#include "unicode/ures.h"
+#include <unicode/ucal.h>
+#include <unicode/uenum.h>
+#include <unicode/udatpg.h>
+#include <unicode/udat.h>
+#include <unicode/unum.h>
+#include <unicode/uldnames.h>
+#include <unicode/ures.h>
 
 // IcuHolder is a template that can manage the lifetime of a raw pointer to ensure that it is cleaned up at the correct
 // time.  The general usage pattern is to aquire some ICU resource via an _open call, then construct a holder using the
