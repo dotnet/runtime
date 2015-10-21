@@ -277,9 +277,6 @@ segment, each pool is composed of a single contiguous block of memory)
 */
 typedef struct
 {
-#ifndef CORECLR
-    char next_segment[SEGMENT_NAME_SUFFIX_LENGTH+1]; /* name of next segment */
-#endif // !CORECLR
     Volatile<SHMPTR> first_pool_blocks[SPS_LAST];
     Volatile<SHMPTR> last_pool_blocks[SPS_LAST];
 } SHM_SEGMENT_HEADER;
@@ -367,64 +364,23 @@ static Volatile<LONG> lock_count;
    SHMGet/SetInfo will verify that the calling thread holds the lock */
 static Volatile<HANDLE> locking_thread;
 
-#ifndef CORECLR
-/* suffix template for mkstemp */
-static char segment_name_template[MAX_LONGPATH];
-static char lockfile_name[MAX_LONGPATH];
-#endif // !defined(CORECLR)
-
 /* Constants ******************************************************************/
-
-#ifndef CORECLR
-
-/* file name for first shared memory segment */
-static const char first_segment_suffix[] = "segment_1";
-
-/* prefix of file name for subsequent shared memory segments */
-static const char segment_name_prefix[] = ".rotor_pal_shm";
-
-/* name of lock file (for init/cleanup) */
-static const char lockfile_shortname[] = ".rotor_pal_shmlockfile";
-
-#endif // !CORECLR
 
 /* size of a single segment : 256KB */
 static const int segment_size = 0x40000;
-
-#if !defined(CORECLR) && defined(_DEBUG)
-/* environment variable, set to a non 0 value if we need to output waste 
-   information to the file shm_waste_log (during process termination) */
-static const char* PAL_SAVE_WASTE = "PAL_SAVE_WASTE";
-#endif
 
 /* Static function prototypes *************************************************/
 
 static SHMPTR SHMInitPool(SHMPTR first, int block_size, int pool_size,
                           SHM_POOL_INFO *pool);
 static SHMPTR SHMLinkPool(SHMPTR first, int block_size, int num_blocks);
-#ifndef CORECLR
-static LPVOID SHMMapSegment(char *segment_name);
-#endif // !CORECLR
 static BOOL   SHMMapUnknownSegments(void);
 static BOOL   SHMAddSegment(void);
-#ifndef CORECLR
-static BOOL   SHMInitSegmentFileSize(int fd);
-static int    SHMGetProcessList(int fd, pid_t **process_list, BOOL strip_me);
-#endif // !CORECLR
 
-#if !defined(CORECLR) && defined(_DEBUG)
-
-static void init_waste(void);
-static void log_waste(enum SHM_POOL_SIZES size, int waste);
-static void save_waste(void);
-
-#else                 
 
 #define init_waste()
 #define log_waste(x,y)
 #define save_waste()
-
-#endif
 
 /* Public function implementations ********************************************/
 
@@ -437,137 +393,10 @@ memory if no other process has done it.
 --*/
 BOOL SHMInitialize(void)
 {
-#ifndef CORECLR
-    pid_t *pal_processes;
-    pid_t this_process;
-    int n_pal_processes = 0;
-    int fd_lock;
-    int fd_map;
-    int i;
-    int j;
-    CHAR config_dir[MAX_LONGPATH];
-    CHAR first_segment_name[MAX_LONGPATH];
-    ssize_t sBytes;
-#endif // !CORECLR
-
     InternalInitializeCriticalSection(&shm_critsec);
 
     init_waste();
     
-#ifndef CORECLR
-    if ( PALGetPalConfigDir( config_dir, MAX_LONGPATH ) )
-    {
-        if ( ( strlen( config_dir ) + strlen( segment_name_prefix ) + 
-                                           /* + 3 for the / _ and \0 */
-               strlen( first_segment_suffix ) + 3 ) < MAX_LONGPATH && 
-             
-             ( strlen( config_dir ) + strlen( segment_name_prefix ) + 
-               SEGMENT_NAME_SUFFIX_LENGTH + 3 ) < MAX_LONGPATH ) 
-        {
-            /* build first segment's file name */
-            sprintf( first_segment_name,"%s/%s_%s", config_dir,
-                     segment_name_prefix, first_segment_suffix );
-
-            /* Initialize mkstemp() template */
-            j = sprintf(segment_name_template, "%s/%s_", 
-                        config_dir, segment_name_prefix);
-            
-            for ( i = 0; i < SEGMENT_NAME_SUFFIX_LENGTH ; i++ )
-            {
-                segment_name_template[i+j] = 'X';
-            }
-            segment_name_template[i+j] = '\0';
-        }
-        else
-        {
-            ASSERT( "Configuration directory length + segment name length "
-                   "is greater then MAX_LONGPATH.\n" );
-            return FALSE;
-        }
-    }
-    else
-    {
-        ASSERT( "Unable to determine the PAL config directory.\n" );
-        return FALSE;
-    }
-
-    /* Once we have access to shared memory, we can use our spinlock for
-       synchronization. But we also have to be synchronized while we *gain*
-       access, to prevent 2 processes from trying to initialize the shared
-       memory system at the same time. We use a separate lockfile for this
-       purpose; this lockfile will also be used to keep track of which
-       processes are using shared memory */
-
-    /* build the lockfile path name */
-    sprintf(lockfile_name, "%s/%s", config_dir, lockfile_shortname);
-
-#ifdef O_EXLOCK
-    fd_lock = PAL__open(lockfile_name, O_RDWR|O_CREAT|O_EXLOCK, 0600);
-#else   // O_EXLOCK
-    fd_lock = PAL__open(lockfile_name, O_RDWR|O_CREAT, 0600);
-#endif  // O_EXLOCK
-    if(fd_lock == -1)
-    {
-        int retry_count = 0;
-
-        while( fd_lock == -1 && ENOENT == errno && 10 > retry_count)
-        {
-            /* directory didn't exist! this means a shutting down PAL 
-               deleted it between our call to INIT_InitPalConfigDir and 
-               here. Try to re-create it a few times, but give up if it 
-               doesn't seem to be working : there's probably something 
-               else wrong */
-            WARN("PAL temp dir has disappeared; trying to recreate\n");
-            if(!INIT_InitPalConfigDir())
-            {
-                ERROR("couldn't recreate PAL temp dir!\n");
-                return FALSE;
-            }
-#ifdef O_EXLOCK
-            fd_lock = PAL__open(lockfile_name,O_RDWR|O_CREAT|O_EXLOCK, 0600);
-#else   // O_EXLOCK
-            fd_lock = PAL__open(lockfile_name,O_RDWR|O_CREAT, 0600);
-#endif  // O_EXLOCK
-            retry_count++;
-        }
-        if(-1 == fd_lock)
-        {
-            ERROR("PAL__open() failed; error is %d (%s)\n", errno, strerror(errno));
-            return FALSE;
-        }
-    }
-#ifndef O_EXLOCK
-    if (lockf(fd_lock, F_LOCK, 0) == -1)
-    {
-        ERROR("lockf() failed; error is %d (%s)\n", errno, strerror(errno));
-        close(fd_lock);
-        return FALSE;
-    }
-#endif  // O_EXLOCK
-
-    TRACE("SHM lock file acquired\n");
-
-    /* got the lock; now check if any other processes are already using shared
-       memory, or if we must initialize it. The first DWORD of the lockfile
-       contains the number of registered PAL processes */
-    n_pal_processes = SHMGetProcessList(fd_lock, &pal_processes, FALSE);
-    if( -1 == n_pal_processes )
-    {
-        ERROR("Unable to read process list from lock file!\n");
-#ifdef O_EXLOCK
-        flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-        lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-        close(fd_lock);
-        return FALSE;
-    }
-
-    /* If there are no registered PAL-aware processes, we can initialize
-       (or re-initialize) the shared memory system */
-    if(n_pal_processes == 0)
-    {
-#endif // !CORECLR
         int size;
         SHM_FIRST_HEADER *header;
         SHMPTR pool_start;
@@ -576,59 +405,12 @@ BOOL SHMInitialize(void)
 
         TRACE("Now initializing global shared memory system\n");
         
-#ifndef CORECLR
-        /* open the file, create if necessary (should be necessary)*/
-        fd_map = PAL__open(first_segment_name,O_RDWR|O_CREAT,0600);
-        if(fd_map == -1)
-        {
-            ERROR("PAL__open() failed; error is %d (%s)\n", errno, strerror(errno));
-            PAL_free(pal_processes);
-#ifdef O_EXLOCK
-            flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-            lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-            close(fd_lock);
-            return FALSE;
-        }
-
-        /* Grow file to segment size (256KB) */
-        if(!SHMInitSegmentFileSize(fd_map))
-        {
-            ERROR("SHMInitSegmentFileSize() failed; error is %d (%s)\n",
-                  errno, strerror(errno));
-            PAL_free(pal_processes);
-#ifdef O_EXLOCK
-            flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-            lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-            close(fd_lock);
-            close(fd_map);
-            return FALSE;
-        }
-
-        shm_segment_bases[0] = mmap(NULL, segment_size,PROT_READ|PROT_WRITE,
-                                    MAPFLAGS, fd_map, 0);
-
-        close(fd_map);
-#else // !CORECLR
         // Not really shared in CoreCLR; we don't try to talk to other CoreCLRs.
         shm_segment_bases[0] = mmap(NULL, segment_size,PROT_READ|PROT_WRITE,
                                     MAP_ANON|MAP_PRIVATE, -1, 0);
-#endif // !CORECLR
         if(shm_segment_bases[0] == MAP_FAILED)
         {
             ERROR("mmap() failed; error is %d (%s)\n", errno, strerror(errno));
-#ifndef CORECLR
-            PAL_free(pal_processes);
-#ifdef O_EXLOCK
-            flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-            lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-            close(fd_lock);
-#endif // !CORECLR
             return FALSE;
         }
         TRACE("Mapped first SHM segment at %p\n",shm_segment_bases[0].Load());
@@ -649,10 +431,6 @@ BOOL SHMInitialize(void)
         // Check spinlock alignment
         _ASSERTE(0 == ((DWORD_PTR)&header->spinlock % (DWORD_PTR)sizeof(void *)));        
 #endif // TRACK_SHMLOCK_OWNERSHIP
-
-#ifndef CORECLR
-        header->header.next_segment[0] = '\0'; /* no next segment */
-#endif // !CORECLR
 
 #ifdef TRACK_SHMLOCK_OWNERSHIP
         header->pidtidCurrentOwner.pid = 0;
@@ -681,15 +459,6 @@ BOOL SHMInitialize(void)
             if(pool_end ==0)
             {
                 ERROR("SHMInitPool failed.\n");
-#ifndef CORECLR
-                PAL_free(pal_processes);
-#ifdef O_EXLOCK
-                flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-                lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-                close(fd_lock);
-#endif // !CORECLR
                 munmap(shm_segment_bases[0],segment_size);
                 return FALSE;
             }
@@ -702,127 +471,6 @@ BOOL SHMInitialize(void)
         }
 
         TRACE("Global shared memory initialization complete.\n");
-#ifndef CORECLR
-    }
-    else
-    {
-        struct stat sb;
-
-        TRACE("Shared memory already initialized : mapping first segment\n")
-
-        fd_map = PAL__open(first_segment_name, O_RDWR);
-        if(fd_map == -1)
-        {
-            ERROR("PAL__open() failed; error is %d (%s)\n", errno, strerror(errno));
-#ifdef O_EXLOCK
-            flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-            lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-            close(fd_lock);
-            PAL_free(pal_processes);
-            return FALSE;
-        }
-
-        /* find out the segment's size (currently always 256KB, but this may
-           change and even become variable) */
-        if( -1 == fstat(fd_map,&sb) )
-        {
-            ERROR("fstat() failed! error is %d (%s)\n", errno, strerror(errno));
-#ifdef O_EXLOCK
-            flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-            lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-            close(fd_lock);
-            close(fd_map);
-            PAL_free(pal_processes);
-            return FALSE;
-        }
-
-        shm_segment_bases[0] = mmap(NULL, sb.st_size,PROT_READ|PROT_WRITE,
-                                    MAPFLAGS, fd_map, 0);
-        close(fd_map);
-
-        if(shm_segment_bases[0] == MAP_FAILED)
-        {
-            ERROR("mmap() failed; error is %d (%s)\n", errno, strerror(errno));
-#ifdef O_EXLOCK
-            flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-            lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-            close(fd_lock);
-            PAL_free(pal_processes);
-            return FALSE;
-        }
-        TRACE("Successfully accessed first shared memory segment\n");
-    }
-
-    /* Re-write lockfile with updated process list */
-
-    /* empty the file */
-    ftruncate(fd_lock,0);
-    lseek(fd_lock, 0, SEEK_SET);
-
-    n_pal_processes++;
-    sBytes = write(fd_lock, &n_pal_processes, sizeof(n_pal_processes));
-    if(sBytes == -1)
-    {
-        ERROR("write() failed; error is %d (%s)\n", errno, strerror(errno));
-#ifdef O_EXLOCK
-        flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-        lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-        close(fd_lock);
-        PAL_free(pal_processes);
-        return FALSE;
-    }
-    /* put back all processes that are still alive */
-    if(n_pal_processes>1)
-    {
-        sBytes = write(fd_lock, pal_processes, (n_pal_processes-1)*sizeof(pid_t));
-        if(sBytes == -1)
-        {
-            ERROR("write() failed; error is %d (%s)\n", errno, strerror(errno));
-#ifdef O_EXLOCK
-            flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-            lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-            close(fd_lock);
-            PAL_free(pal_processes);
-            return FALSE;
-        }
-    }
-    PAL_free(pal_processes);
-
-    /* add this process to the list */
-    this_process = gPID;
-    sBytes = write(fd_lock, &this_process, sizeof(pid_t));
-    if(sBytes == -1)
-    {
-        ERROR("write() failed; error is %d (%s)\n", errno, strerror(errno));
-#ifdef O_EXLOCK
-        flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-        lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-        close(fd_lock);
-        return FALSE;
-    }
-
-    /* We're done with the lock file : release it. */
-#ifdef O_EXLOCK
-    flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-    lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-    close(fd_lock);
-
-    TRACE("Lock file released; ready to map all shared memory segments\n");
-#endif // !CORECLR
 
     shm_numsegments = 1;
     lock_count = 0;
@@ -853,12 +501,6 @@ void SHMCleanup(void)
 {
     SHM_FIRST_HEADER *header;
     pid_t my_pid;
-#ifndef CORECLR
-    int fd_lock;
-    int n_pal_processes;
-    pid_t *pal_processes;
-    ssize_t sBytes;
-#endif // !CORECLR
 
     TRACE("Starting shared memory cleanup\n");
 
@@ -878,70 +520,6 @@ void SHMCleanup(void)
     /* Now for the interprocess stuff. */
     DeleteCriticalSection(&shm_critsec);
 
-#ifndef CORECLR
-    TRACE("Segment unmapping complete; now unregistering this process\n");
-
-    /* Unregister this process by removing its PID from the lock file. By
-       locking the lock file here, we ensure that any ongoing SHMInitialize call
-       will complete before we do anything here, and no subsequent call to
-       SHMInitialize can proceed until we're done. */
-#ifdef O_EXLOCK
-    fd_lock = PAL__open(lockfile_name,O_RDWR | O_EXLOCK);
-#else   // O_EXLOCK
-    fd_lock = PAL__open(lockfile_name,O_RDWR);
-#endif  // O_EXLOCK
-    if(fd_lock == -1)
-    {
-        ERROR("PAL__open() failed; error is %d (%s)\n", errno, strerror(errno));
-        return;
-    }
-#ifndef O_EXLOCK
-    if (lockf(fd_lock, F_LOCK, 0) == -1)
-    {
-        ERROR("lockf() failed; error is %d (%s)\n", errno, strerror(errno));
-        close(fd_lock);
-        return;
-    }
-#endif  // O_EXLOCK
-
-    TRACE("Lockfile acquired\n");
-
-    /* got the lock; now remove this proces from the list, as well as any
-       dead process that didn't clean up after itself */
-    n_pal_processes = SHMGetProcessList(fd_lock, &pal_processes, TRUE);
-    if( -1 == n_pal_processes )
-    {
-        ERROR("Unable to read process list from lock file!\n");
-#ifdef O_EXLOCK
-        flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-        lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-        close(fd_lock);
-        return;
-    }
-
-    /* re-write lockfile with updated process list */
-    lseek(fd_lock, 0, SEEK_SET);
-    ftruncate(fd_lock, 0);
-
-    sBytes = write(fd_lock, &n_pal_processes, sizeof(n_pal_processes));
-    if(sBytes == -1)
-    {
-        ERROR("write() failed; error is %d (%s)\n", errno, strerror(errno));
-#ifdef O_EXLOCK
-        flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-        lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-        close(fd_lock);
-        return;
-    }
-
-    _ASSERT_MSG(0 < n_pal_processes || 0 == header->spinlock,
-        "SHMCleanup called while process %u still owns the lock [current process=%u\n",
-        header->spinlock.Load(), getpid());
-#endif // !CORECLR
 
     /* Unmap memory segments */
     while(shm_numsegments)
@@ -954,111 +532,6 @@ void SHMCleanup(void)
                   errno, strerror( errno ) );
         }
     }
-
-#ifndef CORECLR
-    if(n_pal_processes>0)
-    {        
-        sBytes = write(fd_lock, pal_processes, n_pal_processes*sizeof(pid_t));
-        if(sBytes == -1)
-        {
-            ERROR("write() failed; error is %d (%s)\n", errno, strerror(errno));
-#ifdef O_EXLOCK
-            flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-            lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-            close(fd_lock);
-            return;
-        }
-    }
-    else /* Clean up everything. */
-    {
-        CHAR PalDir[ MAX_LONGPATH + 1 ];
-        CHAR FileName[ MAX_LONGPATH + 1 ];
-        UINT nEndOfPathAndPrefix = 0;
-        SHM_SEGMENT_HEADER segment_header;
-        LPCSTR suffix;
-        int fd_segment;
-
-        /* Build start of filename. */
-        if ( !PALGetPalConfigDir( PalDir, MAX_LONGPATH ) )
-        {
-            ASSERT( "Unable to determine the PAL config directory.\n" );
-#ifdef O_EXLOCK
-            flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-            lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-            close(fd_lock);
-            return;
-        }
-        sprintf( FileName, "%s/%s_", PalDir, segment_name_prefix );
-        nEndOfPathAndPrefix = strlen( FileName );
-
-        /* Unlink all segment files */
-        /* Note: we can't rely on all the mapped segment, since it's
-           possible that another process created another segment that 
-           the current process is not aware. So the solution is to open
-           the segment files and look at the next one in a loop */
-        suffix = first_segment_suffix;
-
-        while ( strlen(suffix) > 0 )
-        {
-            if (strcat_s( FileName, sizeof(FileName), suffix) != SAFECRT_SUCCESS)
-            {
-                ERROR("strcat_s failed!");
-                break;
-            }
-
-            fd_segment = PAL__open( FileName, O_RDONLY );
-            if( fd_segment == -1 )
-            {
-                WARN("Unable to PAL__open shared memory segment file: %s "
-                     "errno is %d (%s)\n", 
-                     FileName, errno, strerror( errno ) );                    
-                break;
-            }
-           
-            if ( read(fd_segment, &segment_header, sizeof(SHM_SEGMENT_HEADER)) !=
-                 sizeof(SHM_SEGMENT_HEADER) )
-            {
-                WARN("Unable to read shared memory segment file: %s " 
-                     "errno is %d (%s)\n", 
-                     FileName, errno, strerror( errno ));
-                close(fd_segment);
-                break;
-            }
-
-            close(fd_segment);
-            if (unlink(FileName) == -1)
-            {
-                WARN("Unable to unlink the shared memory segment file: %s " 
-                     "errno is %d (%s)\n", 
-                     FileName, errno, strerror( errno ));
-            }
-            suffix =  segment_header.next_segment;
-            FileName[ nEndOfPathAndPrefix ] = '\0';
-        }
-
-        if ( -1 == unlink(lockfile_name) )
-        {
-            WARN( "Unable to unlink the file! Reason=(%d)%s\n",
-                  errno, strerror( errno ) );
-        }
-        
-        /* try to remove the PAL's temp directory. this will fail if there are 
-           still files in them; don't insist if that happens */
-        INIT_RemovePalConfigDir();
-    }
-    free(pal_processes);
-
-#ifdef O_EXLOCK
-    flock(fd_lock, LOCK_UN);
-#else   // O_EXLOCK
-    lockf(fd_lock, F_ULOCK, 0);
-#endif  // O_EXLOCK
-    close(fd_lock);
-#endif // !CORECLR
 
     save_waste();
     TRACE("SHMCleanup complete!\n");
@@ -1824,68 +1297,6 @@ static SHMPTR SHMLinkPool(SHMPTR first, int block_size, int num_blocks)
     return next_shmptr;
 }
 
-#ifndef CORECLR
-/*++
-SHMMapSegment
-
-Map the specified SHM segment file into the current process
-
-Parameters :
-    char *segment_name : suffix of the segment's file name, as determined by
-    mkstemp()
-
-Return value :
-    Address where the file was mapped
---*/
-static LPVOID SHMMapSegment(char *segment_name)
-{
-    char segment_path[MAX_LONGPATH];
-    int segment_fd;
-    LPVOID *segment;
-    struct stat sb;
-
-    /* Construct the file's full path */
-    if ( !PALGetPalConfigDir( segment_path, MAX_LONGPATH ) )
-    {
-        ASSERT( "Unable to determine the PAL config directory.\n" );
-        return NULL;
-    }
-    sprintf_s(segment_path+strlen(segment_path), sizeof(segment_path)-strlen(segment_path), "/%s_%s",
-            segment_name_prefix, segment_name);
-
-    TRACE("Mapping SHM file %s into process...\n", segment_path);
-    segment_fd = PAL__open(segment_path,O_RDWR);
-    if(-1 == segment_fd)
-    {
-        ERROR("PAL__open failed! error is %d (%s)\n", errno, strerror(errno));
-        return NULL;
-    }
-
-    /* stat the file to determine its size */
-    if( -1 == fstat(segment_fd, &sb) )
-    {
-        ERROR("fstat() failed! error is %d (%s)\n", errno, strerror(errno));
-        close(segment_fd);
-        return NULL;
-    }
-
-    /* mmap() the file; use MAP_NOSYNC to avoid unnecessary file I/O */
-    segment = static_cast<LPVOID *>(
-        mmap(NULL, sb.st_size,PROT_READ|PROT_WRITE, MAPFLAGS, segment_fd, 0));
-    close(segment_fd);
-    if(segment == MAP_FAILED)
-    {
-        ERROR("mmap() failed; error is %d (%s)\n", errno, strerror(errno));
-        return NULL;
-    }
-
-    TRACE("SHM file %s successfully mapped at address %p\n",
-          segment_name, segment);
-
-    return segment;
-}
-#endif // !CORECLR
-
 /*++
 SHMMapUnknownSegments
 
@@ -1898,54 +1309,7 @@ Return value :
 --*/
 static BOOL SHMMapUnknownSegments(void)
 {
-#ifndef CORECLR
-    SHM_SEGMENT_HEADER *header;
-    int num_new = 0;
-    BOOL retval = FALSE;
-
-    TRACE("Mapping unknown segments into this process...\n");
-
-    SHMLock();
-
-    /* Get header of last known segment */
-    header = (SHM_SEGMENT_HEADER *) shm_segment_bases[shm_numsegments-1].Load();
-
-    /* header->next_segment is the suffix of the next segment's file name
-       (from mkstemp). We use it to map the next segment, then check it to get
-       the name of the next one, etc. */
-    while('\0' != header->next_segment[0])
-    {
-        /* If segment array is full, enlarge it */
-        if(shm_numsegments == MAX_SEGMENTS)
-        {
-            ERROR("Can't map more segments : maximum number (%d) reached!\n",
-                  MAX_SEGMENTS);
-            goto done;
-        }
-        shm_segment_bases[shm_numsegments] =
-                    SHMMapSegment(header->next_segment);
-        if(!shm_segment_bases[shm_numsegments])
-        {
-            ERROR("Failed to map next shared memory segment!\n");
-            goto done;
-        }
-
-        /* Get header of new segment to see if there are others after it */
-        header = (SHM_SEGMENT_HEADER *)
-                        shm_segment_bases[shm_numsegments].Load();
-        shm_numsegments++;
-        num_new++;
-    }
-    retval = TRUE;
-done:
-    SHMRelease();
-    TRACE("Mapped %d new segments (total is now %d)\n",
-          num_new, shm_numsegments);
-
-    return retval;
-#else // !CORECLR
     return TRUE;
-#endif // !CORECLR
 }
 
 /*++
@@ -1964,11 +1328,6 @@ Notes :
 --*/
 static BOOL SHMAddSegment(void)
 {
-#ifndef CORECLR
-    char segment_name[MAX_LONGPATH];
-    char *suffix_start;
-    int fd_map;
-#endif // !CORECLR
     LPVOID segment_base;
     SHM_SEGMENT_HEADER *header;
     SHM_FIRST_HEADER *first_header;
@@ -2000,74 +1359,23 @@ static BOOL SHMAddSegment(void)
 
     TRACE("Creating SHM segment #%d\n", shm_numsegments);
 
-#ifndef CORECLR
-    /* Create name template for mkstemp() */
-    strcpy(segment_name, segment_name_template);
-
-    suffix_start = segment_name + strlen(segment_name) -
-                   SEGMENT_NAME_SUFFIX_LENGTH;
-
-    fd_map = PAL_mkstemp(segment_name);
-    if(fd_map == -1)
-    {
-        ERROR("mkstemp() failed! error is %d (%s)\n", errno, strerror(errno));
-        return FALSE;
-    }
-    if(-1 == fchmod(fd_map, 0600))
-    {
-        ERROR("fchmod() failed! error is %d (%s)\n", errno, strerror(errno));
-        close(fd_map);
-        PAL_unlink(segment_name);
-        return FALSE;
-    }
-
-    /* Grow new file to desired size */
-    if(!SHMInitSegmentFileSize(fd_map))
-    {
-        ERROR("SHMInitSegmentFileSize() failed! error is %d (%s)\n", 
-              errno, strerror(errno));
-        close(fd_map);
-        PAL_unlink(segment_name);
-        return FALSE;
-    }
-
-    /* mmap() the new file */
-    segment_base = mmap(NULL, segment_size, PROT_READ|PROT_WRITE,
-                        MAPFLAGS,fd_map, 0);
-    close(fd_map);
-#else // !CORECLR
     segment_base = mmap(NULL, segment_size, PROT_READ|PROT_WRITE,
                         MAP_ANON|MAP_PRIVATE,-1, 0);
-#endif // !CORECLR
 
     if(segment_base == MAP_FAILED)
     {
         ERROR("mmap() failed! error is %d (%s)\n", errno, strerror(errno));
-#ifndef CORECLR
-        PAL_unlink(segment_name);
-#endif // !CORECLR
         return FALSE;
     }
-
-#ifndef CORECLR
-    TRACE("Mapped SHM segment #%d at %p; name is %s\n",
-          shm_numsegments, segment_base, suffix_start);
-#endif // !CORECLR
 
     shm_segment_bases[shm_numsegments] = segment_base;
 
     /* Save name (well, suffix) of new segment in the header of the old last
        segment, so that other processes know where it is. */
     header = (SHM_SEGMENT_HEADER *)shm_segment_bases[shm_numsegments-1].Load();
-#ifndef CORECLR
-    strcpy(header->next_segment, suffix_start);
-#endif // !CORECLR
 
     /* Indicate that the new segment is the last one */
     header = (SHM_SEGMENT_HEADER *)segment_base;
-#ifndef CORECLR
-    header->next_segment[0] = '\0';
-#endif // !CORECLR
 
     /* We're now ready to update our memory pools */
 
@@ -2173,149 +1481,6 @@ static BOOL SHMAddSegment(void)
 
     return TRUE;
 }
-
-#ifndef CORECLR
-/*++
-SHMInitSegmentFileSize
-
-Grow a file to the size of a SHM segment
-
-Parameters :
-    int fd : File descriptor of file to initialize
-
-(no return value)
-
---*/
-static BOOL SHMInitSegmentFileSize(int fd)
-{
-    /* Make sure the file starts out empty */
-    if(ftruncate(fd, 0)==-1)
-    {
-      ERROR("ftruncate failed; error is %d (%s)\n", errno, strerror(errno));
-      return FALSE;
-    }
-
-    if(lseek(fd, 0, SEEK_SET)==-1)
-    {
-      ERROR("lseek failed; error is %d (%s)\n", errno, strerror(errno));
-      return FALSE;
-    }
-
-    /* grow the file size, by lseek. See lseek manual. */ 
-    if(lseek(fd, segment_size, SEEK_SET)==-1)
-    {
-      ERROR("lseek failed; error is %d (%s)\n", errno, strerror(errno));
-      return FALSE;
-    }
-    if(ftruncate(fd, segment_size)==-1)
-    {
-      ERROR("ftruncate failed; error is %d (%s)\n", errno, strerror(errno));
-      return FALSE;
-    }
-
-    return TRUE;
-}
-
-
-/*++
-SHMGetProcessList
-
-Read the list of registered PAL processes from the lockfile, stripping dead
-processes along the way.
-
-Parameters :
-    int fd : file to read from
-    pid_t **process_list : pointer where process list will be placed
-    BOOL strip_me : if TRUE, the PID of the current process will be removed
-
-Return value :
-    -1 on failure
-    Number of PIDs in the list on success
-
---*/
-static int SHMGetProcessList(int fd, pid_t **process_list, BOOL strip_me)
-{
-    int n_pal_processes;
-    pid_t *list;
-    pid_t me;
-
-    me = gPID;
-
-    if( 0 < read(fd, &n_pal_processes, sizeof(n_pal_processes))
-        && n_pal_processes > 0)
-    {
-        /* read succesful, there are registered processes */
-        int i,n;
-
-        TRACE("LockFile says there are %d registered PAL processes.\n",
-              n_pal_processes);
-
-        list = (pid_t *)PAL_malloc(n_pal_processes*sizeof(pid_t));
-        if(!list)
-        {
-            ERROR("malloc() failed; error is %d (%s)\n",
-                  errno, strerror(errno));
-            return -1;
-        }
-        i = n = 0;
-
-        /* read PIDs of registered processes into an array. We use this chance
-           to discard processes that died without unregistering themselves.*/
-        for( i = 0; i< n_pal_processes; i++)
-        {
-            /* read 1 PID from lock file */
-
-            if(0 >= read(fd, &list[n], sizeof(pid_t)))
-            {
-                WARN("read() failed! error is %d (%s)\n",
-                     errno, strerror(errno));
-                break;
-            }
-
-            /* Discard the PID of the currentprocess if required, and make sure
-               the PID is still valid. If invalid, kill(pid,0) fails and errno
-               is set to ESRCH */
-            if(strip_me && list[n] == me)
-            {
-                TRACE("Removing current process (%08x) from list of registered "
-                      "processes\n", list[n]);
-            }
-            else if(-1 != kill(list[n],0) || errno != ESRCH)
-            {
-                /* good PID : keep it*/
-                n++;
-            }
-            else
-            {
-                TRACE("Discarding registered process 0x%08x : it's dead\n",
-                      list[n]);
-            }
-        }
-        n_pal_processes = n;
-        if(n == 0)
-        {
-            TRACE("There are no registered PAL processes left.\n");
-            PAL_free(list);
-            list = NULL;
-        }
-        else
-        {
-            TRACE("Number of registered PAL processes : %d\n", n_pal_processes);
-        }
-    }
-    else
-    {
-        /* read failed or number of processes was 0 : no registered processes */
-        n_pal_processes = 0;
-        list = NULL;
-        TRACE("No PAL processes registered for shared memory access\n");
-    }
-
-    *process_list = list;
-    return n_pal_processes;
-}
-#endif // !CORECLR
-
 
 /*++
 SHMStrDup
@@ -2568,162 +1733,3 @@ void SHMAddNamedObject( SHMPTR shmNewNamedObject )
     SHMRelease();
     return;
 }
-
-#if !defined(CORECLR) && defined(_DEBUG)
-
-static DWORD alloc_log[SPS_LAST];
-static DWORD waste_log[SPS_LAST];
-
-/*++
-init_waste
-
-Initialize emmory waste logging arays (set all to zero)
-
-(no parameters, no return value)
---*/
-static void init_waste(void)
-{
-    enum SHM_POOL_SIZES sps;
-
-    for (sps = static_cast<SHM_POOL_SIZES>(0); sps < SPS_LAST;
-         sps = static_cast<SHM_POOL_SIZES>(sps + 1))
-    {
-        alloc_log[sps] = 0;
-        waste_log[sps] = 0;
-    }
-}
-
-/*++
-log_waste
-
-add waste information from 1 allocation to the log
-
-Parameters :
-    enum SHM_POOL_SIZES size : pool size selected for allocation
-    int waste : number of bytes wasted by allocation
-    
-(no return value)
-
-   Note: this could be a lot fancier : we could remember every single size 
-   ever requested, and how often it was requested. do we need that much? 
-   we could also keep a cumulative, system-wide total... ? 
---*/
-static void log_waste(enum SHM_POOL_SIZES size, int waste)
-{
-    /* avoid overflowing*/
-    if( ((DWORD)(~0) != alloc_log[size]) && 
-      ((DWORD)(~0)-(DWORD)waste > waste_log[size]))
-    {
-        alloc_log[size]++;
-        waste_log[size]+=waste;
-    }
-    else
-    {
-        WARN("can't track shared memory usage : overflowing\n");
-    }
-}
-
-/*++
-save_waste
-
-output waste information to file (during process termination)
-
-(no parameters, no return value)
---*/
-static void save_waste(void)
-{
-    int fd;
-    FILE *log_file;
-    char file_name[MAX_LONGPATH];
-    enum SHM_POOL_SIZES sps;
-    int avg;
-    LPSTR env_string;
- 
-    env_string = MiscGetenv(PAL_SAVE_WASTE);
-    
-    if(!env_string || env_string[0] =='\0' || env_string[0]=='0')
-    {
-        return;
-    }
-    
-    if ( !PALGetPalConfigDir( file_name, MAX_LONGPATH ) )
-    {
-        ERROR( "Unable to determine the PAL config directory.\n" );
-        return;
-    }
-    
-    if (strcat_s(file_name, sizeof(file_name), "/shm_waste_log") != SAFECRT_SUCCESS)
-    {
-        ERROR( "strcat_s failed!\n" );
-        return;
-    }
-
-    // Get an exclusive lock on the file -- we don't want 
-    // interleaving between the output of multiple processes.
-#ifdef O_EXLOCK
-    fd = PAL__open(file_name, O_APPEND|O_WRONLY|O_CREAT|O_EXLOCK, 0600);
-#else   // O_EXLOCK
-    fd = PAL__open(file_name, O_APPEND|O_WRONLY|O_CREAT, 0600);
-#endif  // O_EXLOCK
-    if(-1 == fd)
-    {
-        WARN("Unable to open log file %s : not logging shared memory waste. "
-             "PAL__open() failed with errno %d (%s)\n",
-             file_name, errno, strerror(errno));
-        return;
-    }
-#ifndef O_EXLOCK
-    if (lockf(fd, F_LOCK, 0) == -1)
-    {
-        WARN("Unable to lock log file %s. Not logging shared memory waste."
-             "lockf() failed with errno %d (%s)\n",
-             file_name, errno, strerror(errno));
-        close(fd);
-        return;
-    }
-#endif  // O_EXLOCK
-
-    /* open in append mode, so we preserve the output of other processes */
-    log_file = fdopen(fd, "at");
-    if( NULL == log_file)
-    {
-        WARN("Unable to open log file : not logging shared memory waste\n");
-#ifdef O_EXLOCK
-        flock(fd, LOCK_UN);
-#else   // O_EXLOCK
-        lockf(fd, F_ULOCK, 0);
-#endif  // O_EXLOCK
-        close(fd);
-        return;
-    }
-    TRACE("now writing shared memory waste log to file %s\n", file_name);
-    fprintf(log_file, "Shared memory waste for process %ld:\n", (long) gPID);
-    
-    /* output one line per block size */
-    for (sps = static_cast<SHM_POOL_SIZES>(0); sps < SPS_LAST;
-         sps = static_cast<SHM_POOL_SIZES>(sps + 1))
-    {
-        if(0 == alloc_log[sps])
-        {
-            avg = 0;
-        }
-        else 
-        {
-            avg = waste_log[sps]/alloc_log[sps];
-        }
-
-        fprintf(log_file, "size %4d : %8u bytes wasted in %8u blocks "
-                "(avg. %8d bytes/block)\n", 
-                block_sizes[sps], waste_log[sps], alloc_log[sps], avg );
-    }
-    fprintf(log_file, "\n");
-            
-#ifdef O_EXLOCK
-    flock(fd, LOCK_UN);
-#else   // O_EXLOCK
-    lockf(fd, F_ULOCK, 0);
-#endif  // O_EXLOCK
-    fclose(log_file);
-}
-
-#endif  // !defined(CORECLR) && defined(_DEBUG)
