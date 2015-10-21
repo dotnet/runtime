@@ -173,96 +173,95 @@ Returns 1 for success, 0 otherwise
 extern "C" int32_t
 GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, UChar* value, int32_t valueLength)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode status = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
+
+    if (U_FAILURE(status))
     {
         return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
     }
 
-    UErrorCode status = U_ZERO_ERROR;
     switch (localeStringData)
     {
         case LocalizedDisplayName:
-            uloc_getDisplayName(locale.getName(), uloc_getDefault(), value, valueLength, &status);
+            uloc_getDisplayName(locale, uloc_getDefault(), value, valueLength, &status);
             break;
         case EnglishDisplayName:
-            uloc_getDisplayName(locale.getName(), ULOC_ENGLISH, value, valueLength, &status);
+            uloc_getDisplayName(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case NativeDisplayName:
-            uloc_getDisplayName(locale.getName(), locale.getName(), value, valueLength, &status);
+            uloc_getDisplayName(locale, locale, value, valueLength, &status);
             break;
         case LocalizedLanguageName:
-            uloc_getDisplayLanguage(locale.getName(), uloc_getDefault(), value, valueLength, &status);
+            uloc_getDisplayLanguage(locale, uloc_getDefault(), value, valueLength, &status);
             break;
         case EnglishLanguageName:
-            uloc_getDisplayLanguage(locale.getName(), ULOC_ENGLISH, value, valueLength, &status);
+            uloc_getDisplayLanguage(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case NativeLanguageName:
-            uloc_getDisplayLanguage(locale.getName(), locale.getName(), value, valueLength, &status);
+            uloc_getDisplayLanguage(locale, locale, value, valueLength, &status);
             break;
         case EnglishCountryName:
-            uloc_getDisplayCountry(locale.getName(), ULOC_ENGLISH, value, valueLength, &status);
+            uloc_getDisplayCountry(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case NativeCountryName:
-            uloc_getDisplayCountry(locale.getName(), locale.getName(), value, valueLength, &status);
+            uloc_getDisplayCountry(locale, locale, value, valueLength, &status);
             break;
         case ListSeparator:
         // fall through
         case ThousandSeparator:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case DecimalSeparator:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_DECIMAL_SEPARATOR_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_DECIMAL_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case Digits:
-            status = GetDigitSymbol(locale.getName(), status, UNUM_ZERO_DIGIT_SYMBOL, 0, value, valueLength);
+            status = GetDigitSymbol(locale, status, UNUM_ZERO_DIGIT_SYMBOL, 0, value, valueLength);
             // symbols UNUM_ONE_DIGIT to UNUM_NINE_DIGIT are contiguous
             for (int32_t symbol = UNUM_ONE_DIGIT_SYMBOL; symbol <= UNUM_NINE_DIGIT_SYMBOL; symbol++)
             {
                 int charIndex = symbol - UNUM_ONE_DIGIT_SYMBOL + 1;
                 status = GetDigitSymbol(
-                    locale.getName(), status, static_cast<UNumberFormatSymbol>(symbol), charIndex, value, valueLength);
+                    locale, status, static_cast<UNumberFormatSymbol>(symbol), charIndex, value, valueLength);
             }
             break;
         case MonetarySymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_CURRENCY_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_CURRENCY_SYMBOL, value, valueLength);
             break;
         case Iso4217MonetarySymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_INTL_CURRENCY_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INTL_CURRENCY_SYMBOL, value, valueLength);
             break;
         case MonetaryDecimalSeparator:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case MonetaryThousandSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(
-                locale.getName(), UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
+            status =
+                GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case AMDesignator:
-            status = GetLocaleInfoAmPm(locale.getName(), true, value, valueLength);
+            status = GetLocaleInfoAmPm(locale, true, value, valueLength);
             break;
         case PMDesignator:
-            status = GetLocaleInfoAmPm(locale.getName(), false, value, valueLength);
+            status = GetLocaleInfoAmPm(locale, false, value, valueLength);
             break;
         case PositiveSign:
-            status = GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_PLUS_SIGN_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PLUS_SIGN_SYMBOL, value, valueLength);
             break;
         case NegativeSign:
-            status = GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_MINUS_SIGN_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MINUS_SIGN_SYMBOL, value, valueLength);
             break;
         case Iso639LanguageName:
-            status = GetLocaleIso639LanguageName(locale.getName(), value, valueLength);
+            status = GetLocaleIso639LanguageName(locale, value, valueLength);
             break;
         case Iso3166CountryName:
-            status = GetLocaleIso3166CountryName(locale.getName(), value, valueLength);
+            status = GetLocaleIso3166CountryName(locale, value, valueLength);
             break;
         case NaNSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_NAN_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_NAN_SYMBOL, value, valueLength);
             break;
         case PositiveInfinitySymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_INFINITY_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INFINITY_SYMBOL, value, valueLength);
             break;
         case ParentName:
         {
@@ -270,7 +269,7 @@ GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, 
             // including invariant locale
             char localeNameTemp[ULOC_FULLNAME_CAPACITY];
 
-            uloc_getParent(locale.getName(), localeNameTemp, ULOC_FULLNAME_CAPACITY, &status);
+            uloc_getParent(locale, localeNameTemp, ULOC_FULLNAME_CAPACITY, &status);
             if (U_SUCCESS(status))
             {
                 status = u_charsToUChars_safe(localeNameTemp, value, valueLength);
@@ -282,10 +281,10 @@ GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, 
             break;
         }
         case PercentSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_PERCENT_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERCENT_SYMBOL, value, valueLength);
             break;
         case PerMilleSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale.getName(), UNUM_PERMILL_SYMBOL, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERMILL_SYMBOL, value, valueLength);
             break;
         default:
             status = U_UNSUPPORTED_ERROR;
@@ -304,15 +303,17 @@ Returns 1 for success, 0 otherwise
 */
 extern "C" int32_t GetLocaleTimeFormat(const UChar* localeName, int shortFormat, UChar* value, int32_t valueLength)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode err = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+
+    if (U_FAILURE(err))
     {
         return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
     }
 
-    UErrorCode err = U_ZERO_ERROR;
     UDateFormatStyle style = (shortFormat != 0) ? UDAT_SHORT : UDAT_MEDIUM;
-    UDateFormat* pFormat = udat_open(style, UDAT_NONE, locale.getName(), nullptr, 0, nullptr, 0, &err);
+    UDateFormat* pFormat = udat_open(style, UDAT_NONE, locale, nullptr, 0, nullptr, 0, &err);
     UDateFormatHolder formatHolder(pFormat, err);
 
     if (U_FAILURE(err))

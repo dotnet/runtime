@@ -402,25 +402,26 @@ Returns 1 for success, 0 otherwise
 */
 extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData localeNumberData, int32_t* value)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode status = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
+
+    if (U_FAILURE(status))
     {
         return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
     }
 
-    UErrorCode status = U_ZERO_ERROR;
-
     switch (localeNumberData)
     {
         case LanguageId:
-            *value = uloc_getLCID(locale.getName());
+            *value = uloc_getLCID(locale);
             break;
         case MeasurementSystem:
-            status = GetMeasurementSystem(locale.getName(), value);
+            status = GetMeasurementSystem(locale, value);
             break;
         case FractionalDigitsCount:
         {
-            UNumberFormat* numformat = unum_open(UNUM_DECIMAL, NULL, 0, locale.getName(), NULL, &status);
+            UNumberFormat* numformat = unum_open(UNUM_DECIMAL, NULL, 0, locale, NULL, &status);
             if (U_SUCCESS(status))
             {
                 *value = unum_getAttribute(numformat, UNUM_MAX_FRACTION_DIGITS);
@@ -429,11 +430,11 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
             break;
         }
         case NegativeNumberFormat:
-            *value = GetNumberNegativePattern(locale.getName());
+            *value = GetNumberNegativePattern(locale);
             break;
         case MonetaryFractionalDigitsCount:
         {
-            UNumberFormat* numformat = unum_open(UNUM_CURRENCY, NULL, 0, locale.getName(), NULL, &status);
+            UNumberFormat* numformat = unum_open(UNUM_CURRENCY, NULL, 0, locale, NULL, &status);
             if (U_SUCCESS(status))
             {
                 *value = unum_getAttribute(numformat, UNUM_MAX_FRACTION_DIGITS);
@@ -442,15 +443,15 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
             break;
         }
         case PositiveMonetaryNumberFormat:
-            *value = GetCurrencyPositivePattern(locale.getName());
+            *value = GetCurrencyPositivePattern(locale);
             break;
         case NegativeMonetaryNumberFormat:
-            *value = GetCurrencyNegativePattern(locale.getName());
+            *value = GetCurrencyNegativePattern(locale);
             break;
         case FirstWeekOfYear:
         {
             // corresponds to DateTimeFormat.CalendarWeekRule
-            UCalendar* pCal = ucal_open(nullptr, 0, locale.getName(), UCAL_TRADITIONAL, &status);
+            UCalendar* pCal = ucal_open(nullptr, 0, locale, UCAL_TRADITIONAL, &status);
             UCalendarHolder calHolder(pCal, status);
 
             if (U_SUCCESS(status))
@@ -482,7 +483,7 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
             // used in coreclr)
             //  0 - Left to right (such as en-US)
             //  1 - Right to left (such as arabic locales)
-            ULayoutType orientation = uloc_getCharacterOrientation(locale.getName(), &status);
+            ULayoutType orientation = uloc_getCharacterOrientation(locale, &status);
             // alternative implementation in ICU 54+ is uloc_isRightToLeft() which
             // also supports script tags in locale
             if (U_SUCCESS(status))
@@ -493,7 +494,7 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
         }
         case FirstDayofWeek:
         {
-            UCalendar* pCal = ucal_open(nullptr, 0, locale.getName(), UCAL_TRADITIONAL, &status);
+            UCalendar* pCal = ucal_open(nullptr, 0, locale, UCAL_TRADITIONAL, &status);
             UCalendarHolder calHolder(pCal, status);
 
             if (U_SUCCESS(status))
@@ -503,10 +504,10 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
             break;
         }
         case NegativePercentFormat:
-            *value = GetPercentNegativePattern(locale.getName());
+            *value = GetPercentNegativePattern(locale);
             break;
         case PositivePercentFormat:
-            *value = GetPercentPositivePattern(locale.getName());
+            *value = GetPercentPositivePattern(locale);
             break;
         default:
             status = U_UNSUPPORTED_ERROR;
@@ -529,8 +530,11 @@ extern "C" int32_t GetLocaleInfoGroupingSizes(const UChar* localeName,
                                               int32_t* primaryGroupSize,
                                               int32_t* secondaryGroupSize)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode status = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
+
+    if (U_FAILURE(status))
     {
         return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
     }
@@ -548,8 +552,7 @@ extern "C" int32_t GetLocaleInfoGroupingSizes(const UChar* localeName,
             return UErrorCodeToBool(U_UNSUPPORTED_ERROR);
     }
 
-    UErrorCode status = U_ZERO_ERROR;
-    UNumberFormat* numformat = unum_open(style, NULL, 0, locale.getName(), NULL, &status);
+    UNumberFormat* numformat = unum_open(style, NULL, 0, locale, NULL, &status);
     if (U_SUCCESS(status))
     {
         *primaryGroupSize = unum_getAttribute(numformat, UNUM_GROUPING_SIZE);
