@@ -741,7 +741,7 @@ namespace System.Net.Http
 
                 // If we get here, there was no previously read data available to copy.
                 // Initiate a new asynchronous read.
-                Task<int> asyncRead = easy._requestContentStream.ReadAsync(
+                Task<int> asyncRead = easy._requestContentStream.ReadAsyncInternal(
                     sts._buffer, 0, Math.Min(sts._buffer.Length, length), easy._cancellationToken);
                 Debug.Assert(asyncRead != null, "Badly implemented stream returned a null task from ReadAsync");
 
