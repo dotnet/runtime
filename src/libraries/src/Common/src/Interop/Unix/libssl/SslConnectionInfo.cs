@@ -8,7 +8,7 @@ namespace System.Net
 {
     internal class SslConnectionInfo
     {
-        public readonly SslProtocols Protocol;
+        public readonly int Protocol;
         public readonly int DataCipherAlg;
         public readonly int DataKeySize;
         public readonly int DataHashAlg;
@@ -18,10 +18,10 @@ namespace System.Net
 
         internal SslConnectionInfo(SafeSslHandle sslContext)
         {
-            string protocolVersion = Interop.Crypto.GetProtocolVersion(sslContext);
-            Protocol = MapProtocolVersion(protocolVersion);
+            string protocolVersion = Interop.Ssl.GetProtocolVersion(sslContext);
+            Protocol = (int)MapProtocolVersion(protocolVersion);
 
-            if (!Interop.Crypto.GetSslConnectionInfo(
+            if (!Interop.Ssl.GetSslConnectionInfo(
                 sslContext,
                 out DataCipherAlg,
                 out KeyExchangeAlg,

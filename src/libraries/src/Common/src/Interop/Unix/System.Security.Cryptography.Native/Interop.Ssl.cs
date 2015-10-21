@@ -43,11 +43,11 @@ internal static partial class Interop
         internal static extern void SslCtxDestroy(IntPtr ctx);
 
         [DllImport(Libraries.CryptoNative)]
-        private static extern IntPtr SSLGetVersion(SafeSslHandle ssl);
+        private static extern IntPtr SslGetVersion(SafeSslHandle ssl);
 
         internal static string GetProtocolVersion(SafeSslHandle ssl)
         {
-            return Marshal.PtrToStringAnsi(SSLGetVersion(ssl));
+            return Marshal.PtrToStringAnsi(SslGetVersion(ssl));
         }
 
         [DllImport(Libraries.CryptoNative)]
@@ -67,5 +67,137 @@ internal static partial class Interop
         // NOTE: this is just an (unsafe) overload to the BioWrite method from Interop.Bio.cs.
         [DllImport(Libraries.CryptoNative)]
         internal static unsafe extern int BioWrite(SafeBioHandle b, byte* data, int len);
+    }
+}
+
+namespace Microsoft.Win32.SafeHandles
+{
+    internal sealed class SafeSslContextHandle : SafeHandle
+    {
+        private SafeSslContextHandle()
+            : base(IntPtr.Zero, true)
+        {
+        }
+
+        public override bool IsInvalid
+        {
+            get { return handle == IntPtr.Zero; }
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.Ssl.SslCtxDestroy(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
+    }
+
+    internal sealed class SafeSslHandle : SafeHandle
+    {
+        private SafeBioHandle _readBio;
+        private SafeBioHandle _writeBio;
+        private bool _isServer;
+
+        public bool IsServer
+        {
+            get { return _isServer; }
+        }
+
+        public SafeBioHandle InputBio
+        {
+            get
+            {
+                return _readBio;
+            }
+        }
+
+        public SafeBioHandle OutputBio
+        {
+            get
+            {
+                return _writeBio;
+            }
+        }
+
+        public static SafeSslHandle Create(SafeSslContextHandle context, bool isServer)
+        {
+            SafeBioHandle readBio = Interop.Crypto.CreateMemoryBio();
+            if (readBio.IsInvalid)
+            {
+                return new SafeSslHandle();
+            }
+
+            SafeBioHandle writeBio = Interop.Crypto.CreateMemoryBio();
+            if (writeBio.IsInvalid)
+            {
+                readBio.Dispose();
+                return new SafeSslHandle();
+            }
+
+            SafeSslHandle handle = Interop.Ssl.SslCreate(context);
+            if (handle.IsInvalid)
+            {
+                readBio.Dispose();
+                writeBio.Dispose();
+                return handle;
+            }
+            handle._isServer = isServer;
+
+            // After SSL_set_bio, the BIO handles are owned by SSL pointer
+            // and are automatically freed by SSL_free. To prevent a double
+            // free, we need to keep the ref counts bumped up till SSL_free
+            bool gotRef = false;
+            readBio.DangerousAddRef(ref gotRef);
+            try
+            {
+                bool ignore = false;
+                writeBio.DangerousAddRef(ref ignore);
+            }
+            catch
+            {
+                if (gotRef)
+                {
+                    readBio.DangerousRelease();
+                }
+                throw;
+            }
+
+            Interop.libssl.SSL_set_bio(handle, readBio, writeBio);
+            handle._readBio = readBio;
+            handle._writeBio = writeBio;
+
+            if (isServer)
+            {
+                Interop.libssl.SSL_set_accept_state(handle);
+            }
+            else
+            {
+                Interop.libssl.SSL_set_connect_state(handle);
+            }
+            return handle;
+        }
+
+        public override bool IsInvalid
+        {
+            get { return handle == IntPtr.Zero; }
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.Ssl.SslDestroy(handle);
+            if (_readBio != null)
+            {
+                _readBio.SetHandleAsInvalid(); // BIO got freed in SslDestroy
+            }
+            if (_writeBio != null)
+            {
+                _writeBio.SetHandleAsInvalid(); // BIO got freed in SslDestroy
+            }
+            return true;
+        }
+
+        private SafeSslHandle() : base(IntPtr.Zero, true)
+        {
+        }
     }
 }
