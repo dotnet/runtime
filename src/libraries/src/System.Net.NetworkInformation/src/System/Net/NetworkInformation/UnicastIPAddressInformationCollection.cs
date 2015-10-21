@@ -8,7 +8,7 @@ namespace System.Net.NetworkInformation
 {
     public class UnicastIPAddressInformationCollection : ICollection<UnicastIPAddressInformation>
     {
-        private readonly Collection<UnicastIPAddressInformation> _addresses = 
+        private readonly Collection<UnicastIPAddressInformation> _addresses =
             new Collection<UnicastIPAddressInformation>();
 
         protected internal UnicastIPAddressInformationCollection()
