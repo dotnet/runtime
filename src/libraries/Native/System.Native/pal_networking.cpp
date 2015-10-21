@@ -1112,7 +1112,7 @@ TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacket
     cmsghdr* controlMessage = CMSG_FIRSTHDR(&header);
     if (isIPv4 != 0)
     {
-        for (; controlMessage != nullptr; controlMessage = CMSG_NXTHDR(&header, controlMessage))
+        for (; controlMessage != nullptr && controlMessage->cmsg_len > 0; controlMessage = CMSG_NXTHDR(&header, controlMessage))
         {
             if (controlMessage->cmsg_level == IPPROTO_IP && controlMessage->cmsg_type == IP_PKTINFO)
             {
@@ -1122,7 +1122,7 @@ TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacket
     }
     else
     {
-        for (; controlMessage != nullptr; controlMessage = CMSG_NXTHDR(&header, controlMessage))
+        for (; controlMessage != nullptr && controlMessage->cmsg_len > 0; controlMessage = CMSG_NXTHDR(&header, controlMessage))
         {
             if (controlMessage->cmsg_level == IPPROTO_IPV6 && controlMessage->cmsg_type == IPV6_PKTINFO)
             {
