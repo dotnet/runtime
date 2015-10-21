@@ -31,45 +31,76 @@ int32_t UErrorCodeToBool(UErrorCode status)
     return 0;
 }
 
-Locale GetLocale(const UChar* localeName, bool canonize)
+int32_t GetLocale(
+    const UChar* localeName, char* localeNameResult, int32_t localeNameResultLength, bool canonicalize, UErrorCode* err)
 {
-    char localeNameTemp[ULOC_FULLNAME_CAPACITY];
+    char localeNameTemp[ULOC_FULLNAME_CAPACITY] = {0};
+    int32_t localeLength;
 
-    if (localeName != NULL)
+    // Convert ourselves instead of doing u_UCharsToChars as that function considers '@' a variant and stops.
+    for (int i = 0; i < ULOC_FULLNAME_CAPACITY - 1; i++)
     {
-        // use UnicodeString.extract instead of u_UCharsToChars; u_UCharsToChars
-        // considers '@' a variant and stops
-        UnicodeString str(localeName, -1, ULOC_FULLNAME_CAPACITY);
-        str.extract(0, str.length(), localeNameTemp);
+        UChar c = localeName[i];
+
+        if (c > (UChar)0x7F)
+        {
+            *err = U_ILLEGAL_ARGUMENT_ERROR;
+            return ULOC_FULLNAME_CAPACITY;
+        }
+
+        localeNameTemp[i] = (char)c;
+
+        if (c == (UChar)0x0)
+        {
+            break;
+        }
     }
 
-    Locale loc;
-    if (canonize)
+    if (canonicalize)
     {
-        loc = Locale::createCanonical(localeName == NULL ? NULL : localeNameTemp);
+        localeLength = uloc_canonicalize(localeNameTemp, localeNameResult, localeNameResultLength, err);
     }
     else
     {
-        loc = Locale::createFromName(localeName == NULL ? NULL : localeNameTemp);
+        localeLength = uloc_getName(localeNameTemp, localeNameResult, localeNameResultLength, err);
     }
 
-    return loc;
+    if (U_SUCCESS(*err))
+    {
+        // Make sure the "language" part of the locale is reasonable (i.e. we can fetch it and it is within range).
+        // This mimics how the C++ ICU API determines if a locale is "bogus" or not.
+
+        char language[ULOC_LANG_CAPACITY];
+        uloc_getLanguage(localeNameTemp, language, ULOC_LANG_CAPACITY, err);
+
+        if (*err == U_STRING_NOT_TERMINATED_WARNING)
+        {
+            // ULOC_LANG_CAPACITY includes the null terminator, so if we couldn't extract the language with the null
+            // terminator, the language must be invalid.
+
+            *err = U_ILLEGAL_ARGUMENT_ERROR;
+        }
+    }
+
+    return localeLength;
 }
 
 UErrorCode u_charsToUChars_safe(const char* str, UChar* value, int32_t valueLength)
 {
     int len = strlen(str);
+
     if (len >= valueLength)
     {
         return U_BUFFER_OVERFLOW_ERROR;
     }
+
     u_charsToUChars(str, value, len + 1);
     return U_ZERO_ERROR;
 }
 
-int FixupLocaleName(UChar* value, int32_t valueLength)
+int32_t FixupLocaleName(UChar* value, int32_t valueLength)
 {
-    int i = 0;
+    int32_t i = 0;
     for (; i < valueLength; i++)
     {
         if (value[i] == (UChar)'\0')
@@ -87,20 +118,19 @@ int FixupLocaleName(UChar* value, int32_t valueLength)
 
 extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
 {
-    Locale locale = GetLocale(localeName, true);
+    UErrorCode status = U_ZERO_ERROR;
 
-    if (locale.isBogus())
-    {
-        // localeName not properly formatted
-        return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
-    }
+    char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, true, &status);
 
-    // other validation done on managed side
-
-    UErrorCode status = u_charsToUChars_safe(locale.getName(), value, valueLength);
     if (U_SUCCESS(status))
     {
-        FixupLocaleName(value, valueLength);
+        status = u_charsToUChars_safe(localeNameBuffer, value, valueLength);
+
+        if (U_SUCCESS(status))
+        {
+            FixupLocaleName(value, valueLength);
+        }
     }
 
     return UErrorCodeToBool(status);
@@ -108,29 +138,35 @@ extern "C" int32_t GetLocaleName(const UChar* localeName, UChar* value, int32_t 
 
 extern "C" int32_t GetDefaultLocaleName(UChar* value, int32_t valueLength)
 {
-    Locale locale = GetLocale(NULL);
-    if (locale.isBogus())
-    {
-        // ICU should be able to get default locale
-        return UErrorCodeToBool(U_INTERNAL_PROGRAM_ERROR);
-    }
+    char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
+    UErrorCode status = U_ZERO_ERROR;
 
-    UErrorCode status = u_charsToUChars_safe(locale.getBaseName(), value, valueLength);
+    const char* defaultLocale = uloc_getDefault();
+
+    uloc_getBaseName(defaultLocale, localeNameBuffer, ULOC_FULLNAME_CAPACITY, &status);
+
     if (U_SUCCESS(status))
     {
-        int localeNameLen = FixupLocaleName(value, valueLength);
+        status = u_charsToUChars_safe(localeNameBuffer, value, valueLength);
 
-        // if collation is present, return that to managed side
-        char collationValueTemp[ULOC_KEYWORDS_CAPACITY];
-        if (locale.getKeywordValue("collation", collationValueTemp, ULOC_KEYWORDS_CAPACITY, status) > 0)
+        if (U_SUCCESS(status))
         {
-            // copy the collation; managed uses a "_" to represent collation (not
-            // "@collation=")
-            status = u_charsToUChars_safe("_", &value[localeNameLen], valueLength - localeNameLen);
-            if (U_SUCCESS(status))
+            int localeNameLen = FixupLocaleName(value, valueLength);
+
+            char collationValueTemp[ULOC_KEYWORDS_CAPACITY];
+            int32_t collationLen =
+                uloc_getKeywordValue(defaultLocale, "collation", collationValueTemp, ULOC_KEYWORDS_CAPACITY, &status);
+
+            if (U_SUCCESS(status) && collationLen > 0)
             {
-                status = u_charsToUChars_safe(
-                    collationValueTemp, &value[localeNameLen + 1], valueLength - localeNameLen - 1);
+                // copy the collation; managed uses a "_" to represent collation (not
+                // "@collation=")
+                status = u_charsToUChars_safe("_", &value[localeNameLen], valueLength - localeNameLen);
+                if (U_SUCCESS(status))
+                {
+                    status = u_charsToUChars_safe(
+                        collationValueTemp, &value[localeNameLen + 1], valueLength - localeNameLen - 1);
+                }
             }
         }
     }
