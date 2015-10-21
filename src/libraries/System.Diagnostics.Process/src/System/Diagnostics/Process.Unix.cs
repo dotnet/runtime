@@ -230,8 +230,8 @@ namespace System.Diagnostics
             if (startInfo.RedirectStandardInput)
             {
                 Debug.Assert(stdinFd >= 0);
-                _standardInput = new StreamWriter(OpenStream(stdinFd, FileAccess.Write), 
-                    Encoding.UTF8, StreamBufferSize) { AutoFlush = true };
+                _standardInput = new StreamWriter(OpenStream(stdinFd, FileAccess.Write),
+                    new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), StreamBufferSize) { AutoFlush = true };
             }
             if (startInfo.RedirectStandardOutput)
             {
