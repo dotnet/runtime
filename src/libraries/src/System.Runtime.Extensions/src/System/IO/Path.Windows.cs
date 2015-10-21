@@ -248,7 +248,9 @@ namespace System.IO
             if (path == null) return null;
             PathInternal.CheckInvalidPathChars(path);
             int pathRoot = PathInternal.GetRootLength(path);
-            return pathRoot <= 0 ? String.Empty : path.Substring(0, pathRoot);
+
+            // Need to return the normalized directory separator
+            return pathRoot <= 0 ? string.Empty : path.Substring(0, pathRoot).Replace(AltDirectorySeparatorChar, DirectorySeparatorChar);
         }
     }
 }
