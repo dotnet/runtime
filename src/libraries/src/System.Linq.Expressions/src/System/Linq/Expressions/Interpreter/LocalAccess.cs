@@ -331,7 +331,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public Instruction BoxIfIndexMatches(int index)
             {
-                return (index == _index) ? new ImmutableBox(index) : null;
+                return (index == _index) ? new ImmutableBox(index, _defaultValue) : null;
             }
 
             public override string InstructionName
@@ -344,47 +344,23 @@ namespace System.Linq.Expressions.Interpreter
         {
             // immutable value:
 
-            internal ImmutableBox(int index)
+            private readonly object _defaultValue;
+
+            internal ImmutableBox(int index, object defaultValue)
                 : base(index)
             {
+                _defaultValue = defaultValue;
             }
 
             public override int Run(InterpretedFrame frame)
             {
-                frame.Data[_index] = new StrongBox<object>();
+                frame.Data[_index] = new StrongBox<object>(_defaultValue);
                 return 1;
             }
 
             public override string InstructionName
             {
                 get { return "InitImmutableBox"; }
-            }
-        }
-
-        internal sealed class ImmutableRefValue : InitializeLocalInstruction, IBoxableInstruction
-        {
-            private readonly Type _type;
-
-            internal ImmutableRefValue(int index, Type type)
-                : base(index)
-            {
-                _type = type;
-            }
-
-            public override int Run(InterpretedFrame frame)
-            {
-                frame.Data[_index] = null;
-                return 1;
-            }
-
-            public Instruction BoxIfIndexMatches(int index)
-            {
-                return (index == _index) ? new ImmutableRefBox(index) : null;
-            }
-
-            public override string InstructionName
-            {
-                get { return "InitImmutableValue"; }
             }
         }
 
@@ -482,7 +458,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public Instruction BoxIfIndexMatches(int index)
             {
-                return (index == _index) ? new MutableBox(index) : null;
+                return (index == _index) ? new MutableBox(index, _type) : null;
             }
 
             public override string InstructionName
@@ -493,14 +469,30 @@ namespace System.Linq.Expressions.Interpreter
 
         internal sealed class MutableBox : InitializeLocalInstruction
         {
-            internal MutableBox(int index)
+            private readonly Type _type;
+
+            internal MutableBox(int index, Type type)
                 : base(index)
             {
+                _type = type;
             }
 
             public override int Run(InterpretedFrame frame)
             {
-                frame.Data[_index] = new StrongBox<object>();
+                var value = default(object);
+
+                try
+                {
+                    value = Activator.CreateInstance(_type);
+                }
+                catch (TargetInvocationException e)
+                {
+                    ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                    throw e.InnerException;
+                }
+
+                frame.Data[_index] = new StrongBox<object>(value);
+
                 return 1;
             }
 
