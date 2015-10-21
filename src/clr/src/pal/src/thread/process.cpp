@@ -561,7 +561,8 @@ CorUnix::InternalCreateProcess(
     int iFdErr = -1;
     
     pid_t processId;
-    char * lpFileName = (char*)InternalMalloc(pThread, MAX_LONGPATH);
+    char * lpFileName;
+    PathCharString lpFileNamePS;
     char **lppArgv = NULL;
     UINT nArg;
     int  iRet;
@@ -580,12 +581,6 @@ CorUnix::InternalCreateProcess(
         ASSERT("lpApplicationName should be NULL, but is %S instead\n",
                lpApplicationName);
         palError = ERROR_INVALID_PARAMETER;
-        goto InternalCreateProcessExit;
-    }
-    
-    if (NULL == lpFileName)
-    {
-        palError = ERROR_NOT_ENOUGH_MEMORY;
         goto InternalCreateProcessExit;
     } 
 
@@ -681,13 +676,15 @@ CorUnix::InternalCreateProcess(
         }
     }
 
+    lpFileName = lpFileNamePS.OpenStringBuffer(MAX_LONGPATH-1);
     if (!getFileName(lpApplicationName, lpCommandLine, lpFileName))
     {
         ERROR("Can't find executable!\n");
         palError = ERROR_FILE_NOT_FOUND;
         goto InternalCreateProcessExit;
     }
-
+    
+    lpFileNamePS.CloseBuffer(MAX_LONGPATH-1);
     /* check type of file */
     iRet = checkFileType(lpFileName);
 
@@ -705,8 +702,8 @@ CorUnix::InternalCreateProcess(
             if ( PAL_GetPALDirectoryA( lpFileName,
                                       (MAX_LONGPATH - (strlen(PROCESS_PELOADER_FILENAME)+1))))
             {
-                if ((strcat_s(lpFileName, sizeof(char) * MAX_LONGPATH, "/") != SAFECRT_SUCCESS) ||
-                    (strcat_s(lpFileName, sizeof(char) * MAX_LONGPATH, PROCESS_PELOADER_FILENAME) != SAFECRT_SUCCESS))
+                if ((strcat_s(lpFileName, lpFileNamePS.GetSizeOf(), "/") != SAFECRT_SUCCESS) ||
+                    (strcat_s(lpFileName, lpFileNamePS.GetSizeOf(), PROCESS_PELOADER_FILENAME) != SAFECRT_SUCCESS))
                 {
                     ERROR("strcpy_s/strcat_s failed!\n");
                     palError = ERROR_INTERNAL_ERROR;
