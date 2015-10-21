@@ -35,10 +35,24 @@ namespace System.Net.Sockets
 
         public static SocketError GetSocketErrorForErrorCode(Interop.Error errorCode)
         {
-            // TODO: audit these using winsock.h
+            // NOTE: SocketError values with no direct mapping have been omitted for now.
+            //
+            //       These values are:
+            //       - SocketError.SocketNotSupported
+            //       - SocketError.OperationNotSupported
+            //       - SocketError.ProtocolFamilyNotSupported
+            //       - SocketError.NoBufferSpaceAvailable
+            //       - SocketError.Shutdown
+            //       - SocketError.HostDown
+            //       - SocketError.ProcessLimit
+            //
+            //        Although they are not present in this mapping, SocketError.IOPending and
+            //        SocketError.OperationAborted are returned directly methods on
+            //        SocketAsyncContext (these errors are only relevant for async I/O).
+
             switch (errorCode)
             {
-                case (Interop.Error)0:
+                case Interop.Error.SUCCESS:
                     return SocketError.Success;
 
                 case Interop.Error.EINTR:
@@ -84,10 +98,6 @@ namespace System.Net.Sockets
                 case Interop.Error.EPROTONOSUPPORT:
                     return SocketError.ProtocolNotSupported;
 
-                // SocketError.SocketNotSupported
-                // SocketError.OperationNotSupported
-                // SocketError.ProtocolFamilyNotSupported
-
                 case Interop.Error.EAFNOSUPPORT:
                     return SocketError.AddressFamilyNotSupported;
 
@@ -112,15 +122,11 @@ namespace System.Net.Sockets
                 case Interop.Error.ECONNRESET:
                     return SocketError.ConnectionReset;
 
-                // SocketError.NoBufferSpaceAvailable
-
                 case Interop.Error.EISCONN:
                     return SocketError.IsConnected;
 
                 case Interop.Error.ENOTCONN:
                     return SocketError.NotConnected;
-
-                // SocketError.Shutdown
 
                 case Interop.Error.ETIMEDOUT:
                     return SocketError.TimedOut;
@@ -128,27 +134,8 @@ namespace System.Net.Sockets
                 case Interop.Error.ECONNREFUSED:
                     return SocketError.ConnectionRefused;
 
-                // SocketError.HostDown
-
                 case Interop.Error.EHOSTUNREACH:
                     return SocketError.HostUnreachable;
-
-                // SocketError.ProcessLimit
-
-                // Extended Windows Sockets error constant definitions
-                // SocketError.SystemNotReady
-                // SocketError.VersionNotSupported
-                // SocketError.NotInitialized
-                // SocketError.Disconnecting
-                // SocketError.TypeNotFound
-                // SocketError.HostNotFound
-                // SocketError.TryAgain
-                // SocketError.NoRecovery
-                // SocketError.NoData
-
-                // OS dependent errors
-                // SocketError.IOPending
-                // SocketError.OperationAborted
 
                 default:
                     return SocketError.SocketError;
