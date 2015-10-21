@@ -284,7 +284,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitUnboxUnaryExpression(Expression expr)
         {
             var node = (UnaryExpression)expr;
-            Debug.Assert(node.Type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(node.Type));
+            Debug.Assert(node.Type.GetTypeInfo().IsValueType);
 
             // Unbox_Any leaves the value on the stack
             EmitExpression(node.Operand);
