@@ -5,10 +5,30 @@ include(CheckIncludeFiles)
 include(CheckPrototypeDefinition)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
+include(CheckTypeSize)
 
 #CMake does not include /usr/local/include into the include search path
 #thus add it manually. This is required on FreeBSD.
 include_directories(SYSTEM /usr/local/include)
+
+# in_pktinfo: Find whether this struct exists
+check_include_files(
+    linux/in.h
+    HAVE_LINUX_IN_H)
+
+if (HAVE_LINUX_IN_H)
+    set (SOCKET_INCLUDES ${SOCKET_INCLUDES} linux/in.h)
+else ()
+    set (SOCKET_INCLUDES ${SOCKET_INCLUDES} netinet/in.h)
+endif ()
+
+set(CMAKE_EXTRA_INCLUDE_FILES ${SOCKET_INCLUDES})
+check_type_size(
+    "struct in_pktinfo"
+    HAVE_IN_PKTINFO
+    BUILTIN_TYPES_ONLY)
+set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
+# /in_pktinfo
 
 check_include_files(
     alloca.h
