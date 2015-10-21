@@ -7,9 +7,6 @@ namespace System.Net.Sockets.Tests
 {
     public class LingerStateTest
     {
-        // This is a stand-in for an issue to be filed when this code is merged into corefx.
-        private const int DummyOSXLingerStateIssue = 123456;
-
         private void TestLingerState_Success(Socket sock, bool enabled, int lingerTime)
         {
             sock.LingerState = new LingerOption(enabled, lingerTime);
@@ -27,7 +24,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(DummyOSXLingerStateIssue, PlatformID.OSX)]
+        [ActiveIssue(4008, PlatformID.OSX)]
         public void Socket_LingerState_Boundaries_CorrectBehavior()
         {
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
