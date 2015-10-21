@@ -69,8 +69,8 @@ NuGet is required to acquire any .NET assembly dependency that is not built by t
 
     dotnet-mbp:coreclr-demo richlander$ curl -L -O https://nuget.org/nuget.exe
 
-Build CoreCLR
-=============
+Build the Runtime and Microsoft Core Library
+============================================
 
 To Build CoreCLR, run build.sh from the root of the coreclr repo.
 
@@ -92,64 +92,34 @@ You will see several files. The interesting ones are:
 
 - `corerun`: The command line host. This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
 - `libcoreclr.dylib`: The CoreCLR runtime itself.
+- `mscorlib.dll`: Microsoft Core Library (requires Mono).
 
 Copy the runtime and corerun into the demo directory.
 
     dotnet-mbp:coreclr richlander$ cp bin/Product/OSX.x64.Debug/corerun ~/coreclr-demo/runtime/
     dotnet-mbp:coreclr richlander$ cp bin/Product/OSX.x64.Debug/libcoreclr.dylib ~/coreclr-demo/runtime/
+	dotnet-mbp:coreclr richlander$ cp bin/Product/OSX.x64.Debug/mscorlib.dll ~/coreclr-demo/runtime/
+	dotnet-mbp:coreclr richlander$ cp bin/Product/OSX.x64.Debug/System.Globalization.Native.dylib ~/coreclr-demo/runtime/
 
-Build the Framework Native Components
-=====================================
-
-    dotnet-mbp:corefx richlander$ src/Native/build.sh
-    dotnet-mbp:corefx richlander$ cp bin/OSX.x64.Debug/Native/*.dylib ~/coreclr-demo/runtime
-
-Build the Framework Managed Components
-======================================
-
-While CoreFX can be built on OS X, building mscorlib still requires Windows.
-
-Build mscorlb
--------------
-
-The following instructions assume you are on a Windows machine with a clone of the CoreCLR repo and that has a correctly configured [environment](https://github.com/dotnet/coreclr/wiki/Windows-instructions#environment).
-
-You will need to copy binaries built on Windows to your Mac. Use whatever copying method works for you, such as a thumbdrive, a sync program or a cloud drive. To make this easy, copy files to a demo directory on Windows, so that you can copy all of the files to your Mac together.
-
-    C:\git\coreclr>mkdir \coreclr-demo
-
-Build mscorlib.dll out of the coreclr repository:
-
-    C:\git\coreclr>build.cmd osxmscorlib
-
-The output is placed in `bin\obj\OSX.x64.Debug`. Copy to the demo folder.
-
-    C:\git\coreclr>copy bin\obj\OSX.x64.Debug\mscorlib.dll \coreclr-demo
-
-Copy mscorlib
--------------
-
-Copy the newly built mscorlib.dll from `C:\coreclr-demo` to your Mac, in the `~/coreclr-demo/runtime/` directory.
-
-Build CoreFX
-------------
-
-Build the rest of the Framework out of the corefx directory on your Mac.
+Build the Framework
+===================
 
     dotnet-mbp:corefx richlander$ ./build.sh
 
+For the purposes of this demo, you need to copy a few required files to the demo folder.
 
-For the purposes of this demo, you need to copy a few required assemblies to the demo folder.
-
+	dotnet-mbp:corefx richlander$ cp bin/OSX.x64.Debug/Native/*.dylib ~/coreclr-demo/runtime
     dotnet-mbp:corefx richlander$ cp bin/OSX.AnyCPU.Debug/System.Console/System.Console.dll ~/coreclr-demo/runtime
     dotnet-mbp:corefx richlander$ cp bin/OSX.AnyCPU.Debug/System.Diagnostics.Debug/System.Diagnostics.Debug.dll ~/coreclr-demo/runtime
 
 The runtime directory should now look like the following:
 
     dotnet-mbp:~ richlander$ ls ~/coreclr-demo/runtime/
-    System.Console.dll              libcoreclr.dylib
-    System.Diagnostics.Debug.dll    mscorlib.dll
-    corerun
+    System.Console.dll                 System.Security.Cryptography.Native.dylib
+    System.Diagnostics.Debug.dll       corerun
+	System.Globalization.Native.dylib  libcoreclr.dylib
+	System.Native.dylib                mscorlib.dll
+	System.Net.Http.Native.dylib
 
 Download NuGet Packages
 =======================
