@@ -2047,7 +2047,7 @@ namespace System {
                     } while (i <= j);
 
                     // The next iteration of the while loop is to "recursively" sort the larger half of the array and the
-                    // following calls recrusively sort the smaller half.  So we subtrack one from depthLimit here so
+                    // following calls recursively sort the smaller half.  So we subtract one from depthLimit here so
                     // both sorts see the new value.
                     depthLimit--;
 
@@ -2364,7 +2364,7 @@ namespace System {
                     } while (i <= j);
 
                     // The next iteration of the while loop is to "recursively" sort the larger half of the array and the
-                    // following calls recrusively sort the smaller half.  So we subtrack one from depthLimit here so
+                    // following calls recursively sort the smaller half.  So we subtract one from depthLimit here so
                     // both sorts see the new value.
                     depthLimit--;
 
