@@ -66,6 +66,33 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
+    internal class NullCheckInstruction : Instruction
+    {
+        public static readonly Instruction Instance = new NullCheckInstruction();
+
+        private NullCheckInstruction() { }
+        public override int ConsumedStack { get { return 1; } }
+        public override int ProducedStack { get { return 1; } }
+
+        public override string InstructionName
+        {
+            get
+            {
+                return "Unbox";
+            }
+        }
+
+        public override int Run(InterpretedFrame frame)
+        {
+            if (frame.Peek() == null)
+            {
+                throw new NullReferenceException();
+            }
+            
+            return +1;
+        }
+    }
+
     internal abstract class NotInstruction : Instruction
     {
         public static Instruction _Bool, _Int64, _Int32, _Int16, _UInt64, _UInt32, _UInt16, _Byte, _SByte;
