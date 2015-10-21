@@ -3701,7 +3701,7 @@ GetTempFileNameW(
         }
     }
     
-    tempfile_name = new char[MAX_LONGPATH];
+    tempfile_name = (char*)InternalMalloc(pThread, MAX_LONGPATH);
     if (tempfile_name == NULL)
     {
         pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -3717,7 +3717,7 @@ GetTempFileNameW(
         path_size = MultiByteToWideChar( CP_ACP, 0, tempfile_name, -1, 
                                            lpTempFileName, MAX_LONGPATH );
 
-        delete [] tempfile_name;
+        InternalFree(pThread, tempfile_name);
         tempfile_name = NULL;
         if (!path_size)
         {
@@ -4881,7 +4881,8 @@ Return value:
 BOOL FILEGetFileNameFromSymLink(char *source)
 {
     int ret;
-    char * sLinkData = new char[MAX_LONGPATH];
+    CPalThread* pThread = InternalGetCurrentThread();
+    char * sLinkData = (char*)InternalMalloc(pThread, MAX_LONGPATH);
 
     do
     {
@@ -4893,7 +4894,7 @@ BOOL FILEGetFileNameFromSymLink(char *source)
         }
     } while (ret > 0);
 
-    delete [] sLinkData;
+    InternalFree(pThread, sLinkData);
     return (errno == EINVAL);
 }
 
