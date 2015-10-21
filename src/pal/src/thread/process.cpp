@@ -561,7 +561,7 @@ CorUnix::InternalCreateProcess(
     int iFdErr = -1;
     
     pid_t processId;
-    char * lpFileName = new char[MAX_LONGPATH];
+    char * lpFileName = (char*)InternalMalloc(pThread, MAX_LONGPATH);
     char **lppArgv = NULL;
     UINT nArg;
     int  iRet;
