@@ -33,6 +33,7 @@ Abstract:
 #include "pal/utils.h"
 #include "pal/misc.h"
 #include "pal/virtual.h"
+#include "pal/stackstring.hpp"
 
 #include <errno.h>
 #if HAVE_POLL
@@ -560,7 +561,7 @@ CorUnix::InternalCreateProcess(
     int iFdErr = -1;
     
     pid_t processId;
-    char lpFileName[MAX_LONGPATH] ;
+    char * lpFileName = new char[MAX_LONGPATH];
     char **lppArgv = NULL;
     UINT nArg;
     int  iRet;
@@ -581,6 +582,12 @@ CorUnix::InternalCreateProcess(
         palError = ERROR_INVALID_PARAMETER;
         goto InternalCreateProcessExit;
     }
+    
+    if (NULL == lpFileName)
+    {
+        palError = ERROR_NOT_ENOUGH_MEMORY;
+        goto InternalCreateProcessExit;
+    } 
 
     if (0 != (dwCreationFlags & ~(CREATE_SUSPENDED|CREATE_NEW_CONSOLE)))
     {
@@ -698,8 +705,8 @@ CorUnix::InternalCreateProcess(
             if ( PAL_GetPALDirectoryA( lpFileName,
                                       (MAX_LONGPATH - (strlen(PROCESS_PELOADER_FILENAME)+1))))
             {
-                if ((strcat_s(lpFileName, sizeof(lpFileName), "/") != SAFECRT_SUCCESS) ||
-                    (strcat_s(lpFileName, sizeof(lpFileName), PROCESS_PELOADER_FILENAME) != SAFECRT_SUCCESS))
+                if ((strcat_s(lpFileName, sizeof(char) * MAX_LONGPATH, "/") != SAFECRT_SUCCESS) ||
+                    (strcat_s(lpFileName, sizeof(char) * MAX_LONGPATH, PROCESS_PELOADER_FILENAME) != SAFECRT_SUCCESS))
                 {
                     ERROR("strcpy_s/strcat_s failed!\n");
                     palError = ERROR_INTERNAL_ERROR;
@@ -3202,7 +3209,8 @@ getFileName(
 {
     LPWSTR lpEnd;
     WCHAR wcEnd;
-    char lpFileName[MAX_LONGPATH];
+    char * lpFileName;
+    PathCharString lpFileNamePS;
     char *lpTemp;
 
     if (lpApplicationName)
@@ -3285,13 +3293,17 @@ getFileName(
         *lpEnd = 0x0000;
 
         /* Convert to ASCII */
-        if (!WideCharToMultiByte(CP_ACP, 0, lpCommandLine, -1,
-                                 lpFileName, MAX_LONGPATH, NULL, NULL))
+        int size = 0;
+        int length = (PAL_wcslen(lpCommandLine)+1) * sizeof(WCHAR);
+        lpFileName = lpFileNamePS.OpenStringBuffer(length);
+        if (!(size = WideCharToMultiByte(CP_ACP, 0, lpCommandLine, -1,
+                                 lpFileName, length, NULL, NULL)))
         {
             ASSERT("WideCharToMultiByte failure\n");
             return FALSE;
         }
 
+        lpFileNamePS.CloseBuffer(size);
         /* restore last character */
         *lpEnd = wcEnd;
 
