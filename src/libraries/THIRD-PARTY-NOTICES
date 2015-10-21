@@ -1,12 +1,30 @@
-This directory contains data files for version 6.0 of
-UTS #46: Unicode IDNA Compatibility Processing,
-http://www.unicode.org/reports/tr46/tr46-5.html .
+.NET Core uses third-party libraries or other resources that may be
+distributed under licenses different than the .NET Core software.
 
-Retrieved from http://www.unicode.org/Public/idna/6.3.0/ on 4 March 2014
+In the event that we accidentally failed to list a required notice, please
+bring it to our attention. Post an issue or email us:
 
-Copyright: http://www.unicode.org/copyright.html
+           dotnet@microsoft.com
 
-COPYRIGHT AND PERMISSION NOTICE
+The attached notices are provided for information only.
+
+License notice for Slicing-by-8 
+-------------------------------
+
+http://sourceforge.net/projects/slicing-by-8/
+
+Copyright (c) 2004-2006 Intel Corporation - All Rights Reserved
+
+
+This software program is licensed subject to the BSD License,  available at
+http://www.opensource.org/licenses/bsd-license.html.
+
+
+License notice for Unicode data
+-------------------------------
+
+http://www.unicode.org/Public/idna/6.3.0/
+http://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt 
 
 Copyright © 1991-2015 Unicode, Inc. All rights reserved.
 Distributed under the Terms of Use in 
