@@ -2398,7 +2398,6 @@ namespace System.Linq.Expressions.Interpreter
                     }
                     _instructions.EmitLoadField(fi);
                 }
-                return;
             }
             else
             {
@@ -2413,7 +2412,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
 
                     if (!method.IsStatic &&
-                        from.Type.IsNullableType())
+                        (from != null && from.Type.IsNullableType()))
                     {
                         // reflection doesn't let us call methods on Nullable<T> when the value
                         // is null...  so we get to special case those methods!
@@ -2423,8 +2422,6 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         _instructions.EmitCall(method);
                     }
-
-                    return;
                 }
             }
         }
