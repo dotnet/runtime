@@ -8,7 +8,7 @@ namespace System.Net.NetworkInformation
 {
     public class GatewayIPAddressInformationCollection : ICollection<GatewayIPAddressInformation>
     {
-        private readonly Collection<GatewayIPAddressInformation> _addresses = 
+        private readonly Collection<GatewayIPAddressInformation> _addresses =
             new Collection<GatewayIPAddressInformation>();
 
         protected internal GatewayIPAddressInformationCollection()

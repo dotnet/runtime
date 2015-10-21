@@ -7,7 +7,7 @@ namespace System.Net.NetworkInformation
     internal class SystemMulticastIPAddressInformation : MulticastIPAddressInformation
     {
         private readonly SystemIPAddressInformation _innerInfo;
-        
+
         public SystemMulticastIPAddressInformation(SystemIPAddressInformation addressInfo)
         {
             _innerInfo = addressInfo;
