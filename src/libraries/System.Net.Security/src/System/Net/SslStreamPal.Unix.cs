@@ -174,14 +174,7 @@ namespace System.Net
 
                 outputBuffer.size = outputSize;
                 outputBuffer.offset = 0;
-                if (outputSize > 0)
-                {
-                    outputBuffer.token = output;
-                }
-                else
-                {
-                    outputBuffer.token = null;
-                }
+                outputBuffer.token = outputSize > 0 ? output : null;
 
                 return done ? SecurityStatusPal.OK : SecurityStatusPal.ContinueNeeded;
             }
@@ -203,7 +196,7 @@ namespace System.Net
                 Interop.libssl.SafeSslHandle scHandle = securityContext.SslContext;
 
                 resultSize = encrypt ?
-                    Interop.OpenSsl.Encrypt(scHandle, buffer, offset, size, buffer.Length, out errorCode) :
+                    Interop.OpenSsl.Encrypt(scHandle, buffer, offset, size, out errorCode) :
                     Interop.OpenSsl.Decrypt(scHandle, buffer, size, out errorCode);
 
                 switch (errorCode)

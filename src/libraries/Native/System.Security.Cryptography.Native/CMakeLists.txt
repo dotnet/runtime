@@ -13,19 +13,6 @@ add_definitions(-DPIC=1)
 
 find_package(OpenSSL REQUIRED)
 
-# Check which versions of TLS the OpenSSL/ssl library supports
-include(CheckLibraryExists)
-
-CHECK_LIBRARY_EXISTS(${OPENSSL_SSL_LIBRARY} "TLSv1_1_method" "" OPENSSL_TLSV11)
-if (OPENSSL_TLSV11)
-    add_definitions(-DHAVE_TLS_V1_1=1)
-endif()
-
-CHECK_LIBRARY_EXISTS(${OPENSSL_SSL_LIBRARY} "TLSv1_2_method" "" OPENSSL_TLSV12)
-if (OPENSSL_TLSV12)
-    add_definitions(-DHAVE_TLS_V1_2=1)
-endif()
-
 set(NATIVECRYPTO_SOURCES
     openssl.c
     pal_asn1.cpp
@@ -62,5 +49,7 @@ target_link_libraries(System.Security.Cryptography.Native
   ${OPENSSL_CRYPTO_LIBRARY}
   ${OPENSSL_SSL_LIBRARY}
 )
+
+include(configure.cmake)
 
 install (TARGETS System.Security.Cryptography.Native DESTINATION .)
