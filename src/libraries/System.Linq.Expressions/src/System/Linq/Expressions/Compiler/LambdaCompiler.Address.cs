@@ -213,7 +213,7 @@ namespace System.Linq.Expressions.Compiler
         private void AddressOf(UnaryExpression node, Type type)
         {
             Debug.Assert(node.NodeType == ExpressionType.Unbox);
-            Debug.Assert(type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(type));
+            Debug.Assert(type.GetTypeInfo().IsValueType);
 
             // Unbox leaves a pointer to the boxed value on the stack
             EmitExpression(node.Operand);

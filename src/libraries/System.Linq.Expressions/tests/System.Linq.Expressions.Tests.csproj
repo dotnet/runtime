@@ -153,6 +153,7 @@
     <Compile Include="Unary\UnaryIsFalseNullableTests.cs" />
     <Compile Include="Unary\UnaryIsFalseTests.cs" />
     <Compile Include="Unary\UnaryIsTrueNullableTests.cs" />
+    <Compile Include="Unary\UnaryUnboxTests.cs" />
     <Compile Include="Unary\UnaryIsTrueTests.cs" />
     <Compile Include="Unary\UnaryOnesComplementNullableTests.cs" />
     <Compile Include="Unary\UnaryUnaryPlusNullableTests.cs" />
