@@ -84,52 +84,33 @@ ellismg@linux:~/git/coreclr$ mkdir -p ~/coreclr-demo/runtime
 ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/corerun ~/coreclr-demo/runtime
 ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/libcoreclr.so ~/coreclr-demo/runtime
 ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/mscorlib.dll ~/coreclr-demo/runtime
+ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/System.Globalization.Native.so ~/coreclr-demo/runtime
 ```
 
-(Alternative) Build the Microsoft Core Library on Windows
-=========================================================
-
-If the build fails (for example due to Mono issues), alternatively you can build it on Windows.
-You'll need a Windows machine with clone of the CoreCLR project.
-
-You will build mscorlib.dll out of the coreclr repository.
-From a regular command prompt window run:
+Build the Framework
+===================
 
 ```
-D:\git\coreclr> build.cmd linuxmscorlib
+ellismg@linux:~/git/corefx$ ./build.sh
 ```
 
-The output is placed in bin\Product\Linux.x64.Debug\mscorlib.dll. You'll want to copy this to the runtime folder on your Linux machine. (e.g. ~/coreclr-demo/runtime)
-
-Build the Framework Native Components
-======================================
+For the purposes of Hello World, you need to copy a few required files to the demo folder.
 
 ```
-ellismg@linux:~/git/corefx$ src/Native/build.sh
 ellismg@linux:~/git/corefx$ cp bin/Linux.x64.Debug/Native/*.so ~/coreclr-demo/runtime
+ellismg@linux:~/git/corefx$ cp bin/Linux.AnyCPU.Debug/System.Console/System.Console.dll ~/coreclr-demo/runtime
+ellismg@linux:~/git/corefx$ cp bin/Linux.AnyCPU.Debug/System.Diagnostics.Debug/System.Diagnostics.Debug.dll ~/coreclr-demo/runtime
 ```
 
-Build the Framework Managed Components
-======================================
-
-We don't _yet_ have support for building managed code on Linux, so you'll need a Windows machine with clones of CoreFX project.
-
-You will build the rest of the framework that out of the corefx repository.  
-You need to pass some special parameters to build.cmd when building out of the CoreFX repository.
-
-```
-D:\git\corefx> build.cmd /p:OSGroup=Linux /p:SkipTests=true
-```
-
-It's also possible to add `/t:rebuild` to the build.cmd to force it to delete the previously built assemblies.
-
-For the purposes of Hello World, you need to copy over both `bin\Linux.AnyCPU.Debug\System.Console\System.Console.dll` and `bin\Linux.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll`  into the runtime folder on Linux. (e.g `~/coreclr-demo/runtime`).
-
-After you've done these steps, the runtime directory on Linux should look like this:
+The runtime directory should now look like the following:
 
 ```
 matell@linux:~$ ls ~/coreclr-demo/runtime/
-corerun  libcoreclr.so  mscorlib.dll  System.Console.dll  System.Diagnostics.Debug.dll System.Native.so
+corerun                       System.Globalization.Native.so
+libcoreclr.so                 System.Native.so
+mscorlib.dll                  System.Net.Http.Native.so
+System.Console.dll            System.Security.Cryptography.Native.so
+System.Diagnostics.Debug.dll
 ```
 
 Download Dependencies
