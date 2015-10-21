@@ -1,12 +1,4 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Condition="'$(OutputType.ToUpper())' == 'EXE'">
-    <_CLRTestBuildsExecutable>true</_CLRTestBuildsExecutable>
-  </PropertyGroup>
-  
-  <PropertyGroup Condition="'$(OutputType.ToUpper())' != 'EXE'">
-    <_CLRTestBuildsExecutable>false</_CLRTestBuildsExecutable>
-  </PropertyGroup>
-
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.
   By default all tests are BuildAndRun. This means that the build system will Build them
   and construct a run-batch-script for them. -->
@@ -16,6 +8,7 @@
         <GenerateRunScript>true</GenerateRunScript>
         <_CLRTestNeedsToRun>true</_CLRTestNeedsToRun>
         <_CLRTestCompilesSource>true</_CLRTestCompilesSource>
+        <_CLRTestBuildsExecutable>true</_CLRTestBuildsExecutable>
       </PropertyGroup>
     </When>
     <When Condition=" '$(CLRTestKind)'=='BuildOnly'">
@@ -23,22 +16,24 @@
         <_CLRTestNeedsToRun>false</_CLRTestNeedsToRun>
         <GenerateRunScript>false</GenerateRunScript>
         <_CLRTestCompilesSource>true</_CLRTestCompilesSource>
+        <_CLRTestBuildsExecutable>true</_CLRTestBuildsExecutable>
       </PropertyGroup>
     </When>
     <When Condition=" '$(CLRTestKind)'=='RunOnly' ">
       <PropertyGroup>
         <GenerateRunScript>true</GenerateRunScript>
         <SkipSigning>true</SkipSigning>
+        <_CLRTestBuildsExecutable>false</_CLRTestBuildsExecutable>
         <_CLRTestNeedsToRun>true</_CLRTestNeedsToRun>
         <_CLRTestCompilesSource>false</_CLRTestCompilesSource>
       </PropertyGroup>
-
     </When>
     <When Condition=" '$(CLRTestKind)'=='SharedLibrary' Or '$(OutputType)' == 'Library' ">
       <PropertyGroup>
         <_CLRTestCompilesSource>true</_CLRTestCompilesSource>
         <_CLRTestNeedsToRun>false</_CLRTestNeedsToRun>
         <GenerateRunScript>false</GenerateRunScript>
+        <_CLRTestBuildsExecutable>false</_CLRTestBuildsExecutable>
       </PropertyGroup>
     </When>
   </Choose>
@@ -70,11 +65,9 @@
   OR, in rare conditions (i.e. non-existant ones so far) a run-only script might be something we depend on, and so we may be asked to
   build a run only for a higher priority testcase.
   -->
-  <Target Name="Build" Condition="('$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)') Or  ('$(_CLRTestInServiceOfHigherPriority)')">
+  <Target Name="Build" Condition="('$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)') Or ('$(_CLRTestInServiceOfHigherPriority)')">
     <MSBuild Projects="@(ProjectReference)" Properties="_CLRTestInServiceOfHigherPriority=true"/>
   </Target>
-
- 
   
   <!-- We will use an imported build here in the instance that we have source that we need to build, and we are the correct priority...OR if we are being asked to build for
   a test with a higher priority. -->
