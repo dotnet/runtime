@@ -2771,8 +2771,13 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileUnboxUnaryExpression(Expression expr)
         {
             var node = (UnaryExpression)expr;
-            // unboxing is a nop:
+            
             Compile(node.Operand);
+
+            if (expr.Type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(expr.Type))
+            {
+                _instructions.Emit(NullCheckInstruction.Instance);
+            }
         }
 
         private void CompileTypeEqualExpression(Expression expr)
