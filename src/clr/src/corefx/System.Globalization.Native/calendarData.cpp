@@ -249,10 +249,10 @@ GetMonthDayPattern
 
 Gets the Month-Day DateTime pattern for the specified locale.
 */
-CalendarDataResult GetMonthDayPattern(Locale& locale, UChar* sMonthDay, int32_t stringCapacity)
+CalendarDataResult GetMonthDayPattern(const char* locale, UChar* sMonthDay, int32_t stringCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
-    UDateTimePatternGenerator* pGenerator = udatpg_open(locale.getName(), &err);
+    UDateTimePatternGenerator* pGenerator = udatpg_open(locale, &err);
     UDateTimePatternGeneratorHolder generatorHolder(pGenerator, err);
 
     if (U_FAILURE(err))
@@ -270,10 +270,10 @@ GetNativeCalendarName
 Gets the native calendar name.
 */
 CalendarDataResult
-GetNativeCalendarName(Locale& locale, CalendarId calendarId, UChar* nativeName, int32_t stringCapacity)
+GetNativeCalendarName(const char* locale, CalendarId calendarId, UChar* nativeName, int32_t stringCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
-    ULocaleDisplayNames* pDisplayNames = uldn_open(locale.getName(), ULDN_STANDARD_NAMES, &err);
+    ULocaleDisplayNames* pDisplayNames = uldn_open(locale, ULDN_STANDARD_NAMES, &err);
     ULocaleDisplayNamesHolder displayNamesHolder(pDisplayNames, err);
 
     uldn_keyValueDisplayName(pDisplayNames, "calendar", GetCalendarName(calendarId), nativeName, stringCapacity, &err);
@@ -298,9 +298,9 @@ extern "C" CalendarDataResult GetCalendarInfo(
     switch (dataType)
     {
         case NativeName:
-            return GetNativeCalendarName(locale, calendarId, result, resultCapacity);
+            return GetNativeCalendarName(locale.getName(), calendarId, result, resultCapacity);
         case MonthDay:
-            return GetMonthDayPattern(locale, result, resultCapacity);
+            return GetMonthDayPattern(locale.getName(), result, resultCapacity);
         default:
             assert(false);
             return UnknownError;
@@ -314,13 +314,13 @@ InvokeCallbackForDatePattern
 Gets the ICU date pattern for the specified locale and EStyle and invokes the
 callback with the result.
 */
-bool InvokeCallbackForDatePattern(Locale& locale,
+bool InvokeCallbackForDatePattern(const char* locale,
                                   UDateFormatStyle style,
                                   EnumCalendarInfoCallback callback,
                                   const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
-    UDateFormat* pFormat = udat_open(UDAT_NONE, style, locale.getName(), nullptr, 0, nullptr, 0, &err);
+    UDateFormat* pFormat = udat_open(UDAT_NONE, style, locale, nullptr, 0, nullptr, 0, &err);
     UDateFormatHolder formatHolder(pFormat, err);
 
     if (U_FAILURE(err))
@@ -353,13 +353,13 @@ InvokeCallbackForDateTimePattern
 Gets the DateTime pattern for the specified skeleton and invokes the callback
 with the retrieved value.
 */
-bool InvokeCallbackForDateTimePattern(Locale& locale,
+bool InvokeCallbackForDateTimePattern(const char* locale,
                                       const UChar* patternSkeleton,
                                       EnumCalendarInfoCallback callback,
                                       const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
-    UDateTimePatternGenerator* pGenerator = udatpg_open(locale.getName(), &err);
+    UDateTimePatternGenerator* pGenerator = udatpg_open(locale, &err);
     UDateTimePatternGeneratorHolder generatorHolder(pGenerator, err);
 
     if (U_FAILURE(err))
@@ -394,7 +394,7 @@ EnumSymbols
 Enumerates of of the symbols of a type for a locale and calendar and invokes a callback
 for each value.
 */
-bool EnumSymbols(Locale& locale,
+bool EnumSymbols(const char* locale,
                  CalendarId calendarId,
                  UDateFormatSymbolType type,
                  int32_t startIndex,
@@ -402,14 +402,14 @@ bool EnumSymbols(Locale& locale,
                  const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
-    UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale.getName(), nullptr, 0, nullptr, 0, &err);
+    UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale, nullptr, 0, nullptr, 0, &err);
     UDateFormatHolder formatHolder(pFormat, err);
 
     if (U_FAILURE(err))
         return false;
 
     char localeWithCalendarName[ULOC_FULLNAME_CAPACITY];
-    strncpy(localeWithCalendarName, locale.getName(), ULOC_FULLNAME_CAPACITY);
+    strncpy(localeWithCalendarName, locale, ULOC_FULLNAME_CAPACITY);
     uloc_setKeywordValue("calendar", GetCalendarName(calendarId), localeWithCalendarName, ULOC_FULLNAME_CAPACITY, &err);
 
     if (U_FAILURE(err))
@@ -471,7 +471,10 @@ EnumAbbrevEraNames
 Enumerates all the abbreviated era names of the specified locale and calendar, invoking the
 callback function for each era name.
 */
-bool EnumAbbrevEraNames(Locale& locale, CalendarId calendarId, EnumCalendarInfoCallback callback, const void* context)
+bool EnumAbbrevEraNames(const char* locale,
+                        CalendarId calendarId,
+                        EnumCalendarInfoCallback callback,
+                        const void* context)
 {
     // The C-API for ICU provides no way to get at the abbreviated era names for a calendar (so we can't use EnumSymbols
     // here). Instead we will try to walk the ICU resource tables directly and fall back to regular era names if can't
@@ -482,7 +485,7 @@ bool EnumAbbrevEraNames(Locale& locale, CalendarId calendarId, EnumCalendarInfoC
     char* localeNamePtr = localeNameBuf;
     char* parentNamePtr = parentNameBuf;
 
-    strncpy(localeNamePtr, locale.getName(), ULOC_FULLNAME_CAPACITY);
+    strncpy(localeNamePtr, locale, ULOC_FULLNAME_CAPACITY);
 
     while (true)
     {
@@ -564,37 +567,38 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
             // ShortDates to map kShort and kMedium in ICU, but also adding the "yMd"
             // skeleton as well, as this
             // closely matches what is used on Windows
-            return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_NUM_MONTH_DAY_UCHAR, callback, context) &&
-                   InvokeCallbackForDatePattern(locale, UDAT_SHORT, callback, context) &&
-                   InvokeCallbackForDatePattern(locale, UDAT_MEDIUM, callback, context);
+            return InvokeCallbackForDateTimePattern(
+                       locale.getName(), UDAT_YEAR_NUM_MONTH_DAY_UCHAR, callback, context) &&
+                   InvokeCallbackForDatePattern(locale.getName(), UDAT_SHORT, callback, context) &&
+                   InvokeCallbackForDatePattern(locale.getName(), UDAT_MEDIUM, callback, context);
         case LongDates:
             // LongDates map to kFull and kLong in ICU.
-            return InvokeCallbackForDatePattern(locale, UDAT_FULL, callback, context) &&
-                   InvokeCallbackForDatePattern(locale, UDAT_LONG, callback, context);
+            return InvokeCallbackForDatePattern(locale.getName(), UDAT_FULL, callback, context) &&
+                   InvokeCallbackForDatePattern(locale.getName(), UDAT_LONG, callback, context);
         case YearMonths:
-            return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_MONTH_UCHAR, callback, context);
+            return InvokeCallbackForDateTimePattern(locale.getName(), UDAT_YEAR_MONTH_UCHAR, callback, context);
         case DayNames:
-            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_WEEKDAYS, 1, callback, context);
+            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_WEEKDAYS, 1, callback, context);
         case AbbrevDayNames:
-            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORT_WEEKDAYS, 1, callback, context);
+            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_SHORT_WEEKDAYS, 1, callback, context);
         case MonthNames:
-            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_MONTHS, 0, callback, context);
+            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_MONTHS, 0, callback, context);
         case AbbrevMonthNames:
-            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORT_MONTHS, 0, callback, context);
+            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_SHORT_MONTHS, 0, callback, context);
         case SuperShortDayNames:
 #ifdef HAVE_DTWIDTHTYPE_SHORT
-            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORTER_WEEKDAYS, 1, callback, context);
+            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_SHORTER_WEEKDAYS, 1, callback, context);
 #else
-            return EnumSymbols(locale, calendarId, UDAT_STANDALONE_NARROW_WEEKDAYS, 1, callback, context);
+            return EnumSymbols(locale.getName(), calendarId, UDAT_STANDALONE_NARROW_WEEKDAYS, 1, callback, context);
 #endif
         case MonthGenitiveNames:
-            return EnumSymbols(locale, calendarId, UDAT_MONTHS, 0, callback, context);
+            return EnumSymbols(locale.getName(), calendarId, UDAT_MONTHS, 0, callback, context);
         case AbbrevMonthGenitiveNames:
-            return EnumSymbols(locale, calendarId, UDAT_SHORT_MONTHS, 0, callback, context);
+            return EnumSymbols(locale.getName(), calendarId, UDAT_SHORT_MONTHS, 0, callback, context);
         case EraNames:
-            return EnumSymbols(locale, calendarId, UDAT_ERAS, 0, callback, context);
+            return EnumSymbols(locale.getName(), calendarId, UDAT_ERAS, 0, callback, context);
         case AbbrevEraNames:
-            return EnumAbbrevEraNames(locale, calendarId, callback, context);
+            return EnumAbbrevEraNames(locale.getName(), calendarId, callback, context);
         default:
             assert(false);
             return false;
