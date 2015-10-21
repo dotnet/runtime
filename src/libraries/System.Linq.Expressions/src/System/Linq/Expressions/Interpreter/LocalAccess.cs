@@ -364,33 +364,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        internal sealed class ImmutableRefValue : InitializeLocalInstruction, IBoxableInstruction
-        {
-            private readonly Type _type;
-
-            internal ImmutableRefValue(int index, Type type)
-                : base(index)
-            {
-                _type = type;
-            }
-
-            public override int Run(InterpretedFrame frame)
-            {
-                frame.Data[_index] = null;
-                return 1;
-            }
-
-            public Instruction BoxIfIndexMatches(int index)
-            {
-                return (index == _index) ? new ImmutableRefBox(index) : null;
-            }
-
-            public override string InstructionName
-            {
-                get { return "InitImmutableValue"; }
-            }
-        }
-
         internal sealed class ImmutableRefBox : InitializeLocalInstruction
         {
             // immutable value:
