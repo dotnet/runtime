@@ -6881,6 +6881,8 @@ HMODULE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pD
 // Try to load the module alongside the assembly where the PInvoke was declared.
 HMODULE NDirect::LoadFromPInvokeAssemblyDirectory(NDirectMethodDesc *pMD, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
 {
+    STANDARD_VM_CONTRACT;
+
     HMODULE hmod = NULL;
 
     Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
@@ -6902,6 +6904,8 @@ HMODULE NDirect::LoadFromPInvokeAssemblyDirectory(NDirectMethodDesc *pMD, LPCWST
 // Try to load the module from the native DLL search directories
 HMODULE NDirect::LoadFromNativeDllSearchDirectories(AppDomain* pDomain, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
 {
+    STANDARD_VM_CONTRACT;
+
     HMODULE hmod = NULL;
 
     if (pDomain->HasNativeDllSearchDirectories())
@@ -7213,28 +7217,26 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
         };
 
         const int NUMBER_OF_LIB_NAME_VARIATIONS = COUNTOF(prefixSuffixCombinations);
-        SString libNameVariations[NUMBER_OF_LIB_NAME_VARIATIONS];
-        for (int i = 0; i < NUMBER_OF_LIB_NAME_VARIATIONS; i++)
-        {
-            libNameVariations[i].Printf(prefixSuffixCombinations[i], PAL_SHLIB_PREFIX, name, PAL_SHLIB_SUFFIX);
-        }
 
         // Try to load from places we tried above, but this time with variations on the
         // name including the prefix, suffix, and both.
         for (int i = 0; i < NUMBER_OF_LIB_NAME_VARIATIONS; i++)
         {
+            SString currLibNameVariation;
+            currLibNameVariation.Printf(prefixSuffixCombinations[i], PAL_SHLIB_PREFIX, name, PAL_SHLIB_SUFFIX);
+
             if (libNameIsRelativePath && searchAssemblyDirectory)
             {
-                hmod = LoadFromPInvokeAssemblyDirectory(pMD, libNameVariations[i], loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker);
+                hmod = LoadFromPInvokeAssemblyDirectory(pMD, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker);
                 if (hmod != NULL)
                     break;
             }
 
-            hmod = LoadFromNativeDllSearchDirectories(pDomain, libNameVariations[i], loadWithAlteredPathFlags, pErrorTracker);
+            hmod = LoadFromNativeDllSearchDirectories(pDomain, currLibNameVariation, loadWithAlteredPathFlags, pErrorTracker);
             if (hmod != NULL)
                 break;
 
-            hmod = LocalLoadLibraryHelper(libNameVariations[i], dllImportSearchPathFlag, pErrorTracker);
+            hmod = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlag, pErrorTracker);
             if (hmod != NULL)
                 break;
         }
