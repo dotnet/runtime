@@ -27,6 +27,11 @@
 #cmakedefine01 HAVE_SUPPORT_FOR_MULTIPLE_CONNECT_ATTEMPTS
 #cmakedefine01 HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO
 #cmakedefine01 HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR
+#cmakedefine01 HAVE_TCGETATTR
+#cmakedefine01 HAVE_TCSETATTR
+#cmakedefine01 HAVE_ECHO
+#cmakedefine01 HAVE_ICANON
+#cmakedefine01 HAVE_TCSANOW
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

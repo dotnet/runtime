@@ -2,9 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -47,6 +50,63 @@ namespace System
         public static Encoding OutputEncoding
         {
             get { return GetConsoleEncoding(); }
+        }
+
+        private static readonly object s_stdInReaderSyncObject = new object();
+        private static SyncTextReader s_stdInReader;
+        private const int DefaultBufferSize = 255;
+
+        private static SyncTextReader StdInReader
+        {
+            get
+            {
+                return Volatile.Read(ref s_stdInReader) ??
+                    Console.EnsureInitialized(
+                        ref s_stdInReader,
+                        () => SyncTextReader.GetSynchronizedTextReader(
+                            new StdInStreamReader(
+                                stream: OpenStandardInput(),
+                                encoding: InputEncoding,
+                                bufferSize: DefaultBufferSize)));
+            }
+        }
+
+        private const int DefaultConsoleBufferSize = 256; // default size of buffer used in stream readers/writers
+        internal static TextReader GetOrCreateReader()
+        {
+            if (Console.IsInputRedirected)
+            {
+                Stream inputStream = OpenStandardInput();
+                return SyncTextReader.GetSynchronizedTextReader(
+                    inputStream == Stream.Null ?
+                    StreamReader.Null :
+                    new StreamReader(
+                        stream: inputStream,
+                        encoding: ConsolePal.InputEncoding,
+                        detectEncodingFromByteOrderMarks: false,
+                        bufferSize: DefaultConsoleBufferSize,
+                        leaveOpen: true)
+                        );
+            }
+            else
+            {
+                return StdInReader;
+            }
+        }
+
+        public static ConsoleKeyInfo ReadKey(bool intercept)
+        {
+            if (Console.IsInputRedirected)
+            {
+                // We could leverage Console.Read() here however
+                // windows fails when stdin is redirected.
+                throw new InvalidOperationException(SR.InvalidOperation_ConsoleReadKeyOnFile);
+            }
+
+            ConsoleKeyInfo keyInfo = StdInReader.ReadKey();
+            if (!intercept) Console.Write(keyInfo.KeyChar);
+
+            return keyInfo;
         }
 
         public static ConsoleColor ForegroundColor
@@ -277,6 +337,33 @@ namespace System
         /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
         private static readonly string[,] s_fgbgAndColorStrings = new string[2, 16]; // 2 == fg vs bg, 16 == ConsoleColor values
 
+        public static bool TryGetSpecialConsoleKey(char[] givenChars, int startIndex, int endIndex, out ConsoleKey key, out int keyLength)
+        {
+            key = (ConsoleKey)0;
+            keyLength = 0;
+            int unprocessedCharCount = endIndex - startIndex + 1;
+
+            if (unprocessedCharCount < TerminalKeyInfo.Instance.MinKeyLength)
+                return false;
+
+            int minRange = TerminalKeyInfo.Instance.MinKeyLength;
+            int maxRange = Math.Min(unprocessedCharCount, TerminalKeyInfo.Instance.MaxKeyLength);
+
+            for (int i = maxRange; i >= minRange; i--)
+            {
+                string currentString = new string(givenChars, startIndex, i);
+
+                // Check if the string prefix matches.
+                if (TerminalKeyInfo.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
+                {
+                    keyLength = currentString.Length;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Provides a cache of color information sourced from terminfo.</summary>
         private struct TerminalColorInfo
         {
@@ -340,6 +427,84 @@ namespace System
             {
                 TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
                 return new TerminalBasicInfo(db);
+            }, isThreadSafe: true);
+        }
+
+        /// <summary>Provides a cache of color information sourced from terminfo.</summary>
+        private struct TerminalKeyInfo
+        {
+            /// <summary> The dictionary of keystring to ConsoleKeyInfo. </summary>
+            public Dictionary<string, ConsoleKey> KeyFormatToConsoleKey;
+            /// <summary> Max key length </summary>
+            public int MaxKeyLength;
+            /// <summary> Min key length </summary>
+            public int MinKeyLength;
+
+            /// <summary>The cached instance.</summary>
+            public static TerminalKeyInfo Instance { get { return _instance.Value; } }
+
+            private void AddKey(TermInfo.Database db, int keyId, ConsoleKey key)
+            {
+                string keyFormat = db.GetString(keyId);
+                if (!string.IsNullOrEmpty(keyFormat))
+                    KeyFormatToConsoleKey[keyFormat] = key;
+            }
+
+            private TerminalKeyInfo(TermInfo.Database db)
+            {
+                KeyFormatToConsoleKey = new Dictionary<string, ConsoleKey>();
+                MaxKeyLength = MinKeyLength = 0;
+                if (db != null)
+                {
+                    AddKey(db, TermInfo.Database.KeyF1, ConsoleKey.F1);
+                    AddKey(db, TermInfo.Database.KeyF2, ConsoleKey.F2);
+                    AddKey(db, TermInfo.Database.KeyF3, ConsoleKey.F3);
+                    AddKey(db, TermInfo.Database.KeyF4, ConsoleKey.F4);
+                    AddKey(db, TermInfo.Database.KeyF5, ConsoleKey.F5);
+                    AddKey(db, TermInfo.Database.KeyF6, ConsoleKey.F6);
+                    AddKey(db, TermInfo.Database.KeyF7, ConsoleKey.F7);
+                    AddKey(db, TermInfo.Database.KeyF8, ConsoleKey.F8);
+                    AddKey(db, TermInfo.Database.KeyF9, ConsoleKey.F9);
+                    AddKey(db, TermInfo.Database.KeyF10, ConsoleKey.F10);
+                    AddKey(db, TermInfo.Database.KeyF11, ConsoleKey.F11);
+                    AddKey(db, TermInfo.Database.KeyF12, ConsoleKey.F12);
+                    AddKey(db, TermInfo.Database.KeyF13, ConsoleKey.F13);
+                    AddKey(db, TermInfo.Database.KeyF14, ConsoleKey.F14);
+                    AddKey(db, TermInfo.Database.KeyF15, ConsoleKey.F15);
+                    AddKey(db, TermInfo.Database.KeyF16, ConsoleKey.F16);
+                    AddKey(db, TermInfo.Database.KeyF17, ConsoleKey.F17);
+                    AddKey(db, TermInfo.Database.KeyF18, ConsoleKey.F18);
+                    AddKey(db, TermInfo.Database.KeyF19, ConsoleKey.F19);
+                    AddKey(db, TermInfo.Database.KeyF20, ConsoleKey.F20);
+                    AddKey(db, TermInfo.Database.KeyF21, ConsoleKey.F21);
+                    AddKey(db, TermInfo.Database.KeyF22, ConsoleKey.F22);
+                    AddKey(db, TermInfo.Database.KeyF23, ConsoleKey.F23);
+                    AddKey(db, TermInfo.Database.KeyF24, ConsoleKey.F24);
+                    AddKey(db, TermInfo.Database.KeyBackspace, ConsoleKey.Backspace);
+                    AddKey(db, TermInfo.Database.KeyClear, ConsoleKey.Clear);
+                    AddKey(db, TermInfo.Database.KeyDown, ConsoleKey.DownArrow);
+                    AddKey(db, TermInfo.Database.KeyHome, ConsoleKey.Home);
+                    AddKey(db, TermInfo.Database.KeyLeft, ConsoleKey.LeftArrow);
+                    AddKey(db, TermInfo.Database.KeyPageDown, ConsoleKey.PageDown);
+                    AddKey(db, TermInfo.Database.KeyPageUp, ConsoleKey.PageUp);
+                    AddKey(db, TermInfo.Database.KeyRight, ConsoleKey.RightArrow);
+                    AddKey(db, TermInfo.Database.KeyEnd, ConsoleKey.End);
+                    AddKey(db, TermInfo.Database.KeyEnter, ConsoleKey.Enter);
+                    AddKey(db, TermInfo.Database.KeyHelp, ConsoleKey.Help);
+                    AddKey(db, TermInfo.Database.KeyPrint, ConsoleKey.Print);
+                    AddKey(db, TermInfo.Database.KeyInsert, ConsoleKey.Insert);
+                    AddKey(db, TermInfo.Database.KeyDelete, ConsoleKey.Delete);
+
+                    MaxKeyLength = KeyFormatToConsoleKey.Keys.Max(key => key.Length);
+                    MinKeyLength = KeyFormatToConsoleKey.Keys.Min(key => key.Length);
+                }
+            }
+
+            /// <summary>Lazy initialization of the terminal key information.</summary>
+            private static Lazy<TerminalKeyInfo> _instance = new Lazy<TerminalKeyInfo>(() =>
+            {
+                TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
+                return new TerminalKeyInfo(db);
             }, isThreadSafe: true);
         }
 
@@ -729,7 +894,91 @@ namespace System
                 /// <summary>The well-known index of the cursor_normal string entry.</summary>
                 public const int CursorVisibleIndex = 16;
 
-
+                /// <summary>The well-known index of key_backspace</summary>
+                public const int KeyBackspace = 55;
+                /// <summary>The well-known index of key_clear</summary>
+                public const int KeyClear = 57;
+                /// <summary>The well-known index of key_dc</summary>
+                public const int KeyDelete = 59;
+                /// <summary>The well-known index of key_down</summary>
+                public const int KeyDown = 61;
+                /// <summary>The well-known index of key_f1</summary>
+                public const int KeyF1 = 66;
+                /// <summary>The well-known index of key_f10</summary>
+                public const int KeyF10 = 67;
+                /// <summary>The well-known index of key_f2</summary>
+                public const int KeyF2 = 68;
+                /// <summary>The well-known index of key_f3</summary>
+                public const int KeyF3 = 69;
+                /// <summary>The well-known index of key_f4</summary>
+                public const int KeyF4 = 70;
+                /// <summary>The well-known index of key_f5</summary>
+                public const int KeyF5 = 71;
+                /// <summary>The well-known index of key_f6</summary>
+                public const int KeyF6 = 72;
+                /// <summary>The well-known index of key_f7</summary>
+                public const int KeyF7 = 73;
+                /// <summary>The well-known index of key_f8</summary>
+                public const int KeyF8 = 74;
+                /// <summary>The well-known index of key_f9</summary>
+                public const int KeyF9 = 75;
+                /// <summary>The well-known index of key_home</summary>
+                public const int KeyHome = 76;
+                /// <summary>The well-known index of key_ic</summary>
+                public const int KeyInsert = 77;
+                /// <summary>The well-known index of key_left</summary>
+                public const int KeyLeft = 79;
+                /// <summary>The well-known index of key_right</summary>
+                public const int KeyPageDown = 81;
+                /// <summary>The well-known index of key_ppage</summary>
+                public const int KeyPageUp = 82;
+                /// <summary>The well-known index of key_up</summary>
+                public const int KeyRight = 83;
+                /// <summary>The well-known index of key_npage</summary>
+                public const int KeyUp = 87;
+                /// <summary>The well-known index of key_cancel</summary>
+                public const int KeyCancel = 159;
+                /// <summary>The well-known index of key_close</summary>
+                public const int KeyClose = 160;
+                /// <summary>The well-known index of key_end</summary>
+                public const int KeyEnd = 164;
+                /// <summary>The well-known index of key_enter</summary>
+                public const int KeyEnter = 165;
+                /// <summary>The well-known index of key_help</summary>
+                public const int KeyHelp = 168;
+                /// <summary>The well-known index of key_print</summary>
+                public const int KeyPrint = 176;
+                /// <summary>The well-known index of key_select</summary>
+                public const int KeySelect = 193;
+                /// <summary>The well-known index of key_f11</summary>
+                public const int KeyF11 = 216;
+                /// <summary>The well-known index of key_f12</summary>
+                public const int KeyF12 = 217;
+                /// <summary>The well-known index of key_f13</summary>
+                public const int KeyF13 = 218;
+                /// <summary>The well-known index of key_f14</summary>
+                public const int KeyF14 = 219;
+                /// <summary>The well-known index of key_f15</summary>
+                public const int KeyF15 = 220;
+                /// <summary>The well-known index of key_f16</summary>
+                public const int KeyF16 = 221;
+                /// <summary>The well-known index of key_f17</summary>
+                public const int KeyF17 = 222;
+                /// <summary>The well-known index of key_f18</summary>
+                public const int KeyF18 = 223;
+                /// <summary>The well-known index of key_f19</summary>
+                public const int KeyF19 = 224;
+                /// <summary>The well-known index of key_f20</summary>
+                public const int KeyF20 = 225;
+                /// <summary>The well-known index of key_f21</summary>
+                public const int KeyF21 = 226;
+                /// <summary>The well-known index of key_f22</summary>
+                public const int KeyF22 = 227;
+                /// <summary>The well-known index of key_f23</summary>
+                public const int KeyF23 = 228;
+                /// <summary>The well-known index of key_f24</summary>
+                public const int KeyF24 = 229;
+               
                 /// <summary>Read a 16-bit value from the buffer starting at the specified position.</summary>
                 /// <param name="buffer">The buffer from which to read.</param>
                 /// <param name="pos">The position at which to read.</param>
