@@ -636,3 +636,9 @@ extern "C" int32_t GetWindowSize(WinSize* windowsSize);
  * otherwise returns 0 and sets errno.
  */
 extern "C" int32_t IsATty(int filedes);
+/**
+* Reads the number of bytes specified into the provided buffer from stdin.
+* in a non-echo and non-canonical mode.
+* Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
+*/
+extern "C" int32_t ReadStdinUnbuffered(void* buffer, int32_t bufferSize);

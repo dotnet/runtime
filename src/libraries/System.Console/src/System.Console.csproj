@@ -27,6 +27,9 @@
     <Compile Include="System\ConsoleCancelEventArgs.cs" />
     <Compile Include="System\ConsoleColor.cs" />
     <Compile Include="System\ConsoleSpecialKey.cs" />
+    <Compile Include="System\ConsoleKey.cs" />
+    <Compile Include="System\ConsoleKeyInfo.cs" />
+    <Compile Include="System\ConsoleModifiers.cs" />
     <Compile Include="System\IO\ConsoleStream.cs" />
     <Compile Include="System\IO\SyncTextReader.cs" />
     <Compile Include="System\IO\SyncTextWriter.cs" />
@@ -83,6 +86,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsole.cs">
       <Link>Common\Interop\Windows\Interop.ReadConsole.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsoleInput.cs">
+      <Link>Common\Interop\Windows\Interop.ReadConsoleInput.cs</Link>
+    </Compile>
 	<Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCtrlHandler.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
     </Compile>
@@ -110,6 +116,8 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\ConsolePal.Unix.cs" />
+	<Compile Include="System\IO\StdInStreamReader.cs" />
+    <Compile Include="System\IO\SyncTextReader.Unix.cs" />
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
     </Compile>
@@ -178,6 +186,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetWindowWidth.cs">
       <Link>Common\Interop\Unix\Interop.GetWindowWidth.cs"</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ReadStdinUnbuffered.cs">
+      <Link>Common\Interop\Unix\Interop.ReadStdinUnbuffered.cs"</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
