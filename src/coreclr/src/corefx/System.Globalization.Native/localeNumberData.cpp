@@ -214,7 +214,7 @@ GetCurrencyNegativePattern
 Implementation of NumberFormatInfo.CurrencyNegativePattern.
 Returns the pattern index.
 */
-int GetCurrencyNegativePattern(const Locale& locale)
+int GetCurrencyNegativePattern(const char* locale)
 {
     const int DEFAULT_VALUE = 0;
     static const char* Patterns[] = {"(Cn)",
@@ -235,7 +235,7 @@ int GetCurrencyNegativePattern(const Locale& locale)
                                      "(n C)"};
     UErrorCode status = U_ZERO_ERROR;
 
-    UNumberFormat* pFormat = unum_open(UNUM_CURRENCY, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormat* pFormat = unum_open(UNUM_CURRENCY, nullptr, 0, locale, nullptr, &status);
     UNumberFormatHolder formatHolder(pFormat, status);
 
     assert(U_SUCCESS(status));
@@ -259,13 +259,13 @@ GetCurrencyPositivePattern
 Implementation of NumberFormatInfo.CurrencyPositivePattern.
 Returns the pattern index.
 */
-int GetCurrencyPositivePattern(const Locale& locale)
+int GetCurrencyPositivePattern(const char* locale)
 {
     const int DEFAULT_VALUE = 0;
     static const char* Patterns[] = {"Cn", "nC", "C n", "n C"};
     UErrorCode status = U_ZERO_ERROR;
 
-    UNumberFormat* pFormat = unum_open(UNUM_CURRENCY, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormat* pFormat = unum_open(UNUM_CURRENCY, nullptr, 0, locale, nullptr, &status);
     UNumberFormatHolder formatHolder(pFormat, status);
 
     assert(U_SUCCESS(status));
@@ -289,13 +289,13 @@ GetNumberNegativePattern
 Implementation of NumberFormatInfo.NumberNegativePattern.
 Returns the pattern index.
 */
-int GetNumberNegativePattern(const Locale& locale)
+int GetNumberNegativePattern(const char* locale)
 {
     const int DEFAULT_VALUE = 1;
     static const char* Patterns[] = {"(n)", "-n", "- n", "n-", "n -"};
     UErrorCode status = U_ZERO_ERROR;
 
-    UNumberFormat* pFormat = unum_open(UNUM_DECIMAL, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormat* pFormat = unum_open(UNUM_DECIMAL, nullptr, 0, locale, nullptr, &status);
     UNumberFormatHolder formatHolder(pFormat, status);
 
     assert(U_SUCCESS(status));
@@ -319,14 +319,14 @@ GetPercentNegativePattern
 Implementation of NumberFormatInfo.PercentNegativePattern.
 Returns the pattern index.
 */
-int GetPercentNegativePattern(const Locale& locale)
+int GetPercentNegativePattern(const char* locale)
 {
     const int DEFAULT_VALUE = 0;
     static const char* Patterns[] = {
         "-n %", "-n%", "-%n", "%-n", "%n-", "n-%", "n%-", "-% n", "n %-", "% n-", "% -n", "n- %"};
     UErrorCode status = U_ZERO_ERROR;
 
-    UNumberFormat* pFormat = unum_open(UNUM_PERCENT, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormat* pFormat = unum_open(UNUM_PERCENT, nullptr, 0, locale, nullptr, &status);
     UNumberFormatHolder formatHolder(pFormat, status);
 
     assert(U_SUCCESS(status));
@@ -350,13 +350,13 @@ GetPercentPositivePattern
 Implementation of NumberFormatInfo.PercentPositivePattern.
 Returns the pattern index.
 */
-int GetPercentPositivePattern(const Locale& locale)
+int GetPercentPositivePattern(const char* locale)
 {
     const int DEFAULT_VALUE = 0;
     static const char* Patterns[] = {"n %", "n%", "%n", "% n"};
     UErrorCode status = U_ZERO_ERROR;
 
-    UNumberFormat* pFormat = unum_open(UNUM_PERCENT, nullptr, 0, locale.getName(), nullptr, &status);
+    UNumberFormat* pFormat = unum_open(UNUM_PERCENT, nullptr, 0, locale, nullptr, &status);
     UNumberFormatHolder formatHolder(pFormat, status);
 
     assert(U_SUCCESS(status));
@@ -380,11 +380,11 @@ GetMeasurementSystem
 Obtains the measurement system for the local, determining if US or metric.
 Returns 1 for US, 0 otherwise.
 */
-UErrorCode GetMeasurementSystem(const char* localeId, int32_t* value)
+UErrorCode GetMeasurementSystem(const char* locale, int32_t* value)
 {
     UErrorCode status = U_ZERO_ERROR;
 
-    UMeasurementSystem measurementSystem = ulocdata_getMeasurementSystem(localeId, &status);
+    UMeasurementSystem measurementSystem = ulocdata_getMeasurementSystem(locale, &status);
     if (U_SUCCESS(status))
     {
         *value = (measurementSystem == UMeasurementSystem::UMS_US) ? 1 : 0;
@@ -413,7 +413,7 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
     switch (localeNumberData)
     {
         case LanguageId:
-            *value = locale.getLCID();
+            *value = uloc_getLCID(locale.getName());
             break;
         case MeasurementSystem:
             status = GetMeasurementSystem(locale.getName(), value);
@@ -429,7 +429,7 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
             break;
         }
         case NegativeNumberFormat:
-            *value = GetNumberNegativePattern(locale);
+            *value = GetNumberNegativePattern(locale.getName());
             break;
         case MonetaryFractionalDigitsCount:
         {
@@ -442,10 +442,10 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
             break;
         }
         case PositiveMonetaryNumberFormat:
-            *value = GetCurrencyPositivePattern(locale);
+            *value = GetCurrencyPositivePattern(locale.getName());
             break;
         case NegativeMonetaryNumberFormat:
-            *value = GetCurrencyNegativePattern(locale);
+            *value = GetCurrencyNegativePattern(locale.getName());
             break;
         case FirstWeekOfYear:
         {
@@ -483,7 +483,7 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
             //  0 - Left to right (such as en-US)
             //  1 - Right to left (such as arabic locales)
             ULayoutType orientation = uloc_getCharacterOrientation(locale.getName(), &status);
-            // alternative implementation in ICU 54+ is Locale.isRightToLeft() which
+            // alternative implementation in ICU 54+ is uloc_isRightToLeft() which
             // also supports script tags in locale
             if (U_SUCCESS(status))
             {
@@ -503,10 +503,10 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
             break;
         }
         case NegativePercentFormat:
-            *value = GetPercentNegativePattern(locale);
+            *value = GetPercentNegativePattern(locale.getName());
             break;
         case PositivePercentFormat:
-            *value = GetPercentPositivePattern(locale);
+            *value = GetPercentPositivePattern(locale.getName());
             break;
         default:
             status = U_UNSUPPORTED_ERROR;
