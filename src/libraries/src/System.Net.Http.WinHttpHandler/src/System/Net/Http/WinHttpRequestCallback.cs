@@ -27,10 +27,11 @@ namespace System.Net.Http
             IntPtr statusInformation,
             uint statusInformationLength)
         {
-            bool invokeCallback = false;
+            WinHttpTraceHelper.TraceCallbackStatus("WinHttpCallback", handle, context, internetStatus);
 
             if (Environment.HasShutdownStarted)
             {
+                WinHttpTraceHelper.Trace("WinHttpCallback: Environment.HasShutdownStarted returned True");
                 return;
             }
 
@@ -40,20 +41,9 @@ namespace System.Net.Http
             }
 
             WinHttpRequestState state = WinHttpRequestState.FromIntPtr(context);
-            if (state != null && 
-                state.RequestHandle != null &&
-                !state.RequestHandle.IsInvalid &&
-                state.RequestHandle.DangerousGetHandle() == handle)
-            {
-                invokeCallback = true;
-            }
+            Debug.Assert(state != null, "WinHttpCallback must have a non-null state object");
 
-            WinHttpTraceHelper.TraceCallbackStatus("WinHttpCallback", handle, invokeCallback, internetStatus);
-
-            if (invokeCallback)
-            {
-                RequestCallback(handle, state, internetStatus, statusInformation, statusInformationLength);
-            }
+            RequestCallback(handle, state, internetStatus, statusInformation, statusInformationLength);
         }
         
         private static void RequestCallback(
@@ -67,6 +57,10 @@ namespace System.Net.Http
             {
                 switch (internetStatus)
                 {
+                    case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_HANDLE_CLOSING:
+                        OnRequestHandleClosing(state);
+                        return;
+
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SENDREQUEST_COMPLETE:
                         OnRequestSendRequestComplete(state);
                         return;
@@ -112,6 +106,16 @@ namespace System.Net.Http
                 Interop.WinHttp.WinHttpCloseHandle(handle);
                 state.SavedException = ex;
             }
+        }
+
+        private static void OnRequestHandleClosing(WinHttpRequestState state)
+        {
+            Debug.Assert(state != null, "OnRequestSendRequestComplete: state is null");
+            
+            // This is the last notification callback that WinHTTP will send. Therefore, we can
+            // now explicitly dispose the state object which will free its corresponding GCHandle.
+            // This will then allow the state object to be garbage collected.
+            state.Dispose();
         }
 
         private static void OnRequestSendRequestComplete(WinHttpRequestState state)

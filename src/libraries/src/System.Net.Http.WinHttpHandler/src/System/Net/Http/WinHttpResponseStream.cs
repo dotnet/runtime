@@ -191,8 +191,6 @@ namespace System.Net.Http
                         _state.RequestHandle.Dispose();
                         _state.RequestHandle = null;
                     }
-                    
-                    _state.Dispose();
                 }
             }
 
