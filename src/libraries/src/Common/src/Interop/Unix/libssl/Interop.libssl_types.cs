@@ -59,18 +59,19 @@ internal static partial class Interop
 
         internal static class SslMethods
         {
-            internal static readonly IntPtr TLSv1_method = libssl.TLSv1_method();
-            internal static readonly IntPtr TLSv1_1_method = libssl.TLSv1_1_method();
-            internal static readonly IntPtr TLSv1_2_method = libssl.TLSv1_2_method();
-            internal static readonly IntPtr SSLv3_method = libssl.SSLv3_method();
-            internal static readonly IntPtr SSLv23_method = libssl.SSLv23_method();
+            internal static readonly IntPtr TLSv1_method = Crypto.TlsV1Method();
+            internal static readonly IntPtr TLSv1_1_method = Crypto.TlsV1_1Method();
+            internal static readonly IntPtr TLSv1_2_method = Crypto.TlsV1_2Method();
+            internal static readonly IntPtr SSLv3_method = Crypto.SslV3Method();
+            internal static readonly IntPtr SSLv23_method = Crypto.SslV2_3Method();
 
 #if DEBUG
             static SslMethods()
             {
                 Debug.Assert(TLSv1_method != IntPtr.Zero, "TLSv1_method is null");
-                Debug.Assert(TLSv1_1_method != IntPtr.Zero, "TLSv1_1_method is null");
-                Debug.Assert(TLSv1_2_method != IntPtr.Zero, "TLSv1_2_method is null");
+                // TLSv1_1_method and TLSv1_2_method do not exist on earlier versions of OpenSSL
+                // Debug.Assert(TLSv1_1_method != IntPtr.Zero, "TLSv1_1_method is null");
+                // Debug.Assert(TLSv1_2_method != IntPtr.Zero, "TLSv1_2_method is null");
                 Debug.Assert(SSLv3_method != IntPtr.Zero, "SSLv3_method is null");
                 Debug.Assert(SSLv23_method != IntPtr.Zero, "SSLv23 method is null");
             }

@@ -11,24 +11,6 @@ internal static partial class Interop
     internal static partial class libssl
     {
         [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern IntPtr SSLv23_method();
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern IntPtr SSLv3_method();
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern IntPtr TLSv1_method();
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern IntPtr TLSv1_1_method();
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern IntPtr TLSv1_2_method();
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern IntPtr SSL_CTX_new(IntPtr meth);
-
-        [DllImport(Interop.Libraries.LibSsl)]
         internal static extern long SSL_CTX_ctrl(SafeSslContextHandle ctx, int cmd, long larg, IntPtr parg);
 
         [DllImport(Interop.Libraries.LibSsl)]
@@ -56,12 +38,6 @@ internal static partial class Interop
         internal static extern void SSL_set_accept_state(SafeSslHandle ssl);
 
         [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern int SSL_write(SafeSslHandle ssl, IntPtr buf, int num);
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern int SSL_read(SafeSslHandle ssl, IntPtr buf, int num);
-
-        [DllImport(Interop.Libraries.LibSsl)]
         internal static extern int SSL_renegotiate_pending(SafeSslHandle ssl);
 
         [DllImport(Interop.Libraries.LibSsl)]
@@ -75,12 +51,6 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.LibSsl)]
         internal static extern int SSL_state(SafeSslHandle ssl);
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern int BIO_read(SafeBioHandle bio, IntPtr buf, int num);
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern int BIO_write(SafeBioHandle bio, IntPtr buf, int num);
 
         [DllImport(Interop.Libraries.LibSsl)]
         internal static extern SafeX509Handle SSL_get_peer_certificate(SafeSslHandle ssl);
