@@ -37,7 +37,7 @@ namespace System.Text.Encodings.Web
         [EditorBrowsable(EditorBrowsableState.Never)]
         public abstract int MaxOutputCharactersPerInputCharacter { get; }
 
-        public string Encode(string value)
+        public virtual string Encode(string value)
         {
             if (value == null)
             {
@@ -161,7 +161,7 @@ namespace System.Text.Encodings.Web
             Encode(output, value, 0, value.Length);
         }
 
-        public void Encode(TextWriter output, string value, int startIndex, int characterCount)
+        public virtual void Encode(TextWriter output, string value, int startIndex, int characterCount)
         {
             if (value == null)
             {
@@ -207,7 +207,7 @@ namespace System.Text.Encodings.Web
             }
         }
 
-        public void Encode(TextWriter output, char[] value, int startIndex, int characterCount)
+        public virtual void Encode(TextWriter output, char[] value, int startIndex, int characterCount)
         {
             if (value == null)
             {
