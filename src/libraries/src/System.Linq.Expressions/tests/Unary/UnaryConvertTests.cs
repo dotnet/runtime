@@ -22,6 +22,24 @@ namespace Tests.ExpressionCompiler.Unary
             }
         }
 
+        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
+        public static void ConvertNullToNonNullableValueTest()
+        {
+            foreach (var e in ConvertNullToNonNullableValue())
+            {
+                VerifyUnaryConvertThrows<NullReferenceException>(e);
+            }
+        }
+
+        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
+        public static void ConvertNullToNullableValueTest()
+        {
+            foreach (var e in ConvertNullToNullableValue())
+            {
+                VerifyUnaryConvert(e, null);
+            }
+        }
+
         private static IEnumerable<KeyValuePair<Expression, object>> ConvertBooleanToNumeric()
         {
             var boolF = Expression.Constant(false);
@@ -48,6 +66,60 @@ namespace Tests.ExpressionCompiler.Unary
             }
         }
 
+        private static IEnumerable<Expression> ConvertNullToNonNullableValue()
+        {
+            var nullC = Expression.Constant(null);
+
+            var factories = new Func<Expression, Type, Expression>[] { Expression.Convert, Expression.ConvertChecked };
+
+            foreach (var factory in factories)
+            {
+                foreach (var b in new[] { false, true })
+                {
+                    yield return factory(nullC, typeof(byte));
+                    yield return factory(nullC, typeof(sbyte));
+                    yield return factory(nullC, typeof(ushort));
+                    yield return factory(nullC, typeof(short));
+                    yield return factory(nullC, typeof(uint));
+                    yield return factory(nullC, typeof(int));
+                    yield return factory(nullC, typeof(ulong));
+                    yield return factory(nullC, typeof(long));
+                    yield return factory(nullC, typeof(float));
+                    yield return factory(nullC, typeof(double));
+                    yield return factory(nullC, typeof(char));
+                    yield return factory(nullC, typeof(TimeSpan));
+                    yield return factory(nullC, typeof(DayOfWeek));
+                }
+            }
+        }
+
+        private static IEnumerable<Expression> ConvertNullToNullableValue()
+        {
+            var nullC = Expression.Constant(null);
+
+            var factories = new Func<Expression, Type, Expression>[] { Expression.Convert, Expression.ConvertChecked };
+
+            foreach (var factory in factories)
+            {
+                foreach (var b in new[] { false, true })
+                {
+                    yield return factory(nullC, typeof(byte?));
+                    yield return factory(nullC, typeof(sbyte?));
+                    yield return factory(nullC, typeof(ushort?));
+                    yield return factory(nullC, typeof(short?));
+                    yield return factory(nullC, typeof(uint?));
+                    yield return factory(nullC, typeof(int?));
+                    yield return factory(nullC, typeof(ulong?));
+                    yield return factory(nullC, typeof(long?));
+                    yield return factory(nullC, typeof(float?));
+                    yield return factory(nullC, typeof(double?));
+                    yield return factory(nullC, typeof(char?));
+                    yield return factory(nullC, typeof(TimeSpan?));
+                    yield return factory(nullC, typeof(DayOfWeek?));
+                }
+            }
+        }
+
         #endregion
 
         #region Test verifiers
@@ -64,6 +136,22 @@ namespace Tests.ExpressionCompiler.Unary
 #if FEATURE_INTERPRET
             Func<object> i = f.Compile(true);
             Assert.Equal(o, i());
+#endif
+        }
+
+        private static void VerifyUnaryConvertThrows<T>(Expression e)
+            where T : Exception
+        {
+            Expression<Func<object>> f =
+                Expression.Lambda<Func<object>>(
+                    Expression.Convert(e, typeof(object)));
+
+            Func<object> c = f.Compile();
+            Assert.Throws<T>(() => c());
+
+#if FEATURE_INTERPRET
+            Func<object> i = f.Compile(true);
+            Assert.Throws<T>(() => i());
 #endif
         }
 
