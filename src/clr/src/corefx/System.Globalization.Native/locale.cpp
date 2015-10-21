@@ -10,11 +10,6 @@
 
 #include "locale.hpp"
 
-#include "unicode/dcfmtsym.h" //decimal
-#include "unicode/dtfmtsym.h" //date
-#include "unicode/localpointer.h"
-#include "unicode/ulocdata.h"
-
 int32_t UErrorCodeToBool(UErrorCode status)
 {
     if (U_SUCCESS(status))

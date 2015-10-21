@@ -8,14 +8,10 @@
 #include <string.h>
 #include <vector>
 
+#include <unicode/ulocdata.h>
+
 #include "locale.hpp"
 #include "holders.h"
-
-#include "unicode/calendar.h"
-#include "unicode/decimfmt.h"
-#include "unicode/localpointer.h"
-#include "unicode/numfmt.h"
-#include "unicode/ulocdata.h"
 
 // invariant character definitions used by ICU
 #define UCHAR_CURRENCY ((UChar)0x00A4)   // international currency
