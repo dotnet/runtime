@@ -9,16 +9,25 @@ add_definitions(-DBIT64=1)
 set(ICU_HOMEBREW_LIB_PATH "/usr/local/opt/icu4c/lib")
 set(ICU_HOMEBREW_INC_PATH "/usr/local/opt/icu4c/include")
 
-find_library(ICUUC NAMES icuuc PATHS ${ICU_HOMEBREW_LIB_PATH})
-if(ICUUC STREQUAL ICUUC-NOTFOUND)
-    message(FATAL_ERROR "Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform)")
-    return()
-endif()
+if(NOT CLR_CMAKE_PLATFORM_DARWIN)
+    find_library(ICUUC NAMES icuuc PATHS ${ICU_HOMEBREW_LIB_PATH})
+    if(ICUUC STREQUAL ICUUC-NOTFOUND)
+        message(FATAL_ERROR "Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform)")
+        return()
+    endif()
 
-find_library(ICUI18N NAMES icui18n PATHS ${ICU_HOMEBREW_LIB_PATH})
-if(ICUI18N STREQUAL ICUI18N-NOTFOUND)
-    message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
-    return()
+    find_library(ICUI18N NAMES icui18n PATHS ${ICU_HOMEBREW_LIB_PATH})
+        if(ICUI18N STREQUAL ICUI18N-NOTFOUND)
+        message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
+        return()
+    endif()
+
+else()
+    find_library(ICUCORE NAMES icucore)
+    if(ICUI18N STREQUAL ICUCORE-NOTFOUND)
+        message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
+        return()
+    endif()
 endif()
 
 find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
@@ -61,9 +70,17 @@ add_library(System.Globalization.Native
 # Disable the "lib" prefix.
 set_target_properties(System.Globalization.Native PROPERTIES PREFIX "")
 
-target_link_libraries(System.Globalization.Native
-  ${ICUUC}
-  ${ICUI18N}
-)
+if(NOT CLR_CMAKE_PLATFORM_DARWIN)
+    target_link_libraries(System.Globalization.Native
+        ${ICUUC}
+        ${ICUI18N}
+    )
+else()
+    target_link_libraries(System.Globalization.Native
+        ${ICUCORE}
+    )
+
+    add_definitions(-DU_DISABLE_RENAMING=1)
+endif()
 
 install (TARGETS System.Globalization.Native DESTINATION .)
