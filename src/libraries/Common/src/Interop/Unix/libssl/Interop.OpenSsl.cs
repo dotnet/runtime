@@ -25,7 +25,7 @@ internal static partial class Interop
 
             IntPtr method = GetSslMethod(isServer, options);
 
-            using (libssl.SafeSslContextHandle innerContext = new libssl.SafeSslContextHandle(method))
+            using (libssl.SafeSslContextHandle innerContext = Crypto.SslCtxCreate(method))
             {
                 if (innerContext.IsInvalid)
                 {
@@ -47,8 +47,8 @@ internal static partial class Interop
                 {
                     Debug.Assert(isServer, "isServer flag should be true");
                     libssl.SSL_CTX_set_verify(innerContext,
-                        (int) libssl.ClientCertOption.SSL_VERIFY_PEER |
-                        (int) libssl.ClientCertOption.SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                        (int)libssl.ClientCertOption.SSL_VERIFY_PEER |
+                        (int)libssl.ClientCertOption.SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
                         s_verifyClientCertificate);
 
                     //update the client CA list 
@@ -67,13 +67,13 @@ internal static partial class Interop
             return context;
         }
 
-        internal static bool DoSslHandshake(SafeSslHandle context, IntPtr recvPtr, int recvCount, out IntPtr sendPtr, out int sendCount)
+        internal static bool DoSslHandshake(SafeSslHandle context, byte[] recvBuf, int recvOffset, int recvCount, out byte[] sendBuf, out int sendCount)
         {
-            sendPtr = IntPtr.Zero;
+            sendBuf = null;
             sendCount = 0;
-            if ((IntPtr.Zero != recvPtr) && (recvCount > 0))
+            if ((recvBuf != null) && (recvCount > 0))
             {
-                BioWrite(context.InputBio, recvPtr, recvCount);
+                BioWrite(context.InputBio, recvBuf, recvOffset, recvCount);
             }
 
             libssl.SslErrorCode error;
@@ -93,32 +93,39 @@ internal static partial class Interop
 
             if (sendCount > 0)
             {
-                sendPtr = Marshal.AllocHGlobal(sendCount);
+                sendBuf = new byte[sendCount];
 
                 try
                 {
-                    sendCount = BioRead(context.OutputBio, sendPtr, sendCount);
+                    sendCount = BioRead(context.OutputBio, sendBuf, sendCount);
                 }
                 finally
                 {
                     if (sendCount <= 0)
                     {
-                        Marshal.FreeHGlobal(sendPtr);
-                        sendPtr = IntPtr.Zero;
+                        sendBuf = null;
                         sendCount = 0;
                     }
                 }
             }
-        
+
             return ((libssl.SSL_state(context) == (int)libssl.SslState.SSL_ST_OK));
 
         }
 
-        internal static int Encrypt(SafeSslHandle context, IntPtr buffer, int offset, int count, int bufferCapacity, out libssl.SslErrorCode errorCode)
+        internal static int Encrypt(SafeSslHandle context, byte[] buffer, int offset, int count, int bufferCapacity, out libssl.SslErrorCode errorCode)
         {
             errorCode = libssl.SslErrorCode.SSL_ERROR_NONE;
 
-            int retVal = libssl.SSL_write(context, new IntPtr(buffer.ToInt64() + offset), count);
+            int retVal;
+            unsafe
+            {
+                fixed (byte* fixedBuffer = buffer)
+                {
+                    retVal = Crypto.SslWrite(context, fixedBuffer + offset, count);
+                }
+            }
+
             if (retVal != count)
             {
                 errorCode = GetSslError(context, retVal);
@@ -148,15 +155,15 @@ internal static partial class Interop
             return retVal;
         }
 
-        internal static int Decrypt(SafeSslHandle context, IntPtr outBufferPtr, int count, out libssl.SslErrorCode errorCode)
+        internal static int Decrypt(SafeSslHandle context, byte[] outBuffer, int count, out libssl.SslErrorCode errorCode)
         {
             errorCode = libssl.SslErrorCode.SSL_ERROR_NONE;
 
-            int retVal = BioWrite(context.InputBio, outBufferPtr, count);
+            int retVal = BioWrite(context.InputBio, outBuffer, 0, count);
 
             if (retVal == count)
             {
-                retVal = libssl.SSL_read(context, outBufferPtr, retVal);
+                retVal = Crypto.SslRead(context, outBuffer, retVal);
 
                 if (retVal > 0)
                 {
@@ -172,7 +179,7 @@ internal static partial class Interop
                 switch (errorCode)
                 {
                     // indicate end-of-file
-                    case libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:                      
+                    case libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
                         break;
 
                     case libssl.SslErrorCode.SSL_ERROR_WANT_READ:
@@ -236,6 +243,7 @@ internal static partial class Interop
             bool tls12 = (options & libssl.Options.SSL_OP_NO_TLSv1_2) == 0;
 
             IntPtr method = libssl.SslMethods.SSLv23_method; // default
+            string methodName = "SSLv23_method";
 
             if (!ssl2)
             {
@@ -244,25 +252,29 @@ internal static partial class Interop
                     if (!tls11 && !tls12)
                     {
                         method = libssl.SslMethods.TLSv1_method;
+                        methodName = "TLSv1_method";
                     }
                     else if (!tls10 && !tls12)
                     {
                         method = libssl.SslMethods.TLSv1_1_method;
+                        methodName = "TLSv1_1_method";
                     }
                     else if (!tls10 && !tls11)
                     {
                         method = libssl.SslMethods.TLSv1_2_method;
+                        methodName = "TLSv1_2_method";
                     }
                 }
                 else if (!tls10 && !tls11 && !tls12)
                 {
                     method = libssl.SslMethods.SSLv3_method;
+                    methodName = "SSLv3_method";
                 }
             }
 
             if (IntPtr.Zero == method)
             {
-                throw CreateSslException(SR.net_get_ssl_method_failed);
+                throw new SslException(SR.Format(SR.net_get_ssl_method_failed, methodName));
             }
 
             return method;
@@ -310,7 +322,7 @@ internal static partial class Interop
                 //Enumerate Certificates from LocalMachine and CurrentUser root store 
                 AddX509Names(nameStack, StoreLocation.LocalMachine, issuerNameHashSet);
                 AddX509Names(nameStack, StoreLocation.CurrentUser, issuerNameHashSet);
-                
+
                 libssl.SSL_CTX_set_client_CA_list(context, nameStack);
 
                 // The handle ownership has been transferred into the CTX.
@@ -364,9 +376,9 @@ internal static partial class Interop
         }
 
         //TODO (Issue #3362) should we check Bio should retry?
-        private static int BioRead(SafeBioHandle bio, IntPtr buffer, int count)
+        private static int BioRead(SafeBioHandle bio, byte[] buffer, int count)
         {
-            int bytes = libssl.BIO_read(bio, buffer, count);
+            int bytes = Crypto.BioRead(bio, buffer, count);
             if (bytes != count)
             {
                 throw CreateSslException(SR.net_ssl_read_bio_failed_error);
@@ -375,9 +387,17 @@ internal static partial class Interop
         }
 
         //TODO (Issue #3362) should we check Bio should retry?
-        private static int BioWrite(SafeBioHandle bio, IntPtr buffer, int count)
+        private static int BioWrite(SafeBioHandle bio, byte[] buffer, int offset, int count)
         {
-            int bytes = libssl.BIO_write(bio, buffer, count);
+            int bytes;
+            unsafe
+            {
+                fixed (byte* bufPtr = buffer)
+                {
+                    bytes = Crypto.BioWrite(bio, bufPtr + offset, count);
+                }
+            }
+
             if (bytes != count)
             {
                 throw CreateSslException(SR.net_ssl_write_bio_failed_error);
@@ -451,7 +471,7 @@ internal static partial class Interop
         {
             return CreateSslException(message, libssl.SSL_get_error(context, error));
         }
-    
+
         #endregion
 
         #region Internal class
