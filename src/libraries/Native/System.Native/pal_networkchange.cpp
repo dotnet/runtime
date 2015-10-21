@@ -1,0 +1,100 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#include "pal_config.h"
+
+#include "pal_errno.h"
+#include "pal_networkchange.h"
+#include "pal_types.h"
+#include "pal_utilities.h"
+
+#include <errno.h>
+#include <linux/netlink.h>
+#include <linux/rtnetlink.h>
+#include <net/if.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+
+#pragma clang diagnostic ignored "-Wcast-align" // NLMSG_* macros trigger this
+
+extern "C" Error CreateNetworkChangeListenerSocket(int32_t* retSocket)
+{
+    sockaddr_nl sa = { };
+    sa.nl_family = AF_NETLINK;
+    sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
+    int32_t sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+    if (sock == -1)
+    {
+        *retSocket = -1;
+        return ConvertErrorPlatformToPal(errno);
+    }
+    if (bind(sock, reinterpret_cast<sockaddr*>(&sa), sizeof(sa)) != 0)
+    {
+        *retSocket = -1;
+        return ConvertErrorPlatformToPal(errno);
+    }
+
+    *retSocket = sock;
+    return PAL_SUCCESS;
+}
+
+extern "C" Error CloseNetworkChangeListenerSocket(int32_t socket)
+{
+    int err = close(socket);
+    return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
+}
+
+extern "C" NetworkChangeKind ReadSingleEvent(int32_t sock)
+{
+    char buffer[4096];
+    iovec iov = { buffer, sizeof(buffer) };
+    sockaddr_nl sanl;
+    msghdr msg = { reinterpret_cast<void*>(&sanl), sizeof(sockaddr_nl), &iov, 1, NULL, 0, 0};
+    ssize_t len = recvmsg(sock, &msg, 0);
+    if (len == -1)
+    {
+        // Probably means the socket has been closed.
+        // If so, the managed side will ignore the return value.
+        return NetworkChangeKind::None;
+    }
+
+    nlmsghdr* hdr = reinterpret_cast<nlmsghdr*>(buffer);
+    // This channel should only send a single message at a time.
+    // This means there should be no multi-part messages (NLM_F_MULTI).
+    assert ((hdr->nlmsg_flags & NLM_F_MULTI) == 0);
+    switch (hdr->nlmsg_type)
+    {
+        case NLMSG_DONE:
+            return NetworkChangeKind::None;
+        case NLMSG_ERROR:
+            return NetworkChangeKind::None;
+        case RTM_NEWADDR:
+            return NetworkChangeKind::AddressAdded;
+        case RTM_DELADDR:
+            return NetworkChangeKind::AddressRemoved;
+        case RTM_NEWLINK:
+            return ReadNewLinkMessage(hdr);
+        case RTM_DELLINK:
+            return NetworkChangeKind::LinkRemoved;
+        default:
+            return NetworkChangeKind::None;
+    }
+}
+
+NetworkChangeKind ReadNewLinkMessage(nlmsghdr* hdr)
+{
+    assert(hdr != nullptr);
+    ifinfomsg* ifimsg;
+    ifimsg = reinterpret_cast<ifinfomsg*>(NLMSG_DATA(hdr));
+    if (ifimsg->ifi_family == AF_INET)
+    {
+        if ((ifimsg->ifi_flags & IFF_UP) != 0)
+        {
+            return NetworkChangeKind::LinkAdded;
+        }
+    }
+
+    return NetworkChangeKind::None;
+}

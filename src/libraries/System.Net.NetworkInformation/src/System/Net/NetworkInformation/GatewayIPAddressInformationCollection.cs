@@ -78,5 +78,18 @@ namespace System.Net.NetworkInformation
         {
             throw new NotSupportedException(SR.net_collection_readonly);
         }
+
+        internal bool Contains(IPAddress ipAddress)
+        {
+            foreach (var info in _addresses)
+            {
+                if (info.Address == ipAddress)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }
