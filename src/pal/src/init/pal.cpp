@@ -745,137 +745,29 @@ done:
 Function:
   PALCommonCleanup
 
-Utility function to free any resource used by the PAL. 
+Utility function to prepare for shutdown.
 
-Parameters :
-    step: selects the desired cleanup step
-    full_cleanup:  FALSE: cleanup only what's needed and leave the rest 
-                          to the OS process cleanup
-                   TRUE:  full cleanup 
 --*/
 void 
-PALCommonCleanup(PALCLEANUP_STEP step, BOOL full_cleanup)
+PALCommonCleanup()
 {
-    CPalThread *pThread = InternalGetCurrentThread();
-    static int step_done[PALCLEANUP_STEP_INVALID] = { 0 };
+    static bool cleanupDone = false;
 
-    switch (step)
+    if (!cleanupDone)
     {
-    case PALCLEANUP_ALL_STEPS:
-    case PALCLEANUP_STEP_ONE:
-        /* Note: in order to work correctly, this step should be executed with 
-           init_count > 0
-         */
-        if (!step_done[PALCLEANUP_STEP_ONE])
-        {
-            step_done[PALCLEANUP_STEP_ONE] = 1;
+        cleanupDone = true;
 
-            PALSetShutdownIntent();
+        PALSetShutdownIntent();
 
-            //
-            // Let the synchronization manager know we're about to shutdown
-            //
+        //
+        // Let the synchronization manager know we're about to shutdown
+        //
 
-            CPalSynchMgrController::PrepareForShutdown();
+        CPalSynchMgrController::PrepareForShutdown();
 
 #ifdef _DEBUG
-            PROCDumpThreadList();
+        PROCDumpThreadList();
 #endif
-
-            TRACE("About to suspend every other thread\n");
-
-            /* prevent other threads from acquiring signaled objects */
-            PROCCondemnOtherThreads();
-            /* prevent other threads from using services we're shutting down */
-            PROCSuspendOtherThreads();
-
-            TRACE("Every other thread suspended until exit\n");
-        }
-
-        /* Fall down for PALCLEANUP_ALL_STEPS */
-        if (PALCLEANUP_ALL_STEPS != step)
-            break;
-
-    case PALCLEANUP_STEP_TWO:
-        if (!step_done[PALCLEANUP_STEP_TWO])
-        {
-            step_done[PALCLEANUP_STEP_TWO] = 1;
-
-            /* LOADFreeeModules needs to be called before unitializing the rest
-               of the PAL since it could result in calling DllMain for loaded
-               libraries. For the user DllMain, all PAL APIs should still be
-               functional. */
-            LOADFreeModules(FALSE);
-
-#ifdef PAL_PERF
-            PERFDisableProcessProfile();
-            PERFDisableThreadProfile(FALSE);
-            PERFTerminate();  
-#endif
-
-            if (full_cleanup)
-            {
-                /* close primary handles of standard file objects */
-                FILECleanupStdHandles();
-                VIRTUALCleanup();
-                /* SEH requires information from the process structure to work;
-                   LOADFreeModules requires SEH to be functional when calling DllMain.
-                   Therefore SEHCleanup must go between LOADFreeModules and
-                   PROCCleanupInitialProcess */
-                SEHCleanup();
-                PROCCleanupInitialProcess();
-            }
-
-            // Object manager shutdown may cause all CPalThread objects
-            // to be deleted. Since the CPalThread of the shutdown thread
-            // needs to be available for reference by the thread suspension unsafe
-            // operations, the reference of CPalThread is incremented here
-            // to keep it alive until PAL finishes cleanup.
-            pThread->AddThreadReference();
-
-            //
-            // Shutdown object manager -- this needs to happen before the
-            // synch manager shutdown since it will call into the synch
-            // manager to free object synch data
-            // 
-            static_cast<CSharedMemoryObjectManager*>(g_pObjectManager)->Shutdown(pThread);
-
-            //
-            // Final synch manager shutdown
-            //
-            CPalSynchMgrController::Shutdown(pThread, full_cleanup);
-
-            if (full_cleanup)
-            {
-                /* It needs to be done after stopping the handle manager, because
-                   the cleanup will delete the critical section which is used
-                   when closing the handle of a file mapping */
-                MAPCleanup();
-                // MutexCleanup();
-
-                MiscCleanup();
-
-                TLSCleanup();
-            }
-
-            // The thread object will no longer be available after the shutdown thread
-            // releases the thread reference.
-            g_fThreadDataAvailable = FALSE;
-            pThread->ReleaseThreadReference();
-            pthread_setspecific(thObjKey, NULL); // Make sure any TLS entry is removed.
-
-            // Since thread object is no longer available here,
-            // the code path from here should stop using any functions
-            // that reference thread object.
-            SHMCleanup();
-
-            TRACE("PAL Terminated.\n");
-        }
-        break;
-
-    default:
-        ASSERT("Unknown final cleanup step %d", step);
-        break;
     }
 }
 

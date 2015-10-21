@@ -38,28 +38,14 @@ Utility function to force PAL to shutdown state
 --*/
 void PALShutdown( void );
 
-typedef enum
-{
-    PALCLEANUP_STEP_ONE, /* enum MUST start from 0 */
-    PALCLEANUP_STEP_TWO,
-    PALCLEANUP_ALL_STEPS,
-    PALCLEANUP_STEP_INVALID          /* This const MUST be the last entry
-                                        in the enum */
-} PALCLEANUP_STEP;
-
 /*++
 Function:
   PALCommonCleanup
 
-Utility function to free any resource used by the PAL. 
+Utility function to prepare for shutdown.
 
-Parameters :
-    step:          selects the desired cleanup step
-    full_cleanup:  TRUE: cleanup only what's needed and leave the rest 
-                         to the OS process cleanup
-                   FALSE: full cleanup 
 --*/
-void PALCommonCleanup( PALCLEANUP_STEP step, BOOL full_cleanup );
+void PALCommonCleanup();
 
 extern Volatile<INT> init_count;
 
