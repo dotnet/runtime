@@ -129,24 +129,24 @@ extern "C" int32_t LastIndexOf(
 Static Function:
 AreEqualOrdinalIgnoreCase
 */
-static bool AreEqualOrdinalIgnoreCase(UChar one, UChar two)
+static bool AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
 {
-	// Return whether the two characters are identical or would be identical if they were upper-cased.
+    // Return whether the two characters are identical or would be identical if they were upper-cased.
 
-	if (one == two)
-	{
-		return true;
-	}
+    if (one == two)
+    {
+        return true;
+    }
 
-	if (one == 0x0131 || two == 0x0131)
-	{
-		// On Windows with InvariantCulture, the LATIN SMALL LETTER DOTLESS I (U+0131)
-		// capitalizes to itself, whereas with ICU it capitalizes to LATIN CAPITAL LETTER I (U+0049).
-		// We special case it to match the Windows invariant behavior.
-		return false;
-	}
+    if (one == 0x0131 || two == 0x0131)
+    {
+        // On Windows with InvariantCulture, the LATIN SMALL LETTER DOTLESS I (U+0131)
+        // capitalizes to itself, whereas with ICU it capitalizes to LATIN CAPITAL LETTER I (U+0049).
+        // We special case it to match the Windows invariant behavior.
+        return false;
+    }
 
-	return u_toupper(one) == u_toupper(two);
+    return u_toupper(one) == u_toupper(two);
 }
 
 /*
@@ -154,53 +154,48 @@ Function:
 IndexOfOrdinalIgnoreCase
 */
 extern "C" int32_t
-IndexOfOrdinalIgnoreCase(const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength)
+IndexOfOrdinalIgnoreCase(
+    const UChar* lpTarget, int32_t cwTargetLength, 
+    const UChar* lpSource, int32_t cwSourceLength, 
+    int32_t findLast)
 {
-	int32_t endIndex = cwSourceLength - cwTargetLength;
-	assert(endIndex >= 0);
+    int32_t result = -1;
 
-	for (int32_t i = 0; i <= endIndex; i++)
-	{
-		int32_t targetIdx = 0;
-		for (int32_t srcIdx = i; targetIdx < cwTargetLength; srcIdx++, targetIdx++) {
-			if (!AreEqualOrdinalIgnoreCase(lpSource[srcIdx], lpTarget[targetIdx])) {
-				break;
-			}
-		}
+    int32_t endIndex = cwSourceLength - cwTargetLength;
+    assert(endIndex >= 0);
 
-		if (targetIdx == cwTargetLength) {
-			return i;
-		}
-	}
+    int32_t i = 0;
+    while (i <= endIndex)
+    {
+        int32_t srcIdx = i, trgIdx = 0;
+        const UChar *src = lpSource, *trg = lpTarget;
+        UChar32 srcCodepoint, trgCodepoint;
 
-	return -1;
-}
+        bool match = true;
+        while (trgIdx < cwTargetLength)
+        {
+            U16_NEXT(src, srcIdx, cwSourceLength, srcCodepoint);
+            U16_NEXT(trg, trgIdx, cwTargetLength, trgCodepoint);
+            if (!AreEqualOrdinalIgnoreCase(srcCodepoint, trgCodepoint))
+            {
+                match = false; 
+                break;
+            }
+        }
 
-/*
-Function:
-LastIndexOfOrdinalIgnoreCase
-*/
-extern "C" int32_t
-LastIndexOfOrdinalIgnoreCase(const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength)
-{
-	int32_t endIndex = cwSourceLength - cwTargetLength;
-	assert(endIndex >= 0);
+        if (match) 
+        {
+            result = i;
+            if (!findLast)
+            {
+                break;
+            }
+        }
 
-	for (int32_t i = endIndex; i >= 0; i--)
-	{
-		int32_t targetIdx = 0;
-		for (int32_t srcIdx = i; targetIdx < cwTargetLength; srcIdx++, targetIdx++) {
-			if (!AreEqualOrdinalIgnoreCase(lpSource[srcIdx], lpTarget[targetIdx])) {
-				break;
-			}
-		}
+        U16_FWD_1(lpSource, i, cwSourceLength);
+    }
 
-		if (targetIdx == cwTargetLength) {
-			return i;
-		}
-	}
-
-	return -1;
+    return result;
 }
 
 /*
