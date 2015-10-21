@@ -85,7 +85,7 @@ Build the Framework Native Components
 ======================================
 
 ```sh
-janhenke@freebsd-frankfurt:~/git/corefx$ src/Native/build.sh
+janhenke@freebsd-frankfurt:~/git/corefx$ ./build.sh native
 janhenke@freebsd-frankfurt:~/git/corefx$ cp bin/FreeBSD.x64.Debug/Native/*.so ~/coreclr-demo/runtime
 ```
 
