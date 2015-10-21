@@ -7,7 +7,7 @@
 // 
 
 // 
-// Defines a random number generator, ripped off from the System.Random code in the BCL.  If you notice any problems,
+// Defines a random number generator, initially from the System.Random code in the BCL.  If you notice any problems,
 // please compare to the implementation in src\mscorlib\src\system\random.cs.
 //
 // Main advantages over rand() are:
