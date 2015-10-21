@@ -108,9 +108,22 @@ namespace System.Net.Security
                     }
                 }
 
-                // TODO (3390): Add support for ECDSA.
+                if (_certKeyHandle == null)
+                {
+                    using (ECDsaOpenSsl ecdsa = (ECDsaOpenSsl)cert.GetECDsaPrivateKey())
+                    {
+                        if (ecdsa != null)
+                        {
+                            _certKeyHandle = ecdsa.DuplicateKeyHandle();
+                            Interop.Crypto.CheckValidOpenSslHandle(_certKeyHandle);
+                        }
+                    }
+                }
 
-                Debug.Assert(_certKeyHandle != null, "Failed to extract a private key handle");
+                if (_certKeyHandle == null)
+                {
+                    throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+                }
 
                 _certHandle = Interop.Crypto.X509Duplicate(cert.Handle);
                 Interop.Crypto.CheckValidOpenSslHandle(_certHandle);
