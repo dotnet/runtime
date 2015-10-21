@@ -34,13 +34,12 @@ class IcuHolder
 
   private:
     T* m_p;
-    IcuHolder(const IcuHolder&);
-    IcuHolder operator=(const IcuHolder&);
+    IcuHolder(const IcuHolder&) = delete;
+    IcuHolder operator=(const IcuHolder&) = delete;
 };
 
 struct UCalendarCloser
 {
-  public:
     void operator()(UCalendar* pCal) const
     {
         ucal_close(pCal);
@@ -49,7 +48,6 @@ struct UCalendarCloser
 
 struct UEnumerationCloser
 {
-  public:
     void operator()(UEnumeration* pEnum) const
     {
         uenum_close(pEnum);
@@ -58,7 +56,6 @@ struct UEnumerationCloser
 
 struct UDateTimePatternGeneratorCloser
 {
-  public:
     void operator()(UDateTimePatternGenerator* pGenerator) const
     {
         udatpg_close(pGenerator);
@@ -67,7 +64,6 @@ struct UDateTimePatternGeneratorCloser
 
 struct UDateFormatCloser
 {
-  public:
     void operator()(UDateFormat* pDateFormat) const
     {
         udat_close(pDateFormat);
