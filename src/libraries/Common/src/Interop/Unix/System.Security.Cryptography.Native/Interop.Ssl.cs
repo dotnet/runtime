@@ -43,6 +43,22 @@ internal static partial class Interop
         internal static extern void SslCtxDestroy(IntPtr ctx);
 
         [DllImport(Libraries.CryptoNative)]
+        private static extern IntPtr SSLGetVersion(SafeSslHandle ssl);
+
+        internal static string GetProtocolVersion(SafeSslHandle ssl)
+        {
+            return Marshal.PtrToStringAnsi(SSLGetVersion(ssl));
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern bool GetSslConnectionInfo(
+            SafeSslHandle ssl,
+            out int dataCipherAlg,
+            out int keyExchangeAlg,
+            out int dataHashAlg,
+            out int dataKeySize);
+
+        [DllImport(Libraries.CryptoNative)]
         internal static unsafe extern int SslWrite(SafeSslHandle ssl, byte* buf, int num);
 
         [DllImport(Libraries.CryptoNative)]

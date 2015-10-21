@@ -210,20 +210,6 @@ internal static partial class Interop
             return libssl.SSL_get_peer_cert_chain(context);
         }
 
-        internal static libssl.SSL_CIPHER GetConnectionInfo(SafeSslHandle sslHandle, out string protocolVersion)
-        {
-            IntPtr cipherPtr = libssl.SSL_get_current_cipher(sslHandle);
-            var cipher = new libssl.SSL_CIPHER();
-            if (IntPtr.Zero != cipherPtr)
-            {
-                cipher = Marshal.PtrToStructure<libssl.SSL_CIPHER>(cipherPtr);
-            }
-
-            IntPtr versionPtr = libssl.SSL_get_version(sslHandle);
-            protocolVersion = Marshal.PtrToStringAnsi(versionPtr);
-            return cipher;
-        }
-
         internal static void FreeSslContext(SafeSslHandle context)
         {
             Debug.Assert((context != null) && !context.IsInvalid, "Expected a valid context in FreeSslContext");
@@ -455,7 +441,7 @@ internal static partial class Interop
             }
         }
 
-        private static SslException CreateSslException(string message)
+        internal static SslException CreateSslException(string message)
         {
             ulong errorVal = Crypto.ErrGetError();
             string msg = SR.Format(message, Marshal.PtrToStringAnsi(Crypto.ErrReasonErrorString(errorVal)));

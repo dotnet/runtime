@@ -366,4 +366,7 @@
   <data name="net_ssl_x509Name_push_failed_error" xml:space="preserve">
     <value>Failed to push X509_NAME into stack.</value>
   </data>
+  <data name="net_ssl_get_connection_info_failed" xml:space="preserve">
+    <value>Getting SSL connection info failed with OpenSSL error - {0}.</value>
+  </data>
 </root>
