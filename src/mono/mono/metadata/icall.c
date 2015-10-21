@@ -53,6 +53,7 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-gc.h>
@@ -3885,8 +3886,10 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, MonoString *name, guint
 			continue;
 
 		if (name != NULL) {
-			if (str == NULL)
+			if (str == NULL) {
 				str = mono_string_to_utf8 (name);
+				mono_identifier_unescape_type_name_chars (str);
+			}
 
 			if (strcmp (nested->name, str))
 				continue;

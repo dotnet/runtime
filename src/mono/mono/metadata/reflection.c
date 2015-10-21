@@ -7627,10 +7627,92 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 	return 1;
 }
 
+
+/**
+ * mono_identifier_unescape_type_name_chars:
+ * @identifier: the display name of a mono type
+ *
+ * Returns:
+ *  The name in internal form, that is without escaping backslashes.
+ *
+ *  The string is modified in place!
+ */
+char*
+mono_identifier_unescape_type_name_chars(char* identifier)
+{
+	char *w, *r;
+	if (!identifier)
+		return NULL;
+	for (w = r = identifier; *r != 0; r++)
+	{
+		char c = *r;
+		if (c == '\\') {
+			r++;
+			if (*r == 0)
+				break;
+			c = *r;
+		}
+		*w = c;
+		w++;
+	}
+	if (w != r)
+		*w = 0;
+	return identifier;
+}
+
+void
+mono_identifier_unescape_info (MonoTypeNameParse* info);
+
+static void
+unescape_each_type_argument(void* data, void* user_data)
+{
+	MonoTypeNameParse* info = (MonoTypeNameParse*)data;
+	mono_identifier_unescape_info (info);
+}
+
+static void
+unescape_each_nested_name (void* data, void* user_data)
+{
+	char* nested_name = (char*) data;
+	mono_identifier_unescape_type_name_chars(nested_name);
+}
+
+/**
+ * mono_identifier_unescape_info:
+ *
+ * @info: a parsed display form of an (optionally assembly qualified) full type name.
+ *
+ * Returns: nothing.
+ *
+ * Destructively updates the info by unescaping the identifiers that
+ * comprise the type namespace, name, nested types (if any) and
+ * generic type arguments (if any).
+ *
+ * The resulting info has the names in internal form.
+ *
+ */
+void
+mono_identifier_unescape_info (MonoTypeNameParse *info)
+{
+	if (!info)
+		return;
+	mono_identifier_unescape_type_name_chars(info->name_space);
+	mono_identifier_unescape_type_name_chars(info->name);
+	// but don't escape info->assembly
+	if (info->type_arguments)
+		g_ptr_array_foreach(info->type_arguments, &unescape_each_type_argument, NULL);
+	if (info->nested)
+		g_list_foreach(info->nested, &unescape_each_nested_name, NULL);
+}
+
 int
 mono_reflection_parse_type (char *name, MonoTypeNameParse *info)
 {
-	return _mono_reflection_parse_type (name, NULL, FALSE, info);
+	int ok = _mono_reflection_parse_type (name, NULL, FALSE, info);
+	if (ok) {
+		mono_identifier_unescape_info (info);
+	}
+	return ok;
 }
 
 static MonoType*

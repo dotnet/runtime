@@ -346,6 +346,50 @@ mono_type_name_check_byref (MonoType *type, GString *str)
 		g_string_append_c (str, '&');
 }
 
+/**
+ * mono_identifier_escape_type_name_chars:
+ * @str: a destination string
+ * @identifier: an IDENTIFIER in internal form
+ *
+ * Returns: str.
+ *
+ * The displayed form of the identifier is appended to str.
+ *
+ * The displayed form of an identifier has the characters ,+&*[]\
+ * that have special meaning in type names escaped with a preceeding
+ * backslash (\) character.
+ */
+static GString*
+mono_identifier_escape_type_name_chars (GString* str, const char* identifier)
+{
+	if (!identifier)
+		return str;
+
+	size_t n = str->len;
+	// reserve space for common case: there will be no escaped characters.
+	g_string_set_size(str, n + strlen(identifier));
+	g_string_set_size(str, n);
+
+	for (const char* s = identifier; *s != 0 ; s++) {
+		switch (*s) {
+		case ',':
+		case '+':
+		case '&':
+		case '*':
+		case '[':
+		case ']':
+		case '\\':
+			g_string_append_c (str, '\\');
+			g_string_append_c (str, *s);
+			break;
+		default:
+			g_string_append_c (str, *s);
+			break;
+		}
+	}
+	return str;
+}
+
 static void
 mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			    MonoTypeNameFormat format)
@@ -427,16 +471,19 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			else
 				g_string_append_c (str, '+');
 		} else if (*klass->name_space) {
-			g_string_append (str, klass->name_space);
+			if (format == MONO_TYPE_NAME_FORMAT_IL)
+				g_string_append (str, klass->name_space);
+			else
+				mono_identifier_escape_type_name_chars (str, klass->name_space);
 			g_string_append_c (str, '.');
 		}
 		if (format == MONO_TYPE_NAME_FORMAT_IL) {
 			char *s = strchr (klass->name, '`');
 			int len = s ? s - klass->name : strlen (klass->name);
-
 			g_string_append_len (str, klass->name, len);
-		} else
-			g_string_append (str, klass->name);
+		} else {
+			mono_identifier_escape_type_name_chars (str, klass->name);
+		}
 		if (is_recursed)
 			break;
 		if (klass->generic_class) {
