@@ -1401,10 +1401,9 @@ void PROCCleanupProcess(BOOL bTerminateUnconditionally)
     /* Declare the beginning of shutdown */
     PALSetShutdownIntent();
 
-    PALCommonCleanup(PALCLEANUP_STEP_ONE, FALSE);
+    PALCommonCleanup();
 
-    /* This must be called after PALCommonCleanup(PALCLEANUP_STEP_ONE, ...)
-     */
+    /* This must be called after PALCommonCleanup */
     PALShutdown();
 }
 
