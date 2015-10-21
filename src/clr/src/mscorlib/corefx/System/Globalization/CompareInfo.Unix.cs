@@ -39,7 +39,7 @@ namespace System.Globalization
             {
                 fixed (char* pSource = source)
                 {
-                    int index = Interop.GlobalizationInterop.IndexOfOrdinalIgnoreCase(value, value.Length, pSource + startIndex, count);
+                    int index = Interop.GlobalizationInterop.IndexOfOrdinalIgnoreCase(value, value.Length, pSource + startIndex, count, findLast: false);
                     return index != -1 ?
                         startIndex + index :
                         -1;
@@ -88,7 +88,7 @@ namespace System.Globalization
             {
                 fixed (char* pSource = source)
                 {
-                    int lastIndex = Interop.GlobalizationInterop.LastIndexOfOrdinalIgnoreCase(value, value.Length, pSource + leftStartIndex, count);
+                    int lastIndex = Interop.GlobalizationInterop.IndexOfOrdinalIgnoreCase(value, value.Length, pSource + leftStartIndex, count, findLast: true);
                     return lastIndex != -1 ?
                         leftStartIndex + lastIndex :
                         -1;

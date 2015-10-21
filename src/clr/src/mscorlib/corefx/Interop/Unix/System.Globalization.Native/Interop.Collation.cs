@@ -19,10 +19,7 @@ internal static partial class Interop
         internal unsafe static extern int LastIndexOf(byte[] localeName, string target, char* pSource, int cwSourceLength, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
-        internal unsafe static extern int IndexOfOrdinalIgnoreCase(string target, int cwTargetLength, char* pSource, int cwSourceLength);
-
-        [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
-        internal unsafe static extern int LastIndexOfOrdinalIgnoreCase(string target, int cwTargetLength, char* pSource, int cwSourceLength);
+        internal unsafe static extern int IndexOfOrdinalIgnoreCase(string target, int cwTargetLength, char* pSource, int cwSourceLength, bool findLast);
 
         [DllImport(Libraries.GlobalizationInterop, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
