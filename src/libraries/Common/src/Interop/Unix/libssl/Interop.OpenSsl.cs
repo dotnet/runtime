@@ -30,7 +30,7 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
-                Crypto.SslCtxCtrl(innerContext, libssl.SSL_CTRL_OPTIONS, options, IntPtr.Zero);
+                Ssl.SslCtxCtrl(innerContext, libssl.SSL_CTRL_OPTIONS, options, IntPtr.Zero);
 
                 libssl.SSL_CTX_set_quiet_shutdown(innerContext, 1);
 
@@ -359,8 +359,8 @@ internal static partial class Interop
             int retVal = libssl.SSL_shutdown(context);
             if (retVal < 0)
             {
-                //TODO (Issue #3362) check this error
-                Crypto.SslGetError(context, retVal);
+                //TODO (Issue #4031) check this error
+                Ssl.SslGetError(context, retVal);
             }
         }
 
@@ -405,7 +405,7 @@ internal static partial class Interop
 
         private static libssl.SslErrorCode GetSslError(SafeSslHandle context, int result)
         {
-            libssl.SslErrorCode retVal = Crypto.SslGetError(context, result);
+            libssl.SslErrorCode retVal = Ssl.SslGetError(context, result);
             if (retVal == libssl.SslErrorCode.SSL_ERROR_SYSCALL)
             {
                 retVal = (libssl.SslErrorCode)Crypto.ErrGetError();
@@ -467,7 +467,7 @@ internal static partial class Interop
 
         private static SslException CreateSslException(SafeSslHandle context, string message, int error)
         {
-            return CreateSslException(message, Crypto.SslGetError(context, error));
+            return CreateSslException(message, Ssl.SslGetError(context, error));
         }
 
         #endregion

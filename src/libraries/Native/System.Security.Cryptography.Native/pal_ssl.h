@@ -30,40 +30,6 @@ enum class CipherAlgorithmType : int32_t
 };
 
 /*
-The values used in OpenSSL for SSL_CIPHER algorithm_enc.
-*/
-enum class SSL_CipherAlgorithm : int64_t
-{
-#ifdef HAVE_SSL_CIPHER_ALGORITHMS
-    SSL_DES = 0x00008000L,
-    SSL_3DES = 0x00010000L,
-    SSL_RC4 = 0x00020000L,
-    SSL_RC2 = 0x00040000L,
-    SSL_IDEA = 0x00080000L,
-    //SSL_eFZA = 0x00100000L,  this value is defined in ssl_locl.h, but has no match
-    SSL_eNULL = 0x00200000L,
-    SSL_AES = 0x04000000L,
-    SSL_CAMELLIA = 0x08000000L,
-    SSL_SEED = 0x10000000L,
-#else
-    SSL_DES = 1,
-    SSL_3DES = 2,
-    SSL_RC4 = 4,
-    SSL_RC2 = 8,
-    SSL_IDEA = 16,
-    SSL_eNULL = 32,
-    SSL_AES128 = 64,
-    SSL_AES256 = 128,
-    SSL_CAMELLIA128 = 256,
-    SSL_CAMELLIA256 = 512,
-    SSL_eGOST2814789CNT = 1024,
-    SSL_SEED = 2048,
-    SSL_AES128GCM = 4096,
-    SSL_AES256GCM = 8192
-#endif
-};
-
-/*
 These values should be kept in sync with System.Security.Authentication.ExchangeAlgorithmType.
 */
 enum class ExchangeAlgorithmType : int32_t
@@ -83,41 +49,6 @@ enum class ExchangeAlgorithmType : int32_t
 };
 
 /*
-The values used in OpenSSL for SSL_CIPHER algorithm_mkey.
-*/
-enum class SSL_KeyExchangeAlgorithm : int64_t
-{
-#ifdef HAVE_SSL_CIPHER_ALGORITHMS
-    SSL_kRSA = 0x00000001L,
-    SSL_kDHr = 0x00000002L,
-    SSL_kDHd = 0x00000004L,
-    //SSL_kFZA = 0x00000008L,  this value is defined in ssl_locl.h, but has no match
-    SSL_kEDH = 0x00000010L,
-    SSL_kKRB5 = 0x00000020L,
-    SSL_kECDH = 0x00000040L,
-    SSL_kECDHE = 0x00000080L,
-#else
-    SSL_kRSA = 1,
-    /* DH cert, RSA CA cert */
-    SSL_kDHr = 2,
-    /* DH cert, DSA CA cert */
-    SSL_kDHd = 4,
-    /* tmp DH key no DH cert */
-    SSL_kEDH = 8,
-    /* Kerberos5 key exchange */
-    SSL_kKRB5 = 16,
-    /* ECDH cert, RSA CA cert */
-    SSL_kECDHr = 32,
-    /* ECDH cert, ECDSA CA cert */
-    SSL_kECDHe = 64,
-    SSL_kEECDH = 128,
-    SSL_kPSK = 256,
-    SSL_kGOST = 512,
-    SSL_kSRP = 1024,
-#endif
-};
-
-/*
 These values should be kept in sync with System.Security.Authentication.HashAlgorithmType.
 */
 enum class HashAlgorithmType : int32_t
@@ -132,25 +63,6 @@ enum class HashAlgorithmType : int32_t
     SSL_GOST94 = 229410,
     SSL_GOST89 = 229411,
     SSL_AEAD = 229412,
-};
-
-/*
-The values used in OpenSSL for SSL_CIPHER algorithm_mac.
-*/
-enum class SSL_DataHashAlgorithm : int64_t
-{
-#ifdef HAVE_SSL_CIPHER_ALGORITHMS
-    SSL_MD5 = 0x00400000L,
-    SSL_SHA1 = 0x00800000L,
-#else
-    SSL_MD5 = 1,
-    SSL_SHA1 = 2,
-    SSL_GOST94 = 4,
-    SSL_GOST89MAC = 8,
-    SSL_SHA256 = 16,
-    SSL_SHA384 = 32,
-    SSL_AEAD = 64
-#endif
 };
 
 /*
@@ -243,7 +155,7 @@ Shims the SSL_get_version method.
 
 Returns the protocol version string for the SSL instance.
 */
-extern "C" const char* SSLGetVersion(SSL* ssl);
+extern "C" const char* SslGetVersion(SSL* ssl);
 
 /*
 Returns the connection information for the SSL instance.

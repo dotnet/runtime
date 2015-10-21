@@ -13,12 +13,6 @@ add_definitions(-DPIC=1)
 
 find_package(OpenSSL REQUIRED)
 
-include(CheckStructHasMember)
-check_struct_has_member ("SSL_CIPHER" algorithms openssl/ssl.h SSL_CIPHER_ALGORITHMS)
-if (SSL_CIPHER_ALGORITHMS)
-    add_definitions(-DHAVE_SSL_CIPHER_ALGORITHMS=1)
-endif()
-
 set(NATIVECRYPTO_SOURCES
     openssl.c
     pal_asn1.cpp
