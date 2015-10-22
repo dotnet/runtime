@@ -18,8 +18,6 @@
     <Compile Include="ArgumentValidationTests.cs" />
     <Compile Include="ConnectAsync.cs" />
     <Compile Include="ConnectExTest.cs" />
-    <Compile Include="Disconnect.cs" />
-    <Compile Include="DisconnectAsync.cs" />
     <Compile Include="DisposedSocketTests.cs" />
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />
@@ -71,6 +69,14 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
       <Link>Common\System\Net\Capability.Sockets.cs</Link>
+    </Compile>
+ 
+    <!-- Sockets APM extensions -->   
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketAPMExtensions.cs">
+      <Link>Common\System\Net\Sockets\SocketAPMExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
 

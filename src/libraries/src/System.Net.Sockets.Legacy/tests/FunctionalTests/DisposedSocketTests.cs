@@ -50,21 +50,10 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void EndConnect_Throws_ObjectDisposed()
+        public void EndConnect_Throws_ArgumentNullException()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndConnect(null));
-        }
-
-        [Fact]
-        public void BeginDisconnect_Throws_ObjectDisposed()
-        {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginDisconnect(false, TheAsyncCallback, null));
-        }
-
-        [Fact]
-        public void EndDisconnect_Throws_ObjectDisposed()
-        {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndDisconnect(null));
+            // Behavior difference:  EndConnect_Throws_ObjectDisposed
+            Assert.Throws<ArgumentNullException>(() => GetDisposedSocket().EndConnect(null));
         }
 
         [Fact]
@@ -76,8 +65,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginSend_Buffer_SocketError_Throws_ObjectDisposedException()
         {
-            SocketError errorCode;
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginSend(s_buffer, 0, s_buffer.Length, SocketFlags.None, out errorCode, TheAsyncCallback, null));
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginSend(s_buffer, 0, s_buffer.Length, SocketFlags.None, TheAsyncCallback, null));
         }
 
         [Fact]
@@ -89,21 +77,14 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginSend_Buffers_SocketError_Throws_ObjectDisposedException()
         {
-            SocketError errorCode;
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginSend(s_buffers, SocketFlags.None, out errorCode, TheAsyncCallback, null));
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginSend(s_buffers, SocketFlags.None, TheAsyncCallback, null));
         }
 
         [Fact]
-        public void EndSend_Throws_ObjectDisposed()
+        public void EndSend_Throws_ArgumentNullException()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndSend(null));
-        }
-
-        [Fact]
-        public void EndSend_SocketError_Throws_ObjectDisposed()
-        {
-            SocketError errorCode;
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndSend(null, out errorCode));
+            // Behavior difference: EndSend_Throws_ObjectDisposed
+            Assert.Throws<ArgumentNullException>(() => GetDisposedSocket().EndSend(null));
         }
 
         [Fact]
@@ -113,9 +94,10 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void EndSendTo_Throws_ObjectDisposed()
+        public void EndSendTo_Throws_ArgumentNullException()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndSendTo(null));
+            // Behavior difference: EndSendTo_Throws_ObjectDisposed
+            Assert.Throws<ArgumentNullException>(() => GetDisposedSocket().EndSendTo(null));
         }
 
         [Fact]
@@ -127,8 +109,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginReceive_Buffer_SocketError_Throws_ObjectDisposedException()
         {
-            SocketError errorCode;
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginReceive(s_buffer, 0, s_buffer.Length, SocketFlags.None, out errorCode, TheAsyncCallback, null));
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginReceive(s_buffer, 0, s_buffer.Length, SocketFlags.None, TheAsyncCallback, null));
         }
 
         [Fact]
@@ -140,21 +121,14 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginReceive_Buffers_SocketError_Throws_ObjectDisposedException()
         {
-            SocketError errorCode;
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginReceive(s_buffers, SocketFlags.None, out errorCode, TheAsyncCallback, null));
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginReceive(s_buffers, SocketFlags.None, TheAsyncCallback, null));
         }
 
         [Fact]
-        public void EndReceive_Throws_ObjectDisposed()
+        public void EndReceive_Throws_ArgumentNullException()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndReceive(null));
-        }
-
-        [Fact]
-        public void EndReceive_SocketError_Throws_ObjectDisposed()
-        {
-            SocketError errorCode;
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndReceive(null, out errorCode));
+            // Behavior difference from Desktop: EndReceive_Throws_ObjectDisposed
+            Assert.Throws<ArgumentNullException>(() => GetDisposedSocket().EndReceive(null));
         }
 
         [Fact]
@@ -165,10 +139,11 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void EndReceiveFrom_Throws_ObjectDisposed()
+        public void EndReceiveFrom_Throws_ArgumentNullException()
         {
+            // Behavior difference from Desktop: EndReceiveFrom_Throws_ObjectDisposed.
             EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndReceiveFrom(null, ref remote));
+            Assert.Throws<ArgumentNullException>(() => GetDisposedSocket().EndReceiveFrom(null, ref remote));
         }
 
         [Fact]
@@ -179,12 +154,13 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void EndReceiveMessageFrom_Throws_ObjectDisposed()
+        public void EndReceiveMessageFrom_Throws_ArgumentNullException()
         {
+            // Behavior difference from Desktop: EndReceiveMessageFrom_Throws_ObjectDisposed.
             SocketFlags flags = SocketFlags.None;
             EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
             IPPacketInformation packetInfo;
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndReceiveMessageFrom(null, ref flags, ref remote, out packetInfo));
+            Assert.Throws<ArgumentNullException>(() => GetDisposedSocket().EndReceiveMessageFrom(null, ref flags, ref remote, out packetInfo));
         }
 
         [Fact]
@@ -194,36 +170,10 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void BeginAccept_Int_Throws_ObjectDisposed()
+        public void EndAccept_Throws_ArgumentNullException()
         {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginAccept(0, TheAsyncCallback, null));
-        }
-
-        [Fact]
-        public void BeginAccept_Socket_Int_Throws_ObjectDisposed()
-        {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().BeginAccept(null, 0, TheAsyncCallback, null));
-        }
-
-        [Fact]
-        public void EndAccept_Throws_ObjectDisposed()
-        {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndAccept(null));
-        }
-
-        [Fact]
-        public void EndAccept_Buffer_Throws_ObjectDisposed()
-        {
-            byte[] buffer;
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndAccept(out buffer, null));
-        }
-
-        [Fact]
-        public void EndAccept_Buffer_Int_Throws_ObjectDisposed()
-        {
-            byte[] buffer;
-            int received;
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().EndAccept(out buffer, out received, null));
+            // Behavior difference from Desktop: EndAccept_Throws_ObjectDisposed
+            Assert.Throws<ArgumentNullException>(() => GetDisposedSocket().EndAccept(null));
         }
     }
 }

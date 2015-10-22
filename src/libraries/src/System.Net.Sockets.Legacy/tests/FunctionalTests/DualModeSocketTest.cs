@@ -1044,7 +1044,8 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginAcceptV6BoundToSpecificV4_CantConnect()
         {
-            Assert.Throws<SocketException>(() =>
+            // TODO: #4052 Behavior difference from Desktop: Used to throw SocketException. 
+            Assert.Throws<ObjectDisposedException>(() =>
             {
                 DualModeConnect_BeginAccept_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
             });
@@ -1053,7 +1054,8 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginAcceptV4BoundToSpecificV6_CantConnect()
         {
-            Assert.Throws<SocketException>(() =>
+            // TODO: #4052  Behavior difference from Desktop: Used to throw SocketException.
+            Assert.Throws<ObjectDisposedException>(() =>
             {
                 DualModeConnect_BeginAccept_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
             });
@@ -1062,7 +1064,8 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginAcceptV6BoundToAnyV4_CantConnect()
         {
-            Assert.Throws<SocketException>(() =>
+            // TODO: #4052 Behavior difference from Desktop: Used to throw SocketException.
+            Assert.Throws<ObjectDisposedException>(() =>
             {
                 DualModeConnect_BeginAccept_Helper(IPAddress.Any, IPAddress.IPv6Loopback);
             });
@@ -1705,9 +1708,11 @@ namespace System.Net.Sockets.Tests
                 EndPoint receivedFrom = new IPEndPoint(connectTo, port);
                 IAsyncResult async = serverSocket.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref receivedFrom, null, null);
 
-                IPEndPoint remoteEndPoint = receivedFrom as IPEndPoint;
-                Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
-                Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
+                // Behavior difference from Desktop: receivedFrom will _not_ change during the synchronous phase.
+
+                // IPEndPoint remoteEndPoint = receivedFrom as IPEndPoint;
+                // Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
+                // Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
                 SocketUdpClient client = new SocketUdpClient(serverSocket, connectTo, port);
                 bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? Configuration.FailingTestTimeout : Configuration.PassingTestTimeout);
@@ -1722,7 +1727,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(1, received);
                 Assert.Equal<Type>(receivedFrom.GetType(), typeof(IPEndPoint));
 
-                remoteEndPoint = receivedFrom as IPEndPoint;
+                IPEndPoint remoteEndPoint = receivedFrom as IPEndPoint;
                 Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
                 Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
             }
@@ -2152,9 +2157,11 @@ namespace System.Net.Sockets.Tests
                 IPPacketInformation ipPacketInformation;
                 IAsyncResult async = serverSocket.BeginReceiveMessageFrom(new byte[1], 0, 1, socketFlags, ref receivedFrom, null, null);
 
-                IPEndPoint remoteEndPoint = receivedFrom as IPEndPoint;
-                Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
-                Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
+                // Behavior difference from Desktop: receivedFrom will _not_ change during the synchronous phase.
+
+                // IPEndPoint remoteEndPoint = receivedFrom as IPEndPoint;
+                // Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
+                // Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
                 SocketUdpClient client = new SocketUdpClient(serverSocket, connectTo, port);
                 bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? Configuration.FailingTestTimeout : Configuration.PassingTestTimeout);
@@ -2169,7 +2176,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(1, received);
                 Assert.Equal<Type>(receivedFrom.GetType(), typeof(IPEndPoint));
 
-                remoteEndPoint = receivedFrom as IPEndPoint;
+                IPEndPoint remoteEndPoint = receivedFrom as IPEndPoint;
                 Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
                 Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
 
@@ -2387,7 +2394,7 @@ namespace System.Net.Sockets.Tests
                 try
                 {
                     Socket socket = _server.EndAcceptSocket(ar);
-                    _log.WriteLine("Accpeted Socket: " + socket.RemoteEndPoint);
+                    _log.WriteLine("Accepted Socket: " + socket.RemoteEndPoint);
                 }
                 catch (SocketException) { }
                 catch (ObjectDisposedException) { }

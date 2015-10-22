@@ -116,12 +116,13 @@ namespace System.Net.Sockets
             return recvMsg_Blocking(socketHandle, msg, out bytesTransferred, overlapped, completionRoutine);
         }
 
-        internal bool TransmitPackets(SafeCloseSocket socketHandle, IntPtr packetArray, int elementCount, int sendSize, SafeNativeOverlapped overlapped, TransmitFileOptions flags)
+        internal bool TransmitPackets(SafeCloseSocket socketHandle, IntPtr packetArray, int elementCount, int sendSize, SafeNativeOverlapped overlapped)
         {
             EnsureDynamicWinsockMethods();
             TransmitPacketsDelegate transmitPackets = _dynamicWinsockMethods.GetDelegate<TransmitPacketsDelegate>(socketHandle);
 
-            return transmitPackets(socketHandle, packetArray, elementCount, sendSize, overlapped, flags);
+            // UseDefaultWorkerThread = 0.
+            return transmitPackets(socketHandle, packetArray, elementCount, sendSize, overlapped, 0);
         }
 
         internal static IntPtr[] SocketListToFileDescriptorSet(IList socketList)

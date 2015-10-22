@@ -90,7 +90,7 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentNullException("localEP");
             }
-
+            
             // IPv6 Changes: Set the AddressFamily of this object before
             //               creating the client socket.
             _family = localEP.AddressFamily;
@@ -98,27 +98,6 @@ namespace System.Net.Sockets
             CreateClientSocket();
 
             Client.Bind(localEP);
-        }
-
-        // Creates a new instance of the System.Net.Sockets.UdpClient class and connects to the
-        // specified remote host on the specified port.
-        public UdpClient(string hostname, int port)
-        {
-            // Validate input parameters.
-            if (hostname == null)
-            {
-                throw new ArgumentNullException("hostname");
-            }
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException("port");
-            }
-
-            // NOTE: Need to create different kinds of sockets based on the addresses
-            //       returned from DNS. As a result, we defer the creation of the 
-            //       socket until the Connect method.
-
-            Connect(hostname, port);
         }
 
         // Used by the class to provide the underlying network socket.
@@ -215,18 +194,6 @@ namespace System.Net.Sockets
             }
         }
 
-        public void AllowNatTraversal(bool allowed)
-        {
-            if (allowed)
-            {
-                _clientSocket.SetIPProtectionLevel(IPProtectionLevel.Unrestricted);
-            }
-            else
-            {
-                _clientSocket.SetIPProtectionLevel(IPProtectionLevel.EdgeRestricted);
-            }
-        }
-
         private bool _cleanedUp = false;
         private void FreeResources()
         {
@@ -267,186 +234,6 @@ namespace System.Net.Sockets
             }
         }
 
-        // Establishes a connection to the specified port on the specified host.
-        public void Connect(string hostname, int port)
-        {
-            // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-            if (hostname == null)
-            {
-                throw new ArgumentNullException("hostname");
-            }
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException("port");
-            }
-
-            // IPv6 Changes: instead of just using the first address in the list,
-            //               we must now look for addresses that use a compatible
-            //               address family to the client socket.
-            //               However, in the case of the <hostname,port> constructor
-            //               we will have deferred creating the socket and will
-            //               do that here instead.
-            //               In addition, the redundant CheckForBroadcast call was
-            //               removed here since it is called from Connect().
-            IPAddress[] addresses = Dns.GetHostAddressesAsync(hostname).GetAwaiter().GetResult();
-
-            Exception lastex = null;
-            Socket ipv6Socket = null;
-            Socket ipv4Socket = null;
-            try
-            {
-                if (_clientSocket == null)
-                {
-                    if (Socket.OSSupportsIPv4)
-                    {
-                        ipv4Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                    }
-                    if (Socket.OSSupportsIPv6)
-                    {
-                        ipv6Socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-                    }
-                }
-
-                foreach (IPAddress address in addresses)
-                {
-                    try
-                    {
-                        if (_clientSocket == null)
-                        {
-                            // We came via the <hostname,port> constructor. Set the
-                            // address family appropriately, create the socket and
-                            // try to connect.
-                            if (address.AddressFamily == AddressFamily.InterNetwork && ipv4Socket != null)
-                            {
-                                ipv4Socket.Connect(address, port);
-                                _clientSocket = ipv4Socket;
-                                if (ipv6Socket != null)
-                                {
-                                    ipv6Socket.Dispose();
-                                }
-                            }
-                            else if (ipv6Socket != null)
-                            {
-                                ipv6Socket.Connect(address, port);
-                                _clientSocket = ipv6Socket;
-                                if (ipv4Socket != null)
-                                {
-                                    ipv4Socket.Dispose();
-                                }
-                            }
-
-                            _family = address.AddressFamily;
-                            _active = true;
-                            break;
-                        }
-                        else if (address.AddressFamily == _family)
-                        {
-                            // Only use addresses with a matching family.
-                            Connect(new IPEndPoint(address, port));
-                            _active = true;
-                            break;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (ExceptionCheck.IsFatal(ex))
-                        {
-                            throw;
-                        }
-                        lastex = ex;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                if (ExceptionCheck.IsFatal(ex))
-                {
-                    throw;
-                }
-                lastex = ex;
-            }
-            finally
-            {
-                // Cleanup temp sockets on failure. The main socket gets closed when the UDPClient
-                // gets closed.
-
-                // Did we connect?
-                if (!_active)
-                {
-                    if (ipv6Socket != null)
-                    {
-                        ipv6Socket.Dispose();
-                    }
-
-                    if (ipv4Socket != null)
-                    {
-                        ipv4Socket.Dispose();
-                    }
-
-                    // The connect failed - rethrow the last error we had.
-                    if (lastex != null)
-                    {
-                        throw lastex;
-                    }
-                    else
-                    {
-                        throw new SocketException((int)SocketError.NotConnected);
-                    }
-                }
-            }
-        }
-
-        // Establishes a connection with the host at the specified address on the
-        // specified port.
-        public void Connect(IPAddress addr, int port)
-        {
-            // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-            if (addr == null)
-            {
-                throw new ArgumentNullException("addr");
-            }
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException("port");
-            }
-
-            // IPv6 Changes: Removed redundant call to CheckForBroadcast() since
-            //               it is made in the real Connect() method.
-            IPEndPoint endPoint = new IPEndPoint(addr, port);
-
-            Connect(endPoint);
-        }
-
-        // Establishes a connection to a remote end point.
-        public void Connect(IPEndPoint endPoint)
-        {
-            // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-            if (endPoint == null)
-            {
-                throw new ArgumentNullException("endPoint");
-            }
-
-            // IPv6 Changes: Actually, no changes but we might want to check for 
-            //               compatible protocols here rather than push it down
-            //               to WinSock.
-            CheckForBroadcast(endPoint.Address);
-            Client.Connect(endPoint);
-            _active = true;
-        }
-
-
         private bool _isBroadcast;
         private void CheckForBroadcast(IPAddress ipAddress)
         {
@@ -477,95 +264,7 @@ namespace System.Net.Sockets
             }
         }
 
-        // Sends a UDP datagram to the host at the remote end point.
-        public int Send(byte[] dgram, int bytes, IPEndPoint endPoint)
-        {
-            // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-            if (dgram == null)
-            {
-                throw new ArgumentNullException("dgram");
-            }
-            if (_active && endPoint != null)
-            {
-                // Do not allow sending packets to arbitrary host when connected.
-                throw new InvalidOperationException(SR.net_udpconnected);
-            }
-
-            if (endPoint == null)
-            {
-                return Client.Send(dgram, 0, bytes, SocketFlags.None);
-            }
-
-            CheckForBroadcast(endPoint.Address);
-
-            return Client.SendTo(dgram, 0, bytes, SocketFlags.None, endPoint);
-        }
-
-
-        // Sends a UDP datagram to the specified port on the specified remote host.
-        public int Send(byte[] dgram, int bytes, string hostname, int port)
-        {
-            // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-            if (dgram == null)
-            {
-                throw new ArgumentNullException("dgram");
-            }
-            if (_active && ((hostname != null) || (port != 0)))
-            {
-                // Do not allow sending packets to arbitrary host when connected.
-                throw new InvalidOperationException(SR.net_udpconnected);
-            }
-
-            if (hostname == null || port == 0)
-            {
-                return Client.Send(dgram, 0, bytes, SocketFlags.None);
-            }
-
-            IPAddress[] addresses = Dns.GetHostAddressesAsync(hostname).GetAwaiter().GetResult();
-
-            int i = 0;
-            for (; i < addresses.Length && addresses[i].AddressFamily != _family; i++) ;
-
-            if (addresses.Length == 0 || i == addresses.Length)
-            {
-                throw new ArgumentException(SR.net_invalidAddressList, "hostname");
-            }
-
-            CheckForBroadcast(addresses[i]);
-            IPEndPoint ipEndPoint = new IPEndPoint(addresses[i], port);
-            return Client.SendTo(dgram, 0, bytes, SocketFlags.None, ipEndPoint);
-        }
-
-        // Sends a UDP datagram to a remote host.
-        public int Send(byte[] dgram, int bytes)
-        {
-            // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-            if (dgram == null)
-            {
-                throw new ArgumentNullException("dgram");
-            }
-            if (!_active)
-            {
-                // Only allowed on connected socket.
-                throw new InvalidOperationException(SR.net_notconnected);
-            }
-
-            return Client.Send(dgram, 0, bytes, SocketFlags.None);
-        }
-
-        public IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint endPoint, AsyncCallback requestCallback, object state)
+        internal IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint endPoint, AsyncCallback requestCallback, object state)
         {
             // Validate input parameters.
             if (_cleanedUp)
@@ -598,7 +297,7 @@ namespace System.Net.Sockets
             return Client.BeginSendTo(datagram, 0, bytes, SocketFlags.None, endPoint, requestCallback, state);
         }
 
-        public IAsyncResult BeginSend(byte[] datagram, int bytes, string hostname, int port, AsyncCallback requestCallback, object state)
+        internal IAsyncResult BeginSend(byte[] datagram, int bytes, string hostname, int port, AsyncCallback requestCallback, object state)
         {
             if (_active && ((hostname != null) || (port != 0)))
             {
@@ -628,12 +327,12 @@ namespace System.Net.Sockets
             return BeginSend(datagram, bytes, ipEndPoint, requestCallback, state);
         }
 
-        public IAsyncResult BeginSend(byte[] datagram, int bytes, AsyncCallback requestCallback, object state)
+        internal IAsyncResult BeginSend(byte[] datagram, int bytes, AsyncCallback requestCallback, object state)
         {
             return BeginSend(datagram, bytes, null, requestCallback, state);
         }
 
-        public int EndSend(IAsyncResult asyncResult)
+        internal int EndSend(IAsyncResult asyncResult)
         {
             if (_cleanedUp)
             {
@@ -650,44 +349,7 @@ namespace System.Net.Sockets
             }
         }
 
-        // Returns a datagram sent by a server.
-        public byte[] Receive(ref IPEndPoint remoteEP)
-        {
-            // Validate input parameters.
-            if (_cleanedUp)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
-
-            // Due to the nature of the ReceiveFrom() call and the ref parameter convention,
-            // we need to cast an IPEndPoint to its base class EndPoint and cast it back down
-            // to IPEndPoint.
-            EndPoint tempRemoteEP;
-            if (_family == AddressFamily.InterNetwork)
-            {
-                tempRemoteEP = IPEndPointStatics.Any;
-            }
-            else
-            {
-                tempRemoteEP = IPEndPointStatics.IPv6Any;
-            }
-
-            int received = Client.ReceiveFrom(_buffer, MaxUDPSize, 0, ref tempRemoteEP);
-            remoteEP = (IPEndPoint)tempRemoteEP;
-
-            // Because we don't return the actual length, we need to ensure the returned buffer
-            // has the appropriate length.
-            if (received < MaxUDPSize)
-            {
-                byte[] newBuffer = new byte[received];
-                Buffer.BlockCopy(_buffer, 0, newBuffer, 0, received);
-                return newBuffer;
-            }
-
-            return _buffer;
-        }
-
-        public IAsyncResult BeginReceive(AsyncCallback requestCallback, object state)
+        internal IAsyncResult BeginReceive(AsyncCallback requestCallback, object state)
         {
             // Validate input parameters.
             if (_cleanedUp)
@@ -711,7 +373,7 @@ namespace System.Net.Sockets
             return Client.BeginReceiveFrom(_buffer, 0, MaxUDPSize, SocketFlags.None, ref tempRemoteEP, requestCallback, state);
         }
 
-        public byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint remoteEP)
+        internal byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint remoteEP)
         {
             if (_cleanedUp)
             {

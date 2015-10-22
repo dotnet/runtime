@@ -175,11 +175,6 @@ namespace System.Net.Sockets
             return SafeCloseSocket.CreateSocket(addressFamily, socketType, protocolType, out socket);
         }
 
-        public static unsafe SafeCloseSocket CreateSocket(SocketInformation socketInformation, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         private static unsafe int Receive(int fd, SocketFlags flags, int available, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
             Debug.Assert(socketAddress != null || socketAddressLen == 0);
