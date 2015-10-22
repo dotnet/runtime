@@ -71,9 +71,10 @@ namespace System.Net.NetworkInformation
 
         private static bool GetSupportsMulticast(string name)
         {
+            // /sys/class/net/<interface_name>/flags
             string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.FlagsFileName);
-            string fileContents = File.ReadAllText(path).Trim();
-            Interop.LinuxNetDeviceFlags flags = (Interop.LinuxNetDeviceFlags)Convert.ToInt32(fileContents, 16);
+            Interop.LinuxNetDeviceFlags flags = (Interop.LinuxNetDeviceFlags)StringParsingHelpers.ParseRawHexFileAsInt(path);
+
             return (flags & Interop.LinuxNetDeviceFlags.IFF_MULTICAST) == Interop.LinuxNetDeviceFlags.IFF_MULTICAST;
         }
 
@@ -115,16 +116,7 @@ namespace System.Net.NetworkInformation
             try
             {
                 string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.SpeedFileName);
-                string contents = File.ReadAllText(path);
-                long val;
-                if (long.TryParse(contents, out val))
-                {
-                    return val;
-                }
-                else
-                {
-                    return null;
-                }
+                return StringParsingHelpers.ParseRawLongFile(path);
             }
             catch (IOException) // Some interfaces may give an "Invalid argument" error when opening this file.
             {

@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation
         public const string Udp4ConnectionsFile = "/proc/net/udp";
         public const string Udp6ConnectionsFile = "/proc/net/udp6";
         public const string DHClientLeasesFile = "/var/lib/dhcp/dhclient.leases";
-        public const string SmbConfFile = "/etc/smb/smb.conf";
+        public const string SmbConfFile = "/etc/samba/smb.conf";
 
         // Individual file names
         public const string AllNetworkInterfaceFileName = "all";
