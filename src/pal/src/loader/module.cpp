@@ -239,6 +239,10 @@ LoadLibraryExW(
     }
 
     lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
+    if (NULL == lpstr)
+    {
+        goto done;
+    }
     if (!LOADConvertLibraryPathWideStringToMultibyteString(lpLibFileName, lpstr, &name_length))
     {
         goto done;
@@ -286,7 +290,10 @@ PAL_LoadLibraryDirect(
     }
     
     lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
-
+    if (NULL == lpstr)
+    {
+        goto done;
+    }
     if (!LOADConvertLibraryPathWideStringToMultibyteString(lpLibFileName, lpstr, &name_length))
     {
         goto done;
@@ -335,6 +342,10 @@ PAL_RegisterLibraryDirect(
     }
 
     lpstr = pathstr.OpenStringBuffer((PAL_wcslen(lpLibFileName)+1) * MaxWCharToAcpLength);
+    if (NULL == lpstr)
+    {
+        goto done;
+    }
     if (!LOADConvertLibraryPathWideStringToMultibyteString(lpLibFileName, lpstr, &name_length))
     {
         goto done;
