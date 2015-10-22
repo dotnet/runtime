@@ -180,6 +180,14 @@
     <OSGroup Condition="'$(OSGroup)'==''">Windows_NT</OSGroup>
   </PropertyGroup>
 
+  <!-- Provide defaults for TestNugetRuntimeId -->
+  <PropertyGroup Condition="'$(TestNugetRuntimeId)'== ''">
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='Windows_NT'">win7-x64</TestNugetRuntimeId>
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</TestNugetRuntimeId>
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='OSX'">osx.10.10-x64</TestNugetRuntimeId>
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='FreeBSD'">ubuntu.14.04-x64</TestNugetRuntimeId>
+  </PropertyGroup>
+
   <!-- Set up Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
