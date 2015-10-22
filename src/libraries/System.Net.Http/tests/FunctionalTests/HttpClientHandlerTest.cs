@@ -44,6 +44,15 @@ namespace System.Net.Http.Functional.Tests
             return message.Contains(pattern);
         }
 
+        private static bool JsonMessageContainsKey(string message, string key)
+        {
+            // TODO: Align with the rest of tests w.r.t response parsing once the test server is finalized.
+            // Currently not adding any new dependencies
+            string pattern = string.Format(@"""{0}"": """, key);
+            return message.Contains(pattern);
+        }
+
+
         private static async Task AssertSuccessfulGetResponse(HttpResponseMessage response, Uri uri, ITestOutputHelper output)
         {
             Assert.Equal<HttpStatusCode>(HttpStatusCode.OK, response.StatusCode);
@@ -289,6 +298,18 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpResponseMessage response = await client.GetAsync(redirectUri);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [Fact]
+        public async Task GetAsync_DefaultCoookieContainer_NoCookieSent()
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                HttpResponseMessage httpResponse = await client.GetAsync(HttpTestServers.RemoteServerHeadersUri);
+                string responseText = await httpResponse.Content.ReadAsStringAsync();
+                _output.WriteLine(responseText);
+                Assert.False(JsonMessageContainsKey(responseText, "Cookie"));
             }
         }
 
