@@ -76,11 +76,6 @@ mono_get_address_info (const char *hostname, int port, int flags, MonoAddressInf
 
 	while (res) {
 		cur = g_new0 (MonoAddressEntry, 1);
-		if (prev)
-			prev->next = cur;
-		else
-			addr_info->entries = cur;
-
 		cur->family = res->ai_family;
 		cur->socktype = res->ai_socktype;
 		cur->protocol = res->ai_protocol;
@@ -91,12 +86,20 @@ mono_get_address_info (const char *hostname, int port, int flags, MonoAddressInf
 			cur->address_len = sizeof (struct in6_addr);
 			cur->address.v6 = ((struct sockaddr_in6*)res->ai_addr)->sin6_addr;
 		} else {
-			g_error ("Cannot handle address family %d", cur->family);
+			g_warning ("Cannot handle address family %d", cur->family);
+			res = res->ai_next;
+			g_free (cur);
+			continue;
 		}
 
 		if (res->ai_canonname)
 			cur->canonical_name = g_strdup (res->ai_canonname);
 
+		if (prev)
+			prev->next = cur;
+		else
+			addr_info->entries = cur;
+			
 		prev = cur;
 		res = res->ai_next;
 	}
