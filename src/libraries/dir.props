@@ -10,8 +10,8 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00107</BuildToolsVersion>
-    <DnxVersion>1.0.0-beta7</DnxVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00110</BuildToolsVersion>
+    <DnxVersion>1.0.0-rc1-15838</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
     <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
@@ -83,8 +83,13 @@
 
     <!-- list of directories to perform batch restore -->
   <ItemGroup>
-    <DnuRestoreDir Include="&quot;$(MSBuildProjectDirectory)\src&quot;" />
-    <DnuRestoreDir Include="&quot;$(ToolsDir)&quot;" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src" />
+    <DnuRestoreDir Include="$(ToolsDir)" />
+    <!-- workaround to address issue where DNX won't recurse directories under a project.json
+         https://github.com/aspnet/dnx/commit/0dda8bf86863364cc20421f1af7494f1b2a3256f -->
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\ref\*\project.json" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\tests\*\project.json" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\Common\tests\**\project.json" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -93,7 +98,6 @@
     <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
 
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
-    <DnuRestoreDirs>@(DnuRestoreDir -> '%(Identity)', ' ')</DnuRestoreDirs>
 
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
@@ -174,6 +178,14 @@
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('OSX'))">OSX</OSGroup>
     <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
     <OSGroup Condition="'$(OSGroup)'==''">Windows_NT</OSGroup>
+  </PropertyGroup>
+
+  <!-- Provide defaults for TestNugetRuntimeId -->
+  <PropertyGroup Condition="'$(TestNugetRuntimeId)'== ''">
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='Windows_NT'">win7-x64</TestNugetRuntimeId>
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</TestNugetRuntimeId>
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='OSX'">osx.10.10-x64</TestNugetRuntimeId>
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='FreeBSD'">ubuntu.14.04-x64</TestNugetRuntimeId>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->

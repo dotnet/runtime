@@ -4,6 +4,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <NugetTargetMoniker>.NETPlatform,Version=v5.4</NugetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Encryption.ECDsa.cs" />

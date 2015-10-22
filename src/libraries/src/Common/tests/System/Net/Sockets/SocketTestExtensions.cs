@@ -15,7 +15,9 @@ namespace System.Net.Sockets.Tests
         // Binds to an OS-assigned port.
         public static TcpListener CreateAndStartTcpListenerOnAnonymousPort(out int port)
         {
-            TcpListener listener = TcpListener.Create(0);
+            TcpListener listener = new TcpListener(IPAddress.IPv6Any, 0);
+            listener.Server.DualMode = true;
+
             listener.Start();
             port = ((IPEndPoint)listener.LocalEndpoint).Port;
             return listener;

@@ -3,6 +3,6 @@
     "System.Runtime": "4.0.20"
   },
   "frameworks": {
-    "dotnet": {}
+    "dotnet5.4": {}
   }
 }

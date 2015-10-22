@@ -91,11 +91,6 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException();
         }
 
-        internal unsafe SocketError DoOperationDisconnect(Socket socket, SafeCloseSocket handle)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         private void TransferCompletionCallback(int bytesTransferred, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
         {
             Debug.Assert(socketAddress == null || socketAddress == _socketAddress.Buffer);
