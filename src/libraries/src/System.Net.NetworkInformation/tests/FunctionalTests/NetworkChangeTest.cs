@@ -8,6 +8,7 @@ namespace System.Net.NetworkInformation.Tests
     public class NetworkChangeTest
     {
         [Fact]
+        [ActiveIssue(4058, PlatformID.OSX)]
         public void NetworkAddressChanged_AddRemove_Success()
         {
             NetworkAddressChangedEventHandler handler = NetworkChange_NetworkAddressChanged;
@@ -16,6 +17,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue(4058, PlatformID.OSX)]
         public void NetworkAddressChanged_JustRemove_Success()
         {
             NetworkAddressChangedEventHandler handler = NetworkChange_NetworkAddressChanged;
