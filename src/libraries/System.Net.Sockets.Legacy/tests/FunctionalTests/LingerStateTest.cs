@@ -7,11 +7,6 @@ namespace System.Net.Sockets.Tests
 {
     public class LingerStateTest
     {
-        // NOTE: xUnit provides no way besides [ActiveIssue(int, PlatformId)] to exclude
-        //       a test from a specific set of platforms but not others. This dummy issue
-        //       is used to disable the boundary test for OS X.
-        const int DummyLingerStateOSXIssue = 0;
-
         private void TestLingerState_Success(Socket sock, bool enabled, int lingerTime)
         {
             sock.LingerState = new LingerOption(enabled, lingerTime);
@@ -45,7 +40,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(DummyLingerStateOSXIssue, PlatformID.OSX)]
+        [PlatformSpecific(~PlatformID.OSX)]
         public void Socket_LingerState_Upper_Boundaries_CorrectBehavior()
         {
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
