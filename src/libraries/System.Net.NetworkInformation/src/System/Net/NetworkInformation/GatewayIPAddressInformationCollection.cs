@@ -8,7 +8,7 @@ namespace System.Net.NetworkInformation
 {
     public class GatewayIPAddressInformationCollection : ICollection<GatewayIPAddressInformation>
     {
-        private readonly Collection<GatewayIPAddressInformation> _addresses = 
+        private readonly Collection<GatewayIPAddressInformation> _addresses =
             new Collection<GatewayIPAddressInformation>();
 
         protected internal GatewayIPAddressInformationCollection()
@@ -77,6 +77,19 @@ namespace System.Net.NetworkInformation
         public virtual void Clear()
         {
             throw new NotSupportedException(SR.net_collection_readonly);
+        }
+
+        internal bool Contains(IPAddress ipAddress)
+        {
+            foreach (var info in _addresses)
+            {
+                if (info.Address == ipAddress)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

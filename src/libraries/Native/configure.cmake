@@ -201,7 +201,44 @@ check_prototype_definition(
     "sys/resource.h"
     PRIORITY_REQUIRES_INT_WHO)
 
-set(CMAKE_REQUIRED_LIBRARIES)
+check_cxx_source_compiles(
+    "
+    #include <netdb.h>
+    #include <net/if_dl.h>
+    int main() { return 0; }
+    "
+    HAVE_AF_LINK)
+
+check_include_files(
+    linux/if_packet.h
+    HAVE_AF_PACKET)
+
+check_cxx_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <sys/socketvar.h>
+    #include <netinet/ip.h>
+    #include <netinet/tcp.h>
+    #include <netinet/tcp_var.h>
+    int main() { return 0; }
+    "
+    HAVE_TCP_VAR_H
+)
+
+check_cxx_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <net/route.h>
+    int main() { rt_msghdr* hdr; return 0; }
+    "
+    HAVE_RT_MSGHDR
+)
+
+check_include_files(
+    linux/rtnetlink.h
+    HAVE_LINUX_RTNETLINK_H)
+
+set (CMAKE_REQUIRED_LIBRARIES)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
