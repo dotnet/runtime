@@ -1290,7 +1290,7 @@ namespace System.Net.Http
         
         private Task<bool> InternalSendRequestAsync(WinHttpRequestState state)
         {
-            state.TcsSendRequest = new TaskCompletionSource<bool>();
+            state.TcsSendRequest = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             lock (state.Lock)
             {
@@ -1323,7 +1323,8 @@ namespace System.Net.Http
         
         private Task<bool> InternalReceiveResponseHeadersAsync(WinHttpRequestState state)
         {
-            state.TcsReceiveResponseHeaders = new TaskCompletionSource<bool>();
+            state.TcsReceiveResponseHeaders =
+                new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             
             lock (state.Lock)
             {
