@@ -69,10 +69,10 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Security.Cryptography.Encryption/4.0.0-beta-23315": {
+      "System.Security.Cryptography.Encryption/4.0.0-beta-23311": {
         "type": "package",
         "dependencies": {
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23315"
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311"
         }
       },
       "System.Security.Cryptography.Primitives/4.0.0-beta-23420": {
@@ -189,10 +189,10 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Security.Cryptography.Encryption/4.0.0-beta-23315": {
+      "System.Security.Cryptography.Encryption/4.0.0-beta-23311": {
         "type": "package",
         "dependencies": {
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23315"
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311"
         }
       },
       "System.Security.Cryptography.Primitives/4.0.0-beta-23420": {
@@ -309,10 +309,10 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Security.Cryptography.Encryption/4.0.0-beta-23315": {
+      "System.Security.Cryptography.Encryption/4.0.0-beta-23311": {
         "type": "package",
         "dependencies": {
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23315"
+          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311"
         }
       },
       "System.Security.Cryptography.Primitives/4.0.0-beta-23420": {
@@ -672,10 +672,10 @@
         "System.Runtime.nuspec"
       ]
     },
-    "System.Security.Cryptography.Encryption/4.0.0-beta-23315": {
+    "System.Security.Cryptography.Encryption/4.0.0-beta-23311": {
       "type": "package",
       "serviceable": true,
-      "sha512": "8UzSB8hsQUfFO2zNrNM59b25F0KZE5q3DY2xMo+/B0mBH+FQp8zSKhOmApqP/83y5RPuXXqB96vBGTAt1vuR8Q==",
+      "sha512": "MFD9kFWRF8nFZmcuYeI0DKl3ftmxG+JFDbK3l6hZam2WSq9Dw/9RkK+vmZIOAgaJ8Ky69G+p2KrVrZ7w2nFU/Q==",
       "files": [
         "de/System.Security.Cryptography.Encryption.xml",
         "es/System.Security.Cryptography.Encryption.xml",
@@ -685,8 +685,8 @@
         "ko/System.Security.Cryptography.Encryption.xml",
         "lib/DNXCore50/System.Security.Cryptography.Encryption.dll",
         "ru/System.Security.Cryptography.Encryption.xml",
-        "System.Security.Cryptography.Encryption.4.0.0-beta-23315.nupkg",
-        "System.Security.Cryptography.Encryption.4.0.0-beta-23315.nupkg.sha512",
+        "System.Security.Cryptography.Encryption.4.0.0-beta-23311.nupkg",
+        "System.Security.Cryptography.Encryption.4.0.0-beta-23311.nupkg.sha512",
         "System.Security.Cryptography.Encryption.nuspec",
         "System.Security.Cryptography.Encryption.xml",
         "zh-hans/System.Security.Cryptography.Encryption.xml",
