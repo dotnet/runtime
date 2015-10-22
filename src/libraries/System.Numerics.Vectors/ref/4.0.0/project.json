@@ -3,6 +3,6 @@
     "System.Numerics.Vectors": "4.0.0"
   },
   "frameworks": {
-    "dotnet": {}
+    "dotnet5.4": {}
   }
 }

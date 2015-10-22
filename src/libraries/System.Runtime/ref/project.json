@@ -1,6 +1,6 @@
 {
   "dependencies": {},
   "frameworks": {
-    "dotnet": {}
+    "dotnet5.4": {}
   }
 }

@@ -1,8 +1,24 @@
 {
   "locked": true,
-  "version": 1,
+  "version": 2,
   "targets": {
-    ".NETPlatform,Version=v5.0": {
+    ".NETPlatform,Version=v5.3": {
+      "System.Runtime/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/dotnet/System.Runtime.dll": {}
+        }
+      }
+    },
+    ".NETPlatform,Version=v5.3/win7-x86": {
+      "System.Runtime/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/dotnet/System.Runtime.dll": {}
+        }
+      }
+    },
+    ".NETPlatform,Version=v5.3/win7-x64": {
       "System.Runtime/4.0.0": {
         "type": "package",
         "compile": {
@@ -65,6 +81,6 @@
     "": [
       "System.Runtime >= 4.0.0"
     ],
-    ".NETPlatform,Version=v5.0": []
+    ".NETPlatform,Version=v5.3": []
   }
 }
