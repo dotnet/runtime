@@ -117,6 +117,12 @@ GetDiskFreeSpaceW(
     {
         length = (PAL_wcslen(lpDirectoryName)+1) * 3;
         dirNameBuffer = dirNameBufferPathString.OpenStringBuffer(length);
+        if (NULL == dirNameBuffer)
+        {
+            dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+            goto exit;
+        }
+
         size = WideCharToMultiByte( CP_ACP, 0, lpDirectoryName, -1,
                                   dirNameBuffer,length, 0, 0 );
         dirNameBufferPathString.CloseBuffer(size);
