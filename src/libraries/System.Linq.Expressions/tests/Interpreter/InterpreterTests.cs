@@ -8,9 +8,9 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Xunit;
 
-namespace Tests.ExpressionInterpreter
+namespace Tests.Expressions
 {
-    public static unsafe class InterpreterTests
+    public static partial class InterpreterTests
     {
         #region Test methods
 
@@ -21,6 +21,11 @@ namespace Tests.ExpressionInterpreter
             Verify(Expression.Constant("bar"));
 
             Verify(Expression.Add(Expression.Constant(1), Expression.Constant(2)));
+        }
+
+        static partial void MissingTest(ExpressionType nodeType)
+        {
+            Assert.True(false);
         }
 
         #endregion
@@ -34,43 +39,58 @@ namespace Tests.ExpressionInterpreter
                     Expression.Convert(expr, typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
 
-            Func<object> c = e.Compile();
-            Func<object> i = e.Compile(preferInterpretation: true);
-
-            // compute the value with the compiler
-            object cResult = null;
-            Exception cException = null;
             try
             {
-                cResult = c();
+                Func<object> c = e.Compile();
+                Func<object> i = e.Compile(preferInterpretation: true);
+
+                // compute the value with the compiler
+                object cResult = null;
+                Exception cException = null;
+                try
+                {
+                    cResult = c();
+                }
+                catch (Exception ex)
+                {
+                    cException = ex;
+                }
+
+                // compute the value with the interpreter
+                object iResult = default(object);
+                Exception iException = null;
+                try
+                {
+                    iResult = i();
+                }
+                catch (Exception ex)
+                {
+                    iException = ex;
+                }
+
+                // either both should have failed the same way or they should both produce the same result
+                if (cException != null || iException != null)
+                {
+                    if (cException == null)
+                    {
+                        Assert.True(false, string.Format("Interpreter threw '{0}' but compiler did not.", iException));
+                    }
+
+                    if (iException == null)
+                    {
+                        Assert.True(false, string.Format("Compiler threw '{0}' but interpreter did not.", cException));
+                    }
+
+                    Assert.Equal(iException.GetType(), cException.GetType());
+                }
+                else
+                {
+                    Assert.Equal(iResult, cResult);
+                }
             }
             catch (Exception ex)
             {
-                cException = ex;
-            }
-
-            // compute the value with the interpreter
-            object iResult = default(object);
-            Exception iException = null;
-            try
-            {
-                iResult = i();
-            }
-            catch (Exception ex)
-            {
-                iException = ex;
-            }
-
-            // either both should have failed the same way or they should both produce the same result
-            if (cException != null || iException != null)
-            {
-                Assert.NotNull(cException);
-                Assert.NotNull(iException);
-                Assert.Equal(iException.GetType(), cException.GetType());
-            }
-            else
-            {
-                Assert.Equal(iResult, cResult);
+                throw new Exception(string.Format("Error for expression '{0}':\r\n\r\n{1}", expr.DebugView, ex.ToString()));
             }
         }
 

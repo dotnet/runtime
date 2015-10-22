@@ -78,13 +78,11 @@ namespace System.Net
 
         public static int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
         {
-            string protocolVersion;
             connectionInfo = null;
             try
             {
-                Interop.libssl.SSL_CIPHER cipher = Interop.OpenSsl.GetConnectionInfo(securityContext.SslContext, out protocolVersion);
-                connectionInfo =  new SslConnectionInfo(cipher, protocolVersion);
-               
+                connectionInfo = new SslConnectionInfo(securityContext.SslContext);
+
                 return 0;
             }
             catch
@@ -193,7 +191,7 @@ namespace System.Net
                 Interop.libssl.SslErrorCode errorCode = Interop.libssl.SslErrorCode.SSL_ERROR_NONE;
 
 
-                Interop.libssl.SafeSslHandle scHandle = securityContext.SslContext;
+                SafeSslHandle scHandle = securityContext.SslContext;
 
                 resultSize = encrypt ?
                     Interop.OpenSsl.Encrypt(scHandle, buffer, offset, size, out errorCode) :

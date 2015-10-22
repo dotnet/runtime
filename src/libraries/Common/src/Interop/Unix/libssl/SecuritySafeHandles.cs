@@ -213,9 +213,9 @@ namespace System.Net.Security
     {
 #endif
         private readonly SafeFreeCredentials _credential;
-        private readonly Interop.libssl.SafeSslHandle _sslContext;
+        private readonly SafeSslHandle _sslContext;
 
-        public Interop.libssl.SafeSslHandle SslContext
+        public SafeSslHandle SslContext
         {
             get
             {

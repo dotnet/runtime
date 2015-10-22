@@ -11,27 +11,6 @@ internal static partial class Interop
     internal static partial class libssl
     {
         [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern long SSL_CTX_ctrl(SafeSslContextHandle ctx, int cmd, long larg, IntPtr parg);
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern SafeSslHandle SSL_new(SafeSslContextHandle ctx);
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern ulong ERR_get_error();
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern IntPtr ERR_reason_error_string(ulong error);
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern SslErrorCode SSL_get_error(SafeSslHandle ssl, int ret);
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern void SSL_free(IntPtr ssl);
-
-        [DllImport(Interop.Libraries.LibSsl)]
-        internal static extern void SSL_CTX_free(IntPtr ctx);
-
-        [DllImport(Interop.Libraries.LibSsl)]
         internal static extern void SSL_set_connect_state(SafeSslHandle ssl);
 
         [DllImport(Interop.Libraries.LibSsl)]

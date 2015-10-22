@@ -5,10 +5,30 @@ include(CheckIncludeFiles)
 include(CheckPrototypeDefinition)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
+include(CheckTypeSize)
 
 #CMake does not include /usr/local/include into the include search path
 #thus add it manually. This is required on FreeBSD.
 include_directories(SYSTEM /usr/local/include)
+
+# in_pktinfo: Find whether this struct exists
+check_include_files(
+    linux/in.h
+    HAVE_LINUX_IN_H)
+
+if (HAVE_LINUX_IN_H)
+    set (SOCKET_INCLUDES ${SOCKET_INCLUDES} linux/in.h)
+else ()
+    set (SOCKET_INCLUDES ${SOCKET_INCLUDES} netinet/in.h)
+endif ()
+
+set(CMAKE_EXTRA_INCLUDE_FILES ${SOCKET_INCLUDES})
+check_type_size(
+    "struct in_pktinfo"
+    HAVE_IN_PKTINFO
+    BUILTIN_TYPES_ONLY)
+set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
+# /in_pktinfo
 
 check_include_files(
     alloca.h
@@ -181,7 +201,32 @@ check_prototype_definition(
     "sys/resource.h"
     PRIORITY_REQUIRES_INT_WHO)
 
-set(CMAKE_REQUIRED_LIBRARIES)
+check_cxx_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <sys/socketvar.h>
+    #include <netinet/ip.h>
+    #include <netinet/tcp.h>
+    #include <netinet/tcp_var.h>
+    int main() { return 0; }
+    "
+    HAVE_TCP_VAR_H
+)
+
+check_cxx_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <net/route.h>
+    int main() { rt_msghdr* hdr; return 0; }
+    "
+    HAVE_RT_MSGHDR
+)
+
+check_include_files(
+    linux/rtnetlink.h
+    HAVE_LINUX_RTNETLINK_H)
+
+set (CMAKE_REQUIRED_LIBRARIES)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
