@@ -86,6 +86,37 @@
     <Compile Include="Cast\CastTests.cs" />
     <Compile Include="Cast\IsNullableTests.cs" />
     <Compile Include="Cast\IsTests.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Array.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Binary.Assign.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Binary.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Binary.Generated.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Block.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Call.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Call.Generated.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Conditional.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Constant.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.DebugInfo.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Default.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Extension.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Goto.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Invoke.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Lambda.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.ListInit.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Logging.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Loop.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.MemberAccess.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.MemberInit.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.New.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Parameter.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.RuntimeVariables.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Switch.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.TypeBinary.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Types.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Unary.Assign.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Unary.cs" />
+    <Compile Include="Catalog\ExpressionCatalog.Unary.Generated.cs" />
+    <Compile Include="Catalog\ReflectionExtensions.cs" />
     <Compile Include="Conditional\ConditionalOneOffTests.cs" />
     <Compile Include="Constant\ConstantArrayTests.cs" />
     <Compile Include="Constant\ConstantNullableTests.cs" />
@@ -94,6 +125,7 @@
     <Compile Include="Convert\ConvertTests.cs" />
     <Compile Include="HelperTypes.cs" />
     <Compile Include="Interpreter\InterpreterTests.cs" />
+    <Compile Include="Interpreter\InterpreterTests.Generated.cs" />
     <Compile Include="Invoke\InvocationTests.cs" />
     <Compile Include="Invoke\InvokeFactoryTests.cs" />
     <Compile Include="Lambda\LambdaAddNullableTests.cs" />
@@ -165,6 +197,7 @@
     <Compile Include="Unary\UnaryUnaryPlusNullableTests.cs" />
     <Compile Include="Unary\UnaryOnesComplementTests.cs" />
     <Compile Include="Unary\UnaryUnaryPlusTests.cs" />
+    <Compile Include="Visitor\ExpressionVisitorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Expressions.csproj">
