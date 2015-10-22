@@ -10,6 +10,7 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessStreamReadTests : ProcessTestBase
     {
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/1837", PlatformID.AnyUnix)]
         [Fact]
         public void TestSyncErrorStream()
         {
@@ -22,6 +23,7 @@ namespace System.Diagnostics.Tests
             Assert.True(p.WaitForExit(WaitInMS));
         }
 
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/1837", PlatformID.AnyUnix)]
         [Fact]
         public void TestAsyncErrorStream()
         {
