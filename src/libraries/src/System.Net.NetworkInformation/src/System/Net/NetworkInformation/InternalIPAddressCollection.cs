@@ -7,10 +7,16 @@ namespace System.Net.NetworkInformation
 {
     internal class InternalIPAddressCollection : IPAddressCollection
     {
-        private readonly Collection<IPAddress> _addresses = new Collection<IPAddress>();
+        private readonly Collection<IPAddress> _addresses;
 
         protected internal InternalIPAddressCollection()
         {
+            _addresses = new Collection<IPAddress>();
+        }
+
+        internal InternalIPAddressCollection(Collection<IPAddress> addresses)
+        {
+            _addresses = addresses;
         }
 
         public override void CopyTo(IPAddress[] array, int offset)

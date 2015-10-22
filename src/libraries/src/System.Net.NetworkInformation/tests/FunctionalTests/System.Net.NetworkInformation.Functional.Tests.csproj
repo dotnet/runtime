@@ -6,17 +6,48 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{DCBB8805-4658-44BF-B5E8-B6714EC8936B}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
-
   <ItemGroup>
+    <!-- Shared code with src assembly -->
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Addresses.cs">
+      <Link>SharedSource\StringParsingHelpers.Addresses.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Connections.cs">
+      <Link>SharedSource\StringParsingHelpers.Connections.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Dns.cs">
+      <Link>SharedSource\StringParsingHelpers.Dns.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Misc.cs">
+      <Link>SharedSource\StringParsingHelpers.Misc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\StringParsingHelpers.Statistics.cs">
+      <Link>SharedSource\StringParsingHelpers.Statistics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkFiles.cs">
+      <Link>SharedSource\NetworkFiles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleTcpConnectionInformation.cs">
+      <Link>SharedSource\SimpleTcpConnectionInformation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.cs">
+      <Link>SharedSource\SimpleGatewayIPAddressInformation.cs</Link>
+    </Compile>
+    <!-- Tests -->
+    <Compile Include="AddressParsingTests.cs" />
+    <Compile Include="DnsParsingTests.cs" />
+    <Compile Include="FileUtil.cs" />
     <Compile Include="IPInterfacePropertiesTest.cs" />
+    <Compile Include="MiscParsingTests.cs" />
     <Compile Include="NetworkChangeTest.cs" />
     <Compile Include="NetworkInterfaceBasicTest.cs" />
     <Compile Include="PhysicalAddressTest.cs" />
-    
+    <Compile Include="ConnectionsParsingTests.cs" />
+    <Compile Include="StatisticsParsingTests.cs" />
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)\System\Net\TestLogging.cs">
       <Link>Common\System\Net\TestLogging.cs</Link>
@@ -30,8 +61,16 @@
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
       <Link>Common\System\Net\Capability.Sockets.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
+      <Link>Common\System\IO\StringParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\RowConfigReader.cs">
+      <Link>Common\System\IO\RowConfigReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.LinuxTcpState.cs">
+      <Link>Interop\Linux\Interop.LinuxTcpState.cs</Link>
+    </Compile>
   </ItemGroup>
-
   <!-- TODO: Remove after the packages are not using System.Private.Networking. -->
   <ItemGroup>
     <ProjectReference Include="..\..\..\System.Net.NameResolution\src\System.Net.NameResolution.csproj">
@@ -42,14 +81,73 @@
       <Project>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</Project>
       <Name>System.Net.Sockets</Name>
     </ProjectReference>
-    
     <ProjectReference Include="..\..\src\System.Net.NetworkInformation.csproj">
       <Project>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</Project>
       <Name>System.Net.NetworkInformation</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="NetworkFiles\rawhexint">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\rawlong">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\rawint_maxvalue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\rawlong_maxvalue">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\resolv.conf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\smb.conf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\dev">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\ipv6_route">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\route">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\snmp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\snmp6">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\sockstat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\sockstat6">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\tcp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\tcp6">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\udp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\udp6">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="NetworkFiles\dhclient.leases">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <None Include="NetworkFiles\rawint">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

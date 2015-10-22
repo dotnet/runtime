@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -90,35 +91,13 @@ namespace System.Net.NetworkInformation
 
         private static string GetDnsSuffix()
         {
-            string data = File.ReadAllText(NetworkFiles.EtcResolvConfFile);
-            RowConfigReader rcr = new RowConfigReader(data);
-            string dnsSuffix;
-
-            return rcr.TryGetNextValue("search", out dnsSuffix) ? dnsSuffix : string.Empty;
+            return StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(NetworkFiles.EtcResolvConfFile);
         }
 
         private static IPAddressCollection GetDnsAddresses()
         {
-            // Parse /etc/resolv.conf for all of the "nameserver" entries.
-            // These are the DNS servers the machine is configured to use.
-            // On OSX, this file is not directly used by most processes for DNS
-            // queries/routing, but it is automatically generated instead, with
-            // the machine's DNS servers listed in it.
-            string data = File.ReadAllText(NetworkFiles.EtcResolvConfFile);
-            RowConfigReader rcr = new RowConfigReader(data);
-            InternalIPAddressCollection addresses = new InternalIPAddressCollection();
-
-            string addressString = null;
-            while (rcr.TryGetNextValue("nameserver", out addressString))
-            {
-                IPAddress parsedAddress;
-                if (IPAddress.TryParse(addressString, out parsedAddress))
-                {
-                    addresses.InternalAdd(parsedAddress);
-                }
-            }
-
-            return addresses;
+            Collection<IPAddress> internalAddresses = StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(NetworkFiles.EtcResolvConfFile);
+            return new InternalIPAddressCollection(internalAddresses);
         }
     }
 }
