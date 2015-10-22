@@ -8,27 +8,27 @@ namespace System.Net.NetworkInformation
         /// Returns objects that describe the network interfaces on the local computer.
         public static NetworkInterface[] GetAllNetworkInterfaces()
         {
-            return SystemNetworkInterface.GetNetworkInterfaces();
+            return NetworkInterfacePal.GetAllNetworkInterfaces();
         }
 
         public static bool GetIsNetworkAvailable()
         {
-            return SystemNetworkInterface.InternalGetIsNetworkAvailable();
-        }
-
-        public static int LoopbackInterfaceIndex
-        {
-            get
-            {
-                return SystemNetworkInterface.InternalLoopbackInterfaceIndex;
-            }
+            return NetworkInterfacePal.GetIsNetworkAvailable();
         }
 
         public static int IPv6LoopbackInterfaceIndex
         {
             get
             {
-                return SystemNetworkInterface.InternalIPv6LoopbackInterfaceIndex;
+                return NetworkInterfacePal.IPv6LoopbackInterfaceIndex;
+            }
+        }
+
+        public static int LoopbackInterfaceIndex
+        {
+            get
+            {
+                return NetworkInterfacePal.LoopbackInterfaceIndex;
             }
         }
 

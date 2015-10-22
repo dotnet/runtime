@@ -12,7 +12,13 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         [DllImport(Libraries.CryptoNative)]
-        private static extern ulong ErrGetError([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
+        internal static extern ulong ErrGetError();
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern ulong ErrGetErrorAlloc([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern IntPtr ErrReasonErrorString(ulong error);
 
         [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
         private static extern void ErrErrorStringN(ulong e, [Out] StringBuilder buf, int len);
@@ -41,7 +47,7 @@ internal static partial class Interop
             // whenever an Exception is desired, and report the exception
             // related to the last value in the queue.
             bool isAllocFailure;
-            ulong error = ErrGetError(out isAllocFailure);
+            ulong error = ErrGetErrorAlloc(out isAllocFailure);
             ulong lastRead = error;
             bool lastIsAllocFailure = isAllocFailure;
 
@@ -52,7 +58,7 @@ internal static partial class Interop
                 error = lastRead;
                 isAllocFailure = lastIsAllocFailure;
 
-                lastRead = ErrGetError(out lastIsAllocFailure);
+                lastRead = ErrGetErrorAlloc(out lastIsAllocFailure);
             }
 
             // If we're in an error flow which results in an Exception, but

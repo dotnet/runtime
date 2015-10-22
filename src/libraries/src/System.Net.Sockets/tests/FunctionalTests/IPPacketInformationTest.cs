@@ -54,8 +54,8 @@ namespace System.Net.Sockets.Tests
         {
             const int ReceiveTimeout = 5000;
 
-            using (var receiver = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            using (var sender = new Socket(SocketType.Dgram, ProtocolType.Udp))
+            using (var receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            using (var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
                 int port = receiver.BindToAnonymousPort(IPAddress.Loopback);
 

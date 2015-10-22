@@ -166,6 +166,21 @@ public static class PathTests
         Assert.Equal(expected, Path.GetPathRoot(value));
     }
 
+    [PlatformSpecific(PlatformID.Windows)]
+    [Theory]
+    [InlineData(@"C:", @"C:")]
+    [InlineData(@"C:\", @"C:\")]
+    [InlineData(@"C:\\", @"C:\")]
+    [InlineData(@"C://", @"C:\")]
+    [InlineData(@"C:\foo", @"C:\")]
+    [InlineData(@"C:\\foo", @"C:\")]
+    [InlineData(@"C://foo", @"C:\")]
+    public static void GetPathRoot_Windows(string value, string expected)
+    {
+        Assert.True(Path.IsPathRooted(value));
+        Assert.Equal(expected, Path.GetPathRoot(value));
+    }
+
     [PlatformSpecific(PlatformID.AnyUnix)]
     [Fact]
     public static void GetPathRoot_Unix()

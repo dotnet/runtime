@@ -6,6 +6,9 @@
 // look like infinite recursion in the implementation. Callers compiled against
 // the contract will still be able to invoke them as extension methods and get
 // source compatibility with classic reflection code.
+//
+// However, this does not apply if there is no 1:1 correspondence with an instance
+// in mscorlib. New extension methods should be merked with 'this'.
 
 namespace System.Reflection
 {
@@ -270,12 +273,88 @@ namespace System.Reflection
         }
     }
 
+    public static class MemberInfoExtensions
+    {
+
+        /// <summary>
+        /// Determines if there is a metadata token available for the given member.
+        /// <see cref="GetMetadataToken(MemberInfo)"/> throws <see cref="InvalidOperationException"/> otherwise.
+        /// </summary>
+        /// <remarks>This maybe</remarks>
+        public static bool HasMetadataToken(this MemberInfo member)
+        {
+            Requires.NotNull(member, "member");
+
+            try
+            {
+                return GetMetadataTokenOrZeroOrThrow(member) != 0;
+            }
+            catch (InvalidOperationException)
+            {
+                // Thrown for unbaked ref-emit members/types. 
+                // Other cases such as typeof(byte[]).MetadataToken will be handled by comparison to zero above.
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a metadata token for the given member if available. The returned token is never nil.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// There is no metadata token available. <see cref="HasMetadataToken(MemberInfo)"/> returns false in this case.
+        /// </exception>
+        public static int GetMetadataToken(this MemberInfo member)
+        {
+            Requires.NotNull(member, "member");
+
+            int token = GetMetadataTokenOrZeroOrThrow(member); 
+
+            if (token == 0)
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+
+            return token;
+        }
+
+        private static int GetMetadataTokenOrZeroOrThrow(MemberInfo member)
+        {
+            int token = member.MetadataToken;
+
+            // Tokens have MSB = table index, 3 LSBs = row index
+            // row index of 0 is a nil token 
+            const int rowMask = 0x00FFFFFF;
+            if ((token & rowMask) == 0)
+            {
+                // Nil token is returned for edge cases like typeof(byte[]).MetadataToken.
+                return 0;
+            }
+
+            return token;
+         }
+    }
+
     public static class MethodInfoExtensions
     {
         public static MethodInfo GetBaseDefinition(MethodInfo method)
         {
             Requires.NotNull(method, "method");
             return method.GetBaseDefinition();
+        }
+    }
+
+    public static class ModuleExtensions
+    {
+        public static bool HasModuleVersionId(this Module module)
+        {
+            Requires.NotNull(module, "module");
+            return true; // not expected to fail on platforms with Module.ModuleVersionId built-in.
+        }
+
+        public static Guid GetModuleVersionId(this Module module)
+        {
+            Requires.NotNull(module, "module");
+            return module.ModuleVersionId;
         }
     }
 

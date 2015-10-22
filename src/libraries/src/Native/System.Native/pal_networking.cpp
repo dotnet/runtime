@@ -27,6 +27,17 @@
 #include <unistd.h>
 #include <vector>
 
+#if !HAVE_IN_PKTINFO
+// On platforms, such as FreeBSD, where in_pktinfo
+// is not available, fallback to custom definition
+// with required members.
+struct in_pktinfo
+{
+    in_addr ipi_addr;
+};
+#define IP_PKTINFO IP_RECVDSTADDR
+#endif
+
 #if !defined(IPV6_ADD_MEMBERSHIP) && defined(IPV6_JOIN_GROUP)
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
 #endif
@@ -1055,7 +1066,15 @@ static int32_t GetIPv4PacketInformation(cmsghdr* controlMessage, IPPacketInforma
 
     auto* pktinfo = reinterpret_cast<in_pktinfo*>(CMSG_DATA(controlMessage));
     ConvertInAddrToByteArray(&packetInfo->Address.Address[0], NUM_BYTES_IN_IPV4_ADDRESS, pktinfo->ipi_addr);
+#if HAVE_IN_PKTINFO
     packetInfo->InterfaceIndex = static_cast<int32_t>(pktinfo->ipi_ifindex);
+#else
+    // TODO: Figure out how to get interface index with in_addr.
+    // One option is http://www.unix.com/man-page/freebsd/3/if_nametoindex
+    // which requires interface name to be known.
+    // Meanwhile:
+    packetInfo->InterfaceIndex = 0;
+#endif
 
     return 1;
 }
@@ -1093,7 +1112,7 @@ TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacket
     cmsghdr* controlMessage = CMSG_FIRSTHDR(&header);
     if (isIPv4 != 0)
     {
-        for (; controlMessage != nullptr; controlMessage = CMSG_NXTHDR(&header, controlMessage))
+        for (; controlMessage != nullptr && controlMessage->cmsg_len > 0; controlMessage = CMSG_NXTHDR(&header, controlMessage))
         {
             if (controlMessage->cmsg_level == IPPROTO_IP && controlMessage->cmsg_type == IP_PKTINFO)
             {
@@ -1103,7 +1122,7 @@ TryGetIPPacketInformation(MessageHeader* messageHeader, int32_t isIPv4, IPPacket
     }
     else
     {
-        for (; controlMessage != nullptr; controlMessage = CMSG_NXTHDR(&header, controlMessage))
+        for (; controlMessage != nullptr && controlMessage->cmsg_len > 0; controlMessage = CMSG_NXTHDR(&header, controlMessage))
         {
             if (controlMessage->cmsg_level == IPPROTO_IPV6 && controlMessage->cmsg_type == IPV6_PKTINFO)
             {

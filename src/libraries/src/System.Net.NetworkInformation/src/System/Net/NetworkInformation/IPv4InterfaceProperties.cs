@@ -28,4 +28,3 @@ namespace System.Net.NetworkInformation
         public abstract int Mtu { get; }
     }
 }
-
