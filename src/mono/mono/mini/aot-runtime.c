@@ -529,8 +529,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				MonoGenericParam *par = (MonoGenericParam*)mono_image_alloc0 (module->assembly->image, sizeof (MonoGenericParamFull));
 				par->num = num;
 				par->gshared_constraint = gshared_constraint;
-				// FIXME:
-				par->image = mono_defaults.corlib;
+				par->image = module->assembly->image;
 				t->data.generic_param = par;
 				if (par_name)
 					((MonoGenericParamFull*)par)->info.name = par_name;
@@ -4403,7 +4402,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 
 	ji.type = decode_value (p, &p);
 
-	mp = mono_mempool_new_size (512);
+	mp = mono_mempool_new ();
 	res = decode_patch (module, mp, &ji, p, &p);
 
 	if (!res) {

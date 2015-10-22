@@ -73,7 +73,7 @@ struct _MonoAssembly {
 	/* 
 	 * The number of appdomains which have this assembly loaded plus the number of 
 	 * assemblies referencing this assembly through an entry in their image->references
-	 * arrays. The later is needed because entries in the image->references array
+	 * arrays. The latter is needed because entries in the image->references array
 	 * might point to assemblies which are only loaded in some appdomains, and without
 	 * the additional reference, they can be freed at any time.
 	 * The ref_count is initially 0.
@@ -179,6 +179,8 @@ struct _MonoImage {
 	 * this image between calls of mono_image_open () and mono_image_close ().
 	 */
 	int   ref_count;
+
+	/* If the raw data was allocated from a source such as mmap, the allocator may store resource tracking information here. */
 	void *raw_data_handle;
 	char *raw_data;
 	guint32 raw_data_len;
@@ -248,11 +250,16 @@ struct _MonoImage {
 	MonoAssembly **references;
 	int nreferences;
 
+	/* Code files in the assembly. */
 	MonoImage **modules;
 	guint32 module_count;
 	gboolean *modules_loaded;
 
-	MonoImage **files; /*protected by the image lock*/
+	/*
+	 * Files in the assembly. Items are either NULL or alias items in modules, so this does not impact ref_count.
+	 * Protected by the image lock.
+	 */
+	MonoImage **files;
 
 	gpointer aot_module;
 
@@ -431,6 +438,7 @@ typedef struct {
 	guint32 *values; /* rows * columns */
 } MonoDynamicTable;
 
+/* "Dynamic" assemblies and images arise from System.Reflection.Emit */
 struct _MonoDynamicAssembly {
 	MonoAssembly assembly;
 	char *strong_name;

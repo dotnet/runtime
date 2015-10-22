@@ -46,11 +46,15 @@
 
 #define INVALID_ADDRESS 0xffffffff
 
+// Amount initially reserved in each image's mempool.
+// FIXME: This number is arbitrary, a more practical number should be found
+#define INITIAL_IMAGE_SIZE    512
+
 /*
  * Keeps track of the various assemblies loaded
  */
 static GHashTable *loaded_images_hash;
-static GHashTable *loaded_images_refonly_hash;
+static GHashTable *loaded_images_refonly_hash; // e.g. Assembly.ReflectionOnlyLoad
 
 static gboolean debug_assembly_unload = FALSE;
 
@@ -687,7 +691,7 @@ mono_image_init (MonoImage *image)
 	mono_mutex_init_recursive (&image->lock);
 	mono_mutex_init_recursive (&image->szarray_cache_lock);
 
-	image->mempool = mono_mempool_new_size (512);
+	image->mempool = mono_mempool_new_size (INITIAL_IMAGE_SIZE);
 	mono_internal_hash_table_init (&image->class_cache,
 				       g_direct_hash,
 				       class_key_extract,
@@ -1304,7 +1308,8 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	g_return_val_if_fail (fname != NULL, NULL);
 	
 #ifdef HOST_WIN32
-	/* Load modules using LoadLibrary. */
+	// Win32 path: If we are running with mixed-mode assemblies enabled (ie have loaded mscoree.dll),
+	// then assemblies need to be loaded with LoadLibrary:
 	if (!refonly && coree_module_handle) {
 		HMODULE module_handle;
 		guint16 *fname_utf16;
@@ -1316,7 +1321,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 		/* There is little overhead because the OS loader lock is held by LoadLibrary. */
 		mono_images_lock ();
 		image = g_hash_table_lookup (loaded_images_hash, absfname);
-		if (image) {
+		if (image) { // Image already loaded
 			g_assert (image->is_module_handle);
 			if (image->has_entry_point && image->ref_count == 0) {
 				/* Increment reference count on images loaded outside of the runtime. */
@@ -1333,6 +1338,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 			return image;
 		}
 
+		// Image not loaded, load it now
 		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
 		module_handle = MonoLoadImage (fname_utf16);
 		if (status && module_handle == NULL)
@@ -1385,14 +1391,15 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	loaded_images = refonly ? loaded_images_refonly_hash : loaded_images_hash;
 	image = g_hash_table_lookup (loaded_images, absfname);
 	g_free (absfname);
-	
-	if (image){
+
+	if (image) { // Image already loaded
 		mono_image_addref (image);
 		mono_images_unlock ();
 		return image;
 	}
 	mono_images_unlock ();
 
+	// Image not loaded, load it now
 	image = do_mono_image_open (fname, status, TRUE, TRUE, refonly, FALSE);
 	if (image == NULL)
 		return NULL;

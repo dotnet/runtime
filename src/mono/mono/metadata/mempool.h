@@ -20,9 +20,6 @@ MONO_API void
 mono_mempool_invalidate    (MonoMemPool *pool);
 
 MONO_API void
-mono_mempool_empty         (MonoMemPool *pool);
-
-MONO_API void
 mono_mempool_stats         (MonoMemPool *pool);
 
 MONO_API void*
