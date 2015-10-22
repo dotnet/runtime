@@ -227,6 +227,21 @@ extern BOOL g_fEEIJWStartup;
 
 #define GetClrInstanceId()  (static_cast<UINT16>(g_nClrInstanceId))
 
+#if defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT)
+
+#include "clrconfig.h"
+ class XplatEventLogger
+{
+    public:
+        inline static BOOL  IsEventLoggingEnabled()
+        {
+            static ConfigDWORD configEventLogging;
+            return configEventLogging.val(CLRConfig::EXTERNAL_EnableEventLog);
+        }
+};
+
+#endif //defined(FEATURE_EVENT_TRACE)
+
 #if defined(FEATURE_EVENT_TRACE)
 
 #ifndef  FEATURE_PAL
@@ -283,16 +298,6 @@ extern "C" {
 
 #elif defined(__LINUX__)
 
-#include "clrconfig.h"
- class XplatEventLogger
-{
-    public:
-        inline static BOOL  IsEventLoggingEnabled()
-        {
-            static ConfigDWORD configEventLogging;
-            return configEventLogging.val(CLRConfig::EXTERNAL_EnableEventLog);
-        }
-};
 #include "clrallevents.h"
 #else
 #error "A tracing System has not been enabled for this Platform"

@@ -37,6 +37,7 @@
         <CDefines Condition="'$(FeatureDbgipcTransportVM)' == 'true'">$(CDefines);FEATURE_DBGIPC_TRANSPORT_VM</CDefines>
         <CDefines Condition="'$(FeatureDbgPublish)' == 'true'">$(CDefines);FEATURE_DBG_PUBLISH</CDefines>
         <CDefines Condition="'$(FeatureEventTrace)' == 'true'">$(CDefines);FEATURE_EVENT_TRACE</CDefines>
+        <CDefines Condition="'$(FeatureXplatEventSource)' == 'true'">$(CDefines);FEATURE_EVENTSOURCE_XPLAT</CDefines>
         <CDefines Condition="'$(FeatureExceptionDispatchInfo)' == 'true'">$(CDefines);FEATURE_EXCEPTIONDISPATCHINFO</CDefines>
         <CDefines Condition="'$(FeatureExceptionNotifications)' == 'true'">$(CDefines);FEATURE_EXCEPTION_NOTIFICATIONS</CDefines>
         <CDefines Condition="'$(FeatureFrameworkInternal)' == 'true'">$(CDefines);FEATURE_FRAMEWORK_INTERNAL</CDefines>
@@ -190,6 +191,7 @@
         <DefineConstants Condition="'$(FeatureNongenericCollections)' == 'true'">$(DefineConstants);FEATURE_NONGENERIC_COLLECTIONS</DefineConstants>
         <DefineConstants Condition="'$(FeatureNormIdnaOnly)' == 'true'">$(DefineConstants);FEATURE_NORM_IDNA_ONLY</DefineConstants>
         <DefineConstants Condition="'$(FeaturePal)' == 'true'">$(DefineConstants);FEATURE_PAL</DefineConstants>
+        <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfmon)' == 'true'">$(DefineConstants);FEATURE_PERFMON</DefineConstants>
         <DefineConstants Condition="'$(FeaturePls)' == 'true'">$(DefineConstants);FEATURE_PLS</DefineConstants>
         <DefineConstants Condition="'$(FeatureRandomizedStringHashing)' == 'true'">$(DefineConstants);FEATURE_RANDOMIZED_STRING_HASHING</DefineConstants>
