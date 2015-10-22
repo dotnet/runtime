@@ -345,6 +345,25 @@ T ValueNumStore::EvalOpIntegral(VNFunc vnf, T v0, T v1, ValueNum* pExcSet)
         {
             return UINT32(v0) >> v1;
         }
+    case GT_ROL:
+        if (sizeof(T) == 8)
+        {
+            return (v0 << v1) | (UINT64(v0) >> (64 - v1));
+        }
+        else
+        {
+            return (v0 << v1) | (UINT32(v0) >> (32 - v1));
+        }
+
+    case GT_ROR:
+        if (sizeof(T) == 8)
+        {
+            return (v0 << (64 - v1)) | (UINT64(v0) >> v1);
+        }
+        else
+        {
+            return (v0 << (32 - v1)) | (UINT32(v0) >> v1);
+        }
 
     case GT_DIV:
     case GT_MOD:
@@ -1050,8 +1069,12 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                 case GT_LSH:
                 case GT_RSH:
                 case GT_RSZ:
+                case GT_ROL:
+                case GT_ROR:
                     // (x << 0) => x
                     // (x >> 0) => x
+                    // (x rol 0) => x
+                    // (x ror 0) => x
                     ZeroVN = VNZeroForType(typ);
                     if (arg1VN == ZeroVN)
                         return arg0VN;
