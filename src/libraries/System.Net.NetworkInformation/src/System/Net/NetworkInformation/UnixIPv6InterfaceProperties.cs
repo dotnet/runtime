@@ -5,13 +5,13 @@ namespace System.Net.NetworkInformation
 {
     internal abstract class UnixIPv6InterfaceProperties : IPv6InterfaceProperties
     {
-        private readonly int _index;
+        private readonly UnixNetworkInterface _uni;
 
         public UnixIPv6InterfaceProperties(UnixNetworkInterface uni)
         {
-            _index = uni.Index;
+            _uni = uni;
         }
 
-        public sealed override int Index { get { return _index; } }
+        public sealed override int Index { get { return _uni.Index; } }
     }
 }
