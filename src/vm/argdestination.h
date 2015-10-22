@@ -57,7 +57,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsStructPassedInRegs());
-        int offset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_argLocDescForStructInRegs->m_idxFloatReg * 8;
+        int offset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_argLocDescForStructInRegs->m_idxFloatReg * 16;
         return dac_cast<PTR_VOID>(dac_cast<TADDR>(m_base) + offset);
     }
 
