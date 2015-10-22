@@ -1,12 +1,14 @@
 {
   "locked": true,
-  "version": 1,
+  "version": 2,
   "targets": {
-    ".NETPlatform,Version=v5.0": {}
+    ".NETPlatform,Version=v5.4": {},
+    ".NETPlatform,Version=v5.4/win7-x86": {},
+    ".NETPlatform,Version=v5.4/win7-x64": {}
   },
   "libraries": {},
   "projectFileDependencyGroups": {
     "": [],
-    ".NETPlatform,Version=v5.0": []
+    ".NETPlatform,Version=v5.4": []
   }
 }

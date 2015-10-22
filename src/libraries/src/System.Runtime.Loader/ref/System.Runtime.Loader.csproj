@@ -6,6 +6,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETPlatform,Version=v5.1</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Loader.cs" />

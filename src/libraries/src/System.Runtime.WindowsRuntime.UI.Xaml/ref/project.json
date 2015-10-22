@@ -4,6 +4,6 @@
     "System.Runtime.WindowsRuntime": "4.0.0"
   },
   "frameworks": {
-    "dotnet": {}
+    "dotnet5.2": {}
   }
 }
