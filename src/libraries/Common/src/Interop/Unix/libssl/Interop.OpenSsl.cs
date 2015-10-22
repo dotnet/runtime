@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -13,15 +15,15 @@ internal static partial class Interop
 {
     internal static class OpenSsl
     {
-        private static libssl.verify_callback s_verifyClientCertificate = VerifyClientCertificate;
+        private static Ssl.SslCtxSetVerifyCallback s_verifyClientCertificate = VerifyClientCertificate;
 
         #region internal methods
 
-        internal static SafeSslHandle AllocateSslContext(long options, SafeX509Handle certHandle, SafeEvpPKeyHandle certKeyHandle, string encryptionPolicy, bool isServer, bool remoteCertRequired)
+        internal static SafeSslHandle AllocateSslContext(SslProtocols protocols, SafeX509Handle certHandle, SafeEvpPKeyHandle certKeyHandle, EncryptionPolicy policy, bool isServer, bool remoteCertRequired)
         {
             SafeSslHandle context = null;
 
-            IntPtr method = GetSslMethod(isServer, options);
+            IntPtr method = GetSslMethod(protocols);
 
             using (SafeSslContextHandle innerContext = Ssl.SslCtxCreate(method))
             {
@@ -30,11 +32,11 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
-                Ssl.SslCtxCtrl(innerContext, libssl.SSL_CTRL_OPTIONS, options, IntPtr.Zero);
+                Ssl.SetProtocolOptions(innerContext, protocols);
 
-                libssl.SSL_CTX_set_quiet_shutdown(innerContext, 1);
+                Ssl.SslCtxSetQuietShutdown(innerContext);
 
-                libssl.SSL_CTX_set_cipher_list(innerContext, encryptionPolicy);
+                Ssl.SetEncryptionPolicy(innerContext, policy);
 
                 if (certHandle != null && certKeyHandle != null)
                 {
@@ -44,9 +46,7 @@ internal static partial class Interop
                 if (remoteCertRequired)
                 {
                     Debug.Assert(isServer, "isServer flag should be true");
-                    libssl.SSL_CTX_set_verify(innerContext,
-                        (int)libssl.ClientCertOption.SSL_VERIFY_PEER |
-                        (int)libssl.ClientCertOption.SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                    Ssl.SslCtxSetVerify(innerContext,
                         s_verifyClientCertificate);
 
                     //update the client CA list 
@@ -74,20 +74,20 @@ internal static partial class Interop
                 BioWrite(context.InputBio, recvBuf, recvOffset, recvCount);
             }
 
-            libssl.SslErrorCode error;
-            int retVal = libssl.SSL_do_handshake(context);
+            Ssl.SslErrorCode error;
+            int retVal = Ssl.SslDoHandshake(context);
 
             if (retVal != 1)
             {
                 error = GetSslError(context, retVal);
 
-                if ((retVal != -1) || (error != libssl.SslErrorCode.SSL_ERROR_WANT_READ))
+                if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
                 {
                     throw CreateSslException(context, SR.net_ssl_handshake_failed_error, retVal);
                 }
             }
 
-            sendCount = libssl.BIO_ctrl_pending(context.OutputBio);
+            sendCount = Ssl.BioCtrlPending(context.OutputBio);
 
             if (sendCount > 0)
             {
@@ -107,18 +107,17 @@ internal static partial class Interop
                 }
             }
 
-            return ((libssl.SSL_state(context) == (int)libssl.SslState.SSL_ST_OK));
-
+            return Ssl.IsSslStateOK(context);
         }
 
-        internal static int Encrypt(SafeSslHandle context, byte[] buffer, int offset, int count, out libssl.SslErrorCode errorCode)
+        internal static int Encrypt(SafeSslHandle context, byte[] buffer, int offset, int count, out Ssl.SslErrorCode errorCode)
         {
             Debug.Assert(buffer != null);
             Debug.Assert(offset >= 0);
             Debug.Assert(count >= 0);
             Debug.Assert(buffer.Length >= offset + count);
 
-            errorCode = libssl.SslErrorCode.SSL_ERROR_NONE;
+            errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
             int retVal;
             unsafe
@@ -137,8 +136,8 @@ internal static partial class Interop
                 switch (errorCode)
                 {
                     // indicate end-of-file
-                    case libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
-                    case libssl.SslErrorCode.SSL_ERROR_WANT_READ:
+                    case Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
+                    case Ssl.SslErrorCode.SSL_ERROR_WANT_READ:
                         break;
 
                     default:
@@ -147,7 +146,7 @@ internal static partial class Interop
             }
             else
             {
-                int capacityNeeded = libssl.BIO_ctrl_pending(context.OutputBio);
+                int capacityNeeded = Ssl.BioCtrlPending(context.OutputBio);
 
                 Debug.Assert(buffer.Length >= capacityNeeded, "Input buffer of size " + buffer.Length +
                                                               " bytes is insufficient since encryption needs " + capacityNeeded + " bytes.");
@@ -158,9 +157,9 @@ internal static partial class Interop
             return retVal;
         }
 
-        internal static int Decrypt(SafeSslHandle context, byte[] outBuffer, int count, out libssl.SslErrorCode errorCode)
+        internal static int Decrypt(SafeSslHandle context, byte[] outBuffer, int count, out Ssl.SslErrorCode errorCode)
         {
-            errorCode = libssl.SslErrorCode.SSL_ERROR_NONE;
+            errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
             int retVal = BioWrite(context.InputBio, outBuffer, 0, count);
 
@@ -182,14 +181,14 @@ internal static partial class Interop
                 switch (errorCode)
                 {
                     // indicate end-of-file
-                    case libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
+                    case Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
                         break;
 
-                    case libssl.SslErrorCode.SSL_ERROR_WANT_READ:
+                    case Ssl.SslErrorCode.SSL_ERROR_WANT_READ:
                         // update error code to renegotiate if renegotiate is pending, otherwise make it SSL_ERROR_WANT_READ
-                        errorCode = libssl.SSL_renegotiate_pending(context) == 1 ?
-                                    libssl.SslErrorCode.SSL_ERROR_RENEGOTIATE :
-                                    libssl.SslErrorCode.SSL_ERROR_WANT_READ;
+                        errorCode = Ssl.IsSslRenegotiatePending(context) ?
+                                    Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE :
+                                    Ssl.SslErrorCode.SSL_ERROR_WANT_READ;
                         break;
 
                     default:
@@ -202,12 +201,12 @@ internal static partial class Interop
 
         internal static SafeX509Handle GetPeerCertificate(SafeSslHandle context)
         {
-            return libssl.SSL_get_peer_certificate(context);
+            return Ssl.SslGetPeerCertificate(context);
         }
 
         internal static SafeSharedX509StackHandle GetPeerCertificateChain(SafeSslHandle context)
         {
-            return libssl.SSL_get_peer_cert_chain(context);
+            return Ssl.SslGetPeerCertChain(context);
         }
 
         internal static void FreeSslContext(SafeSslHandle context)
@@ -220,18 +219,17 @@ internal static partial class Interop
         #endregion
 
         #region private methods
-        private static IntPtr GetSslMethod(bool isServer, long options)
+        private static IntPtr GetSslMethod(SslProtocols protocols)
         {
-            options &= libssl.ProtocolMask;
-            Debug.Assert(options != libssl.ProtocolMask, "All protocols are disabled");
+            Debug.Assert(protocols != SslProtocols.None, "All protocols are disabled");
 
-            bool ssl2 = (options & libssl.Options.SSL_OP_NO_SSLv2) == 0;
-            bool ssl3 = (options & libssl.Options.SSL_OP_NO_SSLv3) == 0;
-            bool tls10 = (options & libssl.Options.SSL_OP_NO_TLSv1) == 0;
-            bool tls11 = (options & libssl.Options.SSL_OP_NO_TLSv1_1) == 0;
-            bool tls12 = (options & libssl.Options.SSL_OP_NO_TLSv1_2) == 0;
+            bool ssl2 = (protocols & SslProtocols.Ssl2) == SslProtocols.Ssl2;
+            bool ssl3 = (protocols & SslProtocols.Ssl3) == SslProtocols.Ssl3;
+            bool tls10 = (protocols & SslProtocols.Tls) == SslProtocols.Tls;
+            bool tls11 = (protocols & SslProtocols.Tls11) == SslProtocols.Tls11;
+            bool tls12 = (protocols & SslProtocols.Tls12) == SslProtocols.Tls12;
 
-            IntPtr method = libssl.SslMethods.SSLv23_method; // default
+            IntPtr method = Ssl.SslMethods.SSLv23_method; // default
             string methodName = "SSLv23_method";
 
             if (!ssl2)
@@ -240,23 +238,23 @@ internal static partial class Interop
                 {
                     if (!tls11 && !tls12)
                     {
-                        method = libssl.SslMethods.TLSv1_method;
+                        method = Ssl.SslMethods.TLSv1_method;
                         methodName = "TLSv1_method";
                     }
                     else if (!tls10 && !tls12)
                     {
-                        method = libssl.SslMethods.TLSv1_1_method;
+                        method = Ssl.SslMethods.TLSv1_1_method;
                         methodName = "TLSv1_1_method";
                     }
                     else if (!tls10 && !tls11)
                     {
-                        method = libssl.SslMethods.TLSv1_2_method;
+                        method = Ssl.SslMethods.TLSv1_2_method;
                         methodName = "TLSv1_2_method";
                     }
                 }
                 else if (!tls10 && !tls11 && !tls12)
                 {
-                    method = libssl.SslMethods.SSLv3_method;
+                    method = Ssl.SslMethods.SSLv3_method;
                     methodName = "SSLv3_method";
                 }
             }
@@ -312,7 +310,7 @@ internal static partial class Interop
                 AddX509Names(nameStack, StoreLocation.LocalMachine, issuerNameHashSet);
                 AddX509Names(nameStack, StoreLocation.CurrentUser, issuerNameHashSet);
 
-                libssl.SSL_CTX_set_client_CA_list(context, nameStack);
+                Ssl.SslCtxSetClientCAList(context, nameStack);
 
                 // The handle ownership has been transferred into the CTX.
                 nameStack.SetHandleAsInvalid();
@@ -356,7 +354,7 @@ internal static partial class Interop
 
         private static void Disconnect(SafeSslHandle context)
         {
-            int retVal = libssl.SSL_shutdown(context);
+            int retVal = Ssl.SslShutdown(context);
             if (retVal < 0)
             {
                 //TODO (Issue #4031) check this error
@@ -403,12 +401,12 @@ internal static partial class Interop
             return bytes;
         }
 
-        private static libssl.SslErrorCode GetSslError(SafeSslHandle context, int result)
+        private static Ssl.SslErrorCode GetSslError(SafeSslHandle context, int result)
         {
-            libssl.SslErrorCode retVal = Ssl.SslGetError(context, result);
-            if (retVal == libssl.SslErrorCode.SSL_ERROR_SYSCALL)
+            Ssl.SslErrorCode retVal = Ssl.SslGetError(context, result);
+            if (retVal == Ssl.SslErrorCode.SSL_ERROR_SYSCALL)
             {
-                retVal = (libssl.SslErrorCode)Crypto.ErrGetError();
+                retVal = (Ssl.SslErrorCode)Crypto.ErrGetError();
             }
             return retVal;
         }
@@ -418,14 +416,14 @@ internal static partial class Interop
             Debug.Assert(certPtr != null && !certPtr.IsInvalid, "certPtr != null && !certPtr.IsInvalid");
             Debug.Assert(keyPtr != null && !keyPtr.IsInvalid, "keyPtr != null && !keyPtr.IsInvalid");
 
-            int retVal = libssl.SSL_CTX_use_certificate(contextPtr, certPtr);
+            int retVal = Ssl.SslCtxUseCertificate(contextPtr, certPtr);
 
             if (1 != retVal)
             {
                 throw CreateSslException(SR.net_ssl_use_cert_failed);
             }
 
-            retVal = libssl.SSL_CTX_use_PrivateKey(contextPtr, keyPtr);
+            retVal = Ssl.SslCtxUsePrivateKey(contextPtr, keyPtr);
 
             if (1 != retVal)
             {
@@ -433,7 +431,7 @@ internal static partial class Interop
             }
 
             //check private key
-            retVal = libssl.SSL_CTX_check_private_key(contextPtr);
+            retVal = Ssl.SslCtxCheckPrivateKey(contextPtr);
 
             if (1 != retVal)
             {
@@ -448,15 +446,15 @@ internal static partial class Interop
             return new SslException(msg, (int)errorVal);
         }
 
-        private static SslException CreateSslException(string message, libssl.SslErrorCode error)
+        private static SslException CreateSslException(string message, Ssl.SslErrorCode error)
         {
             string msg = SR.Format(message, error);
             switch (error)
             {
-                case libssl.SslErrorCode.SSL_ERROR_SYSCALL:
+                case Ssl.SslErrorCode.SSL_ERROR_SYSCALL:
                     return CreateSslException(msg);
 
-                case libssl.SslErrorCode.SSL_ERROR_SSL:
+                case Ssl.SslErrorCode.SSL_ERROR_SSL:
                     Exception innerEx = Interop.Crypto.CreateOpenSslCryptographicException();
                     return new SslException(innerEx.Message, innerEx);
 
@@ -486,7 +484,7 @@ internal static partial class Interop
             {
             }
 
-            public SslException(string inputMessage, libssl.SslErrorCode error)
+            public SslException(string inputMessage, Ssl.SslErrorCode error)
                 : this(inputMessage, (int)error)
             {
             }
