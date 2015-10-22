@@ -72,8 +72,7 @@ namespace System.Net
 
         public static void QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)
         {
-            streamSizes = null;
-            streamSizes = new StreamSizes(Interop.libssl.SslSizes.HEADER_SIZE, Interop.libssl.SslSizes.TRAILER_SIZE, Interop.libssl.SslSizes.SSL3_RT_MAX_PLAIN_LENGTH);
+            streamSizes = new StreamSizes();
         }
 
         public static int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
@@ -91,58 +90,6 @@ namespace System.Net
             }
         }
 
-        private static long GetOptions(SslProtocols protocols)
-        {
-            long retVal = Interop.libssl.Options.SSL_OP_NO_SSLv2 | Interop.libssl.Options.SSL_OP_NO_SSLv3 |
-                                Interop.libssl.Options.SSL_OP_NO_TLSv1 | Interop.libssl.Options.SSL_OP_NO_TLSv1_1 |
-                                Interop.libssl.Options.SSL_OP_NO_TLSv1_2;
-
-            if ((protocols & SslProtocols.Ssl2) != 0)
-            {
-                retVal &= ~Interop.libssl.Options.SSL_OP_NO_SSLv2;
-            }
-            if ((protocols & SslProtocols.Ssl3) != 0)
-            {
-                retVal &= ~Interop.libssl.Options.SSL_OP_NO_SSLv3;
-            }
-            if ((protocols & SslProtocols.Tls) != 0)
-            {
-                retVal &= ~Interop.libssl.Options.SSL_OP_NO_TLSv1;
-            }
-            if ((protocols & SslProtocols.Tls11) != 0)
-            {
-                retVal &= ~Interop.libssl.Options.SSL_OP_NO_TLSv1_1;
-            }
-            if ((protocols & SslProtocols.Tls12) != 0)
-            {
-                retVal &= ~Interop.libssl.Options.SSL_OP_NO_TLSv1_2;
-            }
-
-            return retVal;
-        }
-
-        private static string GetCipherString(EncryptionPolicy encryptionPolicy)
-        {
-            string cipherString = null;
-
-            switch (encryptionPolicy)
-            {
-                case EncryptionPolicy.RequireEncryption:
-                    cipherString = Interop.libssl.CipherString.AllExceptNull;
-                    break;
-
-                case EncryptionPolicy.AllowNoEncryption:
-                    cipherString = Interop.libssl.CipherString.AllIncludingNull;
-                    break;
-
-                case EncryptionPolicy.NoEncryption:
-                    cipherString = Interop.libssl.CipherString.Null;
-                    break;
-            }
-
-            return cipherString;
-        }
-
         private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context,
             SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool isServer, bool remoteCertRequired)
         {
@@ -152,9 +99,7 @@ namespace System.Net
             {
                 if ((null == context) || context.IsInvalid)
                 {
-                    long options = GetOptions(credential.Protocols);
-                    string encryptionPolicy = GetCipherString(credential.Policy);
-                    context = new SafeDeleteContext(credential, options, encryptionPolicy, isServer, remoteCertRequired);
+                    context = new SafeDeleteContext(credential, isServer, remoteCertRequired);
                 }
 
                 byte[] output = null;
@@ -188,7 +133,7 @@ namespace System.Net
             resultSize = 0;
             try
             {
-                Interop.libssl.SslErrorCode errorCode = Interop.libssl.SslErrorCode.SSL_ERROR_NONE;
+                Interop.Ssl.SslErrorCode errorCode = Interop.Ssl.SslErrorCode.SSL_ERROR_NONE;
 
 
                 SafeSslHandle scHandle = securityContext.SslContext;
@@ -199,12 +144,12 @@ namespace System.Net
 
                 switch (errorCode)
                 {
-                    case Interop.libssl.SslErrorCode.SSL_ERROR_RENEGOTIATE:
+                    case Interop.Ssl.SslErrorCode.SSL_ERROR_RENEGOTIATE:
                         return SecurityStatusPal.Renegotiate;
-                    case Interop.libssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
+                    case Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN:
                         return SecurityStatusPal.ContextExpired;
-                    case Interop.libssl.SslErrorCode.SSL_ERROR_NONE:
-                    case Interop.libssl.SslErrorCode.SSL_ERROR_WANT_READ:
+                    case Interop.Ssl.SslErrorCode.SSL_ERROR_NONE:
+                    case Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ:
                         return SecurityStatusPal.OK;
                     default:
                         return SecurityStatusPal.InternalError;
