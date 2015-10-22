@@ -290,7 +290,7 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                         }
                         
                         // Corefx linux binaries
-                        copyArtifacts("dotnet_corefx_linux_nativecomp_debug") {
+                        copyArtifacts("dotnet_corefx_linux_debug") {
                             includePatterns('bin/Linux*/**')
                             buildSelector {
                                 latestSuccessful(true)
@@ -301,10 +301,10 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                         
                         shell("""
     ./tests/runtest.sh \\
-        --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.Debug\" \\
-        --testNativeBinDir=\"\${WORKSPACE}/bin/obj/Linux.${architecture}.Debug/tests\" \\
-        --coreClrBinDir=\"\${WORKSPACE}/bin/Product/Linux.${architecture}.Debug\" \\
-        --mscorlibDir=\"\${WORKSPACE}/bin/Product/Linux.${architecture}.Debug\" \\
+        --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
+        --testNativeBinDir=\"\${WORKSPACE}/bin/obj/Linux.${architecture}.${configuration}/tests\" \\
+        --coreClrBinDir=\"\${WORKSPACE}/bin/Product/Linux.${architecture}.${configuration}\" \\
+        --mscorlibDir=\"\${WORKSPACE}/bin/Product/Linux.${architecture}.${configuration}\" \\
         --coreFxBinDir=\"\${WORKSPACE}/bin/Linux.AnyCPU.Debug\" \\
         --coreFxNativeBinDir=\"\${WORKSPACE}/bin/Linux.${architecture}.Debug\"""")
                     }
