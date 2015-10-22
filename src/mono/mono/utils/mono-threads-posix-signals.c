@@ -178,7 +178,6 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	/* thread_state_init_from_sigctx return FALSE if the current thread is detaching and suspend can't continue. */
 	current->suspend_can_continue = ret;
 
-
 	/*
 	Block the restart signal.
 	We need to block the restart signal while posting to the suspend_ack semaphore or we race to sigsuspend,
@@ -186,18 +185,22 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	*/
 	pthread_sigmask (SIG_BLOCK, &suspend_ack_signal_mask, NULL);
 
-	/* We're done suspending */
-	mono_threads_notify_initiator_of_suspend (current);
-
 	/* This thread is doomed, all we can do is give up and let the suspender recover. */
 	if (!ret) {
 		THREADS_SUSPEND_DEBUG ("\tThread is dying, failed to capture state %p\n", current);
 		mono_threads_transition_async_suspend_compensation (current);
+
+		/* We're done suspending */
+		mono_threads_notify_initiator_of_suspend (current);
+
 		/* Unblock the restart signal. */
 		pthread_sigmask (SIG_UNBLOCK, &suspend_ack_signal_mask, NULL);
 
 		goto done;
 	}
+
+	/* We're done suspending */
+	mono_threads_notify_initiator_of_suspend (current);
 
 	do {
 		current->signal = 0;
