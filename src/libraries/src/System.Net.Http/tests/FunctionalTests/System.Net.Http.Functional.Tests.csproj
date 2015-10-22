@@ -47,6 +47,7 @@
     <Compile Include="ResponseStreamTest.cs" />
     <Compile Include="StreamContentTest.cs" />
     <Compile Include="StringContentTest.cs" />
+    <Compile Include="SyncBlockingContent.cs" />
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
   </ItemGroup>
   <ItemGroup>
