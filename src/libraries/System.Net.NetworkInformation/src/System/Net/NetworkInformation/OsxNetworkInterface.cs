@@ -82,7 +82,11 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                throw new PlatformNotSupportedException();
+                // TODO: This is a crude approximation, but does allow us to determine
+                // whether an interface is operational or not. The OS exposes more information
+                // (see ifconfig and the "Status" label), but it's unclear how closely
+                // that information maps to the OperationalStatus enum we expose here.
+                return Addresses.Count > 0 ? OperationalStatus.Up : OperationalStatus.Unknown;
             }
         }
 
