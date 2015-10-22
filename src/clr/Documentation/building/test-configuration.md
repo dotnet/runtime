@@ -1,3 +1,4 @@
+## General Test Infrastructure Notes ##
 
 ### Kinds of Build Properties ###
 * Build Only
@@ -30,4 +31,11 @@ Testcases are categorized by their priority levels. The most important subset sh
 > `<CLRTestPriority>2</CLRTestPriority>`
  * Lower priority values are always run in conjunction when running higher priority value tests. I.e. if a developer elects to do a priority 2 test run, then all priority 0, 1 and 2 tests are run.
 
+### Adding Tests ###
+#### Converting an existing C# project ####
+  * Remove AssemblyName
+  * Swap in dir.props
+  * Swap in dir.targets
+  * Assign a CLRTestKind
+  * (optional) Assign a priority value
 
