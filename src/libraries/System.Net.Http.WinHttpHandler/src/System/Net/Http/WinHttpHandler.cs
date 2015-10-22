@@ -748,7 +748,11 @@ namespace System.Net.Http
                             ref optionAssuredNonBlockingTrue,
                             (uint)Marshal.SizeOf<uint>()))
                         {
-                            WinHttpException.ThrowExceptionUsingLastError();
+                            int lastError = Marshal.GetLastWin32Error();
+                            if (lastError != Interop.WinHttp.ERROR_WINHTTP_INVALID_OPTION)
+                            {
+                                throw WinHttpException.CreateExceptionUsingError(lastError);
+                            }
                         }
                     }
                 }
