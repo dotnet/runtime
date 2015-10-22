@@ -29,11 +29,16 @@ if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "vs2013"   (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "vs2015"   (set __VSVersion=%1&shift&goto Arg_Loop)
 
+if /i "%1" == "crossgen" (set _crossgen=true&shift&goto Arg_Loop)
+if /i "%1" == "priority" (set _priorityvalue=%2&shift&shift&goto Arg_Loop)
+
 goto Usage
 
 
 :ArgsDone
 
+if defined _crossgen echo Building tests with CrossGen enabled.&set _buildParameters=%_buildParameters% /p:CrossGen=true
+if defined _priorityvalue echo Building Test Priority %_priorityvalue%&set _buildParameters=%_buildParameters% /p:CLRTestPriorityToBuild=%_priorityvalue%
 
 if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=Debug
@@ -187,7 +192,7 @@ exit /b %ERRORLEVEL%
 
 :build
 
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diagnostic;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false %_buildParameters% /fileloggerparameters:Verbosity=diagnostic;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
 IF ERRORLEVEL 1 echo Test build failed. Refer to !__TestManagedBuildLog! for details && exit /b 1
 exit /b 0
 
@@ -200,10 +205,12 @@ exit /b 0
 :Usage
 echo.
 echo Usage:
-echo %0 BuildArch BuildType [clean] [vsversion] where:
+echo %0 BuildArch BuildType [clean] [vsversion] [crossgen] [priority N] where:
 echo.
 echo BuildArch can be: x64
 echo BuildType can be: Debug, Release
 echo Clean - optional argument to force a clean build.
 echo VSVersion - optional argument to use VS2013 or VS2015  (default VS2015)
+echo CrossGen - Enables the tests to run crossgen on the test executables before executing them. 
+echo Priority (N) where N is a number greater than zero that signifies the set of tests that will be built and consequently run.
 exit /b 1
