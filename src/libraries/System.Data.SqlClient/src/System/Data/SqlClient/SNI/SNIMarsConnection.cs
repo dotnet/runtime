@@ -68,7 +68,7 @@ namespace System.Data.SqlClient.SNI
                 return TdsEnums.SNI_SUCCESS_IO_PENDING;
             }
 
-            SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, "Could not start MARS async receive");
+            SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SMUX_PROV, 0, 0, "Could not start MARS async receive");
             return TdsEnums.SNI_ERROR;
         }
 
@@ -246,7 +246,7 @@ namespace System.Data.SqlClient.SNI
 
                     if (!_sessions.ContainsKey(_currentHeader.sessionId))
                     {
-                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, "Packet for unknown MARS session received");
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SMUX_PROV, 0, 0, "Packet for unknown MARS session received");
                         HandleReceiveError();
                         _lowerHandle.Dispose();
                         _lowerHandle = null;

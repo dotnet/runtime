@@ -294,12 +294,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void Disconnect_Throws_ObjectDisposed()
-        {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().Disconnect(false));
-        }
-
-        [Fact]
         public void Listen_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().Listen(1));
@@ -491,18 +485,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void SetIPProtectionLevel_IPv4_Throws_ObjectDisposed()
-        {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket(AddressFamily.InterNetwork).SetIPProtectionLevel(IPProtectionLevel.Unrestricted));
-        }
-
-        [Fact]
-        public void SetIPProtectionLevel_IPv6_Throws_ObjectDisposed()
-        {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket(AddressFamily.InterNetworkV6).SetIPProtectionLevel(IPProtectionLevel.Unrestricted));
-        }
-
-        [Fact]
         public void SetSocketOption_Int_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error, 0)); 
@@ -560,12 +542,6 @@ namespace System.Net.Sockets.Tests
         public void ConnectAsync_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().ConnectAsync(s_eventArgs));
-        }
-
-        [Fact]
-        public void DisconnectAsync_Throws_ObjectDisposed()
-        {
-            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().DisconnectAsync(s_eventArgs));
         }
 
         [Fact]

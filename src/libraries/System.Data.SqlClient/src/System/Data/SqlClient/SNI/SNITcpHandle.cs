@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -33,6 +34,8 @@ namespace System.Data.SqlClient.SNI
         private int _bufferSize = TdsEnums.DEFAULT_LOGIN_PACKET_SIZE;
         private uint _status = TdsEnums.SNI_UNINITIALIZED;
         private Guid _connectionId = Guid.NewGuid();
+
+        private const int MaxParallelIpAddresses = 64;
 
         /// <summary>
         /// Dispose object
@@ -90,7 +93,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="port">TCP port number</param>
         /// <param name="timerExpire">Connection timer expiration</param>
         /// <param name="callbackObject">Callback object</param>
-        public SNITCPHandle(string serverName, int port, long timerExpire, object callbackObject)
+        public SNITCPHandle(string serverName, int port, long timerExpire, object callbackObject, bool parallel)
         {
             _writeScheduler = new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler;
             _writeTaskFactory = new TaskFactory(_writeScheduler);
@@ -100,8 +103,6 @@ namespace System.Data.SqlClient.SNI
             try
             {
                 _tcpClient = new TcpClient();
-
-                IAsyncResult result = _tcpClient.BeginConnect(serverName, port, null, null);
 
                 TimeSpan ts;
 
@@ -114,13 +115,32 @@ namespace System.Data.SqlClient.SNI
                     ts = ts.Ticks < 0 ? TimeSpan.FromTicks(0) : ts;
                 }
 
-                if (!(isInfiniteTimeOut ? result.AsyncWaitHandle.WaitOne(-1) : result.AsyncWaitHandle.WaitOne(ts)))
+                Task connectTask;
+                if (parallel)
+                {
+                    Task<IPAddress[]> serverAddrTask = Dns.GetHostAddressesAsync(serverName);
+                    serverAddrTask.Wait(ts);
+                    IPAddress[] serverAddresses = serverAddrTask.Result;
+
+                    if (serverAddresses.Length > MaxParallelIpAddresses)
+                    {
+                        // Fail if above 64 to match legacy behavior
+                        ReportTcpSNIError(0, (int)SNINativeMethodWrapper.SniSpecialErrors.MultiSubnetFailoverWithMoreThan64IPs, SR.SNI_ERROR_47);
+                        return;
+                    }
+
+                    connectTask = _tcpClient.ConnectAsync(serverAddresses, port);
+                }
+                else
+                {
+                    connectTask = _tcpClient.ConnectAsync(serverName, port);
+                }
+
+                if (!(isInfiniteTimeOut ? connectTask.Wait(-1) : connectTask.Wait(ts)))
                 {
                     ReportTcpSNIError(0, 40, SR.SNI_ERROR_40);
                     return;
                 }
-
-                _tcpClient.EndConnect(result);
 
                 _tcpClient.NoDelay = true;
                 _tcpStream = _tcpClient.GetStream();

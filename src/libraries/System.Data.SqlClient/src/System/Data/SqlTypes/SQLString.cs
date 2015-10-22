@@ -165,6 +165,7 @@ namespace System.Data.SqlTypes
         {
         }
 
+
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.Data.SqlTypes.SqlString'/> class.

@@ -16,7 +16,7 @@ namespace System.Net.Sockets
 {
     public partial class SocketAsyncEventArgs : EventArgs, IDisposable
     {
-        // Struct sizes needed for some custom marshalling.
+        // Struct sizes needed for some custom marshaling.
         internal static readonly int s_controlDataSize = Marshal.SizeOf<Interop.Winsock.ControlData>();
         internal static readonly int s_controlDataIPv6Size = Marshal.SizeOf<Interop.Winsock.ControlDataIPv6>();
         internal static readonly int s_wsaMsgSize = Marshal.SizeOf<Interop.Winsock.WSAMsg>();
@@ -235,24 +235,6 @@ namespace System.Net.Sockets
         private void InnerStartOperationDisconnect()
         {
             CheckPinNoBuffer();
-        }
-
-        internal unsafe SocketError DoOperationDisconnect(Socket socket, SafeCloseSocket handle)
-        {
-            PrepareIOCPOperation();
-
-            SocketError socketError = SocketError.Success;
-
-            if (!socket.DisconnectEx(
-                handle,
-                _ptrNativeOverlapped,
-                (int)(DisconnectReuseSocket ? TransmitFileOptions.ReuseSocket : 0),
-                0))
-            {
-                socketError = SocketPal.GetLastSocketError();
-            }
-
-            return socketError;
         }
 
         private void InnerStartOperationReceive()
@@ -635,8 +617,7 @@ namespace System.Net.Sockets
                 _ptrSendPacketsDescriptor,
                 _sendPacketsDescriptor.Length,
                 _sendPacketsSendSize,
-                _ptrNativeOverlapped,
-                _sendPacketsFlags);
+                _ptrNativeOverlapped);
 
             return result ? SocketError.Success : SocketPal.GetLastSocketError();
         }

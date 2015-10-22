@@ -5,6 +5,7 @@
     <AssemblyVersion>3.9.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
+    <NuGetTargetMoniker>.NETPlatform,Version=v5.1</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />

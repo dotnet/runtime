@@ -63,29 +63,6 @@ namespace System.Net.Sockets
             }
         }
 
-        // This creates a TcpListener that listens on both IPv4 and IPv6 on the given port.
-        public static TcpListener Create(int port)
-        {
-            if (Logging.On)
-            {
-                Logging.Enter(Logging.Sockets, "TcpListener.Create", "Port: " + port);
-            }
-
-            if (!TcpValidationHelpers.ValidatePortNumber(port))
-            {
-                throw new ArgumentOutOfRangeException("port");
-            }
-
-            TcpListener listener = new TcpListener(IPAddress.IPv6Any, port);
-            listener.Server.DualMode = true;
-            if (Logging.On)
-            {
-                Logging.Exit(Logging.Sockets, "TcpListener.Create", "Port: " + port);
-            }
-
-            return listener;
-        }
-
         // Used by the class to provide the underlying network socket.
         public Socket Server
         {
@@ -129,23 +106,6 @@ namespace System.Net.Sockets
 
                 _serverSocket.ExclusiveAddressUse = value;
                 _exclusiveAddressUse = value;
-            }
-        }
-
-        public void AllowNatTraversal(bool allowed)
-        {
-            if (_active)
-            {
-                throw new InvalidOperationException(SR.net_tcplistener_mustbestopped);
-            }
-
-            if (allowed)
-            {
-                _serverSocket.SetIPProtectionLevel(IPProtectionLevel.Unrestricted);
-            }
-            else
-            {
-                _serverSocket.SetIPProtectionLevel(IPProtectionLevel.EdgeRestricted);
             }
         }
 
@@ -245,51 +205,7 @@ namespace System.Net.Sockets
             return _serverSocket.Poll(0, SelectMode.SelectRead);
         }
 
-        // Accepts a pending connection request.
-        public Socket AcceptSocket()
-        {
-            if (Logging.On)
-            {
-                Logging.Enter(Logging.Sockets, this, "AcceptSocket", null);
-            }
-
-            if (!_active)
-            {
-                throw new InvalidOperationException(SR.net_stopped);
-            }
-
-            Socket socket = _serverSocket.Accept();
-            if (Logging.On)
-            {
-                Logging.Exit(Logging.Sockets, this, "AcceptSocket", socket);
-            }
-
-            return socket;
-        }
-
-        public TcpClient AcceptTcpClient()
-        {
-            if (Logging.On)
-            {
-                Logging.Enter(Logging.Sockets, this, "AcceptTcpClient", null);
-            }
-
-            if (!_active)
-            {
-                throw new InvalidOperationException(SR.net_stopped);
-            }
-
-            Socket acceptedSocket = _serverSocket.Accept();
-            TcpClient returnValue = new TcpClient(acceptedSocket);
-            if (Logging.On)
-            {
-                Logging.Exit(Logging.Sockets, this, "AcceptTcpClient", returnValue);
-            }
-
-            return returnValue;
-        }
-
-        public IAsyncResult BeginAcceptSocket(AsyncCallback callback, object state)
+        internal IAsyncResult BeginAcceptSocket(AsyncCallback callback, object state)
         {
             if (Logging.On)
             {
@@ -310,7 +226,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public Socket EndAcceptSocket(IAsyncResult asyncResult)
+        internal Socket EndAcceptSocket(IAsyncResult asyncResult)
         {
             if (Logging.On)
             {
@@ -340,7 +256,7 @@ namespace System.Net.Sockets
             return socket;
         }
 
-        public IAsyncResult BeginAcceptTcpClient(AsyncCallback callback, object state)
+        internal IAsyncResult BeginAcceptTcpClient(AsyncCallback callback, object state)
         {
             if (Logging.On)
             {
@@ -361,7 +277,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult)
+        internal TcpClient EndAcceptTcpClient(IAsyncResult asyncResult)
         {
             if (Logging.On)
             {

@@ -1,9 +1,9 @@
 {
   "locked": true,
-  "version": 1,
+  "version": 2,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.NETCore.Platforms/1.0.1-beta-23419": {
+      "Microsoft.NETCore.Platforms/1.0.1-beta-23420": {
         "type": "package"
       },
       "System.Collections/4.0.10": {
@@ -30,13 +30,13 @@
           "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23420": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet/System.Diagnostics.TraceSource.dll": {}
+          "ref/dotnet5.1/System.Diagnostics.TraceSource.dll": {}
         }
       },
       "System.Globalization/4.0.10": {
@@ -429,7 +429,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00107": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00108": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -456,10 +456,10 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x86": {
-      "Microsoft.NETCore.Platforms/1.0.1-beta-23419": {
+      "Microsoft.NETCore.Platforms/1.0.1-beta-23420": {
         "type": "package"
       },
-      "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+      "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23420": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -474,7 +474,7 @@
           "ref/dotnet/_._": {}
         },
         "runtime": {
-          "runtimes/win7/lib/dotnet/System.Diagnostics.TraceSource.dll": {}
+          "runtimes/win7/lib/dotnet5.4/System.Diagnostics.TraceSource.dll": {}
         }
       },
       "System.Collections/4.0.10": {
@@ -501,13 +501,13 @@
           "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23420": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet/System.Diagnostics.TraceSource.dll": {}
+          "ref/dotnet5.1/System.Diagnostics.TraceSource.dll": {}
         }
       },
       "System.Globalization/4.0.10": {
@@ -900,7 +900,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00107": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00108": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -927,10 +927,10 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x64": {
-      "Microsoft.NETCore.Platforms/1.0.1-beta-23419": {
+      "Microsoft.NETCore.Platforms/1.0.1-beta-23420": {
         "type": "package"
       },
-      "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+      "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23420": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -945,7 +945,7 @@
           "ref/dotnet/_._": {}
         },
         "runtime": {
-          "runtimes/win7/lib/dotnet/System.Diagnostics.TraceSource.dll": {}
+          "runtimes/win7/lib/dotnet5.4/System.Diagnostics.TraceSource.dll": {}
         }
       },
       "System.Collections/4.0.10": {
@@ -972,13 +972,13 @@
           "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23420": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet/System.Diagnostics.TraceSource.dll": {}
+          "ref/dotnet5.1/System.Diagnostics.TraceSource.dll": {}
         }
       },
       "System.Globalization/4.0.10": {
@@ -1371,7 +1371,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00107": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00108": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1398,10 +1398,10 @@
       }
     },
     "DNXCore,Version=v5.0/ubuntu.14.04-x64": {
-      "Microsoft.NETCore.Platforms/1.0.1-beta-23419": {
+      "Microsoft.NETCore.Platforms/1.0.1-beta-23420": {
         "type": "package"
       },
-      "runtime.unix.System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+      "runtime.unix.System.Diagnostics.TraceSource/4.0.0-beta-23420": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -1416,7 +1416,7 @@
           "ref/dotnet/_._": {}
         },
         "runtime": {
-          "lib/dotnet/System.Diagnostics.TraceSource.dll": {}
+          "runtimes/unix/lib/dotnet5.4/System.Diagnostics.TraceSource.dll": {}
         }
       },
       "System.Collections/4.0.10": {
@@ -1443,13 +1443,13 @@
           "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23420": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet/System.Diagnostics.TraceSource.dll": {}
+          "ref/dotnet5.1/System.Diagnostics.TraceSource.dll": {}
         }
       },
       "System.Globalization/4.0.10": {
@@ -1842,7 +1842,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00107": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00108": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1869,10 +1869,10 @@
       }
     },
     "DNXCore,Version=v5.0/osx.10.10-x64": {
-      "Microsoft.NETCore.Platforms/1.0.1-beta-23419": {
+      "Microsoft.NETCore.Platforms/1.0.1-beta-23420": {
         "type": "package"
       },
-      "runtime.unix.System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+      "runtime.unix.System.Diagnostics.TraceSource/4.0.0-beta-23420": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -1887,7 +1887,7 @@
           "ref/dotnet/_._": {}
         },
         "runtime": {
-          "lib/dotnet/System.Diagnostics.TraceSource.dll": {}
+          "runtimes/unix/lib/dotnet5.4/System.Diagnostics.TraceSource.dll": {}
         }
       },
       "System.Collections/4.0.10": {
@@ -1914,13 +1914,13 @@
           "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23420": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet/System.Diagnostics.TraceSource.dll": {}
+          "ref/dotnet5.1/System.Diagnostics.TraceSource.dll": {}
         }
       },
       "System.Globalization/4.0.10": {
@@ -2313,7 +2313,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00107": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00108": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -2341,41 +2341,43 @@
     }
   },
   "libraries": {
-    "Microsoft.NETCore.Platforms/1.0.1-beta-23419": {
+    "Microsoft.NETCore.Platforms/1.0.1-beta-23420": {
       "type": "package",
-      "sha512": "pvPB+YTSV5UIRNfALafBEEUzBh+M0K0oFXJWmY7RDhDGbW8pOBgls0uKaA/FIV9/zxglp21nJ0wBxkrc28R2bQ==",
+      "sha512": "mBAjd9kEJevNZa70h31Kzl2SQNymQJOYOALSxb4XosFp9nSoeueZ+gh+SflMM9tLtaWV2dkqMNipazktytCwRA==",
       "files": [
-        "Microsoft.NETCore.Platforms.1.0.1-beta-23419.nupkg",
-        "Microsoft.NETCore.Platforms.1.0.1-beta-23419.nupkg.sha512",
+        "Microsoft.NETCore.Platforms.1.0.1-beta-23420.nupkg",
+        "Microsoft.NETCore.Platforms.1.0.1-beta-23420.nupkg.sha512",
         "Microsoft.NETCore.Platforms.nuspec",
         "runtime.json"
       ]
     },
-    "runtime.unix.System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+    "runtime.unix.System.Diagnostics.TraceSource/4.0.0-beta-23420": {
       "type": "package",
       "serviceable": true,
-      "sha512": "TWEoNgErtHEeM6UVtbSj9KMkzrzBPOsrPNXwKWPAwq9OOhgVZNWd/AIUrDG59u3905Fg0LYM+muHjZW141bLXA==",
+      "sha512": "RFNthrZEwArssaPuBf1x/4CMVyYv1GgZSwg9YviJem131qmt3SceC4BxPCoiWpOhlMKNiIAaT4vK2tn5MocEcw==",
       "files": [
-        "lib/dotnet/System.Diagnostics.TraceSource.dll",
         "ref/dotnet/_._",
-        "runtime.unix.System.Diagnostics.TraceSource.4.0.0-beta-23419.nupkg",
-        "runtime.unix.System.Diagnostics.TraceSource.4.0.0-beta-23419.nupkg.sha512",
-        "runtime.unix.System.Diagnostics.TraceSource.nuspec"
+        "runtime.unix.System.Diagnostics.TraceSource.4.0.0-beta-23420.nupkg",
+        "runtime.unix.System.Diagnostics.TraceSource.4.0.0-beta-23420.nupkg.sha512",
+        "runtime.unix.System.Diagnostics.TraceSource.nuspec",
+        "runtimes/unix/lib/dotnet5.4/System.Diagnostics.TraceSource.dll"
       ]
     },
-    "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+    "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23420": {
       "type": "package",
       "serviceable": true,
-      "sha512": "Rb5WUjHMEu+kNgdH3t3BmZhj0JdRdV6dJsTy+t4qyAatRGcMyAMVMyY6XYluOWmOMVicxKwO9FCCl0u/wwrizw==",
+      "sha512": "YRavz3qFwJYt3ugbh8d4Wdmwo8VGKNpYaAa6lshHaRh0XAkrAO6zO8/KaccaavskE+tIKcrlZTzhf0QgwXBc9A==",
       "files": [
-        "lib/win8/_._",
-        "lib/wp8/_._",
-        "lib/wpa81/_._",
         "ref/dotnet/_._",
-        "runtime.win7.System.Diagnostics.TraceSource.4.0.0-beta-23419.nupkg",
-        "runtime.win7.System.Diagnostics.TraceSource.4.0.0-beta-23419.nupkg.sha512",
+        "runtime.win7.System.Diagnostics.TraceSource.4.0.0-beta-23420.nupkg",
+        "runtime.win7.System.Diagnostics.TraceSource.4.0.0-beta-23420.nupkg.sha512",
         "runtime.win7.System.Diagnostics.TraceSource.nuspec",
-        "runtimes/win7/lib/dotnet/System.Diagnostics.TraceSource.dll"
+        "runtimes/win7/lib/dotnet5.4/System.Diagnostics.TraceSource.dll",
+        "runtimes/win7/lib/net/_._",
+        "runtimes/win7/lib/netcore50/_._",
+        "runtimes/win7/lib/win8/_._",
+        "runtimes/win7/lib/wp8/_._",
+        "runtimes/win7/lib/wpa81/_._"
       ]
     },
     "System.Collections/4.0.10": {
@@ -2446,35 +2448,35 @@
         "System.Diagnostics.Debug.nuspec"
       ]
     },
-    "System.Diagnostics.TraceSource/4.0.0-beta-23419": {
+    "System.Diagnostics.TraceSource/4.0.0-beta-23420": {
       "type": "package",
       "serviceable": true,
-      "sha512": "IObrVByj5DdHalCQRrWq3BsCxH16KJG1WSFcEO+gozJYFhhKFho1x+tfqyQn2OS0SzN/IYUehOfAibrwdZiAfA==",
+      "sha512": "e2XemTtwIDh+C1xOMk7eU/0XeFaAXe9XkvzWKQZ5xZ5FYV89ALV85sQqgyiaxfE6+VJfe+YVWzyXq/8FeqcglQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Diagnostics.TraceSource.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
-        "ref/dotnet/de/System.Diagnostics.TraceSource.xml",
-        "ref/dotnet/es/System.Diagnostics.TraceSource.xml",
-        "ref/dotnet/fr/System.Diagnostics.TraceSource.xml",
-        "ref/dotnet/it/System.Diagnostics.TraceSource.xml",
-        "ref/dotnet/ja/System.Diagnostics.TraceSource.xml",
-        "ref/dotnet/ko/System.Diagnostics.TraceSource.xml",
-        "ref/dotnet/ru/System.Diagnostics.TraceSource.xml",
-        "ref/dotnet/System.Diagnostics.TraceSource.dll",
-        "ref/dotnet/System.Diagnostics.TraceSource.xml",
-        "ref/dotnet/zh-hans/System.Diagnostics.TraceSource.xml",
-        "ref/dotnet/zh-hant/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet5.1/de/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet5.1/es/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet5.1/fr/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet5.1/it/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet5.1/ja/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet5.1/ko/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet5.1/ru/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet5.1/System.Diagnostics.TraceSource.dll",
+        "ref/dotnet5.1/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet5.1/zh-hans/System.Diagnostics.TraceSource.xml",
+        "ref/dotnet5.1/zh-hant/System.Diagnostics.TraceSource.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Diagnostics.TraceSource.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23419.nupkg",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23419.nupkg.sha512",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23420.nupkg",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23420.nupkg.sha512",
         "System.Diagnostics.TraceSource.nuspec"
       ]
     },
@@ -3369,14 +3371,14 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00107": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00108": {
       "type": "package",
       "serviceable": true,
-      "sha512": "xNAxu4vFz7vzM3h5oGvWuvwOb9Z4wGg/yE271uh2/LnrlFeyP2BuFTIIdyLdhg/R85NO6Y4mnU99tPsrWZAOuw==",
+      "sha512": "rNaXYaJhr7Vh28CjaKZoUgOXf9wIXYXYEyWvdyCr2NgrjTEaQwx+fn/PYD6BSt6orxNjgwrsQdAGzFJrhallQw==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00107.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00108.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00108.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }

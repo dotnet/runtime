@@ -22,9 +22,6 @@ namespace System.Net.Sockets
         // Send without using routing tables.
         DontRoute = 0x0004,
 
-        // See: http://as400bks.rochester.ibm.com/pubs/html/as400/v4r5/ic2978/info/apis/recvms.htm
-        MaxIOVectorLength = 0x0010,
-
         // Partial send or recv for message.
         Truncated = 0x0100,
         ControlDataTruncated = 0x0200,

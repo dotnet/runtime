@@ -64,9 +64,9 @@ namespace System.Data.SqlClient.SNI
             {
                 return handle.EnableSsl(options);
             }
-            catch (Exception e)
+            catch
             {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, string.Format("Encryption(ssl/tls) handshake failed: {0}", e.ToString()));
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SSL_PROV, 0, 31, SR.SNI_ERROR_31);
                 return TdsEnums.SNI_ERROR;
             }
         }
@@ -224,16 +224,23 @@ namespace System.Data.SqlClient.SNI
             // Default to using tcp if no protocol is provided
             if (serverNameParts.Length == 1)
             {
-                return ConstructTcpHandle(serverNameParts[0], timerExpire, callbackObject);
+                return ConstructTcpHandle(serverNameParts[0], timerExpire, callbackObject, parallel);
             }
 
             switch (serverNameParts[0])
             {
                 case TdsEnums.TCP:
-                    return ConstructTcpHandle(serverNameParts[1], timerExpire, callbackObject);
+                    return ConstructTcpHandle(serverNameParts[1], timerExpire, callbackObject, parallel);
 
                 default:
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.INVALID_PROV, 0, 0, string.Format("Unsupported transport protocol: '{0}'", serverNameParts[0]));
+                    if (parallel)
+                    {
+                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, (int)SNINativeMethodWrapper.SniSpecialErrors.MultiSubnetFailoverWithNonTcpProtocol, SR.SNI_ERROR_49);
+                    }
+                    else
+                    {
+                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, 8, SR.SNI_ERROR_8);
+                    }
                     return null;
             }
         }
@@ -245,7 +252,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="timerExpire">Timer expiration</param>
         /// <param name="callbackObject">Asynchronous I/O callback object</param>
         /// <returns></returns>
-        private SNITCPHandle ConstructTcpHandle(string fullServerName, long timerExpire, object callbackObject)
+        private SNITCPHandle ConstructTcpHandle(string fullServerName, long timerExpire, object callbackObject, bool parallel)
         {
             // TCP Format: 
             // tcp:<host name>\<instance name>
@@ -271,7 +278,7 @@ namespace System.Data.SqlClient.SNI
                 return null;
             }
 
-            return new SNITCPHandle(serverAndPortParts[0], portNumber, timerExpire, callbackObject);
+            return new SNITCPHandle(serverAndPortParts[0], portNumber, timerExpire, callbackObject, parallel);
         }
 
         /// <summary>

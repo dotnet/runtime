@@ -472,7 +472,7 @@ namespace System.Data.SqlClient.SNI
 
                 if (!_packetEvent.Wait(timeout))
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, "Timeout error");
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SMUX_PROV, 0, 0, "Timeout error");
                     return TdsEnums.SNI_WAIT_TIMEOUT;
                 }
             }

@@ -1,8 +1,62 @@
 {
   "locked": true,
-  "version": 1,
+  "version": 2,
   "targets": {
-    ".NETPlatform,Version=v5.0": {
+    ".NETPlatform,Version=v5.4": {
+      "System.Runtime/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/dotnet/System.Runtime.dll": {}
+        }
+      },
+      "System.Threading/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0",
+          "System.Threading.Tasks": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet/System.Threading.dll": {}
+        }
+      },
+      "System.Threading.Tasks/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet/System.Threading.Tasks.dll": {}
+        }
+      }
+    },
+    ".NETPlatform,Version=v5.4/win7-x86": {
+      "System.Runtime/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/dotnet/System.Runtime.dll": {}
+        }
+      },
+      "System.Threading/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0",
+          "System.Threading.Tasks": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet/System.Threading.dll": {}
+        }
+      },
+      "System.Threading.Tasks/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet/System.Threading.Tasks.dll": {}
+        }
+      }
+    },
+    ".NETPlatform,Version=v5.4/win7-x64": {
       "System.Runtime/4.0.0": {
         "type": "package",
         "compile": {
@@ -181,6 +235,6 @@
       "System.Runtime >= 4.0.0",
       "System.Threading >= 4.0.0"
     ],
-    ".NETPlatform,Version=v5.0": []
+    ".NETPlatform,Version=v5.4": []
   }
 }
