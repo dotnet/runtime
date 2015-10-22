@@ -5,11 +5,12 @@
 #include "pal_maphardwaretype.h"
 
 #include <sys/socket.h>
+#include <sys/types.h>
 
-#if HAVE_AF_PACKET
+#if defined(AF_PACKET)
 #include <linux/if_packet.h>
 #include <linux/if_arp.h>
-#elif HAVE_AF_LINK
+#elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>
 #else
@@ -18,7 +19,7 @@
 
 NetworkInterfaceType MapHardwareType(uint16_t nativeType)
 {
-#if HAVE_AF_PACKET
+#if defined(AF_PACKET)
     switch (nativeType)
     {
         case ARPHRD_ETHER:
@@ -49,7 +50,7 @@ NetworkInterfaceType MapHardwareType(uint16_t nativeType)
         default:
             return Unknown;
     }
-#else
+#elif defined(AF_LINK)
     switch (nativeType)
     {
         case IFT_ETHER:

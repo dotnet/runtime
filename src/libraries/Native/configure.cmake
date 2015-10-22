@@ -203,18 +203,6 @@ check_prototype_definition(
 
 check_cxx_source_compiles(
     "
-    #include <netdb.h>
-    #include <net/if_dl.h>
-    int main() { return 0; }
-    "
-    HAVE_AF_LINK)
-
-check_include_files(
-    linux/if_packet.h
-    HAVE_AF_PACKET)
-
-check_cxx_source_compiles(
-    "
     #include <sys/types.h>
     #include <sys/socketvar.h>
     #include <netinet/ip.h>
