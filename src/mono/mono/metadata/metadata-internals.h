@@ -4,6 +4,7 @@
 
 #include "mono/metadata/image.h"
 #include "mono/metadata/blob.h"
+#include "mono/metadata/cil-coff.h"
 #include "mono/metadata/mempool.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/mono-hash.h"
@@ -669,6 +670,12 @@ char*
 mono_image_set_strdup (MonoImageSet *set, const char *s);
 
 #define mono_image_set_new0(image,type,size) ((type *) mono_image_set_alloc0 (image, sizeof (type)* (size)))
+
+gboolean
+mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo);
+
+gboolean
+mono_image_load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo);
 
 MonoType*
 mono_metadata_get_shared_type (MonoType *type);

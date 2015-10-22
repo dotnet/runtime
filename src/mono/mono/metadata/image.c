@@ -327,8 +327,8 @@ load_section_tables (MonoImage *image, MonoCLIImageInfo *iinfo, guint32 offset)
 	return TRUE;
 }
 
-static gboolean
-load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
+gboolean
+mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
 	guint32 offset;
 	
@@ -532,8 +532,8 @@ load_tables (MonoImage *image)
 	return TRUE;
 }
 
-static gboolean
-load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo)
+gboolean
+mono_image_load_metadata (MonoImage *image, MonoCLIImageInfo *iinfo)
 {
 	if (!load_metadata_ptrs (image, iinfo))
 		return FALSE;
@@ -938,10 +938,10 @@ pe_image_load_cli_data (MonoImage *image)
 	header = &iinfo->cli_header;
 
 	/* Load the CLI header */
-	if (!load_cli_header (image, iinfo))
+	if (!mono_image_load_cli_header (image, iinfo))
 		return FALSE;
 
-	if (!load_metadata (image, iinfo))
+	if (!mono_image_load_metadata (image, iinfo))
 		return FALSE;
 
 	return TRUE;
