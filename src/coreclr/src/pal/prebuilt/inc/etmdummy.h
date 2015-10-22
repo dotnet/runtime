@@ -177,6 +177,7 @@ This file is generated using the logic from <root>/src/inc/genXplatEtw.pl
 #define FireEtwDebugExceptionProcessingStart() 0
 #define FireEtwDebugExceptionProcessingEnd() 0
 #define FireEtwCodeSymbols(ModuleId, TotalChunks, ChunkNumber, ChunkLength, Chunk, ClrInstanceID) 0
+#define FireEtwEventSource(EventID, EventName, EventSourceName, Payload) 0
 #define FireEtwCLRStackWalkDCStart(ClrInstanceID, Reserved1, Reserved2, FrameCount, Stack) 0
 #define FireEtwMethodDCStart(MethodID, ModuleID, MethodStartAddress, MethodSize, MethodToken, MethodFlags) 0
 #define FireEtwMethodDCStart_V1(MethodID, ModuleID, MethodStartAddress, MethodSize, MethodToken, MethodFlags, ClrInstanceID) 0

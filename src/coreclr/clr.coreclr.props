@@ -94,6 +94,10 @@
     <FeatureSvrGc Condition="'$(TargetArch)' != 'arm'">true</FeatureSvrGc>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetsLinux)' == 'true'">
+    <FeatureXplatEventSource>true</FeatureXplatEventSource>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <FeaturePal>true</FeaturePal>
 
