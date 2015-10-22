@@ -999,6 +999,12 @@ CreateFileW(
     }
     
     name = namePathString.OpenStringBuffer(length);
+    if (NULL == name)
+    {
+        palError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
+    
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
     namePathString.CloseBuffer(size);    
@@ -1038,9 +1044,8 @@ CreateFileW(
     // entry to the function
     //
 
-    pThread->SetLastError(palError);
-
 done:
+	pThread->SetLastError(palError);
     LOGEXIT( "CreateFileW returns HANDLE %p\n", hRet );
     PERF_EXIT(CreateFileW);
     return hRet;
@@ -1087,6 +1092,12 @@ CopyFileW(
     }
     
     source = sourcePathString.OpenStringBuffer(length);
+    if (NULL == source)
+    {
+        pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        goto done;
+    }
+
     src_size = WideCharToMultiByte( CP_ACP, 0, lpExistingFileName, -1, source, length,
                                 NULL, NULL );
     sourcePathString.CloseBuffer(src_size);
@@ -1114,6 +1125,11 @@ CopyFileW(
     }
     
     dest = destPathString.OpenStringBuffer(length);
+    if (NULL == dest)
+    {
+        pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        goto done;
+    }
     dest_size = WideCharToMultiByte( CP_ACP, 0, lpNewFileName, -1, dest, length,
                                 NULL, NULL );
     destPathString.CloseBuffer(dest_size);
@@ -1173,6 +1189,11 @@ DeleteFileA(
     length = strlen(lpFileName);
 
     lpUnixFileName = lpUnixFileNamePS.OpenStringBuffer(length);
+    if (NULL == lpUnixFileName)
+    {
+        palError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
     strcpy_s( lpUnixFileName, lpUnixFileNamePS.GetSizeOf(), lpFileName);
     lpUnixFileNamePS.CloseBuffer(length);
     
@@ -1290,6 +1311,12 @@ DeleteFileW(
     }
     
     name = namePS.OpenStringBuffer(length);
+    if (NULL == name)
+    {
+        pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        goto done;
+    }
+
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
     namePS.CloseBuffer(size);
@@ -1424,6 +1451,11 @@ MoveFileExA(
     length = strlen(lpExistingFileName);
     
     source = sourcePS.OpenStringBuffer(length);
+    if (NULL == source)
+    {
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
     strcpy_s( source, sourcePS.GetSizeOf(), lpExistingFileName);
     sourcePS.CloseBuffer(length);
     
@@ -1432,6 +1464,11 @@ MoveFileExA(
     length = strlen(lpNewFileName);
     
     dest = destPS.OpenStringBuffer(length);
+    if (NULL == dest)
+    {
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
     strcpy_s( dest, destPS.GetSizeOf(), lpNewFileName);
     destPS.CloseBuffer(length);
     
@@ -1589,6 +1626,11 @@ MoveFileExW(
     }
     
     source = sourcePS.OpenStringBuffer(length);
+    if (NULL == source)
+    {
+        pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        goto done;
+    }
     src_size = WideCharToMultiByte( CP_ACP, 0, lpExistingFileName, -1, source, length,
                                 NULL, NULL );
     sourcePS.CloseBuffer(src_size);
@@ -1615,6 +1657,11 @@ MoveFileExW(
     }
     
     dest = destPS.OpenStringBuffer(length);
+    if (NULL == dest)
+    {
+        pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        goto done;
+    }
     dest_size = WideCharToMultiByte( CP_ACP, 0, lpNewFileName, -1, dest, length,
                                 NULL, NULL );
     destPS.CloseBuffer(dest_size);
@@ -1694,6 +1741,11 @@ GetFileAttributesA(
     length = strlen(lpFileName);
     
     UnixFileName = UnixFileNamePS.OpenStringBuffer(length);
+    if (NULL == UnixFileName)
+    {
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
     strcpy_s( UnixFileName, UnixFileNamePS.GetSizeOf(), lpFileName );
     UnixFileNamePS.CloseBuffer(length);
     
@@ -1778,6 +1830,11 @@ GetFileAttributesW(
     
     length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
     filename = filenamePS.OpenStringBuffer(length);
+    if (NULL == filename)
+    {
+        pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        goto done;
+    }
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, filename, length,
                                 NULL, NULL );
     filenamePS.CloseBuffer(size);
@@ -1858,6 +1915,11 @@ GetFileAttributesExW(
     
     length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
     name = namePS.OpenStringBuffer(length);
+    if (NULL == name)
+    {
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
     namePS.CloseBuffer(size);
@@ -1963,6 +2025,11 @@ SetFileAttributesW(
     
     length = (PAL_wcslen(lpFileName)+1) * MaxWCharToAcpLengthFactor;
     name = namePS.OpenStringBuffer(length);
+    if (NULL == name)
+    {
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
     size = WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, name, length,
                                 NULL, NULL );
     namePS.CloseBuffer(size);
@@ -3495,6 +3562,11 @@ GetTempFileNameA(
 
     length = strlen(lpPathName) + MAX_SEEDSIZE + MAX_PREFIX + 10;
     file_template = file_templatePS.OpenStringBuffer(length);
+    if (NULL == file_template)
+    {
+        pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        goto done;
+    }
     *file_template = '\0';
     strcat_s( file_template, file_templatePS.GetSizeOf(), lpPathName );
     file_templatePS.CloseBuffer(length);
@@ -3518,6 +3590,11 @@ GetTempFileNameA(
 
     length = strlen(file_template) + MAX_SEEDSIZE + MAX_PREFIX;
     full_name = full_namePS.OpenStringBuffer(length);
+    if (NULL == full_name)
+    {
+        pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        goto done;
+    }
     sprintf_s( full_name, full_namePS.GetSizeOf(), file_template, (0 == uUnique) ? uUniqueSeed : uUnique);
     full_namePS.CloseBuffer(length);
     
@@ -3652,6 +3729,12 @@ GetTempFileNameW(
 
     length = (PAL_wcslen(lpPathName)+1) * MaxWCharToAcpLengthFactor;
     full_name = full_namePS.OpenStringBuffer(length);
+    if (NULL == full_name)
+    {
+        pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        uRet = 0;
+        goto done;
+    }
     path_size = WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, full_name,
                                      length, NULL, NULL );
     full_namePS.CloseBuffer(path_size);
@@ -3677,6 +3760,12 @@ GetTempFileNameW(
     {
         length = (PAL_wcslen(lpPrefixString)+1) * MaxWCharToAcpLengthFactor;
         prefix_string = prefix_stringPS.OpenStringBuffer(length);
+        if (NULL == prefix_string)
+        {
+            pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+            uRet = 0;
+            goto done;
+        }
         prefix_size = WideCharToMultiByte( CP_ACP, 0, lpPrefixString, -1, 
                                            prefix_string,
                                            MAX_LONGPATH - path_size - MAX_SEEDSIZE, 
