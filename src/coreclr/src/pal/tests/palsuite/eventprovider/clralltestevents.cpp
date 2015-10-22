@@ -1291,6 +1291,13 @@ win_UInt32,
 win_Binary,
 win_UInt16
 );
+ EventXplatEnabledEventSource();
+Error |= FireEtXplatEventSource(
+win_Int32,
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString "),
+W(" Testing UnicodeString ")
+);
  EventXplatEnabledCLRStackWalkDCStart();
 Error |= FireEtXplatCLRStackWalkDCStart(
 win_UInt16,

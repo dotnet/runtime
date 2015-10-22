@@ -5789,3 +5789,62 @@ extern "C" ULONG  FireEtXplatCodeSymbols(
 
 return Error;
 }
+extern "C" BOOL  EventXplatEnabledEventSource(){ return TRUE;}
+extern "C" ULONG  FireEtXplatEventSource(
+                  const signed int EventID,
+                  PCWSTR EventName,
+                  PCWSTR EventSourceName,
+                  PCWSTR Payload
+)
+{
+  ULONG Error = ERROR_WRITE_FAULT;
+    if (!EventXplatEnabledEventSource()){ return ERROR_SUCCESS;};
+    INT EventName_path_size = -1;
+    INT EventName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, EventName, -1, NULL, 0, NULL, NULL );
+    CHAR* EventName_full_name=NULL;
+    INT EventSourceName_path_size = -1;
+    INT EventSourceName_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, EventSourceName, -1, NULL, 0, NULL, NULL );
+    CHAR* EventSourceName_full_name=NULL;
+    INT Payload_path_size = -1;
+    INT Payload_full_name_path_size = WideCharToMultiByte( CP_ACP, 0, Payload, -1, NULL, 0, NULL, NULL );
+    CHAR* Payload_full_name=NULL;
+
+    EventName_full_name = (CHAR*)malloc(EventName_full_name_path_size*sizeof(CHAR));
+    _ASSERTE(EventName_full_name != NULL);
+    if(EventName_full_name == NULL){goto LExit;}
+
+    EventName_path_size = WideCharToMultiByte( CP_ACP, 0, EventName, -1, EventName_full_name, EventName_full_name_path_size, NULL, NULL );
+    _ASSERTE(EventName_path_size == EventName_full_name_path_size );
+    if( EventName_path_size == 0 ){ Error = ERROR_INVALID_PARAMETER; goto LExit;}
+    EventSourceName_full_name = (CHAR*)malloc(EventSourceName_full_name_path_size*sizeof(CHAR));
+    _ASSERTE(EventSourceName_full_name != NULL);
+    if(EventSourceName_full_name == NULL){goto LExit;}
+
+    EventSourceName_path_size = WideCharToMultiByte( CP_ACP, 0, EventSourceName, -1, EventSourceName_full_name, EventSourceName_full_name_path_size, NULL, NULL );
+    _ASSERTE(EventSourceName_path_size == EventSourceName_full_name_path_size );
+    if( EventSourceName_path_size == 0 ){ Error = ERROR_INVALID_PARAMETER; goto LExit;}
+    Payload_full_name = (CHAR*)malloc(Payload_full_name_path_size*sizeof(CHAR));
+    _ASSERTE(Payload_full_name != NULL);
+    if(Payload_full_name == NULL){goto LExit;}
+
+    Payload_path_size = WideCharToMultiByte( CP_ACP, 0, Payload, -1, Payload_full_name, Payload_full_name_path_size, NULL, NULL );
+    _ASSERTE(Payload_path_size == Payload_full_name_path_size );
+    if( Payload_path_size == 0 ){ Error = ERROR_INVALID_PARAMETER; goto LExit;}
+                                
+     tracepoint(
+        DotNETRuntime,
+        EventSource,
+        EventID,
+        EventName_full_name,
+        EventSourceName_full_name,
+        Payload_full_name
+        );
+
+        Error = ERROR_SUCCESS;
+LExit:
+        if (Payload_full_name != NULL) {free(Payload_full_name);}
+        if (EventSourceName_full_name != NULL) {free(EventSourceName_full_name);}
+        if (EventName_full_name != NULL) {free(EventName_full_name);}
+
+return Error;
+}
