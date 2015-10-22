@@ -674,7 +674,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_Power()
+        [ActiveIssue(/*coreclr*/ 1835, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_Power()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.Power, out exprs))
@@ -759,7 +760,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_TypeAs()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_TypeAs()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.TypeAs, out exprs))
@@ -1082,7 +1084,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_AddAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_AddAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.AddAssign, out exprs))
@@ -1099,7 +1102,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_AndAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_AndAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.AndAssign, out exprs))
@@ -1116,7 +1120,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_DivideAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_DivideAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.DivideAssign, out exprs))
@@ -1133,7 +1138,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_ExclusiveOrAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_ExclusiveOrAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.ExclusiveOrAssign, out exprs))
@@ -1150,7 +1156,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_LeftShiftAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_LeftShiftAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.LeftShiftAssign, out exprs))
@@ -1167,7 +1174,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_ModuloAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_ModuloAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.ModuloAssign, out exprs))
@@ -1184,7 +1192,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_MultiplyAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_MultiplyAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.MultiplyAssign, out exprs))
@@ -1201,7 +1210,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_OrAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_OrAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.OrAssign, out exprs))
@@ -1218,7 +1228,9 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_PowerAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        [ActiveIssue(/*coreclr*/ 1835, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_PowerAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.PowerAssign, out exprs))
@@ -1235,7 +1247,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_RightShiftAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_RightShiftAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.RightShiftAssign, out exprs))
@@ -1252,7 +1265,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_SubtractAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_SubtractAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.SubtractAssign, out exprs))
@@ -1269,7 +1283,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_AddAssignChecked()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_AddAssignChecked()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.AddAssignChecked, out exprs))
@@ -1285,8 +1300,9 @@ namespace Tests.Expressions
 			}
 		}
 
-		[Fact]
-		public static void CompileInterpretCrossCheck_MultiplyAssignChecked()
+        [Fact]
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_MultiplyAssignChecked()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.MultiplyAssignChecked, out exprs))
@@ -1303,7 +1319,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_SubtractAssignChecked()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_SubtractAssignChecked()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.SubtractAssignChecked, out exprs))
@@ -1320,7 +1337,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_PreIncrementAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_PreIncrementAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.PreIncrementAssign, out exprs))
@@ -1337,7 +1355,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_PreDecrementAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_PreDecrementAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.PreDecrementAssign, out exprs))
@@ -1354,7 +1373,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_PostIncrementAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_PostIncrementAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.PostIncrementAssign, out exprs))
@@ -1371,7 +1391,8 @@ namespace Tests.Expressions
 		}
 
 		[Fact]
-		public static void CompileInterpretCrossCheck_PostDecrementAssign()
+        [ActiveIssue(/*coreclr*/ 1831, PlatformID.AnyUnix)]
+        public static void CompileInterpretCrossCheck_PostDecrementAssign()
 		{
 			var exprs = default(IEnumerable<Expression>);
 			if (ExpressionCatalog.Catalog.TryGetValue(ExpressionType.PostDecrementAssign, out exprs))
