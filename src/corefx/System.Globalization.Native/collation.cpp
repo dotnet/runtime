@@ -126,6 +126,79 @@ extern "C" int32_t LastIndexOf(
 }
 
 /*
+Static Function:
+AreEqualOrdinalIgnoreCase
+*/
+static bool AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
+{
+    // Return whether the two characters are identical or would be identical if they were upper-cased.
+
+    if (one == two)
+    {
+        return true;
+    }
+
+    if (one == 0x0131 || two == 0x0131)
+    {
+        // On Windows with InvariantCulture, the LATIN SMALL LETTER DOTLESS I (U+0131)
+        // capitalizes to itself, whereas with ICU it capitalizes to LATIN CAPITAL LETTER I (U+0049).
+        // We special case it to match the Windows invariant behavior.
+        return false;
+    }
+
+    return u_toupper(one) == u_toupper(two);
+}
+
+/*
+Function:
+IndexOfOrdinalIgnoreCase
+*/
+extern "C" int32_t
+IndexOfOrdinalIgnoreCase(
+    const UChar* lpTarget, int32_t cwTargetLength, 
+    const UChar* lpSource, int32_t cwSourceLength, 
+    int32_t findLast)
+{
+    int32_t result = -1;
+
+    int32_t endIndex = cwSourceLength - cwTargetLength;
+    assert(endIndex >= 0);
+
+    int32_t i = 0;
+    while (i <= endIndex)
+    {
+        int32_t srcIdx = i, trgIdx = 0;
+        const UChar *src = lpSource, *trg = lpTarget;
+        UChar32 srcCodepoint, trgCodepoint;
+
+        bool match = true;
+        while (trgIdx < cwTargetLength)
+        {
+            U16_NEXT(src, srcIdx, cwSourceLength, srcCodepoint);
+            U16_NEXT(trg, trgIdx, cwTargetLength, trgCodepoint);
+            if (!AreEqualOrdinalIgnoreCase(srcCodepoint, trgCodepoint))
+            {
+                match = false; 
+                break;
+            }
+        }
+
+        if (match) 
+        {
+            result = i;
+            if (!findLast)
+            {
+                break;
+            }
+        }
+
+        U16_FWD_1(lpSource, i, cwSourceLength);
+    }
+
+    return result;
+}
+
+/*
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 extern "C" int32_t StartsWith(
