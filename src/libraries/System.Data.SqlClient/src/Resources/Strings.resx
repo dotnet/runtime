@@ -880,7 +880,7 @@
     <value>Local Database Runtime error occurred. </value>
   </data>
   <data name="SNI_ERROR_51" xml:space="preserve">
-    <value>An instance name was not specified while connecting to a Local Database Runtime.</value>
+    <value>An instance name was not specified while connecting to a Local Database Runtime. Specify an instance name in the format (localdb)\instance_name.</value>
   </data>
   <data name="SNI_ERROR_52" xml:space="preserve">
     <value>Unable to locate a Local Database Runtime installation. Verify that SQL Server Express is properly installed and that the Local Database Runtime feature is enabled.</value>
@@ -1004,5 +1004,35 @@
   </data>
   <data name="SQL_NetworkLibraryNotSupported" xml:space="preserve">
     <value>The keyword 'Network Library' is not supported on this platform, prefix the 'Data Source' with the protocol desired instead ('tcp:' for a TCP connection, or 'np:' for a Named Pipe connection).</value>
+  </data>
+  <data name="SNI_PN0" xml:space="preserve">
+    <value>HTTP Provider</value>
+  </data>
+  <data name="SNI_PN1" xml:space="preserve">
+    <value>Named Pipes Provider</value>
+  </data>
+  <data name="SNI_PN2" xml:space="preserve">
+    <value>Session Provider</value>
+  </data>
+  <data name="SNI_PN3" xml:space="preserve">
+    <value>Sign Provider</value>
+  </data>
+  <data name="SNI_PN4" xml:space="preserve">
+    <value>Shared Memory Provider</value>
+  </data>
+  <data name="SNI_PN5" xml:space="preserve">
+    <value>SMux Provider</value>
+  </data>
+  <data name="SNI_PN6" xml:space="preserve">
+    <value>SSL Provider</value>
+  </data>
+  <data name="SNI_PN7" xml:space="preserve">
+    <value>TCP Provider</value>
+  </data>
+  <data name="SNI_PN8" xml:space="preserve">
+    <value>   </value>
+  </data>
+  <data name="SNI_PN9" xml:space="preserve">
+    <value>SQL Network Interfaces</value>
   </data>
 </root>

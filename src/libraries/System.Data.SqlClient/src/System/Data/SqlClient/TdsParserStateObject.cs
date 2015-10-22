@@ -773,7 +773,11 @@ namespace System.Data.SqlClient
         internal void CreateConnectionHandle(string serverName, bool ignoreSniOpenTimeout, long timerExpire, out byte[] instanceName, byte[] spnBuffer, bool flushCache, bool async, bool parallel)
         {
             _sessionHandle = SNIProxy.Singleton.CreateConnectionHandle(this, serverName, ignoreSniOpenTimeout, timerExpire, out instanceName, spnBuffer, flushCache, async, parallel);
-            if (async)
+            if(_sessionHandle == null)
+            {
+                _parser.ProcessSNIError(this);
+            }
+            else if (async)
             {
                 // Create call backs and allocate to the session handle
                 SNIAsyncCallback ReceiveAsyncCallbackDispatcher = new SNIAsyncCallback(ReadAsyncCallback);

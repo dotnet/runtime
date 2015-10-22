@@ -105,6 +105,8 @@ namespace System.Data.SqlClient
 
         // Version variables
 
+        private bool _isYukon = false; // set to true if speaking to Yukon or later
+
         private bool _isKatmai = false;
 
         private bool _isDenali = false;
@@ -1213,9 +1215,6 @@ namespace System.Data.SqlClient
             SNINativeMethodWrapper.SNI_Error sniError;
             SNINativeMethodWrapper.SNIGetLastError(out sniError);
 #endif // MANAGED_SNI
-#if MANAGED_SNI
-            // NYI
-#else
             if (sniError.sniError != 0)
             {
                 // handle special SNI error codes that are converted into exception which is not a SqlException.
@@ -1235,7 +1234,6 @@ namespace System.Data.SqlClient
                         // continue building SqlError instance
                 }
             }
-#endif // MANAGED_SNI
             // PInvoke code automatically sets the length of the string for us
             // So no need to look for \0
             string errorMessage = sniError.errorMessage;
@@ -1255,10 +1253,9 @@ namespace System.Data.SqlClient
 
             Debug.Assert(!ADP.IsEmpty(errorMessage), "Empty error message received from SNI");
 
-            string sqlContextInfo = Res.GetString(Enum.GetName(typeof(SniContext), stateObj.SniContext));
-
+            string sqlContextInfo = SR.GetResourceString(Enum.GetName(typeof(SniContext), stateObj.SniContext), Enum.GetName(typeof(SniContext), stateObj.SniContext));
             string providerRid = String.Format((IFormatProvider)null, "SNI_PN{0}", (int)sniError.provider);
-            string providerName = Res.GetString(providerRid);
+            string providerName = SR.GetResourceString(providerRid, providerRid);
             Debug.Assert(!ADP.IsEmpty(providerName), String.Format((IFormatProvider)null, "invalid providerResourceId '{0}'", providerRid));
             uint win32ErrorCode = sniError.nativeError;
 
@@ -2913,6 +2910,7 @@ namespace System.Data.SqlClient
             {
                 case TdsEnums.YUKON_MAJOR << 24 | TdsEnums.YUKON_RTM_MINOR:     // Yukon
                     if (increment != TdsEnums.YUKON_INCREMENT) { throw SQL.InvalidTDSVersion(); }
+                    _isYukon = true;
                     break;
                 case TdsEnums.KATMAI_MAJOR << 24 | TdsEnums.KATMAI_MINOR:
                     if (increment != TdsEnums.KATMAI_INCREMENT) { throw SQL.InvalidTDSVersion(); }
@@ -2927,6 +2925,7 @@ namespace System.Data.SqlClient
             }
 
             _isKatmai |= _isDenali;
+            _isYukon |= _isKatmai;
 
             stateObj._outBytesUsed = stateObj._outputHeaderLen;
             byte len;
@@ -3048,9 +3047,42 @@ namespace System.Data.SqlClient
             }
 
             int line;
-            if (!stateObj.TryReadInt32(out line))
+            if (_isYukon)
             {
-                return false;
+                if (!stateObj.TryReadInt32(out line))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                ushort shortLine;
+                if (!stateObj.TryReadUInt16(out shortLine))
+                {
+                    return false;
+                }
+                line = shortLine;
+                // If we haven't yet completed processing login token stream yet, we may be talking to a Yukon server
+                // In that case we still have to read another 2 bytes
+                if (_state == TdsParserState.OpenNotLoggedIn)
+                {
+                    // Login incomplete
+                    byte b;
+                    if (!stateObj.TryPeekByte(out b))
+                    {
+                        return false;
+                    }
+                    if (b == 0)
+                    {
+                        // This is an invalid token value
+                        ushort value;
+                        if (!stateObj.TryReadUInt16(out value))
+                        {
+                            return false;
+                        }
+                        line = (line << 16) + value;
+                    }
+                }
             }
 
             error = new SqlError(number, state, errorClass, _server, message, procedure, line);
@@ -8601,7 +8633,8 @@ namespace System.Data.SqlClient
             Debug.Assert(encoding == null || !needBom);
             char[] inBuff = new char[constTextBufferSize];
 
-            encoding = encoding ?? Encoding.Unicode;
+            encoding = encoding ?? new UnicodeEncoding(false, false);
+
             ConstrainedTextWriter writer = new ConstrainedTextWriter(new StreamWriter(new TdsOutputStream(this, stateObj, null), encoding), size);
 
             if (needBom)

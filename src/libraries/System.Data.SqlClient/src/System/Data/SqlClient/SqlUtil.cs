@@ -795,7 +795,7 @@ namespace System.Data.SqlClient
             Debug.Assert(sniError > 0 && sniError <= (int)SNINativeMethodWrapper.SniSpecialErrors.MaxErrorValue, "SNI error is out of range");
 
             string errorMessageId = String.Format((IFormatProvider)null, "SNI_ERROR_{0}", sniError);
-            return Res.GetString(errorMessageId);
+            return SR.GetResourceString(errorMessageId, errorMessageId);
         }
 
         // BulkLoad
