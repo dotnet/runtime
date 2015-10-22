@@ -41,36 +41,6 @@ namespace System.Net.Sockets
             return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static unsafe SafeCloseSocket CreateSocket(SocketInformation socketInformation, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType)
-        {
-            SafeCloseSocket handle;
-            Interop.Winsock.WSAPROTOCOL_INFO protocolInfo;
-
-            fixed (byte* pinnedBuffer = socketInformation.ProtocolInformation)
-            {
-                handle = SafeCloseSocket.CreateWSASocket(pinnedBuffer);
-                protocolInfo = (Interop.Winsock.WSAPROTOCOL_INFO)Marshal.PtrToStructure<Interop.Winsock.WSAPROTOCOL_INFO>((IntPtr)pinnedBuffer);
-            }
-
-            if (handle.IsInvalid)
-            {
-                SocketException e = new SocketException();
-                if (e.SocketErrorCode == SocketError.InvalidArgument)
-                {
-                    throw new ArgumentException(SR.net_sockets_invalid_socketinformation, "socketInformation");
-                }
-                else
-                {
-                    throw e;
-                }
-            }
-
-            addressFamily = protocolInfo.iAddressFamily;
-            socketType = (SocketType)protocolInfo.iSocketType;
-            protocolType = (ProtocolType)protocolInfo.iProtocol;
-            return handle;
-        }
-
         public static SocketError SetBlocking(SafeCloseSocket handle, bool shouldBlock, out bool willBlock)
         {
             int intBlocking = shouldBlock ? 0 : -1;
@@ -142,19 +112,6 @@ namespace System.Net.Sockets
                 IntPtr.Zero,
                 IntPtr.Zero);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
-        }
-
-        public static SocketError Disconnect(Socket socket, SafeCloseSocket handle, bool reuseSocket)
-        {
-            SocketError errorCode = SocketError.Success;
-
-            // This can throw ObjectDisposedException (handle, and retrieving the delegate).
-            if (!socket.DisconnectExBlocking(handle.DangerousGetHandle(), IntPtr.Zero, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
-            {
-                errorCode = GetLastSocketError();
-            }
-
-            return errorCode;
         }
 
         public static SocketError Send(SafeCloseSocket handle, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out int bytesTransferred)
@@ -783,21 +740,6 @@ namespace System.Net.Sockets
             }
 
             return SocketError.Success;
-        }
-
-        public static unsafe SocketError DisconnectAsync(Socket socket, SafeCloseSocket handle, bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
-        {
-            asyncResult.SetUnmanagedStructures(null);
-
-            SocketError errorCode = SocketError.Success;
-
-            // This can throw ObjectDisposedException (handle, and retrieving the delegate).
-            if (!socket.DisconnectEx(handle, asyncResult.OverlappedHandle, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
-            {
-                errorCode = GetLastSocketError();
-            }
-
-            return errorCode;
         }
 
         public static unsafe SocketError SendAsync(SafeCloseSocket handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)

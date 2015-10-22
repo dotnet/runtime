@@ -26,7 +26,6 @@
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAsyncExtensions.cs" />
     <Compile Include="SocketTestServerAPMMock.cs" />
-    <Compile Include="UdpClientTest.cs" />
     
     <!-- Common Sockets files -->
     <Compile Include="$(CommonTestPath)\System\Net\Sockets\Configuration.cs">
