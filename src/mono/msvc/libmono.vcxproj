@@ -295,14 +295,14 @@
       <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
-xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
-xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
+      <Command>$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|Win32'">
@@ -347,14 +347,14 @@ xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\m
       <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
-xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
-xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
+      <Command>$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -399,14 +399,14 @@ xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\m
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
-xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
-xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
+      <Command>$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|x64'">
@@ -451,14 +451,14 @@ xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\m
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
-xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
-xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
+      <Command>$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -499,14 +499,14 @@ xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\m
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
-xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
-xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
+      <Command>$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_SGen|Win32'">
@@ -548,14 +548,14 @@ xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\m
       <ProgramDatabaseFile>$(TargetDir)$(TargetName).pdb</ProgramDatabaseFile>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
-xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
-xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
+      <Command>$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -597,14 +597,14 @@ xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\m
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
-xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
-xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
+      <Command>$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_SGen|x64'">
@@ -646,14 +646,14 @@ xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\m
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
-xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
-xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
-xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
+      <Command>$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\cil\opcode.def" "$(SolutionDir)include\mono\cil\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\mini\jit.h" "$(SolutionDir)include\mono\jit\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\metadata\*.h" "$(SolutionDir)include\mono\metadata\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-counters.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-dl-fallback.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-error.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-logger.h" "$(SolutionDir)include\mono\utils\"
+$(windir)\system32\xcopy /F /Y "$(SolutionDir)..\mono\utils\mono-publib.h" "$(SolutionDir)include\mono\utils\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
