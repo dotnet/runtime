@@ -34,6 +34,7 @@
 ##########################
 # GarbageCollection events
 ##########################
+noclrinstanceid::::EventSource
 noclrinstanceid:GarbageCollection:::GCStart
 nostack:GarbageCollection:::GCStart
 nomac:GarbageCollection:::GCStart_V1
