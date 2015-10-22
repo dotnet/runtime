@@ -131,9 +131,14 @@
 #include "windowsruntimebufferhelper.h"
 #endif
 
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
+
+#define __EVENTTRACEPRIV_H__
+#include "eventtracepriv.h"
+#undef __EVENTTRACEPRIV_H__
+#endif //defined(FEATURE_EVENTSOURCE_XPLAT)
+
 #endif // CROSSGEN_MSCORLIB
-
-
 
 
 #ifdef CROSSGEN_MSCORLIB
