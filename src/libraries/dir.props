@@ -10,7 +10,7 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00108</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00109</BuildToolsVersion>
     <DnxVersion>1.0.0-rc1-15838</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
@@ -83,8 +83,13 @@
 
     <!-- list of directories to perform batch restore -->
   <ItemGroup>
-    <DnuRestoreDir Include="&quot;$(MSBuildProjectDirectory)\src&quot;" />
-    <DnuRestoreDir Include="&quot;$(ToolsDir)&quot;" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src" />
+    <DnuRestoreDir Include="$(ToolsDir)" />
+    <!-- workaround to address issue where DNX won't recurse directories under a project.json
+         https://github.com/aspnet/dnx/commit/0dda8bf86863364cc20421f1af7494f1b2a3256f -->
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\ref\*\project.json" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\*\tests\*\project.json" />
+    <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src\Common\tests\**\project.json" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -93,7 +98,7 @@
     <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
 
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
-    <DnuRestoreDirs>@(DnuRestoreDir -> '%(Identity)', ' ')</DnuRestoreDirs>
+    <DnuRestoreDirs>@(DnuRestoreDir -> '&quot;%(Identity)&quot;', ' ')</DnuRestoreDirs>
 
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
