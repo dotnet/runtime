@@ -314,7 +314,7 @@ namespace System.Net.Http
                 }
 
                 string cookieValues = _handler.CookieContainer.GetCookieHeader(uri);
-                if (cookieValues != null)
+                if (!string.IsNullOrEmpty(cookieValues))
                 {
                     SetCurlOption(CURLoption.CURLOPT_COOKIE, cookieValues);
                     VerboseTrace("Set cookies");
