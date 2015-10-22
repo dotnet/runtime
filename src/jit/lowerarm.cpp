@@ -41,6 +41,11 @@ void Lowering::LowerCntBlockOp(GenTreePtr *ppTree)
     NYI_ARM("ARM Lowering for BlockOp");
 }
 
+void Lowering::LowerRotate(GenTreePtr tree)
+{
+    NYI_ARM("ARM Lowering for ROL and ROR");
+}
+
 void Lowering::TreeNodeInfoInitCall(GenTree *tree, TreeNodeInfo &info, 
                                     int &srcCount, // out 
                                     int &dstCount  // out

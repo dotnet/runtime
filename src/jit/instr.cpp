@@ -2627,6 +2627,8 @@ void        CodeGen::inst_RV_SH(instruction  ins,
 
     assert(ins == INS_rcl  ||
            ins == INS_rcr  ||
+           ins == INS_rol  ||
+           ins == INS_ror  ||
            ins == INS_shl  ||
            ins == INS_shr  ||
            ins == INS_sar);
@@ -2639,6 +2641,8 @@ void        CodeGen::inst_RV_SH(instruction  ins,
 
         assert(INS_rcl + 1 == INS_rcl_1);
         assert(INS_rcr + 1 == INS_rcr_1);
+        assert(INS_rol + 1 == INS_rol_1);
+        assert(INS_ror + 1 == INS_ror_1);
         assert(INS_shl + 1 == INS_shl_1);
         assert(INS_shr + 1 == INS_shr_1);
         assert(INS_sar + 1 == INS_sar_1);
@@ -2651,6 +2655,8 @@ void        CodeGen::inst_RV_SH(instruction  ins,
 
         assert(INS_rcl + 2 == INS_rcl_N);
         assert(INS_rcr + 2 == INS_rcr_N);
+        assert(INS_rol + 2 == INS_rol_N);
+        assert(INS_ror + 2 == INS_ror_N);
         assert(INS_shl + 2 == INS_shl_N);
         assert(INS_shr + 2 == INS_shr_N);
         assert(INS_sar + 2 == INS_sar_N);
