@@ -20,6 +20,10 @@ add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
 add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 add_compile_options(-Wno-c99-extensions)
 
+if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.5)
+    add_compile_options(-Wno-unreachable-code)
+endif ()
+
 if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
     add_definitions(-DBIT64=1)
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
