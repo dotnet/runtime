@@ -52,7 +52,7 @@ int __cdecl main(int argc, char *argv[])
        (5 in this case) 
     */
   
-    if((int)ReturnValue != 5) 
+    if((int)(size_t)ReturnValue != 5) 
     {
         Fail("ERROR: The return value should be the value of the "
              "variable before the exchange took place, which was 5.  "
