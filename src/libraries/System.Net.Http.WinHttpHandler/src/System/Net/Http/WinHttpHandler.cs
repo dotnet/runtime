@@ -748,7 +748,13 @@ namespace System.Net.Http
                             ref optionAssuredNonBlockingTrue,
                             (uint)Marshal.SizeOf<uint>()))
                         {
-                            WinHttpException.ThrowExceptionUsingLastError();
+                            // This option is not available on downlevel Windows versions. While it improves
+                            // performance, we can ignore the error that the option is not available.
+                            int lastError = Marshal.GetLastWin32Error();
+                            if (lastError != Interop.WinHttp.ERROR_WINHTTP_INVALID_OPTION)
+                            {
+                                throw WinHttpException.CreateExceptionUsingError(lastError);
+                            }
                         }
                     }
                 }
