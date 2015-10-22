@@ -3,46 +3,73 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
-
 // GuidFromName
 
-// Algorithm from Internet Draft document "UUIDs and GUIDs"
-// By Paul J. Leach and Rich Sals, February 4, 1998.
+/**
 
-// This function has been adapted from the routines in the document
-//  uuid_create_from_name and format_uuid_v3
+Algorithm from Internet Draft document "UUIDs and GUIDs"
+By Paul J. Leach and Rich Sals, February 4, 1998.
 
-// Changes from documented routines:
-// 1. Changed all instances of uuid_t to GUID.
-//      uuid_t field time_low is GUID field Data1.
-//      uuid_t field time_mid is GUID field Data2.
-//      uuid_t field time_hi_and_version is GUID field Data3.
-//      uuid_t field clock_seq_hi_and_reserved is GUID field Data4[0].
-//      uuid_t field clock_seq_low is GUID field Data4[1].
-//      uuid_t field node[6] is GUID field Data4[2] through Data4[8].
-//
-// 2. Use a c++ implementation of the md5 cryptographic hash function.
-//
-// 3. Implemented the htonl, htons, ntohl, ntohs socket routines as inlines.
-//
-// 4. Renamed variables and types to suit my biases.
+This function has been adapted from the routines in the document
+ uuid_create_from_name and format_uuid_v3
 
-/*
-** Copyright (c) 1990- 1993, 1996 Open Software Foundation, Inc.
-** Copyright (c) 1989 by Hewlett-Packard Company, Palo Alto, Ca. &
-** Digital Equipment Corporation, Maynard, Mass.
-** To anyone who acknowledges that this file is provided "AS IS"
-** without any express or implied warranty: permission to use, copy,
-** modify, and distribute this file for any purpose is hereby
-** granted without fee, provided that the above copyright notices and
-** this notice appears in all source code copies, and that none of
-** the names of Open Software Foundation, Inc., Hewlett-Packard
-** Company, or Digital Equipment Corporation be used in advertising
-** or publicity pertaining to distribution of the software without
-** specific, written prior permission.  Neither Open Software
-** Foundation, Inc., Hewlett-Packard Company, Microsoft, nor Digital Equipment
-** Corporation makes any representations about the suitability of
-** this software for any purpose.
+Changes from documented routines:
+1. Changed all instances of uuid_t to GUID.
+     uuid_t field time_low is GUID field Data1.
+     uuid_t field time_mid is GUID field Data2.
+     uuid_t field time_hi_and_version is GUID field Data3.
+     uuid_t field clock_seq_hi_and_reserved is GUID field Data4[0].
+     uuid_t field clock_seq_low is GUID field Data4[1].
+     uuid_t field node[6] is GUID field Data4[2] through Data4[8].
+
+2. Use a c++ implementation of the md5 cryptographic hash function.
+
+3. Implemented the htonl, htons, ntohl, ntohs socket routines as inlines.
+
+4. Renamed variables and types to suit my biases.
+
+
+Copyright (c) 1990- 1993, 1996 Open Software Foundation, Inc.
+Copyright (c) 1989 by Hewlett-Packard Company, Palo Alto, Ca. &
+Digital Equipment Corporation, Maynard, Mass.
+To anyone who acknowledges that this file is provided "AS IS"
+without any express or implied warranty: permission to use, copy,
+modify, and distribute this file for any purpose is hereby
+granted without fee, provided that the above copyright notices and
+this notice appears in all source code copies, and that none of
+the names of Open Software Foundation, Inc., Hewlett-Packard
+Company, or Digital Equipment Corporation be used in advertising
+or publicity pertaining to distribution of the software without
+specific, written prior permission.  Neither Open Software
+Foundation, Inc., Hewlett-Packard Company, Microsoft, nor Digital Equipment
+Corporation makes any representations about the suitability of
+this software for any purpose.
+
+
+Copyright(C) The Internet Society 1997. All Rights Reserved.
+
+This document and translations of it may be copied and furnished to others,
+and derivative works that comment on or otherwise explain it or assist in
+its implementation may be prepared, copied, published and distributed, in
+whole or in part, without restriction of any kind, provided that the above
+copyright notice and this paragraph are included on all such copies and
+derivative works.However, this document itself may not be modified in any
+way, such as by removing the copyright notice or references to the Internet
+Society or other Internet organizations, except as needed for the purpose of
+developing Internet standards in which case the procedures for copyrights
+defined in the Internet Standards process must be followed, or as required
+to translate it into languages other than English.
+
+The limited permissions granted above are perpetual and will not be revoked
+by the Internet Society or its successors or assigns.
+
+This document and the information contained herein is provided on an "AS IS"
+basis and THE INTERNET SOCIETY AND THE INTERNET ENGINEERING TASK FORCE
+DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY
+RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A
+PARTICULAR PURPOSE.
+ 
 */
 
 #include "stdafx.h"
