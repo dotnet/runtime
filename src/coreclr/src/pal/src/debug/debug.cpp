@@ -353,6 +353,11 @@ DebugBreakCommand()
         
         SIZE_T dwexe_buf = strlen(EXE_TEXT) + libNameLength + 1;
         CHAR * exe_buf = exe_bufString.OpenStringBuffer(dwexe_buf);
+        
+        if (NULL == exe_buf)
+        {
+            goto FAILED;
+        }
 
         if (snprintf (pid_buf, sizeof (pid_buf), PID_TEXT "%d", getpid()) <= 0) {
             goto FAILED;
