@@ -20,6 +20,7 @@ namespace System.Data.SqlClient.SNI
     {
         NP_PROV = 1,        // Named Pipes Provider
         SMUX_PROV = 5,      // MARS Provider
+        SSL_PROV = 6,       // SSL Provider
         TCP_PROV = 7,       // TCP Provider
         INVALID_PROV = 10,  // Invalid Provider
     }
