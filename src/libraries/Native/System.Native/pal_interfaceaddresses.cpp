@@ -13,9 +13,9 @@
 #include <sys/socket.h>
 #include <sys/sysctl.h>
 
-#if HAVE_AF_PACKET
+#if defined(AF_PACKET)
 #include <linux/if_packet.h>
-#elif HAVE_AF_LINK
+#elif defined(AF_LINK)
 #include <net/if_dl.h>
 #include <net/if_types.h>
 #else
@@ -76,7 +76,7 @@ extern "C" int32_t EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
         }
 
         // LINUX : AF_PACKET = 17        
-#if HAVE_AF_PACKET
+#if defined(AF_PACKET)
         else if (family == AF_PACKET)
         {
             sockaddr_ll* sall = reinterpret_cast<sockaddr_ll*>(current->ifa_addr);
@@ -90,8 +90,7 @@ extern "C" int32_t EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
             memcpy(&lla.AddressBytes, &sall->sll_addr, sall->sll_halen);
             onLinkLayerFound(current->ifa_name, &lla);
         }
-
-#elif HAVE_AF_LINK
+#elif defined(AF_LINK)
         // OSX/BSD : AF_LINK = 18
         else if (family == AF_LINK)
         {
