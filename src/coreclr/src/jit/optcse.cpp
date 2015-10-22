@@ -2022,6 +2022,8 @@ bool                Compiler::optIsCSEcandidate(GenTreePtr tree)
     case GT_XOR:
     case GT_RSH:
     case GT_RSZ:
+    case GT_ROL:
+    case GT_ROR:
         return  true;     // CSE these Binary Operators 
 
     case GT_ADD:          // Check for ADDRMODE flag on these Binary Operators 

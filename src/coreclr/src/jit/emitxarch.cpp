@@ -3389,6 +3389,8 @@ void                emitter::emitIns_R_I(instruction ins,
 
     case INS_rcl_N:
     case INS_rcr_N:
+    case INS_rol_N:
+    case INS_ror_N:
     case INS_shl_N:
     case INS_shr_N:
     case INS_sar_N:
@@ -3968,6 +3970,8 @@ void                emitter::emitIns_C_I   (instruction  ins,
     {
     case INS_rcl_N:
     case INS_rcr_N:
+    case INS_rol_N:
+    case INS_ror_N:
     case INS_shl_N:
     case INS_shr_N:
     case INS_sar_N:
@@ -4146,6 +4150,8 @@ void                emitter::emitIns_I_AR  (instruction ins,
     {
     case INS_rcl_N:
     case INS_rcr_N:
+    case INS_rol_N:
+    case INS_ror_N:
     case INS_shl_N:
     case INS_shr_N:
     case INS_sar_N:
@@ -4212,6 +4218,8 @@ void                emitter::emitIns_I_AI  (instruction ins,
     {
     case INS_rcl_N:
     case INS_rcr_N:
+    case INS_rol_N:
+    case INS_ror_N:
     case INS_shl_N:
     case INS_shr_N:
     case INS_sar_N:
@@ -4474,6 +4482,8 @@ void                emitter::emitIns_I_ARR (instruction ins,
     {
     case INS_rcl_N:
     case INS_rcr_N:
+    case INS_rol_N:
+    case INS_ror_N:
     case INS_shl_N:
     case INS_shr_N:
     case INS_sar_N:
@@ -4620,6 +4630,8 @@ void                emitter::emitIns_I_ARX (instruction ins,
     {
     case INS_rcl_N:
     case INS_rcr_N:
+    case INS_rol_N:
+    case INS_ror_N:
     case INS_shl_N:
     case INS_shr_N:
     case INS_sar_N:
@@ -4768,6 +4780,8 @@ void                emitter::emitIns_I_AX (instruction ins,
     {
     case INS_rcl_N:
     case INS_rcr_N:
+    case INS_rol_N:
+    case INS_ror_N:
     case INS_shl_N:
     case INS_shr_N:
     case INS_sar_N:
@@ -5050,6 +5064,8 @@ void                emitter::emitIns_S_I  (instruction ins,
     {
     case INS_rcl_N:
     case INS_rcr_N:
+    case INS_rol_N:
+    case INS_ror_N:
     case INS_shl_N:
     case INS_shr_N:
     case INS_sar_N:
@@ -6363,6 +6379,8 @@ void                emitter::emitDispShift(instruction ins, int cnt)
     {
     case INS_rcl_1:
     case INS_rcr_1:
+    case INS_rol_1:
+    case INS_ror_1:
     case INS_shl_1:
     case INS_shr_1:
     case INS_sar_1:
@@ -6371,6 +6389,8 @@ void                emitter::emitDispShift(instruction ins, int cnt)
 
     case INS_rcl:
     case INS_rcr:
+    case INS_rol:
+    case INS_ror:
     case INS_shl:
     case INS_shr:
     case INS_sar:
@@ -6379,6 +6399,8 @@ void                emitter::emitDispShift(instruction ins, int cnt)
 
     case INS_rcl_N:
     case INS_rcr_N:
+    case INS_rol_N:
+    case INS_ror_N:
     case INS_shl_N:
     case INS_shr_N:
     case INS_sar_N:

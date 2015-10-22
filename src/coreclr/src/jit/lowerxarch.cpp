@@ -719,6 +719,8 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
+        case GT_ROL:
+        case GT_ROR:
         {
             info->srcCount = 2;
             info->dstCount = 1;
@@ -2914,7 +2916,9 @@ bool Lowering::LowerStoreInd(GenTreePtr tree)
             oper != GT_XOR &&
             oper != GT_LSH &&
             oper != GT_RSH &&
-            oper != GT_RSZ)
+            oper != GT_RSZ &&
+            oper != GT_ROL &&
+            oper != GT_ROR)
         {
             JITDUMP("Lower of StoreInd didn't mark the node as self contained\n");
             JITDUMP("because the node operator not yet supported:\n");
@@ -2924,7 +2928,9 @@ bool Lowering::LowerStoreInd(GenTreePtr tree)
 
         if ((oper == GT_LSH ||
              oper == GT_RSH ||
-             oper == GT_RSZ) &&
+             oper == GT_RSZ ||
+             oper == GT_ROL ||
+             oper == GT_ROR) &&
             varTypeIsSmall(tree))
         {
             //In ldind, Integer values smaller than 4 bytes, a boolean, or a character converted to 4 bytes by sign or zero-extension as appropriate.
@@ -3015,6 +3021,11 @@ bool Lowering::LowerStoreInd(GenTreePtr tree)
         DISPTREE(tree);
         return false;
     }
+}
+
+void Lowering::LowerRotate(GenTreePtr tree)
+{
+    // xarch supports both ROL and ROR instructions so no lowering is required.
 }
 
 void Lowering::SetStoreIndOpCounts(GenTreePtr storeInd, GenTreePtr indirCandidate)
