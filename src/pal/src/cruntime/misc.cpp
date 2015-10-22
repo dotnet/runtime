@@ -72,48 +72,6 @@ namespace CorUnix
 
 /*++
 Function:
-  _rotl
-
-See MSDN doc.
---*/
-unsigned int
-__cdecl 
-_rotl( unsigned int value, int shift )
-{
-    unsigned int retval = 0;
-
-    PERF_ENTRY(_rotl);
-    ENTRY("_rotl( value:%u shift=%d )\n", value, shift );   
-    shift &= 0x1f;
-    retval = ( value << shift ) | ( value >> ( sizeof( int ) * CHAR_BIT - shift ));
-    LOGEXIT("_rotl returns unsigned int %u\n", retval);
-    PERF_EXIT(_rotl);
-    return retval;
-}
-
-/*++
-Function:
-  _rotr
-
-See MSDN doc.
---*/
-unsigned int
-__cdecl 
-_rotr( unsigned int value, int shift )
-{
-    unsigned int retval;
-
-    PERF_ENTRY(_rotr);
-    ENTRY("_rotr( value:%u shift=%d )\n", value, shift );    
-    shift &= 0x1f;
-    retval = ( value >> shift ) | ( value << ( sizeof( int ) * CHAR_BIT - shift ) );
-    LOGEXIT("_rotr returns unsigned int %u\n", retval);
-    PERF_EXIT(_rotr);
-    return retval;
-}
-
-/*++
-Function:
   _gcvt_s
 
 See MSDN doc.

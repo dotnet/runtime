@@ -7,7 +7,7 @@
 **
 ** Source : test.c
 **
-** Purpose: Test for InterlockedBitTestAndSet() function
+** Purpose: Test for InterlockedBitTestAndReset() function
 **
 **
 **=========================================================*/
@@ -24,12 +24,12 @@ typedef struct tag_TEST_DATA
 
 TEST_DATA test_data[] =
 {
-    { 0x00000000,  2, 0x00000004, 0 },
-    { 0x12341234,  2, 0x12341234, 1 },
-    { 0x12341234,  3, 0x1234123c, 0 },
-    { 0x12341234, 31, 0x92341234, 0 },
-    { 0x12341234, 28, 0x12341234, 1 },
-    { 0xffffffff, 28, 0xffffffff, 1 }
+    { (LONG)0x00000000,  3, (LONG)0x00000000, 0 },
+    { (LONG)0x12341234,  2, (LONG)0x12341230, 1 },
+    { (LONG)0x12341234,  3, (LONG)0x12341234, 0 },
+    { (LONG)0x12341234, 31, (LONG)0x12341234, 0 },
+    { (LONG)0x12341234, 28, (LONG)0x02341234, 1 },
+    { (LONG)0xffffffff, 28, (LONG)0xefffffff, 1 }
 };
 
 int __cdecl main(int argc, char *argv[]) {
@@ -48,13 +48,13 @@ int __cdecl main(int argc, char *argv[]) {
         LONG baseVal = test_data[i].baseValue;
         LONG bitPosition = test_data[i].bitPosition;
 
-        UCHAR ret = InterlockedBitTestAndSet(
+        UCHAR ret = InterlockedBitTestAndReset(
             &baseVal, /* Variable to manipulate */
             bitPosition);
 
         if (ret != test_data[i].expectedReturnValue)
         {
-            Fail("ERROR: InterlockedBitTestAndSet(%d): Expected return value is %d,"
+            Fail("ERROR: InterlockedBitTestAndReset(%d): Expected return value is %d,"
                  "Actual return value is %d.",
                  i,
                  test_data[i].expectedReturnValue,
@@ -63,7 +63,7 @@ int __cdecl main(int argc, char *argv[]) {
 
         if (baseVal != test_data[i].expectedValue)
         {
-            Fail("ERROR: InterlockedBitTestAndSet(%d): Expected value is %x,"
+            Fail("ERROR: InterlockedBitTestAndReset(%d): Expected value is %x,"
                  "Actual value is %x.",
                  i,
                  test_data[i].expectedValue,

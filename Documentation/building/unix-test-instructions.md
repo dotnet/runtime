@@ -32,12 +32,12 @@ Run tests:
 
 > ```bash
 > ~/coreclr$ tests/runtest.sh
->     --testRootDir="~/test/Windows_NT.x64.Debug"
->     --testNativeBinDir="~/coreclr/bin/obj/Linux.x64.Debug/tests"
->     --coreClrBinDir="~/coreclr/bin/Product/Linux.x64.Debug"
->     --mscorlibDir="/media/coreclr/bin/Product/Linux.x64.Debug"
->     --coreFxBinDir="~/corefx/bin/Linux.AnyCPU.Debug"
->     --coreFxNativeBinDir="~/corefx/bin/Linux.x64.Debug"
+>     --testRootDir=~/test/Windows_NT.x64.Debug
+>     --testNativeBinDir=~/coreclr/bin/obj/Linux.x64.Debug/tests
+>     --coreClrBinDir=~/coreclr/bin/Product/Linux.x64.Debug
+>     --mscorlibDir=/media/coreclr/bin/Product/Linux.x64.Debug
+>     --coreFxBinDir=~/corefx/bin/Linux.AnyCPU.Debug
+>     --coreFxNativeBinDir=~/corefx/bin/Linux.x64.Debug
 > ```
 
 Test results will go into:
