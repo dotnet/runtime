@@ -24,6 +24,9 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#if defined(__APPLE__) && __APPLE__
+#include <sys/socketvar.h>
+#endif
 #include <unistd.h>
 #include <vector>
 
@@ -1257,6 +1260,7 @@ extern "C" Error SetIPv6MulticastOption(int32_t socket, int32_t multicastOption,
 static int32_t GetMaxLingerTime()
 {
     static volatile int32_t MaxLingerTime = -1;
+    static_assert(sizeof(xsocket::so_linger) == 2, "");
 
     // OS X does not define the linger time in seconds by default, but in ticks.
     // Furthermore, when SO_LINGER_SEC is used, the value is simply scaled by
