@@ -24,6 +24,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void BasicTest_AccessInstanceProperties_NoExceptions()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -106,6 +107,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // Linux and OSX do not support some of these.
         public void BasicTest_GetIPInterfaceStatistics_Success()
         {
             // This API is not actually IPv4 specific.

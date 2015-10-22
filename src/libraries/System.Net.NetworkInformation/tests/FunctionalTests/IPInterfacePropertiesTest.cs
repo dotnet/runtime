@@ -19,6 +19,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // Linux and OSX do not support some of these
         public void IPInfoTest_AccessAllProperties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -109,6 +110,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // Linux and OSX do not support some of these
         public void IPInfoTest_AccessAllIPv4Properties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -139,6 +141,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // Linux and OSX do not support some of these
         public void IPInfoTest_AccessAllIPv6Properties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -172,6 +175,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv6", "true")]
+        [PlatformSpecific(PlatformID.Windows)] // Linux and OSX do not support GetScopeId
         public void IPv6ScopeId_GetLinkLevel_MatchesIndex()
         {
             Assert.True(Capability.IPv6Support());
@@ -190,8 +194,10 @@ namespace System.Net.NetworkInformation.Tests
                 Assert.Equal(ipv6Properties.Index, ipv6Properties.GetScopeId(ScopeLevel.Link));
             }
         }
+
         [Fact]
         [Trait("IPv6", "true")]
+        [PlatformSpecific(PlatformID.Windows)] // Linux and OSX do not support GetScopeId
         public void IPv6ScopeId_AccessAllValues_Success()
         {
             Assert.True(Capability.IPv6Support());
