@@ -2288,7 +2288,7 @@ mono_set_crash_chaining (gboolean chain_crashes)
 }
 
 void
-mono_parse_env_options (void)
+mono_parse_env_options (int argc, char *argv [])
 {
 	const char *env_options = g_getenv ("MONO_ENV_OPTIONS");
 	if (env_options != NULL){
