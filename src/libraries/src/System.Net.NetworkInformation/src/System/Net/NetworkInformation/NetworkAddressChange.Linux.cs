@@ -35,7 +35,7 @@ namespace System.Net.NetworkInformation
                 {
                     if (s_addressChangedSubscribers == null)
                     {
-                        Debug.Assert(s_socket == 0);
+                        Debug.Assert(s_socket == 0, "s_socket != 0, but there are no subscribers to NetworkAddressChanged.");
                         return;
                     }
 
@@ -50,7 +50,7 @@ namespace System.Net.NetworkInformation
 
         private static void CreateSocket()
         {
-            Debug.Assert(s_socket == 0);
+            Debug.Assert(s_socket == 0, "s_socket != 0, must close existing socket before opening another.");
             int newSocket;
             Interop.Error result = Interop.Sys.CreateNetworkChangeListenerSocket(out newSocket);
             if (result != Interop.Error.SUCCESS)
@@ -66,12 +66,15 @@ namespace System.Net.NetworkInformation
 
         private static void CloseSocket()
         {
+            Debug.Assert(s_socket != 0, "s_socket was 0 when CloseSocket was called.");
             Interop.Error result = Interop.Sys.CloseNetworkChangeListenerSocket(s_socket);
             if (result != Interop.Error.SUCCESS)
             {
                 string message = Interop.Sys.GetLastErrorInfo().GetErrorMessage();
                 throw new NetworkInformationException(message);
             }
+
+            s_socket = 0;
         }
 
         private static void LoopReadSocket(int socket)
