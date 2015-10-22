@@ -1823,17 +1823,15 @@
     },
     "System.Reflection.Primitives/4.0.0": {
       "type": "package",
+      "serviceable": true,
       "sha512": "n9S0XpKv2ruc17FSnaiX6nV47VfHTZ1wLjKZlAirUZCvDQCH71mVp+Ohabn0xXLh5pK2PKp45HCxkqu5Fxn/lA==",
       "files": [
-        "[Content_Types].xml",
-        "_rels/.rels",
         "lib/DNXCore50/System.Reflection.Primitives.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Reflection.Primitives.dll",
         "lib/win8/_._",
         "lib/wp80/_._",
         "lib/wpa81/_._",
-        "package/services/metadata/core-properties/7070509f3bfd418d859635361251dab0.psmdcp",
         "ref/dotnet/de/System.Reflection.Primitives.xml",
         "ref/dotnet/es/System.Reflection.Primitives.xml",
         "ref/dotnet/fr/System.Reflection.Primitives.xml",
@@ -1852,6 +1850,8 @@
         "ref/wp80/_._",
         "ref/wpa81/_._",
         "runtimes/win8-aot/lib/netcore50/System.Reflection.Primitives.dll",
+        "System.Reflection.Primitives.4.0.0.nupkg",
+        "System.Reflection.Primitives.4.0.0.nupkg.sha512",
         "System.Reflection.Primitives.nuspec"
       ]
     },
@@ -2059,17 +2059,15 @@
     },
     "System.Security.Principal/4.0.0": {
       "type": "package",
+      "serviceable": true,
       "sha512": "FOhq3jUOONi6fp5j3nPYJMrKtSJlqAURpjiO3FaDIV4DJNEYymWW5uh1pfxySEB8dtAW+I66IypzNge/w9OzZQ==",
       "files": [
-        "[Content_Types].xml",
-        "_rels/.rels",
         "lib/dotnet/System.Security.Principal.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Security.Principal.dll",
         "lib/win8/_._",
         "lib/wp80/_._",
         "lib/wpa81/_._",
-        "package/services/metadata/core-properties/5d44fbabc99d4204b6a2f76329d0a184.psmdcp",
         "ref/dotnet/de/System.Security.Principal.xml",
         "ref/dotnet/es/System.Security.Principal.xml",
         "ref/dotnet/fr/System.Security.Principal.xml",
@@ -2087,6 +2085,8 @@
         "ref/win8/_._",
         "ref/wp80/_._",
         "ref/wpa81/_._",
+        "System.Security.Principal.4.0.0.nupkg",
+        "System.Security.Principal.4.0.0.nupkg.sha512",
         "System.Security.Principal.nuspec"
       ]
     },

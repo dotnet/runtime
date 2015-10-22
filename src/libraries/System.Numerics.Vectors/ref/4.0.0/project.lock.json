@@ -1,8 +1,30 @@
 {
   "locked": true,
-  "version": 1,
+  "version": 2,
   "targets": {
-    ".NETPlatform,Version=v5.0": {
+    ".NETPlatform,Version=v5.4": {
+      "System.Numerics.Vectors/4.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/portable-net45+win8+wpa81/System.Numerics.Vectors.dll": {}
+        },
+        "runtime": {
+          "lib/portable-net45+win8+wpa81/System.Numerics.Vectors.dll": {}
+        }
+      }
+    },
+    ".NETPlatform,Version=v5.4/win7-x86": {
+      "System.Numerics.Vectors/4.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/portable-net45+win8+wpa81/System.Numerics.Vectors.dll": {}
+        },
+        "runtime": {
+          "lib/portable-net45+win8+wpa81/System.Numerics.Vectors.dll": {}
+        }
+      }
+    },
+    ".NETPlatform,Version=v5.4/win7-x64": {
       "System.Numerics.Vectors/4.0.0": {
         "type": "package",
         "compile": {
@@ -37,6 +59,6 @@
     "": [
       "System.Numerics.Vectors >= 4.0.0"
     ],
-    ".NETPlatform,Version=v5.0": []
+    ".NETPlatform,Version=v5.4": []
   }
 }
