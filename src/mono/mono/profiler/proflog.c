@@ -661,6 +661,7 @@ emit_method_inner (LogBuffer *logbuffer, void *method)
 	assert (logbuffer->data <= logbuffer->data_end);
 }
 
+/*
 typedef struct {
 	MonoMethod *method;
 	MonoJitInfo *found;
@@ -688,11 +689,20 @@ find_method (MonoDomain *domain, void *user_data)
 	if (ji)
 		search->found = ji;
 }
+*/
 
 static void
 register_method_local (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji)
 {
 	if (!mono_conc_hashtable_lookup (prof->method_table, method)) {
+		/*
+		 * FIXME: In some cases, we crash while looking up JIT info for AOT'd methods.
+		 * This usually happens for static constructors. This code is disabled for now
+		 * as we don't need this info for anything critical.
+		 *
+		 * https://bugzilla.xamarin.com/show_bug.cgi?id=35171
+		 */
+		/*
 		if (!ji) {
 			MethodSearch search = { method, NULL };
 
@@ -700,6 +710,7 @@ register_method_local (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji)
 
 			ji = search.found;
 		}
+		*/
 
 		/*
 		 * FIXME: We can't always find JIT info for a generic shared method, especially
