@@ -2479,6 +2479,8 @@ LinearScan::getKillSetForNode(GenTree* tree)
     case GT_LSH:
     case GT_RSH:
     case GT_RSZ:
+    case GT_ROL:
+    case GT_ROR:
         if (tree->gtLsraInfo.isHelperCallWithKills)
         {
             killMask = RBM_CALLEE_TRASH;
