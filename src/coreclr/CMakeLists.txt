@@ -245,6 +245,10 @@ if (CLR_CMAKE_PLATFORM_UNIX)
       
   endif(CLR_CMAKE_PLATFORM_LINUX)
 
+  if(CLR_CMAKE_PLATFORM_DARWIN)
+    message("Detected OSX x86_64")
+  endif(CLR_CMAKE_PLATFORM_DARWIN)
+
   if(CLR_CMAKE_PLATFORM_FREEBSD)
     message("Detected FreeBSD amd64")
   endif(CLR_CMAKE_PLATFORM_FREEBSD)
@@ -472,7 +476,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   endif(IS_64BIT_BUILD)
   
   if(CLR_CMAKE_PLATFORM_DARWIN)
-    message("Detected OSX x86_64")
     add_definitions(-D_XOPEN_SOURCE)
   endif(CLR_CMAKE_PLATFORM_DARWIN)
 
