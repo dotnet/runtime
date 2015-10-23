@@ -165,7 +165,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4083)]
         public void BeginSend_Buffer_InvalidOffset_Throws_ArgumentOutOfRange()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginSend(s_buffer, -1, 0, SocketFlags.None, TheAsyncCallback, null));
@@ -173,7 +172,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4083)]
         public void BeginSend_Buffer_InvalidCount_Throws_ArgumentOutOfRange()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginSend(s_buffer, 0, -1, SocketFlags.None, TheAsyncCallback, null));
@@ -212,7 +210,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4083)]
         public void BeginSendTo_InvalidOffset_Throws_ArgumentOutOfRange()
         {
             EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
@@ -221,7 +218,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4083)]
         public void BeginSendTo_InvalidSize_Throws_ArgumentOutOfRange()
         {
             EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
@@ -243,7 +239,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4083)]
         public void BeginReceive_Buffer_InvalidOffset_Throws_ArgumentOutOfRange()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceive(s_buffer, -1, 0, SocketFlags.None, TheAsyncCallback, null));
@@ -251,7 +246,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4083)]
         public void BeginReceive_Buffer_InvalidCount_Throws_ArgumentOutOfRange()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().BeginReceive(s_buffer, 0, -1, SocketFlags.None, TheAsyncCallback, null));
@@ -299,7 +293,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4083)]
         public void BeginReceiveFrom_InvalidOffset_Throws_ArgumentOutOfRange()
         {
             EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
@@ -308,7 +301,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4083)]
         public void BeginReceiveFrom_InvalidSize_Throws_ArgumentOutOfRange()
         {
             EndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 1);
@@ -356,7 +348,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4083)]
         public void BeginReceiveMessageFrom_InvalidOffset_Throws_ArgumentOutOfRange()
         {
             EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
@@ -366,7 +357,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4083)]
         public void BeginReceiveMessageFrom_InvalidSize_Throws_ArgumentOutOfRange()
         {
             EndPoint remote = new IPEndPoint(IPAddress.Loopback, 1);
