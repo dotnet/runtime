@@ -96,11 +96,7 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 			return FALSE;
 
 		mono_mach_arch_thread_state_to_mcontext (state, mctx);
-#ifdef TARGET_ARM64
-		g_assert_not_reached ();
-#else
 		uctx.uc_mcontext = mctx;
-#endif
 		mono_monoctx_to_sigctx (&tmp, &uctx);
 
 		mono_mach_arch_mcontext_to_thread_state (mctx, state);
