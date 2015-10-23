@@ -223,7 +223,7 @@ namespace System.Net.Security
             }
         }
 
-        public SafeDeleteContext(SafeFreeCredentials credential, long options, string encryptionPolicy, bool isServer, bool remoteCertRequired)
+        public SafeDeleteContext(SafeFreeCredentials credential, bool isServer, bool remoteCertRequired)
             : base(IntPtr.Zero, true)
         {
             Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteContext");
@@ -239,10 +239,10 @@ namespace System.Net.Security
             try
             {
                 _sslContext = Interop.OpenSsl.AllocateSslContext(
-                    options,
+                    credential.Protocols,
                     credential.CertHandle,
                     credential.CertKeyHandle,
-                    encryptionPolicy,
+                    credential.Policy,
                     isServer,
                     remoteCertRequired);
             }

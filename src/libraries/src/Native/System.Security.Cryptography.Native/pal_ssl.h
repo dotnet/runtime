@@ -1,9 +1,32 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#include "pal_types.h"
+#include "pal_crypto_types.h"
 
 #include <openssl/ssl.h>
+
+/*
+These values should be kept in sync with System.Security.Authentication.SslProtocols.
+*/
+enum SslProtocols : int32_t
+{
+    PAL_SSL_NONE = 0,
+    PAL_SSL_SSL2 = 12,
+    PAL_SSL_SSL3 = 48,
+    PAL_SSL_TLS = 192,
+    PAL_SSL_TLS11 = 768,
+    PAL_SSL_TLS12 = 3072
+};
+
+/*
+These values should be kept in sync with System.Net.Security.EncryptionPolicy.
+*/
+enum class EncryptionPolicy : int32_t
+{
+    RequireEncryption = 0,
+    AllowNoEncryption,
+    NoEncryption
+};
 
 /*
 These values should be kept in sync with System.Security.Authentication.CipherAlgorithmType.
@@ -65,6 +88,25 @@ enum class HashAlgorithmType : int32_t
     SSL_AEAD = 229412,
 };
 
+enum SslErrorCode : int32_t
+{
+    PAL_SSL_ERROR_NONE = 0,
+    PAL_SSL_ERROR_SSL = 1,
+    PAL_SSL_ERROR_WANT_READ = 2,
+    PAL_SSL_ERROR_WANT_WRITE = 3,
+    PAL_SSL_ERROR_SYSCALL = 5,
+    PAL_SSL_ERROR_ZERO_RETURN = 6,
+};
+
+// the function pointer definition for the callback used in SslCtxSetVerify
+typedef int32_t(*SslCtxSetVerifyCallback)(int32_t, X509_STORE_CTX*);
+
+
+/*
+Ensures that libssl is correctly initialized and ready to use.
+*/
+extern "C" void EnsureLibSslInitialized();
+
 /*
 Shims the SSLv23_method method.
 
@@ -108,11 +150,9 @@ Returns the new SSL_CTX instance.
 extern "C" SSL_CTX* SslCtxCreate(SSL_METHOD* method);
 
 /*
-Shims the SSL_CTX_ctrl method.
-
-The return value of the SSL_CTX_ctrl() function depends on the command supplied via the cmd parameter.
+Sets the specified protocols in the SSL_CTX options.
 */
-extern "C" int64_t SslCtxCtrl(SSL_CTX* ctx, int32_t cmd, int64_t larg, void* parg);
+extern "C" void SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols);
 
 /*
 Shims the SSL_new method.
@@ -151,6 +191,16 @@ Always succeeds.
 extern "C" void SslCtxDestroy(SSL_CTX* ctx);
 
 /*
+Shims the SSL_set_connect_state method.
+*/
+extern "C" void SslSetConnectState(SSL* ssl);
+
+/*
+Shims the SSL_set_accept_state method.
+*/
+extern "C" void SslSetAcceptState(SSL* ssl);
+
+/*
 Shims the SSL_get_version method.
 
 Returns the protocol version string for the SSL instance.
@@ -179,3 +229,110 @@ Returns the positive number of bytes read when successful, 0 or a negative numbe
 when an error is encountered.
 */
 extern "C" int32_t SslRead(SSL* ssl, void* buf, int32_t num);
+
+/*
+Shims the SSL_renegotiate_pending method.
+
+Returns 1 when negotiation is requested; 0 once a handshake has finished.
+*/
+extern "C" int32_t IsSslRenegotiatePending(SSL* ssl);
+
+/*
+Shims the SSL_shutdown method.
+
+Returns:
+1 if the shutdown was successfully completed;
+0 if the shutdown is not yet finished;
+<0 if the shutdown was not successful because a fatal error.
+*/
+extern "C" int32_t SslShutdown(SSL* ssl);
+
+/*
+Shims the SSL_set_bio method.
+*/
+extern "C" void SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio);
+
+/*
+Shims the SSL_do_handshake method.
+
+Returns:
+1 if the handshake was successful;
+0 if the handshake was not successful but was shut down controlled
+and by the specifications of the TLS/SSL protocol;
+<0 if the handshake was not successful because of a fatal error.
+*/
+extern "C" int32_t SslDoHandshake(SSL* ssl);
+
+/*
+Gets a value indicating whether the SSL_state is SSL_ST_OK.
+
+Returns 1 if the state is OK, otherwise 0.
+*/
+extern "C" int32_t IsSslStateOK(SSL* ssl);
+
+/*
+Shims the SSL_get_peer_certificate method.
+
+Returns the certificate presented by the peer.
+*/
+extern "C" X509* SslGetPeerCertificate(SSL* ssl);
+
+/*
+Shims the SSL_get_peer_cert_chain method.
+
+Returns the certificate chain presented by the peer.
+*/
+extern "C" X509Stack* SslGetPeerCertChain(SSL* ssl);
+
+/*
+Shims the SSL_CTX_use_certificate method.
+
+Returns 1 upon success, otherwise 0.
+*/
+extern "C" int32_t SslCtxUseCertificate(SSL_CTX* ctx, X509* x);
+
+/*
+Shims the SSL_CTX_use_PrivateKey method.
+
+Returns 1 upon success, otherwise 0.
+*/
+extern "C" int32_t SslCtxUsePrivateKey(SSL_CTX* ctx, EVP_PKEY* pkey);
+
+/*
+Shims the SSL_CTX_check_private_key method.
+
+Returns 1 upon success, otherwise 0.
+*/
+extern "C" int32_t SslCtxCheckPrivateKey(SSL_CTX* ctx);
+
+/*
+Shims the SSL_CTX_set_quiet_shutdown method.
+*/
+extern "C" void SslCtxSetQuietShutdown(SSL_CTX* ctx);
+
+/*
+Shims the SSL_get_client_CA_list method.
+
+Returns the list of CA names explicity set.
+*/
+extern "C" X509NameStack* SslGetClientCAList(SSL* ssl);
+
+/*
+Shims the SSL_CTX_set_verify method.
+*/
+extern "C" void SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback);
+
+/*
+Sets the specified encryption policy on the SSL_CTX.
+*/
+extern "C" void SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy);
+
+/*
+Shims the SSL_CTX_set_client_CA_list method.
+*/
+extern "C" void SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list);
+
+/*
+Gets the SSL stream sizes to use.
+*/
+extern "C" void GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage);

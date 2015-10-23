@@ -47,3 +47,10 @@ Gets the size of data available in the BIO.
 Shims the BIO_get_mem_data method.
 */
 extern "C" int32_t GetMemoryBioSize(BIO* bio);
+
+/*
+Shims the BIO_ctrl_pending method.
+
+Returns the number of pending characters in the BIOs read and write buffers.
+*/
+extern "C" int32_t BioCtrlPending(BIO* bio);
