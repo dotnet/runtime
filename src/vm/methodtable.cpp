@@ -2733,13 +2733,7 @@ bool MethodTable::ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassing
             switch (fieldType)
             {
             case ELEMENT_TYPE_CHAR:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-
             case ELEMENT_TYPE_I2:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-
             case ELEMENT_TYPE_U2:
                 fieldClassificationType = SystemVClassificationTypeInteger;
                 break;
@@ -2757,20 +2751,14 @@ bool MethodTable::ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassing
                 // At this point, ELEMENT_TYPE_I must be 4 bytes long.  Same for ELEMENT_TYPE_U.
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_I4:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_U4:
+            case ELEMENT_TYPE_PTR:
                 fieldClassificationType = SystemVClassificationTypeInteger;
                 break;
 
             case ELEMENT_TYPE_R4:
                 fieldClassificationType = SystemVClassificationTypeSSE;
-                break;
-
-            case ELEMENT_TYPE_PTR:
-                fieldClassificationType = SystemVClassificationTypeInteger;
                 break;
 
             default:
@@ -2786,20 +2774,14 @@ bool MethodTable::ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassing
                 // At this point, ELEMENT_TYPE_I must be 8 bytes long.  Same for ELEMENT_TYPE_U.
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_I8:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_U8:
+            case ELEMENT_TYPE_PTR:
                 fieldClassificationType = SystemVClassificationTypeInteger;
                 break;
 
             case ELEMENT_TYPE_R8:
                 fieldClassificationType = SystemVClassificationTypeSSE;
-                break;
-
-            case ELEMENT_TYPE_PTR:
-                fieldClassificationType = SystemVClassificationTypeInteger;
                 break;
 
             default:
@@ -2822,54 +2804,28 @@ bool MethodTable::ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassing
             {
 #ifdef FEATURE_COMINTEROP
             case NFT_BSTR:
-                // COMInterop not supported for CORECLR.
-                _ASSERTE(false && "COMInterop not supported for CORECLR.");
-                return false;
             case NFT_HSTRING:
+            case NFT_VARIANT:
+            case NFT_VARIANTBOOL:
+            case NFT_CURRENCY:
                 // COMInterop not supported for CORECLR.
                 _ASSERTE(false && "COMInterop not supported for CORECLR.");
                 return false;
 #endif  // FEATURE_COMINTEROP
             case NFT_STRINGUNI:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
             case NFT_STRINGANSI:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
-            case NFT_DELEGATE:
-                return false;
-#ifdef FEATURE_COMINTEROP
-            case NFT_VARIANT:
-                _ASSERTE(false && "COMInterop not supported for CORECLR.");
-                return false;
-#endif  // FEATURE_COMINTEROP
             case NFT_ANSICHAR:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
             case NFT_WINBOOL:
-                fieldClassificationType = SystemVClassificationTypeInteger;
-                break;
             case NFT_CBOOL:
                 fieldClassificationType = SystemVClassificationTypeInteger;
                 break;
+
+            case NFT_DELEGATE:
             case NFT_DECIMAL:
-                return false;
             case NFT_DATE:
-                return false;
-#ifdef FEATURE_COMINTEROP
-            case NFT_VARIANTBOOL:
-                _ASSERTE(false && "COMInterop not supported for CORECLR.");
-                return false;
-            case NFT_CURRENCY:
-                _ASSERTE(false && "COMInterop not supported for CORECLR.");
-                return false;
-#endif  // FEATURE_COMINTEROP
             case NFT_ILLEGAL:
-                return false;
             case NFT_SAFEHANDLE:
-                return false;
             case NFT_CRITICALHANDLE:
-                return false;
             default:
                 return false;
             }

@@ -4450,7 +4450,6 @@ void           Compiler::impImportAndPushBox (CORINFO_RESOLVED_TOKEN * pResolved
         op1 = gtNewLclvNode(impBoxTemp, TYP_REF);
         op2 = gtNewIconNode(sizeof(void*), TYP_I_IMPL);
         op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, op2);
-        
         if (exprToBox->TypeGet() == TYP_STRUCT)
         {
             assert(info.compCompHnd->getClassSize(pResolvedToken->hClass) == info.compCompHnd->getClassSize(operCls));
@@ -4468,7 +4467,8 @@ void           Compiler::impImportAndPushBox (CORINFO_RESOLVED_TOKEN * pResolved
                    varTypeIsFloating(lclTyp) == varTypeIsFloating(exprToBox->TypeGet()));
             var_types srcTyp = exprToBox->TypeGet();
             var_types dstTyp = lclTyp;
-            if(srcTyp != dstTyp)
+
+            if (srcTyp != dstTyp)
             {
                 assert((varTypeIsFloating(srcTyp) && varTypeIsFloating(dstTyp)) ||
                     (varTypeIsIntegral(srcTyp) && varTypeIsIntegral(dstTyp)));
@@ -4476,6 +4476,7 @@ void           Compiler::impImportAndPushBox (CORINFO_RESOLVED_TOKEN * pResolved
             }
             op1 = gtNewAssignNode(gtNewOperNode(GT_IND, lclTyp, op1), exprToBox);
         }
+
         op2 = gtNewLclvNode(impBoxTemp, TYP_REF);
         op1 = gtNewOperNode(GT_COMMA, TYP_REF, op1, op2);        
 
@@ -13578,7 +13579,6 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
             // reimported, but retExpr won't get cleared as part of setting the block to
             // be reimported. The reimported retExpr value should be the same, so even if
             // we don't unconditionally overwrite it, it shouldn't matter.
-
             if (info.compRetNativeType != TYP_STRUCT)
             {
                 if (info.compRetType == TYP_STRUCT)
