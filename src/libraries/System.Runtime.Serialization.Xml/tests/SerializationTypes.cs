@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -11,7 +12,6 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.ComponentModel;
 
 namespace SerializationTypes
 {
@@ -288,6 +288,11 @@ namespace SerializationTypes
                 return _ro2;
             }
         }
+    }
+
+    public class TypeWithSimpleDictionaryMember
+    {
+        public Dictionary<string, int> F1;
     }
 
     public class TypeWithIDictionaryPropertyInitWithConcreteType
@@ -1675,6 +1680,47 @@ namespace SerializationTypes
         }
     }
 
+    public class TypeWithNestedGenericClassImplementingIXmlSerialiable
+    {
+        // T can only be string
+        public class NestedGenericClassImplementingIXmlSerialiable<T> : IXmlSerializable
+        {
+            public static bool WriteXmlInvoked = false;
+            public static bool ReadXmlInvoked = false;
+
+        public string StringValue { get; set; }
+        private T GenericValue { get; set; }
+
+        public NestedGenericClassImplementingIXmlSerialiable()
+        {
+            GenericValue = default(T);
+        }
+
+        public T GetPrivateMember()
+        {
+            return GenericValue;
+        }
+
+        public System.Xml.Schema.XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(System.Xml.XmlReader reader)
+        {
+            ReadXmlInvoked = true;
+            reader.MoveToContent();
+            StringValue = reader.GetAttribute("StringValue");
+        }
+
+        public void WriteXml(System.Xml.XmlWriter writer)
+        {
+            WriteXmlInvoked = true;
+            writer.WriteAttributeString("StringValue", StringValue);
+        }
+        }
+    }
+
     public class TypeWithPropertyNameSpecified
     {
         public string MyField;
@@ -1791,6 +1837,16 @@ namespace SerializationTypes
     public class BaseClassForInvalidDerivedClass
     {
         public int Id;
+    }
+
+    public class InvalidDerivedClass : BaseClassForInvalidDerivedClass
+    {
+        public ICollection<int> Member1;
+    }
+
+    public class AnotherInvalidDerivedClass : BaseClassForInvalidDerivedClass
+    {
+        public ICollection<int> Member1;
     }
 
     public class TypeWithTypeProperty
@@ -2029,14 +2085,34 @@ namespace SerializationTypes
     {
         private List<string> _anotherStringList = new List<string>();
 
+        static TypeWithListPropertiesWithoutPublicSetters()
+        {
+            StaticProperty = "Static property should not be checked for public setter";
+        }
+
         public TypeWithListPropertiesWithoutPublicSetters()
         {
+            PropertyWithXmlElementAttribute = new List<string>();
             IntList = new MyGenericList<int>();
             StringList = new List<string>();
+            PrivateIntListField = new List<int>();
+            PublicIntListField = new List<int>();
+            PublicIntListFieldWithXmlElementAttribute = new List<int>();
         }
+
+        public static string StaticProperty { get; private set; }
+
+
+        [XmlElement("PropWithXmlElementAttr")]
+        public List<string> PropertyWithXmlElementAttribute { get; private set; }
         public MyGenericList<int> IntList { get; private set; }
         public List<string> StringList { get; private set; }
         public List<string> AnotherStringList { get { return _anotherStringList; } }
+
+        private List<int> PrivateIntListField;
+        public List<int> PublicIntListField;
+        [XmlElement("FieldWithXmlElementAttr")]
+        public List<int> PublicIntListFieldWithXmlElementAttribute;
     }
 
     public abstract class HighScoreManager<T> where T : HighScoreManager<T>.HighScoreBase
@@ -2053,6 +2129,242 @@ namespace SerializationTypes
             public int Id { get; set; }
             public string Name { get; set; }
         }
+    }
+
+    public class TypeWithNestedPublicType
+    {
+        public TypeWithNestedPublicType()
+        {
+            Level = 10;
+        }
+
+        public uint Level { get; private set; }
+        public class LevelData
+        {
+            public string Name { get; set; }
+        }
+    }
+
+    public class PublicTypeWithNestedPublicTypeWithNestedPublicType
+    {
+        public PublicTypeWithNestedPublicTypeWithNestedPublicType()
+        {
+            Level = 10;
+        }
+
+        public uint Level { get; private set; }
+
+        public class NestedPublicType
+        {
+            public class LevelData
+            {
+                public string Name { get; set; }
+            }
+        }
+    }
+
+    internal class InternalTypeWithNestedPublicType
+    {
+        public InternalTypeWithNestedPublicType()
+        {
+            Level = 10;
+        }
+
+        public uint Level { get; private set; }
+        public class LevelData
+        {
+            public string Name { get; set; }
+        }
+    }
+
+    internal class InternalTypeWithNestedPublicTypeWithNestedPublicType
+    {
+        public InternalTypeWithNestedPublicTypeWithNestedPublicType()
+        {
+            Level = 10;
+        }
+
+        public uint Level { get; private set; }
+
+        public class NestedPublicType
+        {
+            public class LevelData
+            {
+                public string Name { get; set; }
+            }
+        }
+    }
+
+    [DataContract]
+    public class BaseTypeWithDataMember
+    {
+        [DataMember]
+        public TypeAsEmbeddedDataMember EmbeddedDataMember { get; set; }
+    }
+
+    [DataContract]
+    public class DerivedTypeWithDataMemberInBaseType : BaseTypeWithDataMember
+    {
+    }
+
+    [DataContract]
+    public class TypeAsEmbeddedDataMember
+    {
+        [DataMember]
+        public string Name { get; set; }
+    }
+
+    public class PocoBaseTypeWithDataMember
+    {
+        public PocoTypeAsEmbeddedDataMember EmbeddedDataMember { get; set; }
+    }
+
+    public class PocoDerivedTypeWithDataMemberInBaseType : PocoBaseTypeWithDataMember
+    {
+    }
+
+    public class PocoTypeAsEmbeddedDataMember
+    {
+        public string Name { get; set; }
+    }
+
+    public class SpotlightDescription
+    {
+        public SpotlightDescription() { }
+        public bool IsDynamic { get; set; }
+        public string Value { get; set; }
+    }
+
+    public enum SlideEventType
+    {
+        None,
+        LaunchURL,
+        LaunchSection,
+        LaunchVideo,
+        LaunchImage
+    }
+
+    public class SerializableSlide
+    {
+        public SerializableSlide() { }
+        public SpotlightDescription Description { get; set; }
+        public string DisplayCondition { get; set; }
+        public string EventData { get; set; }
+        public SlideEventType EventType { get; set; }
+        public string ImageName { get; set; }
+        public string ImagePath { get; set; }
+        public string Title { get; set; }
+    }
+
+    public class GenericTypeWithNestedGenerics<T>
+    {
+        public class InnerGeneric<U>
+        {
+            public T data1;
+            public U data2;
+        }
+    }
+
+    [DataContract]
+    public class TypeWithXmlQualifiedName
+    {
+        [DataMember(IsRequired = true, EmitDefaultValue = false)]
+        public XmlQualifiedName Value { get; set; }
+    }
+
+    public class TypeWithNoDefaultCtor
+    {
+        public TypeWithNoDefaultCtor(string id)
+        {
+            ID = id;
+        }
+        public string ID { get; set; }
+    }
+
+    public class TypeWithPropertyWithoutDefaultCtor
+    {
+        public TypeWithPropertyWithoutDefaultCtor()
+        {
+        }
+
+        public string Name { get; set; }
+        public TypeWithNoDefaultCtor MemberWithInvalidDataContract { get; set; }
+    }
+
+
+    [DataContract(Name = "DCWith.InName")]
+    public class DataContractWithDotInName
+    {
+        [DataMember]
+        public string Name { get; set; }
+    }
+
+    [DataContract(Name = "DCWith-InName")]
+    public class DataContractWithMinusSignInName
+    {
+        [DataMember]
+        public string Name { get; set; }
+    }
+
+    [DataContract(Name = "DCWith{}[]().,:;+-*/%&|^!~=<>?++--&&||<<>>==!=<=>=+=-=*=/=%=&=|=^=<<=>>=->InName")]
+    public class DataContractWithOperatorsInName
+    {
+        [DataMember]
+        public string Name { get; set; }
+    }
+
+    [DataContract(Name = "DCWith`@#$'\" 	InName")]
+    public class DataContractWithOtherSymbolsInName
+    {
+        [DataMember]
+        public string Name { get; set; }
+    }
+
+    [CollectionDataContract(Name = "MyHeaders", Namespace = "http://schemas.microsoft.com/netservices/2010/10/servicebus/connect", ItemName = "MyHeader", KeyName = "MyKey", ValueName = "MyValue")]
+    public sealed class CollectionDataContractWithCustomKeyName : Dictionary<int, int>
+    {
+        public CollectionDataContractWithCustomKeyName()
+        {
+        }
+    }
+
+    // Dictionary<int, int> is already used above so there will be a conflict.
+    [CollectionDataContract(Name = "MyHeaders2", Namespace = "http://schemas.microsoft.com/netservices/2010/10/servicebus/connect", ItemName = "MyHeader2", KeyName = "MyKey2", ValueName = "MyValue2")]
+    public sealed class CollectionDataContractWithCustomKeyNameDuplicate : Dictionary<int, int>
+    {
+        public CollectionDataContractWithCustomKeyNameDuplicate()
+        {
+        }
+    }
+
+    public class CollectionWithoutDefaultConstructor : MyCollection<string>
+    {
+        internal CollectionWithoutDefaultConstructor(string name) : base()
+        {
+            Name = name;
+        }
+
+        public string Name { get; set; }
+    }
+
+    public class TypeWithCollectionWithoutDefaultConstructor
+    {
+        public TypeWithCollectionWithoutDefaultConstructor()
+        {
+            _collectionWithoutDefaultConstructor = new CollectionWithoutDefaultConstructor("MyName");
+        }
+
+        CollectionWithoutDefaultConstructor _collectionWithoutDefaultConstructor;
+        public CollectionWithoutDefaultConstructor CollectionProperty { get { return _collectionWithoutDefaultConstructor; } }
+    }
+
+    public class TypeMissingSerializationCodeBase
+    {
+    }
+
+    public class TypeMissingSerializationCodeDerived : TypeMissingSerializationCodeBase
+    {
+        public string Name { get; set; }
     }
 }
 
@@ -2090,6 +2402,33 @@ namespace DuplicateTypeNamesTest.ns2
     {
         uno, dos, tres,
     }
+}
+
+public class TypeWithoutPublicSetter
+{
+    public string Name { get; private set; }
+
+    [XmlIgnore]
+    public int Age { get; private set; }
+
+    public Type MyType { get; private set; }
+
+    public string ValidProperty { get; set; }
+
+    public string PropertyWrapper
+    {
+        get
+        {
+            return ValidProperty;
+        }
+    }
+}
+
+[CompilerGenerated]
+public class TypeWithCompilerGeneratedAttributeButWithoutPublicSetter
+{
+    [CompilerGenerated]
+    public string Name { get; private set; }
 }
 
 public class TestableDerivedException : System.Exception
