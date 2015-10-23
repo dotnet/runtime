@@ -107,7 +107,6 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
 
     AcquireSuspensionLock(pThread);
     pThread->suspensionInfo.SetSelfSusp(TRUE);
-    pThread->suspensionInfo.IncrSuspCount();
     ReleaseSuspensionLock(pThread);
 
     int pipe_descs[2];
@@ -144,7 +143,6 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
     if (palError == NO_ERROR)
     {
         AcquireSuspensionLock(pThread);
-        pThread->suspensionInfo.DecrSuspCount();
         pThread->suspensionInfo.SetSelfSusp(FALSE);
         ReleaseSuspensionLock(pThread);
     }
@@ -283,7 +281,6 @@ CThreadSuspensionInfo::InternalSuspendThreadFromData(
                     {
                          // Decrement suspension count for self suspension case since 
                          // it was already incremented but the suspension attempt failed.
-                        pthrTarget->suspensionInfo.DecrSuspCount();
                         pthrTarget->suspensionInfo.SetSelfSusp(FALSE);
                         ReleaseSuspensionLock(pthrTarget);
                         ASSERT("Self suspension should not fail but pthread_kill returned %d\n", nPthreadRet);
@@ -302,7 +299,6 @@ CThreadSuspensionInfo::InternalSuspendThreadFromData(
                     palError = ERROR_INTERNAL_ERROR;
                     if (fSelfSuspend)
                     {
-                        pthrTarget->suspensionInfo.DecrSuspCount();
                         pthrTarget->suspensionInfo.SetSelfSusp(FALSE);
                         ReleaseSuspensionLock(pthrTarget);
                     }
