@@ -102,17 +102,6 @@ VOID PROCCleanupThreadSemIds(VOID);
 
 /*++
 Function:
-  PROCCondemnOtherThreads
-
-  Set the waiting state of other threads to TWS_EARLYDEATH; this will prevent 
-  signaled objects from trying to wake up other threads during process termination
-
-(no parameters, no return value)
---*/
-void PROCCondemnOtherThreads(void);
-
-/*++
-Function:
   PROCProcessLock
 
 Abstract

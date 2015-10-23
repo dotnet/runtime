@@ -2744,42 +2744,6 @@ PROCCleanupThreadSemIds(void)
 
 /*++
 Function:
-  PROCCondemnOtherThreads
-
-  Instruct the synchronization manager to abandon any objects owned
-  by threads in this process (including the calling thread).
-
-(no parameters, no return value)
---*/
-void PROCCondemnOtherThreads(void)
-{
-    CPalThread *pThread;
-    CPalThread *pTargetThread;
-
-    pThread = InternalGetCurrentThread();
-
-    TRACE("Marking all other threads as suspended...\n");
-    PROCProcessLock();
-
-    pTargetThread = pGThreadList;
-    
-    while (NULL != pTargetThread)
-    {
-        g_pSynchronizationManager->AbandonObjectsOwnedByThread(
-            pThread,
-            pTargetThread
-            );            
-
-        pTargetThread = pTargetThread->GetNext();
-    }
-    
-    PROCProcessUnlock();
-    TRACE("All threads except this one are now condemned\n");
-}
-
-
-/*++
-Function:
   TerminateCurrentProcessNoExit
 
 Abstract:
