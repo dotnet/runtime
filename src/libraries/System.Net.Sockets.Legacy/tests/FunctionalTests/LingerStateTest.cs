@@ -24,8 +24,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4008, PlatformID.OSX)]
-        public void Socket_LingerState_Boundaries_CorrectBehavior()
+        public void Socket_LingerState_Common_Boundaries_CorrectBehavior()
         {
             Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -35,11 +34,43 @@ namespace System.Net.Sockets.Tests
             TestLingerState_ArgumentException(sock, true, -1);
 
             TestLingerState_Success(sock, true, 0);
+            TestLingerState_Success(sock, true, 120);
+
+            TestLingerState_ArgumentException(sock, true, UInt16.MaxValue + 1);
+        }
+
+        [Fact]
+        [PlatformSpecific(~PlatformID.OSX)]
+        public void Socket_LingerState_Upper_Boundaries_CorrectBehavior()
+        {
+            Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
             TestLingerState_Success(sock, true, Int16.MaxValue);
             TestLingerState_Success(sock, true, Int16.MaxValue + 1);
             TestLingerState_Success(sock, true, UInt16.MaxValue);
+        }
 
-            TestLingerState_ArgumentException(sock, true, UInt16.MaxValue + 1);
+        [Fact]
+        [PlatformSpecific(PlatformID.OSX)]
+        public void Socket_LingerState_Upper_Boundaries_CorrectBehavior_OSX()
+        {
+            // The upper bound for linger time is drastically different on OS X.
+            Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            Assert.Throws<SocketException>(() =>
+            {
+                sock.LingerState = new LingerOption(true, Int16.MaxValue);
+            });
+
+            Assert.Throws<SocketException>(() =>
+            {
+                sock.LingerState = new LingerOption(true, Int16.MaxValue + 1);
+            });
+
+            Assert.Throws<SocketException>(() =>
+            {
+                sock.LingerState = new LingerOption(true, UInt16.MaxValue);
+            });
         }
     }
 }

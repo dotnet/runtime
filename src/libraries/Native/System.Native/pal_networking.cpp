@@ -24,6 +24,9 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#if defined(__APPLE__) && __APPLE__
+#include <sys/socketvar.h>
+#endif
 #include <unistd.h>
 #include <vector>
 
@@ -45,6 +48,15 @@ struct in_pktinfo
 #if !defined(IPV6_DROP_MEMBERSHIP) && defined(IPV6_LEAVE_GROUP)
 #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
 #endif
+
+enum
+{
+#if defined(__APPLE__) && __APPLE__
+    LINGER_OPTION_NAME = SO_LINGER_SEC
+#else
+    LINGER_OPTION_NAME = SO_LINGER,
+#endif
+};
 
 enum
 {
@@ -1244,6 +1256,43 @@ extern "C" Error SetIPv6MulticastOption(int32_t socket, int32_t multicastOption,
     return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
 }
 
+#if defined(__APPLE__) && __APPLE__
+static int32_t GetMaxLingerTime()
+{
+    static volatile int32_t MaxLingerTime = -1;
+    static_assert(sizeof(xsocket::so_linger) == 2, "");
+
+    // OS X does not define the linger time in seconds by default, but in ticks.
+    // Furthermore, when SO_LINGER_SEC is used, the value is simply scaled by
+    // the number of ticks per second and then the result is used to set the
+    // underlying linger time. Unfortunately, the underlying linger time is
+    // stored as a `short` and out-of-range values are simply truncated to fit
+    // within 16 bits and then reinterpreted as 2's complement signed integers.
+    // This results in some *very* strange behavior and a rather low limit for
+    // the linger time. Instead of admitting this behavior, we determine the
+    // maximum linger time in seconds and return an error if the input is out
+    // of range.
+    int32_t maxLingerTime = MaxLingerTime;
+    if (maxLingerTime == -1)
+    {
+        long ticksPerSecond = sysconf(_SC_CLK_TCK);
+        maxLingerTime = static_cast<int32_t>(32767 / ticksPerSecond);
+        MaxLingerTime = maxLingerTime;
+    }
+
+    return maxLingerTime;
+}
+#else
+constexpr int32_t GetMaxLingerTime()
+{
+    // On other platforms, the maximum linger time is locked to the smaller of
+    // 65535 (the maximum time for winsock) and the maximum signed value that
+    // will fit in linger::l_linger.
+
+    return Min(65535U, (1U << (sizeof(linger::l_linger) * 8 - 1)) - 1);
+}
+#endif
+
 extern "C" Error GetLingerOption(int32_t socket, LingerOption* option)
 {
     if (option == nullptr)
@@ -1253,7 +1302,7 @@ extern "C" Error GetLingerOption(int32_t socket, LingerOption* option)
 
     linger opt;
     socklen_t len = sizeof(opt);
-    int err = getsockopt(socket, SOL_SOCKET, SO_LINGER, &opt, &len);
+    int err = getsockopt(socket, SOL_SOCKET, LINGER_OPTION_NAME, &opt, &len);
     if (err != 0)
     {
         return ConvertErrorPlatformToPal(errno);
@@ -1270,8 +1319,13 @@ extern "C" Error SetLingerOption(int32_t socket, LingerOption* option)
         return PAL_EFAULT;
     }
 
+    if (option->OnOff != 0 && (option->Seconds < 0 || option->Seconds > GetMaxLingerTime()))
+    {
+        return PAL_EINVAL;
+    }
+
     linger opt = {.l_onoff = option->OnOff, .l_linger = option->Seconds};
-    int err = setsockopt(socket, SOL_SOCKET, SO_LINGER, &opt, sizeof(opt));
+    int err = setsockopt(socket, SOL_SOCKET, LINGER_OPTION_NAME, &opt, sizeof(opt));
     return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
 }
 
