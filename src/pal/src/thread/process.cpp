@@ -677,6 +677,11 @@ CorUnix::InternalCreateProcess(
     }
 
     lpFileName = lpFileNamePS.OpenStringBuffer(MAX_LONGPATH-1);
+    if (NULL == lpFileName)
+    {
+        palError = ERROR_NOT_ENOUGH_MEMORY;
+        goto InternalCreateProcessExit;
+    }
     if (!getFileName(lpApplicationName, lpCommandLine, lpFileName))
     {
         ERROR("Can't find executable!\n");
@@ -3293,6 +3298,11 @@ getFileName(
         int size = 0;
         int length = (PAL_wcslen(lpCommandLine)+1) * sizeof(WCHAR);
         lpFileName = lpFileNamePS.OpenStringBuffer(length);
+        if (NULL == lpFileName)
+        {
+            ERROR("Not Enough Memory!\n");
+            return FALSE;
+        }
         if (!(size = WideCharToMultiByte(CP_ACP, 0, lpCommandLine, -1,
                                  lpFileName, length, NULL, NULL)))
         {
