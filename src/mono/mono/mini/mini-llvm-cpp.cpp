@@ -626,7 +626,7 @@ init_llvm (void)
   LLVMInitializeARMTarget ();
   LLVMInitializeARMTargetInfo ();
   LLVMInitializeARMTargetMC ();
-#elif defined(TARGET_X86)
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
   LLVMInitializeX86Target ();
   LLVMInitializeX86TargetInfo ();
   LLVMInitializeX86TargetMC ();
