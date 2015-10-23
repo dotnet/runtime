@@ -1975,9 +1975,17 @@ void fgArgInfo::SortArgs()
     argsSorted = true;
 }
 
-// This function creates a tmp var ony if needed.
-// We need this to be done in order to enforce ordering
-// of the evaluation of arguments. There are times this function will not be called for an argument at all.
+//------------------------------------------------------------------------------
+// fgMakeTmpArgNode : This function creates a tmp var only if needed.
+//                    We need this to be done in order to enforce ordering
+//                    of the evaluation of arguments.
+//
+// Arguments:
+//    tmpVarNum  - the var num which we clone into the newly created temp var.
+//
+// Return Value:
+//    the newly created temp var tree. 
+
 GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
                                          FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(const bool passedInRegisters))
 {
@@ -1991,9 +1999,21 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
 #if defined(_TARGET_AMD64_)
     if (type == TYP_STRUCT)
     {
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING 
+        arg->gtFlags |= GTF_DONT_CSE;
 
-
-#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // If it is passed in registers, don't get the address of the var. Make it a
+        // field instead. It will be loaded in registers with putarg_reg tree in lower.
+        if (passedInRegisters)
+        {
+            arg->ChangeOper(GT_LCL_FLD);
+            arg->gtType = type;
+        }
+        else
+        {
+            arg = gtNewOperNode(GT_ADDR, TYP_STRUCT, arg);
+        }
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING 
         switch (lvaLclExactSize(tmpVarNum))
         {
         case 1: type = TYP_BYTE;  break;
@@ -2018,7 +2038,6 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
         default:
             break;
         }
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING 
 
         // If we didn't change the type of the struct, it means
         // its structure doesn't support to be passed directly through a
@@ -2027,31 +2046,15 @@ GenTreePtr    Compiler::fgMakeTmpArgNode(unsigned tmpVarNum
         if (type == TYP_STRUCT)
         {
             arg->gtFlags |= GTF_DONT_CSE;
-
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING 
-
-            // If it is passed in registers, don't get the address of the var. Make it a
-            // field instead. It will be loaded in registers with putarg_reg tree in lower.
-            if (passedInRegisters)
-            {
-                arg->ChangeOper(GT_LCL_FLD);
-                arg->gtType = type;
-            }
-            else
-            {
-                arg = gtNewOperNode(GT_ADDR, TYP_STRUCT, arg);
-            }
-#else // FEATURE_UNIX_AMD64_STRUCT_PASSING 
             arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING 
         }
         else
         {
             arg->ChangeOper(GT_LCL_FLD);
             arg->gtType = type;
         }
+#endif // !!FEATURE_UNIX_AMD64_STRUCT_PASSING 
     }
-
 #else // _TARGET_AMD64_
 
     arg->gtFlags |= GTF_DONT_CSE;
@@ -2247,7 +2250,7 @@ void fgArgInfo::EvalArgsToTemps()
 
             noway_assert(argx->gtType != TYP_STRUCT);
 
-#else // _TARGET_AMD64_
+#else // !(defined(_TARGET_AMD64_) && !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING))
 
             if (defArg->gtType == TYP_STRUCT)
             {
@@ -2276,7 +2279,7 @@ void fgArgInfo::EvalArgsToTemps()
                 }
             }
 
-#endif // _TARGET_AMD64_
+#endif // !(defined(_TARGET_AMD64_) && !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING))
 
             setupArg = compiler->gtNewArgPlaceHolderNode(defArg->gtType, clsHnd);
 
@@ -3845,7 +3848,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 //   Rewrite the struct args to be passed by value on stack or in registers.
 //
 // args:
-//   call: The cll whose arguments need to be morphed..
+//   call: The call whose arguments need to be morphed.
 //   hasStructArgument: Whether this call has struct arguments.
 //   
 void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgument)
@@ -3858,12 +3861,12 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
     {
         fgArgInfoPtr allArgInfo = call->fgArgInfo;
 
-        for (args = call->gtCallArgs; args; args = args->gtOp.gtOp2)
+        for (args = call->gtCallArgs; args != nullptr; args = args->gtOp.gtOp2)
         {
             // For late arguments the arg tree that is overridden is in the gtCallLateArgs list. 
-            // For suchlate args the gtCallArgList contains the setup arg node (ealuating the arg.) 
-            // The tree from the gtCallLateArgs list is passed to the calle. The fgArgEntry node cointains the mapping
-            // between the nodes in both lists. If the arg is not a late arg, the fgArgEntryt->node points to itself,
+            // For such late args the gtCallArgList contains the setup arg node (evaluating the arg.) 
+            // The tree from the gtCallLateArgs list is passed to the callee. The fgArgEntry node contains the mapping
+            // between the nodes in both lists. If the arg is not a late arg, the fgArgEntry->node points to itself,
             // otherwise points to the list in the late args list.
             bool isLateArg = (args->gtOp.gtOp1->gtFlags & GTF_LATE_ARG) != 0;
             fgArgTabEntryPtr fgEntryPtr = gtArgEntryByNode(call, args->gtOp.gtOp1);
@@ -3909,15 +3912,11 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
                 }
 
                 assert(
-                    arg->OperGet() == GT_ADDR ||
-                    arg->OperGet() == GT_LCL_FLD ||
-                    arg->OperGet() == GT_LCL_VAR);
-
-                assert(
                     arg->OperGet() == GT_LCL_VAR ||
                     arg->OperGet() == GT_LCL_FLD ||
-                    arg->gtOp.gtOp1->OperGet() == GT_LCL_FLD ||
-                    arg->gtOp.gtOp1->OperGet() == GT_LCL_VAR);
+                    (arg->OperGet() == GT_ADDR &&
+                        (arg->gtOp.gtOp1->OperGet() == GT_LCL_FLD ||
+                         arg->gtOp.gtOp1->OperGet() == GT_LCL_VAR)));
 
                 GenTreeLclVarCommon* lclCommon = arg->OperGet() == GT_ADDR ?
                     arg->gtOp.gtOp1->AsLclVarCommon() : arg->AsLclVarCommon();
@@ -10087,7 +10086,7 @@ COMPARE:
 
     case GT_ADD:
 
-    CM_OVF_OP :
+CM_OVF_OP :
         if (tree->gtOverflow())
         {
             tree->gtRequestSetFlags();
