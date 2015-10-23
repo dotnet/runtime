@@ -429,13 +429,6 @@ namespace CorUnix
             PAL_ERROR
             InternalSuspendNewThreadFromData(
                 CPalThread *pThread
-            );  
-
-            PAL_ERROR
-            InternalSuspendThreadFromData(
-                CPalThread *pthrSuspender,
-                CPalThread *pthrTarget,
-                DWORD *pdwSuspendCount
             );
 
             PAL_ERROR
@@ -476,9 +469,7 @@ extern LONG g_ssSuspensionLock;
         #ifdef _DEBUG
             void THREADMarkDiagnostic(const char *funcName);
         #endif // _DEBUG
-        
-        BOOL PALCIsSuspensionStateSafe(void);
-        
+
 #ifdef __cplusplus
     }
 #endif // __cpluplus
