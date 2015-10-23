@@ -1,20 +1,22 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
 using SerializationTypes;
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Xml;
 using System.Xml.Linq;
+using Xunit;
 
 
-public static class DataContractJsonSerializerTests
+public static partial class DataContractJsonSerializerTests
 {
     [Fact]
     public static void DCJS_BoolAsRoot()
@@ -28,7 +30,7 @@ public static class DataContractJsonSerializerTests
     {
         Assert.Null(SerializeAndDeserialize<byte[]>(null, "null"));
         byte[] x = new byte[] { 1, 2 };
-        byte[] y = SerializeAndDeserialize<byte[]>(x, "[1,2]");
+        byte[] y = SerializeAndDeserialize<byte[]>(x, @"[1,2]");
         Assert.Equal(x, y);
     }
 
@@ -36,47 +38,58 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_CharAsRoot()
     {
         // Special characters
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2f, "\"\\/\""), (char)0x2f); // Expected output string is: \/
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x5c, "\"\\\\\""), (char)0x5c); // \\
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x27, "\"\'\""), (char)0x27); // '
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x22, "\"\\\"\""), (char)0x22); // \"
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2f, @"""\/"""), (char)0x2f); // Expected output string is: \/
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x5c, @"""\\"""), (char)0x5c); // \\
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x27, @"""'"""), (char)0x27); // '
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x22, @"""\"""""), (char)0x22); // \"
 
         // There are 5 ranges of characters that have output in the form of "\u<code>".
         // The following tests the start and end character and at least one character in each range
         // and also in between the ranges.
 
         // #1. 0x0000 - 0x001F
-        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MinValue, "\"\\u0000\""), char.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x10, "\"\\u0010\""), (char)0x10);
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x1f, "\"\\u001f\""), (char)0x1f);
+        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MinValue, @"""\u0000"""), char.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x10, @"""\u0010"""), (char)0x10);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x1f, @"""\u001f"""), (char)0x1f);
 
         // Between #1 and #2
-        Assert.StrictEqual(SerializeAndDeserialize<char>('a', "\"a\""), 'a'); // 0x0061
+        Assert.StrictEqual(SerializeAndDeserialize<char>('a', @"""a"""), 'a'); // 0x0061
 
         // #2. 0x0085
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x85, "\"\\u0085\""), (char)0x85);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x85, @"""\u0085"""), (char)0x85);
 
         // Between #2 and #3
-        Assert.StrictEqual(SerializeAndDeserialize<char>('ñ', "\"ñ\""), 'ñ'); // 0x00F1
+        Assert.StrictEqual(SerializeAndDeserialize<char>('ñ', @"""ñ"""), 'ñ'); // 0x00F1
 
         // #3. 0x2028 - 0x2029
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2028, "\"\\u2028\""), (char)0x2028);
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2029, "\"\\u2029\""), (char)0x2029);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2028, @"""\u2028"""), (char)0x2028);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2029, @"""\u2029"""), (char)0x2029);
 
         // Between #3 and #4
-        Assert.StrictEqual(SerializeAndDeserialize<char>('?', "\"?\""), '?'); // 0x6F22
+        Assert.StrictEqual(SerializeAndDeserialize<char>('?', @"""?"""), '?'); // 0x6F22
 
         // #4. 0xD800 - 0xDFFF
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xd800, "\"\\ud800\""), (char)0xd800);
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xdabc, "\"\\udabc\""), (char)0xdabc);
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xdfff, "\"\\udfff\""), (char)0xdfff);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xd800, @"""\ud800"""), (char)0xd800);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xdabc, @"""\udabc"""), (char)0xdabc);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xdfff, @"""\udfff"""), (char)0xdfff);
 
         // Between #4 and #5
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xeabc, "\"\""), (char)0xeabc);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xeabc, @""""""), (char)0xeabc);
 
         // #5. 0xFFFE - 0xFFFF
-        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xfffe, "\"\\ufffe\""), (char)0xfffe);
-        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MaxValue, "\"\\uffff\""), char.MaxValue);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xfffe, @"""\ufffe"""), (char)0xfffe);
+        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MaxValue, @"""\uffff"""), char.MaxValue);
+    }
+
+    [Fact]
+    public static void DCJS_NewLineChars()
+    {
+        char ch1 = (char)0x0085;
+        char ch2 = (char)0x2028;
+        char ch3 = (char)0x2029;
+        Assert.StrictEqual<char>(SerializeAndDeserialize<char>(ch1, @"""\u0085"""), ch1);
+        Assert.StrictEqual<char>(SerializeAndDeserialize<char>(ch2, @"""\u2028"""), ch2);
+        Assert.StrictEqual<char>(SerializeAndDeserialize<char>(ch3, @"""\u2029"""), ch3);
     }
 
     [Fact]
@@ -90,22 +103,22 @@ public static class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_DateTimeAsRoot()
     {
-        var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
+        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
         var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm"));
-        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2).AddMinutes(offsetMinutes), string.Format("\"\\/Date(1357084800000{0})\\/\"", timeZoneString)), new DateTime(2013, 1, 2).AddMinutes(offsetMinutes));
-        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local).AddMinutes(offsetMinutes), string.Format("\"\\/Date(1357095845006{0})\\/\"", timeZoneString)), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local).AddMinutes(offsetMinutes));
-        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified).AddMinutes(offsetMinutes), string.Format("\"\\/Date(1357095845006{0})\\/\"", timeZoneString)), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified).AddMinutes(offsetMinutes));
-        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc), "\"\\/Date(1357095845006)\\/\""), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc));
-        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), "\"\\/Date(-62135596800000)\\/\""), DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
-        SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc), "\"\\/Date(253402300799999)\\/\"");
+        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2).AddMinutes(offsetMinutes), string.Format(@"""\/Date(1357084800000{0})\/""", timeZoneString)), new DateTime(2013, 1, 2).AddMinutes(offsetMinutes));
+        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local).AddMinutes(offsetMinutes), string.Format(@"""\/Date(1357095845006{0})\/""", timeZoneString)), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local).AddMinutes(offsetMinutes));
+        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified).AddMinutes(offsetMinutes), string.Format(@"""\/Date(1357095845006{0})\/""", timeZoneString)), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified).AddMinutes(offsetMinutes));
+        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc), @"""\/Date(1357095845006)\/"""), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc));
+        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), @"""\/Date(-62135596800000)\/"""), DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
+        SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc), @"""\/Date(253402300799999)\/""");
     }
 
     [Fact]
     public static void DCJS_DecimalAsRoot()
     {
-        foreach (decimal value in new decimal[] { -1.2m, 0.0m, 2.3m, decimal.MinValue, decimal.MaxValue })
+        foreach (decimal value in new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue })
         {
-            Assert.StrictEqual(SerializeAndDeserialize<decimal>(value, value.ToString(CultureInfo.InvariantCulture)), value);
+            Assert.StrictEqual(SerializeAndDeserialize<decimal>(value, value.ToString()), value);
         }
     }
 
@@ -134,7 +147,7 @@ public static class DataContractJsonSerializerTests
     {
         foreach (Guid value in new Guid[] { Guid.NewGuid(), Guid.Empty })
         {
-            Assert.StrictEqual(SerializeAndDeserialize<Guid>(value, string.Format("\"{0}\"", value.ToString())), value);
+            Assert.StrictEqual(SerializeAndDeserialize<Guid>(value, string.Format(@"""{0}""", value.ToString())), value);
         }
     }
 
@@ -162,14 +175,14 @@ public static class DataContractJsonSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<object>(1, "1"), 1);
         Assert.StrictEqual(SerializeAndDeserialize<object>(true, "true"), true);
         Assert.StrictEqual(SerializeAndDeserialize<object>(null, "null"), null);
-        Assert.StrictEqual(SerializeAndDeserialize<object>("abc", "\"abc\""), "abc");
+        Assert.StrictEqual(SerializeAndDeserialize<object>("abc", @"""abc"""), "abc");
     }
 
     [Fact]
     public static void DCJS_XmlQualifiedNameAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(new XmlQualifiedName("abc", "def"), "\"abc:def\""), new XmlQualifiedName("abc", "def"));
-        Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty, "\"\""), XmlQualifiedName.Empty);
+        Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(new XmlQualifiedName("abc", "def"), @"""abc:def"""), new XmlQualifiedName("abc", "def"));
+        Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty, @""""""), XmlQualifiedName.Empty);
     }
 
     [Fact]
@@ -195,17 +208,17 @@ public static class DataContractJsonSerializerTests
     {
         foreach (string value in new string[] { "abc", "  a b  ", null, "", " ", "Hello World! 漢 ñ" })
         {
-            Assert.StrictEqual(SerializeAndDeserialize<string>(value, value == null ? "null" : string.Format("\"{0}\"", value.ToString())), value);
+            Assert.StrictEqual(SerializeAndDeserialize<string>(value, value == null ? "null" : string.Format(@"""{0}""", value.ToString())), value);
         }
     }
 
     [Fact]
     public static void DCJS_TimeSpanAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(new TimeSpan(1, 2, 3), "\"PT1H2M3S\""), new TimeSpan(1, 2, 3));
-        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(TimeSpan.Zero, "\"PT0S\""), TimeSpan.Zero);
-        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(TimeSpan.MinValue, "\"-P10675199DT2H48M5.4775808S\""), TimeSpan.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(TimeSpan.MaxValue, "\"P10675199DT2H48M5.4775807S\""), TimeSpan.MaxValue);
+        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(new TimeSpan(1, 2, 3), @"""PT1H2M3S"""), new TimeSpan(1, 2, 3));
+        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(TimeSpan.Zero, @"""PT0S"""), TimeSpan.Zero);
+        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(TimeSpan.MinValue, @"""-P10675199DT2H48M5.4775808S"""), TimeSpan.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(TimeSpan.MaxValue, @"""P10675199DT2H48M5.4775807S"""), TimeSpan.MaxValue);
     }
 
     [Fact]
@@ -238,15 +251,15 @@ public static class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_UriAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<Uri>(new Uri("http://abc/"), "\"http:\\/\\/abc\\/\""), new Uri("http://abc/"));
-        Assert.StrictEqual(SerializeAndDeserialize<Uri>(new Uri("http://abc/def/x.aspx?p1=12&p2=34"), "\"http:\\/\\/abc\\/def\\/x.aspx?p1=12&p2=34\""), new Uri("http://abc/def/x.aspx?p1=12&p2=34"));
+        Assert.StrictEqual(SerializeAndDeserialize<Uri>(new Uri(@"http://abc/"), @"""http:\/\/abc\/"""), new Uri(@"http://abc/"));
+        Assert.StrictEqual(SerializeAndDeserialize<Uri>(new Uri(@"http://abc/def/x.aspx?p1=12&p2=34"), @"""http:\/\/abc\/def\/x.aspx?p1=12&p2=34"""), new Uri(@"http://abc/def/x.aspx?p1=12&p2=34"));
     }
 
     [Fact]
     public static void DCJS_ArrayAsRoot()
     {
         SimpleType[] x = new SimpleType[] { new SimpleType { P1 = "abc", P2 = 11 }, new SimpleType { P1 = "def", P2 = 12 } };
-        SimpleType[] y = SerializeAndDeserialize<SimpleType[]>(x, "[{\"P1\":\"abc\",\"P2\":11},{\"P1\":\"def\",\"P2\":12}]");
+        SimpleType[] y = SerializeAndDeserialize<SimpleType[]>(x, @"[{""P1"":""abc"",""P2"":11},{""P1"":""def"",""P2"":12}]");
 
         Utils.Equal(x, y, (a, b) => { return SimpleType.AreEqual(a, b); });
     }
@@ -261,7 +274,7 @@ public static class DataContractJsonSerializerTests
             P1 = new SimpleType[] { new SimpleType { P1 = "ef", P2 = 5 }, new SimpleType { P1 = "gh", P2 = 7 } },
             P2 = new int[] { 11, 12 }
         };
-        TypeWithGetSetArrayMembers y = SerializeAndDeserialize<TypeWithGetSetArrayMembers>(x, "{\"F1\":[{\"P1\":\"ab\",\"P2\":1},{\"P1\":\"cd\",\"P2\":2}],\"F2\":[-1,3],\"P1\":[{\"P1\":\"ef\",\"P2\":5},{\"P1\":\"gh\",\"P2\":7}],\"P2\":[11,12]}");
+        TypeWithGetSetArrayMembers y = SerializeAndDeserialize<TypeWithGetSetArrayMembers>(x, @"{""F1"":[{""P1"":""ab"",""P2"":1},{""P1"":""cd"",""P2"":2}],""F2"":[-1,3],""P1"":[{""P1"":""ef"",""P2"":5},{""P1"":""gh"",""P2"":7}],""P2"":[11,12]}");
 
         Assert.NotNull(y);
         Utils.Equal(x.F1, y.F1, (a, b) => { return SimpleType.AreEqual(a, b); });
@@ -279,7 +292,7 @@ public static class DataContractJsonSerializerTests
         x.P2[0] = -1;
         x.P2[1] = 3;
 
-        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x, "{\"P1\":[{\"P1\":\"ab\",\"P2\":1},{\"P1\":\"cd\",\"P2\":2}],\"P2\":[-1,3]}");
+        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x, @"{""P1"":[{""P1"":""ab"",""P2"":1},{""P1"":""cd"",""P2"":2}],""P2"":[-1,3]}");
 
         Assert.NotNull(y);
         Utils.Equal(x.P1, y.P1, (a, b) => { return SimpleType.AreEqual(a, b); });
@@ -293,7 +306,7 @@ public static class DataContractJsonSerializerTests
         x.Add("one", 1);
         x.Add("two", 2);
 
-        Dictionary<string, int> y = SerializeAndDeserialize<Dictionary<string, int>>(x, "[{\"Key\":\"one\",\"Value\":1},{\"Key\":\"two\",\"Value\":2}]");
+        Dictionary<string, int> y = SerializeAndDeserialize<Dictionary<string, int>>(x, @"[{""Key"":""one"",""Value"":1},{""Key"":""two"",""Value"":2}]");
 
         Assert.NotNull(y);
         Assert.Equal(y.Count, 2);
@@ -326,7 +339,7 @@ public static class DataContractJsonSerializerTests
         x.RO2.Add(true, 'a');
         x.RO2.Add(false, 'b');
 
-        TypeWithDictionaryGenericMembers y = SerializeAndDeserialize<TypeWithDictionaryGenericMembers>(x, "{\"F1\":[{\"Key\":\"ab\",\"Value\":12},{\"Key\":\"cd\",\"Value\":15}],\"F2\":[{\"Key\":\"ef\",\"Value\":17},{\"Key\":\"gh\",\"Value\":19}],\"P1\":[{\"Key\":\"12\",\"Value\":120},{\"Key\":\"13\",\"Value\":130}],\"P2\":[{\"Key\":\"14\",\"Value\":140},{\"Key\":\"15\",\"Value\":150}],\"RO1\":[{\"Key\":true,\"Value\":\"t\"},{\"Key\":false,\"Value\":\"f\"}],\"RO2\":[{\"Key\":true,\"Value\":\"a\"},{\"Key\":false,\"Value\":\"b\"}]}");
+        TypeWithDictionaryGenericMembers y = SerializeAndDeserialize<TypeWithDictionaryGenericMembers>(x, @"{""F1"":[{""Key"":""ab"",""Value"":12},{""Key"":""cd"",""Value"":15}],""F2"":[{""Key"":""ef"",""Value"":17},{""Key"":""gh"",""Value"":19}],""P1"":[{""Key"":""12"",""Value"":120},{""Key"":""13"",""Value"":130}],""P2"":[{""Key"":""14"",""Value"":140},{""Key"":""15"",""Value"":150}],""RO1"":[{""Key"":true,""Value"":""t""},{""Key"":false,""Value"":""f""}],""RO2"":[{""Key"":true,""Value"":""a""},{""Key"":false,""Value"":""b""}]}");
         Assert.NotNull(y);
 
         Assert.NotNull(y.F1);
@@ -367,7 +380,7 @@ public static class DataContractJsonSerializerTests
         x.Add(1, "one");
         x.Add(2, "two");
 
-        MyDictionary y = SerializeAndDeserialize<MyDictionary>(x, "[{\"Key\":1,\"Value\":\"one\"},{\"Key\":2,\"Value\":\"two\"}]");
+        MyDictionary y = SerializeAndDeserialize<MyDictionary>(x, @"[{""Key"":1,""Value"":""one""},{""Key"":2,""Value"":""two""}]");
 
         Assert.NotNull(y);
         Assert.True(y.Count == 2);
@@ -402,7 +415,7 @@ public static class DataContractJsonSerializerTests
         x.RO2.Add(true, 'a');
         x.RO2.Add(false, 'b');
 
-        TypeWithDictionaryMembers y = SerializeAndDeserialize<TypeWithDictionaryMembers>(x, "{\"F1\":[{\"Key\":\"ab\",\"Value\":12},{\"Key\":\"cd\",\"Value\":15}],\"F2\":[{\"Key\":\"ef\",\"Value\":17},{\"Key\":\"gh\",\"Value\":19}],\"P1\":[{\"Key\":\"12\",\"Value\":120},{\"Key\":\"13\",\"Value\":130}],\"P2\":[{\"Key\":\"14\",\"Value\":140},{\"Key\":\"15\",\"Value\":150}],\"RO1\":[{\"Key\":true,\"Value\":\"t\"},{\"Key\":false,\"Value\":\"f\"}],\"RO2\":[{\"Key\":true,\"Value\":\"a\"},{\"Key\":false,\"Value\":\"b\"}]}");
+        TypeWithDictionaryMembers y = SerializeAndDeserialize<TypeWithDictionaryMembers>(x, @"{""F1"":[{""Key"":""ab"",""Value"":12},{""Key"":""cd"",""Value"":15}],""F2"":[{""Key"":""ef"",""Value"":17},{""Key"":""gh"",""Value"":19}],""P1"":[{""Key"":""12"",""Value"":120},{""Key"":""13"",""Value"":130}],""P2"":[{""Key"":""14"",""Value"":140},{""Key"":""15"",""Value"":150}],""RO1"":[{""Key"":true,""Value"":""t""},{""Key"":false,""Value"":""f""}],""RO2"":[{""Key"":true,""Value"":""a""},{""Key"":false,""Value"":""b""}]}");
         Assert.NotNull(y);
 
         Assert.NotNull(y.F1);
@@ -443,7 +456,7 @@ public static class DataContractJsonSerializerTests
         x.Add("zero");
         x.Add("one");
 
-        List<string> y = SerializeAndDeserialize<List<string>>(x, "[\"zero\",\"one\"]");
+        List<string> y = SerializeAndDeserialize<List<string>>(x, @"[""zero"",""one""]");
 
         Assert.NotNull(y);
         Assert.True(y.Count == 2);
@@ -478,7 +491,7 @@ public static class DataContractJsonSerializerTests
         x.RO2.Add('c');
         x.RO2.Add('d');
 
-        TypeWithListGenericMembers y = SerializeAndDeserialize<TypeWithListGenericMembers>(x, "{\"F1\":[\"zero\",\"one\"],\"F2\":[\"abc\",\"def\"],\"P1\":[10,20],\"P2\":[12,34],\"RO1\":[\"a\",\"b\"],\"RO2\":[\"c\",\"d\"]}");
+        TypeWithListGenericMembers y = SerializeAndDeserialize<TypeWithListGenericMembers>(x, @"{""F1"":[""zero"",""one""],""F2"":[""abc"",""def""],""P1"":[10,20],""P2"":[12,34],""RO1"":[""a"",""b""],""RO2"":[""c"",""d""]}");
         Assert.NotNull(y);
 
         Assert.NotNull(y.F1);
@@ -516,7 +529,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_CollectionGenericRoot()
     {
         MyCollection<string> x = new MyCollection<string>("a1", "a2");
-        MyCollection<string> y = SerializeAndDeserialize<MyCollection<string>>(x, "[\"a1\",\"a2\"]");
+        MyCollection<string> y = SerializeAndDeserialize<MyCollection<string>>(x, @"[""a1"",""a2""]");
 
         Assert.NotNull(y);
         Assert.True(y.Count == 2);
@@ -540,7 +553,7 @@ public static class DataContractJsonSerializerTests
         x.RO1.Add("abc");
         x.RO2.Add("xyz");
 
-        TypeWithCollectionGenericMembers y = SerializeAndDeserialize<TypeWithCollectionGenericMembers>(x, "{\"F1\":[\"a1\",\"a2\"],\"F2\":[\"b1\",\"b2\"],\"P1\":[\"c1\",\"c2\"],\"P2\":[\"d1\",\"d2\"],\"RO1\":[\"abc\"],\"RO2\":[\"xyz\"]}");
+        TypeWithCollectionGenericMembers y = SerializeAndDeserialize<TypeWithCollectionGenericMembers>(x, @"{""F1"":[""a1"",""a2""],""F2"":[""b1"",""b2""],""P1"":[""c1"",""c2""],""P2"":[""d1"",""d2""],""RO1"":[""abc""],""RO2"":[""xyz""]}");
         Assert.NotNull(y);
         Assert.True(y.F1.Count == 2, getCheckFailureMsg("F1"));
         Assert.True(y.F2.Count == 2, getCheckFailureMsg("F2"));
@@ -581,7 +594,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_ListRoot()
     {
         MyList x = new MyList("a1", "a2");
-        MyList y = SerializeAndDeserialize<MyList>(x, "[\"a1\",\"a2\"]");
+        MyList y = SerializeAndDeserialize<MyList>(x, @"[""a1"",""a2""]");
 
         Assert.NotNull(y);
         Assert.True(y.Count == 2);
@@ -604,7 +617,7 @@ public static class DataContractJsonSerializerTests
         x.RO1.Add("abc");
         x.RO2.Add("xyz");
 
-        TypeWithListMembers y = SerializeAndDeserialize<TypeWithListMembers>(x, "{\"F1\":[\"a1\",\"a2\"],\"F2\":[\"b1\",\"b2\"],\"P1\":[\"c1\",\"c2\"],\"P2\":[\"d1\",\"d2\"],\"RO1\":[\"abc\"],\"RO2\":[\"xyz\"]}");
+        TypeWithListMembers y = SerializeAndDeserialize<TypeWithListMembers>(x, @"{""F1"":[""a1"",""a2""],""F2"":[""b1"",""b2""],""P1"":[""c1"",""c2""],""P2"":[""d1"",""d2""],""RO1"":[""abc""],""RO2"":[""xyz""]}");
         Assert.NotNull(y);
         Assert.True(y.F1.Count == 2, getCheckFailureMsg("F1"));
         Assert.True(y.F2.Count == 2, getCheckFailureMsg("F2"));
@@ -629,7 +642,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_EnumerableGenericRoot()
     {
         MyEnumerable<string> x = new MyEnumerable<string>("a1", "a2");
-        MyEnumerable<string> y = SerializeAndDeserialize<MyEnumerable<string>>(x, "[\"a1\",\"a2\"]");
+        MyEnumerable<string> y = SerializeAndDeserialize<MyEnumerable<string>>(x, @"[""a1"",""a2""]");
 
         Assert.NotNull(y);
         Assert.True(y.Count == 2);
@@ -650,7 +663,7 @@ public static class DataContractJsonSerializerTests
         };
         x.RO1.Add("abc");
 
-        TypeWithEnumerableGenericMembers y = SerializeAndDeserialize<TypeWithEnumerableGenericMembers>(x, "{\"F1\":[\"a1\",\"a2\"],\"F2\":[\"b1\",\"b2\"],\"P1\":[\"c1\",\"c2\"],\"P2\":[\"d1\",\"d2\"],\"RO1\":[\"abc\"]}");
+        TypeWithEnumerableGenericMembers y = SerializeAndDeserialize<TypeWithEnumerableGenericMembers>(x, @"{""F1"":[""a1"",""a2""],""F2"":[""b1"",""b2""],""P1"":[""c1"",""c2""],""P2"":[""d1"",""d2""],""RO1"":[""abc""]}");
 
         Assert.NotNull(y);
         Assert.True(y.F1.Count == 2);
@@ -664,7 +677,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_CollectionRoot()
     {
         MyCollection x = new MyCollection('a', 45);
-        MyCollection y = SerializeAndDeserialize<MyCollection>(x, "[\"a\",45]");
+        MyCollection y = SerializeAndDeserialize<MyCollection>(x, @"[""a"",45]");
 
         Assert.NotNull(y);
         Assert.True(y.Count == 2);
@@ -684,7 +697,7 @@ public static class DataContractJsonSerializerTests
         };
         x.RO1.Add("abc");
 
-        TypeWithCollectionMembers y = SerializeAndDeserialize<TypeWithCollectionMembers>(x, "{\"F1\":[\"a\",45],\"F2\":[\"ab\",true],\"P1\":[\"x\",\"y\"],\"P2\":[false,true],\"RO1\":[\"abc\"]}");
+        TypeWithCollectionMembers y = SerializeAndDeserialize<TypeWithCollectionMembers>(x, @"{""F1"":[""a"",45],""F2"":[""ab"",true],""P1"":[""x"",""y""],""P2"":[false,true],""RO1"":[""abc""]}");
         Assert.NotNull(y);
 
         Assert.NotNull(y.F1);
@@ -713,7 +726,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_EnumerableRoot()
     {
         MyEnumerable x = new MyEnumerable("abc", 3);
-        MyEnumerable y = SerializeAndDeserialize<MyEnumerable>(x, "[\"abc\",3]");
+        MyEnumerable y = SerializeAndDeserialize<MyEnumerable>(x, @"[""abc"",3]");
 
         Assert.NotNull(y);
         Assert.True(y.Count == 2);
@@ -733,7 +746,7 @@ public static class DataContractJsonSerializerTests
         };
         x.RO1.Add('x');
 
-        TypeWithEnumerableMembers y = SerializeAndDeserialize<TypeWithEnumerableMembers>(x, "{\"F1\":[\"a\",45],\"F2\":[\"ab\",true],\"P1\":[\"x\",\"y\"],\"P2\":[false,true],\"RO1\":[\"x\"]}");
+        TypeWithEnumerableMembers y = SerializeAndDeserialize<TypeWithEnumerableMembers>(x, @"{""F1"":[""a"",45],""F2"":[""ab"",true],""P1"":[""x"",""y""],""P2"":[false,true],""RO1"":[""x""]}");
         Assert.NotNull(y);
 
         Assert.True(y.F1.Count == 2);
@@ -764,7 +777,7 @@ public static class DataContractJsonSerializerTests
             PropX = new MyTypeC { PropC = 'a', PropB = true },
             PropY = 45,
         };
-        MyTypeA y = SerializeAndDeserialize<MyTypeA>(x, "{\"P_Col_Array\":null,\"PropX\":{\"__type\":\"MyTypeC:#SerializationTypes\",\"PropA\":null,\"PropC\":\"a\",\"PropB\":true},\"PropY\":45}");
+        MyTypeA y = SerializeAndDeserialize<MyTypeA>(x, @"{""P_Col_Array"":null,""PropX"":{""__type"":""MyTypeC:#SerializationTypes"",""PropA"":null,""PropC"":""a"",""PropB"":true},""PropY"":45}");
 
         Assert.NotNull(y);
         Assert.NotNull(y.PropX);
@@ -776,23 +789,23 @@ public static class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_DataContractAttribute()
     {
-        SerializeAndDeserialize<DCA_1>(new DCA_1 { P1 = "xyz" }, "{}");
-        SerializeAndDeserialize<DCA_2>(new DCA_2 { P1 = "xyz" }, "{}");
-        SerializeAndDeserialize<DCA_3>(new DCA_3 { P1 = "xyz" }, "{}");
-        SerializeAndDeserialize<DCA_5>(new DCA_5 { P1 = "xyz" }, "{}");
+        SerializeAndDeserialize<DCA_1>(new DCA_1 { P1 = "xyz" }, @"{}");
+        SerializeAndDeserialize<DCA_2>(new DCA_2 { P1 = "xyz" }, @"{}");
+        SerializeAndDeserialize<DCA_3>(new DCA_3 { P1 = "xyz" }, @"{}");
+        SerializeAndDeserialize<DCA_5>(new DCA_5 { P1 = "xyz" }, @"{}");
     }
 
     [Fact]
     public static void DCJS_DataMemberAttribute()
     {
-        SerializeAndDeserialize<DMA_1>(new DMA_1 { P1 = "abc", P2 = 12, P3 = true, P4 = 'a', P5 = 10, MyDataMemberInAnotherNamespace = new MyDataContractClass04_1() { MyDataMember = "Test" }, Order100 = true, OrderMaxValue = false }, "{\"MyDataMemberInAnotherNamespace\":{\"MyDataMember\":\"Test\"},\"P1\":\"abc\",\"P4\":\"a\",\"P5\":10,\"xyz\":12,\"P3\":true,\"Order100\":true,\"OrderMaxValue\":false}");
+        SerializeAndDeserialize<DMA_1>(new DMA_1 { P1 = "abc", P2 = 12, P3 = true, P4 = 'a', P5 = 10, MyDataMemberInAnotherNamespace = new MyDataContractClass04_1() { MyDataMember = "Test" }, Order100 = true, OrderMaxValue = false }, @"{""MyDataMemberInAnotherNamespace"":{""MyDataMember"":""Test""},""P1"":""abc"",""P4"":""a"",""P5"":10,""xyz"":12,""P3"":true,""Order100"":true,""OrderMaxValue"":false}");
     }
 
     [Fact]
     public static void DCJS_IgnoreDataMemberAttribute()
     {
         IDMA_1 x = new IDMA_1 { MyDataMember = "MyDataMember", MyIgnoreDataMember = "MyIgnoreDataMember", MyUnsetDataMember = "MyUnsetDataMember" };
-        IDMA_1 y = SerializeAndDeserialize<IDMA_1>(x, "{\"MyDataMember\":\"MyDataMember\"}");
+        IDMA_1 y = SerializeAndDeserialize<IDMA_1>(x, @"{""MyDataMember"":""MyDataMember""}");
         Assert.NotNull(y);
         Assert.StrictEqual(x.MyDataMember, y.MyDataMember);
         Assert.Null(y.MyIgnoreDataMember);
@@ -816,7 +829,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_EnumAsMember()
     {
         TypeWithEnumMembers x = new TypeWithEnumMembers { F1 = MyEnum.Three, P1 = MyEnum.Two };
-        TypeWithEnumMembers y = SerializeAndDeserialize<TypeWithEnumMembers>(x, "{\"F1\":2,\"P1\":1}");
+        TypeWithEnumMembers y = SerializeAndDeserialize<TypeWithEnumMembers>(x, @"{""F1"":2,""P1"":1}");
 
         Assert.NotNull(y);
         Assert.StrictEqual(x.F1, y.F1);
@@ -827,7 +840,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_DCClassWithEnumAndStruct()
     {
         var x = new DCClassWithEnumAndStruct(true);
-        var y = SerializeAndDeserialize<DCClassWithEnumAndStruct>(x, "{\"MyEnum1\":0,\"MyStruct\":{\"Data\":\"Data\"}}");
+        var y = SerializeAndDeserialize<DCClassWithEnumAndStruct>(x, @"{""MyEnum1"":0,""MyStruct"":{""Data"":""Data""}}");
 
         Assert.StrictEqual<DCStruct>(x.MyStruct, y.MyStruct);
         Assert.StrictEqual(x.MyEnum1, y.MyEnum1);
@@ -840,7 +853,7 @@ public static class DataContractJsonSerializerTests
         var dict1 = new Dictionary<string, object> { { "Key1-0", "Value1-0" }, { "Key1-1", dict2 } };
         var dict0 = new Dictionary<string, object> { { "Key0", dict1 } };
 
-        var y = SerializeAndDeserialize<Dictionary<string, object>>(dict0, "[{\"Key\":\"Key0\",\"Value\":[{\"__type\":\"KeyValuePairOfstringanyType:#System.Collections.Generic\",\"key\":\"Key1-0\",\"value\":\"Value1-0\"},{\"__type\":\"KeyValuePairOfstringanyType:#System.Collections.Generic\",\"key\":\"Key1-1\",\"value\":[{\"__type\":\"KeyValuePairOfstringanyType:#System.Collections.Generic\",\"key\":\"Key2-0\",\"value\":\"Value2-0\"}]}]}]");
+        var y = SerializeAndDeserialize<Dictionary<string, object>>(dict0, @"[{""Key"":""Key0"",""Value"":[{""__type"":""KeyValuePairOfstringanyType:#System.Collections.Generic"",""key"":""Key1-0"",""value"":""Value1-0""},{""__type"":""KeyValuePairOfstringanyType:#System.Collections.Generic"",""key"":""Key1-1"",""value"":[{""__type"":""KeyValuePairOfstringanyType:#System.Collections.Generic"",""key"":""Key2-0"",""value"":""Value2-0""}]}]}]");
         Assert.NotNull(y);
         Assert.StrictEqual(y.Count, 1);
         Assert.True(y["Key0"] is object[]);
@@ -851,13 +864,24 @@ public static class DataContractJsonSerializerTests
     }
 
     [Fact]
+    public static void DCJS_KeyValuePairOfStringObject()
+    {
+        var x = new KeyValuePair<string, object>("key1", "key1value");
+
+        var y = SerializeAndDeserialize<KeyValuePair<string, object>>(x, @"{""key"":""key1"",""value"":""key1value""}");
+        Assert.NotNull(y);
+        Assert.StrictEqual(y.Key, "key1");
+        Assert.StrictEqual(y.Value, "key1value");
+    }
+
+    [Fact]
     public static void DCJS_BuiltInTypes()
     {
         BuiltInTypes x = new BuiltInTypes
         {
             ByteArray = new byte[] { 1, 2 }
         };
-        BuiltInTypes y = SerializeAndDeserialize<BuiltInTypes>(x, "{\"ByteArray\":[1,2]}");
+        BuiltInTypes y = SerializeAndDeserialize<BuiltInTypes>(x, @"{""ByteArray"":[1,2]}");
 
         Assert.NotNull(y);
         Assert.Equal<byte>(x.ByteArray, y.ByteArray);
@@ -867,7 +891,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_DictionaryWithVariousKeyValueTypes()
     {
         var x = new DictionaryWithVariousKeyValueTypes(true);
-        var y = SerializeAndDeserialize<DictionaryWithVariousKeyValueTypes>(x, "{\"WithEnums\":[{\"Key\":1,\"Value\":2},{\"Key\":0,\"Value\":0}],\"WithNullables\":[{\"Key\":-32768,\"Value\":true},{\"Key\":0,\"Value\":false},{\"Key\":32767,\"Value\":null}],\"WithStructs\":[{\"Key\":{\"value\":10},\"Value\":{\"value\":12}},{\"Key\":{\"value\":2147483647},\"Value\":{\"value\":-2147483648}}]}");
+        var y = SerializeAndDeserialize<DictionaryWithVariousKeyValueTypes>(x, @"{""WithEnums"":[{""Key"":1,""Value"":2},{""Key"":0,""Value"":0}],""WithNullables"":[{""Key"":-32768,""Value"":true},{""Key"":0,""Value"":false},{""Key"":32767,""Value"":null}],""WithStructs"":[{""Key"":{""value"":10},""Value"":{""value"":12}},{""Key"":{""value"":2147483647},""Value"":{""value"":-2147483648}}]}");
 
         Assert.StrictEqual(y.WithEnums[MyEnum.Two], MyEnum.Three);
         Assert.StrictEqual(y.WithEnums[MyEnum.One], MyEnum.One);
@@ -879,11 +903,40 @@ public static class DataContractJsonSerializerTests
     }
 
     [Fact]
+    public static void DCJS_DictionaryWithTypeSimpleWithDictionaryMembers()
+    {
+        Type type = typeof(TypeWithSimpleDictionaryMember);
+        DataContractJsonSerializer serializer = new DataContractJsonSerializer(type);
+
+        // Note that there is an extra "," before the final "}"
+        string input = @"{""F1"":[{""Key"":""key"",""Value"":1}],}";
+
+        TypeWithSimpleDictionaryMember obj;
+        using (var ms = new MemoryStream())
+        {
+            using (var writer = new StreamWriter(ms))
+            {
+                writer.Write(input);
+                writer.Flush();
+                ms.Position = 0;
+
+                obj = (TypeWithSimpleDictionaryMember)serializer.ReadObject(ms);
+            }
+        }
+
+        var x = obj;
+        var y = SerializeAndDeserialize<TypeWithSimpleDictionaryMember>(x, @"{""F1"":[{""Key"":""key"",""Value"":1}]}");
+
+        Assert.True(y != null);
+        Assert.True(y.F1["key"] == 1);
+    }
+
+    [Fact]
     public static void DCJS_TypesWithArrayOfOtherTypes()
     {
         var x = new TypeHasArrayOfASerializedAsB(true);
 
-        var y = SerializeAndDeserialize<TypeHasArrayOfASerializedAsB>(x, "{\"Items\":[{\"Name\":\"typeAValue\"},{\"Name\":\"typeBValue\"}]}");
+        var y = SerializeAndDeserialize<TypeHasArrayOfASerializedAsB>(x, @"{""Items"":[{""Name"":""typeAValue""},{""Name"":""typeBValue""}]}");
         Assert.StrictEqual(x.Items[0].Name, y.Items[0].Name);
         Assert.StrictEqual(x.Items[1].Name, y.Items[1].Name);
     }
@@ -892,7 +945,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_WithDuplicateNames()
     {
         var x = new WithDuplicateNames(true);
-        var y = SerializeAndDeserialize<WithDuplicateNames>(x, "{\"ClassA1\":{\"Name\":\"Hello World! 漢 ñ\"},\"ClassA2\":{\"Nombre\":\"\"},\"EnumA1\":1,\"EnumA2\":1,\"StructA1\":{\"Text\":\"\"},\"StructA2\":{\"Texto\":\"\"}}");
+        var y = SerializeAndDeserialize<WithDuplicateNames>(x, @"{""ClassA1"":{""Name"":""Hello World! 漢 ñ""},""ClassA2"":{""Nombre"":""""},""EnumA1"":1,""EnumA2"":1,""StructA1"":{""Text"":""""},""StructA2"":{""Texto"":""""}}");
 
         Assert.StrictEqual(x.ClassA1.Name, y.ClassA1.Name);
         Assert.StrictEqual(x.StructA1, y.StructA1);
@@ -903,12 +956,12 @@ public static class DataContractJsonSerializerTests
 
     [Fact]
     [ActiveIssue(846, PlatformID.AnyUnix)]
-    public static void DCS_XElementAsRoot()
+    public static void DCJS_XElementAsRoot()
     {
         var original = new XElement("ElementName1");
         original.SetAttributeValue(XName.Get("Attribute1"), "AttributeValue1");
         original.SetValue("Value1");
-        var actual = SerializeAndDeserialize<XElement>(original, "\"<ElementName1 Attribute1=\\\"AttributeValue1\\\">Value1<\\/ElementName1>\"");
+        var actual = SerializeAndDeserialize<XElement>(original, @"""<ElementName1 Attribute1=\""AttributeValue1\"">Value1<\/ElementName1>""");
 
         VerifyXElementObject(original, actual);
     }
@@ -918,7 +971,8 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_WithXElement()
     {
         var original = new WithXElement(true);
-        var actual = SerializeAndDeserialize<WithXElement>(original, "{\"e\":\"<ElementName1 Attribute1=\\\"AttributeValue1\\\">Value1<\\/ElementName1>\"}");
+        var actual = SerializeAndDeserialize<WithXElement>(original, @"{""e"":""<ElementName1 Attribute1=\""AttributeValue1\"">Value1<\/ElementName1>""}",
+            skipStringCompare: true);
 
         VerifyXElementObject(original.e, actual.e);
     }
@@ -939,7 +993,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_WithXElementWithNestedXElement()
     {
         var original = new WithXElementWithNestedXElement(true);
-        var actual = SerializeAndDeserialize<WithXElementWithNestedXElement>(original, "{\"e1\":\"<ElementName1 Attribute1=\\\"AttributeValue1\\\"><ElementName2 Attribute2=\\\"AttributeValue2\\\">Value2<\\/ElementName2><\\/ElementName1>\"}");
+        var actual = SerializeAndDeserialize<WithXElementWithNestedXElement>(original, @"{""e1"":""<ElementName1 Attribute1=\""AttributeValue1\""><ElementName2 Attribute2=\""AttributeValue2\"">Value2<\/ElementName2><\/ElementName1>""}");
 
         VerifyXElementObject(original.e1, actual.e1);
         VerifyXElementObject((XElement)original.e1.FirstNode, (XElement)actual.e1.FirstNode);
@@ -950,7 +1004,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_WithArrayOfXElement()
     {
         var original = new WithArrayOfXElement(true);
-        var actual = SerializeAndDeserialize<WithArrayOfXElement>(original, "{\"a\":[\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item0<\\/item>\",\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item1<\\/item>\",\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item2<\\/item>\"]}");
+        var actual = SerializeAndDeserialize<WithArrayOfXElement>(original, @"{""a"":[""<item xmlns=\""http:\/\/p.com\/\"">item0<\/item>"",""<item xmlns=\""http:\/\/p.com\/\"">item1<\/item>"",""<item xmlns=\""http:\/\/p.com\/\"">item2<\/item>""]}");
 
         Assert.StrictEqual(original.a.Length, actual.a.Length);
         VerifyXElementObject(original.a[0], actual.a[0], checkFirstAttribute: false);
@@ -963,7 +1017,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_WithListOfXElement()
     {
         var original = new WithListOfXElement(true);
-        var actual = SerializeAndDeserialize<WithListOfXElement>(original, "{\"list\":[\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item0<\\/item>\",\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item1<\\/item>\",\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item2<\\/item>\"]}");
+        var actual = SerializeAndDeserialize<WithListOfXElement>(original, @"{""list"":[""<item xmlns=\""http:\/\/p.com\/\"">item0<\/item>"",""<item xmlns=\""http:\/\/p.com\/\"">item1<\/item>"",""<item xmlns=\""http:\/\/p.com\/\"">item2<\/item>""]}");
 
         Assert.StrictEqual(original.list.Count, actual.list.Count);
         VerifyXElementObject(original.list[0], actual.list[0], checkFirstAttribute: false);
@@ -975,7 +1029,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_TypeNamesWithSpecialCharacters()
     {
         var x = new __TypeNameWithSpecialCharacters漢ñ() { PropertyNameWithSpecialCharacters漢ñ = "Test" };
-        var y = SerializeAndDeserialize<__TypeNameWithSpecialCharacters漢ñ>(x, "{\"PropertyNameWithSpecialCharacters漢ñ\":\"Test\"}");
+        var y = SerializeAndDeserialize<__TypeNameWithSpecialCharacters漢ñ>(x, @"{""PropertyNameWithSpecialCharacters漢ñ"":""Test""}");
 
         Assert.StrictEqual(x.PropertyNameWithSpecialCharacters漢ñ, y.PropertyNameWithSpecialCharacters漢ñ);
     }
@@ -992,7 +1046,7 @@ public static class DataContractJsonSerializerTests
 
 
         string[][] jaggedStringArray = new string[][] { new string[] { "1", "3", "5", "7", "9" }, new string[] { "0", "2", "4", "6" }, new string[] { "11", "22" } };
-        var actualJaggedStringArray = SerializeAndDeserialize<string[][]>(jaggedStringArray, "[[\"1\",\"3\",\"5\",\"7\",\"9\"],[\"0\",\"2\",\"4\",\"6\"],[\"11\",\"22\"]]");
+        var actualJaggedStringArray = SerializeAndDeserialize<string[][]>(jaggedStringArray, @"[[""1"",""3"",""5"",""7"",""9""],[""0"",""2"",""4"",""6""],[""11"",""22""]]");
 
         Assert.Equal(jaggedStringArray[0], actualJaggedStringArray[0]);
         Assert.Equal(jaggedStringArray[1], actualJaggedStringArray[1]);
@@ -1001,7 +1055,7 @@ public static class DataContractJsonSerializerTests
         var offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
         var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm"));
         object[] objectArray = new object[] { 1, 1.0F, 1.0, "string", Guid.Parse("2054fd3e-e118-476a-9962-1a882be51860"), new DateTime(2013, 1, 2).AddMinutes(offsetMinutes) };
-        var actualObjectArray = SerializeAndDeserialize<object[]>(objectArray, string.Format("[1,1,1,\"string\",\"2054fd3e-e118-476a-9962-1a882be51860\",\"\\/Date(1357084800000{0})\\/\"]", timeZoneString));
+        var actualObjectArray = SerializeAndDeserialize<object[]>(objectArray, string.Format(@"[1,1,1,""string"",""2054fd3e-e118-476a-9962-1a882be51860"",""\/Date(1357084800000{0})\/""]", timeZoneString));
 
         Assert.StrictEqual(1, actualObjectArray[0]);
         Assert.StrictEqual(1, actualObjectArray[1]);
@@ -1026,7 +1080,7 @@ public static class DataContractJsonSerializerTests
         var original = new EnumerableStruct();
         original.Add("a");
         original.Add("b");
-        var actual = SerializeAndDeserialize<EnumerableStruct>(original, "[\"a\",\"b\"]");
+        var actual = SerializeAndDeserialize<EnumerableStruct>(original, @"[""a"",""b""]");
 
         Assert.Equal((IEnumerable<string>)actual, (IEnumerable<string>)original);
     }
@@ -1034,16 +1088,14 @@ public static class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_EnumerableCollection()
     {
-        var dates = new DateTime[] {new DateTime(2000, 1, 1), new DateTime(2000, 1, 2), new DateTime(2000, 1, 3)};
+        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm"));
         var original = new EnumerableCollection();
-        var timeZoneStrings = new List<string>();
-        foreach (var date in dates)
-        {
-            var offsetMinutes = (int) TimeZoneInfo.Local.GetUtcOffset(date).TotalMinutes;
-            original.Add(date.AddMinutes(offsetMinutes));
-            timeZoneStrings.Add(string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm")));
-        }
-        var actual = SerializeAndDeserialize<EnumerableCollection>(original, string.Format("[\"\\/Date(946684800000{0})\\/\",\"\\/Date(946771200000{1})\\/\",\"\\/Date(946857600000{2})\\/\"]", timeZoneStrings.ToArray()));
+        original.Add(new DateTime(2000, 1, 1).AddMinutes(offsetMinutes));
+        original.Add(new DateTime(2000, 1, 2).AddMinutes(offsetMinutes));
+        original.Add(new DateTime(2000, 1, 3).AddMinutes(offsetMinutes));
+        var actual = SerializeAndDeserialize<EnumerableCollection>(original, string.Format(@"[""\/Date(946684800000{0})\/"",""\/Date(946771200000{0})\/"",""\/Date(946857600000{0})\/""]", timeZoneString));
+
         Assert.Equal((IEnumerable<DateTime>)actual, (IEnumerable<DateTime>)original);
     }
 
@@ -1051,7 +1103,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_ContainsLinkedList()
     {
         var original = new ContainsLinkedList(true);
-        var actual = SerializeAndDeserialize<ContainsLinkedList>(original, "{\"Data\":[{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}}]}");
+        var actual = SerializeAndDeserialize<ContainsLinkedList>(original, @"{""Data"":[{""Data"":{""Data"":""23:59:59""},""RefData"":{""Data"":""23:59:59""}},{""Data"":{""Data"":""23:59:59""},""RefData"":{""Data"":""23:59:59""}},{""Data"":{""Data"":""23:59:59""},""RefData"":{""Data"":""23:59:59""}},{""Data"":{""Data"":""23:59:59""},""RefData"":{""Data"":""23:59:59""}},{""Data"":{""Data"":""23:59:59""},""RefData"":{""Data"":""23:59:59""}},{""Data"":{""Data"":""23:59:59""},""RefData"":{""Data"":""23:59:59""}},{""Data"":{""Data"":""23:59:59""},""RefData"":{""Data"":""23:59:59""}}]}");
 
         var actualEnumerator = actual.Data.GetEnumerator();
         var originalEnumerator = original.Data.GetEnumerator();
@@ -1070,7 +1122,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_SimpleCollectionDataContract()
     {
         var original = new SimpleCDC(true);
-        var actual = SerializeAndDeserialize<SimpleCDC>(original, "[\"One\",\"Two\",\"Three\"]");
+        var actual = SerializeAndDeserialize<SimpleCDC>(original, @"[""One"",""Two"",""Three""]");
 
         Assert.Equal((IEnumerable<string>)actual, (IEnumerable<string>)original);
     }
@@ -1114,7 +1166,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_InternalTypeSerialization()
     {
         var value = new InternalType() { InternalProperty = 12 };
-        var deserializedValue = SerializeAndDeserialize<InternalType>(value, "{\"InternalProperty\":12,\"PrivateProperty\":100}");
+        var deserializedValue = SerializeAndDeserialize<InternalType>(value, @"{""InternalProperty"":12,""PrivateProperty"":100}");
         Assert.StrictEqual(deserializedValue.InternalProperty, value.InternalProperty);
         Assert.StrictEqual(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
     }
@@ -1123,7 +1175,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_PrivateTypeSerialization()
     {
         var value = new PrivateType();
-        var deserializedValue = SerializeAndDeserialize<PrivateType>(value, "{\"InternalProperty\":1,\"PrivateProperty\":2}");
+        var deserializedValue = SerializeAndDeserialize<PrivateType>(value, @"{""InternalProperty"":1,""PrivateProperty"":2}");
         Assert.StrictEqual(deserializedValue.GetInternalPropertyValue(), value.GetInternalPropertyValue());
         Assert.StrictEqual(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
     }
@@ -1134,7 +1186,7 @@ public static class DataContractJsonSerializerTests
         //Constructor # 3
         var value = new KnownTypesThroughConstructor() { EnumValue = MyEnum.One, SimpleTypeValue = new SimpleKnownTypeValue() { StrProperty = "PropertyValue" } };
         var actual = SerializeAndDeserialize<KnownTypesThroughConstructor>(value,
-        "{\"EnumValue\":0,\"SimpleTypeValue\":{\"__type\":\"SimpleKnownTypeValue:#SerializationTypes\",\"StrProperty\":\"PropertyValue\"}}",
+        @"{""EnumValue"":0,""SimpleTypeValue"":{""__type"":""SimpleKnownTypeValue:#SerializationTypes"",""StrProperty"":""PropertyValue""}}",
         null, () => { return new DataContractJsonSerializer(typeof(KnownTypesThroughConstructor), new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
 
         Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
@@ -1171,10 +1223,33 @@ public static class DataContractJsonSerializerTests
     #endregion
 
     [Fact]
+    public static void DCJS_EmptyString_Throws()
+    {
+        Type type = typeof(string);
+        DataContractJsonSerializer serializer = new DataContractJsonSerializer(type);
+        string input = "";
+
+        using (var ms = new MemoryStream())
+        {
+            using (var writer = new StreamWriter(ms))
+            {
+                writer.Write(input);
+                writer.Flush();
+                ms.Position = 0;
+
+                Assert.Throws<SerializationException>(() =>
+                {
+                    serializer.ReadObject(ms);
+                });
+            }
+        }
+    }
+
+    [Fact]
     public static void DCJS_ClassWithDatetimeOffsetTypeProperty()
     {
         var value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc)) };
-        var actual = SerializeAndDeserialize(value, "{\"ModifiedTime\":{\"DateTime\":\"\\/Date(1357095845006)\\/\",\"OffsetMinutes\":0}}");
+        var actual = SerializeAndDeserialize(value, @"{""ModifiedTime"":{""DateTime"":""\/Date(1357095845006)\/"",""OffsetMinutes"":0}}");
         Assert.StrictEqual<DateTimeOffset>(value.ModifiedTime, actual.ModifiedTime);
     }
 
@@ -1183,7 +1258,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_GenericTypeWithPrivateSetter()
     {
         var value = new GenericTypeWithPrivateSetter<string>("PropertyWithPrivateSetter's value");
-        var actual = SerializeAndDeserialize(value, "{\"PropertyWithPrivateSetter\":\"PropertyWithPrivateSetter's value\"}");
+        var actual = SerializeAndDeserialize(value, @"{""PropertyWithPrivateSetter"":""PropertyWithPrivateSetter's value""}");
         Assert.StrictEqual(value.PropertyWithPrivateSetter, actual.PropertyWithPrivateSetter);
     }
 
@@ -1203,7 +1278,6 @@ public static class DataContractJsonSerializerTests
             dcjs.WriteObject(stream, obj);
             stream.Position = 0;
             var serializedStr = new StreamReader(stream).ReadToEnd();
-            Debug.WriteLine("Serialized string is: {0}", serializedStr);
 
             stream.Position = 0;
             var obj2 = (TypeWithDateTimeStringProperty)dcjs.ReadObject(stream);
@@ -1212,7 +1286,7 @@ public static class DataContractJsonSerializerTests
         }
 
         // Deserialization only. The provided string of DateTimeString is in different format than the serialized string.
-        // The serialized string is: {"DateTimeString":"\\\/Date(1411072352108-0700)\\\/"}
+        // The serialized string is: {"DateTimeString":"\/Date(1411072352108-0700)\/"}
         using (MemoryStream ms = new MemoryStream())
         {
             StreamWriter sw = new StreamWriter(ms);
@@ -1230,7 +1304,7 @@ public static class DataContractJsonSerializerTests
         TypeWithGenericDictionaryAsKnownType value = new TypeWithGenericDictionaryAsKnownType { };
         value.Foo.Add(10, new Level() { Name = "Foo", LevelNo = 1 });
         value.Foo.Add(20, new Level() { Name = "Bar", LevelNo = 2 });
-        var deserializedValue = SerializeAndDeserialize<TypeWithGenericDictionaryAsKnownType>(value, "{\"Foo\":[{\"Key\":10,\"Value\":{\"LevelNo\":1,\"Name\":\"Foo\"}},{\"Key\":20,\"Value\":{\"LevelNo\":2,\"Name\":\"Bar\"}}]}");
+        var deserializedValue = SerializeAndDeserialize<TypeWithGenericDictionaryAsKnownType>(value, @"{""Foo"":[{""Key"":10,""Value"":{""LevelNo"":1,""Name"":""Foo""}},{""Key"":20,""Value"":{""LevelNo"":2,""Name"":""Bar""}}]}");
 
         Assert.StrictEqual(2, deserializedValue.Foo.Count);
         Assert.StrictEqual("Foo", deserializedValue.Foo[10].Name);
@@ -1244,7 +1318,7 @@ public static class DataContractJsonSerializerTests
     {
         TypeWithKnownTypeAttributeAndInterfaceMember value = new TypeWithKnownTypeAttributeAndInterfaceMember();
         value.HeadLine = new NewsArticle() { Title = "Foo News" };
-        var deserializedValue = SerializeAndDeserialize<TypeWithKnownTypeAttributeAndInterfaceMember>(value, "{\"HeadLine\":{\"__type\":\"NewsArticle:#SerializationTypes\",\"Category\":\"News\",\"Title\":\"Foo News\"}}");
+        var deserializedValue = SerializeAndDeserialize<TypeWithKnownTypeAttributeAndInterfaceMember>(value, @"{""HeadLine"":{""__type"":""NewsArticle:#SerializationTypes"",""Category"":""News"",""Title"":""Foo News""}}");
 
         Assert.StrictEqual("News", deserializedValue.HeadLine.Category);
         Assert.StrictEqual("Foo News", deserializedValue.HeadLine.Title);
@@ -1255,7 +1329,7 @@ public static class DataContractJsonSerializerTests
     {
         TypeWithKnownTypeAttributeAndListOfInterfaceMember value = new TypeWithKnownTypeAttributeAndListOfInterfaceMember();
         value.Articles = new List<IArticle>() { new SummaryArticle() { Title = "Bar Summary" } };
-        var deserializedValue = SerializeAndDeserialize<TypeWithKnownTypeAttributeAndListOfInterfaceMember>(value, "{\"Articles\":[{\"__type\":\"SummaryArticle:#SerializationTypes\",\"Category\":\"Summary\",\"Title\":\"Bar Summary\"}]}");
+        var deserializedValue = SerializeAndDeserialize<TypeWithKnownTypeAttributeAndListOfInterfaceMember>(value, @"{""Articles"":[{""__type"":""SummaryArticle:#SerializationTypes"",""Category"":""Summary"",""Title"":""Bar Summary""}]}");
 
         Assert.StrictEqual(1, deserializedValue.Articles.Count);
         Assert.StrictEqual("Summary", deserializedValue.Articles[0].Category);
@@ -1263,10 +1337,209 @@ public static class DataContractJsonSerializerTests
     }
 
     [Fact]
+    public static void DCJS_Tuple()
+    {
+        DCJS_Tuple1();
+        DCJS_Tuple2();
+        DCJS_Tuple3();
+        DCJS_Tuple4();
+        DCJS_Tuple5();
+        DCJS_Tuple6();
+        DCJS_Tuple7();
+        DCJS_Tuple8();
+    }
+
+    private static void DCJS_Tuple1()
+    {
+        Tuple<int> value = new Tuple<int>(1);
+        var deserializedValue = SerializeAndDeserialize<Tuple<int>>(value, @"{""m_Item1"":1}");
+        Assert.StrictEqual<Tuple<int>>(value, deserializedValue);
+    }
+
+    private static void DCJS_Tuple2()
+    {
+        Tuple<int, int> value = new Tuple<int, int>(1, 2);
+        var deserializedValue = SerializeAndDeserialize<Tuple<int, int>>(value, @"{""m_Item1"":1,""m_Item2"":2}");
+        Assert.StrictEqual<Tuple<int, int>>(value, deserializedValue);
+    }
+
+    private static void DCJS_Tuple3()
+    {
+        Tuple<int, int, int> value = new Tuple<int, int, int>(1, 2, 3);
+        var deserializedValue = SerializeAndDeserialize<Tuple<int, int, int>>(value, @"{""m_Item1"":1,""m_Item2"":2,""m_Item3"":3}");
+        Assert.StrictEqual<Tuple<int, int, int>>(value, deserializedValue);
+    }
+
+    private static void DCJS_Tuple4()
+    {
+        Tuple<int, int, int, int> value = new Tuple<int, int, int, int>(1, 2, 3, 4);
+        var deserializedValue = SerializeAndDeserialize<Tuple<int, int, int, int>>(value, @"{""m_Item1"":1,""m_Item2"":2,""m_Item3"":3,""m_Item4"":4}");
+        Assert.StrictEqual<Tuple<int, int, int, int>>(value, deserializedValue);
+    }
+
+    private static void DCJS_Tuple5()
+    {
+        Tuple<int, int, int, int, int> value = new Tuple<int, int, int, int, int>(1, 2, 3, 4, 5);
+        var deserializedValue = SerializeAndDeserialize<Tuple<int, int, int, int, int>>(value, @"{""m_Item1"":1,""m_Item2"":2,""m_Item3"":3,""m_Item4"":4,""m_Item5"":5}");
+        Assert.StrictEqual<Tuple<int, int, int, int, int>>(value, deserializedValue);
+    }
+
+    private static void DCJS_Tuple6()
+    {
+        Tuple<int, int, int, int, int, int> value = new Tuple<int, int, int, int, int, int>(1, 2, 3, 4, 5, 6);
+        var deserializedValue = SerializeAndDeserialize<Tuple<int, int, int, int, int, int>>(value, @"{""m_Item1"":1,""m_Item2"":2,""m_Item3"":3,""m_Item4"":4,""m_Item5"":5,""m_Item6"":6}");
+        Assert.StrictEqual<Tuple<int, int, int, int, int, int>>(value, deserializedValue);
+    }
+
+    private static void DCJS_Tuple7()
+    {
+        Tuple<int, int, int, int, int, int, int> value = new Tuple<int, int, int, int, int, int, int>(1, 2, 3, 4, 5, 6, 7);
+        var deserializedValue = SerializeAndDeserialize<Tuple<int, int, int, int, int, int, int>>(value, @"{""m_Item1"":1,""m_Item2"":2,""m_Item3"":3,""m_Item4"":4,""m_Item5"":5,""m_Item6"":6,""m_Item7"":7}");
+        Assert.StrictEqual<Tuple<int, int, int, int, int, int, int>>(value, deserializedValue);
+    }
+
+    private static void DCJS_Tuple8()
+    {
+        Tuple<int, int, int, int, int, int, int, Tuple<int>> value = new Tuple<int, int, int, int, int, int, int, Tuple<int>>(1, 2, 3, 4, 5, 6, 7, new Tuple<int>(8));
+        var deserializedValue = SerializeAndDeserialize<Tuple<int, int, int, int, int, int, int, Tuple<int>>>(value, @"{""m_Item1"":1,""m_Item2"":2,""m_Item3"":3,""m_Item4"":4,""m_Item5"":5,""m_Item6"":6,""m_Item7"":7,""m_Rest"":{""m_Item1"":8}}");
+        Assert.StrictEqual<Tuple<int, int, int, int, int, int, int, Tuple<int>>>(value, deserializedValue);
+    }
+
+    [Fact]
+    public static void DCJS_GenericQueue()
+    {
+        Queue<int> value = new Queue<int>();
+        value.Enqueue(1);
+        object syncRoot = ((ICollection)value).SyncRoot;
+#if DESKTOP
+        var deserializedValue = SerializeAndDeserialize<Queue<int>>(value, @"{""_array"":[1,0,0,0],""_head"":0,""_size"":1,""_tail"":1,""_version"":2}");
+#else
+        var deserializedValue = SerializeAndDeserialize<Queue<int>>(value, @"{""_array"":[1,0,0,0],""_head"":0,""_size"":1,""_syncRoot"":{},""_tail"":1,""_version"":2}");
+#endif
+        var a1 = value.ToArray();
+        var a2 = deserializedValue.ToArray();
+        Assert.StrictEqual(a1.Length, a2.Length);
+        Assert.StrictEqual(a1[0], a2[0]);
+    }
+
+    [Fact]
+    public static void DCJS_GenericStack()
+    {
+        var value = new Stack<int>();
+        value.Push(123);
+        value.Push(456);
+        object syncRoot = ((ICollection)value).SyncRoot;
+        var deserializedValue = SerializeAndDeserialize<Stack<int>>(value, @"{""_array"":[123,456,0,0],""_size"":2,""_syncRoot"":{},""_version"":2}");
+        var a1 = value.ToArray();
+        var a2 = deserializedValue.ToArray();
+        Assert.StrictEqual(a1.Length, a2.Length);
+        Assert.StrictEqual(a1[0], a2[0]);
+        Assert.StrictEqual(a1[1], a2[1]);
+    }
+
+    [Fact]
+    public static void DCJS_Queue()
+    {
+        var value = new Queue();
+        value.Enqueue(123);
+        value.Enqueue("Foo");
+        object syncRoot = ((ICollection)value).SyncRoot;
+        var deserializedValue = SerializeAndDeserialize<Queue>(value, @"{""_array"":[123,""Foo"",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],""_growFactor"":200,""_head"":0,""_size"":2,""_syncRoot"":{},""_tail"":2,""_version"":2}");
+        var a1 = value.ToArray();
+        var a2 = deserializedValue.ToArray();
+        Assert.StrictEqual(a1.Length, a2.Length);
+        Assert.StrictEqual(a1[0], a2[0]);
+    }
+
+    [Fact]
+    public static void DCJS_Stack()
+    {
+        var value = new Stack();
+        value.Push(123);
+        value.Push("Foo");
+        object syncRoot = ((ICollection)value).SyncRoot;
+        var deserializedValue = SerializeAndDeserialize<Stack>(value, @"{""_array"":[123,""Foo"",null,null,null,null,null,null,null,null],""_size"":2,""_syncRoot"":{},""_version"":2}");
+        var a1 = value.ToArray();
+        var a2 = deserializedValue.ToArray();
+        Assert.StrictEqual(a1.Length, a2.Length);
+        Assert.StrictEqual(a1[0], a2[0]);
+        Assert.StrictEqual(a1[1], a2[1]);
+    }
+
+    [Fact]
+    public static void DCJS_SortedList()
+    {
+        var value = new SortedList();
+        value.Add(456, "Foo");
+        value.Add(123, "Bar");
+        var deserializedValue = SerializeAndDeserialize<SortedList>(value, @"[{""Key"":123,""Value"":""Bar""},{""Key"":456,""Value"":""Foo""}]");
+        Assert.StrictEqual(value.Count, deserializedValue.Count);
+        Assert.StrictEqual(value[0], deserializedValue[0]);
+        Assert.StrictEqual(value[1], deserializedValue[1]);
+    }
+
+    [Fact]
+    public static void DCJS_SystemVersion()
+    {
+        Version value = new Version(1, 2, 3, 4);
+        var deserializedValue = SerializeAndDeserialize<Version>(value, @"{""_Build"":3,""_Major"":1,""_Minor"":2,""_Revision"":4}");
+        Assert.StrictEqual(value.Major, deserializedValue.Major);
+        Assert.StrictEqual(value.Minor, deserializedValue.Minor);
+        Assert.StrictEqual(value.Build, deserializedValue.Build);
+        Assert.StrictEqual(value.Revision, deserializedValue.Revision);
+    }
+
+    [Fact]
+    public static void DCJS_ObjectArrayAsObject()
+    {
+        string jsonString = @"[""Foo"",123,""456""]";
+        MemoryStream stream = new MemoryStream();
+        StreamWriter sw = new StreamWriter(stream);
+        sw.Write(jsonString);
+        sw.Flush();
+        stream.Seek(0, SeekOrigin.Begin);
+
+        DataContractJsonSerializer dcjs = new DataContractJsonSerializer(typeof(object));
+        var deserializedValue = (object[])dcjs.ReadObject(stream);
+        Assert.StrictEqual(3, deserializedValue.Length);
+        Assert.StrictEqual("Foo", deserializedValue[0]);
+        Assert.StrictEqual(123, deserializedValue[1]);
+        Assert.StrictEqual("456", deserializedValue[2]);
+    }
+
+    [Fact]
+    public static void DCJS_GenericTypeWithNestedGenerics()
+    {
+        GenericTypeWithNestedGenerics<int>.InnerGeneric<double> value = new GenericTypeWithNestedGenerics<int>.InnerGeneric<double>()
+        {
+            data1 = 123,
+            data2 = 4.56
+        };
+        var deserializedValue = SerializeAndDeserialize<GenericTypeWithNestedGenerics<int>.InnerGeneric<double>>(value, @"{""data1"":123,""data2"":4.56}");
+        Assert.StrictEqual(value.data1, deserializedValue.data1);
+        Assert.StrictEqual(value.data2, deserializedValue.data2);
+    }
+
+    [Fact]
+    public static void DCJS_ClassImplementingIXmlSerialiable()
+    {
+        ClassImplementingIXmlSerialiable value = new ClassImplementingIXmlSerialiable() { StringValue = "Foo" };
+        var deserializedValue = SerializeAndDeserialize<ClassImplementingIXmlSerialiable>(value, @"""<ClassImplementingIXmlSerialiable StringValue=\""Foo\"" BoolValue=\""True\"" xmlns=\""http:\/\/schemas.datacontract.org\/2004\/07\/SerializationTypes\""\/>""");
+        Assert.StrictEqual(value.StringValue, deserializedValue.StringValue);
+    }
+
+    [Fact]
+    public static void DCJS_TypeWithNestedGenericClassImplementingIXmlSerialiable()
+    {
+        TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>() { StringValue = "Foo" };
+        var deserializedValue = SerializeAndDeserialize<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>>(value, @"""<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiableOfbooleanRvdAXEcW StringValue=\""Foo\"" xmlns=\""http:\/\/schemas.datacontract.org\/2004\/07\/SerializationTypes\""\/>""");
+        Assert.StrictEqual(value.StringValue, deserializedValue.StringValue);
+    }
+
     public static void DCJS_SerializationEvents()
     {
         var input = new MyType() { Value = "string value" };
-        var output = SerializeAndDeserialize<MyType>(input, "{\"Value\":\"string value\"}");
+        var output = SerializeAndDeserialize<MyType>(input, @"{""Value"":""string value""}");
 
         Assert.True(input.OnSerializingMethodInvoked, "input.OnSerializingMethodInvoked is false");
         Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
@@ -1300,6 +1573,122 @@ public static class DataContractJsonSerializerTests
     }
 
     [Fact]
+    public static void DCJS_DeserializeTypeWithInnerInvalidDataContract()
+    {
+        DataContractJsonSerializer dcjs = new DataContractJsonSerializer(typeof(TypeWithPropertyWithoutDefaultCtor));
+        string jsonString = @"{""Name"":""Foo""}";
+        MemoryStream ms = new MemoryStream();
+        StreamWriter sw = new StreamWriter(ms);
+        sw.Write(jsonString);
+        sw.Flush();
+        ms.Seek(0, SeekOrigin.Begin);
+
+        TypeWithPropertyWithoutDefaultCtor deserializedValue = (TypeWithPropertyWithoutDefaultCtor)dcjs.ReadObject(ms);
+        Assert.StrictEqual("Foo", deserializedValue.Name);
+        Assert.StrictEqual(null, deserializedValue.MemberWithInvalidDataContract);
+    }
+
+    [Fact]
+    public static void DCJS_ReadOnlyCollection()
+    {
+        List<string> list = new List<string>() { "Foo", "Bar" };
+        ReadOnlyCollection<string> value = new ReadOnlyCollection<string>(list);
+        var deserializedValue = SerializeAndDeserialize<ReadOnlyCollection<string>>(value, @"{""_syncRoot"":null,""list"":[""Foo"",""Bar""]}");
+        Assert.StrictEqual(value.Count, deserializedValue.Count);
+        Assert.StrictEqual(value[0], deserializedValue[0]);
+        Assert.StrictEqual(value[1], deserializedValue[1]);
+    }
+
+    [Fact]
+    public static void DCJS_KeyValuePair()
+    {
+        var value = new KeyValuePair<string, object>("FooKey", "FooValue");
+        var deserializedValue = SerializeAndDeserialize<KeyValuePair<string, object>>(value, @"{""key"":""FooKey"",""value"":""FooValue""}");
+
+        Assert.StrictEqual(value.Key, deserializedValue.Key);
+        Assert.StrictEqual(value.Value, deserializedValue.Value);
+    }
+
+    [Fact]
+    public static void DCJS_DataContractWithDotInName()
+    {
+        DataContractWithDotInName value = new DataContractWithDotInName() { Name = "Foo" };
+        var deserializedValue = SerializeAndDeserialize<DataContractWithDotInName>(value, @"{""Name"":""Foo""}");
+
+        Assert.NotNull(deserializedValue);
+        Assert.StrictEqual(value.Name, deserializedValue.Name);
+    }
+
+    [Fact]
+    public static void DCJS_DataContractWithMinusSignInName()
+    {
+        DataContractWithMinusSignInName value = new DataContractWithMinusSignInName() { Name = "Foo" };
+        var deserializedValue = SerializeAndDeserialize<DataContractWithMinusSignInName>(value, @"{""Name"":""Foo""}");
+
+        Assert.NotNull(deserializedValue);
+        Assert.StrictEqual(value.Name, deserializedValue.Name);
+    }
+
+    [Fact]
+    public static void DCJS_DataContractWithOperatorsInName()
+    {
+        DataContractWithOperatorsInName value = new DataContractWithOperatorsInName() { Name = "Foo" };
+        var deserializedValue = SerializeAndDeserialize<DataContractWithOperatorsInName>(value, @"{""Name"":""Foo""}");
+
+        Assert.NotNull(deserializedValue);
+        Assert.StrictEqual(value.Name, deserializedValue.Name);
+    }
+
+    [Fact]
+    public static void DCJS_DataContractWithOtherSymbolsInName()
+    {
+        DataContractWithOtherSymbolsInName value = new DataContractWithOtherSymbolsInName() { Name = "Foo" };
+        var deserializedValue = SerializeAndDeserialize<DataContractWithOtherSymbolsInName>(value, @"{""Name"":""Foo""}");
+
+        Assert.NotNull(deserializedValue);
+        Assert.StrictEqual(value.Name, deserializedValue.Name);
+    }
+
+    [Fact]
+    public static void DCJS_CollectionDataContractWithCustomKeyName()
+    {
+        CollectionDataContractWithCustomKeyName value = new CollectionDataContractWithCustomKeyName();
+        value.Add(100, 123);
+        value.Add(200, 456);
+        var deserializedValue = SerializeAndDeserialize<CollectionDataContractWithCustomKeyName>(value, @"[{""Key"":100,""Value"":123},{""Key"":200,""Value"":456}]");
+
+        Assert.NotNull(deserializedValue);
+        Assert.StrictEqual(value[100], deserializedValue[100]);
+        Assert.StrictEqual(value[200], deserializedValue[200]);
+    }
+
+    [Fact]
+    public static void DCJS_CollectionDataContractWithCustomKeyNameDuplicate()
+    {
+        CollectionDataContractWithCustomKeyNameDuplicate value = new CollectionDataContractWithCustomKeyNameDuplicate();
+        value.Add(100, 123);
+        value.Add(200, 456);
+        var deserializedValue = SerializeAndDeserialize<CollectionDataContractWithCustomKeyNameDuplicate>(value, @"[{""Key"":100,""Value"":123},{""Key"":200,""Value"":456}]");
+
+        Assert.NotNull(deserializedValue);
+        Assert.StrictEqual(value[100], deserializedValue[100]);
+        Assert.StrictEqual(value[200], deserializedValue[200]);
+    }
+
+    [Fact]
+    public static void DCJS_TypeWithCollectionWithoutDefaultConstructor()
+    {
+        TypeWithCollectionWithoutDefaultConstructor value = new TypeWithCollectionWithoutDefaultConstructor();
+        value.CollectionProperty.Add("Foo");
+        value.CollectionProperty.Add("Bar");
+        var deserializedValue = SerializeAndDeserialize<TypeWithCollectionWithoutDefaultConstructor>(value, @"{""CollectionProperty"":[""Foo"",""Bar""]}");
+
+        Assert.NotNull(deserializedValue);
+        Assert.NotNull(deserializedValue.CollectionProperty);
+        Assert.StrictEqual(value.CollectionProperty.Count, deserializedValue.CollectionProperty.Count);
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(value.CollectionProperty, deserializedValue.CollectionProperty));
+    }
+
     public static void DCJS_DataMemberNames()
     {
         var obj = new AppEnvironment()
@@ -1312,7 +1701,7 @@ public static class DataContractJsonSerializerTests
         Assert.StrictEqual(obj.ScreenOrientation, actual.ScreenOrientation);
     }
 
-    private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null)
+    private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractJsonSerializer dcjs;
         if (serializerFactory != null)
@@ -1333,12 +1722,15 @@ public static class DataContractJsonSerializerTests
             ms.Position = 0;
             Utils.CompareResult result = Utils.Compare(baseline, actualOutput, false);
 
-            Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
-                Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
+            if (!skipStringCompare)
+            {
+                Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
+                    Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
+            }
 
             ms.Position = 0;
             T deserialized = (T)dcjs.ReadObject(ms);
-    
+
             return deserialized;
         }
     }
