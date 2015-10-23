@@ -200,8 +200,6 @@
     <Compile Include="System\Linq\Expressions\Interpreter\SubInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\TypeOperations.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\Utilities.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
