@@ -379,7 +379,7 @@ bool InvokeCallbackForDateTimePattern(const char* locale,
 Function:
 EnumSymbols
 
-Enumerates of of the symbols of a type for a locale and calendar and invokes a callback
+Enumerates all of the symbols of a type for a locale and calendar and invokes a callback
 for each value.
 */
 bool EnumSymbols(const char* locale,
@@ -404,7 +404,7 @@ bool EnumSymbols(const char* locale,
         return false;
 
     UCalendar* pCalendar = ucal_open(nullptr, 0, localeWithCalendarName, UCAL_DEFAULT, &err);
-    UCalendarHolder calenderHolder(pCalendar, err);
+    UCalendarHolder calendarHolder(pCalendar, err);
 
     if (U_FAILURE(err))
         return false;
