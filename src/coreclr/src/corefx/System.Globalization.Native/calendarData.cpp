@@ -576,7 +576,10 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
         case AbbrevMonthNames:
             return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORT_MONTHS, 0, callback, context);
         case SuperShortDayNames:
-#ifdef HAVE_DTWIDTHTYPE_SHORT
+            // UDAT_STANDALONE_SHORTER_WEEKDAYS was added in ICU 51, and CentOS 7 currently uses ICU 50.
+            // fallback to UDAT_STANDALONE_NARROW_WEEKDAYS in that case.
+
+#ifdef HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS
             return EnumSymbols(locale, calendarId, UDAT_STANDALONE_SHORTER_WEEKDAYS, 1, callback, context);
 #else
             return EnumSymbols(locale, calendarId, UDAT_STANDALONE_NARROW_WEEKDAYS, 1, callback, context);
