@@ -31,10 +31,14 @@
 # Events from the runtime provider
 ##################################
 
+##################
+# Used in Non Windows Platform Linux 
+##################
+noclrinstanceid::::EventSource
+
 ##########################
 # GarbageCollection events
 ##########################
-noclrinstanceid::::EventSource
 noclrinstanceid:GarbageCollection:::GCStart
 nostack:GarbageCollection:::GCStart
 nomac:GarbageCollection:::GCStart_V1
