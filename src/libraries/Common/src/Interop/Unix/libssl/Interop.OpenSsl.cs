@@ -87,7 +87,7 @@ internal static partial class Interop
                 }
             }
 
-            sendCount = Ssl.BioCtrlPending(context.OutputBio);
+            sendCount = Crypto.BioCtrlPending(context.OutputBio);
 
             if (sendCount > 0)
             {
@@ -146,7 +146,7 @@ internal static partial class Interop
             }
             else
             {
-                int capacityNeeded = Ssl.BioCtrlPending(context.OutputBio);
+                int capacityNeeded = Crypto.BioCtrlPending(context.OutputBio);
 
                 Debug.Assert(buffer.Length >= capacityNeeded, "Input buffer of size " + buffer.Length +
                                                               " bytes is insufficient since encryption needs " + capacityNeeded + " bytes.");

@@ -10,12 +10,12 @@ These values should be kept in sync with System.Security.Authentication.SslProto
 */
 enum SslProtocols : int32_t
 {
-    PAL_SSL_None = 0,
-    PAL_SSL_Ssl2 = 12,
-    PAL_SSL_Ssl3 = 48,
-    PAL_SSL_Tls = 192,
-    PAL_SSL_Tls11 = 768,
-    PAL_SSL_Tls12 = 3072
+    PAL_SSL_NONE = 0,
+    PAL_SSL_SSL2 = 12,
+    PAL_SSL_SSL3 = 48,
+    PAL_SSL_TLS = 192,
+    PAL_SSL_TLS11 = 768,
+    PAL_SSL_TLS12 = 3072
 };
 
 /*
@@ -304,13 +304,6 @@ Shims the SSL_CTX_check_private_key method.
 Returns 1 upon success, otherwise 0.
 */
 extern "C" int32_t SslCtxCheckPrivateKey(SSL_CTX* ctx);
-
-/*
-Shims the BIO_ctrl_pending method.
-
-Returns the number of pending characters in the BIOs read and write buffers.
-*/
-extern "C" int32_t BioCtrlPending(BIO* bio);
 
 /*
 Shims the SSL_CTX_set_quiet_shutdown method.
