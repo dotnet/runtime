@@ -104,16 +104,7 @@ namespace CorUnix
         friend void resume_handler(int code, siginfo_t *siginfo, void *context);
 #endif
 
-        public:
-            BOOL
-            IsSuspensionStateSafe()
-            {
-                return (m_dwUnsafeRegionCount.Load() == 0);
-            };
-
         private:
-            Volatile<DWORD> m_dwSuspCount; // number of times that SuspendThread has been called on it.
-            Volatile<DWORD> m_dwUnsafeRegionCount; // number of unsafe regions a thread is in
             BOOL m_fPending; // TRUE if a suspension is pending on a thread (because the thread is in an unsafe region)
             BOOL m_fSelfsusp; // TRUE if thread is self suspending and while thread is self suspended
             BOOL m_fSuspendedForShutdown; // TRUE once the thread is suspended during PAL cleanup
@@ -161,37 +152,16 @@ namespace CorUnix
             accessed by their own threads (and thus don't require
             synchronization). 
             
-            m_dwSuspCount, m_fPending, m_fSuspendedForShutdown,
+            m_fPending, m_fSuspendedForShutdown,
             m_fSuspendSignalSent, and m_fResumeSignalSent 
             may be set by a different thread than the owner and thus
             require synchronization.
-
-            m_dwUnsafeRegionCount can change even when a suspending
-            thread has acquired suspension mutexes. However, it is only
-            changed by its owner (no other thread will change a thread's
-            unsafe region count).
 
             m_fSelfsusp is set to TRUE only by its own thread but may be later 
             accessed by other threads. 
 
             m_lNumThreadsSuspendedByThisThread is accessed by its owning 
             thread and therefore does not require synchronization. */
-
-            VOID
-            IncrSuspCount(  //////////check this and the following ones. may not be needed.
-                void
-                )
-            {
-                ++m_dwSuspCount;
-            };  
-
-            VOID
-            DecrSuspCount(
-                void
-                )
-            {
-                --m_dwSuspCount;
-            };  
             
 #ifdef _DEBUG
             VOID
@@ -338,14 +308,6 @@ namespace CorUnix
             {
                 return m_fSelfsusp;
             }; 
-                  
-            DWORD
-            GetSuspCount(
-                void
-                )
-            {
-                return m_dwSuspCount;
-            };
 
             void
             PostOnSuspendSemaphore();
@@ -399,9 +361,7 @@ namespace CorUnix
             virtual PAL_ERROR InitializePreCreate();
 
             CThreadSuspensionInfo()
-                : m_dwSuspCount(0)
-                , m_dwUnsafeRegionCount(0)
-                , m_fPending(FALSE)
+                : m_fPending(FALSE)
                 , m_fSelfsusp(FALSE)
                 , m_fSuspendedForShutdown(FALSE)
                 , m_nBlockingPipe(-1)
