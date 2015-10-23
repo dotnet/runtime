@@ -99,10 +99,7 @@
 static void
 abort_syscall (gpointer data)
 {
-	MonoThreadInfo *info = data;
-
-	if (mono_threads_core_needs_abort_syscall ())
-		mono_threads_core_abort_syscall (info);
+	mono_thread_info_abort_socket_syscall_for_close ((MonoThreadInfo*) data);
 }
 
 static gint32
@@ -2750,9 +2747,16 @@ mono_network_cleanup(void)
 void
 icall_cancel_blocking_socket_operation (MonoThread *thread)
 {
-	MonoInternalThread *internal = thread->internal_thread;
-	
-	mono_thread_info_abort_socket_syscall_for_close ((MonoNativeThreadId)(gsize)internal->tid);
+	MonoInternalThread *internal;
+	MonoThreadInfo *info;
+
+	internal = thread->internal_thread;
+	g_assert (internal);
+
+	info = mono_thread_info_lookup (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid));
+	g_assert (info);
+
+	mono_thread_info_abort_socket_syscall_for_close (info);
 }
 
 #endif /* #ifndef DISABLE_SOCKETS */
