@@ -19,6 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+    <ProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -134,19 +134,29 @@
   </Target>
 
   <Target Name="ConsolidateNativeProjectReference"
-          Condition="'@(ProjectReference)' != ''"
+          Condition="'@(NativeProjectReferenceNormalized)' != ''"
           BeforeTargets="Build" >
      <ItemGroup>
         <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\"/>
      </ItemGroup>
 
-    <Message Text= "Project files are :$([System.String]::Copy(%(ProjectReference.FileName)).ToUpper()) " />
-    <Message Text= "Project references are :%(ProjectReference.Identity)" />
-    <Message Text= "Native project references are :%(NativeProjectReference.Identity)" />
     <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
     <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
 
   </Target>
+
+  <PropertyGroup>
+     <PrepareForRunDependsOn>$(PrepareForRunDependsOn);ResetReferenceCopyLocalPaths</PrepareForRunDependsOn>
+  </PropertyGroup>
+
+  <Target Name="ResetReferenceCopyLocalPaths"
+          Condition="'@(ReferenceCopyLocalPaths)' != ''"
+          BeforeTargets="_CopyFilesMarkedCopyLocal">
+    <ItemGroup>
+       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.CopyLocal)' != 'true'"/>
+    </ItemGroup>
+  </Target>
+
 </Project>
 
