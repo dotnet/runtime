@@ -224,6 +224,7 @@ namespace System.Linq.Expressions.Interpreter
             return pi.Length != index || (pi.Length == index && !target.IsStatic);
         }
 
+#if FEATURE_DLG_INVOKE
         /// <summary>
         /// Uses reflection to create new instance of the appropriate ReflectedCaller
         /// </summary>
@@ -250,6 +251,7 @@ namespace System.Linq.Expressions.Interpreter
                 throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
             }
         }
+#endif
 
         #endregion
 
@@ -349,7 +351,7 @@ namespace System.Linq.Expressions.Interpreter
                     throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
                 }
             }
-            
+
             LightLambda targetLambda;
             if (TryGetLightLambdaTarget(instance, out targetLambda))
             {
@@ -455,7 +457,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             int first = frame.StackIndex - _argumentCount;
             object[] args = null;
-            object instance = null; 
+            object instance = null;
             try
             {
                 object ret;
