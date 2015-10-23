@@ -128,7 +128,8 @@ namespace System.Net.Http
                 _cachedReceivePinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             }
 
-            _state.TcsReadFromResponseStream = new TaskCompletionSource<int>();
+            _state.TcsReadFromResponseStream =
+                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             lock (_state.Lock)
             {
