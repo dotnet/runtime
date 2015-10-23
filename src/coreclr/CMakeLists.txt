@@ -225,11 +225,41 @@ if (CLR_CMAKE_PLATFORM_LINUX)
     add_definitions(-DFEATURE_EVENTSOURCE_XPLAT=1)
 endif (CLR_CMAKE_PLATFORM_LINUX)
 
+if (CLR_CMAKE_PLATFORM_UNIX)
+  add_definitions(-DPLATFORM_UNIX=1)
+  
+  if(CLR_CMAKE_PLATFORM_LINUX)
+    add_definitions(-D__LINUX__=1)
+    if(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
+      message("Detected Linux x86_64")
+      add_definitions(-DLINUX64)
+    elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+      message("Detected Linux ARM")
+      add_definitions(-DLINUX32)
+    elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+      message("Detected Linux ARM64")
+      add_definitions(-DLINUX64)
+    else()
+      clr_unknown_arch()
+    endif()
+      
+  endif(CLR_CMAKE_PLATFORM_LINUX)
+
+  if(CLR_CMAKE_PLATFORM_DARWIN)
+    message("Detected OSX x86_64")
+  endif(CLR_CMAKE_PLATFORM_DARWIN)
+
+  if(CLR_CMAKE_PLATFORM_FREEBSD)
+    message("Detected FreeBSD amd64")
+  endif(CLR_CMAKE_PLATFORM_FREEBSD)
+
+endif(CLR_CMAKE_PLATFORM_UNIX)
+
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(src/ToolBox/SOS/lldbplugin)
     add_subdirectory(src/pal)
-    add_subdirectory(src/coreclr/hosts/unixcorerun)
     add_subdirectory(src/corefx)
+    add_subdirectory(src/coreclr/hosts/unixcorerun)
     add_subdirectory(src/coreclr/hosts/unixcoreconsole)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
@@ -237,7 +267,6 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 if(CLR_CMAKE_PLATFORM_DARWIN)
     add_subdirectory(src/coreclr/hosts/osxbundlerun)
 endif(CLR_CMAKE_PLATFORM_DARWIN)
-
 
 # Add this subdir. We install the headers for the jit.
 
@@ -438,39 +467,18 @@ endif(WIN32)
 
 
 if (CLR_CMAKE_PLATFORM_UNIX)
-  add_definitions(-DPLATFORM_UNIX=1)
   add_definitions(-DFEATURE_PAL_SXS)
   add_definitions(-DFEATURE_COREFX_GLOBALIZATION)
+  add_definitions(-DFEATURE_PAL)
 
   if(IS_64BIT_BUILD)
     add_definitions(-DBIT64=1)
   endif(IS_64BIT_BUILD)
-
-  add_definitions(-DFEATURE_PAL)
-    
-  if(CLR_CMAKE_PLATFORM_LINUX)
-    add_definitions(-D__LINUX__=1)
-    if(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
-      message("Detected Linux x86_64")
-      add_definitions(-DLINUX64)
-    elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
-      message("Detected Linux ARM")
-      add_definitions(-DLINUX32)
-    elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
-      message("Detected Linux ARM64")
-      add_definitions(-DLINUX64)
-    else()
-      clr_unknown_arch()
-    endif()
-      
-  endif(CLR_CMAKE_PLATFORM_LINUX)
+  
   if(CLR_CMAKE_PLATFORM_DARWIN)
-    message("Detected OSX x86_64")
     add_definitions(-D_XOPEN_SOURCE)
   endif(CLR_CMAKE_PLATFORM_DARWIN)
-  if(CLR_CMAKE_PLATFORM_FREEBSD)
-    message("Detected FreeBSD amd64")
-  endif(CLR_CMAKE_PLATFORM_FREEBSD)
+
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 
