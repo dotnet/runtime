@@ -535,10 +535,6 @@ namespace CorUnix
                 DWORD *pdwSuspendCount
             );
 
-            VOID LeaveUnsafeRegion();
-
-            VOID EnterUnsafeRegion();
-
 #if !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
             static 
             VOID InitializeSignalSets();
