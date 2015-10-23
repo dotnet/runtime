@@ -299,7 +299,7 @@ namespace Tests.Expressions
             }
         }
 
-        [Fact(Skip = "4020")]
+        [Fact]
         public static void CompileInterpretCrossCheck_Invoke()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -418,7 +418,7 @@ namespace Tests.Expressions
             }
         }
 
-        [Fact(Skip = "4018")]
+        [Fact]
         public static void CompileInterpretCrossCheck_MemberInit()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -1066,7 +1066,7 @@ namespace Tests.Expressions
             }
         }
 
-        [Fact(Skip = "4021")]
+        [Fact]
         public static void CompileInterpretCrossCheck_Unbox()
         {
             var exprs = default(IEnumerable<Expression>);
