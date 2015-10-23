@@ -47,6 +47,8 @@
 
 #include "utilcode.h"
 
+#ifdef STRESS_THREAD
+
 class APIThreadStress
 {
  public:
@@ -73,5 +75,17 @@ class APIThreadStress
     HANDLE    m_syncEvent;
 
 };
+
+#else // STRESS_THREAD
+
+class APIThreadStress
+{
+ public:
+    BOOL DoThreadStress() { return FALSE; }
+    static void SyncThreadStress() { }
+    static void SetThreadStressCount(int count) { }
+};
+
+#endif // STRESS_THREAD
 
 #endif  // _APITHREADSTRESS_H_
