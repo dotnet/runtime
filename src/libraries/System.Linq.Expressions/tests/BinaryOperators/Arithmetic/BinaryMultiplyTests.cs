@@ -123,7 +123,6 @@ namespace Tests.ExpressionCompiler.Binary
             }
         }
 
-        [ActiveIssue(3164, PlatformID.AnyUnix)]
         [Fact]
         public static void CheckLongMultiplyTestOvf()
         {
