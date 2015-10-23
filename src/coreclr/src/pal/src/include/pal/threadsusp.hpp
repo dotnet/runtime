@@ -542,8 +542,6 @@ namespace CorUnix
 
             VOID InitializeSuspensionLock();
 
-            BOOL IsAssertShutdownSafe();
-            
             void SetBlockingPipe(
                 int nBlockingPipe
                 )
