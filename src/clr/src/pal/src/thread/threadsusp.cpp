@@ -1617,21 +1617,6 @@ CThreadSuspensionInfo::DestroySemaphoreIds()
 
 /*++
 Function:
-  IsAssertShutdownSafe
-  
-IsAssertShutdownSafe returns TRUE if a thread is in an unsafe region or in the
-middle of a suspension attempt.
---*/
-BOOL 
-CThreadSuspensionInfo::IsAssertShutdownSafe()
-{
-    // returns TRUE if the thread is in a suspension safe region and not 
-    // asserting from within InternalSuspend/ResumeThreadFromData.
-    return (IsSuspensionStateSafe() && !IsPerformingSuspension());
-}
-
-/*++
-Function:
   THREADMarkDiagnostic
   
 THREADMarkDiagnostic is called in functions that may be suspension unsafe.
