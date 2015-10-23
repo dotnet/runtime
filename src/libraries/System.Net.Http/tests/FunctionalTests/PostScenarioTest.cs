@@ -57,7 +57,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory, MemberData("EchoServers")]
-        [ActiveIssue(4093, PlatformID.AnyUnix)]
         public async Task PostSyncBlockingContentUsingChunkedEncoding_Success(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new SyncBlockingContent(ExpectedContent),
