@@ -211,6 +211,13 @@ namespace System.Net.Http
 
         private Task<bool> InternalWriteDataAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
+            Debug.Assert(count >= 0);
+            
+            if (count == 0)
+            {
+                return Task.FromResult<bool>(true);
+            }
+            
             // TODO (Issue 2505): replace with PinnableBufferCache.
             if (!_cachedSendPinnedBuffer.IsAllocated || _cachedSendPinnedBuffer.Target != buffer)
             {
