@@ -1809,24 +1809,18 @@ extern "C" int ActivationHandlerReturnOffset;
 PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 {
     PAL_ERROR palError;
-    CPalThread *pCurrentThread = InternalGetCurrentThread();
-    DWORD dwSuspendCount;
 
-    palError = pCurrentThread->suspensionInfo.InternalSuspendThreadFromData(
-        pCurrentThread,
-        pThread,
-        &dwSuspendCount
-        );
+    mach_port_t threadPort = pThread->GetMachPortSelf();
+    kern_return_t MachRet = thread_suspend(threadPort);
+    palError = (MachRet == KERN_SUCCESS) ? NO_ERROR : ERROR_GEN_FAILURE;
 
     if (palError == NO_ERROR)
     {
-        mach_port_t thread = pThread->GetMachPortSelf();
         mach_msg_type_number_t count;
-        kern_return_t MachRet;
 
         x86_exception_state64_t ExceptionState;
         count = x86_EXCEPTION_STATE64_COUNT;
-        MachRet = thread_get_state(thread,
+        MachRet = thread_get_state(threadPort,
                                    x86_EXCEPTION_STATE64,
                                    (thread_state_t)&ExceptionState,
                                    &count);
@@ -1838,7 +1832,7 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
         {
             x86_thread_state64_t ThreadState;
             count = x86_THREAD_STATE64_COUNT;
-            MachRet = thread_get_state(thread,
+            MachRet = thread_get_state(threadPort,
                                        x86_THREAD_STATE64,
                                        (thread_state_t)&ThreadState,
                                        &count);
@@ -1861,7 +1855,7 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
                 // after the activation function returns.
                 CONTEXT *pContext = (CONTEXT *)contextAddress;
                 pContext->ContextFlags = CONTEXT_FULL | CONTEXT_SEGMENTS;
-                MachRet = CONTEXT_GetThreadContextFromPort(thread, pContext);
+                MachRet = CONTEXT_GetThreadContextFromPort(threadPort, pContext);
                 _ASSERT_MSG(MachRet == KERN_SUCCESS, "CONTEXT_GetThreadContextFromPort\n");
 
                 // Make the instruction register point to ActivationHandler
@@ -1870,7 +1864,7 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
                 ThreadState.__rbp = rbpAddress;
                 ThreadState.__rdi = contextAddress;
 
-                MachRet = thread_set_state(thread,
+                MachRet = thread_set_state(threadPort,
                                            x86_THREAD_STATE64,
                                            (thread_state_t)&ThreadState,
                                            count);
@@ -1878,11 +1872,8 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
             }
         }
 
-        palError = pCurrentThread->suspensionInfo.InternalResumeThreadFromData(
-            pCurrentThread,
-            pThread,
-            &dwSuspendCount
-            );
+        MachRet = thread_resume(threadPort);
+        palError = (MachRet == ERROR_SUCCESS) ? NO_ERROR : ERROR_GEN_FAILURE;
     }
     else
     {
