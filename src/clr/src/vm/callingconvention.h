@@ -610,7 +610,7 @@ public:
 
         if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
         {
-            // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
+            // Dividing by 16 as size of each register in FloatArgumentRegisters is 16 bytes.
             pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 16;
             pLoc->m_cFloatReg = 1;
         }
