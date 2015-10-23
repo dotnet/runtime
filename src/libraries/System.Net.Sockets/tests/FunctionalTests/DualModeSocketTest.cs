@@ -364,8 +364,8 @@ namespace System.Net.Sockets.Tests
         #region SendTo Async/Event
 
         [Fact] // Base case
-        [ActiveIssue(4003, PlatformID.AnyUnix)]
-        public void Socket_SendToAsyncV4IPEndPointToV4Host_Throws()
+        [PlatformSpecific(PlatformID.Windows)]
+        public void Socket_SendToAsyncV4IPEndPointToV4Host_Throws_Windows()
         {
             Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
@@ -374,6 +374,22 @@ namespace System.Net.Sockets.Tests
             bool async = socket.SendToAsync(args);
             Assert.False(async);
             Assert.Equal(SocketError.Fault, args.SocketError);
+        }
+
+        // NOTE: on *nix, this API returns ENETUNREACH instead of EFAULT: these platforms
+        //       check the family of the provided socket address before checking its size
+        //       (as long as the socket address is large enough to store an address family).
+        [Fact] // Base case
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void Socket_SendToAsyncV4IPEndPointToV4Host_Throws_Unix()
+        {
+            Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+            args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
+            args.SetBuffer(new byte[1], 0, 1);
+            bool async = socket.SendToAsync(args);
+            Assert.False(async);
+            Assert.Equal(SocketError.NetworkUnreachable, args.SocketError);
         }
 
         [Fact] // Base case
