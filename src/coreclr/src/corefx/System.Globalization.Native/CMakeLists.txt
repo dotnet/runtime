@@ -6,29 +6,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_definitions(-DPIC=1)
 add_definitions(-DBIT64=1)
 
-set(ICU_HOMEBREW_LIB_PATH "/usr/local/opt/icu4c/lib")
 set(ICU_HOMEBREW_INC_PATH "/usr/local/opt/icu4c/include")
-
-if(NOT CLR_CMAKE_PLATFORM_DARWIN)
-    find_library(ICUUC NAMES icuuc PATHS ${ICU_HOMEBREW_LIB_PATH})
-    if(ICUUC STREQUAL ICUUC-NOTFOUND)
-        message(FATAL_ERROR "Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform)")
-        return()
-    endif()
-
-    find_library(ICUI18N NAMES icui18n PATHS ${ICU_HOMEBREW_LIB_PATH})
-        if(ICUI18N STREQUAL ICUI18N-NOTFOUND)
-        message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
-        return()
-    endif()
-
-else()
-    find_library(ICUCORE NAMES icucore)
-    if(ICUI18N STREQUAL ICUCORE-NOTFOUND)
-        message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
-        return()
-    endif()
-endif()
 
 find_path(UTYPES_H "unicode/utypes.h" PATHS ${ICU_HOMEBREW_INC_PATH})
 if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
@@ -36,15 +14,41 @@ if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
     return()
 endif()
 
-set(CMAKE_REQUIRED_INCLUDES ${ICU_HOMEBREW_INC_PATH})
-CHECK_CXX_SOURCE_COMPILES("
- #include <unicode/dtfmtsym.h>
- int main() { DateFormatSymbols::DtWidthType e = DateFormatSymbols::DtWidthType::SHORT; }
-" HAVE_DTWIDTHTYPE_SHORT) 
+if(NOT CLR_CMAKE_PLATFORM_DARWIN)
+    find_library(ICUUC icuuc)
+    if(ICUUC STREQUAL ICUUC-NOTFOUND)
+        message(FATAL_ERROR "Cannot find libicuuc, try installing libicu-dev (or the appropriate package for your platform)")
+        return()
+    endif()
 
-if(HAVE_DTWIDTHTYPE_SHORT)
-    add_definitions(-DHAVE_DTWIDTHTYPE_SHORT=1)
-endif(HAVE_DTWIDTHTYPE_SHORT)
+    find_library(ICUI18N icui18n)
+        if(ICUI18N STREQUAL ICUI18N-NOTFOUND)
+        message(FATAL_ERROR "Cannot find libicui18n, try installing libicu-dev (or the appropriate package for your platform)")
+        return()
+    endif()
+
+    set(CMAKE_REQUIRED_INCLUDES ${ICU_HOMEBREW_INC_PATH})
+    CHECK_CXX_SOURCE_COMPILES("
+     #include <unicode/udat.h>
+     int main() { UDateFormatSymbolType e = UDAT_STANDALONE_SHORTER_WEEKDAYS; }
+    " HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS)
+
+    if(HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS)
+        add_definitions(-DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS=1)
+    endif(HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS)
+
+else()
+
+    find_library(ICUCORE icucore)
+    if(ICUI18N STREQUAL ICUCORE-NOTFOUND)
+        message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
+        return()
+    endif()
+
+    # libicucore supports UDAT_STANDALONE_SHORTER_WEEKDAYS
+    add_definitions(-DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS=1)
+
+endif()
 
 add_compile_options(-fPIC)
 
