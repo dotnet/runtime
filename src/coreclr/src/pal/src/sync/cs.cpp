@@ -734,19 +734,6 @@ namespace CorUnix
             goto IECS_exit;
         }
 
-        if (pPalCriticalSection->fInternal && NULL != pThread)
-        {
-            CS_TRACE("EnterUnsafeRegion()\n");
-            // Acquiring an internal critical section: mark the current 
-            // thread as unsafe for suspension
-            //
-            // Note that InternalEnterCriticalSection marks the thread as unsafe 
-            // for suspension only at the first acquisition of a CS, and not when 
-            // recursively reacquiring an already owned CS. 
-
-            pThread->suspensionInfo.EnterUnsafeRegion();
-        }
-
         // Set bits to change and waiter increment for an incoming thread
         lBitsToChange = PALCS_LOCK_BIT;
         lWaitInc = PALCS_LOCK_WAITER_INC;
@@ -917,22 +904,22 @@ namespace CorUnix
                     "{%d, %d, %d} ==>\n", pPalCriticalSection,
                     PALCS_GETWCOUNT(lVal), PALCS_GETAWBIT(lVal), PALCS_GETLBIT(lVal),
                     PALCS_GETWCOUNT(lNewVal), PALCS_GETAWBIT(lNewVal), PALCS_GETLBIT(lNewVal));
-                
+
                 lNewVal = InterlockedCompareExchange(&pPalCriticalSection->LockCount, 
                                                      lNewVal, lVal);
-                
+
                 CS_TRACE("[LCS-UN %p] ==> %s\n", pPalCriticalSection, 
                                (lNewVal == lVal) ? "OK" : "NO");
-                
+
                 if (lNewVal == lVal) 
                 {
-                    goto ILCS_cs_released;
+                    goto ILCS_cs_exit;
                 }
             } 
             else 
             {
                 // There is at least one waiter, we need to wake it up
-                
+
 #ifdef PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
                 // Fair lock case: passing ownership on to the first waiter.
                 // Here we need only to decrement the waiters count. CS will
@@ -977,7 +964,7 @@ namespace CorUnix
                     sched_yield();
 #endif // PALCS_TRANSFER_OWNERSHIP_ON_RELEASE
 
-                    goto ILCS_cs_released;
+                    goto ILCS_cs_exit;
                 }
             }
 
@@ -993,20 +980,6 @@ namespace CorUnix
             lVal = lNewVal;
         }
 
-    ILCS_cs_released:
-        if (pPalCriticalSection->fInternal && NULL != pThread)
-        {
-            // Releasing internal critical section: mark the current thread
-            // back to safe for suspension.
-            //
-            // Note that InternalLeaveCriticalSection marks the thread as safe
-            // for suspension only at the final release of the CS, and not 
-            // when releasing for the M-th time a CS recursively acquired N 
-            // times, with N > M. 
-
-            pThread->suspensionInfo.LeaveUnsafeRegion();
-        }
-        
     ILCS_cs_exit:
         return;
     }
@@ -1033,13 +1006,6 @@ namespace CorUnix
 
         threadId = ObtainCurrentThreadId(pThread);
 
-        if (pPalCriticalSection->fInternal && NULL != pThread)
-        {
-            // Acquiring an internal critical section: mark the current 
-            // thread as unsafe for suspension.
-            pThread->suspensionInfo.EnterUnsafeRegion();
-        }
-
         lNewVal = InterlockedCompareExchange (&pPalCriticalSection->LockCount, 
                                              (LONG)PALCS_LOCK_BIT, 
                                              (LONG)PALCS_LOCK_INIT);
@@ -1057,25 +1023,6 @@ namespace CorUnix
 #endif // _DEBUG 
 
             goto ITECS_exit;
-        }
-
-        if (pPalCriticalSection->fInternal && NULL != pThread)
-        {
-            // InternalEnterCriticalSection's (and InternalLeaveCriticalSection's)
-            // logic requires to mark the thread as unsafe for suspension (and 
-            // back to safe) only at the first acquisition of a CS (and at the 
-            // final release), and not when recursively reacquiring an already 
-            // owned CS. 
-            // InternalTryEnterCriticalSection needs to match the same logic.
-            // The thread has already been marked as unsafe above, before trying 
-            // lo lock the CS. If that had succeeded and it was the first 
-            // acquisition, the current thread would have jumped to ITECS_exit 
-            // from within the previous 'if' block.
-            // Therefore, if control reaches this point, whether the thread 
-            // failed to acquire the CS or it was already owning it and it is
-            // just re-entering it. In both the case the previous unsafe marking 
-            // needs to be undone here. 
-            pThread->suspensionInfo.LeaveUnsafeRegion();
         }
 
         // check if the current thread already owns the criticalSection
@@ -1558,14 +1505,6 @@ namespace CorUnix
             return;
         }
 
-        if (pPalCriticalSection->fInternal && NULL != pThread)
-        {
-            // Acquiring an internal critical section: mark the current 
-            // thread as unsafe for suspension (it may already be
-            // marked as unsafe by a previous call)
-            pThread->suspensionInfo.EnterUnsafeRegion();
-        }
-
         iRet = pthread_mutex_lock(&pPalCriticalSection->csndNativeData.mutex);        
         _ASSERTE(0 == iRet);
 
@@ -1614,16 +1553,6 @@ namespace CorUnix
 
         iRet = pthread_mutex_unlock(&pPalCriticalSection->csndNativeData.mutex);
         _ASSERTE(0 == iRet);
-
-        if (pPalCriticalSection->fInternal && NULL != pThread)
-        {
-            // Releasing internal critical section: mark the current thread
-            // back to safe for suspension. N.B.: after this call the state 
-            // may still be unsafe if EnterUnsafeRegion has been called more 
-            // times (e.g. the thread owns more internal CSs)
-            pThread->suspensionInfo.LeaveUnsafeRegion();
-        }
-
     }
 
     /*++
@@ -1660,11 +1589,6 @@ namespace CorUnix
             goto ITECS_exit;
         }
 
-        if (pPalCriticalSection->fInternal && NULL != pThread)
-        {
-            pThread->suspensionInfo.EnterUnsafeRegion();
-        }
-
         fRet = (0 == pthread_mutex_trylock(&pPalCriticalSection->csndNativeData.mutex));
 
         if (fRet)
@@ -1672,14 +1596,9 @@ namespace CorUnix
             pPalCriticalSection->OwningThread = threadId;
             pPalCriticalSection->RecursionCount = 1;
         }
-        else if (pPalCriticalSection->fInternal && NULL != pThread)
-        {
-            pThread->suspensionInfo.LeaveUnsafeRegion();
-        }
 
     ITECS_exit:
         return fRet;
     }
 #endif // MUTEX_BASED_CSS || _DEBUG
 }
-
