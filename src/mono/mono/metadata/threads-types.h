@@ -257,4 +257,6 @@ void mono_thread_join (gpointer tid);
 
 void mono_thread_detach_internal (MonoInternalThread *thread);
 
+void ves_icall_System_Threading_Thread_GetStackTraces (MonoArray **out_threads, MonoArray **out_stack_traces);
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

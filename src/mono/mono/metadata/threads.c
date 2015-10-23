@@ -1361,6 +1361,23 @@ mono_thread_current (void)
 	return *current_thread_ptr;
 }
 
+/* Return the thread object belonging to INTERNAL in the current domain */
+static MonoThread *
+mono_thread_current_for_thread (MonoInternalThread *internal)
+{
+	MonoDomain *domain = mono_domain_get ();
+	MonoThread **current_thread_ptr;
+
+	g_assert (internal);
+	current_thread_ptr = get_current_thread_ptr_for_domain (domain, internal);
+
+	if (!*current_thread_ptr) {
+		g_assert (domain != mono_get_root_domain ());
+		*current_thread_ptr = new_thread_with_internal (domain, internal);
+	}
+	return *current_thread_ptr;
+}
+
 MonoInternalThread*
 mono_thread_internal_current (void)
 {
@@ -3144,6 +3161,8 @@ typedef struct {
 	MonoInternalThread *thread;
 	MonoStackFrameInfo *frames;
 	int nframes, max_frames;
+	int nthreads, max_threads;
+	MonoInternalThread **threads;
 } ThreadDumpUserData;
 
 static gboolean thread_dump_requested;
@@ -3186,11 +3205,45 @@ get_thread_dump (MonoThreadInfo *info, gpointer ud)
 	return MonoResumeThread;
 }
 
+typedef struct {
+	int nthreads, max_threads;
+	MonoInternalThread **threads;
+} CollectThreadsUserData;
+
 static void
-dump_thread (gpointer key, gpointer value, gpointer user)
+collect_thread (gpointer key, gpointer value, gpointer user)
 {
-	ThreadDumpUserData *ud = user;
+	CollectThreadsUserData *ud = user;
 	MonoInternalThread *thread = value;
+
+	if (ud->nthreads < ud->max_threads)
+		ud->threads [ud->nthreads ++] = thread;
+}
+
+/*
+ * Collect running threads into the THREADS array.
+ * THREADS should be an array allocated on the stack.
+ */
+static int
+collect_threads (MonoInternalThread **thread_array, int max_threads)
+{
+	CollectThreadsUserData ud;
+
+	memset (&ud, 0, sizeof (ud));
+	/* This array contains refs, but its on the stack, so its ok */
+	ud.threads = thread_array;
+	ud.max_threads = max_threads;
+
+	mono_threads_lock ();
+	mono_g_hash_table_foreach (threads, collect_thread, &ud);
+	mono_threads_unlock ();
+
+	return ud.nthreads;
+}
+
+static void
+dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud)
+{
 	GString* text = g_string_new (0);
 	char *name;
 	GError *error = NULL;
@@ -3251,21 +3304,106 @@ void
 mono_threads_perform_thread_dump (void)
 {
 	ThreadDumpUserData ud;
+	MonoInternalThread *thread_array [128];
+	int tindex, nthreads;
 
 	if (!thread_dump_requested)
 		return;
 
 	printf ("Full thread dump:\n");
 
+	/* Make a copy of the threads hash to avoid doing work inside threads_lock () */
+	nthreads = collect_threads (thread_array, 128);
+
 	memset (&ud, 0, sizeof (ud));
 	ud.frames = g_new0 (MonoStackFrameInfo, 256);
 	ud.max_frames = 256;
 
-	mono_threads_lock ();
-	mono_g_hash_table_foreach (threads, dump_thread, &ud);
-	mono_threads_unlock ();
+	for (tindex = 0; tindex < nthreads; ++tindex)
+		dump_thread (thread_array [tindex], &ud);
+
+	g_free (ud.frames);
 
 	thread_dump_requested = FALSE;
+}
+
+/* Obtain the thread dump of all threads */
+static void
+mono_threads_get_thread_dump (MonoArray **out_threads, MonoArray **out_stack_frames)
+{
+	ThreadDumpUserData ud;
+	MonoInternalThread *thread_array [128];
+	MonoDomain *domain = mono_domain_get ();
+	MonoDebugSourceLocation *location;
+	int tindex, nthreads;
+
+	*out_threads = NULL;
+	*out_stack_frames = NULL;
+
+	/* Make a copy of the threads hash to avoid doing work inside threads_lock () */
+	nthreads = collect_threads (thread_array, 128);
+
+	memset (&ud, 0, sizeof (ud));
+	ud.frames = g_new0 (MonoStackFrameInfo, 256);
+	ud.max_frames = 256;
+
+	*out_threads = mono_array_new (domain, mono_defaults.thread_class, nthreads);
+	*out_stack_frames = mono_array_new (domain, mono_defaults.array_class, nthreads);
+
+	for (tindex = 0; tindex < nthreads; ++tindex) {
+		MonoInternalThread *thread = thread_array [tindex];
+		MonoArray *thread_frames;
+		int i;
+
+		ud.thread = thread;
+		ud.nframes = 0;
+
+		/* Collect frames for the thread */
+		if (thread == mono_thread_internal_current ()) {
+			get_thread_dump (mono_thread_info_current (), &ud);
+		} else {
+			mono_thread_info_safe_suspend_and_run (thread_get_tid (thread), FALSE, get_thread_dump, &ud);
+		}
+
+		mono_array_setref_fast (*out_threads, tindex, mono_thread_current_for_thread (thread));
+
+		thread_frames = mono_array_new (domain, mono_defaults.stack_frame_class, ud.nframes);
+		mono_array_setref_fast (*out_stack_frames, tindex, thread_frames);
+
+		for (i = 0; i < ud.nframes; ++i) {
+			MonoStackFrameInfo *frame = &ud.frames [i];
+			MonoMethod *method = NULL;
+			MonoStackFrame *sf = (MonoStackFrame *)mono_object_new (domain, mono_defaults.stack_frame_class);
+
+			sf->native_offset = frame->native_offset;
+
+			if (frame->type == FRAME_TYPE_MANAGED)
+				method = mono_jit_info_get_method (frame->ji);
+
+			if (method) {
+				sf->method_address = (gsize) frame->ji->code_start;
+
+				MONO_OBJECT_SETREF (sf, method, mono_method_get_object (domain, method, NULL));
+
+				location = mono_debug_lookup_source_location (method, frame->native_offset, domain);
+				if (location) {
+					sf->il_offset = location->il_offset;
+
+					if (location && location->source_file) {
+						MONO_OBJECT_SETREF (sf, filename, mono_string_new (domain, location->source_file));
+						sf->line = location->row;
+						sf->column = location->column;
+					}
+					mono_debug_free_source_location (location);
+				} else {
+					sf->il_offset = -1;
+				}
+			}
+			mono_array_setref (thread_frames, i, sf);
+		}
+	}
+
+	g_free (ud.frames);
 }
 
 /**
@@ -4712,4 +4850,10 @@ mono_thread_internal_unhandled_exception (MonoObject* exc)
 				exit (255);
 		}
 	}
+}
+
+void
+ves_icall_System_Threading_Thread_GetStackTraces (MonoArray **out_threads, MonoArray **out_stack_traces)
+{
+	mono_threads_get_thread_dump (out_threads, out_stack_traces);
 }
