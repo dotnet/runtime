@@ -144,7 +144,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(3769, PlatformID.AnyUnix)]
         public static void TestECDsaPublicKey_ValidatesSignature()
         {
             // This signature was produced as the output of ECDsaCng.SignData with the same key
