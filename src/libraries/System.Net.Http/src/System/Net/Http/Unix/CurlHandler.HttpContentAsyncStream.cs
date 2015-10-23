@@ -304,38 +304,22 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(_syncObj), "Should not be invoked while holding the lock");
                 Debug.Assert(_copyTask == null, "Should only be invoked after construction or a reset");
 
-                // Start the copy and store the task to represent it
-                _copyTask = StartCopyToAsync();
+                // Start the copy and store the task to represent it. In the rare case that the synchronous 
+                // call to CopyToAsync may block writing to this stream synchronously (e.g. if the 
+                // SerializeToStreamAsync called by CopyToAsync did a synchronous Write on this stream) we 
+                // need to ensure that doesn't cause a deadlock. So, we invoke CopyToAsync asynchronously. 
+                // This purposefully uses Task.Run this way rather than StartNew with object state because 
+                // the latter would need to use a separate call to Unwrap, which is more expensive than the 
+                // single extra delegate allocation (no closure allocation) we'll get here along with 
+                // Task.Run's very efficient unwrapping implementation.
+                _copyTask = Task.Run(() => _content.CopyToAsync(this));
 
                 // Fix up the instance when it's done
                 _copyTask.ContinueWith((t, s) => ((HttpContentAsyncStream)s).EndCopyToAsync(t), this,
                     CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
 
-            /// <summary>
-            /// Initiates a new CopyToAsync from the HttpContent to this stream, and should only be called when the caller
-            /// can be sure that no one else is accessing the stream or attempting to initiate a copy.
-            /// </summary>
-            private Task StartCopyToAsync()
-            {
-                Debug.Assert(!Monitor.IsEntered(_syncObj), "Should not be invoked while holding the lock");
-                Debug.Assert(_copyTask == null, "Should only be invoked after construction or a reset");
-
-                // Transfer the data from the content to this stream
-                try
-                {
-                    VerboseTrace("Initiating new CopyToAsync");
-                    return _content.CopyToAsync(this);
-                }
-                catch (Exception exc)
-                {
-                    // CopyToAsync allows some exceptions to propagate synchronously, including exceptions
-                    // indicating that a stream can't be re-copied.
-                    return Task.FromException(exc);
-                }
-            }
-
-            /// <summary>Completes a CopyToAsync; called only from StartCopyToAsync.</summary>
+            /// <summary>Completes a CopyToAsync initiated in Run.</summary>
             private void EndCopyToAsync(Task completedCopy)
             {
                 Debug.Assert(!Monitor.IsEntered(_syncObj), "Should not be invoked while holding the lock");
