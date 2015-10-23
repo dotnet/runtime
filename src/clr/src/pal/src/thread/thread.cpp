@@ -300,7 +300,10 @@ static void FreeTHREAD(CPalThread *pThread)
        LeaveCriticalSection(&cs,TRUE) need to access the thread private data 
        stored in the very THREAD structure that we just destroyed. Entering and 
        leaving the critical section with internal==FALSE leads to possible hangs
-       in the PROCSuspendOtherThreads logic, at shutdown time */
+       in the PROCSuspendOtherThreads logic, at shutdown time 
+
+       Update: [TODO] PROCSuspendOtherThreads has been removed. Can this 
+       code be changed?*/
 
     /* Get the lock */
     SPINLOCKAcquire(&free_threads_spinlock, 0);
