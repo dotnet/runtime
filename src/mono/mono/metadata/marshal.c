@@ -242,10 +242,10 @@ mono_marshal_init (void)
 		mono_remoting_init ();
 
 #ifdef USE_COOP_GC
-		register_icall (mono_threads_prepare_blocking, "mono_threads_prepare_blocking", "int", FALSE);
-		register_icall (mono_threads_finish_blocking, "mono_threads_finish_blocking", "void int", FALSE);
-		register_icall (mono_threads_reset_blocking_start, "mono_threads_reset_blocking_start","int", TRUE);
-		register_icall (mono_threads_reset_blocking_end, "mono_threads_reset_blocking_end","void int", TRUE);
+		register_icall (mono_threads_prepare_blocking, "mono_threads_prepare_blocking", "ptr ptr", FALSE);
+		register_icall (mono_threads_finish_blocking, "mono_threads_finish_blocking", "void ptr ptr", FALSE);
+		register_icall (mono_threads_reset_blocking_start, "mono_threads_reset_blocking_start","ptr ptr", TRUE);
+		register_icall (mono_threads_reset_blocking_end, "mono_threads_reset_blocking_end","void ptr ptr", TRUE);
 #endif
 	}
 }
@@ -7061,7 +7061,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	int type, param_shift = 0;
 	static MonoMethodSignature *get_last_error_sig = NULL;
 #ifdef USE_COOP_GC
-	int coop_gc_var;
+	int coop_gc_stack_dummy, coop_gc_var;
 #endif
 
 	memset (&m, 0, sizeof (m));
@@ -7101,7 +7101,9 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	}
 
 #ifdef USE_COOP_GC
-	/* local 4, the local to be used when calling the suspend funcs */
+	/* local 4, dummy local used to get a stack address for suspend funcs */
+	coop_gc_stack_dummy = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	/* local 5, the local to be used when calling the suspend funcs */
 	coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 #endif
 
@@ -7133,6 +7135,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	}			
 
 #ifdef USE_COOP_GC
+	mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
 	mono_mb_emit_icall (mb, mono_threads_prepare_blocking);
 	mono_mb_emit_stloc (mb, coop_gc_var);
 #endif
@@ -7183,6 +7186,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 
 #ifdef USE_COOP_GC
 	mono_mb_emit_ldloc (mb, coop_gc_var);
+	mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
 	mono_mb_emit_icall (mb, mono_threads_finish_blocking);
 #endif
 
@@ -7686,7 +7690,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	int i, *tmp_locals;
 	gboolean closed = FALSE;
 #ifdef USE_COOP_GC
-	int coop_gc_var;
+	int coop_gc_var, coop_gc_dummy_local;
 #endif
 
 	sig = m->sig;
@@ -7717,6 +7721,8 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	/* local 4, the local to be used when calling the reset_blocking funcs */
 	/* tons of code hardcode 3 to be the return var */
 	coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	/* local 5, the local used to get a stack address for suspend funcs */
+	coop_gc_dummy_local = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 #endif
 
 	mono_mb_emit_icon (mb, 0);
@@ -7731,6 +7737,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 
 #ifdef USE_COOP_GC
 	/* XXX can we merge reset_blocking_start with JIT_ATTACH above and save one call? */
+	mono_mb_emit_ldloc_addr (mb, coop_gc_dummy_local);
 	mono_mb_emit_icall (mb, mono_threads_reset_blocking_start);
 	mono_mb_emit_stloc (mb, coop_gc_var);
 #endif
@@ -7866,6 +7873,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 #ifdef USE_COOP_GC
 	/* XXX merge reset_blocking_end with detach */
 	mono_mb_emit_ldloc (mb, coop_gc_var);
+	mono_mb_emit_ldloc_addr (mb, coop_gc_dummy_local);
 	mono_mb_emit_icall (mb, mono_threads_reset_blocking_end);
 #endif
 
