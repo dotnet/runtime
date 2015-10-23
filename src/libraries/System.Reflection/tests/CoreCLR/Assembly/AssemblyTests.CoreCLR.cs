@@ -18,10 +18,18 @@ namespace System.Reflection.Tests
             Assert.NotNull(location);
             Assert.NotEmpty(location);
 
-            string expectedDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
-            string actualDir = Path.GetDirectoryName(location).TrimEnd(Path.DirectorySeparatorChar);
-            Assert.Equal(expectedDir, actualDir, StringComparer.OrdinalIgnoreCase);
+            string expectedDir = AppContext.BaseDirectory;
+            string actualDir = Path.GetDirectoryName(location);
 
+            // Check that neither are relative
+            Assert.True(Path.IsPathRooted(expectedDir));
+            Assert.True(Path.IsPathRooted(actualDir));
+
+            // normalize paths before comparison
+            expectedDir = Path.GetFullPath(expectedDir).TrimEnd(Path.DirectorySeparatorChar);
+            actualDir = Path.GetFullPath(actualDir).TrimEnd(Path.DirectorySeparatorChar);
+
+            Assert.Equal(expectedDir, actualDir, StringComparer.OrdinalIgnoreCase);
             Assert.Equal("System.Reflection.CoreCLR.Tests.dll", Path.GetFileName(location), StringComparer.OrdinalIgnoreCase);
         }
 
