@@ -147,7 +147,7 @@ namespace System.Net
         //
         internal static string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
-            using (SafeSharedX509NameStackHandle names = Interop.libssl.SSL_get_client_CA_list(securityContext.SslContext))
+            using (SafeSharedX509NameStackHandle names = Interop.Ssl.SslGetClientCAList(securityContext.SslContext))
             {
                 if (names.IsInvalid)
                 {

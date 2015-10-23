@@ -44,3 +44,10 @@ extern "C" int32_t GetMemoryBioSize(BIO* bio)
     assert(ret <= INT32_MAX);
     return static_cast<int32_t>(ret);
 }
+
+extern "C" int32_t BioCtrlPending(BIO* bio)
+{
+    size_t result = BIO_ctrl_pending(bio);
+    assert(result <= INT32_MAX);
+    return static_cast<int32_t>(result);
+}

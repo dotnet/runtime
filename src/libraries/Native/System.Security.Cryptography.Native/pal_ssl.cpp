@@ -6,25 +6,46 @@
 
 #include <assert.h>
 
+static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE, "");
+static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL, "");
+static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ, "");
+static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE, "");
+static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL, "");
+static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN, "");
+
+extern "C" void EnsureLibSslInitialized()
+{
+    SSL_library_init();
+    SSL_load_error_strings();
+}
+
 extern "C" const SSL_METHOD* SslV2_3Method()
 {
-    return SSLv23_method();
+    const SSL_METHOD* method = SSLv23_method();
+    assert(method != nullptr);
+    return method;
 }
 
 extern "C" const SSL_METHOD* SslV3Method()
 {
-    return SSLv3_method();
+    const SSL_METHOD* method = SSLv3_method();
+    assert(method != nullptr);
+    return method;
 }
 
 extern "C" const SSL_METHOD* TlsV1Method()
 {
-    return TLSv1_method();
+    const SSL_METHOD* method = TLSv1_method();
+    assert(method != nullptr);
+    return method;
 }
 
 extern "C" const SSL_METHOD* TlsV1_1Method()
 {
 #if HAVE_TLS_V1_1
-    return TLSv1_1_method();
+    const SSL_METHOD* method = TLSv1_1_method();
+    assert(method != nullptr);
+    return method;
 #else
     return nullptr;
 #endif
@@ -33,7 +54,9 @@ extern "C" const SSL_METHOD* TlsV1_1Method()
 extern "C" const SSL_METHOD* TlsV1_2Method()
 {
 #if HAVE_TLS_V1_2
-    return TLSv1_2_method();
+    const SSL_METHOD* method = TLSv1_2_method();
+    assert(method != nullptr);
+    return method;
 #else
     return nullptr;
 #endif
@@ -44,9 +67,36 @@ extern "C" SSL_CTX* SslCtxCreate(SSL_METHOD* method)
     return SSL_CTX_new(method);
 }
 
-extern "C" int64_t SslCtxCtrl(SSL_CTX* ctx, int32_t cmd, int64_t larg, void* parg)
+extern "C" void SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
-    return SSL_CTX_ctrl(ctx, cmd, larg, parg);
+    long protocolOptions = 0;
+
+    if ((protocols & PAL_SSL_SSL2) != PAL_SSL_SSL2)
+    {
+        protocolOptions |= SSL_OP_NO_SSLv2;
+    }
+    if ((protocols & PAL_SSL_SSL3) != PAL_SSL_SSL3)
+    {
+        protocolOptions |= SSL_OP_NO_SSLv3;
+    }
+    if ((protocols & PAL_SSL_TLS) != PAL_SSL_TLS)
+    {
+        protocolOptions |= SSL_OP_NO_TLSv1;
+    }
+#if HAVE_TLS_V1_1
+    if ((protocols & PAL_SSL_TLS11) != PAL_SSL_TLS11)
+    {
+        protocolOptions |= SSL_OP_NO_TLSv1_1;
+    }
+#endif
+#if HAVE_TLS_V1_2
+    if ((protocols & PAL_SSL_TLS12) != PAL_SSL_TLS12)
+    {
+        protocolOptions |= SSL_OP_NO_TLSv1_2;
+    }
+#endif
+
+    SSL_CTX_set_options(ctx, protocolOptions);
 }
 
 extern "C" SSL* SslCreate(SSL_CTX* ctx)
@@ -73,6 +123,16 @@ extern "C" void SslCtxDestroy(SSL_CTX* ctx)
     {
         SSL_CTX_free(ctx);
     }
+}
+
+extern "C" void SslSetConnectState(SSL* ssl)
+{
+    SSL_set_connect_state(ssl);
+}
+
+extern "C" void SslSetAcceptState(SSL* ssl)
+{
+    SSL_set_accept_state(ssl);
 }
 
 extern "C" const char* SslGetVersion(SSL* ssl)
@@ -389,4 +449,127 @@ extern "C" int32_t SslWrite(SSL* ssl, const void* buf, int32_t num)
 extern "C" int32_t SslRead(SSL* ssl, void* buf, int32_t num)
 {
     return SSL_read(ssl, buf, num);
+}
+
+extern "C" int32_t IsSslRenegotiatePending(SSL* ssl)
+{
+    return SSL_renegotiate_pending(ssl) != 0;
+}
+
+extern "C" int32_t SslShutdown(SSL* ssl)
+{
+    return SSL_shutdown(ssl);
+}
+
+extern "C" void SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
+{
+    SSL_set_bio(ssl, rbio, wbio);
+}
+
+extern "C" int32_t SslDoHandshake(SSL* ssl)
+{
+    return SSL_do_handshake(ssl);
+}
+
+extern "C" int32_t IsSslStateOK(SSL* ssl)
+{
+    return SSL_state(ssl) == SSL_ST_OK;
+}
+
+extern "C" X509* SslGetPeerCertificate(SSL* ssl)
+{
+    return SSL_get_peer_certificate(ssl);
+}
+
+extern "C" X509Stack* SslGetPeerCertChain(SSL* ssl)
+{
+    return SSL_get_peer_cert_chain(ssl);
+}
+
+extern "C" int32_t SslCtxUseCertificate(SSL_CTX* ctx, X509* x)
+{
+    return SSL_CTX_use_certificate(ctx, x);
+}
+
+extern "C" int32_t SslCtxUsePrivateKey(SSL_CTX* ctx, EVP_PKEY* pkey)
+{
+    return SSL_CTX_use_PrivateKey(ctx, pkey);
+}
+
+extern "C" int32_t SslCtxCheckPrivateKey(SSL_CTX* ctx)
+{
+    return SSL_CTX_check_private_key(ctx);
+}
+
+extern "C" void SslCtxSetQuietShutdown(SSL_CTX* ctx)
+{
+    SSL_CTX_set_quiet_shutdown(ctx, 1);
+}
+
+extern "C" X509NameStack* SslGetClientCAList(SSL* ssl)
+{
+    return SSL_get_client_CA_list(ssl);
+}
+
+extern "C" void SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback)
+{
+    int mode = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+
+    SSL_CTX_set_verify(ctx, mode, callback);
+}
+
+// delimiter ":" is used to allow more than one strings
+// below string is corresponding to "AllowNoEncryption"
+#define SSL_TXT_Separator ":"
+#define SSL_TXT_AllIncludingNull SSL_TXT_ALL SSL_TXT_Separator SSL_TXT_eNULL
+
+extern "C" void SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
+{
+    const char* cipherString = nullptr;
+    switch (policy)
+    {
+        case EncryptionPolicy::RequireEncryption:
+            cipherString = SSL_TXT_ALL;
+            break;
+
+        case EncryptionPolicy::AllowNoEncryption:
+            cipherString = SSL_TXT_AllIncludingNull;
+            break;
+
+        case EncryptionPolicy::NoEncryption:
+            cipherString = SSL_TXT_eNULL;
+            break;
+    }
+
+    assert(cipherString != nullptr);
+
+    SSL_CTX_set_cipher_list(ctx, cipherString);
+}
+
+extern "C" void SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list)
+{
+    SSL_CTX_set_client_CA_list(ctx, list);
+}
+
+extern "C" void GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage)
+{
+    if (header)
+    {
+        *header = SSL3_RT_HEADER_LENGTH;
+    }
+
+    if (trailer)
+    {
+        // TODO (Issue #3362) : Trailer size requirement is changing based on protocol
+        //       SSL3/TLS1.0 - 68, TLS1.1 - 37 and TLS1.2 - 24
+        //       Current usage is only to compute max input buffer size for
+        //       encryption and so setting to the max
+
+        *trailer = 68;
+    }
+
+    if (maximumMessage)
+    {
+        *maximumMessage = SSL3_RT_MAX_PLAIN_LENGTH;
+    }
 }
