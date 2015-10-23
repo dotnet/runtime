@@ -201,6 +201,8 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 #endif
+
+#if FEATURE_DLG_INVOKE
         private static Type GetHelperType(MethodInfo info, Type[] arrTypes)
         {
             Type t;
@@ -226,8 +228,10 @@ namespace System.Linq.Expressions.Interpreter
             }
             return t;
         }
+#endif
     }
 
+#if FEATURE_DLG_INVOKE
     internal sealed class ActionCallInstruction : CallInstruction
     {
         private readonly Action _target;
@@ -405,4 +409,5 @@ namespace System.Linq.Expressions.Interpreter
             return 1;
         }
     }
+#endif
 }

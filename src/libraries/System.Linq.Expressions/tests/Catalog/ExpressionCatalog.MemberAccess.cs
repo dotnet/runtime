@@ -74,5 +74,7 @@ namespace Tests.Expressions
         {
             get { return "foz"; }
         }
+
+        public static int K = 47;
     }
 }
