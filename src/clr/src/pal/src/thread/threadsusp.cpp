@@ -94,9 +94,6 @@ Function:
   function sets the blocking pipe for the thread and blocks until the
   wakeup code is written to the pipe by ResumeThread.
 
-  On platforms where we don't use pipes for starting threads suspended,
-  this function falls back on InternalSuspendThreadFromData to perform
-  the suspension.
 --*/
 PAL_ERROR
 CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
@@ -156,240 +153,7 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
 
 /*++
 Function:
-  InternalSuspendThreadFromData
 
-InternalSuspendThreadFromData suspends the target thread. It first checks if 
-the target thread is suspending itself. Next, it acquires the thread(s) 
-suspension locks before attempting the actual suspension. Once the attempt
-is completed, the locks are released. The starting suspend count of the 
-target thread is passed back to the caller of this function.
-
-Note that ReleaseSuspensionLock(s) is called before hitting ASSERTs in error
-paths. Currently, this seems unnecessary since asserting within 
-InternalSuspendThreadFromData will not cause cleanup to occur. However,
-this may change since it would be preferable to perform cleanup in these
-situations. Thus, calls to release suspension locks remain in the error paths.
---*/
-PAL_ERROR
-CThreadSuspensionInfo::InternalSuspendThreadFromData(
-    CPalThread *pthrSuspender,
-    CPalThread *pthrTarget,
-    DWORD *pdwSuspendCount
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    DWORD dwPrevSuspendCount = 0;
-
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-    int nPthreadRet = 0;
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
-
-    BOOL fSelfSuspend = FALSE;
-
-    if (!pthrSuspender->suspensionInfo.IsSuspensionStateSafe())
-    {
-        ASSERT("The suspending thread is in an unsafe region.\n");
-        palError = ERROR_INTERNAL_ERROR;
-        goto InternalSuspendThreadFromDataExit;
-    }
-    
-    if (SignalHandlerThread == pthrTarget->GetThreadType())
-    {
-        ASSERT("Attempting to suspend the signal handling thread.\n");
-        palError = ERROR_INVALID_HANDLE;
-        goto InternalSuspendThreadFromDataExit;
-    }
-
-    // Check if this is a self suspension
-    if (pthrSuspender->GetThreadId() == pthrTarget->GetThreadId())
-    {
-        fSelfSuspend = TRUE;
-    }
-
-    // Acquire suspension mutex(es)
-    if (fSelfSuspend)
-    {
-        AcquireSuspensionLock(pthrTarget);
-    }
-    else
-    {
-        AcquireSuspensionLocks(pthrSuspender, pthrTarget);
-    }
-
-    // Check target thread's state to ensure it hasn't died. Setting a 
-    // thread's state to TS_DONE is protected by the target's suspension mutex.
-    if (pthrTarget->synchronizationInfo.GetThreadState() == TS_DONE)
-    {
-        palError = ERROR_INVALID_HANDLE;    
-        if (fSelfSuspend)
-        {
-            ReleaseSuspensionLock(pthrTarget);
-            ASSERT("Self suspension should not fail due to TS_DONE\n");
-        }
-        else
-        {
-            ReleaseSuspensionLocks(pthrSuspender, pthrTarget);
-        }
-        goto InternalSuspendThreadFromDataExit;     
-    }
-        
-    if (pthrTarget->suspensionInfo.GetSuspCount() < MAXIMUM_SUSPEND_COUNT)
-    { 
-#if USE_PTHREAD_CONDVARS
-        // We must initialize the flag indicating the target has acknowledged the suspension
-        // before they could possibly have set it.
-        m_fSuspended = FALSE;
-#endif
-
-        // If this is a self suspension, the suspension count must be 0
-        // so this if statement will be true
-        if (pthrTarget->suspensionInfo.GetSuspCount() == 0) 
-        {
-            if (fSelfSuspend)
-            {
-                // Notice that suspension count is incremented after 
-                // assigning it to dwPrevSuspendCount
-                pthrTarget->suspensionInfo.SetSelfSusp(TRUE);               
-                dwPrevSuspendCount = pthrTarget->suspensionInfo.GetSuspCount();
-                pthrTarget->suspensionInfo.IncrSuspCount();
-                ReleaseSuspensionLock(pthrTarget);
-            }
-
-            /* Within this do while loop, the actual suspension is attempted. 
-            If the target thread is unsafe, the suspender thread will wait on 
-            the target's suspension semaphore. Once the target posts on the 
-            semaphore, it is no longer unsafe and it will wait for the suspender 
-            thread to reiterate the loop and attempt to suspend it again. */
-            do
-            {
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-                pthrTarget->suspensionInfo.SetSuspendSignalSent(TRUE);
-                // Send the SIGUSR1 to the target thread and wait for it to post, immediately prior to suspension.
-                nPthreadRet = pthread_kill(pthrTarget->GetPThreadSelf(), SIGUSR1);
-                if (nPthreadRet == 0)
-                {
-                    if (!fSelfSuspend)
-                    {
-                        pthrTarget->suspensionInfo.WaitOnSuspendSemaphore();
-                    }
-                }
-                else
-                {
-                    // pthread_kill failed so bail out.
-                    palError = ERROR_SIGNAL_REFUSED;
-                    if (fSelfSuspend)
-                    {
-                         // Decrement suspension count for self suspension case since 
-                         // it was already incremented but the suspension attempt failed.
-                        pthrTarget->suspensionInfo.SetSelfSusp(FALSE);
-                        ReleaseSuspensionLock(pthrTarget);
-                        ASSERT("Self suspension should not fail but pthread_kill returned %d\n", nPthreadRet);
-                    }
-                    else
-                    {
-                        ReleaseSuspensionLocks(pthrSuspender, pthrTarget);
-                        ASSERT("pthread_kill failed with error %d\n", nPthreadRet);
-                    }
-                    goto InternalSuspendThreadFromDataExit;
-                }
-#else // USE_SIGNALS_FOR_THREAD_SUSPENSION
-                // Call the native suspension function. If it fails, bail out.
-                if (!THREADHandleSuspendNative(pthrTarget))
-                {
-                    palError = ERROR_INTERNAL_ERROR;
-                    if (fSelfSuspend)
-                    {
-                        pthrTarget->suspensionInfo.SetSelfSusp(FALSE);
-                        ReleaseSuspensionLock(pthrTarget);
-                    }
-                    else
-                    {
-                        ReleaseSuspensionLocks(pthrSuspender, pthrTarget);
-                        ASSERT("Native suspension actually failed!\n");
-                    }
-                    goto InternalSuspendThreadFromDataExit;
-                }
-
-                // Couldn't be a self suspension, if the thread is unsafe, 
-                // since there is an assert check above for a thread 
-                // self suspending in an unsafe region.
-                if (!pthrTarget->suspensionInfo.IsSuspensionStateSafe())
-                {
-                    // The target thread is suspension unsafe so set its pending
-                    // field to TRUE. Once it leaves the unsafe region, it will
-                    // check this field and wait to be suspended.
-                    pthrTarget->suspensionInfo.SetSuspPending(TRUE);
-
-                    // Since the target was suspended before checking if it was
-                    // suspension unsafe, resume it now so it can eventually
-                    // become suspension safe (and be suspended).
-                    if(!THREADHandleResumeNative(pthrTarget))
-                    {
-                        palError = ERROR_INTERNAL_ERROR;
-                        ReleaseSuspensionLocks(pthrSuspender, pthrTarget);
-                        ASSERT("Native suspension actually failed!\n");
-                        goto InternalSuspendThreadFromDataExit;
-                    }       
-
-                    // Wait for the target thread to become suspension safe.
-                    pthrTarget->suspensionInfo.WaitOnSuspendSemaphore();
-                }
-                else
-                {   
-                    // The target thread is suspension safe so leave it suspended
-                    // and set its pending field to FALSE since the suspension
-                    // succeeded.
-                    pthrTarget->suspensionInfo.SetSuspPending(FALSE);
-                }
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
-            } while (pthrTarget->suspensionInfo.GetSuspPending());
-        }
-
-        if (!fSelfSuspend)
-        {
-            // Notice that suspension count is incremented 
-            // after assigning it to dwPrevSuspendCount
-            dwPrevSuspendCount = pthrTarget->suspensionInfo.GetSuspCount();
-            pthrTarget->suspensionInfo.IncrSuspCount();
-        }
-    }
-    else
-    {
-        // A self suspending thread can't reach this code since 
-        // the suspender thread would already have been suspended.
-        palError = ERROR_SIGNAL_REFUSED;
-        ReleaseSuspensionLocks(pthrSuspender, pthrTarget);
-        _ASSERT_MSG(!fSelfSuspend, "A self suspending thread must have a suspension count of 0 to enter SuspendThread, "
-            "yet SuspendThread thinks that this thread's count has reached the maximum.");
-        goto InternalSuspendThreadFromDataExit;
-    }
-
-    if (!fSelfSuspend)
-    {
-        ReleaseSuspensionLocks(pthrSuspender, pthrTarget);
-    }      
-        
-    InternalSuspendThreadFromDataExit: 
-
-    if (NO_ERROR == palError)
-    {
-        *pdwSuspendCount = dwPrevSuspendCount;
-
-#ifdef _DEBUG
-        // Don't increment a self suspending thread's count of threads it suspended.
-        if (!fSelfSuspend)
-        {
-            pthrSuspender->suspensionInfo.IncrNumThreadsSuspendedByThisThread();
-        }
-#endif
-    }
-
-    return palError;
-}
-
-
-/*++
-Function:
   ResumeThread
 
 See MSDN doc.
@@ -502,13 +266,6 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
 
     int nWrittenBytes = -1;
 
-    if (!pthrResumer->suspensionInfo.IsSuspensionStateSafe())
-    {
-        ASSERT("The resuming thread is in an unsafe region.\n");
-        palError = ERROR_INTERNAL_ERROR;
-        goto InternalResumeThreadFromDataExit;
-    }
-
     if (SignalHandlerThread == pthrTarget->GetThreadType())
     {
         ASSERT("Attempting to resume the signal handling thread, which can never be suspended.\n");
@@ -539,8 +296,6 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
         ReleaseSuspensionLocks(pthrResumer, pthrTarget);
         goto InternalResumeThreadFromDataExit;
     }
-
-    dwPrevSuspendCount = pthrTarget->suspensionInfo.GetSuspCount();
 
     // If there is a blocking pipe on this thread, resume it by writing the wake up code to that pipe.
     if (-1 != pthrTarget->suspensionInfo.GetBlockingPipe())
@@ -1451,20 +1206,6 @@ THREADMarkDiagnostic(const char* funcName)
 }
 #endif // _DEBUG
 
-/*++
-Function:
-  PALCIsSuspensionStateSafe
-
-This function allows someone to check if a thread is in a suspension safe
-state in legacy C code, which has no knowledge of CPalThread.
---*/
-BOOL 
-PALCIsSuspensionStateSafe(void)
-{
-    CPalThread *pthrCurrent = InternalGetCurrentThread();
-    return pthrCurrent->suspensionInfo.IsSuspensionStateSafe();
-}
-
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
 /*++
 Function:
@@ -1542,12 +1283,6 @@ CThreadSuspensionInfo::HandleResumeSignal()
     }
 
     SetResumeSignalSent(FALSE);
-
-    if (GetSuspCount() != 0)
-    {
-        ASSERT("Should not be resuming a thread whose suspension count is %d.\n", GetSuspCount());
-        return true;
-    }
 
     // This thread is no longer suspended - if it self suspended, 
     // then its self suspension field should now be set to FALSE.
