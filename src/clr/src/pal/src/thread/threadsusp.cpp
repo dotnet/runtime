@@ -1223,68 +1223,6 @@ CThreadSuspensionInfo::WaitOnResumeSemaphore()
     }
 #endif // USE_POSIX_SEMAPHORES
 }
-      
-/*++
-Function:
-  LeaveUnsafeRegion
-  
-LeaveUnsafeRegion decrements a thread's unsafe region count.
-Once the count is zero, the calling thread checks if there
-is a suspension pending on it. If so, it will post on its
-suspension semaphore and wait for the suspending thread to
-suspend it. LeaveUnsafeRegion should only be called after
-the thread called EnterUnsafeRegion. 
---*/
-VOID
-CThreadSuspensionInfo::LeaveUnsafeRegion()
-{
-    if (PALIsThreadDataInitialized())
-    {
-        _ASSERT_MSG(GetUnsafeRegionCount() > 0, "When entering LeaveUnsafeRegion, a thread's unsafe region count should always be greater than zero.\n");
-
-        // Predecrement the unsafe region count
-        DecrUnsafeRegionCount();
-        if (GetUnsafeRegionCount() == 0) 
-        {
-            if (GetSuspPending())
-            {
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-                pthread_sigmask(SIG_BLOCK, &smWaitmask, &this->m_smOrigmask);
-                PostOnSuspendSemaphore();
-                sigsuspend(&smContmask);
-                // Set the signal mask that came before this sigsuspend.
-                pthread_sigmask(SIG_SETMASK, &this->m_smOrigmask, NULL);
-#else // USE_SIGNALS_FOR_THREAD_SUSPENSION
-                PostOnSuspendSemaphore();
-                while (GetSuspPending())
-                {
-                    sched_yield();
-                }
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
-            }
-        }
-    }
-}
-
-/*++
-Function:
-  EnterUnsafeRegion
-  
-EnterUnsafeRegion increments a thread's unsafe region count.
-When a thread's unsafe region count is greater than zero,
-it cannot be suspended. Thus, this function must be used
-very carefully since thread suspension is required during
-PAL cleanup. LeaveUnsafeRegion is used to decrement a thread's
-suspension count.
---*/
-VOID
-CThreadSuspensionInfo::EnterUnsafeRegion()
-{
-    if (PALIsThreadDataInitialized())
-    {
-        IncrUnsafeRegionCount();
-    }
-}
 
 #if !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
 /*++
