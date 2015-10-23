@@ -31,5 +31,8 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern int GetMemoryBioSize(SafeBioHandle bio);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int BioCtrlPending(SafeBioHandle bio);
     }
 }

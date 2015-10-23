@@ -21,23 +21,31 @@ extern "C" void EnsureLibSslInitialized()
 
 extern "C" const SSL_METHOD* SslV2_3Method()
 {
-    return SSLv23_method();
+    const SSL_METHOD* method = SSLv23_method();
+    assert(method != nullptr);
+    return method;
 }
 
 extern "C" const SSL_METHOD* SslV3Method()
 {
-    return SSLv3_method();
+    const SSL_METHOD* method = SSLv3_method();
+    assert(method != nullptr);
+    return method;
 }
 
 extern "C" const SSL_METHOD* TlsV1Method()
 {
-    return TLSv1_method();
+    const SSL_METHOD* method = TLSv1_method();
+    assert(method != nullptr);
+    return method;
 }
 
 extern "C" const SSL_METHOD* TlsV1_1Method()
 {
 #if HAVE_TLS_V1_1
-    return TLSv1_1_method();
+    const SSL_METHOD* method = TLSv1_1_method();
+    assert(method != nullptr);
+    return method;
 #else
     return nullptr;
 #endif
@@ -46,7 +54,9 @@ extern "C" const SSL_METHOD* TlsV1_1Method()
 extern "C" const SSL_METHOD* TlsV1_2Method()
 {
 #if HAVE_TLS_V1_2
-    return TLSv1_2_method();
+    const SSL_METHOD* method = TLSv1_2_method();
+    assert(method != nullptr);
+    return method;
 #else
     return nullptr;
 #endif
@@ -61,26 +71,26 @@ extern "C" void SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
     long protocolOptions = 0;
 
-    if ((protocols & PAL_SSL_Ssl2) != PAL_SSL_Ssl2)
+    if ((protocols & PAL_SSL_SSL2) != PAL_SSL_SSL2)
     {
         protocolOptions |= SSL_OP_NO_SSLv2;
     }
-    if ((protocols & PAL_SSL_Ssl3) != PAL_SSL_Ssl3)
+    if ((protocols & PAL_SSL_SSL3) != PAL_SSL_SSL3)
     {
         protocolOptions |= SSL_OP_NO_SSLv3;
     }
-    if ((protocols & PAL_SSL_Tls) != PAL_SSL_Tls)
+    if ((protocols & PAL_SSL_TLS) != PAL_SSL_TLS)
     {
         protocolOptions |= SSL_OP_NO_TLSv1;
     }
 #if HAVE_TLS_V1_1
-    if ((protocols & PAL_SSL_Tls11) != PAL_SSL_Tls11)
+    if ((protocols & PAL_SSL_TLS11) != PAL_SSL_TLS11)
     {
         protocolOptions |= SSL_OP_NO_TLSv1_1;
     }
 #endif
 #if HAVE_TLS_V1_2
-    if ((protocols & PAL_SSL_Tls12) != PAL_SSL_Tls12)
+    if ((protocols & PAL_SSL_TLS12) != PAL_SSL_TLS12)
     {
         protocolOptions |= SSL_OP_NO_TLSv1_2;
     }
@@ -491,13 +501,6 @@ extern "C" int32_t SslCtxCheckPrivateKey(SSL_CTX* ctx)
     return SSL_CTX_check_private_key(ctx);
 }
 
-extern "C" int32_t BioCtrlPending(BIO* bio)
-{
-    size_t result = BIO_ctrl_pending(bio);
-    assert(result <= INT32_MAX);
-    return static_cast<int32_t>(result);
-}
-
 extern "C" void SslCtxSetQuietShutdown(SSL_CTX* ctx)
 {
     SSL_CTX_set_quiet_shutdown(ctx, 1);
@@ -540,8 +543,7 @@ extern "C" void SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 
     assert(cipherString != nullptr);
 
-    int result = SSL_CTX_set_cipher_list(ctx, cipherString);
-    assert(result == 1);
+    SSL_CTX_set_cipher_list(ctx, cipherString);
 }
 
 extern "C" void SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list)

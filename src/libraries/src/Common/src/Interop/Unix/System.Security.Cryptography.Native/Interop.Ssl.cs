@@ -13,7 +13,6 @@ internal static partial class Interop
 {
     internal static partial class Ssl
     {
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         internal delegate int SslCtxSetVerifyCallback(int preverify_ok, IntPtr x509_ctx);
 
         [DllImport(Libraries.CryptoNative)]
@@ -44,7 +43,7 @@ internal static partial class Interop
         internal static extern SafeSslHandle SslCreate(SafeSslContextHandle ctx);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern Ssl.SslErrorCode SslGetError(SafeSslHandle ssl, int ret);
+        internal static extern SslErrorCode SslGetError(SafeSslHandle ssl, int ret);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern void SslDestroy(IntPtr ssl);
@@ -117,19 +116,16 @@ internal static partial class Interop
         internal static extern int SslCtxCheckPrivateKey(SafeSslContextHandle ctx);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern int BioCtrlPending(SafeBioHandle bio);
-
-        [DllImport(Libraries.CryptoNative)]
         internal static extern void SslCtxSetQuietShutdown(SafeSslContextHandle ctx);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "SslGetClientCAList")]
-        private static extern SafeSharedX509NameStackHandle SslGetClientCAListPrivate(SafeSslHandle ssl);
+        private static extern SafeSharedX509NameStackHandle SslGetClientCAList_private(SafeSslHandle ssl);
 
         internal static SafeSharedX509NameStackHandle SslGetClientCAList(SafeSslHandle ssl)
         {
-            Interop.Crypto.CheckValidOpenSslHandle(ssl);
+            Crypto.CheckValidOpenSslHandle(ssl);
 
-            SafeSharedX509NameStackHandle handle = SslGetClientCAListPrivate(ssl);
+            SafeSharedX509NameStackHandle handle = SslGetClientCAList_private(ssl);
 
             if (!handle.IsInvalid)
             {
@@ -140,7 +136,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern void SslCtxSetVerify(SafeSslContextHandle ctx, [MarshalAs(UnmanagedType.FunctionPtr)] SslCtxSetVerifyCallback callback);
+        internal static extern void SslCtxSetVerify(SafeSslContextHandle ctx, SslCtxSetVerifyCallback callback);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern void SetEncryptionPolicy(SafeSslContextHandle ctx, EncryptionPolicy policy);
@@ -158,18 +154,6 @@ internal static partial class Interop
             internal static readonly IntPtr TLSv1_2_method = TlsV1_2Method();
             internal static readonly IntPtr SSLv3_method = SslV3Method();
             internal static readonly IntPtr SSLv23_method = SslV2_3Method();
-
-#if DEBUG
-            static SslMethods()
-            {
-                Debug.Assert(TLSv1_method != IntPtr.Zero, "TLSv1_method is null");
-                // TLSv1_1_method and TLSv1_2_method do not exist on earlier versions of OpenSSL
-                // Debug.Assert(TLSv1_1_method != IntPtr.Zero, "TLSv1_1_method is null");
-                // Debug.Assert(TLSv1_2_method != IntPtr.Zero, "TLSv1_2_method is null");
-                Debug.Assert(SSLv3_method != IntPtr.Zero, "SSLv3_method is null");
-                Debug.Assert(SSLv23_method != IntPtr.Zero, "SSLv23 method is null");
-            }
-#endif
         }
 
         internal enum SslErrorCode
