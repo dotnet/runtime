@@ -15,6 +15,7 @@ using AstUtils = System.Linq.Expressions.Utils;
 
 namespace System.Linq.Expressions.Interpreter
 {
+#if FEATURE_MAKE_RUN_METHODS
     internal static partial class DelegateHelpers
     {
         private const int MaximumArity = 17;
@@ -84,6 +85,7 @@ namespace System.Linq.Expressions.Interpreter
             throw Assert.Unreachable;
         }
     }
+#endif
 
     internal class ScriptingRuntimeHelpers
     {
@@ -517,23 +519,5 @@ namespace System.Linq.Expressions.Interpreter
         Read = 1,
         Write = 2,
         ReadWrite = Read | Write,
-    }
-
-    internal sealed class ListEqualityComparer<T> : EqualityComparer<ICollection<T>>
-    {
-        internal static readonly ListEqualityComparer<T> Instance = new ListEqualityComparer<T>();
-
-        private ListEqualityComparer() { }
-
-        // EqualityComparer<T> handles null and object identity for us
-        public override bool Equals(ICollection<T> x, ICollection<T> y)
-        {
-            return x.ListEquals(y);
-        }
-
-        public override int GetHashCode(ICollection<T> obj)
-        {
-            return obj.ListHashCode();
-        }
     }
 }
