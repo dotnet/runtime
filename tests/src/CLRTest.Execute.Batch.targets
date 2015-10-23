@@ -18,6 +18,30 @@ WARNING:   When setting properties based on their current state (for example:
 -->
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="set complus_zaprequire=2" />
+    <CLRTestEnvironmentVariable Condition="'$(CrossGen)' == 'true'" Include="set complus_zaprequireexcludelist=corerun" />
+  </ItemGroup>
+  <!--
+    Target: GetBatchCrossgenScript
+    This returns the portion of the execution script that generates the required lines to crossgen the test executable.
+  -->
+  <Target
+    Name="GetCrossgenBatchScript"
+    Returns="$(CrossgenBatchScript)">
+    
+    <PropertyGroup>
+<!-- CrossGen will create output if it needs to crossgen. Otherwise there will be silence. -->
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildOnly' 
+                           OR '$(CLRTestKind)' == 'BuildAndRun' 
+                           OR '$(CLRTestKind)' == 'SharedLibrary'">
+        <![CDATA[
+if not exist "$(OutputPath)\$(MSBuildProjectName).ni.$(OutputType)" "%CORE_ROOT%\crossgen.exe" /Platform_Assemblies_Paths %CORE_ROOT%%3B. "$(OutputPath)\$(MSBuildProjectName).$(OutputType)"
+        ]]>
+      </CrossgenBatchScript>
+    </PropertyGroup>
+  </Target>
+
   <!--
     Target: GetExecuteCmdFullPath
     Return Executed Cmd Relative Full Path
@@ -53,9 +77,11 @@ WARNING:   When setting properties based on their current state (for example:
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(MSBuildProjectName).cmd">
 
-    <PropertyGroup>
+    <CallTarget Targets="GetCrossgenBatchScript" Condition="'$(CrossGen)' == 'true'">
+      <Output TaskParameter="TargetOutputs" PropertyName="CrossgenBatchScript"/>
+    </CallTarget>
     
-      <!-- TODO:2 build in debugger experience support -->
+    <PropertyGroup>   
     
       <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)"><![CDATA[
 set CLRTestExpectedExitCode=$(CLRTestExitCode)
@@ -107,6 +133,13 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
     
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
     
+    <ItemGroup>
+      <CLRTestEnvironmentVariable Condition="'$(CrossGen)' == 'true' AND '$(_CLRTestNeedsProjectToRun)' == 'true'" Include="set complus_zaprequirelist=$(_CLRTestToRunFileFullPath)" />
+      <CLRTestEnvironmentVariable Condition="'$(CrossGen)' == 'true' AND '$(_CLRTestNeedsProjectToRun)' == 'false'" Include="set complus_zaprequirelist=$(MSBuildProjectName)" />
+    </ItemGroup>
+
+    
+
     <PropertyGroup> 
       <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'true'">"$(_CLRTestToRunFileFullPath)"</_CLRTestRunFile>
       <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And $(_CLRTestNeedsProjectToRun) ">"%CORE_ROOT%\corerun.exe" $(_CLRTestToRunFileFullPath)</_CLRTestRunFile>
@@ -119,9 +152,13 @@ ECHO $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
 %_DebuggerFullPath% $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
 set CLRTestExitCode=%ERRORLEVEL%
       ]]></BatchCLRTestLaunchCmds>
-                
+    </PropertyGroup>   
+    <PropertyGroup>
+      <BatchEnvironmentVariables>
+@(CLRTestEnvironmentVariable -> '%(Identity)', '%0d%0a')
+      </BatchEnvironmentVariables>
     </PropertyGroup>
-     
+    
     <Message Text="MSBuildProjectDirectory:$(MSBuildProjectDirectory)" />
     <Message Text="_CLRTestToRunFileFullPath:$(_CLRTestToRunFileFullPath)"/>
     <Message Text="_CLRTestRunFile:$(_CLRTestRunFile)" />
@@ -196,6 +233,12 @@ $(BatchCLRTestExitCodePrep)
 
 REM The __TestEnv variable may be used to specify something to run before the test.
 IF NOT "%__TestEnv%"=="" call %__TestEnv%
+
+REM Environment Variables
+$(BatchEnvironmentVariables)
+
+REM CrossGen
+$(CrossgenBatchScript)
 
 REM Precommands
 $(CLRTestBatchPreCommands)
