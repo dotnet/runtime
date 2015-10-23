@@ -213,6 +213,12 @@ RemoveDirectoryA(
 
     length = strlen(lpPathName);
     mb_dir = mb_dirPathString.OpenStringBuffer(length);
+    if (NULL == mb_dir)
+    {
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
+    
     if (strncpy_s (mb_dir, sizeof(char) * (length+1), lpPathName, MAX_LONGPATH) != SAFECRT_SUCCESS)
     {
         mb_dirPathString.CloseBuffer(length);
@@ -266,6 +272,12 @@ RemoveDirectoryW(
 
     length = (PAL_wcslen(lpPathName)+1) * 3;
     mb_dir = mb_dirPathString.OpenStringBuffer(length);
+    if (NULL == mb_dir)
+    {
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;        
+    }
+
     mb_size = WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, mb_dir, length,
                                    NULL, NULL );
     mb_dirPathString.CloseBuffer(mb_size);
@@ -463,6 +475,13 @@ SetCurrentDirectoryW(
 
     length = (PAL_wcslen(lpPathName)+1) * 3;
     dir = dirPathString.OpenStringBuffer(length);
+    if (NULL == dir)
+    {
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        bRet = FALSE;
+        goto done;
+    }
+    
     size = WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, dir, length,
                                 NULL, NULL );
     dirPathString.CloseBuffer(size);

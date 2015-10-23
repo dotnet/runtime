@@ -973,6 +973,10 @@ PAL_BindResources(IN LPCSTR lpDomain)
     PathCharString coreCLRDirectoryPathPS;
     int len = strlen(g_szCoreCLRPath);
     coreCLRDirectoryPath = coreCLRDirectoryPathPS.OpenStringBuffer(len);
+    if (NULL == coreCLRDirectoryPath)
+    {
+        return FALSE;
+    }
     DWORD size = FILEGetDirectoryFromFullPathA(g_szCoreCLRPath, len, coreCLRDirectoryPath);
     coreCLRDirectoryPathPS.CloseBuffer(size);
     _ASSERTE(size <= MAX_LONGPATH);
