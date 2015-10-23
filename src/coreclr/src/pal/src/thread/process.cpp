@@ -1240,7 +1240,10 @@ ExitProcess(
         /* another thread has already initiated the termination process. we 
            could just block on the PALInitLock critical section, but then 
            PROCSuspendOtherThreads would hang... so sleep forever here, we're
-           terminating anyway */
+           terminating anyway 
+
+           Update: [TODO] PROCSuspendOtherThreads has been removed. Can this 
+           code be changed? */
         WARN("termination already started from another thread; blocking.\n");
         poll(NULL,0,INFTIM);
     }
@@ -2741,109 +2744,6 @@ PROCCleanupThreadSemIds(void)
 
 /*++
 Function:
-  PROCSuspendOtherThreads
-
-  Calls SuspendThread on all threads in the process, except the current 
-  thread. Used by PAL_Terminate.
-
-(no parameters, no return value)
---*/
-void PROCSuspendOtherThreads(void)
-{
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pThread;
-    CPalThread *pTargetThread;
-    DWORD dwThreadId = 0;
-    DWORD dwLwpId = 0;
-    DWORD dwUnusedSuspendCount = 0;
-
-    TRACE("Terminating all threads except this one...\n");
-
-    pThread = InternalGetCurrentThread();
-        
-    while (TRUE)
-    {
-        PROCProcessLock();
-
-        pTargetThread = pGThreadList;
-        while (NULL != pTargetThread)
-        {
-            /* skip the current thread */
-            if (pTargetThread->GetThreadId() != pThread->GetThreadId())
-            {
-                /* skip already-suspended threads */
-                if (!pTargetThread->suspensionInfo.GetSuspendedForShutdown() && pTargetThread->GetThreadType() != SignalHandlerThread)
-                {
-                    pTargetThread->suspensionInfo.SetSuspendedForShutdown(TRUE);
-
-                    //
-                    // Add a reference to the thread data to keep
-                    // it valid after we release the process lock
-                    //
-                    
-                    pTargetThread->AddThreadReference();
-                    break;
-                }
-            }
-            
-            pTargetThread = pTargetThread->GetNext();
-        }
-        
-        /* unlock the process, we must not hold any critical sections when we 
-           suspend the thread */
-
-        if (pTargetThread)
-        {
-            dwThreadId = pTargetThread->GetThreadId();
-            dwLwpId = pTargetThread->GetLwpId();
-        }
-
-        PROCProcessUnlock();
-
-        if(NULL == pTargetThread)
-        {
-            /* reached end of the list : all other threads have been suspended or have died. */
-            break;
-        }
-
-        TRACE("Suspending thread {tid=%u lwpid=%u pThread=%p} ...\n", 
-              (unsigned int)dwThreadId, (unsigned int)dwLwpId, pTargetThread);
-
-        palError = pThread->suspensionInfo.InternalSuspendThreadFromData(
-            pThread,
-            pTargetThread,
-            &dwUnusedSuspendCount
-            );
-        
-        if (NO_ERROR != palError)
-        {
-             _ASSERT_MSG(pTargetThread->synchronizationInfo.GetThreadState() == TS_DONE, 
-                "Failed to suspend thread {tid=%u lwpid=%u pThread=%p} with error %d\n", 
-                (unsigned int)dwThreadId, (unsigned int)dwLwpId, pTargetThread, palError);
-        }
-
-        //
-        // Release our reference on the target thread data
-        //
-
-        pTargetThread->ReleaseThreadReference();
-        
-    }
-
-    /* wait for threads that are exiting, and thus couldn't be suspended, to 
-        actually die before proceeding with cleanup. */
-    WaitForEndingThreads();
-
-    TRACE("All threads except this one are now suspended or have died.\n");
-    
-#if USE_SYSV_SEMAPHORES
-    PROCCleanupThreadSemIds();
-#endif
-
-}
-
-/*++
-Function:
   PROCCondemnOtherThreads
 
   Instruct the synchronization manager to abandon any objects owned
@@ -2910,7 +2810,11 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
         /* another thread has already initiated the termination process. we
         could just block on the PALInitLock critical section, but then
         PROCSuspendOtherThreads would hang... so sleep forever here, we're
-        terminating anyway */
+        terminating anyway
+
+        Update: [TODO] PROCSuspendOtherThreads has been removed. Can this 
+           code be changed? */
+
         /* note that if *this* thread has already started the termination
         process, we want to proceed. the only way this can happen is if a
         call to DllMain (from ExitProcess) brought us here (because DllMain

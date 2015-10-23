@@ -113,17 +113,6 @@ void PROCCondemnOtherThreads(void);
 
 /*++
 Function:
-  PROCSuspendOtherThreads
-
-  Calls SuspendThread on all threads in the process, except the current 
-  thread. Used by PAL_Terminate.
-
-(no parameters, no return value)
---*/
-void PROCSuspendOtherThreads(void);
-
-/*++
-Function:
   PROCProcessLock
 
 Abstract
