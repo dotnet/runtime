@@ -311,7 +311,7 @@ public class TestRunner
 			writer.WriteEndElement ();
 			//   <test-suite name="corlib_test_net_4_5.dll" success="True" time="114.318" asserts="0">
 			writer.WriteStartElement ("test-suite");
-			writer.WriteAttributeString ("name","runtime-tests.dummy");
+			writer.WriteAttributeString ("name", String.Format ("{0}-tests.dummy", testsuiteName));
 			writer.WriteAttributeString ("success", (nfailed + ntimedout == 0).ToString());
 			writer.WriteAttributeString ("time", test_time.Seconds.ToString());
 			writer.WriteAttributeString ("asserts", (nfailed + ntimedout).ToString());
@@ -327,7 +327,7 @@ public class TestRunner
 			writer.WriteStartElement ("results");
 			//           <test-suite name="MonoTests" success="True" time="114.318" asserts="0">
 			writer.WriteStartElement ("test-suite");
-			writer.WriteAttributeString ("name","runtime");
+			writer.WriteAttributeString ("name", testsuiteName);
 			writer.WriteAttributeString ("success", (nfailed + ntimedout == 0).ToString());
 			writer.WriteAttributeString ("time", test_time.Seconds.ToString());
 			writer.WriteAttributeString ("asserts", (nfailed + ntimedout).ToString());
@@ -337,7 +337,7 @@ public class TestRunner
 			foreach (ProcessData pd in passed) {
 				// <test-case name="MonoTests.Microsoft.Win32.RegistryKeyTest.bug79051" executed="True" success="True" time="0.063" asserts="0" />
 				writer.WriteStartElement ("test-case");
-				writer.WriteAttributeString ("name", "MonoTests.runtime." + pd.test);
+				writer.WriteAttributeString ("name", String.Format ("MonoTests.{0}.{1}", testsuiteName, pd.test));
 				writer.WriteAttributeString ("executed", "True");
 				writer.WriteAttributeString ("success", "True");
 				writer.WriteAttributeString ("time", "0");
@@ -348,7 +348,7 @@ public class TestRunner
 			foreach (ProcessData pd in failed) {
 				// <test-case name="MonoTests.Microsoft.Win32.RegistryKeyTest.bug79051" executed="True" success="True" time="0.063" asserts="0" />
 				writer.WriteStartElement ("test-case");
-				writer.WriteAttributeString ("name", "MonoTests.runtime." + pd.test);
+				writer.WriteAttributeString ("name", String.Format ("MonoTests.{0}.{1}", testsuiteName, pd.test));
 				writer.WriteAttributeString ("executed", "True");
 				writer.WriteAttributeString ("success", "False");
 				writer.WriteAttributeString ("time", "0");
@@ -367,7 +367,7 @@ public class TestRunner
 			foreach (ProcessData pd in timedout) {
 				// <test-case name="MonoTests.Microsoft.Win32.RegistryKeyTest.bug79051" executed="True" success="True" time="0.063" asserts="0" />
 				writer.WriteStartElement ("test-case");
-				writer.WriteAttributeString ("name", "MonoTests.runtime." + pd.test + "_timedout");
+				writer.WriteAttributeString ("name", String.Format ("MonoTests.{0}.{1}_timedout", testsuiteName, pd.test));
 				writer.WriteAttributeString ("executed", "True");
 				writer.WriteAttributeString ("success", "False");
 				writer.WriteAttributeString ("time", "0");
