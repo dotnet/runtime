@@ -21,6 +21,9 @@ internal static partial class Interop
         private extern unsafe static int deflateEnd(byte* strm);
 
         [DllImport(Libraries.Zlib)]
+        internal extern unsafe static uint crc32(uint crc, byte* buffer, int len);
+
+        [DllImport(Libraries.Zlib)]
         private extern unsafe static int inflateInit2_(byte* stream, int windowBits, byte* version, int stream_size);
 
         [DllImport(Libraries.Zlib)]
@@ -49,6 +52,11 @@ internal static partial class Interop
             }
         }
 
+        internal static unsafe uint crc32(uint crc, byte[] buffer, int offset, int len)
+        {
+            fixed (byte* buf = &buffer[offset])
+                return crc32(crc, buf, len);
+        }
 
         internal static unsafe ZLibNative.ErrorCode Deflate(ref ZLibNative.ZStream stream, ZLibNative.FlushCode flush)
         {
