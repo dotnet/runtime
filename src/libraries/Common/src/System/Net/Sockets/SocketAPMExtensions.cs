@@ -316,7 +316,7 @@ namespace System.Net.Sockets
         //     of the offset parameter.
         public static IAsyncResult BeginReceive(this Socket socket, byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state)
         {
-            return TaskToApm.Begin(socket.ReceiveAsync(new ArraySegment<byte>(buffer, offset, size), socketFlags), callback, state);
+            return TaskToApm.Begin(socket.ReceiveAsync(CreateArraySegment(buffer, offset, size), socketFlags), callback, state);
         }
 
         //
@@ -370,7 +370,7 @@ namespace System.Net.Sockets
         public static IAsyncResult BeginReceiveFrom(this Socket socket, byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state)
         {
             // remoteEP will not change in the sync portion.
-            return TaskToApm.Begin(socket.ReceiveFromAsync(new ArraySegment<byte>(buffer, offset, size), socketFlags, remoteEP), callback, state);
+            return TaskToApm.Begin(socket.ReceiveFromAsync(CreateArraySegment(buffer, offset, size), socketFlags, remoteEP), callback, state);
         }
 
         //
@@ -426,7 +426,7 @@ namespace System.Net.Sockets
         public static IAsyncResult BeginReceiveMessageFrom(this Socket socket, byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state)
         {
             // remoteEP will not change in the sync portion.
-            return TaskToApm.Begin(socket.ReceiveMessageFromAsync(new ArraySegment<byte>(buffer, offset, size), socketFlags, remoteEP), callback, state);
+            return TaskToApm.Begin(socket.ReceiveMessageFromAsync(CreateArraySegment(buffer, offset, size), socketFlags, remoteEP), callback, state);
         }
 
         //
@@ -508,7 +508,7 @@ namespace System.Net.Sockets
         //     The System.Net.Sockets.Socket has been closed.
         public static IAsyncResult BeginSend(this Socket socket, byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state)
         {
-            return TaskToApm.Begin(socket.SendAsync(new ArraySegment<byte>(buffer, offset, size), socketFlags), callback, state);
+            return TaskToApm.Begin(socket.SendAsync(CreateArraySegment(buffer, offset, size), socketFlags), callback, state);
         }
 
         //
@@ -561,7 +561,7 @@ namespace System.Net.Sockets
         //     operation.
         public static IAsyncResult BeginSendTo(this Socket socket, byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state)
         {
-            return TaskToApm.Begin(socket.SendToAsync(new ArraySegment<byte>(buffer, offset, size), socketFlags, remoteEP), callback, state);
+            return TaskToApm.Begin(socket.SendToAsync(CreateArraySegment(buffer, offset, size), socketFlags, remoteEP), callback, state);
         }
 
         //
@@ -828,6 +828,24 @@ namespace System.Net.Sockets
         public static int EndSendTo(this Socket socket, IAsyncResult asyncResult)
         {
             return TaskToApm.End<int>(asyncResult);
+        }
+
+        // Behavior adapter.
+        private static ArraySegment<byte> CreateArraySegment(byte[] buffer, int offset, int size)
+        {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException("buffer");
+            }
+
+            try
+            {
+                return new ArraySegment<byte>(buffer, offset, size);
+            }
+            catch (ArgumentException ae)
+            {
+                throw new ArgumentOutOfRangeException(ae.Message, ae);
+            }
         }
     }
 
