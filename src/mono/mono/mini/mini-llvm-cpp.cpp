@@ -626,10 +626,16 @@ init_llvm (void)
   LLVMInitializeARMTarget ();
   LLVMInitializeARMTargetInfo ();
   LLVMInitializeARMTargetMC ();
-#else
+#elif defined(TARGET_X86)
   LLVMInitializeX86Target ();
   LLVMInitializeX86TargetInfo ();
   LLVMInitializeX86TargetMC ();
+#elif defined(TARGET_POWERPC)
+  LLVMInitializePowerPCTarget ();
+  LLVMInitializePowerPCTargetInfo ();
+  LLVMInitializePowerPCTargetMC ();
+#else
+  #error Unsupported mono-llvm target
 #endif
 
   PassRegistry &Registry = *PassRegistry::getPassRegistry();
