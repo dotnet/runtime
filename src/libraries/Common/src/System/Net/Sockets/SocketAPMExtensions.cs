@@ -833,15 +833,12 @@ namespace System.Net.Sockets
         // Behavior adapter.
         private static ArraySegment<byte> CreateArraySegment(byte[] buffer, int offset, int size)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException("buffer");
-            }
-
             try
             {
                 return new ArraySegment<byte>(buffer, offset, size);
             }
+            catch (ArgumentNullException) { throw; }
+            catch (ArgumentOutOfRangeException) { throw; }
             catch (ArgumentException ae)
             {
                 throw new ArgumentOutOfRangeException(ae.Message, ae);
