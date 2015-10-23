@@ -2194,8 +2194,8 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
 
 #elif HAVE_KQUEUE
 
-static_assert(sizeof(SocketEvent) <= sizeof(kevent64_s), "");
-const size_t SocketEventBufferElementSize = sizeof(kevent64_s);
+static_assert(sizeof(SocketEvent) <= sizeof(struct kevent), "");
+const size_t SocketEventBufferElementSize = sizeof(struct kevent);
 
 static SocketEvents GetSocketEvents(int16_t filter, uint16_t flags)
 {
@@ -2268,30 +2268,28 @@ static Error TryChangeSocketEventRegistrationInner(int32_t port, int32_t socket,
     bool readChanged = (changes & PAL_SA_READ) != 0;
     bool writeChanged = (changes & PAL_SA_WRITE) != 0;
 
-    kevent64_s events[2];
+    struct kevent events[2];
 
     int i = 0;
     if (readChanged)
     {
-        events[i++] =  {
-            .ident = static_cast<uint64_t>(socket),
-            .filter = EVFILT_READ,
-            .flags = (newEvents & PAL_SA_READ) == 0 ? RemoveFlags : AddFlags,
-            .udata = data
-        };
+        EV_SET(&events[i++],
+               static_cast<uint64_t>(socket),
+               EVFILT_READ,
+               (newEvents & PAL_SA_READ) == 0 ? RemoveFlags : AddFlags,
+               0, data, 0);
     }
 
     if (writeChanged)
     {
-        events[i++] = {
-            .ident = static_cast<uint64_t>(socket),
-            .filter = EVFILT_WRITE,
-            .flags = (newEvents & PAL_SA_WRITE) == 0 ? RemoveFlags : AddFlags,
-            .udata = data
-        };
+        EV_SET(&events[i++],
+                 static_cast<uint64_t>(socket),
+                 EVFILT_WRITE,
+                 (newEvents & PAL_SA_WRITE) == 0 ? RemoveFlags : AddFlags,
+                 0, data, 0);
     }
 
-    int err = kevent64(port, events, i, nullptr, 0, 0, nullptr);
+    int err = kevent(port, events, i, nullptr, 0, nullptr);
     return err == 0 ? PAL_SUCCESS : ConvertErrorPlatformToPal(errno);
 }
 
@@ -2301,15 +2299,15 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     assert(count != nullptr);
     assert(*count >= 0);
 
-    auto* events = reinterpret_cast<kevent64_s*>(buffer);
-    int numEvents = kevent64(port, nullptr, 0, events, *count, 0, nullptr);
+    auto* events = reinterpret_cast<struct kevent*>(buffer);
+    int numEvents = kevent(port, nullptr, 0, events, *count, nullptr);
     if (numEvents == -1)
     {
         *count = -1;
         return ConvertErrorPlatformToPal(errno);
     }
 
-    // We should never see 0 events. Given an infinite timeout, kevent64 will never return
+    // We should never see 0 events. Given an infinite timeout, kevent will never return
     // 0 events even if there are no file descriptors registered with the kqueue fd. In
     // that case, the wait will block until a file descriptor is added and an event occurs
     // on the added file descriptor.
@@ -2319,9 +2317,9 @@ static Error WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t
     for (int i = 0; i < numEvents; i++)
     {
         // This copy is made deliberately to avoid overwriting data.
-        kevent64_s evt = events[i];
+        struct kevent evt = events[i];
         buffer[i] = {
-            .Data = static_cast<uintptr_t>(evt.udata),
+            .Data = reinterpret_cast<uintptr_t>(evt.udata),
             .Events = GetSocketEvents(evt.filter, evt.flags)
         };
     }
