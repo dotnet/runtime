@@ -792,6 +792,11 @@ static int FILEGlobFromSplitPath( CPalThread *pthrCurrent,
     if (ext) length += strlen(ext);
     
     Pattern = PatternPS.OpenStringBuffer(length);
+    if (NULL == Pattern)
+    {
+        ERROR("Not Enough memory.");
+        return -1;
+    }
     FILEMakePathA( Pattern, length+1, dir, fname, ext );
     PatternPS.CloseBuffer(length);
     TRACE("Assembled Pattern = [%s]\n", Pattern);
@@ -799,6 +804,11 @@ static int FILEGlobFromSplitPath( CPalThread *pthrCurrent,
     /* special handling is needed to handle the case where
         filename contains '[' and ']' */
     EscapedPattern = EscapedPatternPS.OpenStringBuffer(length*2);
+    if (NULL == EscapedPattern)
+    {
+        ERROR("Not Enough memory.");
+        return -1;
+    }
     FILEEscapeSquareBrackets( Pattern, EscapedPattern);
     EscapedPatternPS.CloseBuffer(strlen(EscapedPattern));
 #ifdef GLOB_QUOTE
