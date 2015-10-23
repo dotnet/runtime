@@ -329,19 +329,14 @@ bool InvokeCallbackForDatePattern(const char* locale,
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t patternLen = udat_toPattern(pFormat, false, nullptr, 0, &ignore);
 
-    UChar* pattern = (UChar*)calloc(patternLen + 1, sizeof(UChar));
+    std::vector<UChar> pattern(patternLen + 1, '\0');
 
-    if (pattern == nullptr)
-        return false;
-
-    udat_toPattern(pFormat, false, pattern, patternLen + 1, &err);
+    udat_toPattern(pFormat, false, pattern.data(), patternLen + 1, &err);
 
     if (U_SUCCESS(err))
     {
-        callback(pattern, context);
+        callback(pattern.data(), context);
     }
-
-    free(pattern);
 
     return U_SUCCESS(err);
 }
@@ -368,21 +363,14 @@ bool InvokeCallbackForDateTimePattern(const char* locale,
     UErrorCode ignore = U_ZERO_ERROR;
     int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, nullptr, 0, &ignore);
 
-    UChar* bestPattern = (UChar*)calloc(patternLen + 1, sizeof(UChar));
+    std::vector<UChar> bestPattern(patternLen + 1, '\0');
 
-    if (bestPattern == nullptr)
-    {
-        return false;
-    }
-
-    udatpg_getBestPattern(pGenerator, patternSkeleton, -1, bestPattern, patternLen + 1, &err);
+    udatpg_getBestPattern(pGenerator, patternSkeleton, -1, bestPattern.data(), patternLen + 1, &err);
 
     if (U_SUCCESS(err))
     {
-        callback(bestPattern, context);
+        callback(bestPattern.data(), context);
     }
-
-    free(bestPattern);
 
     return U_SUCCESS(err);
 }
