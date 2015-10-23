@@ -74,7 +74,7 @@ struct UNumberFormatCloser
 {
     void operator()(UNumberFormat* pNumberFormat) const
     {
-        udat_close(pNumberFormat);
+        unum_close(pNumberFormat);
     }
 };
 
