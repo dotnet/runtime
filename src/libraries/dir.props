@@ -285,7 +285,7 @@
   
   <!-- Perf test setup - Required until v5.0 is mandatory across CoreFX-->
   <PropertyGroup>
-    <RunPerfTestsForProject Condition="'$(Performance)' == 'true' and '$(OS)' == 'Windows_NT' and Exists('$(MSBuildProgramFiles32)\MSBuild\Microsoft\Portable\v5.0\Microsoft.Portable.CSharp.targets')" >true</RunPerfTestsForProject>
+    <RunPerfTestsForProject Condition="'$(Performance)' == 'true' and '$(OsEnvironment)' == 'Windows_NT' and Exists('$(MSBuildProgramFiles32)\MSBuild\Microsoft\Portable\v5.0\Microsoft.Portable.CSharp.targets')">true</RunPerfTestsForProject>
   </PropertyGroup>
 
   <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
