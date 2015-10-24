@@ -16,6 +16,7 @@
     <UseECMAKey Condition="'$(UseECMAKey)'==''">true</UseECMAKey>
     <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
+    <DefineConstants>$(DefineConstants);FEATURE_ZLIB_CRC32</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
