@@ -231,6 +231,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		 * preceeding the got slot where the value is stored. The offset can be
 		 * found at [lr + 0].
 		 */
+		/* See if emit_trampolines () in aot-compiler.c for the '2' */
 		if (aot == 2) {
 			ARM_MOV_REG_REG (code, ARMREG_V2, ARMREG_R1);
 		} else {
