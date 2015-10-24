@@ -9,11 +9,16 @@ internal static partial class Interop
 {
     internal static partial class Ssl
     {
+        internal delegate int AppVerifyCallback(IntPtr storeCtx, IntPtr arg);
+
         [DllImport(Libraries.CryptoNative)]
         internal static extern SafeSslContextHandle SslCtxCreate(IntPtr method);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern void SslCtxDestroy(IntPtr ctx);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern void SslCtxSetCertVerifyCallback(SafeSslContextHandle ctx, AppVerifyCallback cb, IntPtr arg);
     }
 }
 

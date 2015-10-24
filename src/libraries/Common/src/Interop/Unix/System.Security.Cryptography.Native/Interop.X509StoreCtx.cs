@@ -17,6 +17,19 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern SafeX509StackHandle X509StoreCtxGetChain(SafeX509StoreCtxHandle ctx);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "X509StoreCtxGetSharedUntrusted")]
+        private static extern SafeSharedX509StackHandle X509StoreCtxGetSharedUntrusted_private(SafeX509StoreCtxHandle ctx);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern IntPtr X509StoreCtxGetTargetCert(SafeX509StoreCtxHandle ctx);
+
+        internal static SafeSharedX509StackHandle X509StoreCtxGetSharedUntrusted(SafeX509StoreCtxHandle ctx)
+        {
+            return SafeInteriorHandle.OpenInteriorHandle(
+                x => X509StoreCtxGetSharedUntrusted_private(x),
+                ctx);
+        }
     }
 }
 
