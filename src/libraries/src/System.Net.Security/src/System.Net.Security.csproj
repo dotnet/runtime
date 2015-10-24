@@ -233,6 +233,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs</Link>
     </Compile>
