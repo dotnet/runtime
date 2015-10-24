@@ -81,6 +81,7 @@ namespace System.Net.Http
                 SetCredentialsOptions(_handler.GetNetworkCredentials(_handler._serverCredentials,_requestMessage.RequestUri));
                 SetCookieOption(_requestMessage.RequestUri);
                 SetRequestHeaders();
+                SetSslOptions();
             }
 
             public void EnsureResponseMessagePublished()
@@ -379,6 +380,17 @@ namespace System.Net.Http
                 {
                     slist.Dispose();
                 }
+            }
+
+            private void SetSslOptions()
+            {
+                // SSL Options should be set regardless of the type of the original request,
+                // in case an http->https redirection occurs.
+                //
+                // While this does slow down the theoretical best path of the request the code
+                // to decide that we need to register the callback is more complicated than, and
+                // potentially more expensive than, just always setting the callback.
+                SslProvider.SetSslOptions(this);
             }
 
             private static void AddRequestHeaders(HttpHeaders headers, SafeCurlSlistHandle handle)

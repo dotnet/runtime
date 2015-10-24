@@ -230,6 +230,16 @@ Shims the X509_STORE_CTX_get1_chain method.
 extern "C" X509Stack* X509StoreCtxGetChain(X509_STORE_CTX* ctx);
 
 /*
+Returns the interior pointer to the "untrusted" certificates collection for this X509_STORE_CTX
+*/
+extern "C" X509Stack* X509StoreCtxGetSharedUntrusted(X509_STORE_CTX* ctx);
+
+/*
+Returns the interior pointer to the target certificate for an X509 certificate chain
+*/
+extern "C" X509* X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx);
+
+/*
 Shims the X509_STORE_CTX_get_error method.
 */
 extern "C" X509VerifyStatusCode X509StoreCtxGetError(X509_STORE_CTX* ctx);

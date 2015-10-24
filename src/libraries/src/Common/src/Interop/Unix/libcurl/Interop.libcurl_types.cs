@@ -53,6 +53,7 @@ internal static partial class Interop
             internal const int CURLOPT_WRITEFUNCTION = CurlOptionFunctionPointBase + 11;
             internal const int CURLOPT_READFUNCTION = CurlOptionFunctionPointBase + 12;
             internal const int CURLOPT_HEADERFUNCTION = CurlOptionFunctionPointBase + 79;
+            internal const int CURLOPT_SSL_CTX_FUNCTION = CurlOptionFunctionPointBase + 108;
             internal const int CURLOPT_SEEKFUNCTION = CurlOptionFunctionPointBase + 167;
         }
 

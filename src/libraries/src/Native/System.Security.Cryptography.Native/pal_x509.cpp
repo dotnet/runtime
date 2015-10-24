@@ -221,6 +221,16 @@ extern "C" X509Stack* X509StoreCtxGetChain(X509_STORE_CTX* ctx)
     return X509_STORE_CTX_get1_chain(ctx);
 }
 
+extern "C" X509Stack* X509StoreCtxGetSharedUntrusted(X509_STORE_CTX* ctx)
+{
+    return ctx ? ctx->untrusted : nullptr;
+}
+
+extern "C" X509* X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx)
+{
+    return ctx ? ctx->cert : nullptr;
+}
+
 extern "C" X509VerifyStatusCode X509StoreCtxGetError(X509_STORE_CTX* ctx)
 {
     return static_cast<X509VerifyStatusCode>(X509_STORE_CTX_get_error(ctx));

@@ -101,6 +101,9 @@ enum SslErrorCode : int32_t
 // the function pointer definition for the callback used in SslCtxSetVerify
 typedef int32_t(*SslCtxSetVerifyCallback)(int32_t, X509_STORE_CTX*);
 
+// the function pointer definition for the callback used in SslCtxSetCertVerifyCallback
+typedef int32_t(*SslCtxSetCertVerifyCallbackCallback)(X509_STORE_CTX*, void* arg);
+
 
 /*
 Ensures that libssl is correctly initialized and ready to use.
@@ -321,6 +324,11 @@ extern "C" X509NameStack* SslGetClientCAList(SSL* ssl);
 Shims the SSL_CTX_set_verify method.
 */
 extern "C" void SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback);
+
+/*
+Shims the SSL_CTX_set_cert_verify_callback method.
+*/
+extern "C" void SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg);
 
 /*
 Sets the specified encryption policy on the SSL_CTX.
