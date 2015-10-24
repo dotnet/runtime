@@ -343,18 +343,6 @@ namespace CorUnix
             bool 
             HandleResumeSignal(
             );
-#else // USE_SIGNALS_FOR_THREAD_SUSPENSION
-            static
-            BOOL 
-            THREADHandleSuspendNative(
-                CPalThread *pthrTarget
-            );
-
-            static
-            BOOL 
-            THREADHandleResumeNative(
-                CPalThread *pthrTarget
-            );
 #endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 
         public:
