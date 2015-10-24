@@ -262,7 +262,6 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
     )
 {
     PAL_ERROR palError = NO_ERROR;
-    DWORD dwPrevSuspendCount = 0;
 
     int nWrittenBytes = -1;
 
@@ -341,15 +340,15 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
     }
     else
     {
-        _ASSERT_MSG(false, "zzzzzzzzzzzzzzzzzzz who's resuming?\n");
-        /////////////////////do something here if there's no pipe. just assert?
+        *pdwSuspendCount = 0;
+        palError = ERROR_BAD_COMMAND;
     }
 
 InternalResumeThreadFromDataExit:
 
     if (NO_ERROR == palError)
     {
-        *pdwSuspendCount = dwPrevSuspendCount;
+        *pdwSuspendCount = 1;
     }
 
     return palError;
