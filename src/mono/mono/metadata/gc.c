@@ -120,7 +120,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	RuntimeInvokeFunction runtime_invoke;
 
 	// This function is called from the innards of the GC, so our best alternative for now is to do polling here
-	MONO_SUSPEND_CHECK ();
+	mono_threads_safepoint ();
 
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
 

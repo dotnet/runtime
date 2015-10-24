@@ -421,7 +421,7 @@ sgen_unified_suspend_stop_world (void)
 			- We haven't accepted the previous suspend as good.
 			- We haven't gave up on it for this STW (it's either bad or asked not to)
 			*/
-			if (!mono_threads_core_check_suspend_result (info)) {
+			if (!mono_thread_info_check_suspend_result (info)) {
 				THREADS_STW_DEBUG ("[GC-STW-RESTART] SKIP thread %p failed to finish to suspend\n", mono_thread_info_get_tid (info));
 				info->client_info.skip = TRUE;
 			} else if (mono_thread_info_in_critical_location (info)) {

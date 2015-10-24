@@ -344,16 +344,6 @@ mono_threads_platform_free (MonoThreadInfo *info)
 }
 
 void
-mono_threads_core_begin_global_suspend (void)
-{
-}
-
-void
-mono_threads_core_end_global_suspend (void)
-{
-}
-
-void
 mono_threads_init_platform (void)
 {
 	mono_threads_posix_init_signals (MONO_THREADS_POSIX_INIT_SIGNALS_SUSPEND_RESTART);

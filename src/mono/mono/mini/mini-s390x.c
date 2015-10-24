@@ -4677,9 +4677,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MEMORY_BARRIER:
 			s390_mem (code);
 			break;
-#if USE_COOP_GC
 		case OP_GC_SAFE_POINT: {
 			guint8 *br;
+
+			g_assert (mono_threads_is_coop_enabled ());
 
 			s390_chi (code, ins->sreg1, 1);	
 			s390_je  (code, 0); CODEPTR(code, br);
@@ -4689,7 +4690,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			PTRSLOT (code, br);
 			break;
 		}
-#endif
 		case OP_GC_LIVENESS_DEF:
 		case OP_GC_LIVENESS_USE:
 		case OP_GC_PARAM_SLOT_LIVENESS_DEF:

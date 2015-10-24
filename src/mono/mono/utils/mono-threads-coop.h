@@ -11,14 +11,46 @@
 #define __MONO_THREADS_COOP_H__
 
 #include <config.h>
+#include <glib.h>
 
-#ifdef USE_COOP_GC
+/* JIT specific interface */
+extern volatile size_t mono_polling_required;
 
 /* Runtime consumable API */
 
-#define MONO_SUSPEND_CHECK() do {	\
-	if (G_UNLIKELY (mono_polling_required)) mono_threads_state_poll ();	\
-} while (0);
+static gboolean
+mono_threads_is_coop_enabled (void)
+{
+#if defined(USE_COOP_GC)
+	return TRUE;
+#else
+	static gboolean is_coop_enabled = -1;
+	if (G_UNLIKELY (is_coop_enabled == -1))
+		is_coop_enabled = g_getenv ("MONO_ENABLE_COOP") != NULL ? TRUE : FALSE;
+	return is_coop_enabled;
+#endif
+}
+
+/* Internal API */
+
+void mono_threads_state_poll (void);
+void mono_threads_state_poll_stack_data (void* stackdata);
+
+void* mono_threads_prepare_blocking (void* stackdata);
+void mono_threads_finish_blocking (void* cookie, void* stackdata);
+
+void* mono_threads_reset_blocking_start (void* stackdata);
+void mono_threads_reset_blocking_end (void* cookie, void* stackdata);
+
+void* mono_threads_try_prepare_blocking (void* stackdata);
+void mono_threads_finish_try_blocking (void* cookie, void* stackdata);
+
+static inline void
+mono_threads_safepoint (void)
+{
+	if (G_UNLIKELY (mono_polling_required))
+		mono_threads_state_poll ();
+}
 
 #define MONO_PREPARE_BLOCKING	\
 {	\
@@ -46,35 +78,5 @@
 #define MONO_FINISH_TRY_BLOCKING \
 	mono_threads_finish_try_blocking (__try_block_cookie, &__dummy);	\
 }
-
-/* Internal API */
-
-void mono_threads_state_poll (void);
-void mono_threads_state_poll_stack_data (void* stackdata);
-
-void* mono_threads_prepare_blocking (void* stackdata);
-void mono_threads_finish_blocking (void* cookie, void* stackdata);
-
-void* mono_threads_reset_blocking_start (void* stackdata);
-void mono_threads_reset_blocking_end (void* cookie, void* stackdata);
-
-void* mono_threads_try_prepare_blocking (void* stackdata);
-void mono_threads_finish_try_blocking (void* cookie, void* stackdata);
-
-/* JIT specific interface */
-extern volatile size_t mono_polling_required;
-
-#else
-
-#define MONO_SUSPEND_CHECK() do {	} while (0);
-#define MONO_PREPARE_BLOCKING {
-#define MONO_FINISH_BLOCKING }
-#define MONO_PREPARE_RESET_BLOCKING {
-#define MONO_FINISH_RESET_BLOCKING }
-#define MONO_TRY_BLOCKING {
-#define MONO_FINISH_TRY_BLOCKING }
-
-#endif /* USE_COOP_GC */
-
 
 #endif

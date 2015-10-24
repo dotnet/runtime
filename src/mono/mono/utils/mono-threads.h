@@ -127,40 +127,16 @@ and reduce the number of casts drastically.
 /* If this is defined, use the signals backed on Mach. Debug only as signals can't be made usable on OSX. */
 // #define USE_SIGNALS_ON_MACH
 
-
-#if defined (USE_COOP_GC)
-#define USE_COOP_BACKEND
-#define MONO_THREADS_PLATFORM_REQUIRES_UNIFIED_SUSPEND 1
-
-#elif defined (_POSIX_VERSION) || defined (__native_client__)
-#define MONO_THREADS_PLATFORM_REQUIRES_UNIFIED_SUSPEND 0
-
+#if defined (_POSIX_VERSION) || defined (__native_client__)
 #if defined (__MACH__) && !defined (USE_SIGNALS_ON_MACH)
 #define USE_MACH_BACKEND
 #else
 #define USE_POSIX_BACKEND
 #endif
-
 #elif HOST_WIN32
-#define MONO_THREADS_PLATFORM_REQUIRES_UNIFIED_SUSPEND 0
 #define USE_WINDOWS_BACKEND
-
 #else
 #error "no backend support for current platform"
-#endif /* defined (USE_COOP_GC) */
-
-#if defined (_POSIX_VERSION) || defined (__native_client__)
-#if defined (__MACH__) && !defined (USE_SIGNALS_ON_MACH)
-#define USE_MACH_SYSCALL_ABORT
-#else
-#define USE_POSIX_SYSCALL_ABORT
-#endif
-
-#elif HOST_WIN32
-#define USE_WINDOWS_SYSCALL_ABORT
-
-#else
-#error "no syscall abort support for current platform"
 #endif /* defined (_POSIX_VERSION) || defined (__native_client__) */
 
 enum {
@@ -217,7 +193,7 @@ typedef struct {
 	MonoSemType resume_semaphore;
 
 	/* only needed by the posix backend */
-#if defined(USE_POSIX_BACKEND) || defined(USE_POSIX_SYSCALL_ABORT)
+#if defined(USE_POSIX_BACKEND)
 	MonoSemType finish_resume_semaphore;
 	gboolean syscall_break_signal;
 	gboolean suspend_can_continue;
@@ -511,6 +487,8 @@ This is called very early in the runtime, it cannot access any runtime facilitie
 */
 void mono_threads_init_platform (void); //ok
 
+void mono_threads_init_coop (void);
+
 void mono_threads_init_abort_syscall (void);
 
 /*
@@ -555,8 +533,8 @@ HANDLE mono_threads_core_open_handle (void);
 HANDLE mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
 void mono_threads_core_set_name (MonoNativeThreadId tid, const char *name);
 
-void mono_threads_core_begin_global_suspend (void);
-void mono_threads_core_end_global_suspend (void);
+void mono_threads_coop_begin_global_suspend (void);
+void mono_threads_coop_end_global_suspend (void);
 
 MonoNativeThreadId
 mono_native_thread_id_get (void);
@@ -655,6 +633,8 @@ gboolean mono_thread_info_in_critical_location (THREAD_INFO_TYPE *info);
 gboolean mono_thread_info_begin_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel);
 gboolean mono_thread_info_begin_resume (THREAD_INFO_TYPE *info);
 
+gboolean
+mono_thread_info_check_suspend_result (THREAD_INFO_TYPE *info);
 
 void mono_threads_add_to_pending_operation_set (THREAD_INFO_TYPE* info); //XXX rename to something to reflect the fact that this is used for both suspend and resume
 gboolean mono_threads_wait_pending_operations (void);

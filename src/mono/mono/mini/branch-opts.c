@@ -1263,7 +1263,7 @@ mono_optimize_branches (MonoCompile *cfg)
 		for (previous_bb = cfg->bb_entry, bb = cfg->bb_entry->next_bb; bb; previous_bb = bb, bb = bb->next_bb) {
 			count ++;
 			if (count == 1000) {
-				MONO_SUSPEND_CHECK ();
+				mono_threads_safepoint ();
 				count = 0;
 			}
 			/* dont touch code inside exception clauses */

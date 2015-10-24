@@ -96,9 +96,35 @@ mono_threads_notify_initiator_of_resume (MonoThreadInfo* info)
 	MONO_SEM_POST (&suspend_semaphore);
 }
 
+static gboolean
+begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
+{
+	if (mono_threads_is_coop_enabled ()) {
+		/* There's nothing else to do after we async request the thread to suspend */
+		mono_threads_add_to_pending_operation_set (info);
+		return TRUE;
+	}
+
+	return mono_threads_core_begin_async_suspend (info, interrupt_kernel);
+}
+
+static gboolean
+check_async_suspend (MonoThreadInfo *info)
+{
+	if (mono_threads_is_coop_enabled ()) {
+		/* Async suspend can't async fail on coop */
+		return TRUE;
+	}
+
+	return mono_threads_core_check_suspend_result (info);
+}
+
 static void
 resume_async_suspended (MonoThreadInfo *info)
 {
+	if (mono_threads_is_coop_enabled ())
+		g_assert_not_reached ();
+
 	g_assert (mono_threads_core_begin_async_resume (info));
 }
 
@@ -140,7 +166,7 @@ mono_threads_begin_global_suspend (void)
 	THREADS_SUSPEND_DEBUG ("------ BEGIN GLOBAL OP sp %d rp %d ap %d wd %d po %d (sp + rp + ap == wd) (wd == po)\n", suspend_posts, resume_posts,
 		abort_posts, waits_done, pending_ops);
 	g_assert ((suspend_posts + resume_posts + abort_posts) == waits_done);
-	mono_threads_core_begin_global_suspend ();
+	mono_threads_coop_begin_global_suspend ();
 }
 
 void
@@ -152,7 +178,7 @@ mono_threads_end_global_suspend (void)
 	THREADS_SUSPEND_DEBUG ("------ END GLOBAL OP sp %d rp %d ap %d wd %d po %d\n", suspend_posts, resume_posts,
 		abort_posts, waits_done, pending_ops);
 	g_assert ((suspend_posts + resume_posts + abort_posts) == waits_done);
-	mono_threads_core_end_global_suspend ();
+	mono_threads_coop_end_global_suspend ();
 }
 
 static void
@@ -603,7 +629,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 #endif
 	g_assert (res);
 
-	unified_suspend_enabled = g_getenv ("MONO_ENABLE_UNIFIED_SUSPEND") != NULL || MONO_THREADS_PLATFORM_REQUIRES_UNIFIED_SUSPEND;
+	unified_suspend_enabled = g_getenv ("MONO_ENABLE_UNIFIED_SUSPEND") != NULL || mono_threads_is_coop_enabled ();
 
 	MONO_SEM_INIT (&global_suspend_semaphore, 1);
 	MONO_SEM_INIT (&suspend_semaphore, 0);
@@ -611,6 +637,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	mono_lls_init (&thread_list, NULL);
 	mono_thread_smr_init ();
 	mono_threads_init_platform ();
+	mono_threads_init_coop ();
 	mono_threads_init_abort_syscall ();
 
 #if defined(__MACH__)
@@ -655,7 +682,7 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 		mono_threads_add_to_pending_operation_set (info);
 		break;
 	case AsyncSuspendInitSuspend:
-		if (!mono_threads_core_begin_async_suspend (info, interrupt_kernel)) {
+		if (!begin_async_suspend (info, interrupt_kernel)) {
 			mono_hazard_pointer_clear (hp, 1);
 			*error_condition = "Could not suspend thread";
 			return NULL;
@@ -665,8 +692,7 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 	//Wait for the pending suspend to finish
 	mono_threads_wait_pending_operations ();
 
-	if (!mono_threads_core_check_suspend_result (info)) {
-
+	if (!check_async_suspend (info)) {
 		mono_hazard_pointer_clear (hp, 1);
 		*error_condition = "Post suspend failed";
 		return NULL;
@@ -791,7 +817,7 @@ mono_thread_info_begin_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 		mono_threads_add_to_pending_operation_set (info);
 		return TRUE;
 	case AsyncSuspendInitSuspend:
-		return mono_threads_core_begin_async_suspend (info, interrupt_kernel);
+		return begin_async_suspend (info, interrupt_kernel);
 	default:
 		g_assert_not_reached ();
 	}
@@ -801,6 +827,12 @@ gboolean
 mono_thread_info_begin_resume (MonoThreadInfo *info)
 {
 	return mono_thread_info_core_resume (info);
+}
+
+gboolean
+mono_thread_info_check_suspend_result (MonoThreadInfo *info)
+{
+	return check_async_suspend (info);
 }
 
 /*

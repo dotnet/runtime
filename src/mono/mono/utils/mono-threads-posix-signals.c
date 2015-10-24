@@ -12,7 +12,7 @@
 
 #include "mono-threads.h"
 
-#if defined(USE_POSIX_BACKEND) || defined(USE_POSIX_SYSCALL_ABORT)
+#if defined(USE_POSIX_BACKEND)
 
 #include <errno.h>
 #include <signal.h>
@@ -307,4 +307,4 @@ mono_threads_posix_get_abort_signal (void)
 	return abort_signal_num;
 }
 
-#endif /* defined(USE_POSIX_BACKEND) || defined(USE_POSIX_SYSCALL_ABORT) */
+#endif /* defined(USE_POSIX_BACKEND) */

@@ -1429,10 +1429,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 #if defined(__native_client_codegen__)
 		target = (gpointer)&__nacl_thread_suspension_needed;
-#elif defined (USE_COOP_GC)
-		target = (gpointer)&mono_polling_required;
 #else
-		g_error ("Unsuported patch target");
+		g_assert (mono_threads_is_coop_enabled ());
+		target = (gpointer)&mono_polling_required;
 #endif
 		break;
 	case MONO_PATCH_INFO_SWITCH: {
@@ -3289,9 +3288,9 @@ register_icalls (void)
 #if defined(__native_client__) || defined(__native_client_codegen__)
 	register_icall (mono_nacl_gc, "mono_nacl_gc", "void", FALSE);
 #endif
-#if defined(USE_COOP_GC)
-	register_icall (mono_threads_state_poll, "mono_threads_state_poll", "void", FALSE);
-#endif
+
+	if (mono_threads_is_coop_enabled ())
+		register_icall (mono_threads_state_poll, "mono_threads_state_poll", "void", FALSE);
 
 #ifndef MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
 	register_opcode_emulation (OP_LMUL, "__emul_lmul", "long long long", mono_llmult, "mono_llmult", TRUE);

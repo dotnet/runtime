@@ -9651,6 +9651,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (mono_aot_mode_is_full (&acfg->aot_opts))
 		acfg->flags |= MONO_AOT_FILE_FLAG_FULL_AOT;
 
+	if (mono_threads_is_coop_enabled ())
+		acfg->flags |= MONO_AOT_FILE_FLAG_SAFEPOINTS;
+
 	if (acfg->aot_opts.instances_logfile_path) {
 		acfg->instances_logfile = fopen (acfg->aot_opts.instances_logfile_path, "w");
 		if (!acfg->instances_logfile) {

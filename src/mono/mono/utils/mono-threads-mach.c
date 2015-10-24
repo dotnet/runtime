@@ -31,6 +31,28 @@ mono_threads_init_platform (void)
 	mono_threads_init_dead_letter ();
 }
 
+#if defined(HOST_WATCHOS) || defined(HOST_TVOS)
+
+gboolean
+mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
+{
+	g_assert_not_reached ();
+}
+
+gboolean
+mono_threads_core_check_suspend_result (MonoThreadInfo *info)
+{
+	g_assert_not_reached ();
+}
+
+gboolean
+mono_threads_core_begin_async_resume (MonoThreadInfo *info)
+{
+	g_assert_not_reached ();
+}
+
+#else /* defined(HOST_WATCHOS) || defined(HOST_TVOS) */
+
 gboolean
 mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
@@ -112,10 +134,18 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 	return ret == KERN_SUCCESS;
 }
 
+#endif /* defined(HOST_WATCHOS) || defined(HOST_TVOS) */
+
 void
 mono_threads_platform_register (MonoThreadInfo *info)
 {
+	char thread_name [64];
+
 	info->native_handle = mach_thread_self ();
+
+	snprintf (thread_name, sizeof (thread_name), "tid_%x", (int) info->native_handle);
+	pthread_setname_np (thread_name);
+
 	mono_threads_install_dead_letter ();
 }
 
@@ -123,16 +153,6 @@ void
 mono_threads_platform_free (MonoThreadInfo *info)
 {
 	mach_port_deallocate (current_task (), info->native_handle);
-}
-
-void
-mono_threads_core_begin_global_suspend (void)
-{
-}
-
-void
-mono_threads_core_end_global_suspend (void)
-{
 }
 
 #endif /* USE_MACH_BACKEND */

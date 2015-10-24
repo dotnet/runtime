@@ -3049,8 +3049,6 @@ is_open_method (MonoMethod *method)
 	return FALSE;
 }
 
-#if defined(__native_client_codegen__) || USE_COOP_GC
-
 static void
 mono_create_gc_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 {
@@ -3061,6 +3059,7 @@ mono_create_gc_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 #if defined(__native_client_codegen__)
 	NEW_AOTCONST (cfg, poll_addr, MONO_PATCH_INFO_GC_SAFE_POINT_FLAG, (gpointer)&__nacl_thread_suspension_needed);
 #else
+	g_assert (mono_threads_is_coop_enabled ());
 	NEW_AOTCONST (cfg, poll_addr, MONO_PATCH_INFO_GC_SAFE_POINT_FLAG, (gpointer)&mono_polling_required);
 #endif
 
@@ -3106,14 +3105,19 @@ static void
 mono_insert_safepoints (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb;
+
+#if !defined(__native_client_codegen__)
+	if (!mono_threads_is_coop_enabled ())
+		return;
+#endif
+
 	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
 #if defined(__native_client__) || defined(__native_client_codegen__)
 		gpointer poll_func = &mono_nacl_gc;
-#elif defined(USE_COOP_GC)
-		gpointer poll_func = &mono_threads_state_poll;
 #else
-		gpointer poll_func = NULL;
+		g_assert (mono_threads_is_coop_enabled ());
+		gpointer poll_func = &mono_threads_state_poll;
 #endif
 
 		if (info && info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER && info->d.icall.func == poll_func) {
@@ -3157,15 +3161,6 @@ mono_insert_safepoints (MonoCompile *cfg)
 		mono_print_code (cfg, "AFTER SAFEPOINTS");
 
 }
-
-#else
-
-static void
-mono_insert_safepoints (MonoCompile *cfg)
-{
-}
-
-#endif
 
 static void
 init_backend (MonoBackend *backend)
@@ -3350,8 +3345,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	}
 #endif
 	/* coop / nacl requires loop detection to happen */
-#if defined(__native_client_codegen__) || defined(USE_COOP_GC)
+#if defined(__native_client_codegen__)
 	cfg->opt |= MONO_OPT_LOOP;
+#else
+	if (mono_threads_is_coop_enabled ())
+		cfg->opt |= MONO_OPT_LOOP;
 #endif
 	cfg->explicit_null_checks = debug_options.explicit_null_checks || (flags & JIT_FLAG_EXPLICIT_NULL_CHECKS);
 	cfg->soft_breakpoints = debug_options.soft_breakpoints;
@@ -3687,7 +3685,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (!COMPILE_LLVM (cfg))
 		mono_if_conversion (cfg);
 
-	MONO_SUSPEND_CHECK ();
+	mono_threads_safepoint ();
 
 	/* Depth-first ordering on basic blocks */
 	cfg->bblocks = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));

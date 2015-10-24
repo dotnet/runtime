@@ -16,7 +16,7 @@
 
 #include <mono/utils/mono-threads.h>
 
-#if defined(USE_MACH_SYSCALL_ABORT)
+#if defined(USE_MACH_BACKEND)
 
 #if defined(HOST_WATCHOS) || defined(HOST_TVOS)
 

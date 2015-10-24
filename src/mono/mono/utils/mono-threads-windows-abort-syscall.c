@@ -12,7 +12,7 @@
 
 #include <mono/utils/mono-threads.h>
 
-#if defined(USE_WINDOWS_SYSCALL_ABORT)
+#if defined(USE_WINDOWS_BACKEND)
 
 #include <limits.h>
 

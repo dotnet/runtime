@@ -17,7 +17,7 @@
 #include "mono-threads.h"
 #include "mono-threads-posix-signals.h"
 
-#if defined(USE_POSIX_SYSCALL_ABORT)
+#if defined(USE_POSIX_BACKEND)
 
 void
 mono_threads_init_abort_syscall (void)
