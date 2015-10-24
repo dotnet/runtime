@@ -6879,13 +6879,12 @@ HMODULE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pD
 #endif //defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
 
 // Try to load the module alongside the assembly where the PInvoke was declared.
-HMODULE NDirect::LoadFromPInvokeAssemblyDirectory(NDirectMethodDesc *pMD, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
+HMODULE NDirect::LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
 {
     STANDARD_VM_CONTRACT;
 
     HMODULE hmod = NULL;
 
-    Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
     SString path = pAssembly->GetManifestFile()->GetPath();
 
     SString::Iterator lastPathSeparatorIter = path.End();
@@ -6901,6 +6900,7 @@ HMODULE NDirect::LoadFromPInvokeAssemblyDirectory(NDirectMethodDesc *pMD, LPCWST
     return hmod;
 }
 
+#ifdef FEATURE_CORECLR
 // Try to load the module from the native DLL search directories
 HMODULE NDirect::LoadFromNativeDllSearchDirectories(AppDomain* pDomain, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker)
 {
@@ -6924,6 +6924,7 @@ HMODULE NDirect::LoadFromNativeDllSearchDirectories(AppDomain* pDomain, LPCWSTR 
 
     return hmod;
 }
+#endif // FEATURE_CORECLR
 
 HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
 {
@@ -7100,7 +7101,8 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
         }
         else if (searchAssemblyDirectory)
         {
-            hmod = LoadFromPInvokeAssemblyDirectory(pMD, wszLibName, loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker);
+            Assembly* pAssembly = pMD->GetMethodTable()->GetAssembly();
+            hmod = LoadFromPInvokeAssemblyDirectory(pAssembly, wszLibName, loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker);
 
 #ifndef FEATURE_CORECLR
             if (hmod == NULL)
@@ -7147,6 +7149,15 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
                     }
 
                     pathFromCodebase.Append(wszLibName);
+
+                    SString path = pAssembly->GetManifestFile()->GetPath();
+                    SString::Iterator i = path.End();
+                    if (PEAssembly::FindLastPathSeparator(path, i))
+                    {
+                        i++;
+                        path.Truncate(i);
+                        path.Append(wszLibName);
+                    }
 
                     if (!pathFromCodebase.EqualsCaseInsensitive(path, PEImage::GetFileSystemLocale()))
                     {
@@ -7227,7 +7238,8 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
 
             if (libNameIsRelativePath && searchAssemblyDirectory)
             {
-                hmod = LoadFromPInvokeAssemblyDirectory(pMD, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker);
+                Assembly *pAssembly = pMD->GetMethodTable()->GetAssembly();
+                hmod = LoadFromPInvokeAssemblyDirectory(pAssembly, currLibNameVariation, loadWithAlteredPathFlags | dllImportSearchPathFlag, pErrorTracker);
                 if (hmod != NULL)
                     break;
             }
