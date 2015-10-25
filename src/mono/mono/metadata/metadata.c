@@ -3233,8 +3233,10 @@ mono_metadata_get_shared_type (MonoType *type)
 }
 
 static gboolean
-compare_type_literals (int class_type, int type_type)
+compare_type_literals (MonoImage *image, int class_type, int type_type, MonoError *error)
 {
+	mono_error_init (error);
+
 	/* byval_arg.type can be zero if we're decoding a type that references a class been loading.
 	 * See mcs/test/gtest-440. and #650936.
 	 * FIXME This better be moved to the metadata verifier as it can catch more cases.
@@ -3247,8 +3249,13 @@ compare_type_literals (int class_type, int type_type)
 	if (class_type == type_type)
 		return TRUE;
 
-	if (type_type == MONO_TYPE_CLASS)
-		return class_type == MONO_TYPE_STRING || class_type == MONO_TYPE_OBJECT;
+	if (type_type == MONO_TYPE_CLASS) {
+		if (class_type == MONO_TYPE_STRING || class_type == MONO_TYPE_OBJECT)
+			return TRUE;
+		//XXX stringify this argument
+		mono_error_set_bad_image (error, image, "Expected reference type but got type kind %d", class_type);
+		return FALSE;
+	}
 
 	g_assert (type_type == MONO_TYPE_VALUETYPE);
 	switch (class_type) {
@@ -3269,6 +3276,8 @@ compare_type_literals (int class_type, int type_type)
 	case MONO_TYPE_CLASS:
 		return TRUE;
 	default:
+		//XXX stringify this argument
+		mono_error_set_bad_image (error, image, "Expected value type but got type kind %d", class_type);
 		return FALSE;
 	}
 }
@@ -3334,8 +3343,13 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 			return FALSE;
 		}
-		if (!compare_type_literals (class->byval_arg.type, type->type))
+
+		if (!compare_type_literals (m, class->byval_arg.type, type->type, &error)) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 			return FALSE;
+		}
+
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
