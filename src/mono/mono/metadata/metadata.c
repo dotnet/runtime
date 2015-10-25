@@ -2104,13 +2104,16 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 MonoMethodSignature *
 mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, const char **rptr)
 {
+	/*
+	 * This function MUST NOT be called by runtime code as it does error handling incorrectly.
+	 * Use mono_metadata_parse_method_signature_full instead.
+	 * It's ok to asser on failure as we no longer use it.
+	 */
 	MonoError error;
 	MonoMethodSignature *ret;
 	ret = mono_metadata_parse_method_signature_full (m, NULL, def, ptr, rptr, &error);
-	if (!ret) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
-	}
+	g_assert (mono_error_ok (&error));
+
 	return ret;
 }
 
