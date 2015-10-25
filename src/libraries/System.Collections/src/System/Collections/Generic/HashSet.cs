@@ -1499,8 +1499,8 @@ namespace System.Collections.Generic
         internal struct Slot
         {
             internal int hashCode;      // Lower 31 bits of hash code, -1 if unused
-            internal T value;
             internal int next;          // Index of next entry, -1 if last
+            internal T value;
         }
 
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
