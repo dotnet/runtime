@@ -181,9 +181,9 @@ namespace System.Linq.Parallel
         internal struct Slot
         {
             internal int hashCode;
+            internal int next;
             internal TKey key;
             internal TValue value;
-            internal int next;
         }
     }
 }
