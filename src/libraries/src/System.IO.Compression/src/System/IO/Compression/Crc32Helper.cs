@@ -461,6 +461,7 @@ namespace System.IO.Compression
 
         private static unsafe bool IsZlibCrcAvailable()
         {
+#if FEATURE_ZLIB_CRC32
             try
             {
                 // Make a P/Invoke into zlib crc32 to ensure we're able to find and use it.
@@ -474,6 +475,9 @@ namespace System.IO.Compression
                 Debug.Write("zlib unavailable");
                 return false;
             }
+#else
+            return false;
+#endif
         }
 
         // Calculate CRC based on the old CRC and the new bytes 
@@ -529,7 +533,12 @@ namespace System.IO.Compression
 
         private static uint ZlibCrc32(uint crc32, byte[] buffer, int offset, int length)
         {
+#if FEATURE_ZLIB_CRC32
             return Interop.zlib.crc32(crc32, buffer, offset, length);
+#else
+            Debug.Fail("ZlibCrc32 should not be called when FEATURE_ZLIB_CRC32 is false!");
+            throw new InvalidOperationException();
+#endif
         } 
     }
 }
