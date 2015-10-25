@@ -724,7 +724,6 @@ mono_metadata_parse_array_full              (MonoImage             *image,
 MONO_API MonoType *
 mono_metadata_parse_type_full               (MonoImage             *image,
 					     MonoGenericContainer  *container,
-					     MonoParseTypeMode      mode,
 					     short                  opt_attrs,
 					     const char            *ptr,
 					     const char           **rptr);

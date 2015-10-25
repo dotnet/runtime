@@ -1322,13 +1322,13 @@ get_type (MonoImage *m, const char *ptr, char **result, gboolean is_def, MonoGen
 	}
 
 	default:
-		t = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, start, &ptr);
+		t = mono_metadata_parse_type_full (m, container, 0, start, &ptr);
 		if (t) {
 			*result = dis_stringify_type (m, t, is_def);
 		} else {
 			GString *err = g_string_new ("@!#$<InvalidType>$#!@");
 			if (container)
-				t = mono_metadata_parse_type_full (m, NULL, MONO_PARSE_TYPE, 0, start, &ptr);
+				t = mono_metadata_parse_type_full (m, NULL, 0, start, &ptr);
 			if (t) {
 				char *name = dis_stringify_type (m, t, is_def);
 				g_warning ("Encountered a generic type inappropriate for its context");
