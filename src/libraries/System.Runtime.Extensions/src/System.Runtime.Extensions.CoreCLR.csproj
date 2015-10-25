@@ -71,9 +71,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFullPathNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetFullPathNameW.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs">
-      <Link>Common\Interop\Windows\mincore\Interop.GetLastError.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathNameW.cs">
       <Link>Common\Interop\Windows\mincore\Interop.GetLongPathNameW.cs</Link>
     </Compile>
