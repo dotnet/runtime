@@ -1396,6 +1396,9 @@ test-appdomain-unload: appdomain-loader.exe appdomain-tester.exe
 	MONO_DEBUG_ASSEMBLY_UNLOAD=1 $(RUNTIME) -O=gshared appdomain-loader.exe > appdomain-loader.exe.3.stdout || exit 1;
 	MONO_DEBUG_ASSEMBLY_UNLOAD=1 $(RUNTIME) appdomain-loader.exe > appdomain-loader.exe.4.stdout || exit 1;
 
+coreclr-gcstress:
+	$(MAKE) -C $(mono_build_root)/acceptance-tests coreclr-gcstress
+
 noinst_LTLIBRARIES = libtest.la
 
 AM_CPPFLAGS = $(GLIB_CFLAGS)
