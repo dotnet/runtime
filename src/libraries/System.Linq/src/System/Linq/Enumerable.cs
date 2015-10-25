@@ -3617,8 +3617,8 @@ namespace System.Linq
         internal struct Slot
         {
             internal int hashCode;
-            internal TElement value;
             internal int next;
+            internal TElement value;
         }
     }
 
