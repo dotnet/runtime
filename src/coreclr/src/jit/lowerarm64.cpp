@@ -1639,7 +1639,7 @@ void Lowering::LowerRotate(GenTreePtr tree)
         {
             ssize_t   rotateLeftIndex = rotateLeftIndexNode->gtIntCon.gtIconVal;
             ssize_t   rotateRightIndex = rotatedValueBitSize - rotateLeftIndex;
-            rotateIndexNode->gtIntCon.gtIconVal = rotateRightIndex;
+            rotateLeftIndexNode->gtIntCon.gtIconVal = rotateRightIndex;
         }
         else
         {
