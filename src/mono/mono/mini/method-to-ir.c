@@ -9585,7 +9585,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * based on whenever there is an rgctx or not.
 			 */
 			if (cfg->llvm_only && virtual && cmethod && (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-				MonoInst *args [16], *icall_args [16];
+				MonoInst *args_buf [16], *icall_args [16];
+				MonoInst **args;
 				MonoBasicBlock *rgctx_bb, *end_bb;
 				MonoInst *call1, *call2, *call_target;
 				MonoMethodSignature *rgctx_sig;
@@ -9627,7 +9628,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/* Rgctx case */
 				MONO_START_BB (cfg, rgctx_bb);
 				/* Make a call with an rgctx */
-				g_assert (fsig->param_count + 2 < 16);
+				if (fsig->param_count + 2 < 16)
+					args = args_buf;
+				else
+					args = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst*) * (fsig->param_count + 2));
 				args [0] = sp [0];
 				for (i = 0; i < fsig->param_count; ++i)
 					args [i + 1] = sp [i + 1];
