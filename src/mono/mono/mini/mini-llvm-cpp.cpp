@@ -59,15 +59,6 @@ using namespace llvm;
 
 #ifndef MONO_CROSS_COMPILE
 
-void
-mono_llvm_cpp_throw_exception (void)
-{
-	gint32 *ex = NULL;
-
-	/* The generated code catches an int32* */
-	throw ex;
-}
-
 static void (*unhandled_exception)() = default_mono_llvm_unhandled_exception;
 
 void
@@ -626,10 +617,16 @@ init_llvm (void)
   LLVMInitializeARMTarget ();
   LLVMInitializeARMTargetInfo ();
   LLVMInitializeARMTargetMC ();
-#else
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
   LLVMInitializeX86Target ();
   LLVMInitializeX86TargetInfo ();
   LLVMInitializeX86TargetMC ();
+#elif defined(TARGET_POWERPC)
+  LLVMInitializePowerPCTarget ();
+  LLVMInitializePowerPCTargetInfo ();
+  LLVMInitializePowerPCTargetMC ();
+#else
+  #error Unsupported mono-llvm target
 #endif
 
   PassRegistry &Registry = *PassRegistry::getPassRegistry();

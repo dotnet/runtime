@@ -7119,6 +7119,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+		(method->klass->image->raw_data && method->klass->image->raw_data [1] != 'Z') ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME))
 		return NULL;
 

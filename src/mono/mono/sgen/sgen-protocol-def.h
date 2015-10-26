@@ -1,3 +1,19 @@
+/*
+ * All binary protocol entries are defined here.  To keep compatibility with past binary
+ * protocol files, new protocol entries need to be defined at the end of the file so that
+ * the sequential numbering is preserved.  We also can't change the types or numbers of
+ * arguments of existing entries.  Instead, a new entry has to be added and the old entry
+ * retired - add a comment to make clear it's not used anymore, but it needs to stay in the
+ * definition file, both to preserve the numbering as well as for the benefit of
+ * `sgen-grep-binprot`, which will still want to read the old entries.
+ *
+ * It might become necessary to add a header protocol entry that includes version
+ * information.  If/when we do that, we should also include word length and endianness.  As
+ * of right now, binary protocol files don't identify themselves as 32 vs 64 bits or big- vs
+ * little-endian.  At that point, `sgen-grep-binprot` should also be made able to read all
+ * combinations of files, regardless of the host.
+ */
+
 BEGIN_PROTOCOL_ENTRY3 (binary_protocol_collection_requested, TYPE_INT, generation, TYPE_SIZE, requested_size, TYPE_BOOL, force)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)

@@ -153,6 +153,8 @@ typedef struct MonoCompileArch {
 
 //  #define DEBUG_ELFABIV2
 
+  #define MONO_ARCH_LLVM_SUPPORTED 1
+
  #else
   #define PPC_STACK_PARAM_OFFSET 48
   #define PPC_MINIMAL_STACK_SIZE 48

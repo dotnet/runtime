@@ -19,7 +19,7 @@ if HAVE_VTUNE
 vtune_lib = libmono-profiler-vtune.la
 endif
 
-lib_LTLIBRARIES = libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la $(vtune_lib)
+lib_LTLIBRARIES = libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la libmono-profiler-log-static.la $(vtune_lib)
 
 if PLATFORM_DARWIN
 libmono_profiler_log_la_LDFLAGS = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
@@ -67,6 +67,14 @@ libmono_profiler_vtune_la_SOURCES = mono-profiler-vtune.c
 libmono_profiler_vtune_la_CFLAGS = $(VTUNE_CFLAGS)
 libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 endif
+
+# The log profile uses eglib functions, so it needs to be linked against
+# libeglib in shared mode, but not in static mode, since that would
+# leads to duplicate symbols when it is linked into an app which
+# also uses eglib (e.g. the runtime). Automake doesn't support this
+# functionality, so create a separate static version of the library.
+libmono_profiler_log_static_la_SOURCES = proflog.c
+libmono_profiler_log_static_la_LDFLAGS = -static
 
 mprof_report_SOURCES = decode.c
 mprof_report_LDADD = $(Z_LIBS) $(GLIB_LIBS) $(LIBICONV)
