@@ -7128,7 +7128,8 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		LLVMSetInitializer (aot_module.inited_var, LLVMConstNull (inited_type));
 	}
 
-	emit_init_icall_wrappers (lmodule);
+	if (llvm_only)
+		emit_init_icall_wrappers (lmodule);
 
 	emit_llvm_code_start (lmodule);
 
