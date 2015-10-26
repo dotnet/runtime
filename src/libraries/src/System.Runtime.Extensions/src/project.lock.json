@@ -3,7 +3,7 @@
   "version": 2,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.DotNet.CoreCLR/1.0.5-prerelease": {
+      "Microsoft.DotNet.CoreCLR/1.0.6-prerelease": {
         "type": "package",
         "compile": {
           "lib/dnxcore50/clretwrc.dll": {},
@@ -28,7 +28,7 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x86": {
-      "Microsoft.DotNet.CoreCLR/1.0.5-prerelease": {
+      "Microsoft.DotNet.CoreCLR/1.0.6-prerelease": {
         "type": "package",
         "compile": {
           "lib/dnxcore50/clretwrc.dll": {},
@@ -53,7 +53,7 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x64": {
-      "Microsoft.DotNet.CoreCLR/1.0.5-prerelease": {
+      "Microsoft.DotNet.CoreCLR/1.0.6-prerelease": {
         "type": "package",
         "compile": {
           "lib/dnxcore50/clretwrc.dll": {},
@@ -79,9 +79,9 @@
     }
   },
   "libraries": {
-    "Microsoft.DotNet.CoreCLR/1.0.5-prerelease": {
+    "Microsoft.DotNet.CoreCLR/1.0.6-prerelease": {
       "type": "package",
-      "sha512": "KXTA4cUjhywQwoXpOw1mAc/flHx82TjdfgAKCakR3E4G9tzuBhPIolY/F6938d4a154uCMTVagPFFznNmDfsew==",
+      "sha512": "W7A0eUuO0nvMCs/3pp5+8bva41YvlUMKxUau5mVxd72H4vTEVBnHmxI41Z4hq8VbMf5ZNby1XYiJ2NAbNG4d0A==",
       "files": [
         "lib/dnxcore50/clretwrc.dll",
         "lib/dnxcore50/coreclr.dll",
@@ -91,15 +91,15 @@
         "lib/dnxcore50/mscorlib.dll",
         "lib/dnxcore50/mscorrc.debug.dll",
         "lib/dnxcore50/mscorrc.dll",
-        "Microsoft.DotNet.CoreCLR.1.0.5-prerelease.nupkg",
-        "Microsoft.DotNet.CoreCLR.1.0.5-prerelease.nupkg.sha512",
+        "Microsoft.DotNet.CoreCLR.1.0.6-prerelease.nupkg",
+        "Microsoft.DotNet.CoreCLR.1.0.6-prerelease.nupkg.sha512",
         "Microsoft.DotNet.CoreCLR.nuspec"
       ]
     }
   },
   "projectFileDependencyGroups": {
     "": [
-      "Microsoft.DotNet.CoreCLR >= 1.0.5-prerelease"
+      "Microsoft.DotNet.CoreCLR >= 1.0.6-prerelease"
     ],
     "DNXCore,Version=v5.0": []
   }
