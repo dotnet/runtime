@@ -4,11 +4,13 @@
 
   <PropertyGroup>
     <AssemblyName>System.Net.NetworkInformation</AssemblyName>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <ProjectGuid>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
