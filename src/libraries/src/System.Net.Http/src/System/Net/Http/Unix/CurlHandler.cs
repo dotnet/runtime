@@ -20,7 +20,6 @@ namespace System.Net.Http
         #region Constants
 
         private const string VerboseDebuggingConditional = "CURLHANDLER_VERBOSE";
-        private const string HttpPrefix = "HTTP/";
         private const char SpaceChar = ' ';
         private const int StatusCodeLength = 3;
 
@@ -557,90 +556,20 @@ namespace System.Net.Http
 
         private static bool TryParseStatusLine(HttpResponseMessage response, string responseHeader, EasyRequest state)
         {
-            if (!responseHeader.StartsWith(HttpPrefix, StringComparison.OrdinalIgnoreCase))
+            if (!responseHeader.StartsWith(CurlResponseParseUtils.HttpPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
             // Clear the header if status line is recieved again. This signifies that there are multiple response headers (like in redirection).
             response.Headers.Clear();
-
             response.Content.Headers.Clear();
 
-            int responseHeaderLength = responseHeader.Length;
-
-            // Check if line begins with HTTP/1.1 or HTTP/1.0
-            int prefixLength = HttpPrefix.Length;
-            int versionIndex = prefixLength + 2;
-
-            if ((versionIndex < responseHeaderLength) && (responseHeader[prefixLength] == '1') && (responseHeader[prefixLength + 1] == '.'))
-            {
-                response.Version =
-                    responseHeader[versionIndex] == '1' ? HttpVersion.Version11 :
-                    responseHeader[versionIndex] == '0' ? HttpVersion.Version10 :
-                    new Version(0, 0);
-            }
-            else
-            {
-                response.Version = new Version(0, 0);
-            }
-
-            // TODO: Parsing errors are treated as fatal. Find right behaviour
-
-            int spaceIndex = responseHeader.IndexOf(SpaceChar);
-
-            if (spaceIndex > -1)
-            {
-                int codeStartIndex = spaceIndex + 1;
-                int statusCode = 0;
-
-                // Parse first 3 characters after a space as status code
-                if (TryParseStatusCode(responseHeader, codeStartIndex, out statusCode))
-                {
-                    response.StatusCode = (HttpStatusCode)statusCode;
-
-                    int codeEndIndex = codeStartIndex + StatusCodeLength;
-
-                    int reasonPhraseIndex = codeEndIndex + 1;
-
-                    if (reasonPhraseIndex < responseHeaderLength && responseHeader[codeEndIndex] == SpaceChar)
-                    {
-                        int newLineCharIndex = responseHeader.IndexOfAny(s_newLineCharArray, reasonPhraseIndex);
-                        int reasonPhraseEnd = newLineCharIndex >= 0 ? newLineCharIndex : responseHeaderLength;
-                        response.ReasonPhrase = responseHeader.Substring(reasonPhraseIndex, reasonPhraseEnd - reasonPhraseIndex);
-                    }
-                    state._isRedirect = state._handler.AutomaticRedirection &&
+            CurlResponseParseUtils.ReadStatusLine(response, responseHeader);
+            state._isRedirect = state._handler.AutomaticRedirection &&
                          (response.StatusCode == HttpStatusCode.Redirect ||
                          response.StatusCode == HttpStatusCode.RedirectKeepVerb ||
                          response.StatusCode == HttpStatusCode.RedirectMethod) ;
-                }
-            }
-
-            return true;
-        }
-
-        private static bool TryParseStatusCode(string responseHeader, int statusCodeStartIndex, out int statusCode)
-        {
-            if (statusCodeStartIndex + StatusCodeLength > responseHeader.Length)
-            {
-                statusCode = 0;
-                return false;
-            }
-
-            char c100 = responseHeader[statusCodeStartIndex];
-            char c10 = responseHeader[statusCodeStartIndex + 1];
-            char c1 = responseHeader[statusCodeStartIndex + 2];
-
-            if (c100 < '0' || c100 > '9' ||
-                c10 < '0' || c10 > '9' ||
-                c1 < '0' || c1 > '9')
-            {
-                statusCode = 0;
-                return false;
-            }
-
-            statusCode = (c100 - '0') * 100 + (c10 - '0') * 10 + (c1 - '0');
-
             return true;
         }
 
