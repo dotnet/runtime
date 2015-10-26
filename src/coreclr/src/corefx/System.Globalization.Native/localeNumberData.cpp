@@ -6,14 +6,12 @@
 
 #include <assert.h>
 #include <string.h>
+#include <vector>
+
+#include <unicode/ulocdata.h>
 
 #include "locale.hpp"
-
-#include "unicode/calendar.h"
-#include "unicode/decimfmt.h"
-#include "unicode/localpointer.h"
-#include "unicode/numfmt.h"
-#include "unicode/ulocdata.h"
+#include "holders.h"
 
 // invariant character definitions used by ICU
 #define UCHAR_CURRENCY ((UChar)0x00A4)   // international currency
@@ -63,7 +61,7 @@ NormalizeNumericPattern
 Returns a numeric string pattern in a format that we can match against the
 appropriate managed pattern.
 */
-void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* destPattern, bool isNegative)
+std::string NormalizeNumericPattern(const UChar* srcPattern, bool isNegative)
 {
     // A srcPattern example: "#,##0.00 C;(#,##0.00 C)" but where C is the
     // international currency symbol (UCHAR_CURRENCY)
@@ -71,11 +69,20 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
     // separated by a semicolon
     // A destPattern example: "(C n)" where C represents the currency symbol, and
     // n is the number
-    destPattern->remove();
+    std::string destPattern;
 
     int iStart = 0;
-    int iEnd = srcPattern->length() - 1;
-    int32_t iNegativePatternStart = srcPattern->indexOf(UCHAR_SEMICOLON);
+    int iEnd = u_strlen(srcPattern);
+    int32_t iNegativePatternStart = -1;
+
+    for (int i = iStart; i < iEnd; i++)
+    {
+        if (srcPattern[i] == ';')
+        {
+            iNegativePatternStart = i;
+        }
+    }
+
     if (iNegativePatternStart >= 0)
     {
         if (isNegative)
@@ -95,14 +102,14 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
 
     for (int i = iStart; i <= iEnd; i++)
     {
-        UChar ch = srcPattern->charAt(i);
+        UChar ch = srcPattern[i];
         switch (ch)
         {
             case UCHAR_DIGIT:
                 if (!digitAdded)
                 {
                     digitAdded = true;
-                    destPattern->append('n');
+                    destPattern.push_back('n');
                 }
                 break;
 
@@ -110,7 +117,7 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
                 if (!currencyAdded)
                 {
                     currencyAdded = true;
-                    destPattern->append('C');
+                    destPattern.push_back('C');
                 }
                 break;
 
@@ -119,7 +126,7 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
                 if (!spaceAdded)
                 {
                     spaceAdded = true;
-                    destPattern->append(UCHAR_SPACE);
+                    destPattern.push_back(' ');
                 }
                 else
                 {
@@ -131,11 +138,11 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
             case UCHAR_OPENPAREN:
             case UCHAR_CLOSEPAREN:
                 minusAdded = true;
-                destPattern->append(ch);
+                destPattern.push_back(static_cast<char>(ch));
                 break;
 
             case UCHAR_PERCENT:
-                destPattern->append(ch);
+                destPattern.push_back('%');
                 break;
         }
     }
@@ -144,8 +151,10 @@ void NormalizeNumericPattern(const UnicodeString* srcPattern, UnicodeString* des
     // minus sign
     if (isNegative && !minusAdded)
     {
-        destPattern->insert(0, UCHAR_MINUS);
+        destPattern.insert(destPattern.begin(), '-');
     }
+
+    return destPattern;
 }
 
 /*
@@ -156,30 +165,35 @@ Determines the pattern from the decimalFormat and returns the matching pattern's
 index from patterns[].
 Returns index -1 if no pattern is found.
 */
-int GetNumericPattern(DecimalFormat* decimalFormat, const char* patterns[], int patternsCount, bool isNegative)
+int GetNumericPattern(const UNumberFormat* pNumberFormat, const char* patterns[], int patternsCount, bool isNegative)
 {
     const int INVALID_FORMAT = -1;
     const int MAX_DOTNET_NUMERIC_PATTERN_LENGTH = 6; // example: "(C n)" plus terminator
-    char charPattern[MAX_DOTNET_NUMERIC_PATTERN_LENGTH] = {0};
 
-    UnicodeString icuPattern;
-    decimalFormat->toPattern(icuPattern);
+    UErrorCode ignore = U_ZERO_ERROR;
+    int32_t icuPatternLength = unum_toPattern(pNumberFormat, false, nullptr, 0, &ignore);
 
-    UnicodeString normalizedPattern;
-    NormalizeNumericPattern(&icuPattern, &normalizedPattern, isNegative);
+    std::vector<UChar> icuPattern(icuPatternLength + 1, '\0');
+
+    UErrorCode err = U_ZERO_ERROR;
+
+    unum_toPattern(pNumberFormat, false, icuPattern.data(), icuPattern.size(), &err);
+
+    assert(U_SUCCESS(err));
+
+    std::string normalizedPattern = NormalizeNumericPattern(icuPattern.data(), isNegative);
 
     assert(normalizedPattern.length() > 0);
     assert(normalizedPattern.length() < MAX_DOTNET_NUMERIC_PATTERN_LENGTH);
+
     if (normalizedPattern.length() == 0 || normalizedPattern.length() >= MAX_DOTNET_NUMERIC_PATTERN_LENGTH)
     {
         return INVALID_FORMAT;
     }
 
-    u_UCharsToChars(normalizedPattern.getTerminatedBuffer(), charPattern, normalizedPattern.length() + 1);
-
     for (int i = 0; i < patternsCount; i++)
     {
-        if (strcmp(charPattern, patterns[i]) == 0)
+        if (strcmp(normalizedPattern.c_str(), patterns[i]) == 0)
         {
             return i;
         }
@@ -196,7 +210,7 @@ GetCurrencyNegativePattern
 Implementation of NumberFormatInfo.CurrencyNegativePattern.
 Returns the pattern index.
 */
-int GetCurrencyNegativePattern(const Locale& locale)
+int GetCurrencyNegativePattern(const char* locale)
 {
     const int DEFAULT_VALUE = 0;
     static const char* Patterns[] = {"(Cn)",
@@ -217,19 +231,17 @@ int GetCurrencyNegativePattern(const Locale& locale)
                                      "(n C)"};
     UErrorCode status = U_ZERO_ERROR;
 
-    LocalPointer<NumberFormat> format(NumberFormat::createInstance(locale, UNUM_CURRENCY, status));
+    UNumberFormat* pFormat = unum_open(UNUM_CURRENCY, nullptr, 0, locale, nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
+
     assert(U_SUCCESS(status));
+
     if (U_SUCCESS(status))
     {
-        DecimalFormat* decimalFormat = dynamic_cast<DecimalFormat*>(format.getAlias());
-        assert(decimalFormat != NULL);
-        if (decimalFormat != NULL)
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), true);
+        if (value >= 0)
         {
-            int value = GetNumericPattern(decimalFormat, Patterns, ARRAY_LENGTH(Patterns), true);
-            if (value >= 0)
-            {
-                return value;
-            }
+            return value;
         }
     }
 
@@ -243,25 +255,23 @@ GetCurrencyPositivePattern
 Implementation of NumberFormatInfo.CurrencyPositivePattern.
 Returns the pattern index.
 */
-int GetCurrencyPositivePattern(const Locale& locale)
+int GetCurrencyPositivePattern(const char* locale)
 {
     const int DEFAULT_VALUE = 0;
     static const char* Patterns[] = {"Cn", "nC", "C n", "n C"};
     UErrorCode status = U_ZERO_ERROR;
 
-    LocalPointer<NumberFormat> format(NumberFormat::createInstance(locale, UNUM_CURRENCY, status));
+    UNumberFormat* pFormat = unum_open(UNUM_CURRENCY, nullptr, 0, locale, nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
+
     assert(U_SUCCESS(status));
+
     if (U_SUCCESS(status))
     {
-        DecimalFormat* decimalFormat = dynamic_cast<DecimalFormat*>(format.getAlias());
-        assert(decimalFormat != NULL);
-        if (decimalFormat != NULL)
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), false);
+        if (value >= 0)
         {
-            int value = GetNumericPattern(decimalFormat, Patterns, ARRAY_LENGTH(Patterns), false);
-            if (value >= 0)
-            {
-                return value;
-            }
+            return value;
         }
     }
 
@@ -275,25 +285,23 @@ GetNumberNegativePattern
 Implementation of NumberFormatInfo.NumberNegativePattern.
 Returns the pattern index.
 */
-int GetNumberNegativePattern(const Locale& locale)
+int GetNumberNegativePattern(const char* locale)
 {
     const int DEFAULT_VALUE = 1;
     static const char* Patterns[] = {"(n)", "-n", "- n", "n-", "n -"};
     UErrorCode status = U_ZERO_ERROR;
 
-    LocalPointer<NumberFormat> format(NumberFormat::createInstance(locale, UNUM_DECIMAL, status));
+    UNumberFormat* pFormat = unum_open(UNUM_DECIMAL, nullptr, 0, locale, nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
+
     assert(U_SUCCESS(status));
+
     if (U_SUCCESS(status))
     {
-        DecimalFormat* decimalFormat = dynamic_cast<DecimalFormat*>(format.getAlias());
-        assert(decimalFormat != NULL);
-        if (decimalFormat != NULL)
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), true);
+        if (value >= 0)
         {
-            int value = GetNumericPattern(decimalFormat, Patterns, ARRAY_LENGTH(Patterns), true);
-            if (value >= 0)
-            {
-                return value;
-            }
+            return value;
         }
     }
 
@@ -307,26 +315,24 @@ GetPercentNegativePattern
 Implementation of NumberFormatInfo.PercentNegativePattern.
 Returns the pattern index.
 */
-int GetPercentNegativePattern(const Locale& locale)
+int GetPercentNegativePattern(const char* locale)
 {
     const int DEFAULT_VALUE = 0;
     static const char* Patterns[] = {
         "-n %", "-n%", "-%n", "%-n", "%n-", "n-%", "n%-", "-% n", "n %-", "% n-", "% -n", "n- %"};
     UErrorCode status = U_ZERO_ERROR;
 
-    LocalPointer<NumberFormat> format(NumberFormat::createInstance(locale, UNUM_PERCENT, status));
+    UNumberFormat* pFormat = unum_open(UNUM_PERCENT, nullptr, 0, locale, nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
+
     assert(U_SUCCESS(status));
+
     if (U_SUCCESS(status))
     {
-        DecimalFormat* decimalFormat = dynamic_cast<DecimalFormat*>(format.getAlias());
-        assert(decimalFormat != NULL);
-        if (decimalFormat != NULL)
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), true);
+        if (value >= 0)
         {
-            int value = GetNumericPattern(decimalFormat, Patterns, ARRAY_LENGTH(Patterns), true);
-            if (value >= 0)
-            {
-                return value;
-            }
+            return value;
         }
     }
 
@@ -340,25 +346,23 @@ GetPercentPositivePattern
 Implementation of NumberFormatInfo.PercentPositivePattern.
 Returns the pattern index.
 */
-int GetPercentPositivePattern(const Locale& locale)
+int GetPercentPositivePattern(const char* locale)
 {
     const int DEFAULT_VALUE = 0;
     static const char* Patterns[] = {"n %", "n%", "%n", "% n"};
     UErrorCode status = U_ZERO_ERROR;
 
-    LocalPointer<NumberFormat> format(NumberFormat::createInstance(locale, UNUM_PERCENT, status));
+    UNumberFormat* pFormat = unum_open(UNUM_PERCENT, nullptr, 0, locale, nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
+
     assert(U_SUCCESS(status));
+
     if (U_SUCCESS(status))
     {
-        DecimalFormat* decimalFormat = dynamic_cast<DecimalFormat*>(format.getAlias());
-        assert(decimalFormat != NULL);
-        if (decimalFormat != NULL)
+        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), false);
+        if (value >= 0)
         {
-            int value = GetNumericPattern(decimalFormat, Patterns, ARRAY_LENGTH(Patterns), false);
-            if (value >= 0)
-            {
-                return value;
-            }
+            return value;
         }
     }
 
@@ -372,11 +376,11 @@ GetMeasurementSystem
 Obtains the measurement system for the local, determining if US or metric.
 Returns 1 for US, 0 otherwise.
 */
-UErrorCode GetMeasurementSystem(const char* localeId, int32_t* value)
+UErrorCode GetMeasurementSystem(const char* locale, int32_t* value)
 {
     UErrorCode status = U_ZERO_ERROR;
 
-    UMeasurementSystem measurementSystem = ulocdata_getMeasurementSystem(localeId, &status);
+    UMeasurementSystem measurementSystem = ulocdata_getMeasurementSystem(locale, &status);
     if (U_SUCCESS(status))
     {
         *value = (measurementSystem == UMeasurementSystem::UMS_US) ? 1 : 0;
@@ -394,25 +398,26 @@ Returns 1 for success, 0 otherwise
 */
 extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData localeNumberData, int32_t* value)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode status = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
+
+    if (U_FAILURE(status))
     {
         return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
     }
 
-    UErrorCode status = U_ZERO_ERROR;
-
     switch (localeNumberData)
     {
         case LanguageId:
-            *value = locale.getLCID();
+            *value = uloc_getLCID(locale);
             break;
         case MeasurementSystem:
-            status = GetMeasurementSystem(locale.getName(), value);
+            status = GetMeasurementSystem(locale, value);
             break;
         case FractionalDigitsCount:
         {
-            UNumberFormat* numformat = unum_open(UNUM_DECIMAL, NULL, 0, locale.getName(), NULL, &status);
+            UNumberFormat* numformat = unum_open(UNUM_DECIMAL, NULL, 0, locale, NULL, &status);
             if (U_SUCCESS(status))
             {
                 *value = unum_getAttribute(numformat, UNUM_MAX_FRACTION_DIGITS);
@@ -425,7 +430,7 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
             break;
         case MonetaryFractionalDigitsCount:
         {
-            UNumberFormat* numformat = unum_open(UNUM_CURRENCY, NULL, 0, locale.getName(), NULL, &status);
+            UNumberFormat* numformat = unum_open(UNUM_CURRENCY, NULL, 0, locale, NULL, &status);
             if (U_SUCCESS(status))
             {
                 *value = unum_getAttribute(numformat, UNUM_MAX_FRACTION_DIGITS);
@@ -442,11 +447,13 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
         case FirstWeekOfYear:
         {
             // corresponds to DateTimeFormat.CalendarWeekRule
-            LocalPointer<Calendar> calendar(Calendar::createInstance(locale, status));
+            UCalendar* pCal = ucal_open(nullptr, 0, locale, UCAL_TRADITIONAL, &status);
+            UCalendarHolder calHolder(pCal, status);
+
             if (U_SUCCESS(status))
             {
                 // values correspond to LOCALE_IFIRSTWEEKOFYEAR
-                int minDaysInWeek = calendar->getMinimalDaysInFirstWeek();
+                int minDaysInWeek = ucal_getAttribute(pCal, UCAL_MINIMAL_DAYS_IN_FIRST_WEEK);
                 if (minDaysInWeek == 1)
                 {
                     *value = CalendarWeekRule::FirstDay;
@@ -472,8 +479,8 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
             // used in coreclr)
             //  0 - Left to right (such as en-US)
             //  1 - Right to left (such as arabic locales)
-            ULayoutType orientation = uloc_getCharacterOrientation(locale.getName(), &status);
-            // alternative implementation in ICU 54+ is Locale.isRightToLeft() which
+            ULayoutType orientation = uloc_getCharacterOrientation(locale, &status);
+            // alternative implementation in ICU 54+ is uloc_isRightToLeft() which
             // also supports script tags in locale
             if (U_SUCCESS(status))
             {
@@ -483,10 +490,12 @@ extern "C" int32_t GetLocaleInfoInt(const UChar* localeName, LocaleNumberData lo
         }
         case FirstDayofWeek:
         {
-            LocalPointer<Calendar> pcalendar(Calendar::createInstance(locale, status));
+            UCalendar* pCal = ucal_open(nullptr, 0, locale, UCAL_TRADITIONAL, &status);
+            UCalendarHolder calHolder(pCal, status);
+
             if (U_SUCCESS(status))
             {
-                *value = pcalendar->getFirstDayOfWeek(status) - 1; // .NET is 0-based and ICU is 1-based
+                *value = ucal_getAttribute(pCal, UCAL_FIRST_DAY_OF_WEEK) - 1; // .NET is 0-based and ICU is 1-based
             }
             break;
         }
@@ -517,8 +526,11 @@ extern "C" int32_t GetLocaleInfoGroupingSizes(const UChar* localeName,
                                               int32_t* primaryGroupSize,
                                               int32_t* secondaryGroupSize)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode status = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
+
+    if (U_FAILURE(status))
     {
         return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
     }
@@ -536,8 +548,7 @@ extern "C" int32_t GetLocaleInfoGroupingSizes(const UChar* localeName,
             return UErrorCodeToBool(U_UNSUPPORTED_ERROR);
     }
 
-    UErrorCode status = U_ZERO_ERROR;
-    UNumberFormat* numformat = unum_open(style, NULL, 0, locale.getName(), NULL, &status);
+    UNumberFormat* numformat = unum_open(style, NULL, 0, locale, NULL, &status);
     if (U_SUCCESS(status))
     {
         *primaryGroupSize = unum_getAttribute(numformat, UNUM_GROUPING_SIZE);
