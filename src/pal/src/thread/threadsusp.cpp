@@ -1179,32 +1179,6 @@ CThreadSuspensionInfo::DestroySemaphoreIds()
 }
 #endif // USE_SYSV_SEMAPHORES
 
-/*++
-Function:
-  THREADMarkDiagnostic
-  
-THREADMarkDiagnostic is called in functions that may be suspension unsafe.
-For the assert to be invoked, the calling thread must have suspended
-other threads, in which case the suspended threads may be holding an internal
-lock or resource required by the diagnostic function. If this assert shows
-up, it at least warrants reviewing the function to decide if threads executing
-in it should be marked as suspension unsafe.
---*/
-#ifdef _DEBUG
-void 
-THREADMarkDiagnostic(const char* funcName)
-{
-    if (PALIsThreadDataInitialized())
-    {
-        CPalThread *pthrCurrent = InternalGetCurrentThread();
-        _ASSERT_MSG(pthrCurrent->suspensionInfo.GetNumThreadsSuspendedByThisThread() == 0, 
-            "SUSPENSION DIAGNOSTIC: %s is potentially suspension unsafe "
-            "and was executed by a thread that suspended %d threads.\n", 
-            funcName, pthrCurrent->suspensionInfo.GetNumThreadsSuspendedByThisThread());
-    }
-}
-#endif // _DEBUG
-
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
 /*++
 Function:

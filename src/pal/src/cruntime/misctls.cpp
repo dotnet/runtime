@@ -60,7 +60,6 @@ PAL_localtime(const PAL_time_t *clock)
 
     PERF_ENTRY(localtime);
     ENTRY( "localtime( clock=%p )\n",clock );
-    THREADMarkDiagnostic("PAL_localtime");
 
     /* Get the per-thread buffer from the thread structure. */
     pThread = InternalGetCurrentThread();
