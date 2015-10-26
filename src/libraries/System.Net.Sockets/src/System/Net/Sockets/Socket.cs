@@ -645,6 +645,10 @@ namespace System.Net.Sockets
             }
         }
 
+        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        //       normal IPv6 socket once the socket is bound to an IPv6-specific
+        //       address. This can cause behavioral differences in code that checks
+        //       the value of DualMode (e.g. the checks in CanTryAddressFamily).
         public bool DualMode
         {
             get

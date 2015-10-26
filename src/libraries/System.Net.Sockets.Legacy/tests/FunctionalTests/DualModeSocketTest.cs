@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,6 +22,18 @@ namespace System.Net.Sockets.Tests
         public DualMode(ITestOutputHelper output)
         {
             _log = TestLogging.GetInstance();
+        }
+
+        private static void AssertDualModeEnabled(Socket socket, IPAddress listenOn)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.True(socket.DualMode);
+            }
+            else
+            {
+                Assert.True((listenOn != IPAddress.IPv6Any && !listenOn.IsIPv4MappedToIPv6) || socket.DualMode);
+            }
         }
 
         #region Constructor and Property
@@ -953,7 +966,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4005, PlatformID.AnyUnix)]
         public void AcceptV6BoundToSpecificV6_Success()
         {
             Accept_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
@@ -1007,7 +1019,7 @@ namespace System.Net.Sockets.Tests
                 SocketClient client = new SocketClient(serverSocket, connectTo, port);
                 Socket clientSocket = serverSocket.Accept();
                 Assert.True(clientSocket.Connected);
-                Assert.True(clientSocket.DualMode);
+                AssertDualModeEnabled(clientSocket, listenOn);
                 Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
             }
         }
@@ -1029,7 +1041,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4005, PlatformID.AnyUnix)]
         public void BeginAcceptV6BoundToSpecificV6_Success()
         {
             DualModeConnect_BeginAccept_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
@@ -1087,7 +1098,7 @@ namespace System.Net.Sockets.Tests
                 SocketClient client = new SocketClient(serverSocket, connectTo, port);
                 Socket clientSocket = serverSocket.EndAccept(async);
                 Assert.True(clientSocket.Connected);
-                Assert.True(clientSocket.DualMode);
+                AssertDualModeEnabled(clientSocket, listenOn);
                 Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
                 Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
             }
@@ -1110,7 +1121,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4005, PlatformID.AnyUnix)]
         public void AcceptAsyncV6BoundToSpecificV6_Success()
         {
             DualModeConnect_AcceptAsync_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
@@ -1181,7 +1191,7 @@ namespace System.Net.Sockets.Tests
                 Socket clientSocket = args.AcceptSocket;
                 Assert.NotNull(clientSocket);
                 Assert.True(clientSocket.Connected);
-                Assert.True(clientSocket.DualMode);
+                AssertDualModeEnabled(clientSocket, listenOn);
                 Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
                 Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
             }
@@ -1561,10 +1571,27 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4005, PlatformID.AnyUnix)]
-        public void ReceiveFromV4BoundToSpecificV6_NotReceived()
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ReceiveFromV4BoundToSpecificV6_NotReceived_Windows()
         {
             Assert.Throws<SocketException>(() =>
+            {
+                ReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
+            });
+        }
+
+        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        //       normal IPv6 socket once the socket is bound to an IPv6-specific
+        //       address. As a result, the argument validation checks in
+        //       ReceiveFrom that check that the supplied endpoint is compatible
+        //       with the socket's address family fail. We've decided that this is
+        //       an acceptable difference due to the extra state that would otherwise
+        //       be necessary to emulate the Winsock behavior.
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void ReceiveFromV4BoundToSpecificV6_NotReceived_Unix()
+        {
+            Assert.Throws<ArgumentException>(() =>
             {
                 ReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
             });
@@ -1674,10 +1701,27 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4005, PlatformID.AnyUnix)]
-        public void BeginReceiveFromV4BoundToSpecificV6_NotReceived()
+        [PlatformSpecific(PlatformID.Windows)]
+        public void BeginReceiveFromV4BoundToSpecificV6_NotReceived_Windows()
         {
             Assert.Throws<TimeoutException>(() =>
+            {
+                BeginReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, expectedToTimeout: true);
+            });
+        }
+
+        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        //       normal IPv6 socket once the socket is bound to an IPv6-specific
+        //       address. As a result, the argument validation checks in
+        //       ReceiveFrom that check that the supplied endpoint is compatible
+        //       with the socket's address family fail. We've decided that this is
+        //       an acceptable difference due to the extra state that would otherwise
+        //       be necessary to emulate the Winsock behavior.
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void BeginReceiveFromV4BoundToSpecificV6_NotReceived_Unix()
+        {
+            Assert.Throws<ArgumentException>(() =>
             {
                 BeginReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, expectedToTimeout: true);
             });
@@ -1808,7 +1852,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4005, PlatformID.AnyUnix)]
         public void ReceiveFromAsyncV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1961,10 +2004,27 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4005, PlatformID.AnyUnix)]
-        public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived()
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived_Windows()
         {
             Assert.Throws<SocketException>(() =>
+            {
+                ReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
+            });
+        }
+
+        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        //       normal IPv6 socket once the socket is bound to an IPv6-specific
+        //       address. As a result, the argument validation checks in
+        //       ReceiveFrom that check that the supplied endpoint is compatible
+        //       with the socket's address family fail. We've decided that this is
+        //       an acceptable difference due to the extra state that would otherwise
+        //       be necessary to emulate the Winsock behavior.
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived_Unix()
+        {
+            Assert.Throws<ArgumentException>(() =>
             {
                 ReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
             });
@@ -1980,7 +2040,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void ReceiveMessageFromV4BoundToAnyV6_Success()
         {
             ReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -1997,17 +2057,30 @@ namespace System.Net.Sockets.Tests
                 SocketFlags socketFlags = SocketFlags.None;
                 IPPacketInformation ipPacketInformation;
                 int received = 0;
-                Assert.Throws<SocketException>(() =>
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    // This is a false start.
-                    // http://msdn.microsoft.com/en-us/library/system.net.sockets.socket.receivemessagefrom.aspx
-                    // "...the returned IPPacketInformation object will only be valid for packets which arrive at the
-                    // local computer after the socket option has been set. If a socket is sent packets between when
-                    // it is bound to a local endpoint (explicitly by the Bind method or implicitly by one of the Connect,
-                    // ConnectAsync, SendTo, or SendToAsync methods) and its first call to the ReceiveMessageFrom method,
-                    // calls to ReceiveMessageFrom method will return invalid IPPacketInformation objects for these packets."
-                    received = serverSocket.ReceiveMessageFrom(new byte[1], 0, 1, ref socketFlags, ref receivedFrom, out ipPacketInformation);
-                });
+                    Assert.Throws<SocketException>(() =>
+                    {
+                        // This is a false start.
+                        // http://msdn.microsoft.com/en-us/library/system.net.sockets.socket.receivemessagefrom.aspx
+                        // "...the returned IPPacketInformation object will only be valid for packets which arrive at the
+                        // local computer after the socket option has been set. If a socket is sent packets between when
+                        // it is bound to a local endpoint (explicitly by the Bind method or implicitly by one of the Connect,
+                        // ConnectAsync, SendTo, or SendToAsync methods) and its first call to the ReceiveMessageFrom method,
+                        // calls to ReceiveMessageFrom method will return invalid IPPacketInformation objects for these packets."
+                        received = serverSocket.ReceiveMessageFrom(new byte[1], 0, 1, ref socketFlags, ref receivedFrom, out ipPacketInformation);
+                    });
+                }
+                else
+                {
+                    // *nix may throw either a SocketException or ArgumentException in this case, depending on how the IP stack
+                    // behaves w.r.t. dual-mode sockets bound to IPv6-specific addresses.
+                    Assert.ThrowsAny<Exception>(() =>
+                    {
+                        received = serverSocket.ReceiveMessageFrom(new byte[1], 0, 1, ref socketFlags, ref receivedFrom, out ipPacketInformation);
+                    });
+                }
 
                 SocketUdpClient client = new SocketUdpClient(serverSocket, connectTo, port);
 
@@ -2070,28 +2143,28 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToSpecificMappedV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact] // Base case
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToAnyMappedV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToSpecificV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToAnyV4_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.Any, IPAddress.Loopback);
@@ -2121,10 +2194,27 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4005, PlatformID.AnyUnix)]
-        public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived()
+        [PlatformSpecific(PlatformID.Windows)]
+        public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived_Windows()
         {
             Assert.Throws<TimeoutException>(() =>
+            {
+                BeginReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, expectedToTimeout: true);
+            });
+        }
+
+        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        //       normal IPv6 socket once the socket is bound to an IPv6-specific
+        //       address. As a result, the argument validation checks in
+        //       ReceiveFrom that check that the supplied endpoint is compatible
+        //       with the socket's address family fail. We've decided that this is
+        //       an acceptable difference due to the extra state that would otherwise
+        //       be necessary to emulate the Winsock behavior.
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived_Unix()
+        {
+            Assert.Throws<ArgumentException>(() =>
             {
                 BeginReceiveMessageFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, expectedToTimeout: true);
             });
@@ -2140,7 +2230,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void BeginReceiveMessageFromV4BoundToAnyV6_Success()
         {
             BeginReceiveMessageFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -2230,28 +2320,28 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact] // Base case
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToSpecificMappedV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact] // Base case
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToAnyMappedV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Any.MapToIPv6(), IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToSpecificV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToAnyV4_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.Any, IPAddress.Loopback);
@@ -2281,12 +2371,29 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4005, PlatformID.AnyUnix)]
-        public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived()
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived_Windows()
         {
             Assert.Throws<TimeoutException>(() =>
             {
                 ReceiveMessageFromAsync_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
+            });
+        }
+
+        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        //       normal IPv6 socket once the socket is bound to an IPv6-specific
+        //       address. As a result, the argument validation checks in
+        //       ReceiveFrom that check that the supplied endpoint is compatible
+        //       with the socket's address family fail. We've decided that this is
+        //       an acceptable difference due to the extra state that would otherwise
+        //       be necessary to emulate the Winsock behavior.
+        [Fact]
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived_Unix()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                ReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
             });
         }
 
@@ -2300,7 +2407,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(4004, PlatformID.AnyUnix)]
+        [ActiveIssue(4004, PlatformID.OSX)]
         public void ReceiveMessageFromAsyncV4BoundToAnyV6_Success()
         {
             ReceiveMessageFromAsync_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
