@@ -560,14 +560,11 @@ namespace System.Net.Http
 
                         if (!TryParseStatusLine(response, responseHeader, easy))
                         {
-                            int colonIndex = responseHeader.IndexOf(':');
-
-                            // Skip malformed header lines that are missing the colon character.
-                            if (colonIndex > 0)
+                            int index = 0;
+                            string headerName = CurlResponseParseUtils.ReadHeaderName(responseHeader, out index);
+                            if (headerName != null)
                             {
-                                string headerName = responseHeader.Substring(0, colonIndex);
-                                string headerValue = responseHeader.SubstringTrim(colonIndex + 1);
-
+                                string headerValue = responseHeader.Substring(index).Trim();
                                 if (!response.Headers.TryAddWithoutValidation(headerName, headerValue))
                                 {
                                     response.Content.Headers.TryAddWithoutValidation(headerName, headerValue);
