@@ -6069,7 +6069,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (cfg->method->save_lmf && !cfg->llvm_only)
 		LLVM_FAILURE (ctx, "lmf");
 
-	if (sig->pinvoke && cfg->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
+	if (sig->pinvoke && cfg->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE && !cfg->llvm_only)
 		LLVM_FAILURE (ctx, "pinvoke signature");
 
 	header = cfg->header;
