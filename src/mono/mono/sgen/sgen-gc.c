@@ -3133,7 +3133,7 @@ sgen_gc_init (void)
 			} else if (g_str_has_prefix (opt, "binary-protocol=")) {
 				char *filename = strchr (opt, '=') + 1;
 				char *colon = strrchr (filename, ':');
-				size_t limit = -1;
+				size_t limit = 0;
 				if (colon) {
 					if (!mono_gc_parse_environment_string_extract_number (colon + 1, &limit)) {
 						sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring limit.", "Binary protocol file size limit must be an integer.");
