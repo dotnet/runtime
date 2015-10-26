@@ -12572,8 +12572,10 @@ FIELD_DONE:
                         // Unbox nullable helper returns a TYP_STRUCT.
                         // We need to spill it to a temp so than we can take the address of it.
                         // We need the temp so we can pass its address to the unbox_nullable jit helper function.
-                        // This is needed for 2 register returned nullables.
-                        // The one register ones are normalized. For the bigger than 16 bytes ones there is retbuf already passed in rdi.
+                        // This is needed for nullables returned in 2 registers.
+                        // The ones returned in a single register are normalized.
+                        // For the bigger than 16 bytes nullables there is retbuf already passed in 
+                        // rdi/rsi (depending whether there is a "this").
 
                         unsigned   tmp = lvaGrabTemp(true DEBUGARG("UNBOXing a register returnable nullable"));
                         lvaTable[tmp].lvDontPromote = true;
@@ -12585,14 +12587,34 @@ FIELD_DONE:
 
                         op2 = gtNewLclvNode(tmp, TYP_STRUCT);
                         op2 = gtNewOperNode(GT_ADDR, TYP_BYREF, op2);
-                        op1 = gtNewOperNode(GT_COMMA, TYP_STRUCT, op1, op2);
+                        op1 = gtNewOperNode(GT_COMMA, TYP_BYREF, op1, op2);
+
+                        // In this case the return value of the unbox helper is TYP_BYREF.
+                        // Make sure the right type is placed on the operand type stack.
+                        impPushOnStack(op1, tiRetVal);
+
+                        // Load the struct.
+                        oper = GT_LDOBJ;
+
+                        assert(op1->gtType == TYP_BYREF);
+                        assert(!tiVerificationNeeded || tiRetVal.IsByRef());
+
+                        goto LDOBJ;
+                    }
+                    else
+                    {
+                        // If non register passable struct we have it materialized in the RetBuf.
+                        assert(op1->gtType == TYP_STRUCT);
+                        tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
+                        assert(tiRetVal.IsValueClass());
                     }
                 }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
+#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                 assert(op1->gtType == TYP_STRUCT);
                 tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
                 assert(tiRetVal.IsValueClass());
+#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             }
 
             impPushOnStack(op1, tiRetVal);                    
