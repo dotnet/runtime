@@ -335,6 +335,8 @@ extern "C" int32_t GetNameInfo(const uint8_t* address,
                                int32_t serviceLength,
                                int32_t flags);
 
+extern "C" int32_t GetDomainName(uint8_t* name, int32_t nameLength);
+
 extern "C" int32_t GetHostName(uint8_t* name, int32_t nameLength);
 
 extern "C" Error GetIPSocketAddressSizes(int32_t* ipv4SocketAddressSize, int32_t* ipv6SocketAddressSize);

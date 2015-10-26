@@ -21,6 +21,10 @@
 #include <termios.h>
 #include <unistd.h>
 
+#if HAVE_INOTIFY_INIT || HAVE_INOTIFY_ADD_WATCH || HAVE_INOTIFY_RM_WATCH
+#include <sys/inotify.h>
+#endif
+
 #if HAVE_STAT64
 #define stat_ stat64
 #define fstat_ fstat64
@@ -103,6 +107,23 @@ static_assert(PAL_POSIX_FADV_SEQUENTIAL == POSIX_FADV_SEQUENTIAL, "");
 static_assert(PAL_POSIX_FADV_WILLNEED == POSIX_FADV_WILLNEED, "");
 static_assert(PAL_POSIX_FADV_DONTNEED == POSIX_FADV_DONTNEED, "");
 static_assert(PAL_POSIX_FADV_NOREUSE == POSIX_FADV_NOREUSE, "");
+#endif
+
+// Validate our NotifyEvents enum values are correct for the platform
+#if HAVE_INOTIFY_INIT || HAVE_INOTIFY_ADD_WATCH || HAVE_INOTIFY_RM_WATCH
+static_assert(PAL_IN_ACCESS == IN_ACCESS, "");
+static_assert(PAL_IN_MODIFY == IN_MODIFY, "");
+static_assert(PAL_IN_ATTRIB == IN_ATTRIB, "");
+static_assert(PAL_IN_MOVED_FROM == IN_MOVED_FROM, "");
+static_assert(PAL_IN_MOVED_TO == IN_MOVED_TO, "");
+static_assert(PAL_IN_CREATE == IN_CREATE, "");
+static_assert(PAL_IN_DELETE == IN_DELETE, "");
+static_assert(PAL_IN_Q_OVERFLOW == IN_Q_OVERFLOW, "");
+static_assert(PAL_IN_IGNORED == IN_IGNORED, "");
+static_assert(PAL_IN_ONLYDIR == IN_ONLYDIR, "");
+static_assert(PAL_IN_DONT_FOLLOW == IN_DONT_FOLLOW, "");
+static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK, "");
+static_assert(PAL_IN_ISDIR == IN_ISDIR, "");
 #endif
 
 static void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
@@ -817,7 +838,7 @@ extern "C" int32_t GetWindowSize(WinSize* windowSize)
 
 extern "C" int32_t IsATty(int fd)
 {
-	return isatty(fd);
+    return isatty(fd);
 }
 
 extern "C" int32_t ReadStdinUnbuffered(void* buffer, int32_t bufferSize)
@@ -851,5 +872,39 @@ extern "C" int32_t ReadStdinUnbuffered(void* buffer, int32_t bufferSize)
 #endif
 }
 
+extern "C" int32_t INotifyInit()
+{
+#if HAVE_INOTIFY_INIT
+    return inotify_init();
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
 
+extern "C" int32_t INotifyAddWatch(int32_t fd, const char* pathName, uint32_t mask)
+{
+    assert(fd >= 0);
+    assert(pathName != nullptr);
 
+#if HAVE_INOTIFY_ADD_WATCH
+    return inotify_add_watch(fd, pathName, mask);
+#else
+    (void)mask;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+extern "C" int32_t INotifyRemoveWatch(int32_t fd, int32_t wd)
+{
+    assert(fd >= 0);
+    assert(wd >= 0);
+
+#if HAVE_INOTIFY_RM_WATCH
+    return inotify_rm_watch(fd, wd);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
+}

@@ -184,8 +184,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs" >
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getdomainname.cs" >
-      <Link>Common\Interop\Unix\libc\Interop.getdomainname.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetDomainName.cs" >
+      <Link>Common\Interop\Unix\System.Native\Interop.GetDomainName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs" >
       <Link>Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
