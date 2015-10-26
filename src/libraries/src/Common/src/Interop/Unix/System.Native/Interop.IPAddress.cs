@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 internal static partial class Interop
 {
@@ -42,7 +43,7 @@ internal static partial class Interop
         [DllImport(Libraries.SystemNative)]
         internal unsafe static extern int IPAddressToString(byte* address, int addressLength, bool isIPv6, byte* str, int stringLength, uint scope = 0);
 
-        internal unsafe static uint IPAddressToString(byte[] address, bool isIPv6, System.Text.StringBuilder addressString, uint scope = 0)
+        internal unsafe static uint IPAddressToString(byte[] address, bool isIPv6, StringBuilder addressString, uint scope = 0)
         {
             Debug.Assert(address != null);
             Debug.Assert((address.Length == IPv4AddressBytes) || (address.Length == IPv6AddressBytes));
