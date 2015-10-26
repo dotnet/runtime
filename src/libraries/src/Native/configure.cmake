@@ -226,6 +226,18 @@ check_include_files(
     linux/rtnetlink.h
     HAVE_LINUX_RTNETLINK_H)
 
+check_function_exists(
+    inotify_init
+    HAVE_INOTIFY_INIT)
+
+check_function_exists(
+    inotify_add_watch
+    HAVE_INOTIFY_ADD_WATCH)
+
+check_function_exists(
+    inotify_rm_watch
+    HAVE_INOTIFY_RM_WATCH)
+
 set (CMAKE_REQUIRED_LIBRARIES)
 
 configure_file(

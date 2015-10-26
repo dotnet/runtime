@@ -8,18 +8,18 @@ using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        private static extern unsafe int getdomainname(byte* name, int len);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        private static extern unsafe int GetDomainName(byte* name, int len);
 
-        internal static unsafe string getdomainname()
+        internal static unsafe string GetDomainName()
         {
             const int HOST_NAME_MAX = 255; // man getdomainname
             const int ArrLength = HOST_NAME_MAX + 1;
 
             byte* name = stackalloc byte[ArrLength];
-            int err = getdomainname(name, ArrLength);
+            int err = GetDomainName(name, ArrLength);
             if (err != 0)
             {
                 // This should never happen.  According to the man page,

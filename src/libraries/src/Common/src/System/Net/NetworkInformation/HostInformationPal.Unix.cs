@@ -12,7 +12,7 @@ namespace System.Net.NetworkInformation
 
         public static string GetDomainName()
         {
-            return Interop.libc.getdomainname();
+            return Interop.Sys.GetDomainName();
         }
     }
 }
