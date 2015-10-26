@@ -30,19 +30,6 @@ Revision History:
 #include "pal/dbgmsg.h"
 
 #include <pthread.h>
-#if !USE_SIGNALS_FOR_THREAD_SUSPENSION
-#if (HAVE_PTHREAD_SUSPEND || HAVE_PTHREAD_SUSPEND_NP) && (HAVE_PTHREAD_RESUME || HAVE_PTHREAD_RESUME_NP || HAVE_PTHREAD_CONTINUE || HAVE_PTHREAD_CONTINUE_NP)
-#if HAVE_PTHREAD_NP_H
-#include <pthread_np.h>
-#endif
-#elif HAVE_MACH_THREADS
-#include <mach/thread_act.h>
-#include "sys/types.h"
-#include "sys/mman.h"
-#else
-#error "Don't know how to suspend and resume threads on this platform!"
-#endif
-#endif // !USE_SIGNALS_FOR_THREAD_SUSPENSION
 #include <unistd.h>
 #include <errno.h>
 #include <stddef.h>
