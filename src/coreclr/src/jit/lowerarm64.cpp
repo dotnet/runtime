@@ -1643,7 +1643,7 @@ void Lowering::LowerRotate(GenTreePtr tree)
         }
         else
         {
-            GenTreePtr tmp = gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
+            GenTreePtr tmp = comp->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
             rotateLeftIndexNode->InsertAfterSelf(tmp);
             tree->gtOp.gtOp2 = tmp;
         }
