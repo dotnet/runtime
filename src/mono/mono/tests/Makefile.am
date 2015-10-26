@@ -1368,15 +1368,25 @@ test-oom: $(OOM_TESTS)
 if HOST_WIN32
 test-unhandled-exception-2:
 else
-test-unhandled-exception-2: unhandled-exception.exe
-	@echo "Testing unhandled-exception_1 ..."; $(RUNTIME) $+ 1 1> unhandled-exception_1.exe.stdout 2> unhandled-exception_1.exe.stderr; if test "x$$?" != "x1";   then exit 1; fi;	\
-	 echo "Testing unhandled-exception_2 ..."; $(RUNTIME) $+ 2 1> unhandled-exception_2.exe.stdout 2> unhandled-exception_2.exe.stderr; if test "x$$?" != "x0";   then exit 2; fi;	\
-	 echo "Testing unhandled-exception_3 ..."; $(RUNTIME) $+ 3 1> unhandled-exception_3.exe.stdout 2> unhandled-exception_3.exe.stderr; if test "x$$?" != "x0";   then exit 3; fi;	\
-	 echo "Testing unhandled-exception_4 ..."; $(RUNTIME) $+ 4 1> unhandled-exception_4.exe.stdout 2> unhandled-exception_4.exe.stderr; if test "x$$?" != "x0";   then exit 4; fi;	\
-	 echo "Testing unhandled-exception_5 ..."; $(RUNTIME) $+ 5 1> unhandled-exception_5.exe.stdout 2> unhandled-exception_5.exe.stderr; if test "x$$?" != "x255"; then exit 5; fi;	\
-	 echo "Testing unhandled-exception_6 ..."; $(RUNTIME) $+ 6 1> unhandled-exception_6.exe.stdout 2> unhandled-exception_6.exe.stderr; if test "x$$?" != "x0";   then exit 6; fi;	\
-	 echo "Testing unhandled-exception_7 ..."; $(RUNTIME) $+ 7 1> unhandled-exception_7.exe.stdout 2> unhandled-exception_7.exe.stderr; if test "x$$?" != "x0";   then exit 7; fi;	\
-	 echo "Testing unhandled-exception_8 ..."; $(RUNTIME) $+ 8 1> unhandled-exception_8.exe.stdout 2> unhandled-exception_8.exe.stderr; if test "x$$?" != "x3";   then exit 8; fi
+test-unhandled-exception-2: test-unhandled-exception-2-1 test-unhandled-exception-2-2 test-unhandled-exception-2-3 test-unhandled-exception-2-4	\
+		 test-unhandled-exception-2-5 test-unhandled-exception-2-6 test-unhandled-exception-2-7 test-unhandled-exception-2-8
+
+test-unhandled-exception-2-1: unhandled-exception-1.exe test-runner.exe
+	@$(RUNTIME) ./test-runner.exe --expected-exit-code 1 $<
+test-unhandled-exception-2-2: unhandled-exception-2.exe test-runner.exe
+	@$(RUNTIME) ./test-runner.exe --expected-exit-code 0 $<
+test-unhandled-exception-2-3: unhandled-exception-3.exe test-runner.exe
+	@$(RUNTIME) ./test-runner.exe --expected-exit-code 255 $<
+test-unhandled-exception-2-4: unhandled-exception-4.exe test-runner.exe
+	@$(RUNTIME) ./test-runner.exe --expected-exit-code 0 $<
+test-unhandled-exception-2-5: unhandled-exception-5.exe test-runner.exe
+	@$(RUNTIME) ./test-runner.exe --expected-exit-code 255 $<
+test-unhandled-exception-2-6: unhandled-exception-6.exe test-runner.exe
+	@$(RUNTIME) ./test-runner.exe --expected-exit-code 0 $<
+test-unhandled-exception-2-7: unhandled-exception-7.exe test-runner.exe
+	@$(RUNTIME) ./test-runner.exe --expected-exit-code 0 $<
+test-unhandled-exception-2-8: unhandled-exception-8.exe test-runner.exe
+	@$(RUNTIME) ./test-runner.exe --expected-exit-code 3 $<
 endif
 
 EXTRA_DIST += appdomain-loader.cs appdomain-tester.cs
