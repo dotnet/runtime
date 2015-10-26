@@ -6,17 +6,10 @@
 
 #include <assert.h>
 #include <string.h>
+#include <vector>
 
 #include "locale.hpp"
-
-#include "unicode/dcfmtsym.h" //decimal symbols
-#include "unicode/dtfmtsym.h" //date symbols
-#include "unicode/smpdtfmt.h" //date format
-#include "unicode/localpointer.h"
-
-// invariant character definitions used by ICU
-#define UCHAR_SPACE ((UChar)0x0020)   // space
-#define UCHAR_NBSPACE ((UChar)0x00A0) // space
+#include "holders.h"
 
 // Enum that corresponds to managed enum CultureData.LocaleStringData.
 // The numeric values of the enum members match their Win32 counterparts.
@@ -57,26 +50,20 @@ GetLocaleInfoDecimalFormatSymbol
 
 Obtains the value of a DecimalFormatSymbols
 */
-UErrorCode GetLocaleInfoDecimalFormatSymbol(const Locale& locale,
-                                            DecimalFormatSymbols::ENumberFormatSymbol symbol,
-                                            UChar* value,
-                                            int32_t valueLength)
+UErrorCode
+GetLocaleInfoDecimalFormatSymbol(const char* locale, UNumberFormatSymbol symbol, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
-    LocalPointer<DecimalFormatSymbols> decimalsymbols(new DecimalFormatSymbols(locale, status));
-    if (decimalsymbols == NULL)
-    {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
+    UNumberFormat* pFormat = unum_open(UNUM_DECIMAL, nullptr, 0, locale, nullptr, &status);
+    UNumberFormatHolder formatHolder(pFormat, status);
 
     if (U_FAILURE(status))
     {
         return status;
     }
 
-    UnicodeString s = decimalsymbols->getSymbol(symbol);
+    unum_getSymbol(pFormat, symbol, value, valueLength, &status);
 
-    s.extract(value, valueLength, status);
     return status;
 }
 
@@ -86,9 +73,9 @@ GetDigitSymbol
 
 Obtains the value of a Digit DecimalFormatSymbols
 */
-UErrorCode GetDigitSymbol(const Locale& locale,
+UErrorCode GetDigitSymbol(const char* locale,
                           UErrorCode previousStatus,
-                          DecimalFormatSymbols::ENumberFormatSymbol symbol,
+                          UNumberFormatSymbol symbol,
                           int digit,
                           UChar* value,
                           int32_t valueLength)
@@ -105,31 +92,69 @@ UErrorCode GetDigitSymbol(const Locale& locale,
 Function:
 GetLocaleInfoAmPm
 
-Obtains the value of a DateFormatSymbols Am or Pm string
+Obtains the value of the AM or PM string for a locale.
 */
-UErrorCode GetLocaleInfoAmPm(const Locale& locale, bool am, UChar* value, int32_t valueLength)
+UErrorCode GetLocaleInfoAmPm(const char* locale, bool am, UChar* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
-    LocalPointer<DateFormatSymbols> dateFormatSymbols(new DateFormatSymbols(locale, status));
-    if (dateFormatSymbols == NULL)
-    {
-        status = U_MEMORY_ALLOCATION_ERROR;
-    }
+    UDateFormat* pFormat = udat_open(UDAT_DEFAULT, UDAT_DEFAULT, locale, nullptr, 0, nullptr, 0, &status);
+    UDateFormatHolder formatHolder(pFormat, status);
 
     if (U_FAILURE(status))
     {
         return status;
     }
 
-    int32_t count = 0;
-    const UnicodeString* tempStr = dateFormatSymbols->getAmPmStrings(count);
-    int offset = am ? 0 : 1;
-    if (offset >= count)
+    udat_getSymbols(pFormat, UDAT_AM_PMS, am ? 0 : 1, value, valueLength, &status);
+
+    return status;
+}
+
+/*
+Function:
+GetLocaleIso639LanguageName
+
+Gets the language name for a locale (via uloc_getLanguage) and converts the result to UChars
+*/
+UErrorCode GetLocaleIso639LanguageName(const char* locale, UChar* value, int32_t valueLength)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    int32_t length = uloc_getLanguage(locale, nullptr, 0, &status);
+
+    std::vector<char> buf(length + 1, '\0');
+    status = U_ZERO_ERROR;
+
+    uloc_getLanguage(locale, buf.data(), length + 1, &status);
+
+    if (U_SUCCESS(status))
     {
-        return U_INTERNAL_PROGRAM_ERROR;
+        status = u_charsToUChars_safe(buf.data(), value, valueLength);
     }
 
-    tempStr[offset].extract(value, valueLength, status);
+    return status;
+}
+
+/*
+Function:
+GetLocaleIso3166CountryName
+
+Gets the country name for a locale (via uloc_getCountry) and converts the result to UChars
+*/
+UErrorCode GetLocaleIso3166CountryName(const char* locale, UChar* value, int32_t valueLength)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    int32_t length = uloc_getCountry(locale, nullptr, 0, &status);
+
+    std::vector<char> buf(length + 1, '\0');
+    status = U_ZERO_ERROR;
+
+    uloc_getCountry(locale, buf.data(), length + 1, &status);
+
+    if (U_SUCCESS(status))
+    {
+        status = u_charsToUChars_safe(buf.data(), value, valueLength);
+    }
+
     return status;
 }
 
@@ -143,85 +168,71 @@ Returns 1 for success, 0 otherwise
 extern "C" int32_t
 GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, UChar* value, int32_t valueLength)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode status = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
+
+    if (U_FAILURE(status))
     {
         return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
     }
 
-    UnicodeString str;
-    UErrorCode status = U_ZERO_ERROR;
     switch (localeStringData)
     {
         case LocalizedDisplayName:
-            locale.getDisplayName(str);
-            str.extract(value, valueLength, status);
+            uloc_getDisplayName(locale, uloc_getDefault(), value, valueLength, &status);
             break;
         case EnglishDisplayName:
-            locale.getDisplayName(Locale::getEnglish(), str);
-            str.extract(value, valueLength, status);
+            uloc_getDisplayName(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case NativeDisplayName:
-            locale.getDisplayName(locale, str);
-            str.extract(value, valueLength, status);
+            uloc_getDisplayName(locale, locale, value, valueLength, &status);
             break;
         case LocalizedLanguageName:
-            locale.getDisplayLanguage(str);
-            str.extract(value, valueLength, status);
+            uloc_getDisplayLanguage(locale, uloc_getDefault(), value, valueLength, &status);
             break;
         case EnglishLanguageName:
-            locale.getDisplayLanguage(Locale::getEnglish(), str);
-            str.extract(value, valueLength, status);
+            uloc_getDisplayLanguage(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case NativeLanguageName:
-            locale.getDisplayLanguage(locale, str);
-            str.extract(value, valueLength, status);
+            uloc_getDisplayLanguage(locale, locale, value, valueLength, &status);
             break;
         case EnglishCountryName:
-            locale.getDisplayCountry(Locale::getEnglish(), str);
-            str.extract(value, valueLength, status);
+            uloc_getDisplayCountry(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case NativeCountryName:
-            locale.getDisplayCountry(locale, str);
-            str.extract(value, valueLength, status);
+            uloc_getDisplayCountry(locale, locale, value, valueLength, &status);
             break;
         case ListSeparator:
         // fall through
         case ThousandSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(
-                locale, DecimalFormatSymbols::kGroupingSeparatorSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case DecimalSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(
-                locale, DecimalFormatSymbols::kDecimalSeparatorSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_DECIMAL_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case Digits:
-            status = GetDigitSymbol(locale, status, DecimalFormatSymbols::kZeroDigitSymbol, 0, value, valueLength);
-            // symbols kOneDigitSymbol to kNineDigitSymbol are contiguous
-            for (int32_t symbol = DecimalFormatSymbols::kOneDigitSymbol;
-                 symbol <= DecimalFormatSymbols::kNineDigitSymbol;
-                 symbol++)
+            status = GetDigitSymbol(locale, status, UNUM_ZERO_DIGIT_SYMBOL, 0, value, valueLength);
+            // symbols UNUM_ONE_DIGIT to UNUM_NINE_DIGIT are contiguous
+            for (int32_t symbol = UNUM_ONE_DIGIT_SYMBOL; symbol <= UNUM_NINE_DIGIT_SYMBOL; symbol++)
             {
-                int charIndex = symbol - DecimalFormatSymbols::kOneDigitSymbol + 1;
+                int charIndex = symbol - UNUM_ONE_DIGIT_SYMBOL + 1;
                 status = GetDigitSymbol(
-                    locale, status, (DecimalFormatSymbols::ENumberFormatSymbol)symbol, charIndex, value, valueLength);
+                    locale, status, static_cast<UNumberFormatSymbol>(symbol), charIndex, value, valueLength);
             }
             break;
         case MonetarySymbol:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kCurrencySymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_CURRENCY_SYMBOL, value, valueLength);
             break;
         case Iso4217MonetarySymbol:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kIntlCurrencySymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INTL_CURRENCY_SYMBOL, value, valueLength);
             break;
         case MonetaryDecimalSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(
-                locale, DecimalFormatSymbols::kMonetarySeparatorSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case MonetaryThousandSeparator:
-            status = GetLocaleInfoDecimalFormatSymbol(
-                locale, DecimalFormatSymbols::kMonetaryGroupingSeparatorSymbol, value, valueLength);
+            status =
+                GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case AMDesignator:
             status = GetLocaleInfoAmPm(locale, true, value, valueLength);
@@ -230,27 +241,22 @@ GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, 
             status = GetLocaleInfoAmPm(locale, false, value, valueLength);
             break;
         case PositiveSign:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kPlusSignSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PLUS_SIGN_SYMBOL, value, valueLength);
             break;
         case NegativeSign:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kMinusSignSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MINUS_SIGN_SYMBOL, value, valueLength);
             break;
         case Iso639LanguageName:
-            status = u_charsToUChars_safe(locale.getLanguage(), value, valueLength);
+            status = GetLocaleIso639LanguageName(locale, value, valueLength);
             break;
         case Iso3166CountryName:
-            // coreclr expects 2-character version, not 3 (3 would correspond to
-            // LOCALE_SISO3166CTRYNAME2 and locale.getISO3Country)
-            status = u_charsToUChars_safe(locale.getCountry(), value, valueLength);
+            status = GetLocaleIso3166CountryName(locale, value, valueLength);
             break;
         case NaNSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kNaNSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_NAN_SYMBOL, value, valueLength);
             break;
         case PositiveInfinitySymbol:
-            status =
-                GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kInfinitySymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INFINITY_SYMBOL, value, valueLength);
             break;
         case ParentName:
         {
@@ -258,7 +264,7 @@ GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, 
             // including invariant locale
             char localeNameTemp[ULOC_FULLNAME_CAPACITY];
 
-            uloc_getParent(locale.getName(), localeNameTemp, ULOC_FULLNAME_CAPACITY, &status);
+            uloc_getParent(locale, localeNameTemp, ULOC_FULLNAME_CAPACITY, &status);
             if (U_SUCCESS(status))
             {
                 status = u_charsToUChars_safe(localeNameTemp, value, valueLength);
@@ -270,10 +276,10 @@ GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, 
             break;
         }
         case PercentSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kPercentSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERCENT_SYMBOL, value, valueLength);
             break;
         case PerMilleSymbol:
-            status = GetLocaleInfoDecimalFormatSymbol(locale, DecimalFormatSymbols::kPerMillSymbol, value, valueLength);
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERMILL_SYMBOL, value, valueLength);
             break;
         default:
             status = U_UNSUPPORTED_ERROR;
@@ -284,85 +290,31 @@ GetLocaleInfoString(const UChar* localeName, LocaleStringData localeStringData, 
 }
 
 /*
-Function:
-NormalizeTimePattern
-
-Convert an ICU non-localized time pattern to .NET format
-*/
-void NormalizeTimePattern(const UnicodeString* srcPattern, UnicodeString* destPattern)
-{
-    // An srcPattern example: "h:mm:ss a"
-    // A destPattern example: "h:mm:ss tt"
-    destPattern->remove();
-
-    bool amPmAdded = false;
-    for (int i = 0; i <= srcPattern->length() - 1; i++)
-    {
-        UChar ch = srcPattern->charAt(i);
-        switch (ch)
-        {
-            case ':':
-            case '.':
-            case 'H':
-            case 'h':
-            case 'm':
-            case 's':
-                destPattern->append(ch);
-                break;
-
-            case UCHAR_SPACE:
-            case UCHAR_NBSPACE:
-                destPattern->append(UCHAR_SPACE);
-                break;
-
-            case 'a': // AM/PM
-                if (!amPmAdded)
-                {
-                    amPmAdded = true;
-                    destPattern->append("tt");
-                }
-                break;
-        }
-    }
-}
-
-/*
 PAL Function:
 GetLocaleTimeFormat
 
-Obtains time format information.
+Obtains time format information (in ICU format, it needs to be coverted to .NET Format).
 Returns 1 for success, 0 otherwise
 */
 extern "C" int32_t GetLocaleTimeFormat(const UChar* localeName, int shortFormat, UChar* value, int32_t valueLength)
 {
-    Locale locale = GetLocale(localeName);
-    if (locale.isBogus())
+    UErrorCode err = U_ZERO_ERROR;
+    char locale[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
+
+    if (U_FAILURE(err))
     {
         return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
     }
 
-    DateFormat::EStyle style = (shortFormat != 0) ? DateFormat::kShort : DateFormat::kMedium;
-    LocalPointer<DateFormat> dateFormat(DateFormat::createTimeInstance(style, locale));
-    if (dateFormat == NULL || !dateFormat.isValid())
-    {
-        return UErrorCodeToBool(U_MEMORY_ALLOCATION_ERROR);
-    }
+    UDateFormatStyle style = (shortFormat != 0) ? UDAT_SHORT : UDAT_MEDIUM;
+    UDateFormat* pFormat = udat_open(style, UDAT_NONE, locale, nullptr, 0, nullptr, 0, &err);
+    UDateFormatHolder formatHolder(pFormat, err);
 
-    // cast to SimpleDateFormat so we can call toPattern()
-    SimpleDateFormat* sdf = dynamic_cast<SimpleDateFormat*>(dateFormat.getAlias());
-    if (sdf == NULL)
-    {
-        return UErrorCodeToBool(U_INTERNAL_PROGRAM_ERROR);
-    }
+    if (U_FAILURE(err))
+        return UErrorCodeToBool(err);
 
-    UnicodeString icuPattern;
-    sdf->toPattern(icuPattern);
+    udat_toPattern(pFormat, false, value, valueLength, &err);
 
-    UnicodeString dotnetPattern;
-    NormalizeTimePattern(&icuPattern, &dotnetPattern);
-
-    UErrorCode status = U_ZERO_ERROR;
-    dotnetPattern.extract(value, valueLength, status);
-
-    return UErrorCodeToBool(status);
+    return UErrorCodeToBool(err);
 }

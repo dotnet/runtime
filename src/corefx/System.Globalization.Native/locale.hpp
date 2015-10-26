@@ -27,9 +27,13 @@ int32_t UErrorCodeToBool(UErrorCode code);
 Function:
 GetLocale
 
-Returns a locale given the locale name
+Converts a managed localeName into something ICU understands and can use as a localeName.
 */
-Locale GetLocale(const UChar* localeName, bool canonize = false);
+int32_t GetLocale(const UChar* localeName,
+                  char* localeNameResult,
+                  int32_t localeNameResultLength,
+                  bool canonicalize,
+                  UErrorCode* err);
 
 /*
 Function:

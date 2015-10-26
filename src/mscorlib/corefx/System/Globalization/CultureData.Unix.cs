@@ -213,7 +213,8 @@ namespace System.Globalization
                 Contract.Assert(false, "[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
                 return String.Empty;
             }
-            return StringBuilderCache.GetStringAndRelease(sb);
+
+            return ConvertIcuTimeFormatString(StringBuilderCache.GetStringAndRelease(sb));
         }
 
         private int GetFirstDayOfWeek()
@@ -253,6 +254,44 @@ namespace System.Globalization
         private static CultureInfo GetUserDefaultCulture()
         {
             return CultureInfo.GetUserDefaultCulture();
+        }
+
+        private static string ConvertIcuTimeFormatString(string icuFormatString)
+        {
+            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
+            bool amPmAdded = false;
+
+            for (int i = 0; i < icuFormatString.Length; i++)
+            {
+                switch(icuFormatString[i])
+                {
+                    case ':':
+                    case '.':
+                    case 'H':
+                    case 'h':
+                    case 'm':
+                    case 's':
+                        sb.Append(icuFormatString[i]);
+                        break;
+
+                    case ' ':
+                    case '\u00A0':
+                        // Convert nonbreaking spaces into regular spaces
+                        sb.Append(' ');
+                        break;
+
+                    case 'a': // AM/PM
+                        if (!amPmAdded)
+                        {
+                            amPmAdded = true;
+                            sb.Append("tt");
+                        }
+                        break;
+
+                }
+            }
+
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
     }
 }
