@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using Xunit;
 
 namespace Tests.ExpressionCompiler.Unary
@@ -12,6 +13,24 @@ namespace Tests.ExpressionCompiler.Unary
     public static class UnaryConvertTests
     {
         #region Test methods
+
+        [Fact]
+        public static void ConvertBoxingTest()
+        {
+            foreach (var e in ConvertBoxing())
+            {
+                VerifyUnaryConvert(e);
+            }
+        }
+
+        [Fact]
+        public static void ConvertUnboxingTest()
+        {
+            foreach (var e in ConvertUnboxing())
+            {
+                VerifyUnaryConvert(e);
+            }
+        }
 
         [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
         public static void CheckUnaryConvertBooleanToNumericTest()
@@ -120,6 +139,131 @@ namespace Tests.ExpressionCompiler.Unary
             }
         }
 
+        private static IEnumerable<Expression> ConvertBoxing()
+        {
+            // C# Language Specification - 4.3.1 Boxing conversions
+            // ----------------------------------------------------
+
+            var factories = new Func<Expression, Type, Expression>[] { Expression.Convert, Expression.ConvertChecked };
+
+            foreach (var factory in factories)
+            {
+                // >>> From any value-type to the type object.
+                // >>> From any value-type to the type System.ValueType.
+                foreach (var t in new[] { typeof(object), typeof(ValueType) })
+                {
+                    yield return factory(Expression.Constant(1, typeof(int)), t);
+                    yield return factory(Expression.Constant(DayOfWeek.Monday, typeof(DayOfWeek)), t);
+                    yield return factory(Expression.Constant(new TimeSpan(3, 14, 15), typeof(TimeSpan)), t);
+
+                    yield return factory(Expression.Constant(1, typeof(int?)), t);
+                    yield return factory(Expression.Constant(DayOfWeek.Monday, typeof(DayOfWeek?)), t);
+                    yield return factory(Expression.Constant(new TimeSpan(3, 14, 15), typeof(TimeSpan?)), t);
+
+                    yield return factory(Expression.Constant(null, typeof(int?)), t);
+                    yield return factory(Expression.Constant(null, typeof(DayOfWeek?)), t);
+                    yield return factory(Expression.Constant(null, typeof(TimeSpan?)), t);
+                }
+
+                // >>> From any non-nullable-value-type to any interface-type implemented by the value-type.
+                foreach (var o in new object[] { 1, DayOfWeek.Monday, new TimeSpan(3, 14, 15) })
+                {
+                    var t = o.GetType();
+                    var c = Expression.Constant(o, t);
+
+                    foreach (var i in t.GetTypeInfo().ImplementedInterfaces)
+                    {
+                        yield return factory(c, i);
+                    }
+                }
+
+                // >>> From any nullable-type to any interface-type implemented by the underlying type of the nullable-type.
+                foreach (var o in new object[] { (int?)1, (DayOfWeek?)DayOfWeek.Monday, (TimeSpan?)new TimeSpan(3, 14, 15) })
+                {
+                    var t = o.GetType();
+                    var n = typeof(Nullable<>).MakeGenericType(t);
+
+                    foreach (var c in new[] { Expression.Constant(o, n), Expression.Constant(null, n) })
+                    {
+                        foreach (var i in t.GetTypeInfo().ImplementedInterfaces)
+                        {
+                            yield return factory(c, i);
+                        }
+                    }
+                }
+
+                // >>> From any enum-type to the type System.Enum.
+                {
+                    yield return factory(Expression.Constant(DayOfWeek.Monday, typeof(DayOfWeek)), typeof(Enum));
+                }
+
+                // >>> From any nullable-type with an underlying enum-type to the type System.Enum.
+                {
+                    yield return factory(Expression.Constant(DayOfWeek.Monday, typeof(DayOfWeek?)), typeof(Enum));
+                    yield return factory(Expression.Constant(null, typeof(DayOfWeek?)), typeof(Enum));
+                }
+            }
+        }
+
+        private static IEnumerable<Expression> ConvertUnboxing()
+        {
+            // C# Language Specification - 4.3.2 Unboxing conversions
+            // ----------------------------------------------------
+
+            var factories = new Func<Expression, Type, Expression>[] { Expression.Convert, Expression.ConvertChecked };
+
+            foreach (var factory in factories)
+            {
+                // >>> From the type object to any value-type.
+                // >>> From the type System.ValueType to any value-type.
+                foreach (var o in new object[] { 1, DayOfWeek.Monday, new TimeSpan(3, 14, 15) })
+                {
+                    var t = o.GetType();
+                    var n = typeof(Nullable<>).MakeGenericType(t);
+
+                    foreach (var f in new[] { typeof(object), typeof(ValueType) })
+                    {
+                        yield return factory(Expression.Constant(o, typeof(object)), t);
+                        yield return factory(Expression.Constant(o, typeof(object)), n);
+                    }
+                }
+
+                // >>> From any interface-type to any non-nullable-value-type that implements the interface-type.
+                foreach (var o in new object[] { 1, DayOfWeek.Monday, new TimeSpan(3, 14, 15) })
+                {
+                    var t = o.GetType();
+
+                    foreach (var i in t.GetTypeInfo().ImplementedInterfaces)
+                    {
+                        yield return factory(Expression.Constant(o, i), t);
+                    }
+                }
+
+                // >>> From any interface-type to any nullable-type whose underlying type implements the interface-type.
+                foreach (var o in new object[] { 1, DayOfWeek.Monday, new TimeSpan(3, 14, 15) })
+                {
+                    var t = o.GetType();
+                    var n = typeof(Nullable<>).MakeGenericType(t);
+
+                    foreach (var i in t.GetTypeInfo().ImplementedInterfaces)
+                    {
+                        yield return factory(Expression.Constant(o, i), n);
+                    }
+                }
+
+                // >>> From the type System.Enum to any enum-type.
+                {
+                    yield return factory(Expression.Constant(DayOfWeek.Monday, typeof(Enum)), typeof(DayOfWeek));
+                }
+
+                // >>> From the type System.Enum to any nullable-type with an underlying enum-type.
+                {
+                    yield return factory(Expression.Constant(DayOfWeek.Monday, typeof(Enum)), typeof(DayOfWeek?));
+                    yield return factory(Expression.Constant(null, typeof(Enum)), typeof(DayOfWeek?));
+                }
+            }
+        }
+
         #endregion
 
         #region Test verifiers
@@ -152,6 +296,23 @@ namespace Tests.ExpressionCompiler.Unary
 #if FEATURE_INTERPRET
             Func<object> i = f.Compile(true);
             Assert.Throws<T>(() => i());
+#endif
+        }
+
+        private static void VerifyUnaryConvert(Expression e)
+        {
+            Expression<Func<object>> f =
+                Expression.Lambda<Func<object>>(
+                    Expression.Convert(e, typeof(object)));
+
+            Func<object> c = f.Compile();
+            object co = c(); // should not throw
+
+#if FEATURE_INTERPRET
+            Func<object> i = f.Compile(true);
+            object io = i(); // should not throw
+            
+            Assert.Equal(io, co);
 #endif
         }
 
