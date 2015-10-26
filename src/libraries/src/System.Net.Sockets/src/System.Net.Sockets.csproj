@@ -56,7 +56,6 @@
     <Compile Include="System\Net\Sockets\_AcceptOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\_BaseOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\_ConnectOverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\_DisconnectOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\_MultipleConnectAsync.cs" />
     <Compile Include="System\Net\Sockets\_OverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\_ReceiveMessageOverlappedAsyncResult.cs" />
