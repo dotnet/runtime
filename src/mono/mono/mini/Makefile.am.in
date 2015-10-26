@@ -424,7 +424,9 @@ common_sources = \
 	mini-llvm-cpp.h	\
 	alias-analysis.c	\
 	mini-cross-helpers.c \
-	arch-stubs.c
+	arch-stubs.c		\
+	llvm-runtime.h		\
+	llvm-runtime.cpp
 
 test_sources = 			\
 	basic-calls.cs 		\
