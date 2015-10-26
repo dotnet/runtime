@@ -11,7 +11,7 @@ namespace System.Net.Security.Tests
 {
     internal static class TestConfiguration
     {
-        public const int TestTimeoutSeconds = 3; 
+        public const int TestTimeoutSeconds = 10;
         
         public const SslProtocols DefaultSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
 
