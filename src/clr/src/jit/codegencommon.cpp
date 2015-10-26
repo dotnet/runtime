@@ -11046,7 +11046,7 @@ var_types Compiler::GetHfaType(GenTreePtr tree)
 
 unsigned Compiler::GetHfaSlots(GenTreePtr tree)
 {
-    return GetHfaSlots(GetHfaClassHandle(tree));
+    return GetHfaSlots(GetStructClassHandle(tree));
 }
 
 var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)

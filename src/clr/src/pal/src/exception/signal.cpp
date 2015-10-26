@@ -101,6 +101,8 @@ int g_signalPipe[2] = { 0, 0 };
 
 DWORD g_dwExternalSignalHandlerThreadId = 0;
 
+
+
 /* public function definitions ************************************************/
 
 /*++
@@ -594,7 +596,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
                 &winContext, 
                 CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
 
-            if (g_safeActivationCheckFunction(winContext.Rip))
+            if (g_safeActivationCheckFunction(GetProgramCounterFromCONTEXT(&winContext)))
             {
                 g_activationFunction(&winContext);
             }
