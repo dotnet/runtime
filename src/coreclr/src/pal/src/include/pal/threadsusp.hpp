@@ -449,22 +449,5 @@ extern const BYTE WAKEUPCODE; // use for pipe reads during self suspend.
 extern LONG g_ssSuspensionLock;
 #endif
 
-#ifdef __cplusplus
-    extern "C"
-    {
-#endif // __cplusplus
-
-        #ifdef _DEBUG
-            void THREADMarkDiagnostic(const char *funcName);
-        #endif // _DEBUG
-
-#ifdef __cplusplus
-    }
-#endif // __cpluplus
-
-#ifndef _DEBUG //  for non debug and checked builds, resolve macros to nothing.
-    #define THREADMarkDiagnostic(funcName)
-#endif // _DEBUG
-
 #endif // _PAL_THREADSUSP_HPP
 
