@@ -20,15 +20,17 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative)]
         internal static extern IntPtr ErrReasonErrorString(ulong error);
 
-        [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
-        private static extern void ErrErrorStringN(ulong e, [Out] StringBuilder buf, int len);
+        [DllImport(Libraries.CryptoNative)]
+        private static unsafe extern void ErrErrorStringN(ulong e, byte* buf, int len);
 
-        private static string ErrErrorStringN(ulong error)
+        private static unsafe string ErrErrorStringN(ulong error)
         {
-            StringBuilder buf = new StringBuilder(1024);
-
-            ErrErrorStringN(error, buf, buf.Capacity);
-            return buf.ToString();
+            var buffer = new byte[1024];
+            fixed (byte* buf = buffer)
+            {
+                ErrErrorStringN(error, buf, buffer.Length);
+                return Marshal.PtrToStringAnsi((IntPtr)buf);
+            }
         }
 
         internal static Exception CreateOpenSslCryptographicException()
