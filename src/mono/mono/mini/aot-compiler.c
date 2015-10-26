@@ -7412,6 +7412,11 @@ emit_llvm_file (MonoAotCompile *acfg)
 	char *command, *opts, *tempbc, *output_fname;
 
 	/* Emit the LLVM code into a .bc file */
+	if (acfg->aot_opts.llvm_only && acfg->aot_opts.asm_only) {
+		mono_llvm_emit_aot_module (acfg->aot_opts.llvm_outfile, g_path_get_basename (acfg->image->name));
+		return TRUE;
+	}
+
 	tempbc = g_strdup_printf ("%s.bc", acfg->tmpbasename);
 	mono_llvm_emit_aot_module (tempbc, g_path_get_basename (acfg->image->name));
 	g_free (tempbc);
