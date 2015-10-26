@@ -59,6 +59,31 @@ namespace Tests.ExpressionCompiler.Unary
             }
         }
 
+        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
+        public static void ConvertUnderlyingTypeToEnumTypeTest()
+        {
+            var enumValue = DayOfWeek.Monday;
+            var value = (int)enumValue;
+
+            foreach (var o in new[] { Expression.Constant(value, typeof(int)), Expression.Constant(value, typeof(ValueType)), Expression.Constant(value, typeof(object)) })
+            {
+                VerifyUnaryConvert(Expression.Convert(o, typeof(DayOfWeek)), enumValue);
+            }
+        }
+
+        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
+        public static void ConvertUnderlyingTypeToNullableEnumTypeTest()
+        {
+            var enumValue = DayOfWeek.Monday;
+            var value = (int)enumValue;
+
+            var cInt = Expression.Constant(value, typeof(int));
+            VerifyUnaryConvert(Expression.Convert(cInt, typeof(DayOfWeek?)), enumValue);
+
+            var cObj = Expression.Constant(value, typeof(object));
+            VerifyUnaryConvertThrows<InvalidCastException>(Expression.Convert(cObj, typeof(DayOfWeek?)));
+        }
+
         private static IEnumerable<KeyValuePair<Expression, object>> ConvertBooleanToNumeric()
         {
             var boolF = Expression.Constant(false);
@@ -311,7 +336,7 @@ namespace Tests.ExpressionCompiler.Unary
 #if FEATURE_INTERPRET
             Func<object> i = f.Compile(true);
             object io = i(); // should not throw
-            
+
             Assert.Equal(io, co);
 #endif
         }
