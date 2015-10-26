@@ -1372,21 +1372,21 @@ test-unhandled-exception-2: test-unhandled-exception-2-1 test-unhandled-exceptio
 		 test-unhandled-exception-2-5 test-unhandled-exception-2-6 test-unhandled-exception-2-7 test-unhandled-exception-2-8
 
 test-unhandled-exception-2-1: unhandled-exception-1.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --expected-exit-code 1 $<
+	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 1 $<
 test-unhandled-exception-2-2: unhandled-exception-2.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --expected-exit-code 0 $<
+	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 0 $<
 test-unhandled-exception-2-3: unhandled-exception-3.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --expected-exit-code 255 $<
+	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 255 $<
 test-unhandled-exception-2-4: unhandled-exception-4.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --expected-exit-code 0 $<
+	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 0 $<
 test-unhandled-exception-2-5: unhandled-exception-5.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --expected-exit-code 255 $<
+	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 255 $<
 test-unhandled-exception-2-6: unhandled-exception-6.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --expected-exit-code 0 $<
+	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 0 $<
 test-unhandled-exception-2-7: unhandled-exception-7.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --expected-exit-code 0 $<
+	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 0 $<
 test-unhandled-exception-2-8: unhandled-exception-8.exe test-runner.exe
-	@$(RUNTIME) ./test-runner.exe --expected-exit-code 3 $<
+	@$(RUNTIME) ./test-runner.exe --testsuite-name $@ --expected-exit-code 3 $<
 endif
 
 EXTRA_DIST += appdomain-loader.cs appdomain-tester.cs
