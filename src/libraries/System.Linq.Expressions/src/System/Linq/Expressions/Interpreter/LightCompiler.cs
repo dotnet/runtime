@@ -1129,7 +1129,13 @@ namespace System.Linq.Expressions.Interpreter
                     _instructions.MarkLabel(whenNull);
                 }
 
+                return;
+            }
 
+            if (typeTo.GetTypeInfo().IsEnum)
+            {
+                _instructions.Emit(NullCheckInstruction.Instance);
+                _instructions.EmitCastToEnum(typeTo);
                 return;
             }
 
