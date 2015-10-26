@@ -31,7 +31,7 @@ internal static partial class Interop
                 IntPtr.Zero, (uint)errorCode, 0, buffer, (uint)buffer.Length, IntPtr.Zero);
             if (result != 0)
             {
-                // result is the # of characters copied to the StringBuilder.
+                // result is the # of characters copied.
                 return new string(buffer, 0, (int)result);
             }
             else

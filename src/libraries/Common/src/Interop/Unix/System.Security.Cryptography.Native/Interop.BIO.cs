@@ -20,8 +20,8 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool BioDestroy(IntPtr a);
 
-        [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
-        internal static extern int BioGets(SafeBioHandle b, [Out] StringBuilder buf, int size);
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int BioGets(SafeBioHandle b, byte[] buf, int size);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern int BioRead(SafeBioHandle b, byte[] data, int len);
