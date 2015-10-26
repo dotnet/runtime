@@ -283,15 +283,15 @@ namespace Internal.Cryptography.Pal
 
                 int bioSize = Interop.Crypto.GetMemoryBioSize(bioHandle);
                 // Ensure space for the trailing \0
-                StringBuilder builder = new StringBuilder(bioSize + 1);
-                int read = Interop.Crypto.BioGets(bioHandle, builder, builder.Capacity);
+                var buf = new byte[bioSize + 1];
+                int read = Interop.Crypto.BioGets(bioHandle, buf, buf.Length);
 
                 if (read < 0)
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
-                return builder.ToString();
+                return Encoding.UTF8.GetString(buf, 0, read);
             }
         }
 

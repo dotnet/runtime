@@ -23,8 +23,8 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
         internal static extern SafeAsn1ObjectHandle ObjTxt2Obj(string s);
 
-        [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
-        private static extern int ObjObj2Txt([Out] StringBuilder buf, int buf_len, IntPtr a);
+        [DllImport(Libraries.CryptoNative)]
+        private static unsafe extern int ObjObj2Txt(byte* buf, int buf_len, IntPtr a);
 
         [DllImport(Libraries.CryptoNative, CharSet = CharSet.Ansi)]
         internal static extern IntPtr GetObjectDefinitionByName(string friendlyName);
@@ -77,14 +77,15 @@ internal static partial class Interop
             }
         }
 
-        internal static string GetOidValue(IntPtr asn1ObjectPtr)
+        internal static unsafe string GetOidValue(IntPtr asn1ObjectPtr)
         {
             // OBJ_obj2txt returns the number of bytes that should have been in the answer, but it does not accept
             // a NULL buffer.  The documentation says "A buffer length of 80 should be more than enough to handle
             // any OID encountered in practice", so start with a buffer of size 80, and try again if required.
-            StringBuilder buf = new StringBuilder(80);
+            const int StackCapacity = 80;
+            byte* bufStack = stackalloc byte[StackCapacity];
 
-            int bytesNeeded = ObjObj2Txt(buf, buf.Capacity, asn1ObjectPtr);
+            int bytesNeeded = ObjObj2Txt(bufStack, StackCapacity, asn1ObjectPtr);
 
             if (bytesNeeded < 0)
             {
@@ -93,15 +94,18 @@ internal static partial class Interop
 
             Debug.Assert(bytesNeeded != 0, "OBJ_obj2txt reported a zero-length response");
 
-            if (bytesNeeded >= buf.Capacity)
+            if (bytesNeeded < StackCapacity)
             {
-                int initialBytesNeeded = bytesNeeded;
+                return Marshal.PtrToStringAnsi((IntPtr)bufStack, bytesNeeded);
+            }
 
-                // bytesNeeded does not count the \0 which will be written on the end (based on OpenSSL 1.0.1f),
-                // so make sure to leave room for it.
-                buf.EnsureCapacity(bytesNeeded + 1);
-
-                bytesNeeded = ObjObj2Txt(buf, buf.Capacity, asn1ObjectPtr);
+            // bytesNeeded does not count the \0 which will be written on the end (based on OpenSSL 1.0.1f),
+            // so make sure to leave room for it.
+            int initialBytesNeeded = bytesNeeded;
+            byte[] bufHeap = new byte[bytesNeeded + 1];
+            fixed (byte* buf = bufHeap)
+            {
+                bytesNeeded = ObjObj2Txt(buf, bufHeap.Length, asn1ObjectPtr);
 
                 if (bytesNeeded < 0)
                 {
@@ -112,14 +116,14 @@ internal static partial class Interop
                     bytesNeeded == initialBytesNeeded,
                     "OBJ_obj2txt changed the required number of bytes for the realloc call");
 
-                if (bytesNeeded >= buf.Capacity)
+                if (bytesNeeded > initialBytesNeeded)
                 {
                     // OBJ_obj2txt is demanding yet more memory
                     throw new CryptographicException();
                 }
-            }
 
-            return buf.ToString();
+                return Marshal.PtrToStringAnsi((IntPtr)buf, bytesNeeded);
+            }
         }
     }
 }
