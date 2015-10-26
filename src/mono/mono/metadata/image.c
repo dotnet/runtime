@@ -51,10 +51,21 @@
 #define INITIAL_IMAGE_SIZE    512
 
 /*
- * Keeps track of the various assemblies loaded
+ * The "loaded images" hashes keep track of the various assemblies and netmodules loaded
+ * There are four, for all combinations of (look up by path or name?) and (normal or reflection-only load?)
  */
-static GHashTable *loaded_images_hash;
-static GHashTable *loaded_images_refonly_hash; // e.g. Assembly.ReflectionOnlyLoad
+enum {
+	IMAGES_HASH_PATH_BIT = 1,
+	IMAGES_HASH_REFONLY_BIT = 2, // Reflection-only, e.g. Assembly.ReflectionOnlyLoad
+	IMAGES_HASH_COUNT = 4
+};
+static GHashTable *loaded_images_hashes [4] = {NULL, NULL, NULL, NULL};
+
+static GHashTable *loaded_images_hash (gboolean path, gboolean refonly)
+{
+	int idx = (path ? IMAGES_HASH_PATH_BIT : 0) | (refonly ? IMAGES_HASH_REFONLY_BIT : 0);
+	return loaded_images_hashes [idx];
+}
 
 static gboolean debug_assembly_unload = FALSE;
 
@@ -203,8 +214,11 @@ mono_images_init (void)
 {
 	mono_mutex_init_recursive (&images_mutex);
 
-	loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
-	loaded_images_refonly_hash = g_hash_table_new (g_str_hash, g_str_equal);
+	int hash_idx;
+	for(hash_idx = 0; hash_idx < IMAGES_HASH_COUNT; hash_idx++)
+	{
+		loaded_images_hashes [hash_idx] = g_hash_table_new (g_str_hash, g_str_equal);
+	}
 
 	debug_assembly_unload = g_getenv ("MONO_DEBUG_ASSEMBLY_UNLOAD") != NULL;
 
@@ -226,12 +240,15 @@ mono_images_cleanup (void)
 
 	mono_mutex_destroy (&images_mutex);
 
-	g_hash_table_iter_init (&iter, loaded_images_hash);
+	// If an assembly image is still loaded at shutdown, this could indicate managed code is still running.
+	// Reflection-only images being still loaded doesn't indicate anything as harmful, so we don't check for it.
+	g_hash_table_iter_init (&iter, loaded_images_hash (TRUE, FALSE));
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&image))
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly image '%s' still loaded at shutdown.", image->name);
 
-	g_hash_table_destroy (loaded_images_hash);
-	g_hash_table_destroy (loaded_images_refonly_hash);
+	int hash_idx;
+	for(hash_idx = 0; hash_idx < IMAGES_HASH_COUNT; hash_idx++)
+		g_hash_table_destroy (loaded_images_hashes [hash_idx]);
 
 	mutex_inited = FALSE;
 }
@@ -1127,23 +1144,35 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	return do_mono_image_load (image, status, care_about_cli, care_about_pecoff);
 }
 
+/**
+ * mono_image_loaded:
+ * @name: path or assembly name of the image to load
+ * @refonly: Check with respect to reflection-only loads?
+ *
+ * This routine verifies that the given image is loaded.
+ * It checks either reflection-only loads only, or normal loads only, as specified by parameter.
+ *
+ * Returns: the loaded MonoImage, or NULL on failure.
+ */
 MonoImage *
 mono_image_loaded_full (const char *name, gboolean refonly)
 {
 	MonoImage *res;
-	GHashTable *loaded_images = refonly ? loaded_images_refonly_hash : loaded_images_hash;
-        
+
 	mono_images_lock ();
-	res = g_hash_table_lookup (loaded_images, name);
+	res = g_hash_table_lookup (loaded_images_hash(FALSE, refonly), name);
+	if (!res)
+		res = g_hash_table_lookup (loaded_images_hash(TRUE, refonly), name);
 	mono_images_unlock ();
+
 	return res;
 }
 
 /**
  * mono_image_loaded:
- * @name: name of the image to load
+ * @name: path or assembly name of the image to load
  *
- * This routine ensures that the given image is loaded.
+ * This routine verifies that the given image is loaded. Reflection-only loads do not count.
  *
  * Returns: the loaded MonoImage, or NULL on failure.
  */
@@ -1175,7 +1204,7 @@ MonoImage *
 mono_image_loaded_by_guid_full (const char *guid, gboolean refonly)
 {
 	GuidData data;
-	GHashTable *loaded_images = refonly ? loaded_images_refonly_hash : loaded_images_hash;
+	GHashTable *loaded_images = loaded_images_hash (TRUE, refonly);
 	data.res = NULL;
 	data.guid = guid;
 
@@ -1195,7 +1224,7 @@ static MonoImage *
 register_image (MonoImage *image)
 {
 	MonoImage *image2;
-	GHashTable *loaded_images = image->ref_only ? loaded_images_refonly_hash : loaded_images_hash;
+	GHashTable *loaded_images = loaded_images_hash (TRUE, image->ref_only);
 
 	mono_images_lock ();
 	image2 = g_hash_table_lookup (loaded_images, image->name);
@@ -1207,9 +1236,11 @@ register_image (MonoImage *image)
 		mono_image_close (image);
 		return image2;
 	}
+
+	GHashTable *loaded_images_by_name = loaded_images_hash (FALSE, image->ref_only);
 	g_hash_table_insert (loaded_images, image->name, image);
-	if (image->assembly_name && (g_hash_table_lookup (loaded_images, image->assembly_name) == NULL))
-		g_hash_table_insert (loaded_images, (char *) image->assembly_name, image);	
+	if (image->assembly_name && (g_hash_table_lookup (loaded_images_by_name, image->assembly_name) == NULL))
+		g_hash_table_insert (loaded_images_by_name, (char *) image->assembly_name, image);
 	mono_images_unlock ();
 
 	return image;
@@ -1302,7 +1333,7 @@ MonoImage *
 mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean refonly)
 {
 	MonoImage *image;
-	GHashTable *loaded_images;
+	GHashTable *loaded_images = loaded_images_hash (TRUE, refonly);
 	char *absfname;
 	
 	g_return_val_if_fail (fname != NULL, NULL);
@@ -1320,7 +1351,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 
 		/* There is little overhead because the OS loader lock is held by LoadLibrary. */
 		mono_images_lock ();
-		image = g_hash_table_lookup (loaded_images_hash, absfname);
+		image = g_hash_table_lookup (loaded_images, absfname);
 		if (image) { // Image already loaded
 			g_assert (image->is_module_handle);
 			if (image->has_entry_point && image->ref_count == 0) {
@@ -1345,7 +1376,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 			last_error = GetLastError ();
 
 		/* mono_image_open_from_module_handle is called by _CorDllMain. */
-		image = g_hash_table_lookup (loaded_images_hash, absfname);
+		image = g_hash_table_lookup (loaded_images, absfname);
 		if (image)
 			mono_image_addref (image);
 		mono_images_unlock ();
@@ -1388,7 +1419,6 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	 * the same image, we discard all but the first copy.
 	 */
 	mono_images_lock ();
-	loaded_images = refonly ? loaded_images_refonly_hash : loaded_images_hash;
 	image = g_hash_table_lookup (loaded_images, absfname);
 	g_free (absfname);
 
@@ -1611,12 +1641,12 @@ gboolean
 mono_image_close_except_pools (MonoImage *image)
 {
 	MonoImage *image2;
-	GHashTable *loaded_images;
+	GHashTable *loaded_images, *loaded_images_by_name;
 	int i;
 
 	g_return_val_if_fail (image != NULL, FALSE);
 
-	/* 
+	/*
 	 * Atomically decrement the refcount and remove ourselves from the hash tables, so
 	 * register_image () can't grab an image which is being closed.
 	 */
@@ -1627,14 +1657,15 @@ mono_image_close_except_pools (MonoImage *image)
 		return FALSE;
 	}
 
-	loaded_images = image->ref_only ? loaded_images_refonly_hash : loaded_images_hash;
+	loaded_images_by_name = loaded_images_hash (FALSE, image->ref_only);
+	loaded_images         = loaded_images_hash (TRUE,  image->ref_only);
 	image2 = g_hash_table_lookup (loaded_images, image->name);
 	if (image == image2) {
 		/* This is not true if we are called from mono_image_open () */
 		g_hash_table_remove (loaded_images, image->name);
 	}
-	if (image->assembly_name && (g_hash_table_lookup (loaded_images, image->assembly_name) == image))
-		g_hash_table_remove (loaded_images, (char *) image->assembly_name);	
+	if (image->assembly_name && (g_hash_table_lookup (loaded_images_by_name, image->assembly_name) == image))
+		g_hash_table_remove (loaded_images_by_name, (char *) image->assembly_name);	
 
 	mono_images_unlock ();
 
