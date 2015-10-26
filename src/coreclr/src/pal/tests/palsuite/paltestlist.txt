@@ -778,9 +778,6 @@ threading/SetEvent/test4/paltest_setevent_test4
 threading/Sleep/test1/paltest_sleep_test1
 threading/SleepEx/test1/paltest_sleepex_test1
 threading/SleepEx/test2/paltest_sleepex_test2
-threading/SuspendThread/test1/paltest_suspendthread_test1
-threading/SuspendThread/test4/paltest_suspendthread_test4
-threading/SuspendThread/test5/paltest_suspendthread_test5
 threading/SwitchToThread/test1/paltest_switchtothread_test1
 threading/ThreadPriority/test1/paltest_threadpriority_test1
 threading/TLS/test1/paltest_tls_test1
