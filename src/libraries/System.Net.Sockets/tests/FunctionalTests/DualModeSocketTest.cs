@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -364,8 +365,7 @@ namespace System.Net.Sockets.Tests
         #region SendTo Async/Event
 
         [Fact] // Base case
-        [PlatformSpecific(PlatformID.Windows)]
-        public void Socket_SendToAsyncV4IPEndPointToV4Host_Throws_Windows()
+        public void Socket_SendToAsyncV4IPEndPointToV4Host_Throws()
         {
             Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
@@ -373,23 +373,23 @@ namespace System.Net.Sockets.Tests
             args.SetBuffer(new byte[1], 0, 1);
             bool async = socket.SendToAsync(args);
             Assert.False(async);
-            Assert.Equal(SocketError.Fault, args.SocketError);
-        }
 
-        // NOTE: on *nix, this API returns ENETUNREACH instead of EFAULT: these platforms
-        //       check the family of the provided socket address before checking its size
-        //       (as long as the socket address is large enough to store an address family).
-        [Fact] // Base case
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        public void Socket_SendToAsyncV4IPEndPointToV4Host_Throws_Unix()
-        {
-            Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-            args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-            args.SetBuffer(new byte[1], 0, 1);
-            bool async = socket.SendToAsync(args);
-            Assert.False(async);
-            Assert.Equal(SocketError.NetworkUnreachable, args.SocketError);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.Equal(SocketError.Fault, args.SocketError);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                // NOTE: on Linux, this API returns ENETUNREACH instead of EFAULT: this platform
+                //       checks the family of the provided socket address before checking its size
+                //       (as long as the socket address is large enough to store an address family).
+                Assert.Equal(SocketError.NetworkUnreachable, args.SocketError);
+            }
+            else
+            {
+                // NOTE: on other Unix platforms, this API returns EINVAL instead of EFAULT.
+                Assert.Equal(SocketError.InvalidArgument, args.SocketError);
+            }
         }
 
         [Fact] // Base case
