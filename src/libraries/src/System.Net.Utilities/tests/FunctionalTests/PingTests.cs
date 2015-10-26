@@ -10,6 +10,7 @@ namespace System.Net.Utilities.Tests
 {
     public class PingTests
     {
+        [ActiveIssue(2487, PlatformID.AnyUnix)]
         [Fact]
         public async Task SendPingAsyncWithIPAddress()
         {
@@ -24,6 +25,7 @@ namespace System.Net.Utilities.Tests
                 });
         }
 
+        [ActiveIssue(2487, PlatformID.AnyUnix)]
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeout()
         {
@@ -38,6 +40,7 @@ namespace System.Net.Utilities.Tests
                 });
         }
 
+        [ActiveIssue(2487, PlatformID.AnyUnix)]
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer()
         {
@@ -55,6 +58,7 @@ namespace System.Net.Utilities.Tests
                 });
         }
 
+        [ActiveIssue(2487, PlatformID.AnyUnix)]
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions()
         {
@@ -72,6 +76,7 @@ namespace System.Net.Utilities.Tests
                 });
         }
 
+        [ActiveIssue(2487, PlatformID.AnyUnix)]
         [Fact]
         public async Task SendPingAsyncWithHost()
         {
@@ -86,6 +91,7 @@ namespace System.Net.Utilities.Tests
                 });
         }
 
+        [ActiveIssue(2487, PlatformID.AnyUnix)]
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeout()
         {
@@ -100,6 +106,7 @@ namespace System.Net.Utilities.Tests
                 });
         }
 
+        [ActiveIssue(2487, PlatformID.AnyUnix)]
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
@@ -117,6 +124,7 @@ namespace System.Net.Utilities.Tests
                 });
         }
 
+        [ActiveIssue(2487, PlatformID.AnyUnix)]
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
@@ -132,6 +140,19 @@ namespace System.Net.Utilities.Tests
 
                     Assert.Equal(buffer, pingReply.Buffer);
                 });
+        }
+
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Fact]
+        public async Task SendAsync_ThrowsPlatformNotSupported_Unix()
+        {
+            // TODO: Remove this test once Ping implemented on Unix
+
+            IPAddress localIpAddress = IPAddress.Loopback;
+            Ping p = new Ping();
+
+            PingException e = await Assert.ThrowsAsync<PingException>(() => p.SendPingAsync(localIpAddress));
+            Assert.IsType<PlatformNotSupportedException>(e.InnerException);
         }
 
         private const int PingCount = 4;
