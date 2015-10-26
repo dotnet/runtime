@@ -2240,11 +2240,19 @@ namespace System.Linq.Expressions.Interpreter
                 var value = frame.Pop();
                 if (value != null)
                 {
-                    if (!TypeUtils.HasReferenceConversion(value.GetType(), _t) &&
-                        !TypeUtils.HasIdentityPrimitiveOrNullableConversion(value.GetType(), _t))
+                    var valueType = value.GetType();
+
+                    if (!TypeUtils.HasReferenceConversion(valueType, _t) &&
+                        !TypeUtils.HasIdentityPrimitiveOrNullableConversion(valueType, _t))
                     {
                         throw new InvalidCastException();
                     }
+
+                    if (!_t.IsAssignableFrom(valueType))
+                    {
+                        throw new InvalidCastException();
+                    }
+
                     frame.Push(value);
                 }
                 else

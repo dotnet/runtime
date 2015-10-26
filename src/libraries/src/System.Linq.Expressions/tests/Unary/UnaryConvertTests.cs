@@ -32,6 +32,15 @@ namespace Tests.ExpressionCompiler.Unary
             }
         }
 
+        [Fact]
+        public static void ConvertUnboxingInvalidCastTest()
+        {
+            foreach (var e in ConvertUnboxingInvalidCast())
+            {
+                VerifyUnaryConvertThrows<InvalidCastException>(e);
+            }
+        }
+
         [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
         public static void CheckUnaryConvertBooleanToNumericTest()
         {
@@ -82,6 +91,17 @@ namespace Tests.ExpressionCompiler.Unary
 
             var cObj = Expression.Constant(value, typeof(object));
             VerifyUnaryConvertThrows<InvalidCastException>(Expression.Convert(cObj, typeof(DayOfWeek?)));
+        }
+
+        [Fact] // [Issue(4019, "https://github.com/dotnet/corefx/issues/4019")]
+        public static void ConvertArrayToIncompatibleTypeTest()
+        {
+            var arr = new object[] { "bar" };
+
+            foreach (var t in new[] { typeof(string[]), typeof(IEnumerable<char>[]) })
+            {
+                VerifyUnaryConvertThrows<InvalidCastException>(Expression.Convert(Expression.Constant(arr), t));
+            }
         }
 
         private static IEnumerable<KeyValuePair<Expression, object>> ConvertBooleanToNumeric()
@@ -285,6 +305,31 @@ namespace Tests.ExpressionCompiler.Unary
                 {
                     yield return factory(Expression.Constant(DayOfWeek.Monday, typeof(Enum)), typeof(DayOfWeek?));
                     yield return factory(Expression.Constant(null, typeof(Enum)), typeof(DayOfWeek?));
+                }
+            }
+        }
+
+        private static IEnumerable<Expression> ConvertUnboxingInvalidCast()
+        {
+            var objs = new object[] { 1, 1L, 1.0f, 1.0, true, TimeSpan.FromSeconds(1), "bar" };
+            var types = objs.Select(o => o.GetType()).ToArray();
+
+            foreach (var o in objs)
+            {
+                var c = Expression.Constant(o, typeof(object));
+
+                foreach (var t in types)
+                {
+                    if (t != o.GetType())
+                    {
+                        yield return Expression.Convert(c, t);
+
+                        if (t.GetTypeInfo().IsValueType)
+                        {
+                            var n = typeof(Nullable<>).MakeGenericType(t);
+                            yield return Expression.Convert(c, n);
+                        }
+                    }
                 }
             }
         }
