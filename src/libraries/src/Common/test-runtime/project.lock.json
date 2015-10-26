@@ -2379,6 +2379,28 @@
           "runtimes/win7/lib/dotnet/System.Globalization.Extensions.dll": {}
         }
       },
+      "runtime.win7.System.IO.Compression/4.1.0-beta-23419": {
+        "type": "package",
+        "dependencies": {
+          "System.Collections": "4.0.10",
+          "System.Diagnostics.Debug": "4.0.10",
+          "System.IO": "4.0.10",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.Extensions": "4.0.10",
+          "System.Runtime.Handles": "4.0.0",
+          "System.Runtime.InteropServices": "4.0.20",
+          "System.Text.Encoding": "4.0.10",
+          "System.Threading": "4.0.0",
+          "System.Threading.Tasks": "4.0.10"
+        },
+        "compile": {
+          "ref/dotnet/_._": {}
+        },
+        "runtime": {
+          "runtimes/win7/lib/dotnet/System.IO.Compression.dll": {}
+        }
+      },
       "runtime.win7.System.IO.FileSystem/4.0.1-beta-23419": {
         "type": "package",
         "dependencies": {
@@ -2725,8 +2747,8 @@
         "native": {
           "runtimes/win7-x64/native/API-MS-Win-Base-Util-L1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-com-l1-1-0.dll": {},
-          "runtimes/win7-x64/native/api-ms-win-core-com-private-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-comm-l1-1-0.dll": {},
+          "runtimes/win7-x64/native/api-ms-win-core-com-private-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-console-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-console-l2-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-datetime-l1-1-0.dll": {},
@@ -2789,13 +2811,13 @@
           "runtimes/win7-x64/native/api-ms-win-core-shlwapi-obsolete-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-shutdown-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-shutdown-l1-1-1.dll": {},
+          "runtimes/win7-x64/native/API-MS-Win-Core-StringAnsi-L1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-string-l1-1-0.dll": {},
           "runtimes/win7-x64/native/API-MS-Win-Core-String-L2-1-0.dll": {},
-          "runtimes/win7-x64/native/api-ms-win-core-string-obsolete-l1-1-0.dll": {},
-          "runtimes/win7-x64/native/api-ms-win-core-string-obsolete-l1-1-1.dll": {},
-          "runtimes/win7-x64/native/API-MS-Win-Core-StringAnsi-L1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-stringloader-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-stringloader-l1-1-1.dll": {},
+          "runtimes/win7-x64/native/api-ms-win-core-string-obsolete-l1-1-0.dll": {},
+          "runtimes/win7-x64/native/api-ms-win-core-string-obsolete-l1-1-1.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-synch-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-synch-l1-2-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-sysinfo-l1-1-0.dll": {},
@@ -2851,6 +2873,12 @@
         "type": "package",
         "native": {
           "runtimes/win7-x64/native/sni.dll": {}
+        }
+      },
+      "runtime.win7-x64.System.IO.Compression.clrcompression/4.0.1-beta-23419": {
+        "type": "package",
+        "native": {
+          "runtimes/win7-x64/native/clrcompression.dll": {}
         }
       },
       "System.AppContext/4.0.1-beta-23419": {
@@ -3209,12 +3237,6 @@
         },
         "compile": {
           "ref/dotnet/System.IO.Compression.dll": {}
-        }
-      },
-      "System.IO.Compression.clrcompression-x64/4.0.0": {
-        "type": "package",
-        "native": {
-          "runtimes/win7-x64/native/clrcompression.dll": {}
         }
       },
       "System.IO.Compression.ZipFile/4.0.1-beta-23419": {
@@ -5072,6 +5094,28 @@
           "runtimes/win7/lib/dotnet/System.Globalization.Extensions.dll": {}
         }
       },
+      "runtime.win7.System.IO.Compression/4.1.0-beta-23419": {
+        "type": "package",
+        "dependencies": {
+          "System.Collections": "4.0.10",
+          "System.Diagnostics.Debug": "4.0.10",
+          "System.IO": "4.0.10",
+          "System.Resources.ResourceManager": "4.0.0",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.Extensions": "4.0.10",
+          "System.Runtime.Handles": "4.0.0",
+          "System.Runtime.InteropServices": "4.0.20",
+          "System.Text.Encoding": "4.0.10",
+          "System.Threading": "4.0.0",
+          "System.Threading.Tasks": "4.0.10"
+        },
+        "compile": {
+          "ref/dotnet/_._": {}
+        },
+        "runtime": {
+          "runtimes/win7/lib/dotnet/System.IO.Compression.dll": {}
+        }
+      },
       "runtime.win7.System.IO.FileSystem/4.0.1-beta-23419": {
         "type": "package",
         "dependencies": {
@@ -5418,8 +5462,8 @@
         "native": {
           "runtimes/win7-x86/native/API-MS-Win-Base-Util-L1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-com-l1-1-0.dll": {},
-          "runtimes/win7-x86/native/api-ms-win-core-com-private-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-comm-l1-1-0.dll": {},
+          "runtimes/win7-x86/native/api-ms-win-core-com-private-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-console-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-console-l2-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-datetime-l1-1-0.dll": {},
@@ -5482,13 +5526,13 @@
           "runtimes/win7-x86/native/api-ms-win-core-shlwapi-obsolete-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-shutdown-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-shutdown-l1-1-1.dll": {},
+          "runtimes/win7-x86/native/API-MS-Win-Core-StringAnsi-L1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-string-l1-1-0.dll": {},
           "runtimes/win7-x86/native/API-MS-Win-Core-String-L2-1-0.dll": {},
-          "runtimes/win7-x86/native/api-ms-win-core-string-obsolete-l1-1-0.dll": {},
-          "runtimes/win7-x86/native/api-ms-win-core-string-obsolete-l1-1-1.dll": {},
-          "runtimes/win7-x86/native/API-MS-Win-Core-StringAnsi-L1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-stringloader-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-stringloader-l1-1-1.dll": {},
+          "runtimes/win7-x86/native/api-ms-win-core-string-obsolete-l1-1-0.dll": {},
+          "runtimes/win7-x86/native/api-ms-win-core-string-obsolete-l1-1-1.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-synch-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-synch-l1-2-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-sysinfo-l1-1-0.dll": {},
@@ -5544,6 +5588,12 @@
         "type": "package",
         "native": {
           "runtimes/win7-x86/native/sni.dll": {}
+        }
+      },
+      "runtime.win7-x86.System.IO.Compression.clrcompression/4.0.1-beta-23419": {
+        "type": "package",
+        "native": {
+          "runtimes/win7-x86/native/clrcompression.dll": {}
         }
       },
       "System.AppContext/4.0.1-beta-23419": {
@@ -5902,12 +5952,6 @@
         },
         "compile": {
           "ref/dotnet/System.IO.Compression.dll": {}
-        }
-      },
-      "System.IO.Compression.clrcompression-x86/4.0.0": {
-        "type": "package",
-        "native": {
-          "runtimes/win7-x86/native/clrcompression.dll": {}
         }
       },
       "System.IO.Compression.ZipFile/4.0.1-beta-23419": {
@@ -13536,6 +13580,22 @@
         "runtimes/win7/lib/dotnet/System.Globalization.Extensions.dll"
       ]
     },
+    "runtime.win7.System.IO.Compression/4.1.0-beta-23419": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "ZQBJqvm8n4NQ+4jA6uZy1whMxRc4xF+Io1OQaaGEiq5VFerxp/NQUi8wPNKpSy1Rj+RJC7DtY5m6dIZGJh5wow==",
+      "files": [
+        "lib/net/_._",
+        "lib/win8/_._",
+        "lib/wp8/_._",
+        "lib/wpa81/_._",
+        "ref/dotnet/_._",
+        "runtime.win7.System.IO.Compression.4.1.0-beta-23419.nupkg",
+        "runtime.win7.System.IO.Compression.4.1.0-beta-23419.nupkg.sha512",
+        "runtime.win7.System.IO.Compression.nuspec",
+        "runtimes/win7/lib/dotnet/System.IO.Compression.dll"
+      ]
+    },
     "runtime.win7.System.IO.FileSystem/4.0.1-beta-23419": {
       "type": "package",
       "serviceable": true,
@@ -13992,6 +14052,17 @@
         "runtimes/win7-x64/native/sni.dll"
       ]
     },
+    "runtime.win7-x64.System.IO.Compression.clrcompression/4.0.1-beta-23419": {
+      "type": "package",
+      "sha512": "twFwug8zgLKoQwEpdo0EMnkuexZv6FmMP0JdVeuio23/6NUIshyMRaqgzIErN3d0vYl77FcQ4sbyA2qqkO2nEg==",
+      "files": [
+        "runtime.win7-x64.System.IO.Compression.clrcompression.4.0.1-beta-23419.nupkg",
+        "runtime.win7-x64.System.IO.Compression.clrcompression.4.0.1-beta-23419.nupkg.sha512",
+        "runtime.win7-x64.System.IO.Compression.clrcompression.nuspec",
+        "runtimes/win10-x64/native/ClrCompression.dll",
+        "runtimes/win7-x64/native/clrcompression.dll"
+      ]
+    },
     "runtime.win7-x86.Microsoft.NETCore.ConsoleHost/1.0.0-beta-23419": {
       "type": "package",
       "sha512": "oRlTbNaozeJYXXb3ki4U/KrJDqgqdjriEoGmu8/AEzaPuBGqFqg7CS0RVsX4eomxDHgU9syh+F1NN4f/KNrfCw==",
@@ -14206,6 +14277,17 @@
         "runtime.win7-x86.System.Data.SqlClient.sni.4.0.0-beta-23419.nupkg.sha512",
         "runtime.win7-x86.System.Data.SqlClient.sni.nuspec",
         "runtimes/win7-x86/native/sni.dll"
+      ]
+    },
+    "runtime.win7-x86.System.IO.Compression.clrcompression/4.0.1-beta-23419": {
+      "type": "package",
+      "sha512": "NXsS0pw3zfLjbD4a3jSThXsKT3yYPQaWmNLHNvLncTyEu81OLVmyTg7iJj2lnJKMDVo7zo/uEPpuASGRm5NTzw==",
+      "files": [
+        "runtime.win7-x86.System.IO.Compression.clrcompression.4.0.1-beta-23419.nupkg",
+        "runtime.win7-x86.System.IO.Compression.clrcompression.4.0.1-beta-23419.nupkg.sha512",
+        "runtime.win7-x86.System.IO.Compression.clrcompression.nuspec",
+        "runtimes/win10-x86/native/ClrCompression.dll",
+        "runtimes/win7-x86/native/clrcompression.dll"
       ]
     },
     "System.AppContext/4.0.1-beta-23419": {
@@ -15008,28 +15090,6 @@
         "System.IO.Compression.4.1.0-beta-23419.nupkg",
         "System.IO.Compression.4.1.0-beta-23419.nupkg.sha512",
         "System.IO.Compression.nuspec"
-      ]
-    },
-    "System.IO.Compression.clrcompression-x64/4.0.0": {
-      "type": "package",
-      "sha512": "Lqr+URMwKzf+8HJF6YrqEqzKzDzFJTE4OekaxqdIns71r8Ufbd8SbZa0LKl9q+7nu6Em4SkIEXVMB7plSXekOw==",
-      "files": [
-        "runtimes/win10-x64/native/ClrCompression.dll",
-        "runtimes/win7-x64/native/clrcompression.dll",
-        "System.IO.Compression.clrcompression-x64.4.0.0.nupkg",
-        "System.IO.Compression.clrcompression-x64.4.0.0.nupkg.sha512",
-        "System.IO.Compression.clrcompression-x64.nuspec"
-      ]
-    },
-    "System.IO.Compression.clrcompression-x86/4.0.0": {
-      "type": "package",
-      "sha512": "GmevpuaMRzYDXHu+xuV10fxTO8DsP7OKweWxYtkaxwVnDSj9X6RBupSiXdiveq9yj/xjZ1NbG+oRRRb99kj+VQ==",
-      "files": [
-        "runtimes/win10-x86/native/ClrCompression.dll",
-        "runtimes/win7-x86/native/clrcompression.dll",
-        "System.IO.Compression.clrcompression-x86.4.0.0.nupkg",
-        "System.IO.Compression.clrcompression-x86.4.0.0.nupkg.sha512",
-        "System.IO.Compression.clrcompression-x86.nuspec"
       ]
     },
     "System.IO.Compression.ZipFile/4.0.1-beta-23419": {
@@ -17602,6 +17662,7 @@
       "Microsoft.NETCore.Platforms >= 1.0.1-beta-23419",
       "Microsoft.NETCore.TestHost >= 1.0.0-beta-23419",
       "Microsoft.NETCore.Console >= 1.0.0-beta-23419",
+      "System.IO.Compression >= 4.1.0-beta-23419",
       "coveralls.io >= 1.4.0",
       "OpenCover >= 4.6.166",
       "ReportGenerator >= 2.3.1",
