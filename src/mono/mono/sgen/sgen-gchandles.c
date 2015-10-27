@@ -260,18 +260,28 @@ retry:
 		goto retry;
 	}
 	handles->slot_hint = index;
-	bucketize (index, &bucket, &offset);
-	if (!try_occupy_slot (handles, bucket, offset, obj, track))
-		goto retry;
-	/* If a GC happens shortly after a new bucket is allocated, the entire
-	 * bucket could be scanned even though it's mostly empty. To avoid this, we
-	 * track the maximum index seen so far, so that we can skip the empty slots.
+
+	/*
+	 * If a GC happens shortly after a new bucket is allocated, the entire
+	 * bucket could be scanned even though it's mostly empty. To avoid this,
+	 * we track the maximum index seen so far, so that we can skip the empty
+	 * slots.
+	 *
+	 * Note that we update `max_index` before we even try occupying the
+	 * slot.  If we did it the other way around and a GC happened in
+	 * between, the GC wouldn't know that the slot was occupied.  This is
+	 * not a huge deal since `obj` is on the stack and thus pinned anyway,
+	 * but hopefully some day it won't be anymore.
 	 */
 	do {
 		max_index = handles->max_index;
 		if (index <= max_index)
 			break;
-	} while (!InterlockedCompareExchange ((volatile gint32 *)&handles->max_index, index, max_index));
+	} while (InterlockedCompareExchange ((volatile gint32 *)&handles->max_index, index, max_index) != max_index);
+
+	bucketize (index, &bucket, &offset);
+	if (!try_occupy_slot (handles, bucket, offset, obj, track))
+		goto retry;
 #ifdef HEAVY_STATISTICS
 	InterlockedIncrement ((volatile gint32 *)&stat_gc_handles_allocated);
 	if (stat_gc_handles_allocated > stat_gc_handles_max_allocated)
