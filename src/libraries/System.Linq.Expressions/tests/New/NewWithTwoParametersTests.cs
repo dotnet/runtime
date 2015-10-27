@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.New
 {
-    public static unsafe class NewWithTwoParametersTests
+    public static class NewWithTwoParametersTests
     {
         #region Test methods
 

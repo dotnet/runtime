@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Lifted
 {
-    public static unsafe class NonLiftedComparisonNotEqualNullableTests
+    public static class NonLiftedComparisonNotEqualNullableTests
     {
         #region Test methods
 

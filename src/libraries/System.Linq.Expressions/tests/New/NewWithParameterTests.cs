@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.New
 {
-    public static unsafe class NewWithParameterTests
+    public static class NewWithParameterTests
     {
         #region Test methods
 

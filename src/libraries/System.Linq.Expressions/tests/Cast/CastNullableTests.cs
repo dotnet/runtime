@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Cast
 {
-    public static unsafe class CastNullableTests
+    public static class CastNullableTests
     {
         #region Test methods
 

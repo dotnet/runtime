@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Array
 {
-    public static unsafe class ArrayArrayLengthTests
+    public static class ArrayArrayLengthTests
     {
         #region Bool tests
 
