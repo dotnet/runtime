@@ -32,6 +32,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Xml;
+using System.Text.RegularExpressions;
 
 //
 // This is a simple test runner with support for parallel execution
@@ -446,8 +447,14 @@ public class TestRunner
 
 	static string DumpPseudoTrace (string filename) {
 		if (File.Exists (filename))
-			return File.ReadAllText (filename);
+			return FilterInvalidXmlChars (File.ReadAllText (filename));
 		else
 			return string.Empty;
+	}
+
+	static string FilterInvalidXmlChars (string text) {
+		// Spec at http://www.w3.org/TR/2008/REC-xml-20081126/#charsets says only the following chars are valid in XML:
+		// Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF]	/* any Unicode character, excluding the surrogate blocks, FFFE, and FFFF. */
+		return Regex.Replace (text, @"[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD\u10000-\u10FFFF]", "");
 	}
 }
