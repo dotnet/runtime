@@ -26,7 +26,7 @@ namespace System.Linq.Expressions.Tests
             b.Compile().DynamicInvoke();
         }
 
-        [Fact(Skip = "4150")]
+        [Fact]
         public static void NoWriteBackToInstance()
         {
             new NoThread(false).DoTest();
