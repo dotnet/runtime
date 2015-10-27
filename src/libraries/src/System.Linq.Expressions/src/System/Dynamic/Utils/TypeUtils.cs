@@ -730,5 +730,13 @@ namespace System.Dynamic.Utils
             }
         }
 #endif 
+
+        public static bool IsVector(this Type type)
+        {
+            // Unfortunately, the IsSzArray property of System.Type is inaccessible to us,
+            // but the ToString representation of the type is sufficient to differentiate
+            // a vector (X[]) from a multi-dimensional array of rank 1 (X[*]).
+            return type.GetArrayRank() == 1 && type.ToString().EndsWith("[]");
+        }
     }
 }
