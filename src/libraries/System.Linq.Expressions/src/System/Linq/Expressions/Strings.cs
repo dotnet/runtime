@@ -1467,5 +1467,27 @@ namespace System.Linq.Expressions
             return SR.Format(SR.OperatorNotImplementedForType, p0, p1);
         }
 #endif
+
+        /// <summary>
+        /// A string like "The constructor should not be static"
+        /// </summary>
+        internal static string NonStaticConstructorRequired
+        {
+            get
+            {
+                return SR.NonStaticConstructorRequired;
+            }
+        }
+
+        /// <summary>
+        /// A string like "The constructor should not be declared on an abstract class"
+        /// </summary>
+        internal static string NonAbstractConstructorRequired
+        {
+            get
+            {
+                return SR.NonAbstractConstructorRequired;
+            }
+        }
     }
 }
