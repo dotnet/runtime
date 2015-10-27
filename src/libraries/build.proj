@@ -2,8 +2,14 @@
 <Project ToolsVersion="12.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
+  <!-- required to build the projects in their specified order -->
+  <PropertyGroup>
+    <SerializeProjects>true</SerializeProjects>
+  </PropertyGroup>
+
   <ItemGroup>
     <Project Include="src\dirs.proj" />
+    <Project Include="src\post.msbuild" />
   </ItemGroup>
 
   <Import Project="dir.targets" />
