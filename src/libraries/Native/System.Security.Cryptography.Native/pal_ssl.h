@@ -214,11 +214,8 @@ Returns the connection information for the SSL instance.
 
 Returns 1 upon success, otherwise 0.
 */
-extern "C" int32_t GetSslConnectionInfo(SSL* ssl,
-                                        CipherAlgorithmType* dataCipherAlg,
-                                        ExchangeAlgorithmType* keyExchangeAlg,
-                                        HashAlgorithmType* dataHashAlg,
-                                        int32_t* dataKeySize);
+
+extern "C" int32_t GetSslConnectionInfo(SSL* ssl, CipherAlgorithmType* dataCipherAlg, ExchangeAlgorithmType* keyExchangeAlg, HashAlgorithmType* dataHashAlg, int32_t* dataKeySize, int32_t* hashKeySize);
 
 /*
 Shims the SSL_write method.
