@@ -184,7 +184,7 @@ namespace System.Net.NetworkInformation
             return new OsxUdpStatistics();
         }
 
-        public override UnicastIPAddressInformationCollection GetUnicastAddresses()
+        private UnicastIPAddressInformationCollection GetUnicastAddresses()
         {
             UnicastIPAddressInformationCollection collection = new UnicastIPAddressInformationCollection();
             foreach (UnicastIPAddressInformation info in
@@ -195,17 +195,6 @@ namespace System.Net.NetworkInformation
             }
 
             return collection;
-        }
-
-        public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback callback, object state)
-        {
-            Task<UnicastIPAddressInformationCollection> t = GetUnicastAddressesAsync();
-            return TaskToApm.Begin(t, callback, state);
-        }
-
-        public override UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult)
-        {
-            return TaskToApm.End<UnicastIPAddressInformationCollection>(asyncResult);
         }
 
         public override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
