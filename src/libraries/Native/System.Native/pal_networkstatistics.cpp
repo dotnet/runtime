@@ -277,8 +277,8 @@ extern "C" int32_t GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* i
     int32_t connectionIndex = -1;
     xHeadPtr = reinterpret_cast<xinpgen*>(buffer);
     for (xHeadPtr = reinterpret_cast<xinpgen*>(reinterpret_cast<uint8_t*>(xHeadPtr) + xHeadPtr->xig_len);
-            xHeadPtr->xig_len >= sizeof(xtcpcb);
-            xHeadPtr = reinterpret_cast<xinpgen*>(reinterpret_cast<uint8_t*>(xHeadPtr) + xHeadPtr->xig_len))
+         xHeadPtr->xig_len >= sizeof(xtcpcb);
+         xHeadPtr = reinterpret_cast<xinpgen*>(reinterpret_cast<uint8_t*>(xHeadPtr) + xHeadPtr->xig_len))
     {
         connectionIndex++;
         xtcpcb* head_xtcpb = reinterpret_cast<xtcpcb*>(xHeadPtr);
@@ -391,8 +391,8 @@ extern "C" int32_t GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCou
     int32_t connectionIndex = -1;
     xHeadPtr = reinterpret_cast<xinpgen*>(buffer);
     for (xHeadPtr = reinterpret_cast<xinpgen*>(reinterpret_cast<uint8_t*>(xHeadPtr) + xHeadPtr->xig_len);
-            xHeadPtr->xig_len >= sizeof(xinpcb);
-            xHeadPtr = reinterpret_cast<xinpgen*>(reinterpret_cast<uint8_t*>(xHeadPtr) + xHeadPtr->xig_len))
+         xHeadPtr->xig_len >= sizeof(xinpcb);
+         xHeadPtr = reinterpret_cast<xinpgen*>(reinterpret_cast<uint8_t*>(xHeadPtr) + xHeadPtr->xig_len))
     {
         connectionIndex++;
         xinpcb* head_xinpcb = reinterpret_cast<xinpcb*>(xHeadPtr);
@@ -429,16 +429,8 @@ extern "C" int32_t GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPI
         return -1;
     }
 
-    int statisticsMib[] =
-    {
-        CTL_NET,
-        PF_ROUTE,
-        0,
-        0,
-        NET_RT_IFLIST2,
-        0
-    };
-    
+    int statisticsMib[] = {CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST2, 0};
+
     size_t len;
     // Get estimated data length
     if (sysctl(statisticsMib, 6, nullptr, &len, nullptr, 0) == -1)
@@ -456,7 +448,8 @@ extern "C" int32_t GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPI
         return -1;
     }
 
-    for (uint8_t*headPtr = buffer; headPtr <= buffer + len; headPtr += reinterpret_cast<if_msghdr*>(headPtr)->ifm_msglen)
+    for (uint8_t* headPtr = buffer; headPtr <= buffer + len;
+         headPtr += reinterpret_cast<if_msghdr*>(headPtr)->ifm_msglen)
     {
         if_msghdr* ifHdr = reinterpret_cast<if_msghdr*>(headPtr);
         if (ifHdr->ifm_index == interfaceIndex && ifHdr->ifm_type == RTM_IFINFO2)
@@ -481,7 +474,7 @@ extern "C" int32_t GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPI
             return 0;
         }
     }
-    
+
     // No statistics were found with the given interface index; shouldn't happen.
     delete[] buffer;
     memset(retStats, 0, sizeof(NativeIPInterfaceStatistics));
@@ -490,15 +483,7 @@ extern "C" int32_t GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPI
 
 extern "C" int32_t GetNumRoutes()
 {
-    int routeDumpMib[] =
-    {
-        CTL_NET,
-        PF_ROUTE,
-        0,
-        0,
-        NET_RT_DUMP,
-        0
-    };
+    int routeDumpMib[] = {CTL_NET, PF_ROUTE, 0, 0, NET_RT_DUMP, 0};
 
     size_t len;
     if (sysctl(routeDumpMib, 6, nullptr, &len, nullptr, 0) == -1)
@@ -524,7 +509,7 @@ extern "C" int32_t GetNumRoutes()
         {
             count++;
         }
-        
+
         headPtr += rtmsg->rtm_msglen;
     }
 

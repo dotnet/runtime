@@ -21,7 +21,7 @@
 
 extern "C" Error CreateNetworkChangeListenerSocket(int32_t* retSocket)
 {
-    sockaddr_nl sa = { };
+    sockaddr_nl sa = {};
     sa.nl_family = AF_NETLINK;
     sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
     int32_t sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
@@ -49,9 +49,9 @@ extern "C" Error CloseNetworkChangeListenerSocket(int32_t socket)
 extern "C" NetworkChangeKind ReadSingleEvent(int32_t sock)
 {
     char buffer[4096];
-    iovec iov = { buffer, sizeof(buffer) };
+    iovec iov = {buffer, sizeof(buffer)};
     sockaddr_nl sanl;
-    msghdr msg = { reinterpret_cast<void*>(&sanl), sizeof(sockaddr_nl), &iov, 1, NULL, 0, 0};
+    msghdr msg = {reinterpret_cast<void*>(&sanl), sizeof(sockaddr_nl), &iov, 1, NULL, 0, 0};
     ssize_t len = recvmsg(sock, &msg, 0);
     if (len == -1)
     {
@@ -63,7 +63,7 @@ extern "C" NetworkChangeKind ReadSingleEvent(int32_t sock)
     nlmsghdr* hdr = reinterpret_cast<nlmsghdr*>(buffer);
     // This channel should only send a single message at a time.
     // This means there should be no multi-part messages (NLM_F_MULTI).
-    assert ((hdr->nlmsg_flags & NLM_F_MULTI) == 0);
+    assert((hdr->nlmsg_flags & NLM_F_MULTI) == 0);
     switch (hdr->nlmsg_type)
     {
         case NLMSG_DONE:

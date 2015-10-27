@@ -29,5 +29,5 @@ typedef void (*LinkLayerAddressFound)(const char* interfaceName, LinkLayerAddres
 typedef void (*GatewayAddressFound)(IpAddressInfo* addressInfo);
 
 int32_t EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex,
-                                                GatewayAddressFound onGatewayFound,
-                                                uint16_t addressFamily);
+                                              GatewayAddressFound onGatewayFound,
+                                              uint16_t addressFamily);
