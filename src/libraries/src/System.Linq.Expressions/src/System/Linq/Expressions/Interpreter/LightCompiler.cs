@@ -2179,6 +2179,25 @@ namespace System.Linq.Expressions.Interpreter
             CompileAddress(node, -1);
         }
 
+        private static bool ShouldWritebackNode(Expression node)
+        {
+            if (!node.Type.GetTypeInfo().IsValueType)
+                return false;
+            switch (node.NodeType)
+            {
+                case ExpressionType.Parameter:
+                case ExpressionType.Call:
+                case ExpressionType.ArrayIndex:
+                    return true;
+                case ExpressionType.Index:
+                    return ((IndexExpression)node).Object.Type.IsArray;
+                case ExpressionType.MemberAccess:
+                    return ((MemberExpression)node).Member is FieldInfo;
+                default:
+                    return false;
+            }
+        }
+
         /// <summary>
         /// Emits the address of the specified node.  
         /// </summary>
@@ -2187,6 +2206,14 @@ namespace System.Linq.Expressions.Interpreter
         /// <returns></returns>
         private ByRefUpdater CompileAddress(Expression node, int index)
         {
+            if (index == -1)
+            {
+                if (!ShouldWritebackNode(node))
+                {
+                    Compile(node);
+                    return null;
+                }
+            }
             switch (node.NodeType)
             {
                 case ExpressionType.Parameter:
