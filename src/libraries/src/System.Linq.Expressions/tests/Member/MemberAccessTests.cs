@@ -229,7 +229,7 @@ namespace Tests.ExpressionCompiler.MemberAccess
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile();
 
-            Assert.Throws<NullReferenceException>(()=>f());
+            Assert.Throws<NullReferenceException>(() => f());
         }
 
         [Fact] // [Issue(3217, "https://github.com/dotnet/corefx/issues/3217")]

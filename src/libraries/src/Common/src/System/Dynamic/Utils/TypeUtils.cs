@@ -39,7 +39,7 @@ namespace System.Dynamic.Utils
         public static void ValidateType(Type type)
         {
             if (type != typeof(void))
-            { 
+            {
                 // A check to avoid a bunch of reflection (currently not supported) during cctor
                 if (type.GetTypeInfo().IsGenericTypeDefinition)
                 {

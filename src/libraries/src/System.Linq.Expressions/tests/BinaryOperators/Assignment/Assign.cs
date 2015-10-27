@@ -14,7 +14,7 @@ namespace System.Linq.Expressions.Tests
             ParameterExpression variable = Expression.Variable(typeof(int));
             LabelTarget target = Expression.Label(typeof(int));
             Expression exp = Expression.Block(
-                new ParameterExpression[] {variable},
+                new ParameterExpression[] { variable },
                 Expression.Assign(variable, Expression.Constant(42)),
                 Expression.Return(target, variable),
                 Expression.Label(target, Expression.Default(typeof(int)))
