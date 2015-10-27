@@ -366,8 +366,8 @@ namespace Tests.Expressions
                             )
                         );
 
-                        return new InstrumentWithLog(log).Visit(body);
-                    });
+                    return new InstrumentWithLog(log).Visit(body);
+                });
 
             yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.Block, expr);
         }

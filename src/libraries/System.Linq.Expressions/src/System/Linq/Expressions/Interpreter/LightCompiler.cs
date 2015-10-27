@@ -1013,7 +1013,7 @@ namespace System.Linq.Expressions.Interpreter
                 Compile(node.Operand);
                 _instructions.EmitStoreLocal(opTemp.Index);
 
-                if (!node.Operand.Type.GetTypeInfo().IsValueType || 
+                if (!node.Operand.Type.GetTypeInfo().IsValueType ||
                     (TypeUtils.IsNullableType(node.Operand.Type) && node.IsLiftedToNull))
                 {
                     _instructions.EmitLoadLocal(opTemp.Index);
@@ -1023,7 +1023,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
 
                 _instructions.EmitLoadLocal(opTemp.Index);
-                if(TypeUtils.IsNullableType(node.Operand.Type) &&
+                if (TypeUtils.IsNullableType(node.Operand.Type) &&
                     node.Method.GetParametersCached()[0].ParameterType.Equals(TypeUtils.GetNonNullableType(node.Operand.Type)))
                 {
                     _instructions.Emit(NullableMethodCallInstruction.CreateGetValue());
@@ -1517,12 +1517,12 @@ namespace System.Linq.Expressions.Interpreter
             LocalDefinition temp = _locals.DefineLocal(Expression.Parameter(node.SwitchValue.Type), _instructions.Count);
             Compile(node.SwitchValue);
             _instructions.EmitStoreLocal(temp.Index);
-                        
+
             var doneLabel = Expression.Label(node.Type, "done");
 
-            foreach(var @case in node.Cases)
+            foreach (var @case in node.Cases)
             {
-                foreach(var val in @case.TestValues)
+                foreach (var val in @case.TestValues)
                 {
                     //  temp == val ? 
                     //          goto(Body) doneLabel: 
@@ -2768,7 +2768,7 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileUnboxUnaryExpression(Expression expr)
         {
             var node = (UnaryExpression)expr;
-            
+
             Compile(node.Operand);
 
             if (expr.Type.GetTypeInfo().IsValueType && !TypeUtils.IsNullableType(expr.Type))

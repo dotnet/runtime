@@ -126,8 +126,8 @@ namespace System.Linq.Expressions.Compiler
         /// Creates a lambda compiler for an inlined lambda
         /// </summary>
         private LambdaCompiler(
-            LambdaCompiler parent, 
-            LambdaExpression lambda, 
+            LambdaCompiler parent,
+            LambdaExpression lambda,
             InvocationExpression invocation)
         {
             _tree = parent._tree;

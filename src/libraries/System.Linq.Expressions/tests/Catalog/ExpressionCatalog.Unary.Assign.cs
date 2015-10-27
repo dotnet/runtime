@@ -12,117 +12,117 @@ namespace Tests.Expressions
     {
         private static IEnumerable<KeyValuePair<ExpressionType, Expression>> PreIncrementAssign()
         {
-			foreach (var t in s_unaryIncrDecrTypes)
-			{
-				foreach (var o in s_exprs[t])
-				{
-					foreach (var e in GetAssignments(o, (op) => Expression.PreIncrementAssign(op)))
-					{
-						yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PreIncrementAssign, e);
-					}
-				}
-			}
+            foreach (var t in s_unaryIncrDecrTypes)
+            {
+                foreach (var o in s_exprs[t])
+                {
+                    foreach (var e in GetAssignments(o, (op) => Expression.PreIncrementAssign(op)))
+                    {
+                        yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PreIncrementAssign, e);
+                    }
+                }
+            }
         }
 
         private static IEnumerable<KeyValuePair<ExpressionType, Expression>> PreIncrementAssign_Nullable()
         {
-			foreach (var t in s_unaryIncrDecrTypes)
-			{
-				foreach (var o in s_nullableExprs[t])
-				{
-					foreach (var e in GetAssignments(o, (op) => Expression.PreIncrementAssign(op)))
-					{
-						yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PreIncrementAssign, e);
-					}
-				}
-			}
+            foreach (var t in s_unaryIncrDecrTypes)
+            {
+                foreach (var o in s_nullableExprs[t])
+                {
+                    foreach (var e in GetAssignments(o, (op) => Expression.PreIncrementAssign(op)))
+                    {
+                        yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PreIncrementAssign, e);
+                    }
+                }
+            }
         }
 
         private static IEnumerable<KeyValuePair<ExpressionType, Expression>> PostIncrementAssign()
         {
-			foreach (var t in s_unaryIncrDecrTypes)
-			{
-				foreach (var o in s_exprs[t])
-				{
-					foreach (var e in GetAssignments(o, (op) => Expression.PostIncrementAssign(op)))
-					{
-						yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PostIncrementAssign, e);
-					}
-				}
-			}
+            foreach (var t in s_unaryIncrDecrTypes)
+            {
+                foreach (var o in s_exprs[t])
+                {
+                    foreach (var e in GetAssignments(o, (op) => Expression.PostIncrementAssign(op)))
+                    {
+                        yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PostIncrementAssign, e);
+                    }
+                }
+            }
         }
 
         private static IEnumerable<KeyValuePair<ExpressionType, Expression>> PostIncrementAssign_Nullable()
         {
-			foreach (var t in s_unaryIncrDecrTypes)
-			{
-				foreach (var o in s_nullableExprs[t])
-				{
-					foreach (var e in GetAssignments(o, (op) => Expression.PostIncrementAssign(op)))
-					{
-						yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PostIncrementAssign, e);
-					}
-				}
-			}
+            foreach (var t in s_unaryIncrDecrTypes)
+            {
+                foreach (var o in s_nullableExprs[t])
+                {
+                    foreach (var e in GetAssignments(o, (op) => Expression.PostIncrementAssign(op)))
+                    {
+                        yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PostIncrementAssign, e);
+                    }
+                }
+            }
         }
 
         private static IEnumerable<KeyValuePair<ExpressionType, Expression>> PreDecrementAssign()
         {
-			foreach (var t in s_unaryIncrDecrTypes)
-			{
-				foreach (var o in s_exprs[t])
-				{
-					foreach (var e in GetAssignments(o, (op) => Expression.PreDecrementAssign(op)))
-					{
-						yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PreDecrementAssign, e);
-					}
-				}
-			}
+            foreach (var t in s_unaryIncrDecrTypes)
+            {
+                foreach (var o in s_exprs[t])
+                {
+                    foreach (var e in GetAssignments(o, (op) => Expression.PreDecrementAssign(op)))
+                    {
+                        yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PreDecrementAssign, e);
+                    }
+                }
+            }
         }
 
         private static IEnumerable<KeyValuePair<ExpressionType, Expression>> PreDecrementAssign_Nullable()
         {
-			foreach (var t in s_unaryIncrDecrTypes)
-			{
-				foreach (var o in s_nullableExprs[t])
-				{
-					foreach (var e in GetAssignments(o, (op) => Expression.PreDecrementAssign(op)))
-					{
-						yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PreDecrementAssign, e);
-					}
-				}
-			}
+            foreach (var t in s_unaryIncrDecrTypes)
+            {
+                foreach (var o in s_nullableExprs[t])
+                {
+                    foreach (var e in GetAssignments(o, (op) => Expression.PreDecrementAssign(op)))
+                    {
+                        yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PreDecrementAssign, e);
+                    }
+                }
+            }
         }
 
         private static IEnumerable<KeyValuePair<ExpressionType, Expression>> PostDecrementAssign()
         {
-			foreach (var t in s_unaryIncrDecrTypes)
-			{
-				foreach (var o in s_exprs[t])
-				{
-					foreach (var e in GetAssignments(o, (op) => Expression.PostDecrementAssign(op)))
-					{
-						yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PostDecrementAssign, e);
-					}
-				}
-			}
+            foreach (var t in s_unaryIncrDecrTypes)
+            {
+                foreach (var o in s_exprs[t])
+                {
+                    foreach (var e in GetAssignments(o, (op) => Expression.PostDecrementAssign(op)))
+                    {
+                        yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PostDecrementAssign, e);
+                    }
+                }
+            }
         }
 
         private static IEnumerable<KeyValuePair<ExpressionType, Expression>> PostDecrementAssign_Nullable()
         {
-			foreach (var t in s_unaryIncrDecrTypes)
-			{
-				foreach (var o in s_nullableExprs[t])
-				{
-					foreach (var e in GetAssignments(o, (op) => Expression.PostDecrementAssign(op)))
-					{
-						yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PostDecrementAssign, e);
-					}
-				}
-			}
+            foreach (var t in s_unaryIncrDecrTypes)
+            {
+                foreach (var o in s_nullableExprs[t])
+                {
+                    foreach (var e in GetAssignments(o, (op) => Expression.PostDecrementAssign(op)))
+                    {
+                        yield return new KeyValuePair<ExpressionType, Expression>(ExpressionType.PostDecrementAssign, e);
+                    }
+                }
+            }
         }
 
-		private static IEnumerable<Expression> GetAssignments(Expression initialValue, Func<Expression, Expression> createAssignment)
+        private static IEnumerable<Expression> GetAssignments(Expression initialValue, Func<Expression, Expression> createAssignment)
         {
             // Parameter
             {
@@ -131,7 +131,7 @@ namespace Tests.Expressions
 
                 yield return Expression.Block(new[] { p }, a, createAssignment(p));
             }
-            
+
             // Member
             {
                 var p = Expression.Parameter(typeof(Holder<>).MakeGenericType(initialValue.Type));
@@ -152,7 +152,7 @@ namespace Tests.Expressions
                 yield return Expression.Block(new[] { p }, a, b, createAssignment(e));
             }
 
-			// Vector
+            // Vector
             {
                 var p = Expression.Parameter(typeof(Vector<>).MakeGenericType(initialValue.Type));
                 var a = Expression.Assign(p, Expression.New(p.Type));

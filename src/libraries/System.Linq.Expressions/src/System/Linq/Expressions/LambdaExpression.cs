@@ -546,9 +546,11 @@ namespace System.Linq.Expressions
 
             MethodInfo mi;
             var ldc = s_lambdaDelegateCache;
-            if (!ldc.TryGetValue(delegateType, out mi)) {
+            if (!ldc.TryGetValue(delegateType, out mi))
+            {
                 mi = delegateType.GetMethod("Invoke");
-                if (TypeUtils.CanCache(delegateType)) {
+                if (TypeUtils.CanCache(delegateType))
+                {
                     ldc[delegateType] = mi;
                 }
             }

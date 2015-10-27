@@ -238,7 +238,7 @@ namespace Tests.Expressions
 
             public int I0()
             {
-                _addToLog("I0(" + string.Join(", ", new object[] {  }) + ")");
+                _addToLog("I0(" + string.Join(", ", new object[] { }) + ")");
                 return 42;
             }
 
@@ -419,7 +419,7 @@ namespace Tests.Expressions
 
             public E I0()
             {
-                _addToLog("I0(" + string.Join(", ", new object[] {  }) + ")");
+                _addToLog("I0(" + string.Join(", ", new object[] { }) + ")");
                 return E.Red;
             }
 
