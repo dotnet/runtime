@@ -247,7 +247,7 @@ sgen_card_table_mark_range (mword address, mword size)
 	SGEN_ASSERT (0, num_cards <= CARD_COUNT_IN_BYTES, "How did we get an object larger than the card table?");
 	if (end > SGEN_CARDTABLE_END) {
 		memset (start, 1, SGEN_CARDTABLE_END - start);
-		memset (sgen_cardtable, 1, end - sgen_cardtable);
+		memset (sgen_cardtable, 1, end - SGEN_CARDTABLE_END);
 		return;
 	}
 #endif
