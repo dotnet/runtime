@@ -2263,8 +2263,8 @@ static Error TryChangeSocketEventRegistrationInner(
                EVFILT_READ,
                (newEvents & PAL_SA_READ) == 0 ? RemoveFlags : AddFlags,
                0,
-               data,
-               0);
+               0,
+               reinterpret_cast<void*>(data));
     }
 
     if (writeChanged)
@@ -2274,8 +2274,8 @@ static Error TryChangeSocketEventRegistrationInner(
                EVFILT_WRITE,
                (newEvents & PAL_SA_WRITE) == 0 ? RemoveFlags : AddFlags,
                0,
-               data,
-               0);
+               0,
+               reinterpret_cast<void*>(data));
     }
 
     int err = kevent(port, events, i, nullptr, 0, nullptr);
