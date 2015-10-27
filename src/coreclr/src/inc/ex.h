@@ -9,6 +9,15 @@
 
 void RetailAssertIfExpectedClean();             // Defined in src/utilcode/debug.cpp
 
+#ifdef FEATURE_PAL
+#define EX_TRY_HOLDER                                   \
+    NativeExceptionHolderCatchAll __exceptionHolder;    \
+    __exceptionHolder.Push();                           \
+
+#else // FEATURE_PAL
+#define EX_TRY_HOLDER
+#endif // FEATURE_PAL
+
 #ifdef CLR_STANDALONE_BINDER
 
 #define INCONTRACT(x)
@@ -17,12 +26,16 @@ void RetailAssertIfExpectedClean();             // Defined in src/utilcode/debug
 
 void DECLSPEC_NORETURN ThrowLastError();
 
-#define EX_TRY  try
-#define EX_CATCH_HRESULT(_hr)    catch (HRESULT hr) { _hr = hr; }
-#define EX_CATCH    catch(...)
+#define EX_TRY          \
+    try                 \
+    {                   \
+        EX_TRY_HOLDER   \
+
+#define EX_CATCH_HRESULT(_hr)    } catch (HRESULT hr) { _hr = hr; }
+#define EX_CATCH    } catch(...)
 #define EX_END_CATCH(a)
 #define EX_RETHROW  throw
-#define EX_SWALLOW_NONTERMINAL catch(...) {}
+#define EX_SWALLOW_NONTERMINAL } catch(...) {}
 #define EX_END_CATCH_UNREACHABLE
 #define EX_CATCH_HRESULT_NO_ERRORINFO(_hr)                                      \
     EX_CATCH                                                                    \
@@ -982,6 +995,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
                 {                                                                       \
                     /* this is necessary for Rotor exception handling to work */        \
                     DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
+                    EX_TRY_HOLDER                                                       \
 
                                                                                         
 #define EX_CATCH_IMPL_EX(DerivedExceptionClass)                                         \
