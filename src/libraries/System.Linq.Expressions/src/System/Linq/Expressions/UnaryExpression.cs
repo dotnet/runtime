@@ -855,7 +855,7 @@ namespace System.Linq.Expressions
             {
                 throw Error.ArgumentMustBeArray();
             }
-            if (array.Type.GetArrayRank() != 1)
+            if (!array.Type.IsVector())
             {
                 throw Error.ArgumentMustBeSingleDimensionalArrayType();
             }

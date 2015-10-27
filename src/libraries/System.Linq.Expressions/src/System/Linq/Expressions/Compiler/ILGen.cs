@@ -1096,13 +1096,14 @@ namespace System.Linq.Expressions.Compiler
             ContractUtils.RequiresNotNull(arrayType, "arrayType");
             if (!arrayType.IsArray) throw Error.ArrayTypeMustBeArray();
 
-            int rank = arrayType.GetArrayRank();
-            if (rank == 1)
+            if (arrayType.IsVector())
             {
                 il.Emit(OpCodes.Newarr, arrayType.GetElementType());
             }
             else
             {
+                int rank = arrayType.GetArrayRank();
+
                 Type[] types = new Type[rank];
                 for (int i = 0; i < rank; i++)
                 {
