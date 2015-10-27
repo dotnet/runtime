@@ -147,9 +147,6 @@ mono_mempool_destroy (MonoMemPool *pool)
 void
 mono_mempool_invalidate (MonoMemPool *pool)
 {
-#ifdef INDIVIDUAL_ALLOCATIONS
-	g_assert_not_reached ();
-#else
 	MonoMemPool *p, *n;
 
 	p = pool;
@@ -158,7 +155,6 @@ mono_mempool_invalidate (MonoMemPool *pool)
 		memset (p, 42, p->size);
 		p = n;
 	}
-#endif
 }
 
 /**
@@ -173,9 +169,6 @@ mono_mempool_invalidate (MonoMemPool *pool)
 void
 mono_mempool_stats (MonoMemPool *pool)
 {
-#ifdef INDIVIDUAL_ALLOCATIONS
-	g_assert_not_reached ();
-#else
 	MonoMemPool *p;
 	int count = 0;
 	guint32 still_free = pool->end - pool->pos;
@@ -191,10 +184,8 @@ mono_mempool_stats (MonoMemPool *pool)
 		g_print ("Num chunks: %d\n", count);
 		g_print ("Free memory: %d\n", still_free);
 	}
-#endif
 }
 
-#ifndef INDIVIDUAL_ALLOCATIONS
 #ifdef TRACE_ALLOCATIONS
 #include <execinfo.h>
 #include "metadata/appdomain.h"
@@ -226,7 +217,6 @@ mono_backtrace (int size)
         mono_mutex_unlock (&mempool_tracing_lock);
 }
 
-#endif
 #endif
 
 /**

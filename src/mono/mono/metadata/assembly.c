@@ -2947,7 +2947,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 		return corlib;
 
 	// This unusual directory layout can occur if mono is being built and run out of its own source repo
-	if (assemblies_path) { // MONO_PATH has been set
+	if (assemblies_path) { // Custom assemblies path set via MONO_PATH or mono_set_assemblies_path
 		corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status, FALSE);
 		if (corlib)
 			return corlib;
@@ -2955,7 +2955,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 
 	/* Normal case: Load corlib from mono/<version> */
 	corlib_file = g_build_filename ("mono", runtime->framework_version, "mscorlib.dll", NULL);
-	if (assemblies_path) { // MONO_PATH has been set
+	if (assemblies_path) { // Custom assemblies path
 		corlib = load_in_path (corlib_file, (const char**)assemblies_path, status, FALSE);
 		if (corlib) {
 			g_free (corlib_file);
