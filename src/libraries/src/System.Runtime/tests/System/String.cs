@@ -347,40 +347,35 @@ public static unsafe class StringTests
     [InlineData("Hello", 0, "Hello", 0, 5, 0)]
     [InlineData("Hello", 0, "Hello", 0, 3, 0)]
     [InlineData("Hello", 2, "Hello", 2, 3, 0)]
-    [InlineData("Hello", 0, "Hello123", 0, int.MaxValue, -1)]           // Recalculated length
-    [InlineData("Hello123", 0, "Hello", 0, int.MaxValue, 1)]            // Recalculated length
-    [InlineData("aaaaaaaaaaaaaa", 3, "aaaaaaaaaaaaaa", 3, 100, 0)]      // Equal long alignment 2, equal compare
+    [InlineData("Hello", 0, "He" + c_SoftHyphen + "llo", 0, 5, -1)]
+    [InlineData("Hello", 0, "-=<Hello>=-", 3, 5, 0)]
+    [InlineData("\uD83D\uDD53Hello\uD83D\uDD50", 1, "\uD83D\uDD53Hello\uD83D\uDD54", 1, 7, 0)] // Surrogate split
+    [InlineData("Hello", 0, "Hello123", 0, int.MaxValue, -1)]           // Recalculated length, second string longer
+    [InlineData("Hello123", 0, "Hello", 0, int.MaxValue, 1)]            // Recalculated length, first string longer
+    [InlineData("---aaaaaaaaaaa", 3, "+++aaaaaaaaaaa", 3, 100, 0)]      // Equal long alignment 2, equal compare
     [InlineData("aaaaaaaaaaaaaa", 3, "aaaxaaaaaaaaaa", 3, 100, -1)]     // Equal long alignment 2, different compare at n=1
-    [InlineData("aaaaaaaaaaaaaa", 1, "aaaaaaaaaaaaaa", 1, 100, 0)]      // Equal long alignment 6, equal compare
+    [InlineData("-aaaaaaaaaaaaa", 1, "+aaaaaaaaaaaaa", 1, 100, 0)]      // Equal long alignment 6, equal compare
     [InlineData("aaaaaaaaaaaaaa", 1, "axaaaaaaaaaaaa", 1, 100, -1)]     // Equal long alignment 6, different compare at n=1
     [InlineData("aaaaaaaaaaaaaa", 0, "aaaaaaaaaaaaaa", 0, 100, 0)]      // Equal long alignment 4, equal compare
     [InlineData("aaaaaaaaaaaaaa", 0, "xaaaaaaaaaaaaa", 0, 100, -1)]     // Equal long alignment 4, different compare at n=1
     [InlineData("aaaaaaaaaaaaaa", 0, "axaaaaaaaaaaaa", 0, 100, -1)]     // Equal long alignment 4, different compare at n=2
-    [InlineData("aaaaaaaaaaaaaa", 2, "aaaaaaaaaaaaaa", 2, 100, 0)]      // Equal long alignment 0, equal compare
+    [InlineData("--aaaaaaaaaaaa", 2, "++aaaaaaaaaaaa", 2, 100, 0)]      // Equal long alignment 0, equal compare
     [InlineData("aaaaaaaaaaaaaa", 2, "aaxaaaaaaaaaaa", 2, 100, -1)]     // Equal long alignment 0, different compare at n=1
     [InlineData("aaaaaaaaaaaaaa", 2, "aaaxaaaaaaaaaa", 2, 100, -1)]     // Equal long alignment 0, different compare at n=2
     [InlineData("aaaaaaaaaaaaaa", 2, "aaaaxaaaaaaaaa", 2, 100, -1)]     // Equal long alignment 0, different compare at n=3
     [InlineData("aaaaaaaaaaaaaa", 2, "aaaaaxaaaaaaaa", 2, 100, -1)]     // Equal long alignment 0, different compare at n=4
     [InlineData("aaaaaaaaaaaaaa", 2, "aaaaaaxaaaaaaa", 2, 100, -1)]     // Equal long alignment 0, different compare at n=5
+    [InlineData("aaaaaaaaaaaaaa", 0, "+aaaaaaaaaaaaa", 1, 13, 0)]       // Different int alignment, equal compare
     [InlineData("aaaaaaaaaaaaaa", 0, "aaaaaaaaaaaaax", 1, 100, -1)]     // Different int alignment
     [InlineData("aaaaaaaaaaaaaa", 1, "aaaxaaaaaaaaaa", 3, 100, -1)]     // Different long alignment, abs of 4, one of them is 2, different at n=1
+    [InlineData("-aaaaaaaaaaaaa", 1, "++++aaaaaaaaaa", 4, 10, 0)]       // Different long alignment, equal compare
     [InlineData("aaaaaaaaaaaaaa", 1, "aaaaaaaaaaaaax", 4, 100, -1)]     // Different long alignment
     public static void TestCompareOrdinalIndexed(string strA, int indexA, string strB, int indexB, int length, int expectedResult)
     {
         int result = String.CompareOrdinal(strA, indexA, strB, indexB, length);
+        result = Math.Max(-1, Math.Min(1, result));
 
-        if (expectedResult == -1)
-        {
-            Assert.True(result < 0);
-        }
-        else if (expectedResult == 1)
-        {
-            Assert.True(result > 0);
-        }
-        else
-        {
-            Assert.Equal(0, result);
-        }
+        Assert.Equal(expectedResult, result);
     }
 
     [Fact]
