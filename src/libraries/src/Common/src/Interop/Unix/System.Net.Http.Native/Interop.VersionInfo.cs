@@ -1,0 +1,17 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Runtime.InteropServices;
+
+internal static partial class Interop
+{
+    internal static partial class LibCurl
+    {
+        [DllImport(Libraries.HttpNative)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetCurlVersionInfo(
+            out int age,
+            [MarshalAs(UnmanagedType.Bool)] out bool supportsSsl,
+            [MarshalAs(UnmanagedType.Bool)] out bool supportsAutoDecompression);
+    }
+}
