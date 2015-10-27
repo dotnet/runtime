@@ -43,6 +43,7 @@ internal static partial class Interop
             internal const int CURLOPT_COOKIE = CurlOptionObjectPointBase + 22;
             internal const int CURLOPT_HTTPHEADER = CurlOptionObjectPointBase + 23;
             internal const int CURLOPT_HEADERDATA = CurlOptionObjectPointBase + 29;
+            internal const int CURLOPT_CUSTOMREQUEST = CurlOptionObjectPointBase + 36;
             internal const int CURLOPT_ACCEPTENCODING = CurlOptionObjectPointBase + 102;
             internal const int CURLOPT_PRIVATE = CurlOptionObjectPointBase + 103;
             internal const int CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165;
