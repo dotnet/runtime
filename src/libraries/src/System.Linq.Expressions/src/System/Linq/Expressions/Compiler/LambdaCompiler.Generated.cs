@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Compiler
             CompilationFlags startEmitted = emitStart ? EmitExpressionStart(node) : CompilationFlags.EmitNoExpressionStart;
             // only pass tail call flags to emit the expression
             flags = flags & CompilationFlags.EmitAsTailCallMask;
-            
+
             switch (node.NodeType)
             {
                 case ExpressionType.Add:

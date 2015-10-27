@@ -229,7 +229,7 @@ namespace Tests.ExpressionCompiler.New
         class TestPrivateDefaultConstructor
         {
             private TestPrivateDefaultConstructor()
-            { 
+            {
             }
 
             public static Func<TestPrivateDefaultConstructor> GetInstanceFunc()

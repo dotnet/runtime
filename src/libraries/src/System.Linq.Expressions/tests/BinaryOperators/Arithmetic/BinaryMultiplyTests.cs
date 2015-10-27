@@ -750,7 +750,7 @@ namespace Tests.ExpressionCompiler.Binary
             Exception csException = null;
             try
             {
-                csResult = checked((long)(a * b)); 
+                csResult = checked((long)(a * b));
             }
             catch (Exception ex)
             {

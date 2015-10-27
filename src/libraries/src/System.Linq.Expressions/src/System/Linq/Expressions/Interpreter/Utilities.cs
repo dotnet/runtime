@@ -105,7 +105,7 @@ namespace System.Linq.Expressions.Interpreter
 
             return i;
         }
-        
+
         private static readonly object Int32_m = -1;
         private static readonly object Int32_0 = 0;
         private static readonly object Int32_1 = 1;
