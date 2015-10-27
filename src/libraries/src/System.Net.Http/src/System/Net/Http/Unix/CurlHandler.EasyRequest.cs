@@ -205,6 +205,11 @@ namespace System.Net.Http
                         SetCurlOption(CURLoption.CURLOPT_COPYPOSTFIELDS, string.Empty);
                     }
                 }
+                else if (_requestMessage.Method == HttpMethod.Trace)
+                {
+                    SetCurlOption(CURLoption.CURLOPT_CUSTOMREQUEST, _requestMessage.Method.Method);
+                    SetCurlOption(CURLoption.CURLOPT_NOBODY, 1L);
+                }
                 else
                 {
                     SetCurlOption(CURLoption.CURLOPT_CUSTOMREQUEST, _requestMessage.Method.Method);
