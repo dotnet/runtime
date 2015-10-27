@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.IO;
 using Test.Cryptography;
 using Xunit;
 
@@ -102,17 +101,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(cert, certFromPfx);
                 }
             }
-        }
-
-        [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
-        public static void TestContentType()
-        {
-            string fileName = Path.Combine("TestData", "My.pfx");
-            if (!File.Exists(fileName))
-                throw new Exception("Test infrastructure failure: Expected to find file: \"" + fileName + "\".");
-            X509ContentType ct = X509Certificate2.GetCertContentType(fileName);
-            Assert.Equal(X509ContentType.Pkcs12, ct);
         }
 
         private static readonly byte[] s_expectedSig =
