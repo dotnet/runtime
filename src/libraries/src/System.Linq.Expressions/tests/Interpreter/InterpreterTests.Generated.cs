@@ -674,7 +674,6 @@ namespace Tests.Expressions
         }
 
         [Fact]
-        [ActiveIssue(/*coreclr*/ 1835, PlatformID.AnyUnix)]
         public static void CompileInterpretCrossCheck_Power()
         {
             var exprs = default(IEnumerable<Expression>);
@@ -1219,7 +1218,6 @@ namespace Tests.Expressions
         }
 
         [Fact]
-        [ActiveIssue(/*coreclr*/ 1835, PlatformID.AnyUnix)]
         public static void CompileInterpretCrossCheck_PowerAssign()
         {
             var exprs = default(IEnumerable<Expression>);
