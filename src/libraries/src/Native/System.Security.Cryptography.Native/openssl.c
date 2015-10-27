@@ -44,16 +44,8 @@ as a utility.
 Return values:
 A time_t representation of the input date. See also man mktime(3).
 */
-static
-time_t
-MakeTimeT(
-    int32_t year,
-    int32_t month,
-    int32_t day,
-    int32_t hour,
-    int32_t minute,
-    int32_t second,
-    int32_t isDst)
+static time_t
+MakeTimeT(int32_t year, int32_t month, int32_t day, int32_t hour, int32_t minute, int32_t second, int32_t isDst)
 {
     struct tm currentTm;
     currentTm.tm_year = year - 1900;
@@ -78,11 +70,7 @@ Return values:
 1: Data was copied
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
-int32_t
-GetX509Thumbprint(
-    X509* x509,
-    uint8_t* pBuf,
-    int32_t cBuf)
+int32_t GetX509Thumbprint(X509* x509, uint8_t* pBuf, int32_t cBuf)
 {
     if (!x509)
     {
@@ -109,9 +97,7 @@ Return values:
 NULL if the validity cannot be determined, a pointer to the ASN1_TIME structure for the NotBefore value
 otherwise.
 */
-ASN1_TIME*
-GetX509NotBefore(
-    X509* x509)
+ASN1_TIME* GetX509NotBefore(X509* x509)
 {
     if (x509 && x509->cert_info && x509->cert_info->validity)
     {
@@ -132,9 +118,7 @@ Return values:
 NULL if the validity cannot be determined, a pointer to the ASN1_TIME structure for the NotAfter value
 otherwise.
 */
-ASN1_TIME*
-GetX509NotAfter(
-    X509* x509)
+ASN1_TIME* GetX509NotAfter(X509* x509)
 {
     if (x509 && x509->cert_info && x509->cert_info->validity)
     {
@@ -155,9 +139,7 @@ Return values:
 NULL if the validity cannot be determined, a pointer to the ASN1_TIME structure for the NextUpdate value
 otherwise.
 */
-ASN1_TIME*
-GetX509CrlNextUpdate(
-    X509_CRL* crl)
+ASN1_TIME* GetX509CrlNextUpdate(X509_CRL* crl)
 {
     if (crl)
     {
@@ -181,9 +163,7 @@ The encoded value of the version, otherwise:
   1: X509v2
   2: X509v3
 */
-int
-GetX509Version(
-    X509* x509)
+int GetX509Version(X509* x509)
 {
     if (x509 && x509->cert_info)
     {
@@ -205,9 +185,7 @@ Return values:
 NULL if the algorithm cannot be determined, otherwise a pointer to the OpenSSL ASN1_OBJECT structure
 describing the object type.
 */
-ASN1_OBJECT*
-GetX509PublicKeyAlgorithm(
-    X509* x509)
+ASN1_OBJECT* GetX509PublicKeyAlgorithm(X509* x509)
 {
     if (x509 && x509->cert_info && x509->cert_info->key && x509->cert_info->key->algor)
     {
@@ -228,9 +206,7 @@ Return values:
 NULL if the algorithm cannot be determined, otherwise a pointer to the OpenSSL ASN1_OBJECT structure
 describing the object type.
 */
-ASN1_OBJECT*
-GetX509SignatureAlgorithm(
-    X509* x509)
+ASN1_OBJECT* GetX509SignatureAlgorithm(X509* x509)
 {
     if (x509 && x509->sig_alg && x509->sig_alg->algorithm)
     {
@@ -252,11 +228,7 @@ Return values:
 1: Data was copied
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
-int32_t
-GetX509PublicKeyParameterBytes(
-    X509* x509,
-    uint8_t* pBuf,
-    int32_t cBuf)
+int32_t GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, int32_t cBuf)
 {
     if (!x509 || !x509->cert_info || !x509->cert_info->key || !x509->cert_info->key->algor)
     {
@@ -293,9 +265,7 @@ Return values:
 NULL if the public key cannot be determined, a pointer to the ASN1_BIT_STRING structure representing
 the public key.
 */
-ASN1_BIT_STRING*
-GetX509PublicKeyBytes(
-    X509* x509)
+ASN1_BIT_STRING* GetX509PublicKeyBytes(X509* x509)
 {
     if (x509 && x509->cert_info && x509->cert_info->key)
     {
@@ -338,11 +308,7 @@ Remarks:
 
  So this function will really work on all of them.
 */
-int32_t
-GetAsn1StringBytes(
-    ASN1_STRING* asn1,
-    uint8_t* pBuf,
-    int32_t cBuf)
+int32_t GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_t cBuf)
 {
     if (!asn1 || cBuf < 0)
     {
@@ -377,23 +343,19 @@ Return values:
 1: Data was copied
 Any negative value: The input buffer size was reported as insufficient. A buffer of size ABS(return) is required.
 */
-int32_t
-GetX509NameRawBytes(
-    X509_NAME* x509Name,
-    uint8_t* pBuf,
-    int32_t cBuf)
+int32_t GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pBuf, int32_t cBuf)
 {
     if (!x509Name || !x509Name->bytes || cBuf < 0)
     {
         return 0;
     }
 
-    /* 
+    /*
      * length is size_t on some platforms and int on others, so the comparisons
      * are not tautological everywhere. We can let the compiler optimize away
      * any part of the check that is. We split the size checks into two checks
      * so we can get around the warnings on Linux where the Length is unsigned
-     * whereas Length is signed on OS X. The first check makes sure the variable 
+     * whereas Length is signed on OS X. The first check makes sure the variable
      * value is less than INT_MAX in it's native format; once we know it is not
      * too large, we can safely cast to an int to make sure it is not negative
      */
@@ -415,7 +377,7 @@ GetX509NameRawBytes(
     {
         return -length;
     }
-    
+
     memcpy(pBuf, x509Name->bytes->data, (unsigned int)length);
     return 1;
 }
@@ -431,9 +393,7 @@ Return values:
 0 if the field count cannot be determined, or the count of OIDs present in the EKU.
 Note that 0 does not always indicate an error, merely that GetX509EkuField should not be called.
 */
-int
-GetX509EkuFieldCount(
-    EXTENDED_KEY_USAGE* eku)
+int GetX509EkuFieldCount(EXTENDED_KEY_USAGE* eku)
 {
     return sk_ASN1_OBJECT_num(eku);
 }
@@ -449,10 +409,7 @@ Return values:
 NULL if eku is NULL or loc is out of bounds, otherwise a pointer to the ASN1_OBJECT structure encoding
 that particular OID.
 */
-ASN1_OBJECT*
-GetX509EkuField(
-    EXTENDED_KEY_USAGE* eku,
-    int32_t loc)
+ASN1_OBJECT* GetX509EkuField(EXTENDED_KEY_USAGE* eku, int32_t loc)
 {
     return sk_ASN1_OBJECT_value(eku, loc);
 }
@@ -468,11 +425,7 @@ Return values:
 NULL if the certificate is invalid or no name information could be found, otherwise a pointer to a
 memory-backed BIO structure which contains the answer to the GetNameInfo query
 */
-BIO*
-GetX509NameInfo(
-    X509* x509,
-    int32_t nameType,
-    int32_t forIssuer)
+BIO* GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssuer)
 {
     static const char szOidUpn[] = "1.3.6.1.4.1.311.20.2.3";
 
@@ -484,7 +437,8 @@ GetX509NameInfo(
     // Algorithm behaviors (pseudocode).  When forIssuer is true, replace "Subject" with "Issuer" and
     // SAN (Subject Alternative Names) with IAN (Issuer Alternative Names).
     //
-    // SimpleName: Subject[CN] ?? Subject[OU] ?? Subject[O] ?? Subject[E] ?? Subject.Rdns.FirstOrDefault() ?? SAN.Entries.FirstOrDefault(type == GEN_EMAIL);
+    // SimpleName: Subject[CN] ?? Subject[OU] ?? Subject[O] ?? Subject[E] ?? Subject.Rdns.FirstOrDefault() ??
+    // SAN.Entries.FirstOrDefault(type == GEN_EMAIL);
     // EmailName: SAN.Entries.FirstOrDefault(type == GEN_EMAIL) ?? Subject[E];
     // UpnName: SAN.Entries.FirsOrDefaultt(type == GEN_OTHER && entry.AsOther().OID == szOidUpn).AsOther().Value;
     // DnsName: SAN.Entries.FirstOrDefault(type == GEN_DNS) ?? Subject[CN];
@@ -578,12 +532,8 @@ GetX509NameInfo(
         }
     }
 
-    if (nameType == NAME_TYPE_SIMPLE ||
-        nameType == NAME_TYPE_DNS ||
-        nameType == NAME_TYPE_DNSALT ||
-        nameType == NAME_TYPE_EMAIL ||
-        nameType == NAME_TYPE_UPN ||
-        nameType == NAME_TYPE_URL)
+    if (nameType == NAME_TYPE_SIMPLE || nameType == NAME_TYPE_DNS || nameType == NAME_TYPE_DNSALT ||
+        nameType == NAME_TYPE_EMAIL || nameType == NAME_TYPE_UPN || nameType == NAME_TYPE_URL)
     {
         int expectedType = -1;
 
@@ -646,7 +596,7 @@ GetX509NameInfo(
                                 if (sizeof(szOidUpn) == cchLocalOid &&
                                     0 == strncmp(localOid, szOidUpn, sizeof(szOidUpn)))
                                 {
-                                    //OTHERNAME->ASN1_TYPE->union.field
+                                    // OTHERNAME->ASN1_TYPE->union.field
                                     str = value->value->value.asn1_string;
                                 }
                             }
@@ -669,8 +619,7 @@ GetX509NameInfo(
         }
     }
 
-    if (nameType == NAME_TYPE_EMAIL ||
-        nameType == NAME_TYPE_DNS)
+    if (nameType == NAME_TYPE_EMAIL || nameType == NAME_TYPE_DNS)
     {
         X509_NAME* name = forIssuer ? x509->cert_info->issuer : x509->cert_info->subject;
         int expectedNid = NID_undef;
@@ -734,9 +683,7 @@ Return values:
 0 if the hostname is not a match
 Any negative number indicates an error in the arguments.
 */
-static
-int
-CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, int cchHostname, char sanRules)
+static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, int cchHostname, char sanRules)
 {
     assert(candidate);
     assert(hostname);
@@ -785,11 +732,7 @@ CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, int cchHost
         {
             char c = candidateStr[i];
 
-            if ((c < 'a' || c > 'z') &&
-                (c < '0' || c > '9') &&
-                (c != '.') &&
-                (c != '-') &&
-                (c != '*' || i != 0))
+            if ((c < 'a' || c > 'z') && (c < '0' || c > '9') && (c != '.') && (c != '-') && (c != '*' || i != 0))
             {
                 return 0;
             }
@@ -861,11 +804,7 @@ Return values:
 0 if the hostname is not a match
 Any negative number indicates an error in the arguments.
 */
-int32_t
-CheckX509Hostname(
-    X509* x509,
-    const char* hostname,
-    int32_t cchHostname)
+int32_t CheckX509Hostname(X509* x509, const char* hostname, int32_t cchHostname)
 {
     if (!x509)
         return -2;
@@ -950,13 +889,8 @@ Return values:
 0 if the hostname is not a match
 Any negative number indicates an error in the arguments.
 */
-int32_t
-CheckX509IpAddress(
-    X509* x509,
-    const uint8_t* addressBytes,
-    int32_t addressBytesLen,
-    const char* hostname,
-    int32_t cchHostname)
+int32_t CheckX509IpAddress(
+    X509* x509, const uint8_t* addressBytes, int32_t addressBytesLen, const char* hostname, int32_t cchHostname)
 {
     if (!x509)
         return -2;
@@ -1043,9 +977,7 @@ Return values:
 0 if the field count cannot be determined, or the count of certificates in STACK_OF(X509)
 Note that 0 does not always indicate an error, merely that GetX509StackField should not be called.
 */
-int32_t
-GetX509StackFieldCount(
-    STACK_OF(X509)* stack)
+int32_t GetX509StackFieldCount(STACK_OF(X509) * stack)
 {
     return sk_X509_num(stack);
 }
@@ -1061,10 +993,7 @@ Return values:
 NULL if stack is NULL or loc is out of bounds, otherwise a pointer to the X509 structure encoding
 that particular element.
 */
-X509*
-GetX509StackField(
-    STACK_OF(X509)* stack,
-    int loc)
+X509* GetX509StackField(STACK_OF(X509) * stack, int loc)
 {
     return sk_X509_value(stack, loc);
 }
@@ -1076,9 +1005,7 @@ RecursiveFreeX509Stack
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to free a stack
 when done with it.
 */
-void
-RecursiveFreeX509Stack(
-    STACK_OF(X509)* stack)
+void RecursiveFreeX509Stack(STACK_OF(X509) * stack)
 {
     sk_X509_pop_free(stack, X509_free);
 }
@@ -1094,16 +1021,14 @@ Return values:
 0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or the date inputs don't produce a valid time_t;
 1 on success.
 */
-int32_t
-SetX509ChainVerifyTime(
-    X509_STORE_CTX* ctx,
-    int32_t year,
-    int32_t month,
-    int32_t day,
-    int32_t hour,
-    int32_t minute,
-    int32_t second,
-    int32_t isDst)
+int32_t SetX509ChainVerifyTime(X509_STORE_CTX* ctx,
+                               int32_t year,
+                               int32_t month,
+                               int32_t day,
+                               int32_t hour,
+                               int32_t minute,
+                               int32_t second,
+                               int32_t isDst)
 {
     if (!ctx)
     {
@@ -1139,8 +1064,7 @@ Return values:
 The directory which would be applied for X509_LOOKUP_add_dir(ctx, NULL). That is, the value of the
 SSL_CERT_DIR environment variable, or the value of the X509_CERT_DIR compile-time constant.
 */
-const char*
-GetX509RootStorePath()
+const char* GetX509RootStorePath()
 {
     const char* dir = getenv(X509_get_default_cert_dir_env());
 
@@ -1163,9 +1087,7 @@ Return values:
 If bio containns a valid DER-encoded X509 object, a pointer to that X509 structure that was deserialized,
 otherwise NULL.
 */
-X509*
-ReadX509AsDerFromBio(
-    BIO* bio)
+X509* ReadX509AsDerFromBio(BIO* bio)
 {
     return d2i_X509_bio(bio, NULL);
 }
@@ -1185,8 +1107,7 @@ behavior on non-file, non-null BIO objects.
 See also:
 OpenSSL's BIO_tell
 */
-int32_t BioTell(
-    BIO* bio)
+int32_t BioTell(BIO* bio)
 {
     if (!bio)
     {
@@ -1213,9 +1134,7 @@ otherwise unspecified
 See also:
 OpenSSL's BIO_seek
 */
-int32_t BioSeek(
-    BIO* bio,
-    int32_t ofs)
+int32_t BioSeek(BIO* bio, int32_t ofs)
 {
     if (!bio)
     {
@@ -1235,8 +1154,7 @@ of X509* to OpenSSL.
 Return values:
 A STACK_OF(X509*) with no comparator.
 */
-STACK_OF(X509)*
-NewX509Stack()
+STACK_OF(X509) * NewX509Stack()
 {
     return sk_X509_new_null();
 }
@@ -1252,10 +1170,7 @@ Return values:
 1 on success
 0 on a NULL stack, or an error within sk_X509_push
 */
-int32_t
-PushX509StackField(
-    STACK_OF(X509)* stack,
-    X509* x509)
+int32_t PushX509StackField(STACK_OF(X509) * stack, X509* x509)
 {
     if (!stack)
     {
@@ -1276,10 +1191,7 @@ Returns a bool to managed code.
 1 for success
 0 for failure
 */
-int32_t
-GetRandomBytes(
-    uint8_t* buf,
-    int32_t num)
+int32_t GetRandomBytes(uint8_t* buf, int32_t num)
 {
     int ret = RAND_bytes(buf, num);
 
@@ -1299,10 +1211,7 @@ Return values:
 -1 indicates OpenSSL signalled an error, CryptographicException should be raised.
 -2 indicates an error in the input arguments
 */
-int32_t
-LookupFriendlyNameByOid(
-    const char* oidValue,
-    const char** friendlyName)
+int32_t LookupFriendlyNameByOid(const char* oidValue, const char** friendlyName)
 {
     ASN1_OBJECT* oid;
     int nid;
@@ -1364,9 +1273,7 @@ LockingCallback
 
 Called back by OpenSSL to lock or unlock.
 */
-static
-void
-LockingCallback(int mode, int n, const char* file, int line)
+static void LockingCallback(int mode, int n, const char* file, int line)
 {
     (void)file, (void)line; // deliberately unused parameters
 
@@ -1396,9 +1303,7 @@ Called back by OpenSSL to get the current thread id.
 This is necessary because OSX uses an earlier version of
 OpenSSL, which requires setting the CRYPTO_set_id_callback.
 */
-static
-unsigned long
-GetCurrentThreadId()
+static unsigned long GetCurrentThreadId()
 {
     uint64_t tid;
     pthread_threadid_np(pthread_self(), &tid);
@@ -1416,8 +1321,7 @@ Return values:
 0 on success
 non-zero on failure
 */
-int32_t
-EnsureOpenSslInitialized()
+int32_t EnsureOpenSslInitialized()
 {
     int ret = 0;
     int numLocks = 0;

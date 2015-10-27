@@ -40,7 +40,6 @@ struct IPv4GlobalStatistics
 
 struct IPv6GlobalStatistics
 {
-    
 };
 
 struct UdpGlobalStatistics

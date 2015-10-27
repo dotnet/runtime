@@ -57,8 +57,7 @@ extern "C" int32_t EvpCipherCtxSetPadding(EVP_CIPHER_CTX* x, int32_t padding)
     return EVP_CIPHER_CTX_set_padding(x, padding);
 }
 
-extern "C" int32_t
-EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, unsigned char* in, int32_t inl)
+extern "C" int32_t EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, unsigned char* in, int32_t inl)
 {
     int outLength;
     int32_t ret = EVP_CipherUpdate(ctx, out, &outLength, in, inl);

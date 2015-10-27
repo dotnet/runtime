@@ -44,7 +44,7 @@ enum class CipherAlgorithmType : int32_t
     Aes = 26129,
     Rc4 = 26625,
 
-    //Algorithm constants which are not present in the managed CipherAlgorithmType enum.
+    // Algorithm constants which are not present in the managed CipherAlgorithmType enum.
     SSL_IDEA = 229380,
     SSL_CAMELLIA128 = 229381,
     SSL_CAMELLIA256 = 229382,
@@ -62,7 +62,7 @@ enum class ExchangeAlgorithmType : int32_t
     RsaKeyX = 41984,
     DiffieHellman = 43522,
 
-    //ExchangeAlgorithm constants which are not present in the managed ExchangeAlgorithmType enum.
+    // ExchangeAlgorithm constants which are not present in the managed ExchangeAlgorithmType enum.
     SSL_ECDH = 43525,
     SSL_ECDSA = 41475,
     SSL_kPSK = 229390,
@@ -80,7 +80,7 @@ enum class HashAlgorithmType : int32_t
     Md5 = 32771,
     Sha1 = 32772,
 
-    //HashAlgorithm constants which are not present in the managed HashAlgorithmType enum.
+    // HashAlgorithm constants which are not present in the managed HashAlgorithmType enum.
     SSL_SHA256 = 32780,
     SSL_SHA384 = 32781,
     SSL_GOST94 = 229410,
@@ -103,7 +103,6 @@ typedef int32_t(*SslCtxSetVerifyCallback)(int32_t, X509_STORE_CTX*);
 
 // the function pointer definition for the callback used in SslCtxSetCertVerifyCallback
 typedef int32_t(*SslCtxSetCertVerifyCallbackCallback)(X509_STORE_CTX*, void* arg);
-
 
 /*
 Ensures that libssl is correctly initialized and ready to use.
@@ -215,7 +214,11 @@ Returns the connection information for the SSL instance.
 
 Returns 1 upon success, otherwise 0.
 */
-extern "C" int32_t GetSslConnectionInfo(SSL* ssl, CipherAlgorithmType* dataCipherAlg, ExchangeAlgorithmType* keyExchangeAlg, HashAlgorithmType* dataHashAlg, int32_t* dataKeySize);
+extern "C" int32_t GetSslConnectionInfo(SSL* ssl,
+                                        CipherAlgorithmType* dataCipherAlg,
+                                        ExchangeAlgorithmType* keyExchangeAlg,
+                                        HashAlgorithmType* dataHashAlg,
+                                        int32_t* dataKeySize);
 
 /*
 Shims the SSL_write method.

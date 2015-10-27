@@ -81,5 +81,4 @@ NetworkInterfaceType MapHardwareType(uint16_t nativeType)
             return Unknown;
     }
 #endif
-
 }

@@ -31,12 +31,12 @@ extern "C" void X509NameDestroy(X509_NAME* a)
     }
 }
 
-extern "C" STACK_OF(X509_NAME)* NewX509NameStack()
+extern "C" STACK_OF(X509_NAME) * NewX509NameStack()
 {
     return sk_X509_NAME_new_null();
 }
 
-extern "C" int32_t PushX509NameStackField(STACK_OF(X509_NAME)* stack, X509_NAME* x509Name)
+extern "C" int32_t PushX509NameStackField(STACK_OF(X509_NAME) * stack, X509_NAME* x509Name)
 {
     if (!stack)
     {
@@ -46,7 +46,7 @@ extern "C" int32_t PushX509NameStackField(STACK_OF(X509_NAME)* stack, X509_NAME*
     return sk_X509_NAME_push(stack, x509Name);
 }
 
-extern "C" void RecursiveFreeX509NameStack(STACK_OF(X509_NAME)* stack)
+extern "C" void RecursiveFreeX509NameStack(STACK_OF(X509_NAME) * stack)
 {
     sk_X509_NAME_pop_free(stack, X509_NAME_free);
 }
