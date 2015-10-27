@@ -1124,5 +1124,21 @@ namespace System.Linq.Expressions
             return NotImplemented.ByDesignWithMessage(Strings.OperatorNotImplementedForType(p0, p1));
         }
 #endif
+
+        /// <summary>
+        /// ArgumentException with message like "The constructor should not be static"
+        /// </summary>
+        internal static Exception NonStaticConstructorRequired()
+        {
+            return new ArgumentException(Strings.NonStaticConstructorRequired);
+        }
+
+        /// <summary>
+        /// InvalidOperationException with message like "Can't compile a NewExpression with a constructor declared on an abstract class"
+        /// </summary>
+        internal static Exception NonAbstractConstructorRequired()
+        {
+            return new InvalidOperationException(Strings.NonAbstractConstructorRequired);
+        }
     }
 }
