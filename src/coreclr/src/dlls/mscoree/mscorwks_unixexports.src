@@ -58,6 +58,7 @@ GetTempFileNameW
 GetTempPathW
 LeaveCriticalSection
 LocalAlloc
+LocalReAlloc
 LocalFree
 LockFile
 lstrlenA
