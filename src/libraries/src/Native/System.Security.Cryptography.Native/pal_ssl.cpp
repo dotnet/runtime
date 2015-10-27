@@ -364,6 +364,16 @@ enum class SSL_DataHashAlgorithm : int64_t
 #endif
 };
 
+class SSL_DataHashSize 
+{ 
+public:
+  static const int32_t MD5_HashKeySize = 128;
+  static const int32_t SHA1_HashKeySize = 160;
+  static const int32_t SHA256_HashKeySize = 256;
+  static const int32_t SHA384_HashKeySize = 384;
+  static const int32_t GOST_HashKeySize = 256;
+};
+
 static HashAlgorithmType MapHashAlgorithmType(const SSL_CIPHER* cipher)
 {
     unsigned long mac;
@@ -404,11 +414,45 @@ static HashAlgorithmType MapHashAlgorithmType(const SSL_CIPHER* cipher)
     return HashAlgorithmType::None;
 }
 
-extern "C" int32_t GetSslConnectionInfo(SSL* ssl,
-                                        CipherAlgorithmType* dataCipherAlg,
-                                        ExchangeAlgorithmType* keyExchangeAlg,
-                                        HashAlgorithmType* dataHashAlg,
-                                        int32_t* dataKeySize)
+static int32_t GetHashKeySize(const SSL_CIPHER* cipher)
+{
+    unsigned long mac;
+#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
+    mac = cipher->algorithm_mac;
+#else
+    const unsigned long SSL_MAC_MASK = 0x00c00000L;
+    mac = cipher->algorithms & SSL_MAC_MASK;
+#endif
+
+    SSL_DataHashAlgorithm sslMac = static_cast<SSL_DataHashAlgorithm>(mac);
+    switch (sslMac)
+    {
+    case SSL_DataHashAlgorithm::SSL_MD5:
+        return SSL_DataHashSize::MD5_HashKeySize;
+
+    case SSL_DataHashAlgorithm::SSL_SHA1:
+        return SSL_DataHashSize::SHA1_HashKeySize;
+
+#if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
+    case SSL_DataHashAlgorithm::SSL_GOST94:
+        return SSL_DataHashSize::GOST_HashKeySize;
+
+    case SSL_DataHashAlgorithm::SSL_GOST89MAC:
+        return SSL_DataHashSize::GOST_HashKeySize;
+
+    case SSL_DataHashAlgorithm::SSL_SHA256:
+        return SSL_DataHashSize::SHA256_HashKeySize;
+
+    case SSL_DataHashAlgorithm::SSL_SHA384:
+        return SSL_DataHashSize::SHA384_HashKeySize;
+
+    case SSL_DataHashAlgorithm::SSL_AEAD:
+        return 0;
+#endif
+    }
+}
+
+extern "C" int32_t GetSslConnectionInfo(SSL* ssl, CipherAlgorithmType* dataCipherAlg, ExchangeAlgorithmType* keyExchangeAlg, HashAlgorithmType* dataHashAlg, int32_t* dataKeySize, int32_t* hashKeySize)
 {
     const SSL_CIPHER* cipher;
 
@@ -427,6 +471,7 @@ extern "C" int32_t GetSslConnectionInfo(SSL* ssl,
     *keyExchangeAlg = MapExchangeAlgorithmType(cipher);
     *dataHashAlg = MapHashAlgorithmType(cipher);
     *dataKeySize = cipher->alg_bits;
+    *hashKeySize = GetHashKeySize(cipher);
 
     return 1;
 

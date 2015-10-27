@@ -65,7 +65,8 @@ internal static partial class Interop
             out int dataCipherAlg,
             out int keyExchangeAlg,
             out int dataHashAlg,
-            out int dataKeySize);
+            out int dataKeySize,
+            out int hashKeySize);
 
         [DllImport(Libraries.CryptoNative)]
         internal static unsafe extern int SslWrite(SafeSslHandle ssl, byte* buf, int num);

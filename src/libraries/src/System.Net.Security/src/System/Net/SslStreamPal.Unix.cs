@@ -66,7 +66,7 @@ namespace System.Net
 
         public static SafeFreeContextBufferChannelBinding QueryContextChannelBinding(SafeDeleteContext phContext, ChannelBindingKind attribute)
         {
-            // TODO (Issue #3362) To be implemented
+            // TODO (Issue #3954) To be implemented
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
 
@@ -75,19 +75,9 @@ namespace System.Net
             streamSizes = new StreamSizes();
         }
 
-        public static int QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
+        public static void QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
         {
-            connectionInfo = null;
-            try
-            {
-                connectionInfo = new SslConnectionInfo(securityContext.SslContext);
-
-                return 0;
-            }
-            catch
-            {
-                return -1;
-            }
+            connectionInfo = new SslConnectionInfo(securityContext.SslContext);
         }
 
         private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context,
