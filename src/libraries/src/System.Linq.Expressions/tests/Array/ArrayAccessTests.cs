@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Array
 {
-    public static unsafe class ArrayAccessTests
+    public static class ArrayAccessTests
     {
         [Fact]
         public static void ArrayAccess_MultiDimensionalOf1()
