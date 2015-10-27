@@ -2569,6 +2569,13 @@ if test "x$enable_nacl_gc" = "xyes"; then
 fi
 AC_SUBST(MONO_NACL_ALIGN_MASK_OFF)
 
+dnl **************************
+dnl *** AOT cross offsets  ***
+dnl **************************
+
+AC_ARG_WITH(cross-offsets, [  --with-cross-offsets=<offsets file path>    Explicit AOT cross offsets file],
+    AC_DEFINE_UNQUOTED(MONO_OFFSETS_FILE, "$withval", [AOT cross offsets file]))
+
 dnl **************
 dnl ***  LLVM  ***
 dnl **************
