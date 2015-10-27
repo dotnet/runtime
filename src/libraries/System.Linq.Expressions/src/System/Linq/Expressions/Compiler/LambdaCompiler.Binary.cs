@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Compiler
                     {
                         throw ContractUtils.Unreachable;
                     }
-                    _ilg.EmitLoadElement(leftType.GetElementType());
+                    EmitGetArrayElement(leftType);
                     return;
                 case ExpressionType.Coalesce:
                     throw Error.UnexpectedCoalesceOperator();

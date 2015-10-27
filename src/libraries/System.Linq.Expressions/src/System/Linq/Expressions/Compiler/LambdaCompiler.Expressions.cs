@@ -291,15 +291,23 @@ namespace System.Linq.Expressions.Compiler
                 var method = node.Indexer.GetGetMethod(true);
                 EmitCall(objectType, method);
             }
-            else if (node.Arguments.Count != 1)
+            else
+            {
+                EmitGetArrayElement(objectType);
+            }
+        }
+
+        private void EmitGetArrayElement(Type arrayType)
+        {
+            if (!arrayType.IsVector())
             {
                 // Multidimensional arrays, call get
-                _ilg.Emit(OpCodes.Call, node.Object.Type.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
+                _ilg.Emit(OpCodes.Call, arrayType.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
             }
             else
             {
                 // For one dimensional arrays, emit load
-                _ilg.EmitLoadElement(node.Type);
+                _ilg.EmitLoadElement(arrayType.GetElementType());
             }
         }
 
@@ -311,15 +319,23 @@ namespace System.Linq.Expressions.Compiler
                 var method = node.Indexer.GetSetMethod(true);
                 EmitCall(objectType, method);
             }
-            else if (node.Arguments.Count != 1)
+            else
+            {
+                EmitSetArrayElement(objectType);
+            }
+        }
+
+        private void EmitSetArrayElement(Type arrayType)
+        {
+            if (!arrayType.IsVector())
             {
                 // Multidimensional arrays, call set
-                _ilg.Emit(OpCodes.Call, node.Object.Type.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance));
+                _ilg.Emit(OpCodes.Call, arrayType.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance));
             }
             else
             {
                 // For one dimensional arrays, emit store
-                _ilg.EmitStoreElement(node.Type);
+                _ilg.EmitStoreElement(arrayType.GetElementType());
             }
         }
 
