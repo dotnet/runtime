@@ -266,6 +266,8 @@ public class TestRunner
 						else
 							Console.Write (".");
 					}
+
+					p.Close ();
 				}
 			});
 
