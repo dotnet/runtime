@@ -174,9 +174,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\libc\Interop.Write.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl.cs">
-      <Link>Common\Interop\Unix\libcurl\Interop.libcurl.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_easy.cs">
       <Link>Common\Interop\Unix\libcurl\Interop.libcurl_easy.cs</Link>
     </Compile>
@@ -200,6 +197,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.VersionInfo.cs">
+      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.VersionInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
