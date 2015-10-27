@@ -737,8 +737,13 @@ extern "C" int32_t GetDomainName(uint8_t* name, int32_t nameLength)
     assert(name != nullptr);
     assert(nameLength > 0);
 
-    size_t unsignedSize = UnsignedCast(nameLength);
-    return getdomainname(reinterpret_cast<char*>(name), unsignedSize);
+#if HAVE_GETDOMAINNAME_SIZET
+    size_t namelen = UnsignedCast(nameLength);
+#else
+    int namelen = nameLength;
+#endif
+
+    return getdomainname(reinterpret_cast<char*>(name), namelen);
 }
 
 extern "C" int32_t GetHostName(uint8_t* name, int32_t nameLength)

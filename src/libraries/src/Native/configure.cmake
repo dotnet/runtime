@@ -226,6 +226,20 @@ check_include_files(
     linux/rtnetlink.h
     HAVE_LINUX_RTNETLINK_H)
 
+# getdomainname on OSX takes an 'int' instead of a 'size_t'
+# check if compiling with 'size_t' would cause a warning
+set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+set (CMAKE_REQUIRED_FLAGS "-Weverything")
+check_cxx_source_compiles(
+    "
+    #include <unistd.h>
+	int main() { size_t namelen = 20; char name[namelen]; getdomainname(name, namelen); }
+    "
+    HAVE_GETDOMAINNAME_SIZET
+	FAIL_REGEX "-Wshorten"
+)
+set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
+
 check_function_exists(
     inotify_init
     HAVE_INOTIFY_INIT)
@@ -237,6 +251,13 @@ check_function_exists(
 check_function_exists(
     inotify_rm_watch
     HAVE_INOTIFY_RM_WATCH)
+
+set (HAVE_INOTIFY 0)
+if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
+	set (HAVE_INOTIFY 1)
+elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
+	message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
+endif()
 
 set (CMAKE_REQUIRED_LIBRARIES)
 
