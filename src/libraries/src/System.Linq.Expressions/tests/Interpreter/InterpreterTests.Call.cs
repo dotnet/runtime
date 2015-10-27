@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if FEATURE_INTERPRET
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -13,7 +12,7 @@ namespace Tests.Expressions
 {
     partial class InterpreterTests
     {
-        [Fact(Skip = "4150")]
+        [Fact]
         public static void CompileInterpretCrossCheck_Call_WriteBacks()
         {
             foreach (var e in Call_WriteBacks())
@@ -24,7 +23,6 @@ namespace Tests.Expressions
 
         private static IEnumerable<Expression> Call_WriteBacks()
         {
-            // OK
             foreach (var t in new[] { typeof(C), typeof(S) })
             {
                 var p = Expression.Parameter(t);
@@ -34,7 +32,6 @@ namespace Tests.Expressions
                 yield return Expression.Block(new[] { p }, Expression.Assign(p, Expression.New(t)), Expression.Call(p, mtd), m);
             }
 
-            // OK
             foreach (var t in new[] { typeof(C), typeof(S) })
             {
                 var p = Expression.Parameter(t.MakeArrayType());
@@ -45,7 +42,6 @@ namespace Tests.Expressions
                 yield return Expression.Block(new[] { p }, Expression.Assign(p, Expression.NewArrayInit(t, Expression.New(t))), Expression.Call(o, mtd), m);
             }
 
-            // OK
             foreach (var t in new[] { typeof(C), typeof(S) })
             {
                 var p = Expression.Parameter(t.MakeArrayType(2));
@@ -56,7 +52,6 @@ namespace Tests.Expressions
                 yield return Expression.Block(new[] { p }, Expression.Assign(p, Expression.NewArrayBounds(t, Expression.Constant(1), Expression.Constant(1))), Expression.Assign(o, Expression.New(t)), Expression.Call(o, mtd), m);
             }
 
-            // FAIL - Issue for struct; compiler doesn't write back but interpreter does
             foreach (var t in new[] { typeof(C), typeof(S) })
             {
                 var p = Expression.Parameter(typeof(Holder<>).MakeGenericType(t));
@@ -67,7 +62,6 @@ namespace Tests.Expressions
                 yield return Expression.Block(new[] { p }, Expression.Assign(p, Expression.New(p.Type.GetTypeInfo().DeclaredConstructors.Single(), Expression.New(t))), Expression.Call(o, mtd), m);
             }
 
-            // OK - Surprising compared to previous
             foreach (var t in new[] { typeof(C), typeof(S) })
             {
                 var p = Expression.Parameter(typeof(Holder<>).MakeGenericType(t));
@@ -78,7 +72,6 @@ namespace Tests.Expressions
                 yield return Expression.Block(new[] { p }, Expression.Assign(p, Expression.New(p.Type.GetTypeInfo().DeclaredConstructors.Single(), Expression.New(t))), Expression.Call(o, mtd), m);
             }
 
-            // FAIL - Issue for struct; compiler doesn't write back but interpreter does
             foreach (var t in new[] { typeof(C), typeof(S) })
             {
                 var p = Expression.Parameter(typeof(List<>).MakeGenericType(t));
