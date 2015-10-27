@@ -638,6 +638,7 @@ namespace System.Net.Http.Functional.Tests
 
         #region Various HTTP Method Tests
 
+        [ActiveIssue(4187, PlatformID.AnyUnix)]
         [Theory, MemberData("HttpMethods")]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(
             string method,
@@ -656,6 +657,7 @@ namespace System.Net.Http.Functional.Tests
             }        
         }
 
+        [ActiveIssue(4187, PlatformID.AnyUnix)]
         [Theory, MemberData("HttpMethodsThatAllowContent")]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(
             string method,
