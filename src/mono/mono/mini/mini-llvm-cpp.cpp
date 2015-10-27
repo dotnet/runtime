@@ -748,11 +748,6 @@ mono_llvm_dispose_ee (MonoEERef *eeref)
 #else
 
 void
-mono_llvm_cpp_throw_exception (void)
-{
-}
-
-void
 mono_llvm_set_unhandled_exception_handler (void)
 {
 }
