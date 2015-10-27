@@ -1726,6 +1726,28 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	return type;
 }
 
+
+MonoType*
+mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container,
+							   short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
+{
+	MonoType *ret;
+
+	mono_error_init (error);
+
+	ret = mono_metadata_parse_type_internal (m, container, opt_attrs, transient, ptr, rptr);
+
+	if (!ret) {
+		if (mono_loader_get_last_error ())
+			mono_error_set_from_loader_error (error);
+		else
+			mono_error_set_bad_image (error, m, "Could not parse type at %p due to unknown reasons", ptr);
+	}
+
+	return ret;
+}
+
+
 MonoType*
 mono_metadata_parse_type_full (MonoImage *m, MonoGenericContainer *container,
 							   short opt_attrs, const char *ptr, const char **rptr)
@@ -2022,14 +2044,10 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	method->generic_param_count = gen_param_count;
 
 	if (call_convention != 0xa) {
-		method->ret = mono_metadata_parse_type_full (m, container, pattrs ? pattrs [0] : 0, ptr, &ptr);
+		method->ret = mono_metadata_parse_type_checked (m, container, pattrs ? pattrs [0] : 0, FALSE, ptr, &ptr, error);
 		if (!method->ret) {
 			mono_metadata_free_method_signature (method);
 			g_free (pattrs);
-			if (mono_loader_get_last_error ())
-				mono_error_set_from_loader_error (error);
-			else
-				mono_error_set_bad_image (error, m, "Could not parse return type signature");
 			return NULL;
 		}
 		is_open = mono_class_is_open_constructed_type (method->ret);
@@ -2052,12 +2070,8 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 			method->sentinelpos = i;
 			ptr++;
 		}
-		method->params [i] = mono_metadata_parse_type_full (m, container, pattrs ? pattrs [i+1] : 0, ptr, &ptr);
+		method->params [i] = mono_metadata_parse_type_checked (m, container, pattrs ? pattrs [i+1] : 0, FALSE, ptr, &ptr, error);
 		if (!method->params [i]) {
-			if (mono_loader_get_last_error ())
-				mono_error_set_from_loader_error (error);
-			else
-				mono_error_set_bad_image (error, m, "Could not parse type argument %d on method signature", i);
 			mono_metadata_free_method_signature (method);
 			g_free (pattrs);
 			return NULL;
@@ -3353,19 +3367,27 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
-		MonoType *etype = mono_metadata_parse_type_full (m, container, 0, ptr, &ptr);
-		if (!etype)
+		MonoError error;
+		MonoType *etype = mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, &error);
+		if (!etype) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 			return FALSE;
+		}
 		type->data.klass = mono_class_from_mono_type (etype);
-		if (!type->data.klass)
-			return FALSE;
+		g_assert (type->data.klass); //This was previously an assert, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
 		break;
 	}
-	case MONO_TYPE_PTR:
-		type->data.type = mono_metadata_parse_type_internal (m, container, 0, transient, ptr, &ptr);
-		if (!type->data.type)
+	case MONO_TYPE_PTR: {
+		MonoError error;
+		type->data.type = mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, &error);
+		if (!type->data.type) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 			return FALSE;
+		}
 		break;
+	}
 	case MONO_TYPE_FNPTR: {
 		MonoError error;
 		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, &error);
@@ -5542,14 +5564,9 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 
 	mono_metadata_decode_value (ptr, &ptr);
 
-	type = mono_metadata_parse_type_internal (image, NULL, 0, TRUE, ptr, &ptr);
-	if (!type) {
-		if (mono_loader_get_last_error ())
-			mono_error_set_from_loader_error (error);
-		else
-			mono_error_set_bad_image (error, image, "Could not parse type spec %08x.", type_spec);
+	type = mono_metadata_parse_type_checked (image, NULL, 0, TRUE, ptr, &ptr, error);
+	if (!type)
 		return NULL;
-	}
 
 	type2 = mono_metadata_type_dup (image, type);
 	mono_metadata_free_type (type);

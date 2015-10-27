@@ -895,5 +895,8 @@ mono_method_get_wrapper_cache (MonoMethod *method);
 MonoWrapperCaches*
 mono_method_get_wrapper_cache (MonoMethod *method);
 
+MonoType*
+mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container, short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
