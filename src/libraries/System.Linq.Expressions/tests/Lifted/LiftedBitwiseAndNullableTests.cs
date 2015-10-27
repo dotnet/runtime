@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Lifted
 {
-    public static unsafe class LiftedBitwiseAndNullableTests
+    public static class LiftedBitwiseAndNullableTests
     {
         #region Test methods
 

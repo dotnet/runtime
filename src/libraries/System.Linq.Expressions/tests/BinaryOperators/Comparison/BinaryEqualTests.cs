@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Binary
 {
-    public static unsafe class BinaryEqualTests
+    public static class BinaryEqualTests
     {
         #region Test methods
 

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Array
 {
-    public static unsafe class NullableArrayLengthTests
+    public static class NullableArrayLengthTests
     {
         #region NullableBool tests
 

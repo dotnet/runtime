@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.MemberInit
 {
-    public static unsafe class MemberInitTests
+    public static class MemberInitTests
     {
         #region Test methods
 

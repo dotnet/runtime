@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Unary
 {
-    public static unsafe class UnaryArithmeticNegateTests
+    public static class UnaryArithmeticNegateTests
     {
         #region Test methods
 

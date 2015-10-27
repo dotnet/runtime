@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Convert
 {
-    public static unsafe class ConvertTests
+    public static class ConvertTests
     {
         #region Test methods
 
