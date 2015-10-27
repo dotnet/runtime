@@ -25,5 +25,43 @@ namespace System.Linq.Expressions.Tests
 
             b.Compile().DynamicInvoke();
         }
+
+        [Fact(Skip = "4150")]
+        public static void NoWriteBackToInstance()
+        {
+            new NoThread(false).DoTest();
+            new NoThread(true).DoTest(); // This case fails
+        }
+
+        public class NoThread
+        {
+            private readonly bool _preferInterpretation;
+
+            public NoThread(bool preferInterpretation)
+            {
+                _preferInterpretation = preferInterpretation;
+            }
+
+            public Func<NoThread, int> DoItA = (nt) =>
+            {
+                nt.DoItA = (nt0) => 1;
+                return 0;
+            };
+
+            public Action Compile()
+            {
+                var ind0 = Expression.Constant(this);
+                var fld = Expression.PropertyOrField(ind0, "DoItA");
+                var block = Expression.Block(typeof(void), Expression.Invoke(fld, ind0));
+                return Expression.Lambda<Action>(block).Compile(_preferInterpretation);
+            }
+
+            public void DoTest()
+            {
+                var act = Compile();
+                act();
+                Assert.Equal(1, DoItA(this));
+            }
+        }
     }
 }
