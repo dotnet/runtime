@@ -24,6 +24,7 @@ namespace System.Net.Http.Functional.Tests
     public class HttpClientHandlerTest
     {
         readonly ITestOutputHelper _output;
+        private const string ExpectedContent = "Test contest";
         private const string Username = "testuser";
         private const string Password = "password";
         private const string DecompressedContentPart = "Accept-Encoding";
@@ -33,33 +34,54 @@ namespace System.Net.Http.Functional.Tests
         private readonly NetworkCredential _credential = new NetworkCredential(Username, Password);
 
         public readonly static object[][] GetServers = HttpTestServers.GetServers;
-        public readonly static object[][] PutServers = HttpTestServers.PutServers;
         public readonly static object[][] PostServers = HttpTestServers.PostServers;
-        public readonly static object[][] DeleteServers = HttpTestServers.DeleteServers;
-
-        private static bool JsonMessageContainsKeyValue(string message, string key, string value)
-        {
-            // TODO: Align with the rest of tests w.r.t response parsing once the test server is finalized.
-            // Currently not adding any new dependencies
-            string pattern = string.Format(@"""{0}"": ""{1}""", key, value);
-            return message.Contains(pattern);
-        }
-
-        private static bool JsonMessageContainsKey(string message, string key)
-        {
-            // TODO: Align with the rest of tests w.r.t response parsing once the test server is finalized.
-            // Currently not adding any new dependencies
-            string pattern = string.Format(@"""{0}"": """, key);
-            return message.Contains(pattern);
-        }
-
+        public readonly static object[][] HttpMethods = 
+            new object[][]
+                {
+                    // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
+                    new object[] { "GET", false },
+                    new object[] { "GET", true },
+                    new object[] { "HEAD", false },
+                    new object[] { "HEAD", true },
+                    new object[] { "POST", false },
+                    new object[] { "POST", true },
+                    new object[] { "PUT", false },
+                    new object[] { "PUT", true },
+                    new object[] { "DELETE", false },
+                    new object[] { "DELETE", true },
+                    new object[] { "OPTIONS", false },
+                    new object[] { "OPTIONS", true },
+                    new object[] { "TRACE", false },
+                    new object[] { "TRACE", true },
+                    
+                    // Custom HTTP method
+                    new object[] { "CUSTOM1", false },
+                    new object[] { "CUSTOM1", true }
+                };
+        public readonly static object[][] HttpMethodsThatAllowContent = 
+            new object[][]
+                {
+                    // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
+                    new object[] { "GET", false },
+                    new object[] { "GET", true },
+                    new object[] { "POST", false },
+                    new object[] { "POST", true },
+                    new object[] { "PUT", false },
+                    new object[] { "PUT", true },
+                    new object[] { "DELETE", false },
+                    new object[] { "DELETE", true },
+                    
+                    // Custom HTTP method
+                    new object[] { "CUSTOM1", false },
+                    new object[] { "CUSTOM1", true }
+                };
 
         private static async Task AssertSuccessfulGetResponse(HttpResponseMessage response, Uri uri, ITestOutputHelper output)
         {
             Assert.Equal<HttpStatusCode>(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal<string>("OK", response.ReasonPhrase);
             string responseContent = await response.Content.ReadAsStringAsync();
-            Assert.True(JsonMessageContainsKeyValue(responseContent, "url", uri.AbsoluteUri));
+            Assert.True(TestHelper.JsonMessageContainsKeyValue(responseContent, "url", uri.AbsoluteUri));
             output.WriteLine(responseContent);
         }
 
@@ -310,7 +332,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpResponseMessage httpResponse = await client.GetAsync(HttpTestServers.RemoteServerHeadersUri);
                 string responseText = await httpResponse.Content.ReadAsStringAsync();
                 _output.WriteLine(responseText);
-                Assert.False(JsonMessageContainsKey(responseText, "Cookie"));
+                Assert.False(TestHelper.JsonMessageContainsKey(responseText, "Cookie"));
             }
         }
 
@@ -327,7 +349,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpResponseMessage httpResponse = await client.GetAsync(HttpTestServers.RemoteServerCookieUri);
                 Assert.Equal(httpResponse.StatusCode, HttpStatusCode.OK);
                 string responseText = await httpResponse.Content.ReadAsStringAsync();
-                Assert.True(JsonMessageContainsKeyValue(responseText, name, value));
+                Assert.True(TestHelper.JsonMessageContainsKeyValue(responseText, name, value));
             }
         }
 
@@ -341,7 +363,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpResponseMessage httpResponse = await client.GetAsync(HttpTestServers.RemoteServerHeadersUri);
                 httpResponse.EnsureSuccessStatusCode();
                 string responseText = await httpResponse.Content.ReadAsStringAsync();
-                Assert.True(JsonMessageContainsKeyValue(responseText, name, value));
+                Assert.True(TestHelper.JsonMessageContainsKeyValue(responseText, name, value));
             }
         }
 
@@ -387,7 +409,7 @@ namespace System.Net.Http.Functional.Tests
                     await client.PostAsync(remoteServer, stringContent);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, data));
+                Assert.True(TestHelper.JsonMessageContainsKeyValue(responseContent, dataKey, data));
                 _output.WriteLine(responseContent);
             }
         }
@@ -402,8 +424,8 @@ namespace System.Net.Http.Functional.Tests
                 HttpResponseMessage response = await client.PostAsync(remoteServer, content);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Assert.True(JsonMessageContainsKeyValue(responseContent, "thing1", "hello"));
-                Assert.True(JsonMessageContainsKeyValue(responseContent, "thing2", "world"));
+                Assert.True(TestHelper.JsonMessageContainsKeyValue(responseContent, "thing1", "hello"));
+                Assert.True(TestHelper.JsonMessageContainsKeyValue(responseContent, "thing2", "world"));
                 _output.WriteLine(responseContent);
             }
         }
@@ -440,7 +462,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpResponseMessage response = await client.PostAsync(remoteServer, form);
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     string responseContent = await response.Content.ReadAsStringAsync();
-                    Assert.True(JsonMessageContainsKeyValue(responseContent, fileTitle, fileContent));
+                    Assert.True(TestHelper.JsonMessageContainsKeyValue(responseContent, fileTitle, fileContent));
                     _output.WriteLine(responseContent);
                 }
             }
@@ -470,7 +492,7 @@ namespace System.Net.Http.Functional.Tests
                 response = await client.PostAsync(remoteServer, stringContent);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 responseContent = await response.Content.ReadAsStringAsync();
-                Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, data));
+                Assert.True(TestHelper.JsonMessageContainsKeyValue(responseContent, dataKey, data));
                 _output.WriteLine(responseContent);
             }
         }
@@ -580,7 +602,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpResponseMessage response = await client.PostAsync(remoteServer, null);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, String.Empty));
+                Assert.True(TestHelper.JsonMessageContainsKeyValue(responseContent, dataKey, String.Empty));
                 _output.WriteLine(responseContent);
             }
         }
@@ -614,112 +636,52 @@ namespace System.Net.Http.Functional.Tests
 
         #endregion
 
-        #region Put Method Tests
+        #region Various HTTP Method Tests
 
-        [Theory, MemberData("PutServers")]
-        public async Task PutAsync_CallMethod_StringContent(Uri remoteServer)
+        [Theory, MemberData("HttpMethods")]
+        public async Task SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(
+            string method,
+            bool secureServer)
         {
             using (var client = new HttpClient())
             {
-                var stringContent = new StringContent("{ \"firstName\": \"John\" }", Encoding.UTF32,
-                    mediaTypeJson);
-                HttpResponseMessage response = await client.PutAsync(remoteServer, stringContent);
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                _output.WriteLine(responseContent);
-            }
-        }
-
-        [Theory, MemberData("PutServers")]
-        public async Task PutAsync_CallMethod_NullContent(Uri remoteServer)
-        {
-            using (var client = new HttpClient())
-            {
-                HttpResponseMessage response = await client.PutAsync(remoteServer, null);
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                Assert.True(JsonMessageContainsKeyValue(responseContent, dataKey, String.Empty));
-                _output.WriteLine(responseContent);
-            }
-        }
-
-        [Fact]
-        public async Task PutAsync_IncorrectUri_MethodNotAllowed()
-        {
-            using (var client = new HttpClient())
-            {
-                HttpResponseMessage response = await client.PutAsync(HttpTestServers.RemoteGetServer, null);
-                Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
-            }
-        }
-
-        #endregion
-
-        #region Delete Method Tests
-
-        [Theory, MemberData("DeleteServers")]
-        public async Task DeleteAsync_Success(Uri deleteUri)
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                HttpResponseMessage response = await client.DeleteAsync(deleteUri);
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            }
-        }
-
-        [Theory, MemberData("DeleteServers")]
-        public async Task SendAsync_HttpDeleteMethodWithContent_Success(Uri deleteUri)
-        {
-            string value1 = Guid.NewGuid().ToString("N");
-            string value2 = Guid.NewGuid().ToString("N");
-            Dictionary<string, string> values = new Dictionary<string, string>{ {"key1", value1}, {"key2", value2} };
-            using (HttpClient client = new HttpClient())
-            {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, deleteUri);
-                request.Content = new FormUrlEncodedContent(values);
-                HttpResponseMessage response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                foreach(KeyValuePair<string, string> kvPair in values)
+                var request = new HttpRequestMessage(
+                    new HttpMethod(method), 
+                    secureServer ? HttpTestServers2.SecureRemoteEchoServer : HttpTestServers2.RemoteEchoServer);
+                using (HttpResponseMessage response = await client.SendAsync(request))
                 {
-                    Assert.True(JsonMessageContainsKeyValue(responseContent, kvPair.Key, kvPair.Value));
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    TestHelper.VerifyRequestMethod(response, method);
                 }
-                _output.WriteLine(responseContent);
-            }
+            }        
         }
 
-        #endregion
-
-        #region Options Method Tests
-
-        [Theory, MemberData("GetServers")]
-        public async Task SendAsync_HttpOptionsMethodNoContent_OKResponseWithAllowHeader(Uri uri)
+        [Theory, MemberData("HttpMethodsThatAllowContent")]
+        public async Task SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(
+            string method,
+            bool secureServer)
         {
-            using (HttpClient client = new HttpClient())
+            using (var client = new HttpClient())
             {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Options, uri);
-                HttpResponseMessage response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.True(response.Content.Headers.Contains("Allow"));
-            }
+                var request = new HttpRequestMessage(
+                    new HttpMethod(method), 
+                    secureServer ? HttpTestServers2.SecureRemoteEchoServer : HttpTestServers2.RemoteEchoServer);
+                request.Content = new StringContent(ExpectedContent);
+                using (HttpResponseMessage response = await client.SendAsync(request))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    TestHelper.VerifyRequestMethod(response, method);
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseContent);                    
+                    TestHelper.VerifyResponseBody(
+                        responseContent,
+                        response.Content.Headers.ContentMD5,
+                        false,
+                        ExpectedContent);                    
+                }
+            }        
         }
-
-        [Theory, MemberData("GetServers")]
-        public async Task SendAsync_HttpOptionsMethodWithContent_OKResponseWithAllowHeader(Uri uri)
-        {
-            string value1 = Guid.NewGuid().ToString("N");
-            string value2 = Guid.NewGuid().ToString("N");
-            Dictionary<string, string> values = new Dictionary<string, string>{ {"key1", value1}, {"key2", value2} };
-            using (HttpClient client = new HttpClient())
-            {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Options, uri);
-                request.Content = new FormUrlEncodedContent(values);
-                HttpResponseMessage response = await client.SendAsync(request);
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.True(response.Content.Headers.Contains("Allow"));
-            }
-        }
-
+        
         #endregion
     }
 }

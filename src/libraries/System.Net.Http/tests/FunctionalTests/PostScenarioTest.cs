@@ -160,7 +160,7 @@ namespace System.Net.Http.Functional.Tests
                         useChunkedEncodingUpload = true;
                     }
 
-                    VerifyResponseBody(
+                    TestHelper.VerifyResponseBody(
                         responseContent,
                         response.Content.Headers.ContentMD5,
                         useChunkedEncodingUpload,
@@ -202,48 +202,13 @@ namespace System.Net.Http.Functional.Tests
                     string responseContent = await response.Content.ReadAsStringAsync();
                     _output.WriteLine(responseContent);
 
-                    VerifyResponseBody(
+                    TestHelper.VerifyResponseBody(
                         responseContent,
                         response.Content.Headers.ContentMD5,
                         true,
                         requestBody);
                 }
             }
-        }
-
-        private bool JsonMessageContainsKeyValue(string message, string key, string value)
-        {
-            // TODO: Align with the rest of tests w.r.t response parsing once the test server is finalized.
-            // Currently not adding any new dependencies
-            string pattern = string.Format(@"""{0}"": ""{1}""", key, value);
-            return message.Contains(pattern);
-        }
-
-        private void VerifyResponseBody(
-            string responseContent,
-            byte[] expectedMD5Hash,
-            bool chunkedUpload,
-            string requestBody)
-        {
-            // Compare computed hash with transmitted hash.
-            using (MD5 md5 = MD5.Create())
-            {
-                byte[] bytes = Encoding.ASCII.GetBytes(responseContent);
-                byte[] actualMD5Hash = md5.ComputeHash(bytes);
-                Assert.Equal(expectedMD5Hash, actualMD5Hash);
-            }
-
-            // Verify upload semsntics: 'Content-Length' vs. 'Transfer-Encoding: chunked'.
-            bool requestUsedContentLengthUpload =
-                JsonMessageContainsKeyValue(responseContent, "Content-Length", requestBody.Length.ToString());
-            bool requestUsedChunkedUpload =
-                JsonMessageContainsKeyValue(responseContent, "Transfer-Encoding", "chunked");
-            Assert.NotEqual(requestUsedContentLengthUpload, requestUsedChunkedUpload);
-            Assert.Equal(chunkedUpload, requestUsedChunkedUpload);
-            Assert.Equal(!chunkedUpload, requestUsedContentLengthUpload);
-
-            // Verify that request body content was correctly sent to server.
-            Assert.True(JsonMessageContainsKeyValue(responseContent, "BodyContent", requestBody), "Valid request body");
         }
     }
 }
