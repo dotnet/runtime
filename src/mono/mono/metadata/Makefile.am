@@ -133,6 +133,7 @@ common_sources = \
 	icall.c			\
 	icall-def.h		\
 	image.c			\
+	image-internals.h	\
 	jit-info.c		\
 	loader.c		\
 	locales.c		\

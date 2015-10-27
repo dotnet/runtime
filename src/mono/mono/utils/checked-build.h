@@ -11,6 +11,12 @@
 #define __CHECKED_BUILD_H__
 
 #include <config.h>
+#include <mono/utils/atomic.h>
+
+// This is for metadata writes which we have chosen not to check at the current time.
+// Because in principle this should never happen, we still use a macro so that the exemptions will be easier to find, and remove, later.
+// The current reason why this is needed is for pointers to constant strings, which the checker cannot verify yet.
+#define CHECKED_METADATA_WRITE_PTR_EXEMPT(ptr, val) do { (ptr) = (val); } while (0)
 
 #ifdef CHECKED_BUILD
 
@@ -70,6 +76,18 @@ Functions that can be called from both coop or preept modes.
 	assert_gc_neutral_mode ();	\
 } while (0);
 
+// Use when writing a pointer from one image or imageset to another.
+#define CHECKED_METADATA_WRITE_PTR(ptr, val) do {    \
+    check_metadata_store (&(ptr), (val));    \
+    (ptr) = (val);    \
+} while (0);
+
+// Use when writing a pointer from an image or imageset to itself.
+#define CHECKED_METADATA_WRITE_PTR_LOCAL(ptr, val) do {    \
+    check_metadata_store_local (&(ptr), (val));    \
+    (ptr) = (val);    \
+} while (0);
+
 /*
 This can be called by embedders
 */
@@ -93,6 +111,9 @@ void assert_gc_neutral_mode (void);
 void checked_build_init (void);
 void checked_build_thread_transition(const char *transition, void *info, int from_state, int suspend_count, int next_state, int suspend_count_delta);
 
+void check_metadata_store(void *from, void *to);
+void check_metadata_store_local(void *from, void *to);
+
 #else
 
 #define MONO_REQ_GC_SAFE_MODE
@@ -103,6 +124,9 @@ void checked_build_thread_transition(const char *transition, void *info, int fro
 
 #define CHECKED_MONO_INIT()
 #define CHECKED_BUILD_THREAD_TRANSITION(transition, info, from_state, suspend_count, next_state, suspend_count_delta)
+
+#define CHECKED_METADATA_WRITE_PTR(ptr, val) do { (ptr) = (val); } while (0)
+#define CHECKED_METADATA_WRITE_PTR_LOCAL(ptr, val) do { (ptr) = (val); } while (0)
 
 #endif /* CHECKED_BUILD */
 
