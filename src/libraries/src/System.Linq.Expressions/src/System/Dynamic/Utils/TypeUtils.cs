@@ -730,5 +730,12 @@ namespace System.Dynamic.Utils
             }
         }
 #endif 
+
+        public static bool IsVector(this Type type)
+        {
+            // Unfortunately, the IsSzArray property of System.Type is inaccessible to us,
+            // so we use a little equality comparison trick instead:
+            return type == type.GetElementType().MakeArrayType();
+        }
     }
 }

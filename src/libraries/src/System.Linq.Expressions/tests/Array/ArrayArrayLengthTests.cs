@@ -2088,5 +2088,18 @@ namespace Tests.ExpressionCompiler.Array
         }
 
         #endregion
+
+        #region Regression tests
+
+        [Fact]
+        public static void ArrayLength_MultiDimensionalOf1()
+        {
+            foreach (var e in new Expression[] { Expression.Parameter(typeof(int).MakeArrayType(1)), Expression.Constant(new int[2, 2]) })
+            {
+                Assert.Throws<ArgumentException>(() => Expression.ArrayLength(e));
+            }
+        }
+
+        #endregion
     }
 }
