@@ -597,6 +597,9 @@ namespace System.Linq.Expressions.Compiler
 
             if (node.Constructor != null)
             {
+                if (node.Constructor.DeclaringType.GetTypeInfo().IsAbstract)
+                    throw Error.NonAbstractConstructorRequired();
+
                 List<WriteBack> wb = EmitArguments(node.Constructor, node);
                 _ilg.Emit(OpCodes.Newobj, node.Constructor);
                 EmitWriteBack(wb);

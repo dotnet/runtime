@@ -2324,6 +2324,9 @@ namespace System.Linq.Expressions.Interpreter
 
             if (node.Constructor != null)
             {
+                if (node.Constructor.DeclaringType.GetTypeInfo().IsAbstract)
+                    throw Error.NonAbstractConstructorRequired();
+
                 var parameters = node.Constructor.GetParameters();
                 List<ByRefUpdater> updaters = null;
 

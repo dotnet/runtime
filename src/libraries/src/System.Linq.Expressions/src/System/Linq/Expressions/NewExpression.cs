@@ -164,6 +164,7 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(constructor, "constructor");
             ContractUtils.RequiresNotNull(constructor.DeclaringType, "constructor.DeclaringType");
             TypeUtils.ValidateType(constructor.DeclaringType);
+            ValidateConstructor(constructor);
             var argList = arguments.ToReadOnly();
             ValidateArgumentTypes(constructor, ExpressionType.New, ref argList);
 
@@ -181,6 +182,7 @@ namespace System.Linq.Expressions
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression> arguments, IEnumerable<MemberInfo> members)
         {
             ContractUtils.RequiresNotNull(constructor, "constructor");
+            ValidateConstructor(constructor);
             var memberList = members.ToReadOnly();
             var argList = arguments.ToReadOnly();
             ValidateNewArgs(constructor, ref argList, ref memberList);
@@ -364,6 +366,12 @@ namespace System.Linq.Expressions
                 return;
             }
             throw Error.ArgumentMustBeFieldInfoOrPropertInfoOrMethod();
+        }
+
+        private static void ValidateConstructor(ConstructorInfo constructor)
+        {
+            if (constructor.IsStatic)
+                throw Error.NonStaticConstructorRequired();
         }
     }
 }
