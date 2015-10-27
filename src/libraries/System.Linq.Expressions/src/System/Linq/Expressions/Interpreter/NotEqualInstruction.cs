@@ -13,8 +13,8 @@ namespace System.Linq.Expressions.Interpreter
     internal abstract class NotEqualInstruction : Instruction
     {
         // Perf: EqualityComparer<T> but is 3/2 to 2 times slower.
-        private static Instruction s_reference,s_boolean,s_SByte,s_int16,s_char,s_int32,s_int64,s_byte,s_UInt16,s_UInt32,s_UInt64,s_single,s_double;
-        private static Instruction s_referenceLiftedToNull,s_booleanLiftedToNull,s_SByteLiftedToNull,s_int16LiftedToNull,s_charLiftedToNull,s_int32LiftedToNull,s_int64LiftedToNull,s_byteLiftedToNull,s_UInt16LiftedToNull,s_UInt32LiftedToNull,s_UInt64LiftedToNull,s_singleLiftedToNull,s_doubleLiftedToNull;
+        private static Instruction s_reference, s_boolean, s_SByte, s_int16, s_char, s_int32, s_int64, s_byte, s_UInt16, s_UInt32, s_UInt64, s_single, s_double;
+        private static Instruction s_referenceLiftedToNull, s_booleanLiftedToNull, s_SByteLiftedToNull, s_int16LiftedToNull, s_charLiftedToNull, s_int32LiftedToNull, s_int64LiftedToNull, s_byteLiftedToNull, s_UInt16LiftedToNull, s_UInt32LiftedToNull, s_UInt64LiftedToNull, s_singleLiftedToNull, s_doubleLiftedToNull;
 
         public override int ConsumedStack { get { return 2; } }
         public override int ProducedStack { get { return 1; } }

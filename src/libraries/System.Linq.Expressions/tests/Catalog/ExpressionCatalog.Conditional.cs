@@ -91,8 +91,8 @@ namespace Tests.Expressions
                                 summary
                             )
                         );
-                    });
-                }
+                });
             }
         }
     }
+}
