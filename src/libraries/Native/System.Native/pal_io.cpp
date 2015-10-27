@@ -21,7 +21,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-#if HAVE_INOTIFY_INIT || HAVE_INOTIFY_ADD_WATCH || HAVE_INOTIFY_RM_WATCH
+#if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
 
@@ -110,7 +110,7 @@ static_assert(PAL_POSIX_FADV_NOREUSE == POSIX_FADV_NOREUSE, "");
 #endif
 
 // Validate our NotifyEvents enum values are correct for the platform
-#if HAVE_INOTIFY_INIT || HAVE_INOTIFY_ADD_WATCH || HAVE_INOTIFY_RM_WATCH
+#if HAVE_INOTIFY
 static_assert(PAL_IN_ACCESS == IN_ACCESS, "");
 static_assert(PAL_IN_MODIFY == IN_MODIFY, "");
 static_assert(PAL_IN_ATTRIB == IN_ATTRIB, "");
@@ -874,7 +874,7 @@ extern "C" int32_t ReadStdinUnbuffered(void* buffer, int32_t bufferSize)
 
 extern "C" int32_t INotifyInit()
 {
-#if HAVE_INOTIFY_INIT
+#if HAVE_INOTIFY
     return inotify_init();
 #else
     errno = ENOTSUP;
@@ -887,10 +887,10 @@ extern "C" int32_t INotifyAddWatch(int32_t fd, const char* pathName, uint32_t ma
     assert(fd >= 0);
     assert(pathName != nullptr);
 
-#if HAVE_INOTIFY_ADD_WATCH
+#if HAVE_INOTIFY
     return inotify_add_watch(fd, pathName, mask);
 #else
-    (void)mask;
+    (void)fd, (void)pathName, (void)mask;
     errno = ENOTSUP;
     return -1;
 #endif
@@ -901,9 +901,10 @@ extern "C" int32_t INotifyRemoveWatch(int32_t fd, int32_t wd)
     assert(fd >= 0);
     assert(wd >= 0);
 
-#if HAVE_INOTIFY_RM_WATCH
+#if HAVE_INOTIFY
     return inotify_rm_watch(fd, wd);
 #else
+    (void)fd, (void)wd;
     errno = ENOTSUP;
     return -1;
 #endif
