@@ -1571,8 +1571,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
-        public void ReceiveFromV4BoundToSpecificV6_NotReceived_Windows()
+        [PlatformSpecific(~PlatformID.Linux)]
+        public void ReceiveFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
             {
@@ -1580,7 +1580,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        // NOTE: on Linux, the OS IP stack changes a dual-mode socket back to a
         //       normal IPv6 socket once the socket is bound to an IPv6-specific
         //       address. As a result, the argument validation checks in
         //       ReceiveFrom that check that the supplied endpoint is compatible
@@ -1588,8 +1588,8 @@ namespace System.Net.Sockets.Tests
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        public void ReceiveFromV4BoundToSpecificV6_NotReceived_Unix()
+        [PlatformSpecific(PlatformID.Linux)]
+        public void ReceiveFromV4BoundToSpecificV6_NotReceived_Linux()
         {
             Assert.Throws<ArgumentException>(() =>
             {
@@ -1701,8 +1701,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
-        public void BeginReceiveFromV4BoundToSpecificV6_NotReceived_Windows()
+        [PlatformSpecific(~PlatformID.Linux)]
+        public void BeginReceiveFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
             {
@@ -1710,7 +1710,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        // NOTE: on Linux, the OS IP stack changes a dual-mode socket back to a
         //       normal IPv6 socket once the socket is bound to an IPv6-specific
         //       address. As a result, the argument validation checks in
         //       ReceiveFrom that check that the supplied endpoint is compatible
@@ -1718,8 +1718,8 @@ namespace System.Net.Sockets.Tests
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        public void BeginReceiveFromV4BoundToSpecificV6_NotReceived_Unix()
+        [PlatformSpecific(PlatformID.Linux)]
+        public void BeginReceiveFromV4BoundToSpecificV6_NotReceived_Linux()
         {
             Assert.Throws<ArgumentException>(() =>
             {
@@ -2004,8 +2004,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
-        public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived_Windows()
+        [PlatformSpecific(~PlatformID.Linux)]
+        public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
             {
@@ -2013,7 +2013,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        // NOTE: on Linux, the OS IP stack changes a dual-mode socket back to a
         //       normal IPv6 socket once the socket is bound to an IPv6-specific
         //       address. As a result, the argument validation checks in
         //       ReceiveFrom that check that the supplied endpoint is compatible
@@ -2021,8 +2021,8 @@ namespace System.Net.Sockets.Tests
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived_Unix()
+        [PlatformSpecific(PlatformID.Linux)]
+        public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived_Linux()
         {
             Assert.Throws<ArgumentException>(() =>
             {
@@ -2194,8 +2194,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
-        public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived_Windows()
+        [PlatformSpecific(~PlatformID.Linux)]
+        public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
             {
@@ -2203,7 +2203,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        // NOTE: on Linux, the OS IP stack changes a dual-mode socket back to a
         //       normal IPv6 socket once the socket is bound to an IPv6-specific
         //       address. As a result, the argument validation checks in
         //       ReceiveFrom that check that the supplied endpoint is compatible
@@ -2211,8 +2211,8 @@ namespace System.Net.Sockets.Tests
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived_Unix()
+        [PlatformSpecific(PlatformID.Linux)]
+        public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived_Linux()
         {
             Assert.Throws<ArgumentException>(() =>
             {
@@ -2371,8 +2371,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)]
-        public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived_Windows()
+        [PlatformSpecific(~PlatformID.Linux)]
+        public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
             {
@@ -2380,7 +2380,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        // NOTE: on *nix, the OS IP stack changes a dual-mode socket back to a
+        // NOTE: on Linux, the OS IP stack changes a dual-mode socket back to a
         //       normal IPv6 socket once the socket is bound to an IPv6-specific
         //       address. As a result, the argument validation checks in
         //       ReceiveFrom that check that the supplied endpoint is compatible
@@ -2388,8 +2388,8 @@ namespace System.Net.Sockets.Tests
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
         [Fact]
-        [PlatformSpecific(PlatformID.AnyUnix)]
-        public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived_Unix()
+        [PlatformSpecific(PlatformID.Linux)]
+        public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived_Linux()
         {
             Assert.Throws<ArgumentException>(() =>
             {
