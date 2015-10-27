@@ -420,6 +420,9 @@ function run_test {
     # Convert DOS line endings to Unix if needed
     sed -i 's/\r$//' "$scriptFileName"
 
+    # Add executable file mode bit if needed
+    chmod +x "$scriptFileName"
+
     "./$scriptFileName" >"$outputFileName" 2>&1
     return $?
 }
