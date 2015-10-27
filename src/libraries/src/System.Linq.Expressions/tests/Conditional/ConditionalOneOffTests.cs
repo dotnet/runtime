@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Tests.Expressions.Conditional
 {
-    public static unsafe class ConditionalOneOffTests
+    public static class ConditionalOneOffTests
     {
         [Fact] // [Issue(3223, "https://github.com/dotnet/corefx/issues/3223")]
         public static void VisitIfThenDoesNotCloneTree()

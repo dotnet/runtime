@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Block
 {
-    public static unsafe class BlockTests
+    public static class BlockTests
     {
         #region Test methods
 

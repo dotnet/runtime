@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.MemberAccess
 {
-    public static unsafe class MemberAccessTests
+    public static class MemberAccessTests
     {
         [Fact]
         public static void CheckMemberAccessStructInstanceFieldTest()

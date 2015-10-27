@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Array
 {
-    public static unsafe class ArrayBoundsOneOffTests
+    public static class ArrayBoundsOneOffTests
     {
         [Fact]
         public static void CompileWithCastTest()

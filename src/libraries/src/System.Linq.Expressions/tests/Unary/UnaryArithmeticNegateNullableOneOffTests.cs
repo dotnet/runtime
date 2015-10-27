@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Unary
 {
-    public static unsafe class UnaryArithmeticNegateNullableOneOffTests
+    public static class UnaryArithmeticNegateNullableOneOffTests
     {
         [Fact] //[WorkItem(3197, "https://github.com/dotnet/corefx/issues/3197")]
         public static void UnaryArithmeticNegateNullableStackBalance()

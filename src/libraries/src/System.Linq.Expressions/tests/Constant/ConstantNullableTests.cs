@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Constant
 {
-    public static unsafe class ConstantNullableTests
+    public static class ConstantNullableTests
     {
         #region Test methods
 

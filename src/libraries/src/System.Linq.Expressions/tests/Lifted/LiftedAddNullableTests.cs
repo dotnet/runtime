@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Lifted
 {
-    public static unsafe class LiftedAddNullableTests
+    public static class LiftedAddNullableTests
     {
         #region Test methods
 
