@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Array
 {
-    public static unsafe class ArrayBoundsTests
+    public static class ArrayBoundsTests
     {
         #region Test methods
 

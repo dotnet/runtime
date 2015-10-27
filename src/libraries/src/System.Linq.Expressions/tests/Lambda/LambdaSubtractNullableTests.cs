@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Lambda
 {
-    public static unsafe class LambdaSubtractNullableTests
+    public static class LambdaSubtractNullableTests
     {
         #region Test methods
 

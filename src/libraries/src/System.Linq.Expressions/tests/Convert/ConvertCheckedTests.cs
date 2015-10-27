@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Tests.ExpressionCompiler.Convert
 {
-    public static unsafe class ConvertCheckedTests
+    public static class ConvertCheckedTests
     {
         #region Test methods
 
