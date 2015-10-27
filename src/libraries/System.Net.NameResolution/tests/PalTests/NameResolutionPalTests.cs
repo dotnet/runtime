@@ -9,6 +9,11 @@ namespace System.Net.NameResolution.PalTests
 {
     public class NameResolutionPalTests
     {
+        static NameResolutionPalTests()
+        {
+            NameResolutionPal.EnsureSocketsAreInitialized();
+        }
+
         [Fact]
         public void HostName_NotNull()
         {

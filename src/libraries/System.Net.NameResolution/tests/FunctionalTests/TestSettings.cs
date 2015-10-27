@@ -4,6 +4,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,7 +23,10 @@ namespace System.Net.NameResolution.Tests
         {
             get
             {
-                return AddressFamily.InterNetworkV6;
+                // *nix machines are not always configured to resolve localhost to an IPv6 address.
+                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                    AddressFamily.InterNetworkV6 :
+                    AddressFamily.InterNetwork;
             }
         }
 
