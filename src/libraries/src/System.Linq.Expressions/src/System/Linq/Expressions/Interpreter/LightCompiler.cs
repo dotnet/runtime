@@ -2250,7 +2250,11 @@ namespace System.Linq.Expressions.Interpreter
                     if (field != null)
                     {
                         _instructions.EmitLoadField(field);
-                        return new FieldByRefUpdater(memberTemp, field, index);
+                        if (!field.IsLiteral && !field.IsInitOnly)
+                        {
+                            return new FieldByRefUpdater(memberTemp, field, index);
+                        }
+                        return null;
                     }
                     PropertyInfo property = member.Member as PropertyInfo;
                     if (property != null)
@@ -3116,7 +3120,16 @@ namespace System.Linq.Expressions.Interpreter
         public override void Update(InterpretedFrame frame, object value)
         {
             var obj = _object == null ? null : frame.Data[_object.Value.Index];
-            _property.SetValue(obj, value);
+
+            try
+            {
+                _property.SetValue(obj, value);
+            }
+            catch (TargetInvocationException e)
+            {
+                ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                throw e.InnerException;
+            }
         }
 
         public override void UndefineTemps(InstructionList instructions, LocalVariables locals)
@@ -3150,10 +3163,18 @@ namespace System.Linq.Expressions.Interpreter
                 args[i] = frame.Data[_args[i].Index];
             }
             args[args.Length - 1] = value;
-            _indexer.Invoke(
-                _obj == null ? null : frame.Data[_obj.Value.Index],
-                args
-            );
+
+            object instance = _obj == null ? null : frame.Data[_obj.Value.Index];
+
+            try
+            {
+                _indexer.Invoke(instance, args);
+            }
+            catch (TargetInvocationException e)
+            {
+                ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                throw e.InnerException;
+            }
         }
 
         public override void UndefineTemps(InstructionList instructions, LocalVariables locals)
