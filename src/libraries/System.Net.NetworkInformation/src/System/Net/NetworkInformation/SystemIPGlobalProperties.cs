@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
 {
@@ -358,21 +359,7 @@ namespace System.Net.NetworkInformation
             return new SystemIcmpV6Statistics();
         }
 
-        public override UnicastIPAddressInformationCollection GetUnicastAddresses()
-        {
-            // Wait for the Address Table to stabilize
-            using (ManualResetEvent stable = new ManualResetEvent(false))
-            {
-                if (!TeredoHelper.UnsafeNotifyStableUnicastIpAddressTable(StableUnicastAddressTableCallback, stable))
-                {
-                    stable.WaitOne();
-                }
-            }
-
-            return GetUnicastAddressTable();
-        }
-
-        public override IAsyncResult BeginGetUnicastAddresses(AsyncCallback callback, object state)
+        private IAsyncResult BeginGetUnicastAddresses(AsyncCallback callback, object state)
         {
             ContextAwareResult asyncResult = new ContextAwareResult(false, false, this, state, callback);
             asyncResult.StartPostingAsyncOp(false);
@@ -386,7 +373,7 @@ namespace System.Net.NetworkInformation
             return asyncResult;
         }
 
-        public override UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult)
+        private UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
             {
@@ -408,6 +395,11 @@ namespace System.Net.NetworkInformation
 
             result.EndCalled = true;
             return GetUnicastAddressTable();
+        }
+
+        public override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
+        {
+            return Task<UnicastIPAddressInformationCollection>.Factory.FromAsync(BeginGetUnicastAddresses, EndGetUnicastAddresses, null);
         }
 
         private static void StableUnicastAddressTableCallback(object param)

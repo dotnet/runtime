@@ -80,24 +80,9 @@ namespace System.Net.NetworkInformation
 
         public abstract IPGlobalStatistics GetIPv6GlobalStatistics();
 
-        public virtual UnicastIPAddressInformationCollection GetUnicastAddresses()
-        {
-            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
-        }
-
-        public virtual IAsyncResult BeginGetUnicastAddresses(AsyncCallback callback, object state)
-        {
-            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
-        }
-
-        public virtual UnicastIPAddressInformationCollection EndGetUnicastAddresses(IAsyncResult asyncResult)
-        {
-            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
-        }
-
         public virtual Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {
-            return Task<UnicastIPAddressInformationCollection>.Factory.FromAsync(BeginGetUnicastAddresses, EndGetUnicastAddresses, null);
+            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
         }
     }
 }
