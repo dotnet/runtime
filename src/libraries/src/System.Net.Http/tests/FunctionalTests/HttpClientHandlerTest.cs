@@ -35,6 +35,7 @@ namespace System.Net.Http.Functional.Tests
         public readonly static object[][] GetServers = HttpTestServers.GetServers;
         public readonly static object[][] PutServers = HttpTestServers.PutServers;
         public readonly static object[][] PostServers = HttpTestServers.PostServers;
+        public readonly static object[][] DeleteServers = HttpTestServers.DeleteServers;
 
         private static bool JsonMessageContainsKeyValue(string message, string key, string value)
         {
@@ -649,6 +650,73 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpResponseMessage response = await client.PutAsync(HttpTestServers.RemoteGetServer, null);
                 Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
+            }
+        }
+
+        #endregion
+
+        #region Delete Method Tests
+
+        [Theory, MemberData("DeleteServers")]
+        public async Task DeleteAsync_Success(Uri deleteUri)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                HttpResponseMessage response = await client.DeleteAsync(deleteUri);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [Theory, MemberData("DeleteServers")]
+        public async Task SendAsync_HttpDeleteMethodWithContent_Success(Uri deleteUri)
+        {
+            string value1 = Guid.NewGuid().ToString("N");
+            string value2 = Guid.NewGuid().ToString("N");
+            Dictionary<string, string> values = new Dictionary<string, string>{ {"key1", value1}, {"key2", value2} };
+            using (HttpClient client = new HttpClient())
+            {
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, deleteUri);
+                request.Content = new FormUrlEncodedContent(values);
+                HttpResponseMessage response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                foreach(KeyValuePair<string, string> kvPair in values)
+                {
+                    Assert.True(JsonMessageContainsKeyValue(responseContent, kvPair.Key, kvPair.Value));
+                }
+                _output.WriteLine(responseContent);
+            }
+        }
+
+        #endregion
+
+        #region Options Method Tests
+
+        [Theory, MemberData("GetServers")]
+        public async Task SendAsync_HttpOptionsMethodNoContent_OKResponseWithAllowHeader(Uri uri)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Options, uri);
+                HttpResponseMessage response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.True(response.Content.Headers.Contains("Allow"));
+            }
+        }
+
+        [Theory, MemberData("GetServers")]
+        public async Task SendAsync_HttpOptionsMethodWithContent_OKResponseWithAllowHeader(Uri uri)
+        {
+            string value1 = Guid.NewGuid().ToString("N");
+            string value2 = Guid.NewGuid().ToString("N");
+            Dictionary<string, string> values = new Dictionary<string, string>{ {"key1", value1}, {"key2", value2} };
+            using (HttpClient client = new HttpClient())
+            {
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Options, uri);
+                request.Content = new FormUrlEncodedContent(values);
+                HttpResponseMessage response = await client.SendAsync(request);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.True(response.Content.Headers.Contains("Allow"));
             }
         }
 

@@ -16,6 +16,7 @@ namespace System.Net.Tests
         public readonly static Uri RemoteGetServer = new Uri("http://" + Host + "/get");
         public readonly static Uri RemotePostServer = new Uri("http://" + Host + "/post");
         public readonly static Uri RemotePutServer = new Uri("http://" + Host + "/put");
+        public readonly static Uri RemoteDeleteServer = new Uri("http://" + Host + "/delete");
         public readonly static Uri SecureRemoteGetServer = new Uri("https://" + Host + "/get");
         public readonly static Uri SecureRemotePostServer = new Uri("https://" + Host + "/post");
         public readonly static Uri RemoteServerGzipUri = new Uri("http://" + Host + "/gzip");
@@ -23,6 +24,7 @@ namespace System.Net.Tests
         public readonly static Uri RemoteServerCookieUri = new Uri("http://" + Host + "/cookies");
         public readonly static Uri RemoteServerHeadersUri = new Uri("http://" + Host + "/headers");
         public readonly static Uri SecureRemotePutServer = new Uri("https://" + Host + "/put");
+        public readonly static Uri SecureRemoteDeleteServer = new Uri("https://" + Host + "/delete");
 
         public const string RemoteStatusCodeServerFormat = "http://" + Host + "/status/{0}";
         public const string SecureRemoteStatusCodeServerFormat = "https://" + Host + "/status/{0}";
@@ -30,6 +32,7 @@ namespace System.Net.Tests
         public readonly static object[][] GetServers = { new object[] { RemoteGetServer }, new object[] { SecureRemoteGetServer } };
         public readonly static object[][] PostServers = { new object[] { RemotePostServer }, new object[] { SecureRemotePostServer } };
         public readonly static object[][] PutServers = { new object[] { RemotePutServer }, new object[] { SecureRemotePutServer } };
+        public readonly static object[][] DeleteServers = { new object[] { RemoteDeleteServer }, new object[] { SecureRemoteDeleteServer } };
 
         public static Uri BasicAuthUriForCreds(string userName, string password)
         {
