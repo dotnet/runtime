@@ -54,7 +54,7 @@ public class TestRunner
 		int concurrency = 1;
 		int timeout = 2 * 60; // in seconds
 		int expectedExitCode = 0;
-		string testsuiteName = "runtime";
+		string testsuiteName = null;
 
 		DateTime test_start_time = DateTime.UtcNow;
 
@@ -128,6 +128,11 @@ public class TestRunner
 			} else {
 				break;
 			}
+		}
+
+		if (String.IsNullOrEmpty (testsuiteName)) {
+			Console.WriteLine ("Missing the required --testsuite-name command line option.");
+			return 1;
 		}
 
 		var disabled = new Dictionary <string, string> ();
