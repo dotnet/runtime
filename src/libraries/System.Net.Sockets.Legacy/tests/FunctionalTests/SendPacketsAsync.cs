@@ -309,7 +309,6 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [ActiveIssue(4007, PlatformID.AnyUnix)]
-        [ActiveIssue(3497, PlatformID.Windows)]
         public void SendPacketsElement_FilePart_Success()
         {
             SendPackets(new SendPacketsElement(TestFileName, 10, 20), 20);
