@@ -6797,6 +6797,25 @@ public:
 };
 
 //
+// This is a native exception holder that is used when the catch catches
+// all exceptions.
+//
+class NativeExceptionHolderCatchAll : public NativeExceptionHolderBase
+{
+
+public:
+    NativeExceptionHolderCatchAll()
+        : NativeExceptionHolderBase()
+    {
+    }
+
+    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
+    {
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
+};
+
+//
 // This factory class for the native exception holder is necessary because
 // templated functions don't need the explicit type parameter and can infer
 // the template type from the parameter.
