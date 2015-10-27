@@ -34,9 +34,20 @@ namespace Tests.Expressions
 
         private static void Verify(Expression expr)
         {
+            Expression res;
+
+            if (expr.Type == typeof(void))
+            {
+                res = Expression.Block(expr, Expression.Constant(null));
+            }
+            else
+            {
+                res = Expression.Convert(expr, typeof(object));
+            }
+
             Expression<Func<object>> e =
                 Expression.Lambda<Func<object>>(
-                    Expression.Convert(expr, typeof(object)),
+                    res,
                     Enumerable.Empty<ParameterExpression>());
 
             try
