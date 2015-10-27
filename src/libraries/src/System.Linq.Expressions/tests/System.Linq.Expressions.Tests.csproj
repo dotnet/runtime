@@ -124,6 +124,7 @@
     <Compile Include="Convert\ConvertCheckedTests.cs" />
     <Compile Include="Convert\ConvertTests.cs" />
     <Compile Include="HelperTypes.cs" />
+    <Compile Include="Interpreter\InterpreterTests.Address.cs" />
     <Compile Include="Interpreter\InterpreterTests.cs" />
     <Compile Include="Interpreter\InterpreterTests.Generated.cs" />
     <Compile Include="Invoke\InvocationTests.cs" />
