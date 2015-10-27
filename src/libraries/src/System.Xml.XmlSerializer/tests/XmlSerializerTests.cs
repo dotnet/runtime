@@ -1464,8 +1464,8 @@ public static partial class XmlSerializerTests
         obj.BinaryHexContent = Encoding.Unicode.GetBytes(str);
         var actual = SerializeAndDeserialize(obj,
 @"<?xml version=""1.0"" encoding=""utf-8""?><TypeWithBinaryProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><BinaryHexContent>540068006500200071007500690063006B002000620072006F0077006E00200066006F00780020006A0075006D007000730020006F00760065007200200074006800650020006C0061007A007900200064006F0067002E00</BinaryHexContent><Base64Content>VABoAGUAIABxAHUAaQBjAGsAIABiAHIAbwB3AG4AIABmAG8AeAAgAGoAdQBtAHAAcwAgAG8AdgBlAHIAIAB0AGgAZQAgAGwAYQB6AHkAIABkAG8AZwAuAA==</Base64Content></TypeWithBinaryProperty>");
-        Assert.StrictEqual(str, Encoding.Unicode.GetString(actual.Base64Content));
-        Assert.StrictEqual(str, Encoding.Unicode.GetString(actual.BinaryHexContent));
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(obj.Base64Content, actual.Base64Content));
+        Assert.StrictEqual(true, Enumerable.SequenceEqual(obj.BinaryHexContent, actual.BinaryHexContent));
     }
 
     [Fact]
@@ -1477,21 +1477,6 @@ public static partial class XmlSerializerTests
 
         serializers = XmlSerializer.FromTypes(null);
         Assert.Equal(0, serializers.Length);
-    }
-
-    [Fact]
-    public static void Xml_FromMappings()
-    {
-        var types = new[] {typeof (Guid), typeof (List<string>)};
-        XmlReflectionImporter importer = new XmlReflectionImporter();
-        XmlTypeMapping[] mappings = new XmlTypeMapping[types.Length];
-        for (int i = 0; i < types.Length; i++)
-        {
-            mappings[i] = importer.ImportTypeMapping(types[i]);
-        }
-        var serializers = XmlSerializer.FromMappings(mappings, typeof(object));
-        Xml_GuidAsRoot(serializers[0]);
-        Xml_ListGenericRoot(serializers[1]);
     }
 
     [Fact]
@@ -1535,7 +1520,7 @@ public static partial class XmlSerializerTests
 
         // XmlSerializer(Type, XmlAttributeOverrides, Type[], XmlRootAttribute, String)
         var root = new XmlRootAttribute("Collection");
-        serializer = new XmlSerializer(typeof(Music.Orchestra), overrides, Array.Empty<Type>(), root, "defaultNamespace");
+        serializer = new XmlSerializer(typeof(Music.Orchestra), overrides, new Type[0], root, "defaultNamespace");
         actual = SerializeAndDeserialize(expected,
 @"<?xml version=""1.0"" encoding=""utf-8""?><Collection xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""  xmlns=""defaultNamespace""><Brass><Name>Trumpet</Name><IsValved>true</IsValved></Brass><Brass><Name>Cornet</Name><IsValved>true</IsValved></Brass></Collection>",
             () => serializer);
@@ -1545,18 +1530,6 @@ public static partial class XmlSerializerTests
         {
             new XmlSerializer(null, overrides);
         });
-    }
-
-    [Fact]
-    public static void Xml_ConstructorWithTypeMapping()
-    {
-        XmlTypeMapping mapping = null;
-        XmlSerializer serializer = null;
-        Assert.Throws<ArgumentNullException>(() => { new XmlSerializer(mapping); });
-        
-        mapping = new XmlReflectionImporter(null, null).ImportTypeMapping(typeof(List<string>));
-        serializer = new XmlSerializer(mapping);
-        Xml_ListGenericRoot(serializer);
     }
 
     [Fact]
