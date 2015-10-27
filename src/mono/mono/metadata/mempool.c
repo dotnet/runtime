@@ -19,10 +19,6 @@
 #include "mempool.h"
 #include "mempool-internals.h"
 
-#if USE_MALLOC_FOR_MEMPOOLS
-#define MALLOC_ALLOCATION
-#endif
-
 /*
  * MonoMemPool is for fast allocation of memory. We free
  * all memory when the pool is destroyed.
@@ -30,6 +26,8 @@
 
 #define MEM_ALIGN 8
 #define ALIGN_SIZE(s)	(((s) + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1))
+
+// Size of memory at start of mempool reserved for header
 #define SIZEOF_MEM_POOL	(ALIGN_SIZE (sizeof (MonoMemPool)))
 
 #if MONO_SMALL_CONFIG
@@ -40,33 +38,42 @@
 #define MONO_MEMPOOL_MINSIZE 512
 #endif
 
+// The --with-malloc-mempools debug-build flag causes mempools to be allocated in single-element blocks, so tools like Valgrind can run better.
+#if USE_MALLOC_FOR_MEMPOOLS
+#define INDIVIDUAL_ALLOCATIONS
+#define MONO_MEMPOOL_PREFER_INDIVIDUAL_ALLOCATION_SIZE 0
+#else
+#define MONO_MEMPOOL_PREFER_INDIVIDUAL_ALLOCATION_SIZE MONO_MEMPOOL_PAGESIZE
+#endif
+
 #ifndef G_LIKELY
 #define G_LIKELY(a) (a)
 #define G_UNLIKELY(a) (a)
 #endif
 
-#ifdef MALLOC_ALLOCATION
-typedef struct _Chunk {
-	struct _Chunk *next;
-	guint32 size;
-} Chunk;
-
+// A mempool is a linked list of memory blocks, each of which begins with this header structure.
+// The initial block in the linked list is special, and tracks additional information.
 struct _MonoMemPool {
-	Chunk *chunks;
-	guint32 allocated;
-};
-#else
-struct _MonoMemPool {
+	// Next block after this one in linked list
 	MonoMemPool *next;
-	gint rest;
-	guint8 *pos, *end;
+
+	// Size of this memory block only
 	guint32 size;
+
+	// Used in "initial block" only: Beginning of current free space in mempool (may be in some block other than the first one)
+	guint8 *pos;
+
+	// Used in "initial block" only: End of current free space in mempool (ie, the first byte following the end of usable space)
+	guint8 *end;
+
 	union {
-		double pad; /* to assure proper alignment */
+		// Unused: Imposing floating point memory rules on _MonoMemPool's final field ensures proper alignment of whole header struct
+		double pad;
+
+		// Used in "initial block" only: Number of bytes so far allocated (whether used or not) in the whole mempool
 		guint32 allocated;
 	} d;
 };
-#endif
 
 static long total_bytes_allocated = 0;
 
@@ -81,24 +88,33 @@ mono_mempool_new (void)
 	return mono_mempool_new_size (MONO_MEMPOOL_PAGESIZE);
 }
 
+/**
+ * mono_mempool_new_size:
+ * @initial_size: the amount of memory to initially reserve for the memory pool.
+ *
+ * Returns: a new memory pool with a specific initial memory reservation.
+ */
 MonoMemPool *
 mono_mempool_new_size (int initial_size)
 {
-#ifdef MALLOC_ALLOCATION
-	return g_new0 (MonoMemPool, 1);
-#else
 	MonoMemPool *pool;
+
+#ifdef INDIVIDUAL_ALLOCATIONS
+	// In individual allocation mode, create initial block with zero storage space.
+	initial_size = SIZEOF_MEM_POOL;
+#else
 	if (initial_size < MONO_MEMPOOL_MINSIZE)
 		initial_size = MONO_MEMPOOL_MINSIZE;
+#endif
+
 	pool = g_malloc (initial_size);
 
 	pool->next = NULL;
-	pool->pos = (guint8*)pool + SIZEOF_MEM_POOL;
-	pool->end = pool->pos + initial_size - SIZEOF_MEM_POOL;
+	pool->pos = (guint8*)pool + SIZEOF_MEM_POOL; // Start after header
+	pool->end = (guint8*)pool + initial_size;    // End at end of allocated space 
 	pool->d.allocated = pool->size = initial_size;
 	total_bytes_allocated += initial_size;
 	return pool;
-#endif
 }
 
 /**
@@ -110,11 +126,6 @@ mono_mempool_new_size (int initial_size)
 void
 mono_mempool_destroy (MonoMemPool *pool)
 {
-#ifdef MALLOC_ALLOCATION
-	mono_mempool_empty (pool);
-
-	g_free (pool);
-#else
 	MonoMemPool *p, *n;
 
 	total_bytes_allocated -= pool->d.allocated;
@@ -125,7 +136,6 @@ mono_mempool_destroy (MonoMemPool *pool)
 		g_free (p);
 		p = n;
 	}
-#endif
 }
 
 /**
@@ -137,9 +147,6 @@ mono_mempool_destroy (MonoMemPool *pool)
 void
 mono_mempool_invalidate (MonoMemPool *pool)
 {
-#ifdef MALLOC_ALLOCATION
-	g_assert_not_reached ();
-#else
 	MonoMemPool *p, *n;
 
 	p = pool;
@@ -148,49 +155,26 @@ mono_mempool_invalidate (MonoMemPool *pool)
 		memset (p, 42, p->size);
 		p = n;
 	}
-#endif
-}
-
-void
-mono_mempool_empty (MonoMemPool *pool)
-{
-#ifdef MALLOC_ALLOCATION
-	Chunk *p, *n;
-
-	p = pool->chunks;
-	pool->chunks = NULL;
-	while (p) {
-		n = p->next;
-		g_free (p);
-		p = n;
-	}
-
-	pool->allocated = 0;
-#else
-	pool->pos = (guint8*)pool + SIZEOF_MEM_POOL;
-	pool->end = pool->pos + pool->size - SIZEOF_MEM_POOL;
-#endif
 }
 
 /**
  * mono_mempool_stats:
  * @pool: the momory pool we need stats for
  *
- * Print a few stats about the mempool
+ * Print a few stats about the mempool:
+ * - Total memory allocated (malloced) by mem pool
+ * - Number of chunks/blocks memory is allocated in
+ * - How much memory is available to dispense before a new malloc must occur?
  */
 void
 mono_mempool_stats (MonoMemPool *pool)
 {
-#ifdef MALLOC_ALLOCATION
-	g_assert_not_reached ();
-#else
 	MonoMemPool *p;
 	int count = 0;
-	guint32 still_free = 0;
+	guint32 still_free = pool->end - pool->pos;
 
 	p = pool;
 	while (p) {
-		still_free += p->end - p->pos;
 		p = p->next;
 		count++;
 	}
@@ -200,10 +184,8 @@ mono_mempool_stats (MonoMemPool *pool)
 		g_print ("Num chunks: %d\n", count);
 		g_print ("Free memory: %d\n", still_free);
 	}
-#endif
 }
 
-#ifndef MALLOC_ALLOCATION
 #ifdef TRACE_ALLOCATIONS
 #include <execinfo.h>
 #include "metadata/appdomain.h"
@@ -237,7 +219,18 @@ mono_backtrace (int size)
 
 #endif
 
-static int
+/**
+ * mono_mempool_alloc:
+ * @pool: the memory pool to use
+ * @size: size of the memory entity we are trying to allocate
+ *
+ * A mempool is growing; give a recommended size for the next block.
+ * Each block in a mempool should be about 150% bigger than the previous one,
+ * or bigger if it is necessary to include the new entity.
+ *
+ * Returns: the recommended size.
+ */
+static guint
 get_next_size (MonoMemPool *pool, int size)
 {
 	int target = pool->next? pool->next->size: pool->size;
@@ -251,12 +244,11 @@ get_next_size (MonoMemPool *pool, int size)
 		target = MONO_MEMPOOL_PAGESIZE;
 	return target;
 }
-#endif
 
 /**
  * mono_mempool_alloc:
- * @pool: the momory pool to use
- * @size: size of the momory block
+ * @pool: the memory pool to use
+ * @size: size of the memory block
  *
  * Allocates a new block of memory in @pool.
  *
@@ -265,24 +257,10 @@ get_next_size (MonoMemPool *pool, int size)
 gpointer
 mono_mempool_alloc (MonoMemPool *pool, guint size)
 {
-	gpointer rval;
+	gpointer rval = pool->pos; // Return value
 
+	// Normal case: Just bump up pos pointer and we are done
 	size = ALIGN_SIZE (size);
-
-#ifdef MALLOC_ALLOCATION
-	{
-		Chunk *c = g_malloc (size + sizeof (Chunk));
-
-		c->next = pool->chunks;
-		pool->chunks = c;
-		c->size = size - sizeof(Chunk);
-
-		pool->allocated += size;
-
-		rval = ((guint8*)c) + sizeof (Chunk);
-	}
-#else
-	rval = pool->pos;
 	pool->pos = (guint8*)rval + size;
 
 #ifdef TRACE_ALLOCATIONS
@@ -290,28 +268,34 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 		mono_backtrace (size);
 	}
 #endif
+
+	// If we have just overflowed the current block, we need to back up and try again.
 	if (G_UNLIKELY (pool->pos >= pool->end)) {
-		pool->pos -= size;
-		if (size >= 4096) {
-			MonoMemPool *np = g_malloc (SIZEOF_MEM_POOL + size);
-			np->next = pool->next;
-			pool->next = np;
-			np->pos = (guint8*)np + SIZEOF_MEM_POOL;
-			np->size = SIZEOF_MEM_POOL + size;
-			np->end = np->pos + np->size - SIZEOF_MEM_POOL;
-			pool->d.allocated += SIZEOF_MEM_POOL + size;
-			total_bytes_allocated += SIZEOF_MEM_POOL + size;
-			return (guint8*)np + SIZEOF_MEM_POOL;
-		} else {
-			int new_size = get_next_size (pool, size);
+		pool->pos -= size;  // Back out
+
+		// For large objects, allocate the object into its own block.
+		// (In individual allocation mode, the constant will be 0 and this path will always be taken)
+		if (size >= MONO_MEMPOOL_PREFER_INDIVIDUAL_ALLOCATION_SIZE) {
+			guint new_size = SIZEOF_MEM_POOL + size;
 			MonoMemPool *np = g_malloc (new_size);
+
 			np->next = pool->next;
+			np->size = new_size;
+			pool->next = np;
+			pool->d.allocated += new_size;
+			total_bytes_allocated += new_size;
+
+			rval = (guint8*)np + SIZEOF_MEM_POOL;
+		} else {
+			// Notice: any unused memory at the end of the old head becomes simply abandoned in this case until the mempool is freed (see Bugzilla #35136)
+			guint new_size = get_next_size (pool, size);
+			MonoMemPool *np = g_malloc (new_size);
+
+			np->next = pool->next;
+			np->size = new_size;
 			pool->next = np;
 			pool->pos = (guint8*)np + SIZEOF_MEM_POOL;
-			np->pos = (guint8*)np + SIZEOF_MEM_POOL;
-			np->size = new_size;
-			np->end = np->pos;
-			pool->end = pool->pos + new_size - SIZEOF_MEM_POOL;
+			pool->end = (guint8*)np + new_size;
 			pool->d.allocated += new_size;
 			total_bytes_allocated += new_size;
 
@@ -319,7 +303,6 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			pool->pos += size;
 		}
 	}
-#endif
 
 	return rval;
 }
@@ -334,14 +317,12 @@ mono_mempool_alloc0 (MonoMemPool *pool, guint size)
 {
 	gpointer rval;
 
-#ifdef MALLOC_ALLOCATION
-	rval = mono_mempool_alloc (pool, size);
-#else
+	// For the fast path, repeat the first few lines of mono_mempool_alloc
 	size = ALIGN_SIZE (size);
-
 	rval = pool->pos;
 	pool->pos = (guint8*)rval + size;
 
+	// If that doesn't work fall back on mono_mempool_alloc to handle new chunk allocation
 	if (G_UNLIKELY (pool->pos >= pool->end)) {
 		rval = mono_mempool_alloc (pool, size);
 	}
@@ -349,7 +330,6 @@ mono_mempool_alloc0 (MonoMemPool *pool, guint size)
 	else if (pool == mono_get_corlib ()->mempool) {
 		mono_backtrace (size);
 	}
-#endif
 #endif
 
 	memset (rval, 0, size);
@@ -365,28 +345,13 @@ gboolean
 mono_mempool_contains_addr (MonoMemPool *pool,
 							gpointer addr)
 {
-#ifdef MALLOC_ALLOCATION
-	Chunk *c;
+	MonoMemPool *p = pool;
 
-	c = pool->chunks;
-	while (c) {
-		guint8 *p = ((guint8*)c) + sizeof (Chunk);
-
-		if (addr >= (gpointer)p && addr < (gpointer)(p + c->size))
-			return TRUE;
-
-		c = c->next;
-	}
-#else
-	MonoMemPool *p;
-
-	p = pool;
 	while (p) {
-		if (addr > (gpointer)p && addr <= (gpointer)((guint8*)p + p->size))
+		if (addr >= (gpointer)p && addr < (gpointer)((guint8*)p + p->size))
 			return TRUE;
 		p = p->next;
 	}
-#endif
 
 	return FALSE;
 }
@@ -422,11 +387,7 @@ mono_mempool_strdup (MonoMemPool *pool,
 guint32
 mono_mempool_get_allocated (MonoMemPool *pool)
 {
-#ifdef MALLOC_ALLOCATION
-	return pool->allocated;
-#else
 	return pool->d.allocated;
-#endif
 }
 
 /**

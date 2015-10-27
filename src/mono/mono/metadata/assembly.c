@@ -1588,6 +1588,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 	
 	image = NULL;
 
+	// If VM built with mkbundle
 	loaded_from_bundle = FALSE;
 	if (bundles != NULL) {
 		image = mono_assembly_open_from_bundle (fname, status, refonly);
@@ -2920,6 +2921,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 		return corlib;
 	}
 
+	// In native client, Corlib is embedded in the executable as static variable corlibData
 #if defined(__native_client__)
 	if (corlibData != NULL && corlibSize != 0) {
 		int status = 0;
@@ -2936,6 +2938,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	}
 #endif
 
+	// A nonstandard preload hook may provide a special mscorlib assembly
 	aname = mono_assembly_name_new ("mscorlib.dll");
 	corlib = invoke_assembly_preload_hook (aname, assemblies_path);
 	mono_assembly_name_free (aname);
@@ -2943,16 +2946,16 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	if (corlib != NULL)
 		return corlib;
 
-	if (assemblies_path) {
+	// This unusual directory layout can occur if mono is being built and run out of its own source repo
+	if (assemblies_path) { // Custom assemblies path set via MONO_PATH or mono_set_assemblies_path
 		corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status, FALSE);
 		if (corlib)
 			return corlib;
 	}
 
-	/* Load corlib from mono/<version> */
-	
+	/* Normal case: Load corlib from mono/<version> */
 	corlib_file = g_build_filename ("mono", runtime->framework_version, "mscorlib.dll", NULL);
-	if (assemblies_path) {
+	if (assemblies_path) { // Custom assemblies path
 		corlib = load_in_path (corlib_file, (const char**)assemblies_path, status, FALSE);
 		if (corlib) {
 			g_free (corlib_file);

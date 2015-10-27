@@ -484,6 +484,10 @@ mono_tables_names [] = {
 
 #endif
 
+// Amount initially reserved in each imageset's mempool.
+// FIXME: This number is arbitrary, a more practical number should be found
+#define INITIAL_IMAGE_SET_SIZE    1024
+
 /**
  * mono_meta_table_name:
  * @table: table index
@@ -2437,7 +2441,7 @@ mono_image_set_alloc (MonoImageSet *set, guint size)
 
 	mono_image_set_lock (set);
 	if (!set->mempool)
-		set->mempool = mono_mempool_new_size (1024);
+		set->mempool = mono_mempool_new_size (INITIAL_IMAGE_SET_SIZE);
 	res = mono_mempool_alloc (set->mempool, size);
 	mono_image_set_unlock (set);
 
@@ -2451,7 +2455,7 @@ mono_image_set_alloc0 (MonoImageSet *set, guint size)
 
 	mono_image_set_lock (set);
 	if (!set->mempool)
-		set->mempool = mono_mempool_new_size (1024);
+		set->mempool = mono_mempool_new_size (INITIAL_IMAGE_SET_SIZE);
 	res = mono_mempool_alloc0 (set->mempool, size);
 	mono_image_set_unlock (set);
 
@@ -2465,7 +2469,7 @@ mono_image_set_strdup (MonoImageSet *set, const char *s)
 
 	mono_image_set_lock (set);
 	if (!set->mempool)
-		set->mempool = mono_mempool_new_size (1024);
+		set->mempool = mono_mempool_new_size (INITIAL_IMAGE_SET_SIZE);
 	res = mono_mempool_strdup (set->mempool, s);
 	mono_image_set_unlock (set);
 

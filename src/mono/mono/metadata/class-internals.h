@@ -583,8 +583,13 @@ struct _MonoGenericParam {
 typedef struct {
 	MonoClass *pklass;		/* The corresponding `MonoClass'. */
 	const char *name;
+
+	// See GenericParameterAttributes
 	guint16 flags;
+
 	guint32 token;
+
+	// Constraints on type parameters
 	MonoClass** constraints; /* NULL means end of list */
 } MonoGenericParamInfo;
 
