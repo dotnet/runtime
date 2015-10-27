@@ -129,8 +129,6 @@ namespace System.Net.NetworkInformation
         public abstract string HostName { get; }
         public abstract bool IsWinsProxy { get; }
         public abstract System.Net.NetworkInformation.NetBiosNodeType NodeType { get; }
-        public virtual System.IAsyncResult BeginGetUnicastAddresses(System.AsyncCallback callback, object state) { return default(System.IAsyncResult); }
-        public virtual System.Net.NetworkInformation.UnicastIPAddressInformationCollection EndGetUnicastAddresses(System.IAsyncResult asyncResult) { return default(System.Net.NetworkInformation.UnicastIPAddressInformationCollection); }
         public abstract System.Net.NetworkInformation.TcpConnectionInformation[] GetActiveTcpConnections();
         public abstract System.Net.IPEndPoint[] GetActiveTcpListeners();
         public abstract System.Net.IPEndPoint[] GetActiveUdpListeners();
@@ -143,7 +141,6 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.TcpStatistics GetTcpIPv6Statistics();
         public abstract System.Net.NetworkInformation.UdpStatistics GetUdpIPv4Statistics();
         public abstract System.Net.NetworkInformation.UdpStatistics GetUdpIPv6Statistics();
-        public virtual System.Net.NetworkInformation.UnicastIPAddressInformationCollection GetUnicastAddresses() { return default(System.Net.NetworkInformation.UnicastIPAddressInformationCollection); }
         public virtual System.Threading.Tasks.Task<System.Net.NetworkInformation.UnicastIPAddressInformationCollection> GetUnicastAddressesAsync() { return default(System.Threading.Tasks.Task<System.Net.NetworkInformation.UnicastIPAddressInformationCollection>); }
     }
     public abstract partial class IPGlobalStatistics
