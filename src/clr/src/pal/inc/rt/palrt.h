@@ -437,6 +437,7 @@ typedef union _ULARGE_INTEGER {
 /******************* OLE, BSTR, VARIANT *************************/
 
 STDAPI_(LPVOID) CoTaskMemAlloc(SIZE_T cb);
+STDAPI_(LPVOID) CoTaskMemRealloc(LPVOID pv, SIZE_T cb);
 STDAPI_(void) CoTaskMemFree(LPVOID pv);
 
 typedef SHORT VARIANT_BOOL;
