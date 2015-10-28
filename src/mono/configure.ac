@@ -2700,6 +2700,9 @@ AM_CONDITIONAL(LOADED_LLVM, [test x$enable_loadedllvm = xyes])
 if test "x$enable_llvm" = "xyes"; then
    enable_llvm_runtime=yes
 fi
+if test "x$enable_llvm_runtime" = "xyes"; then
+   AC_DEFINE(ENABLE_LLVM_RUNTIME, 1, [Runtime support code for llvm enabled])
+fi
 AM_CONDITIONAL(ENABLE_LLVM_RUNTIME, [test x$enable_llvm_runtime = xyes])
 
 TARGET="unknown"

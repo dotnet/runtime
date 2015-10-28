@@ -4494,6 +4494,16 @@ void mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
 
 #endif
 
+#if !defined(ENABLE_LLVM_RUNTIME) && !defined(ENABLE_LLVM)
+
+void
+mono_llvm_cpp_throw_exception (void)
+{
+	g_assert_not_reached ();
+}
+
+#endif
+
 #ifdef DISABLE_JIT
 
 MonoCompile*
@@ -4514,15 +4524,5 @@ mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpoin
 {
 	g_assert_not_reached ();
 }
-
-#if !defined(ENABLE_LLVM_RUNTIME) && !defined(ENABLE_LLVM)
-
-void
-mono_llvm_cpp_throw_exception (void)
-{
-	g_assert_not_reached ();
-}
-
-#endif
 
 #endif /* DISABLE_JIT */
