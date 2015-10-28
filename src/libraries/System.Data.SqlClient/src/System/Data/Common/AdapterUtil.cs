@@ -93,9 +93,9 @@ namespace System.Data.Common
             }
         }
 
-        static private bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        static private readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-        public static bool IsWindows
+        static internal bool IsWindows
         {
             get
             {
