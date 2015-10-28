@@ -70,7 +70,7 @@ public class TestRunner
 		while (i < args.Length) {
 			if (args [i].StartsWith ("-")) {
 				if (args [i] == "-j") {
-					if (i + i >= args.Length) {
+					if (i + 1 >= args.Length) {
 						Console.WriteLine ("Missing argument to -j command line option.");
 						return 1;
 					}
@@ -80,28 +80,28 @@ public class TestRunner
 						concurrency = Int32.Parse (args [i + 1]);
 					i += 2;
 				} else if (args [i] == "--timeout") {
-					if (i + i >= args.Length) {
+					if (i + 1 >= args.Length) {
 						Console.WriteLine ("Missing argument to --timeout command line option.");
 						return 1;
 					}
 					timeout = Int32.Parse (args [i + 1]);
 					i += 2;
 				} else if (args [i] == "--disabled") {
-					if (i + i >= args.Length) {
+					if (i + 1 >= args.Length) {
 						Console.WriteLine ("Missing argument to --disabled command line option.");
 						return 1;
 					}
 					disabled_tests = args [i + 1];
 					i += 2;
 				} else if (args [i] == "--runtime") {
-					if (i + i >= args.Length) {
+					if (i + 1 >= args.Length) {
 						Console.WriteLine ("Missing argument to --runtime command line option.");
 						return 1;
 					}
 					runtime = args [i + 1];
 					i += 2;
 				} else if (args [i] == "--opt-sets") {
-					if (i + i >= args.Length) {
+					if (i + 1 >= args.Length) {
 						Console.WriteLine ("Missing argument to --opt-sets command line option.");
 						return 1;
 					}
@@ -109,14 +109,14 @@ public class TestRunner
 						opt_sets.Add (s);
 					i += 2;
 				} else if (args [i] == "--expected-exit-code") {
-					if (i + i >= args.Length) {
+					if (i + 1 >= args.Length) {
 						Console.WriteLine ("Missing argument to --expected-exit-code command line option.");
 						return 1;
 					}
 					expectedExitCode = Int32.Parse (args [i + 1]);
 					i += 2;
 				} else if (args [i] == "--testsuite-name") {
-					if (i + i >= args.Length) {
+					if (i + 1 >= args.Length) {
 						Console.WriteLine ("Missing argument to --testsuite-name command line option.");
 						return 1;
 					}
