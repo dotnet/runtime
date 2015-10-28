@@ -3,17 +3,14 @@
 
 namespace System.Net.NetworkInformation
 {
-    // Represent the possible IP options used for the ICMP packet.
     public class PingOptions
     {
-        private const int DontFragmentFlag = 2;
-        private int _ttl = 128;
+        private int _ttl;
         private bool _dontFragment;
 
-        internal PingOptions(Interop.IpHlpApi.IPOptions options)
+        public PingOptions()
         {
-            _ttl = options.ttl;
-            _dontFragment = ((options.flags & DontFragmentFlag) > 0 ? true : false);
+            _ttl = 128;
         }
 
         public PingOptions(int ttl, bool dontFragment)
@@ -25,10 +22,6 @@ namespace System.Net.NetworkInformation
 
             _ttl = ttl;
             _dontFragment = dontFragment;
-        }
-
-        public PingOptions()
-        {
         }
 
         public int Ttl
