@@ -105,20 +105,11 @@ internal static partial class Interop
         internal static extern bool X509StoreSetRevocationFlag(SafeX509StoreHandle ctx, X509RevocationFlag revocationFlag);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern SafeX509StoreCtxHandle X509StoreCtxCreate();
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern void X509StoreCtxDestroy(IntPtr v);
-
-        [DllImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool X509StoreCtxInit(SafeX509StoreCtxHandle ctx, SafeX509StoreHandle store, SafeX509Handle x509);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern int X509VerifyCert(SafeX509StoreCtxHandle ctx);
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern SafeX509StackHandle X509StoreCtxGetChain(SafeX509StoreCtxHandle ctx);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern X509VerifyStatusCode X509StoreCtxGetError(SafeX509StoreCtxHandle ctx);

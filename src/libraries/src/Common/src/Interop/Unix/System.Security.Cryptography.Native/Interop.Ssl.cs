@@ -34,9 +34,6 @@ internal static partial class Interop
         internal static extern IntPtr TlsV1_2Method();
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern SafeSslContextHandle SslCtxCreate(IntPtr method);
-
-        [DllImport(Libraries.CryptoNative)]
         internal static extern void SetProtocolOptions(SafeSslContextHandle ctx, SslProtocols protocols);
 
         [DllImport(Libraries.CryptoNative)]
@@ -47,9 +44,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern void SslDestroy(IntPtr ssl);
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern void SslCtxDestroy(IntPtr ctx);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern void SslSetConnectState(SafeSslHandle ssl);
@@ -176,26 +170,6 @@ internal static partial class Interop
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeSslContextHandle : SafeHandle
-    {
-        private SafeSslContextHandle()
-            : base(IntPtr.Zero, true)
-        {
-        }
-
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            Interop.Ssl.SslCtxDestroy(handle);
-            SetHandle(IntPtr.Zero);
-            return true;
-        }
-    }
-
     internal sealed class SafeSslHandle : SafeHandle
     {
         private SafeBioHandle _readBio;

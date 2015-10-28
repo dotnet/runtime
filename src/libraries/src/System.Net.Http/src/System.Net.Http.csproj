@@ -136,6 +136,7 @@
     <Compile Include="System\Net\Http\Unix\CurlHandler.EasyRequest.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.HttpContentAsyncStream.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.MultiAgent.cs" />
+    <Compile Include="System\Net\Http\Unix\CurlHandler.SslProvider.cs" />
     <Compile Include="System\Net\Http\Unix\CurlException.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.CurlResponseMessage.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.CURLcode.cs">
@@ -203,6 +204,18 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpVersion.cs">
       <Link>Common\System\Net\HttpVersion.cs</Link>
