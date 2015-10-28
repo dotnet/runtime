@@ -2713,6 +2713,8 @@ mono_jinfo_get_epilog_size (MonoJitInfo *ji)
  * LLVM/Bitcode exception handling.
  */
 
+#ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
+
 #if 0
 static gboolean show_native_addresses = TRUE;
 #else
@@ -2733,6 +2735,8 @@ build_stack_trace (struct _Unwind_Context *frame_ctx, void *state)
 	return _URC_NO_REASON;
 }
 
+#endif
+
 static void
 throw_exception (MonoObject *ex, gboolean rethrow)
 {
@@ -2748,10 +2752,10 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 	jit_tls->thrown_exc = mono_gchandle_new ((MonoObject*)mono_ex, FALSE);
 
 	if (!rethrow) {
+#ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
 		GList *l, *ips = NULL;
 		GList *trace;
 
-		// FIXME: Move this to mini-exceptions.c
 		_Unwind_Backtrace (build_stack_trace, &ips);
 		/* The list contains gshared info-ip pairs */
 		trace = NULL;
@@ -2764,6 +2768,7 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 		MONO_OBJECT_SETREF (mono_ex, trace_ips, mono_glist_to_array (trace, mono_defaults.int_class));
 		g_list_free (l);
 		g_list_free (trace);
+#endif
 	}
 
 	mono_llvm_cpp_throw_exception ();
