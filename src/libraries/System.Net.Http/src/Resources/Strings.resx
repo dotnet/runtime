@@ -297,6 +297,9 @@
   <data name="net_http_unix_invalid_credential" xml:space="preserve">
     <value>libcurl does not support different credentials for different authentication schemes</value>
   </data>
+  <data name="net_http_unix_https_libcurl_no_versioninfo" xml:space="preserve">
+    <value>The call to curl_version_info failed unexpectedly.</value>
+  </data>
   <data name="net_http_unix_https_libcurl_too_old" xml:space="preserve">
     <value>libcurl library available is too old</value>
   </data>
