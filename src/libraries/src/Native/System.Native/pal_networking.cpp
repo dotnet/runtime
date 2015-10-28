@@ -732,6 +732,20 @@ extern "C" int32_t GetNameInfo(const uint8_t* address,
     return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
 }
 
+extern "C" int32_t GetDomainName(uint8_t* name, int32_t nameLength)
+{
+    assert(name != nullptr);
+    assert(nameLength > 0);
+
+#if HAVE_GETDOMAINNAME_SIZET
+    size_t namelen = UnsignedCast(nameLength);
+#else
+    int namelen = nameLength;
+#endif
+
+    return getdomainname(reinterpret_cast<char*>(name), namelen);
+}
+
 extern "C" int32_t GetHostName(uint8_t* name, int32_t nameLength)
 {
     assert(name != nullptr);

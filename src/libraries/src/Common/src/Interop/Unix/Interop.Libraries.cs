@@ -5,7 +5,6 @@ internal static partial class Interop
 {
     private static partial class Libraries
     {
-        internal const string Libc = "libc";                   // C library
         internal const string LibCoreClr = "libcoreclr";       // CoreCLR runtime
         internal const string Zlib = "libz";                   // zlib compression library
 
