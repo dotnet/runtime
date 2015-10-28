@@ -1,4 +1,4 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="CheckRoslyn" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
 
   <!--
@@ -10,7 +10,7 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00111</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00112</BuildToolsVersion>
     <DnxVersion>1.0.0-rc1-15838</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
@@ -112,39 +112,31 @@
   </PropertyGroup>
 
   <!--
-    Set up Roslyn predefines
+    On Unix we always use a version of Roslyn we restore from NuGet and we have to work around some known issues.
   -->
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName).$(RoslynVersion)/</RoslynPackageDir>
     <RoslynPropsFile>$(RoslynPackageDir)build/Microsoft.Net.ToolsetCompilers.props</RoslynPropsFile>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix' and '$(UseRoslynCompiler)'=='true'">
+
     <!--
       PDB support isn't implemented yet. https://github.com/dotnet/roslyn/issues/2449
       Note that both DebugSymbols and DebugType need set or project references will assume they need to copy pdbs and fail.
     -->
     <DebugSymbols>false</DebugSymbols>
     <DebugType>none</DebugType>
+
     <!--
       Delay signing with the ECMA key currently doesn't work.
       https://github.com/dotnet/roslyn/issues/2444
     -->
     <UseECMAKey>false</UseECMAKey>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(OsEnvironment)'=='Unix' and '$(UseRoslynCompiler)'=='true'">
-    <!--
-      System.Diagnostics.Debug.Tests currently fails trying to resolve types against System.Runtime
-      https://github.com/dotnet/corefx/issues/1609
-    -->
-    <ExcludeProjects Include="System.Diagnostics.Debug/tests/System.Diagnostics.Debug.Tests.csproj" />
-  </ItemGroup>
 
-  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <!--
       Mono currently doesn't include VB targets for portable, notably /lib/mono/xbuild/Microsoft/Portable/v4.5/Microsoft.Portable.VisualBasic.targets.
       Fixed in https://github.com/mono/mono/pull/1726.
     -->
     <IncludeVbProjects>false</IncludeVbProjects>
+
     <!--
       Building packages fails for two reasons.
       First, nuget doesn't like the paths in the nuspec having backslashes as directory separators.
@@ -180,14 +172,6 @@
     <OSGroup Condition="'$(OSGroup)'==''">Windows_NT</OSGroup>
   </PropertyGroup>
 
-  <!-- Provide defaults for TestNugetRuntimeId -->
-  <PropertyGroup Condition="'$(TestNugetRuntimeId)'== ''">
-    <TestNugetRuntimeId Condition="'$(OSGroup)'=='Windows_NT'">win7-x64</TestNugetRuntimeId>
-    <TestNugetRuntimeId Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</TestNugetRuntimeId>
-    <TestNugetRuntimeId Condition="'$(OSGroup)'=='OSX'">osx.10.10-x64</TestNugetRuntimeId>
-    <TestNugetRuntimeId Condition="'$(OSGroup)'=='FreeBSD'">ubuntu.14.04-x64</TestNugetRuntimeId>
-  </PropertyGroup>
-
   <!-- Set up Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
@@ -200,6 +184,25 @@
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
     <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Provide defaults for TestNugetRuntimeId -->
+  <PropertyGroup Condition="'$(TestNugetRuntimeId)'== ''">
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='Windows_NT'">win7-x64</TestNugetRuntimeId>
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='Linux'">ubuntu.14.04-x64</TestNugetRuntimeId>
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='OSX'">osx.10.10-x64</TestNugetRuntimeId>
+    <TestNugetRuntimeId Condition="'$(OSGroup)'=='FreeBSD'">ubuntu.14.04-x64</TestNugetRuntimeId>
+  </PropertyGroup>
+
+  <!-- Provide defaults for ToolNugetRuntimeId -->
+  <PropertyGroup Condition="'$(ToolNugetRuntimeId)'== ''">
+    <ToolNugetRuntimeId Condition="'$(OsEnvironment)'=='Windows_NT'">win7-x64</ToolNugetRuntimeId>
+
+    <!-- This is a bit of a hack because inside MSBuild we have no real concept of the host distro, so we'll assume
+         that if you are building on not windows, your host OS is the same as your target.  If that's not
+         the case, you'll have to provide your own ToolNugetRuntimeId, which is not the end of the world (build.sh will
+         do this for you, for example). -->
+    <ToolNugetRuntimeId Condition="'$(OsEnvironment)'=='Unix'">$(TestNugetRuntimeId)</ToolNugetRuntimeId>
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
@@ -282,15 +285,9 @@
   
   <!-- Perf test setup - Required until v5.0 is mandatory across CoreFX-->
   <PropertyGroup>
-    <RunPerfTestsForProject Condition="'$(Performance)' == 'true' and '$(OS)' == 'Windows_NT' and Exists('$(MSBuildProgramFiles32)\MSBuild\Microsoft\Portable\v5.0\Microsoft.Portable.CSharp.targets')" >true</RunPerfTestsForProject>
+    <RunPerfTestsForProject Condition="'$(Performance)' == 'true' and '$(OsEnvironment)' == 'Windows_NT' and Exists('$(MSBuildProgramFiles32)\MSBuild\Microsoft\Portable\v5.0\Microsoft.Portable.CSharp.targets')">true</RunPerfTestsForProject>
   </PropertyGroup>
 
-  <Import Project="$(RoslynPropsFile)"
-          Condition="'$(UseRoslynCompiler)'=='true' and Exists('$(RoslynPropsFile)')" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Unix' and Exists('$(RoslynPropsFile)')" />
 
-  <!-- Building the build.proj should restore successfully, so ignore in that case -->
-  <Target Name="CheckRoslyn" Condition="'$(UseRoslynCompiler)'=='true' and '$(MSBuildProjectFile)'!='build.proj'">
-    <Warning Condition="!Exists('$(RoslynPropsFile)')"
-             Text="The Roslyn targets do not exist- Roslyn will not be used for this build, but the package should be restored if you build again." />
-  </Target>
 </Project>

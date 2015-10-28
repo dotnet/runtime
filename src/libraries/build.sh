@@ -129,7 +129,7 @@ build_managed_corefx()
     __buildproj=$__scriptpath/build.proj
     __buildlog=$__scriptpath/msbuild.log
 
-    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:OSGroup=$__BuildOS /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId "$@"
+    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:OSGroup=$__BuildOS /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__TestNugetRuntimeId $__UnprocessedBuildArgs
     BUILDERRORLEVEL=$?
 
     echo
@@ -168,9 +168,9 @@ build_native_corefx()
 
     # Build
 
-    echo "Executing make install -j $NumProc $__UnprocessedBuildArgs"
+    echo "Executing make install -j $NumProc"
 
-    make install -j $NumProc $__UnprocessedBuildArgs
+    make install -j $NumProc
     if [ $? != 0 ]; then
         echo "Failed to build corefx native components."
         exit 1
