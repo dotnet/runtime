@@ -205,7 +205,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData("BasicConstraintsData")]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void BasicConstraintsExtensionEncode(
             bool certificateAuthority,
             bool hasPathLengthConstraint,
@@ -233,16 +232,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string rawDataString)
         {
             byte[] rawData = rawDataString.HexToByteArray();
+            int expectedPathLengthConstraint = hasPathLengthConstraint ? pathLengthConstraint : 0;
 
             X509BasicConstraintsExtension ext = new X509BasicConstraintsExtension(new AsnEncodedData(rawData), critical);
             Assert.Equal(certificateAuthority, ext.CertificateAuthority);
             Assert.Equal(hasPathLengthConstraint, ext.HasPathLengthConstraint);
-            Assert.Equal(pathLengthConstraint, ext.PathLengthConstraint);
+            Assert.Equal(expectedPathLengthConstraint, ext.PathLengthConstraint);
         }
 
         public static object[][] BasicConstraintsData = new object[][]
         {
             new object[] { false, false, 0, false, "3000" },
+            new object[] { false, false, 121, false, "3000" },
             new object[] { true, false, 0, false, "30030101ff" },
             new object[] { false, true, 0, false, "3003020100" },
             new object[] { false, true, 7654321, false, "3005020374cbb1" },
