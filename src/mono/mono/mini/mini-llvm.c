@@ -56,6 +56,7 @@ typedef struct {
 	GHashTable *plt_entries;
 	GHashTable *plt_entries_ji;
 	GHashTable *method_to_lmethod;
+	GHashTable *direct_callables;
 	char **bb_names;
 	int bb_names_len;
 	GPtrArray *used;
@@ -1548,8 +1549,27 @@ get_aotconst (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data)
 static LLVMValueRef
 get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
 {
+	LLVMValueRef callee;
+	char *callee_name;
 	if (ctx->llvm_only) {
 		LLVMValueRef load;
+
+		callee_name = mono_aot_get_direct_call_symbol (type, data);
+		if (callee_name) {
+			/* Directly callable */
+			// FIXME: Locking
+			callee = (LLVMValueRef)g_hash_table_lookup (ctx->lmodule->direct_callables, callee_name);
+			if (!callee) {
+				callee = LLVMAddFunction (ctx->module, callee_name, llvm_sig);
+
+				LLVMSetVisibility (callee, LLVMHiddenVisibility);
+
+				g_hash_table_insert (ctx->lmodule->direct_callables, (char*)callee_name, callee);
+			} else {
+				g_free (callee_name);
+			}
+			return callee;
+		}
 
 		/*
 		 * Calls are made through the GOT.
@@ -1558,10 +1578,9 @@ get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gcons
 
 		return convert (ctx, load, LLVMPointerType (llvm_sig, 0));
 	} else {
-		char *callee_name = mono_aot_get_plt_symbol (type, data);
-		LLVMValueRef callee;
 		MonoJumpInfo *ji = NULL;
 
+		callee_name = mono_aot_get_plt_symbol (type, data);
 		if (!callee_name)
 			return NULL;
 
@@ -7151,6 +7170,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	lmodule->llvm_types = g_hash_table_new (NULL, NULL);
 	lmodule->plt_entries = g_hash_table_new (g_str_hash, g_str_equal);
 	lmodule->plt_entries_ji = g_hash_table_new (NULL, NULL);
+	lmodule->direct_callables = g_hash_table_new (g_str_hash, g_str_equal);
 	lmodule->method_to_lmethod = g_hash_table_new (NULL, NULL);
 	lmodule->idx_to_lmethod = g_hash_table_new (NULL, NULL);
 	lmodule->idx_to_unbox_tramp = g_hash_table_new (NULL, NULL);

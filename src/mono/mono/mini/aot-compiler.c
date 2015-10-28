@@ -7318,6 +7318,26 @@ mono_aot_mark_unused_llvm_plt_entry (MonoJumpInfo *patch_info)
 }
 
 char*
+mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
+{
+	const char *sym = NULL;
+
+	if (llvm_acfg->aot_opts.direct_icalls) {
+		if (type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
+			/* Call to a C function implementing a jit icall */
+			sym = mono_lookup_jit_icall_symbol (data);
+		} else if (type == MONO_PATCH_INFO_ICALL_ADDR) {
+			MonoMethod *method = (gpointer)data;
+			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+				sym = mono_lookup_icall_symbol (method);
+		}
+		if (sym)
+			return g_strdup (sym);
+	}
+	return NULL;
+}
+
+char*
 mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 {
 	MonoJumpInfo *ji = mono_mempool_alloc (llvm_acfg->mempool, sizeof (MonoJumpInfo));
