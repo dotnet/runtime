@@ -35,46 +35,24 @@ namespace System.Net.Http.Functional.Tests
 
         public readonly static object[][] GetServers = HttpTestServers.GetServers;
         public readonly static object[][] PostServers = HttpTestServers.PostServers;
-        public readonly static object[][] HttpMethods = 
-            new object[][]
+
+        // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
+        //     "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE"
+        public readonly static IEnumerable<object[]> HttpMethods =
+            GetMethods("GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE", "CUSTOM1");
+        public readonly static IEnumerable<object[]> HttpMethodsThatAllowContent =
+            GetMethods("GET", "POST", "PUT", "DELETE", "CUSTOM1");
+
+        private static IEnumerable<object[]> GetMethods(params string[] methods)
+        {
+            foreach (string method in methods)
+            {
+                foreach (bool secure in new[] { true, false })
                 {
-                    // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
-                    new object[] { "GET", false },
-                    new object[] { "GET", true },
-                    new object[] { "HEAD", false },
-                    new object[] { "HEAD", true },
-                    new object[] { "POST", false },
-                    new object[] { "POST", true },
-                    new object[] { "PUT", false },
-                    new object[] { "PUT", true },
-                    new object[] { "DELETE", false },
-                    new object[] { "DELETE", true },
-                    new object[] { "OPTIONS", false },
-                    new object[] { "OPTIONS", true },
-                    new object[] { "TRACE", false },
-                    new object[] { "TRACE", true },
-                    
-                    // Custom HTTP method
-                    new object[] { "CUSTOM1", false },
-                    new object[] { "CUSTOM1", true }
-                };
-        public readonly static object[][] HttpMethodsThatAllowContent = 
-            new object[][]
-                {
-                    // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
-                    new object[] { "GET", false },
-                    new object[] { "GET", true },
-                    new object[] { "POST", false },
-                    new object[] { "POST", true },
-                    new object[] { "PUT", false },
-                    new object[] { "PUT", true },
-                    new object[] { "DELETE", false },
-                    new object[] { "DELETE", true },
-                    
-                    // Custom HTTP method
-                    new object[] { "CUSTOM1", false },
-                    new object[] { "CUSTOM1", true }
-                };
+                    yield return new object[] { method, secure };
+                }
+            }
+        }
 
         private static async Task AssertSuccessfulGetResponse(HttpResponseMessage response, Uri uri, ITestOutputHelper output)
         {
