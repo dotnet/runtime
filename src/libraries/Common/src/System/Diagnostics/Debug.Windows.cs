@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Security;
+using System.Text;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -24,16 +25,17 @@ namespace System.Diagnostics
             [SecuritySafeCritical]
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
             {
-                string fullMessage = message + Environment.NewLine + detailMessage + Environment.NewLine + stackTrace;
-
-                Debug.WriteLine(fullMessage);
                 if (Debugger.IsAttached)
                 {
+                    string fullMessage = message + Environment.NewLine + detailMessage + Environment.NewLine + stackTrace;
+                    Debug.WriteLine(fullMessage);
                     Debugger.Break();
                 }
                 else
                 {
-                    Environment.FailFast(fullMessage);
+                    string fullMessage = FormatAssert(stackTrace, message, detailMessage) + Environment.NewLine;
+                    WriteToStdErr(fullMessage); // ignore return value indicating whether or not write was successful
+                    throw new InvalidOperationException(fullMessage);
                 }
             }
 
@@ -74,6 +76,25 @@ namespace System.Diagnostics
                 {
                     Interop.mincore.OutputDebugString(message ?? string.Empty);
                 }
+            }
+
+            private static unsafe bool WriteToStdErr(string message)
+            {
+                IntPtr handle = Interop.mincore.GetStdHandle(Interop.mincore.HandleTypes.STD_ERROR_HANDLE);
+                if (handle != IntPtr.Zero && handle != new IntPtr(-1))
+                {
+                    byte[] messageBytes = Encoding.ASCII.GetBytes(message);
+                    fixed (byte* messageBytesPtr = messageBytes)
+                    {
+                        int numBytesWritten;
+                        if (Interop.mincore.WriteFile(handle, messageBytesPtr, messageBytes.Length, out numBytesWritten, IntPtr.Zero) != 0)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
             }
         }
     }
