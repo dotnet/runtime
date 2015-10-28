@@ -518,6 +518,11 @@ extern "C" void SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback)
     SSL_CTX_set_verify(ctx, mode, callback);
 }
 
+extern "C" void SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallbackCallback callback, void* arg)
+{
+    SSL_CTX_set_cert_verify_callback(ctx, callback, arg);
+}
+
 // delimiter ":" is used to allow more than one strings
 // below string is corresponding to "AllowNoEncryption"
 #define SSL_TXT_Separator ":"

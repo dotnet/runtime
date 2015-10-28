@@ -213,6 +213,12 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509NameEntry.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509NameEntry.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.SafeCurlHandle.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.SafeCurlHandle.cs</Link>
     </Compile>
