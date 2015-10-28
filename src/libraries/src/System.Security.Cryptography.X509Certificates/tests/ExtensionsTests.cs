@@ -129,70 +129,60 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_CrlSign()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.CrlSign, false, "03020102".HexToByteArray());
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_DataEncipherment()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.DataEncipherment, false, "03020410".HexToByteArray());
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_DecipherOnly()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.DecipherOnly, false, "0303070080".HexToByteArray());
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_DigitalSignature()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false, "03020780".HexToByteArray());
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_EncipherOnly()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.EncipherOnly, false, "03020001".HexToByteArray());
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_KeyAgreement()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.KeyAgreement, false, "03020308".HexToByteArray());
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_KeyCertSign()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.KeyCertSign, false, "03020204".HexToByteArray());
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_KeyEncipherment()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.KeyEncipherment, false, "03020520".HexToByteArray());
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_None()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.None, false, "030100".HexToByteArray());
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_NonRepudiation()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.NonRepudiation, false, "03020640".HexToByteArray());

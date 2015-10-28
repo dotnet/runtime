@@ -149,6 +149,133 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Encode the segments { tag, length, value } of a bit string value based upon a NamedBitList.
+        /// ((<paramref name="bigEndianBytes"/>[0] >> 7) &amp; 1) is considered the "leading" bit, proceeding
+        /// through the array for up to <paramref name="namedBitsCount"/>.
+        /// </summary>
+        /// <param name="bigEndianBytes">
+        /// The data in big endian order, the most significant bit of byte 0 is the leading bit
+        /// (corresponds to the named value for "bit 0"). Any bits beyond <paramref name="namedBitsCount"/>
+        /// are ignored, and any missing bits are assumed to be unset.
+        /// </param>
+        /// <param name="namedBitsCount">
+        /// The total number of named bits.  Since the bits are numbered with a zero index, this should be
+        /// one higher than the largest defined bit. (namedBitsCount=10 covers bits 0-9)
+        /// </param>
+        /// <returns>
+        /// A triplet of { tag }, { length }, { data }.  All trailing unset named bits are removed. 
+        /// </returns>
+        internal static byte[][] SegmentedEncodeNamedBitList(byte[] bigEndianBytes, int namedBitsCount)
+        {
+            Debug.Assert(bigEndianBytes != null, "bigEndianBytes != null");
+            Debug.Assert(namedBitsCount > 0, "namedBitsCount > 0");
+
+            // The encoding that this follows is the DER encoding for NamedBitList, which is different than
+            // (unnamed) BIT STRING.
+            //
+            // X.690 (08/2015) setion 11.2.2 (Unused bits) says:
+            //    Where ITU-T Rec. X.680 | ISO/IEC 8824-1, 22.7, applies, the bitstring shall have all
+            //    trailing 0 bits removed before it is encoded.
+            //        NOTE 1 – In the case where a size constraint has been applied, the abstract value
+            //            delivered by a decoder to the application will be one of those satisfying the
+            //            size constraint and differing from the transmitted value only in the number of
+            //            trailing 0 bits.
+            //        NOTE 2 – If a bitstring value has no 1 bits, then an encoder shall encode the value
+            //            with a length of 1 and an initial octet set to 0.
+            //
+            // X.680 (08/2015) section 22.7 says:
+            //    When a "NamedBitList" is used in defining a bitstring type ASN.1 encoding rules are free
+            //    to add (or remove) arbitrarily any trailing 0 bits to (or from) values that are being
+            //    encoded or decoded
+            //
+            // Therefore, if 16 bits are defined, and only bit 7 is set, instead of { 00 01 00 } the encoding
+            // should be { 00 01 }
+            //
+            // And, if 8 bits are defined, and only bit 6 is set, instead of { 00 02 } it should be { 01 02 },
+            // signifiying that the last bit was omitted.
+
+            int lastSetBit = -1;
+
+            int lastBitProvided = (bigEndianBytes.Length * 8) - 1;
+            int lastPossibleBit = Math.Min(lastBitProvided, namedBitsCount - 1);
+
+            for (int currentBit = lastPossibleBit; currentBit >= 0; currentBit--)
+            {
+                int currentByte = currentBit / 8;
+
+                // As we loop through the numbered bits we need to figure out
+                // 1) which indexed byte it would be in (currentByte)
+                // 2) How many bits from the right it is (shiftIndex)
+                // 
+                // For example:
+                // currentBit 0 => currentByte 0, shiftIndex 7 (1 << 7)
+                // currentBit 1 => currentByte 0, shiftIndex 6 (1 << 6)
+                // currentBit 7 => currentByte 0, shiftIndex 0 (1 << 0)
+                // currentBit 8 => currentByte 1, shiftIndex 7 (1 << 7)
+                // etc
+                int shiftIndex = 7 - (currentBit % 8);
+                int testValue = 1 << shiftIndex;
+                byte dataByte = bigEndianBytes[currentByte];
+
+                if ((dataByte & testValue) == testValue)
+                {
+                    lastSetBit = currentBit;
+                    break;
+                }
+            }
+
+            byte[] dataSegment;
+
+            if (lastSetBit >= 0)
+            {
+                // Bits are zero-indexed, so lastSetBit=0 means "1 semantic bit", and
+                // "1 semantic bit" requires a byte to write it down.
+                int semanticBits = lastSetBit + 1;
+                int semanticBytes = (7 + semanticBits) / 8;
+
+                // For a lastSetBit of  : 0 1 2 3 4 5 6 7 8 9 A B C D E F
+                // unused bits should be: 7 6 5 4 3 2 1 0 7 6 5 4 3 2 1 0
+                int unusedBits = 7 - (lastSetBit % 8);
+
+                // We need to make a mask of the bits to keep around for the last
+                // byte, ensuring we clear out any bits that were set, but beyond
+                // the namedBitsCount limit.
+                // 
+                // For example:
+                // lastSetBit 0 => mask 0b10000000
+                // lastSetBit 1 => mask 0b11000000
+                // lastSetBit 7 => mask 0b11111111
+                // lastSetBit 8 => mask 0b10000000
+                byte lastByteSemanticMask = unchecked((byte)(-1 << unusedBits));
+
+                // Semantic bytes plus the "how many unused bits" prefix byte.
+                dataSegment = new byte[semanticBytes + 1];
+                dataSegment[0] = (byte)unusedBits;
+                
+                Debug.Assert(semanticBytes <= bigEndianBytes.Length);
+
+                Buffer.BlockCopy(bigEndianBytes, 0, dataSegment, 1, semanticBytes);
+
+                // But the last byte might have too many bits set, trim it down
+                // to only the ones we knew about (all "don't care" values must be 0)
+                dataSegment[semanticBytes] &= lastByteSemanticMask;
+            }
+            else
+            {
+                // No bits being set is encoded as just "no unused bits",
+                // with no semantic payload.
+                dataSegment = new byte[] { 0x00 };
+            }
+
+            return new byte[][]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.BitString },
+                EncodeLength(dataSegment.Length),
+                dataSegment
+            };
+        }
+        
+        /// <summary>
         /// Make a constructed SEQUENCE of the byte-triplets of the contents.
         /// Each byte[][] should be a byte[][3] of {tag (1 byte), length (1-5 bytes), payload (variable)}.
         /// </summary>

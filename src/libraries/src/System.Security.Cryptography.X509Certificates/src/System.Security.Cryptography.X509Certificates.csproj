@@ -279,6 +279,9 @@
     <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
+      <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>
