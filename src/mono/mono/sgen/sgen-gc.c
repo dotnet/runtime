@@ -2182,7 +2182,7 @@ sgen_ensure_free_space (size_t size)
 				generation_to_collect = GENERATION_OLD;
 			}
 		} else if (sgen_need_major_collection (size)) {
-			reason = "Minor allowance";
+			reason = concurrent_collection_in_progress ? "Forced finish concurrent collection" : "Minor allowance";
 			generation_to_collect = GENERATION_OLD;
 		} else {
 			generation_to_collect = GENERATION_NURSERY;
@@ -2229,18 +2229,18 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	if (concurrent_collection_in_progress) {
 		/*
-		 * We update the concurrent collection.  If it finished, we're done.  If
-		 * not, and we've been asked to do a nursery collection, we do that.
+		 * If the concurrent worker is finished or we are asked to do a major collection
+		 * then we finish the concurrent collection.
 		 */
-		gboolean finish = major_should_finish_concurrent_collection () || (wait_to_finish && generation_to_collect == GENERATION_OLD);
+		gboolean finish = major_should_finish_concurrent_collection () || generation_to_collect == GENERATION_OLD;
 
 		if (finish) {
 			major_finish_concurrent_collection (wait_to_finish);
 			oldest_generation_collected = GENERATION_OLD;
 		} else {
+			SGEN_ASSERT (0, generation_to_collect == GENERATION_NURSERY, "Why aren't we finishing the concurrent collection?");
 			major_update_concurrent_collection ();
-			if (generation_to_collect == GENERATION_NURSERY)
-				collect_nursery (NULL, FALSE);
+			collect_nursery (NULL, FALSE);
 		}
 
 		goto done;
