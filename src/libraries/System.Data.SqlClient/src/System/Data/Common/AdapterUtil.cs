@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Security;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Res = System.SR;
@@ -89,6 +90,16 @@ namespace System.Data.Common
                     s_falseTask = Task.FromResult<bool>(false);
                 }
                 return s_falseTask;
+            }
+        }
+
+        static private bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+        public static bool IsWindows
+        {
+            get
+            {
+                return s_isWindows;
             }
         }
 

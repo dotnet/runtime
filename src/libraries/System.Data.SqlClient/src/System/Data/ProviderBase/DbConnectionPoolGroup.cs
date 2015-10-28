@@ -156,8 +156,16 @@ namespace System.Data.ProviderBase
             if (null != _poolGroupOptions)
             {
                 DbConnectionPoolIdentity currentIdentity = DbConnectionPoolIdentity.NoIdentity;
+
                 if (_poolGroupOptions.PoolByIdentity)
                 {
+                    // There is no concept of Windows identity on non-Windows platform. Hence we 
+                    // cannot support Windows authentication.
+                    if (!ADP.IsWindows)
+                    {
+                        throw new PlatformNotSupportedException(SR.GetString(SR.ADP_FeatureNotSupportedOnNonWindowsPlatform, DbConnectionStringKeywords.IntegratedSecurity));
+                    }
+
                     // if we're pooling by identity (because integrated security is
                     // being used for these connections) then we need to go out and
                     // search for the connectionPool that matches the current identity.
