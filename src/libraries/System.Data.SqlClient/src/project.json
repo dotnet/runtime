@@ -22,6 +22,7 @@
     "System.Runtime.Handles": "4.0.0",
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.InteropServices": "4.0.20",
+    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-*",
     "System.Security.Claims": "4.0.0",
     "System.Security.Principal": "4.0.0",
     "System.Security.Principal.Windows": "4.0.0-beta-*",
