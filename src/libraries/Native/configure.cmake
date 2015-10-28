@@ -229,14 +229,13 @@ check_include_files(
 # getdomainname on OSX takes an 'int' instead of a 'size_t'
 # check if compiling with 'size_t' would cause a warning
 set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-set (CMAKE_REQUIRED_FLAGS "-Weverything")
+set (CMAKE_REQUIRED_FLAGS "-Werror -Weverything")
 check_cxx_source_compiles(
     "
     #include <unistd.h>
-	int main() { size_t namelen = 20; char name[namelen]; getdomainname(name, namelen); }
+    int main() { size_t namelen = 20; char name[20]; getdomainname(name, namelen); }
     "
     HAVE_GETDOMAINNAME_SIZET
-	FAIL_REGEX "-Wshorten"
 )
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
