@@ -19,19 +19,19 @@ namespace System.Net.Http
 
             internal static void SetSslOptions(EasyRequest easy)
             {
-                int answer = Interop.libcurl.curl_easy_setopt(
+                int answer = Interop.LibCurl.EasySetOptionPointer(
                     easy._easyHandle,
-                    Interop.libcurl.CURLoption.CURLOPT_SSL_CTX_FUNCTION,
+                    Interop.LibCurl.CURLoption.CURLOPT_SSL_CTX_FUNCTION,
                     s_sslCtxCallback);
 
                 switch (answer)
                 {
-                    case Interop.libcurl.CURLcode.CURLE_OK:
+                    case Interop.LibCurl.CURLcode.CURLE_OK:
                         break;
                     // Curl 7.38 and prior
-                    case Interop.libcurl.CURLcode.CURLE_UNKNOWN_OPTION:
+                    case Interop.LibCurl.CURLcode.CURLE_UNKNOWN_OPTION:
                     // Curl 7.39 and later
-                    case Interop.libcurl.CURLcode.CURLE_NOT_BUILT_IN:
+                    case Interop.LibCurl.CURLcode.CURLE_NOT_BUILT_IN:
                         VerboseTrace("CURLOPT_SSL_CTX_FUNCTION is not supported, platform default https chain building in use");
                         break;
                     default:
@@ -50,7 +50,7 @@ namespace System.Net.Http
                     Interop.Ssl.SslCtxSetCertVerifyCallback(ctx, s_sslVerifyCallback, userPtr);
                 }
 
-                return Interop.libcurl.CURLcode.CURLE_OK;
+                return Interop.LibCurl.CURLcode.CURLE_OK;
             }
 
             private static int VerifyCertChain(IntPtr storeCtxPtr, IntPtr arg)

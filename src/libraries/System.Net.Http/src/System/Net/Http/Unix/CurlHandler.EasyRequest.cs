@@ -10,11 +10,10 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-using CURLAUTH = Interop.libcurl.CURLAUTH;
-using CURLoption = Interop.libcurl.CURLoption;
-using CurlProtocols = Interop.libcurl.CURLPROTO_Definitions;
-using CURLProxyType = Interop.libcurl.curl_proxytype;
-using SafeCurlHandle = Interop.libcurl.SafeCurlHandle;
+using CURLoption = Interop.LibCurl.CURLoption;
+using CurlProtocols = Interop.LibCurl.CURLPROTO_Definitions;
+using CURLProxyType = Interop.LibCurl.curl_proxytype;
+using SafeCurlHandle = Interop.LibCurl.SafeCurlHandle;
 using SafeCurlSlistHandle = Interop.LibCurl.SafeCurlSlistHandle;
 
 namespace System.Net.Http
@@ -63,7 +62,7 @@ namespace System.Net.Http
             internal void InitializeCurl()
             {
                 // Create the underlying easy handle
-                SafeCurlHandle easyHandle = Interop.libcurl.curl_easy_init();
+                SafeCurlHandle easyHandle = Interop.LibCurl.EasyCreate();
                 if (easyHandle.IsInvalid)
                 {
                     throw new OutOfMemoryException();
@@ -236,7 +235,7 @@ namespace System.Net.Http
                     string encoding = (gzip && deflate) ? EncodingNameGzip + "," + EncodingNameDeflate :
                                        gzip ? EncodingNameGzip :
                                        EncodingNameDeflate;
-                    SetCurlOption(CURLoption.CURLOPT_ACCEPTENCODING, encoding);
+                    SetCurlOption(CURLoption.CURLOPT_ACCEPT_ENCODING, encoding);
                     VerboseTrace(encoding);
                 }
             }
@@ -278,7 +277,7 @@ namespace System.Net.Http
                 SetCurlOption(CURLoption.CURLOPT_PROXYPORT, proxyUri.Port);
                 VerboseTrace("Set proxy: " + proxyUri.ToString());
 
-                KeyValuePair<NetworkCredential, ulong> credentialScheme = GetCredentials(_handler.Proxy.Credentials, _requestMessage.RequestUri);
+                KeyValuePair<NetworkCredential, long> credentialScheme = GetCredentials(_handler.Proxy.Credentials, _requestMessage.RequestUri);
                 NetworkCredential credentials = credentialScheme.Key;
                 if (credentials != null)
                 {
@@ -295,7 +294,7 @@ namespace System.Net.Http
                 }
             }
 
-            internal void SetCredentialsOptions(KeyValuePair<NetworkCredential, ulong> credentialSchemePair)
+            internal void SetCredentialsOptions(KeyValuePair<NetworkCredential, long> credentialSchemePair)
             {
                 if (credentialSchemePair.Key == null)
                 {
@@ -304,7 +303,7 @@ namespace System.Net.Http
                 }
 
                 NetworkCredential credentials = credentialSchemePair.Key;
-                ulong authScheme = credentialSchemePair.Value;
+                long authScheme = credentialSchemePair.Value;
                 string userName = string.IsNullOrEmpty(credentials.Domain) ?
                     credentials.UserName :
                     string.Format("{0}\\{1}", credentials.Domain, credentials.UserName);
@@ -420,32 +419,27 @@ namespace System.Net.Http
 
             internal void SetCurlOption(int option, string value)
             {
-                ThrowIfCURLEError(Interop.libcurl.curl_easy_setopt(_easyHandle, option, value));
+                ThrowIfCURLEError(Interop.LibCurl.EasySetOptionString(_easyHandle, option, value));
             }
 
             internal void SetCurlOption(int option, long value)
             {
-                ThrowIfCURLEError(Interop.libcurl.curl_easy_setopt(_easyHandle, option, value));
-            }
-
-            internal void SetCurlOption(int option, ulong value)
-            {
-                ThrowIfCURLEError(Interop.libcurl.curl_easy_setopt(_easyHandle, option, value));
+                ThrowIfCURLEError(Interop.LibCurl.EasySetOptionLong(_easyHandle, option, value));
             }
 
             internal void SetCurlOption(int option, IntPtr value)
             {
-                ThrowIfCURLEError(Interop.libcurl.curl_easy_setopt(_easyHandle, option, value));
+                ThrowIfCURLEError(Interop.LibCurl.EasySetOptionPointer(_easyHandle, option, value));
             }
 
             internal void SetCurlOption(int option, Delegate value)
             {
-                ThrowIfCURLEError(Interop.libcurl.curl_easy_setopt(_easyHandle, option, value));
+                ThrowIfCURLEError(Interop.LibCurl.EasySetOptionPointer(_easyHandle, option, value));
             }
 
             internal void SetCurlOption(int option, SafeHandle value)
             {
-                ThrowIfCURLEError(Interop.libcurl.curl_easy_setopt(_easyHandle, option, value));
+                ThrowIfCURLEError(Interop.LibCurl.EasySetOptionPointer(_easyHandle, option, value));
             }
 
             internal sealed class SendTransferState

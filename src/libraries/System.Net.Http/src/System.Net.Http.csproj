@@ -139,9 +139,6 @@
     <Compile Include="System\Net\Http\Unix\CurlHandler.SslProvider.cs" />
     <Compile Include="System\Net\Http\Unix\CurlException.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.CurlResponseMessage.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.CURLcode.cs">
-      <Link>Common\Interop\Unix\libcurl\Interop.CURLcode.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
@@ -175,20 +172,20 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\libc\Interop.Write.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_easy.cs">
-      <Link>Common\Interop\Unix\libcurl\Interop.libcurl_easy.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_multi.cs">
       <Link>Common\Interop\Unix\libcurl\Interop.libcurl_multi.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_types.cs">
       <Link>Common\Interop\Unix\libcurl\Interop.libcurl_types.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.SafeCurlHandle.cs">
-      <Link>Common\Interop\Unix\libcurl\Interop.SafeCurlHandle.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.SafeCurlMultiHandle.cs">
       <Link>Common\Interop\Unix\libcurl\Interop.SafeCurlMultiHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs">
+      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Easy.cs">
+      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Easy.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs</Link>

@@ -56,8 +56,8 @@
     <Compile Include="System\Net\WebExceptionPal.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.CURLcode.cs">
-      <Link>Common\Interop\Unix\libcurl\Interop.CURLcode.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs">
+      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs</Link>
     </Compile>
     <Compile Include="System\Net\WebExceptionPal.Unix.cs" />
   </ItemGroup>
