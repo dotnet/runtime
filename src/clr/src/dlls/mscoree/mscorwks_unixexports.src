@@ -22,6 +22,7 @@ CloseHandle
 CoCreateGuid
 CopyFileW
 CoTaskMemAlloc
+CoTaskMemRealloc
 CoTaskMemFree
 CreateDirectoryW
 CreateEventW
@@ -58,6 +59,7 @@ GetTempFileNameW
 GetTempPathW
 LeaveCriticalSection
 LocalAlloc
+LocalReAlloc
 LocalFree
 LockFile
 lstrlenA
