@@ -68,6 +68,10 @@
 #include "mini-llvm-cpp.h"
 #endif
 
+#ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
+#include <unwind.h>
+#endif
+
 #ifdef ENABLE_EXTENSION_MODULE
 #include "../../../mono-extensions/mono/mini/mini-exceptions.c"
 #endif
