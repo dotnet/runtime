@@ -336,7 +336,7 @@ typedef ucontext_t native_context_t;
 
 #endif // HAVE_BSD_REGS_T
 
-inline static DWORD64 GetProgramCounterFromCONTEXT(LPCONTEXT pContext)
+inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
 {
 #if defined(_AMD64_)
     return pContext->Rip;
@@ -347,7 +347,7 @@ inline static DWORD64 GetProgramCounterFromCONTEXT(LPCONTEXT pContext)
 #endif
 }
 
-inline static void SetProgramCounterOnCONTEXT(LPCONTEXT pContext, DWORD64 pc)
+inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
 {
 #if defined(_AMD64_)
     pContext->Rip = pc;
@@ -480,7 +480,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
 /*++
 Function :
-    CONTEXTGetPC
+    GetNativeContextPC
     
     Returns the program counter from the native context.
 
@@ -491,7 +491,7 @@ Return value :
     The program counter from the native context.
 
 --*/
-LPVOID CONTEXTGetPC(const native_context_t *context);
+LPVOID GetNativeContextPC(const native_context_t *context);
 
 /*++
 Function :

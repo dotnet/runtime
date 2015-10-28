@@ -228,7 +228,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
         // So we compensate it by incrementing the PC before passing it to the unwinder.
         // Without it, the unwinder would not find unwind info if the hardware exception
         // happened in the first instruction of a function.
-        SetProgramCounterOnCONTEXT(context, GetProgramCounterFromCONTEXT(context) + 1);
+        CONTEXTSetPC(context, CONTEXTGetPC(context) + 1);
     }
 
 #if UNWIND_CONTEXT_IS_UCONTEXT_T
@@ -260,7 +260,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     // The behaviour of libunwind from nongnu.org is to null the PC
     // So we bank the original PC here, so we can compare it after
     // the step
-    curPc = GetProgramCounterFromCONTEXT(context);
+    curPc = CONTEXTGetPC(context);
 #endif
 
     st = unw_step(&cursor);
@@ -285,9 +285,9 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     //
     UnwindContextToWinContext(&cursor, context);
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(_ARM64_)
-    if (st == 0 && GetProgramCounterFromCONTEXT(context) == curPc)
+    if (st == 0 && CONTEXTGetPC(context) == curPc)
     {
-        SetProgramCounterOnCONTEXT(context, 0);
+        CONTEXTSetPC(context, 0);
     }
 #endif
 
