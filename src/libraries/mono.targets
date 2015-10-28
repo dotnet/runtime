@@ -12,16 +12,4 @@
     <IgnoreDefaultInstalledAssemblySubsetTables>true</IgnoreDefaultInstalledAssemblySubsetTables>
   </PropertyGroup>
 
-  <!--
-    Skipping this temporarily to focus on the failures in building the product assemblies. The error we get is as follows:
-
-     RunTestsForProject:
-      mono corerun.exe xunit.console.netcore.exe System.Xml.XPath.XmlDocument.Tests.dll  -xml testResults.xml  -notrait category=OuterLoop -notrait category=failing 
-      Cannot open assembly 'corerun.exe': No such file or directory.
-
-    Note that MSBuild will shell launch as opposed to mono launch if the target file doesn't end in .exe.
-  -->
-  <Target Name="RunTestsForProject">
-    <Message Importance="high" Text="Skipping test run pending fix." />
-  </Target>
 </Project>
