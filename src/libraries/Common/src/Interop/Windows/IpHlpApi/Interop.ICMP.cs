@@ -117,6 +117,18 @@ internal static partial class Interop
             ICMP4_UNREACH_ADMIN = 13,
         }
 
+        internal sealed class SafeCloseIcmpHandle : SafeHandleZeroOrMinusOneIsInvalid
+        {
+            private SafeCloseIcmpHandle() : base(true)
+            {
+            }
+
+            override protected bool ReleaseHandle()
+            {
+                return Interop.IpHlpApi.IcmpCloseHandle(handle);
+            }
+        }
+
         [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal extern static SafeCloseIcmpHandle IcmpCreateFile();
 
