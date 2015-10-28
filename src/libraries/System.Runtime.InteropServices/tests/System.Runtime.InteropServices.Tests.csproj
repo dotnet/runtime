@@ -15,7 +15,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttributeTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
+    <Compile Include="System\Runtime\InteropServices\HandleCollectorTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
