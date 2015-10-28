@@ -40,6 +40,8 @@ using System.Text.RegularExpressions;
 
 public class TestRunner
 {
+	const string TEST_TIME_FORMAT = "mm\\:ss\\.fff";
+
 	class ProcessData {
 		public string test;
 		public StreamWriter stdout, stderr;
@@ -57,8 +59,6 @@ public class TestRunner
 		int expectedExitCode = 0;
 		string testsuiteName = null;
 		string inputFile = null;
-
-		DateTime test_start_time = DateTime.UtcNow;
 
 		// FIXME: Add support for runtime arguments + env variables
 
@@ -168,8 +168,7 @@ public class TestRunner
 
 		object monitor = new object ();
 
-		if (concurrency != 1)
-			Console.WriteLine ("Running tests: ");
+		Console.WriteLine ("Running tests: ");
 
 		var test_info = new Queue<TestInfo> ();
 		if (opt_sets.Count == 0) {
@@ -180,9 +179,18 @@ public class TestRunner
 				foreach (string s in tests)
 					test_info.Enqueue (new TestInfo { test = s, opt_set = opt });
 			}
-		}		
+		}
+
+		/* compute the max length of test names, to have an optimal output width */
+		int output_width = -1;
+		foreach (TestInfo ti in test_info) {
+			if (ti.test.Length > output_width)
+				output_width = Math.Min (120, ti.test.Length);
+		}
 
 		List<Thread> threads = new List<Thread> (concurrency);
+
+		DateTime test_start_time = DateTime.UtcNow;
 
 		for (int j = 0; j < concurrency; ++j) {
 			Thread thread = new Thread (() => {
@@ -195,11 +203,12 @@ public class TestRunner
 						ti = test_info.Dequeue ();
 					}
 
+					var output = new StringWriter ();
+
 					string test = ti.test;
 					string opt_set = ti.opt_set;
 
-					if (concurrency == 1)
-						Console.Write ("Testing " + test + "... ");
+					output.Write (String.Format ("{{0,-{0}}} ", output_width), test);
 
 					/* Spawn a new process */
 					string process_args;
@@ -245,6 +254,8 @@ public class TestRunner
 						}
 					};
 
+					var start = DateTime.UtcNow;
+
 					p.Start ();
 
 					p.BeginOutputReadLine ();
@@ -255,33 +266,32 @@ public class TestRunner
 							timedout.Add (data);
 						}
 
-						if (concurrency == 1)
-							Console.WriteLine ("timed out.");
-						else
-							Console.Write (".");
+						output.Write ("timed out");
 
 						p.Kill ();
 					} else if (p.ExitCode != expectedExitCode) {
+						var end = DateTime.UtcNow;
+
 						lock (monitor) {
 							failed.Add (data);
 						}
 
-						if (concurrency == 1)
-							Console.WriteLine ("failed.");
-						else
-							Console.Write (".");
+						output.Write ("failed, time: {0}, exit code: {1}", (end - start).ToString (TEST_TIME_FORMAT), p.ExitCode);
 					} else {
+						var end = DateTime.UtcNow;
+
 						lock (monitor) {
 							passed.Add (data);
 						}
 
-						if (concurrency == 1)
-							Console.WriteLine ("passed.");
-						else
-							Console.Write (".");
+						output.Write ("passed, time: {0}", (end - start).ToString (TEST_TIME_FORMAT));
 					}
 
 					p.Close ();
+
+					lock (monitor) {
+						Console.WriteLine (output.ToString ());
+					}
 				}
 			});
 
@@ -293,11 +303,12 @@ public class TestRunner
 		for (int j = 0; j < threads.Count; ++j)
 			threads [j].Join ();
 
+		TimeSpan test_time = DateTime.UtcNow - test_start_time;
+
 		int npassed = passed.Count;
 		int nfailed = failed.Count;
 		int ntimedout = timedout.Count;
 
-		TimeSpan test_time = DateTime.UtcNow - test_start_time;
 		XmlWriterSettings xmlWriterSettings = new XmlWriterSettings ();
 		xmlWriterSettings.NewLineOnAttributes = true;
 		xmlWriterSettings.Indent = true;
@@ -420,6 +431,8 @@ public class TestRunner
 			writer.WriteEndDocument ();
 		}
 
+		Console.WriteLine ();
+		Console.WriteLine ("Time: {0}", test_time.ToString (TEST_TIME_FORMAT));
 		Console.WriteLine ();
 		Console.WriteLine ("{0,4} test(s) passed", npassed);
 		Console.WriteLine ("{0,4} test(s) failed", nfailed);
