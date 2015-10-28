@@ -543,7 +543,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
 /*++
 Function :
-    CONTEXTGetPC
+    GetNativeContextPC
     
     Returns the program counter from the native context.
 
@@ -554,7 +554,7 @@ Return value :
     The program counter from the native context.
 
 --*/
-LPVOID CONTEXTGetPC(const native_context_t *context)
+LPVOID GetNativeContextPC(const native_context_t *context)
 {
 #ifdef _AMD64_
     return (LPVOID)MCREG_Rip(context->uc_mcontext);
