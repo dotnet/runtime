@@ -44,6 +44,32 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(value, segments[2]);
         }
 
+        [Theory]
+        [InlineData("", 9, "01", "00")]
+        [InlineData("00", 9, "01", "00")]
+        [InlineData("0000", 9, "01", "00")]
+        [InlineData("007F", 9, "01", "00")]
+        [InlineData("8000", 3, "02", "0780")]
+        [InlineData("8FF0", 3, "02", "0780")]
+        [InlineData("8FF0", 7, "02", "018E")]
+        [InlineData("8FF0", 8, "02", "008F")]
+        [InlineData("8FF0", 9, "03", "078F80")]
+        public static void ValidateNamedBitEncodings(string hexRaw, int namedBits, string hexLength, string encodedData)
+        {
+            byte[] input = hexRaw.HexToByteArray();
+            const byte tag = 0x03;
+            byte[] length = hexLength.HexToByteArray();
+            byte[] expectedOutput = encodedData.HexToByteArray();
+
+            byte[][] segments = DerEncoder.SegmentedEncodeNamedBitList(input, namedBits);
+
+            Assert.Equal(3, segments.Length);
+            
+            Assert.Equal(new[] { tag }, segments[0]);
+            Assert.Equal(length, segments[1]);
+            Assert.Equal(expectedOutput, segments[2]);
+        }
+
         [Fact]
         public static void ConstructSequence()
         {
