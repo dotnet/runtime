@@ -8,10 +8,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-using CURLAUTH = Interop.libcurl.CURLAUTH;
-using CURLcode = Interop.libcurl.CURLcode;
+using CURLAUTH = Interop.LibCurl.CURLAUTH;
+using CURLcode = Interop.LibCurl.CURLcode;
 using CURLMcode = Interop.libcurl.CURLMcode;
-using CURLoption = Interop.libcurl.CURLoption;
+using CURLoption = Interop.LibCurl.CURLoption;
 
 namespace System.Net.Http
 {
@@ -41,7 +41,7 @@ namespace System.Net.Http
 
         private readonly static char[] s_newLineCharArray = new char[] { HttpRuleParser.CR, HttpRuleParser.LF };
         private readonly static string[] s_authenticationSchemes = { "Negotiate", "Digest", "Basic" }; // the order in which libcurl goes over authentication schemes
-        private readonly static ulong[] s_authSchemePriorityOrder = { CURLAUTH.Negotiate, CURLAUTH.Digest, CURLAUTH.Basic };
+        private readonly static long[] s_authSchemePriorityOrder = { CURLAUTH.Negotiate, CURLAUTH.Digest, CURLAUTH.Basic };
 
         private readonly static bool s_supportsAutomaticDecompression;
         private readonly static bool s_supportsSSL;
@@ -355,11 +355,11 @@ namespace System.Net.Http
             }
         }
 
-        private KeyValuePair<NetworkCredential, ulong> GetNetworkCredentials(ICredentials credentials, Uri requestUri)
+        private KeyValuePair<NetworkCredential, long> GetNetworkCredentials(ICredentials credentials, Uri requestUri)
         {
             if (_preAuthenticate)
             {
-                KeyValuePair<NetworkCredential, ulong> ncAndScheme;
+                KeyValuePair<NetworkCredential, long> ncAndScheme;
                 lock (LockObject)
                 {
                     Debug.Assert(_credentialCache != null, "Expected non-null credential cache");
@@ -374,7 +374,7 @@ namespace System.Net.Http
             return GetCredentials(credentials, requestUri);
         }
 
-        private void AddCredentialToCache(Uri serverUri, ulong authAvail, NetworkCredential nc)
+        private void AddCredentialToCache(Uri serverUri, long authAvail, NetworkCredential nc)
         {
             lock (LockObject)
             {
@@ -424,10 +424,10 @@ namespace System.Net.Http
             }
         }
 
-        private static KeyValuePair<NetworkCredential, ulong> GetCredentials(ICredentials credentials, Uri requestUri)
+        private static KeyValuePair<NetworkCredential, long> GetCredentials(ICredentials credentials, Uri requestUri)
         {
             NetworkCredential nc = null;
-            ulong curlAuthScheme = CURLAUTH.None;
+            long curlAuthScheme = CURLAUTH.None;
 
             if (credentials != null)
             {
@@ -453,7 +453,7 @@ namespace System.Net.Http
             }
 
             VerboseTrace("curlAuthScheme = " + curlAuthScheme);
-            return new KeyValuePair<NetworkCredential, ulong>(nc, curlAuthScheme); ;
+            return new KeyValuePair<NetworkCredential, long>(nc, curlAuthScheme); ;
         }
 
         private void CheckDisposed()
@@ -654,7 +654,7 @@ namespace System.Net.Http
             Uri forwardUri;
             if (Uri.TryCreate(location, UriKind.RelativeOrAbsolute, out forwardUri) && forwardUri.IsAbsoluteUri)
             {
-                KeyValuePair<NetworkCredential, ulong> ncAndScheme = GetCredentials(state._handler.Credentials as CredentialCache, forwardUri);
+                KeyValuePair<NetworkCredential, long> ncAndScheme = GetCredentials(state._handler.Credentials as CredentialCache, forwardUri);
                 if (ncAndScheme.Key != null)
                 {
                     state.SetCredentialsOptions(ncAndScheme);

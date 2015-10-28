@@ -21,7 +21,7 @@ namespace System.Net
             // an enum type that is more compatible directly with the WebExceptionStatus enum.
             switch (ex.HResult)
             {
-                case Interop.libcurl.CURLcode.CURLE_COULDNT_RESOLVE_HOST:
+                case Interop.LibCurl.CURLcode.CURLE_COULDNT_RESOLVE_HOST:
                     status = WebExceptionStatus.NameResolutionFailure;
                     break;
                 default:
