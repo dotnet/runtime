@@ -141,12 +141,15 @@ internal class RFLogging
         {
             try
             {
-                string logFilename = logDirectory + "\\instrmentation.log";
+                string logFilename = Path.Combine (logDirectory, "instrmentation.log");
                 while (File.Exists(logFilename))
                 {
-                    logFilename = logDirectory + "\\instrmentation.log-" + DateTime.Now.ToString().Replace('/', '-').Replace(':', '.');
+                    logFilename = Path.Combine (logDirectory, "instrmentation.log-" + DateTime.Now.ToString().Replace('/', '-').Replace(':', '.'));
                 }
 
+                string logDirname = Path.GetDirectoryName (logFilename);
+                if (!Directory.Exists (logDirname))
+                    Directory.CreateDirectory (logDirname);
                 _instrumentationLogFile = File.Open(logFilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
             }
             catch
@@ -183,7 +186,7 @@ internal class RFLogging
             {
                 fRetry = false;
 
-                string safeName = logDirectory + "\\" + name.Replace('\\', ' ').Replace('*', ' ').Replace('?', ' ').Replace('>', ' ').Replace('<', ' ').Replace('|', ' ').Replace(':', ' ').Replace('/', ' ').Replace('"', ' ');
+                string safeName = Path.Combine (logDirectory, name.Replace('\\', ' ').Replace('*', ' ').Replace('?', ' ').Replace('>', ' ').Replace('<', ' ').Replace('|', ' ').Replace(':', ' ').Replace('/', ' ').Replace('"', ' '));
                 filename = safeName + ".log";
                 if (File.Exists(filename))
                 {
@@ -191,6 +194,9 @@ internal class RFLogging
                 }
                 try
                 {
+                    string dirname = Path.GetDirectoryName (filename);
+                    if (!Directory.Exists (dirname))
+                        Directory.CreateDirectory (dirname);
                     _logFile = File.Open(filename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
                 }
                 catch (IOException e)
