@@ -67,6 +67,7 @@
   -->
   <Target Name="Build" Condition="('$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)') Or ('$(_CLRTestInServiceOfHigherPriority)')">
     <MSBuild Projects="@(ProjectReference)" Properties="_CLRTestInServiceOfHigherPriority=true"/>
+    <MakeDir Condition="'$(CLRTestKind)' == 'RunOnly'" ContinueOnError="false" Directories="$(OutputPath)" />
   </Target>
   
   <!-- We will use an imported build here in the instance that we have source that we need to build, and we are the correct priority...OR if we are being asked to build for
