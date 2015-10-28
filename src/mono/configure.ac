@@ -2583,6 +2583,7 @@ dnl **************
 AC_ARG_ENABLE(llvm,[  --enable-llvm	Enable the LLVM back-end], enable_llvm=$enableval, enable_llvm=no)
 AC_ARG_ENABLE(loadedllvm,[  --enable-loadedllvm	Load the LLVM back-end dynamically], enable_llvm=$enableval && enable_loadedllvm=$enableval, enable_loadedllvm=no)
 AC_ARG_ENABLE(llvm-version-check,[  --enable-llvm-version-check Check that the LLVM matches the version expected by mono], enable_llvm_version_check=$enableval, enable_llvm_version_check=no)
+AC_ARG_ENABLE(llvm-runtime,[  --enable-llvm-runtime	Enable runtime support for llvmonly code], enable_llvm_runtime=$enableval, enable_llvm_runtime=no)
 
 AC_ARG_WITH(llvm, [  --with-llvm=<llvm prefix>    Enable the LLVM back-end], enable_llvm=yes,)
 
@@ -2695,6 +2696,11 @@ if test "x$enable_loadedllvm" = "xyes"; then
    AC_DEFINE(MONO_LLVM_LOADED, 1, [The LLVM back end is dynamically loaded])
 fi
 AM_CONDITIONAL(LOADED_LLVM, [test x$enable_loadedllvm = xyes])
+
+if test "x$enable_llvm" = "xyes"; then
+   enable_llvm_runtime=yes
+fi
+AM_CONDITIONAL(ENABLE_LLVM_RUNTIME, [test x$enable_llvm_runtime = xyes])
 
 TARGET="unknown"
 ACCESS_UNALIGNED="yes"

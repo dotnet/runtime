@@ -3,8 +3,6 @@
 
 #include <glib.h>
 
-#if defined(ENABLE_LLVM_RUNTIME) || defined(ENABLE_LLVM)
-
 extern "C" {
 
 void
@@ -17,17 +15,3 @@ mono_llvm_cpp_throw_exception (void)
 }
 
 }
-
-#else
-
-extern "C" {
-
-void
-mono_llvm_cpp_throw_exception (void)
-{
-	g_assert_not_reached ();
-}
-
-}
-
-#endif /* ENABLE_LLVM_RUNTIME */
