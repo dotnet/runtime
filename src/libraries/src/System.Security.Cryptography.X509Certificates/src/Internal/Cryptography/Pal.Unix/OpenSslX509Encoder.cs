@@ -147,7 +147,19 @@ namespace Internal.Cryptography.Pal
 
         public byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages)
         {
-            throw new NotImplementedException();
+            // The numeric values of X509KeyUsageFlags mean that if we interpret it as a little-endian
+            // ushort it will line up with the flags in the spec.
+            ushort ushortValue = unchecked((ushort)(int)keyUsages);
+            byte[] data = BitConverter.GetBytes(ushortValue);
+
+            // RFC 3280 section 4.2.1.3 (https://tools.ietf.org/html/rfc3280#section-4.2.1.3) defines
+            // digitalSignature (0) through decipherOnly (8), making 9 named bits.
+            const int namedBitsCount = 9;
+
+            // The expected output of this method isn't the SEQUENCE value, but just the payload bytes.
+            byte[][] segments = DerEncoder.SegmentedEncodeNamedBitList(data, namedBitsCount);
+            Debug.Assert(segments.Length == 3);
+            return ConcatenateArrays(segments);
         }
 
         public void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
@@ -302,6 +314,28 @@ namespace Internal.Cryptography.Pal
                 rsa.ImportParameters(rsaParameters);
                 return rsa;
             }
+        }
+
+        private static byte[] ConcatenateArrays(byte[][] segments)
+        {
+            int length = 0;
+
+            foreach (byte[] segment in segments)
+            {
+                length += segment.Length;
+            }
+
+            byte[] concatenated = new byte[length];
+
+            int offset = 0;
+
+            foreach (byte[] segment in segments)
+            {
+                Buffer.BlockCopy(segment, 0, concatenated, offset, segment.Length);
+                offset += segment.Length;
+            }
+
+            return concatenated;
         }
     }
 }
