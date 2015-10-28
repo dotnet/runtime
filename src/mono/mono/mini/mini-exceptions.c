@@ -42,6 +42,10 @@
 #include <sys/prctl.h>
 #endif
 
+#ifdef HAVE_UNWIND_H
+#include <unwind.h>
+#endif
+
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
@@ -66,10 +70,6 @@
 
 #ifdef ENABLE_LLVM
 #include "mini-llvm-cpp.h"
-#endif
-
-#ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
-#include <unwind.h>
 #endif
 
 #ifdef ENABLE_EXTENSION_MODULE
