@@ -431,6 +431,7 @@ namespace System.Linq.Expressions
         internal Expression() { }
         protected internal override System.Linq.Expressions.Expression Accept(System.Linq.Expressions.ExpressionVisitor visitor) { return default(System.Linq.Expressions.Expression); }
         public new TDelegate Compile() { return default(TDelegate); }
+        public new TDelegate Compile(bool preferInterpretation) { return default(TDelegate); }
         public System.Linq.Expressions.Expression<TDelegate> Update(System.Linq.Expressions.Expression body, System.Collections.Generic.IEnumerable<System.Linq.Expressions.ParameterExpression> parameters) { return default(System.Linq.Expressions.Expression<TDelegate>); }
     }
     public enum ExpressionType
@@ -645,6 +646,7 @@ namespace System.Linq.Expressions
         public bool TailCall { get { return default(bool); } }
         public sealed override System.Type Type { get { return default(System.Type); } }
         public System.Delegate Compile() { return default(System.Delegate); }
+        public System.Delegate Compile(bool preferInterpretation) { return default(System.Delegate); }
     }
     public sealed partial class ListInitExpression : System.Linq.Expressions.Expression
     {
