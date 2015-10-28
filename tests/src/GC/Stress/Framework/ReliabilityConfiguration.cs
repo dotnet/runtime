@@ -1004,13 +1004,13 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
         }
 
 
-        if (basepath.LastIndexOf("\\") == (basepath.Length - 1))
+        if (basepath.LastIndexOf(Path.PathSeparator) == (basepath.Length - 1))
         {
             return (basepath + trimmedPath);
         }
         else
         {
-            return (basepath + "\\" + trimmedPath);
+            return Path.Combine(basepath, trimmedPath);
         }
     }
 
