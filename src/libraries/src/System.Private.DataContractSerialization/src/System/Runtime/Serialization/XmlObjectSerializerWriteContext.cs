@@ -35,11 +35,10 @@ namespace System.Runtime.Serialization
 
         internal static XmlObjectSerializerWriteContext CreateContext(DataContractSerializer serializer, DataContract rootTypeDataContract, DataContractResolver dataContractResolver)
         {
-            return new XmlObjectSerializerWriteContext(serializer, rootTypeDataContract
-                                                                                       , dataContractResolver
-                                                                                                             );
+            return (serializer.PreserveObjectReferences || serializer.SerializationSurrogateProvider != null)
+                ? new XmlObjectSerializerWriteContextComplex(serializer, rootTypeDataContract, dataContractResolver)
+                : new XmlObjectSerializerWriteContext(serializer, rootTypeDataContract, dataContractResolver);
         }
-
 
         protected XmlObjectSerializerWriteContext(DataContractSerializer serializer, DataContract rootTypeDataContract, DataContractResolver resolver)
             : base(serializer, rootTypeDataContract, resolver)
@@ -48,7 +47,6 @@ namespace System.Runtime.Serialization
             // Known types restricts the set of types that can be deserialized
             _unsafeTypeForwardingEnabled = true;
         }
-
 
         internal XmlObjectSerializerWriteContext(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
             : base(serializer, maxItemsInObjectGraph, streamingContext, ignoreExtensionDataObject)

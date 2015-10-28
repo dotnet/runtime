@@ -1092,4 +1092,10 @@
   <data name="JsonDuplicateMemberInInput" xml:space="preserve">
     <value>The data contract type '{0}' cannot be deserialized because the data member '{1}' was found more than once in the input.</value>
   </data>
+  <data name="SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser" xml:space="preserve">
+    <value>Using surrogates with get-only collection properties is not supported.  Consider removing the surrogate associated with '{0}'.</value>
+  </data>
+  <data name="FactoryObjectContainsSelfReference" xml:space="preserve">
+    <value>Object graph of type '{0}' with Id '{2}' contains a reference to itself. The object has been replaced with a new object of type '{1}' either because it implements IObjectReference or because it is surrogated. The serializer does not support fixing up the nested reference to the new object and cannot deserialize this object. Consider changing the object to remove the nested self-reference.</value>
+  </data>
 </root>

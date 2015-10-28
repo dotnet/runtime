@@ -85,9 +85,10 @@ namespace System.Runtime.Serialization
 
         internal static XmlObjectSerializerReadContext CreateContext(DataContractSerializer serializer, DataContract rootTypeDataContract, DataContractResolver dataContractResolver)
         {
-            return new XmlObjectSerializerReadContext(serializer, rootTypeDataContract, dataContractResolver);
+            return (serializer.PreserveObjectReferences || serializer.SerializationSurrogateProvider != null)
+                ? new XmlObjectSerializerReadContextComplex(serializer, rootTypeDataContract, dataContractResolver)
+                : new XmlObjectSerializerReadContext(serializer, rootTypeDataContract, dataContractResolver);
         }
-
 
         internal XmlObjectSerializerReadContext(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
             : base(serializer, maxItemsInObjectGraph, streamingContext, ignoreExtensionDataObject)
@@ -175,7 +176,6 @@ namespace System.Runtime.Serialization
                 }
                 knownTypesAddedInCurrentScope = ReplaceScopedKnownTypesTop(dataContract.KnownDataContracts, knownTypesAddedInCurrentScope);
             }
-
 
             if (knownTypesAddedInCurrentScope)
             {
@@ -409,6 +409,25 @@ namespace System.Runtime.Serialization
                 DeserializedObjects.Add(id, obj);
         }
 
+        public void ReplaceDeserializedObject(string id, object oldObj, object newObj)
+        {
+            if (object.ReferenceEquals(oldObj, newObj))
+                return;
+
+            if (id != Globals.NewObjectId)
+            {
+                // In certain cases (IObjectReference, SerializationSurrogate or DataContractSurrogate),
+                // an object can be replaced with a different object once it is deserialized. If the 
+                // object happens to be referenced from within itself, that reference needs to be updated
+                // with the new instance. BinaryFormatter supports this by fixing up such references later. 
+                // These XmlObjectSerializer implementations do not currently support fix-ups. Hence we 
+                // throw in such cases to allow us add fix-up support in the future if we need to.
+                if (DeserializedObjects.IsObjectReferenced(id))
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.FactoryObjectContainsSelfReference, DataContract.GetClrTypeFullName(oldObj.GetType()), DataContract.GetClrTypeFullName(newObj.GetType()), id)));
+                DeserializedObjects.Remove(id);
+                DeserializedObjects.Add(id, newObj);
+            }
+        }
 
 #if USE_REFEMIT
         public object GetExistingObject(string id, Type type, string name, string ns)

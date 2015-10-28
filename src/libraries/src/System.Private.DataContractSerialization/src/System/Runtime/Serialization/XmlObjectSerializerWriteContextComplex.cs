@@ -21,6 +21,7 @@ namespace System.Runtime.Serialization
     internal class XmlObjectSerializerWriteContextComplex : XmlObjectSerializerWriteContext
 #endif
     {
+        private ISerializationSurrogateProvider _serializationSurrogateProvider;
         private SerializationMode _mode;
 
         internal XmlObjectSerializerWriteContextComplex(DataContractSerializer serializer, DataContract rootTypeDataContract, DataContractResolver dataContractResolver)
@@ -28,6 +29,7 @@ namespace System.Runtime.Serialization
         {
             _mode = SerializationMode.SharedContract;
             this.preserveObjectReferences = serializer.PreserveObjectReferences;
+            _serializationSurrogateProvider = serializer.SerializationSurrogateProvider;
         }
 
         internal XmlObjectSerializerWriteContextComplex(XmlObjectSerializer serializer, int maxItemsInObjectGraph, StreamingContext streamingContext, bool ignoreExtensionDataObject)
@@ -171,6 +173,18 @@ namespace System.Runtime.Serialization
             }
         }
 
+        internal override void InternalSerialize(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
+        {
+            if (_serializationSurrogateProvider == null)
+            {
+                base.InternalSerialize(xmlWriter, obj, isDeclaredType, writeXsiType, declaredTypeID, declaredTypeHandle);
+            }
+            else
+            {
+                InternalSerializeWithSurrogate(xmlWriter, obj, isDeclaredType, writeXsiType, declaredTypeID, declaredTypeHandle);
+            }
+        }
+
         internal override bool OnHandleReference(XmlWriterDelegator xmlWriter, object obj, bool canContainCyclicReference)
         {
             if (preserveObjectReferences && !this.IsGetOnlyCollection)
@@ -196,15 +210,74 @@ namespace System.Runtime.Serialization
             base.OnEndHandleReference(xmlWriter, obj, canContainCyclicReference);
         }
 
+        internal override void CheckIfTypeSerializable(Type memberType, bool isMemberTypeSerializable)
+        {
+            if (_serializationSurrogateProvider != null)
+            {
+                while (memberType.IsArray)
+                    memberType = memberType.GetElementType();
+                memberType = DataContractSurrogateCaller.GetDataContractType(_serializationSurrogateProvider, memberType);
+                if (!DataContract.IsTypeSerializable(memberType))
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.TypeNotSerializable, memberType)));
+                return;
+            }
+
+            base.CheckIfTypeSerializable(memberType, isMemberTypeSerializable);
+        }
+
+        internal override Type GetSurrogatedType(Type type)
+        {
+            if (_serializationSurrogateProvider == null)
+            {
+                return base.GetSurrogatedType(type);
+            }
+            else
+            {
+                type = DataContract.UnwrapNullableType(type);
+                Type surrogateType = DataContractSerializer.GetSurrogatedType(_serializationSurrogateProvider, type);
+                if (this.IsGetOnlyCollection && surrogateType != type)
+                {
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser,
+                        DataContract.GetClrTypeFullName(type))));
+                }
+                else
+                {
+                    return surrogateType;
+                }
+            }
+        }
+
         private void InternalSerializeWithSurrogate(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
         {
             RuntimeTypeHandle objTypeHandle = isDeclaredType ? declaredTypeHandle : obj.GetType().TypeHandle;
             object oldObj = obj;
+            int objOldId = 0;
             Type objType = Type.GetTypeFromHandle(objTypeHandle);
             Type declaredType = GetSurrogatedType(Type.GetTypeFromHandle(declaredTypeHandle));
 
             declaredTypeHandle = declaredType.TypeHandle;
-            throw new PlatformNotSupportedException();
+
+            obj = DataContractSerializer.SurrogateToDataContractType(_serializationSurrogateProvider, obj, declaredType, ref objType);
+            objTypeHandle = objType.TypeHandle;
+            if (oldObj != obj)
+                objOldId = SerializedObjects.ReassignId(0, oldObj, obj);
+
+            if (writeXsiType)
+            {
+                declaredType = Globals.TypeOfObject;
+                SerializeWithXsiType(xmlWriter, obj, objTypeHandle, objType, -1, declaredType.TypeHandle, declaredType);
+            }
+            else if (declaredTypeHandle.Equals(objTypeHandle))
+            {
+                DataContract contract = GetDataContract(objTypeHandle, objType);
+                SerializeWithoutXsiType(contract, xmlWriter, obj, declaredTypeHandle);
+            }
+            else
+            {
+                SerializeWithXsiType(xmlWriter, obj, objTypeHandle, objType, -1, declaredTypeHandle, declaredType);
+            }
+            if (oldObj != obj)
+                SerializedObjects.ReassignId(objOldId, obj, oldObj);
         }
 
         internal override void WriteArraySize(XmlWriterDelegator xmlWriter, int size)
