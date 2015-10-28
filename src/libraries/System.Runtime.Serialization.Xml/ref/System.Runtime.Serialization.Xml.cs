@@ -26,6 +26,7 @@ namespace System.Runtime.Serialization
         public System.Collections.ObjectModel.ReadOnlyCollection<System.Type> KnownTypes { get { return default(System.Collections.ObjectModel.ReadOnlyCollection<System.Type>); } }
         public int MaxItemsInObjectGraph { get { return default(int); } }
         public bool PreserveObjectReferences { get { return default(bool); } }
+        public System.Runtime.Serialization.ISerializationSurrogateProvider SerializationSurrogateProvider { get { return default(System.Runtime.Serialization.ISerializationSurrogateProvider); } set { } }
         public bool SerializeReadOnlyTypes { get { return default(bool); } }
         public override bool IsStartObject(System.Xml.XmlDictionaryReader reader) { return default(bool); }
         public override bool IsStartObject(System.Xml.XmlReader reader) { return default(bool); }
