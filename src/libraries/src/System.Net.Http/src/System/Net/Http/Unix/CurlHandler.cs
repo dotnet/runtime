@@ -10,10 +10,8 @@ using System.Collections.Generic;
 
 using CURLAUTH = Interop.libcurl.CURLAUTH;
 using CURLcode = Interop.libcurl.CURLcode;
-using CurlFeatures = Interop.libcurl.CURL_VERSION_Features;
 using CURLMcode = Interop.libcurl.CURLMcode;
 using CURLoption = Interop.libcurl.CURLoption;
-using CurlVersionInfoData = Interop.libcurl.curl_version_info_data;
 
 namespace System.Net.Http
 {
@@ -45,7 +43,6 @@ namespace System.Net.Http
         private readonly static string[] s_authenticationSchemes = { "Negotiate", "Digest", "Basic" }; // the order in which libcurl goes over authentication schemes
         private readonly static ulong[] s_authSchemePriorityOrder = { CURLAUTH.Negotiate, CURLAUTH.Digest, CURLAUTH.Basic };
 
-        private readonly static CurlVersionInfoData s_curlVersionInfoData;
         private readonly static bool s_supportsAutomaticDecompression;
         private readonly static bool s_supportsSSL;
 
@@ -70,18 +67,19 @@ namespace System.Net.Http
 
         static CurlHandler()
         {
-            // curl_global_init call handled by Interop.libcurl's cctor
+            // curl_global_init call handled by Interop.LibCurl's cctor
+
+            int age;
+            if (!Interop.LibCurl.GetCurlVersionInfo(out age, out s_supportsSSL, out s_supportsAutomaticDecompression))
+            {
+                throw new InvalidOperationException(SR.net_http_unix_https_libcurl_no_versioninfo);  
+            }
 
             // Verify the version of curl we're using is new enough
-            s_curlVersionInfoData = Marshal.PtrToStructure<CurlVersionInfoData>(Interop.libcurl.curl_version_info(CurlAge));
-            if (s_curlVersionInfoData.age < MinCurlAge)
+            if (age < MinCurlAge)
             {
                 throw new InvalidOperationException(SR.net_http_unix_https_libcurl_too_old);
             }
-
-            // Feature detection
-            s_supportsSSL = (CurlFeatures.CURL_VERSION_SSL & s_curlVersionInfoData.features) != 0;
-            s_supportsAutomaticDecompression = (CurlFeatures.CURL_VERSION_LIBZ & s_curlVersionInfoData.features) != 0;
         }
 
         #region Properties
