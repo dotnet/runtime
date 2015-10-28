@@ -615,8 +615,8 @@ static void
 emit_time (LogBuffer *logbuffer, uint64_t value)
 {
 	uint64_t tdiff = value - logbuffer->last_time;
-	if (value < logbuffer->last_time)
-		printf ("time went backwards\n");
+	//if (value < logbuffer->last_time)
+	//	printf ("time went backwards\n");
 	//if (tdiff > 1000000)
 	//	printf ("large time offset: %llu\n", tdiff);
 	encode_uleb128 (tdiff, logbuffer->data, &logbuffer->data);
