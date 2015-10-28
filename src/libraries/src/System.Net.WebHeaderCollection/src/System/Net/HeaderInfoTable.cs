@@ -32,7 +32,7 @@ namespace System.Net
                 }
                 else if ((value[i] == ',') && !inquote)
                 {
-                    tempStringCollection.Add(SubstringTrim(value, startIndex, length));
+                    tempStringCollection.Add(value.SubstringTrim(startIndex, length));
                     startIndex = i + 1;
                     length = 0;
                     continue;
@@ -43,7 +43,7 @@ namespace System.Net
             // Now add the last of the header values to the stringtable.
             if (startIndex < value.Length && length > 0)
             {
-                tempStringCollection.Add(SubstringTrim(value, startIndex, length));
+                tempStringCollection.Add(value.SubstringTrim(startIndex, length));
             }
 
             return tempStringCollection.ToArray();
@@ -104,35 +104,6 @@ namespace System.Net
             { HttpKnownHeaderNames.Warning,            new HeaderInfo(HttpKnownHeaderNames.Warning,            false,  false,  true,   s_multiParser) },
             { HttpKnownHeaderNames.WWWAuthenticate,    new HeaderInfo(HttpKnownHeaderNames.WWWAuthenticate,    false,  true,   true,   s_singleParser) }
         };
-
-        private static string SubstringTrim(string value, int startIndex, int length)
-        {
-            int offset = 0;
-            while (offset < length && char.IsWhiteSpace(value[startIndex + offset]))
-            {
-                offset++;
-            }
-
-            int end = length - 1;
-            while (end >= offset && char.IsWhiteSpace(value[startIndex + end]))
-            {
-                end--;
-            }
-
-            int newLength = end - offset + 1;
-            if (newLength == 0)
-            {
-                return string.Empty;
-            }
-
-            int newStartIndex = startIndex + offset;
-            if (newStartIndex == 0 && newLength == value.Length)
-            {
-                return value;
-            }
-
-            return value.Substring(newStartIndex, newLength);
-        }
 
         internal static HeaderInfo GetKnownHeaderInfo(string name)
         {
