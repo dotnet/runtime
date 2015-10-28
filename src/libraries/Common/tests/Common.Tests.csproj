@@ -26,6 +26,9 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\src\System\StringExtensions.cs">
+      <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\src\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
@@ -41,6 +44,7 @@
     <Compile Include="..\src\System\IO\TaskHelpers.cs">
       <Link>Common\System\IO\TaskHelpers.cs</Link>
     </Compile>
+    <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">

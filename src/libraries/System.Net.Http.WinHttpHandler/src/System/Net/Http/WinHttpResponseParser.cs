@@ -198,7 +198,7 @@ namespace System.Net.Http
                 if (colonIndex > 0)
                 {
                     string headerName = responseHeaderArray[i].Substring(0, colonIndex);
-                    string headerValue = responseHeaderArray[i].Substring(colonIndex + 1).Trim(); // Normalize header value by trimming white space.
+                    string headerValue = responseHeaderArray[i].SubstringTrim(colonIndex + 1); // Normalize header value by trimming white space.
 
                     if (!response.Headers.TryAddWithoutValidation(headerName, headerValue))
                     {

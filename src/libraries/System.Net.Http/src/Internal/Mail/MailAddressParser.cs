@@ -303,11 +303,9 @@ namespace System.Net.Mail
 
                 Debug.Assert(index < 0 || data[index] == MailBnfHelper.Comma, "Mis-alligned index: " + index);
 
-                // Do not include the Comma (if any)
-                displayName = data.Substring(index + 1, startingIndex - index);
-
-                // Because there were no bounding quotes, trim extra whitespace 
-                displayName = displayName.Trim();
+                // Do not include the Comma (if any), and because there were no bounding quotes, 
+                // trim extra whitespace.
+                displayName = data.SubstringTrim(index + 1, startingIndex - index);
             }
             return NormalizeOrThrow(displayName);
         }
