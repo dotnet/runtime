@@ -12,8 +12,6 @@
 
 #include <glib.h>
 
-#include <unwind.h>
-
 G_BEGIN_DECLS
 
 void
