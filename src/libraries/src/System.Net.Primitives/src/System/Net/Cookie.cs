@@ -1009,7 +1009,7 @@ namespace System.Net
         // Gets the full string of the cookie
         internal string GetCookieString()
         {
-            return _tokenStream.Substring(_cookieStartIndex, _cookieLength).Trim();
+            return _tokenStream.SubstringTrim(_cookieStartIndex, _cookieLength);
         }
 
         // Extract
@@ -1021,11 +1021,9 @@ namespace System.Net
 
             if (_tokenLength != 0)
             {
-                tokenString = _tokenStream.Substring(_start, _tokenLength);
-                if (!Quoted)
-                {
-                    tokenString = tokenString.Trim();
-                }
+                tokenString = Quoted ?
+                    _tokenStream.Substring(_start, _tokenLength) :
+                    _tokenStream.SubstringTrim(_start, _tokenLength);
             }
             return tokenString;
         }

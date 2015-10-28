@@ -71,6 +71,9 @@
     <Compile Include="..\..\src\System\Net\Sockets\SocketError.cs" >
       <Link>ProductionCode\System\Net\Sockets\SocketError.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+      <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs" >
       <Link>ProductionCode\Common\System\Net\ByteOrder.cs</Link>
     </Compile>

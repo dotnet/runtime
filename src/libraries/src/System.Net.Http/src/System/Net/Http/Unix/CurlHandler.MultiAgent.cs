@@ -565,7 +565,7 @@ namespace System.Net.Http
                             if (colonIndex > 0)
                             {
                                 string headerName = responseHeader.Substring(0, colonIndex);
-                                string headerValue = responseHeader.Substring(colonIndex + 1).Trim();
+                                string headerValue = responseHeader.SubstringTrim(colonIndex + 1);
 
                                 if (!response.Headers.TryAddWithoutValidation(headerName, headerValue))
                                 {
