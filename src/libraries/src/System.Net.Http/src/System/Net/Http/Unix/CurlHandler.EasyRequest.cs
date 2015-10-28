@@ -15,7 +15,7 @@ using CURLoption = Interop.libcurl.CURLoption;
 using CurlProtocols = Interop.libcurl.CURLPROTO_Definitions;
 using CURLProxyType = Interop.libcurl.curl_proxytype;
 using SafeCurlHandle = Interop.libcurl.SafeCurlHandle;
-using SafeCurlSlistHandle = Interop.libcurl.SafeCurlSlistHandle;
+using SafeCurlSlistHandle = Interop.LibCurl.SafeCurlSlistHandle;
 
 namespace System.Net.Http
 {
@@ -365,7 +365,7 @@ namespace System.Net.Http
                     AddRequestHeaders(contentHeaders, slist);
                     if (contentHeaders.ContentType == null)
                     {
-                        if (!Interop.libcurl.curl_slist_append(slist, NoContentType))
+                        if (!Interop.LibCurl.SListAppend(slist, NoContentType))
                         {
                             throw CreateHttpRequestException();
                         }
@@ -377,7 +377,7 @@ namespace System.Net.Http
                 if (_requestMessage.Headers.TransferEncodingChunked.HasValue && 
                     !_requestMessage.Headers.TransferEncodingChunked.Value)
                 {
-                    if (!Interop.libcurl.curl_slist_append(slist, NoTransferEncoding))
+                    if (!Interop.LibCurl.SListAppend(slist, NoTransferEncoding))
                     {
                         throw CreateHttpRequestException();
                     }
@@ -411,7 +411,7 @@ namespace System.Net.Http
                 foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
                 {
                     string headerStr = header.Key + ": " + headers.GetHeaderString(header.Key);
-                    if (!Interop.libcurl.curl_slist_append(handle, headerStr))
+                    if (!Interop.LibCurl.SListAppend(handle, headerStr))
                     {
                         throw CreateHttpRequestException();
                     }
