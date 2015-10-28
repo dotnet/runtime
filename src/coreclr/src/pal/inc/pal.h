@@ -3944,6 +3944,7 @@ HeapSetInformation(
         IN SIZE_T HeapInformationLength);
 
 #define LMEM_FIXED          0x0000
+#define LMEM_MOVEABLE       0x0002
 #define LMEM_ZEROINIT       0x0040
 #define LPTR                (LMEM_FIXED | LMEM_ZEROINIT)
 
@@ -3953,6 +3954,14 @@ PALAPI
 LocalAlloc(
        IN UINT uFlags,
        IN SIZE_T uBytes);
+
+PALIMPORT
+HLOCAL
+PALAPI
+LocalReAlloc(
+       IN HLOCAL hMem,
+       IN SIZE_T uBytes,
+       IN UINT   uFlags);
 
 PALIMPORT
 HLOCAL
