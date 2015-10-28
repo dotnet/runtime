@@ -1035,4 +1035,7 @@
   <data name="SNI_PN9" xml:space="preserve">
     <value>SQL Network Interfaces</value>
   </data>
+  <data name="ADP_FeatureNotSupportedOnNonWindowsPlatform" xml:space="preserve">
+    <value>{0} is not supported on non-Windows platform.</value>
+  </data>
 </root>
