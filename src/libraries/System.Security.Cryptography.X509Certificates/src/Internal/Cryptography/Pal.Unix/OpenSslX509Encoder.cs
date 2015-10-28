@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -42,12 +43,106 @@ namespace Internal.Cryptography.Pal
 
         public X509ContentType GetCertContentType(byte[] rawData)
         {
-            throw new NotImplementedException();
+            {
+                ICertificatePal certPal;
+
+                if (CertificatePal.TryReadX509Der(rawData, out certPal) ||
+                    CertificatePal.TryReadX509Pem(rawData, out certPal))
+                {
+                    certPal.Dispose();
+
+                    return X509ContentType.Cert;
+                }
+            }
+
+            if (PkcsFormatReader.IsPkcs7(rawData))
+            {
+                return X509ContentType.Pkcs7;
+            }
+
+            {
+                OpenSslPkcs12Reader pfx;
+
+                if (OpenSslPkcs12Reader.TryRead(rawData, out pfx))
+                {
+                    pfx.Dispose();
+                    return X509ContentType.Pkcs12;
+                }
+            }
+
+            // Unsupported format.
+            // Windows throws new CryptographicException(CRYPT_E_NO_MATCH)
+            throw new CryptographicException();
         }
 
         public X509ContentType GetCertContentType(string fileName)
         {
-            throw new NotImplementedException();
+            // If we can't open the file, fail right away.
+            using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(fileName, "rb"))
+            {
+                Interop.Crypto.CheckValidOpenSslHandle(fileBio);
+
+                int bioPosition = Interop.Crypto.BioTell(fileBio);
+                Debug.Assert(bioPosition >= 0);
+
+                // X509ContentType.Cert
+                {
+                    ICertificatePal certPal;
+
+                    if (CertificatePal.TryReadX509Der(fileBio, out certPal))
+                    {
+                        certPal.Dispose();
+
+                        return X509ContentType.Cert;
+                    }
+
+                    CertificatePal.RewindBio(fileBio, bioPosition);
+
+                    if (CertificatePal.TryReadX509Pem(fileBio, out certPal))
+                    {
+                        certPal.Dispose();
+
+                        return X509ContentType.Cert;
+                    }
+
+                    CertificatePal.RewindBio(fileBio, bioPosition);
+                }
+
+                // X509ContentType.Pkcs7
+                {
+                    if (PkcsFormatReader.IsPkcs7Der(fileBio))
+                    {
+                        return X509ContentType.Pkcs7;
+                    }
+
+                    CertificatePal.RewindBio(fileBio, bioPosition);
+
+                    if (PkcsFormatReader.IsPkcs7Pem(fileBio))
+                    {
+                        return X509ContentType.Pkcs7;
+                    }
+
+                    CertificatePal.RewindBio(fileBio, bioPosition);
+                }
+
+                // X509ContentType.Pkcs12 (aka PFX)
+                {
+                    OpenSslPkcs12Reader pkcs12Reader;
+
+                    if (OpenSslPkcs12Reader.TryRead(fileBio, out pkcs12Reader))
+                    {
+                        pkcs12Reader.Dispose();
+
+                        return X509ContentType.Pkcs12;
+                    }
+
+                    CertificatePal.RewindBio(fileBio, bioPosition);
+                }
+            }
+
+            // Unsupported format.
+            // Windows throws new CryptographicException(CRYPT_E_NO_MATCH)
+            throw new CryptographicException();
         }
 
         public byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages)

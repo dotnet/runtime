@@ -196,7 +196,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestContentType()
         {
             X509ContentType ct = X509Certificate2.GetCertContentType(TestData.MsCertificate);

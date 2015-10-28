@@ -27,6 +27,7 @@
     <Compile Include="ChainTests.cs" />
     <Compile Include="CollectionImportTests.cs" />
     <Compile Include="CollectionTests.cs" />
+    <Compile Include="ContentTypeTests.cs" />
     <Compile Include="CtorTests.cs" />
     <Compile Include="ExportTests.cs" />
     <Compile Include="ExtensionsTests.cs" />

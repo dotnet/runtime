@@ -10,6 +10,45 @@ namespace Internal.Cryptography.Pal
 {
     internal static class PkcsFormatReader
     {
+        internal static bool IsPkcs7(byte[] rawData)
+        {
+            using (SafePkcs7Handle pkcs7 = Interop.Crypto.DecodePkcs7(rawData, rawData.Length))
+            {
+                if (!pkcs7.IsInvalid)
+                {
+                    return true;
+                }
+            }
+
+            using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
+            {
+                Interop.Crypto.CheckValidOpenSslHandle(bio);
+
+                Interop.Crypto.BioWrite(bio, rawData, rawData.Length);
+
+                using (SafePkcs7Handle pkcs7 = Interop.Crypto.PemReadBioPkcs7(bio))
+                {
+                    return !pkcs7.IsInvalid;
+                }
+            }
+        }
+
+        internal static bool IsPkcs7Der(SafeBioHandle fileBio)
+        {
+            using (SafePkcs7Handle pkcs7 = Interop.Crypto.D2IPkcs7Bio(fileBio))
+            {
+                return !pkcs7.IsInvalid;
+            }
+        }
+
+        internal static bool IsPkcs7Pem(SafeBioHandle fileBio)
+        {
+            using (SafePkcs7Handle pkcs7 = Interop.Crypto.PemReadBioPkcs7(fileBio))
+            {
+                return !pkcs7.IsInvalid;
+            }
+        }
+
         internal static bool TryReadPkcs7Der(byte[] rawData, out ICertificatePal certPal)
         {
             List<ICertificatePal> ignored;
