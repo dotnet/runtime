@@ -56,6 +56,7 @@ public class TestRunner
 		int timeout = 2 * 60; // in seconds
 		int expectedExitCode = 0;
 		string testsuiteName = null;
+		string inputFile = null;
 
 		DateTime test_start_time = DateTime.UtcNow;
 
@@ -122,6 +123,13 @@ public class TestRunner
 					}
 					testsuiteName = args [i + 1];
 					i += 2;
+				} else if (args [i] == "--input-file") {
+					if (i + 1 >= args.Length) {
+						Console.WriteLine ("Missing argument to --input-file command line option.");
+						return 1;
+					}
+					inputFile = args [i + 1];
+					i += 2;
 				} else {
 					Console.WriteLine ("Unknown command line option: '" + args [i] + "'.");
 					return 1;
@@ -143,11 +151,16 @@ public class TestRunner
 				disabled [test] = test;
 		}
 
-		// The remaining arguments are the tests
 		var tests = new List<string> ();
-		for (int j = i; j < args.Length; ++j)
-			if (!disabled.ContainsKey (args [j]))
-				tests.Add (args [j]);
+
+		if (!String.IsNullOrEmpty (inputFile)) {
+			tests.AddRange (File.ReadAllLines (inputFile));
+		} else {
+			// The remaining arguments are the tests
+			for (int j = i; j < args.Length; ++j)
+				if (!disabled.ContainsKey (args [j]))
+					tests.Add (args [j]);
+		}
 
 		var passed = new List<ProcessData> ();
 		var failed = new List<ProcessData> ();
