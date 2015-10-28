@@ -2,28 +2,29 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class Sys
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int inotify_init();
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int INotifyInit();
 
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int inotify_add_watch(int fd, string pathname, uint mask);
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int INotifyAddWatch(int fd, string pathName, uint mask);
 
-        [DllImport(Libraries.Libc, SetLastError = true, EntryPoint = "inotify_rm_watch")]
-        private static extern int inotify_rm_watch_extern(int fd, int wd);
+        [DllImport(Libraries.SystemNative, SetLastError = true, EntryPoint = "INotifyRemoveWatch")]
+        private static extern int INotifyRemoveWatch_private(int fd, int wd);
 
-        internal static int inotify_rm_watch(int fd, int wd)
+        internal static int INotifyRemoveWatch(int fd, int wd)
         {
-            int result = Interop.libc.inotify_rm_watch_extern(fd, wd);
+            int result = INotifyRemoveWatch_private(fd, wd);
             if (result < 0)
             {
-                Error hr = Interop.Sys.GetLastError();
-                if (hr == Interop.Error.EINVAL)
+                Error hr = GetLastError();
+                if (hr == Error.EINVAL)
                 {
                     // This specific case means that there was a deleted event in the queue that was not processed
                     // so this call is expected to fail since the WatchDescriptor is no longer valid and was cleaned
@@ -32,7 +33,7 @@ internal static partial class Interop
                 }
                 else
                 {
-                    System.Diagnostics.Debug.Fail("inotify_rm_watch failed with " + hr);
+                    Debug.Fail("inotify_rm_watch failed with " + hr);
                 }
             }
 
@@ -49,7 +50,6 @@ internal static partial class Interop
             IN_MOVED_TO    = 0x00000080,
             IN_CREATE      = 0x00000100,
             IN_DELETE      = 0x00000200,
-            IN_UNMOUNT     = 0x00002000,
             IN_Q_OVERFLOW  = 0x00004000,
             IN_IGNORED     = 0x00008000,
             IN_ONLYDIR     = 0x01000000,
