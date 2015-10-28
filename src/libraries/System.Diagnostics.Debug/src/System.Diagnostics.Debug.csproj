@@ -12,10 +12,12 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
     <NoWarn>0436</NoWarn>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
     <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
@@ -39,17 +41,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetStdHandle.cs">
-      <Link>Common\Interop\Windows\Interop.GetStdHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HandleTypes.cs">
-      <Link>Common\Interop\Windows\Interop.HandleTypes.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OutputDebugString.cs">
       <Link>Common\Interop\Windows\mincore\Interop.OutputDebugString.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_IntPtr.cs">
-      <Link>Common\Interop\Windows\Interop.WriteFile.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
