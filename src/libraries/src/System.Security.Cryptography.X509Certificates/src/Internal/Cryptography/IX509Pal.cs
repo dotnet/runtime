@@ -17,6 +17,7 @@ namespace Internal.Cryptography.Pal
         X509ContentType GetCertContentType(String fileName);
         byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages);
         void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages);
+        bool SupportsLegacyBasicConstraintsExtension { get; }
         byte[] EncodeX509BasicConstraints2Extension(bool certificateAuthority, bool hasPathLengthConstraint, int pathLengthConstraint);
         void DecodeX509BasicConstraintsExtension(byte[] encoded, out bool certificateAuthority, out bool hasPathLengthConstraint, out int pathLengthConstraint);
         void DecodeX509BasicConstraints2Extension(byte[] encoded, out bool certificateAuthority, out bool hasPathLengthConstraint, out int pathLengthConstraint);

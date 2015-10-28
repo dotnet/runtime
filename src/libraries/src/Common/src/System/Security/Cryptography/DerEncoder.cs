@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Security.Cryptography
@@ -77,6 +78,28 @@ namespace System.Security.Cryptography
             Debug.Assert(remainder < 0x80);
 
             return new byte[] { 0x84, high, midHigh, midLow, low };
+        }
+
+        /// <summary>
+        /// Encode the segments { tag, length, value } of a boolean.
+        /// </summary>
+        /// <param name="value">The boolean to encode</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeBoolean(bool value)
+        {
+            // BER says FALSE is zero, TRUE is other.
+            // DER says TRUE is 0xFF.
+            byte[] data =
+            {
+                (byte)(value ? 0xFF : 0x00),
+            };
+
+            return new byte[][]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.Boolean }, 
+                new byte[] { 0x01 }, 
+                data, 
+            };
         }
 
         /// <summary>
@@ -274,12 +297,21 @@ namespace System.Security.Cryptography
                 dataSegment
             };
         }
-        
+
         /// <summary>
         /// Make a constructed SEQUENCE of the byte-triplets of the contents.
         /// Each byte[][] should be a byte[][3] of {tag (1 byte), length (1-5 bytes), payload (variable)}.
         /// </summary>
         internal static byte[] ConstructSequence(params byte[][][] items)
+        {
+            return ConstructSequence((IEnumerable<byte[][]>)items);
+        }
+
+        /// <summary>
+        /// Make a constructed SEQUENCE of the byte-triplets of the contents.
+        /// Each byte[][] should be a byte[][3] of {tag (1 byte), length (1-5 bytes), payload (variable)}.
+        /// </summary>
+        internal static byte[] ConstructSequence(IEnumerable<byte[][]> items)
         {
             // A more robust solution would be required for public API.  DerInteger(int), DerBoolean, etc,
             // which do not allow the user to specify lengths, but only the payload.  But for efficiency things

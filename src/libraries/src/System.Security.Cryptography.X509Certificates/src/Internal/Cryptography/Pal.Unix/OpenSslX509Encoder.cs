@@ -215,12 +215,37 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public bool SupportsLegacyBasicConstraintsExtension
+        {
+            get { return false; }
+        }
+
         public byte[] EncodeX509BasicConstraints2Extension(
             bool certificateAuthority,
             bool hasPathLengthConstraint,
             int pathLengthConstraint)
         {
-            throw new NotImplementedException();
+            //BasicConstraintsSyntax::= SEQUENCE {
+            //    cA BOOLEAN DEFAULT FALSE,
+            //    pathLenConstraint INTEGER(0..MAX) OPTIONAL,
+            //    ... }
+
+            List<byte[][]> segments = new List<byte[][]>(2);
+
+            if (certificateAuthority)
+            {
+                segments.Add(DerEncoder.SegmentedEncodeBoolean(true));
+            }
+
+            if (hasPathLengthConstraint)
+            {
+                byte[] pathLengthBytes = BitConverter.GetBytes(pathLengthConstraint);
+                // Little-Endian => Big-Endian
+                Array.Reverse(pathLengthBytes);
+                segments.Add(DerEncoder.SegmentedEncodeUnsignedInteger(pathLengthBytes));
+            }
+
+            return DerEncoder.ConstructSequence(segments);
         }
 
         public void DecodeX509BasicConstraintsExtension(
@@ -229,7 +254,12 @@ namespace Internal.Cryptography.Pal
             out bool hasPathLengthConstraint,
             out int pathLengthConstraint)
         {
-            throw new NotImplementedException();
+            // No RFC nor ITU document describes the layout of the 2.5.29.10 structure,
+            // and OpenSSL doesn't have a decoder for it, either.
+            //
+            // Since it was never published as a standard (2.5.29.19 replaced it before publication)
+            // there shouldn't be too many people upset that we can't decode it for them on Unix.
+            throw new PlatformNotSupportedException(SR.NotSupported_LegacyBasicConstraints);
         }
 
         public void DecodeX509BasicConstraints2Extension(
