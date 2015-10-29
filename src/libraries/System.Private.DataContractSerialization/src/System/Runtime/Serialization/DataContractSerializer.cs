@@ -464,10 +464,7 @@ namespace System.Runtime.Serialization
             object obj = DataContractSurrogateCaller.GetObjectToSerialize(serializationSurrogateProvider, oldObj, objType, surrogatedDeclaredType);
             if (obj != oldObj)
             {
-                if (obj == null)
-                    objType = Globals.TypeOfObject;
-                else
-                    objType = obj.GetType();
+                objType = obj != null ? obj.GetType() : Globals.TypeOfObject;
             }
             return obj;
         }
