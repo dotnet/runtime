@@ -2,7 +2,7 @@
   "locked": true,
   "version": 2,
   "targets": {
-    ".NETPlatform,Version=v5.1": {
+    ".NETPlatform,Version=v5.4": {
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -159,7 +159,7 @@
         }
       }
     },
-    ".NETPlatform,Version=v5.1/win7-x86": {
+    ".NETPlatform,Version=v5.4/win7-x86": {
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -316,7 +316,7 @@
         }
       }
     },
-    ".NETPlatform,Version=v5.1/win7-x64": {
+    ".NETPlatform,Version=v5.4/win7-x64": {
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -1074,6 +1074,6 @@
       "System.Xml.XPath >= 4.0.0",
       "System.Xml.ReaderWriter >= 4.0.0"
     ],
-    ".NETPlatform,Version=v5.1": []
+    ".NETPlatform,Version=v5.4": []
   }
 }
