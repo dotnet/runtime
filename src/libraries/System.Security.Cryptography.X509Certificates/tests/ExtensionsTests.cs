@@ -265,7 +265,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void EnhancedKeyUsageExtension_Empty()
         {
             OidCollection usages = new OidCollection();
@@ -273,7 +272,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void EnhancedKeyUsageExtension_2Oids()
         {
             Oid oid1 = Oid.FromOidValue("1.3.6.1.5.5.7.3.1", OidGroup.EnhancedKeyUsage);
