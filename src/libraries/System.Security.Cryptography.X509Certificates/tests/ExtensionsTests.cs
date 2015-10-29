@@ -299,7 +299,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_Bytes()
         {
             byte[] sk = { 1, 2, 3, 4 };
@@ -314,7 +313,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_String()
         {
             string sk = "01ABcd";
@@ -329,7 +327,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKey()
         {
             PublicKey pk = new X509Certificate2(TestData.MsCertificate).PublicKey;
@@ -344,7 +341,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKeySha1()
         {
             TestSubjectKeyIdentifierExtension(
@@ -356,7 +352,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKeyShortSha1()
         {
             TestSubjectKeyIdentifierExtension(

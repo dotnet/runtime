@@ -71,6 +71,24 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Theory]
+        [InlineData("010203040506070809", "09")]
+        [InlineData("", "00")]
+        public static void ValidateOctetStringEncodings(string hexData, string hexLength)
+        {
+            byte[] input = hexData.HexToByteArray();
+            const byte tag = 0x04;
+            byte[] length = hexLength.HexToByteArray();
+
+            byte[][] segments = DerEncoder.SegmentedEncodeOctetString(input);
+
+            Assert.Equal(3, segments.Length);
+
+            Assert.Equal(new[] { tag }, segments[0]);
+            Assert.Equal(length, segments[1]);
+            Assert.Equal(input, segments[2]);
+        }
+
+        [Theory]
         [InlineData("1.3.6.1.5.5.7.3.1", "08", "2B06010505070301")]
         [InlineData("1.3.6.1.5.5.7.3.2", "08", "2B06010505070302")]
         [InlineData("2.999.3", "03", "883703")]
