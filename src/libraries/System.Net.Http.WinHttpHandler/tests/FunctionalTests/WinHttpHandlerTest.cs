@@ -22,7 +22,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
         private const string SlowServer = "http://httpbin.org/drip?numbytes=1&duration=1&delay=40&code=200";
         
-        readonly ITestOutputHelper _output;
+        private readonly ITestOutputHelper _output;
 
         public WinHttpHandlerTest(ITestOutputHelper output)
         {

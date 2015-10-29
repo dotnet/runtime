@@ -64,15 +64,21 @@ namespace System.Net.Http
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SENDREQUEST_COMPLETE:
                         OnRequestSendRequestComplete(state);
                         return;
-                        
+
+                    case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_DATA_AVAILABLE:
+                        Debug.Assert(statusInformationLength == Marshal.SizeOf<int>());
+                        int bytesAvailable = Marshal.ReadInt32(statusInformation);
+                        OnRequestDataAvailable(state, bytesAvailable);
+                        return;
+
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_READ_COMPLETE:
                         OnRequestReadComplete(state, statusInformationLength);
                         return;
-                        
+
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_WRITE_COMPLETE:
                         OnRequestWriteComplete(state);
                         return;
-                        
+
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_HEADERS_AVAILABLE:
                         OnRequestReceiveResponseHeadersComplete(state);
                         return;
@@ -125,6 +131,15 @@ namespace System.Net.Http
             Debug.Assert(!state.TcsSendRequest.Task.IsCompleted, "OnRequestSendRequestComplete: TcsSendRequest.Task is completed");
             
             state.TcsSendRequest.TrySetResult(true);
+        }
+
+        private static void OnRequestDataAvailable(WinHttpRequestState state, int bytesAvailable)
+        {
+            Debug.Assert(state != null, "OnRequestDataAvailable: state is null");
+            Debug.Assert(state.TcsQueryDataAvailable != null, "TcsQueryDataAvailable is null");
+            Debug.Assert(!state.TcsQueryDataAvailable.Task.IsCompleted, "TcsQueryDataAvailable.Task is completed");
+
+            state.TcsQueryDataAvailable.TrySetResult(bytesAvailable);
         }
 
         private static void OnRequestReadComplete(WinHttpRequestState state, uint bytesRead)
@@ -323,6 +338,21 @@ namespace System.Net.Http
                     else
                     {
                         state.TcsReceiveResponseHeaders.TrySetException(innerException);
+                    }
+                    break;
+
+                case Interop.WinHttp.API_QUERY_DATA_AVAILABLE:
+                    if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
+                    {
+                        // TODO: Issue #2165. We need to pass in the cancellation token from the
+                        // user's ReadAsync() call into the TrySetCanceled().
+                        Debug.WriteLine("RequestCallback: QUERY_DATA_AVAILABLE - ERROR_WINHTTP_OPERATION_CANCELLED");
+                        state.TcsQueryDataAvailable.TrySetCanceled();
+                    }
+                    else
+                    {
+                        state.TcsQueryDataAvailable.TrySetException(
+                            new IOException(SR.net_http_io_read, innerException));
                     }
                     break;
 
