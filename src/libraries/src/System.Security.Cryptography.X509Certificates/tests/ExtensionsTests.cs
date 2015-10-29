@@ -363,7 +363,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKeyCapiSha1()
         {
             TestSubjectKeyIdentifierExtension(

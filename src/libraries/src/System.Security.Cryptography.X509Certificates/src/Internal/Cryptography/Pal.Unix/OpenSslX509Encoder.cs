@@ -354,7 +354,48 @@ namespace Internal.Cryptography.Pal
 
         public byte[] ComputeCapiSha1OfPublicKey(PublicKey key)
         {
-            throw new NotImplementedException();
+            // The CapiSha1 value is the SHA-1 of the SubjectPublicKeyInfo field, inclusive
+            // of the DER structural bytes.
+
+            //SubjectPublicKeyInfo::= SEQUENCE {
+            //    algorithm AlgorithmIdentifier{ { SupportedAlgorithms} },
+            //    subjectPublicKey BIT STRING,
+            //    ... }
+            //
+            //AlgorithmIdentifier{ ALGORITHM: SupportedAlgorithms} ::= SEQUENCE {
+            //    algorithm ALGORITHM.&id({ SupportedAlgorithms}),
+            //    parameters ALGORITHM.&Type({ SupportedAlgorithms}
+            //    { @algorithm}) OPTIONAL,
+            //    ... }
+            //
+            //ALGORITHM::= CLASS {
+            //    &Type OPTIONAL,
+            //    &id OBJECT IDENTIFIER UNIQUE }
+            //WITH SYNTAX {
+            //    [&Type]
+            //IDENTIFIED BY &id }
+
+            // key.EncodedKeyValue corresponds to SubjectPublicKeyInfo.subjectPublicKey, except it
+            // has had the BIT STRING envelope removed.
+            //
+            // key.EncodedParameters corresponds to AlgorithmIdentifier.Parameters precisely
+            // (DER NULL for RSA, DER Constructed SEQUENCE for DSA)
+
+            byte[] empty = Array.Empty<byte>();
+            byte[][] algorithmOid = DerEncoder.SegmentedEncodeOid(key.Oid);
+            // Because ConstructSegmentedSequence doesn't look to see that it really is tag+length+value (but does check
+            // that the array has length 3), just hide the joined TLV triplet in the last element.
+            byte[][] segmentedParameters = { empty, empty, key.EncodedParameters.RawData };
+            byte[][] algorithmIdentifier = DerEncoder.ConstructSegmentedSequence(algorithmOid, segmentedParameters);
+            byte[][] subjectPublicKey = DerEncoder.SegmentedEncodeBitString(key.EncodedKeyValue.RawData);
+
+            using (SHA1 hash = SHA1.Create())
+            {
+                return hash.ComputeHash(
+                    DerEncoder.ConstructSequence(
+                        algorithmIdentifier,
+                        subjectPublicKey));
+            }
         }
 
         private static RSA BuildRsaPublicKey(byte[] encodedData)

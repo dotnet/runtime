@@ -174,6 +174,57 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Encode the segments { tag, length, value } of a bit string where all bits are significant.
+        /// </summary>
+        /// <param name="data">The data to encode</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeBitString(byte[] data)
+        {
+            return SegmentedEncodeBitString(0, data);
+        }
+
+        /// <summary>
+        /// Encode the segments { tag, length, value } of a bit string where the least significant
+        /// <paramref name="unusedBits"/> of the last byte are padding.
+        /// </summary>
+        /// <param name="unusedBits">The number of padding bits (0-7) in the last byte</param>
+        /// <param name="data">The data to encode</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeBitString(int unusedBits, byte[] data)
+        {
+            Debug.Assert(data != null);
+            Debug.Assert(unusedBits >= 0);
+            Debug.Assert(unusedBits <= 7);
+            Debug.Assert(unusedBits == 0 || data.Length > 0);
+
+            byte[] encodedData = new byte[data.Length + 1];
+
+            // Copy data to encodedData, but leave a one byte gap for unusedBits.
+            Buffer.BlockCopy(data, 0, encodedData, 1, data.Length);
+            encodedData[0] = (byte)unusedBits;
+
+            // We need to make a mask of the bits to keep around for the last
+            // byte, ensuring we clear out any bits that were set, but reported
+            // as padding by unusedBits
+            // 
+            // For example:
+            // unusedBits 0 => mask 0b11111111
+            // unusedBits 1 => mask 0b11111110
+            // unusedBits 7 => mask 0b10000000
+            byte lastByteSemanticMask = unchecked((byte)(-1 << unusedBits));
+
+            // Since encodedData.Length is data.Length + 1, "encodedDate.Length - 1" is just "data.Length".
+            encodedData[data.Length] &= lastByteSemanticMask;
+
+            return new byte[][]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.BitString },
+                EncodeLength(encodedData.Length),
+                encodedData,
+            };
+        }
+
+        /// <summary>
         /// Encode the segments { tag, length, value } of a bit string value based upon a NamedBitList.
         /// ((<paramref name="bigEndianBytes"/>[0] >> 7) &amp; 1) is considered the "leading" bit, proceeding
         /// through the array for up to <paramref name="namedBitsCount"/>.
@@ -394,6 +445,26 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Make a constructed SEQUENCE of the byte-triplets of the contents, but leave
+        /// the value in a segmented form (to be included in a larger SEQUENCE).
+        /// </summary>
+        /// <param name="items">Series of Tag-Length-Value triplets to build into one sequence.</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] ConstructSegmentedSequence(params byte[][][] items)
+        {
+            Debug.Assert(items != null);
+
+            byte[] data = ConcatenateArrays(items);
+
+            return new byte[][]
+            {
+                new byte[] { ConstructedSequenceTag }, 
+                EncodeLength(data.Length),
+                data,
+            };
+        }
+
+        /// <summary>
         /// Make a constructed SEQUENCE of the byte-triplets of the contents.
         /// Each byte[][] should be a byte[][3] of {tag (1 byte), length (1-5 bytes), payload (variable)}.
         /// </summary>
@@ -516,6 +587,34 @@ namespace System.Security.Cryptography
             }
 
             encodedData.AddRange(littleEndianBytes);
+        }
+
+        private static byte[] ConcatenateArrays(byte[][][] segments)
+        {
+            int length = 0;
+
+            foreach (byte[][] middleSegments in segments)
+            {
+                foreach (byte[] segment in middleSegments)
+                {
+                    length += segment.Length;
+                }
+            }
+
+            byte[] concatenated = new byte[length];
+
+            int offset = 0;
+
+            foreach (byte[][] middleSegments in segments)
+            {
+                foreach (byte[] segment in middleSegments)
+                {
+                    Buffer.BlockCopy(segment, 0, concatenated, offset, segment.Length);
+                    offset += segment.Length;
+                }
+            }
+
+            return concatenated;
         }
     }
 }
