@@ -12,7 +12,7 @@ namespace System.Net
         public readonly int DataCipherAlg;
         public readonly int DataKeySize;
         public readonly int DataHashAlg;
-        public readonly int DataHashKeySize = 0;
+        public readonly int DataHashKeySize;
         public readonly int KeyExchangeAlg;
         public readonly int KeyExchKeySize = 0;
 
@@ -26,11 +26,15 @@ namespace System.Net
                 out DataCipherAlg,
                 out KeyExchangeAlg,
                 out DataHashAlg,
-                out DataKeySize))
+                out DataKeySize,
+                out DataHashKeySize))
             {
                 throw Interop.OpenSsl.CreateSslException(SR.net_ssl_get_connection_info_failed);
             }
-            // TODO (Issue #3362) map key sizes
+
+            //Openssl does not provide a way to return a exchange key size.
+            //It internally does calculate the key size before generating key to exchange
+            //It is not a constant (Algorthim specific) either that we can hardcode and return. 
         }
 
         private SslProtocols MapProtocolVersion(string protocolVersion)

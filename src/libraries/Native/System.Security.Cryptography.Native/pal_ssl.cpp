@@ -364,7 +364,7 @@ enum class SSL_DataHashAlgorithm : int64_t
 #endif
 };
 
-static HashAlgorithmType MapHashAlgorithmType(const SSL_CIPHER* cipher)
+static void GetHashAlgorithmTypeAndSize(const SSL_CIPHER* cipher, HashAlgorithmType* dataHashAlg, DataHashSize* hashKeySize)
 {
     unsigned long mac;
 #if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
@@ -377,42 +377,59 @@ static HashAlgorithmType MapHashAlgorithmType(const SSL_CIPHER* cipher)
     SSL_DataHashAlgorithm sslMac = static_cast<SSL_DataHashAlgorithm>(mac);
     switch (sslMac)
     {
-        case SSL_DataHashAlgorithm::SSL_MD5:
-            return HashAlgorithmType::Md5;
+    case SSL_DataHashAlgorithm::SSL_MD5:
+        *dataHashAlg = HashAlgorithmType::Md5;
+        *hashKeySize = DataHashSize::MD5_HashKeySize;
+        return;
 
-        case SSL_DataHashAlgorithm::SSL_SHA1:
-            return HashAlgorithmType::Sha1;
+    case SSL_DataHashAlgorithm::SSL_SHA1:
+        *dataHashAlg = HashAlgorithmType::Sha1;
+        *hashKeySize = DataHashSize::SHA1_HashKeySize;
+        return;
 
 #if HAVE_SSL_CIPHER_SPLIT_ALGORITHMS
-        case SSL_DataHashAlgorithm::SSL_GOST94:
-            return HashAlgorithmType::SSL_GOST94;
+    case SSL_DataHashAlgorithm::SSL_GOST94:
+        *dataHashAlg = HashAlgorithmType::SSL_GOST94;
+        *hashKeySize = DataHashSize::GOST_HashKeySize;
+        return;
 
-        case SSL_DataHashAlgorithm::SSL_GOST89MAC:
-            return HashAlgorithmType::SSL_GOST89;
+    case SSL_DataHashAlgorithm::SSL_GOST89MAC:
+        *dataHashAlg = HashAlgorithmType::SSL_GOST89;
+        *hashKeySize = DataHashSize::GOST_HashKeySize;
+        return;
 
-        case SSL_DataHashAlgorithm::SSL_SHA256:
-            return HashAlgorithmType::SSL_SHA256;
+    case SSL_DataHashAlgorithm::SSL_SHA256:
+        *dataHashAlg = HashAlgorithmType::SSL_SHA256;
+        *hashKeySize = DataHashSize::SHA256_HashKeySize;
+        return;
 
-        case SSL_DataHashAlgorithm::SSL_SHA384:
-            return HashAlgorithmType::SSL_SHA384;
+    case SSL_DataHashAlgorithm::SSL_SHA384:
+        *dataHashAlg = HashAlgorithmType::SSL_SHA384;
+        *hashKeySize = DataHashSize::SHA384_HashKeySize;
+        return;
 
-        case SSL_DataHashAlgorithm::SSL_AEAD:
-            return HashAlgorithmType::SSL_AEAD;
+    case SSL_DataHashAlgorithm::SSL_AEAD:
+        *dataHashAlg = HashAlgorithmType::SSL_AEAD;
+        *hashKeySize = DataHashSize::Default;
+        return;
 #endif
     }
 
-    return HashAlgorithmType::None;
+    *dataHashAlg = HashAlgorithmType::None;
+    *hashKeySize = DataHashSize::Default;
+    return;
 }
 
 extern "C" int32_t GetSslConnectionInfo(SSL* ssl,
-                                        CipherAlgorithmType* dataCipherAlg,
-                                        ExchangeAlgorithmType* keyExchangeAlg,
+                                        CipherAlgorithmType* dataCipherAlg, 
+                                        ExchangeAlgorithmType* keyExchangeAlg, 
                                         HashAlgorithmType* dataHashAlg,
-                                        int32_t* dataKeySize)
+                                        int32_t* dataKeySize, 
+                                        DataHashSize* hashKeySize)
 {
     const SSL_CIPHER* cipher;
 
-    if (!ssl || !dataCipherAlg || !keyExchangeAlg || !dataHashAlg || !dataKeySize)
+    if (!ssl || !dataCipherAlg || !keyExchangeAlg || !dataHashAlg || !dataKeySize || !hashKeySize)
     {
         goto err;
     }
@@ -425,8 +442,8 @@ extern "C" int32_t GetSslConnectionInfo(SSL* ssl,
 
     *dataCipherAlg = MapCipherAlgorithmType(cipher);
     *keyExchangeAlg = MapExchangeAlgorithmType(cipher);
-    *dataHashAlg = MapHashAlgorithmType(cipher);
     *dataKeySize = cipher->alg_bits;
+    GetHashAlgorithmTypeAndSize(cipher, dataHashAlg, hashKeySize);
 
     return 1;
 
@@ -441,6 +458,8 @@ err:
         *dataHashAlg = HashAlgorithmType::None;
     if (dataKeySize)
         *dataKeySize = 0;
+    if (hashKeySize)
+        *hashKeySize = DataHashSize::Default;
 
     return 0;
 }
