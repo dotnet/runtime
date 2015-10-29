@@ -43,18 +43,22 @@ For the time being, perf tests should reside within their own "Performance" fold
 
 Start by adding the following lines to the tests csproj:
 ```
- <!-- Performance Tests -->  
-  <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">  
-    <Compile Include="Performance\Perf.Dictionary.cs" />  
-    <Compile Include="Performance\Perf.List.cs" />  
-    <Compile Include="$(CommonTestPath)\Performance\PerfUtils.cs">  
-      <Link>Common\Performance\PerfUtils.cs</Link>  
-    </Compile>  
-  </ItemGroup>  
+  <ItemGroup>
+    <!-- Performance Tests -->
+    <Compile Include="Performance\Perf.Dictionary.cs" />
+    <Compile Include="Performance\Perf.List.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Optimizations to configure Xunit for performance -->
+  <ItemGroup>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
+  </ItemGroup>
 ```
 (Replace Dictionary/List with whatever class you’re testing.)
 
-Next, the project.json for the tests directory also needs to import the perf stuff:
+Next, the project.json for the tests directory also needs to import the xunit libraries:
 
 ```
     "Microsoft.DotNet.xunit.performance": "1.0.0-*",

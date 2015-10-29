@@ -56,7 +56,7 @@ namespace System.IO.Tests
         /// </summary>
         [Benchmark]
         [MemberData("ReadWriteTestParameters")]
-        public async void Read(bool useAsync, int bufferSize, int totalSize)
+        public async Task Read(bool useAsync, int bufferSize, int totalSize)
         {
             byte[] bytes = new byte[bufferSize];
             // Actual file size may be slightly over the desired size due to rounding if totalSize % readSize != 0
@@ -95,7 +95,7 @@ namespace System.IO.Tests
         /// </summary>
         [Benchmark]
         [MemberData("ReadWriteTestParameters")]
-        public async void Write(bool useAsync, int bufferSize, int totalSize)
+        public async Task Write(bool useAsync, int bufferSize, int totalSize)
         {
             byte[] bytes = CreateBytesToWrite(bufferSize);
             // Actual file size may be slightly over the desired size due to rounding if totalSize % bufferSize != 0

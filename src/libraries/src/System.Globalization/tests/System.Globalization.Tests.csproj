@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -9,6 +9,7 @@
     <RootNamespace>System.Globalization.Tests</RootNamespace>
     <AssemblyName>System.Globalization.Tests</AssemblyName>
     <RestorePackages>true</RestorePackages>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -169,9 +170,7 @@
     <Compile Include="TextInfo\TextInfoToUpper2.cs" />
     <Compile Include="UnicodeCategory\UnicodeCategoryTests.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
-  </ItemGroup>
-  <!-- Performance Tests -->
-  <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
+    <!-- Performance Tests -->
     <Compile Include="Performance\Perf.CultureInfo.cs" />
     <Compile Include="Performance\Perf.DateTimeCultureInfo.cs" />
     <Compile Include="Performance\Perf.NumberCultureInfo.cs" />

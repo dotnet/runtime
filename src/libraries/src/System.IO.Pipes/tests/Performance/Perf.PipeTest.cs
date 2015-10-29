@@ -11,7 +11,7 @@ namespace System.IO.Pipes.Tests
     {
         [Benchmark]
         [InlineData(1000000)]
-        public async void ReadWrite(int size)
+        public async Task ReadWrite(int size)
         {
             Random rand = new Random(314);
             byte[] sent = new byte[size];
