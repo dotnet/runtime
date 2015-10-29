@@ -2,8 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System.IO
 {
@@ -12,9 +12,6 @@ namespace System.IO
     /// </summary>
     unsafe internal class PathHelper
     {
-        // This should cover the vast majority of usages without adding undue memory pressure
-        private const int MaxBuilderSize = 1024;
-
         // Can't be over 8.3 and be a short name
         private const int MaxShortName = 12;
 
@@ -25,22 +22,21 @@ namespace System.IO
         // string.WhitespaceChars will trim more aggressively than what the underlying FS does (for ex, NTFS, FAT).
         private static readonly char[] s_trimEndChars = { (char)0x9, (char)0xA, (char)0xB, (char)0xC, (char)0xD, (char)0x20, (char)0x85, (char)0xA0 };
 
-        // We don't use StringBuilderCache because the cached size is too small and we don't want to collide with other usages.
         [ThreadStatic]
-        private static StringBuilder t_cachedOutputBuffer;
+        private static StringBuffer t_fullPathBuffer;
 
-        internal string Normalize(string path, bool fullCheck, bool expandShortPaths)
+        internal static string Normalize(string path, bool fullCheck, bool expandShortPaths)
         {
-            StringBuilder fullPath = null;
+            // Get the full path
+            StringBuffer fullPath = t_fullPathBuffer ?? (t_fullPathBuffer = new StringBuffer(PathInternal.MaxShortPath));
             try
             {
-                // Get the full path
-                fullPath = this.GetFullPathName(path);
+                GetFullPathName(path, fullPath);
 
                 if (fullCheck)
                 {
                     // Trim whitespace off the end of the string. Win32 normalization trims only U+0020.
-                    fullPath = fullPath.TrimEnd(s_trimEndChars);
+                    fullPath.TrimEnd(s_trimEndChars);
                 }
 
                 if (fullPath.Length >= PathInternal.MaxLongPath)
@@ -67,63 +63,65 @@ namespace System.IO
 
                 bool possibleShortPath = false;
                 bool foundTilde = false;
-                bool possibleBadUnc = this.IsUnc(fullPath);
-                int index = possibleBadUnc ? 2 : 0;
-                int lastSeparator = possibleBadUnc ? 1 : 0;
-                int segmentLength;
+                bool possibleBadUnc = IsUnc(fullPath);
+                ulong index = possibleBadUnc ? (ulong)2 : 0;
+                ulong lastSeparator = possibleBadUnc ? (ulong)1 : 0;
+                ulong segmentLength;
+                char* start = fullPath.CharPointer;
                 char current;
 
                 while (index < fullPath.Length)
                 {
-                    current = fullPath[index];
+                    current = start[index];
 
-                    switch (current)
+                    // Try to skip deeper analysis. '?' and higher are valid/ignorable except for '\', '|', and '~'
+                    if (current < '?' || current == '\\' || current == '|' || current == '~')
                     {
-                        case '|':
-                        case '>':
-                        case '<':
-                        case '\"':
-                            if (fullCheck) throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
-                            foundTilde = false;
-                            break;
-                        case '~':
-                            foundTilde = true;
-                            break;
-                        case '\\':
-                            segmentLength = index - lastSeparator - 1;
-                            if (segmentLength > Path.MaxComponentLength)
-                                throw new PathTooLongException(SR.IO_PathTooLong);
-                            lastSeparator = index;
+                        switch (current)
+                        {
+                            case '|':
+                            case '>':
+                            case '<':
+                            case '\"':
+                                if (fullCheck) throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
+                                foundTilde = false;
+                                break;
+                            case '~':
+                                foundTilde = true;
+                                break;
+                            case '\\':
+                                segmentLength = index - lastSeparator - 1;
+                                if (segmentLength > (ulong)Path.MaxComponentLength)
+                                    throw new PathTooLongException(SR.IO_PathTooLong);
+                                lastSeparator = index;
 
-                            if (foundTilde)
-                            {
-                                if (segmentLength <= MaxShortName)
+                                if (foundTilde)
                                 {
-                                    // Possibly a short path.
-                                    possibleShortPath = true;
+                                    if (segmentLength <= MaxShortName)
+                                    {
+                                        // Possibly a short path.
+                                        possibleShortPath = true;
+                                    }
+
+                                    foundTilde = false;
                                 }
 
-                                foundTilde = false;
-                            }
+                                if (possibleBadUnc)
+                                {
+                                    // If we're at the end of the path and this is the first separator, we're missing the share.
+                                    // Otherwise we're good, so ignore UNC tracking from here.
+                                    if (index == fullPath.Length - 1)
+                                        throw new ArgumentException(SR.Arg_PathIllegalUNC);
+                                    else
+                                        possibleBadUnc = false;
+                                }
 
-                            if (possibleBadUnc)
-                            {
-                                // If we're at the end of the path and this is the first separator, we're missing the share.
-                                // Otherwise we're good, so ignore UNC tracking from here.
-                                if (index == fullPath.Length - 1)
-                                    throw new ArgumentException(SR.Arg_PathIllegalUNC);
-                                else
-                                    possibleBadUnc = false;
-                            }
+                                break;
 
-                            break;
-
-                        default:
-                            if (fullCheck && current < ' ') throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
-
-                            // Do some easy filters for invalid short names.
-                            if (foundTilde && !IsPossibleShortChar(current)) foundTilde = false;
-                            break;
+                            default:
+                                if (fullCheck && current < ' ') throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
+                                break;
+                        }
                     }
 
                     index++;
@@ -133,7 +131,7 @@ namespace System.IO
                     throw new ArgumentException(SR.Arg_PathIllegalUNC);
 
                 segmentLength = fullPath.Length - lastSeparator - 1;
-                if (segmentLength > Path.MaxComponentLength)
+                if (segmentLength > (ulong)Path.MaxComponentLength)
                     throw new PathTooLongException(SR.IO_PathTooLong);
 
                 if (foundTilde && segmentLength <= MaxShortName)
@@ -143,11 +141,11 @@ namespace System.IO
                 // this is how we've always done this. This expansion is costly so we'll continue to let other short paths slide.
                 if (expandShortPaths && possibleShortPath)
                 {
-                    return TryExpandShortFileName(fullPath);
+                    return TryExpandShortFileName(fullPath, originalPath: path);
                 }
                 else
                 {
-                    if (fullPath.Length == path.Length && fullPath.StartsWithOrdinal(path))
+                    if (fullPath.Length == (ulong)path.Length && fullPath.StartsWith(path))
                     {
                         // If we have the exact same string we were passed in, don't bother to allocate another string from the StringBuilder.
                         return path;
@@ -160,78 +158,33 @@ namespace System.IO
             }
             finally
             {
-                if (fullPath != null && fullPath.Capacity <= MaxBuilderSize)
-                {
-                    // Stash for reuse
-                    t_cachedOutputBuffer = fullPath;
-                }
+                // Clear the buffer
+                fullPath.Free();
             }
         }
 
-        private static bool IsPossibleShortChar(char value)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsUnc(StringBuffer buffer)
         {
-            // Normal restrictions apply, also cannot be a-z, +, ;, =, [,], 127, above 255, or comma.
-            // Lower case has to be let through as the file system isn't case sensitive and will match against the upper case.
-            return value >= ' '
-                && value <= LastAnsi
-                && value != '+'
-                && value != ';'
-                && value != '='
-                && value != '['
-                && value != ']'
-                && value != ','
-                && value != Delete;
+            return buffer.Length > 1 && buffer[0] == '\\' && buffer[1] == '\\';
         }
 
-        private bool IsUnc(StringBuilder builder)
+        private static void GetFullPathName(string path, StringBuffer fullPath)
         {
-            return builder.Length > 1 && builder[0] == '\\' && builder[1] == '\\';
-        }
+            // If the string starts with an extended prefix we would need to remove it from the path before we call GetFullPathName as
+            // it doesn't root extended paths correctly. We don't currently resolve extended paths, so we'll just assert here.
+            Debug.Assert(PathInternal.IsRelative(path) || !PathInternal.IsExtended(path));
 
-        private StringBuilder GetOutputBuffer(int minimumCapacity)
-        {
-            StringBuilder local = t_cachedOutputBuffer;
-            if (local == null)
-            {
-                local = new StringBuilder(minimumCapacity);
-            }
-            else
-            {
-                local.Clear();
-                local.EnsureCapacity(minimumCapacity);
-            }
-
-            return local;
-        }
-
-        private StringBuilder GetFullPathName(string path)
-        {
             // Historically we would skip leading spaces *only* if the path started with a drive " C:" or a UNC " \\"
             int startIndex = PathInternal.PathStartSkip(path);
-            int capacity = path.Length;
-
-            if (PathInternal.IsRelative(path))
-            {
-                // If the initial path is relative the final path will likely be no more than the current directory length (which can only
-                // be MaxPath) so we'll pick that as a reasonable start.
-                capacity += PathInternal.MaxShortPath;
-            }
-            else
-            {
-                // If the string starts with an extended prefix we would need to remove it from the path before we call GetFullPathName as
-                // it doesn't root extended paths correctly. We don't currently resolve extended paths, so we'll just assert here.
-                Debug.Assert(!PathInternal.IsExtended(path));
-            }
-
-            StringBuilder outputBuffer = this.GetOutputBuffer(capacity);
 
             fixed (char* pathStart = path)
             {
-                int result = 0;
-                while ((result = Interop.mincore.GetFullPathNameW(pathStart + startIndex, outputBuffer.Capacity + 1, outputBuffer, IntPtr.Zero)) > outputBuffer.Capacity)
+                uint result = 0;
+                while ((result = Interop.mincore.GetFullPathNameW(pathStart + startIndex, (uint)fullPath.CharCapacity, fullPath.GetHandle(), IntPtr.Zero)) > fullPath.CharCapacity)
                 {
                     // Reported size (which does not include the null) is greater than the buffer size. Increase the capacity.
-                    outputBuffer.Capacity = result;
+                    fullPath.EnsureCharCapacity(result);
                 }
 
                 if (result == 0)
@@ -242,34 +195,34 @@ namespace System.IO
                         errorCode = Interop.mincore.Errors.ERROR_BAD_PATHNAME;
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
                 }
-            }
 
-            return outputBuffer;
+                fullPath.Length = result;
+            }
         }
 
-        private int GetInputBuffer(StringBuilder content, bool isUnc, out char[] buffer)
+        private static ulong GetInputBuffer(StringBuffer content, bool isUnc, out StringBuffer buffer)
         {
-            int length = content.Length;
-            length += isUnc ? PathInternal.UncExtendedPrefixToInsert.Length : PathInternal.ExtendedPathPrefix.Length;
-            buffer = new char[length];
+            ulong length = content.Length;
+            length += isUnc ? (ulong)PathInternal.UncExtendedPrefixToInsert.Length : (ulong)PathInternal.ExtendedPathPrefix.Length;
+            buffer = new StringBuffer(length);
 
             if (isUnc)
             {
-                PathInternal.UncExtendedPathPrefix.CopyTo(0, buffer, 0, PathInternal.UncExtendedPathPrefix.Length);
-                int prefixDifference = PathInternal.UncExtendedPathPrefix.Length - PathInternal.UncPathPrefix.Length;
-                content.CopyTo(prefixDifference, buffer, PathInternal.ExtendedPathPrefix.Length, content.Length - prefixDifference);
+                buffer.CopyFrom(bufferIndex: 0, source: PathInternal.UncExtendedPathPrefix);
+                ulong prefixDifference = (ulong)(PathInternal.UncExtendedPathPrefix.Length - PathInternal.UncPathPrefix.Length);
+                content.CopyTo(bufferIndex: prefixDifference, destination: buffer, destinationIndex: (ulong)PathInternal.ExtendedPathPrefix.Length, count: content.Length - prefixDifference);
                 return prefixDifference;
             }
             else
             {
-                int prefixSize = PathInternal.ExtendedPathPrefix.Length;
-                PathInternal.ExtendedPathPrefix.CopyTo(0, buffer, 0, prefixSize);
-                content.CopyTo(0, buffer, prefixSize, content.Length);
+                ulong prefixSize = (ulong)PathInternal.ExtendedPathPrefix.Length;
+                buffer.CopyFrom(bufferIndex: 0, source: PathInternal.ExtendedPathPrefix);
+                content.CopyTo(bufferIndex: 0, destination: buffer, destinationIndex: prefixSize, count: content.Length);
                 return prefixSize;
             }
         }
 
-        private string TryExpandShortFileName(StringBuilder outputBuffer)
+        private static string TryExpandShortFileName(StringBuffer outputBuffer, string originalPath)
         {
             // We guarantee we'll expand short names for paths that only partially exist. As such, we need to find the part of the path that actually does exist. To
             // avoid allocating like crazy we'll create only one input array and modify the contents with embedded nulls.
@@ -278,19 +231,20 @@ namespace System.IO
             Debug.Assert(!PathInternal.IsExtended(outputBuffer), "expanding short names expects normal paths");
 
             // Add the extended prefix before expanding to allow growth over MAX_PATH
-            char[] inputBuffer = null;
-            int rootLength = PathInternal.GetRootLength(outputBuffer);
-            bool isUnc = this.IsUnc(outputBuffer);
-            int rootDifference = this.GetInputBuffer(outputBuffer, isUnc, out inputBuffer);
+            StringBuffer inputBuffer = null;
+            ulong rootLength = PathInternal.GetRootLength(outputBuffer);
+            bool isUnc = IsUnc(outputBuffer);
+
+            ulong rootDifference = GetInputBuffer(outputBuffer, isUnc, out inputBuffer);
             rootLength += rootDifference;
-            int inputLength = inputBuffer.Length;
+            ulong inputLength = inputBuffer.Length;
 
             bool success = false;
-            int foundIndex = inputBuffer.Length - 1;
+            ulong foundIndex = inputBuffer.Length - 1;
 
             while (!success)
             {
-                int result = Interop.mincore.GetLongPathNameW(inputBuffer, outputBuffer, outputBuffer.Capacity + 1);
+                uint result = Interop.mincore.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), (uint)outputBuffer.CharCapacity);
 
                 // Replace any temporary null we added
                 if (inputBuffer[foundIndex] == '\0') inputBuffer[foundIndex] = '\\';
@@ -320,16 +274,17 @@ namespace System.IO
                         inputBuffer[foundIndex] = '\0';
                     }
                 }
-                else if (result > outputBuffer.Capacity)
+                else if (result > outputBuffer.CharCapacity)
                 {
                     // Not enough space. The result count for this API does not include the null terminator.
-                    outputBuffer.EnsureCapacity(result);
-                    result = Interop.mincore.GetLongPathNameW(inputBuffer, outputBuffer, outputBuffer.Capacity + 1);
+                    outputBuffer.EnsureCharCapacity(result);
+                    result = Interop.mincore.GetLongPathNameW(inputBuffer.GetHandle(), outputBuffer.GetHandle(), (uint)outputBuffer.CharCapacity);
                 }
                 else
                 {
                     // Found the path
                     success = true;
+                    outputBuffer.Length = result;
                     if (foundIndex < inputLength - 1)
                     {
                         // It was a partial find, put the non-existant part of the path back
@@ -339,33 +294,28 @@ namespace System.IO
             }
 
             // Strip out the prefix and return the string
-            if (success)
+            StringBuffer bufferToUse = success ? outputBuffer : inputBuffer;
+            string returnValue = null;
+
+            int newLength = (int)(bufferToUse.Length - rootDifference);
+            if (isUnc)
             {
-                if (isUnc)
-                {
-                    // Need to go from \\?\UNC\ to \\?\UN\\
-                    outputBuffer[PathInternal.UncExtendedPathPrefix.Length - 1] = '\\';
-                    return outputBuffer.ToString(rootDifference, outputBuffer.Length - rootDifference);
-                }
-                else
-                {
-                    return outputBuffer.ToString(rootDifference, outputBuffer.Length - rootDifference);
-                }
+                // Need to go from \\?\UNC\ to \\?\UN\\
+                bufferToUse[(ulong)PathInternal.UncExtendedPathPrefix.Length - 1] = '\\';
+            }
+
+            if (bufferToUse.SubstringEquals(originalPath, rootDifference, newLength))
+            {
+                // Use the original path to avoid allocating
+                returnValue = originalPath;
             }
             else
             {
-                // Failed to get and expanded path, clean up our input
-                if (isUnc)
-                {
-                    // Need to go from \\?\UNC\ to \\?\UN\\
-                    inputBuffer[PathInternal.UncExtendedPathPrefix.Length - 1] = '\\';
-                    return new string(inputBuffer, rootDifference, inputBuffer.Length - rootDifference);
-                }
-                else
-                {
-                    return new string(inputBuffer, rootDifference, inputBuffer.Length - rootDifference);
-                }
+                returnValue = bufferToUse.Substring(rootDifference, newLength);
             }
+
+            inputBuffer.Dispose();
+            return returnValue;
         }
     }
 }

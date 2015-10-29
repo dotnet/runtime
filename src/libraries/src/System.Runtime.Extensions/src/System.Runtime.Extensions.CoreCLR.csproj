@@ -44,6 +44,18 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandle.cs">
+      <Link>Common\System\Runtime\InteropServices\SafeHeapHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandleCache.cs">
+      <Link>Common\System\Runtime\InteropServices\SafeHeapHandleCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\NativeBuffer.cs">
+      <Link>Common\System\Runtime\InteropServices\NativeBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\InteropServices\StringBuffer.cs">
+      <Link>Common\System\Runtime\InteropServices\StringBuffer.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
@@ -88,6 +100,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.StringBuffer.cs">
+      <Link>Common\System\IO\PathInternal.Windows.StringBuffer.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
