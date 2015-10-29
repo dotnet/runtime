@@ -283,6 +283,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestEnhancedKeyUsageExtension(usages, false, "301606082b06010505070301060a2b0601040182370a0301".HexToByteArray());
         }
 
+        [Theory]
+        [InlineData("1")]
+        [InlineData("3.0")]
+        [InlineData("Invalid Value")]
+        public static void EnhancedKeyUsageExtension_InvalidOid(string invalidOidValue)
+        {
+            OidCollection oids = new OidCollection
+            {
+                new Oid(invalidOidValue)
+            };
+
+            Assert.ThrowsAny<CryptographicException>(() => new X509EnhancedKeyUsageExtension(oids, false));
+        }
+
         [Fact]
         public static void SubjectKeyIdentifierExtensionDefault()
         {
