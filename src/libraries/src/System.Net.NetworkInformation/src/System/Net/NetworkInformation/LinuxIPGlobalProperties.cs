@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxIPGlobalProperties : IPGlobalProperties
+    internal class LinuxIPGlobalProperties : UnixIPGlobalProperties
     {
         public override string DhcpScopeName
         {
@@ -104,24 +104,6 @@ namespace System.Net.NetworkInformation
         public override UdpStatistics GetUdpIPv6Statistics()
         {
             return new LinuxUdpStatistics(false);
-        }
-
-        private UnicastIPAddressInformationCollection GetUnicastAddresses()
-        {
-            UnicastIPAddressInformationCollection collection = new UnicastIPAddressInformationCollection();
-            foreach (UnicastIPAddressInformation info in
-                LinuxNetworkInterface.GetLinuxNetworkInterfaces().SelectMany(lni => lni.GetIPProperties().UnicastAddresses))
-            {
-                // PERF: Use Interop.Sys.EnumerateInterfaceAddresses directly here.
-                collection.InternalAdd(info);
-            }
-
-            return collection;
-        }
-
-        public override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
-        {
-            return Task.Run((Func<UnicastIPAddressInformationCollection>)GetUnicastAddresses);
         }
     }
 }

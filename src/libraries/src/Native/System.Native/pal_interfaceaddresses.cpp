@@ -42,65 +42,75 @@ extern "C" int32_t EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
         int family = current->ifa_addr->sa_family;
         if (family == AF_INET)
         {
-            // IP Address
-            IpAddressInfo iai = {
-                .InterfaceIndex = interfaceIndex, .NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS,
-            };
+            if (onIpv4Found != nullptr)
+            {
+                // IP Address
+                IpAddressInfo iai = {
+                    .InterfaceIndex = interfaceIndex, .NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS,
+                };
 
-            sockaddr_in* sain = reinterpret_cast<sockaddr_in*>(current->ifa_addr);
-            memcpy(iai.AddressBytes, &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
+                sockaddr_in* sain = reinterpret_cast<sockaddr_in*>(current->ifa_addr);
+                memcpy(iai.AddressBytes, &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
 
-            // Net Mask
-            IpAddressInfo maskInfo = {
-                .InterfaceIndex = interfaceIndex, .NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS,
-            };
+                // Net Mask
+                IpAddressInfo maskInfo = {
+                    .InterfaceIndex = interfaceIndex, .NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS,
+                };
 
-            sockaddr_in* mask_sain = reinterpret_cast<sockaddr_in*>(current->ifa_netmask);
-            memcpy(maskInfo.AddressBytes, &mask_sain->sin_addr.s_addr, sizeof(mask_sain->sin_addr.s_addr));
+                sockaddr_in* mask_sain = reinterpret_cast<sockaddr_in*>(current->ifa_netmask);
+                memcpy(maskInfo.AddressBytes, &mask_sain->sin_addr.s_addr, sizeof(mask_sain->sin_addr.s_addr));
 
-            onIpv4Found(current->ifa_name, &iai, &maskInfo);
+                onIpv4Found(current->ifa_name, &iai, &maskInfo);
+            }
         }
         else if (family == AF_INET6)
         {
-            IpAddressInfo iai = {
-                .InterfaceIndex = interfaceIndex, .NumAddressBytes = NUM_BYTES_IN_IPV6_ADDRESS,
-            };
+            if (onIpv6Found != nullptr)
+            {
+                IpAddressInfo iai = {
+                    .InterfaceIndex = interfaceIndex, .NumAddressBytes = NUM_BYTES_IN_IPV6_ADDRESS,
+                };
 
-            sockaddr_in6* sain6 = reinterpret_cast<sockaddr_in6*>(current->ifa_addr);
-            memcpy(iai.AddressBytes, sain6->sin6_addr.s6_addr, sizeof(sain6->sin6_addr.s6_addr));
-            uint32_t scopeId = sain6->sin6_scope_id;
-            onIpv6Found(current->ifa_name, &iai, &scopeId);
+                sockaddr_in6* sain6 = reinterpret_cast<sockaddr_in6*>(current->ifa_addr);
+                memcpy(iai.AddressBytes, sain6->sin6_addr.s6_addr, sizeof(sain6->sin6_addr.s6_addr));
+                uint32_t scopeId = sain6->sin6_scope_id;
+                onIpv6Found(current->ifa_name, &iai, &scopeId);
+            }
         }
 
-// LINUX : AF_PACKET = 17
 #if defined(AF_PACKET)
         else if (family == AF_PACKET)
         {
-            sockaddr_ll* sall = reinterpret_cast<sockaddr_ll*>(current->ifa_addr);
+            if (onLinkLayerFound != nullptr)
+            {
+                sockaddr_ll* sall = reinterpret_cast<sockaddr_ll*>(current->ifa_addr);
 
-            LinkLayerAddressInfo lla = {
-                .InterfaceIndex = interfaceIndex,
-                .NumAddressBytes = sall->sll_halen,
-                .HardwareType = MapHardwareType(sall->sll_hatype),
-            };
+                LinkLayerAddressInfo lla = {
+                    .InterfaceIndex = interfaceIndex,
+                    .NumAddressBytes = sall->sll_halen,
+                    .HardwareType = MapHardwareType(sall->sll_hatype),
+                };
 
-            memcpy(&lla.AddressBytes, &sall->sll_addr, sall->sll_halen);
-            onLinkLayerFound(current->ifa_name, &lla);
+                memcpy(&lla.AddressBytes, &sall->sll_addr, sall->sll_halen);
+                onLinkLayerFound(current->ifa_name, &lla);
+            }
         }
 #elif defined(AF_LINK)
-        // OSX/BSD : AF_LINK = 18
         else if (family == AF_LINK)
         {
-            sockaddr_dl* sadl = reinterpret_cast<sockaddr_dl*>(current->ifa_addr);
+            if (onLinkLayerFound != nullptr)
+            {
+                sockaddr_dl* sadl = reinterpret_cast<sockaddr_dl*>(current->ifa_addr);
 
-            LinkLayerAddressInfo lla = {
-                .InterfaceIndex = interfaceIndex,
-                .NumAddressBytes = sadl->sdl_alen,
-                .HardwareType = MapHardwareType(sadl->sdl_type),
-            };
+                LinkLayerAddressInfo lla = {
+                    .InterfaceIndex = interfaceIndex,
+                    .NumAddressBytes = sadl->sdl_alen,
+                    .HardwareType = MapHardwareType(sadl->sdl_type),
+                };
 
-            memcpy(&lla.AddressBytes, reinterpret_cast<uint8_t*>(LLADDR(sadl)), sadl->sdl_alen);
-            onLinkLayerFound(current->ifa_name, &lla);
+                memcpy(&lla.AddressBytes, reinterpret_cast<uint8_t*>(LLADDR(sadl)), sadl->sdl_alen);
+                onLinkLayerFound(current->ifa_name, &lla);
+            }
         }
 #endif
     }
