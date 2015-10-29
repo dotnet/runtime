@@ -286,5 +286,11 @@ one flavor's ABI and the shim's ABI.
   - At first, it seemed that we'd want to use 1:1 names throughout, but it
     turns out there are many cases where being strictly 1:1 isn't practical.
 - Stick to data types which are guaranteed not to vary in size across flavors.
-  - e.g. use int32_t, int64_t from stdint.h and not int, long.
-
+  - Use int32_t, int64_t, etc. from stdint.h and not int, long, etc.
+  - Use char* for ASCII or UTF-8 strings and uint8_t* for byte buffers.
+     - Note that sizeof(char) == 1 is guaranteed.
+  - Do not use size_t in shim API. Always pick a fixed size. Often, it is most 
+    convenient to line up with the managed int as int32_t (e.g. scratch buffer 
+    size for read/write), but sometimes we need to handle huge sizes (e.g.
+    memory mapped files) and therefore use uint64_t.
+  - Use int64_t for native off_t values.
