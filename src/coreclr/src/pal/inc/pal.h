@@ -6769,11 +6769,9 @@ public:
     // with return value optimization (in CreateHolder).
     void Push();
 
-    // Given the locals stack range find the next holder starting with this one
-    NativeExceptionHolderBase *FindNextHolder(void *frameLowAddress, void *frameHighAddress);
-
-    // Given the locals stack range find the holder
-    static NativeExceptionHolderBase *FindHolder(void *frameLowAddress, void *frameHighAddress);
+    // Given the currentHolder and locals stack range find the next holder starting with this one
+    // To find the first holder, pass nullptr as the currentHolder.
+    static NativeExceptionHolderBase *FindNextHolder(NativeExceptionHolderBase *currentHolder, void *frameLowAddress, void *frameHighAddress);
 };
 
 //

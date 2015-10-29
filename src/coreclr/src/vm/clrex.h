@@ -823,6 +823,10 @@ class EEFileLoadException : public EEException
 #define EX_TRY                                                                                     \
     EX_TRY_CUSTOM(CLRException::HandlerState, (::GetThreadNULLOk()), CLRLastThrownObjectException)
 
+#undef EX_TRY_CPP_ONLY
+#define EX_TRY_CPP_ONLY                                                                             \
+    EX_TRY_CUSTOM_CPP_ONLY(CLRException::HandlerState, (::GetThreadNULLOk()), CLRLastThrownObjectException)
+
 // Faster version with thread, skipping GetThread call
 #define EX_TRY_THREAD(pThread)                                                           \
     EX_TRY_CUSTOM(CLRException::HandlerState, (pThread, CLRException::HandlerState::ThreadIsNotNull), CLRLastThrownObjectException)

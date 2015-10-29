@@ -4633,13 +4633,22 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
 
             UINT_PTR parentSp = GetSP(&frameContext);
 
-            NativeExceptionHolderBase* holder = NativeExceptionHolderBase::FindHolder((void*)sp, (void*)parentSp);
-            if ((holder != NULL) && (holder->InvokeFilter(ex) == EXCEPTION_EXECUTE_HANDLER))
+            // Find all holders on this frame that are in scopes embedded in each other and call their filters.
+            NativeExceptionHolderBase* holder = nullptr;
+            while ((holder = NativeExceptionHolderBase::FindNextHolder(holder, (void*)sp, (void*)parentSp)) != nullptr)
             {
-                // Switch to pass 2
-                ex.TargetFrameSp = sp;
-                UnwindManagedExceptionPass2(ex, &unwindStartContext);
-            }            
+                EXCEPTION_DISPOSITION disposition =  holder->InvokeFilter(ex);
+                if (disposition == EXCEPTION_EXECUTE_HANDLER)
+                {
+                    // Switch to pass 2
+                    ex.TargetFrameSp = sp;
+                    UnwindManagedExceptionPass2(ex, &unwindStartContext);
+                    UNREACHABLE();
+                }
+
+                // The EXCEPTION_CONTINUE_EXECUTION is not supported and should never be returned by a filter
+                _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
+            }
         }
 
     } while (IsSpInStackLimits(GetSP(&frameContext), stackLowAddress, stackHighAddress));
