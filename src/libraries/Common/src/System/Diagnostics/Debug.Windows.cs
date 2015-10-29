@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Security;
-using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -24,16 +23,14 @@ namespace System.Diagnostics
             [SecuritySafeCritical]
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
             {
-                string fullMessage = message + Environment.NewLine + detailMessage + Environment.NewLine + stackTrace;
-
-                Debug.WriteLine(fullMessage);
                 if (Debugger.IsAttached)
                 {
                     Debugger.Break();
                 }
                 else
                 {
-                    Environment.FailFast(fullMessage);
+                    // TODO: #3708 Determine if/how to put up a dialog instead.
+                    throw new DebugAssertException(message, detailMessage, stackTrace);
                 }
             }
 
