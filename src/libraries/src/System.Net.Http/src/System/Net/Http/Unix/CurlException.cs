@@ -20,7 +20,7 @@ namespace System.Net.Http
 
         internal static string GetCurlErrorString(int code, bool isMulti)
         {
-            IntPtr ptr = isMulti ? Interop.libcurl.curl_multi_strerror(code) : Interop.LibCurl.EasyGetErrorString(code);
+            IntPtr ptr = isMulti ? Interop.libcurl.curl_multi_strerror(code) : Interop.Http.EasyGetErrorString(code);
             return Marshal.PtrToStringAnsi(ptr);
         }
     }

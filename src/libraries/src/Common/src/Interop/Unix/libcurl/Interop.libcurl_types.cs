@@ -49,7 +49,7 @@ internal static partial class Interop
             [FieldOffset(16)]
             internal IntPtr data;
             [FieldOffset(16)]
-            internal int result;
+            internal Http.CURLcode result;
         }
 
         // Poll values used with curl_multi_wait and curl_waitfd.events/revents

@@ -18,14 +18,6 @@ internal static partial class Interop
         }
     }
 
-    internal static partial class LibCurl
-    {
-        static LibCurl()
-        {
-            HttpInitializer.Initialize();
-        }
-    }
-
     internal static partial class Http
     {
         static Http()

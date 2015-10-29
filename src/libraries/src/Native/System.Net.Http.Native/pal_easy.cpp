@@ -68,21 +68,24 @@ extern "C" void EasyDestroy(CURL* handle)
     curl_easy_cleanup(handle);
 }
 
-#define convertOption(option) static_cast<CURLoption>(option)
+inline static CURLoption ConvertOption(PAL_CURLoption option)
+{
+    return static_cast<CURLoption>(option);
+}
 
 extern "C" int32_t EasySetOptionString(CURL* handle, PAL_CURLoption option, const char* value)
 {
-    return curl_easy_setopt(handle, convertOption(option), value);
+    return curl_easy_setopt(handle, ConvertOption(option), value);
 }
 
 extern "C" int32_t EasySetOptionLong(CURL* handle, PAL_CURLoption option, int64_t value)
 {
-    return curl_easy_setopt(handle, convertOption(option), value);
+    return curl_easy_setopt(handle, ConvertOption(option), value);
 }
 
 extern "C" int32_t EasySetOptionPointer(CURL* handle, PAL_CURLoption option, void* value)
 {
-    return curl_easy_setopt(handle, convertOption(option), value);
+    return curl_easy_setopt(handle, ConvertOption(option), value);
 }
 
 extern "C" const char* EasyGetErrorString(PAL_CURLcode code)
@@ -90,16 +93,19 @@ extern "C" const char* EasyGetErrorString(PAL_CURLcode code)
     return curl_easy_strerror(static_cast<CURLcode>(code));
 }
 
-#define convertInfo(info) static_cast<CURLINFO>(info)
+inline static CURLINFO ConvertInfo(PAL_CURLINFO info)
+{
+    return static_cast<CURLINFO>(info);
+}
 
 extern "C" int32_t EasyGetInfoPointer(CURL* handle, PAL_CURLINFO info, void** value)
 {
-    return curl_easy_getinfo(handle, convertInfo(info), value);
+    return curl_easy_getinfo(handle, ConvertInfo(info), value);
 }
 
 extern "C" int32_t EasyGetInfoLong(CURL* handle, PAL_CURLINFO info, int64_t* value)
 {
-    return curl_easy_getinfo(handle, convertInfo(info), value);
+    return curl_easy_getinfo(handle, ConvertInfo(info), value);
 }
 
 extern "C" int32_t EasyPerform(CURL* handle)
@@ -107,7 +113,7 @@ extern "C" int32_t EasyPerform(CURL* handle)
     return curl_easy_perform(handle);
 }
 
-extern "C" int32_t EasyPause(CURL* handle)
+extern "C" int32_t EasyUnpause(CURL* handle)
 {
     return curl_easy_pause(handle, CURLPAUSE_CONT);
 }

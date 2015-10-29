@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class LibCurl
+    internal static partial class Http
     {
         [DllImport(Libraries.HttpNative)]
         public static extern SafeCurlHandle EasyCreate();
@@ -15,111 +15,113 @@ internal static partial class Interop
         private static extern void EasyDestroy(IntPtr handle);
 
         [DllImport(Libraries.HttpNative, CharSet = CharSet.Ansi)]
-        public static extern int EasySetOptionString(SafeCurlHandle curl, int option, string value);
+        public static extern CURLcode EasySetOptionString(SafeCurlHandle curl, CURLoption option, string value);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern int EasySetOptionLong(SafeCurlHandle curl, int option, long value);
+        public static extern CURLcode EasySetOptionLong(SafeCurlHandle curl, CURLoption option, long value);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern int EasySetOptionPointer(SafeCurlHandle curl, int option, IntPtr value);
+        public static extern CURLcode EasySetOptionPointer(SafeCurlHandle curl, CURLoption option, IntPtr value);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern int EasySetOptionPointer(SafeCurlHandle curl, int option, SafeHandle value);
+        public static extern CURLcode EasySetOptionPointer(SafeCurlHandle curl, CURLoption option, SafeHandle value);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern int EasySetOptionPointer(SafeCurlHandle curl, int option, Delegate callback);
+        public static extern CURLcode EasySetOptionPointer(SafeCurlHandle curl, CURLoption option, Delegate callback);
 
         [DllImport(Libraries.HttpNative)]
         public static extern IntPtr EasyGetErrorString(int code);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern int EasyGetInfoPointer(IntPtr handle, int info, out IntPtr value);
+        public static extern CURLcode EasyGetInfoPointer(IntPtr handle, CURLINFO info, out IntPtr value);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern int EasyGetInfoLong(SafeCurlHandle handle, int info, out long value);
+        public static extern CURLcode EasyGetInfoLong(SafeCurlHandle handle, CURLINFO info, out long value);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern int EasyPerform(SafeCurlHandle curl);
+        public static extern CURLcode EasyPerform(SafeCurlHandle curl);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern int EasyPause(SafeCurlHandle easy);
+        public static extern CURLcode EasyUnpause(SafeCurlHandle easy);
 
-        // Class for constants defined for the enum CURLoption in curl.h
-        internal static partial class CURLoption
+        // Curl options are of the format <type base> + <n>
+        private const int CurlOptionLongBase = 0;
+        private const int CurlOptionObjectPointBase = 10000;
+        private const int CurlOptionFunctionPointBase = 20000;
+
+        // Enum for constants defined for the enum CURLoption in curl.h
+        internal enum CURLoption
         {
-            // Curl options are of the format <type base> + <n>
-            private const int CurlOptionLongBase = 0;
-            private const int CurlOptionObjectPointBase = 10000;
-            private const int CurlOptionFunctionPointBase = 20000;
+            CURLOPT_INFILESIZE = CurlOptionLongBase + 14,
+            CURLOPT_VERBOSE = CurlOptionLongBase + 41,
+            CURLOPT_NOBODY = CurlOptionLongBase + 44,
+            CURLOPT_UPLOAD = CurlOptionLongBase + 46,
+            CURLOPT_POST = CurlOptionLongBase + 47,
+            CURLOPT_FOLLOWLOCATION = CurlOptionLongBase + 52,
+            CURLOPT_PROXYPORT = CurlOptionLongBase + 59,
+            CURLOPT_POSTFIELDSIZE = CurlOptionLongBase + 60,
+            CURLOPT_MAXREDIRS = CurlOptionLongBase + 68,
+            CURLOPT_NOSIGNAL = CurlOptionLongBase + 99,
+            CURLOPT_PROXYTYPE = CurlOptionLongBase + 101,
+            CURLOPT_HTTPAUTH = CurlOptionLongBase + 107,
+            CURLOPT_PROTOCOLS = CurlOptionLongBase + 181,
+            CURLOPT_REDIR_PROTOCOLS = CurlOptionLongBase + 182,
 
-            internal const int CURLOPT_INFILESIZE = CurlOptionLongBase + 14;
-            internal const int CURLOPT_VERBOSE = CurlOptionLongBase + 41;
-            internal const int CURLOPT_NOBODY = CurlOptionLongBase + 44;
-            internal const int CURLOPT_UPLOAD = CurlOptionLongBase + 46;
-            internal const int CURLOPT_POST = CurlOptionLongBase + 47;
-            internal const int CURLOPT_FOLLOWLOCATION = CurlOptionLongBase + 52;
-            internal const int CURLOPT_PROXYPORT = CurlOptionLongBase + 59;
-            internal const int CURLOPT_POSTFIELDSIZE = CurlOptionLongBase + 60;
-            internal const int CURLOPT_MAXREDIRS = CurlOptionLongBase + 68;
-            internal const int CURLOPT_NOSIGNAL = CurlOptionLongBase + 99;
-            internal const int CURLOPT_PROXYTYPE = CurlOptionLongBase + 101;
-            internal const int CURLOPT_HTTPAUTH = CurlOptionLongBase + 107;
-            internal const int CURLOPT_PROTOCOLS = CurlOptionLongBase + 181;
-            internal const int CURLOPT_REDIR_PROTOCOLS = CurlOptionLongBase + 182;
+            CURLOPT_WRITEDATA = CurlOptionObjectPointBase + 1,
+            CURLOPT_URL = CurlOptionObjectPointBase + 2,
+            CURLOPT_PROXY = CurlOptionObjectPointBase + 4,
+            CURLOPT_PROXYUSERPWD = CurlOptionObjectPointBase + 6,
+            CURLOPT_READDATA = CurlOptionObjectPointBase + 9,
+            CURLOPT_COOKIE = CurlOptionObjectPointBase + 22,
+            CURLOPT_HTTPHEADER = CurlOptionObjectPointBase + 23,
+            CURLOPT_HEADERDATA = CurlOptionObjectPointBase + 29,
+            CURLOPT_CUSTOMREQUEST = CurlOptionObjectPointBase + 36,
+            CURLOPT_ACCEPT_ENCODING = CurlOptionObjectPointBase + 102,
+            CURLOPT_PRIVATE = CurlOptionObjectPointBase + 103,
+            CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165,
+            CURLOPT_SEEKDATA = CurlOptionObjectPointBase + 168,
+            CURLOPT_USERNAME = CurlOptionObjectPointBase + 173,
+            CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174,
 
-            internal const int CURLOPT_WRITEDATA = CurlOptionObjectPointBase + 1;
-            internal const int CURLOPT_URL = CurlOptionObjectPointBase + 2;
-            internal const int CURLOPT_PROXY = CurlOptionObjectPointBase + 4;
-            internal const int CURLOPT_PROXYUSERPWD = CurlOptionObjectPointBase + 6;
-            internal const int CURLOPT_READDATA = CurlOptionObjectPointBase + 9;
-            internal const int CURLOPT_COOKIE = CurlOptionObjectPointBase + 22;
-            internal const int CURLOPT_HTTPHEADER = CurlOptionObjectPointBase + 23;
-            internal const int CURLOPT_HEADERDATA = CurlOptionObjectPointBase + 29;
-            internal const int CURLOPT_CUSTOMREQUEST = CurlOptionObjectPointBase + 36;
-            internal const int CURLOPT_ACCEPT_ENCODING = CurlOptionObjectPointBase + 102;
-            internal const int CURLOPT_PRIVATE = CurlOptionObjectPointBase + 103;
-            internal const int CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165;
-            internal const int CURLOPT_SEEKDATA = CurlOptionObjectPointBase + 168;
-            internal const int CURLOPT_USERNAME = CurlOptionObjectPointBase + 173;
-            internal const int CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174;
-
-            internal const int CURLOPT_WRITEFUNCTION = CurlOptionFunctionPointBase + 11;
-            internal const int CURLOPT_READFUNCTION = CurlOptionFunctionPointBase + 12;
-            internal const int CURLOPT_HEADERFUNCTION = CurlOptionFunctionPointBase + 79;
-            internal const int CURLOPT_SSL_CTX_FUNCTION = CurlOptionFunctionPointBase + 108;
-            internal const int CURLOPT_SEEKFUNCTION = CurlOptionFunctionPointBase + 167;
+            CURLOPT_WRITEFUNCTION = CurlOptionFunctionPointBase + 11,
+            CURLOPT_READFUNCTION = CurlOptionFunctionPointBase + 12,
+            CURLOPT_HEADERFUNCTION = CurlOptionFunctionPointBase + 79,
+            CURLOPT_SSL_CTX_FUNCTION = CurlOptionFunctionPointBase + 108,
+            CURLOPT_SEEKFUNCTION = CurlOptionFunctionPointBase + 167,
         }
 
-        // Class for constants defined for the enum CURLINFO in curl.h
-        internal static partial class CURLINFO
-        {
-            // Curl info are of the format <type base> + <n>
-            private const int CurlInfoStringBase = 0x100000;
-            private const int CurlInfoLongBase = 0x200000;
+        // Curl info are of the format <type base> + <n>
+        private const int CurlInfoStringBase = 0x100000;
+        private const int CurlInfoLongBase = 0x200000;
 
-            internal const int CURLINFO_PRIVATE = CurlInfoStringBase + 21;
-            internal const int CURLINFO_HTTPAUTH_AVAIL = CurlInfoLongBase + 23;
+        // Enum for constants defined for the enum CURLINFO in curl.h
+        internal enum CURLINFO
+        {
+            CURLINFO_PRIVATE = CurlInfoStringBase + 21,
+            CURLINFO_HTTPAUTH_AVAIL = CurlInfoLongBase + 23,
         }
 
         // AUTH related constants
-        internal static partial class CURLAUTH
+        [Flags]
+        internal enum CURLAUTH
         {
-            internal const long None = 0;
-            internal const long Basic = 1 << 0;
-            internal const long Digest = 1 << 1;
-            internal const long Negotiate = 1 << 2;
+            None = 0,
+            Basic = 1 << 0,
+            Digest = 1 << 1,
+            Negotiate = 1 << 2,
         }
 
         // Class for constants defined for the enum curl_proxytype in curl.h
-        internal static partial class curl_proxytype
+        internal enum curl_proxytype
         {
-            internal const int CURLPROXY_HTTP = 0;
+            CURLPROXY_HTTP = 0,
         }
 
-        internal static partial class CURLPROTO_Definitions
+        [Flags]
+        internal enum CurlProtocols
         {
-            internal const int CURLPROTO_HTTP = (1 << 0);
-            internal const int CURLPROTO_HTTPS = (1 << 1);
+            CURLPROTO_HTTP = (1 << 0),
+            CURLPROTO_HTTPS = (1 << 1),
         }
 
         internal sealed class SafeCurlHandle : SafeHandle
