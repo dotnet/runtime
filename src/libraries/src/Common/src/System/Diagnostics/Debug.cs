@@ -58,6 +58,16 @@ namespace System.Diagnostics
             Assert(false, message, detailMessage);
         }
 
+        private static string FormatAssert(string stackTrace, string message, string detailMessage)
+        {
+            return SR.DebugAssertBanner + Environment.NewLine
+                   + SR.DebugAssertShortMessage + Environment.NewLine
+                   + message + Environment.NewLine
+                   + SR.DebugAssertLongMessage + Environment.NewLine
+                   + detailMessage + Environment.NewLine
+                   + stackTrace;
+        }
+
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Assert(bool condition, string message, string detailMessageFormat, params object[] args)
         {
@@ -202,16 +212,6 @@ namespace System.Diagnostics
             {
                 WriteLine(value, category);
             }
-        }
-
-        private static string FormatAssert(string stackTrace, string message, string detailMessage)
-        {
-            return SR.DebugAssertBanner + Environment.NewLine
-                   + SR.DebugAssertShortMessage + Environment.NewLine
-                   + message + Environment.NewLine
-                   + SR.DebugAssertLongMessage + Environment.NewLine
-                   + detailMessage + Environment.NewLine
-                   + stackTrace;
         }
 
         internal interface IDebugLogger
