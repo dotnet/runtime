@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <PropertyGroup>
     <AssemblyName>System.Net.NetworkInformation</AssemblyName>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
@@ -12,7 +11,6 @@
     <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
-
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
@@ -20,7 +18,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
-
   <ItemGroup>
     <Compile Include="System\Net\NetworkInformation\DuplicateAddressDetectionState.cs" />
     <Compile Include="System\Net\NetworkInformation\GatewayIPAddressInformation.cs" />
@@ -65,7 +62,6 @@
       <Link>Common\System\Net\NetworkInformation\NetworkInformationException.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Windows.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Windows.cs" />
@@ -238,12 +234,12 @@
       <Link>Interop\Windows\Winsock\WSABuffer.cs</Link>
     </Compile>
   </ItemGroup>
-
   <!-- Unix -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\NetworkInformation\NetworkFiles.cs" />
     <Compile Include="System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\SimpleTcpConnectionInformation.cs" />
+    <Compile Include="System\Net\NetworkInformation\StringParsingHelpers.Dns.cs" />
     <Compile Include="System\Net\NetworkInformation\UnixIPInterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\UnixIPv4InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\UnixIPv6InterfaceProperties.cs" />
@@ -276,7 +272,6 @@
       <Link>Common\System\IO\RowConfigReader.cs</Link>
     </Compile>
   </ItemGroup>
-
   <!-- Linux -->
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
     <Compile Include="System\Net\NetworkInformation\LinuxIcmpV4Statistics.cs" />
@@ -294,6 +289,10 @@
     <Compile Include="System\Net\NetworkInformation\LinuxNetworkInterface.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPv4InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPv6InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\StringParsingHelpers.Addresses.cs" />
+    <Compile Include="System\Net\NetworkInformation\StringParsingHelpers.Connections.cs" />
+    <Compile Include="System\Net\NetworkInformation\StringParsingHelpers.Misc.cs" />
+    <Compile Include="System\Net\NetworkInformation\StringParsingHelpers.Statistics.cs" />
     <!-- Linux Common -->
     <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
       <Link>Common\System\IO\StringParser.cs</Link>
@@ -308,7 +307,6 @@
       <Link>Interop\Linux\System.Native\Interop.NetworkChange.cs</Link>
     </Compile>
   </ItemGroup>
-
   <!-- OSX -->
   <ItemGroup Condition=" '$(TargetsOsx)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Osx.cs" />
@@ -333,10 +331,8 @@
       <Link>Interop\OSX\System.Native\Interop.TcpConnectionInfo.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

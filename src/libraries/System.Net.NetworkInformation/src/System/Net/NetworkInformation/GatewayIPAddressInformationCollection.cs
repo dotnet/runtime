@@ -8,11 +8,17 @@ namespace System.Net.NetworkInformation
 {
     public class GatewayIPAddressInformationCollection : ICollection<GatewayIPAddressInformation>
     {
-        private readonly Collection<GatewayIPAddressInformation> _addresses =
-            new Collection<GatewayIPAddressInformation>();
+        private readonly Collection<GatewayIPAddressInformation> _addresses;
+            
 
         protected internal GatewayIPAddressInformationCollection()
         {
+            _addresses = new Collection<GatewayIPAddressInformation>();
+        }
+
+        internal GatewayIPAddressInformationCollection(Collection<GatewayIPAddressInformation> addresses)
+        {
+            _addresses = addresses;
         }
 
         public virtual void CopyTo(GatewayIPAddressInformation[] array, int offset)
