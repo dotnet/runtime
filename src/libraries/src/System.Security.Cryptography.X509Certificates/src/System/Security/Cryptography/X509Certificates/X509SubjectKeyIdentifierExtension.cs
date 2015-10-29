@@ -127,7 +127,10 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static byte[] ComputeSha1(byte[] data)
         {
-            return SHA1.Create().ComputeHash(data);
+            using (SHA1 sha1 = SHA1.Create())
+            {
+                return sha1.ComputeHash(data);
+            }
         }
 
         private String _subjectKeyIdentifier;
