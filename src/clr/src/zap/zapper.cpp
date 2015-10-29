@@ -2636,7 +2636,7 @@ HRESULT Zapper::Compile(LPCWSTR string, CORCOMPILE_NGEN_SIGNATURE * pNativeImage
 #endif
 
 #if defined(CROSSGEN_COMPILE) || defined(FEATURE_CORECLR)
-    if (fMscorlib || IsReadyToRunCompilation())
+    if (fMscorlib)
     {
         //
         // Disallow use of native image to force a new native image generation for mscorlib
