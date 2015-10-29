@@ -3,6 +3,15 @@
   "version": 2,
   "targets": {
     "DNXCore,Version=v5.0": {
+      "System.Collections/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet/System.Collections.dll": {}
+        }
+      },
       "System.Diagnostics.Contracts/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -1714,6 +1723,7 @@
   },
   "projectFileDependencyGroups": {
     "": [
+      "System.Collections >= 4.0.0",
       "System.Diagnostics.Contracts >= 4.0.0",
       "System.Diagnostics.Debug >= 4.0.10",
       "System.IO >= 4.0.10",
