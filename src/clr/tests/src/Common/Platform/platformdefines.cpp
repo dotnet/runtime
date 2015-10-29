@@ -331,6 +331,8 @@ void TP_DebugBreak()
 {
 #ifdef _PPC_
 	__asm__ __volatile__("trap");
+#elif defined(_ARM_)
+    __asm__ __volatile__("bkpt");
 #else
 	__asm__ __volatile__("int $3");
 #endif	

@@ -101,6 +101,8 @@ int g_signalPipe[2] = { 0, 0 };
 
 DWORD g_dwExternalSignalHandlerThreadId = 0;
 
+
+
 /* public function definitions ************************************************/
 
 /*++
@@ -262,7 +264,7 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
         record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
         record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
         record.ExceptionRecord = NULL;
-        record.ExceptionAddress = CONTEXTGetPC(ucontext);
+        record.ExceptionAddress = GetNativeContextPC(ucontext);
         record.NumberParameters = 0;
 
         pointers.ExceptionRecord = &record;
@@ -307,7 +309,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
         record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
         record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
         record.ExceptionRecord = NULL;
-        record.ExceptionAddress = CONTEXTGetPC(ucontext);
+        record.ExceptionAddress = GetNativeContextPC(ucontext);
         record.NumberParameters = 0;
 
         pointers.ExceptionRecord = &record;
@@ -352,7 +354,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
         record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
         record.ExceptionRecord = NULL;
-        record.ExceptionAddress = CONTEXTGetPC(ucontext);
+        record.ExceptionAddress = GetNativeContextPC(ucontext);
         record.NumberParameters = 2;
 
         // TODO: First parameter says whether a read (0) or write (non-0) caused the
@@ -405,7 +407,7 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
         record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
         record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
         record.ExceptionRecord = NULL;
-        record.ExceptionAddress = CONTEXTGetPC(ucontext);
+        record.ExceptionAddress = GetNativeContextPC(ucontext);
         record.NumberParameters = 0;
 
         pointers.ExceptionRecord = &record;
@@ -536,7 +538,7 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
         record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
         record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
         record.ExceptionRecord = NULL;
-        record.ExceptionAddress = CONTEXTGetPC(ucontext);
+        record.ExceptionAddress = GetNativeContextPC(ucontext);
         record.NumberParameters = 2;
 
         // TODO: First parameter says whether a read (0) or write (non-0) caused the
@@ -594,7 +596,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
                 &winContext, 
                 CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
 
-            if (g_safeActivationCheckFunction(winContext.Rip))
+            if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext)))
             {
                 g_activationFunction(&winContext);
             }
