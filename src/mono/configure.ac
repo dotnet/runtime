@@ -546,7 +546,7 @@ if test x"$GCC" = xyes; then
 		if test "x$mono_cv_clang" = "xyes"; then
 	   	   # https://bugzilla.samba.org/show_bug.cgi?id=8118
 	   	   WARN="$WARN -Qunused-arguments"
-		   WARN="$WARN -Wno-unused-function -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign"
+		   WARN="$WARN -Wno-unused-function -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address"
 		fi
 else
 	# The Sun Forte compiler complains about inline functions that access static variables
