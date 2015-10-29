@@ -333,16 +333,22 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                     buildFlow("""
 // Grab the checked out git commit hash so that it can be passed to the child
 // builds.
-gitCommit = build.environment.get('GIT_COMMIT')
+// Temporarily output the properties for diagnosis of issues with the statement below
+out.println 'Triggered Parameters Map:'
+out.println params
+out.println 'Build Object Properties:'
+build.properties.each { out.println \"\$it.key -> \$it.value\" }
+// globalParams = params + [GitBranchOrCommit: build.environment.get('GIT_COMMIT')]
+globalParams = params
 // Build the input jobs in parallel
 parallel (
-    { linuxBuildJob = build(params + [GitBranchOrCommit: gitCommit], '${inputCoreCLRBuildName}') },
-    { windowsBuildJob = build(params + [GitBranchOrCommit: gitCommit], '${inputWindowTestsBuildName}') }
+    { linuxBuildJob = build(globalParams, '${inputCoreCLRBuildName}') },
+    { windowsBuildJob = build(globalParams, '${inputWindowTestsBuildName}') }
 )
     
 // And then build the test build
-build(params + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number, 
-                CORECLR_WINDOWS_BUILD: windowsBuildJob.build.number, GitBranchOrCommit: gitCommit], '${fullTestJobName}')    
+build(globalParams + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number, 
+                CORECLR_WINDOWS_BUILD: windowsBuildJob.build.number], '${fullTestJobName}')    
 """)
 
                     // Needs a workspace
