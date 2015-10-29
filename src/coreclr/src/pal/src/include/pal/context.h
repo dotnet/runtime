@@ -336,6 +336,28 @@ typedef ucontext_t native_context_t;
 
 #endif // HAVE_BSD_REGS_T
 
+inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
+{
+#if defined(_AMD64_)
+    return pContext->Rip;
+#elif defined(_ARM64_) || defined(_ARM_)
+    return pContext->Pc;
+#else
+#error don't know how to get the program counter for this architecture
+#endif
+}
+
+inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
+{
+#if defined(_AMD64_)
+    pContext->Rip = pc;
+#elif defined(_ARM64_) || defined(_ARM_)
+    pContext->Pc = pc;
+#else
+#error don't know how to set the program counter for this architecture
+#endif
+}
+
 /*++
 Function :
     CONTEXT_CaptureContext
@@ -458,7 +480,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
 /*++
 Function :
-    CONTEXTGetPC
+    GetNativeContextPC
     
     Returns the program counter from the native context.
 
@@ -469,7 +491,7 @@ Return value :
     The program counter from the native context.
 
 --*/
-LPVOID CONTEXTGetPC(const native_context_t *context);
+LPVOID GetNativeContextPC(const native_context_t *context);
 
 /*++
 Function :

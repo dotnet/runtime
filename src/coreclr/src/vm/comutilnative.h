@@ -34,7 +34,7 @@
 #ifdef  FEATURE_RANDOMIZED_STRING_HASHING
 #pragma warning(push)
 #pragma warning(disable:4324)
-#if !defined(CROSS_COMPILE) && defined(_TARGET_ARM_)
+#if !defined(CROSS_COMPILE) && defined(_TARGET_ARM_) && !defined(PLATFORM_UNIX)
 #include "arm_neon.h"
 #endif
 #include "marvin32.h"
