@@ -1168,6 +1168,40 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 	}
 }
 
+static LLVMTypeRef
+sig_to_llvm_sig_no_cinfo (EmitContext *ctx, MonoMethodSignature *sig)
+{
+	LLVMTypeRef ret_type;
+	LLVMTypeRef *param_types = NULL;
+	LLVMTypeRef res;
+	int i, pindex;
+	MonoType *rtype;
+
+	rtype = mini_get_underlying_type (sig->ret);
+	ret_type = type_to_llvm_type (ctx, rtype);
+	CHECK_FAILURE (ctx);
+
+	param_types = g_new0 (LLVMTypeRef, (sig->param_count * 8) + 3);
+	pindex = 0;
+
+	if (sig->hasthis)
+		param_types [pindex ++] = ThisType ();
+	for (i = 0; i < sig->param_count; ++i)
+		param_types [pindex ++] = type_to_llvm_arg_type (ctx, sig->params [i]);
+
+	CHECK_FAILURE (ctx);
+
+	res = LLVMFunctionType (ret_type, param_types, pindex, FALSE);
+	g_free (param_types);
+
+	return res;
+
+ FAILURE:
+	g_free (param_types);
+
+	return NULL;
+}
+
 /*
  * sig_to_llvm_sig_full:
  *
@@ -1185,68 +1219,68 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	gboolean vretaddr = FALSE;
 	MonoType *rtype;
 
+	if (!cinfo)
+		return sig_to_llvm_sig_no_cinfo (ctx, sig);
+
 	rtype = mini_get_underlying_type (sig->ret);
 	ret_type = type_to_llvm_type (ctx, rtype);
 	CHECK_FAILURE (ctx);
 
-	if (cinfo) {
-		switch (cinfo->ret.storage) {
-		case LLVMArgVtypeInReg:
-			/* LLVM models this by returning an aggregate value */
-			if (cinfo->ret.pair_storage [0] == LLVMArgInIReg && cinfo->ret.pair_storage [1] == LLVMArgNone) {
-				LLVMTypeRef members [2];
+	switch (cinfo->ret.storage) {
+	case LLVMArgVtypeInReg:
+		/* LLVM models this by returning an aggregate value */
+		if (cinfo->ret.pair_storage [0] == LLVMArgInIReg && cinfo->ret.pair_storage [1] == LLVMArgNone) {
+			LLVMTypeRef members [2];
 
-				members [0] = IntPtrType ();
-				ret_type = LLVMStructType (members, 1, FALSE);
-			} else if (cinfo->ret.pair_storage [0] == LLVMArgNone && cinfo->ret.pair_storage [1] == LLVMArgNone) {
-				/* Empty struct */
-				ret_type = LLVMVoidType ();
-			} else if (cinfo->ret.pair_storage [0] == LLVMArgInIReg && cinfo->ret.pair_storage [1] == LLVMArgInIReg) {
-				LLVMTypeRef members [2];
-
-				members [0] = IntPtrType ();
-				members [1] = IntPtrType ();
-				ret_type = LLVMStructType (members, 2, FALSE);
-			} else {
-				g_assert_not_reached ();
-			}
-			break;
-		case LLVMArgVtypeByVal:
-			/* Vtype returned normally by val */
-			break;
-		case LLVMArgVtypeAsScalar:
-			/* LLVM models this by returning an int */
-			g_assert (cinfo->ret.nslots == 1 || cinfo->ret.nslots == 2);
-			ret_type = LLVMIntType (cinfo->ret.nslots * sizeof (mgreg_t) * 8);
-			break;
-		case LLVMArgFpStruct: {
-			/* Vtype returned as a fp struct */
-			LLVMTypeRef members [16];
-
-			/* Have to create our own structure since we don't map fp structures to LLVM fp structures yet */
-			for (i = 0; i < cinfo->ret.nslots; ++i)
-				members [i] = cinfo->ret.esize == 8 ? LLVMDoubleType () : LLVMFloatType ();
-			ret_type = LLVMStructType (members, cinfo->ret.nslots, FALSE);
-			break;
-		}
-		case LLVMArgVtypeByRef:
-			/* Vtype returned using a hidden argument */
+			members [0] = IntPtrType ();
+			ret_type = LLVMStructType (members, 1, FALSE);
+		} else if (cinfo->ret.pair_storage [0] == LLVMArgNone && cinfo->ret.pair_storage [1] == LLVMArgNone) {
+			/* Empty struct */
 			ret_type = LLVMVoidType ();
-			break;
-		default:
-			if (mini_type_is_vtype (rtype)) {
-				g_assert (cinfo->ret.storage == LLVMArgVtypeRetAddr);
-				vretaddr = TRUE;
-				ret_type = LLVMVoidType ();
-			}
-			break;
+		} else if (cinfo->ret.pair_storage [0] == LLVMArgInIReg && cinfo->ret.pair_storage [1] == LLVMArgInIReg) {
+			LLVMTypeRef members [2];
+
+			members [0] = IntPtrType ();
+			members [1] = IntPtrType ();
+			ret_type = LLVMStructType (members, 2, FALSE);
+		} else {
+			g_assert_not_reached ();
 		}
+		break;
+	case LLVMArgVtypeByVal:
+		/* Vtype returned normally by val */
+		break;
+	case LLVMArgVtypeAsScalar:
+		/* LLVM models this by returning an int */
+		g_assert (cinfo->ret.nslots == 1 || cinfo->ret.nslots == 2);
+		ret_type = LLVMIntType (cinfo->ret.nslots * sizeof (mgreg_t) * 8);
+		break;
+	case LLVMArgFpStruct: {
+		/* Vtype returned as a fp struct */
+		LLVMTypeRef members [16];
+
+		/* Have to create our own structure since we don't map fp structures to LLVM fp structures yet */
+		for (i = 0; i < cinfo->ret.nslots; ++i)
+			members [i] = cinfo->ret.esize == 8 ? LLVMDoubleType () : LLVMFloatType ();
+		ret_type = LLVMStructType (members, cinfo->ret.nslots, FALSE);
+		break;
+	}
+	case LLVMArgVtypeByRef:
+		/* Vtype returned using a hidden argument */
+		ret_type = LLVMVoidType ();
+		break;
+	case LLVMArgVtypeRetAddr:
+		vretaddr = TRUE;
+		ret_type = LLVMVoidType ();
+		break;
+	default:
+		break;
 	}
 
 	pindexes = g_new0 (int, sig->param_count);
 	param_types = g_new0 (LLVMTypeRef, (sig->param_count * 8) + 3);
 	pindex = 0;
-	if (cinfo && cinfo->ret.storage == LLVMArgVtypeByRef) {
+	if (cinfo->ret.storage == LLVMArgVtypeByRef) {
 		/*
 		 * Has to be the first argument because of the sret argument attribute
 		 * FIXME: This might conflict with passing 'this' as the first argument, but
@@ -1258,12 +1292,12 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		param_types [pindex] = LLVMPointerType (param_types [pindex], 0);
 		pindex ++;
 	}
-	if (!ctx->llvm_only && cinfo && cinfo->rgctx_arg) {
+	if (!ctx->llvm_only && cinfo->rgctx_arg) {
 		cinfo->rgctx_arg_pindex = pindex;
 		param_types [pindex] = ctx->module->ptr_type;
 		pindex ++;
 	}
-	if (cinfo && cinfo->imt_arg) {
+	if (cinfo->imt_arg) {
 		cinfo->imt_arg_pindex = pindex;
 		param_types [pindex] = ctx->module->ptr_type;
 		pindex ++;
@@ -1292,23 +1326,17 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	if (vretaddr && vret_arg_pindex == pindex)
 		param_types [pindex ++] = IntPtrType ();
 	if (sig->hasthis) {
-		if (cinfo)
-			cinfo->this_arg_pindex = pindex;
+		cinfo->this_arg_pindex = pindex;
 		param_types [pindex ++] = ThisType ();
 	}
 	if (vretaddr && vret_arg_pindex == pindex)
 		param_types [pindex ++] = IntPtrType ();
 	for (i = 0; i < sig->param_count; ++i) {
-		LLVMArgInfo *ainfo = cinfo ? &cinfo->args [i + sig->hasthis] : NULL;
+		LLVMArgInfo *ainfo = &cinfo->args [i + sig->hasthis];
 
 		if (vretaddr && vret_arg_pindex == pindex)
 			param_types [pindex ++] = IntPtrType ();
 		pindexes [i] = pindex;
-
-		if (!ainfo) {
-			param_types [pindex ++] = type_to_llvm_arg_type (ctx, sig->params [i]);
-			continue;
-		}
 
 		switch (ainfo->storage) {
 		case LLVMArgVtypeInReg:
@@ -1358,7 +1386,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	}
 	if (vretaddr && vret_arg_pindex == pindex)
 		param_types [pindex ++] = IntPtrType ();
-	if (ctx->llvm_only && cinfo && cinfo->rgctx_arg) {
+	if (ctx->llvm_only && cinfo->rgctx_arg) {
 		/* Pass the rgctx as the last argument */
 		cinfo->rgctx_arg_pindex = pindex;
 		param_types [pindex] = ctx->module->ptr_type;
@@ -1370,11 +1398,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	res = LLVMFunctionType (ret_type, param_types, pindex, FALSE);
 	g_free (param_types);
 
-	if (cinfo) {
-		cinfo->pindexes = pindexes;
-	} else {
-		g_free (pindexes);
-	}
+	cinfo->pindexes = pindexes;
 
 	return res;
 
