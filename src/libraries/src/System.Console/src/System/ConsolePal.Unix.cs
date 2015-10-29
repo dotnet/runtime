@@ -536,8 +536,28 @@ namespace System
             {
                 while (count > 0)
                 {
-                    int bytesWritten;
-                    while (Interop.CheckIo(bytesWritten = Interop.Sys.Write(fd, bufPtr + offset, count))) ;
+                    int bytesWritten = Interop.Sys.Write(fd, bufPtr + offset, count);
+                    if (bytesWritten < 0)
+                    {
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                        if (errorInfo.Error == Interop.Error.EINTR)
+                        {
+                            // Interrupted... try again.
+                            continue;
+                        }
+                        else if (errorInfo.Error == Interop.Error.EPIPE)
+                        {
+                            // Broken pipe... likely due to being redirected to a program
+                            // that ended, so simply pretend we were successful.
+                            return;
+                        }
+                        else
+                        {
+                            // Something else... fail.
+                            throw Interop.GetExceptionForIoErrno(errorInfo);
+                        }
+                    }
+
                     count -= bytesWritten;
                     offset += bytesWritten;
                 }
