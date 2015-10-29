@@ -2900,12 +2900,13 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		LLVM_FAILURE (ctx, "non-default callconv");
 
 	cinfo = call->cinfo;
+	g_assert (cinfo);
 	if (call->rgctx_arg_reg)
 		cinfo->rgctx_arg = TRUE;
 	if (call->imt_arg_reg)
 		cinfo->imt_arg = TRUE;
 
-	vretaddr = cinfo && (cinfo->ret.storage == LLVMArgVtypeRetAddr || cinfo->ret.storage == LLVMArgVtypeByRef);
+	vretaddr = (cinfo->ret.storage == LLVMArgVtypeRetAddr || cinfo->ret.storage == LLVMArgVtypeByRef);
 
 	llvm_sig = sig_to_llvm_sig_full (ctx, sig, cinfo);
 	CHECK_FAILURE (ctx);
@@ -3066,7 +3067,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
 		g_assert (cinfo->vret_arg_pindex < nargs);
-		if (cinfo && cinfo->ret.storage == LLVMArgVtypeByRef)
+		if (cinfo->ret.storage == LLVMArgVtypeByRef)
 			args [cinfo->vret_arg_pindex] = addresses [call->inst.dreg];
 		else
 			args [cinfo->vret_arg_pindex] = LLVMBuildPtrToInt (builder, addresses [call->inst.dreg], IntPtrType (), "");
@@ -3075,7 +3076,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		guint32 regpair;
 		int reg, pindex;
-		LLVMArgInfo *ainfo = call->cinfo ? &call->cinfo->args [i] : NULL;
+		LLVMArgInfo *ainfo = &call->cinfo->args [i];
 
 		if (sig->hasthis) {
 			if (i == 0)
@@ -3149,7 +3150,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (!sig->pinvoke && !cfg->llvm_only)
 		LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
 
-	if (cinfo && cinfo->ret.storage == LLVMArgVtypeByRef)
+	if (cinfo->ret.storage == LLVMArgVtypeByRef)
 		LLVMAddInstrAttribute (lcall, 1 + cinfo->vret_arg_pindex, LLVMStructRetAttribute);
 	if (!ctx->llvm_only && call->rgctx_arg_reg)
 		LLVMAddInstrAttribute (lcall, 1 + cinfo->rgctx_arg_pindex, LLVMInRegAttribute);
@@ -3158,7 +3159,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 	/* Add byval attributes if needed */
 	for (i = 0; i < sig->param_count; ++i) {
-		LLVMArgInfo *ainfo = call->cinfo ? &call->cinfo->args [i + sig->hasthis] : NULL;
+		LLVMArgInfo *ainfo = &call->cinfo->args [i + sig->hasthis];
 
 		if (ainfo && ainfo->storage == LLVMArgVtypeByVal) {
 			LLVMAddInstrAttribute (lcall, 1 + cinfo->pindexes [i], LLVMByValAttribute);
@@ -3168,56 +3169,50 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	/*
 	 * Convert the result
 	 */
-	if (cinfo) {
-		switch (cinfo->ret.storage) {
-		case LLVMArgVtypeInReg: {
-			LLVMValueRef regs [2];
+	switch (cinfo->ret.storage) {
+	case LLVMArgVtypeInReg: {
+		LLVMValueRef regs [2];
 
-			if (LLVMTypeOf (lcall) == LLVMVoidType ())
-				/* Empty struct */
-				break;
+		if (LLVMTypeOf (lcall) == LLVMVoidType ())
+			/* Empty struct */
+			break;
 
-			if (!addresses [ins->dreg])
-				addresses [ins->dreg] = build_alloca (ctx, sig->ret);
+		if (!addresses [ins->dreg])
+			addresses [ins->dreg] = build_alloca (ctx, sig->ret);
 
-			regs [0] = LLVMBuildExtractValue (builder, lcall, 0, "");
-			if (cinfo->ret.pair_storage [1] != LLVMArgNone)
-				regs [1] = LLVMBuildExtractValue (builder, lcall, 1, "");
-			emit_args_to_vtype (ctx, builder, sig->ret, addresses [ins->dreg], &cinfo->ret, regs);
-			break;
-		}
-		case LLVMArgVtypeByVal:
-			if (!addresses [call->inst.dreg])
-				addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
-			LLVMBuildStore (builder, lcall, addresses [call->inst.dreg]);
-			break;
-		case LLVMArgFpStruct:
-			if (!addresses [call->inst.dreg])
-				addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
-			LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
-			break;
-		case LLVMArgVtypeAsScalar:
-			if (!addresses [call->inst.dreg])
-				addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
-			LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
-			break;
-		default:
-			if (sig->ret->type != MONO_TYPE_VOID && !vretaddr)
-				/* If the method returns an unsigned value, need to zext it */
-				values [ins->dreg] = convert_full (ctx, lcall, llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, sig->ret)), type_is_unsigned (ctx, sig->ret));
-			break;
-		}
-	} else {
-		if (sig->ret->type != MONO_TYPE_VOID && !vretaddr)
-			/* If the method returns an unsigned value, need to zext it */
-			values [ins->dreg] = convert_full (ctx, lcall, llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, sig->ret)), type_is_unsigned (ctx, sig->ret));
+		regs [0] = LLVMBuildExtractValue (builder, lcall, 0, "");
+		if (cinfo->ret.pair_storage [1] != LLVMArgNone)
+			regs [1] = LLVMBuildExtractValue (builder, lcall, 1, "");
+		emit_args_to_vtype (ctx, builder, sig->ret, addresses [ins->dreg], &cinfo->ret, regs);
+		break;
 	}
-
-	if (vretaddr) {
+	case LLVMArgVtypeByVal:
+		if (!addresses [call->inst.dreg])
+			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
+		LLVMBuildStore (builder, lcall, addresses [call->inst.dreg]);
+		break;
+	case LLVMArgFpStruct:
+		if (!addresses [call->inst.dreg])
+			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
+		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
+		break;
+	case LLVMArgVtypeAsScalar:
+		if (!addresses [call->inst.dreg])
+			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
+		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
+		break;
+	case LLVMArgVtypeRetAddr:
+	case LLVMArgVtypeByRef:
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
 		g_assert (cinfo->vret_arg_pindex < nargs);
 		args [cinfo->vret_arg_pindex] = LLVMBuildPtrToInt (builder, addresses [call->inst.dreg], IntPtrType (), "");
+		break;
+	default:
+		if (sig->ret->type != MONO_TYPE_VOID)
+			/* If the method returns an unsigned value, need to zext it */
+			values [ins->dreg] = convert_full (ctx, lcall, llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, sig->ret)), type_is_unsigned (ctx, sig->ret));
+		break;
 	}
 
 	*builder_ref = ctx->builder;
