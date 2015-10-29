@@ -5,6 +5,6 @@
     "System.Security.Cryptography.Primitives": "4.0.0-beta-*"
   },
   "frameworks": {
-    "dotnet5.1": {}
+    "dotnet5.4": {}
   }
 }
