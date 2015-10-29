@@ -28,6 +28,9 @@ namespace System.Net.Http
                 {
                     case Interop.libcurl.CURLcode.CURLE_OK:
                         break;
+                    // Curl 7.38 and prior
+                    case Interop.libcurl.CURLcode.CURLE_UNKNOWN_OPTION:
+                    // Curl 7.39 and later
                     case Interop.libcurl.CURLcode.CURLE_NOT_BUILT_IN:
                         VerboseTrace("CURLOPT_SSL_CTX_FUNCTION is not supported, platform default https chain building in use");
                         break;
