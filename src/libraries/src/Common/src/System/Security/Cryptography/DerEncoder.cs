@@ -301,6 +301,24 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Encode the segments { tag, length, value } of an octet string (byte array).
+        /// </summary>
+        /// <param name="data">The data to encode</param>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeOctetString(byte[] data)
+        {
+            Debug.Assert(data != null);
+
+            // Because this is not currently public API the data array is not being cloned.
+            return new byte[][]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.OctetString }, 
+                EncodeLength(data.Length),
+                data,
+            };
+        }
+
+        /// <summary>
         /// Encode the segments { tag, length, value } of an object identifier (Oid).
         /// </summary>
         /// <returns>The encoded segments { tag, length, value }</returns>

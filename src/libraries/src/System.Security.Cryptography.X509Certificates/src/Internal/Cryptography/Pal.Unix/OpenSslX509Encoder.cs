@@ -327,7 +327,18 @@ namespace Internal.Cryptography.Pal
 
         public byte[] EncodeX509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier)
         {
-            throw new NotImplementedException();
+            //subjectKeyIdentifier EXTENSION ::= {
+            //    SYNTAX SubjectKeyIdentifier
+            //    IDENTIFIED BY id - ce - subjectKeyIdentifier }
+            //
+            //SubjectKeyIdentifier::= KeyIdentifier
+            //
+            //KeyIdentifier ::= OCTET STRING
+
+            byte[][] segments = DerEncoder.SegmentedEncodeOctetString(subjectKeyIdentifier);
+
+            // The extension is not a sequence, just the octet string
+            return ConcatenateArrays(segments);
         }
 
         public void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
