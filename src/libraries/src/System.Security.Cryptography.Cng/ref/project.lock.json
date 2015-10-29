@@ -2,7 +2,7 @@
   "locked": true,
   "version": 2,
   "targets": {
-    ".NETPlatform,Version=v5.2": {
+    ".NETPlatform,Version=v5.4": {
       "System.IO/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -92,7 +92,7 @@
         }
       }
     },
-    ".NETPlatform,Version=v5.2/win7-x86": {
+    ".NETPlatform,Version=v5.4/win7-x86": {
       "runtime.win7.System.Security.Cryptography.Algorithms/4.0.0-beta-23420": {
         "type": "package",
         "compile": {
@@ -188,7 +188,7 @@
         }
       }
     },
-    ".NETPlatform,Version=v5.2/win7-x64": {
+    ".NETPlatform,Version=v5.4/win7-x64": {
       "runtime.win7.System.Security.Cryptography.Algorithms/4.0.0-beta-23420": {
         "type": "package",
         "compile": {
@@ -672,6 +672,6 @@
       "System.Security.Cryptography.Algorithms >= 4.0.0-beta-*",
       "System.Security.Cryptography.Primitives >= 4.0.0-beta-*"
     ],
-    ".NETPlatform,Version=v5.2": []
+    ".NETPlatform,Version=v5.4": []
   }
 }
