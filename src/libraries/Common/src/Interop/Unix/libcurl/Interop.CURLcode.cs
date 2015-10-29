@@ -16,6 +16,7 @@ internal static partial class Interop
             internal const int CURLE_COULDNT_RESOLVE_PROXY =  5;
             internal const int CURLE_COULDNT_RESOLVE_HOST  =  6;
             internal const int CURLE_ABORTED_BY_CALLBACK = 42;
+            internal const int CURLE_UNKNOWN_OPTION = 48;
         }
     }
 }
