@@ -330,7 +330,7 @@ class ZapWriter : public IStream
 
     USHORT GetMachine()
     {
-        return IMAGE_FILE_MACHINE_NATIVE;
+        return IMAGE_FILE_MACHINE_NATIVE_NI;
     }
 
     void SaveDosHeader();

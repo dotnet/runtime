@@ -962,8 +962,11 @@ inline BOOL PEDecoder::IsNativeMachineFormat() const
     if (!HasContents() || !HasNTHeaders() )
         return FALSE;
     _ASSERTE(m_pNTHeaders);
+    WORD expectedFormat = (HasNativeHeader() || HasReadyToRunHeader()) ?
+        IMAGE_FILE_MACHINE_NATIVE_NI :
+        IMAGE_FILE_MACHINE_NATIVE;
     //do not call GetNTHeaders as we do not want to bother with PE32->PE32+ conversion
-    return m_pNTHeaders->FileHeader.Machine==IMAGE_FILE_MACHINE_NATIVE;
+    return m_pNTHeaders->FileHeader.Machine==expectedFormat;
 }
 
 inline BOOL PEDecoder::IsI386() const

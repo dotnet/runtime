@@ -84,12 +84,24 @@ inline CHECK CheckOverflow(RVA value1, COUNT_T value2)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_I386
 #elif defined(_TARGET_AMD64_)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_AMD64
+#if defined(__LINUX__)
+#define IMAGE_FILE_MACHINE_NATIVE_NI   0x9664
+#elif defined(__APPLE__)
+#define IMAGE_FILE_MACHINE_NATIVE_NI   0xa664
+#elif defined(__FreeBSD__)
+#define IMAGE_FILE_MACHINE_NATIVE_NI   0xb664
+#endif
 #elif defined(_TARGET_ARM_)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_ARMNT
 #elif defined(_TARGET_ARM64_)
 #define IMAGE_FILE_MACHINE_NATIVE   IMAGE_FILE_MACHINE_ARM64
 #else
 #error "port me"
+#endif
+
+// Machine code for native images
+#ifndef IMAGE_FILE_MACHINE_NATIVE_NI
+#define IMAGE_FILE_MACHINE_NATIVE_NI IMAGE_FILE_MACHINE_NATIVE
 #endif
 
 // --------------------------------------------------------------------------------
