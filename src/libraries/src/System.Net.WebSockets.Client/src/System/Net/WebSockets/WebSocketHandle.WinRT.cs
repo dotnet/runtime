@@ -13,6 +13,9 @@ using System.Threading.Tasks;
 
 using Microsoft.Win32.SafeHandles;
 
+using Windows.Web;
+using RTWebSocketError = Windows.Networking.Sockets.WebSocketError;
+
 namespace System.Net.WebSockets
 {
     internal partial struct WebSocketHandle
@@ -41,12 +44,8 @@ namespace System.Net.WebSockets
             }
             catch (Exception ex)
             {
-                // TODO #4143: ** TFS BUILD IS BROKEN ** 
-                // This doesn't compile right now due to missing types 'WebErrorStatus' and 'RTWebSocketError'
-                // Commenting out for now to allow the build to resume.
-                //WebErrorStatus status = RTWebSocketError.GetStatus(ex.HResult);
-                //var inner = new Exception(status.ToString(), ex);
-                var inner = ex;
+                WebErrorStatus status = RTWebSocketError.GetStatus(ex.HResult);
+                var inner = new Exception(status.ToString(), ex);
                 WebSocketException wex = new WebSocketException(SR.net_webstatus_ConnectFailure, inner);
                 if (Logging.On)
                 {
