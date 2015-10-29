@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class LibCurl
+    internal static partial class Http
     {
         [DllImport(Libraries.HttpNative, CharSet = CharSet.Ansi)]
         private static extern IntPtr SListAppend(IntPtr slist, string headerValue);
 
-        internal static bool SListAppend(SafeCurlSlistHandle slist, string headerValue)
+        internal static bool SListAppend(SafeCurlSListHandle slist, string headerValue)
         {
             bool gotRef = false;
             try
@@ -27,7 +27,7 @@ internal static partial class Interop
             }
             finally
             {
-                if (!gotRef)
+                if (gotRef)
                     slist.DangerousRelease();
             }
         }
@@ -35,9 +35,9 @@ internal static partial class Interop
         [DllImport(Libraries.HttpNative)]
         private static extern void SListFreeAll(IntPtr slist);
 
-        internal sealed class SafeCurlSlistHandle : SafeHandle
+        internal sealed class SafeCurlSListHandle : SafeHandle
         {
-            public SafeCurlSlistHandle() : base(IntPtr.Zero, true)
+            public SafeCurlSListHandle() : base(IntPtr.Zero, true)
             {
             }
 

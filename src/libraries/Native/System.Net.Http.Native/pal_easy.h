@@ -7,9 +7,12 @@
 
 #include <curl/curl.h>
 
-#define CurlOptionLongBase 0
-#define CurlOptionObjectPointBase 10000
-#define CurlOptionFunctionPointBase 20000
+enum
+{
+    CurlOptionLongBase = 0,
+    CurlOptionObjectPointBase = 10000,
+    CurlOptionFunctionPointBase = 20000,
+};
 
 enum PAL_CURLoption : int32_t
 {
@@ -59,8 +62,11 @@ enum PAL_CURLcode : int32_t
     PAL_CURLE_COULDNT_RESOLVE_HOST = 6,
 };
 
-#define CurlInfoStringBase 0x100000
-#define CurlInfoLongBase 0x200000
+enum
+{
+    CurlInfoStringBase = 0x100000,
+    CurlInfoLongBase = 0x200000,
+};
 
 enum PAL_CURLINFO : int32_t
 {
@@ -131,8 +137,8 @@ Returns CURLE_OK (0) if everything was ok, non-zero means an error occurred.
 extern "C" int32_t EasyPerform(CURL* handle);
 
 /*
-Shims the curl_easy_pause function.
+Unpauses the CURL request.
 
 Returns CURLE_OK (0) if everything was ok, non-zero means an error occurred.
 */
-extern "C" int32_t EasyPause(CURL* handle);
+extern "C" int32_t EasyUnpause(CURL* handle);
