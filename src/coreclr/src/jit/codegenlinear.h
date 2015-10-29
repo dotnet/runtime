@@ -40,6 +40,7 @@
     void                genMathIntrinsic(GenTreePtr treeNode);
 
     void                genPutArgStk(GenTreePtr treeNode);
+    unsigned            getBaseVarForPutArgStk(GenTreePtr treeNode);
 
 #ifdef FEATURE_SIMD
     instruction         getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned *ival = nullptr);
@@ -104,7 +105,7 @@
     void                genConsumeBlockOp(GenTreeBlkOp* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    void                genConsumePutArgStk(GenTreePutArgStk* putArgStkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
+    void                genConsumePutStructArgStk(GenTreePutArgStk* putArgStkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg, unsigned baseVarNum);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     void                genConsumeRegs(GenTree* tree);
@@ -131,8 +132,11 @@
     void                genCodeForCpBlkUnroll    (GenTreeCpBlk* cpBlkNode);
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    void                genCodeForPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
-    void                genCodeForPutArgUnroll(GenTreePutArgStk* putArgStkNode);
+    void                genPutStructArgStk(GenTreePtr treeNode
+                                           FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned baseVarNum));
+
+    void                genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode, unsigned baseVarNum);
+    void                genStructPutArgUnroll(GenTreePutArgStk* putArgStkNode, unsigned baseVarNum);
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     void                genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);

@@ -2670,82 +2670,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         break;
 
     case GT_PUTARG_STK:
-#ifdef _TARGET_X86_
         genPutArgStk(treeNode);
-#else // !_TARGET_X86_
-        {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-
-            if (targetType == TYP_STRUCT)
-            {
-                genPutArgStk(treeNode);
-                break;
-            }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-            noway_assert(targetType != TYP_STRUCT);
-            assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
-
-            // Get argument offset on stack.
-            // Here we cross check that argument offset hasn't changed from lowering to codegen since
-            // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-            int argOffset = treeNode->AsPutArgStk()->gtSlotNum * TARGET_POINTER_SIZE;
-            
-#ifdef DEBUG
-            fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(treeNode->AsPutArgStk()->gtCall, treeNode);
-            assert(curArgTabEntry);
-            assert(argOffset == (int)curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
-#endif
-
-            GenTreePtr data = treeNode->gtOp.gtOp1;
-            unsigned varNum;            
-
-#if FEATURE_FASTTAILCALL
-            bool putInIncomingArgArea = treeNode->AsPutArgStk()->putInIncomingArgArea;
-#else
-            const bool putInIncomingArgArea = false;
-#endif
-            // Whether to setup stk arg in incoming or out-going arg area?
-            // Fast tail calls implemented as epilog+jmp = stk arg is setup in incoming arg area.
-            // All other calls - stk arg is setup in out-going arg area.
-            if (putInIncomingArgArea)
-            {
-                // The first varNum is guaranteed to be the first incoming arg of the method being compiled.
-                // See lvaInitTypeRef() for the order in which lvaTable entries are initialized.
-                varNum = 0;
-#ifdef DEBUG
-                // This must be a fast tail call.
-                assert(treeNode->AsPutArgStk()->gtCall->AsCall()->IsFastTailCall());
-
-                // Since it is a fast tail call, the existence of first incoming arg is guaranteed
-                // because fast tail call requires that in-coming arg area of caller is >= out-going
-                // arg area required for tail call.
-                LclVarDsc* varDsc = compiler->lvaTable;
-                assert(varDsc != nullptr);
-                assert(varDsc->lvIsRegArg && ((varDsc->lvArgReg == REG_ARG_0) || (varDsc->lvArgReg == REG_FLTARG_0))); 
-#endif
-            }
-            else
-            {
-#if FEATURE_FIXED_OUT_ARGS
-                varNum = compiler->lvaOutgoingArgSpaceVar;
-#else // !FEATURE_FIXED_OUT_ARGS
-                NYI_X86("Stack args for x86/RyuJIT");
-                varNum = BAD_VAR_NUM;
-#endif // !FEATURE_FIXED_OUT_ARGS
-            }
-
-            if (data->isContained())
-            {
-                getEmitter()->emitIns_S_I(ins_Store(targetType), emitTypeSize(targetType), varNum,
-                                          argOffset, (int) data->AsIntConCommon()->IconValue());
-            }
-            else
-            {
-                genConsumeReg(data);
-                getEmitter()->emitIns_S_R(ins_Store(targetType), emitTypeSize(targetType), data->gtRegNum, varNum, argOffset);
-            }
-        }
-#endif // !_TARGET_X86_
         break;
 
     case GT_PUTARG_REG:
@@ -3791,37 +3716,33 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
     }
 }
 
-// Generate code for a store to some address + offset
-//   baseNode: tree node which can be either a local address or arbitrary node
-//   offset: distance from the baseNode from which to load
+//------------------------------------------------------------------------
+// genCodeForStoreOffset: Generate code to store a reg to [base + offset].
+//
+// Arguments:
+//      ins         - the instruction to generate.
+//      size        - the size that needs to be stored.
+//      src         - the register which needs to be stored.
+//      baseNode    - the base, relative to which to store the src register.
+//      offset      - the offset that is added to the baseNode to calculate the address to store into.
+//
+
 void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber src, GenTree* baseNode, unsigned offset)
 {
     emitter *emit = getEmitter();
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    if (baseNode->OperGet() == GT_PUTARG_STK)
+    if (baseNode->OperIsLocalAddr())
     {
-        GenTreePutArgStk* putArgStkNode = baseNode->AsPutArgStk();
-        assert(putArgStkNode->gtOp.gtOp1->isContained());
-        assert(putArgStkNode->gtOp.gtOp1->gtOp.gtOper == GT_LDOBJ);
+        if (baseNode->gtOper == GT_LCL_FLD_ADDR)
+        {
+            offset += baseNode->gtLclFld.gtLclOffs;
+        }
 
-        emit->emitIns_S_R(ins, size, src, compiler->lvaOutgoingArgSpaceVar, 
-                          (putArgStkNode->gtSlotNum * TARGET_POINTER_SIZE) + offset);
+        emit->emitIns_S_R(ins, size, src, baseNode->AsLclVarCommon()->GetLclNum(), offset);
     }
     else
-#endif // #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     {
-
-        if (baseNode->OperIsLocalAddr())
-        {
-            if (baseNode->gtOper == GT_LCL_FLD_ADDR)
-                offset += baseNode->gtLclFld.gtLclOffs;
-            emit->emitIns_S_R(ins, size, src, baseNode->gtLclVarCommon.gtLclNum, offset);
-        }
-        else
-        {
-            emit->emitIns_AR_R(ins, size, src, baseNode->gtRegNum, offset);
-        }
+        emit->emitIns_AR_R(ins, size, src, baseNode->gtRegNum, offset);
     }
 }
 
@@ -3863,6 +3784,9 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeCpBlk* cpBlkNode)
         assert(genIsValidFloatReg(xmmReg));
         size_t slots = size / XMM_REGSIZE_BYTES;
 
+        // TODO: In the below code the load and store instructions are for 16 bytes, but the 
+        //          type is EA_8BYTE. The movdqa/u are 16 byte instructions, so it works, but
+        //          this probably needs to be changed.
         while (slots-- > 0)
         {
             // Load
@@ -3946,21 +3870,31 @@ void CodeGen::genCodeForCpBlkRepMovs(GenTreeCpBlk* cpBlkNode)
 }
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-// Generates PutArg code by performing a loop unroll
+
+//---------------------------------------------------------------------------------------------------------------//
+// genStructPutArgUnroll: Generates code for passing a struct arg on stack by value using loop unrolling.
+//
+// Arguments:
+//     putArgNode  - the PutArgStk tree.
+//     baseVarNum  - the base var number, relative to which the by-val struct will be copied on the stack.
 //
 // TODO-Amd64-Unix: Try to share code with copyblk. 
-//      The difference for now is thethe putarg_stk contains it's children, while cpyblk not.
+//      Need refactoring of copyblk before it could be used for putarg_stk.
+//      The difference for now is that a putarg_stk contains its children, while cpyblk does not.
 //      This creates differences in code. After some significant refactoring it could be reused.
-void CodeGen::genCodeForPutArgUnroll(GenTreePutArgStk* putArgNode)
+
+void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode, unsigned baseVarNum)
 {
+    noway_assert(putArgNode->TypeGet() == TYP_STRUCT);
     // Make sure we got the arguments of the cpblk operation in the right registers
     GenTreePtr   dstAddr = putArgNode;
     GenTreePtr   srcAddr = putArgNode->gtOp.gtOp1;
 
-    size_t size = putArgNode->gtNumSlots * TARGET_POINTER_SIZE;
+    size_t size = putArgNode->getArgSize();
     assert(size <= CPBLK_UNROLL_LIMIT);
 
     emitter *emit = getEmitter();
+    unsigned putArgOffset = putArgNode->getArgOffset();
 
     assert(srcAddr->isContained());
     assert(srcAddr->gtOper == GT_LDOBJ);
@@ -3982,12 +3916,24 @@ void CodeGen::genCodeForPutArgUnroll(GenTreePutArgStk* putArgNode)
         assert(genIsValidFloatReg(xmmReg));
         size_t slots = size / XMM_REGSIZE_BYTES;
 
+        assert(putArgNode->gtGetOp1()->isContained());
+        assert(putArgNode->gtGetOp1()->gtOp.gtOper == GT_LDOBJ);
+
+        // TODO: In the below code the load and store instructions are for 16 bytes, but the 
+        //          type is EA_8BYTE. The movdqa/u are 16 byte instructions, so it works, but
+        //          this probably needs to be changed.
         while (slots-- > 0)
         {
             // Load
-            genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmReg, srcAddr->gtOp.gtOp1, offset); // Load the address of the child of the LdObj node.
+            genCodeForLoadOffset(INS_movdqu, EA_8BYTE, xmmReg, srcAddr->gtGetOp1(), offset); // Load the address of the child of the LdObj node.
+            
             // Store
-            genCodeForStoreOffset(INS_movdqu, EA_8BYTE, xmmReg, dstAddr, offset);
+            emit->emitIns_S_R(INS_movdqu,
+                              EA_8BYTE, 
+                              xmmReg,
+                              baseVarNum,
+                              putArgOffset + offset);
+            
             offset += XMM_REGSIZE_BYTES;
         }
     }
@@ -3997,70 +3943,85 @@ void CodeGen::genCodeForPutArgUnroll(GenTreePutArgStk* putArgNode)
     {
         // Grab the integer temp register to emit the remaining loads and stores.
         regNumber tmpReg = genRegNumFromMask(putArgNode->gtRsvdRegs & RBM_ALLINT);
-
+        assert(genIsValidIntReg(tmpReg));
+        
         if ((size & 8) != 0)
         {
-#ifdef _TARGET_X86_
-            // TODO-X86-CQ: [1091735] Revisit block ops codegen. One example: use movq for 8 byte movs.
-            for (unsigned savedOffs = offset; offset < savedOffs + 8; offset += 4)
-            {
-                genCodeForLoadOffset(INS_mov, EA_4BYTE, tmpReg, srcAddr, offset);
-                genCodeForStoreOffset(INS_mov, EA_4BYTE, tmpReg, dstAddr, offset);
-            }
-#else // !_TARGET_X86_
             genCodeForLoadOffset(INS_mov, EA_8BYTE, tmpReg, srcAddr->gtOp.gtOp1, offset);
-            genCodeForStoreOffset(INS_mov, EA_8BYTE, tmpReg, dstAddr, offset);
+
+            emit->emitIns_S_R(INS_mov,
+                              EA_8BYTE,
+                              tmpReg,
+                              baseVarNum,
+                              putArgOffset + offset);
+
             offset += 8;
-#endif // !_TARGET_X86_
         }
+
         if ((size & 4) != 0)
         {
             genCodeForLoadOffset(INS_mov, EA_4BYTE, tmpReg, srcAddr->gtOp.gtOp1, offset);
-            genCodeForStoreOffset(INS_mov, EA_4BYTE, tmpReg, dstAddr, offset);
+
+            emit->emitIns_S_R(INS_mov,
+                              EA_4BYTE,
+                              tmpReg,
+                              baseVarNum,
+                              putArgOffset + offset);
+
             offset += 4;
         }
+
         if ((size & 2) != 0)
         {
             genCodeForLoadOffset(INS_mov, EA_2BYTE, tmpReg, srcAddr->gtOp.gtOp1, offset);
-            genCodeForStoreOffset(INS_mov, EA_2BYTE, tmpReg, dstAddr, offset);
+
+            emit->emitIns_S_R(INS_mov,
+                              EA_2BYTE,
+                              tmpReg,
+                              baseVarNum,
+                              putArgOffset + offset);
+
             offset += 2;
         }
+
         if ((size & 1) != 0)
         {
             genCodeForLoadOffset(INS_mov, EA_1BYTE, tmpReg, srcAddr->gtOp.gtOp1, offset);
-            genCodeForStoreOffset(INS_mov, EA_1BYTE, tmpReg, dstAddr, offset);
+            emit->emitIns_S_R(INS_mov,
+                              EA_1BYTE,
+                              tmpReg,
+                              baseVarNum,
+                              putArgOffset + offset);
         }
     }
 }
 
-// Generate code for CpBlk by using rep movs
+//------------------------------------------------------------------------
+// genStructPutArgRepMovs: Generates code for passing a struct arg by value on stack using Rep Movs.
+//
+// Arguments:
+//     putArgNode  - the PutArgStk tree.
+//     baseVarNum  - the base var number, relative to which the by-val struct bits will go.
+//
 // Preconditions:
-// The size argument of the PutArgStk (for structs) is a constant and is between 
-// CPBLK_UNROLL_LIMIT and CPBLK_MOVS_LIMIT bytes.
-void CodeGen::genCodeForPutArgRepMovs(GenTreePutArgStk* putArgNode)
+//     The size argument of the PutArgStk (for structs) is a constant and is between 
+//     CPBLK_UNROLL_LIMIT and CPBLK_MOVS_LIMIT bytes.
+
+void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode, unsigned baseVarNum)
 {
+    assert(putArgNode->TypeGet() == TYP_STRUCT);
+    assert(putArgNode->getArgSize() > CPBLK_UNROLL_LIMIT);
+    assert(baseVarNum != BAD_VAR_NUM);
 
     // Make sure we got the arguments of the cpblk operation in the right registers
     GenTreePtr   dstAddr = putArgNode;
-    GenTreePtr   srcAddr = putArgNode->gtOp.gtOp1;
-#ifdef DEBUG
-    size_t size = putArgNode->gtNumSlots * TARGET_POINTER_SIZE;
-#endif // DEBUG
+    GenTreePtr   srcAddr = putArgNode->gtGetOp1();
 
     // Validate state.
     assert(putArgNode->gtRsvdRegs == (RBM_RDI | RBM_RCX | RBM_RSI));
-
-#ifdef DEBUG
     assert(srcAddr->isContained());
 
-#ifdef _TARGET_AMD64_
-    assert(size > CPBLK_UNROLL_LIMIT);
-#else
-    assert(size > CPBLK_UNROLL_LIMIT && size < CPBLK_MOVS_LIMIT);
-#endif
-
-#endif // DEBUG
-    genConsumePutArgStk(putArgNode, REG_RDI, REG_RSI, REG_RCX);
+    genConsumePutStructArgStk(putArgNode, REG_RDI, REG_RSI, REG_RCX, baseVarNum);
     instGen(INS_r_movsb);
 }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -5237,53 +5198,64 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
 }
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-void CodeGen::genConsumePutArgStk(GenTreePutArgStk* putArgNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg)
+//------------------------------------------------------------------------
+// genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
+//                      Also loads in the right register the addresses of the
+//                      src/dst for rep mov operation.
+//
+// Arguments:
+//    putArgNode - the PUTARG_STK tree.
+//    dstReg     - the dstReg for the rep move operation.
+//    srcReg     - the srcReg for the rep move operation.
+//    sizeReg    - the sizeReg for the rep move operation.
+//    baseVarNum - the base for var numfor placing the "by-value" args on the stack.
+//
+// Return Value:
+//    None.
+//
+// Note: sizeReg can be REG_NA when this function is used to consume the dstReg and srcReg
+//           for copying on the stack a struct with references.
+
+void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg, unsigned baseVarNum)
 {
+    assert(putArgNode->TypeGet() == TYP_STRUCT);
+    assert(baseVarNum != BAD_VAR_NUM);
+
     // The putArgNode children are always contained. We should not consume any registers.
+    assert(putArgNode->gtGetOp1()->isContained());
 
     GenTree* dst = putArgNode;
 
-#ifdef DEBUG
     // Get the GT_ADDR node, which is GT_LCL_VAR_ADDR (asserted below.)
-    GenTree* src = putArgNode->gtOp.gtOp1; 
+    GenTree* src = putArgNode->gtGetOp1();
     assert(src->OperGet() == GT_LDOBJ);
-    src = src->gtOp.gtOp1;
-#else // !DEBUG
-    // Get the GT_ADDR node, which is GT_LCL_VAR_ADDR (asserted below.)
-    GenTree* src = putArgNode->gtOp.gtOp1->gtOp.gtOp1;
-#endif // !DEBUG
+    src = src->gtGetOp1();
     
-    size_t size = putArgNode->gtNumSlots * TARGET_POINTER_SIZE;
+    size_t size = putArgNode->getArgSize();
     GenTree* op1;
     GenTree* op2;
 
-    regNumber reg1, reg2, reg3;
     op1 = dst;
-    reg1 = dstReg;
     op2 = src;
-    reg2 = srcReg;
-    reg3 = sizeReg;
 
-    if (reg2 != REG_NA && op2->gtRegNum != REG_NA)
+    assert(dstReg != REG_NA);
+    assert(srcReg != REG_NA);
+
+    // Consume the registers only if they are not contained or set to REG_NA.
+    if (op2->gtRegNum != REG_NA)
     {
         genConsumeReg(op2);
     }
 
-    if ((reg1 != REG_NA) && (op1->gtRegNum != reg1))
+    // If the op1 is already in the dstReg - nothing to do.
+    // Otherwise load the op1 (GT_ADDR) into the dstReg to copy the struct on the stack by value.
+    if (op1->gtRegNum != dstReg)
     {
-#if FEATURE_FIXED_OUT_ARGS
-        // Generate LEA instruction to load the stack of the outgoing var + SlotNum offset in  RDI.
-        LclVarDsc *  varDsc = &compiler->lvaTable[compiler->lvaOutgoingArgSpaceVar];
-        int offset = varDsc->lvStkOffs + putArgNode->gtSlotNum * TARGET_POINTER_SIZE;
-        // Outgoing area always on top of the stack (relative to rsp.)
-        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, reg1, REG_SPBASE, offset);
-#else // !FEATURE_FIXED_OUT_ARGS
-        NYI_X86("Stack args for x86/RyuJIT");
-#endif // !FEATURE_FIXED_OUT_ARGS
-
+        // Generate LEA instruction to load the stack of the outgoing var + SlotNum offset (or the incoming arg area for tail calls) in RDI.
+        getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, baseVarNum, putArgNode->getArgOffset());
     }
     
-    if (op2->gtRegNum != reg2)
+    if (op2->gtRegNum != srcReg)
     {
         if (src->OperIsLocalAddr())
         {
@@ -5292,22 +5264,18 @@ void CodeGen::genConsumePutArgStk(GenTreePutArgStk* putArgNode, regNumber dstReg
             GenTreeLclVarCommon* lclNode = src->AsLclVarCommon();
 
             // Generate LEA instruction to load the LclVar address in RSI.
-            LclVarDsc *  varLclDsc = &compiler->lvaTable[lclNode->gtLclNum];
-            int offset = varLclDsc->lvStkOffs;
-
-            // Otutgoing area always on top of the stack (relative to rsp.)
-            getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, reg2, (isFramePointerUsed() ? getFramePointerReg() : REG_SPBASE), offset);
+            getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, lclNode->gtLclNum, 0);
         }
         else
         {
             assert(src->gtRegNum != REG_NA);
-            getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, reg2, src->gtRegNum);
+            getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, srcReg, src->gtRegNum);
         }
     }
 
-    if ((reg3 != REG_NA))
+    if (sizeReg != REG_NA)
     {
-        inst_RV_IV(INS_mov, reg3, size, EA_8BYTE);
+        inst_RV_IV(INS_mov, sizeReg, size, EA_8BYTE);
     }
 }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -7357,40 +7325,183 @@ CodeGen::genMathIntrinsic(GenTreePtr treeNode)
     genProduceReg(treeNode);
 }
 
-#if defined(_TARGET_X86_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-//---------------------------------------------------------------------
-// genPutArgStk - generate code for putting a struct arg on the stack by value.
-//                In case there are references to heap object in the struct,
-//                it generates the gcinfo as well.
+//-------------------------------------------------------------------------- //
+// getBaseVarForPutArgStk - returns the baseVarNum for passing a stack arg.
 //
 // Arguments
 //    treeNode - the GT_PUTARG_STK node
 //
 // Return value:
+//    The number of the base variable.
+//
+unsigned
+CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
+{
+    assert(treeNode->OperGet() == GT_PUTARG_STK);
+
+    unsigned baseVarNum;
+#if FEATURE_FASTTAILCALL
+    bool putInIncomingArgArea = treeNode->AsPutArgStk()->putInIncomingArgArea;
+#else
+    const bool putInIncomingArgArea = false;
+#endif
+    // Whether to setup stk arg in incoming or out-going arg area?
+    // Fast tail calls implemented as epilog+jmp = stk arg is setup in incoming arg area.
+    // All other calls - stk arg is setup in out-going arg area.
+    if (putInIncomingArgArea)
+    {
+        // The first baseVarNum is guaranteed to be the first incoming arg of the method being compiled.
+        // See lvaInitTypeRef() for the order in which lvaTable entries are initialized.
+        baseVarNum = 0;
+#ifdef DEBUG
+        // This must be a fast tail call.
+        assert(treeNode->AsPutArgStk()->gtCall->AsCall()->IsFastTailCall());
+
+        // Since it is a fast tail call, the existence of first incoming arg is guaranteed
+        // because fast tail call requires that in-coming arg area of caller is >= out-going
+        // arg area required for tail call.
+        LclVarDsc* varDsc = compiler->lvaTable;
+        assert(varDsc != nullptr);
+        assert(varDsc->lvIsRegArg && ((varDsc->lvArgReg == REG_ARG_0) || (varDsc->lvArgReg == REG_FLTARG_0)));
+#endif
+    }
+    else
+    {
+#if FEATURE_FIXED_OUT_ARGS
+        baseVarNum = compiler->lvaOutgoingArgSpaceVar;
+#else // !FEATURE_FIXED_OUT_ARGS
+        NYI_X86("Stack args for x86/RyuJIT");
+        baseVarNum = BAD_VAR_NUM;
+#endif // !FEATURE_FIXED_OUT_ARGS
+    }
+
+    return baseVarNum;
+}
+
+//--------------------------------------------------------------------- //
+// genPutStructArgStk - generate code for passing an arg on the stack.
+//
+// Arguments
+//    treeNode      - the GT_PUTARG_STK node
+//    targetType    - the type of the treeNode
+//
+// Return value:
 //    None
 //
-void
+void 
 CodeGen::genPutArgStk(GenTreePtr treeNode)
 {
-#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    assert(treeNode->OperGet() == GT_PUTARG_STK);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     var_types targetType = treeNode->TypeGet();
 #ifdef _TARGET_X86_
     noway_assert(targetType != TYP_STRUCT);
-#elif defined (FEATURE_UNIX_AMD64_STRUCT_PASSING)
-    noway_assert(targetType == TYP_STRUCT);
+
+    // The following logic is applicable for x86 arch.
+    assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
+
+    GenTreePtr data = treeNode->gtOp.gtOp1;
+
+    // On a 32-bit target, all of the long arguments have been decomposed into
+    // a separate putarg_stk for each of the upper and lower halves.
+    noway_assert(targetType != TYP_LONG);
+
+    // Decrement SP.
+    int argSize = genTypeSize(genActualType(targetType));
+    inst_RV_IV(INS_sub, REG_SPBASE, argSize, emitActualTypeSize(TYP_I_IMPL));
+
+    genStackLevel += argSize;
+
+    // TODO-Cleanup: Handle this in emitInsMov() in emitXArch.cpp?
+    if (data->isContained())
+    {
+        NYI_X86("Contained putarg_stk");
+
+    }
+    else
+    {
+        genConsumeReg(data);
+        getEmitter()->emitIns_AR_R(ins_Store(targetType), emitTypeSize(targetType), data->gtRegNum, REG_SPBASE, 0);
+    }
+#else // !_TARGET_X86_
+    {
+        unsigned baseVarNum = getBaseVarForPutArgStk(treeNode);
+        
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+        if (targetType == TYP_STRUCT)
+        {
+            genPutStructArgStk(treeNode, baseVarNum);
+            return;
+        }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+        noway_assert(targetType != TYP_STRUCT);
+        assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
+
+        // Get argument offset on stack.
+        // Here we cross check that argument offset hasn't changed from lowering to codegen since
+        // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
+        int argOffset = treeNode->AsPutArgStk()->getArgOffset();
+
+#ifdef DEBUG
+        fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(treeNode->AsPutArgStk()->gtCall, treeNode);
+        assert(curArgTabEntry);
+        assert(argOffset == (int)curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
+#endif
+
+        GenTreePtr data = treeNode->gtGetOp1();
+
+        if (data->isContained())
+        {
+            getEmitter()->emitIns_S_I(ins_Store(targetType),
+                                      emitTypeSize(targetType),
+                                      baseVarNum,
+                                      argOffset, 
+                                      (int)data->AsIntConCommon()->IconValue());
+        }
+        else
+        {
+            genConsumeReg(data);
+            getEmitter()->emitIns_S_R(ins_Store(targetType), emitTypeSize(targetType), data->gtRegNum, baseVarNum, argOffset);
+        }
+    }
+#endif // !_TARGET_X86_
+}
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+//---------------------------------------------------------------------
+// genPutStructArgStk - generate code for copying a struct arg on the stack by value.
+//                In case there are references to heap object in the struct,
+//                it generates the gcinfo as well.
+//
+// Arguments
+//    treeNode      - the GT_PUTARG_STK node
+//    baseVarNum    - the variable number relative to which to put the argument on the stack.
+//                    For tail calls this is the baseVarNum = 0.
+//                    For non tail calls this is the outgoingArgSpace.
+//
+// Return value:
+//    None
+//
+void
+CodeGen::genPutStructArgStk(GenTreePtr treeNode
+                            FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(unsigned baseVarNum))
+{
+    assert(treeNode->OperGet() == GT_PUTARG_STK);
+    assert(baseVarNum != BAD_VAR_NUM);
     
+    var_types targetType = treeNode->TypeGet();
+    assert(targetType == TYP_STRUCT);
+   
     GenTreePutArgStk* putArgStk = treeNode->AsPutArgStk();
     if (putArgStk->gtNumberReferenceSlots == 0)
     {
         switch (putArgStk->gtPutArgStkKind)
         {
         case GenTreePutArgStk::PutArgStkKindRepInstr:
-            genCodeForPutArgRepMovs(putArgStk);
+            genStructPutArgRepMovs(putArgStk, baseVarNum);
             break;
         case GenTreePutArgStk::PutArgStkKindUnroll:
-            genCodeForPutArgUnroll(putArgStk);
+            genStructPutArgUnroll(putArgStk, baseVarNum);
             break;
         default:
             unreached();
@@ -7402,7 +7513,7 @@ CodeGen::genPutArgStk(GenTreePtr treeNode)
 
         // Consume these registers.
         // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
-        genConsumePutArgStk(putArgStk, REG_RDI, REG_RSI, REG_NA);
+        genConsumePutStructArgStk(putArgStk, REG_RDI, REG_RSI, REG_NA, baseVarNum);
         GenTreePtr   dstAddr = putArgStk;
         GenTreePtr   srcAddr = putArgStk->gtOp.gtOp1;
         gcInfo.gcMarkRegPtrVal(REG_RSI, srcAddr->TypeGet());
@@ -7458,7 +7569,10 @@ CodeGen::genPutArgStk(GenTreePtr treeNode)
                 // See emitGCVarLiveUpd function. If we could call it separately, we could do instGen(INS_movsq); and emission of gc info.
 
                 getEmitter()->emitIns_R_AR(ins_Load(TYP_REF), EA_GCREF, REG_RCX, REG_RSI, 0);
-                getEmitter()->emitIns_S_R(ins_Store(TYP_REF), EA_GCREF, REG_RCX, compiler->lvaOutgoingArgSpaceVar,
+                getEmitter()->emitIns_S_R(ins_Store(TYP_REF),
+                                          EA_GCREF, 
+                                          REG_RCX, 
+                                          baseVarNum,
                                           ((copiedSlots + putArgStk->gtSlotNum) * TARGET_POINTER_SIZE)); 
                 getEmitter()->emitIns_R_I(INS_add, EA_8BYTE, REG_RSI, TARGET_POINTER_SIZE);
                 getEmitter()->emitIns_R_I(INS_add, EA_8BYTE, REG_RDI, TARGET_POINTER_SIZE);
@@ -7472,37 +7586,8 @@ CodeGen::genPutArgStk(GenTreePtr treeNode)
         gcInfo.gcMarkRegSetNpt(RBM_RDI);
     }
     return;
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-    assert(!varTypeIsFloating(targetType) || (targetType == treeNode->gtGetOp1()->TypeGet()));
-
-    GenTreePtr data = treeNode->gtOp.gtOp1;
-
-#if !defined(_TARGET_64BIT_)
-    // On a 64-bit target, all of the long arguments have been decomposed into
-    // a separate putarg_stk for each of the upper and lower halves.
-    noway_assert(targetType != TYP_LONG);
-#endif // !defined(_TARGET_64BIT_)
-
-    // Decrement SP.
-    int argSize = genTypeSize(genActualType(targetType));
-    inst_RV_IV(INS_sub, REG_SPBASE, argSize, emitActualTypeSize(TYP_I_IMPL));
-#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    genStackLevel += argSize;
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-
-    // TODO-Cleanup: Handle this in emitInsMov() in emitXArch.cpp?
-    if (data->isContained())
-    {
-        NYI_X86("Contained putarg_stk");
-
-    }
-    else
-    {
-        genConsumeReg(data);
-        getEmitter()->emitIns_AR_R(ins_Store(targetType), emitTypeSize(targetType), data->gtRegNum, REG_SPBASE, 0);
-    }
 }
-#endif // defined(_TARGET_X86_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif //defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
 /*****************************************************************************
  *
