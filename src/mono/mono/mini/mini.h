@@ -783,6 +783,15 @@ typedef struct {
 	 * Should be 0 or 1.
 	 */
 	int vret_arg_index;
+	/*
+	 * Maps parameter indexes in the original signature to parameter indexes
+	 * in the LLVM signature.
+	 */
+	int *pindexes;
+	/* The indexes of various special arguments in the LLVM signature */
+	int vret_arg_pindex, this_arg_pindex, rgctx_arg_pindex, imt_arg_pindex;
+
+	/* Inline array of argument info */
 	/* args [0] is for the this argument if it exists */
 	LLVMArgInfo args [1];
 } LLVMCallInfo;

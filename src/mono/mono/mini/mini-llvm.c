@@ -1168,25 +1168,14 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 	}
 }
 
-typedef struct {
-	/* 
-	 * Maps parameter indexes in the original signature to parameter indexes
-	 * in the LLVM signature.
-	 */
-	int *pindexes;
-	/* The indexes of various special arguments in the LLVM signature */
-	int vret_arg_pindex, this_arg_pindex, rgctx_arg_pindex, imt_arg_pindex;
-} LLVMSigInfo;
-
 /*
  * sig_to_llvm_sig_full:
  *
  *   Return the LLVM signature corresponding to the mono signature SIG using the
- * calling convention information in CINFO. Return parameter mapping information in SINFO.
+ * calling convention information in CINFO. Fill out the parameter mapping information in CINFO.
  */
 static LLVMTypeRef
-sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *cinfo,
-					  LLVMSigInfo *sinfo)
+sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *cinfo)
 {
 	LLVMTypeRef ret_type;
 	LLVMTypeRef *param_types = NULL;
@@ -1195,9 +1184,6 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	int *pindexes;
 	gboolean vretaddr = FALSE;
 	MonoType *rtype;
-
-	if (sinfo)
-		memset (sinfo, 0, sizeof (LLVMSigInfo));
 
 	rtype = mini_get_underlying_type (sig->ret);
 	ret_type = type_to_llvm_type (ctx, rtype);
@@ -1266,22 +1252,19 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		 * FIXME: This might conflict with passing 'this' as the first argument, but
 		 * this is only used on arm64 which has a dedicated struct return register.
 		 */
-		if (sinfo)
-			sinfo->vret_arg_pindex = pindex;
+		cinfo->vret_arg_pindex = pindex;
 		param_types [pindex] = type_to_llvm_arg_type (ctx, sig->ret);
 		CHECK_FAILURE (ctx);
 		param_types [pindex] = LLVMPointerType (param_types [pindex], 0);
 		pindex ++;
 	}
 	if (!ctx->llvm_only && cinfo && cinfo->rgctx_arg) {
-		if (sinfo)
-			sinfo->rgctx_arg_pindex = pindex;
+		cinfo->rgctx_arg_pindex = pindex;
 		param_types [pindex] = ctx->lmodule->ptr_type;
 		pindex ++;
 	}
 	if (cinfo && cinfo->imt_arg) {
-		if (sinfo)
-			sinfo->imt_arg_pindex = pindex;
+		cinfo->imt_arg_pindex = pindex;
 		param_types [pindex] = ctx->lmodule->ptr_type;
 		pindex ++;
 	}
@@ -1303,15 +1286,14 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			}
 		}
 
-		if (sinfo)
-			sinfo->vret_arg_pindex = vret_arg_pindex;
+		cinfo->vret_arg_pindex = vret_arg_pindex;
 	}				
 
 	if (vretaddr && vret_arg_pindex == pindex)
 		param_types [pindex ++] = IntPtrType ();
 	if (sig->hasthis) {
-		if (sinfo)
-			sinfo->this_arg_pindex = pindex;
+		if (cinfo)
+			cinfo->this_arg_pindex = pindex;
 		param_types [pindex ++] = ThisType ();
 	}
 	if (vretaddr && vret_arg_pindex == pindex)
@@ -1378,8 +1360,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		param_types [pindex ++] = IntPtrType ();
 	if (ctx->llvm_only && cinfo && cinfo->rgctx_arg) {
 		/* Pass the rgctx as the last argument */
-		if (sinfo)
-			sinfo->rgctx_arg_pindex = pindex;
+		cinfo->rgctx_arg_pindex = pindex;
 		param_types [pindex] = ctx->lmodule->ptr_type;
 		pindex ++;
 	}
@@ -1389,8 +1370,8 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	res = LLVMFunctionType (ret_type, param_types, pindex, FALSE);
 	g_free (param_types);
 
-	if (sinfo) {
-		sinfo->pindexes = pindexes;
+	if (cinfo) {
+		cinfo->pindexes = pindexes;
 	} else {
 		g_free (pindexes);
 	}
@@ -1406,7 +1387,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 static LLVMTypeRef
 sig_to_llvm_sig (EmitContext *ctx, MonoMethodSignature *sig)
 {
-	return sig_to_llvm_sig_full (ctx, sig, NULL, NULL);
+	return sig_to_llvm_sig_full (ctx, sig, NULL);
 }
 
 /*
@@ -2890,7 +2871,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	gpointer target;
 	gboolean is_virtual, calli;
 	LLVMBuilderRef builder = *builder_ref;
-	LLVMSigInfo sinfo;
 
 	if (call->signature->call_convention != MONO_CALL_DEFAULT)
 		LLVM_FAILURE (ctx, "non-default callconv");
@@ -2903,7 +2883,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 	vretaddr = cinfo && (cinfo->ret.storage == LLVMArgVtypeRetAddr || cinfo->ret.storage == LLVMArgVtypeByRef);
 
-	llvm_sig = sig_to_llvm_sig_full (ctx, sig, cinfo, &sinfo);
+	llvm_sig = sig_to_llvm_sig_full (ctx, sig, cinfo);
 	CHECK_FAILURE (ctx);
 
 	is_virtual = (ins->opcode == OP_VOIDCALL_MEMBASE || ins->opcode == OP_CALL_MEMBASE || ins->opcode == OP_VCALL_MEMBASE || ins->opcode == OP_LCALL_MEMBASE || ins->opcode == OP_FCALL_MEMBASE || ins->opcode == OP_RCALL_MEMBASE);
@@ -3030,7 +3010,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 	if (call->rgctx_arg_reg) {
 		g_assert (values [call->rgctx_arg_reg]);
-		g_assert (sinfo.rgctx_arg_pindex < nargs);
+		g_assert (cinfo->rgctx_arg_pindex < nargs);
 		/*
 		 * On ARM, the imt/rgctx argument is passed in a caller save register, but some of our trampolines etc. clobber it, leading to
 		 * problems is LLVM moves the arg assignment earlier. To work around this, save the argument into a stack slot and load
@@ -3042,30 +3022,30 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		LLVMBuildStore (builder, convert (ctx, ctx->values [call->rgctx_arg_reg], ctx->lmodule->ptr_type), ctx->imt_rgctx_loc);
 		args [sinfo.rgctx_arg_pindex] = mono_llvm_build_load (builder, ctx->imt_rgctx_loc, "", TRUE, LLVM_BARRIER_NONE);
 #else
-		args [sinfo.rgctx_arg_pindex] = convert (ctx, values [call->rgctx_arg_reg], ctx->lmodule->ptr_type);
+		args [cinfo->rgctx_arg_pindex] = convert (ctx, values [call->rgctx_arg_reg], ctx->lmodule->ptr_type);
 #endif
 	}
 	if (call->imt_arg_reg) {
 		g_assert (!ctx->llvm_only);
 		g_assert (values [call->imt_arg_reg]);
-		g_assert (sinfo.imt_arg_pindex < nargs);
+		g_assert (cinfo->imt_arg_pindex < nargs);
 #ifdef TARGET_ARM
 		if (!ctx->imt_rgctx_loc)
 			ctx->imt_rgctx_loc = build_alloca_llvm_type (ctx, ctx->lmodule->ptr_type, sizeof (gpointer));
 		LLVMBuildStore (builder, convert (ctx, ctx->values [call->imt_arg_reg], ctx->lmodule->ptr_type), ctx->imt_rgctx_loc);
-		args [sinfo.imt_arg_pindex] = mono_llvm_build_load (builder, ctx->imt_rgctx_loc, "", TRUE, LLVM_BARRIER_NONE);
+		args [cinfo->imt_arg_pindex] = mono_llvm_build_load (builder, ctx->imt_rgctx_loc, "", TRUE, LLVM_BARRIER_NONE);
 #else
-		args [sinfo.imt_arg_pindex] = convert (ctx, values [call->imt_arg_reg], ctx->lmodule->ptr_type);
+		args [cinfo->imt_arg_pindex] = convert (ctx, values [call->imt_arg_reg], ctx->lmodule->ptr_type);
 #endif
 	}
 	if (vretaddr) {
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
-		g_assert (sinfo.vret_arg_pindex < nargs);
+		g_assert (cinfo->vret_arg_pindex < nargs);
 		if (cinfo && cinfo->ret.storage == LLVMArgVtypeByRef)
-			args [sinfo.vret_arg_pindex] = addresses [call->inst.dreg];
+			args [cinfo->vret_arg_pindex] = addresses [call->inst.dreg];
 		else
-			args [sinfo.vret_arg_pindex] = LLVMBuildPtrToInt (builder, addresses [call->inst.dreg], IntPtrType (), "");
+			args [cinfo->vret_arg_pindex] = LLVMBuildPtrToInt (builder, addresses [call->inst.dreg], IntPtrType (), "");
 	}
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
@@ -3075,11 +3055,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 		if (sig->hasthis) {
 			if (i == 0)
-				pindex = sinfo.this_arg_pindex;
+				pindex = cinfo->this_arg_pindex;
 			else
-				pindex = sinfo.pindexes [i - 1];
+				pindex = cinfo->pindexes [i - 1];
 		} else {
-			pindex = sinfo.pindexes [i];
+			pindex = cinfo->pindexes [i];
 		}
 
 		regpair = (guint32)(gssize)(l->data);
@@ -3146,18 +3126,18 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		LLVMSetInstructionCallConv (lcall, LLVMMono1CallConv);
 
 	if (cinfo && cinfo->ret.storage == LLVMArgVtypeByRef)
-		LLVMAddInstrAttribute (lcall, 1 + sinfo.vret_arg_pindex, LLVMStructRetAttribute);
+		LLVMAddInstrAttribute (lcall, 1 + cinfo->vret_arg_pindex, LLVMStructRetAttribute);
 	if (!ctx->llvm_only && call->rgctx_arg_reg)
-		LLVMAddInstrAttribute (lcall, 1 + sinfo.rgctx_arg_pindex, LLVMInRegAttribute);
+		LLVMAddInstrAttribute (lcall, 1 + cinfo->rgctx_arg_pindex, LLVMInRegAttribute);
 	if (call->imt_arg_reg)
-		LLVMAddInstrAttribute (lcall, 1 + sinfo.imt_arg_pindex, LLVMInRegAttribute);
+		LLVMAddInstrAttribute (lcall, 1 + cinfo->imt_arg_pindex, LLVMInRegAttribute);
 
 	/* Add byval attributes if needed */
 	for (i = 0; i < sig->param_count; ++i) {
 		LLVMArgInfo *ainfo = call->cinfo ? &call->cinfo->args [i + sig->hasthis] : NULL;
 
 		if (ainfo && ainfo->storage == LLVMArgVtypeByVal) {
-			LLVMAddInstrAttribute (lcall, 1 + sinfo.pindexes [i], LLVMByValAttribute);
+			LLVMAddInstrAttribute (lcall, 1 + cinfo->pindexes [i], LLVMByValAttribute);
 		}
 	}
 
@@ -3212,13 +3192,13 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (vretaddr) {
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
-		g_assert (sinfo.vret_arg_pindex < nargs);
-		args [sinfo.vret_arg_pindex] = LLVMBuildPtrToInt (builder, addresses [call->inst.dreg], IntPtrType (), "");
+		g_assert (cinfo->vret_arg_pindex < nargs);
+		args [cinfo->vret_arg_pindex] = LLVMBuildPtrToInt (builder, addresses [call->inst.dreg], IntPtrType (), "");
 	}
 
 	*builder_ref = ctx->builder;
 
-	g_free (sinfo.pindexes);
+	g_free (cinfo->pindexes);
 	
 	return;
  FAILURE:
@@ -5976,7 +5956,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	GPtrArray *bblock_list;
 	MonoMethodHeader *header;
 	MonoExceptionClause *clause;
-	LLVMSigInfo sinfo;
 	char **names;
 
 	/* The code below might acquire the loader lock, so use it for global locking */
@@ -6057,14 +6036,14 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	if (cfg->rgctx_var)
 		linfo->rgctx_arg = TRUE;
-	method_type = sig_to_llvm_sig_full (ctx, sig, linfo, &sinfo);
+	method_type = sig_to_llvm_sig_full (ctx, sig, linfo);
 	CHECK_FAILURE (ctx);
 
 	/* 
 	 * This maps parameter indexes in the original signature to the indexes in
 	 * the LLVM signature.
 	 */
-	ctx->pindexes = sinfo.pindexes;
+	ctx->pindexes = linfo->pindexes;
 
 	method = LLVMAddFunction (module, method_name, method_type);
 	ctx->lmethod = method;
@@ -6102,8 +6081,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		LLVMAddFunctionAttr (method, LLVMNoInlineAttribute);
 
 	if (linfo->rgctx_arg) {
-		ctx->rgctx_arg = LLVMGetParam (method, sinfo.rgctx_arg_pindex);
-		ctx->rgctx_arg_pindex = sinfo.rgctx_arg_pindex;
+		ctx->rgctx_arg = LLVMGetParam (method, linfo->rgctx_arg_pindex);
+		ctx->rgctx_arg_pindex = linfo->rgctx_arg_pindex;
 		/*
 		 * We mark the rgctx parameter with the inreg attribute, which is mapped to
 		 * MONO_ARCH_RGCTX_REG in the Mono calling convention in llvm, i.e.
@@ -6116,16 +6095,16 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		ctx->rgctx_arg_pindex = -1;
 	}
 	if (cfg->vret_addr) {
-		values [cfg->vret_addr->dreg] = LLVMGetParam (method, sinfo.vret_arg_pindex);
+		values [cfg->vret_addr->dreg] = LLVMGetParam (method, linfo->vret_arg_pindex);
 		LLVMSetValueName (values [cfg->vret_addr->dreg], "vret");
 		if (linfo->ret.storage == LLVMArgVtypeByRef) {
-			LLVMAddAttribute (LLVMGetParam (method, sinfo.vret_arg_pindex), LLVMStructRetAttribute);
-			LLVMAddAttribute (LLVMGetParam (method, sinfo.vret_arg_pindex), LLVMNoAliasAttribute);
+			LLVMAddAttribute (LLVMGetParam (method, linfo->vret_arg_pindex), LLVMStructRetAttribute);
+			LLVMAddAttribute (LLVMGetParam (method, linfo->vret_arg_pindex), LLVMNoAliasAttribute);
 		}
 	}
 	if (sig->hasthis) {
-		ctx->this_arg_pindex = sinfo.this_arg_pindex;
-		ctx->this_arg = LLVMGetParam (method, sinfo.this_arg_pindex);
+		ctx->this_arg_pindex = linfo->this_arg_pindex;
+		ctx->this_arg = LLVMGetParam (method, linfo->this_arg_pindex);
 		values [cfg->args [0]->dreg] = ctx->this_arg;
 		LLVMSetValueName (values [cfg->args [0]->dreg], "this");
 	}
@@ -6136,7 +6115,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	for (i = 0; i < sig->param_count; ++i) {
 		char *name;
 
-		values [cfg->args [i + sig->hasthis]->dreg] = LLVMGetParam (method, sinfo.pindexes [i]);
+		values [cfg->args [i + sig->hasthis]->dreg] = LLVMGetParam (method, linfo->pindexes [i]);
 		if (names [i] && names [i][0] != '\0')
 			name = g_strdup_printf ("arg_%s", names [i]);
 		else
@@ -6144,7 +6123,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		LLVMSetValueName (values [cfg->args [i + sig->hasthis]->dreg], name);
 		g_free (name);
 		if (linfo->args [i + sig->hasthis].storage == LLVMArgVtypeByVal)
-			LLVMAddAttribute (LLVMGetParam (method, sinfo.pindexes [i]), LLVMByValAttribute);
+			LLVMAddAttribute (LLVMGetParam (method, linfo->pindexes [i]), LLVMByValAttribute);
 
 		if (linfo->args [i + sig->hasthis].storage == LLVMArgVtypeByRef) {
 			/* For OP_LDADDR */
