@@ -135,8 +135,8 @@ enum SocketOptionName : int32_t
     // PAL_SO_USELOOPBACK = 0x0040,
     PAL_SO_LINGER = 0x0080,
     PAL_SO_OOBINLINE = 0x0100,
-    //PAL_SO_DONTLINGER = ~PAL_SO_LINGER,
-    //PAL_SO_EXCLUSIVEADDRUSE = ~PAL_SO_REUSEADDR,
+    // PAL_SO_DONTLINGER = ~PAL_SO_LINGER,
+    // PAL_SO_EXCLUSIVEADDRUSE = ~PAL_SO_REUSEADDR,
     PAL_SO_SNDBUF = 0x1001,
     PAL_SO_RCVBUF = 0x1002,
     PAL_SO_SNDLOWAT = 0x1003,
@@ -296,9 +296,9 @@ struct FdSet
 
 struct SocketEvent
 {
-    uintptr_t Data;           // User data for this event
+    uintptr_t Data;      // User data for this event
     SocketEvents Events; // Event flags
-    uint32_t Padding;         // Pad out to 8-byte alignment
+    uint32_t Padding;    // Pad out to 8-byte alignment
 };
 
 /**
@@ -393,13 +393,16 @@ extern "C" Error Shutdown(int32_t socket, int32_t socketShutdown);
 
 extern "C" Error GetSocketErrorOption(int32_t socket, Error* error);
 
-extern "C" Error GetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
+extern "C" Error GetSockOpt(
+    int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen);
 
-extern "C" Error SetSockOpt(int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
+extern "C" Error SetSockOpt(
+    int32_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t optionLen);
 
 extern "C" Error Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, int32_t* createdSocket);
 
-extern "C" Error Select(int32_t fdCount, FdSet* readFdSet, FdSet* writeFdSet, FdSet* errorFdSet, int32_t microseconds, int32_t* selected);
+extern "C" Error Select(
+    int32_t fdCount, FdSet* readFdSet, FdSet* writeFdSet, FdSet* errorFdSet, int32_t microseconds, int32_t* selected);
 
 extern "C" Error GetBytesAvailable(int32_t socket, int32_t* available);
 
@@ -411,7 +414,8 @@ extern "C" Error CreateSocketEventBuffer(int32_t count, SocketEvent** buffer);
 
 extern "C" Error FreeSocketEventBuffer(SocketEvent* buffer);
 
-extern "C" Error TryChangeSocketEventRegistration(int32_t port, int32_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
+extern "C" Error TryChangeSocketEventRegistration(
+    int32_t port, int32_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data);
 
 extern "C" Error WaitForSocketEvents(int32_t port, SocketEvent* buffer, int32_t* count);
 

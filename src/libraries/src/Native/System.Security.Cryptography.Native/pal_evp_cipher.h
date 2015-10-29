@@ -51,8 +51,7 @@ EvpCipherUpdate
 
 Direct shim to EVP_CipherUpdate.
 */
-extern "C" int32_t
-EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, unsigned char* in, int32_t inl);
+extern "C" int32_t EvpCipherUpdate(EVP_CIPHER_CTX* ctx, uint8_t* out, int32_t* outl, unsigned char* in, int32_t inl);
 
 /*
 Function:

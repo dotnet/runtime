@@ -27,6 +27,18 @@ def prCCJob = job(Utilities.getFullJobName(project, 'code_coverage_windows', tru
   }
 }
 
+[true, false].each { isPR -> 
+  def codeFormatterJobName = Utilities.getFullJobName(project, 'native_code_format_check', isPR)
+  def codeFormatterJob = job(codeFormatterJobName) {
+    label('ubuntu')
+    steps {
+      batchFile('python src/Native/format-code.py checkonly')
+    }
+  }
+
+  Utilities.simpleInnerLoopJobSetup(codeFormatterJob, project, isPR, "Code Formatter Check")
+}
+
 // For both jobs, archive the coverage info and publish an HTML report
 [rollingCCJob, prCCJob].each { newJob ->
     Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
