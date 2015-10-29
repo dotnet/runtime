@@ -311,7 +311,7 @@ function create_core_overlay {
         rm -f -r "$coreOverlayDir"
     fi
     mkdir "$coreOverlayDir"
-    find "$coreFxBinDir" -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' -exec cp -f -u '{}' "$coreOverlayDir/" \;
+    (cd $coreFxBinDir && find . -iname '*.dll' \! -iwholename '*test*' \! -iwholename '*/ToolRuntime/*' -exec cp -f -u '{}' "$coreOverlayDir/" \;)
     cp -f "$coreFxNativeBinDir/Native/"*.so "$coreOverlayDir/" 2>/dev/null
     cp -f "$coreClrBinDir/"* "$coreOverlayDir/" 2>/dev/null
     cp -f "$mscorlibDir/mscorlib.dll" "$coreOverlayDir/"
@@ -419,6 +419,9 @@ function run_test {
 
     # Convert DOS line endings to Unix if needed
     sed -i 's/\r$//' "$scriptFileName"
+
+    # Add executable file mode bit if needed
+    chmod +x "$scriptFileName"
 
     "./$scriptFileName" >"$outputFileName" 2>&1
     return $?
