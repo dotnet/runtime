@@ -281,7 +281,20 @@ namespace Internal.Cryptography.Pal
 
         public byte[] EncodeX509EnhancedKeyUsageExtension(OidCollection usages)
         {
-            throw new NotImplementedException();
+            //extKeyUsage EXTENSION ::= {
+            //    SYNTAX SEQUENCE SIZE(1..MAX) OF KeyPurposeId
+            //    IDENTIFIED BY id - ce - extKeyUsage }
+            //
+            //KeyPurposeId::= OBJECT IDENTIFIER
+
+            List<byte[][]> segments = new List<byte[][]>(usages.Count);
+
+            foreach (Oid usage in usages)
+            {
+                segments.Add(DerEncoder.SegmentedEncodeOid(usage));
+            }
+
+            return DerEncoder.ConstructSequence(segments);
         }
 
         public void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
