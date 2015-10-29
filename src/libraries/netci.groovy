@@ -27,7 +27,9 @@ def prCCJob = job(Utilities.getFullJobName(project, 'code_coverage_windows', tru
   }
 }
 
-[true, false].each { isPR -> 
+// Jenkins seems to have a bug where it uses the master groovy script instead of the branch-specific
+// script, so disable this globally
+/*[true, false].each { isPR -> 
   def codeFormatterJobName = Utilities.getFullJobName(project, 'native_code_format_check', isPR)
   def codeFormatterJob = job(codeFormatterJobName) {
     label('ubuntu')
@@ -37,7 +39,7 @@ def prCCJob = job(Utilities.getFullJobName(project, 'code_coverage_windows', tru
   }
 
   Utilities.simpleInnerLoopJobSetup(codeFormatterJob, project, isPR, "Code Formatter Check")
-}
+}*/
 
 // For both jobs, archive the coverage info and publish an HTML report
 [rollingCCJob, prCCJob].each { newJob ->
