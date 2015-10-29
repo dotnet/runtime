@@ -1076,7 +1076,7 @@ MINI_OP(OP_GC_PARAM_SLOT_LIVENESS_DEF, "gc_param_slot_liveness_def", NONE, NONE,
 MINI_OP(OP_GENERIC_CLASS_INIT, "generic_class_init", NONE, IREG, NONE)
 
 /* Arch specific opcodes */
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_S390X)
 MINI_OP(OP_GC_SAFE_POINT,     "gc_safe_point", NONE, IREG, NONE)
 #endif
 

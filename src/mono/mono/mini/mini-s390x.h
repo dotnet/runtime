@@ -113,6 +113,14 @@ typedef struct
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 /*-----------------------------------------------*/
+/* SIMD Related Definitions                      */
+/*-----------------------------------------------*/
+
+#define MONO_MAX_XREGS			31
+#define MONO_ARCH_CALLEE_XREGS		0x0
+#define MONO_ARCH_CALLEE_SAVED_XREGS	0x0
+
+/*-----------------------------------------------*/
 /* Macros used to generate instructions          */
 /*-----------------------------------------------*/
 #define S390_OFFSET(b, t)	(guchar *) ((guint64) (b) - (guint64) (t))
