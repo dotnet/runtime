@@ -24,6 +24,6 @@ extern "C" int32_t GetCurlVersionInfo(int32_t* age, int32_t* supportsSsl, int32_
     *age = versionInfo->age;
     *supportsSsl = (versionInfo->features & CURL_VERSION_SSL) == CURL_VERSION_SSL;
     *supportsAutoDecompression = (versionInfo->features & CURL_VERSION_LIBZ) == CURL_VERSION_LIBZ;
-    
+
     return 1;
 }
