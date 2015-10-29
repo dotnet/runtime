@@ -30,7 +30,7 @@ def prCCJob = job(Utilities.getFullJobName(project, 'code_coverage_windows', tru
 [true, false].each { isPR -> 
   def codeFormatterJobName = Utilities.getFullJobName(project, 'native_code_format_check', isPR)
   def codeFormatterJob = job(codeFormatterJobName) {
-    label('windows')
+    label('ubuntu')
     steps {
       batchFile('python src/Native/format-code.py checkonly')
     }
