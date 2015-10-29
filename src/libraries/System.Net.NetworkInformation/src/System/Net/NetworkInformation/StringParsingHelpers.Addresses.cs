@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.IO;
 
 namespace System.Net.NetworkInformation
@@ -10,9 +10,9 @@ namespace System.Net.NetworkInformation
     {
         // /proc/net/route contains some information about gateway addresses,
         // and seperates the information about by each interface.
-        internal static Collection<GatewayIPAddressInformation> ParseGatewayAddressesFromRouteFile(string filePath, string interfaceName)
+        internal static List<GatewayIPAddressInformation> ParseGatewayAddressesFromRouteFile(string filePath, string interfaceName)
         {
-            Collection<GatewayIPAddressInformation> collection = new Collection<GatewayIPAddressInformation>();
+            List<GatewayIPAddressInformation> collection = new List<GatewayIPAddressInformation>();
             // Columns are as follows (first-line header):
             // Iface  Destination  Gateway  Flags  RefCnt  Use  Metric  Mask  MTU  Window  IRTT
             string[] fileLines = File.ReadAllLines(filePath);
@@ -33,12 +33,12 @@ namespace System.Net.NetworkInformation
             return collection;
         }
 
-        internal static Collection<IPAddress> ParseDhcpServerAddressesFromLeasesFile(string filePath, string name)
+        internal static List<IPAddress> ParseDhcpServerAddressesFromLeasesFile(string filePath, string name)
         {
             // Parse the /var/lib/dhcp/dhclient.leases file, if it exists.
             // If any errors occur, like the file not existing or being
             // improperly formatted, just bail and return an empty collection.
-            Collection<IPAddress> collection = new Collection<IPAddress>();
+            List<IPAddress> collection = new List<IPAddress>();
             try
             {
                 string fileContents = File.ReadAllText(filePath);
@@ -78,9 +78,9 @@ namespace System.Net.NetworkInformation
             return collection;
         }
 
-        internal static Collection<IPAddress> ParseWinsServerAddressesFromSmbConfFile(string smbConfFilePath)
+        internal static List<IPAddress> ParseWinsServerAddressesFromSmbConfFile(string smbConfFilePath)
         {
-            Collection<IPAddress> collection = new Collection<IPAddress>();
+            List<IPAddress> collection = new List<IPAddress>();
             try
             {
                 string fileContents = File.ReadAllText(smbConfFilePath);
