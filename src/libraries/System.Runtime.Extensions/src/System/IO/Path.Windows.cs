@@ -138,22 +138,6 @@ namespace System.IO
             return path;
         }
 
-        private static string NormalizeStandardPath(string path, bool fullCheck, bool expandShortPaths)
-        {
-            // Technically this doesn't matter, but we used to throw for this case
-            if (String.IsNullOrWhiteSpace(path))
-                throw new ArgumentException(SR.Arg_PathIllegal);
-
-            PathHelper helper = new PathHelper();
-            string returnVal = helper.Normalize(path, fullCheck, expandShortPaths);
-
-            if (String.Equals(returnVal, path, StringComparison.Ordinal))
-            {
-                returnVal = path;
-            }
-            return returnVal;
-        }
-
         private static string NormalizePath(string path, bool fullCheck = true, bool expandShortPaths = true)
         {
             Debug.Assert(path != null, "path can't be null");
@@ -191,7 +175,11 @@ namespace System.IO
             }
             else
             {
-                return NormalizeStandardPath(path, fullCheck, expandShortPaths);
+                // Technically this doesn't matter but we used to throw for this case
+                if (String.IsNullOrWhiteSpace(path))
+                    throw new ArgumentException(SR.Arg_PathIllegal);
+
+                return PathHelper.Normalize(path, fullCheck, expandShortPaths);
             }
         }
 
