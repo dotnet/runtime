@@ -1350,6 +1350,9 @@ ErrExit: ;
         // for minimal impact we won't update hr for regular builds
         hr = GET_EXCEPTION()->GetHR();
         _ASSERTE(FAILED(hr));
+        StackSString exceptionMessage;
+        GET_EXCEPTION()->GetMessage(exceptionMessage);
+        fprintf(stderr, "%S\n", exceptionMessage.GetUnicode());
 #endif // CROSSGEN_COMPILE
     }
     EX_END_CATCH(RethrowTerminalExceptionsWithInitCheck)

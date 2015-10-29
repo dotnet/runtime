@@ -39,7 +39,7 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::Resourc
 
     HRESULT hr = E_FAIL;
 
-#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) && !(defined(CROSSGEN_COMPILE) && defined(PLATFORM_UNIX))
+#ifndef FEATURE_UTILCODE_NO_DEPENDENCIES
     if (pResourceDLL == NULL) 
     {
         pResourceDLL = CCompRC::GetDefaultResourceDll();
