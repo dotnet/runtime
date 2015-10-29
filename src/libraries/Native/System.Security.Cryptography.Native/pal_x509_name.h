@@ -51,7 +51,7 @@ Return values:
 1 on success
 0 on a NULL stack, or an error within sk_X509_NAME_push
 */
-extern "C" int32_t PushX509NameStackField(STACK_OF(X509_NAME) * stack, X509_NAME* x509Name);
+extern "C" int32_t PushX509NameStackField(STACK_OF(X509_NAME) * stack, X509_NAME * x509Name);
 
 /*
 Function:

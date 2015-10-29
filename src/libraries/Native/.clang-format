@@ -2,7 +2,6 @@
 Language:        Cpp
 # BasedOnStyle:  LLVM
 AlignEscapedNewlinesLeft: false
-AlignAfterOpenBracket: true
 AllowShortFunctionsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: true
 BinPackArguments: false
