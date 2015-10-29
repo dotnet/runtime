@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Runtime.InteropServices;
-
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
@@ -13,7 +11,7 @@ namespace System.Diagnostics
     internal static partial class Debug
 #endif
     {
-        // internal and not read only so that the tests can swap this out.
+        // internal and not readonly so that the tests can swap this out.
         internal static IDebugLogger s_logger = new UnixDebugLogger();
 
         // --------------
@@ -28,28 +26,20 @@ namespace System.Diagnostics
 
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
             {
-                // TODO: Determine whether there's anything better we can do here once
-                //       Debugger.* is available on Unix.
-
-                // When an assert fails, it calls WriteCore with the assert message, followed
-                // by calling ShowAssertDialog.  If s_shouldWriteToStdError is true,
-                // then the assert will have already been written to the console.  But if it's
-                // false (the default), then it's easy for the important failure information
-                // to be missed.  As such, if if it's false, we still output the error information to
-                // stderr for lack of any better place to display it to the user; this will also
-                // help ensure it shows up in continuous integration logs.
-                string assertMessage = FormatAssert(stackTrace, message, detailMessage) + Environment.NewLine;
-                if (!s_shouldWriteToStdErr)
+                if (Debugger.IsAttached)
                 {
-                    WriteToStderr(assertMessage);
+                    Debugger.Break();
+                }
+                else
+                {
+                    // TODO: #3708 Determine if/how to put up a dialog instead.
+                    throw new DebugAssertException(message, detailMessage, stackTrace);
                 }
             }
 
             public void WriteCore(string message)
             {
-                Assert(message != null);
-
-                WriteToSyslog(message);
+                WriteToDebugger(message);
 
                 if (s_shouldWriteToStdErr)
                 {
@@ -57,9 +47,16 @@ namespace System.Diagnostics
                 }
             }
 
-            private static void WriteToSyslog(string message)
+            private static void WriteToDebugger(string message)
             {
-                Interop.Sys.SysLog(Interop.Sys.SysLogPriority.LOG_USER | Interop.Sys.SysLogPriority.LOG_DEBUG, "%s", message);
+                if (Debugger.IsLogging())
+                {
+                    Debugger.Log(0, null, message);
+                }
+                else
+                {
+                    Interop.Sys.SysLog(Interop.Sys.SysLogPriority.LOG_USER | Interop.Sys.SysLogPriority.LOG_DEBUG, "%s", message);
+                }
             }
 
             private static void WriteToStderr(string message)
@@ -93,8 +90,19 @@ namespace System.Diagnostics
                             int totalBytesWritten = 0;
                             while (bufCount > 0)
                             {
-                                int bytesWritten;
-                                while (Interop.CheckIo(bytesWritten = Interop.Sys.Write((int)fileHandle.DangerousGetHandle(), buf + totalBytesWritten, bufCount))) ;
+                                int bytesWritten = Interop.Sys.Write((int)fileHandle.DangerousGetHandle(), buf + totalBytesWritten, bufCount);
+                                if (bytesWritten < 0)
+                                {
+                                    if (Interop.Sys.GetLastErrorInfo().Error == Interop.Error.EINTR)
+                                    {
+                                        continue;
+                                    }
+
+                                    // On error, simply stop writing the debug output.  This could commonly happen if stderr
+                                    // was piped to a program that ended before this program did, resulting in EPIPE errors.
+                                    return;
+                                }
+
                                 bufCount -= bytesWritten;
                                 totalBytesWritten += bytesWritten;
                             }
@@ -105,4 +113,3 @@ namespace System.Diagnostics
         }
     }
 }
-
