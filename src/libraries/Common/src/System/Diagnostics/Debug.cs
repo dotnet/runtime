@@ -219,5 +219,13 @@ namespace System.Diagnostics
             void ShowAssertDialog(string stackTrace, string message, string detailMessage);
             void WriteCore(string message);
         }
+
+        private sealed class DebugAssertException : Exception
+        {
+            internal DebugAssertException(string message, string detailMessage, string stackTrace) : 
+                base(message + Environment.NewLine + detailMessage + Environment.NewLine + stackTrace)
+            {
+            }
+        }
     }
 }
