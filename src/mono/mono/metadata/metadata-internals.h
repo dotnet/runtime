@@ -724,7 +724,6 @@ mono_metadata_parse_array_full              (MonoImage             *image,
 MONO_API MonoType *
 mono_metadata_parse_type_full               (MonoImage             *image,
 					     MonoGenericContainer  *container,
-					     MonoParseTypeMode      mode,
 					     short                  opt_attrs,
 					     const char            *ptr,
 					     const char           **rptr);
@@ -895,6 +894,9 @@ mono_method_get_wrapper_cache (MonoMethod *method);
 
 MonoWrapperCaches*
 mono_method_get_wrapper_cache (MonoMethod *method);
+
+MonoType*
+mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container, short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error);
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

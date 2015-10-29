@@ -980,7 +980,7 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContainer *co
 		g_string_append (res, "instance ");
 	ptr++;
 	pcount = mono_metadata_decode_value (ptr, &ptr);
-	type = mono_metadata_parse_type_full (m, container, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	type = mono_metadata_parse_type_full (m, container, 0, ptr, &ptr);
 	blurb = dis_stringify_type (m, type, TRUE);
 	if (prop_flags & 0x0200)
 		g_string_append (res, "specialname ");
@@ -993,7 +993,7 @@ dis_property_signature (MonoImage *m, guint32 prop_idx, MonoGenericContainer *co
 	for (i = 0; i < pcount; i++) {
 		if (i)
 			g_string_append (res, ", ");
-		param = mono_metadata_parse_type_full (m, container, MONO_PARSE_PARAM, 0, ptr, &ptr);
+		param = mono_metadata_parse_type_full (m, container, 0, ptr, &ptr);
 		blurb = dis_stringify_param (m, param);
 		g_string_append (res, blurb);
 		g_free (blurb);
