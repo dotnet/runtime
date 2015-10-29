@@ -63,9 +63,7 @@ namespace CorUnix
         )
     {
         int nRet;
-        pthrCurrent->suspensionInfo.EnterUnsafeRegion();
         nRet = rand();
-        pthrCurrent->suspensionInfo.LeaveUnsafeRegion();
         return nRet;
     }
 }
