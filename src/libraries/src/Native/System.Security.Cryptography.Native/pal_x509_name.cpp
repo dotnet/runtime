@@ -36,7 +36,7 @@ extern "C" STACK_OF(X509_NAME) * NewX509NameStack()
     return sk_X509_NAME_new_null();
 }
 
-extern "C" int32_t PushX509NameStackField(STACK_OF(X509_NAME) * stack, X509_NAME* x509Name)
+extern "C" int32_t PushX509NameStackField(STACK_OF(X509_NAME) * stack, X509_NAME * x509Name)
 {
     if (!stack)
     {

@@ -1170,7 +1170,7 @@ Return values:
 1 on success
 0 on a NULL stack, or an error within sk_X509_push
 */
-int32_t PushX509StackField(STACK_OF(X509) * stack, X509* x509)
+int32_t PushX509StackField(STACK_OF(X509) * stack, X509 * x509)
 {
     if (!stack)
     {

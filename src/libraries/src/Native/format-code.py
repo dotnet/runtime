@@ -26,7 +26,7 @@ except:
 if a.checkonly is None:
     args = '-style=file -i '
 else:
-    args = '-style=file '
+    args = '-style=file -output-replacements-xml '
 
 print 'Running clang-format style cop on native code...'
 
@@ -37,6 +37,9 @@ for extension in extensions:
     for nativefile in glob.glob('**/*.' + extension):
         cmd = cf + args + os.path.realpath(nativefile)
         print 'Formatting native file with command: ' + cmd
-        if len(subprocess.check_output(cmd, shell=True)) != 0:
-            print 'File not style compliant, exiting: ' + nativefile
-            sys.exit(-1)
+        if a.checkonly is None:
+            subprocess.call(cmd, shell=True)
+        else:
+            if len(subprocess.check_output(cmd, shell=True)) != 74:
+                print 'File not style compliant, exiting: ' + nativefile
+                sys.exit(-1)
