@@ -27,10 +27,10 @@
 #endif
 
 extern "C" int32_t EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
-                                                IPv6AddressFound onIpv6Found,
-                                                LinkLayerAddressFound onLinkLayerFound)
+                                               IPv6AddressFound onIpv6Found,
+                                               LinkLayerAddressFound onLinkLayerFound)
 {
-    ifaddrs *headAddr;
+    ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
         return -1;
@@ -44,8 +44,7 @@ extern "C" int32_t EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
         {
             // IP Address
             IpAddressInfo iai = {
-                .InterfaceIndex = interfaceIndex,
-                .NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS,
+                .InterfaceIndex = interfaceIndex, .NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS,
             };
 
             sockaddr_in* sain = reinterpret_cast<sockaddr_in*>(current->ifa_addr);
@@ -53,8 +52,7 @@ extern "C" int32_t EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
 
             // Net Mask
             IpAddressInfo maskInfo = {
-                .InterfaceIndex = interfaceIndex,
-                .NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS,
+                .InterfaceIndex = interfaceIndex, .NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS,
             };
 
             sockaddr_in* mask_sain = reinterpret_cast<sockaddr_in*>(current->ifa_netmask);
@@ -65,8 +63,7 @@ extern "C" int32_t EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
         else if (family == AF_INET6)
         {
             IpAddressInfo iai = {
-                .InterfaceIndex = interfaceIndex,
-                .NumAddressBytes = NUM_BYTES_IN_IPV6_ADDRESS,
+                .InterfaceIndex = interfaceIndex, .NumAddressBytes = NUM_BYTES_IN_IPV6_ADDRESS,
             };
 
             sockaddr_in6* sain6 = reinterpret_cast<sockaddr_in6*>(current->ifa_addr);
@@ -75,7 +72,7 @@ extern "C" int32_t EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
             onIpv6Found(current->ifa_name, &iai, &scopeId);
         }
 
-        // LINUX : AF_PACKET = 17        
+// LINUX : AF_PACKET = 17
 #if defined(AF_PACKET)
         else if (family == AF_PACKET)
         {
@@ -115,7 +112,7 @@ extern "C" int32_t EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
 #if HAVE_RT_MSGHDR
 extern "C" int32_t EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
 {
-    int routeDumpName[] = { CTL_NET, AF_ROUTE, 0, AF_INET, NET_RT_DUMP, 0 };
+    int routeDumpName[] = {CTL_NET, AF_ROUTE, 0, AF_INET, NET_RT_DUMP, 0};
 
     size_t byteCount;
 
@@ -142,7 +139,7 @@ extern "C" int32_t EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex
 
         if (isGateway && gatewayPresent)
         {
-            IpAddressInfo iai = { };
+            IpAddressInfo iai = {};
             iai.InterfaceIndex = interfaceIndex;
             iai.NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS;
             sockaddr_in* sain = reinterpret_cast<sockaddr_in*>(hdr + 1);

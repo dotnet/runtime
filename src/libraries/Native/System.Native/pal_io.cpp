@@ -856,13 +856,15 @@ extern "C" int32_t ReadStdinUnbuffered(void* buffer, int32_t bufferSize)
     struct termios oldtermios = {};
     struct termios newtermios = {};
 
-    if (tcgetattr(STDIN_FILENO , &oldtermios) < 0) return -1;
+    if (tcgetattr(STDIN_FILENO, &oldtermios) < 0)
+        return -1;
 
     newtermios = oldtermios;
     newtermios.c_lflag &= static_cast<uint32_t>(~(ECHO | ICANON));
     newtermios.c_cc[VMIN] = 1;
     newtermios.c_cc[VTIME] = 0;
-    if (tcsetattr(STDIN_FILENO, TCSANOW, &newtermios) < 0) return -1;
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &newtermios) < 0)
+        return -1;
     ssize_t count = read(STDIN_FILENO, buffer, UnsignedCast(bufferSize));
     tcsetattr(STDIN_FILENO, TCSANOW, &oldtermios);
     return static_cast<int32_t>(count);

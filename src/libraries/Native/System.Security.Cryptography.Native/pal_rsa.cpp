@@ -82,14 +82,14 @@ extern "C" int32_t RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8
 }
 
 extern "C" int32_t GetRsaParameters(const RSA* rsa,
-                                 BIGNUM** n,
-                                 BIGNUM** e,
-                                 BIGNUM** d,
-                                 BIGNUM** p,
-                                 BIGNUM** dmp1,
-                                 BIGNUM** q,
-                                 BIGNUM** dmq1,
-                                 BIGNUM** iqmp)
+                                    BIGNUM** n,
+                                    BIGNUM** e,
+                                    BIGNUM** d,
+                                    BIGNUM** p,
+                                    BIGNUM** dmp1,
+                                    BIGNUM** q,
+                                    BIGNUM** dmq1,
+                                    BIGNUM** iqmp)
 {
     if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
     {

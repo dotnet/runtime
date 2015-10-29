@@ -166,7 +166,7 @@ enum class SSL_CipherAlgorithm : int64_t
     SSL_RC4 = 0x00020000L,
     SSL_RC2 = 0x00040000L,
     SSL_IDEA = 0x00080000L,
-    //SSL_eFZA = 0x00100000L,  this value is defined in ssl_locl.h, but has no match
+    // SSL_eFZA = 0x00100000L,  this value is defined in ssl_locl.h, but has no match
     SSL_eNULL = 0x00200000L,
     SSL_AES = 0x04000000L,
     SSL_CAMELLIA = 0x08000000L,
@@ -279,7 +279,7 @@ enum class SSL_KeyExchangeAlgorithm : int64_t
     SSL_kRSA = 0x00000001L,
     SSL_kDHr = 0x00000002L,
     SSL_kDHd = 0x00000004L,
-    //SSL_kFZA = 0x00000008L,  this value is defined in ssl_locl.h, but has no match
+    // SSL_kFZA = 0x00000008L,  this value is defined in ssl_locl.h, but has no match
     SSL_kEDH = 0x00000010L,
     SSL_kKRB5 = 0x00000020L,
     SSL_kECDH = 0x00000040L,
@@ -404,7 +404,11 @@ static HashAlgorithmType MapHashAlgorithmType(const SSL_CIPHER* cipher)
     return HashAlgorithmType::None;
 }
 
-extern "C" int32_t GetSslConnectionInfo(SSL* ssl, CipherAlgorithmType* dataCipherAlg, ExchangeAlgorithmType* keyExchangeAlg, HashAlgorithmType* dataHashAlg, int32_t* dataKeySize)
+extern "C" int32_t GetSslConnectionInfo(SSL* ssl,
+                                        CipherAlgorithmType* dataCipherAlg,
+                                        ExchangeAlgorithmType* keyExchangeAlg,
+                                        HashAlgorithmType* dataHashAlg,
+                                        int32_t* dataKeySize)
 {
     const SSL_CIPHER* cipher;
 
