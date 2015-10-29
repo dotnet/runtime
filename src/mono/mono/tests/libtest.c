@@ -3545,8 +3545,8 @@ mono_test_marshal_lookup_symbol (const char *symbol_name)
 	return lookup_mono_symbol (symbol_name);
 }
 
-#define MONO_BEGIN_EFRAME { void *__region_cookie = mono_threads_enter_gc_unsafe_region ? mono_threads_enter_gc_unsafe_region () : NULL;
-#define MONO_END_EFRAME if (mono_threads_exit_gc_unsafe_region) mono_threads_exit_gc_unsafe_region (__region_cookie); }
+#define MONO_BEGIN_EFRAME { void *__dummy; void *__region_cookie = mono_threads_enter_gc_unsafe_region ? mono_threads_enter_gc_unsafe_region (&__dummy) : NULL;
+#define MONO_END_EFRAME if (mono_threads_exit_gc_unsafe_region) mono_threads_exit_gc_unsafe_region (__region_cookie, &__dummy); }
 
 /**
  * test_method_thunk:
@@ -3572,10 +3572,10 @@ test_method_thunk (int test_id, gpointer test_method_handle, gpointer create_obj
 	gpointer (*mono_object_unbox)(gpointer)
 		= lookup_mono_symbol ("mono_object_unbox");
 
-	gpointer* (*mono_threads_enter_gc_unsafe_region) ()
+	gpointer (*mono_threads_enter_gc_unsafe_region) (gpointer)
 		= lookup_mono_symbol ("mono_threads_enter_gc_unsafe_region");
 
-	gpointer (*mono_threads_exit_gc_unsafe_region) (gpointer *)
+	void (*mono_threads_exit_gc_unsafe_region) (gpointer, gpointer)
 		= lookup_mono_symbol ("mono_threads_exit_gc_unsafe_region");
 
 	

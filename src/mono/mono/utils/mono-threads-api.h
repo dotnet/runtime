@@ -31,8 +31,8 @@ For further explanation of what can and can't be done in GC unsafe mode:
 http://www.mono-project.com/docs/advanced/runtime/docs/coop-suspend/#gc-unsafe-mode
 
 */
-#define MONO_BEGIN_EFRAME { void *__dummy; void *__region_cookie = mono_threads_enter_gc_unsafe_region (__dummy);
-#define MONO_END_EFRAME mono_threads_exit_gc_unsafe_region (__region_cookie, __dummy); }
+#define MONO_BEGIN_EFRAME { void *__dummy; void *__region_cookie = mono_threads_enter_gc_unsafe_region (&__dummy);
+#define MONO_END_EFRAME mono_threads_exit_gc_unsafe_region (__region_cookie, &__dummy); }
 
 
 MONO_END_DECLS
