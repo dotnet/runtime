@@ -9,6 +9,8 @@
 
 #include "stdafx.h"
 
+#ifdef STRESS_THREAD
+
 #include "apithreadstress.h"
 #include "clrhost.h"
 #include "ex.h"
@@ -179,3 +181,4 @@ void APIThreadStress::SyncThreadStress()
     }
 }
 
+#endif // STRESS_THREAD

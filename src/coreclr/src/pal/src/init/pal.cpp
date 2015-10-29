@@ -588,7 +588,6 @@ done:
     if (fFirstTimeInit && 0 == retval)
     {
         _ASSERTE(NULL != pThread);
-        _ASSERTE(pThread->suspensionInfo.IsSuspensionStateSafe());
     }
 
     if (retval != 0 && GetLastError() == ERROR_SUCCESS)
