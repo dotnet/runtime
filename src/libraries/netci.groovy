@@ -8,51 +8,53 @@ def project = 'dotnet/corefx'
 // Define code coverage build
 // **************************
 
-// Define build string
-def codeCoverageBuildString = '''call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\Common7\\Tools\\VsDevCmd.bat" && build.cmd /p:Coverage=true'''
-
-// Generate a rolling (12 hr job) and a PR job that can be run on demand
-
-def rollingCCJob = job(Utilities.getFullJobName(project, 'code_coverage_windows', false)) {
-  label('windows')
-  steps {
-    batchFile(codeCoverageBuildString)
-  }
-}
-
-def prCCJob = job(Utilities.getFullJobName(project, 'code_coverage_windows', true)) {
-  label('windows')
-  steps {
-    batchFile(codeCoverageBuildString)
-  }
-}
-
-// Jenkins seems to have a bug where it uses the master groovy script instead of the branch-specific
-// script, so disable this globally
-/*[true, false].each { isPR -> 
-  def codeFormatterJobName = Utilities.getFullJobName(project, 'native_code_format_check', isPR)
-  def codeFormatterJob = job(codeFormatterJobName) {
-    label('ubuntu')
-    steps {
-      shell('python src/Native/format-code.py checkonly')
+[true, false].each { isPR -> 
+    def newJob = job(Utilities.getFullJobName(project, 'code_coverage_windows', isPR)) {
+        steps {
+            batchFile('call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\Common7\\Tools\\VsDevCmd.bat" && build.cmd /p:Coverage=true')
+        }
     }
-  }
-
-  Utilities.simpleInnerLoopJobSetup(codeFormatterJob, project, isPR, "Code Formatter Check")
-}*/
-
-// For both jobs, archive the coverage info and publish an HTML report
-[rollingCCJob, prCCJob].each { newJob ->
+    
+    // Set up standard options
+    Utilities.standardJobSetup(newJob, project, isPR)
+    // Set the machine affinity to windows machines
+    Utilities.setMachineAffinity(newJob, 'Windows_NT')
+    // Publish reports
     Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
+    // Archive results.
     Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
+    // Set triggers
+    if (isPR) {
+        // Set PR trigger
+        Utilities.addGithubPRTrigger(newJob, 'Code Coverage Windows Debug', 'test code coverage')
+    }
+    else {
+        // Set a periodic trigger
+        Utilities.addPeriodicTrigger(newJob, '@daily')
+    }
 }
 
-Utilities.addScm(rollingCCJob, project)
-Utilities.addStandardOptions(rollingCCJob)
-Utilities.addStandardNonPRParameters(rollingCCJob)
-Utilities.addPeriodicTrigger(rollingCCJob, '@daily')
-             
-Utilities.addPRTestSCM(prCCJob, project)
-Utilities.addStandardOptions(prCCJob)
-Utilities.addStandardPRParameters(prCCJob, project)
-Utilities.addGithubPRTrigger(prCCJob, 'Code Coverage Windows Debug', '@dotnet-bot test code coverage please')
+// **************************
+// Define code formatter check build
+// **************************
+
+[true, false].each { isPR -> 
+    def newJob = job(Utilities.getFullJobName(project, 'native_code_format_check', isPR)) {
+        steps {
+            shell('python src/Native/format-code.py checkonly')
+        }
+    }
+    
+    // Set up standard options.
+    Utilities.standardJobSetup(newJob, project, isPR)
+    // Set the machine affinity to Ubuntu machines
+    Utilities.setMachineAffinity(newJob, 'Ubuntu')
+    if (isPR) {
+        // Set PR trigger.  Only trigger when the phrase is said.
+        Utilities.addGithubPRTrigger(newJob, 'Code Formatter Check', '(?i).*test\\W+code\\W+formatter\\W+check.*', true)
+    }
+    else {
+        // Set a push trigger
+        Utilities.addGithubPushTrigger(newJob)
+    }
+}
