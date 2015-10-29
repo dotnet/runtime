@@ -621,7 +621,6 @@ PAL_wcstoul(
     PERF_ENTRY(wcstoul);
     ENTRY("wcstoul (nptr=%p (%S), endptr=%p, base=%d)\n", nptr?nptr:W16_NULLSTRING, nptr?nptr:W16_NULLSTRING,
           endptr, base);
-    THREADMarkDiagnostic("PAL_wcstoul -> strtoul");
 
     size = WideCharToMultiByte(CP_ACP, 0, nptr, -1, NULL, 0, NULL, NULL);
     if (!size)
@@ -712,7 +711,6 @@ PAL__wcstoui64(
     PERF_ENTRY(wcstoul);
     ENTRY("_wcstoui64 (nptr=%p (%S), endptr=%p, base=%d)\n", nptr?nptr:W16_NULLSTRING, nptr?nptr:W16_NULLSTRING,
           endptr, base);
-    THREADMarkDiagnostic("PAL__wcstoui64 -> strtoull");
 
     size = WideCharToMultiByte(CP_ACP, 0, nptr, -1, NULL, 0, NULL, NULL);
     if (!size)
@@ -1482,7 +1480,6 @@ PAL_wcstod( const wchar_16 * nptr, wchar_16 **endptr )
 
     PERF_ENTRY(wcstod);
     ENTRY( "wcstod( %p (%S), %p (%S) )\n", nptr, nptr, endptr , endptr );
-    THREADMarkDiagnostic("PAL_wcstod -> strtod");
 
     if ( !nptr )
     {
