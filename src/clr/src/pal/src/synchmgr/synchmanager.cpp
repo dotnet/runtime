@@ -4594,15 +4594,6 @@ namespace CorUnix
             LONG lIdx = 0;
             PAL_ERROR palTempErr;
 
-            // Make sure we are going to run deferred condition signalings 
-            // from a thread suspension safe area.
-            if (!pthrCurrent->suspensionInfo.IsSuspensionStateSafe())
-            {
-                ERROR("Signaling condition from within thread suspension unsafe "
-                      "area. The calling code is probably holding a PAL internal "
-                      "lock. This may cause deadlocks.\n");
-            }
-
             // Signal all the pending signalings from the array
             for (lIdx = 0; lIdx < lArrayPendingSignalingCount; lIdx++)
             {
@@ -4611,7 +4602,7 @@ namespace CorUnix
                     m_rgpthrPendingSignalings[lIdx]->synchronizationInfo.GetNativeData());
                 if (NO_ERROR != palTempErr)
                 {
-                    palErr = palTempErr;                    
+                    palErr = palTempErr;
                 }
 
                 // Release the thread reference

@@ -1993,12 +1993,6 @@ GetExitCodeThread(
 PALIMPORT
 DWORD
 PALAPI
-SuspendThread(
-          IN HANDLE hThread);
-
-PALIMPORT
-DWORD
-PALAPI
 ResumeThread(
          IN HANDLE hThread);
 

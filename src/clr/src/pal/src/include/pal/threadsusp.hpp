@@ -80,19 +80,12 @@ Abstract:
 #endif // HAS_POSIX_SEMAPHORES
 
 #include <stdarg.h>
-	
+
 namespace CorUnix
 {
 #ifdef _DEBUG
 #define MAX_TRACKED_CRITSECS 8
 #endif
-
-    PAL_ERROR
-    InternalSuspendThread(
-        CPalThread *pthrSuspender,
-        HANDLE hTarget,
-        DWORD *pdwSuspendCount
-    );
 
     PAL_ERROR
     InternalResumeThread(
@@ -102,25 +95,16 @@ namespace CorUnix
     );
 
     class CThreadSuspensionInfo : public CThreadInfoInitializer
-    {    
+    {
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
         /* suspend_handler and resume_handler are friends of CThreadSuspensionInfo,
         which allows them to call private functions: HandleSuspendSignal and 
         HandleResumeSignal. */
         friend void suspend_handler(int code, siginfo_t *siginfo, void *context);
         friend void resume_handler(int code, siginfo_t *siginfo, void *context);
-#endif    
-
-        public:
-            BOOL
-            IsSuspensionStateSafe()
-            {
-                return (m_dwUnsafeRegionCount.Load() == 0);
-            };
+#endif
 
         private:
-            Volatile<DWORD> m_dwSuspCount; // number of times that SuspendThread has been called on it.
-            Volatile<DWORD> m_dwUnsafeRegionCount; // number of unsafe regions a thread is in
             BOOL m_fPending; // TRUE if a suspension is pending on a thread (because the thread is in an unsafe region)
             BOOL m_fSelfsusp; // TRUE if thread is self suspending and while thread is self suspended
             BOOL m_fSuspendedForShutdown; // TRUE once the thread is suspended during PAL cleanup
@@ -132,7 +116,6 @@ namespace CorUnix
 #ifdef _DEBUG
             Volatile<LONG> m_lNumThreadsSuspendedByThisThread; // number of threads that this thread has suspended; used for suspension diagnostics
 #endif
-            BOOL m_fPerformingSuspension; // TRUE when performing suspension operations; FALSE otherwise
 #if DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
             int m_nSpinlock; // thread's suspension spinlock, which is used to synchronize suspension and resumption attempts
 #else // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
@@ -169,62 +152,16 @@ namespace CorUnix
             accessed by their own threads (and thus don't require
             synchronization). 
             
-            m_dwSuspCount, m_fPending, m_fSuspendedForShutdown,
+            m_fPending, m_fSuspendedForShutdown,
             m_fSuspendSignalSent, and m_fResumeSignalSent 
             may be set by a different thread than the owner and thus
             require synchronization.
 
-            m_dwUnsafeRegionCount can change even when a suspending
-            thread has acquired suspension mutexes. However, it is only
-            changed by its owner (no other thread will change a thread's
-            unsafe region count).
-
             m_fSelfsusp is set to TRUE only by its own thread but may be later 
             accessed by other threads. 
 
-            m_lNumThreadsSuspendedByThisThread and m_fPerformingSuspension are
-            only accessed by their owning thread and therefore do not
-            require synchronization. */
-
-            DWORD
-            GetUnsafeRegionCount(
-                void
-                )
-            {
-                return m_dwUnsafeRegionCount;
-            };
-           
-            VOID
-            IncrUnsafeRegionCount(
-                void
-                )
-            {
-                m_dwUnsafeRegionCount++;
-            };  
-
-            VOID
-            DecrUnsafeRegionCount(
-                void
-                )
-            {
-                m_dwUnsafeRegionCount--;
-            };
-
-            VOID
-            IncrSuspCount(
-                void
-                )
-            {
-                ++m_dwSuspCount;
-            };  
-
-            VOID
-            DecrSuspCount(
-                void
-                )
-            {
-                --m_dwSuspCount;
-            };  
+            m_lNumThreadsSuspendedByThisThread is accessed by its owning 
+            thread and therefore does not require synchronization. */
             
 #ifdef _DEBUG
             VOID
@@ -371,14 +308,6 @@ namespace CorUnix
             {
                 return m_fSelfsusp;
             }; 
-                  
-            DWORD
-            GetSuspCount(
-                void
-                )
-            {
-                return m_dwSuspCount;
-            };
 
             void
             PostOnSuspendSemaphore();
@@ -414,45 +343,29 @@ namespace CorUnix
             bool 
             HandleResumeSignal(
             );
-#else // USE_SIGNALS_FOR_THREAD_SUSPENSION
-            static
-            BOOL 
-            THREADHandleSuspendNative(
-                CPalThread *pthrTarget
-            );
-
-            static
-            BOOL 
-            THREADHandleResumeNative(
-                CPalThread *pthrTarget
-            );
 #endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 
         public:
             virtual PAL_ERROR InitializePreCreate();
 
             CThreadSuspensionInfo()
-                :
-                m_dwSuspCount(0),
-                m_dwUnsafeRegionCount(0),
-                m_fPending(FALSE),
-                m_fSelfsusp(FALSE),
-                m_fSuspendedForShutdown(FALSE),
-                m_nBlockingPipe(-1),
+                : m_fPending(FALSE)
+                , m_fSelfsusp(FALSE)
+                , m_fSuspendedForShutdown(FALSE)
+                , m_nBlockingPipe(-1)
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
-                m_fSuspendSignalSent(FALSE),
-                m_fResumeSignalSent(FALSE),
+                , m_fSuspendSignalSent(FALSE)
+                , m_fResumeSignalSent(FALSE)
 #endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 #ifdef _DEBUG
-                m_lNumThreadsSuspendedByThisThread(0),
+                , m_lNumThreadsSuspendedByThisThread(0)
 #endif // _DEBUG
-                m_fPerformingSuspension(FALSE)
 #if !DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-                ,m_fSuspmutexInitialized(FALSE)
+                , m_fSuspmutexInitialized(FALSE)
 #endif
 #if USE_POSIX_SEMAPHORES || USE_PTHREAD_CONDVARS
-                ,m_fSemaphoresInitialized(FALSE)
-#endif                
+                , m_fSemaphoresInitialized(FALSE)
+#endif
             {
                 InitializeSuspensionLock();
             }; 
@@ -475,21 +388,6 @@ namespace CorUnix
                 void
             );
 #endif
-
-            void
-            SetPerformingSuspension(
-                BOOL fPerformingSuspension
-                )
-            {
-                m_fPerformingSuspension = fPerformingSuspension;
-            };
-
-            BOOL
-            IsPerformingSuspension()
-            {
-                return m_fPerformingSuspension;
-            };
-
             void
             SetSuspendedForShutdown(
                 BOOL fSuspendedForShutdown
@@ -519,13 +417,6 @@ namespace CorUnix
             PAL_ERROR
             InternalSuspendNewThreadFromData(
                 CPalThread *pThread
-            );  
-
-            PAL_ERROR
-            InternalSuspendThreadFromData(
-                CPalThread *pthrSuspender,
-                CPalThread *pthrTarget,
-                DWORD *pdwSuspendCount
             );
 
             PAL_ERROR
@@ -535,10 +426,6 @@ namespace CorUnix
                 DWORD *pdwSuspendCount
             );
 
-            VOID LeaveUnsafeRegion();
-
-            VOID EnterUnsafeRegion();
-
 #if !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
             static 
             VOID InitializeSignalSets();
@@ -546,8 +433,6 @@ namespace CorUnix
 
             VOID InitializeSuspensionLock();
 
-            BOOL IsAssertShutdownSafe();
-            
             void SetBlockingPipe(
                 int nBlockingPipe
                 )
@@ -563,25 +448,6 @@ extern const BYTE WAKEUPCODE; // use for pipe reads during self suspend.
 #ifdef USE_GLOBAL_LOCK_FOR_SUSPENSION
 extern LONG g_ssSuspensionLock;
 #endif
-
-#ifdef __cplusplus
-    extern "C"
-    {
-#endif // __cplusplus
-
-        #ifdef _DEBUG
-            void THREADMarkDiagnostic(const char *funcName);
-        #endif // _DEBUG
-        
-        BOOL PALCIsSuspensionStateSafe(void);
-        
-#ifdef __cplusplus
-    }
-#endif // __cpluplus
-
-#ifndef _DEBUG //  for non debug and checked builds, resolve macros to nothing.
-    #define THREADMarkDiagnostic(funcName)
-#endif // _DEBUG
 
 #endif // _PAL_THREADSUSP_HPP
 

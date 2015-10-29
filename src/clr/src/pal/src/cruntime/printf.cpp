@@ -1087,8 +1087,6 @@ int PAL_vsscanf(LPCSTR Buffer, LPCSTR Format, va_list ap)
     INT Prefix;
     INT Type = -1;
 
-    THREADMarkDiagnostic("PAL_vsscanf");
-
     while (*Fmt)
     {
         if (!*Buff && Length == 0)
@@ -1263,7 +1261,6 @@ int PAL_wvsscanf(LPCWSTR Buffer, LPCWSTR Format, va_list ap)
     INT Prefix;
     INT Type = -1;
 
-    THREADMarkDiagnostic("PAL_wvsscanf");
     while (*Fmt)
     {
         if (!*Buff && Length == 0)
@@ -1503,12 +1500,11 @@ PAL_sscanf(
 
     PERF_ENTRY(sscanf);
     ENTRY("PAL_sscanf (buffer=%p (%s), format=%p (%s))\n", buffer, buffer, format, format);
-    THREADMarkDiagnostic("PAL_sscanf");
 
     va_start(ap, format);
     Length = PAL_vsscanf(buffer, format, ap);
     va_end(ap);
-	
+
     LOGEXIT("PAL_sscanf returns int %d\n", Length);
     PERF_EXIT(sscanf);
     return Length;
@@ -1589,7 +1585,6 @@ PAL_swscanf(
 
     PERF_ENTRY(swscanf);
     ENTRY("PAL_swscanf (buffer=%p (%S), format=%p (%S))\n", buffer, buffer, format, format);
-    THREADMarkDiagnostic("PAL_swscanf");
 
     va_start(ap, format);
     Length = PAL_wvsscanf(buffer, format, ap);

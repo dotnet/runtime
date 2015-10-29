@@ -300,7 +300,10 @@ static void FreeTHREAD(CPalThread *pThread)
        LeaveCriticalSection(&cs,TRUE) need to access the thread private data 
        stored in the very THREAD structure that we just destroyed. Entering and 
        leaving the critical section with internal==FALSE leads to possible hangs
-       in the PROCSuspendOtherThreads logic, at shutdown time */
+       in the PROCSuspendOtherThreads logic, at shutdown time 
+
+       Update: [TODO] PROCSuspendOtherThreads has been removed. Can this 
+       code be changed?*/
 
     /* Get the lock */
     SPINLOCKAcquire(&free_threads_spinlock, 0);
@@ -944,6 +947,7 @@ CorUnix::InternalEndCurrentThread(
     //
     // Need to synchronize setting the thread state to TS_DONE since 
     // this is checked for in InternalSuspendThreadFromData.
+    // TODO: Is this still needed after removing InternalSuspendThreadFromData?
     //
 
     pThread->suspensionInfo.AcquireSuspensionLock(pThread);
@@ -2195,14 +2199,11 @@ CPalThread::SetStartStatus(
 #endif
 
     //
-    // This routine may get called from two spots:
-    // * CPalThread::ThreadEntry
-    // * InternalSuspendThreadFromData
+    // This routine may get called from CPalThread::ThreadEntry
     //
-    // No matter which path we're on if we've reached this point
-    // there are no further thread suspensions that happen at
-    // creation time, to reset m_bCreateSuspended to prevent
-    // InternalSuspendThreadFromData from calling us again
+    // If we've reached this point there are no further thread 
+    // suspensions that happen at creation time, so reset
+    // m_bCreateSuspended
     //
 
     m_bCreateSuspended = FALSE;
