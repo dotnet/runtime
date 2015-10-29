@@ -18,7 +18,7 @@ extern volatile size_t mono_polling_required;
 
 /* Runtime consumable API */
 
-static gboolean
+static gboolean G_GNUC_UNUSED
 mono_threads_is_coop_enabled (void)
 {
 #if defined(USE_COOP_GC)
