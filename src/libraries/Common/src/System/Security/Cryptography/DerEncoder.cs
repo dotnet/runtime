@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.Numerics;
 
 namespace System.Security.Cryptography
 {
@@ -299,6 +301,81 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Encode the segments { tag, length, value } of an object identifier (Oid).
+        /// </summary>
+        /// <returns>The encoded segments { tag, length, value }</returns>
+        internal static byte[][] SegmentedEncodeOid(Oid oid)
+        {
+            Debug.Assert(oid != null);
+
+            // All exceptions past this point should just be "CryptographicException", because that's
+            // how they'd come back from Desktop/Windows, since it was a non-success result of calling
+            // CryptEncodeObject.
+            string oidValue = oid.Value;
+
+            if (string.IsNullOrEmpty(oidValue))
+                throw new CryptographicException(SR.Argument_InvalidOidValue);
+            if (oidValue.Length < 3 /* "1.1" is the shortest value */)
+                throw new CryptographicException(SR.Argument_InvalidOidValue);
+            if (oidValue[1] != '.')
+                throw new CryptographicException(SR.Argument_InvalidOidValue);
+
+            int firstRid;
+
+            switch (oidValue[0])
+            {
+                case '0':
+                    firstRid = 0;
+                    break;
+                case '1':
+                    firstRid = 1;
+                    break;
+                case '2':
+                    firstRid = 2;
+                    break;
+                default:
+                    throw new CryptographicException(SR.Argument_InvalidOidValue);
+            }
+
+            int startPos = 2;
+
+            // The first two RIDs are special:
+            // ITU X.690 8.19.4:
+            //   The numerical value of the first subidentifier is derived from the values of the first two
+            //   object identifier components in the object identifier value being encoded, using the formula:
+            //       (X*40) + Y
+            //   where X is the value of the first object identifier component and Y is the value of the
+            //   second object identifier component.
+            //       NOTE – This packing of the first two object identifier components recognizes that only
+            //          three values are allocated from the root node, and at most 39 subsequent values from
+            //          nodes reached by X = 0 and X = 1.
+
+            BigInteger rid = ParseOidRid(oidValue, ref startPos);
+            rid += 40 * firstRid;
+
+            // The worst case is "1.1.1.1.1", which takes 4 bytes (5 rids, with the first two condensed)
+            // Longer numbers get smaller: "2.1.127" is only 2 bytes. (81d (0x51) and 127 (0x7F))
+            // So length / 2 should prevent any reallocations.
+            List<byte> encodedBytes = new List<byte>(oidValue.Length / 2);
+
+            EncodeRid(encodedBytes, ref rid);
+
+            while (startPos < oidValue.Length)
+            {
+                rid = ParseOidRid(oidValue, ref startPos);
+
+                EncodeRid(encodedBytes, ref rid);
+            }
+
+            return new byte[][]
+            {
+                new byte[] { (byte)DerSequenceReader.DerTag.ObjectIdentifier }, 
+                EncodeLength(encodedBytes.Count),
+                encodedBytes.ToArray(),
+            };
+        }
+
+        /// <summary>
         /// Make a constructed SEQUENCE of the byte-triplets of the contents.
         /// Each byte[][] should be a byte[][3] of {tag (1 byte), length (1-5 bytes), payload (variable)}.
         /// </summary>
@@ -355,6 +432,72 @@ namespace System.Security.Cryptography
             }
 
             return encodedSequence;
+        }
+
+        private static BigInteger ParseOidRid(string oidValue, ref int startIndex)
+        {
+            Debug.Assert(startIndex < oidValue.Length);
+
+            int endIndex = oidValue.IndexOf('.', startIndex);
+            
+            if (endIndex == -1)
+            {
+                endIndex = oidValue.Length;
+            }
+
+            Debug.Assert(endIndex > startIndex);
+
+            // The following code is equivalent to
+            // BigInteger.TryParse(temp, NumberStyles.None, CultureInfo.InvariantCulture, out value)
+            // but doesn't require creating the intermediate substring (TryParse doesn't take start+end/length values)
+
+            BigInteger value = BigInteger.Zero;
+
+            for (int position = startIndex; position < endIndex; position++)
+            {
+                value *= 10;
+                value += AtoI(oidValue[position]);
+            }
+
+            startIndex = endIndex + 1;
+            return value;
+        }
+
+        private static int AtoI(char c)
+        {
+            if (c >= '0' && c <= '9')
+                return c - '0';
+
+            throw new CryptographicException(SR.Argument_InvalidOidValue);
+        }
+
+        private static void EncodeRid(List<byte> encodedData, ref BigInteger rid)
+        {
+            BigInteger divisor = new BigInteger(128);
+            BigInteger unencoded = rid;
+
+            // The encoding is 7 bits of value and the 8th bit signifies "keep reading".
+            // So, for the input 1079 (0b0000 0100 0011 0111) the partitioning is
+            // 00|00 0100 0|011 0111, and the leading two bits are ignored.
+            // Therefore the encoded is 0b1000 1000 0011 0111 = 0x8837
+
+            Stack<byte> littleEndianBytes = new Stack<byte>();
+            byte continuance = 0;
+
+            while (unencoded != BigInteger.Zero)
+            {
+                BigInteger remainder;
+                unencoded = BigInteger.DivRem(unencoded, divisor, out remainder);
+
+                byte octet = (byte)remainder;
+                octet |= continuance;
+
+                // Any remaining (preceding) bytes need the continuance bit set.
+                continuance = 0x80;
+                littleEndianBytes.Push(octet);
+            }
+
+            encodedData.AddRange(littleEndianBytes);
         }
     }
 }
