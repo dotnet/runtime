@@ -131,20 +131,57 @@ namespace System.Net.Http
             _state.TcsReadFromResponseStream =
                 new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            _state.TcsQueryDataAvailable =
+                new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _state.TcsQueryDataAvailable.Task.ContinueWith((previousTask) => 
+                {
+                    if (previousTask.IsFaulted)
+                    {
+                        _state.TcsReadFromResponseStream.TrySetException(previousTask.Exception.InnerException);
+                    }
+                    else if (previousTask.IsCanceled)
+                    {
+                        _state.TcsReadFromResponseStream.TrySetCanceled();
+                    }
+                    else
+                    {
+                        int bytesToRead;
+                        int bytesAvailable = previousTask.Result;
+                        if (bytesAvailable > count)
+                        {
+                            bytesToRead = count;
+                        }
+                        else
+                        {
+                            bytesToRead = bytesAvailable;
+                        }
+                        
+                        lock (_state.Lock)
+                        {
+                            if (!Interop.WinHttp.WinHttpReadData(
+                                _state.RequestHandle,
+                                Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset),
+                                (uint)bytesToRead,
+                                IntPtr.Zero))
+                            {
+                                _state.TcsReadFromResponseStream.TrySetException(
+                                    new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError()));
+                            }
+                        }
+                    }
+                }, 
+                token, TaskContinuationOptions.None, TaskScheduler.Default);
+
+            // TODO: Issue #2165. Register callback on cancellation token to cancel WinHTTP operation.
+                
             lock (_state.Lock)
             {
-                if (!Interop.WinHttp.WinHttpReadData(
-                    _state.RequestHandle,
-                    Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset),
-                    (uint)count,
-                    IntPtr.Zero))
+                if (!Interop.WinHttp.WinHttpQueryDataAvailable(_state.RequestHandle, IntPtr.Zero))
                 {
                     _state.TcsReadFromResponseStream.TrySetException(
                         new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError()));
                 }
             }
-
-            // TODO: Issue #2165. Register callback on cancellation token to cancel WinHTTP operation.
 
             return _state.TcsReadFromResponseStream.Task;
         }
