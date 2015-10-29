@@ -11,6 +11,7 @@
     <ProjectGuid>{142469EC-D665-4FE2-845A-FDA69F9CC557}</ProjectGuid>
     <NuGetPackageImportStamp>d2615b94</NuGetPackageImportStamp>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -36,9 +37,6 @@
     <Compile Include="PipeTestBase.cs" />
     <Compile Include="PipeTest.Read.cs" />
     <Compile Include="PipeTest.Write.cs" />
-  </ItemGroup>
-  <!-- Performance Tests -->
-  <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
     <Compile Include="Performance\Perf.AnonymousPipeStream.cs" />
     <Compile Include="Performance\Perf.NamedPipeStream.cs" />
     <Compile Include="Performance\Perf.PipeTest.cs" />

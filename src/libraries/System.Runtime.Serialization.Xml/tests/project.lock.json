@@ -3,7 +3,7 @@
   "version": 2,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0023": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -653,7 +653,7 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x86": {
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0023": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -1303,7 +1303,7 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x64": {
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0023": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -1954,9 +1954,9 @@
     }
   },
   "libraries": {
-    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0022": {
+    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0023": {
       "type": "package",
-      "sha512": "uh4WpDAs7mW9aiMqcHojn1MEGNUND03qmSsWFyVApAcRQQ0ppCJvQ2sUGBdL1/8DB12NGzKizaGg0Tnd4PCnfA==",
+      "sha512": "7TOhATYXNVMF3HHGuM/WFHLt7r4uvFIUliplzIHsfL/KwxaHUbV6RI1f7EZRAioMbJI5520BGOOZ+9XIqtTQuA==",
       "files": [
         "lib/dotnet/xunit.performance.core.dll",
         "lib/dotnet/xunit.performance.core.pdb",
@@ -1968,8 +1968,8 @@
         "lib/net46/xunit.performance.core.XML",
         "lib/net46/xunit.performance.execution.desktop.dll",
         "lib/net46/xunit.performance.execution.desktop.pdb",
-        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0022.nupkg",
-        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0022.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0023.nupkg",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0023.nupkg.sha512",
         "Microsoft.DotNet.xunit.performance.nuspec"
       ]
     },
@@ -3244,6 +3244,7 @@
   },
   "projectFileDependencyGroups": {
     "": [
+      "Microsoft.DotNet.xunit.performance >= 1.0.0-*",
       "System.Collections >= 4.0.10",
       "System.Collections.Concurrent >= 4.0.10",
       "System.Collections.NonGeneric >= 4.0.0",
@@ -3270,8 +3271,7 @@
       "System.Xml.XDocument >= 4.0.10",
       "System.Xml.XmlDocument >= 4.0.0",
       "xunit >= 2.1.0",
-      "xunit.netcore.extensions >= 1.0.0-prerelease-*",
-      "Microsoft.DotNet.xunit.performance >= 1.0.0-alpha-build0022"
+      "xunit.netcore.extensions >= 1.0.0-prerelease-*"
     ],
     "DNXCore,Version=v5.0": []
   }
