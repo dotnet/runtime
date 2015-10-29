@@ -111,10 +111,10 @@ enum SslErrorCode : int32_t
 };
 
 // the function pointer definition for the callback used in SslCtxSetVerify
-typedef int32_t(*SslCtxSetVerifyCallback)(int32_t, X509_STORE_CTX*);
+typedef int32_t (*SslCtxSetVerifyCallback)(int32_t, X509_STORE_CTX*);
 
 // the function pointer definition for the callback used in SslCtxSetCertVerifyCallback
-typedef int32_t(*SslCtxSetCertVerifyCallbackCallback)(X509_STORE_CTX*, void* arg);
+typedef int32_t (*SslCtxSetCertVerifyCallbackCallback)(X509_STORE_CTX*, void* arg);
 
 /*
 Ensures that libssl is correctly initialized and ready to use.
