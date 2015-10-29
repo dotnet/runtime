@@ -12,6 +12,8 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using System.IO;
+using System.Text;
 
 namespace SerializationTypes
 {
@@ -2479,6 +2481,219 @@ public class AppEnvironment
     [DataMember(Name = "screen_dpi(x:y)")]
     public int ScreenDpi { get; set; }
 }
+
+#region Types for data contract surrogate tests
+
+public class NonSerializablePerson
+{
+    public string Name { get; private set; }
+    public int Age { get; private set; }
+
+    public NonSerializablePerson(string name, int age)
+    {
+        this.Name = name;
+        this.Age = age;
+    }
+
+    public override string ToString()
+    {
+        return string.Format("Person[Name={0},Age={1}]", this.Name, this.Age);
+    }
+}
+
+public class Family
+{
+    public NonSerializablePerson[] Members;
+
+    public override string ToString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("Family members:");
+        foreach (var member in this.Members)
+        {
+            sb.AppendLine("  " + member);
+        }
+
+        return sb.ToString();
+    }
+}
+
+[DataContract]
+public class NonSerializablePersonSurrogate
+{
+    [DataMember(Name = "PersonName")]
+    public string Name { get; set; }
+    [DataMember(Name = "PersonAge")]
+    public int Age { get; set; }
+}
+
+public class MyPersonSurrogateProvider : ISerializationSurrogateProvider
+{
+    public Type GetSurrogateType(Type type)
+    {
+        if (type == typeof(NonSerializablePerson))
+        {
+            return typeof(NonSerializablePersonSurrogate);
+        }
+        else
+        {
+            return type;
+        }
+    }
+
+    public object GetDeserializedObject(object obj, Type targetType)
+    {
+        if (obj is NonSerializablePersonSurrogate)
+        {
+            NonSerializablePersonSurrogate person = (NonSerializablePersonSurrogate)obj;
+            return new NonSerializablePerson(person.Name, person.Age);
+        }
+
+        return obj;
+    }
+
+    public object GetObjectToSerialize(object obj, Type targetType)
+    {
+        if (obj is NonSerializablePerson)
+        {
+            NonSerializablePerson nsp = (NonSerializablePerson)obj;
+            NonSerializablePersonSurrogate serializablePerson = new NonSerializablePersonSurrogate
+            {
+                Name = nsp.Name,
+                Age = nsp.Age,
+            };
+
+            return serializablePerson;
+        }
+
+        return obj;
+    }
+}
+
+[DataContract]
+class MyFileStream : IDisposable
+{
+    private FileStream stream;
+
+    internal string Name
+    {
+        get
+        {
+            return this.stream.Name;
+        }
+    }
+
+    internal MyFileStream(string fileName)
+    {
+        this.stream = new FileStream(
+                            fileName,
+                            FileMode.OpenOrCreate,
+                            FileAccess.ReadWrite,
+                            FileShare.ReadWrite);
+    }
+
+    internal void WriteLine(string line)
+    {
+        using (StreamWriter writer = new StreamWriter(this.stream))
+        {
+            writer.WriteLine(line);
+        }
+    }
+
+    internal string ReadLine()
+    {
+        using (StreamReader reader = new StreamReader(this.stream))
+        {
+            return reader.ReadLine();
+        }
+    }
+
+    public void Dispose()
+    {
+        this.stream.Dispose();
+    }
+}
+
+[DataContract]
+class MyFileStreamReference
+{
+    [DataMember]
+    private string fileStreamName;
+
+    private MyFileStreamReference(string fileStreamName)
+    {
+        this.fileStreamName = fileStreamName;
+    }
+
+    internal static MyFileStreamReference Create(MyFileStream myFileStream)
+    {
+        return new MyFileStreamReference(myFileStream.Name);
+    }
+
+    internal MyFileStream ToMyFileStream()
+    {
+        return new MyFileStream(fileStreamName);
+    }
+}
+
+internal class MyFileStreamSurrogateProvider : ISerializationSurrogateProvider
+{
+    static MyFileStreamSurrogateProvider()
+    {
+        Singleton = new MyFileStreamSurrogateProvider();
+    }
+
+    internal static MyFileStreamSurrogateProvider Singleton { get; private set; }
+
+    public Type GetSurrogateType(Type type)
+    {
+        if (type == typeof (MyFileStream))
+        {
+            return typeof (MyFileStreamReference);
+        }
+
+        return type;
+    }
+
+    public object GetObjectToSerialize(object obj, Type targetType)
+    {
+        if (obj == null)
+        {
+            return null;
+        }
+        MyFileStream myFileStream = obj as MyFileStream;
+        if (null != myFileStream)
+        {
+            if (targetType != typeof (MyFileStreamReference))
+            {
+                throw new ArgumentException("Target type for serialization must be MyFileStream");
+            }
+            return MyFileStreamReference.Create(myFileStream);
+        }
+
+        return obj;
+    }
+
+    public object GetDeserializedObject(object obj, Type targetType)
+    {
+        if (obj == null)
+        {
+            return null;
+        }
+        MyFileStreamReference myFileStreamRef = obj as MyFileStreamReference;
+        if (null != myFileStreamRef)
+        {
+            if (targetType != typeof (MyFileStream))
+            {
+                throw new ArgumentException("Target type for deserialization must be MyFileStream");
+            }
+            return myFileStreamRef.ToMyFileStream();
+        }
+        return obj;
+    }
+}
+
+#endregion
 
 public class TypeWithBinaryProperty
 {
