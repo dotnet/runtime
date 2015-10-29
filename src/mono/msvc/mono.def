@@ -506,7 +506,6 @@ mono_mempool_alloc
 mono_mempool_alloc0
 mono_mempool_contains_addr
 mono_mempool_destroy
-mono_mempool_empty
 mono_mempool_get_allocated
 mono_mempool_invalidate
 mono_mempool_new
