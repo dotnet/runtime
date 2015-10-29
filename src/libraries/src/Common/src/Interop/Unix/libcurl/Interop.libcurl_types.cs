@@ -11,45 +11,12 @@ internal static partial class Interop
 {
     internal static partial class libcurl
     {
-        // Class for constants defined for the enum CURLMcode in multi.h
-        internal static partial class CURLMcode
-        {
-            internal const int CURLM_OK = 0;
-            internal const int CURLM_BAD_HANDLE = 1;
-            internal const int CURLM_BAD_EASY_HANDLE = 2;
-            internal const int CURLM_OUT_OF_MEMORY = 3;
-            internal const int CURLM_INTERNAL_ERROR = 4;
-            internal const int CURLM_BAD_SOCKET = 5;
-            internal const int CURLM_UNKNOWN_OPTION = 6;
-            internal const int CURLM_ADDED_ALREADY = 7;
-        }
-
         // Class for constants defined for the results of CURL_SEEKFUNCTION
         internal static partial class CURL_SEEKFUNC
         {
             internal const int CURL_SEEKFUNC_OK = 0;
             internal const int CURL_SEEKFUNC_FAIL = 1;
             internal const int CURL_SEEKFUNC_CANTSEEK = 2;
-        }
-
-        // Class for constants defined for the enum CURLMSG in multi.h
-        internal static partial class CURLMSG
-        {
-            internal const int CURLMSG_DONE = 1;
-        }
-
-        // Type definition of CURLMsg from multi.h
-        [StructLayout(LayoutKind.Explicit)]
-        internal struct CURLMsg
-        {
-            [FieldOffset(0)]
-            internal int msg;
-            [FieldOffset(8)]
-            internal IntPtr easy_handle;
-            [FieldOffset(16)]
-            internal IntPtr data;
-            [FieldOffset(16)]
-            internal Http.CURLcode result;
         }
 
         // Poll values used with curl_multi_wait and curl_waitfd.events/revents
@@ -71,8 +38,8 @@ internal static partial class Interop
             IntPtr context);
 
         public delegate int seek_callback(
-            IntPtr userp, 
-            curl_off_t offset, 
+            IntPtr userp,
+            curl_off_t offset,
             int origin);
 
         public const int CURL_READFUNC_ABORT = 0x10000000;

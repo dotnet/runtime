@@ -178,9 +178,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_types.cs">
       <Link>Common\Interop\Unix\libcurl\Interop.libcurl_types.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.SafeCurlMultiHandle.cs">
-      <Link>Common\Interop\Unix\libcurl\Interop.SafeCurlMultiHandle.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs</Link>
     </Compile>
@@ -189,6 +186,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.Multi.cs">
+      <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.Multi.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.SList.cs">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.SList.cs</Link>
