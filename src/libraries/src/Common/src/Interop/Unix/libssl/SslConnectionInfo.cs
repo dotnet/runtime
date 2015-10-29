@@ -31,7 +31,10 @@ namespace System.Net
             {
                 throw Interop.OpenSsl.CreateSslException(SR.net_ssl_get_connection_info_failed);
             }
-            // TODO (Issue #3362) map key sizes
+
+            //Openssl does not provide a way to return a exchange key size.
+            //It internally does calculate the key size before generating key to exchange
+            //It is not a constant (Algorthim specific) either that we can hardcode and return. 
         }
 
         private SslProtocols MapProtocolVersion(string protocolVersion)

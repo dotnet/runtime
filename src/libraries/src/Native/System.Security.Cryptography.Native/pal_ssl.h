@@ -4,6 +4,8 @@
 #include "pal_crypto_types.h"
 
 #include <openssl/ssl.h>
+#include <openssl/md5.h>
+#include <openssl/sha.h>
 
 /*
 These values should be kept in sync with System.Security.Authentication.SslProtocols.
@@ -86,6 +88,16 @@ enum class HashAlgorithmType : int32_t
     SSL_GOST94 = 229410,
     SSL_GOST89 = 229411,
     SSL_AEAD = 229412,
+};
+
+enum class DataHashSize : int32_t
+{
+    MD5_HashKeySize = 8 * MD5_DIGEST_LENGTH,
+    SHA1_HashKeySize = 8 * SHA_DIGEST_LENGTH,
+    SHA256_HashKeySize = 8 * SHA256_DIGEST_LENGTH,
+    SHA384_HashKeySize = 8 * SHA384_DIGEST_LENGTH,
+    GOST_HashKeySize = 256,
+    Default = 0,
 };
 
 enum SslErrorCode : int32_t
@@ -215,7 +227,12 @@ Returns the connection information for the SSL instance.
 Returns 1 upon success, otherwise 0.
 */
 
-extern "C" int32_t GetSslConnectionInfo(SSL* ssl, CipherAlgorithmType* dataCipherAlg, ExchangeAlgorithmType* keyExchangeAlg, HashAlgorithmType* dataHashAlg, int32_t* dataKeySize, int32_t* hashKeySize);
+extern "C" int32_t GetSslConnectionInfo(SSL* ssl,
+                                        CipherAlgorithmType* dataCipherAlg,
+                                        ExchangeAlgorithmType* keyExchangeAlg,
+                                        HashAlgorithmType* dataHashAlg,
+                                        int32_t* dataKeySize,
+                                        DataHashSize* hashKeySize);
 
 /*
 Shims the SSL_write method.
