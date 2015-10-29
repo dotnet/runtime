@@ -3368,6 +3368,12 @@ struct GenTreePutArgStk: public GenTreeUnOp
     }
 #endif // FEATURE_FASTTAILCALL
 
+    unsigned getArgOffset() { return gtSlotNum * TARGET_POINTER_SIZE; }
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    unsigned getArgSize() { return gtNumSlots * TARGET_POINTER_SIZE; }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
     //------------------------------------------------------------------------
     // setGcPointers: Sets the number of references and the layout of the struct object returned by the VM.
