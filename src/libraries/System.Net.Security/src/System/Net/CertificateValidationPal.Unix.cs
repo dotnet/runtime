@@ -243,11 +243,5 @@ namespace System.Net
                 return -1;
             }
         }
-
-        private static int QueryContextIssuerList(SafeDeleteContext securityContext, out Object issuerList)
-        {
-            // TODO (Issue #3362) To be implemented
-            throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
-        }
     }
 }

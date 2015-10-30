@@ -53,7 +53,7 @@ namespace System.Net.Security
 
                 _HashCode ^= allowedProtocols;
                 _HashCode ^= (int)encryptionPolicy;
-                _HashCode ^= serverMode ? 5 : 7; //TODO (Issue #3362) used a prime number here as it's a XOR. Figure out appropriate value.
+                _HashCode ^= serverMode ? 0x10000 : 0x20000;
                 _AllowedProtocols = allowedProtocols;
                 _EncryptionPolicy = encryptionPolicy;
                 _isServerMode = serverMode;

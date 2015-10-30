@@ -608,7 +608,7 @@ extern "C" void GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maxim
 
     if (trailer)
     {
-        // TODO (Issue #3362) : Trailer size requirement is changing based on protocol
+        // TODO (Issue #4223) : Trailer size requirement is changing based on protocol
         //       SSL3/TLS1.0 - 68, TLS1.1 - 37 and TLS1.2 - 24
         //       Current usage is only to compute max input buffer size for
         //       encryption and so setting to the max
