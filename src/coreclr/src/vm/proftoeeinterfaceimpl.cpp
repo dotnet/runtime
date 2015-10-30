@@ -582,6 +582,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     {
         *pInterface = static_cast<ICorProfilerInfo6 *>(this);
     }
+    else if (id == IID_ICorProfilerInfo7)
+    {
+        *pInterface = static_cast<ICorProfilerInfo7 *>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown *>(static_cast<ICorProfilerInfo *>(this));
@@ -9123,7 +9127,188 @@ HRESULT ProfToEEInterfaceImpl::EnumNgenModuleMethodsInliningThisMethod(
     return hr;
 }
 
+HRESULT ProfToEEInterfaceImpl::GetInMemorySymbolsLength(
+    ModuleID moduleId,
+    DWORD* pCountSymbolBytes)
+{
 
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SO_NOT_MAINLINE;
+    }
+    CONTRACTL_END;
+
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+        kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+            LL_INFO10,
+            "**PROF: GetInMemorySymbolsLength.\n"));
+
+    HRESULT hr = S_OK;
+    if (pCountSymbolBytes == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    *pCountSymbolBytes = 0;
+
+    Module* pModule = reinterpret_cast< Module* >(moduleId);
+    if (pModule == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    if (pModule->IsBeingUnloaded())
+    {
+        return CORPROF_E_DATAINCOMPLETE;
+    }
+
+    //This method would work fine on reflection.emit, but there would be no way to know
+    //if some other thread was changing the size of the symbols before this method returned.
+    //Adding events or locks to detect/prevent changes would make the scenario workable
+    if (pModule->IsReflection())
+    {
+        return COR_PRF_MODULE_DYNAMIC;
+    }
+    
+    CGrowableStream* pStream = pModule->GetInMemorySymbolStream();
+    if (pStream == NULL)
+    {
+        return S_OK;
+    }
+
+    STATSTG SizeData = { 0 };
+    hr = pStream->Stat(&SizeData, STATFLAG_NONAME);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+    if (SizeData.cbSize.u.HighPart > 0)
+    {
+        return COR_E_OVERFLOW;
+    }
+    *pCountSymbolBytes = SizeData.cbSize.u.LowPart;
+
+    return S_OK;
+}
+
+HRESULT ProfToEEInterfaceImpl::ReadInMemorySymbols(
+    ModuleID moduleId,
+    DWORD symbolsReadOffset,
+    BYTE* pSymbolBytes,
+    DWORD countSymbolBytes,
+    DWORD* pCountSymbolBytesRead)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SO_NOT_MAINLINE;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+        kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+            LL_INFO10,
+            "**PROF: ReadInMemorySymbols.\n"));
+
+    HRESULT hr = S_OK;
+    if (pSymbolBytes == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    if (pCountSymbolBytesRead == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    *pCountSymbolBytesRead = 0;
+
+    Module* pModule = reinterpret_cast< Module* >(moduleId);
+    if (pModule == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    if (pModule->IsBeingUnloaded())
+    {
+        return CORPROF_E_DATAINCOMPLETE;
+    }
+
+    //This method would work fine on reflection.emit, but there would be no way to know
+    //if some other thread was changing the size of the symbols before this method returned.
+    //Adding events or locks to detect/prevent changes would make the scenario workable
+    if (pModule->IsReflection())
+    {
+        return COR_PRF_MODULE_DYNAMIC;
+    }
+
+    CGrowableStream* pStream = pModule->GetInMemorySymbolStream();
+    if (pStream == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    STATSTG SizeData = { 0 };
+    hr = pStream->Stat(&SizeData, STATFLAG_NONAME);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+    if (SizeData.cbSize.u.HighPart > 0)
+    {
+        return COR_E_OVERFLOW;
+    }
+    DWORD streamSize = SizeData.cbSize.u.LowPart;
+    if (symbolsReadOffset >= streamSize)
+    {
+        return E_INVALIDARG;
+    }
+
+    *pCountSymbolBytesRead = min(streamSize - symbolsReadOffset, countSymbolBytes);
+    memcpy_s(pSymbolBytes, countSymbolBytes, ((BYTE*)pStream->GetRawBuffer().StartAddress()) + symbolsReadOffset, *pCountSymbolBytesRead);
+
+    return S_OK;
+}
+
+HRESULT ProfToEEInterfaceImpl::ApplyMetaData(
+    ModuleID    moduleId)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SO_NOT_MAINLINE;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach, (LF_CORPROF, LL_INFO1000, "**PROF: ApplyMetaData.\n"));
+
+    if (moduleId == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        Module *pModule = (Module *)moduleId;
+        _ASSERTE(pModule != NULL);
+        if (pModule->IsBeingUnloaded())
+        {
+            hr = CORPROF_E_DATAINCOMPLETE;
+        }
+       else
+       {
+            pModule->ApplyMetaData();
+       }
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
 
 //---------------------------------------------------------------------------------------
 //

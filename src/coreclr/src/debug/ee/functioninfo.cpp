@@ -806,7 +806,6 @@ DWORD DebuggerJitInfo::MapNativeOffsetToIL(SIZE_T nativeOffsetToMap,
                     {
                         // If the caller requested to skip prologs, we simply restart the walk
                         // with the offset set to the end of the prolog.
-                        m = GetSequenceMap();
                         nativeOffset = m->nativeEndOffset;
                         continue;
                     }

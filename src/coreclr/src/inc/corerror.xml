@@ -3650,6 +3650,11 @@
     <Comment> This call can't be completed safely because the runtime is not suspended </Comment>
 </HRESULT>
 -->
+    
+<HRESULT NumericValue="0x80131382">
+    <SymbolicName>CORPROF_E_CALLBACK7_REQUIRED</SymbolicName>
+    <Comment> Profiler must implement ICorProfilerCallback7 interface for this call to be supported. </Comment>
+</HRESULT>
 
 <HRESULT NumericValue="0x80131400">
 	<SymbolicName>SECURITY_E_XML_TO_ASN_ENCODING</SymbolicName>
