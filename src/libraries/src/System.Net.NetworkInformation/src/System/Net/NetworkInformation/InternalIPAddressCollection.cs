@@ -1,20 +1,20 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 
 namespace System.Net.NetworkInformation
 {
     internal class InternalIPAddressCollection : IPAddressCollection
     {
-        private readonly Collection<IPAddress> _addresses;
+        private readonly List<IPAddress> _addresses;
 
         protected internal InternalIPAddressCollection()
         {
-            _addresses = new Collection<IPAddress>();
+            _addresses = new List<IPAddress>();
         }
 
-        internal InternalIPAddressCollection(Collection<IPAddress> addresses)
+        internal InternalIPAddressCollection(List<IPAddress> addresses)
         {
             _addresses = addresses;
         }

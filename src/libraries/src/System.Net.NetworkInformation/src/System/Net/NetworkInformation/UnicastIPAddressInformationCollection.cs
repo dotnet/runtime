@@ -2,14 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace System.Net.NetworkInformation
 {
     public class UnicastIPAddressInformationCollection : ICollection<UnicastIPAddressInformation>
     {
-        private readonly Collection<UnicastIPAddressInformation> _addresses =
-            new Collection<UnicastIPAddressInformation>();
+        private readonly List<UnicastIPAddressInformation> _addresses =
+            new List<UnicastIPAddressInformation>();
 
         protected internal UnicastIPAddressInformationCollection()
         {

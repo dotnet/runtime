@@ -2,13 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace System.Net.NetworkInformation
 {
     public class MulticastIPAddressInformationCollection : ICollection<MulticastIPAddressInformation>
     {
-        private readonly Collection<MulticastIPAddressInformation> _addresses = new Collection<MulticastIPAddressInformation>();
+        private readonly List<MulticastIPAddressInformation> _addresses = new List<MulticastIPAddressInformation>();
 
         protected internal MulticastIPAddressInformationCollection()
         {

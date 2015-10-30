@@ -1,8 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.ObjectModel;
-using System.IO;
+using System.Collections.Generic;
 
 namespace System.Net.NetworkInformation
 {
@@ -74,21 +73,21 @@ namespace System.Net.NetworkInformation
         // and seperates the information about by each interface.
         public GatewayIPAddressInformationCollection GetGatewayAddresses()
         {
-            Collection<GatewayIPAddressInformation> innerCollection
+            List<GatewayIPAddressInformation> innerCollection
                 = StringParsingHelpers.ParseGatewayAddressesFromRouteFile(NetworkFiles.Ipv4RouteFile, _linuxNetworkInterface.Name);
             return new GatewayIPAddressInformationCollection(innerCollection);
         }
 
         private IPAddressCollection GetDhcpServerAddresses()
         {
-            Collection<IPAddress> internalCollection
+            List<IPAddress> internalCollection
                 = StringParsingHelpers.ParseDhcpServerAddressesFromLeasesFile(NetworkFiles.DHClientLeasesFile, _linuxNetworkInterface.Name);
             return new InternalIPAddressCollection(internalCollection);
         }
 
         private IPAddressCollection GetWinsServerAddresses()
         {
-            Collection<IPAddress> internalCollection
+            List<IPAddress> internalCollection
                 = StringParsingHelpers.ParseWinsServerAddressesFromSmbConfFile(NetworkFiles.SmbConfFile);
             return new InternalIPAddressCollection(internalCollection);
         }

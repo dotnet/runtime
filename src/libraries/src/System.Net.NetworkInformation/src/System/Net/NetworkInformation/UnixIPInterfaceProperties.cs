@@ -1,8 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.ObjectModel;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 
@@ -96,7 +95,7 @@ namespace System.Net.NetworkInformation
 
         private static IPAddressCollection GetDnsAddresses()
         {
-            Collection<IPAddress> internalAddresses = StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(NetworkFiles.EtcResolvConfFile);
+            List<IPAddress> internalAddresses = StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(NetworkFiles.EtcResolvConfFile);
             return new InternalIPAddressCollection(internalAddresses);
         }
     }

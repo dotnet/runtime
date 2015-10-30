@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Net.NetworkInformation.Tests
@@ -12,7 +12,7 @@ namespace System.Net.NetworkInformation.Tests
         public static void GatewayAddressParsing()
         {
             FileUtil.NormalizeLineEndings("route", "route_normalized1");
-            Collection<GatewayIPAddressInformation> gatewayAddresses = StringParsingHelpers.ParseGatewayAddressesFromRouteFile("route_normalized1", "wlan0");
+            List<GatewayIPAddressInformation> gatewayAddresses = StringParsingHelpers.ParseGatewayAddressesFromRouteFile("route_normalized1", "wlan0");
             Assert.Equal(3, gatewayAddresses.Count);
 
             Assert.Equal(StringParsingHelpers.ParseHexIPAddress("0180690A"), gatewayAddresses[0].Address);
@@ -24,7 +24,7 @@ namespace System.Net.NetworkInformation.Tests
         public static void DhcpServerAddressParsing()
         {
             FileUtil.NormalizeLineEndings("dhclient.leases", "dhclient.leases_normalized0");
-            Collection<IPAddress> dhcpServerAddresses = StringParsingHelpers.ParseDhcpServerAddressesFromLeasesFile("dhclient.leases_normalized0", "wlan0");
+            List<IPAddress> dhcpServerAddresses = StringParsingHelpers.ParseDhcpServerAddressesFromLeasesFile("dhclient.leases_normalized0", "wlan0");
             Assert.Equal(1, dhcpServerAddresses.Count);
             Assert.Equal(IPAddress.Parse("10.105.128.4"), dhcpServerAddresses[0]);
         }
@@ -34,7 +34,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             FileUtil.NormalizeLineEndings("smb.conf", "smb.conf_normalized");
 
-            Collection<IPAddress> winsServerAddresses = StringParsingHelpers.ParseWinsServerAddressesFromSmbConfFile("smb.conf_normalized");
+            List<IPAddress> winsServerAddresses = StringParsingHelpers.ParseWinsServerAddressesFromSmbConfFile("smb.conf_normalized");
             Assert.Equal(1, winsServerAddresses.Count);
             Assert.Equal(IPAddress.Parse("255.1.255.1"), winsServerAddresses[0]);
         }
