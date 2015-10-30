@@ -202,10 +202,10 @@ DEFINE_DACVAR(ULONG, PTR_BYTE, dac__g_highest_address, ::g_highest_address)
 DEFINE_DACVAR(ULONG, GCHeap, dac__g_pGCHeap, ::g_pGCHeap)
 
 #ifdef GC_CONFIG_DRIVEN
-DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__interesting_data_per_heap, ::interesting_data_per_heap)
-DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__compact_reasons_per_heap, ::compact_reasons_per_heap)
-DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__expand_mechanisms_per_heap, ::expand_mechanisms_per_heap)
-DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__interesting_mechanism_bits_per_heap, ::interesting_mechanism_bits_per_heap)
+DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__interesting_data_per_heap, WKS::interesting_data_per_heap)
+DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__compact_reasons_per_heap, WKS::compact_reasons_per_heap)
+DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__expand_mechanisms_per_heap, WKS::expand_mechanisms_per_heap)
+DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__interesting_mechanism_bits_per_heap, WKS::interesting_mechanism_bits_per_heap)
 DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__gc_global_mechanisms, ::gc_global_mechanisms)
 #endif //GC_CONFIG_DRIVEN
 
