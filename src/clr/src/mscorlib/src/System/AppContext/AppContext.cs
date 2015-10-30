@@ -26,7 +26,9 @@ namespace System
 #endif
             get
             {
-                return AppDomain.CurrentDomain.BaseDirectory;
+                // The value of APP_CONTEXT_BASE_DIRECTORY key has to be a string and it is not allowed to be any other type. 
+                // Otherwise the caller will get invalid cast exception
+                return (string) AppDomain.CurrentDomain.GetData("APP_CONTEXT_BASE_DIRECTORY") ?? AppDomain.CurrentDomain.BaseDirectory;
             }
         }
 

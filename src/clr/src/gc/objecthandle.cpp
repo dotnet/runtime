@@ -1805,6 +1805,7 @@ void Ref_VerifyHandleTable(UINT condemned, UINT maxgen, ScanContext* sc)
 #endif // FEATURE_COMINTEROP
         HNDTYPE_ASYNCPINNED,
         HNDTYPE_SIZEDREF,
+        HNDTYPE_DEPENDENT,
     };
 
     // verify these handles

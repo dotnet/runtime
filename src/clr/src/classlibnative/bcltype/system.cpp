@@ -588,12 +588,10 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     }
 #endif // !FEATURE_PAL
 
-#ifdef FEATURE_WINDOWSPHONE
     // stash the user-provided exception object. this will be used as
     // the inner exception object to the FatalExecutionEngineException.
     if (gc.refExceptionForWatsonBucketing != NULL)
         pThread->SetLastThrownObject(gc.refExceptionForWatsonBucketing);
-#endif // FEATURE_WINDOWSPHONE
 
     EEPolicy::HandleFatalError(exitCode, retAddress, pszMessage);
 

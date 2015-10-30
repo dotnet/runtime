@@ -633,7 +633,11 @@ public:
             case FrameworkAssembly_SystemRuntimeWindowsRuntimeUIXaml:
                 return "System.Runtime.WindowsRuntime.UI.Xaml";
             case FrameworkAssembly_SystemNumericsVectors:
+#ifdef FEATURE_CORECLR
                 return "System.Numerics.Vectors";
+#else
+                return "System.Numerics";
+#endif 
             default:
                 _ASSERTE(!"Invalid AssemblyRef token!");
                 return NULL;

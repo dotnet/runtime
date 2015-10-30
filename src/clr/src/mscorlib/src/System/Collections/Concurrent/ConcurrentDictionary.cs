@@ -84,10 +84,9 @@ namespace System.Collections.Concurrent
         // that generate collisions. Whenever a GrowTable() should be the only place that changes this
 #if !FEATURE_CORECLR
         // The field should be have been marked as NonSerialized but because we shipped it without that attribute in 4.5.1.
-        // we have to also add the OptionalField attribute to prevent cases where the field was serialized and we try to deserialize it after the fix.
-        // See DevDiv:899074 for more information
+        // we can't add it back without breaking compat. To maximize compat we are going to keep the OptionalField attribute 
+        // This will prevent cases where the field was not serialized.
         [OptionalField]
-        [NonSerialized]
 #endif
         private int m_keyRehashCount;
 

@@ -2083,7 +2083,7 @@ struct StackTraceElement
 #if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     // TRUE if this element represents the last frame of the foreign
     // exception stack trace.
-    BOOL fIsLastFrameFromForeignStackTrace;
+    BOOL            fIsLastFrameFromForeignStackTrace;
 #endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
 };
@@ -8431,7 +8431,6 @@ DECLARE_API (DumpGCLog)
     INIT_API_NODAC();
     MINIDUMP_NOT_SUPPORTED();    
     
-
     if (GetEEFlavor() == UNKNOWNEE) 
     {
         ExtOut("CLR not loaded\n");
@@ -8446,7 +8445,6 @@ DECLARE_API (DumpGCLog)
     if (*args != 0)
         fileName = args;
     
-    // Try to find stress log symbols
     DWORD_PTR dwAddr = GetValueFromExpression(MAIN_CLR_MODULE_NAME_A "!SVR::gc_log_buffer");
     moveN (dwAddr, dwAddr);
 
@@ -8460,7 +8458,7 @@ DECLARE_API (DumpGCLog)
             return E_FAIL;
         }
     }
-
+    
     ExtOut("Dumping GC log at %08x\n", dwAddr);
 
     g_bDacBroken = FALSE;
@@ -8511,6 +8509,7 @@ DECLARE_API (DumpGCLog)
 
     DWORD dwWritten = 0;
     WriteFile (hGCLog, bGCLog, iRealLogSize + 1, &dwWritten, NULL);
+
     Status = S_OK;
 
 exit:
@@ -8529,8 +8528,295 @@ exit:
 
     return Status;
 }
-
 #endif //TRACE_GC
+
+DECLARE_API (DumpGCConfigLog)
+{
+    INIT_API();
+#ifdef GC_CONFIG_DRIVEN    
+    MINIDUMP_NOT_SUPPORTED();    
+
+    if (GetEEFlavor() == UNKNOWNEE) 
+    {
+        ExtOut("CLR not loaded\n");
+        return Status;
+    }
+
+    const char* fileName = "GCConfigLog.txt";
+
+    while (isspace (*args))
+        args ++;
+
+    if (*args != 0)
+        fileName = args;
+    
+    if (!InitializeHeapData ())
+    {
+        ExtOut("GC Heap not initialized yet.\n");
+        return S_OK;
+    }
+
+    BOOL fIsServerGC = IsServerBuild();
+
+    DWORD_PTR dwAddr = 0; 
+    DWORD_PTR dwAddrOffset = 0;
+    
+    if (fIsServerGC) 
+    {
+        dwAddr = GetValueFromExpression(MAIN_CLR_MODULE_NAME_A "!SVR::gc_config_log_buffer");
+        dwAddrOffset = GetValueFromExpression(MAIN_CLR_MODULE_NAME_A "!SVR::gc_config_log_buffer_offset");
+    }
+    else
+    {
+        dwAddr = GetValueFromExpression(MAIN_CLR_MODULE_NAME_A "!WKS::gc_config_log_buffer");
+        dwAddrOffset = GetValueFromExpression(MAIN_CLR_MODULE_NAME_A "!WKS::gc_config_log_buffer_offset");
+    }
+
+    moveN (dwAddr, dwAddr);
+    moveN (dwAddrOffset, dwAddrOffset);
+
+    if (dwAddr == 0)
+    {
+        ExtOut("Can't get either WKS or SVR GC's config log buffer");
+        return E_FAIL;
+    }
+    
+    ExtOut("Dumping GC log at %08x\n", dwAddr);
+
+    g_bDacBroken = FALSE;
+    
+    ExtOut("Attempting to dump GC log to file '%s'\n", fileName);
+    
+    Status = E_FAIL;
+
+    HANDLE hGCLog = CreateFileA(
+        fileName,
+        GENERIC_WRITE,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+
+    if (hGCLog == INVALID_HANDLE_VALUE)
+    {
+        ExtOut("failed to create file: %d\n", GetLastError());
+        goto exit;
+    }
+
+    int iLogSize = (int)dwAddrOffset;
+
+    BYTE* bGCLog = new NOTHROW BYTE[iLogSize];
+    if (bGCLog == NULL)
+    {
+        ReportOOM();
+        goto exit;
+    }
+
+    memset (bGCLog, 0, iLogSize);
+    if (!SafeReadMemory(dwAddr, bGCLog, iLogSize, NULL))
+    {
+        ExtOut("failed to read memory from %08x\n", dwAddr);
+    }
+
+    SetFilePointer (hGCLog, 0, 0, FILE_END);
+    DWORD dwWritten = 0;
+    WriteFile (hGCLog, bGCLog, iLogSize, &dwWritten, NULL);
+
+    Status = S_OK;
+
+exit:
+
+    if (hGCLog != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle (hGCLog);
+    }
+
+    if (Status == S_OK)
+        ExtOut("SUCCESS: Stress log dumped\n");
+    else if (Status == S_FALSE)
+        ExtOut("No Stress log in the image, no file written\n");
+    else
+        ExtOut("FAILURE: Stress log not dumped\n");
+
+    return Status;
+#else
+    ExtOut("Not implemented\n");
+    return S_OK;
+#endif //GC_CONFIG_DRIVEN
+}
+
+#ifdef GC_CONFIG_DRIVEN
+static const char * const str_interesting_data_points[] =
+{
+    "pre short", // 0
+    "post short", // 1
+    "merged pins", // 2
+    "converted pins", // 3
+    "pre pin", // 4
+    "post pin", // 5
+    "pre and post pin", // 6
+    "pre short padded", // 7
+    "post short padded", // 7
+};
+
+static char* str_heap_compact_reasons[] = 
+{
+    "low on ephemeral space",
+    "high fragmetation",
+    "couldn't allocate gaps",
+    "user specfied compact LOH",
+    "last GC before OOM",
+    "induced compacting GC",
+    "fragmented gen0 (ephemeral GC)", 
+    "high memory load (ephemeral GC)",
+    "high memory load and frag",
+    "very high memory load and frag",
+    "no gc mode"
+};
+
+static BOOL gc_heap_compact_reason_mandatory_p[] =
+{
+    TRUE, //compact_low_ephemeral = 0,
+    FALSE, //compact_high_frag = 1,
+    TRUE, //compact_no_gaps = 2,
+    TRUE, //compact_loh_forced = 3,
+    TRUE, //compact_last_gc = 4
+    TRUE, //compact_induced_compacting = 5,
+    FALSE, //compact_fragmented_gen0 = 6, 
+    FALSE, //compact_high_mem_load = 7, 
+    TRUE, //compact_high_mem_frag = 8, 
+    TRUE, //compact_vhigh_mem_frag = 9,
+    TRUE //compact_no_gc_mode = 10
+};
+
+static char* str_heap_expand_mechanisms[] = 
+{
+    "reused seg with normal fit",
+    "reused seg with best fit",
+    "expand promoting eph",
+    "expand with a new seg",
+    "no memory for a new seg",
+    "expand in next full GC"
+};
+
+static char* str_bit_mechanisms[] = 
+{
+    "using mark list",
+    "demotion"
+};
+
+static const char * const str_gc_global_mechanisms[] =
+{
+    "concurrent GCs", 
+    "compacting GCs",
+    "promoting GCs",
+    "GCs that did demotion",
+    "card bundles",
+    "elevation logic"
+};
+
+void PrintInterestingGCInfo(DacpGCInterestingInfoData* dataPerHeap)
+{
+    ExtOut("Interesting data points\n");
+    size_t* data = dataPerHeap->interestingDataPoints;
+    for (int i = 0; i < NUM_GC_DATA_POINTS; i++)
+    {
+        ExtOut("%20s: %d\n", str_interesting_data_points[i], data[i]);
+    }
+
+    ExtOut("\nCompacting reasons\n");
+    data = dataPerHeap->compactReasons;
+    for (int i = 0; i < MAX_COMPACT_REASONS_COUNT; i++)
+    {
+        ExtOut("[%s]%35s: %d\n", (gc_heap_compact_reason_mandatory_p[i] ? "M" : "W"), str_heap_compact_reasons[i], data[i]);
+    }
+
+    ExtOut("\nExpansion mechanisms\n");
+    data = dataPerHeap->expandMechanisms;
+    for (int i = 0; i < MAX_EXPAND_MECHANISMS_COUNT; i++)
+    {
+        ExtOut("%30s: %d\n", str_heap_expand_mechanisms[i], data[i]);
+    }
+
+    ExtOut("\nOther mechanisms enabled\n");
+    data = dataPerHeap->bitMechanisms;
+    for (int i = 0; i < MAX_GC_MECHANISM_BITS_COUNT; i++)
+    {
+        ExtOut("%20s: %d\n", str_bit_mechanisms[i], data[i]);
+    }
+}
+#endif //GC_CONFIG_DRIVEN
+
+DECLARE_API(DumpGCData)
+{
+    INIT_API();
+
+#ifdef GC_CONFIG_DRIVEN
+    MINIDUMP_NOT_SUPPORTED();    
+
+    if (!InitializeHeapData ())
+    {
+        ExtOut("GC Heap not initialized yet.\n");
+        return S_OK;
+    }
+
+    DacpGCInterestingInfoData interestingInfo;
+    interestingInfo.RequestGlobal(g_sos);
+    for (int i = 0; i < MAX_GLOBAL_GC_MECHANISMS_COUNT; i++)
+    {
+        ExtOut("%-30s: %d\n", str_gc_global_mechanisms[i], interestingInfo.globalMechanisms[i]);
+    }
+
+    ExtOut("\n[info per heap]\n");
+
+    if (!IsServerBuild())
+    {
+        if (interestingInfo.Request(g_sos) != S_OK)
+        {
+            ExtOut("Error requesting interesting GC info\n");
+            return E_FAIL;
+        }
+            
+        PrintInterestingGCInfo(&interestingInfo);
+    }
+    else
+    {   
+        DWORD dwNHeaps = GetGcHeapCount();
+        DWORD dwAllocSize;
+        if (!ClrSafeInt<DWORD>::multiply(sizeof(CLRDATA_ADDRESS), dwNHeaps, dwAllocSize))
+        {
+            ExtOut("Failed to get GCHeaps:  integer overflow\n");
+            return Status;
+        }
+
+        CLRDATA_ADDRESS *heapAddrs = (CLRDATA_ADDRESS*)alloca(dwAllocSize);
+        if (g_sos->GetGCHeapList(dwNHeaps, heapAddrs, NULL) != S_OK)
+        {
+            ExtOut("Failed to get GCHeaps\n");
+            return Status;
+        }
+        
+        for (DWORD n = 0; n < dwNHeaps; n ++)
+        {
+            if (interestingInfo.Request(g_sos, heapAddrs[n]) != S_OK)
+            {
+                ExtOut("Heap %d: Error requesting interesting GC info\n", n);
+                return E_FAIL;
+            }
+
+            ExtOut("--------info for heap %d--------\n", n);
+            PrintInterestingGCInfo(&interestingInfo);
+            ExtOut("\n");
+        }
+    }
+
+    return S_OK;
+#else
+    ExtOut("Not implemented\n");
+    return S_OK;
+#endif //GC_CONFIG_DRIVEN
+}
 
 #ifndef FEATURE_PAL
 /**********************************************************************\

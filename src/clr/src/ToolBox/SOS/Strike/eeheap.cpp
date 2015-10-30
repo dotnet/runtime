@@ -537,11 +537,11 @@ void GCPrintLargeHeapSegmentInfo(const DacpGcHeapDetails &heap, DWORD_PTR &total
 void GCHeapInfo(const DacpGcHeapDetails &heap, DWORD_PTR &total_size)
 {
     GCPrintGenerationInfo(heap);
-    ExtOut(WIN64_8SPACES " segment " WIN64_8SPACES "    begin " WIN64_8SPACES "allocated  size\n");
+    ExtOut("%" POINTERSIZE "s  %" POINTERSIZE "s  %" POINTERSIZE "s  %" POINTERSIZE "s\n", "segment", "begin", "allocated", "size");
     GCPrintSegmentInfo(heap, total_size);
     ExtOut("Large object heap starts at 0x%p\n",
                   (ULONG64)heap.generation_table[GetMaxGeneration()+1].allocation_start);
-    ExtOut(WIN64_8SPACES " segment " WIN64_8SPACES "    begin " WIN64_8SPACES "allocated  size\n");
+    ExtOut("%" POINTERSIZE "s  %" POINTERSIZE "s  %" POINTERSIZE "s  %" POINTERSIZE "s\n", "segment", "begin", "allocated", "size");
     GCPrintLargeHeapSegmentInfo(heap,total_size);
 }
 
@@ -758,7 +758,7 @@ void GCGenUsageStats(TADDR start, TADDR end, const std::unordered_set<TADDR> &li
         {
             genUsage->freed += objSize;
         }
-        else if (liveObjs.find(taddrObj) == liveObjs.end())
+        else if (!(liveObjs.empty()) && liveObjs.find(taddrObj) == liveObjs.end())
         {
             genUsage->unrooted += objSize;
         }
@@ -782,7 +782,8 @@ BOOL GCHeapUsageStats(const DacpGcHeapDetails& heap, BOOL bIncUnreachable, HeapU
 #ifndef FEATURE_PAL
     // this will create the bitmap of rooted objects only if bIncUnreachable is true
     GCRootImpl gcroot;
-    const std::unordered_set<TADDR> &liveObjs = gcroot.GetLiveObjects();
+    std::unordered_set<TADDR> emptyLiveObjs;
+    const std::unordered_set<TADDR> &liveObjs = (bIncUnreachable ? gcroot.GetLiveObjects() : emptyLiveObjs);
     
     // 1a. enumerate all non-ephemeral segments
     while (taddrSeg != (TADDR)heap.generation_table[0].start_segment)
