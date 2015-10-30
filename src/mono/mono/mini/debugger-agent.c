@@ -4858,6 +4858,9 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 		mono_arch_skip_single_step (ctx);
 
 	if (suspend_count > 0) {
+		/* Fastpath during invokes, see in process_suspend () */
+		if (suspend_count - tls->resume_count == 0)
+			return;
 		process_suspend (tls, ctx);
 		return;
 	}
