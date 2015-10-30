@@ -27,6 +27,8 @@ Install the following packages for the toolchain:
 - gettext
 - libicu-dev
 - liblttng-ust-dev
+- libcurl4-openssl-dev
+- libssl-dev
 - uuid-dev
 
 In order to get lldb-3.6 on Ubuntu 14.04, we need to add an additional package source:
@@ -39,7 +41,7 @@ ellismg@linux:~$ sudo apt-get update
 
 Then install the packages you need:
 
-`ellismg@linux:~$ sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev uuid-dev`
+`ellismg@linux:~$ sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev uuid-dev`
 
 You now have all the required components.
 
@@ -61,6 +63,11 @@ ellismg@linux:~$ echo "deb http://download.mono-project.com/repo/debian wheezy m
 ellismg@linux:~$ sudo apt-get update
 ellismg@linux:~$ sudo apt-get install mono-devel
 ```
+
+Set the maximum number of file-handles
+--------------------------------------
+
+To ensure that your system can allocate enough file-handles for the corefx build, add `fs.file-max = 100000` to `/etc/sysctl.conf`, and then run `sudo sysctl -p`.
 
 Build the Runtime and Microsoft Core Library
 =============================================
