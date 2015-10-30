@@ -357,19 +357,31 @@ build(globalParams + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number,
                         buildNeedsWorkspace.setValue('true')
                     }
                 }
-            
+
                 if (isPR) {
                     Utilities.addPRTestSCM(newFlowJob, project)
                     Utilities.addStandardPRParameters(newFlowJob, project)
                     if (architecture == 'x64') {
-                        Utilities.addGithubPRTrigger(newFlowJob, "Linux ${architecture} ${configuration} Build and Test", '@dotnet-bot test linux')
-                    } else {
-                       Utilities.addGithubPRTrigger(newFlowJob, "Linux ${architecture} ${configuration} Build and Test", '@dotnet-bot test linux x86')
+                        if (configuration == 'Release') {
+                            // Tests will be run on x64 Release by default (no trigger phase required).
+                            Utilities.addGithubPRTrigger(newFlowJob, "Linux ${architecture} ${configuration} Build and Test")
+                        } else {
+                            Utilities.addGithubPRTrigger(newFlowJob, "Linux ${architecture} ${configuration} Build and Test", "(?i).*test\\W+linux\\W+debug.*")
+                        }
+                    } else if (architecture == 'x86') {
+                        if (configuration == 'Release') {
+                            Utilities.addGithubPRTrigger(newFlowJob, "Linux ${architecture} ${configuration} Build and Test", "(?i).*test\\W+linux\\W+x86.*")
+                        } else {
+                            Utilities.addGithubPRTrigger(newFlowJob, "Linux ${architecture} ${configuration} Build and Test", "(?i).*test\\W+linux\\W+x86\\W+debug.*")
+                        }
                     }
                 }
                 else {
                     Utilities.addScm(newFlowJob, project)
                     Utilities.addStandardNonPRParameters(newFlowJob)
+                    if (architecture == 'x64') {
+                        Utilities.addGithubPushTrigger(newFlowJob)
+                    }
                 }
                 
                 Utilities.addStandardOptions(newFlowJob)
