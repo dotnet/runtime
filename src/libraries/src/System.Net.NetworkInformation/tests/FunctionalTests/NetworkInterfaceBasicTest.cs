@@ -44,6 +44,52 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Linux)]
+        public void BasicTest_AccessInstanceProperties_NoExceptions_Linux()
+        {
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                _log.WriteLine("- NetworkInterface -");
+                _log.WriteLine("Name: " + nic.Name);
+                Assert.Throws<PlatformNotSupportedException>(() => nic.Description);
+                Assert.Throws<PlatformNotSupportedException>(() => nic.Id);
+                Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
+                _log.WriteLine("Type: " + nic.NetworkInterfaceType);
+                _log.WriteLine("Status: " + nic.OperationalStatus);
+                try
+                {
+                    _log.WriteLine("Speed: " + nic.Speed);
+                    Assert.True(nic.Speed >= 0, "Overflow");
+                }
+                // We cannot guarantee this works on all devices.
+                catch (PlatformNotSupportedException)
+                { }
+                _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
+                _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.OSX)]
+        public void BasicTest_AccessInstanceProperties_NoExceptions_Osx()
+        {
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                _log.WriteLine("- NetworkInterface -");
+                _log.WriteLine("Name: " + nic.Name);
+                Assert.Throws<PlatformNotSupportedException>(() => nic.Description);
+                _log.WriteLine("ID: " + nic.Id);
+                Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
+                _log.WriteLine("Type: " + nic.NetworkInterfaceType);
+                _log.WriteLine("Status: " + nic.OperationalStatus);
+                _log.WriteLine("Speed: " + nic.Speed);
+                Assert.True(nic.Speed >= 0, "Overflow");
+                _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
+                _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+            }
+        }
+
+        [Fact]
         [Trait("IPv4", "true")]
         public void BasicTest_StaticLoopbackIndex_MatchesLoopbackNetworkInterface()
         {
@@ -107,7 +153,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Windows)] // Linux and OSX do not support some of these.
+        [PlatformSpecific(PlatformID.Windows)]
         public void BasicTest_GetIPInterfaceStatistics_Success()
         {
             // This API is not actually IPv4 specific.
@@ -124,6 +170,56 @@ namespace System.Net.NetworkInformation.Tests
                 _log.WriteLine("NonUnicastPacketsReceived: " + stats.NonUnicastPacketsReceived);
                 _log.WriteLine("NonUnicastPacketsSent: " + stats.NonUnicastPacketsSent);
                 _log.WriteLine("OutgoingPacketsDiscarded: " + stats.OutgoingPacketsDiscarded);
+                _log.WriteLine("OutgoingPacketsWithErrors: " + stats.OutgoingPacketsWithErrors);
+                _log.WriteLine("OutputQueueLength: " + stats.OutputQueueLength);
+                _log.WriteLine("UnicastPacketsReceived: " + stats.UnicastPacketsReceived);
+                _log.WriteLine("UnicastPacketsSent: " + stats.UnicastPacketsSent);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Linux)]
+        public void BasicTest_GetIPInterfaceStatistics_Success_Linux()
+        {
+            // This API is not actually IPv4 specific.
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                IPInterfaceStatistics stats = nic.GetIPStatistics();
+
+                _log.WriteLine("- Stats for : " + nic.Name);
+                _log.WriteLine("BytesReceived: " + stats.BytesReceived);
+                _log.WriteLine("BytesSent: " + stats.BytesSent);
+                _log.WriteLine("IncomingPacketsDiscarded: " + stats.IncomingPacketsDiscarded);
+                _log.WriteLine("IncomingPacketsWithErrors: " + stats.IncomingPacketsWithErrors);
+                Assert.Throws<PlatformNotSupportedException>(() => stats.IncomingUnknownProtocolPackets);
+                _log.WriteLine("NonUnicastPacketsReceived: " + stats.NonUnicastPacketsReceived);
+                Assert.Throws<PlatformNotSupportedException>(() => stats.NonUnicastPacketsSent);
+                _log.WriteLine("OutgoingPacketsDiscarded: " + stats.OutgoingPacketsDiscarded);
+                _log.WriteLine("OutgoingPacketsWithErrors: " + stats.OutgoingPacketsWithErrors);
+                _log.WriteLine("OutputQueueLength: " + stats.OutputQueueLength);
+                _log.WriteLine("UnicastPacketsReceived: " + stats.UnicastPacketsReceived);
+                _log.WriteLine("UnicastPacketsSent: " + stats.UnicastPacketsSent);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.OSX)]
+        public void BasicTest_GetIPInterfaceStatistics_Success_OSX()
+        {
+            // This API is not actually IPv4 specific.
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                IPInterfaceStatistics stats = nic.GetIPStatistics();
+
+                _log.WriteLine("- Stats for : " + nic.Name);
+                _log.WriteLine("BytesReceived: " + stats.BytesReceived);
+                _log.WriteLine("BytesSent: " + stats.BytesSent);
+                _log.WriteLine("IncomingPacketsDiscarded: " + stats.IncomingPacketsDiscarded);
+                _log.WriteLine("IncomingPacketsWithErrors: " + stats.IncomingPacketsWithErrors);
+                _log.WriteLine("IncomingUnknownProtocolPackets: " + stats.IncomingUnknownProtocolPackets);
+                _log.WriteLine("NonUnicastPacketsReceived: " + stats.NonUnicastPacketsReceived);
+                _log.WriteLine("NonUnicastPacketsSent: " + stats.NonUnicastPacketsSent);
+                Assert.Throws<PlatformNotSupportedException>(() => stats.OutgoingPacketsDiscarded);
                 _log.WriteLine("OutgoingPacketsWithErrors: " + stats.OutgoingPacketsWithErrors);
                 _log.WriteLine("OutputQueueLength: " + stats.OutputQueueLength);
                 _log.WriteLine("UnicastPacketsReceived: " + stats.UnicastPacketsReceived);
