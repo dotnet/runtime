@@ -1322,16 +1322,17 @@ mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *p
  */
 static MonoArrayType *
 mono_metadata_parse_array_internal (MonoImage *m, MonoGenericContainer *container,
-									gboolean transient, const char *ptr, const char **rptr)
+									gboolean transient, const char *ptr, const char **rptr, MonoError *error)
 {
 	int i;
 	MonoArrayType *array;
 	MonoType *etype;
 	
-	array = transient ? g_malloc0 (sizeof (MonoArrayType)) : mono_image_alloc0 (m, sizeof (MonoArrayType));
-	etype = mono_metadata_parse_type_full (m, container, 0, ptr, &ptr);
+	etype = mono_metadata_parse_type_checked (m, container, 0, FALSE, ptr, &ptr, error); //FIXME this doesn't respect @transient
 	if (!etype)
 		return NULL;
+
+	array = transient ? g_malloc0 (sizeof (MonoArrayType)) : mono_image_alloc0 (m, sizeof (MonoArrayType));
 	array->eklass = mono_class_from_mono_type (etype);
 	array->rank = mono_metadata_decode_value (ptr, &ptr);
 
@@ -1356,7 +1357,13 @@ MonoArrayType *
 mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *container,
 								const char *ptr, const char **rptr)
 {
-	return mono_metadata_parse_array_internal (m, container, FALSE, ptr, rptr);
+	MonoError error;
+	MonoArrayType *ret = mono_metadata_parse_array_internal (m, container, FALSE, ptr, rptr, &error);
+	if (!ret) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+	}
+	return ret;
 }
 
 MonoArrayType *
@@ -3375,7 +3382,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 			return FALSE;
 		}
 		type->data.klass = mono_class_from_mono_type (etype);
-		g_assert (type->data.klass); //This was previously an assert, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
+		g_assert (type->data.klass); //This was previously a check for NULL, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
 		break;
 	}
 	case MONO_TYPE_PTR: {
@@ -3398,11 +3405,16 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		}
 		break;
 	}
-	case MONO_TYPE_ARRAY:
-		type->data.array = mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr);
-		if (!type->data.array)
+	case MONO_TYPE_ARRAY: {
+		MonoError error;
+		type->data.array = mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr, &error);
+		if (!type->data.array) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 			return FALSE;
+		}
 		break;
+	}
 	case MONO_TYPE_MVAR:
 		if (container && !container->is_method)
 			return FALSE;
