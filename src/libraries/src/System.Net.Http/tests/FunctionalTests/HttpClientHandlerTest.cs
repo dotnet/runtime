@@ -374,6 +374,28 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(4259, PlatformID.AnyUnix)]
+        [Fact]
+        public async Task SendAsync_ReadFromSlowStreamingServer_PartialDataReturned()
+        {
+            // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
+            const string SlowStreamingServer = "http://httpbin.org/drip?numbytes=8192&duration=15&delay=1&code=200";
+            
+            int bytesRead;
+            byte[] buffer = new byte[8192];
+            using (var client = new HttpClient())
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, SlowStreamingServer);
+                using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
+                {
+                    var stream = await response.Content.ReadAsStreamAsync();
+                    bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                }
+                _output.WriteLine("Bytes read from stream: {0}", bytesRead);
+                Assert.True(bytesRead < buffer.Length, "bytesRead should be less than buffer.Length");
+            }            
+        }
+
         #region Post Methods Tests
 
         [Theory, MemberData("PostServers")]

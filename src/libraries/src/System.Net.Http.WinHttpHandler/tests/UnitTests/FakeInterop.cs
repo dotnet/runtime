@@ -170,9 +170,44 @@ internal static partial class Interop
             return true;
         }
 
-        public static bool WinHttpQueryDataAvailable(SafeWinHttpHandle requestHandle, out uint bytesAvailable)
+        public static bool WinHttpQueryDataAvailable(
+            SafeWinHttpHandle requestHandle,
+            IntPtr bytesAvailableShouldBeNullForAsync)
         {
-            bytesAvailable = 0;
+            if (bytesAvailableShouldBeNullForAsync != IntPtr.Zero)
+            {
+                return false;
+            }
+            
+            if (TestControl.WinHttpQueryDataAvailable.ErrorWithApiCall)
+            {
+                return false;
+            }
+
+            Task.Run(() => {
+                var fakeHandle = (FakeSafeWinHttpHandle)requestHandle;
+                bool aborted = !fakeHandle.DelayOperation(TestControl.WinHttpReadData.Delay);
+
+                if (aborted || TestControl.WinHttpQueryDataAvailable.ErrorOnCompletion)
+                {
+                    Interop.WinHttp.WINHTTP_ASYNC_RESULT asyncResult;
+                    asyncResult.dwResult = new IntPtr((int)Interop.WinHttp.API_QUERY_DATA_AVAILABLE);
+                    asyncResult.dwError = aborted ? Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED :
+                        Interop.WinHttp.ERROR_WINHTTP_CONNECTION_ERROR;
+
+                    TestControl.WinHttpQueryDataAvailable.Wait();
+                    fakeHandle.InvokeCallback(Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REQUEST_ERROR, asyncResult);
+                }
+                else
+                {
+                    int bufferSize = Marshal.SizeOf<int>();
+                    IntPtr buffer = Marshal.AllocHGlobal(bufferSize);
+                    Marshal.WriteInt32(buffer, TestServer.DataAvailable);
+                    fakeHandle.InvokeCallback(Interop.WinHttp.WINHTTP_CALLBACK_STATUS_DATA_AVAILABLE, buffer, (uint)bufferSize);
+                    Marshal.FreeHGlobal(buffer);
+                }
+            });            
+            
             return true;
         }
 

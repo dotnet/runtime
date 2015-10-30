@@ -210,7 +210,43 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public void ReadAsync_NetworkFails_TaskIsFaultedWithIOException()
+        public void ReadAsync_QueryDataAvailableFailsWithApiCall_TaskIsFaultedWithIOException()
+        {
+            Stream stream = MakeResponseStream();
+
+            TestControl.WinHttpQueryDataAvailable.ErrorWithApiCall = true;
+            
+            Task t = stream.ReadAsync(new byte[1], 0, 1);
+            AggregateException ex = Assert.Throws<AggregateException>(() => t.Wait());
+            Assert.IsType<IOException>(ex.InnerException);
+        }
+
+        [Fact]
+        public void ReadAsync_QueryDataAvailableFailsOnCompletionCallback_TaskIsFaultedWithIOException()
+        {
+            Stream stream = MakeResponseStream();
+
+            TestControl.WinHttpQueryDataAvailable.ErrorOnCompletion = true;
+            
+            Task t = stream.ReadAsync(new byte[1], 0, 1);
+            AggregateException ex = Assert.Throws<AggregateException>(() => t.Wait());
+            Assert.IsType<IOException>(ex.InnerException);
+        }
+
+        [Fact]
+        public void ReadAsync_ReadDataFailsWithApiCall_TaskIsFaultedWithIOException()
+        {
+            Stream stream = MakeResponseStream();
+
+            TestControl.WinHttpReadData.ErrorWithApiCall = true;
+            
+            Task t = stream.ReadAsync(new byte[1], 0, 1);
+            AggregateException ex = Assert.Throws<AggregateException>(() => t.Wait());
+            Assert.IsType<IOException>(ex.InnerException);
+        }
+
+        [Fact]
+        public void ReadAsync_ReadDataFailsOnCompletionCallback_TaskIsFaultedWithIOException()
         {
             Stream stream = MakeResponseStream();
 
@@ -256,7 +292,34 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public void Read_NetworkFails_ThrowsIOException()
+        public void Read_QueryDataAvailableFailsWithApiCall_ThrowsIOException()
+        {
+            Stream stream = MakeResponseStream();
+
+            TestControl.WinHttpQueryDataAvailable.ErrorWithApiCall = true;
+            Assert.Throws<IOException>(() => { stream.Read(new byte[1], 0, 1); });
+        }
+
+        [Fact]
+        public void Read_QueryDataAvailableFailsOnCompletionCallback_ThrowsIOException()
+        {
+            Stream stream = MakeResponseStream();
+
+            TestControl.WinHttpQueryDataAvailable.ErrorOnCompletion = true;
+            Assert.Throws<IOException>(() => { stream.Read(new byte[1], 0, 1); });
+        }
+
+        [Fact]
+        public void Read_ReadDataFailsWithApiCall_ThrowsIOException()
+        {
+            Stream stream = MakeResponseStream();
+
+            TestControl.WinHttpReadData.ErrorWithApiCall = true;
+            Assert.Throws<IOException>(() => { stream.Read(new byte[1], 0, 1); });
+        }
+
+        [Fact]
+        public void Read_ReadDataFailsOnCompletionCallback_ThrowsIOException()
         {
             Stream stream = MakeResponseStream();
 

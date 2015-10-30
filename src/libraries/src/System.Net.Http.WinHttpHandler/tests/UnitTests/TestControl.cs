@@ -10,6 +10,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
     public static class TestControl
     {
         public static ApiControl WinHttpOpen { get; private set; }
+        public static ApiControl WinHttpQueryDataAvailable { get; private set; }
         public static ApiControl WinHttpReadData { get; private set; }
         public static ApiControl WinHttpReceiveResponse { get; private set; }
         public static ApiControl WinHttpWriteData { get; private set; }
@@ -26,6 +27,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public static void Reset()
         {
             WinHttpOpen = new ApiControl();
+            WinHttpQueryDataAvailable = new ApiControl();
             WinHttpReadData = new ApiControl();
             WinHttpReceiveResponse = new ApiControl();
             WinHttpWriteData = new ApiControl();

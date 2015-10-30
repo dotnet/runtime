@@ -76,5 +76,10 @@ namespace System.Net.Http
         {
             return System.Runtime.InteropServices.Marshal.SizeOf<T>(structure);
         }
+
+        public static int ReadInt32(IntPtr ptr)
+        {
+            return System.Runtime.InteropServices.Marshal.ReadInt32(ptr);
+        }
     }
 }
