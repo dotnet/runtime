@@ -9823,8 +9823,10 @@ gc_heap::init_semi_shared()
 #endif //GC_CONFIG_DRIVEN
 
 #ifdef SHORT_PLUGS
-    size_t max_num_objects_in_plug = (size_t)DESIRED_PLUG_LENGTH / Align (min_obj_size);
-    short_plugs_pad_ratio = (float)(max_num_objects_in_plug + 1) / (float)max_num_objects_in_plug;
+    {
+        size_t max_num_objects_in_plug = (size_t)DESIRED_PLUG_LENGTH / Align(min_obj_size);
+        short_plugs_pad_ratio = (float)(max_num_objects_in_plug + 1) / (float)max_num_objects_in_plug;
+    }
 #endif //SHORT_PLUGS
 
     ret = 1;
