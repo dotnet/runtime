@@ -71,6 +71,10 @@ inline BOOL ShouldTrackMovementForProfilerOrEtw()
 // 256 GC threads and 256 GC heaps. 
 #define MAX_SUPPORTED_CPUS 256
 
+#ifdef GC_CONFIG_DRIVEN
+int compact_ratio = 0;
+#endif //GC_CONFIG_DRIVEN
+
 #if defined (TRACE_GC) && !defined (DACCESS_COMPILE)
 const char * const allocation_state_str[] = {
     "start",
@@ -362,7 +366,6 @@ void gc_heap::add_to_history()
 #endif //BACKGROUND_GC
 
 #ifdef TRACE_GC
-
 BOOL   gc_log_on = TRUE;
 HANDLE gc_log = INVALID_HANDLE_VALUE;
 size_t gc_log_file_size = 0;
@@ -439,8 +442,54 @@ void GCLog (const char *fmt, ... )
         va_end(args);
     }
 }
-
 #endif //TRACE_GC
+
+#ifdef GC_CONFIG_DRIVEN
+BOOL   gc_config_log_on = FALSE;
+HANDLE gc_config_log = INVALID_HANDLE_VALUE;
+
+// we keep this much in a buffer and only flush when the buffer is full
+#define gc_config_log_buffer_size (1*1024) // TEMP
+BYTE* gc_config_log_buffer = 0;
+size_t gc_config_log_buffer_offset = 0;
+
+// For config since we log so little we keep the whole history. Also it's only
+// ever logged by one thread so no need to synchronize.
+void log_va_msg_config(const char *fmt, va_list args)
+{
+    const int BUFFERSIZE = 256;
+    static char rgchBuffer[BUFFERSIZE];
+    char *  pBuffer  = &rgchBuffer[0];
+
+    pBuffer[0] = '\r';
+    pBuffer[1] = '\n';
+    int buffer_start = 2;
+    int msg_len = _vsnprintf (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, fmt, args );
+    assert (msg_len != -1);
+    msg_len += buffer_start;
+
+    if ((gc_config_log_buffer_offset + msg_len) > gc_config_log_buffer_size)
+    {
+        DWORD written_to_log = 0;
+        WriteFile (gc_config_log, gc_config_log_buffer, (DWORD)gc_config_log_buffer_offset, &written_to_log, NULL);
+        FlushFileBuffers (gc_config_log);
+        gc_config_log_buffer_offset = 0;
+    }
+
+    memcpy (gc_config_log_buffer + gc_config_log_buffer_offset, pBuffer, msg_len);
+    gc_config_log_buffer_offset += msg_len;
+}
+
+void GCLogConfig (const char *fmt, ... )
+{
+    if (gc_config_log_on && (gc_config_log != INVALID_HANDLE_VALUE))
+    {
+        va_list     args;
+        va_start( args, fmt );
+        log_va_msg_config (fmt, args);
+    }
+}
+#endif //GC_CONFIG_DRIVEN
 
 #ifdef SYNCHRONIZATION_STATS
 
@@ -2207,7 +2256,7 @@ HANDLE*     gc_heap::g_gc_threads;
 size_t*     gc_heap::g_promoted;
 
 #ifdef MH_SC_MARK
-BOOL*		gc_heap::g_mark_stack_busy;
+BOOL*       gc_heap::g_mark_stack_busy;
 #endif //MH_SC_MARK
 
 
@@ -2240,6 +2289,10 @@ gc_history_global gc_heap::gc_data_global;
 size_t      gc_heap::gc_last_ephemeral_decommit_time = 0;
 
 size_t      gc_heap::gc_gen0_desired_high;
+
+#ifdef SHORT_PLUGS
+float       gc_heap::short_plugs_pad_ratio = 0;
+#endif //SHORT_PLUGS
 
 #if defined(_WIN64)
 #define MAX_ALLOWED_MEM_LOAD 85
@@ -2452,9 +2505,7 @@ size_t      gc_heap::c_mark_list_length = 0;
 
 size_t      gc_heap::c_mark_list_index = 0;
 
-gc_history_per_heap gc_heap::saved_bgc_data_per_heap;
-
-BOOL        gc_heap::bgc_data_saved_p = FALSE;
+gc_history_per_heap gc_heap::bgc_data_per_heap;
 
 BOOL    gc_heap::bgc_thread_running;
 
@@ -2527,6 +2578,11 @@ size_t      gc_heap::current_obj_size = 0;
 
 #endif //HEAP_ANALYZE
 
+#ifdef GC_CONFIG_DRIVEN
+size_t gc_heap::interesting_data_per_gc[max_idp_count];
+//size_t gc_heap::interesting_data_per_heap[max_idp_count];
+//size_t gc_heap::interesting_mechanisms_per_heap[max_im_count];
+#endif //GC_CONFIG_DRIVEN
 #endif //MULTIPLE_HEAPS
 
 no_gc_region_info gc_heap::current_no_gc_region_info;
@@ -2537,6 +2593,12 @@ size_t gc_heap::eph_gen_starts_size = 0;
 heap_segment* gc_heap::segment_standby_list;
 size_t        gc_heap::last_gc_index = 0;
 size_t        gc_heap::min_segment_size = 0;
+
+#ifdef GC_CONFIG_DRIVEN
+size_t gc_heap::time_init = 0;
+size_t gc_heap::time_since_init = 0;
+size_t gc_heap::compact_or_sweep_gcs[2];
+#endif //GC_CONFIG_DRIVEN
 
 #ifdef FEATURE_LOH_COMPACTION
 BOOL                   gc_heap::loh_compaction_always_p = FALSE;
@@ -2573,6 +2635,12 @@ BOOL        gc_heap::heap_analyze_enabled = FALSE;
 extern "C" {
 #endif //!DACCESS_COMPILE
 GARY_IMPL(generation, generation_table,NUMBERGENERATIONS+1);
+#ifdef GC_CONFIG_DRIVEN
+GARY_IMPL(size_t, interesting_data_per_heap, max_idp_count);
+GARY_IMPL(size_t, compact_reasons_per_heap, max_compact_reasons_count);
+GARY_IMPL(size_t, expand_mechanisms_per_heap, max_expand_mechanisms_count);
+GARY_IMPL(size_t, interesting_mechanism_bits_per_heap, max_gc_mechanism_bits_count);
+#endif //GC_CONFIG_DRIVEN
 #ifndef DACCESS_COMPILE
 }
 #endif //!DACCESS_COMPILE
@@ -2669,6 +2737,21 @@ void gc_generation_data::print (int heap_num, int gen_num)
 #endif //SIMPLE_DPRINTF && DT_LOG
 }
 
+void gc_history_per_heap::set_mechanism (gc_mechanism_per_heap mechanism_per_heap, DWORD value)
+{
+    DWORD* mechanism = &mechanisms[mechanism_per_heap];
+    *mechanism = 0;
+    *mechanism |= mechanism_mask;
+    *mechanism |= (1 << value);
+
+#ifdef DT_LOG
+    gc_mechanism_descr* descr = &gc_mechanisms_descr[mechanism_per_heap];
+    dprintf (DT_LOG_0, ("setting %s: %s", 
+            descr->name,
+            (descr->descr)[value]));
+#endif //DT_LOG
+}
+
 void gc_history_per_heap::print()
 {
 #if defined(SIMPLE_DPRINTF) && defined(DT_LOG)
@@ -2711,14 +2794,15 @@ void gc_history_global::print()
 #ifdef DT_LOG
     char str_settings[64];
     memset (str_settings, '|', sizeof (char) * 64);
-    str_settings[max_global_mechanism*2] = 0;
+    str_settings[max_global_mechanisms_count*2] = 0;
 
-    for (int i = 0; i < max_global_mechanism; i++)
+    for (int i = 0; i < max_global_mechanisms_count; i++)
     {
         str_settings[i * 2] = (get_mechanism_p ((gc_global_mechanism_p)i) ? 'Y' : 'N');
     }
 
     dprintf (DT_LOG_0, ("[hp]|c|p|o|d|b|e|"));
+
     dprintf (DT_LOG_0, ("%4d|%s", num_heaps, str_settings));
     dprintf (DT_LOG_0, ("Condemned gen%d(reason: %s; mode: %s), youngest budget %Id(%d), memload %d",
                         condemned_generation,
@@ -2743,7 +2827,7 @@ void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per
                                maxgen_size_info->running_free_list_efficiency,
                                current_gc_data_per_heap->gen_to_condemn_reasons.get_reasons0(),
                                current_gc_data_per_heap->gen_to_condemn_reasons.get_reasons1(),
-                               current_gc_data_per_heap->mechanisms[gc_compact],
+                               current_gc_data_per_heap->mechanisms[gc_heap_compact],
                                current_gc_data_per_heap->mechanisms[gc_heap_expand],
                                current_gc_data_per_heap->heap_index,
                                (BYTE*)(current_gc_data_per_heap->extra_gen0_committed),
@@ -4245,8 +4329,8 @@ gc_heap::compute_new_ephemeral_size()
 #endif //RESPECT_LARGE_ALIGNMENT
 
 #ifdef SHORT_PLUGS
-    float pad_ratio = (float)24 / (float)DESIRED_PLUG_LENGTH;
-    total_ephemeral_size += (size_t)((float)total_ephemeral_size * pad_ratio) + Align (min_obj_size);
+    total_ephemeral_size = Align ((size_t)((float)total_ephemeral_size * short_plugs_pad_ratio) + 1);
+    total_ephemeral_size += Align (min_obj_size);
 #endif //SHORT_PLUGS
 
     dprintf (3, ("total ephemeral size is %Ix, padding %Ix(%Ix)", 
@@ -4299,7 +4383,7 @@ gc_heap::soh_get_segment_to_expand()
 
             if (can_expand_into_p (seg, size/3, total_ephemeral_size, gen_alloc))
             {
-                gc_data_per_heap.set_mechanism (gc_heap_expand, 
+                get_gc_data_per_heap()->set_mechanism (gc_heap_expand, 
                     (use_bestfit ? expand_reuse_bestfit : expand_reuse_normal));
                 if (settings.condemned_generation == max_generation)
                 {
@@ -4331,6 +4415,7 @@ gc_heap::soh_get_segment_to_expand()
                     if (settings.pause_mode != pause_sustained_low_latency)
                     {
                         dprintf (GTC_LOG, ("max_gen-1: SustainedLowLatency is set, acquire a new seg"));
+                        get_gc_data_per_heap()->set_mechanism (gc_heap_expand, expand_next_full_gc);
                         return 0;
                     }
                 }
@@ -4357,7 +4442,7 @@ gc_heap::soh_get_segment_to_expand()
                                   GetClrInstanceId());
     }
 
-    gc_data_per_heap.set_mechanism (gc_heap_expand, (result ? expand_new_seg : expand_no_memory));
+    get_gc_data_per_heap()->set_mechanism (gc_heap_expand, (result ? expand_new_seg : expand_no_memory));
 
     if (result == 0)
     {
@@ -4981,8 +5066,8 @@ void set_thread_group_affinity_for_heap(HANDLE gc_thread, int heap_number)
 
     CPUGroupInfo::GetGroupForProcessor((WORD)heap_number, &gn, &gpn);
     ga.Group  = gn;
-    ga.Reserved[0] = 0;	// reserve must be filled with zero
-    ga.Reserved[1] = 0;	// otherwise call may fail
+    ga.Reserved[0] = 0; // reserve must be filled with zero
+    ga.Reserved[1] = 0; // otherwise call may fail
     ga.Reserved[2] = 0;
 
     int bit_number = 0;
@@ -5196,7 +5281,7 @@ DWORD gc_heap::gc_thread_function ()
 #endif //MULTIPLE_HEAPS
 
 void* virtual_alloc_commit_for_heap(void* addr, size_t size, DWORD type, 
-						            DWORD prot, int h_number)
+                                    DWORD prot, int h_number)
 {
 #if defined(MULTIPLE_HEAPS) && !defined(FEATURE_REDHAWK) && !defined(FEATURE_PAL)
     // Currently there is no way for us to specific the numa node to allocate on via hosting interfaces to
@@ -5487,6 +5572,7 @@ void gc_mechanisms::init_mechanisms()
     heap_expansion = FALSE;
     concurrent = FALSE;
     demotion = FALSE;
+    elevation_reduced = FALSE;
     found_finalizers = FALSE;
 #ifdef BACKGROUND_GC
     background_p = recursive_gc_sync::background_running_p() != FALSE;
@@ -5556,6 +5642,9 @@ void gc_mechanisms::record (gc_history_global* history)
 
     if (card_bundles)
         history->set_mechanism_p (global_card_bundles);
+
+    if (elevation_reduced)
+        history->set_mechanism_p (global_elevation);
 }
 
 /**********************************
@@ -7082,7 +7171,7 @@ fail:
 void gc_heap::copy_brick_card_range (BYTE* la, DWORD* old_card_table,
                                      short* old_brick_table,
                                      heap_segment* seg,
-                                     BYTE* start, BYTE* end, BOOL heap_expand)
+                                     BYTE* start, BYTE* end)
 {
     ptrdiff_t brick_offset = brick_of (start) - brick_of (la);
 
@@ -7163,7 +7252,6 @@ void gc_heap::copy_brick_card_range (BYTE* la, DWORD* old_card_table,
         }
         ct = card_table_next (ct);
     }
-
 }
 
 //initialize all of the arrays managed by the card table for a page aligned range when an existing ro segment becomes in range
@@ -7193,7 +7281,7 @@ void gc_heap::init_brick_card_range (heap_segment* seg)
                               heap_segment_allocated (seg));
 }
 
-void gc_heap::copy_brick_card_table(BOOL heap_expand)
+void gc_heap::copy_brick_card_table()
 {
     BYTE* la = lowest_address;
     BYTE* ha = highest_address;
@@ -7282,8 +7370,7 @@ void gc_heap::copy_brick_card_table(BOOL heap_expand)
                                    old_brick_table,
                                    seg,
                                    align_lower_page (heap_segment_mem (seg)),
-                                   end,
-                                   heap_expand);
+                                   end);
         }
         seg = heap_segment_next (seg);
     }
@@ -7307,8 +7394,7 @@ void gc_heap::copy_brick_card_table(BOOL heap_expand)
                                    0,
                                    seg,
                                    align_lower_page (heap_segment_mem (seg)),
-                                   end,
-                                   heap_expand);
+                                   end);
         }
         seg = heap_segment_next (seg);
     }
@@ -7556,18 +7642,18 @@ private:
 
     static void introsort_loop (BYTE** lo, BYTE** hi, int depth_limit)
     {
-    	while (hi-lo >= size_threshold)
-    	{
-    	    if (depth_limit == 0)
-    	    {
-    	        heapsort (lo, hi);
+        while (hi-lo >= size_threshold)
+        {
+            if (depth_limit == 0)
+            {
+                heapsort (lo, hi);
                 return;
-    	    }
+            }
             BYTE** p=median_partition (lo, hi);
-    	    depth_limit=depth_limit-1;
+            depth_limit=depth_limit-1;
             introsort_loop (p, hi, depth_limit);
             hi=p-1;
-    	}        
+        }        
     }
 
     static BYTE** median_partition (BYTE** low, BYTE** high)
@@ -9385,19 +9471,11 @@ void gc_heap::adjust_ephemeral_limits ()
     StompWriteBarrierEphemeral();
 }
 
-HRESULT gc_heap::initialize_gc (size_t segment_size,
-                                size_t heap_size
-#ifdef MULTIPLE_HEAPS
-                                ,unsigned number_of_heaps
-#endif //MULTIPLE_HEAPS
-)
+#if defined(TRACE_GC) || defined(GC_CONFIG_DRIVEN)
+HANDLE CreateLogFile(const CLRConfig::ConfigStringInfo & info, BOOL is_config)
 {
-#ifdef TRACE_GC
-    int log_last_gcs = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCLogEnabled);
-    if (log_last_gcs)
-    {
-        LPWSTR  temp_logfile_name = NULL;
-        CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCLogFile, &temp_logfile_name);
+    LPWSTR  temp_logfile_name = NULL;
+    CLRConfig::GetConfigValue(info, &temp_logfile_name);
 
 #ifdef FEATURE_REDHAWK
         gc_log = PalCreateFileW(
@@ -9409,21 +9487,21 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
             FILE_ATTRIBUTE_NORMAL,
             NULL);
 #else // FEATURE_REDHAWK
-        char logfile_name[MAX_LONGPATH+1];
-        if (temp_logfile_name != 0)
-        {
-            int ret;
-            ret = WszWideCharToMultiByte(CP_ACP, 0, temp_logfile_name, -1, logfile_name, sizeof(logfile_name)-1, NULL, NULL);
-            _ASSERTE(ret != 0);
-            delete temp_logfile_name;
-        }
+    char logfile_name[MAX_LONGPATH+1];
+    if (temp_logfile_name != 0)
+    {
+        int ret;
+        ret = WszWideCharToMultiByte(CP_ACP, 0, temp_logfile_name, -1, logfile_name, sizeof(logfile_name)-1, NULL, NULL);
+        _ASSERTE(ret != 0);
+        delete temp_logfile_name;
+    }
 
-        char szPid[20];
-        sprintf_s(szPid, _countof(szPid), ".%d", GetCurrentProcessId());
-        strcat_s(logfile_name, _countof(logfile_name), szPid);
-        strcat_s(logfile_name, _countof(logfile_name), ".log");
+    char szPid[20];
+    sprintf_s(szPid, _countof(szPid), ".%d", GetCurrentProcessId());
+    strcat_s(logfile_name, _countof(logfile_name), szPid);
+    strcat_s(logfile_name, _countof(logfile_name), (is_config ? ".config.log" : ".log"));
 
-        gc_log = CreateFileA(
+    HANDLE hFile = CreateFileA(
             logfile_name,
             GENERIC_WRITE,
             FILE_SHARE_READ,
@@ -9431,12 +9509,26 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
             CREATE_ALWAYS,
             FILE_ATTRIBUTE_NORMAL,
             NULL);
-#endif // FEATURE_REDHAWK
+#endif //FEATURE_REDHAWK
+    return hFile;
+}
+#endif //TRACE_GC || GC_CONFIG_DRIVEN
+
+HRESULT gc_heap::initialize_gc (size_t segment_size,
+                                size_t heap_size
+#ifdef MULTIPLE_HEAPS
+                                ,unsigned number_of_heaps
+#endif //MULTIPLE_HEAPS
+)
+{
+#ifdef TRACE_GC
+    int log_last_gcs = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCLogEnabled);
+    if (log_last_gcs)
+    {
+        gc_log = CreateLogFile(CLRConfig::UNSUPPORTED_GCLogFile, FALSE);
 
         if (gc_log == INVALID_HANDLE_VALUE)
-        {
             return E_FAIL;
-        }
 
         // GCLogFileSize in MBs.
         gc_log_file_size = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCLogFileSize);
@@ -9451,15 +9543,57 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
         gc_log_buffer = new (nothrow) BYTE [gc_log_buffer_size];
         if (!gc_log_buffer)
         {
+            CloseHandle(gc_log);
             return E_FAIL;
         }
+
         memset (gc_log_buffer, '*', gc_log_buffer_size);
 
         max_gc_buffers = gc_log_file_size * 1024 * 1024 / gc_log_buffer_size;
-        //max_gc_buffers = gc_log_file_size * 1024 * 5/ gc_log_buffer_size;
-
     }
 #endif // TRACE_GC
+
+#ifdef GC_CONFIG_DRIVEN
+    gc_config_log_on = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCConfigLogEnabled);
+    if (gc_config_log_on)
+    {
+        gc_config_log = CreateLogFile(CLRConfig::UNSUPPORTED_GCConfigLogFile, TRUE);
+
+        if (gc_config_log == INVALID_HANDLE_VALUE)
+            return E_FAIL;
+
+        gc_config_log_buffer = new (nothrow) BYTE [gc_config_log_buffer_size];
+        if (!gc_config_log_buffer)
+        {
+            CloseHandle(gc_config_log);
+            return E_FAIL;
+        }
+
+        compact_ratio = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCCompactRatio);
+
+        //         h#  | GC  | gen | C   | EX   | NF  | BF  | ML  | DM  || PreS | PostS | Merge | Conv | Pre | Post | PrPo | PreP | PostP | 
+        cprintf (("%2s | %6s | %1s | %1s | %2s | %2s | %2s | %2s | %2s || %5s | %5s | %5s | %5s | %5s | %5s | %5s | %5s | %5s |",
+                "h#", // heap index
+                "GC", // GC index
+                "g", // generation
+                "C",  // compaction (empty means sweeping), 'M' means it was mandatory, 'W' means it was not
+                "EX", // heap expansion
+                "NF", // normal fit
+                "BF", // best fit (if it indicates neither NF nor BF it means it had to acquire a new seg.
+                "ML", // mark list
+                "DM", // demotion
+                "PreS", // short object before pinned plug
+                "PostS", // short object after pinned plug
+                "Merge", // merged pinned plugs
+                "Conv", // converted to pinned plug
+                "Pre", // plug before pinned plug but not after
+                "Post", // plug after pinned plug but not before
+                "PrPo", // plug both before and after pinned plug
+                "PreP", // pre short object padded
+                "PostP" // post short object padded
+                ));
+    }
+#endif //GC_CONFIG_DRIVEN
 
 #ifdef GC_STATS
     GCStatistics::logFileName = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCMixLog);
@@ -9519,10 +9653,8 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
     }
 #endif //CARD_BUNDLE
 
-    //Init the gc_mechanisms
     settings.first_init();
 
-    //g_highest_address = (BYTE*)0x7ffe0000;
     g_card_table = make_card_table (g_lowest_address, g_highest_address);
 
     if (!g_card_table)
@@ -9684,6 +9816,16 @@ gc_heap::init_semi_shared()
     }
 
     memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
+
+#ifdef GC_CONFIG_DRIVEN
+    compact_or_sweep_gcs[0] = 0;
+    compact_or_sweep_gcs[1] = 0;
+#endif //GC_CONFIG_DRIVEN
+
+#ifdef SHORT_PLUGS
+    size_t max_num_objects_in_plug = (size_t)DESIRED_PLUG_LENGTH / Align (min_obj_size);
+    short_plugs_pad_ratio = (float)(max_num_objects_in_plug + 1) / (float)max_num_objects_in_plug;
+#endif //SHORT_PLUGS
 
     ret = 1;
 
@@ -10238,6 +10380,14 @@ gc_heap::init_gc_heap (int  h_number)
     bgc_overflow_count = 0;
     end_loh_size = dd_min_gc_size (dynamic_data_of (max_generation + 1));
 #endif //BACKGROUND_GC
+
+#ifdef GC_CONFIG_DRIVEN
+    memset (interesting_data_per_heap, 0, sizeof (interesting_data_per_heap));
+    memset(compact_reasons_per_heap, 0, sizeof (compact_reasons_per_heap));
+    memset(expand_mechanisms_per_heap, 0, sizeof (expand_mechanisms_per_heap));
+    memset(interesting_mechanism_bits_per_heap, 0, sizeof (interesting_mechanism_bits_per_heap));
+#endif //GC_CONFIG_DRIVEN
+
     return 1;
 }
 
@@ -10787,6 +10937,7 @@ void allocator::thread_item_front (BYTE* item, size_t size)
     alloc_list* al = &alloc_list_of (a_l_number);
     free_list_slot (item) = al->alloc_list_head();
     free_list_undo (item) = UNDO_EMPTY;
+
     if (al->alloc_list_tail() == 0)
     {
         al->alloc_list_tail() = al->alloc_list_head();
@@ -10803,6 +10954,17 @@ void allocator::copy_to_alloc_list (alloc_list* toalist)
     for (unsigned int i = 0; i < num_buckets; i++)
     {
         toalist [i] = alloc_list_of (i);
+#ifdef FL_VERIFICATION
+        BYTE* free_item = alloc_list_head_of (i);
+        size_t count = 0;
+        while (free_item)
+        {
+            count++;
+            free_item = free_list_slot (free_item);
+        }
+
+        toalist[i].item_count = count;
+#endif //FL_VERIFICATION
     }
 }
 
@@ -10811,14 +10973,16 @@ void allocator::copy_from_alloc_list (alloc_list* fromalist)
     BOOL repair_list = !discard_if_no_fit_p ();
     for (unsigned int i = 0; i < num_buckets; i++)
     {
+        size_t count = alloc_list_damage_count_of (i);
         alloc_list_of (i) = fromalist [i];
+        assert (alloc_list_damage_count_of (i) == 0);
+
         if (repair_list)
         {
             //repair the the list
             //new items may have been added during the plan phase 
             //items may have been unlinked. 
             BYTE* free_item = alloc_list_head_of (i);
-            size_t count =  alloc_list_damage_count_of (i);
             while (free_item && count)
             {
                 assert (((CObjectHeader*)free_item)->IsFree());
@@ -10832,7 +10996,17 @@ void allocator::copy_from_alloc_list (alloc_list* fromalist)
                 free_item = free_list_slot (free_item);
             }
 
-            alloc_list_damage_count_of (i) = 0; 
+#ifdef FL_VERIFICATION
+            free_item = alloc_list_head_of (i);
+            size_t item_count = 0;
+            while (free_item)
+            {
+                item_count++;
+                free_item = free_list_slot (free_item);
+            }
+
+            assert (item_count == alloc_list_of (i).item_count);
+#endif //FL_VERIFICATION
         }
 #ifdef DEBUG
         BYTE* tail_item = alloc_list_tail_of (i);
@@ -13211,13 +13385,18 @@ BYTE* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
     allocator* gen_allocator = generation_allocator (gen);
     BOOL discard_p = gen_allocator->discard_if_no_fit_p ();
     int pad_in_front = (old_loc != 0)? USE_PADDING_FRONT : 0;
+
+    size_t real_size = size + Align (min_obj_size);
+    if (pad_in_front)
+        real_size += Align (min_obj_size);
+
     if (! (size_fit_p (size REQD_ALIGN_AND_OFFSET_ARG, generation_allocation_pointer (gen),
                        generation_allocation_limit (gen), old_loc, USE_PADDING_TAIL | pad_in_front)))
     {
         size_t sz_list = gen_allocator->first_bucket_size();
         for (unsigned int a_l_idx = 0; a_l_idx < gen_allocator->number_of_buckets(); a_l_idx++)
         {
-            if ((size < (sz_list / 2)) || (a_l_idx == (gen_allocator->number_of_buckets()-1)))
+            if ((real_size < (sz_list / 2)) || (a_l_idx == (gen_allocator->number_of_buckets()-1)))
             {
                 BYTE* free_list = gen_allocator->alloc_list_head_of (a_l_idx);
                 BYTE* prev_free_item = 0; 
@@ -13240,7 +13419,8 @@ BYTE* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
                         adjust_limit (free_list, free_list_size, gen, from_gen_number+1);
                         goto finished;
                     }
-                    else if (discard_p)
+                    // We do first fit on bucket 0 because we are not guaranteed to find a fit there.
+                    else if (discard_p || (a_l_idx == 0))
                     {
                         dprintf (3, ("couldn't use this free area, discarding"));
                         generation_free_obj_space (gen) += free_list_size;
@@ -13890,6 +14070,8 @@ retry:
                 clear_plug_padded (old_loc);
                 pad = 0;
                 *convert_to_pinned_p = TRUE;
+                record_interesting_data_point (idp_converted_pin);
+
                 return 0;
             }
         }
@@ -13927,7 +14109,6 @@ inline int power (int x, int y)
     return z;
 }
 
-inline
 int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation, 
                                            int n_initial,
                                            BOOL* blocking_collection_p
@@ -13966,7 +14147,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             else
             {
                 n = max_generation - 1;
-                gc_data_global.set_mechanism_p (global_elevation);
+                settings.elevation_reduced = TRUE;
             }
         }
         else
@@ -14426,7 +14607,7 @@ int gc_heap::generation_to_condemn (int n_initial,
 
     if (should_expand_in_full_gc)
     {
-        dprintf (GTC_LOG, ("h%d: expand_in_full", heap_number));
+        dprintf (GTC_LOG, ("h%d: expand_in_full - BLOCK", heap_number));
         *blocking_collection_p = TRUE;
         if (!check_only_p)
         {
@@ -14614,7 +14795,7 @@ exit:
         }
 
         local_condemn_reasons->set_gen (gen_final_per_heap, n);
-        gc_data_per_heap.gen_to_condemn_reasons.init (local_condemn_reasons);
+        get_gc_data_per_heap()->gen_to_condemn_reasons.init (local_condemn_reasons);
 
 #ifdef DT_LOG
         local_condemn_reasons->print (heap_number);
@@ -14880,6 +15061,12 @@ void gc_heap::gc1()
         FATAL_GC_ERROR();
     
     size_t end_gc_time = (size_t) (ts.QuadPart/(qpf.QuadPart/1000));
+
+#ifdef GC_CONFIG_DRIVEN
+    if (heap_number == 0)
+        time_since_init = end_gc_time - time_init;
+#endif //GC_CONFIG_DRIVEN
+
 //    printf ("generation: %d, elapsed time: %Id\n", n,  end_gc_time - dd_time_clock (dynamic_data_of (0)));
 
     //adjust the allocation size from the pinned quantities. 
@@ -14935,13 +15122,13 @@ void gc_heap::gc1()
             int gen_num_for_data = ((n < (max_generation - 1)) ? (n + 1) : (max_generation + 1));
             for (int gen_number = (n + 1); gen_number <= gen_num_for_data; gen_number++)
             {
-                gc_data_per_heap.gen_data[gen_number].size_after = generation_size (gen_number);
-                gc_data_per_heap.gen_data[gen_number].free_list_space_after = generation_free_list_space (generation_of (gen_number));
-                gc_data_per_heap.gen_data[gen_number].free_obj_space_after = generation_free_obj_space (generation_of (gen_number));
+                get_gc_data_per_heap()->gen_data[gen_number].size_after = generation_size (gen_number);
+                get_gc_data_per_heap()->gen_data[gen_number].free_list_space_after = generation_free_list_space (generation_of (gen_number));
+                get_gc_data_per_heap()->gen_data[gen_number].free_obj_space_after = generation_free_obj_space (generation_of (gen_number));
             }
         }
 
-        gc_data_per_heap.maxgen_size_info.running_free_list_efficiency = (DWORD)(generation_allocator_efficiency (generation_of (max_generation)) * 100);
+        get_gc_data_per_heap()->maxgen_size_info.running_free_list_efficiency = (DWORD)(generation_allocator_efficiency (generation_of (max_generation)) * 100);
 
         free_list_info (max_generation, "after computing new dynamic data");
         
@@ -15950,6 +16137,18 @@ void gc_heap::allocate_for_no_gc_after_gc()
 #endif //MULTIPLE_HEAPS
 }
 
+void gc_heap::init_records()
+{
+    memset (&gc_data_per_heap, 0, sizeof (gc_data_per_heap));
+    gc_data_per_heap.heap_index = heap_number;
+    if (heap_number == 0)
+        memset (&gc_data_global, 0, sizeof (gc_data_global));
+
+#ifdef GC_CONFIG_DRIVEN
+    memset (interesting_data_per_gc, 0, sizeof (interesting_data_per_gc));
+#endif //GC_CONFIG_DRIVEN
+}
+
 int gc_heap::garbage_collect (int n)
 {
     //TODO BACKGROUND_GC remove these when ready
@@ -15995,18 +16194,9 @@ int gc_heap::garbage_collect (int n)
             goto done;
         }
 
-#ifdef BACKGROUND_GC
-        if (recursive_gc_sync::background_running_p())
-        {
-            save_bgc_data_per_heap();
-        }
-#endif //BACKGROUND_GC
-
-        memset (&gc_data_per_heap, 0, sizeof (gc_data_per_heap));
-        gc_data_per_heap.heap_index = heap_number;
-        if (heap_number == 0)
-            memset (&gc_data_global, 0, sizeof (gc_data_global));
+        init_records();
         memset (&fgm_result, 0, sizeof (fgm_result));
+
         settings.reason = gc_trigger_reason;
         verify_pinned_queue_p = FALSE;
 
@@ -16047,7 +16237,7 @@ int gc_heap::garbage_collect (int n)
                 //copy the card and brick tables
                 if (g_card_table != g_heaps[i]->card_table)
                 {
-                    g_heaps[i]->copy_brick_card_table (FALSE);
+                    g_heaps[i]->copy_brick_card_table();
                 }
 
                 g_heaps[i]->rearrange_large_heap_segments();
@@ -16070,7 +16260,7 @@ int gc_heap::garbage_collect (int n)
 #endif //BACKGROUND_GC
             // check for card table growth
             if (g_card_table != card_table)
-                copy_brick_card_table (FALSE);
+                copy_brick_card_table();
 
 #endif //MULTIPLE_HEAPS
 
@@ -16236,8 +16426,8 @@ int gc_heap::garbage_collect (int n)
         {
             // We need to save the settings because we'll need to restore it after each FGC.
             assert (settings.condemned_generation == max_generation);
+            settings.compaction = FALSE;
             saved_bgc_settings = settings;
-            bgc_data_saved_p = FALSE;
 
 #ifdef MULTIPLE_HEAPS
             if (heap_number == 0)
@@ -16346,6 +16536,7 @@ int gc_heap::garbage_collect (int n)
                 }
                 else
                 {
+                    settings.compaction = TRUE;
                     c_write (settings.concurrent, FALSE);
                 }
 
@@ -16356,10 +16547,15 @@ int gc_heap::garbage_collect (int n)
 
             if (do_concurrent_p)
             {
+                // At this point we are sure we'll be starting a BGC, so save its per heap data here.
+                // global data is only calculated at the end of the GC so we don't need to worry about
+                // FGCs overwriting it.
+                memset (&bgc_data_per_heap, 0, sizeof (bgc_data_per_heap));
+                memcpy (&bgc_data_per_heap, &gc_data_per_heap, sizeof(gc_data_per_heap));
+
                 if (do_ephemeral_gc_p)
                 {
                     dprintf (2, ("GC threads running, doing gen%d GC", settings.condemned_generation));
-                    save_bgc_data_per_heap();
 
                     gen_to_condemn_reasons.init();
                     gen_to_condemn_reasons.set_condition (gen_before_bgc);
@@ -16730,7 +16926,11 @@ BYTE* gc_heap::find_object (BYTE* o, BYTE* low)
 #endif //INTERIOR_POINTERS
 
 #ifdef MARK_LIST
+#ifdef GC_CONFIG_DRIVEN
+#define m_boundary(o) {if (mark_list_index <= mark_list_end) {*mark_list_index = o;mark_list_index++;} else {mark_list_index++;} if (slow > o) slow = o; if (shigh < o) shigh = o;}
+#else
 #define m_boundary(o) {if (mark_list_index <= mark_list_end) {*mark_list_index = o;mark_list_index++;}if (slow > o) slow = o; if (shigh < o) shigh = o;}
+#endif //GC_CONFIG_DRIVEN
 #else //MARK_LIST
 #define m_boundary(o) {if (slow > o) slow = o; if (shigh < o) shigh = o;}
 #endif //MARK_LIST
@@ -16971,8 +17171,13 @@ void gc_heap::enque_pinned_plug (BYTE* plug,
         size_t last_obj_size = plug - last_object_in_last_plug;
         if (last_obj_size < min_pre_pin_obj_size)
         {
+            record_interesting_data_point (idp_pre_short);
+#ifdef SHORT_PLUGS
+            if (is_padded)
+                record_interesting_data_point (idp_pre_short_padded);
+#endif //SHORT_PLUGS
             dprintf (3, ("encountered a short object %Ix right before pinned plug %Ix!", 
-                                 last_object_in_last_plug, plug));
+                         last_object_in_last_plug, plug));
             // Need to set the short bit regardless of having refs or not because we need to 
             // indicate that this object is not walkable.
             m.set_pre_short();
@@ -17034,6 +17239,11 @@ void gc_heap::save_post_plug_info (BYTE* last_pinned_plug, BYTE* last_object_in_
     if (last_obj_size < min_pre_pin_obj_size)
     {
         dprintf (3, ("PP %Ix last obj %Ix is too short", last_pinned_plug, last_object_in_last_plug));
+        record_interesting_data_point (idp_post_short);
+#ifdef SHORT_PLUGS
+        if (is_padded)
+            record_interesting_data_point (idp_post_short_padded);
+#endif //SHORT_PLUGS
         m.set_post_short();
         verify_pinned_queue_p = TRUE;
 
@@ -20832,6 +21042,13 @@ void gc_heap::store_plug_gap_info (BYTE* plug_start,
     }
 }
 
+void gc_heap::record_interesting_data_point (interesting_data_point idp)
+{
+#ifdef GC_CONFIG_DRIVEN
+    (interesting_data_per_gc[idp])++;
+#endif //GC_CONFIG_DRIVEN
+}
+
 #ifdef _PREFAST_
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
@@ -20864,8 +21081,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #ifdef MARK_LIST
     BOOL use_mark_list = FALSE;
     BYTE** mark_list_next = &mark_list[0];
+#ifdef GC_CONFIG_DRIVEN
+    dprintf (3, ("total number of marked objects: %Id (%Id)",
+                 (mark_list_index - &mark_list[0]), ((mark_list_end - &mark_list[0]))));
+#else
     dprintf (3, ("mark_list length: %Id",
-                 mark_list_index - &mark_list[0]));
+                 (mark_list_index - &mark_list[0])));
+#endif //GC_CONFIG_DRIVEN
 
     if ((condemned_gen_number < max_generation) &&
         (mark_list_index <= mark_list_end) 
@@ -20880,6 +21102,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         //verify_qsort_array (&mark_list[0], mark_list_index-1);
 #endif //!MULTIPLE_HEAPS
         use_mark_list = TRUE;
+        get_gc_data_per_heap()->set_mechanism_bit (gc_mark_list_bit);
     }
     else
     {
@@ -21419,19 +21642,12 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     else
                     {
 #ifdef SIMPLE_DPRINTF
-                        dprintf (3, ("(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix",
+                        dprintf (3, ("(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix(%d)",
                             (size_t)(node_gap_size (plug_start)), 
                             plug_start, plug_end, (size_t)new_address, (size_t)(plug_start - new_address),
-                                (size_t)new_address + ps, ps));
+                                (size_t)new_address + ps, ps, 
+                                (is_plug_padded (plug_start) ? 1 : 0)));
 #endif //SIMPLE_DPRINTF
-
-#ifdef SHORT_PLUGS
-                        if (is_plug_padded (plug_start))
-                        {
-                            dprintf (3, ("%Ix was padded", plug_start));
-                            dd_padding_size (dd_active_old) += Align (min_obj_size);
-                        }
-#endif //SHORT_PLUGS
                     }
                 }
             }
@@ -21753,7 +21969,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
             free_list_allocated, rejected_free_space, end_seg_allocated,
             condemned_allocated, generation_condemned_allocated (generation_of (settings.condemned_generation))));
 
-        maxgen_size_increase* maxgen_size_info = &(gc_data_per_heap.maxgen_size_info);
+        maxgen_size_increase* maxgen_size_info = &(get_gc_data_per_heap()->maxgen_size_info);
         maxgen_size_info->free_list_allocated = free_list_allocated;
         maxgen_size_info->free_list_rejected = rejected_free_space;
         maxgen_size_info->end_seg_allocated = end_seg_allocated;
@@ -21816,10 +22032,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
                      settings.entry_memory_load));
         should_compact = TRUE;
 
+        get_gc_data_per_heap()->set_mechanism (gc_heap_compact, 
+            ((settings.gen0_reduction_count > 0) ? compact_fragmented_gen0 : compact_high_mem_load));
+
         if ((condemned_gen_number >= (max_generation - 1)) && 
             dt_low_ephemeral_space_p (tuning_deciding_expansion))
         {
-            dprintf(2,("Not enough space for all ephemeral generations with compaction"));
+            dprintf (2, ("Not enough space for all ephemeral generations with compaction"));
             should_expand = TRUE;
         }
     }
@@ -21843,7 +22062,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
             if (plan_loh())
             {
                 should_compact = TRUE;
-                gc_data_per_heap.set_mechanism (gc_compact, compact_loh_forced);
+                get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_loh_forced);
                 loh_compacted_p = TRUE;
             }
         }
@@ -21903,6 +22122,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
         settings.demotion = FALSE;
         int pol_max = policy_sweep;
+#ifdef GC_CONFIG_DRIVEN
+        BOOL is_compaction_mandatory = FALSE;
+#endif //GC_CONFIG_DRIVEN
+
         int i;
         for (i = 0; i < n_heaps; i++)
         {
@@ -21910,8 +22133,40 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 pol_max = policy_compact;
             // set the demotion flag is any of the heap has demotion
             if (g_heaps[i]->demotion_high >= g_heaps[i]->demotion_low)
+            {
+                (g_heaps[i]->get_gc_data_per_heap())->set_mechanism_bit (gc_demotion_bit);
                 settings.demotion = TRUE;
+            }
+
+#ifdef GC_CONFIG_DRIVEN
+            if (!is_compaction_mandatory)
+            {
+                int compact_reason = (g_heaps[i]->get_gc_data_per_heap())->get_mechanism (gc_heap_compact);
+                if (compact_reason >= 0)
+                {
+                    if (gc_heap_compact_reason_mandatory_p[compact_reason])
+                        is_compaction_mandatory = TRUE;
+                }
+            }
+#endif //GC_CONFIG_DRIVEN
         }
+
+#ifdef GC_CONFIG_DRIVEN
+        if (!is_compaction_mandatory)
+        {
+            // If compaction is not mandatory we can feel free to change it to a sweeping GC.
+            // Note that we may want to change this to only checking every so often instead of every single GC.
+            if (should_do_sweeping_gc (pol_max >= policy_compact))
+            {
+                pol_max = policy_sweep;
+            }
+            else
+            {
+                if (pol_max == policy_sweep)
+                    pol_max = policy_compact;
+            }
+        }
+#endif //GC_CONFIG_DRIVEN
 
         for (i = 0; i < n_heaps; i++)
         {
@@ -21944,7 +22199,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
             //copy the card and brick tables
             if (g_card_table!= g_heaps[i]->card_table)
             {
-                g_heaps[i]->copy_brick_card_table (TRUE);
+                g_heaps[i]->copy_brick_card_table();
             }
 
             if (is_full_compacting_gc)
@@ -21971,6 +22226,23 @@ void gc_heap::plan_phase (int condemned_gen_number)
     }
 
     settings.demotion = ((demotion_high >= demotion_low) ? TRUE : FALSE);
+    if (settings.demotion)
+        get_gc_data_per_heap()->set_mechanism_bit (gc_demotion_bit);
+
+#ifdef GC_CONFIG_DRIVEN
+    BOOL is_compaction_mandatory = FALSE;
+    int compact_reason = get_gc_data_per_heap()->get_mechanism (gc_heap_compact);
+    if (compact_reason >= 0)
+        is_compaction_mandatory = gc_heap_compact_reason_mandatory_p[compact_reason];
+
+    if (!is_compaction_mandatory)
+    {
+        if (should_do_sweeping_gc (should_compact))
+            should_compact = FALSE;
+        else
+            should_compact = TRUE;
+    }
+#endif //GC_CONFIG_DRIVEN
 
     if (should_compact && (condemned_gen_number == max_generation))
     {
@@ -22389,7 +22661,6 @@ BOOL gc_heap::ensure_gap_allocation (int condemned_gen_number)
         heap_segment_committed (ephemeral_heap_segment))
     {
         if (!grow_heap_segment (ephemeral_heap_segment, start + size))
-
         {
             return FALSE;
         }
@@ -24105,6 +24376,15 @@ void gc_heap::recover_saved_pinned_info()
     {
         mark* oldest_entry = oldest_pin();
         oldest_entry->recover_plug_info();
+#ifdef GC_CONFIG_DRIVEN
+        if (oldest_entry->has_pre_plug_info() && oldest_entry->has_post_plug_info())
+            record_interesting_data_point (idp_pre_and_post_pin);
+        else if (oldest_entry->has_pre_plug_info())
+            record_interesting_data_point (idp_pre_pin);
+        else if (oldest_entry->has_post_plug_info())
+            record_interesting_data_point (idp_post_pin);
+#endif //GC_CONFIG_DRIVEN
+
         deque_pinned_plug();
     }
 }
@@ -24130,7 +24410,7 @@ void gc_heap::compact_phase (int condemned_gen_number,
     update_oldest_pinned_plug();
 
     BOOL reused_seg = FALSE;
-    int heap_expand_mechanism = gc_data_per_heap.get_mechanism (gc_heap_expand);
+    int heap_expand_mechanism = get_gc_data_per_heap()->get_mechanism (gc_heap_expand);
     if ((heap_expand_mechanism == expand_reuse_bestfit) || 
         (heap_expand_mechanism == expand_reuse_normal))
     {
@@ -24589,17 +24869,6 @@ void gc_heap::recover_bgc_settings()
         dprintf (2, ("restoring bgc settings"));
         settings = saved_bgc_settings;
         GCHeap::GcCondemnedGeneration = gc_heap::settings.condemned_generation;
-    }
-}
-
-inline
-void gc_heap::save_bgc_data_per_heap()
-{
-    if (!bgc_data_saved_p)
-    {
-        memset (&saved_bgc_data_per_heap, 0, sizeof (saved_bgc_data_per_heap));
-        memcpy (&saved_bgc_data_per_heap, &gc_data_per_heap, sizeof(gc_data_per_heap));
-        bgc_data_saved_p = TRUE;
     }
 }
 
@@ -28747,7 +29016,7 @@ generation* gc_heap::expand_heap (int condemned_generation,
 
     //copy the card and brick tables
     if (g_card_table!= card_table)
-        copy_brick_card_table (TRUE);
+        copy_brick_card_table();
 
     BOOL new_segment_p = (heap_segment_next (new_seg) == 0);
     dprintf (2, ("new_segment_p %Ix", (size_t)new_segment_p));
@@ -28779,8 +29048,7 @@ generation* gc_heap::expand_heap (int condemned_generation,
     if (should_promote_ephemeral)
     {
         ephemeral_promotion = TRUE;
-        gc_data_per_heap.clear_mechanism (gc_heap_expand);
-        gc_data_per_heap.set_mechanism (gc_heap_expand, expand_new_seg_ep);
+        get_gc_data_per_heap()->set_mechanism (gc_heap_expand, expand_new_seg_ep);
         dprintf (2, ("promoting ephemeral"));
         save_ephemeral_generation_starts();
     }
@@ -28885,6 +29153,7 @@ generation* gc_heap::expand_heap (int condemned_generation,
         dprintf (2, ("Demoting ephemeral segment"));
         //demote the entire segment.
         settings.demotion = TRUE;
+        get_gc_data_per_heap()->set_mechanism_bit (gc_demotion_bit);
         demotion_low = heap_segment_mem (ephemeral_heap_segment);
         demotion_high = heap_segment_reserved (ephemeral_heap_segment);
     }
@@ -28894,6 +29163,7 @@ generation* gc_heap::expand_heap (int condemned_generation,
         demotion_high = 0;
 #ifndef MULTIPLE_HEAPS
         settings.demotion = FALSE;
+        get_gc_data_per_heap()->clear_mechanism_bit (gc_demotion_bit);
 #endif //!MULTIPLE_HEAPS
     }
     ptrdiff_t eph_size1 = total_ephemeral_size;
@@ -28938,6 +29208,11 @@ bool gc_heap::init_dynamic_data()
         dd->gc_clock = 0;
         dd->time_clock = now;
     }
+
+#ifdef GC_CONFIG_DRIVEN
+    if (heap_number == 0)
+        time_init = now;
+#endif //GC_CONFIG_DRIVEN
 
     // get the registry setting for generation 0 size
     size_t gen0size = GCHeap::GetValidGen0MaxSize(get_valid_segment_size());
@@ -29185,9 +29460,9 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                     size_t free_space = generation_free_list_space (generation_of (gen_number));
                     // DTREVIEW - is min_gc_size really a good choice? 
                     // on 64-bit this will almost always be true.
+                    dprintf (GTC_LOG, ("frag: %Id, min: %Id", free_space, min_gc_size));
                     if (free_space > min_gc_size)
                     {
-                        dprintf (2, ("Detected excessive Fragmentation"));
                         settings.gen0_reduction_count = 2;
                     }
                     else
@@ -29203,7 +29478,6 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                                           max (min_gc_size, (max_size/3)));
                 }
             }
-
         }
 
         size_t new_allocation_ret = 
@@ -29404,9 +29678,7 @@ inline
 gc_history_per_heap* gc_heap::get_gc_data_per_heap()
 {
 #ifdef BACKGROUND_GC
-    return (settings.concurrent ? 
-                (bgc_data_saved_p ? &saved_bgc_data_per_heap : &gc_data_per_heap) :
-                &gc_data_per_heap);
+    return (settings.concurrent ? &bgc_data_per_heap : &gc_data_per_heap);
 #else
     return &gc_data_per_heap;
 #endif //BACKGROUND_GC
@@ -29557,13 +29829,30 @@ void gc_heap::decommit_ephemeral_segment_pages()
         return;
     }
 
-    BOOL trim_p = FALSE;
     size_t slack_space = heap_segment_committed (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment);
     dynamic_data* dd = dynamic_data_of (0);
 
+#ifndef MULTIPLE_HEAPS
+    size_t extra_space = (g_low_memory_status ? 0 : (512 * 1024));
+    size_t decommit_timeout = (g_low_memory_status ? 0 : GC_EPHEMERAL_DECOMMIT_TIMEOUT);
+    size_t ephemeral_elapsed = dd_time_clock(dd) - gc_last_ephemeral_decommit_time;
+
+    if (dd_desired_allocation (dd) > gc_gen0_desired_high)
+    {
+        gc_gen0_desired_high = dd_desired_allocation (dd) + extra_space;
+    }
+
+    if (ephemeral_elapsed >= decommit_timeout)
+    {
+        slack_space = min (slack_space, gc_gen0_desired_high);
+
+        gc_last_ephemeral_decommit_time = dd_time_clock(dd);
+        gc_gen0_desired_high = 0;
+    }
+#endif //!MULTIPLE_HEAPS
+
     if (settings.condemned_generation >= (max_generation-1))
     {
-        trim_p = TRUE;
         size_t new_slack_space = 
 #ifdef _WIN64
                     max(min(min(get_valid_segment_size()/32, dd_max_size(dd)), (generation_size (max_generation) / 10)), dd_desired_allocation(dd));
@@ -29576,32 +29865,13 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #endif //_WIN64
 
         slack_space = min (slack_space, new_slack_space);
+
+        size_t saved_slack_space = slack_space;
+        new_slack_space = ((slack_space < gen0_big_free_spaces) ? 0 : (slack_space - gen0_big_free_spaces));
+        slack_space = new_slack_space;
+        dprintf (1, ("ss: %Id->%Id", saved_slack_space, slack_space));
     }
 
-#ifndef MULTIPLE_HEAPS
-    size_t extra_space = (g_low_memory_status ? 0 : (512 * 1024));
-    size_t decommit_timeout = (g_low_memory_status ? 0 : GC_EPHEMERAL_DECOMMIT_TIMEOUT);
-    size_t ephemeral_elapsed = dd_time_clock(dd) - gc_last_ephemeral_decommit_time;
-
-    if (dd_desired_allocation (dynamic_data_of(0)) > gc_gen0_desired_high)
-    {
-        gc_gen0_desired_high = dd_desired_allocation (dynamic_data_of(0)) + extra_space;
-    }
-
-    if (ephemeral_elapsed >= decommit_timeout)
-    {
-        slack_space = min (slack_space, gc_gen0_desired_high);
-
-        gc_last_ephemeral_decommit_time = dd_time_clock(dynamic_data_of(0));
-        gc_gen0_desired_high = 0;
-    }
-#endif //!MULTIPLE_HEAPS
-
-    size_t saved_slack_space = slack_space;
-    size_t current_slack_space = ((slack_space < gen0_big_free_spaces) ? 0 : (slack_space - gen0_big_free_spaces));
-    slack_space = current_slack_space;
-
-    dprintf (1, ("ss: %Id->%Id", saved_slack_space, slack_space));
     decommit_heap_segment_pages (ephemeral_heap_segment, slack_space);    
 
     gc_history_per_heap* current_gc_data_per_heap = get_gc_data_per_heap();
@@ -29710,6 +29980,8 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
     float  fragmentation_burden = ( ((0 == fragmentation) || (0 == gen_sizes)) ? (0.0f) :
                                     (float (fragmentation) / gen_sizes) );
 
+    dprintf (GTC_LOG, ("fragmentation: %Id (%d%%)", fragmentation, (int)(fragmentation_burden * 100.0)));
+
 #ifdef STRESS_HEAP
     // for pure GC stress runs we need compaction, for GC stress "mix"
     // we need to ensure a better mix of compacting and sweeping collections
@@ -29740,12 +30012,14 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
     {
         should_compact = TRUE;
         last_gc_before_oom = FALSE;
+        get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_last_gc);
     }
 
     if (settings.reason == reason_induced_compacting)
     {
         dprintf (2, ("induced compacting GC"));
         should_compact = TRUE;
+        get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_induced_compacting);
     }
 
     dprintf (2, ("Fragmentation: %d Fragmentation burden %d%%",
@@ -29757,7 +30031,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
         {
             dprintf(GTC_LOG, ("compacting due to low ephemeral"));
             should_compact = TRUE;
-            gc_data_per_heap.set_mechanism (gc_compact, compact_low_ephemeral);
+            get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_low_ephemeral);
         }
     }
 
@@ -29794,8 +30068,8 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
             {
 #endif // BACKGROUND_GC
             assert (settings.concurrent == FALSE);
-            dprintf(GTC_LOG,("compacting due to fragmentation"));
             should_compact = TRUE;
+            get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_high_frag);
 #ifdef BACKGROUND_GC
             }
 #endif // BACKGROUND_GC
@@ -29817,6 +30091,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
                 {
                     dprintf(GTC_LOG,("compacting due to fragmentation in high memory"));
                     should_compact = TRUE;
+                    get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_high_mem_frag);
                 }
                 high_memory = TRUE;
             }
@@ -29826,6 +30101,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
                 {
                     dprintf(GTC_LOG,("compacting due to fragmentation in very high memory"));
                     should_compact = TRUE;
+                    get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_vhigh_mem_frag);
                 }
                 high_memory = TRUE;
             }
@@ -29840,7 +30116,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
         (ensure_gap_allocation (condemned_gen_number) == FALSE))
     {
         should_compact = TRUE;
-        gc_data_per_heap.set_mechanism (gc_compact, compact_no_gaps);
+        get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_no_gaps);
     }
 
     if (settings.condemned_generation == max_generation)
@@ -31710,9 +31986,9 @@ void gc_heap::descr_generations (BOOL begin_gc_p)
         heap_segment* seg = generation_start_segment (gen);
         while (seg && (seg != ephemeral_heap_segment))
         {
-            dprintf (GTC_LOG,("g%d: [%Ix %Ix[-%Ix[ (%Id) (%Id)",
-                         curr_gen_number,
-                         (size_t)heap_segment_mem (seg),
+            dprintf (GTC_LOG, ("g%d: [%Ix %Ix[-%Ix[ (%Id) (%Id)",
+                        curr_gen_number,
+                        (size_t)heap_segment_mem (seg),
                         (size_t)heap_segment_allocated (seg),
                         (size_t)heap_segment_committed (seg),
                         (size_t)(heap_segment_allocated (seg) - heap_segment_mem (seg)),
@@ -31722,7 +31998,7 @@ void gc_heap::descr_generations (BOOL begin_gc_p)
         }
         if (seg && (seg != generation_start_segment (gen)))
         {
-            dprintf (GTC_LOG,("g%d: [%Ix %Ix[",
+            dprintf (GTC_LOG, ("g%d: [%Ix %Ix[",
                          curr_gen_number,
                          (size_t)heap_segment_mem (seg),
                          (size_t)generation_allocation_start (generation_of (curr_gen_number-1))));
@@ -31731,7 +32007,7 @@ void gc_heap::descr_generations (BOOL begin_gc_p)
         }
         else if (seg)
         {
-            dprintf (GTC_LOG,("g%d: [%Ix %Ix[",
+            dprintf (GTC_LOG, ("g%d: [%Ix %Ix[",
                          curr_gen_number,
                          (size_t)generation_allocation_start (generation_of (curr_gen_number)),
                          (size_t)(((curr_gen_number == 0)) ?
@@ -32497,7 +32773,7 @@ gc_heap::verify_heap (BOOL begin_gc_p)
             //copy the card and brick tables
             if (g_card_table != g_heaps[i]->card_table)
             {
-                g_heaps[i]->copy_brick_card_table (FALSE);
+                g_heaps[i]->copy_brick_card_table();
             }
         }
 
@@ -32505,7 +32781,7 @@ gc_heap::verify_heap (BOOL begin_gc_p)
     }
 #else
         if (g_card_table != card_table)
-            copy_brick_card_table (FALSE);
+            copy_brick_card_table();
 #endif //MULTIPLE_HEAPS
 
     //verify that the generation structures makes sense
@@ -34395,21 +34671,27 @@ void gc_heap::do_pre_gc()
                         (ULONG)settings.reason);
 #endif // STRESS_LOG
 
+#ifdef MULTIPLE_HEAPS
+    gc_heap* hp = g_heaps[0];
+#else
+    gc_heap* hp = 0;
+#endif //MULTIPLE_HEAPS
+
 #ifdef BACKGROUND_GC
-    settings.b_state = current_bgc_state;
+    settings.b_state = hp->current_bgc_state;
 #endif //BACKGROUND_GC
 
 #ifdef BACKGROUND_GC
     dprintf (1, ("*GC* %d(gen0:%d)(%d)(%s)(%d)", 
         VolatileLoad(&settings.gc_index), 
-        dd_collection_count (dynamic_data_of (0)),
+        dd_collection_count (hp->dynamic_data_of (0)),
         settings.condemned_generation,
         (settings.concurrent ? "BGC" : (recursive_gc_sync::background_running_p() ? "FGC" : "NGC")),
-        VolatileLoad(&current_bgc_state)));
+        settings.b_state));
 #else
     dprintf (1, ("*GC* %d(gen0:%d)(%d)", 
         VolatileLoad(&settings.gc_index), 
-        dd_collection_count (dynamic_data_of (0)),
+        dd_collection_count(hp->dynamic_data_of(0)),
         settings.condemned_generation));
 #endif //BACKGROUND_GC
 
@@ -34457,6 +34739,104 @@ void gc_heap::do_pre_gc()
 #endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
 }
 
+#ifdef GC_CONFIG_DRIVEN
+void gc_heap::record_interesting_info_per_heap()
+{
+    // datapoints are always from the last blocking GC so don't record again
+    // for BGCs.
+    if (!(settings.concurrent))
+    {
+        for (int i = 0; i < max_idp_count; i++)
+        {
+            interesting_data_per_heap[i] += interesting_data_per_gc[i];
+        }
+    }
+
+    int compact_reason = get_gc_data_per_heap()->get_mechanism (gc_heap_compact);
+    if (compact_reason >= 0)
+        (compact_reasons_per_heap[compact_reason])++;
+    int expand_mechanism = get_gc_data_per_heap()->get_mechanism (gc_heap_expand);
+    if (expand_mechanism >= 0)
+        (expand_mechanisms_per_heap[expand_mechanism])++;
+
+    for (int i = 0; i < max_gc_mechanism_bits_count; i++)
+    {
+        if (get_gc_data_per_heap()->is_mechanism_bit_set ((gc_mechanism_bit_per_heap)i))
+            (interesting_mechanism_bits_per_heap[i])++;
+    }
+
+    //         h#  | GC  | gen | C   | EX  | NF  | BF  | ML  | DM  || PreS | PostS | Merge | Conv | Pre | Post | PrPo | PreP | PostP |
+    cprintf (("%2d | %6d | %1d | %1s | %2s | %2s | %2s | %2s | %2s || %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id |",
+            heap_number,
+            settings.gc_index,
+            settings.condemned_generation,
+            // TEMP - I am just doing this for wks GC 'cuase I wanna see the pattern of doing C/S GCs.
+            (settings.compaction ? (((compact_reason >= 0) && gc_heap_compact_reason_mandatory_p[compact_reason]) ? "M" : "W") : ""), // compaction
+            ((expand_mechanism >= 0)? "X" : ""), // EX
+            ((expand_mechanism == expand_reuse_normal) ? "X" : ""), // NF
+            ((expand_mechanism == expand_reuse_bestfit) ? "X" : ""), // BF
+            (get_gc_data_per_heap()->is_mechanism_bit_set (gc_mark_list_bit) ? "X" : ""), // ML
+            (get_gc_data_per_heap()->is_mechanism_bit_set (gc_demotion_bit) ? "X" : ""), // DM
+            interesting_data_per_gc[idp_pre_short],
+            interesting_data_per_gc[idp_post_short],
+            interesting_data_per_gc[idp_merged_pin],
+            interesting_data_per_gc[idp_converted_pin],
+            interesting_data_per_gc[idp_pre_pin],
+            interesting_data_per_gc[idp_post_pin],
+            interesting_data_per_gc[idp_pre_and_post_pin],
+            interesting_data_per_gc[idp_pre_short_padded],
+            interesting_data_per_gc[idp_post_short_padded]));
+}
+
+void gc_heap::record_global_mechanisms()
+{
+    for (int i = 0; i < max_global_mechanisms_count; i++)
+    {
+        if (gc_data_global.get_mechanism_p ((gc_global_mechanism_p)i))
+        {
+            ::record_global_mechanism (i);
+        }
+    }
+}
+
+BOOL gc_heap::should_do_sweeping_gc (BOOL compact_p)
+{
+    if (!compact_ratio)
+        return (!compact_p);
+
+    size_t compact_count = compact_or_sweep_gcs[0];
+    size_t sweep_count = compact_or_sweep_gcs[1];
+
+    size_t total_count = compact_count + sweep_count;
+    BOOL should_compact = compact_p;
+    if (total_count > 3)
+    {
+        if (compact_p)
+        {
+            int temp_ratio = (int)((compact_count + 1) * 100 / (total_count + 1));
+            if (temp_ratio > compact_ratio)
+            {
+                // cprintf (("compact would be: %d, total_count: %d, ratio would be %d%% > target\n",
+                //     (compact_count + 1), (total_count + 1), temp_ratio));
+                should_compact = FALSE;
+            }
+        }
+        else
+        {
+            int temp_ratio = (int)((sweep_count + 1) * 100 / (total_count + 1));
+            if (temp_ratio > (100 - compact_ratio))
+            {
+                // cprintf (("sweep would be: %d, total_count: %d, ratio would be %d%% > target\n",
+                //     (sweep_count + 1), (total_count + 1), temp_ratio));
+                should_compact = TRUE;
+            }
+        }
+    }
+
+    return !should_compact;
+}
+#endif //GC_CONFIG_DRIVEN
+
 void gc_heap::do_post_gc()
 {
     if (!settings.concurrent)
@@ -34473,6 +34853,12 @@ void gc_heap::do_post_gc()
 #endif //COUNT_CYCLES
 #endif //TRACE_GC
 
+#ifdef MULTIPLE_HEAPS
+    gc_heap* hp = g_heaps[0];
+#else
+    gc_heap* hp = 0;
+#endif //MULTIPLE_HEAPS
+    
     GCToEEInterface::GcDone(settings.condemned_generation);
 
 #ifdef GC_PROFILING
@@ -34483,11 +34869,10 @@ void gc_heap::do_post_gc()
     }
 #endif // GC_PROFILING
 
-
     //dprintf (1, (" ****end of Garbage Collection**** %d(gen0:%d)(%d)", 
     dprintf (1, ("*EGC* %d(gen0:%d)(%d)(%s)", 
         VolatileLoad(&settings.gc_index), 
-        dd_collection_count (dynamic_data_of (0)),
+        dd_collection_count(hp->dynamic_data_of(0)),
         settings.condemned_generation,
         (settings.concurrent ? "BGC" : "GC")));
 
@@ -34504,6 +34889,24 @@ void gc_heap::do_post_gc()
                       (ULONG)settings.condemned_generation,
                       (ULONG)settings.reason);
 #endif // STRESS_LOG
+
+#ifdef GC_CONFIG_DRIVEN
+    if (!settings.concurrent)
+    {
+        if (settings.compaction)
+            (compact_or_sweep_gcs[0])++;
+        else
+            (compact_or_sweep_gcs[1])++;
+    }
+
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < n_heaps; i++)
+        g_heaps[i]->record_interesting_info_per_heap();
+#else
+    record_interesting_info_per_heap();
+#endif //MULTIPLE_HEAPS
+    record_global_mechanisms();
+#endif //GC_CONFIG_DRIVEN
 }
 
 unsigned GCHeap::GetGcCount()

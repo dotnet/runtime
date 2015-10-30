@@ -109,6 +109,11 @@ class GCHeap;
 
 GPTR_DECL(GCHeap, g_pGCHeap);
 
+#ifdef GC_CONFIG_DRIVEN
+#define MAX_GLOBAL_GC_MECHANISMS_COUNT 6
+GARY_DECL(size_t, gc_global_mechanisms, MAX_GLOBAL_GC_MECHANISMS_COUNT);
+#endif //GC_CONFIG_DRIVEN
+
 #ifndef DACCESS_COMPILE
 extern "C" {
 #endif
@@ -344,6 +349,10 @@ void record_changed_seg (BYTE* start, BYTE* end,
                          bgc_state current_bgc_state,
                          changed_seg_state changed_state);
 
+#ifdef GC_CONFIG_DRIVEN
+void record_global_mechanism (int mech_index);
+#endif //GC_CONFIG_DRIVEN
+
 //constants for the flags parameter to the gc call back
 
 #define GC_CALL_INTERIOR            0x1
@@ -377,19 +386,23 @@ public:
 #endif
     }
     
-#ifndef CLR_STANDALONE_BINDER   
-    static BOOL IsGCHeapInitialized()
-    {
-        LIMITED_METHOD_CONTRACT;
+#ifndef CLR_STANDALONE_BINDER
 
-        return (g_pGCHeap != NULL);
-    }
+#ifndef DACCESS_COMPILE
     static BOOL IsGCInProgress(BOOL bConsiderGCStart = FALSE)
     {
         WRAPPER_NO_CONTRACT;
 
         return (IsGCHeapInitialized() ? GetGCHeap()->IsGCInProgressHelper(bConsiderGCStart) : false);
     }   
+#endif
+    
+    static BOOL IsGCHeapInitialized()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return (g_pGCHeap != NULL);
+    }
 
     static void WaitForGCCompletion(BOOL bConsiderGCStart = FALSE)
     {

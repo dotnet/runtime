@@ -218,7 +218,7 @@ Remarks:
 #endif
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 //+
-// Provider Microsoft-Windows-DotNETRuntime Event Count 167
+// Provider Microsoft-Windows-DotNETRuntime Event Count 168
 //+
 EXTERN_C __declspec(selectany) const GUID MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER = {0xe13c0d23, 0xccbc, 0x4e12, {0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4}};
 
@@ -744,6 +744,8 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR DebugExceptionProcessingEn
 #define DebugExceptionProcessingEnd_value 0xf3
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR CodeSymbols = {0x104, 0x0, 0x0, 0x5, 0x1, 0x1e, 0x400000000};
 #define CodeSymbols_value 0x104
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR EventSource = {0x10e, 0x0, 0x0, 0x4, 0x1, 0x0, 0x0};
+#define EventSource_value 0x10e
 
 //
 // Note on Generate Code from Manifest Windows Vista and above
@@ -3208,6 +3210,20 @@ Remarks:
 #define FireEtwCodeSymbols(ModuleId, TotalChunks, ChunkNumber, ChunkLength, Chunk, ClrInstanceID)\
         EventEnabledCodeSymbols() ?\
         CoTemplate_xhhqbh(Microsoft_Windows_DotNETRuntimeHandle, &CodeSymbols, ModuleId, TotalChunks, ChunkNumber, ChunkLength, Chunk, ClrInstanceID)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for EventSource
+//
+
+#define EventEnabledEventSource() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00002000) != 0)
+
+//
+// Event Macro for EventSource
+//
+#define FireEtwEventSource(EventID, EventName, EventSourceName, Payload)\
+        EventEnabledEventSource() ?\
+        CoTemplate_dzzz(Microsoft_Windows_DotNETRuntimeHandle, &EventSource, EventID, EventName, EventSourceName, Payload)\
         : ERROR_SUCCESS\
 
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
@@ -10969,6 +10985,54 @@ CoTemplate_xhhqbh(
 MCGEN_CALLOUT(RegHandle,
               Descriptor,
               ARGUMENT_COUNT_xhhqbh,
+              EventData);
+#endif
+
+    return Error;
+}
+#endif
+
+//
+//Template from manifest : EventSource
+//
+#ifndef CoTemplate_dzzz_def
+#define CoTemplate_dzzz_def
+ETW_INLINE
+ULONG
+CoTemplate_dzzz(
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const signed int  _Arg0,
+    _In_opt_ PCWSTR  _Arg1,
+    _In_opt_ PCWSTR  _Arg2,
+    _In_opt_ PCWSTR  _Arg3
+    )
+{
+#define ARGUMENT_COUNT_dzzz 4
+    ULONG Error = ERROR_SUCCESS;
+
+    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_dzzz];
+
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const signed int)  );
+
+    EventDataDescCreate(&EventData[1], 
+                        (_Arg1 != NULL) ? _Arg1 : L"NULL",
+                        (_Arg1 != NULL) ? (ULONG)((wcslen(_Arg1) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+
+    EventDataDescCreate(&EventData[2], 
+                        (_Arg2 != NULL) ? _Arg2 : L"NULL",
+                        (_Arg2 != NULL) ? (ULONG)((wcslen(_Arg2) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+
+    EventDataDescCreate(&EventData[3], 
+                        (_Arg3 != NULL) ? _Arg3 : L"NULL",
+                        (_Arg3 != NULL) ? (ULONG)((wcslen(_Arg3) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+
+    Error = EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_dzzz, EventData);
+
+#ifdef MCGEN_CALLOUT
+MCGEN_CALLOUT(RegHandle,
+              Descriptor,
+              ARGUMENT_COUNT_dzzz,
               EventData);
 #endif
 

@@ -28,6 +28,10 @@ GPTR_IMPL(DWORD,g_card_table);
 GPTR_IMPL_INIT(BYTE,g_lowest_address,0);
 GPTR_IMPL_INIT(BYTE,g_highest_address,0);
 
+#ifdef GC_CONFIG_DRIVEN
+GARY_IMPL(size_t, gc_global_mechanisms, MAX_GLOBAL_GC_MECHANISMS_COUNT);
+#endif //GC_CONFIG_DRIVEN
+
 #ifndef DACCESS_COMPILE
 
 BYTE* g_ephemeral_low = (BYTE*)1; 
@@ -40,6 +44,13 @@ BYTE* g_shadow_lowest_address = NULL;
 #endif
 
 VOLATILE(LONG) m_GCLock = -1;
+
+#ifdef GC_CONFIG_DRIVEN
+void record_global_mechanism (int mech_index)
+{
+	(gc_global_mechanisms[mech_index])++;
+}
+#endif //GC_CONFIG_DRIVEN
 
 LONG g_bLowMemoryFromHost = 0;
 
