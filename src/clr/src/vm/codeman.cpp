@@ -1211,9 +1211,9 @@ bool DoesOSSupportAVX()
     {
         return FALSE;
     }
+#endif // !FEATURE_PAL
 
     return TRUE;
-#endif // !FEATURE_PAL
 }
 
 #endif // defined(_TARGET_AMD64_)
