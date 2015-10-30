@@ -1055,8 +1055,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginAcceptV6BoundToSpecificV4_CantConnect()
         {
-            // TODO: #4052 Behavior difference from Desktop: Used to throw SocketException. 
-            Assert.Throws<ObjectDisposedException>(() =>
+            Assert.Throws<SocketException>(() =>
             {
                 DualModeConnect_BeginAccept_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
             });
@@ -1065,8 +1064,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginAcceptV4BoundToSpecificV6_CantConnect()
         {
-            // TODO: #4052  Behavior difference from Desktop: Used to throw SocketException.
-            Assert.Throws<ObjectDisposedException>(() =>
+            Assert.Throws<SocketException>(() =>
             {
                 DualModeConnect_BeginAccept_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
             });
@@ -1075,8 +1073,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void BeginAcceptV6BoundToAnyV4_CantConnect()
         {
-            // TODO: #4052 Behavior difference from Desktop: Used to throw SocketException.
-            Assert.Throws<ObjectDisposedException>(() =>
+            Assert.Throws<SocketException>(() =>
             {
                 DualModeConnect_BeginAccept_Helper(IPAddress.Any, IPAddress.IPv6Loopback);
             });
@@ -1096,11 +1093,29 @@ namespace System.Net.Sockets.Tests
                 serverSocket.Listen(1);
                 IAsyncResult async = serverSocket.BeginAccept(null, null);
                 SocketClient client = new SocketClient(serverSocket, connectTo, port);
-                Socket clientSocket = serverSocket.EndAccept(async);
-                Assert.True(clientSocket.Connected);
-                AssertDualModeEnabled(clientSocket, listenOn);
-                Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
-                Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
+
+                // Due to the nondeterministic nature of calling dispose on a Socket that is doing
+                // an EndAccept operation, we expect two types of exceptions to happen.
+                Socket clientSocket;
+                try
+                {
+                    clientSocket = serverSocket.EndAccept(async);
+                    Assert.True(clientSocket.Connected);
+                    AssertDualModeEnabled(clientSocket, listenOn);
+                    Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
+                    Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
+                }
+                catch (ObjectDisposedException) { }
+                catch (SocketException) { }
+
+                Assert.True(
+                    client.WaitHandle.WaitOne(Configuration.PassingTestTimeout),
+                    "Timed out while waiting for connection");
+
+                if ( client.Error != SocketError.Success)
+                {
+                    throw new SocketException((int)client.Error);
+                }
             }
         }
 
@@ -2523,11 +2538,25 @@ namespace System.Net.Sockets.Tests
             private Socket _serverSocket;
             private int _port;
 
+            public ManualResetEvent WaitHandle
+            {
+                get;
+                private set;
+            }
+
+            public SocketError Error
+            {
+                get;
+                private set;
+            }
+
             public SocketClient(Socket serverSocket, IPAddress connectTo, int port)
             {
                 _connectTo = connectTo;
                 _serverSocket = serverSocket;
                 _port = port;
+                WaitHandle = new ManualResetEvent(false);
+                Error = SocketError.Success;
 
                 ThreadPool.QueueUserWorkItem(ConnectClient);
             }
@@ -2539,10 +2568,15 @@ namespace System.Net.Sockets.Tests
                     Socket socket = new Socket(_connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                     socket.Connect(_connectTo, _port);
                 }
-                catch (SocketException)
+                catch (SocketException ex)
                 {
                     Task.Delay(Configuration.FailingTestTimeout).Wait(); // Give the other end a chance to call Accept().
                     _serverSocket.Dispose(); // Cancels the test
+                    Error = ex.SocketErrorCode;
+                }
+                finally
+                {
+                    WaitHandle.Set();
                 }
             }
         }
