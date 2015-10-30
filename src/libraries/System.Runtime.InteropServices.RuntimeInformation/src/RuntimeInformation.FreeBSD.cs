@@ -3,7 +3,7 @@
 
 namespace System.Runtime.InteropServices
 {
-    public static class RuntimeInformation
+    public static partial class RuntimeInformation
     {
         private static OSPlatform s_freeBSD = OSPlatform.Create("FREEBSD");
 

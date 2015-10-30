@@ -7,7 +7,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.SystemInfo)]
+        [DllImport(Libraries.SystemInfo_L1_1)]
         internal extern static int GlobalMemoryStatusEx(out MEMORYSTATUSEX lpBuffer);
     }
 }

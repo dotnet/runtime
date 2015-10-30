@@ -3,7 +3,7 @@
 
 namespace System.Runtime.InteropServices
 {
-    public static class RuntimeInformation
+    public static partial class RuntimeInformation
     {
         public static bool IsOSPlatform(OSPlatform osPlatform)
         {
