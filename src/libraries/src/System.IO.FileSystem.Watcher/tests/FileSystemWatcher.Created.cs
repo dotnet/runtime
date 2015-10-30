@@ -178,7 +178,7 @@ public class CreatedTests
         }
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     [ActiveIssue(1477, PlatformID.Windows)]
     [ActiveIssue(3215, PlatformID.OSX)]
     public static void FileSystemWatcher_Created_WatcherDoesntFollowSymLinkToFile()
