@@ -364,15 +364,15 @@ build(globalParams + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number,
                     if (architecture == 'x64') {
                         if (configuration == 'Release') {
                             // Tests will be run on x64 Release by default (no trigger phase required).
-                            Utilities.addGithubPRTrigger(newFlowJob, "Linux ${architecture} ${configuration} Build and Test")
+                            Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test")
                         } else {
-                            Utilities.addGithubPRTrigger(newFlowJob, "Linux ${architecture} ${configuration} Build and Test", "(?i).*test\\W+linux\\W+debug.*")
+                            Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test", "(?i).*test\\W+ubuntu\\W+debug.*")
                         }
                     } else if (architecture == 'x86') {
                         if (configuration == 'Release') {
-                            Utilities.addGithubPRTrigger(newFlowJob, "Linux ${architecture} ${configuration} Build and Test", "(?i).*test\\W+linux\\W+x86.*")
+                            Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test", "(?i).*test\\W+ubuntu\\W+x86.*")
                         } else {
-                            Utilities.addGithubPRTrigger(newFlowJob, "Linux ${architecture} ${configuration} Build and Test", "(?i).*test\\W+linux\\W+x86\\W+debug.*")
+                            Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test", "(?i).*test\\W+ubuntu\\W+x86\\W+debug.*")
                         }
                     }
                 }
