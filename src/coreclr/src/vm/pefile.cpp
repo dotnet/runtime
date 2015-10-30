@@ -2146,7 +2146,7 @@ BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, Loggab
     // Check processor
     //
 
-    if (info->wMachine != IMAGE_FILE_MACHINE_NATIVE)
+    if (info->wMachine != IMAGE_FILE_MACHINE_NATIVE_NI)
     {
         RuntimeVerifyLog(LL_ERROR, pLogAsm, W("Processor type recorded in native image doesn't match this machine's processor."));
         return FALSE;
