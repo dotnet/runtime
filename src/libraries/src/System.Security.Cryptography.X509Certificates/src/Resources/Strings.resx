@@ -225,6 +225,9 @@
   <data name="NotSupported_KeyAlgorithm" xml:space="preserve">
     <value>The certificate key algorithm is not supported.</value>
   </data>
+  <data name="NotSupported_LegacyBasicConstraints" xml:space="preserve">
+    <value>The X509 Basic Constraints extension with OID 2.5.29.10 is not supported.</value>
+  </data>
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
   </data>

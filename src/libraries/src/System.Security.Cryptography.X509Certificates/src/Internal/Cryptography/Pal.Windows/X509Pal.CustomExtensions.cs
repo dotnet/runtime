@@ -59,6 +59,11 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public bool SupportsLegacyBasicConstraintsExtension
+        {
+            get { return true; }
+        }
+
         public byte[] EncodeX509BasicConstraints2Extension(bool certificateAuthority, bool hasPathLengthConstraint, int pathLengthConstraint)
         {
             unsafe

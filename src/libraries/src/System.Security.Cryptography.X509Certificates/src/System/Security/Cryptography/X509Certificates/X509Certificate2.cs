@@ -486,10 +486,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static X509Extension CreateCustomExtensionIfAny(Oid oid)
         {
-            String oidValue = oid.Value;
+            string oidValue = oid.Value;
             switch (oidValue)
             {
                 case Oids.BasicConstraints:
+                    return X509Pal.Instance.SupportsLegacyBasicConstraintsExtension ?
+                        new X509BasicConstraintsExtension() :
+                        null;
+
                 case Oids.BasicConstraints2:
                     return new X509BasicConstraintsExtension();
 

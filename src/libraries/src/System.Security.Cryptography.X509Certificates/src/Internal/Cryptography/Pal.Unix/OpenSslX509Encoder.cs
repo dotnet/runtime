@@ -215,12 +215,37 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public bool SupportsLegacyBasicConstraintsExtension
+        {
+            get { return false; }
+        }
+
         public byte[] EncodeX509BasicConstraints2Extension(
             bool certificateAuthority,
             bool hasPathLengthConstraint,
             int pathLengthConstraint)
         {
-            throw new NotImplementedException();
+            //BasicConstraintsSyntax::= SEQUENCE {
+            //    cA BOOLEAN DEFAULT FALSE,
+            //    pathLenConstraint INTEGER(0..MAX) OPTIONAL,
+            //    ... }
+
+            List<byte[][]> segments = new List<byte[][]>(2);
+
+            if (certificateAuthority)
+            {
+                segments.Add(DerEncoder.SegmentedEncodeBoolean(true));
+            }
+
+            if (hasPathLengthConstraint)
+            {
+                byte[] pathLengthBytes = BitConverter.GetBytes(pathLengthConstraint);
+                // Little-Endian => Big-Endian
+                Array.Reverse(pathLengthBytes);
+                segments.Add(DerEncoder.SegmentedEncodeUnsignedInteger(pathLengthBytes));
+            }
+
+            return DerEncoder.ConstructSequence(segments);
         }
 
         public void DecodeX509BasicConstraintsExtension(
@@ -229,7 +254,12 @@ namespace Internal.Cryptography.Pal
             out bool hasPathLengthConstraint,
             out int pathLengthConstraint)
         {
-            throw new NotImplementedException();
+            // No RFC nor ITU document describes the layout of the 2.5.29.10 structure,
+            // and OpenSSL doesn't have a decoder for it, either.
+            //
+            // Since it was never published as a standard (2.5.29.19 replaced it before publication)
+            // there shouldn't be too many people upset that we can't decode it for them on Unix.
+            throw new PlatformNotSupportedException(SR.NotSupported_LegacyBasicConstraints);
         }
 
         public void DecodeX509BasicConstraints2Extension(
@@ -251,7 +281,20 @@ namespace Internal.Cryptography.Pal
 
         public byte[] EncodeX509EnhancedKeyUsageExtension(OidCollection usages)
         {
-            throw new NotImplementedException();
+            //extKeyUsage EXTENSION ::= {
+            //    SYNTAX SEQUENCE SIZE(1..MAX) OF KeyPurposeId
+            //    IDENTIFIED BY id - ce - extKeyUsage }
+            //
+            //KeyPurposeId::= OBJECT IDENTIFIER
+
+            List<byte[][]> segments = new List<byte[][]>(usages.Count);
+
+            foreach (Oid usage in usages)
+            {
+                segments.Add(DerEncoder.SegmentedEncodeOid(usage));
+            }
+
+            return DerEncoder.ConstructSequence(segments);
         }
 
         public void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
@@ -284,7 +327,18 @@ namespace Internal.Cryptography.Pal
 
         public byte[] EncodeX509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier)
         {
-            throw new NotImplementedException();
+            //subjectKeyIdentifier EXTENSION ::= {
+            //    SYNTAX SubjectKeyIdentifier
+            //    IDENTIFIED BY id - ce - subjectKeyIdentifier }
+            //
+            //SubjectKeyIdentifier::= KeyIdentifier
+            //
+            //KeyIdentifier ::= OCTET STRING
+
+            byte[][] segments = DerEncoder.SegmentedEncodeOctetString(subjectKeyIdentifier);
+
+            // The extension is not a sequence, just the octet string
+            return ConcatenateArrays(segments);
         }
 
         public void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
@@ -300,7 +354,48 @@ namespace Internal.Cryptography.Pal
 
         public byte[] ComputeCapiSha1OfPublicKey(PublicKey key)
         {
-            throw new NotImplementedException();
+            // The CapiSha1 value is the SHA-1 of the SubjectPublicKeyInfo field, inclusive
+            // of the DER structural bytes.
+
+            //SubjectPublicKeyInfo::= SEQUENCE {
+            //    algorithm AlgorithmIdentifier{ { SupportedAlgorithms} },
+            //    subjectPublicKey BIT STRING,
+            //    ... }
+            //
+            //AlgorithmIdentifier{ ALGORITHM: SupportedAlgorithms} ::= SEQUENCE {
+            //    algorithm ALGORITHM.&id({ SupportedAlgorithms}),
+            //    parameters ALGORITHM.&Type({ SupportedAlgorithms}
+            //    { @algorithm}) OPTIONAL,
+            //    ... }
+            //
+            //ALGORITHM::= CLASS {
+            //    &Type OPTIONAL,
+            //    &id OBJECT IDENTIFIER UNIQUE }
+            //WITH SYNTAX {
+            //    [&Type]
+            //IDENTIFIED BY &id }
+
+            // key.EncodedKeyValue corresponds to SubjectPublicKeyInfo.subjectPublicKey, except it
+            // has had the BIT STRING envelope removed.
+            //
+            // key.EncodedParameters corresponds to AlgorithmIdentifier.Parameters precisely
+            // (DER NULL for RSA, DER Constructed SEQUENCE for DSA)
+
+            byte[] empty = Array.Empty<byte>();
+            byte[][] algorithmOid = DerEncoder.SegmentedEncodeOid(key.Oid);
+            // Because ConstructSegmentedSequence doesn't look to see that it really is tag+length+value (but does check
+            // that the array has length 3), just hide the joined TLV triplet in the last element.
+            byte[][] segmentedParameters = { empty, empty, key.EncodedParameters.RawData };
+            byte[][] algorithmIdentifier = DerEncoder.ConstructSegmentedSequence(algorithmOid, segmentedParameters);
+            byte[][] subjectPublicKey = DerEncoder.SegmentedEncodeBitString(key.EncodedKeyValue.RawData);
+
+            using (SHA1 hash = SHA1.Create())
+            {
+                return hash.ComputeHash(
+                    DerEncoder.ConstructSequence(
+                        algorithmIdentifier,
+                        subjectPublicKey));
+            }
         }
 
         private static RSA BuildRsaPublicKey(byte[] encodedData)

@@ -205,7 +205,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData("BasicConstraintsData")]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void BasicConstraintsExtensionEncode(
             bool certificateAuthority,
             bool hasPathLengthConstraint,
@@ -233,16 +232,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string rawDataString)
         {
             byte[] rawData = rawDataString.HexToByteArray();
+            int expectedPathLengthConstraint = hasPathLengthConstraint ? pathLengthConstraint : 0;
 
             X509BasicConstraintsExtension ext = new X509BasicConstraintsExtension(new AsnEncodedData(rawData), critical);
             Assert.Equal(certificateAuthority, ext.CertificateAuthority);
             Assert.Equal(hasPathLengthConstraint, ext.HasPathLengthConstraint);
-            Assert.Equal(pathLengthConstraint, ext.PathLengthConstraint);
+            Assert.Equal(expectedPathLengthConstraint, ext.PathLengthConstraint);
         }
 
         public static object[][] BasicConstraintsData = new object[][]
         {
             new object[] { false, false, 0, false, "3000" },
+            new object[] { false, false, 121, false, "3000" },
             new object[] { true, false, 0, false, "30030101ff" },
             new object[] { false, true, 0, false, "3003020100" },
             new object[] { false, true, 7654321, false, "3005020374cbb1" },
@@ -264,7 +265,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void EnhancedKeyUsageExtension_Empty()
         {
             OidCollection usages = new OidCollection();
@@ -272,7 +272,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void EnhancedKeyUsageExtension_2Oids()
         {
             Oid oid1 = Oid.FromOidValue("1.3.6.1.5.5.7.3.1", OidGroup.EnhancedKeyUsage);
@@ -282,6 +281,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             usages.Add(oid2);
 
             TestEnhancedKeyUsageExtension(usages, false, "301606082b06010505070301060a2b0601040182370a0301".HexToByteArray());
+        }
+
+        [Theory]
+        [InlineData("1")]
+        [InlineData("3.0")]
+        [InlineData("Invalid Value")]
+        public static void EnhancedKeyUsageExtension_InvalidOid(string invalidOidValue)
+        {
+            OidCollection oids = new OidCollection
+            {
+                new Oid(invalidOidValue)
+            };
+
+            Assert.ThrowsAny<CryptographicException>(() => new X509EnhancedKeyUsageExtension(oids, false));
         }
 
         [Fact]
@@ -300,7 +313,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_Bytes()
         {
             byte[] sk = { 1, 2, 3, 4 };
@@ -315,7 +327,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_String()
         {
             string sk = "01ABcd";
@@ -330,7 +341,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKey()
         {
             PublicKey pk = new X509Certificate2(TestData.MsCertificate).PublicKey;
@@ -345,7 +355,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKeySha1()
         {
             TestSubjectKeyIdentifierExtension(
@@ -357,7 +366,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKeyShortSha1()
         {
             TestSubjectKeyIdentifierExtension(
@@ -369,7 +377,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKeyCapiSha1()
         {
             TestSubjectKeyIdentifierExtension(

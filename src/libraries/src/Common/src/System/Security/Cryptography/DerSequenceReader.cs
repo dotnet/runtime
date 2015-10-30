@@ -264,6 +264,7 @@ namespace System.Security.Cryptography
 
         internal enum DerTag : byte
         {
+            Boolean = 0x01,
             Integer = 0x02,
             BitString = 0x03,
             OctetString = 0x04,
