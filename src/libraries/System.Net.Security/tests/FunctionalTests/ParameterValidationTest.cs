@@ -24,7 +24,7 @@ namespace System.Net.Security.Tests
         public void SslStreamConstructor_BadEncryptionPolicy_ThrowException()
         {
             using (var _remoteServer = new DummyTcpServer(
-                new IPEndPoint(IPAddress.Loopback, 600), EncryptionPolicy.RequireEncryption))
+                new IPEndPoint(IPAddress.Loopback, 0), EncryptionPolicy.RequireEncryption))
             using (var client = new TcpClient())
             {
                 client.Connect(_remoteServer.RemoteEndPoint);
