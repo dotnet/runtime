@@ -6,32 +6,34 @@ using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
+using CURLcode = Interop.Http.CURLcode;
+
 namespace System.Net.Http
 {
     internal partial class CurlHandler : HttpMessageHandler
     {
         private static class SslProvider
         {
-            private delegate int SslCtxCallback(IntPtr curl, IntPtr sslCtx, IntPtr userPtr);
+            private delegate CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx, IntPtr userPtr);
 
             private static readonly SslCtxCallback s_sslCtxCallback = SetSslCtxVerifyCallback;
             private static readonly Interop.Ssl.AppVerifyCallback s_sslVerifyCallback = VerifyCertChain;
 
             internal static void SetSslOptions(EasyRequest easy)
             {
-                int answer = Interop.libcurl.curl_easy_setopt(
+                CURLcode answer = Interop.Http.EasySetOptionPointer(
                     easy._easyHandle,
-                    Interop.libcurl.CURLoption.CURLOPT_SSL_CTX_FUNCTION,
+                    Interop.Http.CURLoption.CURLOPT_SSL_CTX_FUNCTION,
                     s_sslCtxCallback);
 
                 switch (answer)
                 {
-                    case Interop.libcurl.CURLcode.CURLE_OK:
+                    case CURLcode.CURLE_OK:
                         break;
                     // Curl 7.38 and prior
-                    case Interop.libcurl.CURLcode.CURLE_UNKNOWN_OPTION:
+                    case CURLcode.CURLE_UNKNOWN_OPTION:
                     // Curl 7.39 and later
-                    case Interop.libcurl.CURLcode.CURLE_NOT_BUILT_IN:
+                    case CURLcode.CURLE_NOT_BUILT_IN:
                         VerboseTrace("CURLOPT_SSL_CTX_FUNCTION is not supported, platform default https chain building in use");
                         break;
                     default:
@@ -40,7 +42,7 @@ namespace System.Net.Http
                 }
             }
 
-            private static int SetSslCtxVerifyCallback(
+            private static CURLcode SetSslCtxVerifyCallback(
                 IntPtr curl,
                 IntPtr sslCtx,
                 IntPtr userPtr)
@@ -50,7 +52,7 @@ namespace System.Net.Http
                     Interop.Ssl.SslCtxSetCertVerifyCallback(ctx, s_sslVerifyCallback, userPtr);
                 }
 
-                return Interop.libcurl.CURLcode.CURLE_OK;
+                return CURLcode.CURLE_OK;
             }
 
             private static int VerifyCertChain(IntPtr storeCtxPtr, IntPtr arg)

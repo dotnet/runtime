@@ -8,6 +8,8 @@ endif()
 
 set(NATIVEHTTP_SOURCES
     pal_curlinit.cpp
+    pal_easy.cpp
+    pal_slist.cpp
     pal_versioninfo.cpp
 )
 

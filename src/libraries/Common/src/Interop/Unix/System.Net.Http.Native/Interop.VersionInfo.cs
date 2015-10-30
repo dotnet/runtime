@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class LibCurl
+    internal static partial class Http
     {
         [DllImport(Libraries.HttpNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
