@@ -27,20 +27,14 @@ namespace System.Net.Security.Tests
 
         private static readonly SslProtocols[] s_eachSslProtocol = new SslProtocols[]
         {
-            SslProtocols.Ssl2,
             SslProtocols.Ssl3,
             SslProtocols.Tls,
             SslProtocols.Tls11,
             SslProtocols.Tls12,
         };
 
-        public static IEnumerable<object[]> ProtocolMismatchData()
+        private static IEnumerable<object[]> ProtocolMismatchData()
         {
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(IOException) };
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls, typeof(IOException) };
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls11, typeof(IOException) };
-            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(IOException) };
-
             yield return new object[] { SslProtocols.Ssl3, SslProtocols.Ssl2, typeof(IOException) };
             yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls, typeof(IOException) };
             yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls11, typeof(IOException) };
@@ -60,6 +54,14 @@ namespace System.Net.Security.Tests
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Ssl3, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
+        }
+
+        private static IEnumerable<object[]> ProtocolMismatchDataSsl2Specific()
+        {
+            yield return new object[] {SslProtocols.Ssl2, SslProtocols.Ssl3, typeof (IOException)};
+            yield return new object[] {SslProtocols.Ssl2, SslProtocols.Tls, typeof (IOException)};
+            yield return new object[] {SslProtocols.Ssl2, SslProtocols.Tls11, typeof (IOException)};
+            yield return new object[] {SslProtocols.Ssl2, SslProtocols.Tls12, typeof (IOException)};
         }
 
         public ClientAsyncAuthenticateTest()
@@ -98,7 +100,23 @@ namespace System.Net.Security.Tests
             Assert.Throws(expected, () => ClientAsyncSslHelper(server, client));
         }
 
+        [Theory]
+        [MemberData("ProtocolMismatchDataSsl2Specific")]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ClientAsyncAuthenticate_MismatchProtocols_Ssl2_Fails(SslProtocols server, SslProtocols client, Type expected)
+        {
+            Assert.Throws(expected, () => ClientAsyncSslHelper(server, client));
+        }
+
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
+        public void ClientAsyncAuthenticate_EachProtocol_Ssl2_Success()
+        {
+            ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2);
+        }
+
+        [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void ClientAsyncAuthenticate_Ssl2Tls12ServerSsl2Client_Fails()
         {
             Assert.Throws<Win32Exception>(() =>
@@ -109,6 +127,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void ClientAsyncAuthenticate_Ssl2Tls12ServerTls12Client_Fails()
         {
             Assert.Throws<Win32Exception>(() =>
@@ -119,6 +138,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void ClientAsyncAuthenticate_Ssl2ServerSsl2Tls12Client_Success()
         {
             ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2 | SslProtocols.Tls12);
