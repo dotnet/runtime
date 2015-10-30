@@ -53,7 +53,7 @@ namespace System.Net.NetworkInformation
         private static UnicastIPAddressInformationCollection GetUnicastAddresses(UnixNetworkInterface uni)
         {
             var collection = new UnicastIPAddressInformationCollection();
-            foreach (IPAddress address in uni.Addresses.Where((addr) => !IsMulticast(addr)))
+            foreach (IPAddress address in uni.Addresses.Where((addr) => !IPAddressUtil.IsMulticast(addr)))
             {
                 IPAddress netMask = (address.AddressFamily == AddressFamily.InterNetwork)
                                     ? uni.GetNetMaskForIPv4Address(address)
@@ -67,25 +67,12 @@ namespace System.Net.NetworkInformation
         private static MulticastIPAddressInformationCollection GetMulticastAddresses(UnixNetworkInterface uni)
         {
             var collection = new MulticastIPAddressInformationCollection();
-            foreach (IPAddress address in uni.Addresses.Where(IsMulticast))
+            foreach (IPAddress address in uni.Addresses.Where(IPAddressUtil.IsMulticast))
             {
                 collection.InternalAdd(new UnixMulticastIPAddressInformation(address));
             }
 
             return collection;
-        }
-
-        private static bool IsMulticast(IPAddress address)
-        {
-            if (address.AddressFamily == AddressFamily.InterNetworkV6)
-            {
-                return address.IsIPv6Multicast;
-            }
-            else
-            {
-                byte firstByte = address.GetAddressBytes()[0];
-                return firstByte >= 224 && firstByte <= 239;
-            }
         }
 
         private static string GetDnsSuffix()

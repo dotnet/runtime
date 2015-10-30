@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxIPGlobalProperties : IPGlobalProperties
+    internal class OsxIPGlobalProperties : UnixIPGlobalProperties
     {
         public override string DhcpScopeName
         {
@@ -182,24 +182,6 @@ namespace System.Net.NetworkInformation
         {
             // OSX does not provide separated UDP-IPv4 and UDP-IPv6 stats.
             return new OsxUdpStatistics();
-        }
-
-        private UnicastIPAddressInformationCollection GetUnicastAddresses()
-        {
-            UnicastIPAddressInformationCollection collection = new UnicastIPAddressInformationCollection();
-            foreach (UnicastIPAddressInformation info in
-                OsxNetworkInterface.GetOsxNetworkInterfaces().SelectMany(oni => oni.GetIPProperties().UnicastAddresses))
-            {
-                // PERF: Use Interop.Sys.EnumerateInterfaceAddresses directly here.
-                collection.InternalAdd(info);
-            }
-
-            return collection;
-        }
-
-        public override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
-        {
-            return Task.Run((Func<UnicastIPAddressInformationCollection>)GetUnicastAddresses);
         }
     }
 }

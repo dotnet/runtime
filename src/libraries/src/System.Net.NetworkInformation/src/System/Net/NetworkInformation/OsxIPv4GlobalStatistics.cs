@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -26,7 +27,7 @@ namespace System.Net.NetworkInformation
         private readonly int _numIPAddresses;
         private readonly int _numRoutes;
 
-        public OsxIPv4GlobalStatistics()
+        public unsafe OsxIPv4GlobalStatistics()
         {
             Interop.Sys.IPv4GlobalStatistics statistics;
             if (Interop.Sys.GetIPv4GlobalStatistics(out statistics) == -1)
@@ -49,11 +50,19 @@ namespace System.Net.NetworkInformation
             _defaultTtl = statistics.DefaultTtl;
             _forwarding = statistics.Forwarding == 1;
 
-            var interfaces = (UnixNetworkInterface[])NetworkInterface.GetAllNetworkInterfaces();
+            HashSet<string> interfaceSet = new HashSet<string>();
+            int numIPAddresses = 0;
+            Interop.Sys.EnumerateInterfaceAddresses(
+                (name, addressInfo, netmaskInfo) =>
+                {
+                    interfaceSet.Add(name);
+                    numIPAddresses++;
+                },
+                null,
+                null);
 
-            // PERF: In native shim, use sysctl: net.link.generic.system.ifcount = number of network interfaces
-            _numInterfaces = interfaces.Length;
-            _numIPAddresses = interfaces.Sum(uni => uni.Addresses.Count);
+            _numInterfaces = interfaceSet.Count;
+            _numIPAddresses = numIPAddresses;
 
             _numRoutes = Interop.Sys.GetNumRoutes();
             if (_numRoutes == -1)
