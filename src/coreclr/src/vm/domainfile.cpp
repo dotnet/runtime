@@ -3279,7 +3279,7 @@ void DomainAssembly::GetCurrentVersionInfo(CORCOMPILE_VERSION_INFO *pNativeVersi
     // pNativeVersionInfo->wOSMajorVersion = (WORD) osInfo.dwMajorVersion;
     pNativeVersionInfo->wOSMajorVersion = 4;
 
-    pNativeVersionInfo->wMachine = IMAGE_FILE_MACHINE_NATIVE;
+    pNativeVersionInfo->wMachine = IMAGE_FILE_MACHINE_NATIVE_NI;
 
     pNativeVersionInfo->wVersionMajor = VER_MAJORVERSION;
     pNativeVersionInfo->wVersionMinor = VER_MINORVERSION;
