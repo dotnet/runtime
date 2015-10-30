@@ -5,6 +5,12 @@
 
 #include "pal_types.h"
 
+enum TimeConversionConstants
+{
+    SecondsToMicroSeconds = 1000000,  // 10^6
+    SecondsToNanoSeconds = 1000000000 // 10^9
+};
+
 struct UTimBuf
 {
     int64_t AcTime;
@@ -17,3 +23,17 @@ struct UTimBuf
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
 extern "C" int32_t UTime(const char* path, UTimBuf* time);
+
+/**
+ * Gets the resolution of the timestamp, in counts per second.
+ *
+ * Returns 1 on success; otherwise, 0 on failure.
+ */
+extern "C" int32_t GetTimestampResolution(uint64_t* resolution);
+
+/**
+ * Gets a high-resolution timestamp that can be used for time-interval measurements.
+ *
+ * Returns 1 on success; otherwise, 0 on failure.
+ */
+extern "C" int32_t GetTimestamp(uint64_t* timestamp);

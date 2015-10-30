@@ -7,12 +7,12 @@ namespace System.Diagnostics
     {
         private static bool QueryPerformanceFrequency(out long value)
         {
-            return Interop.libcoreclr.QueryPerformanceFrequency(out value);
+            return Interop.Sys.GetTimestampResolution(out value);
         }
 
         private static bool QueryPerformanceCounter(out long value)
         {
-            return Interop.libcoreclr.QueryPerformanceCounter(out value);
+            return Interop.Sys.GetTimestamp(out value);
         }
     }
 }
