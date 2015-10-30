@@ -72,20 +72,8 @@ namespace System.Net.NetworkInformation
                                                 Interop.Sys.IpAddressInfo* addressInfo,
                                                 Interop.Sys.IpAddressInfo* netMask)
         {
-            byte[] ipBytes = new byte[addressInfo->NumAddressBytes];
-            fixed (byte* ipArrayPtr = ipBytes)
-            {
-                Buffer.MemoryCopy(addressInfo->AddressBytes, ipArrayPtr, ipBytes.Length, ipBytes.Length);
-            }
-            IPAddress ipAddress = new IPAddress(ipBytes);
-
-            byte[] ipBytes2 = new byte[netMask->NumAddressBytes];
-            fixed (byte* ipArrayPtr = ipBytes2)
-            {
-                Buffer.MemoryCopy(netMask->AddressBytes, ipArrayPtr, ipBytes2.Length, ipBytes2.Length);
-            }
-            IPAddress netMaskAddress = new IPAddress(ipBytes2);
-
+            IPAddress ipAddress = IPAddressUtil.GetIPAddressFromNativeInfo(addressInfo);
+            IPAddress netMaskAddress = IPAddressUtil.GetIPAddressFromNativeInfo(netMask);
             uni.AddAddress(ipAddress);
             uni._netMasks[ipAddress] = netMaskAddress;
         }
@@ -94,13 +82,7 @@ namespace System.Net.NetworkInformation
                                                         Interop.Sys.IpAddressInfo* addressInfo,
                                                         uint scopeId)
         {
-            byte[] ipBytes = new byte[addressInfo->NumAddressBytes];
-            fixed (byte* ipArrayPtr = ipBytes)
-            {
-                Buffer.MemoryCopy(addressInfo->AddressBytes, ipArrayPtr, ipBytes.Length, ipBytes.Length);
-            }
-            IPAddress address = new IPAddress(ipBytes);
-
+            IPAddress address = IPAddressUtil.GetIPAddressFromNativeInfo(addressInfo);
             uni.AddAddress(address);
             uni._ipv6ScopeId = scopeId;
         }
