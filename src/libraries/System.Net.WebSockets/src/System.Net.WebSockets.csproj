@@ -6,6 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <AssemblyName>System.Net.WebSockets</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>    
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
