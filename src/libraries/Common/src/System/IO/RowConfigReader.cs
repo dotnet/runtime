@@ -10,6 +10,7 @@ namespace System.IO
     {
         private string _buffer;
         private int _currentIndex;
+        private StringComparison _comparisonKind;
 
         /// <summary>
         /// Constructs a new RowConfigReader which reads from the given string.
@@ -19,6 +20,19 @@ namespace System.IO
         {
             _buffer = buffer;
             _currentIndex = 0;
+            _comparisonKind = StringComparison.Ordinal;
+        }
+
+        /// <summary>
+        /// Constructs a new RowConfigReader which reads from the given string.
+        /// <param name="buffer">The string to parse through.</param>
+        /// <param name="comparisonKind">The comparison kind to use.</param>
+        /// </summary>
+        public RowConfigReader(string buffer, StringComparison comparisonKind)
+        {
+            _buffer = buffer;
+            _currentIndex = 0;
+            _comparisonKind = comparisonKind;
         }
 
         /// <summary>
@@ -52,7 +66,7 @@ namespace System.IO
             }
 
             // First, find the key
-            int keyIndex = _buffer.IndexOf(key, _currentIndex);
+            int keyIndex = _buffer.IndexOf(key, _currentIndex, _comparisonKind);
             if (keyIndex == -1)
             {
                 value = null;
@@ -63,7 +77,7 @@ namespace System.IO
             // NOTE: This assumes that the "value" does not have any whitespace in it, nor is there any
             // after. This is the format of most "row-based" config files in /proc/net, etc.
             int afterKey = keyIndex + key.Length;
-            int endOfLine = _buffer.IndexOf(Environment.NewLine, afterKey);
+            int endOfLine = _buffer.IndexOf(Environment.NewLine, afterKey, _comparisonKind);
             Debug.Assert(endOfLine != -1, "RowConfigReader needs a newline after the key, and one was not found.");
 
             int valueIndex = _buffer.LastIndexOf('\t', endOfLine);
