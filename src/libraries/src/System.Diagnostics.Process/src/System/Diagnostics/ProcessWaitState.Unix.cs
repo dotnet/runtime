@@ -69,7 +69,9 @@ namespace System.Diagnostics
 
             ~Holder()
             {
-                if (_state != null)
+                // Don't try to Dispose resources (like ManualResetEvents) if 
+                // the process is shutting down.
+                if (_state != null && !Environment.HasShutdownStarted)
                 {
                     _state.ReleaseRef();
                 }
@@ -79,9 +81,9 @@ namespace System.Diagnostics
             {
                 if (_state != null)
                 {
+                    GC.SuppressFinalize(this);
                     _state.ReleaseRef();
                     _state = null;
-                    GC.SuppressFinalize(this);
                 }
             }
         }
@@ -119,9 +121,9 @@ namespace System.Diagnostics
         /// </summary>
         internal void ReleaseRef()
         {
+            ProcessWaitState pws;
             lock (ProcessWaitState.s_processWaitStates)
             {
-                ProcessWaitState pws;
                 bool foundState = ProcessWaitState.s_processWaitStates.TryGetValue(_processId, out pws);
                 Debug.Assert(foundState);
                 if (foundState)
@@ -129,10 +131,17 @@ namespace System.Diagnostics
                     --pws._outstandingRefCount;
                     if (pws._outstandingRefCount == 0)
                     {
-                        ProcessWaitState.s_processWaitStates.Remove(_processId);
-                        pws.Dispose();
+                        s_processWaitStates.Remove(_processId);
+                    }
+                    else
+                    {
+                        pws = null;
                     }
                 }
+            }
+            if (pws != null)
+            {
+                pws.Dispose();
             }
         }
 
