@@ -62,5 +62,10 @@ namespace System.Net.NetworkInformation
                 return _addresses[index];
             }
         }
+
+        public override IEnumerator<IPAddress> GetEnumerator()
+        {
+            return _addresses.GetEnumerator();
+        }
     }
 }
