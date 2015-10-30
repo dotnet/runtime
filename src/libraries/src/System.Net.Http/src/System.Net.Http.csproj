@@ -172,9 +172,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\libc\Interop.Write.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_multi.cs">
-      <Link>Common\Interop\Unix\libcurl\Interop.libcurl_multi.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_types.cs">
       <Link>Common\Interop\Unix\libcurl\Interop.libcurl_types.cs</Link>
     </Compile>

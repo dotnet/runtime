@@ -53,6 +53,16 @@ Returns CURLM_OK on success, otherwise an error code.
 extern "C" int32_t MultiRemoveHandle(CURLM* multi_handle, CURL* easy_handle);
 
 /*
+Shims the curl_multi_wait function.
+
+Returns CURLM_OK on success, otherwise an error code.
+
+isExtraFileDescriptorActive is set to a value indicating whether extraFileDescriptor has new data received.
+isTimeout is set to a value indicating whether a timeout was encountered before any file descriptors had events occur.
+*/
+extern "C" int32_t MultiWait(CURLM* multi_handle, int32_t extraFileDescriptor, int32_t* isExtraFileDescriptorActive, int32_t* isTimeout);
+
+/*
 Reads/writes available data from each easy handle.
 Shims the curl_multi_perform function.
 

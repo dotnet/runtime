@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
 
 using size_t = System.UInt64;
 using curl_off_t = System.Int64;
@@ -18,18 +17,6 @@ internal static partial class Interop
             internal const int CURL_SEEKFUNC_FAIL = 1;
             internal const int CURL_SEEKFUNC_CANTSEEK = 2;
         }
-
-        // Poll values used with curl_multi_wait and curl_waitfd.events/revents
-        internal const int CURL_WAIT_POLLIN = 0x0001;
-
-#pragma warning disable 0649 // until this file is split up, this produces a warning in the X509 project due to being unused
-        internal struct curl_waitfd
-        {
-            internal int fd;
-            internal short events;
-            internal short revents;
-        };
-#pragma warning restore 0649
 
         public delegate size_t curl_readwrite_callback(
             IntPtr buffer,

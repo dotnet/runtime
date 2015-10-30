@@ -271,31 +271,19 @@ namespace System.Net.Http
                             }
                         }
 
-                        // Wait for more things to do.  Even with our cancellation mechanism, we specify a timeout so that
-                        // just in case something goes wrong we can recover gracefully.  This timeout is relatively long.
-                        // Note, though, that libcurl has its own internal timeout, which can be requested separately
-                        // via curl_multi_timeout, but which is used implicitly by curl_multi_wait if it's shorter
-                        // than the value we provide.
-                        const int FailsafeTimeoutMilliseconds = 1000;
-                        int numFds;
-                        unsafe
+                        // Wait for more things to do.
+                        bool isWakeupRequestedPipeActive;
+                        bool isTimeout;
+                        ThrowIfCURLMError(Interop.Http.MultiWait(multiHandle, _wakeupRequestedPipeFd, out isWakeupRequestedPipeActive, out isTimeout));
+                        if (isWakeupRequestedPipeActive)
                         {
-                            Interop.libcurl.curl_waitfd extraFds = new Interop.libcurl.curl_waitfd {
-                                fd = _wakeupRequestedPipeFd,
-                                events = Interop.libcurl.CURL_WAIT_POLLIN,
-                                revents = 0
-                            };
-                            ThrowIfCURLMError(Interop.libcurl.curl_multi_wait(multiHandle, &extraFds, 1, FailsafeTimeoutMilliseconds, out numFds));
-                            if ((extraFds.revents & Interop.libcurl.CURL_WAIT_POLLIN) != 0)
-                            {
-                                // We woke up (at least in part) because a wake-up was requested.  
-                                // Read the data out of the pipe to clear it.
-                                Debug.Assert(numFds >= 1, "numFds should have been at least one, as the extraFd was set");
-                                VerboseTrace("curl_multi_wait wake-up notification");
-                                ReadFromWakeupPipeWhenKnownToContainData();
-                            }
-                            VerboseTraceIf(numFds == 0, "curl_multi_wait timeout");
+                            // We woke up (at least in part) because a wake-up was requested.  
+                            // Read the data out of the pipe to clear it.
+                            Debug.Assert(!isTimeout, "should not have timed out if isExtraFileDescriptorActive");
+                            VerboseTrace("curl_multi_wait wake-up notification");
+                            ReadFromWakeupPipeWhenKnownToContainData();
                         }
+                        VerboseTraceIf(isTimeout, "curl_multi_wait timeout");
 
                         // PERF NOTE: curl_multi_wait uses poll (assuming it's available), which is O(N) in terms of the number of fds 
                         // being waited on. If this ends up being a scalability bottleneck, we can look into using the curl_multi_socket_* 
