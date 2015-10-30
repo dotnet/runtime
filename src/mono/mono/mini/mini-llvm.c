@@ -1498,6 +1498,23 @@ create_builder (EmitContext *ctx)
 	return builder;
 }
 
+static char*
+get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
+{
+	char *name;
+
+	switch (type) {
+	case MONO_PATCH_INFO_INTERNAL_METHOD:
+		name = g_strdup_printf ("jit_icall_%s", data);
+		break;
+	default:
+		name = g_strdup_printf ("%s_%d", mono_ji_type_to_string (type), got_offset);
+		break;
+	}
+
+	return name;
+}
+
 static LLVMValueRef
 get_aotconst (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data)
 {
@@ -1536,14 +1553,7 @@ get_aotconst (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data)
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
 	got_entry_addr = LLVMBuildGEP (builder, ctx->module->got_var, indexes, 2, "");
 
-	switch (type) {
-	case MONO_PATCH_INFO_INTERNAL_METHOD:
-		name = g_strdup_printf ("jit_icall_%s", data);
-		break;
-	default:
-		break;
-	}
-
+	name = get_aotconst_name (type, data, got_offset);
 	load = LLVMBuildLoad (builder, got_entry_addr, name ? name : "");
 	g_free (name);
 	//set_invariant_load_flag (load);
@@ -2575,7 +2585,7 @@ emit_init_method (EmitContext *ctx)
 
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, FALSE);
-	inited_var = LLVMBuildLoad (builder, LLVMBuildGEP (builder, ctx->module->inited_var, indexes, 2, ""), "");
+	inited_var = LLVMBuildLoad (builder, LLVMBuildGEP (builder, ctx->module->inited_var, indexes, 2, ""), "is_inited");
 
 	args [0] = inited_var;
 	args [1] = LLVMConstInt (LLVMInt8Type (), 1, FALSE);
@@ -4780,18 +4790,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_AOTCONST: {
 			guint32 got_offset;
 			LLVMValueRef indexes [2];
-			MonoJumpInfo *ji;
+			MonoJumpInfo *tmp_ji, *ji;
 			LLVMValueRef got_entry_addr;
+			char *name;
 
 			/* 
 			 * FIXME: Can't allocate from the cfg mempool since that is freed if
 			 * the LLVM compile fails.
 			 */
-			ji = g_new0 (MonoJumpInfo, 1);
-			ji->type = (MonoJumpInfoType)ins->inst_c1;
-			ji->data.target = ins->inst_p0;
+			tmp_ji = g_new0 (MonoJumpInfo, 1);
+			tmp_ji->type = (MonoJumpInfoType)ins->inst_c1;
+			tmp_ji->data.target = ins->inst_p0;
 
-			ji = mono_aot_patch_info_dup (ji);
+			ji = mono_aot_patch_info_dup (tmp_ji);
+			g_free (tmp_ji);
 
 			ji->next = cfg->patch_info;
 			cfg->patch_info = ji;
@@ -4809,7 +4821,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
 			got_entry_addr = LLVMBuildGEP (builder, ctx->module->got_var, indexes, 2, "");
 
-			values [ins->dreg] = LLVMBuildLoad (builder, got_entry_addr, dname);
+			name = get_aotconst_name (ji->type, ji->data.target, got_offset);
+			values [ins->dreg] = LLVMBuildLoad (builder, got_entry_addr, name);
+			g_free (name);
 			set_invariant_load_flag (values [ins->dreg]);
 			break;
 		}
@@ -6442,7 +6456,8 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		if (cfg->verbose_level)
 			printf ("%s emitted as %s\n", mono_method_full_name (cfg->method, TRUE), method_name);
 
-		LLVMVerifyFunction(method, 0);
+		int err = LLVMVerifyFunction(method,   LLVMPrintMessageAction);
+		g_assert (err == 0);
 	} else {
 		LLVMVerifyFunction(method, 0);
 		mono_llvm_optimize_method (ctx->module->mono_ee, method);

@@ -419,6 +419,12 @@ static const char* const patch_info_str[] = {
 #undef PATCH_INFO
 };
 
+const char*
+mono_ji_type_to_string (MonoJumpInfoType type)
+{
+	return patch_info_str [type];
+}
+
 void
 mono_print_ji (const MonoJumpInfo *ji)
 {
@@ -736,6 +742,12 @@ print_regtrack (RegTrack *t, int num)
 	}
 }
 #else
+
+const char*
+mono_ji_type_to_string (MonoJumpInfoType type)
+{
+	return "";
+}
 
 void
 mono_print_ji (const MonoJumpInfo *ji)
