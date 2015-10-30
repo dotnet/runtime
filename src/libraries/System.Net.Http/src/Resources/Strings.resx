@@ -348,4 +348,7 @@
   <data name="net_http_no_concurrent_io_allowed" xml:space="preserve">
     <value>The stream does not support concurrent I/O read or write operations.</value>
   </data>
+  <data name="net_http_unix_invalid_response" xml:space="preserve">
+    <value>The server returned an invalid or unrecognized response.</value>
+  </data>
 </root>
