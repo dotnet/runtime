@@ -21,6 +21,13 @@ internal static partial class Interop
         public static extern CURLMcode MultiRemoveHandle(SafeCurlMultiHandle multi_handle, SafeCurlHandle easy_handle);
 
         [DllImport(Libraries.HttpNative)]
+        public static extern CURLMcode MultiWait(
+            SafeCurlMultiHandle multi_handle,
+            int extraFileDescriptor,
+            [MarshalAs(UnmanagedType.Bool)] out bool isExtraFileDescriptorActive,
+            [MarshalAs(UnmanagedType.Bool)] out bool isTimeout);
+
+        [DllImport(Libraries.HttpNative)]
         public static extern CURLMcode MultiPerform(SafeCurlMultiHandle multi_handle);
 
         [DllImport(Libraries.HttpNative)]

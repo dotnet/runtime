@@ -34,6 +34,41 @@ extern "C" int32_t MultiRemoveHandle(CURLM* multi_handle, CURL* easy_handle)
     return curl_multi_remove_handle(multi_handle, easy_handle);
 }
 
+extern "C" int32_t MultiWait(CURLM* multi_handle, int32_t extraFileDescriptor, int32_t* isExtraFileDescriptorActive, int32_t* isTimeout)
+{
+    if (!isExtraFileDescriptorActive || !isTimeout)
+    {
+        if (isExtraFileDescriptorActive)
+            *isExtraFileDescriptorActive = 0;
+        if (isTimeout)
+            *isTimeout = 0;
+
+        return CURLM_INTERNAL_ERROR;
+    }
+
+    curl_waitfd extraFds =
+    {
+        .fd = extraFileDescriptor,
+        .events = CURL_WAIT_POLLIN,
+        .revents = 0
+    };
+
+    // Even with our cancellation mechanism, we specify a timeout so that
+    // just in case something goes wrong we can recover gracefully.  This timeout is relatively long.
+    // Note, though, that libcurl has its own internal timeout, which can be requested separately
+    // via curl_multi_timeout, but which is used implicitly by curl_multi_wait if it's shorter
+    // than the value we provide.
+    const int FailsafeTimeoutMilliseconds = 1000;
+
+    int numFds;
+    CURLMcode result = curl_multi_wait(multi_handle, &extraFds, 1, FailsafeTimeoutMilliseconds, &numFds);
+
+    *isExtraFileDescriptorActive = (extraFds.revents & CURL_WAIT_POLLIN) != 0;
+    *isTimeout = numFds == 0;
+
+    return result;
+}
+
 extern "C" int32_t MultiPerform(CURLM* multi_handle)
 {
     int running_handles;
