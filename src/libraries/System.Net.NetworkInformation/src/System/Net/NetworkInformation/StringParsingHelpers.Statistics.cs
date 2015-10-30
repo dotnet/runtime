@@ -175,9 +175,9 @@ namespace System.Net.NetworkInformation
         public static Icmpv4StatisticsTable ParseIcmpv4FromSnmpFile(string filePath)
         {
             string fileContents = File.ReadAllText(filePath);
-            int firstIpHeader = fileContents.IndexOf("Icmp:");
-            int secondIpHeader = fileContents.IndexOf("Icmp:", firstIpHeader + 1);
-            int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondIpHeader);
+            int firstIpHeader = fileContents.IndexOf("Icmp:", StringComparison.Ordinal);
+            int secondIpHeader = fileContents.IndexOf("Icmp:", firstIpHeader + 1, StringComparison.Ordinal);
+            int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondIpHeader, StringComparison.Ordinal);
             string icmpData = fileContents.Substring(secondIpHeader, endOfSecondLine - secondIpHeader);
             StringParser parser = new StringParser(icmpData, ' ');
 
@@ -264,9 +264,9 @@ namespace System.Net.NetworkInformation
         {
             string fileContents = File.ReadAllText(filePath);
 
-            int firstIpHeader = fileContents.IndexOf("Ip:");
-            int secondIpHeader = fileContents.IndexOf("Ip:", firstIpHeader + 1);
-            int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondIpHeader);
+            int firstIpHeader = fileContents.IndexOf("Ip:", StringComparison.Ordinal);
+            int secondIpHeader = fileContents.IndexOf("Ip:", firstIpHeader + 1, StringComparison.Ordinal);
+            int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondIpHeader, StringComparison.Ordinal);
             string ipData = fileContents.Substring(secondIpHeader, endOfSecondLine - secondIpHeader);
             StringParser parser = new StringParser(ipData, ' ');
 
@@ -333,9 +333,9 @@ namespace System.Net.NetworkInformation
             // NOTE: There is no information in the snmp6 file regarding TCP statistics,
             // so the statistics are always pulled from /proc/net/snmp.
             string fileContents = File.ReadAllText(filePath);
-            int firstTcpHeader = fileContents.IndexOf("Tcp:");
-            int secondTcpHeader = fileContents.IndexOf("Tcp:", firstTcpHeader + 1);
-            int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondTcpHeader);
+            int firstTcpHeader = fileContents.IndexOf("Tcp:", StringComparison.Ordinal);
+            int secondTcpHeader = fileContents.IndexOf("Tcp:", firstTcpHeader + 1, StringComparison.Ordinal);
+            int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondTcpHeader, StringComparison.Ordinal);
             string tcpData = fileContents.Substring(secondTcpHeader, endOfSecondLine - secondTcpHeader);
             StringParser parser = new StringParser(tcpData, ' ');
 
@@ -367,9 +367,9 @@ namespace System.Net.NetworkInformation
         internal static UdpGlobalStatisticsTable ParseUdpv4GlobalStatisticsFromSnmpFile(string filePath)
         {
             string fileContents = File.ReadAllText(filePath);
-            int firstUdpHeader = fileContents.IndexOf("Udp:");
-            int secondUdpHeader = fileContents.IndexOf("Udp:", firstUdpHeader + 1);
-            int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondUdpHeader);
+            int firstUdpHeader = fileContents.IndexOf("Udp:", StringComparison.Ordinal);
+            int secondUdpHeader = fileContents.IndexOf("Udp:", firstUdpHeader + 1, StringComparison.Ordinal);
+            int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondUdpHeader, StringComparison.Ordinal);
             string tcpData = fileContents.Substring(secondUdpHeader, endOfSecondLine - secondUdpHeader);
             StringParser parser = new StringParser(tcpData, ' ');
 

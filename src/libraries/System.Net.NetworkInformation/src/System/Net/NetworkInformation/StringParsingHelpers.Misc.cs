@@ -35,9 +35,9 @@ namespace System.Net.NetworkInformation
         {
             // snmp6 does not include Default TTL info. Read it from snmp.
             string snmp4FileContents = File.ReadAllText(filePath);
-            int firstIpHeader = snmp4FileContents.IndexOf("Ip:");
-            int secondIpHeader = snmp4FileContents.IndexOf("Ip:", firstIpHeader + 1);
-            int endOfSecondLine = snmp4FileContents.IndexOf(Environment.NewLine, secondIpHeader);
+            int firstIpHeader = snmp4FileContents.IndexOf("Ip:", StringComparison.Ordinal);
+            int secondIpHeader = snmp4FileContents.IndexOf("Ip:", firstIpHeader + 1, StringComparison.Ordinal);
+            int endOfSecondLine = snmp4FileContents.IndexOf(Environment.NewLine, secondIpHeader, StringComparison.Ordinal);
             string ipData = snmp4FileContents.Substring(secondIpHeader, endOfSecondLine - secondIpHeader);
             StringParser parser = new StringParser(ipData, ' ');
             parser.MoveNextOrFail(); // Skip Ip:
@@ -80,7 +80,7 @@ namespace System.Net.NetworkInformation
             int occurrences = 0;
             while (index != -1)
             {
-                index = candidate.IndexOf(value, index + 1);
+                index = candidate.IndexOf(value, index + 1, StringComparison.Ordinal);
                 if (index != -1)
                 {
                     occurrences++;

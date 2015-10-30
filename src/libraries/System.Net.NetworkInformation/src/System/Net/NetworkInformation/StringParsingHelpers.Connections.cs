@@ -15,8 +15,8 @@ namespace System.Net.NetworkInformation
         {
             // Parse the number of active connections out of /proc/net/sockstat
             string sockstatFile = File.ReadAllText(filePath);
-            int indexOfTcp = sockstatFile.IndexOf(protocolName);
-            int endOfTcpLine = sockstatFile.IndexOf(Environment.NewLine, indexOfTcp + 1);
+            int indexOfTcp = sockstatFile.IndexOf(protocolName, StringComparison.Ordinal);
+            int endOfTcpLine = sockstatFile.IndexOf(Environment.NewLine, indexOfTcp + 1, StringComparison.Ordinal);
             string tcpLineData = sockstatFile.Substring(indexOfTcp, endOfTcpLine - indexOfTcp);
             StringParser sockstatParser = new StringParser(tcpLineData, ' ');
             sockstatParser.MoveNextOrFail(); // Skip "<name>:"
