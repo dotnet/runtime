@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using SafeCurlHandle = Interop.Http.SafeCurlHandle;
 
 internal static partial class Interop
 {

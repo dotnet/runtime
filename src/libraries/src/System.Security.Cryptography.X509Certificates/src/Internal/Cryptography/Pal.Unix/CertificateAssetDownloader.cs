@@ -72,27 +72,27 @@ namespace Internal.Cryptography.Pal
 
             List<byte[]> dataPieces = new List<byte[]>();
 
-            using (Interop.libcurl.SafeCurlHandle curlHandle = Interop.libcurl.curl_easy_init())
+            using (Interop.Http.SafeCurlHandle curlHandle = Interop.Http.EasyCreate())
             {
                 GCHandle gcHandle = GCHandle.Alloc(dataPieces);
 
                 try
                 {
                     IntPtr dataHandlePtr = GCHandle.ToIntPtr(gcHandle);
-                    Interop.libcurl.curl_easy_setopt(curlHandle, Interop.libcurl.CURLoption.CURLOPT_URL, uri);
-                    Interop.libcurl.curl_easy_setopt(curlHandle, Interop.libcurl.CURLoption.CURLOPT_WRITEDATA, dataHandlePtr);
-                    Interop.libcurl.curl_easy_setopt(curlHandle, Interop.libcurl.CURLoption.CURLOPT_WRITEFUNCTION, s_writeCallback);
-                    Interop.libcurl.curl_easy_setopt(curlHandle, Interop.libcurl.CURLoption.CURLOPT_FOLLOWLOCATION, 1L);
+                    Interop.Http.EasySetOptionString(curlHandle, Interop.Http.CURLoption.CURLOPT_URL, uri);
+                    Interop.Http.EasySetOptionPointer(curlHandle, Interop.Http.CURLoption.CURLOPT_WRITEDATA, dataHandlePtr);
+                    Interop.Http.EasySetOptionPointer(curlHandle, Interop.Http.CURLoption.CURLOPT_WRITEFUNCTION, s_writeCallback);
+                    Interop.Http.EasySetOptionLong(curlHandle, Interop.Http.CURLoption.CURLOPT_FOLLOWLOCATION, 1L);
 
                     Stopwatch stopwatch = Stopwatch.StartNew();
-                    int res = Interop.libcurl.curl_easy_perform(curlHandle);
+                    Interop.Http.CURLcode res = Interop.Http.EasyPerform(curlHandle);
                     stopwatch.Stop();
 
                     // TimeSpan.Zero isn't a worrisome value on the subtraction, it only
                     // means "no limit" on the original input.
                     remainingDownloadTime -= stopwatch.Elapsed;
 
-                    if (res != Interop.libcurl.CURLcode.CURLE_OK)
+                    if (res != Interop.Http.CURLcode.CURLE_OK)
                     {
                         return null;
                     }

@@ -10,10 +10,11 @@ using System.Threading;
 using System.Threading.Tasks;
 
 // TODO: Once we upgrade to C# 6, remove all of these and simply import the libcurl class.
-using CURLcode = Interop.libcurl.CURLcode;
-using CURLINFO = Interop.libcurl.CURLINFO;
+using CURLAUTH = Interop.Http.CURLAUTH;
+using CURLcode = Interop.Http.CURLcode;
+using CURLINFO = Interop.Http.CURLINFO;
 using CURLMcode = Interop.libcurl.CURLMcode;
-using CURLoption = Interop.libcurl.CURLoption;
+using CURLoption = Interop.Http.CURLoption;
 using SafeCurlMultiHandle = Interop.libcurl.SafeCurlMultiHandle;
 using size_t = System.UInt64; // TODO: IntPtr
 
@@ -251,14 +252,14 @@ namespace System.Net.Http
                             Interop.libcurl.CURLMsg message = Marshal.PtrToStructure<Interop.libcurl.CURLMsg>(messagePtr);
                             Debug.Assert(message.msg == Interop.libcurl.CURLMSG.CURLMSG_DONE, "CURLMSG_DONE is supposed to be the only message type");
 
-                            IntPtr gcHandlePtr;
-                            ActiveRequest completedOperation;
                             if (message.msg == Interop.libcurl.CURLMSG.CURLMSG_DONE)
                             {
-                                int getInfoResult = Interop.libcurl.curl_easy_getinfo(message.easy_handle, CURLINFO.CURLINFO_PRIVATE, out gcHandlePtr);
+                                IntPtr gcHandlePtr;
+                                CURLcode getInfoResult = Interop.Http.EasyGetInfoPointer(message.easy_handle, CURLINFO.CURLINFO_PRIVATE, out gcHandlePtr);
                                 Debug.Assert(getInfoResult == CURLcode.CURLE_OK, "Failed to get info on a completing easy handle");
                                 if (getInfoResult == CURLcode.CURLE_OK)
                                 {
+                                    ActiveRequest completedOperation;
                                     bool gotActiveOp = _activeOperations.TryGetValue(gcHandlePtr, out completedOperation);
                                     Debug.Assert(gotActiveOp, "Expected to find GCHandle ptr in active operations table");
                                     if (gotActiveOp)
@@ -361,7 +362,7 @@ namespace System.Net.Http
                             ActiveRequest ar;
                             Debug.Assert(FindActiveRequest(easy, out gcHandlePtr, out ar), "Couldn't find active request for unpause");
 
-                            int unpauseResult = Interop.libcurl.curl_easy_pause(easy._easyHandle, Interop.libcurl.CURLPAUSE_CONT);
+                            CURLcode unpauseResult = Interop.Http.EasyUnpause(easy._easyHandle);
                             try
                             {
                                 ThrowIfCURLEError(unpauseResult);
@@ -498,7 +499,7 @@ namespace System.Net.Http
                 }
             }
 
-            private void FinishRequest(EasyRequest completedOperation, int messageResult)
+            private void FinishRequest(EasyRequest completedOperation, CURLcode messageResult)
             {
                 VerboseTrace("messageResult: " + messageResult, easy: completedOperation);
 
@@ -506,11 +507,11 @@ namespace System.Net.Http
                 {
                     if (completedOperation._handler.PreAuthenticate)
                     {
-                        ulong availedAuth;
-                        if (Interop.libcurl.curl_easy_getinfo(completedOperation._easyHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out availedAuth) == CURLcode.CURLE_OK)
+                        long authAvailable;
+                        if (Interop.Http.EasyGetInfoLong(completedOperation._easyHandle, CURLINFO.CURLINFO_HTTPAUTH_AVAIL, out authAvailable) == CURLcode.CURLE_OK)
                         {
                             completedOperation._handler.AddCredentialToCache(
-                               completedOperation._requestMessage.RequestUri, availedAuth, completedOperation._networkCredential);
+                               completedOperation._requestMessage.RequestUri, (CURLAUTH)authAvailable, completedOperation._networkCredential);
                         }
                         // Ignore errors: no need to fail for the sake of putting the credentials into the cache
                     }
