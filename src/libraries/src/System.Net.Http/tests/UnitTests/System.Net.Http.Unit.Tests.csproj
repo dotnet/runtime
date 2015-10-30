@@ -259,6 +259,9 @@
     <Compile Include="..\..\src\System\Net\Http\StringContent.cs">
       <Link>ProductionCode\System\Net\Http\StringContent.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Unix\CurlResponseParseUtils.cs">
+      <Link>ProductionCode\System\Net\Http\CurlResponseParseUtils.cs</Link>
+    </Compile>
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
     <Compile Include="Headers\ByteArrayHeaderParserTest.cs" />
@@ -266,6 +269,7 @@
     <Compile Include="Headers\CacheControlHeaderValueTest.cs" />
     <Compile Include="Headers\ContentDispositionHeaderValueTest.cs" />
     <Compile Include="Headers\ContentRangeHeaderValueTest.cs" />
+    <Compile Include="Headers\CurlResponseParseUtilsTest.cs" />
     <Compile Include="Headers\DateHeaderParserTest.cs" />
     <Compile Include="Headers\EntityTagHeaderValueTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\AuthenticationParserTest.cs" />
