@@ -96,6 +96,7 @@ namespace System.Net.Http
         public TaskCompletionSource<bool> TcsWriteToRequestStream { get; set; }
         public TaskCompletionSource<bool> TcsInternalWriteDataToRequestStream { get; set; }
         public TaskCompletionSource<bool> TcsReceiveResponseHeaders { get; set; }
+        public TaskCompletionSource<int> TcsQueryDataAvailable { get; set; }
         public TaskCompletionSource<int> TcsReadFromResponseStream { get; set; }
 
         #region IDisposable Members
