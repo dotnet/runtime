@@ -336,3 +336,15 @@ interface ISOSDacInterface2 : IUnknown
     HRESULT GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
     HRESULT IsRCWDCOMProxy(CLRDATA_ADDRESS rcwAddr, BOOL* isDCOMProxy);
 };
+
+[
+    object,
+    local,
+    uuid(B08C5CDC-FD8A-49C5-AB38-5FEEF35235B4)
+]
+interface ISOSDacInterface3 : IUnknown
+{
+    HRESULT GetGCInterestingInfoData(CLRDATA_ADDRESS interestingInfoAddr, struct DacpGCInterestingInfoData *data);
+    HRESULT GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *data);
+    HRESULT GetGCGlobalMechanisms(size_t* globalMechanisms);
+};

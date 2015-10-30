@@ -21,7 +21,15 @@ EXPORTS
     dumpdomain=DumpDomain
 #ifdef TRACE_GC
     DumpGCLog
-#endif
+    dumpgclog=DumpGCLog
+    dlog=DumpGCLog
+#endif     
+    DumpGCData
+    dumpgcdata=DumpGCData
+    dgc=DumpGCData
+    DumpGCConfigLog
+    dumpgcconfiglog=DumpGCConfigLog
+    dclog=DumpGCConfigLog
     DumpHeap
     dumpheap=DumpHeap
     DumpIL
@@ -168,6 +176,10 @@ EXPORTS
     filthint
 #endif
 
+#ifdef FEATURE_PAL
+    SetClrDebugDll
+    UnloadClrDebugDll
+#else
     _EFN_GetManagedExcepStack
     _EFN_GetManagedExcepStackW
     _EFN_GetManagedObjectFieldInfo    
@@ -194,6 +206,8 @@ EXPORTS
     procinfo=ProcInfo
     VerifyStackTrace
     WatsonBuckets
+#endif // !FEATURE_PAL
+
 
 #ifdef FEATURE_CORESYSTEM
 // Only documented for Apollo internal usage

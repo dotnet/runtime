@@ -615,9 +615,11 @@ typedef enum
 
     COR_PRF_HIGH_ADD_ASSEMBLY_REFERENCES            = 0x00000001,
 
+    COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED          = 0x00000002,
+
     COR_PRF_HIGH_REQUIRE_PROFILE_IMAGE              = 0,
 
-    COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = 0,
+    COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED,
 
     // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
     // Trying to change any of these flags elsewhere will result in a
@@ -2349,6 +2351,29 @@ interface ICorProfilerCallback6 : ICorProfilerCallback5
 };
 
 
+[
+    object,
+    uuid(F76A2DBA-1D52-4539-866C-2AA518F9EFC3),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback7 : ICorProfilerCallback6
+{
+    // This event is triggered whenever the symbol stream associated with an
+    // in-memory module is updated. Even when symbols are provided up-front in
+    // a call to the managed API Assembly.Load(byte[], byte[], ...) the runtime
+    // may not actually associate the symbolic data with the module until after
+    // the ModuleLoadFinished callback has occured. This event provides a later
+    // opportunity to collect symbols for such modules.
+    //
+    // This event is controlled by the COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED
+    // event mask flag.
+    //
+    // Note: This event is not currently raised for symbols implicitly created or
+    // modified via Reflection.Emit APIs.
+    HRESULT ModuleInMemorySymbolsUpdated(ModuleID moduleId);
+}
+
 
 /*
  * COR_PRF_CODEGEN_FLAGS controls various flags and hooks for a specific
@@ -3699,6 +3724,62 @@ interface ICorProfilerInfo6 : ICorProfilerInfo5
         [out] ICorProfilerMethodEnum** ppEnum);
 };
 
+[
+    object,
+    uuid(9AEECC0D-63E0-4187-8C00-E312F503F663),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo7 : ICorProfilerInfo6
+{
+    /*
+    * Applies the newly emitted Metadata.
+    *
+    * This method can be used to apply the newly defined metadata by IMetadataEmit::Define* methods
+    * to the module.
+    *
+    * If metadata changes are made after ModuleLoadFinished callback,
+    * it is required to call this method before using the new metadata
+    */
+    HRESULT ApplyMetaData(
+        [in] ModuleID    moduleId);
+
+    /* Returns the length of an in-memory symbol stream
+    *
+    * If the module has in-memory symbols the length of the stream will
+    * be placed in pCountSymbolBytes. If the module doesn't have in-memory
+    * symbols, *pCountSymbolBytes = 0
+    *
+    * Returns S_OK if the length could be determined (even if it is 0)
+    *
+    * Note: The current implementation does not support reflection.emit. 
+    * CORPROF_E_MODULE_IS_DYNAMIC will be returned in that case. 
+    */
+    HRESULT GetInMemorySymbolsLength(
+        [in] ModuleID moduleId,
+        [out] DWORD* pCountSymbolBytes);
+
+    /* Reads bytes from an in-memory symbol stream
+    *
+    * This function attempts to read countSymbolBytes of data starting at offset 
+    * symbolsReadOffset within the in-memory stream. The data will be copied into
+    * pSymbolBytes which is expected to have countSymbolBytes of space available.
+    * pCountSymbolsBytesRead contains the actual number of bytes read which
+    * may be less than countSymbolBytes if the end of the stream is reached.
+    *
+    * Returns S_OK if a non-zero number of bytes were read.
+    *
+    * Note: The current implementation does not support reflection.emit.
+    * CORPROF_E_MODULE_IS_DYNAMIC will be returned in that case.
+    */
+    HRESULT ReadInMemorySymbols(
+        [in] ModuleID moduleId,
+        [in] DWORD symbolsReadOffset,
+        [out] BYTE* pSymbolBytes,
+        [in] DWORD countSymbolBytes,
+        [out] DWORD* pCountSymbolBytesRead);
+
+};
 
 /*
 * This interface lets you iterate over methods in the runtime.
