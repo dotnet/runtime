@@ -5709,7 +5709,25 @@ bool                Compiler::fgCanFastTailCall(GenTreeCall* callee)
             if (argx->OperGet() == GT_LDOBJ)
             {
 #ifdef _TARGET_AMD64_
-                hasMultiByteArgs = !VarTypeIsMultiByteAndCanEnreg(TYP_STRUCT, argx->gtLdObj.gtClass, nullptr);
+
+                unsigned typeSize = 0;
+                hasMultiByteArgs = !VarTypeIsMultiByteAndCanEnreg(TYP_STRUCT, argx->gtLdObj.gtClass, &typeSize);
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                // On System V the args could be a 2 eightbyte struct that is passed in two registers.
+                // Account for the second eightbyte in the nCalleeArgs.
+                // TODO-CQ-Amd64-Unix:  Structs of size between 9 to 16 bytes are conservatively estimated
+                //                      as two args, since they need two registers. Whereas nCallerArgs is
+                //                      counting such an arg as one.This would mean we will not be optimizing 
+                //                      certain calls  though technically possible.
+
+                if (typeSize > TARGET_POINTER_SIZE)
+                {
+                    unsigned extraArgRegsToAdd = (typeSize / TARGET_POINTER_SIZE);
+                    nCalleeArgs += extraArgRegsToAdd;
+                }
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
 #else
                 assert(!"Target platform ABI rules regarding passing struct type args in registers");
                 unreached();
