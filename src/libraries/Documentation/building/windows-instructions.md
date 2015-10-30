@@ -118,6 +118,8 @@ To skip an entire test project from being run on a specific platform, for ex, sk
 4. Set breakpoint appropriately
 5. F5 (Debug)
 
+For advanced debugging using WinDBG see [Debugging CoreFX on Windows](https://github.com/dotnet/corefx/blob/master/Documentation/debugging/windows-instructions.md)
+
 ### Code Coverage
 
 Code coverage is built into the corefx build system.  It utilizes OpenCover for generating coverage data and ReportGenerator for generating reports about that data.  To run:
