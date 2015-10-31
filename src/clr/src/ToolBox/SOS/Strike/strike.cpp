@@ -8530,6 +8530,7 @@ exit:
 }
 #endif //TRACE_GC
 
+#ifndef FEATURE_PAL
 DECLARE_API (DumpGCConfigLog)
 {
     INIT_API();
@@ -8647,6 +8648,7 @@ exit:
     return S_OK;
 #endif //GC_CONFIG_DRIVEN
 }
+#endif // FEATURE_PAL
 
 #ifdef GC_CONFIG_DRIVEN
 static const char * const str_interesting_data_points[] =
