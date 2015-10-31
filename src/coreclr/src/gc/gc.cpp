@@ -34770,7 +34770,7 @@ void gc_heap::record_interesting_info_per_heap()
     //         h#  | GC  | gen | C   | EX  | NF  | BF  | ML  | DM  || PreS | PostS | Merge | Conv | Pre | Post | PrPo | PreP | PostP |
     cprintf (("%2d | %6d | %1d | %1s | %2s | %2s | %2s | %2s | %2s || %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id | %5Id |",
             heap_number,
-            settings.gc_index,
+            (size_t)settings.gc_index,
             settings.condemned_generation,
             // TEMP - I am just doing this for wks GC 'cuase I wanna see the pattern of doing C/S GCs.
             (settings.compaction ? (((compact_reason >= 0) && gc_heap_compact_reason_mandatory_p[compact_reason]) ? "M" : "W") : ""), // compaction
