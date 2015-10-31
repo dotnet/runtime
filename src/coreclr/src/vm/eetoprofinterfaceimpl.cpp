@@ -409,6 +409,7 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
     m_pCallback4(NULL),
     m_pCallback5(NULL),
     m_pCallback6(NULL),
+    m_pCallback7(NULL),
     m_hmodProfilerDLL(NULL),
     m_fLoadedViaAttach(FALSE),
     m_pProfToEE(NULL),
@@ -659,21 +660,24 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
     m_hmodProfilerDLL = hmodProfilerDLL.Extract();
     hmodProfilerDLL = NULL;
 
-    // The profiler may optionally support ICorProfilerCallback3,4,5,6.  Let's check.
-    
-    ReleaseHolder<ICorProfilerCallback6> pCallback6;
+    // The profiler may optionally support ICorProfilerCallback3,4,5,6,7.  Let's check.
+
+    ReleaseHolder<ICorProfilerCallback7> pCallback7;
     hr = m_pCallback2->QueryInterface(
-        IID_ICorProfilerCallback6,
-        (LPVOID *) &pCallback6);
-    if (SUCCEEDED(hr) && (pCallback6 != NULL))
+        IID_ICorProfilerCallback7,
+        (LPVOID *)&pCallback7);
+    if (SUCCEEDED(hr) && (pCallback7 != NULL))
     {
         // Nifty.  Transfer ownership to this class
-        _ASSERTE(m_pCallback6 == NULL);
-        m_pCallback6 = pCallback6.Extract();
-        pCallback6 = NULL;
+        _ASSERTE(m_pCallback7 == NULL);
+        m_pCallback7 = pCallback7.Extract();
+        pCallback7 = NULL;
 
-        // And while we're at it, we must now also have an ICorProfilerCallback3,4,5
+        // And while we're at it, we must now also have an ICorProfilerCallback3,4,5,6
         // due to inheritance relationship of the interfaces
+        _ASSERTE(m_pCallback6 == NULL);
+        m_pCallback6 = static_cast<ICorProfilerCallback6 *>(m_pCallback7);
+        m_pCallback6->AddRef();
 
         _ASSERTE(m_pCallback5 == NULL);
         m_pCallback5 = static_cast<ICorProfilerCallback5 *>(m_pCallback6);
@@ -686,6 +690,36 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
         _ASSERTE(m_pCallback3 == NULL);
         m_pCallback3 = static_cast<ICorProfilerCallback3 *>(m_pCallback4);
         m_pCallback3->AddRef();
+    }
+
+    if (m_pCallback6 == NULL)
+    {
+        ReleaseHolder<ICorProfilerCallback6> pCallback6;
+        hr = m_pCallback2->QueryInterface(
+            IID_ICorProfilerCallback6,
+            (LPVOID *)&pCallback6);
+        if (SUCCEEDED(hr) && (pCallback6 != NULL))
+        {
+            // Nifty.  Transfer ownership to this class
+            _ASSERTE(m_pCallback6 == NULL);
+            m_pCallback6 = pCallback6.Extract();
+            pCallback6 = NULL;
+
+            // And while we're at it, we must now also have an ICorProfilerCallback3,4,5
+            // due to inheritance relationship of the interfaces
+
+            _ASSERTE(m_pCallback5 == NULL);
+            m_pCallback5 = static_cast<ICorProfilerCallback5 *>(m_pCallback6);
+            m_pCallback5->AddRef();
+
+            _ASSERTE(m_pCallback4 == NULL);
+            m_pCallback4 = static_cast<ICorProfilerCallback4 *>(m_pCallback5);
+            m_pCallback4->AddRef();
+
+            _ASSERTE(m_pCallback3 == NULL);
+            m_pCallback3 = static_cast<ICorProfilerCallback3 *>(m_pCallback4);
+            m_pCallback3->AddRef();
+        }
     }
         
     if (m_pCallback5 == NULL)
@@ -826,6 +860,13 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
             REMOVE_STACK_GUARD_FOR_PROFILER_CALL;
             m_pCallback6->Release();
             m_pCallback6 = NULL;
+        }
+
+        if (m_pCallback7 != NULL)
+        {
+            REMOVE_STACK_GUARD_FOR_PROFILER_CALL;
+            m_pCallback7->Release();
+            m_pCallback7 = NULL;
         }
 
         // Only unload the V4 profiler if this is not part of shutdown.  This protects
@@ -2299,6 +2340,12 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
         return CORPROF_E_CALLBACK6_REQUIRED;
     }
 
+    if (((dwEventMaskHigh & COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED) != 0) &&
+        !IsCallback7Supported())
+    {
+        return CORPROF_E_CALLBACK7_REQUIRED;
+    }
+
     // Now save the modified masks
     g_profControlBlock.dwEventMask = dwEventMask;
     g_profControlBlock.dwEventMaskHigh = dwEventMaskHigh;
@@ -3647,6 +3694,45 @@ HRESULT EEToProfInterfaceImpl::ModuleAttachedToAssembly(
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
         return m_pCallback2->ModuleAttachedToAssembly(moduleId, AssemblyId);
     }
+}
+
+HRESULT EEToProfInterfaceImpl::ModuleInMemorySymbolsUpdated(ModuleID moduleId)
+{
+    CONTRACTL
+    {
+        // Yay!
+        NOTHROW;
+
+        // Yay!
+        GC_TRIGGERS;
+
+        // Yay!
+        MODE_PREEMPTIVE;
+
+        // Yay!
+        CAN_TAKE_LOCK;
+
+        SO_NOT_MAINLINE;
+    }
+    CONTRACTL_END;
+
+    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
+        LL_INFO10,
+        "**PROF: ModuleInMemorySymbolsUpdated.  moduleId: 0x%p.\n",
+        moduleId
+        ));
+    HRESULT hr = S_OK;
+
+    _ASSERTE(IsCallback7Supported());
+
+    {
+        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
+        // whose try/catch blocks aren't visible to the contract system        
+        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
+        hr = m_pCallback7->ModuleInMemorySymbolsUpdated(moduleId);
+    }
+
+    return hr;
 }
 
 //---------------------------------------------------------------------------------------

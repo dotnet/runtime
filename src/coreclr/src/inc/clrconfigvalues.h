@@ -319,9 +319,12 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_StatsUpdatePeriod, W("StatsUpdatePeriod"), 
 RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_SuspendTimeLog, W("SuspendTimeLog"), "Specifies the name of the log file for suspension statistics")
 RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_GCMixLog, W("GCMixLog"), "Specifies the name of the log file for GC mix statistics")
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_GCLatencyMode, W("GCLatencyMode"), "Specifies the GC latency mode - batch, interactive or low latency (note that the same thing can be specified via API which is the supported way)")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCConfigLogEnabled, W("GCConfigLogEnabled"), 0, "Specifies if you want to turn on config logging in GC")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCLogEnabled, W("GCLogEnabled"), 0, "Specifies if you want to turn on logging in GC")
 RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_GCLogFile, W("GCLogFile"), "Specifies the name of the GC log file")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCLogFileSize, W("GCLogFileSize"), 0, "Specifies the maximum GC log file size")
+RETAIL_CONFIG_STRING_INFO(UNSUPPORTED_GCConfigLogFile, W("GCConfigLogFile"), "Specifies the name of the GC config log file")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCLogFileSize, W("GCLogFileSize"), 0, "Specifies the GC log file size")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCCompactRatio, W("GCCompactRatio"), 0, "Specifies the ratio compacting GCs vs sweeping ")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_GCPollType, W("GCPollType"), "")
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_NewGCCalc, W("NewGCCalc"), "", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(UNSUPPORTED_GCprnLvl, W("GCprnLvl"), "Specifies the maximum level of GC logging")
@@ -598,6 +601,8 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_WinMDPath, W("WinMDPath"), "Path for Windows 
 // 
 CONFIG_DWORD_INFO_EX(INTERNAL_LoaderHeapCallTracing, W("LoaderHeapCallTracing"), 0, "Loader heap troubleshooting", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CodeHeapReserveForJumpStubs, W("CodeHeapReserveForJumpStubs"), 2, "Percentage of code heap to reserve for jump stubs")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenReserveForJumpStubs, W("NGenReserveForJumpStubs"), 0, "Percentage of ngen image size to reserve for jump stubs")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnOutOfMemoryWithinRange, W("BreakOnOutOfMemoryWithinRange"), 0, "Break before out of memory within range exception is thrown")
 
 // 
 // Log

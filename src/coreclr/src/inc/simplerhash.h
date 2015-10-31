@@ -467,10 +467,49 @@ struct LargePrimitiveKeyFuncs: public KeyFuncsDefEquals<T>
 {
     static unsigned GetHashCode(const T val)
     {
-        UINT64 asUINT64 = static_cast<UINT64>(val);
-        unsigned res = asUINT64 >> 32;
-        res = res ^ static_cast<unsigned>(asUINT64 & ((((UINT64)1) << 32) - 1));
-        return res;
+        // A static cast when T is a float or a double converts the value (i.e. 0.25 converts to 0)
+        //
+        // Instead we want to use all of the bits of a float to create the hash value
+        // So we cast the address of val to a pointer to an equivalent sized unsigned int
+        // This allows us to read the actual bit representation of a float type
+        //
+        // We can't read beyond the end of val, so we use sizeof(T) to determine 
+        // exactly how many bytes to read
+        //
+        if (sizeof(T) == 8)
+        {
+            // cast &val to (UINT64 *) then deref to get the bits
+            UINT64 asUINT64 = *(reinterpret_cast<const UINT64 *>(&val));
+
+            // Get the upper and lower 32-bit values from the 64-bit value
+            UINT32 upper32 = static_cast<UINT32> (asUINT64 >> 32);
+            UINT32 lower32 = static_cast<UINT32> (asUINT64 & 0xFFFFFFFF);
+
+            // Exclusive-Or the upper32 and the lower32 values
+            return static_cast<unsigned>(upper32 ^ lower32);
+
+        }
+        else if (sizeof(T) == 4)
+        {
+            // cast &val to (UINT32 *) then deref to get the bits
+            UINT32 asUINT32 = *(reinterpret_cast<const UINT32 *>(&val));
+
+            // Just return the 32-bit value 
+            return static_cast<unsigned>(asUINT32);
+        }
+        else if ((sizeof(T) == 2) || (sizeof(T) == 1))
+        {
+            // For small sizes we must have an integer type
+            // so we can just use the static_cast.
+            //
+            return static_cast<unsigned>(val);
+        }
+        else
+        { 
+            // Only support Hashing for types that are 8,4,2 or 1 bytes in size
+            assert(!"Unsupported size");
+            return static_cast<unsigned>(val);  // compile-time error here when we have a illegal size
+        }
     }
 };
 

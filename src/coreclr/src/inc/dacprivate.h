@@ -753,6 +753,61 @@ struct DacpOomData : ZeroInit<DacpOomData>
     }
 };
 
+// This is the value of max_idp_count in ndp\clr\src\vm\gcpriv.h
+#define NUM_GC_DATA_POINTS 9
+// These are from ndp\clr\src\vm\gcrecord.h
+#define MAX_COMPACT_REASONS_COUNT 11
+#define MAX_EXPAND_MECHANISMS_COUNT 6
+#define MAX_GC_MECHANISM_BITS_COUNT 2
+// This is from ndp\clr\src\vm\common.h
+#define MAX_GLOBAL_GC_MECHANISMS_COUNT 6
+struct DacpGCInterestingInfoData : ZeroInit<DacpGCInterestingInfoData>
+{
+    size_t interestingDataPoints[NUM_GC_DATA_POINTS];
+    size_t compactReasons[MAX_COMPACT_REASONS_COUNT];
+    size_t expandMechanisms[MAX_EXPAND_MECHANISMS_COUNT];
+    size_t bitMechanisms[MAX_GC_MECHANISM_BITS_COUNT];
+    size_t globalMechanisms[MAX_GLOBAL_GC_MECHANISMS_COUNT];
+
+    HRESULT RequestGlobal(ISOSDacInterface *sos)
+    {
+        HRESULT hr;
+        ISOSDacInterface3 *psos3 = NULL;
+        if (SUCCEEDED(hr = sos->QueryInterface(__uuidof(ISOSDacInterface3), (void**) &psos3)))
+        {
+            hr = psos3->GetGCGlobalMechanisms(globalMechanisms);
+            psos3->Release();
+        }
+        return hr;
+    }
+
+    HRESULT Request(ISOSDacInterface *sos)
+    {
+        HRESULT hr;
+        ISOSDacInterface3 *psos3 = NULL;
+        if (SUCCEEDED(hr = sos->QueryInterface(__uuidof(ISOSDacInterface3), (void**) &psos3)))
+        {
+            hr = psos3->GetGCInterestingInfoStaticData(this);
+            psos3->Release();
+        }
+        return hr;
+    }
+
+    // Use this for Server mode, as there are multiple heaps,
+    // and you need to pass a heap address in addr.
+    HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr)
+    {
+        HRESULT hr;
+        ISOSDacInterface3 *psos3 = NULL;
+        if (SUCCEEDED(hr = sos->QueryInterface(__uuidof(ISOSDacInterface3), (void**) &psos3)))
+        {
+            hr = psos3->GetGCInterestingInfoData(addr, this);
+            psos3->Release();
+        }
+        return hr;
+    }
+};
+
 struct DacpGcHeapAnalyzeData
     : ZeroInit<DacpGcHeapAnalyzeData>
 {
