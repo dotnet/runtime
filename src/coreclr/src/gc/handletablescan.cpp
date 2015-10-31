@@ -904,12 +904,19 @@ void CALLBACK BlockResetAgeMapForBlocks(TableSegment *pSegment, UINT uBlock, UIN
 #endif
 }
 
-
-static void VerifyObject(_UNCHECKED_OBJECTREF *pValue, _UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj, BYTE minAge)
+static void VerifyObject(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj)
 {
-#ifndef FEATURE_REDHAWK
+#ifdef FEATURE_REDHAWK
+    MethodTable* pMT = (MethodTable*)(obj->GetGCSafeMethodTable());
+    pMT->SanityCheck();
+#else
     obj->ValidateHeap(from);
 #endif // FEATURE_REDHAWK
+}
+
+static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF *pValue, _UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj, BYTE minAge)
+{
+    VerifyObject(from, obj);
 
     int thisAge = GCHeap::GetGCHeap()->WhichGeneration(obj);
 
@@ -947,7 +954,7 @@ static void VerifyObject(_UNCHECKED_OBJECTREF *pValue, _UNCHECKED_OBJECTREF from
  * Also validates the objects themselves.
  *
  */
-void BlockVerifyAgeMapForBlocksWorker(ULONG32 *pdwGen, ULONG32 dwClumpMask, ScanCallbackInfo *pInfo)
+void BlockVerifyAgeMapForBlocksWorker(ULONG32 *pdwGen, ULONG32 dwClumpMask, ScanCallbackInfo *pInfo, UINT uType)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -963,7 +970,7 @@ void BlockVerifyAgeMapForBlocksWorker(ULONG32 *pdwGen, ULONG32 dwClumpMask, Scan
     // loop over the clumps, scanning those that are identified by the mask
     do
     {        
-                // compute the last handle in this clump
+        // compute the last handle in this clump
         _UNCHECKED_OBJECTREF *pLast = pValue + HANDLE_HANDLES_PER_CLUMP;
 
         // if this clump should be scanned then scan it
@@ -975,7 +982,7 @@ void BlockVerifyAgeMapForBlocksWorker(ULONG32 *pdwGen, ULONG32 dwClumpMask, Scan
             {
                 if (!HndIsNullOrDestroyedHandle(*pValue))
                 {
-                    VerifyObject(pValue, (*pValue), (*pValue), minAge);
+                    VerifyObjectAndAge(pValue, (*pValue), (*pValue), minAge);
 #ifndef FEATURE_REDHAWK
                     if ((*pValue)->GetGCSafeMethodTable() == g_pOverlappedDataClass)
                     {
@@ -984,7 +991,7 @@ void BlockVerifyAgeMapForBlocksWorker(ULONG32 *pdwGen, ULONG32 dwClumpMask, Scan
                         if (pOverlapped->m_userObject != NULL)
                         {
                             Object * pUserObject = OBJECTREFToObject(pOverlapped->m_userObject);
-                            VerifyObject(pValue, (*pValue), pUserObject, minAge);
+                            VerifyObjectAndAge(pValue, (*pValue), pUserObject, minAge);
                             if (pOverlapped->m_isArray)
                             {
                                 ArrayBase* pUserArrayObject = (ArrayBase*)pUserObject;
@@ -992,12 +999,27 @@ void BlockVerifyAgeMapForBlocksWorker(ULONG32 *pdwGen, ULONG32 dwClumpMask, Scan
                                 SIZE_T num = pUserArrayObject->GetNumComponents();
                                 for (SIZE_T i = 0; i < num; i ++)
                                 {
-                                     VerifyObject(pValue, pUserObject, pObj[i], minAge);
+                                     VerifyObjectAndAge(pValue, pUserObject, pObj[i], minAge);
                                 }                                    
                             }                            
                         }
                     }
-#endif // !FEATURE_REDHAWK                    
+#endif // !FEATURE_REDHAWK
+
+                    if (uType == HNDTYPE_DEPENDENT)
+                    {
+                        PTR_LPARAM pUserData = HandleQuickFetchUserDataPointer((OBJECTHANDLE)pValue);
+
+                        // if we did then copy the value
+                        if (pUserData)
+                        {
+                            _UNCHECKED_OBJECTREF pSecondary = (_UNCHECKED_OBJECTREF)(*pUserData);
+                            if (pSecondary)
+                            {
+                                VerifyObject(pSecondary, pSecondary);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1011,7 +1033,6 @@ void BlockVerifyAgeMapForBlocksWorker(ULONG32 *pdwGen, ULONG32 dwClumpMask, Scan
     } while (dwClumpMask);
 }
 
-
 /*
  * BlockVerifyAgeMapForBlocks
  *
@@ -1023,21 +1044,17 @@ void CALLBACK BlockVerifyAgeMapForBlocks(TableSegment *pSegment, UINT uBlock, UI
 {
     WRAPPER_NO_CONTRACT;
 
-    // set up to update the specified blocks
-    ULONG32 *pdwGen     = (ULONG32 *)pSegment->rgGeneration + uBlock;
-    ULONG32 *pdwGenLast =            pdwGen                 + uCount;
-
-    // loop over all the blocks, checking for eligible clumps as we go
-    do
+    for (UINT u = 0; u < uCount; u++)
     {
-        BlockVerifyAgeMapForBlocksWorker(pdwGen, 0xFFFFFFFF, pInfo);
+        UINT uCur = (u + uBlock);
 
-        // on to the next block's generation info
-        pdwGen++;
+        ULONG32 *pdwGen     = (ULONG32 *)pSegment->rgGeneration + uCur;
 
-    } while (pdwGen < pdwGenLast);
+        UINT uType = pSegment->rgBlockType[uCur];
+
+        BlockVerifyAgeMapForBlocksWorker(pdwGen, 0xFFFFFFFF, pInfo, uType);
+    }
 }
-
 
 /*
  * BlockLockBlocks

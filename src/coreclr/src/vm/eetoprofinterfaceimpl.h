@@ -55,6 +55,7 @@ public:
     BOOL IsCallback4Supported();
     BOOL IsCallback5Supported();
     BOOL IsCallback6Supported();
+    BOOL IsCallback7Supported();
 
     HRESULT SetEventMask(DWORD dwEventMask, DWORD dwEventMaskHigh);
 
@@ -229,6 +230,9 @@ public:
     HRESULT ModuleAttachedToAssembly( 
         ModuleID    moduleId,
         AssemblyID  AssemblyId);
+
+    HRESULT ModuleInMemorySymbolsUpdated(
+        ModuleID    moduleId);
 
     //
     // Class Events
@@ -525,12 +529,13 @@ private:
 
     // Pointer to the profiler's implementation of the callback interface(s).
     // Profilers MUST support ICorProfilerCallback2.
-    // Profilers MAY optionally support ICorProfilerCallback3,4,5
+    // Profilers MAY optionally support ICorProfilerCallback3,4,5,6,7
     ICorProfilerCallback2 * m_pCallback2;
     ICorProfilerCallback3 * m_pCallback3;
     ICorProfilerCallback4 * m_pCallback4;
     ICorProfilerCallback5 * m_pCallback5;
     ICorProfilerCallback6 * m_pCallback6;
+    ICorProfilerCallback7 * m_pCallback7;
     HMODULE                 m_hmodProfilerDLL;
 
     BOOL                    m_fLoadedViaAttach;

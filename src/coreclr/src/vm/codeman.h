@@ -1114,6 +1114,26 @@ private :
     CUnorderedArray<DomainCodeHeapList *, 5> m_DomainCodeHeaps;
     CUnorderedArray<DomainCodeHeapList *, 5> m_DynamicDomainCodeHeaps;
 
+#ifdef _TARGET_AMD64_
+private:
+    //
+    // List of reserved memory blocks to be used for jump stub allocation if no suitable memory block is found 
+    // via the regular mechanism
+    //
+    struct EmergencyJumpStubReserve
+    {
+        EmergencyJumpStubReserve * m_pNext;
+        BYTE *   m_ptr;
+        SIZE_T   m_size;
+        SIZE_T   m_free;
+    };
+    EmergencyJumpStubReserve * m_pEmergencyJumpStubReserveList;
+
+public:
+    BYTE * AllocateFromEmergencyJumpStubReserve(const BYTE * loAddr, const BYTE * hiAddr, SIZE_T * pReserveSize);
+    VOID EnsureJumpStubReserve(BYTE * pImageBase, SIZE_T imageSize, SIZE_T reserveSize);
+#endif
+
 public:
     ICorJitCompiler *   m_jit;
     HINSTANCE           m_JITCompiler;

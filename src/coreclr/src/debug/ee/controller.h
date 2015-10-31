@@ -1105,6 +1105,8 @@ private:
     static void ApplyTraceFlag(Thread *thread);
     static void UnapplyTraceFlag(Thread *thread);
 
+    virtual void DebuggerDetachClean();
+
   public:
     static const BYTE *g_pMSCorEEStart, *g_pMSCorEEEnd;
 
@@ -1324,7 +1326,7 @@ public:
     // still send. 
     //
     // Returns true if send an event, false elsewise.
-    virtual bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
+    virtual bool SendEvent(Thread *thread, bool fInteruptedBySetIp);   
 
     AppDomain           *m_pAppDomain;
 
@@ -1379,6 +1381,8 @@ class DebuggerPatchSkip : public DebuggerController
     void CopyInstructionBlock(BYTE *to, const BYTE* from);
 
     void DecodeInstruction(CORDB_ADDRESS_TYPE *code);
+
+    void DebuggerDetachClean();
 
     CORDB_ADDRESS_TYPE      *m_address;
     int                      m_iOrigDisp;        // the original displacement of a relative call or jump

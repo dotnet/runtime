@@ -857,7 +857,8 @@ class ClrDataAccess
     : public IXCLRDataProcess2,
       public ICLRDataEnumMemoryRegions,
       public ISOSDacInterface,
-      public ISOSDacInterface2
+      public ISOSDacInterface2,
+      public ISOSDacInterface3
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1192,6 +1193,11 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
     virtual HRESULT STDMETHODCALLTYPE IsRCWDCOMProxy(CLRDATA_ADDRESS rcwAddr, BOOL* isDCOMProxy);
 
+    // ISOSDacInterface3
+    virtual HRESULT STDMETHODCALLTYPE GetGCInterestingInfoData(CLRDATA_ADDRESS interestingInfoAddr, struct DacpGCInterestingInfoData *data);
+    virtual HRESULT STDMETHODCALLTYPE GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *data);
+    virtual HRESULT STDMETHODCALLTYPE GetGCGlobalMechanisms(size_t* globalMechanisms);
+
     //
     // ClrDataAccess.
     //
@@ -1271,6 +1277,7 @@ public:
                                 DacpGcHeapDetails *detailsData);
     HRESULT GetServerAllocData(unsigned int count, struct DacpGenerationAllocData *data, unsigned int *pNeeded);
     HRESULT ServerOomData(CLRDATA_ADDRESS addr, DacpOomData *oomData);
+    HRESULT ServerGCInterestingInfoData(CLRDATA_ADDRESS addr, DacpGCInterestingInfoData *interestingInfoData);
     HRESULT ServerGCHeapAnalyzeData(CLRDATA_ADDRESS heapAddr, 
                                 DacpGcHeapAnalyzeData *analyzeData);
 

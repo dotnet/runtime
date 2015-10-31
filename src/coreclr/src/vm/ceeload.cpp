@@ -1505,6 +1505,30 @@ Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEFile *file, Allo
     RETURN pModuleSafe.Extract();
 }
 
+void Module::ApplyMetaData()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    LOG((LF_CLASSLOADER, LL_INFO100, "Module::ApplyNewMetaData %x\n", this));
+
+    HRESULT hr = S_OK;
+    ULONG ulCount;
+
+    // Ensure for TypeRef
+    ulCount = GetMDImport()->GetCountWithTokenKind(mdtTypeRef) + 1;
+    EnsureTypeRefCanBeStored(TokenFromRid(ulCount, mdtTypeRef));
+
+    // Ensure for AssemblyRef
+    ulCount = GetMDImport()->GetCountWithTokenKind(mdtAssemblyRef) + 1;
+    EnsureAssemblyRefCanBeStored(TokenFromRid(ulCount, mdtAssemblyRef));
+}
+
 //
 // Destructor for Module
 //
@@ -4467,7 +4491,16 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
                                                 &cbWritten);
     IfFailThrow(HRESULT_FROM_WIN32(dwError));
 
+#if PROFILING_SUPPORTED && !defined(CROSSGEN_COMPILE)
+    BEGIN_PIN_PROFILER(CORProfilerInMemorySymbolsUpdatesEnabled());
+    {
+        g_profControlBlock.pProfInterface->ModuleInMemorySymbolsUpdated((ModuleID) this);
+    }
+    END_PIN_PROFILER();
+#endif //PROFILING_SUPPORTED && !defined(CROSSGEN_COMPILE)
+
     ETW::CodeSymbolLog::EmitCodeSymbols(this);
+
     // Tell the debugger that symbols have been loaded for this
     // module.  We iterate through all domains which contain this
     // module's assembly, and send a debugger notify for each one.
@@ -6229,21 +6262,17 @@ Module *Module::GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL
     if (!permitResources && pModule && pModule->IsResource())
         pModule = NULL;
 
+#ifndef DACCESS_COMPILE
 #if defined(FEATURE_MULTIMODULE_ASSEMBLIES)
     // check if actually loaded, unless happens during GC (GC works only with loaded assemblies)
     if (!GCHeap::IsGCInProgress() && onlyLoadedInAppDomain && pModule && !pModule->IsManifest())
     {
-#ifndef DACCESS_COMPILE
         DomainModule *pDomainModule = pModule->FindDomainModule(GetAppDomain());
         if (pDomainModule == NULL || !pDomainModule->IsLoaded())
             pModule = NULL;
-#else
-        // unfortunately DAC doesn't have a GetAppDomain() however multi-module
-        // assemblies aren't very common so it should be ok to fail here for now.
-        DacNotImpl();
-#endif // !DACCESS_COMPILE
     }    
 #endif // FEATURE_MULTIMODULE_ASSEMBLIES
+#endif // !DACCESS_COMPILE
     RETURN pModule;
 }
 

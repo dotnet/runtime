@@ -1161,6 +1161,9 @@ EEJitManager::EEJitManager()
     m_jit = NULL;
     m_JITCompiler      = NULL;
 #ifdef _TARGET_AMD64_
+    m_pEmergencyJumpStubReserveList = NULL;
+#endif
+#ifdef _TARGET_AMD64_
     m_JITCompilerOther = NULL;
 #endif
 #ifdef ALLOW_SXS_JIT
@@ -1177,6 +1180,42 @@ EEJitManager::EEJitManager()
 #if defined(_TARGET_AMD64_)
 extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16]);
 extern "C" DWORD __stdcall xmmYmmStateSupport();
+
+bool DoesOSSupportAVX()
+{
+#ifndef FEATURE_PAL
+    // On Windows we have an api(GetEnabledXStateFeatures) to check if AVX is supported
+    typedef DWORD64 (WINAPI *PGETENABLEDXSTATEFEATURES)();
+    PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
+    
+    // Probe ApiSet first
+    HMODULE hMod = WszLoadLibraryEx(W("api-ms-win-core-xstate-l2-1-0.dll"), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+    if (hMod == NULL)
+    {
+        // On older OS's where apiset is not present probe kernel32
+        hMod = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if(hMod = NULL)
+            return FALSE;
+    }
+        
+    pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
+        
+    if (pfnGetEnabledXStateFeatures == NULL)
+    {
+        return FALSE;
+    }
+    
+    DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
+    if ((FeatureMask & XSTATE_MASK_AVX) == 0)
+    {
+        return FALSE;
+    }
+#endif // !FEATURE_PAL
+
+    return TRUE;
+}
+
 #endif // defined(_TARGET_AMD64_)
 
 void EEJitManager::SetCpuInfo()
@@ -1250,15 +1289,18 @@ void EEJitManager::SetCpuInfo()
             }
             if ((buffer[11] & 0x18) == 0x18)
             {
-                if (xmmYmmStateSupport() == 1)
+                if(DoesOSSupportAVX())
                 {
-                    dwCPUCompileFlags |= CORJIT_FLG_USE_AVX;
-                    if (maxCpuId >= 0x07)
+                    if (xmmYmmStateSupport() == 1)
                     {
-                        (void) getcpuid(0x07, buffer);
-                        if ((buffer[4]  & 0x20) != 0)
+                        dwCPUCompileFlags |= CORJIT_FLG_USE_AVX;
+                        if (maxCpuId >= 0x07)
                         {
-                            dwCPUCompileFlags |= CORJIT_FLG_USE_AVX2;
+                            (void) getcpuid(0x07, buffer);
+                            if ((buffer[4]  & 0x20) != 0)
+                            {
+                                dwCPUCompileFlags |= CORJIT_FLG_USE_AVX2;
+                            }
                         }
                     }
                 }
@@ -1801,8 +1843,137 @@ void ThrowOutOfMemoryWithinRange()
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
+    // Allow breaking into debugger or terminating the process when this exception occurs
+    switch (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnOutOfMemoryWithinRange))
+    {
+    case 1:
+        DebugBreak();
+        break;
+    case 2:
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_OUTOFMEMORY);
+        break;   
+    default:
+        break;
+    }
+
     EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_OUT_OF_MEMORY_WITHIN_RANGE));
 }
+
+#ifdef _TARGET_AMD64_
+BYTE * EEJitManager::AllocateFromEmergencyJumpStubReserve(const BYTE * loAddr, const BYTE * hiAddr, SIZE_T * pReserveSize)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(m_CodeHeapCritSec.OwnedByCurrentThread());
+    } CONTRACTL_END;
+
+    for (EmergencyJumpStubReserve ** ppPrev = &m_pEmergencyJumpStubReserveList; *ppPrev != NULL; ppPrev = &(*ppPrev)->m_pNext)
+    {
+        EmergencyJumpStubReserve * pList = *ppPrev;
+
+        if (loAddr <= pList->m_ptr &&
+            pList->m_ptr + pList->m_size < hiAddr)
+        {
+            *ppPrev = pList->m_pNext;
+
+            BYTE * pBlock = pList->m_ptr;
+            *pReserveSize = pList->m_size;
+
+            delete pList;
+
+            return pBlock;
+        }
+    }
+
+    return NULL;
+}
+
+VOID EEJitManager::EnsureJumpStubReserve(BYTE * pImageBase, SIZE_T imageSize, SIZE_T reserveSize)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    CrstHolder ch(&m_CodeHeapCritSec);
+
+    BYTE * loAddr = pImageBase + imageSize + INT32_MIN;
+    if (loAddr > pImageBase) loAddr = NULL; // overflow
+
+    BYTE * hiAddr = pImageBase + INT32_MAX;
+    if (hiAddr < pImageBase) hiAddr = (BYTE *)UINT64_MAX; // overflow
+
+    for (EmergencyJumpStubReserve * pList = m_pEmergencyJumpStubReserveList; pList != NULL; pList = pList->m_pNext)
+    {
+        if (loAddr <= pList->m_ptr &&
+            pList->m_ptr + pList->m_size < hiAddr)
+        {
+            SIZE_T used = min(reserveSize, pList->m_free);
+            pList->m_free -= used;
+
+            reserveSize -= used;
+            if (reserveSize == 0)
+                return;
+        }        
+    }
+
+    // Try several different strategies - the most efficient one first
+    int allocMode = 0;
+
+    // Try to reserve at least 16MB at a time
+    SIZE_T allocChunk = max(ALIGN_UP(reserveSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY), 16*1024*1024);
+
+    while (reserveSize > 0)
+    {
+        NewHolder<EmergencyJumpStubReserve> pNewReserve(new EmergencyJumpStubReserve());
+
+        for (;;)
+        {
+            BYTE * loAddrCurrent = loAddr;
+            BYTE * hiAddrCurrent = hiAddr;
+
+            switch (allocMode)
+            {
+            case 0:
+                // First, try to allocate towards the center of the allowed range. It is more likely to 
+                // satisfy subsequent reservations.
+                loAddrCurrent = loAddr + (hiAddr - loAddr) / 8;
+                hiAddrCurrent = hiAddr - (hiAddr - loAddr) / 8;
+                break;
+            case 1:
+                // Try the whole allowed range
+                break;
+            case 2:
+                // If the large allocation failed, retry with small chunk size
+                allocChunk = VIRTUAL_ALLOC_RESERVE_GRANULARITY;
+                break;
+            default:
+                return; // Unable to allocate the reserve - give up
+            }
+
+            pNewReserve->m_ptr = ClrVirtualAllocWithinRange(loAddrCurrent, hiAddrCurrent,
+                                               allocChunk, MEM_RESERVE, PAGE_NOACCESS);
+
+            if (pNewReserve->m_ptr != NULL)
+                break;
+
+            // Retry with the next allocation strategy
+            allocMode++;
+        }
+
+        SIZE_T used = min(allocChunk, reserveSize);
+        reserveSize -= used;
+
+        pNewReserve->m_size = allocChunk;
+        pNewReserve->m_free = allocChunk - used;
+
+        // Add it to the list
+        pNewReserve->m_pNext = m_pEmergencyJumpStubReserveList;
+        m_pEmergencyJumpStubReserveList = pNewReserve.Extract();
+    }
+}
+#endif // _TARGET_AMD64_
 
 HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap *pJitMetaHeap)
 {
@@ -1838,6 +2009,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     BYTE * pBaseAddr = NULL;
     DWORD dwSizeAcquiredFromInitialBlock = 0;
+    bool fAllocatedFromEmergencyJumpStubReserve = false;
 
     pBaseAddr = (BYTE *)pInfo->m_pAllocator->GetCodeHeapInitialBlock(loAddr, hiAddr, (DWORD)initialRequestSize, &dwSizeAcquiredFromInitialBlock);
     if (pBaseAddr != NULL)
@@ -1850,8 +2022,18 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
         {
             pBaseAddr = ClrVirtualAllocWithinRange(loAddr, hiAddr,
                                                    reserveSize, MEM_RESERVE, PAGE_NOACCESS);
+
             if (!pBaseAddr)
+            {
+#ifdef _TARGET_AMD64_
+                pBaseAddr = ExecutionManager::GetEEJitManager()->AllocateFromEmergencyJumpStubReserve(loAddr, hiAddr, &reserveSize);
+                if (!pBaseAddr)
+                    ThrowOutOfMemoryWithinRange();
+                fAllocatedFromEmergencyJumpStubReserve = true;                
+#else
                 ThrowOutOfMemoryWithinRange();
+#endif // _TARGET_AMD64_
+            }
         }
         else
         {
@@ -1881,7 +2063,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     // We do not need to memset this memory, since ClrVirtualAlloc() guarantees that the memory is zero.
     // Furthermore, if we avoid writing to it, these pages don't come into our working set
 
-    pHp->bFull           = false;
+    pHp->bFull           = fAllocatedFromEmergencyJumpStubReserve;
     pHp->bFullForJumpStubs = false;
 
     pHp->cBlocks         = 0;
@@ -2167,12 +2349,10 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
             // allocation won't fail or handle jump stub allocation gracefully (see DevDiv #381823 and 
             // related bugs for details).
             //
-            static int codeHeapReserveForJumpStubs = -1;
+            static ConfigDWORD configCodeHeapReserveForJumpStubs;
+            int percentReserveForJumpStubs = configCodeHeapReserveForJumpStubs.val(CLRConfig::INTERNAL_CodeHeapReserveForJumpStubs);
 
-            if (codeHeapReserveForJumpStubs == -1)
-                codeHeapReserveForJumpStubs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CodeHeapReserveForJumpStubs);
-
-            size_t reserveForJumpStubs = codeHeapReserveForJumpStubs * (pCodeHeap->maxCodeHeapSize / 100);
+            size_t reserveForJumpStubs = percentReserveForJumpStubs * (pCodeHeap->maxCodeHeapSize / 100);
 
             size_t minReserveForJumpStubs = sizeof(CodeHeader) +
                 sizeof(JumpStubBlockHeader) + (size_t) DEFAULT_JUMPSTUBS_PER_BLOCK * BACK_TO_BACK_JUMP_ALLOCATE_SIZE +

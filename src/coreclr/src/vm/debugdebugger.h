@@ -151,6 +151,8 @@ private:
         void InitPass2();
     };
 
+public:
+
     struct GetStackFramesData {
 
         // Used for the integer-skip version
@@ -186,15 +188,14 @@ private:
         }
     };
 
-
-public:
-
     static FCDECL3(void, 
                    GetStackFramesInternal, 
                    StackFrameHelper* pStackFrameHelper, 
                    INT32 iSkip, 
                    Object* pException
                   );
+
+    static void GetStackFramesFromException(OBJECTREF * e, GetStackFramesData *pData, PTRARRAYREF * pDynamicMethodArray = NULL);
 
 #ifndef DACCESS_COMPILE
 // the DAC directly calls GetStackFramesFromException
@@ -204,8 +205,6 @@ private:
     static void GetStackFramesHelper(Frame *pStartFrame, void* pStopStack, GetStackFramesData *pData);
 
     static void GetStackFrames(Frame *pStartFrame, void* pStopStack, GetStackFramesData *pData);    
-
-    static void GetStackFramesFromException(OBJECTREF * e, GetStackFramesData *pData, PTRARRAYREF * pDynamicMethodArray = NULL);
 
     static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data);
 

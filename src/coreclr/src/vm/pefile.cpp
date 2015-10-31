@@ -1681,6 +1681,17 @@ void PEFile::SetNativeImage(PEImage *image)
     m_nativeImage->Load();
     m_nativeImage->AllocateLazyCOWPages();
 
+#if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE)
+    static ConfigDWORD configNGenReserveForJumpStubs;
+    int percentReserveForJumpStubs = configNGenReserveForJumpStubs.val(CLRConfig::INTERNAL_NGenReserveForJumpStubs);
+    if (percentReserveForJumpStubs != 0)
+    {
+        PEImageLayout * pLayout = image->GetLoadedLayout();
+        ExecutionManager::GetEEJitManager()->EnsureJumpStubReserve((BYTE *)pLayout->GetBase(), pLayout->GetVirtualSize(),
+            percentReserveForJumpStubs * (pLayout->GetVirtualSize() / 100));
+    }
+#endif
+
     ExternalLog(LL_INFO100, W("Attempting to use native image %s."), image->GetPath().GetUnicode());
     RETURN;
 }
