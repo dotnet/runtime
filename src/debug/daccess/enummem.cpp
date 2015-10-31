@@ -802,6 +802,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
         {
             frameHadContext = false;
             status = pStackWalk->GetFrame(&pFrame);
+            PCODE addr = NULL;
             if (status == S_OK && pFrame != NULL)
             {
                 // write out the code that ip pointed to
@@ -812,7 +813,8 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                 {
                     // Enumerate the code around the call site to help debugger stack walking heuristics
                     ::FillRegDisplay(&regDisp, &context);
-                    TADDR callEnd = PCODEToPINSTR(GetControlPC(&regDisp));
+                    addr = GetControlPC(&regDisp);
+                    TADDR callEnd = PCODEToPINSTR(addr);
                     DacEnumCodeForStackwalk(callEnd);
                     frameHadContext = true;
                 }
@@ -969,8 +971,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                             DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMethodDesc);
 
 #ifdef WIN64EXCEPTIONS
-                            PCODE addr = pMethodDesc->GetNativeCode();
-
+                          
                             if (addr != NULL)
                             {
                                 EECodeInfo codeInfo(addr);

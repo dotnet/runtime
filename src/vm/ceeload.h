@@ -1942,6 +1942,8 @@ protected:
 
     BOOL IsManifest();
 
+    void ApplyMetaData();
+
 #ifdef FEATURE_MIXEDMODE
     void FixupVTables();
 #endif 

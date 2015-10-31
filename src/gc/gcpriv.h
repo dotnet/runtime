@@ -161,6 +161,11 @@ inline void FATAL_GC_ERROR()
 
 /* End of optional features */
 
+#ifdef GC_CONFIG_DRIVEN
+void GCLogConfig (const char *fmt, ... );
+#define cprintf(x) {GCLogConfig x;}
+#endif //GC_CONFIG_DRIVEN
+
 #ifdef _DEBUG
 #define TRACE_GC
 #endif
@@ -356,21 +361,16 @@ public:
 #ifdef SIMPLE_DPRINTF
 
 //#define dprintf(l,x) {if (trace_gc && ((l<=print_level)||gc_heap::settings.concurrent)) {printf ("\n");printf x ; fflush(stdout);}}
-void LogValist(const char *fmt, va_list args);
 void GCLog (const char *fmt, ... );
 //#define dprintf(l,x) {if (trace_gc && (l<=print_level)) {GCLog x;}}
 //#define dprintf(l,x) {if ((l==SEG_REUSE_LOG_0) || (l==SEG_REUSE_LOG_1) || (trace_gc && (l<=3))) {GCLog x;}}
 //#define dprintf(l,x) {if (l == DT_LOG_0) {GCLog x;}}
 //#define dprintf(l,x) {if (trace_gc && ((l <= 2) || (l == BGC_LOG) || (l==GTC_LOG))) {GCLog x;}}
-//#define dprintf(l,x) {if (l==GTC_LOG) {GCLog x;}}
-//#define dprintf(l,x) {if (trace_gc && ((l <= 2) || (l == 1234)) ) {GCLog x;}}
-//#define dprintf(l,x) {if ((l <= 1) || (l == 2222)) {GCLog x;}}
+//#define dprintf(l,x) {if ((l == 1) || (l == 2222)) {GCLog x;}}
 #define dprintf(l,x) {if ((l <= 1) || (l == GTC_LOG)) {GCLog x;}}
-//#define dprintf(l,x) {if ((l <= 1) || (l == GTC_LOG) ||(l == DT_LOG_0)) {GCLog x;}}
 //#define dprintf(l,x) {if ((l==GTC_LOG) || (l <= 1)) {GCLog x;}}
 //#define dprintf(l,x) {if (trace_gc && ((l <= print_level) || (l==GTC_LOG))) {GCLog x;}}
 //#define dprintf(l,x) {if (l==GTC_LOG) {printf ("\n");printf x ; fflush(stdout);}}
-
 #else //SIMPLE_DPRINTF
 
 // The GCTrace output goes to stdout by default but can get sent to the stress log or the logfile if the
@@ -408,7 +408,6 @@ struct GCDebugSpinLock {
         : lock(-1), holding_thread((Thread*) -1)
     {
     }
-
 };
 typedef GCDebugSpinLock GCSpinLock;
 
@@ -572,6 +571,7 @@ public:
     int  gen0_reduction_count;
     BOOL should_lock_elevation;
     int elevation_locked_count;
+    BOOL elevation_reduced;
     BOOL minimal_gc;
     gc_reason reason;
     gc_pause_mode pause_mode;
@@ -731,9 +731,13 @@ class alloc_list
 {
     BYTE* head;
     BYTE* tail;
-    size_t damage_count;
 
+    size_t damage_count;
 public:
+#ifdef FL_VERIFICATION
+    size_t item_count;
+#endif //FL_VERIFICATION
+
     BYTE*& alloc_list_head () { return head;}
     BYTE*& alloc_list_tail () { return tail;}
     size_t& alloc_list_damage_count(){ return damage_count; }
@@ -1115,6 +1119,26 @@ struct no_gc_region_info
     BOOL minimal_gc_p;
 };
 
+// if you change these, make sure you update them for sos (strike.cpp) as well.
+// 
+// !!!NOTE!!!
+// Right now I am only recording data from blocking GCs. When recording from BGC,
+// it should have its own copy just like gc_data_per_heap.
+// for BGCs we will have a very different set of datapoints to record.
+enum interesting_data_point
+{
+    idp_pre_short = 0,
+    idp_post_short = 1,
+    idp_merged_pin = 2,
+    idp_converted_pin = 3,
+    idp_pre_pin = 4,
+    idp_post_pin = 5,
+    idp_pre_and_post_pin = 6,
+    idp_pre_short_padded = 7,
+    idp_post_short_padded = 8,
+    max_idp_count
+};
+
 //class definition of the internal class
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 extern void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw);
@@ -1284,10 +1308,10 @@ public:
     BYTE* pad_for_alignment_large (BYTE* newAlloc, int requiredAlignment, size_t size);
 #endif // FEATURE_STRUCTALIGN
 
-    PER_HEAP
+    PER_HEAP_ISOLATED
     void do_pre_gc();
 
-    PER_HEAP
+    PER_HEAP_ISOLATED
     void do_post_gc();
 
     PER_HEAP
@@ -1298,6 +1322,9 @@ public:
     // when we figured that we needed to do a BGC.
     PER_HEAP
     int garbage_collect (int n);
+
+    PER_HEAP
+    void init_records();
 
     static 
     DWORD* make_card_table (BYTE* start, BYTE* end);
@@ -1758,13 +1785,13 @@ protected:
     void copy_brick_card_range (BYTE* la, DWORD* old_card_table,
                                 short* old_brick_table,
                                 heap_segment* seg,
-                                BYTE* start, BYTE* end, BOOL heap_expand);
+                                BYTE* start, BYTE* end);
     PER_HEAP
     void init_brick_card_range (heap_segment* seg);
     PER_HEAP
     void copy_brick_card_table_l_heap ();
     PER_HEAP
-    void copy_brick_card_table(BOOL heap_expand);
+    void copy_brick_card_table();
     PER_HEAP
     void clear_brick_table (BYTE* from, BYTE* end);
     PER_HEAP
@@ -2142,6 +2169,18 @@ protected:
                               size_t last_plug_len);
     PER_HEAP
     void plan_phase (int condemned_gen_number);
+
+    PER_HEAP
+    void record_interesting_data_point (interesting_data_point idp);
+
+#ifdef GC_CONFIG_DRIVEN
+    PER_HEAP
+    void record_interesting_info_per_heap();
+    PER_HEAP_ISOLATED
+    void record_global_mechanisms();
+    PER_HEAP_ISOLATED
+    BOOL should_do_sweeping_gc (BOOL compact_p);
+#endif //GC_CONFIG_DRIVEN
 
 #ifdef FEATURE_LOH_COMPACTION
     // plan_loh can allocate memory so it can fail. If it fails, we will
@@ -2935,6 +2974,11 @@ public:
     PER_HEAP
     size_t gen0_big_free_spaces;
 
+#ifdef SHORT_PLUGS
+    PER_HEAP_ISOLATED
+    float short_plugs_pad_ratio;
+#endif //SHORT_PLUGS
+
 #ifdef _WIN64
     PER_HEAP_ISOLATED
     size_t youngest_gen_desired_th;
@@ -3070,10 +3114,7 @@ protected:
     gc_mechanisms saved_bgc_settings;
 
     PER_HEAP
-    gc_history_per_heap saved_bgc_data_per_heap;
-
-    PER_HEAP
-    BOOL bgc_data_saved_p;
+    gc_history_per_heap bgc_data_per_heap;
 
     PER_HEAP
     BOOL bgc_thread_running; // gc thread is its main loop
@@ -3421,7 +3462,11 @@ protected:
     alloc_list loh_alloc_list[NUM_LOH_ALIST-1];
 
 #define NUM_GEN2_ALIST (12)
-#define BASE_GEN2_ALIST (1*64)
+#ifdef _WIN64
+#define BASE_GEN2_ALIST (1*256)
+#else
+#define BASE_GEN2_ALIST (1*128)
+#endif //_WIN64
     PER_HEAP
     alloc_list gen2_alloc_list[NUM_GEN2_ALIST-1];
 
@@ -3520,6 +3565,36 @@ protected:
 
     PER_HEAP_ISOLATED
     size_t eph_gen_starts_size;
+
+#ifdef GC_CONFIG_DRIVEN
+    PER_HEAP_ISOLATED
+    size_t time_init;
+
+    PER_HEAP_ISOLATED
+    size_t time_since_init;
+
+    // 0 stores compacting GCs;
+    // 1 stores sweeping GCs;
+    PER_HEAP_ISOLATED
+    size_t compact_or_sweep_gcs[2];
+
+    PER_HEAP
+    size_t interesting_data_per_gc[max_idp_count];
+
+#ifdef MULTIPLE_HEAPS
+    PER_HEAP
+    size_t interesting_data_per_heap[max_idp_count];
+
+    PER_HEAP
+    size_t compact_reasons_per_heap[max_compact_reasons_count];
+
+    PER_HEAP
+    size_t expand_mechanisms_per_heap[max_expand_mechanisms_count];
+
+    PER_HEAP
+    size_t interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_count];
+#endif //MULTIPLE_HEAPS
+#endif //GC_CONFIG_DRIVEN
 
     PER_HEAP
     BOOL        ro_segments_in_range;
@@ -4042,8 +4117,10 @@ size_t generation_unusable_fragmentation (generation* inst)
 
 #define plug_skew           sizeof(ObjHeader)
 #define min_obj_size        (sizeof(BYTE*)+plug_skew+sizeof(size_t))//syncblock + vtable+ first field
-#define min_free_list       (sizeof(BYTE*)+min_obj_size) //Need one slot more
 //Note that this encodes the fact that plug_skew is a multiple of BYTE*.
+// We always use USE_PADDING_TAIL when fitting so items on the free list should be
+// twice the min_obj_size.
+#define min_free_list       (2*min_obj_size)
 struct plug
 {
     BYTE *  skew[plug_skew / sizeof(BYTE *)];
@@ -4258,6 +4335,13 @@ extern "C" {
 #endif //!DACCESS_COMPILE
 
 GARY_DECL(generation,generation_table,NUMBERGENERATIONS+1);
+
+#ifdef GC_CONFIG_DRIVEN
+GARY_DECL(size_t, interesting_data_per_heap, max_idp_count);
+GARY_DECL(size_t, compact_reasons_per_heap, max_compact_reasons_count);
+GARY_DECL(size_t, expand_mechanisms_per_heap, max_expand_mechanisms_count);
+GARY_DECL(size_t, interesting_mechanism_bits_per_heap, max_gc_mechanism_bits_count);
+#endif //GC_CONFIG_DRIVEN
 
 #ifndef DACCESS_COMPILE
 }

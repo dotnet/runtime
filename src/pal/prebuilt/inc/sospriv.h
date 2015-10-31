@@ -82,6 +82,13 @@ typedef interface ISOSDacInterface2 ISOSDacInterface2;
 #endif 	/* __ISOSDacInterface2_FWD_DEFINED__ */
 
 
+#ifndef __ISOSDacInterface3_FWD_DEFINED__
+#define __ISOSDacInterface3_FWD_DEFINED__
+typedef interface ISOSDacInterface3 ISOSDacInterface3;
+
+#endif 	/* __ISOSDacInterface3_FWD_DEFINED__ */
+
+
 /* header files for imported files */
 #include "unknwn.h"
 #include "xclrdata.h"
@@ -1979,6 +1986,108 @@ EXTERN_C const IID IID_ISOSDacInterface2;
 
 
 #endif 	/* __ISOSDacInterface2_INTERFACE_DEFINED__ */
+
+
+#ifndef __ISOSDacInterface3_INTERFACE_DEFINED__
+#define __ISOSDacInterface3_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface3 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface3;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("B08C5CDC-FD8A-49C5-AB38-5FEEF35235B4")
+    ISOSDacInterface3 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetGCInterestingInfoData( 
+            CLRDATA_ADDRESS interestingInfoAddr,
+            struct DacpGCInterestingInfoData *data) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetGCInterestingInfoStaticData( 
+            struct DacpGCInterestingInfoData *data) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetGCGlobalMechanisms( 
+            size_t *globalMechanisms) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ISOSDacInterface3Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface3 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface3 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface3 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetGCInterestingInfoData )( 
+            ISOSDacInterface3 * This,
+            CLRDATA_ADDRESS interestingInfoAddr,
+            struct DacpGCInterestingInfoData *data);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetGCInterestingInfoStaticData )( 
+            ISOSDacInterface3 * This,
+            struct DacpGCInterestingInfoData *data);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetGCGlobalMechanisms )( 
+            ISOSDacInterface3 * This,
+            size_t *globalMechanisms);
+        
+        END_INTERFACE
+    } ISOSDacInterface3Vtbl;
+
+    interface ISOSDacInterface3
+    {
+        CONST_VTBL struct ISOSDacInterface3Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface3_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface3_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface3_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface3_GetGCInterestingInfoData(This,interestingInfoAddr,data)	\
+    ( (This)->lpVtbl -> GetGCInterestingInfoData(This,interestingInfoAddr,data) ) 
+
+#define ISOSDacInterface3_GetGCInterestingInfoStaticData(This,data)	\
+    ( (This)->lpVtbl -> GetGCInterestingInfoStaticData(This,data) ) 
+
+#define ISOSDacInterface3_GetGCGlobalMechanisms(This,globalMechanisms)	\
+    ( (This)->lpVtbl -> GetGCGlobalMechanisms(This,globalMechanisms) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSDacInterface3_INTERFACE_DEFINED__ */
 
 
 /* Additional Prototypes for ALL interfaces */

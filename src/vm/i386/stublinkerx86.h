@@ -772,25 +772,9 @@ struct ThisPtrRetBufPrecode {
         return m_pMethodDesc;
     }
 
-    PCODE GetTarget()
-    { 
-        LIMITED_METHOD_DAC_CONTRACT;
+    PCODE GetTarget();
 
-        return rel32Decode(PTR_HOST_MEMBER_TADDR(ThisPtrRetBufPrecode, this, m_rel32));
-    }
-
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-        }
-        CONTRACTL_END;
-
-        EnsureWritableExecutablePages(&m_rel32);
-        return rel32SetInterlocked(&m_rel32, target, expected, (MethodDesc*)GetMethodDesc());
-    }
+    BOOL SetTargetInterlocked(TADDR target, TADDR expected);
 };
 IN_WIN32(static_assert_no_msg(offsetof(ThisPtrRetBufPrecode, m_movArg1Scratch) + 1 == OFFSETOF_PRECODE_TYPE);)
 typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
