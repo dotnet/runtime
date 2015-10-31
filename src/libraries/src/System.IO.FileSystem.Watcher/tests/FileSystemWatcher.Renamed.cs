@@ -82,7 +82,7 @@ public partial class RenamedTests
         });
     }
 
-    [Fact]
+    [Fact, OuterLoop]
     // Note: Can't use the TestNestedDirectoriesHelper since we need access to the root
     public static void FileSystemWatcher_Moved_NestedDirectoryRoot()
     {

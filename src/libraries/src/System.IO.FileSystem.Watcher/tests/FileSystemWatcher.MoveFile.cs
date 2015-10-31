@@ -83,7 +83,7 @@ public class MoveFileTests
 
     }
 
-    [Theory]
+    [Theory, OuterLoop]
     [InlineData(WatcherChangeTypes.Changed, false)]
     [InlineData(WatcherChangeTypes.Created, true)]
     [InlineData(WatcherChangeTypes.Deleted, true)]
