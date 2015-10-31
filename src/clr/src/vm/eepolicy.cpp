@@ -1334,7 +1334,6 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             // (in SystemDomain::Init) finished.  See Dev10 Bug 677432 for the detail.
             if (ohException != NULL)
             {
-#ifdef FEATURE_WINDOWSPHONE
                 // for fail-fast, if there's a LTO available then use that as the inner exception object
                 // for the FEEE we'll be reporting.  this can help the Watson back-end to generate better
                 // buckets for apps that call Environment.FailFast() and supply an exception object.
@@ -1345,7 +1344,6 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                     EXCEPTIONREF curEx = (EXCEPTIONREF)ObjectFromHandle(ohException);
                     curEx->SetInnerException(lto);
                 }
-#endif // FEATURE_WINDOWSPHONE
                 pThread->SetLastThrownObject(ObjectFromHandle(ohException), TRUE);
             }
 

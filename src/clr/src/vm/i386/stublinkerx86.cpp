@@ -6736,8 +6736,16 @@ void FixupPrecode::Fixup(DataImage *image, MethodDesc * pMD)
 
 #endif // HAS_FIXUP_PRECODE
 
+#endif // !DACCESS_COMPILE
+
+
 #ifdef HAS_THISPTR_RETBUF_PRECODE
 
+// rel32 jmp target that points back to the jump (infinite loop).
+// Used to mark uninitialized ThisPtrRetBufPrecode target
+#define REL32_JMP_SELF (-5)
+
+#ifndef DACCESS_COMPILE
 void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
@@ -6762,13 +6770,38 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
     m_jmp = X86_INSTR_JMP_REL32;        // jmp rel32
     m_pMethodDesc = (TADDR)pMD;
 
-    if (pLoaderAllocator != NULL)
+    // This precode is never patched lazily - avoid unnecessary jump stub allocation
+    m_rel32 = REL32_JMP_SELF;
+}
+
+BOOL ThisPtrRetBufPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
+{
+    CONTRACTL
     {
-        m_rel32 = rel32UsingJumpStub(&m_rel32,
-            GetPreStubEntryPoint(), NULL /* pMD */, pLoaderAllocator);
+        THROWS;
+        GC_TRIGGERS;
     }
+    CONTRACTL_END;
+
+    // This precode is never patched lazily - the interlocked semantics is not required.
+    _ASSERTE(m_rel32 == REL32_JMP_SELF);
+
+    // Use pMD == NULL to allocate the jump stub in non-dynamic heap that has the same lifetime as the precode itself
+    m_rel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, ((MethodDesc *)GetMethodDesc())->GetLoaderAllocatorForCode());
+
+    return TRUE;
+}
+#endif // !DACCESS_COMPILE
+
+PCODE ThisPtrRetBufPrecode::GetTarget()
+{ 
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // This precode is never patched lazily - pretend that the uninitialized m_rel32 points to prestub
+    if (m_rel32 == REL32_JMP_SELF)
+        return GetPreStubEntryPoint();
+
+    return rel32Decode(PTR_HOST_MEMBER_TADDR(ThisPtrRetBufPrecode, this, m_rel32));
 }
 
 #endif // HAS_THISPTR_RETBUF_PRECODE
-
-#endif // !DACCESS_COMPILE

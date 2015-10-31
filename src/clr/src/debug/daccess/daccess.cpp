@@ -3267,6 +3267,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface2*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface3)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface3*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -6849,8 +6853,19 @@ ClrDataAccess::GetMDImport(const PEFile* peFile, const ReflectionModule* reflect
     {
         // Get the metadata
         PTR_SBuffer metadataBuffer = reflectionModule->GetDynamicMetadataBuffer();
-        mdBaseTarget = dac_cast<PTR_CVOID>((metadataBuffer->DacGetRawBuffer()).StartAddress());
-        mdSize = metadataBuffer->GetSize();
+        if (metadataBuffer != PTR_NULL)
+        {
+            mdBaseTarget = dac_cast<PTR_CVOID>((metadataBuffer->DacGetRawBuffer()).StartAddress());
+            mdSize = metadataBuffer->GetSize();
+        }
+        else
+        {
+            if (throwEx)
+            {
+                DacError(E_FAIL);
+            }
+            return NULL;
+        }
     }
     else
     {
