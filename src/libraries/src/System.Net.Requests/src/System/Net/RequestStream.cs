@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
@@ -51,6 +52,14 @@ namespace System.Net
             // Nothing to do.
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            // Nothing to do.
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                Task.CompletedTask;
+        }
+
         public override long Length
         {
             get
@@ -89,6 +98,11 @@ namespace System.Net
         public override void Write(byte[] buffer, int offset, int count)
         {
             _buffer.Write(buffer, offset, count);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            return _buffer.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         public ArraySegment<byte> GetBuffer()
