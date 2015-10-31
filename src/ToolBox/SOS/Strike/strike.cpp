@@ -8588,7 +8588,7 @@ DECLARE_API (DumpGCConfigLog)
     ExtOut("Attempting to dump GC log to file '%s'\n", fileName);
     
     Status = E_FAIL;
-
+    
     HANDLE hGCLog = CreateFileA(
         fileName,
         GENERIC_WRITE,
@@ -8604,24 +8604,26 @@ DECLARE_API (DumpGCConfigLog)
         goto exit;
     }
 
-    int iLogSize = (int)dwAddrOffset;
-
-    BYTE* bGCLog = new NOTHROW BYTE[iLogSize];
-    if (bGCLog == NULL)
     {
-        ReportOOM();
-        goto exit;
-    }
+        int iLogSize = (int)dwAddrOffset;
 
-    memset (bGCLog, 0, iLogSize);
-    if (!SafeReadMemory(dwAddr, bGCLog, iLogSize, NULL))
-    {
-        ExtOut("failed to read memory from %08x\n", dwAddr);
-    }
+        ArrayHolder<BYTE> bGCLog = new NOTHROW BYTE[iLogSize];
+        if (bGCLog == NULL)
+        {
+            ReportOOM();
+            goto exit;
+        }
 
-    SetFilePointer (hGCLog, 0, 0, FILE_END);
-    DWORD dwWritten = 0;
-    WriteFile (hGCLog, bGCLog, iLogSize, &dwWritten, NULL);
+        memset (bGCLog, 0, iLogSize);
+        if (!SafeReadMemory(dwAddr, bGCLog, iLogSize, NULL))
+        {
+            ExtOut("failed to read memory from %08x\n", dwAddr);
+        }
+
+        SetFilePointer (hGCLog, 0, 0, FILE_END);
+        DWORD dwWritten;
+        WriteFile (hGCLog, bGCLog, iLogSize, &dwWritten, NULL);
+    }
 
     Status = S_OK;
 
@@ -8660,7 +8662,7 @@ static const char * const str_interesting_data_points[] =
     "post short padded", // 7
 };
 
-static char* str_heap_compact_reasons[] = 
+static const char * const str_heap_compact_reasons[] = 
 {
     "low on ephemeral space",
     "high fragmetation",
@@ -8690,7 +8692,7 @@ static BOOL gc_heap_compact_reason_mandatory_p[] =
     TRUE //compact_no_gc_mode = 10
 };
 
-static char* str_heap_expand_mechanisms[] = 
+static const char * const str_heap_expand_mechanisms[] = 
 {
     "reused seg with normal fit",
     "reused seg with best fit",
@@ -8700,7 +8702,7 @@ static char* str_heap_expand_mechanisms[] =
     "expand in next full GC"
 };
 
-static char* str_bit_mechanisms[] = 
+static const char * const str_bit_mechanisms[] = 
 {
     "using mark list",
     "demotion"
