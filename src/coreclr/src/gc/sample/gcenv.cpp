@@ -92,7 +92,7 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 
 bool GCToEEInterface::IsPreemptiveGCDisabled(Thread * pThread)
 {
-    return !!pThread->PreemptiveGCDisabled();
+    return pThread->PreemptiveGCDisabled();
 }
 
 void GCToEEInterface::EnablePreemptiveGC(Thread * pThread)

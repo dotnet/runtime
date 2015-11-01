@@ -120,12 +120,12 @@ public:
         return m_pMethTab;
     }
 
-    void RawSetMethodTable(MethodTable * pMT)
+    MethodTable * GetGCSafeMethodTable() const
     {
-        m_pMethTab = pMT;
+        return (MethodTable *)((uintptr_t)m_pMethTab & ~3);
     }
 
-    void SetMethodTable(MethodTable * pMT)
+    void RawSetMethodTable(MethodTable * pMT)
     {
         m_pMethTab = pMT;
     }

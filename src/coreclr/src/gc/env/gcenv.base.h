@@ -439,15 +439,6 @@ struct _DacGlobals;
 
 #define OS_PAGE_SIZE 4096
 
-#if defined(_DEBUG)
-#ifndef _DEBUG_IMPL
-#define _DEBUG_IMPL 1
-#endif
-#define ASSERT(_expr) assert(_expr)
-#else
-#define ASSERT(_expr)
-#endif
-
 #ifndef _ASSERTE
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif
@@ -864,6 +855,8 @@ public:
         UNSUPPORTED_GCLogEnabled,
         UNSUPPORTED_GCLogFile,
         UNSUPPORTED_GCLogFileSize,
+        UNSUPPORTED_GCConfigLogEnabled,
+        UNSUPPORTED_GCConfigLogFile,
         UNSUPPORTED_BGCSpinCount,
         UNSUPPORTED_BGCSpin,
         EXTERNAL_GCStressStart,
@@ -872,7 +865,10 @@ public:
         Config_COUNT
     };
 
-    static DWORD GetConfigValue(CLRConfigTypes eType)
+    typedef CLRConfigTypes ConfigDWORDInfo;
+    typedef CLRConfigTypes ConfigStringInfo;
+
+    static DWORD GetConfigValue(ConfigDWORDInfo eType)
     {
         switch (eType)
         {
@@ -900,7 +896,7 @@ public:
         }
     }
 
-    static HRESULT GetConfigValue(CLRConfigTypes eType, PWSTR * outVal) 
+    static HRESULT GetConfigValue(ConfigStringInfo eType, PWSTR * outVal)
     { 
         *outVal = NULL; 
         return 0; 
