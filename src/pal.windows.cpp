@@ -2,6 +2,11 @@
 #include "trace.h"
 #include "utils.h"
 
+#include <locale>
+#include <codecvt>
+
+static std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> g_converter;
+
 bool pal::load_library(const char_t* path, dll_t& dll)
 {
     dll = ::LoadLibraryW(path);
@@ -100,36 +105,12 @@ bool pal::get_own_executable_path(string_t& recv)
 
 std::string pal::to_stdstring(const string_t& str)
 {
-    // Calculate the size needed
-    auto length = ::WideCharToMultiByte(CP_ACP, 0, str.c_str(), -1, nullptr, 0, nullptr, nullptr);
-
-    // Allocate a string
-    auto buf = new char[length];
-    auto res = ::WideCharToMultiByte(CP_ACP, 0, str.c_str(), (int)str.length(), buf, length, nullptr, nullptr);
-    if (res == -1)
-    {
-        return std::string();
-    }
-    auto copied = std::string(buf);
-    delete[] buf;
-    return copied;
+    return g_converter.to_bytes(str);
 }
 
 pal::string_t pal::to_palstring(const std::string& str)
 {
-    // Calculate the size needed
-    auto length = ::MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, nullptr, 0);
-
-    // Allocate a string
-    auto buf = new char_t[length];
-    auto res = ::MultiByteToWideChar(CP_ACP, 0, str.c_str(), (int)str.length(), buf, length);
-    if (res == -1)
-    {
-        return string_t();
-    }
-    auto copied = string_t(buf);
-    delete[] buf;
-    return copied;
+    return g_converter.from_bytes(str);
 }
 
 bool pal::realpath(string_t& path)
@@ -166,9 +147,7 @@ std::vector<pal::string_t> pal::readdir(const string_t& path)
     auto handle = ::FindFirstFileW(search_string.c_str(), &data);
     do
     {
-        string_t filepath(path);
-        filepath.push_back(DIR_SEPARATOR);
-        filepath.append(data.cFileName);
+        string_t filepath(data.cFileName);
         files.push_back(filepath);
     } while (::FindNextFileW(handle, &data));
     ::FindClose(handle);
