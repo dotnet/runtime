@@ -2779,8 +2779,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Have to use ecx as a temp reg since this can occur after OP_SETRET */
 
 			/* 
-			 * Read from the single stepping trigger page. This will cause a
-			 * SIGSEGV when single stepping is enabled.
 			 * We do this _before_ the breakpoint, so single stepping after
 			 * a breakpoint is hit will step to the next IL offset.
 			 */
