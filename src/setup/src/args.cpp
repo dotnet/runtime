@@ -49,7 +49,8 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
         // coreconsole mode. Find the managed app in the same directory
         pal::string_t managed_app(own_dir);
         managed_app.push_back(DIR_SEPARATOR);
-        managed_app.append(change_extension(own_name, _X(".dll")));
+        managed_app.append(get_executable(own_name));
+        managed_app.append(_X(".dll"));
         args.managed_application = managed_app;
         args.app_argv = &argv[1];
         args.app_argc = argc - 1;

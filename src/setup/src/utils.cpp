@@ -16,20 +16,22 @@ void append_path(pal::string_t& path1, const pal::char_t* path2)
     }
 }
 
-pal::string_t change_extension(const pal::string_t& filename, const pal::char_t* new_extension)
+pal::string_t get_executable(const pal::string_t& filename)
 {
     pal::string_t result(filename);
 
-    auto ext_sep = result.find_last_of('.');
-    if (ext_sep != pal::string_t::npos)
+    if (ends_with(result, _X(".exe")))
     {
         // We need to strip off the old extension
-        result.erase(ext_sep);
+        result.erase(result.length() - 4);
     }
-
-    // Append the new extension
-    result.append(new_extension);
+    
     return result;
+}
+
+bool ends_with(const pal::string_t& value, const pal::string_t& suffix)
+{
+    return (0 == value.compare(value.length() - suffix.length(), suffix.length(), suffix));
 }
 
 pal::string_t get_filename(const pal::string_t& path)
