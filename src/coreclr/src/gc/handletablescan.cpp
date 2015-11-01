@@ -18,6 +18,7 @@
 
 #include "gc.h"
 
+#include "objecthandle.h"
 #include "handletablepriv.h"
 
 #ifndef FEATURE_REDHAWK
