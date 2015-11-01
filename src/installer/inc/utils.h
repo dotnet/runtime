@@ -3,7 +3,8 @@
 
 #include "pal.h"
 
-pal::string_t change_extension(const pal::string_t& filename, const pal::char_t* new_extension);
+bool ends_with(const pal::string_t& value, const pal::string_t& suffix);
+pal::string_t get_executable(const pal::string_t& filename);
 pal::string_t get_directory(const pal::string_t& path);
 pal::string_t get_filename(const pal::string_t& path);
 void append_path(pal::string_t& path1, const pal::char_t* path2);
