@@ -74,7 +74,7 @@ Object * AllocateObject(MethodTable * pMT)
             return NULL;
     }
 
-    pObject->SetMethodTable(pMT);
+    pObject->RawSetMethodTable(pMT);
 
     return pObject;
 }
