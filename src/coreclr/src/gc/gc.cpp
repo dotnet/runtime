@@ -9478,7 +9478,7 @@ HANDLE CreateLogFile(const CLRConfig::ConfigStringInfo & info, BOOL is_config)
     CLRConfig::GetConfigValue(info, &temp_logfile_name);
 
 #ifdef FEATURE_REDHAWK
-        gc_log = PalCreateFileW(
+    return PalCreateFileW(
             temp_logfile_name,
             GENERIC_WRITE,
             FILE_SHARE_READ,
@@ -9501,7 +9501,7 @@ HANDLE CreateLogFile(const CLRConfig::ConfigStringInfo & info, BOOL is_config)
     strcat_s(logfile_name, _countof(logfile_name), szPid);
     strcat_s(logfile_name, _countof(logfile_name), (is_config ? ".config.log" : ".log"));
 
-    HANDLE hFile = CreateFileA(
+    return CreateFileA(
             logfile_name,
             GENERIC_WRITE,
             FILE_SHARE_READ,
@@ -9510,7 +9510,6 @@ HANDLE CreateLogFile(const CLRConfig::ConfigStringInfo & info, BOOL is_config)
             FILE_ATTRIBUTE_NORMAL,
             NULL);
 #endif //FEATURE_REDHAWK
-    return hFile;
 }
 #endif //TRACE_GC || GC_CONFIG_DRIVEN
 
