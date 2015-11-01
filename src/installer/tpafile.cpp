@@ -222,7 +222,7 @@ void tpafile::write_native_paths(pal::string_t& output)
 
                 append_path(candidate, entry.library_name.c_str());
                 append_path(candidate, entry.library_version.c_str());
-                append_path(candidate, entry.relative_path.c_str());
+                append_path(candidate, get_directory(entry.relative_path).c_str());
 
                 if (pal::file_exists(candidate))
                 {
