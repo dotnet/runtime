@@ -21,6 +21,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-memory-model.h>
 #include "trace.h"
 
 #if defined (PLATFORM_ANDROID) || (defined (TARGET_IOS) && defined (TARGET_IOS))
@@ -50,6 +51,8 @@
 #endif
 
 static MonoTraceSpec trace_spec;
+
+static volatile gint32 output_lock = 0;
 
 gboolean
 mono_trace_eval_exception (MonoClass *klass)
@@ -413,6 +416,9 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 	if (!trace_spec.enabled)
 		return;
 
+	while (output_lock != 0 || InterlockedCompareExchange (&output_lock, 1, 0) != 0)
+		mono_thread_info_yield ();
+
 	fname = mono_method_full_name (method, TRUE);
 	indent (1);
 	printf ("ENTER: %s(", fname);
@@ -420,8 +426,8 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 
 	if (!ebp) {
 		printf (") ip: %p\n", RETURN_ADDRESS_N (1));
-		return;
-	}	
+		goto unlock;
+	}
 
 	sig = mono_method_signature (method);
 
@@ -435,7 +441,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 			if (gsctx && gsctx->is_gsharedvt) {
 				/* Needs a ctx to get precise method */
 				printf (") <gsharedvt>\n");
-				return;
+				goto unlock;
 			}
 		}
 	}
@@ -565,6 +571,9 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 
 	printf (")\n");
 	fflush (stdout);
+
+unlock:
+	mono_atomic_store_release (&output_lock, 0);
 }
 
 void
@@ -577,6 +586,9 @@ mono_trace_leave_method (MonoMethod *method, ...)
 
 	if (!trace_spec.enabled)
 		return;
+
+	while (output_lock != 0 || InterlockedCompareExchange (&output_lock, 1, 0) != 0)
+		mono_thread_info_yield ();
 
 	va_start(ap, method);
 
@@ -593,7 +605,7 @@ mono_trace_leave_method (MonoMethod *method, ...)
 			if (gsctx && gsctx->is_gsharedvt) {
 				/* Needs a ctx to get precise method */
 				printf (") <gsharedvt>\n");
-				return;
+				goto unlock;
 			}
 		}
 	}
@@ -703,6 +715,9 @@ handle_enum:
 	//printf (" ip: %p\n", RETURN_ADDRESS_N (1));
 	printf ("\n");
 	fflush (stdout);
+
+unlock:
+	mono_atomic_store_release (&output_lock, 0);
 }
 
 void
