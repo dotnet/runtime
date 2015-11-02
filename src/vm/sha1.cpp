@@ -66,14 +66,18 @@ static void SHA1_block(SHA1_CTX *ctx)
     int i;
     BOOL OK = TRUE;
 
-    for (i = 0; i != 16; i++) {   // Copy to local array, zero original
+    // OACR note:
+    // Loop conditions are using (i <= limit - increment) instead of (i < limit) to satisfy OACR. When the increment is greater
+    // than 1, OACR incorrectly thinks that the max value of 'i' is (limit - 1).
+
+    for (i = 0; i < 16; i++) {   // Copy to local array, zero original
                                   // Extend length to 80
         DWORDC datval = ctx->awaiting_data[i];
         ctx->awaiting_data[i] = 0;
         msg80[i] = datval;
     }
 
-    for (i = 16; i != 80; i += 2) {
+    for (i = 16; i <= 80 - 2; i += 2) {
         DWORDC temp1 =    msg80[i-3] ^ msg80[i-8] 
                         ^ msg80[i-14] ^ msg80[i-16];
         DWORDC temp2 =    msg80[i-2] ^ msg80[i-7] 
@@ -92,7 +96,7 @@ static void SHA1_block(SHA1_CTX *ctx)
 #define ROUND4(B, C, D) ((B ^ C ^ D) + sha1_round4)
 
 // Round 1
-    for (i = 0; i != 20; i += 5) { 
+    for (i = 0; i <= 20 - 5; i += 5) { 
         e += ROTATE32L(a, 5) + ROUND1(b, c, d) + msg80[i];
         b = ROTATE32L(b, 30);
 
@@ -114,7 +118,7 @@ static void SHA1_block(SHA1_CTX *ctx)
     } // for i
 
 // Round 2
-    for (i = 20; i != 40; i += 5) { 
+    for (i = 20; i <= 40 - 5; i += 5) { 
         e += ROTATE32L(a, 5) + ROUND2(b, c, d) + msg80[i];
         b = ROTATE32L(b, 30);
 
@@ -132,7 +136,7 @@ static void SHA1_block(SHA1_CTX *ctx)
     } // for i
 
 // Round 3
-    for (i = 40; i != 60; i += 5) { 
+    for (i = 40; i <= 60 - 5; i += 5) { 
         e += ROTATE32L(a, 5) + ROUND3(b, c, d) + msg80[i];
         b = ROTATE32L(b, 30);
 
@@ -150,7 +154,7 @@ static void SHA1_block(SHA1_CTX *ctx)
     } // for i
 
 // Round 4
-    for (i = 60; i != 80; i += 5) { 
+    for (i = 60; i <= 80 - 5; i += 5) { 
         e += ROTATE32L(a, 5) + ROUND4(b, c, d) + msg80[i];
         b = ROTATE32L(b, 30);
 
@@ -178,7 +182,7 @@ static void SHA1_block(SHA1_CTX *ctx)
     ctx->partial_hash[3] += d;
     ctx->partial_hash[4] += e;
 #if 0
-    for (i = 0; i != 16; i++) {
+    for (i = 0; i < 16; i++) {
         printf("%8lx ", msg16[i]);
         if ((i & 7) == 7) printf("\n");
     }
