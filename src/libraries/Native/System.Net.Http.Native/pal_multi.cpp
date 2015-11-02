@@ -3,6 +3,8 @@
 
 #include "pal_multi.h"
 
+#include <assert.h>
+
 static_assert(PAL_CURLM_OK == CURLM_OK, "");
 static_assert(PAL_CURLM_BAD_HANDLE == CURLM_BAD_HANDLE, "");
 static_assert(PAL_CURLM_BAD_EASY_HANDLE == CURLM_BAD_EASY_HANDLE, "");
@@ -19,32 +21,25 @@ extern "C" CURLM* MultiCreate()
     return curl_multi_init();
 }
 
-extern "C" int32_t MultiDestroy(CURLM* multi_handle)
+extern "C" int32_t MultiDestroy(CURLM* multiHandle)
 {
-    return curl_multi_cleanup(multi_handle);
+    return curl_multi_cleanup(multiHandle);
 }
 
-extern "C" int32_t MultiAddHandle(CURLM* multi_handle, CURL* easy_handle)
+extern "C" int32_t MultiAddHandle(CURLM* multiHandle, CURL* easyHandle)
 {
-    return curl_multi_add_handle(multi_handle, easy_handle);
+    return curl_multi_add_handle(multiHandle, easyHandle);
 }
 
-extern "C" int32_t MultiRemoveHandle(CURLM* multi_handle, CURL* easy_handle)
+extern "C" int32_t MultiRemoveHandle(CURLM* multiHandle, CURL* easyHandle)
 {
-    return curl_multi_remove_handle(multi_handle, easy_handle);
+    return curl_multi_remove_handle(multiHandle, easyHandle);
 }
 
-extern "C" int32_t MultiWait(CURLM* multi_handle, int32_t extraFileDescriptor, int32_t* isExtraFileDescriptorActive, int32_t* isTimeout)
+extern "C" int32_t MultiWait(CURLM* multiHandle, int32_t extraFileDescriptor, int32_t* isExtraFileDescriptorActive, int32_t* isTimeout)
 {
-    if (!isExtraFileDescriptorActive || !isTimeout)
-    {
-        if (isExtraFileDescriptorActive)
-            *isExtraFileDescriptorActive = 0;
-        if (isTimeout)
-            *isTimeout = 0;
-
-        return CURLM_INTERNAL_ERROR;
-    }
+    assert(isExtraFileDescriptorActive != nullptr);
+    assert(isTimeout != nullptr);
 
     curl_waitfd extraFds =
     {
@@ -61,7 +56,7 @@ extern "C" int32_t MultiWait(CURLM* multi_handle, int32_t extraFileDescriptor, i
     const int FailsafeTimeoutMilliseconds = 1000;
 
     int numFds;
-    CURLMcode result = curl_multi_wait(multi_handle, &extraFds, 1, FailsafeTimeoutMilliseconds, &numFds);
+    CURLMcode result = curl_multi_wait(multiHandle, &extraFds, 1, FailsafeTimeoutMilliseconds, &numFds);
 
     *isExtraFileDescriptorActive = (extraFds.revents & CURL_WAIT_POLLIN) != 0;
     *isTimeout = numFds == 0;
@@ -69,40 +64,31 @@ extern "C" int32_t MultiWait(CURLM* multi_handle, int32_t extraFileDescriptor, i
     return result;
 }
 
-extern "C" int32_t MultiPerform(CURLM* multi_handle)
+extern "C" int32_t MultiPerform(CURLM* multiHandle)
 {
     int running_handles;
-    return curl_multi_perform(multi_handle, &running_handles);
+    return curl_multi_perform(multiHandle, &running_handles);
 }
 
-static int32_t DefaultMessageInfo(int32_t* message, CURL** easy_handle, int32_t* result)
+extern "C" int32_t MultiInfoRead(CURLM* multiHandle, int32_t* message, CURL** easyHandle, int32_t* result)
 {
-    if (message)
-        *message = 0;
-    if (easy_handle)
-        *easy_handle = nullptr;
-    if (result)
-        *result = 0;
-
-    return 0;
-}
-
-extern "C" int32_t MultiInfoRead(CURLM* multi_handle, int32_t* message, CURL** easy_handle, int32_t* result)
-{
-    if (!message || !easy_handle || !result)
-    {
-        return DefaultMessageInfo(message, easy_handle, result);
-    }
+    assert(message != nullptr);
+    assert(easyHandle != nullptr);
+    assert(result != nullptr);
 
     int msgs_in_queue;
-    CURLMsg* curlMessage = curl_multi_info_read(multi_handle, &msgs_in_queue);
-    if (!curlMessage)
+    CURLMsg* curlMessage = curl_multi_info_read(multiHandle, &msgs_in_queue);
+    if (curlMessage == nullptr)
     {
-        return DefaultMessageInfo(message, easy_handle, result);
+        *message = 0;
+        *easyHandle = nullptr;
+        *result = 0;
+
+        return 0;
     }
- 
+
     *message = curlMessage->msg;
-    *easy_handle = curlMessage->easy_handle;
+    *easyHandle = curlMessage->easy_handle;
     *result = curlMessage->data.result;
 
     return 1;

@@ -15,29 +15,32 @@ internal static partial class Interop
         private static extern CURLMcode MultiDestroy(IntPtr handle);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern CURLMcode MultiAddHandle(SafeCurlMultiHandle multi_handle, SafeCurlHandle easy_handle);
+        public static extern CURLMcode MultiAddHandle(SafeCurlMultiHandle multiHandle, SafeCurlHandle easyHandle);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern CURLMcode MultiRemoveHandle(SafeCurlMultiHandle multi_handle, SafeCurlHandle easy_handle);
+        public static extern CURLMcode MultiRemoveHandle(SafeCurlMultiHandle multiHandle, SafeCurlHandle easyHandle);
 
         [DllImport(Libraries.HttpNative)]
         public static extern CURLMcode MultiWait(
-            SafeCurlMultiHandle multi_handle,
+            SafeCurlMultiHandle multiHandle,
             int extraFileDescriptor,
-            [MarshalAs(UnmanagedType.Bool)] out bool isExtraFileDescriptorActive,
-            [MarshalAs(UnmanagedType.Bool)] out bool isTimeout);
+            out bool isExtraFileDescriptorActive,
+            out bool isTimeout);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern CURLMcode MultiPerform(SafeCurlMultiHandle multi_handle);
+        public static extern CURLMcode MultiPerform(SafeCurlMultiHandle multiHandle);
 
         [DllImport(Libraries.HttpNative)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool MultiInfoRead(SafeCurlMultiHandle multi_handle, out CURLMSG message, out IntPtr easy_handle, out CURLcode result);
+        public static extern bool MultiInfoRead(
+            SafeCurlMultiHandle multiHandle,
+            out CURLMSG message,
+            out IntPtr easyHandle,
+            out CURLcode result);
 
         [DllImport(Libraries.HttpNative)]
         public static extern IntPtr MultiGetErrorString(int code);
 
-        // Class for constants defined for the enum CURLMcode in multi.h
+        // Enum for constants defined for the enum CURLMcode in multi.h
         internal enum CURLMcode : int
         {
             CURLM_OK = 0,
@@ -50,7 +53,7 @@ internal static partial class Interop
             CURLM_ADDED_ALREADY = 7,
         }
 
-        // Class for constants defined for the enum CURLMSG in multi.h
+        // Enum for constants defined for the enum CURLMSG in multi.h
         internal enum CURLMSG : int
         {
             CURLMSG_DONE = 1,

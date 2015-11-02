@@ -111,7 +111,7 @@ internal static partial class Interop
             Negotiate = 1 << 2,
         }
 
-        // Class for constants defined for the enum curl_proxytype in curl.h
+        // Enum for constants defined for the enum curl_proxytype in curl.h
         internal enum curl_proxytype
         {
             CURLPROXY_HTTP = 0,

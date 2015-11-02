@@ -246,16 +246,16 @@ namespace System.Net.Http
 
                         // Complete and remove any requests that have finished being processed.
                         CURLMSG message;
-                        IntPtr easy_handle;
+                        IntPtr easyHandle;
                         CURLcode result;
-                        while (Interop.Http.MultiInfoRead(multiHandle, out message, out easy_handle, out result))
+                        while (Interop.Http.MultiInfoRead(multiHandle, out message, out easyHandle, out result))
                         {
                             Debug.Assert(message == CURLMSG.CURLMSG_DONE, "CURLMSG_DONE is supposed to be the only message type");
 
                             if (message == CURLMSG.CURLMSG_DONE)
                             {
                                 IntPtr gcHandlePtr;
-                                CURLcode getInfoResult = Interop.Http.EasyGetInfoPointer(easy_handle, CURLINFO.CURLINFO_PRIVATE, out gcHandlePtr);
+                                CURLcode getInfoResult = Interop.Http.EasyGetInfoPointer(easyHandle, CURLINFO.CURLINFO_PRIVATE, out gcHandlePtr);
                                 Debug.Assert(getInfoResult == CURLcode.CURLE_OK, "Failed to get info on a completing easy handle");
                                 if (getInfoResult == CURLcode.CURLE_OK)
                                 {
