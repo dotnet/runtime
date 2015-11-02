@@ -378,7 +378,7 @@ namespace System.Xml.Serialization
             // (ie. XmlNodeType.Whitespace), deemed as insignificant for the XML infoset, is not 
             // reported by the reader. This mode corresponds to XmlReaderSettings.IgnoreWhitespace = true. 
             settings.IgnoreWhitespace = true;
-            settings.DtdProcessing = (DtdProcessing) 2; /* DtdProcessing.Parse */
+            settings.DtdProcessing = (DtdProcessing)2; /* DtdProcessing.Parse */
             // Normalization = true, that's the default for the readers created with XmlReader.Create(). 
             // The XmlTextReader has as default a non-conformant mode according to the XML spec 
             // which skips some of the required processing for new lines, hence the need for the explicit 
@@ -399,7 +399,7 @@ namespace System.Xml.Serialization
             // (ie. XmlNodeType.Whitespace), deemed as insignificant for the XML infoset, is not 
             // reported by the reader. This mode corresponds to XmlReaderSettings.IgnoreWhitespace = true. 
             settings.IgnoreWhitespace = true;
-            settings.DtdProcessing = (DtdProcessing) 2; /* DtdProcessing.Parse */
+            settings.DtdProcessing = (DtdProcessing)2; /* DtdProcessing.Parse */
             // Normalization = true, that's the default for the readers created with XmlReader.Create(). 
             // The XmlTextReader has as default a non-conformant mode according to the XML spec 
             // which skips some of the required processing for new lines, hence the need for the explicit 
