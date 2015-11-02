@@ -41,7 +41,9 @@
     <Compile Include="AddressParsingTests.cs" />
     <Compile Include="DnsParsingTests.cs" />
     <Compile Include="FileUtil.cs" />
-    <Compile Include="IPInterfacePropertiesTest.cs" />
+    <Compile Include="IPInterfacePropertiesTest_Linux.cs" />
+    <Compile Include="IPInterfacePropertiesTest_OSX.cs" />
+    <Compile Include="IPInterfacePropertiesTest_Windows.cs" />
     <Compile Include="MiscParsingTests.cs" />
     <Compile Include="NetworkChangeTest.cs" />
     <Compile Include="NetworkInterfaceBasicTest.cs" />

@@ -43,5 +43,7 @@ namespace System.Net.NetworkInformation
 
         public override IPAddress IPv4Mask { get { return _netMask; } }
 
+        public override int PrefixLength { get { throw new PlatformNotSupportedException(); } }
+
     }
 }

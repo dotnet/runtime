@@ -423,23 +423,23 @@ namespace System.Net.NetworkInformation
 
                         return new IPInterfaceStatisticsTable()
                         {
-                            BytesReceived = uint.Parse(pieces[1]),
-                            PacketsReceived = uint.Parse(pieces[2]),
-                            ErrorsReceived = uint.Parse(pieces[3]),
-                            IncomingPacketsDropped = uint.Parse(pieces[4]),
-                            FifoBufferErrorsReceived = uint.Parse(pieces[5]),
-                            PacketFramingErrorsReceived = uint.Parse(pieces[6]),
-                            CompressedPacketsReceived = uint.Parse(pieces[7]),
-                            MulticastFramesReceived = uint.Parse(pieces[8]),
+                            BytesReceived = ParseUInt64AndClampToUInt32(pieces[1]),
+                            PacketsReceived = ParseUInt64AndClampToUInt32(pieces[2]),
+                            ErrorsReceived = ParseUInt64AndClampToUInt32(pieces[3]),
+                            IncomingPacketsDropped = ParseUInt64AndClampToUInt32(pieces[4]),
+                            FifoBufferErrorsReceived = ParseUInt64AndClampToUInt32(pieces[5]),
+                            PacketFramingErrorsReceived = ParseUInt64AndClampToUInt32(pieces[6]),
+                            CompressedPacketsReceived = ParseUInt64AndClampToUInt32(pieces[7]),
+                            MulticastFramesReceived = ParseUInt64AndClampToUInt32(pieces[8]),
 
-                            BytesTransmitted = uint.Parse(pieces[9]),
-                            PacketsTransmitted = uint.Parse(pieces[10]),
-                            ErrorsTransmitted = uint.Parse(pieces[11]),
-                            OutgoingPacketsDropped = uint.Parse(pieces[12]),
-                            FifoBufferErrorsTransmitted = uint.Parse(pieces[13]),
-                            CollisionsDetected = uint.Parse(pieces[14]),
-                            CarrierLosses = uint.Parse(pieces[15]),
-                            CompressedPacketsTransmitted = uint.Parse(pieces[16])
+                            BytesTransmitted = ParseUInt64AndClampToUInt32(pieces[9]),
+                            PacketsTransmitted = ParseUInt64AndClampToUInt32(pieces[10]),
+                            ErrorsTransmitted = ParseUInt64AndClampToUInt32(pieces[11]),
+                            OutgoingPacketsDropped = ParseUInt64AndClampToUInt32(pieces[12]),
+                            FifoBufferErrorsTransmitted = ParseUInt64AndClampToUInt32(pieces[13]),
+                            CollisionsDetected = ParseUInt64AndClampToUInt32(pieces[14]),
+                            CarrierLosses = ParseUInt64AndClampToUInt32(pieces[15]),
+                            CompressedPacketsTransmitted = ParseUInt64AndClampToUInt32(pieces[16]),
                         };
                     }
                     index += 1;
@@ -447,6 +447,11 @@ namespace System.Net.NetworkInformation
 
                 throw new NetworkInformationException();
             }
+        }
+
+        private static uint ParseUInt64AndClampToUInt32(string value)
+        {
+            return (uint)Math.Min(uint.MaxValue, ulong.Parse(value));
         }
     }
 }
