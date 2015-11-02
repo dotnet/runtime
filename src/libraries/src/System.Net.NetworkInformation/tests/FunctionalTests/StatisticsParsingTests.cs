@@ -213,7 +213,7 @@ namespace System.Net.NetworkInformation.Tests
             FileUtil.NormalizeLineEndings("dev", "dev_normalized1");
             IPInterfaceStatisticsTable table = StringParsingHelpers.ParseInterfaceStatisticsTableFromFile("dev_normalized1", "lo");
 
-            Assert.Equal(30008u, table.BytesReceived);
+            Assert.Equal(uint.MaxValue, table.BytesReceived);
             Assert.Equal(302u, table.PacketsReceived);
             Assert.Equal(0u, table.ErrorsReceived);
             Assert.Equal(0u, table.IncomingPacketsDropped);
