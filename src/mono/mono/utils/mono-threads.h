@@ -390,7 +390,7 @@ void
 mono_thread_info_suspend_unlock (void);
 
 void
-mono_thread_info_abort_socket_syscall_for_close (MonoThreadInfo *info);
+mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid);
 
 void
 mono_thread_info_set_is_async_context (gboolean async_context);

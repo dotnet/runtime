@@ -1042,16 +1042,16 @@ mono_thread_info_suspend_unlock (void)
  * facility.
  */
 void
-mono_thread_info_abort_socket_syscall_for_close (MonoThreadInfo *info)
+mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid)
 {
 	MonoThreadHazardPointers *hp;
+	MonoThreadInfo *info;
 
-	g_assert (info);
-
-	if (info == mono_thread_info_current () || !mono_threads_core_needs_abort_syscall ())
+	if (tid == mono_native_thread_id_get () || !mono_threads_core_needs_abort_syscall ())
 		return;
 
 	hp = mono_hazard_pointer_get ();
+	info = mono_thread_info_lookup (tid);
 	if (!info)
 		return;
 

@@ -99,7 +99,7 @@
 static void
 abort_syscall (gpointer data)
 {
-	mono_thread_info_abort_socket_syscall_for_close ((MonoThreadInfo*) data);
+	mono_thread_info_abort_socket_syscall_for_close ((MonoNativeThreadId) (gsize) data);
 }
 
 static gint32
@@ -746,7 +746,7 @@ ves_icall_System_Net_Sockets_Socket_Accept_internal (SOCKET sock, gint32 *error,
 
 	*error = 0;
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted) {
 		*error = WSAEINTR;
 		return NULL;
@@ -1197,7 +1197,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 	start = time (NULL);
 
 	do {
-		mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+		mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 		if (interrupted) {
 			g_free (pfds);
 			*error = WSAEINTR;
@@ -1272,7 +1272,7 @@ ves_icall_System_Net_Sockets_Socket_Connect_internal (SOCKET sock, MonoObject *s
 
 	LOGDEBUG (g_message("%s: connecting to %s port %d", __func__, inet_ntoa(((struct sockaddr_in *)sa)->sin_addr), ntohs (((struct sockaddr_in *)sa)->sin_port)));
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted) {
 		*error = WSAEINTR;
 		return;
@@ -1362,7 +1362,7 @@ ves_icall_System_Net_Sockets_Socket_Disconnect_internal (SOCKET sock, MonoBoolea
 			_wapi_transmitfile = NULL;
 	}
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted) {
 		*error = WSAEINTR;
 		return;
@@ -1412,7 +1412,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_internal (SOCKET sock, MonoArray *bu
 		return (0);
 	}
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted)
 		return 0;
 
@@ -1464,7 +1464,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_array_internal (SOCKET sock, MonoArr
 		return(0);
 	}
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted) {
 		*error = WSAEINTR;
 		return 0;
@@ -1521,7 +1521,7 @@ ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (SOCKET sock, MonoArray
 		return (0);
 	}
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted) {
 		g_free(sa);
 		*error = WSAEINTR;
@@ -1589,7 +1589,7 @@ ves_icall_System_Net_Sockets_Socket_Send_internal (SOCKET sock, MonoArray *buffe
 		return (0);
 	}
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted) {
 		*error = WSAEINTR;
 		return 0;
@@ -1635,7 +1635,7 @@ ves_icall_System_Net_Sockets_Socket_Send_array_internal(SOCKET sock, MonoArray *
 		return(0);
 	}
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted) {
 		*error = WSAEINTR;
 		return 0;
@@ -1697,7 +1697,7 @@ ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArray *buff
 		return (0);
 	}
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted) {
 		g_free (sa);
 		*error = WSAEINTR;
@@ -1786,7 +1786,7 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32
 	timeout = (timeout >= 0) ? (timeout / 1000) : -1;
 	start = time (NULL);
 	do {
-		mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+		mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 		if (interrupted) {
 			g_free (pfds);
 			*error = WSAEINTR;
@@ -2365,7 +2365,7 @@ ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock, gint32 how, g
 
 	*error = 0;
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted) {
 		*error = WSAEINTR;
 		return;
@@ -2692,7 +2692,7 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (SOCKET sock, MonoString *
 		buffers.TailLength = mono_array_length (post_buffer);
 	}
 
-	mono_thread_info_install_interrupt (abort_syscall, mono_thread_info_current (), &interrupted);
+	mono_thread_info_install_interrupt (abort_syscall, (gpointer) (gsize) mono_native_thread_id_get (), &interrupted);
 	if (interrupted) {
 		CloseHandle (file);
 		SetLastError (WSAEINTR);
@@ -2748,15 +2748,11 @@ void
 icall_cancel_blocking_socket_operation (MonoThread *thread)
 {
 	MonoInternalThread *internal;
-	MonoThreadInfo *info;
 
 	internal = thread->internal_thread;
 	g_assert (internal);
 
-	info = mono_thread_info_lookup (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid));
-	g_assert (info);
-
-	mono_thread_info_abort_socket_syscall_for_close (info);
+	mono_thread_info_abort_socket_syscall_for_close (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid));
 }
 
 #endif /* #ifndef DISABLE_SOCKETS */
