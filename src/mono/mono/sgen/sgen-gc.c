@@ -1411,9 +1411,9 @@ job_scan_los_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJob 
 }
 
 static void
-init_gray_queue (void)
+init_gray_queue (gboolean use_workers)
 {
-	if (sgen_collection_is_concurrent ())
+	if (use_workers)
 		sgen_workers_init_distribute_gray_queue ();
 	sgen_gray_object_queue_init (&gray_queue, NULL);
 }
@@ -1522,7 +1522,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	sgen_memgov_minor_collection_start ();
 
-	init_gray_queue ();
+	init_gray_queue (FALSE);
 
 	gc_stats.minor_gc_count ++;
 
@@ -1686,7 +1686,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 		sgen_nursery_alloc_prepare_for_major ();
 	}
 
-	init_gray_queue ();
+	init_gray_queue (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT);
 
 	TV_GETTIME (atv);
 
@@ -1920,12 +1920,6 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 		object_ops = &major_collector.major_ops_serial;
 	}
 
-	/*
-	 * The workers have stopped so we need to finish gray queue
-	 * work that might result from finalization in the main GC
-	 * thread.  Redirection must therefore be turned off.
-	 */
-	sgen_gray_object_queue_disable_alloc_prepare (&gray_queue);
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
 	/* all the objects in the heap */
