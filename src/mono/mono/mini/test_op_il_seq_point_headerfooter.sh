@@ -1,7 +1,8 @@
 #!/bin/sh
 
-TOTAL=$(grep -c "<test-case" TestResults_op_il_seq_point.xml)
-FAILURES=$(grep -c "<failure>" TestResults_op_il_seq_point.xml)
+TESTRESULT_FILE=TestResult-op_il_seq_point.xml
+TOTAL=$(grep -c "<test-case" $TESTRESULT_FILE)
+FAILURES=$(grep -c "<failure>" $TESTRESULT_FILE)
 if [ "$FAILURES" -eq "0" ]
 then
 	PASS="True"
@@ -15,26 +16,26 @@ MYFQDN=$(hostname -f)
 MYDATE=$(date +%F)
 MYTIME=$(date +%T)
 
-echo "            </results>" >> TestResults_op_il_seq_point.xml
-echo "          </test-suite>" >> TestResults_op_il_seq_point.xml
-echo "        </results>" >> TestResults_op_il_seq_point.xml
-echo "      </test-suite>" >> TestResults_op_il_seq_point.xml
-echo "    </results>" >> TestResults_op_il_seq_point.xml
-echo "  </test-suite>" >> TestResults_op_il_seq_point.xml
-echo "</test-results>" >> TestResults_op_il_seq_point.xml
+echo "            </results>" >> $TESTRESULT_FILE
+echo "          </test-suite>" >> $TESTRESULT_FILE
+echo "        </results>" >> $TESTRESULT_FILE
+echo "      </test-suite>" >> $TESTRESULT_FILE
+echo "    </results>" >> $TESTRESULT_FILE
+echo "  </test-suite>" >> $TESTRESULT_FILE
+echo "</test-results>" >> $TESTRESULT_FILE
 
-echo "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?>" > TestResults_op_il_seq_point.xml.header
-echo "<!--This file represents the results of running a test suite-->" >> TestResults_op_il_seq_point.xml.header
-echo "<test-results name=\"regression-tests.dummy\" total=\"${TOTAL}\" failures=\"${FAILURES}\" not-run=\"0\" date=\"${MYDATE}\" time=\"${MYTIME}\">" >> TestResults_op_il_seq_point.xml.header
-echo "  <environment nunit-version=\"2.4.8.0\" clr-version=\"4.0.30319.17020\" os-version=\"Unix ${MYUNAME}\" platform=\"Unix\" cwd=\"${PWD}\" machine-name=\"${MYHOSTNAME}\" user=\"${USER}\" user-domain=\"${MYFQDN}\" />" >> TestResults_op_il_seq_point.xml.header
-echo "  <culture-info current-culture=\"${MYLOCALE}\" current-uiculture=\"${MYLOCALE}\" />" >> TestResults_op_il_seq_point.xml.header
-echo "  <test-suite name=\"op_il_seq_point-tests.dummy\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" >> TestResults_op_il_seq_point.xml.header
-echo "    <results>" >> TestResults_op_il_seq_point.xml.header
-echo "      <test-suite name=\"MonoTests\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" >> TestResults_op_il_seq_point.xml.header
-echo "        <results>" >> TestResults_op_il_seq_point.xml.header
-echo "          <test-suite name=\"op_il_seq_point\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" >> TestResults_op_il_seq_point.xml.header
-echo "            <results>" >> TestResults_op_il_seq_point.xml.header
+echo "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?>" > $TESTRESULT_FILE.header
+echo "<!--This file represents the results of running a test suite-->" >> $TESTRESULT_FILE.header
+echo "<test-results name=\"regression-tests.dummy\" total=\"${TOTAL}\" failures=\"${FAILURES}\" not-run=\"0\" date=\"${MYDATE}\" time=\"${MYTIME}\">" >> $TESTRESULT_FILE.header
+echo "  <environment nunit-version=\"2.4.8.0\" clr-version=\"4.0.30319.17020\" os-version=\"Unix ${MYUNAME}\" platform=\"Unix\" cwd=\"${PWD}\" machine-name=\"${MYHOSTNAME}\" user=\"${USER}\" user-domain=\"${MYFQDN}\" />" >> $TESTRESULT_FILE.header
+echo "  <culture-info current-culture=\"${MYLOCALE}\" current-uiculture=\"${MYLOCALE}\" />" >> $TESTRESULT_FILE.header
+echo "  <test-suite name=\"op_il_seq_point-tests.dummy\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" >> $TESTRESULT_FILE.header
+echo "    <results>" >> $TESTRESULT_FILE.header
+echo "      <test-suite name=\"MonoTests\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" >> $TESTRESULT_FILE.header
+echo "        <results>" >> $TESTRESULT_FILE.header
+echo "          <test-suite name=\"op_il_seq_point\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" >> $TESTRESULT_FILE.header
+echo "            <results>" >> $TESTRESULT_FILE.header
 
-cat TestResults_op_il_seq_point.xml.header TestResults_op_il_seq_point.xml > TestResults_op_il_seq_point.xml.new
-mv TestResults_op_il_seq_point.xml.new TestResults_op_il_seq_point.xml
-rm -f TestResults_op_il_seq_point.xml.header
+cat $TESTRESULT_FILE.header $TESTRESULT_FILE > $TESTRESULT_FILE.new
+mv $TESTRESULT_FILE.new $TESTRESULT_FILE
+rm -f $TESTRESULT_FILE.header

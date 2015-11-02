@@ -180,7 +180,7 @@ sub emit_nunit_report
 	} else {
 		$successbool = "True";
 	}
-	open (my $nunitxml, '>', 'TestResults_profiler.xml') or die "Could not write to 'TestResults_profiler.xml' $!";
+	open (my $nunitxml, '>', 'TestResult-profiler.xml') or die "Could not write to 'TestResult-profiler.xml' $!";
 	print $nunitxml "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?>\n";
 	print $nunitxml "<!--This file represents the results of running a test suite-->\n";
 	print $nunitxml "<test-results name=\"profiler-tests.dummy\" total=\"$total\" failures=\"$failed\" not-run=\"0\" date=\"" . strftime ("%F", localtime) . "\" time=\"" . strftime ("%T", localtime) . "\">\n";

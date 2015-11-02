@@ -35,7 +35,7 @@ foreach $line (<STDIN>) {
         } else {
             $successbool = "True";
         }
-        open (my $nunitxml, '>', 'TestResults_regression.xml') or die "Could not write to 'TestResults_regression.xml' $!";
+        open (my $nunitxml, '>', 'TestResult-regression.xml') or die "Could not write to 'TestResult-regression.xml' $!";
         print $nunitxml "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?>\n";
         print $nunitxml "<!--This file represents the results of running a test suite-->\n";
         print $nunitxml "<test-results name=\"regression-tests.dummy\" total=\"$total\" failures=\"$failed\" not-run=\"0\" date=\"" . strftime ("%F", localtime) . "\" time=\"" . strftime ("%T", localtime) . "\">\n";

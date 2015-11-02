@@ -312,7 +312,7 @@ public class TestRunner
 		XmlWriterSettings xmlWriterSettings = new XmlWriterSettings ();
 		xmlWriterSettings.NewLineOnAttributes = true;
 		xmlWriterSettings.Indent = true;
-		using (XmlWriter writer = XmlWriter.Create (String.Format ("TestResults_{0}.xml", testsuiteName), xmlWriterSettings)) {
+		using (XmlWriter writer = XmlWriter.Create (String.Format ("TestResult-{0}.xml", testsuiteName), xmlWriterSettings)) {
 			// <?xml version="1.0" encoding="utf-8" standalone="no"?>
 			writer.WriteStartDocument ();
 			// <!--This file represents the results of running a test suite-->

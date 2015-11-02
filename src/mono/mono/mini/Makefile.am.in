@@ -670,7 +670,7 @@ rcheck2: mono $(regtests)
 	$(MINI_RUNTIME) --regression $(regtests)
 
 check-seq-points: mono $(regtests)
-	rm -f TestResults_op_il_seq_point.xml
+	rm -f TestResult-op_il_seq_point.xml
 	for i in $(regtests); do $(srcdir)/test_op_il_seq_point.sh $$i || ($(srcdir)/test_op_il_seq_point_headerfooter.sh; exit 1) || exit 1; done
 	for i in $(regtests); do $(srcdir)/test_op_il_seq_point.sh $$i --aot || ($(srcdir)/test_op_il_seq_point_headerfooter.sh; exit 1) || exit 1; done
 	$(srcdir)/test_op_il_seq_point_headerfooter.sh
@@ -773,7 +773,7 @@ docu: mini.sgm
 check-local: rcheck check-seq-points
 
 clean-local:
-	rm -f mono a.out gmon.out *.o buildver-boehm.h buildver-sgen.h test.exe regressionexitcode.out TestResults_op_il_seq_point.xml*
+	rm -f mono a.out gmon.out *.o buildver-boehm.h buildver-sgen.h test.exe regressionexitcode.out TestResult-op_il_seq_point.xml*
 
 pkgconfigdir = $(libdir)/pkgconfig
 
