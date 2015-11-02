@@ -463,7 +463,7 @@ VOID InternalDeleteCriticalSection(
 
 #endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
 
-        InternalDelete(pThread, pPalCriticalSection->DebugInfo);
+        InternalDelete(pPalCriticalSection->DebugInfo);
         pPalCriticalSection->DebugInfo = NULL;
     }
 #endif // _DEBUG
@@ -636,7 +636,7 @@ namespace CorUnix
         CPalThread * pThread = 
             (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
 
-        pPalCriticalSection->DebugInfo = InternalNew<CRITICAL_SECTION_DEBUG_INFO>(pThread);
+        pPalCriticalSection->DebugInfo = InternalNew<CRITICAL_SECTION_DEBUG_INFO>();
         _ASSERT_MSG(NULL != pPalCriticalSection->DebugInfo, 
                     "Failed to allocate debug info for new CS\n");
 
