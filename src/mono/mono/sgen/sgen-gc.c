@@ -1788,6 +1788,11 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 		SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
 		sgen_workers_start_all_workers (object_ops);
 		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	} else if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
+		if (sgen_workers_have_idle_work ()) {
+			sgen_workers_start_all_workers (object_ops);
+			sgen_workers_join ();
+		}
 	}
 
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
@@ -2130,12 +2135,11 @@ major_finish_concurrent_collection (gboolean forced)
 	binary_protocol_concurrent_finish ();
 
 	/*
-	 * The major collector can add global remsets which are processed in the finishing
-	 * nursery collection, below.  That implies that the workers must have finished
-	 * marking before the nursery collection is allowed to run, otherwise we might miss
-	 * some remsets.
+	 * We need to stop all workers since we're updating the cardtable below.
+	 * The workers will be resumed with a finishing pause context to avoid
+	 * additional cardtable and object scanning.
 	 */
-	sgen_workers_wait ();
+	sgen_workers_stop_all_workers ();
 
 	SGEN_TV_GETTIME (time_major_conc_collection_end);
 	gc_stats.major_gc_time_concurrent += SGEN_TV_ELAPSED (time_major_conc_collection_start, time_major_conc_collection_end);
