@@ -232,25 +232,7 @@ CPalThread* AllocTHREAD(CPalThread *pthr)
 
     if (pThread == NULL)
     {
-        if(pthr != NULL)
-        {
-            pThread = InternalNew<CPalThread>(pthr);
-        }
-        else
-        {
-#ifdef FEATURE_PAL_SXS
-            // When we reach this point, this thread has presumably wandered in
-            // and is creating a CPalThread instance for itself.  In other words,
-            // the current thread is not registered in the PAL thread list, and
-            // therefore, we will not try to suspend it.  This in turn means
-            // that it's okay to use the system's "new", as opposed to our "new",
-            // whose purpose is to disallow thread suspension while in malloc.
-#else // FEATURE_PAL_SXS
-            // do not use the overloaded new in malloc.cpp since thread data isn't initialized.
-            _ASSERT_MSG(!PALIsThreadDataInitialized(), "Thread data was initialized but NULL was passed in as a reference to the current thread.\n");
-#endif // FEATURE_PAL_SXS
-            pThread = InternalNew<CPalThread>(NULL);
-        }
+        pThread = InternalNew<CPalThread>();
     }
     else
     {

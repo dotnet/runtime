@@ -151,7 +151,7 @@ FindFirstFileA(
         goto done;
     }
 
-    find_data = (find_obj *)InternalMalloc(pthrCurrent, sizeof(find_obj));
+    find_data = (find_obj *)InternalMalloc(sizeof(find_obj));
     if ( find_data == NULL )
     {
         ERROR("Unable to allocate memory for find_data\n");
@@ -183,7 +183,7 @@ FindFirstFileA(
              *      c:\temp\foo.txt\bar  - ERROR_DIRECTORY
              *
              */
-            LPSTR lpTemp = InternalStrdup(pthrCurrent, (LPSTR)lpFileName);
+            LPSTR lpTemp = InternalStrdup((LPSTR)lpFileName);
             if ( !lpTemp )
             {
                 ERROR( "strdup failed!\n" );
@@ -213,7 +213,7 @@ FindFirstFileA(
                     }
                 }
             }
-            InternalFree(pthrCurrent, lpTemp);
+            InternalFree(lpTemp);
             lpTemp = NULL;
             goto done;
         }
@@ -238,7 +238,7 @@ done:
             {
                 globfree( &(find_data->gGlob) );
             }
-            InternalFree(pthrCurrent, find_data);
+            InternalFree(find_data);
         }
         if (dwLastError)
         {
@@ -559,7 +559,6 @@ FindClose(
     find_obj *find_data;
     BOOL  hRet = TRUE;
     DWORD dwLastError = 0;
-    CPalThread *pthrCurrent = InternalGetCurrentThread();
 
     PERF_ENTRY(FindClose);
     ENTRY("FindClose(hFindFile=%p)\n", hFindFile);
@@ -584,7 +583,7 @@ FindClose(
     {
         globfree( &(find_data->gGlob) );
     }
-    InternalFree(pthrCurrent, find_data);
+    InternalFree(find_data);
 
 done:
     if (dwLastError)

@@ -39,12 +39,11 @@ PAL_realloc(
     size_t szSize
     )
 {
-    return InternalRealloc(InternalGetCurrentThread(), pvMemblock, szSize);
+    return InternalRealloc(pvMemblock, szSize);
 }
 
 void *
 CorUnix::InternalRealloc(
-    CPalThread *pthrCurrent,
     void* pvMemblock,
     size_t szSize
     )
@@ -59,7 +58,7 @@ CorUnix::InternalRealloc(
         // If pvMemblock is NULL, there's no reason to call free.
         if (pvMemblock != NULL)
         {
-            InternalFree(pthrCurrent, pvMemblock);
+            InternalFree(pvMemblock);
         }
         pvMem = NULL;
     }
@@ -79,12 +78,11 @@ PAL_free(
     void *pvMem
     )
 {
-    InternalFree(InternalGetCurrentThread(), pvMem);
+    InternalFree(pvMem);
 }
 
 void
 CorUnix::InternalFree(
-    CPalThread *pthrCurrent,
     void *pvMem
     )
 {
@@ -97,12 +95,11 @@ PAL_malloc(
     size_t szSize
     )
 {
-    return InternalMalloc(InternalGetCurrentThread(), szSize);
+    return InternalMalloc(szSize);
 }
 
 void *
 CorUnix::InternalMalloc(
-    CPalThread *pthrCurrent,
     size_t szSize
     )
 {
@@ -124,12 +121,11 @@ PAL__strdup(
     const char *c_szStr
     )
 {
-    return InternalStrdup(InternalGetCurrentThread(), c_szStr);
+    return InternalStrdup(c_szStr);
 }
 
 char *
 CorUnix::InternalStrdup(
-    CPalThread *pthrCurrent,
     const char *c_szStr
     )
 {

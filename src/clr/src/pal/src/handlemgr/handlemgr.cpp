@@ -53,7 +53,7 @@ CSimpleHandleManager::Initialize(
        field, with the head in the global 'm_hiFreeListStart'. */
     m_dwTableSize = m_dwTableGrowthRate;
     
-    m_rghteHandleTable = reinterpret_cast<HANDLE_TABLE_ENTRY*>(InternalMalloc(InternalGetCurrentThread(), (m_dwTableSize * sizeof(HANDLE_TABLE_ENTRY))));
+    m_rghteHandleTable = reinterpret_cast<HANDLE_TABLE_ENTRY*>(InternalMalloc((m_dwTableSize * sizeof(HANDLE_TABLE_ENTRY))));
     if(NULL == m_rghteHandleTable)
     {
         ERROR("Unable to create initial handle table array");
@@ -113,7 +113,6 @@ CSimpleHandleManager::AllocateHandle(
 
         /* grow handle table */
         rghteTempTable = reinterpret_cast<HANDLE_TABLE_ENTRY*>(InternalRealloc(
-            pThread,
             m_rghteHandleTable,
             (m_dwTableSize + m_dwTableGrowthRate) * sizeof(HANDLE_TABLE_ENTRY)));
         

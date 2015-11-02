@@ -102,7 +102,7 @@ SetConsoleCtrlHandler(
 
     if(Add)
     {
-        handler = (CTRL_HANDLER_LIST *)InternalMalloc(pThread, sizeof(CTRL_HANDLER_LIST));
+        handler = (CTRL_HANDLER_LIST *)InternalMalloc(sizeof(CTRL_HANDLER_LIST));
         if(!handler)
         {
             ERROR("PAL_malloc failed! error is %d (%s)\n", errno, strerror(errno));
@@ -145,7 +145,7 @@ SetConsoleCtrlHandler(
                 nCtrlHandlerListLength--;
                 pCtrlHandler = handler->next;
 
-                InternalFree(pThread, handler);
+                InternalFree(handler);
                 TRACE("Removing Control Handler %p from head of list\n", 
                       HandlerRoutine );
             }
@@ -154,7 +154,7 @@ SetConsoleCtrlHandler(
                 /* handler was not first in the list... */
                 nCtrlHandlerListLength--;
                 temp_handler->next = handler->next;
-                InternalFree(pThread, handler);
+                InternalFree(handler);
                 TRACE("Removing Control Handler %p (not head of list)\n", 
                       HandlerRoutine );                 
             }                 
