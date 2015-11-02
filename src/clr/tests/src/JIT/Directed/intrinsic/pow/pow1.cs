@@ -18,11 +18,7 @@ internal class pow1
 
         string processorArchEnvVar = null;
 
-#if CORECLR 
-        processorArchEnvVar = TestLibrary.Env.GetEnvVariable("PROCESSOR_ARCHITECTURE");
-#else
         processorArchEnvVar = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-#endif
 
         if ((processorArchEnvVar != null) && processorArchEnvVar.Equals("ARM", StringComparison.CurrentCultureIgnoreCase))
         {
