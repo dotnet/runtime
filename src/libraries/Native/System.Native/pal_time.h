@@ -5,12 +5,6 @@
 
 #include "pal_types.h"
 
-enum TimeConversionConstants
-{
-    SecondsToMicroSeconds = 1000000,  // 10^6
-    SecondsToNanoSeconds = 1000000000 // 10^9
-};
-
 struct UTimBuf
 {
     int64_t AcTime;

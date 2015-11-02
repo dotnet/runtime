@@ -184,19 +184,8 @@ check_cxx_source_runs(
     " 
     HAVE_CLOCK_MONOTONIC)
 
-check_cxx_source_runs(
-    "
-    #include <stdlib.h>
-    #include <mach/mach_time.h>
-    int main()
-    {
-        int ret;
-        mach_timebase_info_data_t timebaseInfo;
-        ret = mach_timebase_info(&timebaseInfo);
-        mach_absolute_time();
-        exit(ret);
-    }
-    " 
+check_function_exists(
+    mach_absolute_time
     HAVE_MACH_ABSOLUTE_TIME)
 
 check_cxx_source_runs(
