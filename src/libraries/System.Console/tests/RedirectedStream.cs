@@ -26,8 +26,19 @@ public class RedirectedStream : RemoteExecutorTestBase
     [Fact]
     public static void ErrorRedirect() // the CI system redirects stdout, so we can only really test the redirected behavior.
     {
-
         RunRemote(() => { Assert.True(Console.IsErrorRedirected); return 42; }, new ProcessStartInfo() { RedirectStandardError = true });
+    }
+
+    [Fact]
+    public static void InvokeRedirected()
+    {
+        // We can't be sure of the state of stdin/stdout/stderr redirects, so we can't validate
+        // the results of the Redirected properties one way or the other, but we can at least
+        // invoke them to ensure that no exceptions are thrown.
+        bool result;
+        result = Console.IsInputRedirected;
+        result = Console.IsOutputRedirected;
+        result = Console.IsErrorRedirected;
     }
 
     //[Fact] // the CI system redirects stdout, so we can only really test the redirected behavior.
