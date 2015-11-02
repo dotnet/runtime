@@ -151,7 +151,7 @@ public class InternalsVisibleToAttributeAssemblyName
 
         string assemblyName;
         string actualFriendAssemblyName;
-        assemblyName = "::B:" + TestLibrary.Env.FileSeperator + "\n\v\r\t\0myTestCase.dll";
+        assemblyName = "::B:" + System.IO.Path.DirectorySeparatorChar + "\n\v\r\t\0myTestCase.dll";
         TestLibrary.TestFramework.BeginScenario(c_TEST_DESC);
         try
         {

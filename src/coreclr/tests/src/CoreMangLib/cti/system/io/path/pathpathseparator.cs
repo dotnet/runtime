@@ -45,7 +45,7 @@ public class PathPathSeparator
         const string c_TEST_DESC = "PosTest1: Verify the Path.PathSeparator value is semicolon ... ";
         const string c_TEST_ID = "P001";
 
-        char correctChar = Env.PathDelimiter[0];
+        char correctChar = Utilities.IsWindows ? ';' : ':';
 
         TestLibrary.TestFramework.BeginScenario(c_TEST_DESC);
 

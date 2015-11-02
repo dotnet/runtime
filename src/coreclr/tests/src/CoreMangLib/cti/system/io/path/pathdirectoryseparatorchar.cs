@@ -45,7 +45,7 @@ public class PathDirectorySeparatorChar
         const string c_TEST_DESC = "PosTest1: Verify the Path.DirectorySeparatorChar value is backslash... ";
         const string c_TEST_ID = "P001";
 
-        char correctChar = Env.FileSeperator[0];
+        char correctChar = Utilities.IsWindows ? '\\' : '/';
 
         TestLibrary.TestFramework.BeginScenario(c_TEST_DESC);
 
