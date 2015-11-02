@@ -277,8 +277,34 @@ namespace System.Net.Security
         }
     }
 
-    internal abstract class SafeFreeContextBufferChannelBinding : ChannelBinding
+    internal sealed class SafeFreeContextBufferChannelBinding : ChannelBinding
     {
-        // TODO (Issue #3362) To be implemented
+        private readonly SafeChannelBindingHandle _channelBinding = null;
+
+        public override int Size
+        {
+            get { return _channelBinding.Length; }
+        }
+
+        public override bool IsInvalid
+        {
+            get { return _channelBinding.IsInvalid; }
+        }
+
+        public SafeFreeContextBufferChannelBinding(SafeChannelBindingHandle binding)
+        {
+            Debug.Assert(null != binding && !binding.IsInvalid, "input channelBinding is invalid");
+            bool gotRef = false;
+            binding.DangerousAddRef(ref gotRef);
+            handle = binding.DangerousGetHandle();
+            _channelBinding = binding;
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            _channelBinding.DangerousRelease();
+            _channelBinding.Dispose();
+            return true;
+        }
     }
 }
