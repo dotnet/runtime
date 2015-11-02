@@ -1054,7 +1054,6 @@ public:
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct);
     bool ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct);
-    
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
 
     // Copy m_dwFlags from another method table
@@ -1091,6 +1090,10 @@ public:
     bool ClassRequiresUnmanagedCodeCheck();
 
 private:
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+    void AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel);
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
 
     DWORD   GetClassIndexFromToken(mdTypeDef typeToken)
     {
