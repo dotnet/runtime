@@ -170,8 +170,6 @@ static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 
 static gboolean *evacuate_block_obj_sizes;
 static float evacuation_threshold = 0.666f;
-static float concurrent_evacuation_threshold = 0.666f;
-static gboolean want_evacuation = FALSE;
 
 static gboolean lazy_sweep = FALSE;
 
@@ -1620,8 +1618,6 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 static void
 sweep_finish (void)
 {
-	mword total_evacuate_heap = 0;
-	mword total_evacuate_saved = 0;
 	int i;
 
 	for (i = 0; i < num_block_obj_sizes; ++i) {
@@ -1635,15 +1631,7 @@ sweep_finish (void)
 		} else {
 			evacuate_block_obj_sizes [i] = FALSE;
 		}
-		{
-			mword total_bytes = block_obj_sizes [i] * sweep_slots_available [i];
-			total_evacuate_heap += total_bytes;
-			if (evacuate_block_obj_sizes [i])
-				total_evacuate_saved += total_bytes - block_obj_sizes [i] * sweep_slots_used [i];
-		}
 	}
-
-	want_evacuation = (float)total_evacuate_saved / (float)total_evacuate_heap > (1 - concurrent_evacuation_threshold);
 
 	set_sweep_state (SWEEP_STATE_SWEPT, SWEEP_STATE_COMPACTING);
 }
@@ -2433,10 +2421,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	concurrent_mark = is_concurrent;
 	collector->is_concurrent = is_concurrent;
 	collector->needs_thread_pool = is_concurrent || concurrent_sweep;
-	if (is_concurrent)
-		collector->want_synchronous_collection = &want_evacuation;
-	else
-		collector->want_synchronous_collection = NULL;
 	collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 	collector->supports_cardtable = TRUE;
 

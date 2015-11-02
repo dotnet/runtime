@@ -608,12 +608,6 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 }
 
 MonoBoolean
-ves_icall_Mono_Runtime_SetGCAllowSynchronousMajor (MonoBoolean flag)
-{
-	return mono_gc_set_allow_synchronous_major (flag);
-}
-
-MonoBoolean
 mono_gc_GCHandle_CheckCurrentDomain (guint32 gchandle)
 {
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());

@@ -1420,11 +1420,6 @@ mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 	return NULL;
 }
 
-gboolean
-mono_gc_set_allow_synchronous_major (gboolean flag)
-{
-	return flag;
-}
 /* Toggleref support */
 
 void

@@ -2687,12 +2687,6 @@ sgen_client_ensure_weak_gchandles_accessible (void)
 		mono_gc_wait_for_bridge_processing ();
 }
 
-gboolean
-mono_gc_set_allow_synchronous_major (gboolean flag)
-{
-	return sgen_set_allow_synchronous_major (flag);
-}
-
 void*
 mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
 {
