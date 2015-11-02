@@ -11,45 +11,15 @@ namespace System.Net.NetworkInformation
 {
     internal class LinuxIPGlobalProperties : UnixIPGlobalProperties
     {
-        public override string DhcpScopeName
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override string DhcpScopeName { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override string DomainName
-        {
-            get
-            {
-                return HostInformation.DomainName;
-            }
-        }
+        public override string DomainName { get { return HostInformation.DomainName; } }
 
-        public override string HostName
-        {
-            get
-            {
-                return HostInformation.HostName;
-            }
-        }
+        public override string HostName { get { return HostInformation.HostName; } }
 
-        public override bool IsWinsProxy
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool IsWinsProxy { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override NetBiosNodeType NodeType
-        {
-            get
-            {
-                return NetBiosNodeType.Unknown;
-            }
-        }
+        public override NetBiosNodeType NodeType { get { return NetBiosNodeType.Unknown; } }
 
         public override TcpConnectionInformation[] GetActiveTcpConnections()
         {

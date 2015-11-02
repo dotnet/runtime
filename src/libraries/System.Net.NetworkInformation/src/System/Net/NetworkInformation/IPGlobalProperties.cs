@@ -5,6 +5,10 @@ using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
 {
+    /// <summary>
+    /// Provides various global machine properties related to Internet Protocol (IP),
+    /// such as the local host name, domain name, and active socket connections.
+    /// </summary>
     public abstract class IPGlobalProperties
     {
         public static IPGlobalProperties GetIPGlobalProperties()
@@ -80,6 +84,10 @@ namespace System.Net.NetworkInformation
 
         public abstract IPGlobalStatistics GetIPv6GlobalStatistics();
 
+        /// <summary>
+        /// Returns a list of all unicast IP addresses after ensuring they are all stable.
+        /// </summary>
+        /// <returns>The collection of unicast IP addresses.</returns>
         public virtual Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);

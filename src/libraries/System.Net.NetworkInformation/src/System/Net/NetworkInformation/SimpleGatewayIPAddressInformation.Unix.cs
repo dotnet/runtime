@@ -3,7 +3,6 @@
 
 namespace System.Net.NetworkInformation
 {
-    /// Provides information about a network interface address.
     internal class SimpleGatewayIPAddressInformation : GatewayIPAddressInformation
     {
         private readonly IPAddress _address;
@@ -13,7 +12,6 @@ namespace System.Net.NetworkInformation
             _address = address;
         }
 
-        /// Gets the Internet Protocol (IP) address.
         public override IPAddress Address
         {
             get

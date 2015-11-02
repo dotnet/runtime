@@ -19,9 +19,7 @@ internal static partial class Interop
         TCP_CLOSE_WAIT,
         TCP_LAST_ACK,
         TCP_LISTEN,
-        TCP_CLOSING,    /* Now a valid state */
+        TCP_CLOSING,
         TCP_NEW_SYN_RECV,
-
-        TCP_MAX_STATES  /* Leave at the end! */
     }
 }

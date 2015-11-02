@@ -3,7 +3,9 @@
 
 namespace System.Net.NetworkInformation
 {
+    /// <summary>
     /// Specifies how an IP address network prefix was located.
+    /// </summary>
     public enum PrefixOrigin
     {
         Other = 0,

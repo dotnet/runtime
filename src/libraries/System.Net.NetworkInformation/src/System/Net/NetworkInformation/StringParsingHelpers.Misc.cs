@@ -51,7 +51,7 @@ namespace System.Net.NetworkInformation
             int ret;
             if (!int.TryParse(File.ReadAllText(filePath).Trim(), out ret))
             {
-                throw new NetworkInformationException();
+                throw ExceptionHelper.CreateForParseFailure();
             }
 
             return ret;
@@ -62,7 +62,7 @@ namespace System.Net.NetworkInformation
             long ret;
             if (!long.TryParse(File.ReadAllText(filePath).Trim(), out ret))
             {
-                throw new NetworkInformationException();
+                throw ExceptionHelper.CreateForParseFailure();
             }
 
             return ret;

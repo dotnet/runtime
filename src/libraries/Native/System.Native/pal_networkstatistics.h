@@ -38,10 +38,6 @@ struct IPv4GlobalStatistics
     int32_t Forwarding;
 };
 
-struct IPv6GlobalStatistics
-{
-};
-
 struct UdpGlobalStatistics
 {
     uint64_t DatagramsReceived;

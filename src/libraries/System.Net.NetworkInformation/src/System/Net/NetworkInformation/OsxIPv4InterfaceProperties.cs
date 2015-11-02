@@ -13,53 +13,17 @@ namespace System.Net.NetworkInformation
             _mtu = mtu;
         }
 
-        public override bool IsAutomaticPrivateAddressingActive
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool IsAutomaticPrivateAddressingActive { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override bool IsAutomaticPrivateAddressingEnabled
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool IsAutomaticPrivateAddressingEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override bool IsDhcpEnabled
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool IsDhcpEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override bool IsForwardingEnabled
-        {
-            get
-            {
-                // Doesn't seem to be exposed on a per-interface basis.
-                throw new PlatformNotSupportedException();
-            }
-        }
+        // Doesn't seem to be exposed on a per-interface basis.
+        public override bool IsForwardingEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override int Mtu
-        {
-            get
-            {
-                return _mtu;
-            }
-        }
+        public override int Mtu { get { return _mtu; } }
 
-        public override bool UsesWins
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool UsesWins { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
     }
 }

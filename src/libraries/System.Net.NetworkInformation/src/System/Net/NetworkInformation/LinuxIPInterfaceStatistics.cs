@@ -35,11 +35,11 @@ namespace System.Net.NetworkInformation
 
         public override long IncomingPacketsWithErrors { get { return _table.ErrorsReceived; } }
 
-        public override long IncomingUnknownProtocolPackets { get { throw new PlatformNotSupportedException(); } }
+        public override long IncomingUnknownProtocolPackets { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long NonUnicastPacketsReceived { get { return _table.MulticastFramesReceived; } }
 
-        public override long NonUnicastPacketsSent { get { throw new PlatformNotSupportedException(); } }
+        public override long NonUnicastPacketsSent { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long OutgoingPacketsDiscarded { get { return _table.OutgoingPacketsDropped; } }
 
