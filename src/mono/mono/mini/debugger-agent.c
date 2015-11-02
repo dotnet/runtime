@@ -4974,10 +4974,14 @@ debugger_agent_single_step_from_context (MonoContext *ctx)
 	DebuggerTlsData *tls;
 	MonoThreadUnwindState orig_restore_state;
 
+	tls = mono_native_tls_get_value (debugger_tls_id);
+	/* Fastpath during invokes, see in process_suspend () */
+	if (tls && suspend_count && suspend_count - tls->resume_count == 0)
+		return;
+
 	if (is_debugger_thread ())
 		return;
 
-	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
 
 	/* Have to save/restore the restore_ctx as we can be called recursively during invokes etc. */
