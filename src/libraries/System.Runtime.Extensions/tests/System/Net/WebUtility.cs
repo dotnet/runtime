@@ -53,8 +53,8 @@ namespace System.Net.Tests
         [Fact]
         public static void HtmlEncodeWithoutTextWriter()
         {
-            string input = "Hello! '\"<&>\u2665\u00E7";
-            string expected = "Hello! &#39;&quot;&lt;&amp;&gt;\u2665&#231;";
+            string input = "Hello! '\"<&>\u2665\u00E7 World";
+            string expected = "Hello! &#39;&quot;&lt;&amp;&gt;\u2665&#231; World";
 
             string returned = WebUtility.HtmlEncode(input);
 
