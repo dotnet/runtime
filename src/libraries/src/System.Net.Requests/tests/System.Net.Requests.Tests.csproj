@@ -22,6 +22,7 @@
   <ItemGroup>
     <Compile Include="HttpWebRequestTest.cs" />
     <Compile Include="HttpWebResponseTest.cs" />
+    <Compile Include="RequestStreamTest.cs" />
     <Compile Include="WebRequestTest.cs" />
 
     <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
