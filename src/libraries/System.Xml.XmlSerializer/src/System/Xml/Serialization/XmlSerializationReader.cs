@@ -1107,11 +1107,11 @@ namespace System.Xml.Serialization
         }
 
         // 0x6018
-        private static uint IsTextualNodeBitmap = (1 << (int)XmlNodeType.Text) | (1 << (int)XmlNodeType.CDATA) | (1 << (int)XmlNodeType.Whitespace) | (1 << (int)XmlNodeType.SignificantWhitespace);
+        private static uint s_isTextualNodeBitmap = (1 << (int)XmlNodeType.Text) | (1 << (int)XmlNodeType.CDATA) | (1 << (int)XmlNodeType.Whitespace) | (1 << (int)XmlNodeType.SignificantWhitespace);
 
         private static bool IsTextualNode(XmlNodeType nodeType)
         {
-            return 0 != (IsTextualNodeBitmap & (1 << (int)nodeType));
+            return 0 != (s_isTextualNodeBitmap & (1 << (int)nodeType));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.ReadString"]/*' />
