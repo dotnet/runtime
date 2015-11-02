@@ -28,8 +28,6 @@
     <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
-    <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
-    <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
   </ItemGroup>
   <ItemGroup>
