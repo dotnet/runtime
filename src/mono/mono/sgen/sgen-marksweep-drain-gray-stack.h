@@ -52,9 +52,12 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 #endif
 
 	SGEN_ASSERT (9, obj, "null object from pointer %p", ptr);
+#ifndef COPY_OR_MARK_CONCURRENT
 	SGEN_ASSERT (9, current_collection_generation == GENERATION_OLD, "old gen parallel allocator called from a %d collection", current_collection_generation);
+#endif
 
 	if (sgen_ptr_in_nursery (obj)) {
+#ifndef COPY_OR_MARK_CONCURRENT
 		int word, bit;
 		GCObject *forwarded, *old_obj;
 		mword vtable_word = *(mword*)obj;
@@ -128,6 +131,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 		binary_protocol_mark (obj, (gpointer)LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
 
 		return FALSE;
+#endif
 	} else {
 		mword vtable_word = *(mword*)obj;
 		SgenDescriptor desc;
@@ -189,14 +193,14 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 		}
 		return FALSE;
 	}
-	SGEN_ASSERT (0, FALSE, "How is this happening?");
-	return FALSE;
+
+	return TRUE;
 }
 
 static void
-SCAN_OBJECT_FUNCTION_NAME (GCObject *obj, SgenDescriptor desc, SgenGrayQueue *queue)
+SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQueue *queue)
 {
-	char *start = (char*)obj;
+	char *start = (char*)full_object;
 
 #ifdef HEAVY_STATISTICS
 	++stat_optimized_major_scan;
@@ -211,6 +215,19 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *obj, SgenDescriptor desc, SgenGrayQueue *qu
 	/* Now scan the object. */
 
 #undef HANDLE_PTR
+#ifdef COPY_OR_MARK_CONCURRENT
+#define HANDLE_PTR(ptr,obj)	do {					\
+		GCObject *__old = *(ptr);				\
+		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
+		if (__old && !sgen_ptr_in_nursery (__old)) {            \
+			PREFETCH_READ (__old);				\
+			COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
+		} else {                                                \
+			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
+				mark_mod_union_card ((full_object), (void**)(ptr)); \
+			}						\
+		} while (0)
+#else
 #define HANDLE_PTR(ptr,obj)	do {					\
 		void *__old = *(ptr);					\
 		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
@@ -222,19 +239,21 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *obj, SgenDescriptor desc, SgenGrayQueue *qu
 			}						\
 		}							\
 	} while (0)
+#endif
 
 #define SCAN_OBJECT_PROTOCOL
 #include "sgen-scan-object.h"
 }
 
 static gboolean
-DRAIN_GRAY_STACK_FUNCTION_NAME (ScanCopyContext ctx)
+DRAIN_GRAY_STACK_FUNCTION_NAME (SgenGrayQueue *queue)
 {
-	SgenGrayQueue *queue = ctx.queue;
-
-	SGEN_ASSERT (0, ctx.ops->scan_object == major_scan_object_with_evacuation, "Wrong scan function");
-
+#ifdef COPY_OR_MARK_CONCURRENT
+	int i;
+	for (i = 0; i < 32; i++) {
+#else
 	for (;;) {
+#endif
 		GCObject *obj;
 		SgenDescriptor desc;
 
@@ -244,8 +263,9 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (ScanCopyContext ctx)
 		if (!obj)
 			return TRUE;
 
-		SCAN_OBJECT_FUNCTION_NAME (obj, desc, ctx.queue);
+		SCAN_OBJECT_FUNCTION_NAME (obj, desc, queue);
 	}
+	return FALSE;
 }
 
 #undef COPY_OR_MARK_FUNCTION_NAME

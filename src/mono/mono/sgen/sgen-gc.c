@@ -539,30 +539,25 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj)
  * frequently after each object is copied, to achieve better locality and cache
  * usage.
  *
- * max_objs is the maximum number of objects to scan, or -1 to scan until the stack is
- * empty.
  */
 gboolean
-sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
+sgen_drain_gray_stack (ScanCopyContext ctx)
 {
 	ScanObjectFunc scan_func = ctx.ops->scan_object;
 	GrayQueue *queue = ctx.queue;
 
-	if (current_collection_generation == GENERATION_OLD && major_collector.drain_gray_stack)
-		return major_collector.drain_gray_stack (ctx);
+	if (ctx.ops->drain_gray_stack)
+		return ctx.ops->drain_gray_stack (queue);
 
-	do {
-		int i;
-		for (i = 0; i != max_objs; ++i) {
-			GCObject *obj;
-			SgenDescriptor desc;
-			GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
-			if (!obj)
-				return TRUE;
-			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
-			scan_func (obj, desc, queue);
-		}
-	} while (max_objs < 0);
+	for (;;) {
+		GCObject *obj;
+		SgenDescriptor desc;
+		GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
+		if (!obj)
+			return TRUE;
+		SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
+		scan_func (obj, desc, queue);
+	}
 	return FALSE;
 }
 
@@ -1080,7 +1075,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	 *   To achieve better cache locality and cache usage, we drain the gray stack 
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 	TV_GETTIME (atv);
 	SGEN_LOG (2, "%s generation done", generation_name (generation));
 
@@ -1102,7 +1097,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	done_with_ephemerons = 0;
 	do {
 		done_with_ephemerons = sgen_client_mark_ephemerons (ctx);
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
@@ -1110,7 +1105,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 
 	if (sgen_client_bridge_need_processing ()) {
 		/*Make sure the gray stack is empty before we process bridge objects so we get liveness right*/
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 		sgen_collect_bridge_objects (generation, ctx);
 		if (generation == GENERATION_OLD)
 			sgen_collect_bridge_objects (GENERATION_NURSERY, ctx);
@@ -1134,7 +1129,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	Make sure we drain the gray stack before processing disappearing links and finalizers.
 	If we don't make sure it is empty we might wrongly see a live object as dead.
 	*/
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 
 	/*
 	We must clear weak links that don't track resurrection before processing object ready for
@@ -1155,7 +1150,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 		sgen_finalize_in_range (GENERATION_NURSERY, ctx);
 	/* drain the new stack that might have been created */
 	SGEN_LOG (6, "Precise scan of gray area post fin");
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 
 	/*
 	 * This must be done again after processing finalizable objects since CWL slots are cleared only after the key is finalized.
@@ -1163,7 +1158,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	done_with_ephemerons = 0;
 	do {
 		done_with_ephemerons = sgen_client_mark_ephemerons (ctx);
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
@@ -1194,7 +1189,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 			sgen_null_link_in_range (GENERATION_NURSERY, ctx, TRUE);
 		if (sgen_gray_object_queue_is_empty (queue))
 			break;
-		sgen_drain_gray_stack (-1, ctx);
+		sgen_drain_gray_stack (ctx);
 	}
 
 	g_assert (sgen_gray_object_queue_is_empty (queue));
@@ -1424,7 +1419,7 @@ init_gray_queue (void)
 }
 
 static void
-enqueue_scan_from_roots_jobs (char *heap_start, char *heap_end, SgenObjectOperations *ops)
+enqueue_scan_from_roots_jobs (char *heap_start, char *heap_end, SgenObjectOperations *ops, gboolean enqueue)
 {
 	ScanFromRegisteredRootsJob *scrrj;
 	ScanThreadDataJob *stdj;
@@ -1437,33 +1432,33 @@ enqueue_scan_from_roots_jobs (char *heap_start, char *heap_end, SgenObjectOperat
 	scrrj->heap_start = heap_start;
 	scrrj->heap_end = heap_end;
 	scrrj->root_type = ROOT_TYPE_NORMAL;
-	sgen_workers_enqueue_job (&scrrj->job);
+	sgen_workers_enqueue_job (&scrrj->job, enqueue);
 
 	scrrj = (ScanFromRegisteredRootsJob*)sgen_thread_pool_job_alloc ("scan from registered roots wbarrier", job_scan_from_registered_roots, sizeof (ScanFromRegisteredRootsJob));
 	scrrj->ops = ops;
 	scrrj->heap_start = heap_start;
 	scrrj->heap_end = heap_end;
 	scrrj->root_type = ROOT_TYPE_WBARRIER;
-	sgen_workers_enqueue_job (&scrrj->job);
+	sgen_workers_enqueue_job (&scrrj->job, enqueue);
 
 	/* Threads */
 
 	stdj = (ScanThreadDataJob*)sgen_thread_pool_job_alloc ("scan thread data", job_scan_thread_data, sizeof (ScanThreadDataJob));
 	stdj->heap_start = heap_start;
 	stdj->heap_end = heap_end;
-	sgen_workers_enqueue_job (&stdj->job);
+	sgen_workers_enqueue_job (&stdj->job, enqueue);
 
 	/* Scan the list of objects ready for finalization. */
 
 	sfej = (ScanFinalizerEntriesJob*)sgen_thread_pool_job_alloc ("scan finalizer entries", job_scan_finalizer_entries, sizeof (ScanFinalizerEntriesJob));
 	sfej->queue = &fin_ready_queue;
 	sfej->ops = ops;
-	sgen_workers_enqueue_job (&sfej->job);
+	sgen_workers_enqueue_job (&sfej->job, enqueue);
 
 	sfej = (ScanFinalizerEntriesJob*)sgen_thread_pool_job_alloc ("scan critical finalizer entries", job_scan_finalizer_entries, sizeof (ScanFinalizerEntriesJob));
 	sfej->queue = &critical_fin_queue;
 	sfej->ops = ops;
-	sgen_workers_enqueue_job (&sfej->job);
+	sgen_workers_enqueue_job (&sfej->job, enqueue);
 }
 
 /*
@@ -1565,7 +1560,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	 */
 	sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan remset", job_remembered_set_scan, sizeof (ScanJob));
 	sj->ops = object_ops;
-	sgen_workers_enqueue_job (&sj->job);
+	sgen_workers_enqueue_job (&sj->job, FALSE);
 
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
@@ -1574,7 +1569,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	sgen_pin_stats_print_class_stats ();
 
-	sgen_drain_gray_stack (-1, ctx);
+	sgen_drain_gray_stack (ctx);
 
 	/* FIXME: Why do we do this at this specific, seemingly random, point? */
 	sgen_client_collecting_minor (&fin_ready_queue, &critical_fin_queue);
@@ -1582,7 +1577,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED (btv, atv);
 
-	enqueue_scan_from_roots_jobs (sgen_get_nursery_start (), nursery_next, object_ops);
+	enqueue_scan_from_roots_jobs (sgen_get_nursery_start (), nursery_next, object_ops, FALSE);
 
 	TV_GETTIME (btv);
 	time_minor_scan_roots += TV_ELAPSED (atv, btv);
@@ -1789,7 +1784,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	 * before pinning has finished.  For the non-concurrent
 	 * collector we start the workers after pinning.
 	 */
-	if (mode != COPY_OR_MARK_FROM_ROOTS_SERIAL) {
+	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
 		sgen_workers_start_all_workers (object_ops);
 		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
@@ -1810,7 +1805,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	 * FIXME: is this the right context?  It doesn't seem to contain a copy function
 	 * unless we're concurrent.
 	 */
-	enqueue_scan_from_roots_jobs (heap_start, heap_end, object_ops);
+	enqueue_scan_from_roots_jobs (heap_start, heap_end, object_ops, mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT);
 
 	TV_GETTIME (btv);
 	time_major_scan_roots += TV_ELAPSED (atv, btv);
@@ -1821,11 +1816,11 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 		/* Mod union card table */
 		sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan mod union cardtable", job_scan_major_mod_union_card_table, sizeof (ScanJob));
 		sj->ops = object_ops;
-		sgen_workers_enqueue_job (&sj->job);
+		sgen_workers_enqueue_job (&sj->job, FALSE);
 
 		sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_card_table, sizeof (ScanJob));
 		sj->ops = object_ops;
-		sgen_workers_enqueue_job (&sj->job);
+		sgen_workers_enqueue_job (&sj->job, FALSE);
 
 		TV_GETTIME (atv);
 		time_major_scan_mod_union += TV_ELAPSED (btv, atv);
@@ -1837,8 +1832,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 static void
 major_finish_copy_or_mark (CopyOrMarkFromRootsMode mode)
 {
-	switch (mode) {
-	case COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT:
+	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		/*
 		 * Prepare the pin queue for the next collection.  Since pinning runs on the worker
 		 * threads we must wait for the jobs to finish before we can reset it.
@@ -1850,14 +1844,6 @@ major_finish_copy_or_mark (CopyOrMarkFromRootsMode mode)
 
 		if (do_concurrent_checks)
 			sgen_debug_check_nursery_is_clean ();
-		break;
-	case COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT:
-		sgen_workers_wait_for_jobs_finished ();
-		break;
-	case COPY_OR_MARK_FROM_ROOTS_SERIAL:
-		break;
-	default:
-		g_assert_not_reached ();
 	}
 }
 
@@ -1921,10 +1907,6 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 		major_copy_or_mark_from_roots (NULL, COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT, object_ops);
 
 		major_finish_copy_or_mark (COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT);
-
-		sgen_workers_join ();
-
-		SGEN_ASSERT (0, sgen_gray_object_queue_is_empty (&gray_queue), "Why is the gray queue not empty after workers have finished working?");
 
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
 		main_gc_thread = NULL;

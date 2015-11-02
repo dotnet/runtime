@@ -1120,36 +1120,6 @@ pin_major_object (GCObject *obj, SgenGrayQueue *queue)
 
 #include "sgen-major-copy-object.h"
 
-static void
-major_copy_or_mark_object_concurrent (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
-{
-	SGEN_ASSERT (9, sgen_concurrent_collection_in_progress (), "Why are we scanning concurrently when there's no concurrent collection on?");
-	SGEN_ASSERT (9, !sgen_workers_are_working () || sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "We must not scan from two threads at the same time!");
-
-	g_assert (!SGEN_OBJECT_IS_FORWARDED (obj));
-
-	if (!sgen_ptr_in_nursery (obj)) {
-		mword objsize;
-
-		objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size (obj));
-
-		if (objsize <= SGEN_MAX_SMALL_OBJ_SIZE) {
-			MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-			MS_MARK_OBJECT_AND_ENQUEUE (obj, sgen_obj_get_descriptor (obj), block, queue);
-		} else {
-			if (sgen_los_object_is_pinned (obj))
-				return;
-
-			binary_protocol_mark (obj, SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
-
-			sgen_los_pin_object (obj);
-			if (SGEN_OBJECT_HAS_REFERENCES (obj))
-				GRAY_OBJECT_ENQUEUE (queue, obj, sgen_obj_get_descriptor (obj));
-			INC_NUM_MAJOR_OBJECTS_MARKED ();
-		}
-	}
-}
-
 static long long
 major_get_and_reset_num_major_objects_marked (void)
 {
@@ -1209,8 +1179,15 @@ static void major_scan_object_with_evacuation (GCObject *start, mword desc, Sgen
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_with_evacuation
 #include "sgen-marksweep-drain-gray-stack.h"
 
+#undef COPY_OR_MARK_WITH_EVACUATION
+#define COPY_OR_MARK_CONCURRENT
+#define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_concurrent
+#define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_concurrent
+#define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_concurrent
+#include "sgen-marksweep-drain-gray-stack.h"
+
 static gboolean
-drain_gray_stack (ScanCopyContext ctx)
+drain_gray_stack (SgenGrayQueue *queue)
 {
 	gboolean evacuation = FALSE;
 	int i;
@@ -1222,9 +1199,9 @@ drain_gray_stack (ScanCopyContext ctx)
 	}
 
 	if (evacuation)
-		return drain_gray_stack_with_evacuation (ctx);
+		return drain_gray_stack_with_evacuation (queue);
 	else
-		return drain_gray_stack_no_evacuation (ctx);
+		return drain_gray_stack_no_evacuation (queue);
 }
 
 #include "sgen-marksweep-scan-object-concurrent.h"
@@ -2497,21 +2474,17 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 	collector->major_ops_serial.copy_or_mark_object = major_copy_or_mark_object_canonical;
 	collector->major_ops_serial.scan_object = major_scan_object_with_evacuation;
+	collector->major_ops_serial.drain_gray_stack = drain_gray_stack;
 	if (is_concurrent) {
 		collector->major_ops_concurrent_start.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
-		collector->major_ops_concurrent_start.scan_object = major_scan_object_no_mark_concurrent_start;
-
-		collector->major_ops_concurrent.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
-		collector->major_ops_concurrent.scan_object = major_scan_object_no_mark_concurrent;
+		collector->major_ops_concurrent_start.scan_object = major_scan_object_concurrent;
+		collector->major_ops_concurrent_start.drain_gray_stack = drain_gray_stack_concurrent;
 
 		collector->major_ops_concurrent_finish.copy_or_mark_object = major_copy_or_mark_object_concurrent_finish_canonical;
 		collector->major_ops_concurrent_finish.scan_object = major_scan_object_no_evacuation;
 		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_concurrent_finish;
+		collector->major_ops_concurrent_finish.drain_gray_stack = drain_gray_stack_no_evacuation;
 	}
-
-#if !defined (FIXED_HEAP) && !defined (SGEN_PARALLEL_MARK)
-	if (!is_concurrent)
-		collector->drain_gray_stack = drain_gray_stack;
 
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("Optimized copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy);
@@ -2528,7 +2501,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Gray stack drain loops", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_loops);
 	mono_counters_register ("Gray stack prefetch fills", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_prefetch_fills);
 	mono_counters_register ("Gray stack prefetch failures", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_prefetch_fill_failures);
-#endif
 #endif
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL

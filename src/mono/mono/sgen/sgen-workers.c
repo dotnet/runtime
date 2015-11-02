@@ -124,16 +124,10 @@ worker_try_finish (void)
 	} while (!set_state (old_state, STATE_NOT_WORKING));
 }
 
-static gboolean
-collection_needs_workers (void)
-{
-	return sgen_collection_is_concurrent ();
-}
-
 void
-sgen_workers_enqueue_job (SgenThreadPoolJob *job)
+sgen_workers_enqueue_job (SgenThreadPoolJob *job, gboolean enqueue)
 {
-	if (!collection_needs_workers ()) {
+	if (!enqueue) {
 		job->func (NULL, job);
 		sgen_thread_pool_job_free (job);
 		return;
@@ -231,7 +225,7 @@ marker_idle_func (void *data_untyped)
 
 		SGEN_ASSERT (0, !sgen_gray_object_queue_is_empty (&data->private_gray_queue), "How is our gray queue empty if we just got work?");
 
-		sgen_drain_gray_stack (32, ctx);
+		sgen_drain_gray_stack (ctx);
 	} else {
 		worker_try_finish ();
 	}
@@ -254,7 +248,7 @@ init_distribute_gray_queue (void)
 void
 sgen_workers_init_distribute_gray_queue (void)
 {
-	SGEN_ASSERT (0, sgen_get_major_collector ()->is_concurrent && collection_needs_workers (),
+	SGEN_ASSERT (0, sgen_get_major_collector ()->is_concurrent,
 			"Why should we init the distribute gray queue if we don't need it?");
 	init_distribute_gray_queue ();
 }
@@ -290,9 +284,6 @@ sgen_workers_init (int num_workers)
 void
 sgen_workers_start_all_workers (SgenObjectOperations *object_ops)
 {
-	if (!collection_needs_workers ())
-		return;
-
 	idle_func_object_ops = object_ops;
 	mono_memory_write_barrier ();
 
@@ -303,9 +294,6 @@ void
 sgen_workers_join (void)
 {
 	int i;
-
-	if (!collection_needs_workers ())
-		return;
 
 	sgen_thread_pool_wait_for_all_jobs ();
 	sgen_thread_pool_idle_wait ();

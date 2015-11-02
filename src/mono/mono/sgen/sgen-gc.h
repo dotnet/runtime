@@ -411,11 +411,14 @@ gboolean sgen_is_worker_thread (MonoNativeThreadId thread);
 typedef void (*CopyOrMarkObjectFunc) (GCObject**, SgenGrayQueue*);
 typedef void (*ScanObjectFunc) (GCObject *obj, SgenDescriptor desc, SgenGrayQueue*);
 typedef void (*ScanVTypeFunc) (GCObject *full_object, char *start, SgenDescriptor desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
+typedef gboolean (*DrainGrayStackFunc) (SgenGrayQueue *queue);
 
 typedef struct {
 	CopyOrMarkObjectFunc copy_or_mark_object;
 	ScanObjectFunc scan_object;
 	ScanVTypeFunc scan_vtype;
+	/* Drain stack optimized for the above functions */
+	DrainGrayStackFunc drain_gray_stack;
 	/*FIXME add allocation function? */
 } SgenObjectOperations;
 
@@ -618,7 +621,6 @@ struct _SgenMajorCollector {
 
 	SgenObjectOperations major_ops_serial;
 	SgenObjectOperations major_ops_concurrent_start;
-	SgenObjectOperations major_ops_concurrent;
 	SgenObjectOperations major_ops_concurrent_finish;
 
 	GCObject* (*alloc_object) (GCVTable vtable, size_t size, gboolean has_references);
@@ -648,7 +650,6 @@ struct _SgenMajorCollector {
 	void (*finish_nursery_collection) (void);
 	void (*start_major_collection) (void);
 	void (*finish_major_collection) (ScannedObjectCounts *counts);
-	gboolean (*drain_gray_stack) (ScanCopyContext ctx);
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr, char **start);
 	gboolean (*ptr_is_from_pinned_alloc) (char *ptr);
 	void (*report_pinned_memory_usage) (void);
@@ -801,7 +802,7 @@ void sgen_register_disappearing_link (GCObject *obj, void **link, gboolean track
 
 GCObject* sgen_weak_link_get (void **link_addr);
 
-gboolean sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx);
+gboolean sgen_drain_gray_stack (ScanCopyContext ctx);
 
 enum {
 	SPACE_NURSERY,
