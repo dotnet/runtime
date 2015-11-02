@@ -29,11 +29,11 @@ namespace TestLibrary
 #else
             Random rand = new Random();
 
-            if (Env.GetEnvVariable("CORECLR_SEED") != null)
+            if (Environment.GetEnvironmentVariable("CORECLR_SEED") != null)
             {
                 try
                 {
-                    seed = int.Parse(Env.GetEnvVariable("CORECLR_SEED"));
+                    seed = int.Parse(Environment.GetEnvironmentVariable("CORECLR_SEED"));
                 }
                 catch (FormatException) { seed = rand.Next(); }
             }
