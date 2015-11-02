@@ -12,6 +12,12 @@
 #include <mach/mach_time.h>
 #endif
 
+enum
+{
+    SecondsToMicroSeconds = 1000000,  // 10^6
+    SecondsToNanoSeconds = 1000000000 // 10^9
+};
+
 static void ConvertUTimBuf(const UTimBuf& pal, utimbuf& native)
 {
     native.actime = pal.AcTime;
@@ -75,6 +81,7 @@ extern "C" int32_t GetTimestamp(uint64_t* timestamp)
     struct timespec ts;
     int result = clock_gettime(CLOCK_MONOTONIC, &ts);
     assert(result == 0); // only possible errors are if MONOTONIC isn't supported or &ts is an invalid address
+    (void)result; // suppress unused parameter warning in release builds
     *timestamp = (static_cast<uint64_t>(ts.tv_sec) * SecondsToNanoSeconds) + static_cast<uint64_t>(ts.tv_nsec);
     return 1;
 
