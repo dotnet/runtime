@@ -45,7 +45,7 @@ public class PathVolumeSeparatorChar
         const string c_TEST_DESC = "PosTest1: Verify the Path.VolumeSeparatorChar value is colon ... ";
         const string c_TEST_ID = "P001";
 
-        char correctChar = Env.VolumeSeperator[0];
+        char correctChar = Utilities.IsWindows ? ':' : '/';
 
         TestLibrary.TestFramework.BeginScenario(c_TEST_DESC);
 

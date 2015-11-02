@@ -32,7 +32,6 @@
   <ItemGroup>
     <Compile Include="CalendarHelpers.cs" />
     <Compile Include="EndianessChecker.cs" />
-    <Compile Include="Env.cs" />
     <Compile Include="Generator.cs" />
     <Compile Include="GlobLocHelper.cs" />
     <Compile Include="Logging.cs" />
