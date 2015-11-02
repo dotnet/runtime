@@ -10,17 +10,11 @@
             _mtu = mtu;
         }
 
-        public override int Mtu
-        {
-            get
-            {
-                return _mtu;
-            }
-        }
+        public override int Mtu { get { return _mtu; } }
 
         public override long GetScopeId(ScopeLevel scopeLevel)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
         }
     }
 }

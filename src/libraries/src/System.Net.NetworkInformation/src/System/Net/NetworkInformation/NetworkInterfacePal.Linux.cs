@@ -24,19 +24,13 @@ namespace System.Net.NetworkInformation
             return false;
         }
 
-        public static int IPv6LoopbackInterfaceIndex
-        {
-            get
-            {
-                return LoopbackInterfaceIndex;
-            }
-        }
+        public static int IPv6LoopbackInterfaceIndex { get { return LoopbackInterfaceIndex; } }
 
         public static int LoopbackInterfaceIndex
         {
             get
             {
-                var interfaces = LinuxNetworkInterface.GetLinuxNetworkInterfaces();
+                NetworkInterface[] interfaces = LinuxNetworkInterface.GetLinuxNetworkInterfaces();
                 for (int i = 0; i < interfaces.Length; i++)
                 {
                     if (interfaces[i].NetworkInterfaceType == NetworkInterfaceType.Loopback)
@@ -45,7 +39,7 @@ namespace System.Net.NetworkInformation
                     }
                 }
 
-                throw new NetworkInformationException();
+                throw new NetworkInformationException(SR.net_NoLoopback);
             }
         }
     }

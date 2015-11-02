@@ -13,7 +13,7 @@ internal static partial class Interop
             public int InterfaceIndex;
             public fixed byte AddressBytes[8];
             public byte NumAddressBytes;
-            private byte __pading;
+            private byte __padding; // For native struct-size padding. Does not contain useful data.
             public ushort HardwareType;
         }
 
@@ -32,9 +32,10 @@ internal static partial class Interop
         public unsafe delegate void DnsAddessDiscoveredCallback(IpAddressInfo* gatewayAddress);
 
         [DllImport(Libraries.SystemNative)]
-        public static extern int EnumerateInterfaceAddresses(IPv4AddressDiscoveredCallback ipv4Found,
-                                                                IPv6AddressDiscoveredCallback ipv6Found,
-                                                                LinkLayerAddressDiscoveredCallback linkLayerFound);
+        public static extern int EnumerateInterfaceAddresses(
+            IPv4AddressDiscoveredCallback ipv4Found,
+            IPv6AddressDiscoveredCallback ipv6Found,
+            LinkLayerAddressDiscoveredCallback linkLayerFound);
 
         [DllImport(Libraries.SystemNative)]
         public static extern int EnumerateGatewayAddressesForInterface(uint interfaceIndex, DnsAddessDiscoveredCallback onGatewayFound);

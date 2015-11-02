@@ -38,13 +38,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public override bool IsDnsEnabled
-        {
-            get
-            {
-                return DnsAddresses.Count > 0;
-            }
-        }
+        public override bool IsDnsEnabled { get { return DnsAddresses.Count > 0; } }
 
         public sealed override string DnsSuffix { get { return _dnsSuffix; } }
 

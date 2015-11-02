@@ -32,7 +32,7 @@ namespace System.Net.NetworkInformation
             Interop.Sys.IPv4GlobalStatistics statistics;
             if (Interop.Sys.GetIPv4GlobalStatistics(out statistics) == -1)
             {
-                throw new NetworkInformationException((int)Interop.Sys.GetLastError());
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
             _outboundPackets = (long)statistics.OutboundPackets;
@@ -67,7 +67,7 @@ namespace System.Net.NetworkInformation
             _numRoutes = Interop.Sys.GetNumRoutes();
             if (_numRoutes == -1)
             {
-                throw new NetworkInformationException();
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
         }
 
@@ -81,19 +81,19 @@ namespace System.Net.NetworkInformation
 
         public override long OutputPacketRequests { get { return _outboundPackets; } }
 
-        public override long OutputPacketRoutingDiscards { get { throw new PlatformNotSupportedException(); } }
+        public override long OutputPacketRoutingDiscards { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override long OutputPacketsDiscarded { get { throw new PlatformNotSupportedException(); } }
+        public override long OutputPacketsDiscarded { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long OutputPacketsWithNoRoute { get { return _outputPacketsNoRoute; } }
 
-        public override long PacketFragmentFailures { get { throw new PlatformNotSupportedException(); } }
+        public override long PacketFragmentFailures { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override long PacketReassembliesRequired { get { throw new PlatformNotSupportedException(); } }
+        public override long PacketReassembliesRequired { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long PacketReassemblyFailures { get { return _cantFrags; } }
 
-        public override long PacketReassemblyTimeout { get { throw new PlatformNotSupportedException(); ; } }
+        public override long PacketReassemblyTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); ; } }
 
         public override long PacketsFragmented { get { return _datagramsFragmented; } }
 

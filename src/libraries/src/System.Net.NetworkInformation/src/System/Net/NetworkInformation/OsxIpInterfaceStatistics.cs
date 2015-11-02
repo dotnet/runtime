@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation
             Interop.Sys.NativeIPInterfaceStatistics nativeStats;
             if (Interop.Sys.GetNativeIPInterfaceStatistics(name, out nativeStats) == -1)
             {
-                throw new NetworkInformationException();
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
             _outputQueueLength = (long)nativeStats.SendQueueLength;
@@ -38,100 +38,28 @@ namespace System.Net.NetworkInformation
             _outErrors = (long)nativeStats.OutErrors;
         }
 
-        public override long BytesReceived
-        {
-            get
-            {
-                return _inBytes;
-            }
-        }
+        public override long BytesReceived { get { return _inBytes; } }
 
-        public override long BytesSent
-        {
-            get
-            {
-                return _outBytes;
-            }
-        }
+        public override long BytesSent { get { return _outBytes; } }
 
-        public override long IncomingPacketsDiscarded
-        {
-            get
-            {
-                return _inPacketsDiscarded;
-            }
-        }
+        public override long IncomingPacketsDiscarded { get { return _inPacketsDiscarded; } }
 
-        public override long IncomingPacketsWithErrors
-        {
-            get
-            {
-                return _inErrors;
-            }
-        }
+        public override long IncomingPacketsWithErrors { get { return _inErrors; } }
 
-        public override long IncomingUnknownProtocolPackets
-        {
-            get
-            {
-                return _inUnknownProtocols;
-            }
-        }
+        public override long IncomingUnknownProtocolPackets { get { return _inUnknownProtocols; } }
 
-        public override long NonUnicastPacketsReceived
-        {
-            get
-            {
-                return _inNonUnicastPackets;
-            }
-        }
+        public override long NonUnicastPacketsReceived { get { return _inNonUnicastPackets; } }
 
-        public override long NonUnicastPacketsSent
-        {
-            get
-            {
-                return _outNonUnicastPackets;
-            }
-        }
+        public override long NonUnicastPacketsSent { get { return _outNonUnicastPackets; } }
 
-        public override long OutgoingPacketsDiscarded
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override long OutgoingPacketsDiscarded { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override long OutgoingPacketsWithErrors
-        {
-            get
-            {
-                return _outErrors;
-            }
-        }
+        public override long OutgoingPacketsWithErrors { get { return _outErrors; } }
 
-        public override long OutputQueueLength
-        {
-            get
-            {
-                return _outputQueueLength;
-            }
-        }
+        public override long OutputQueueLength { get { return _outputQueueLength; } }
 
-        public override long UnicastPacketsReceived
-        {
-            get
-            {
-                return _inPackets - _inNonUnicastPackets;
-            }
-        }
+        public override long UnicastPacketsReceived { get { return _inPackets - _inNonUnicastPackets; } }
 
-        public override long UnicastPacketsSent
-        {
-            get
-            {
-                return _outPackets - _outNonUnicastPackets;
-            }
-        }
+        public override long UnicastPacketsSent { get { return _outPackets - _outNonUnicastPackets; } }
     }
 }

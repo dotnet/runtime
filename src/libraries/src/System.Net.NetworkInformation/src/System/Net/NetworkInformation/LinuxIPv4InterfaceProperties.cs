@@ -19,47 +19,17 @@ namespace System.Net.NetworkInformation
             _mtu = GetMtu();
         }
 
-        public override bool IsAutomaticPrivateAddressingActive
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool IsAutomaticPrivateAddressingActive { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override bool IsAutomaticPrivateAddressingEnabled
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool IsAutomaticPrivateAddressingEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override bool IsDhcpEnabled
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool IsDhcpEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override bool IsForwardingEnabled { get { return _isForwardingEnabled; } }
 
-        public override int Mtu
-        {
-            get
-            {
-                return _mtu;
-            }
-        }
+        public override int Mtu { get { return _mtu; } }
 
-        public override bool UsesWins
-        {
-            get
-            {
-                return _linuxNetworkInterface.GetIPProperties().WinsServersAddresses.Count > 0;
-            }
-        }
+        public override bool UsesWins { get { return _linuxNetworkInterface.GetIPProperties().WinsServersAddresses.Count > 0; } }
 
         private bool GetIsForwardingEnabled()
         {

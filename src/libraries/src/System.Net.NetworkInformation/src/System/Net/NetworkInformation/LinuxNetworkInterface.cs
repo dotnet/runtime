@@ -32,17 +32,17 @@ namespace System.Net.NetworkInformation
                 (name, ipAddr, maskAddr) =>
                 {
                     LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
-                    ProcessIpv4Address(lni, ipAddr, maskAddr);
+                    lni.ProcessIpv4Address(ipAddr, maskAddr);
                 },
                 (name, ipAddr, scopeId) =>
                 {
                     LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
-                    ProcessIpv6Address(lni, ipAddr, *scopeId);
+                    lni.ProcessIpv6Address( ipAddr, *scopeId);
                 },
                 (name, llAddr) =>
                 {
                     LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
-                    ProcessLinkLayerAddress(lni, llAddr);
+                    lni.ProcessLinkLayerAddress(llAddr);
                 });
 
             return interfacesByName.Values.ToArray();
@@ -90,9 +90,9 @@ namespace System.Net.NetworkInformation
 
         public override OperationalStatus OperationalStatus { get { return _operationalStatus; } }
 
-        public override string Id { get { throw new PlatformNotSupportedException(); } }
+        public override string Id { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override string Description { get { throw new PlatformNotSupportedException(); } }
+        public override string Description { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long Speed
         {
@@ -104,12 +104,12 @@ namespace System.Net.NetworkInformation
                 }
                 else
                 {
-                    throw new PlatformNotSupportedException();
+                    throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
                 }
             }
         }
 
-        public override bool IsReceiveOnly { get { throw new PlatformNotSupportedException(); } }
+        public override bool IsReceiveOnly { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         private static long? GetSpeed(string name)
         {

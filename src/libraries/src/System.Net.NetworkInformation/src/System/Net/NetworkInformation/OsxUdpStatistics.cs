@@ -18,7 +18,7 @@ namespace System.Net.NetworkInformation
             Interop.Sys.UdpGlobalStatistics statistics;
             if (Interop.Sys.GetUdpGlobalStatistics(out statistics) == -1)
             {
-                throw new NetworkInformationException((int)Interop.Sys.GetLastError());
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
             _datagramsReceived = (long)statistics.DatagramsReceived;
