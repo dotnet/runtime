@@ -284,7 +284,7 @@ CreateProcessA(
             palError = ERROR_INTERNAL_ERROR;
             goto done;
         }
-        ApplicationNameW = (LPWSTR)InternalMalloc(pThread, sizeof(WCHAR)*n);
+        ApplicationNameW = (LPWSTR)InternalMalloc(sizeof(WCHAR)*n);
         if(!ApplicationNameW)
         {
             ERROR("malloc() failed!\n");
@@ -304,7 +304,7 @@ CreateProcessA(
             palError = ERROR_INTERNAL_ERROR;
             goto done;
         }
-        CommandLineW = (LPWSTR)InternalMalloc(pThread, sizeof(WCHAR)*n);
+        CommandLineW = (LPWSTR)InternalMalloc(sizeof(WCHAR)*n);
         if(!CommandLineW)
         {
             ERROR("malloc() failed!\n");
@@ -323,7 +323,7 @@ CreateProcessA(
             palError = ERROR_INTERNAL_ERROR;
             goto done;
         }
-        CurrentDirectoryW = (LPWSTR)InternalMalloc(pThread, sizeof(WCHAR)*n);
+        CurrentDirectoryW = (LPWSTR)InternalMalloc(sizeof(WCHAR)*n);
         if(!CurrentDirectoryW)
         {
             ERROR("malloc() failed!\n");
@@ -357,9 +357,9 @@ CreateProcessA(
         lpProcessInformation
         );
 done:
-    InternalFree(pThread, ApplicationNameW);
-    InternalFree(pThread, CommandLineW);
-    InternalFree(pThread, CurrentDirectoryW);
+    InternalFree(ApplicationNameW);
+    InternalFree(CommandLineW);
+    InternalFree(CurrentDirectoryW);
 
     if (NO_ERROR != palError)
     {
@@ -762,7 +762,7 @@ CorUnix::InternalCreateProcess(
             }
         }
         EnvironmentEntries++;
-        EnvironmentArray = (char **)InternalMalloc(pThread, EnvironmentEntries * sizeof(char *));
+        EnvironmentArray = (char **)InternalMalloc(EnvironmentEntries * sizeof(char *));
 
         EnvironmentEntries = 0;
         // Convert the environment block to array of strings
@@ -1088,7 +1088,7 @@ InternalCreateProcessExit:
 
     if (EnvironmentArray)
     {
-        InternalFree(pThread, EnvironmentArray);
+        InternalFree(EnvironmentArray);
     }
 
     /* if we still have the file structures at this point, it means we 
@@ -1128,8 +1128,8 @@ InternalCreateProcessExit:
     /* free allocated memory */
     if (lppArgv)
     {
-        InternalFree (pThread, *lppArgv);
-        InternalFree (pThread, lppArgv);
+        InternalFree(*lppArgv);
+        InternalFree(lppArgv);
     }
 
     return palError;
@@ -1996,7 +1996,7 @@ CreateProcessModules(
                 if (!dup)
                 {
                     int cbModuleName = strlen(moduleName) + 1;
-                    ProcessModules *entry = (ProcessModules *)InternalMalloc(pThread, sizeof(ProcessModules) + cbModuleName);
+                    ProcessModules *entry = (ProcessModules *)InternalMalloc(sizeof(ProcessModules) + cbModuleName);
                     if (entry == NULL)
                     {
                         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -2078,7 +2078,7 @@ CreateProcessModules(
                     if (!dup)
                     {
                         int cbModuleName = strlen(moduleName) + 1;
-                        ProcessModules *entry = (ProcessModules *)InternalMalloc(pThread, sizeof(ProcessModules) + cbModuleName);
+                        ProcessModules *entry = (ProcessModules *)InternalMalloc(sizeof(ProcessModules) + cbModuleName);
                         if (entry == NULL)
                         {
                             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -2134,12 +2134,10 @@ Return
 void
 DestroyProcessModules(IN ProcessModules *listHead)
 {
-    CPalThread* pThread = InternalGetCurrentThread();	
-
     for (ProcessModules *entry = listHead; entry != NULL; )
     {
         ProcessModules *next = entry->Next;
-        InternalFree(pThread, entry);
+        InternalFree(entry);
         entry = next;
     }
 }
@@ -2347,7 +2345,7 @@ CorUnix::InitializeProcessCommandLine(
         INT n = lstrlenW(lpwstrFullPath) + 1;
 
         int iLen = n;
-        initial_dir = reinterpret_cast<LPWSTR>(InternalMalloc(pThread, iLen*sizeof(WCHAR)));
+        initial_dir = reinterpret_cast<LPWSTR>(InternalMalloc(iLen*sizeof(WCHAR)));
         if (NULL == initial_dir)
         {
             ERROR("malloc() failed! (initial_dir) \n");
@@ -2358,18 +2356,18 @@ CorUnix::InitializeProcessCommandLine(
         if (wcscpy_s(initial_dir, iLen, lpwstrFullPath) != SAFECRT_SUCCESS)
         {
             ERROR("wcscpy_s failed!\n");
-            InternalFree(pThread, initial_dir);
+            InternalFree(initial_dir);
             palError = ERROR_INTERNAL_ERROR;
             goto exit;
         }
 
         lpwstr[0] = '/';
 
-        InternalFree(pThread, g_lpwstrAppDir);
+        InternalFree(g_lpwstrAppDir);
         g_lpwstrAppDir = initial_dir;
     }
 
-    InternalFree(pThread, g_lpwstrCmdLine);
+    InternalFree(g_lpwstrCmdLine);
     g_lpwstrCmdLine = lpwstrCmdLine;
 
 exit:
@@ -2534,10 +2532,10 @@ PROCCleanupInitialProcess(VOID)
     InternalEnterCriticalSection(pThread, &g_csProcess);
     
     /* Free the application directory */
-    InternalFree (pThread, g_lpwstrAppDir);
+    InternalFree(g_lpwstrAppDir);
     
     /* Free the stored command line */
-    InternalFree (pThread, g_lpwstrCmdLine);
+    InternalFree(g_lpwstrCmdLine);
 
     InternalLeaveCriticalSection(pThread, &g_csProcess);
 
@@ -3488,7 +3486,7 @@ buildArgv(
     pThread = InternalGetCurrentThread();
     /* make sure to allocate enough space, up for the worst case scenario */
     int iLength = (iWlen + strlen(PROCESS_PELOADER_FILENAME) + strlen(lpAppPath) + 2);
-    lpAsciiCmdLine = (char *) InternalMalloc(pThread, iLength);
+    lpAsciiCmdLine = (char *) InternalMalloc(iLength);
 
     if (lpAsciiCmdLine == NULL)
     {
@@ -3599,7 +3597,7 @@ buildArgv(
                                  pChar, iWlen+1, NULL, NULL))
         {
             ASSERT("Unable to convert to a multibyte string\n");
-            InternalFree (pThread, lpAsciiCmdLine);
+            InternalFree(lpAsciiCmdLine);
             return NULL;
         }
     }
@@ -3683,11 +3681,11 @@ buildArgv(
 
     /* allocate lppargv according to the number of arguments
        in the command line */
-    lppArgv = (char **) InternalMalloc (pThread, (((*pnArg)+1) * sizeof(char *)));
+    lppArgv = (char **) InternalMalloc((((*pnArg)+1) * sizeof(char *)));
 
     if (lppArgv == NULL)
     {
-        InternalFree (pThread, lpAsciiCmdLine);
+        InternalFree(lpAsciiCmdLine);
         return NULL;
     }
 
@@ -3841,7 +3839,7 @@ getPath(
     pThread = InternalGetCurrentThread();
     /* Then try to look in the path */
     int iLen2 = strlen(MiscGetenv("PATH"))+1;
-    lpPath = (LPSTR) InternalMalloc(pThread, iLen2);
+    lpPath = (LPSTR) InternalMalloc(iLen2);
 
     if (!lpPath)
     {
@@ -3880,7 +3878,7 @@ getPath(
         /* verify if the path fit in the OUT parameter */
         if (slashLen + nextLen + strlen (lpFileName) >= iLen)
         {
-            InternalFree (pThread, lpPath);
+            InternalFree(lpPath);
             ERROR("buffer too small for full path\n");
             return FALSE;
         }
@@ -3898,14 +3896,14 @@ getPath(
         if (access (lpPathFileName, F_OK) == 0)
         {
             TRACE("Found %s in $PATH element %s\n", lpFileName, lpNext);
-            InternalFree(pThread, lpPath);
+            InternalFree(lpPath);
             return TRUE;
         }
 
         lpNext = lpCurrent;  /* search in the next directory */
     }
 
-    InternalFree (pThread, lpPath);
+    InternalFree(lpPath);
     TRACE("File %s not found in $PATH\n", lpFileName);
     return FALSE;
 }

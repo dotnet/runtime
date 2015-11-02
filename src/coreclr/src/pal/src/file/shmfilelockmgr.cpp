@@ -203,7 +203,7 @@ CSharedMemoryFileLockMgr::GetLockControllerForFile(
         dwShareMode = fileLocks->share_mode;
     }
 
-    pController = InternalNew<CSharedMemoryFileLockController>(pThread, dwAccessRights, shmFileLocks);
+    pController = InternalNew<CSharedMemoryFileLockController>(dwAccessRights, shmFileLocks);
     if (NULL == pController)
     {
         palError = ERROR_OUTOFMEMORY;
@@ -338,8 +338,7 @@ CSharedMemoryFileLockController::GetTransactionLock(
 
     if (NO_ERROR == palError)
     {
-        *ppTransactionLock = InternalNew<CSharedMemoryFileTransactionLock>(pThread,
-                                                                           m_shmFileLocks,
+        *ppTransactionLock = InternalNew<CSharedMemoryFileTransactionLock>(m_shmFileLocks,
                                                                            reinterpret_cast<PVOID>(this),
                                                                            lockRgnStart, 
                                                                            nbBytesToLock);
@@ -441,7 +440,7 @@ CSharedMemoryFileLockController::ReleaseController(
             );
     }
 
-    InternalDelete(pThread, this);
+    InternalDelete(this);
 }
 
 void
@@ -457,7 +456,7 @@ CSharedMemoryFileTransactionLock::ReleaseLock(
         RDWR_LOCK_RGN
         );
 
-    InternalDelete(pThread, this);
+    InternalDelete(this);
 }
 
 PAL_ERROR
