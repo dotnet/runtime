@@ -56,12 +56,20 @@ namespace System.Net.Security.Tests
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
         }
 
-        private static IEnumerable<object[]> ProtocolMismatchDataSsl2Specific()
+        private static IEnumerable<object[]> ProtocolMismatchDataSsl2SpecificWindows()
         {
             yield return new object[] {SslProtocols.Ssl2, SslProtocols.Ssl3, typeof (IOException)};
             yield return new object[] {SslProtocols.Ssl2, SslProtocols.Tls, typeof (IOException)};
             yield return new object[] {SslProtocols.Ssl2, SslProtocols.Tls11, typeof (IOException)};
             yield return new object[] {SslProtocols.Ssl2, SslProtocols.Tls12, typeof (IOException)};
+        }
+
+        private static IEnumerable<object[]> ProtocolMismatchDataSsl2SpecificLinux()
+        {
+            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls11, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(AuthenticationException) };
         }
 
         public ClientAsyncAuthenticateTest()
@@ -101,9 +109,17 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [MemberData("ProtocolMismatchDataSsl2Specific")]
+        [MemberData("ProtocolMismatchDataSsl2SpecificWindows")]
         [PlatformSpecific(PlatformID.Windows)]
-        public void ClientAsyncAuthenticate_MismatchProtocols_Ssl2_Fails(SslProtocols server, SslProtocols client, Type expected)
+        public void ClientAsyncAuthenticate_MismatchProtocols_Ssl2_Fails_Windows(SslProtocols server, SslProtocols client, Type expected)
+        {
+            Assert.Throws(expected, () => ClientAsyncSslHelper(server, client));
+        }
+
+        [Theory]
+        [MemberData("ProtocolMismatchDataSsl2SpecificLinux")]
+        [PlatformSpecific(PlatformID.Linux)]
+        public void ClientAsyncAuthenticate_MismatchProtocols_Ssl2_Fails_Linux(SslProtocols server, SslProtocols client, Type expected)
         {
             Assert.Throws(expected, () => ClientAsyncSslHelper(server, client));
         }
