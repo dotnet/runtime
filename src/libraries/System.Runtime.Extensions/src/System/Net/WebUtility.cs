@@ -9,8 +9,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
-using System.Net.Configuration;
-using System.Runtime.Versioning;
 using System.Text;
 
 namespace System.Net
@@ -26,15 +24,6 @@ namespace System.Net
         private const int UNICODE_PLANE16_END = 0x10FFFF;
 
         private const int UnicodeReplacementChar = '\uFFFD';
-
-        private static readonly UnicodeDecodingConformance s_htmlDecodeConformance;
-        private static readonly UnicodeEncodingConformance s_htmlEncodeConformance;
-
-        static WebUtility()
-        {
-            s_htmlDecodeConformance = UnicodeDecodingConformance.Strict;
-            s_htmlEncodeConformance = UnicodeEncodingConformance.Strict;
-        }
 
         #region HtmlEncode / HtmlDecode methods
 
@@ -112,7 +101,7 @@ namespace System.Net
                         }
                         else
 #endif // ENTITY_ENCODE_HIGH_ASCII_CHARS
-                        if (s_htmlEncodeConformance == UnicodeEncodingConformance.Strict && Char.IsSurrogate(ch))
+                        if (Char.IsSurrogate(ch))
                         {
                             int scalarValue = GetNextUnicodeScalarValueFromUtf16Surrogate(ref pch, ref cch);
                             if (scalarValue >= UNICODE_PLANE01_START)
@@ -202,29 +191,8 @@ namespace System.Net
 
                             if (parsedSuccessfully)
                             {
-                                switch (s_htmlDecodeConformance)
-                                {
-                                    case UnicodeDecodingConformance.Strict:
-                                        // decoded character must be U+0000 .. U+10FFFF, excluding surrogates
-                                        parsedSuccessfully = ((parsedValue < HIGH_SURROGATE_START) || (LOW_SURROGATE_END < parsedValue && parsedValue <= UNICODE_PLANE16_END));
-                                        break;
-
-                                    case UnicodeDecodingConformance.Compat:
-                                        // decoded character must be U+0001 .. U+FFFF
-                                        // null chars disallowed for compat with 4.0
-                                        parsedSuccessfully = (0 < parsedValue && parsedValue <= UNICODE_PLANE00_END);
-                                        break;
-
-                                    case UnicodeDecodingConformance.Loose:
-                                        // decoded character must be U+0000 .. U+10FFFF
-                                        parsedSuccessfully = (parsedValue <= UNICODE_PLANE16_END);
-                                        break;
-
-                                    default:
-                                        Debug.Assert(false, "Should never get here!");
-                                        parsedSuccessfully = false;
-                                        break;
-                                }
+                                // decoded character must be U+0000 .. U+10FFFF, excluding surrogates
+                                parsedSuccessfully = ((parsedValue < HIGH_SURROGATE_START) || (LOW_SURROGATE_END < parsedValue && parsedValue <= UNICODE_PLANE16_END));
                             }
 
                             if (parsedSuccessfully)
@@ -299,7 +267,7 @@ namespace System.Net
                         return s.Length - cch;
                     }
 #endif // ENTITY_ENCODE_HIGH_ASCII_CHARS
-                    else if (s_htmlEncodeConformance == UnicodeEncodingConformance.Strict && Char.IsSurrogate(ch))
+                    else if (Char.IsSurrogate(ch))
                     {
                         return s.Length - cch;
                     }
@@ -621,24 +589,16 @@ namespace System.Net
 
         private static bool StringRequiresHtmlDecoding(string s)
         {
-            if (s_htmlDecodeConformance == UnicodeDecodingConformance.Compat)
+            // this string requires html decoding if it contains '&' or a surrogate character
+            for (int i = 0; i < s.Length; i++)
             {
-                // this string requires html decoding only if it contains '&'
-                return (s.IndexOf('&') >= 0);
-            }
-            else
-            {
-                // this string requires html decoding if it contains '&' or a surrogate character
-                for (int i = 0; i < s.Length; i++)
+                char c = s[i];
+                if (c == '&' || Char.IsSurrogate(c))
                 {
-                    char c = s[i];
-                    if (c == '&' || Char.IsSurrogate(c))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
-                return false;
             }
+            return false;
         }
 
         #endregion
