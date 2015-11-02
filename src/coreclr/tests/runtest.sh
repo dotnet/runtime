@@ -247,7 +247,7 @@ function exit_with_error {
     if ((printUsage != 0)); then
         print_usage
     fi
-    exit 1
+    exit $EXIT_CODE_EXCEPTION
 }
 
 # Handle Ctrl-C. We will stop execution and print the results that
@@ -544,6 +544,11 @@ function run_tests_in_directory {
     done
 }
 
+# Exit code constants
+readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
+readonly EXIT_CODE_EXCEPTION=1     # Script exited because something exceptional happened (e.g. bad arguments, Ctrl-C interrupt).
+readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or more tests failed.
+
 # Argument variables
 testRootDir=
 testNativeBinDir=
@@ -561,7 +566,7 @@ do
     case $i in
         -h|--help)
             print_usage
-            exit 0
+            exit $EXIT_CODE_SUCCESS
             ;;
         -v|--verbose)
             verbose=1
@@ -605,7 +610,7 @@ do
         *)
             echo "Unknown switch: $i"
             print_usage
-            exit 0
+            exit $EXIT_CODE_SUCCESS
             ;;
     esac
 done
@@ -617,11 +622,11 @@ fi
 if [ -z "$testRootDir" ]; then
     echo "--testRootDir is required."
     print_usage
-    exit 1
+    exit $EXIT_CODE_EXCEPTION
 fi
 if [ ! -d "$testRootDir" ]; then
     echo "Directory specified by --testRootDir does not exist: $testRootDir"
-    exit 1
+    exit $EXIT_CODE_EXCEPTION
 fi
 
 xunit_output_begin
@@ -651,4 +656,9 @@ finish_remaining_tests
 
 print_results
 xunit_output_end
-exit 0
+
+if ((countFailedTests > 0)); then
+    exit $EXIT_CODE_TEST_FAILURE
+fi
+
+exit $EXIT_CODE_SUCCESS
