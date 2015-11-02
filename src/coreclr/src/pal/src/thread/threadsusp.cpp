@@ -67,11 +67,6 @@ static LONG g_ssSuspensionLock = 0;
 #if !HAVE_MACH_EXCEPTIONS
 static sigset_t smDefaultmask; // masks signals that the PAL handles as exceptions.
 #endif // !HAVE_MACH_EXCEPTIONS
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-static sigset_t smWaitmask; // used so a thread does not receive a SIGUSR1 or SIGUSR2, during a suspension retry, until it enters sigsuspend
-static sigset_t smSuspmask; // used when a thread is suspended via signals; blocks all signals except SIGUSR2
-static sigset_t smContmask; // used when a thread is in sigsuspend on a suspension retry, waiting to receive a SIGUSR1
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 
 /*++
 Function:
@@ -775,7 +770,7 @@ CThreadSuspensionInfo::WaitOnResumeSemaphore()
 #endif // USE_POSIX_SEMAPHORES
 }
 
-#if !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
+#if !HAVE_MACH_EXCEPTIONS
 /*++
 Function:
   InitializeSignalSets
@@ -790,9 +785,8 @@ signal handling thread.
 VOID
 CThreadSuspensionInfo::InitializeSignalSets()
 {
-#if !HAVE_MACH_EXCEPTIONS
     sigemptyset(&smDefaultmask);
-    
+
 #ifndef DO_NOT_USE_SIGNAL_HANDLING_THREAD
     // The default signal mask masks all common signals except those that represent 
     // synchronous exceptions in the PAL or are used by the system (e.g. SIGPROF on BSD).
@@ -820,45 +814,11 @@ CThreadSuspensionInfo::InitializeSignalSets()
     sigaddset(&smDefaultmask, SIGINFO);
 #endif
     sigaddset(&smDefaultmask, SIGPIPE);
+    sigaddset(&smDefaultmask, SIGUSR1);
     sigaddset(&smDefaultmask, SIGUSR2);
-
-    #if !USE_SIGNALS_FOR_THREAD_SUSPENSION
-    {
-        // Don't mask SIGUSR1 if using signal suspension since SIGUSR1 is needed
-        // to suspend threads.
-        sigaddset(&smDefaultmask, SIGUSR1);
-    }
-    #endif // !USE_SIGNALS_FOR_THREAD_SUSPENSION
 #endif // DO_NOT_USE_SIGNAL_HANDLING_THREAD
-#endif // !HAVE_MACH_EXCEPTIONS
-
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-#if !HAVE_MACH_EXCEPTIONS
-    #ifdef DO_NOT_USE_SIGNAL_HANDLING_THREAD
-    {
-        // If the SWT is turned on, SIGUSR2 was already added to the mask. 
-        // Otherwise, add it to the mask now.
-        sigaddset(&smDefaultmask, SIGUSR2);
-    }
-    #endif
-#endif // !HAVE_MACH_EXCEPTIONS
-
-    // smContmask is used to allow a thread to accept a SIGUSR1 when in sigsuspend, 
-    // after a pending suspension
-    sigfillset(&smContmask);
-    sigdelset(&smContmask, SIGUSR1);
-
-    // smSuspmask is used in sigsuspend during a safe suspension attempt.
-    sigfillset(&smSuspmask);
-    sigdelset(&smSuspmask, SIGUSR2);
-
-    // smWaitmask forces a thread to wait for a SIGUSR1 during a suspension retry
-    sigemptyset(&smWaitmask);
-    sigaddset(&smWaitmask, SIGUSR1);
-    sigaddset(&smWaitmask, SIGUSR2);   
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 }
-#endif // !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
+#endif // !HAVE_MACH_EXCEPTIONS
 
 /*++
 Function:
@@ -1028,13 +988,6 @@ CThreadSuspensionInfo::InitializePreCreate()
     m_fSemaphoresInitialized = TRUE;
 #endif // USE_POSIX_SEMAPHORES
 
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-    // m_smOrigmask is used to restore a thread's signal mask. 
-    // This is not needed for sigsuspend operations since sigsuspend 
-    // automatically restores the original mask
-    sigemptyset(&m_smOrigmask);
-#endif
-
 #if !HAVE_MACH_EXCEPTIONS
     // This signal mask blocks SIGUSR2 when signal suspension is turned on
     // (SIGUSR2 must be blocked for signal suspension), and masks other signals
@@ -1165,95 +1118,3 @@ CThreadSuspensionInfo::DestroySemaphoreIds()
     }
 }
 #endif // USE_SYSV_SEMAPHORES
-
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-/*++
-Function:
-  HandleSuspendSignal
-
-Returns:
-    true if the signal is expected by this PAL instance; false should 
-    be chained to the next signal handler.
-  
-HandleSuspendSignal is called from within the SIGUSR1 handler. The thread
-that invokes this function will suspend itself if it's suspension safe
-or set its pending flag to TRUE and continue executing until it becomes
-suspension safe.
---*/
-bool
-CThreadSuspensionInfo::HandleSuspendSignal(
-    CPalThread *pthrTarget
-    )
-{
-    if (!GetSuspendSignalSent())
-    {
-        return false;
-    }
-
-    SetSuspendSignalSent(FALSE);
-
-    if (IsSuspensionStateSafe())
-    {
-        SetSuspPending(FALSE);
-        if (!pthrTarget->GetCreateSuspended())
-        {
-            /* Note that we don't call sem_post when CreateSuspended is true. 
-            This is to handle the scenario where a thread suspends itself and 
-            another thread then attempts to suspend that thread. It won't wait 
-            on the semaphore if the self suspending thread already posted 
-            but didn't reach the matching wait. */
-            PostOnSuspendSemaphore();
-        }
-        else 
-        {
-            pthrTarget->SetStartStatus(TRUE);
-        }
-        sigsuspend(&smSuspmask);
-    }
-    else
-    {
-        SetSuspPending(TRUE);
-    }
-
-    return true;
-}
-
-/*++
-Function:
-  HandleResumeSignal
-
-Returns:
-    true if the signal is expected by this PAL instance; false should 
-    be chained to the next signal handler.
-  
-HandleResumeSignal is called from within the SIGUSR2 handler. 
-A thread suspended by sigsuspend will enter the SUGUSR2 handler
-and reach this function, which checks that SIGUSR2 was sent
-by InternalResumeThreadFromData and that the resumed thread
-still has a positive suspend count. After these checks, the resumed
-thread posts on its resume semaphore so the resuming thread can
-continue execution.
---*/
-bool
-CThreadSuspensionInfo::HandleResumeSignal()
-{
-    if (!GetResumeSignalSent())
-    {
-        return false;
-    }
-
-    SetResumeSignalSent(FALSE);
-
-    // This thread is no longer suspended - if it self suspended, 
-    // then its self suspension field should now be set to FALSE.
-    if (GetSelfSusp())
-    {
-        SetSelfSusp(FALSE);
-    }
-
-    PostOnResumeSemaphore();
-
-    return true;
-}
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
-

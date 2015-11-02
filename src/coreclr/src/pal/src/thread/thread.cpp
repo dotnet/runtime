@@ -1594,13 +1594,13 @@ CorUnix::InitializeGlobalThreadData(
         }
     }
 
-#if !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
+#if !HAVE_MACH_EXCEPTIONS
     //
     // Initialize the thread suspension signal sets.
     //
     
     CThreadSuspensionInfo::InitializeSignalSets();
-#endif // !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
+#endif // !HAVE_MACH_EXCEPTIONS
 
     return palError;
 }
