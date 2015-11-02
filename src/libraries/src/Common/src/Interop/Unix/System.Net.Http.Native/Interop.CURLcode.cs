@@ -5,7 +5,7 @@ internal static partial class Interop
 {
     internal static partial class Http
     {
-        // Class for constants defined for the enum CURLcode in curl.h
+        // Enum for constants defined for the enum CURLcode in curl.h
         internal enum CURLcode
         {
             CURLE_OK = 0,
