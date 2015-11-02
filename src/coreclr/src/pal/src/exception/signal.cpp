@@ -67,10 +67,6 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context);
 static void sigbus_handler(int code, siginfo_t *siginfo, void *context);
 static void sigint_handler(int code, siginfo_t *siginfo, void *context);
 static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-void CorUnix::suspend_handler(int code, siginfo_t *siginfo, void *context);
-void CorUnix::resume_handler(int code, siginfo_t *siginfo, void *context);
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 
 static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code, 
                                   native_context_t *ucontext);
@@ -89,11 +85,6 @@ struct sigaction g_previous_sigbus;
 struct sigaction g_previous_sigsegv;
 struct sigaction g_previous_sigint;
 struct sigaction g_previous_sigquit;
-
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-struct sigaction g_previous_sigusr1;
-struct sigaction g_previous_sigusr2;
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 
 // Pipe used for sending SIGINT / SIGQUIT signals notifications to a helper thread
 // that invokes the actual handler.
@@ -139,10 +130,6 @@ BOOL SEHInitializeSignals()
     handle_signal(SIGFPE, sigfpe_handler, &g_previous_sigfpe);
     handle_signal(SIGBUS, sigbus_handler, &g_previous_sigbus);
     handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-    handle_signal(SIGUSR1, suspend_handler, &g_previous_sigusr1);
-    handle_signal(SIGUSR2, resume_handler, &g_previous_sigusr2);
-#endif
 
     handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, NULL);
 
@@ -197,48 +184,6 @@ void SEHCleanupSignals()
 }
 
 /* internal function definitions **********************************************/
-
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-
-void CorUnix::suspend_handler(int code, siginfo_t *siginfo, void *context)
-{
-    if (PALIsInitialized())
-    {
-        CPalThread *pThread = InternalGetCurrentThread();
-        if (pThread->suspensionInfo.HandleSuspendSignal(pThread)) 
-        {
-            return;
-        }
-    }
-    
-    TRACE("SIGUSR1 signal was unhandled; chaining to previous sigaction\n");
-
-    if (g_previous_sigusr1.sa_sigaction != NULL)
-    {
-        g_previous_sigusr1.sa_sigaction(code, siginfo, context);
-    }
-}
-
-void CorUnix::resume_handler(int code, siginfo_t *siginfo, void *context)
-{
-    if (PALIsInitialized())
-    {
-        CPalThread *pThread = InternalGetCurrentThread();
-        if (pThread->suspensionInfo.HandleResumeSignal()) 
-        {
-            return;
-        }
-    }
-
-    TRACE("SIGUSR2 signal was unhandled; chaining to previous sigaction\n");
-
-    if (g_previous_sigusr2.sa_sigaction != NULL)
-    {
-        g_previous_sigusr2.sa_sigaction(code, siginfo, context);
-    }
-}
-
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 
 /*++
 Function :
