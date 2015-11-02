@@ -3,14 +3,13 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using CURLAUTH = Interop.Http.CURLAUTH;
 using CURLcode = Interop.Http.CURLcode;
-using CURLMcode = Interop.libcurl.CURLMcode;
+using CURLMcode = Interop.Http.CURLMcode;
 using CURLoption = Interop.Http.CURLoption;
 
 namespace System.Net.Http
@@ -482,11 +481,11 @@ namespace System.Net.Http
             }
         }
 
-        private static void ThrowIfCURLMError(int error)
+        private static void ThrowIfCURLMError(CURLMcode error)
         {
             if (error != CURLMcode.CURLM_OK)
             {
-                string msg = CurlException.GetCurlErrorString(error, true);
+                string msg = CurlException.GetCurlErrorString((int)error, true);
                 VerboseTrace(msg);
                 switch (error)
                 {
@@ -501,7 +500,7 @@ namespace System.Net.Http
                         throw new OutOfMemoryException(msg);
                     case CURLMcode.CURLM_INTERNAL_ERROR:
                     default:
-                        throw new CurlException(error, msg);
+                        throw new CurlException((int)error, msg);
                 }
             }
         }
