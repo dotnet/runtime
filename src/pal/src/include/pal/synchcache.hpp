@@ -114,11 +114,11 @@ namespace CorUnix
             }
 #endif // _DEBUG
 
-            Unlock(pthrCurrent);       
+            Unlock(pthrCurrent);
 
             for (j=i;j<n;j++)
             {
-                pvObjRaw = (void *) InternalNew<USynchCacheStackNode>(pthrCurrent);
+                pvObjRaw = (void *) InternalNew<USynchCacheStackNode>();
                 if (NULL == pvObjRaw)
                     break;
 #ifdef _DEBUG
@@ -161,14 +161,14 @@ namespace CorUnix
             }
             else
             {
-                InternalDelete(pthrCurrent, (char *)pNode);
+                InternalDelete((char *)pNode);
             }
-            Unlock(pthrCurrent);       
+            Unlock(pthrCurrent);
         }
 
         void Flush(CPalThread * pthrCurrent, bool fDontLock = false)
         {
-            USynchCacheStackNode * pNode, * pTemp;        
+            USynchCacheStackNode * pNode, * pTemp;
 
             if (!fDontLock)
             {
@@ -186,9 +186,9 @@ namespace CorUnix
             {
                 pTemp = pNode;
                 pNode = pNode->next;
-                InternalDelete(pthrCurrent, (char *)pTemp);
-            } 
-        }    
+                InternalDelete((char *)pTemp);
+            }
+        }
     };
 
     template <typename T> class CSHRSynchCache

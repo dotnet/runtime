@@ -165,7 +165,6 @@ LoadLibraryExA(
 
     LPSTR lpstr = NULL;
     HMODULE hModule = NULL;
-    CPalThread *pThread = NULL;
 
     PERF_ENTRY(LoadLibraryA);
     ENTRY("LoadLibraryExA (lpLibFileName=%p (%s)) \n",
@@ -177,9 +176,8 @@ LoadLibraryExA(
         goto Done;
     }
 
-    pThread = InternalGetCurrentThread();
     /* do the Dos/Unix conversion on our own copy of the name */
-    lpstr = InternalStrdup(pThread, lpLibFileName);
+    lpstr = InternalStrdup(lpLibFileName);
     if (!lpstr)
     {
         ERROR("InternalStrdup failure!\n");
@@ -194,7 +192,7 @@ LoadLibraryExA(
  Done:
     if (lpstr != NULL)
     {
-        InternalFree(pThread, lpstr);
+        InternalFree(lpstr);
     }
 
     LOGEXIT("LoadLibraryExA returns HMODULE %p\n", hModule);
@@ -503,7 +501,6 @@ FreeLibrary(
 {
     MODSTRUCT *module;
     BOOL retval = FALSE;
-    CPalThread *pThread;
 
     PERF_ENTRY(FreeLibrary);
     ENTRY("FreeLibrary (hLibModule=%p)\n", hLibModule);
@@ -598,10 +595,9 @@ FreeLibrary(
         WARN("dlclose() call failed! error message is \"%s\"\n", dlerror());
     }
 
-    pThread = InternalGetCurrentThread();
     /* release all memory */
-    InternalFree(pThread, module->lib_name);
-    InternalFree(pThread, module);
+    InternalFree(module->lib_name);
+    InternalFree(module);
 
     retval = TRUE;
 
@@ -983,7 +979,6 @@ Return value :
 extern "C"
 BOOL LOADSetExeName(LPWSTR name)
 {
-    CPalThread *pThread = InternalGetCurrentThread();
 #if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
     LPSTR pszExeName = NULL;
 #endif
@@ -992,7 +987,7 @@ BOOL LOADSetExeName(LPWSTR name)
     LockModuleList();
 
     // Save the exe path in the exe module struct
-    InternalFree(pThread, exe_module.lib_name);
+    InternalFree(exe_module.lib_name);
     exe_module.lib_name = name;
 
     // For platforms where we can't trust the handle to be constant, we need to 
@@ -1023,7 +1018,7 @@ BOOL LOADSetExeName(LPWSTR name)
 exit:
     if (pszExeName)
     {
-        InternalFree(pThread, pszExeName);
+        InternalFree(pszExeName);
     }
 #endif
     UnlockModuleList();
@@ -1045,7 +1040,6 @@ extern "C"
 void LOADFreeModules(BOOL bTerminateUnconditionally)
 {
     MODSTRUCT *module;
-    CPalThread *pThread = InternalGetCurrentThread();
 
     if (!exe_module.prev)
     {
@@ -1077,11 +1071,11 @@ void LOADFreeModules(BOOL bTerminateUnconditionally)
         if (module->dl_handle)
             dlclose( module->dl_handle );
 
-        InternalFree( pThread, module->lib_name );
+        InternalFree( module->lib_name );
         module->lib_name = NULL;
         if (module != &exe_module)
         {
-            InternalFree( pThread, module );
+            InternalFree( module );
         }
     }
     while (module != &exe_module);
@@ -1393,11 +1387,9 @@ static MODSTRUCT *LOADAllocModule(void *dl_handle, LPCSTR name)
 {   
     MODSTRUCT *module;
     LPWSTR wide_name;
-    CPalThread* pThread = NULL;
 
-    pThread = InternalGetCurrentThread();	
     /* no match found : try to create a new module structure */
-    module = (MODSTRUCT *)InternalMalloc(pThread, sizeof(MODSTRUCT));
+    module = (MODSTRUCT *)InternalMalloc(sizeof(MODSTRUCT));
     if (!module)
     {
         ERROR("malloc() failed! errno is %d (%s)\n", errno, strerror(errno));
@@ -1408,7 +1400,7 @@ static MODSTRUCT *LOADAllocModule(void *dl_handle, LPCSTR name)
     if (NULL == wide_name)
     {
         ERROR("couldn't convert name to a wide-character string\n");
-        InternalFree(pThread, module);
+        InternalFree(module);
         return NULL;
     }
 
@@ -1909,8 +1901,7 @@ MODSTRUCT *LOADGetPalLibrary()
         // Make sure it's terminated with a slash.
         if (g_szCoreCLRPath == NULL)
         {
-            CPalThread* pThread = InternalGetCurrentThread();
-            g_szCoreCLRPath = (char*) InternalMalloc(pThread, g_cbszCoreCLRPath);
+            g_szCoreCLRPath = (char*) InternalMalloc(g_cbszCoreCLRPath);
 
             if (g_szCoreCLRPath == NULL)
             {

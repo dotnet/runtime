@@ -804,7 +804,7 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::GetSynchControllersForObjects
 
-    Internal common impelmentation for GetSynchWaitControllersForObjects and 
+    Internal common implementation for GetSynchWaitControllersForObjects and 
     GetSynchStateControllersForObjects
     --*/
     PAL_ERROR CPalSynchronizationManager::GetSynchControllersForObjects(
@@ -1128,7 +1128,7 @@ namespace CorUnix
             psdSynchData = static_cast<CSynchData *>(pvSynchData);
         }
 
-        psdSynchData->Release(pthrCurrent);                        
+        psdSynchData->Release(pthrCurrent);
 
     FOSD_exit:
         return;
@@ -1517,7 +1517,7 @@ namespace CorUnix
         InternalInitializeCriticalSection(&s_csSynchProcessLock);
         InternalInitializeCriticalSection(&s_csMonitoredProcessesLock);        
         
-        pSynchManager = InternalNew<CPalSynchronizationManager>(pthrCurrent);
+        pSynchManager = InternalNew<CPalSynchronizationManager>();
         if (NULL == pSynchManager)
         {
             ERROR("Failed to allocate memory for Synchronization Manager");
@@ -1549,9 +1549,9 @@ namespace CorUnix
             }
             s_pObjSynchMgr = NULL;
             g_pSynchronizationManager = NULL;
-            InternalDelete(pthrCurrent, pSynchManager);
+            InternalDelete(pSynchManager);
         }
-        
+
         return palErr;
     }
 
@@ -2556,7 +2556,7 @@ namespace CorUnix
             // If the array is full, add the target thread object at the end 
             // of the overflow list
             DeferredSignalingListNode * pdsln = 
-                InternalNew<DeferredSignalingListNode>(pthrCurrent);
+                InternalNew<DeferredSignalingListNode>();
 
             if (pdsln)
             {
@@ -3375,10 +3375,10 @@ namespace CorUnix
         }
         else
         {
-            pmpln = InternalNew<MonitoredProcessesListNode>(pthrCurrent);
+            pmpln = InternalNew<MonitoredProcessesListNode>();
             if (NULL == pmpln)
             {
-                ERROR("No memory to allocate MonitoredProcessesListNode structure\n");            
+                ERROR("No memory to allocate MonitoredProcessesListNode structure\n");
                 palErr = ERROR_NOT_ENOUGH_MEMORY; 
                 goto RPFM_exit;
             }
@@ -3389,7 +3389,7 @@ namespace CorUnix
             pmpln->pProcLocalData = pProcLocalData;
 
             // Acquire SynchData and AddRef it
-            pmpln->psdSynchData = psdSynchData;            
+            pmpln->psdSynchData = psdSynchData;
             psdSynchData->AddRef();
             
             pmpln->pNext = m_pmplnMonitoredProcesses;
@@ -3478,7 +3478,7 @@ namespace CorUnix
 
                 m_lMonitoredProcessesCount--;
                 pmpln->psdSynchData->Release(pthrCurrent);                
-                InternalDelete(pthrCurrent, pmpln);
+                InternalDelete(pmpln);
             }
         }
         else
@@ -3686,7 +3686,7 @@ namespace CorUnix
                 pNode->psdSynchData->Release(pthrCurrent);
 
                 // Delete the node
-                InternalDelete(pthrCurrent, pNode);
+                InternalDelete(pNode);
 
                 // Go to the next
                 pNode = pNext;
@@ -3736,7 +3736,7 @@ namespace CorUnix
             pNode = m_pmplnMonitoredProcesses;
             m_pmplnMonitoredProcesses = pNode->pNext;
             pNode->psdSynchData->Release(pthrCurrent);
-            InternalDelete(pthrCurrent, pNode);
+            InternalDelete(pNode);
         }
 
         // Release the monitored processes lock
@@ -4063,7 +4063,7 @@ namespace CorUnix
         {
             int i;
 
-            rgshridWTLNodes = InternalNewArray<SharedID>(pthrCurrent, ulcWaitingThreads);
+            rgshridWTLNodes = InternalNewArray<SharedID>(ulcWaitingThreads);
             if (NULL == rgshridWTLNodes)
             {
                 palError = ERROR_OUTOFMEMORY;
@@ -4272,7 +4272,7 @@ namespace CorUnix
 
         if (NULL != rgshridWTLNodes)
         {
-            InternalDeleteArray(pthrCurrent, rgshridWTLNodes);
+            InternalDeleteArray(rgshridWTLNodes);
         }
 
         return palError;
@@ -4637,7 +4637,7 @@ namespace CorUnix
                     pdsln->pthrTarget->ReleaseThreadReference();
 
                     // Delete the node
-                    InternalDelete(pthrCurrent, pdsln);
+                    InternalDelete(pdsln);
 
                     lIdx += 1;
                 }
