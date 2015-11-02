@@ -76,7 +76,7 @@ namespace TestLibrary
             [SecuritySafeCritical]
             get
             {
-                return true;
+                return Path.DirectorySeparatorChar == '\\';
             }
         }
 
