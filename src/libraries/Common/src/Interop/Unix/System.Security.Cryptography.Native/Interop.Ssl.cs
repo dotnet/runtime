@@ -6,7 +6,9 @@ using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -141,6 +143,15 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern void GetStreamSizes(out int header, out int trailer, out int maximumMessage);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int SslGetPeerFinished(SafeSslHandle ssl, IntPtr buf, int count);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int SslGetFinished(SafeSslHandle ssl, IntPtr buf, int count);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern bool SslSessionReused(SafeSslHandle ssl);
 
         internal static class SslMethods
         {
@@ -277,6 +288,100 @@ namespace Microsoft.Win32.SafeHandles
 
         private SafeSslHandle() : base(IntPtr.Zero, true)
         {
+        }
+    }
+
+    internal sealed class SafeChannelBindingHandle : SafeHandle
+    {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SecChannelBindings
+        {
+            internal int InitiatorLength;
+            internal int InitiatorOffset;
+            internal int AcceptorAddrType;
+            internal int AcceptorLength;
+            internal int AcceptorOffset;
+            internal int ApplicationDataLength;
+            internal int ApplicationDataOffset;
+        }
+
+        private static readonly byte[] s_tlsServerEndPointByteArray = Encoding.UTF8.GetBytes("tls-server-end-point:");
+        private static readonly byte[] s_tlsUniqueByteArray = Encoding.UTF8.GetBytes("tls-unique:");
+        private static readonly int s_secChannelBindingSize = Marshal.SizeOf<SecChannelBindings>();
+        private readonly int _cbtPrefixByteArraySize;
+        private const int CertHashMaxSize = 128;
+
+        internal int Length
+        {
+            get;
+            private set;
+        }
+
+        internal IntPtr CertHashPtr
+        {
+            get;
+            private set;
+        }
+
+        internal void SetCertHash(byte[] certHashBytes)
+        {
+            Debug.Assert(certHashBytes != null, "check certHashBytes is not null");
+            int length = certHashBytes.Length;
+            Marshal.Copy(certHashBytes, 0, CertHashPtr, length);
+            SetCertHashLength(length);
+        }
+
+        private byte[] GetPrefixBytes(ChannelBindingKind kind)
+        {
+            if (kind == ChannelBindingKind.Endpoint)
+            {
+                return s_tlsServerEndPointByteArray;
+            }
+            else if (kind == ChannelBindingKind.Unique)
+            {
+                return s_tlsUniqueByteArray;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        internal SafeChannelBindingHandle(ChannelBindingKind kind)
+            : base(IntPtr.Zero, true)
+        {
+            byte[] cbtPrefix = GetPrefixBytes(kind);
+            _cbtPrefixByteArraySize = cbtPrefix.Length;
+            handle = Marshal.AllocHGlobal(s_secChannelBindingSize + _cbtPrefixByteArraySize + CertHashMaxSize);
+            IntPtr cbtPrefixPtr = handle + s_secChannelBindingSize;
+            Marshal.Copy(cbtPrefix, 0, cbtPrefixPtr, _cbtPrefixByteArraySize);
+            CertHashPtr = cbtPrefixPtr + _cbtPrefixByteArraySize;
+            Length = CertHashMaxSize;
+        }
+
+        internal void SetCertHashLength(int certHashLength)
+        {
+            int cbtLength = _cbtPrefixByteArraySize + certHashLength;
+            Length = s_secChannelBindingSize + cbtLength;
+
+            SecChannelBindings channelBindings = new SecChannelBindings()
+            {
+                ApplicationDataLength = cbtLength,
+                ApplicationDataOffset = s_secChannelBindingSize
+            };
+            Marshal.StructureToPtr(channelBindings, handle, true);
+        }
+
+        public override bool IsInvalid
+        {
+            get { return handle == IntPtr.Zero; }
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            Marshal.FreeHGlobal(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
         }
     }
 }
