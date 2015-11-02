@@ -1,6 +1,6 @@
-//-----------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 namespace System.Runtime.Serialization
 {
     using System;
@@ -8,7 +8,7 @@ namespace System.Runtime.Serialization
     using System.Reflection;
     using System.Collections.ObjectModel;
 
-    static class DataContractSurrogateCaller
+    internal static class DataContractSurrogateCaller
     {
         internal static Type GetDataContractType(ISerializationSurrogateProvider surrogateProvider, Type type)
         {

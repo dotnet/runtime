@@ -1560,7 +1560,7 @@ namespace System.Xml
         }
 
         private async Task WriteBase64AsyncImpl(byte[] buffer, int offset, int count)
-        { 
+        {
             if (count > 0)
             {
                 if (_trailByteCount > 0)
@@ -1641,7 +1641,7 @@ namespace System.Xml
 
         private Task FlushBase64Async()
         {
-            return _trailByteCount > 0? FlushTrailBytesAsync() : Task.CompletedTask;
+            return _trailByteCount > 0 ? FlushTrailBytesAsync() : Task.CompletedTask;
         }
 
         private void FlushTrailBytes()
