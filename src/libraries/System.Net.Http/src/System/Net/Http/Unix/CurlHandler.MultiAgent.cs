@@ -13,9 +13,10 @@ using System.Threading.Tasks;
 using CURLAUTH = Interop.Http.CURLAUTH;
 using CURLcode = Interop.Http.CURLcode;
 using CURLINFO = Interop.Http.CURLINFO;
-using CURLMcode = Interop.libcurl.CURLMcode;
+using CURLMcode = Interop.Http.CURLMcode;
+using CURLMSG = Interop.Http.CURLMSG;
 using CURLoption = Interop.Http.CURLoption;
-using SafeCurlMultiHandle = Interop.libcurl.SafeCurlMultiHandle;
+using SafeCurlMultiHandle = Interop.Http.SafeCurlMultiHandle;
 using size_t = System.UInt64; // TODO: IntPtr
 
 namespace System.Net.Http
@@ -203,7 +204,7 @@ namespace System.Net.Http
                 // we're processing other requests.  Once the work quiesces and there are no more requests
                 // to process, this multi handle will be released as the worker goes away.  The next
                 // time a request arrives and a new worker is spun up, a new multi handle will be created.
-                SafeCurlMultiHandle multiHandle = Interop.libcurl.curl_multi_init();
+                SafeCurlMultiHandle multiHandle = Interop.Http.MultiCreate();
                 if (multiHandle.IsInvalid)
                 {
                     throw CreateHttpRequestException();
@@ -241,21 +242,20 @@ namespace System.Net.Http
                         }
 
                         // We have one or more active operations. Run any work that needs to be run.
-                        int running_handles;
-                        ThrowIfCURLMError(Interop.libcurl.curl_multi_perform(multiHandle, out running_handles));
+                        ThrowIfCURLMError(Interop.Http.MultiPerform(multiHandle));
 
                         // Complete and remove any requests that have finished being processed.
-                        int pendingMessages;
-                        IntPtr messagePtr;
-                        while ((messagePtr = Interop.libcurl.curl_multi_info_read(multiHandle, out pendingMessages)) != IntPtr.Zero)
+                        CURLMSG message;
+                        IntPtr easyHandle;
+                        CURLcode result;
+                        while (Interop.Http.MultiInfoRead(multiHandle, out message, out easyHandle, out result))
                         {
-                            Interop.libcurl.CURLMsg message = Marshal.PtrToStructure<Interop.libcurl.CURLMsg>(messagePtr);
-                            Debug.Assert(message.msg == Interop.libcurl.CURLMSG.CURLMSG_DONE, "CURLMSG_DONE is supposed to be the only message type");
+                            Debug.Assert(message == CURLMSG.CURLMSG_DONE, "CURLMSG_DONE is supposed to be the only message type");
 
-                            if (message.msg == Interop.libcurl.CURLMSG.CURLMSG_DONE)
+                            if (message == CURLMSG.CURLMSG_DONE)
                             {
                                 IntPtr gcHandlePtr;
-                                CURLcode getInfoResult = Interop.Http.EasyGetInfoPointer(message.easy_handle, CURLINFO.CURLINFO_PRIVATE, out gcHandlePtr);
+                                CURLcode getInfoResult = Interop.Http.EasyGetInfoPointer(easyHandle, CURLINFO.CURLINFO_PRIVATE, out gcHandlePtr);
                                 Debug.Assert(getInfoResult == CURLcode.CURLE_OK, "Failed to get info on a completing easy handle");
                                 if (getInfoResult == CURLcode.CURLE_OK)
                                 {
@@ -265,37 +265,25 @@ namespace System.Net.Http
                                     if (gotActiveOp)
                                     {
                                         DeactivateActiveRequest(multiHandle, completedOperation.Easy, gcHandlePtr, completedOperation.CancellationRegistration);
-                                        FinishRequest(completedOperation.Easy, message.result);
+                                        FinishRequest(completedOperation.Easy, result);
                                     }
                                 }
                             }
                         }
 
-                        // Wait for more things to do.  Even with our cancellation mechanism, we specify a timeout so that
-                        // just in case something goes wrong we can recover gracefully.  This timeout is relatively long.
-                        // Note, though, that libcurl has its own internal timeout, which can be requested separately
-                        // via curl_multi_timeout, but which is used implicitly by curl_multi_wait if it's shorter
-                        // than the value we provide.
-                        const int FailsafeTimeoutMilliseconds = 1000;
-                        int numFds;
-                        unsafe
+                        // Wait for more things to do.
+                        bool isWakeupRequestedPipeActive;
+                        bool isTimeout;
+                        ThrowIfCURLMError(Interop.Http.MultiWait(multiHandle, _wakeupRequestedPipeFd, out isWakeupRequestedPipeActive, out isTimeout));
+                        if (isWakeupRequestedPipeActive)
                         {
-                            Interop.libcurl.curl_waitfd extraFds = new Interop.libcurl.curl_waitfd {
-                                fd = _wakeupRequestedPipeFd,
-                                events = Interop.libcurl.CURL_WAIT_POLLIN,
-                                revents = 0
-                            };
-                            ThrowIfCURLMError(Interop.libcurl.curl_multi_wait(multiHandle, &extraFds, 1, FailsafeTimeoutMilliseconds, out numFds));
-                            if ((extraFds.revents & Interop.libcurl.CURL_WAIT_POLLIN) != 0)
-                            {
-                                // We woke up (at least in part) because a wake-up was requested.  
-                                // Read the data out of the pipe to clear it.
-                                Debug.Assert(numFds >= 1, "numFds should have been at least one, as the extraFd was set");
-                                VerboseTrace("curl_multi_wait wake-up notification");
-                                ReadFromWakeupPipeWhenKnownToContainData();
-                            }
-                            VerboseTraceIf(numFds == 0, "curl_multi_wait timeout");
+                            // We woke up (at least in part) because a wake-up was requested.  
+                            // Read the data out of the pipe to clear it.
+                            Debug.Assert(!isTimeout, "should not have timed out if isExtraFileDescriptorActive");
+                            VerboseTrace("curl_multi_wait wake-up notification");
+                            ReadFromWakeupPipeWhenKnownToContainData();
                         }
+                        VerboseTraceIf(isTimeout, "curl_multi_wait timeout");
 
                         // PERF NOTE: curl_multi_wait uses poll (assuming it's available), which is O(N) in terms of the number of fds 
                         // being waited on. If this ends up being a scalability bottleneck, we can look into using the curl_multi_socket_* 
@@ -404,7 +392,7 @@ namespace System.Net.Http
                     easy._associatedMultiAgent = this;
                     easy.SetCurlOption(CURLoption.CURLOPT_PRIVATE, gcHandlePtr);
                     SetCurlCallbacks(easy, gcHandlePtr);
-                    ThrowIfCURLMError(Interop.libcurl.curl_multi_add_handle(multiHandle, easy._easyHandle));
+                    ThrowIfCURLMError(Interop.Http.MultiAddHandle(multiHandle, easy._easyHandle));
                 }
                 catch (Exception exc)
                 {
@@ -441,7 +429,7 @@ namespace System.Net.Http
                 IntPtr gcHandlePtr, CancellationTokenRegistration cancellationRegistration)
             {
                 // Remove the operation from the multi handle so we can shut down the multi handle cleanly
-                int removeResult = Interop.libcurl.curl_multi_remove_handle(multiHandle, easy._easyHandle);
+                CURLMcode removeResult = Interop.Http.MultiRemoveHandle(multiHandle, easy._easyHandle);
                 Debug.Assert(removeResult == CURLMcode.CURLM_OK, "Failed to remove easy handle"); // ignore cleanup errors in release
 
                 // Release the associated GCHandle so that it's not kept alive forever
@@ -539,7 +527,7 @@ namespace System.Net.Http
                 // or due to completing the entire response.
                 completedOperation.Cleanup();
             }
-            
+
             private static size_t CurlReceiveHeadersCallback(IntPtr buffer, size_t size, size_t nitems, IntPtr context)
             {
                 CurlHandler.VerboseTrace("size: " + size + ", nitems: " + nitems);
