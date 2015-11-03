@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.X509Certificates
             Critical = critical;
         }
 
-        public X509Extension(String oid, byte[] rawData, bool critical)
+        public X509Extension(string oid, byte[] rawData, bool critical)
             : this(new Oid(oid), rawData, critical)
         {
         }
@@ -53,10 +53,9 @@ namespace System.Security.Cryptography.X509Certificates
             Critical = extension.Critical;
         }
 
-        internal X509Extension(String oidValue)
+        internal X509Extension(string oidValue)
         {
             base.Oid = Oid.FromOidValue(oidValue, OidGroup.ExtensionOrAttribute);
-            return;
         }
     }
 }

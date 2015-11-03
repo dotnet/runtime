@@ -22,7 +22,7 @@ namespace Internal.NativeCrypto
         public int cbData;
         public IntPtr pbData;
 
-        public String OID
+        public string OID
         {
             get
             {
@@ -30,7 +30,7 @@ namespace Internal.NativeCrypto
             }
         }
 
-        public String Name
+        public string Name
         {
             get
             {
@@ -48,9 +48,9 @@ namespace Internal.NativeCrypto
 
     internal static partial class OidInfo
     {
-        private const String Capi2Dll = "Crypt32.dll";
+        private const string Capi2Dll = "Crypt32.dll";
 
-        public static CRYPT_OID_INFO FindOidInfo(CryptOidInfoKeyType keyType, String key, OidGroup group, bool fallBackToAllGroups)
+        public static CRYPT_OID_INFO FindOidInfo(CryptOidInfoKeyType keyType, string key, OidGroup group, bool fallBackToAllGroups)
         {
             const OidGroup CRYPT_OID_DISABLE_SEARCH_DS_FLAG = unchecked((OidGroup)0x80000000);
             Debug.Assert(key != null);

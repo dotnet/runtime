@@ -19,17 +19,17 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class CertificatePal : IDisposable, ICertificatePal
     {
-        public static ICertificatePal FromBlob(byte[] rawData, String password, X509KeyStorageFlags keyStorageFlags)
+        public static ICertificatePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(rawData, null, password, keyStorageFlags);
         }
 
-        public static ICertificatePal FromFile(String fileName, String password, X509KeyStorageFlags keyStorageFlags)
+        public static ICertificatePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(null, fileName, password, keyStorageFlags);
         }
 
-        private static ICertificatePal FromBlobOrFile(byte[] rawData, String fileName, String password, X509KeyStorageFlags keyStorageFlags)
+        private static ICertificatePal FromBlobOrFile(byte[] rawData, string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(rawData != null || fileName != null);
 
@@ -145,7 +145,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static SafeCertContextHandle FilterPFXStore(byte[] rawData, String password, PfxCertStoreFlags pfxCertStoreFlags)
+        private static SafeCertContextHandle FilterPFXStore(byte[] rawData, string password, PfxCertStoreFlags pfxCertStoreFlags)
         {
             SafeCertStoreHandle hStore;
             unsafe

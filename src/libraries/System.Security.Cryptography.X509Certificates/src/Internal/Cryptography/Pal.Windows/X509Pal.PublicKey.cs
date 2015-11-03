@@ -243,7 +243,6 @@ namespace Internal.Cryptography.Pal
                         pLocal = pCertDssParameters->p.ToByteArray();
                         qLocal = pCertDssParameters->q.ToByteArray();
                         gLocal = pCertDssParameters->g.ToByteArray();
-                        return;
                     }
                 );
             }
@@ -251,7 +250,6 @@ namespace Internal.Cryptography.Pal
             p = pLocal;
             q = qLocal;
             g = gLocal;
-            return;
         }
     }
 }

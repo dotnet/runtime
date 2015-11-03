@@ -22,7 +22,7 @@ namespace Internal.Cryptography.Pal
     /// </summary>
     internal sealed partial class X509Pal : IX509Pal
     {
-        public String X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)
+        public string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag)
         {
             CertNameStrTypeAndFlags dwStrType = CertNameStrTypeAndFlags.CERT_X500_NAME_STR | MapNameToStrFlag(flag);
             unsafe
@@ -46,7 +46,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public byte[] X500DistinguishedNameEncode(String distinguishedName, X500DistinguishedNameFlags flag)
+        public byte[] X500DistinguishedNameEncode(string distinguishedName, X500DistinguishedNameFlags flag)
         {
             Debug.Assert(distinguishedName != null);
 
@@ -63,10 +63,10 @@ namespace Internal.Cryptography.Pal
             return encodedName;
         }
 
-        public String X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine)
+        public string X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine)
         {
             if (encodedDistinguishedName == null || encodedDistinguishedName.Length == 0)
-                return String.Empty;
+                return string.Empty;
 
             FormatObjectStringType stringType = multiLine ? FormatObjectStringType.CRYPT_FORMAT_STR_MULTI_LINE : FormatObjectStringType.None;
 

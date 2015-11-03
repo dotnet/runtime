@@ -10,11 +10,11 @@ namespace Internal.Cryptography.Pal
     internal interface IX509Pal
     {
         AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal);
-        String X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag);
-        byte[] X500DistinguishedNameEncode(String distinguishedName, X500DistinguishedNameFlags flag);
-        String X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine);
+        string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag);
+        byte[] X500DistinguishedNameEncode(string distinguishedName, X500DistinguishedNameFlags flag);
+        string X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine);
         X509ContentType GetCertContentType(byte[] rawData);
-        X509ContentType GetCertContentType(String fileName);
+        X509ContentType GetCertContentType(string fileName);
         byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages);
         void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages);
         bool SupportsLegacyBasicConstraintsExtension { get; }

@@ -140,7 +140,6 @@ namespace Internal.Cryptography.Pal.Native
         {
             this.cbData = cbData;
             this.pbData = pbData;
-            return;
         }
 
         public int cbData;
