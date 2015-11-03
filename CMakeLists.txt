@@ -28,7 +28,7 @@ endif()
 add_executable(corehost ${SOURCES})
 
 # Older CMake doesn't support CMAKE_CXX_STANDARD and GCC/Clang need a switch to enable C++ 11
-if(${CMAKE_CXX_COMPILER_ID} MATCHES "(Clang|GCC)")
+if(${CMAKE_CXX_COMPILER_ID} MATCHES "(Clang|GNU)")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
