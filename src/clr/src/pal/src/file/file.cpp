@@ -284,9 +284,9 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, LPSTR lpBuffer, DWORD c
         char pszCwdBuffer[MAXPATHLEN+1]; // MAXPATHLEN is for getcwd()
         DWORD cchCwdBuffer = sizeof(pszCwdBuffer)/sizeof(pszCwdBuffer[0]);
 
-        if (InternalGetcwd(pszCwdBuffer, cchCwdBuffer) == NULL)
+        if (getcwd(pszCwdBuffer, cchCwdBuffer) == NULL)
         {
-            WARN("InternalGetcwd(NULL) failed with error %d\n", errno);
+            WARN("getcwd(NULL) failed with error %d\n", errno);
             palError = DIRGetLastErrorFromErrno();
             goto LExit;
         }
@@ -842,7 +842,7 @@ done:
         }
         if (bFileCreated)
         {
-            if (-1 == InternalUnlink(lpUnixPath))
+            if (-1 == unlink(lpUnixPath))
             {
                 WARN("can't delete file; unlink() failed with errno %d (%s)\n",
                      errno, strerror(errno));
@@ -1243,10 +1243,10 @@ DeleteFileA(
     //   Instead, we call unlink which will succeed.
 
     if (palError == NO_ERROR &&
-	dwShareMode != SHARE_MODE_NOT_INITALIZED &&
-	(dwShareMode & FILE_SHARE_DELETE) != 0)
+    dwShareMode != SHARE_MODE_NOT_INITALIZED &&
+    (dwShareMode & FILE_SHARE_DELETE) != 0)
     {
-      result = InternalUnlink( lpFullUnixFileName );
+      result = unlink( lpFullUnixFileName );
     }
     else
     {
@@ -1497,7 +1497,7 @@ MoveFileExA(
         }
     }
 
-    result = InternalRename( source, dest );
+    result = rename( source, dest );
     if ((result < 0) && (dwFlags & MOVEFILE_REPLACE_EXISTING) &&
         ((errno == ENOTDIR) || (errno == EEXIST)))
     {
@@ -1505,7 +1505,7 @@ MoveFileExA(
         
         if ( bRet ) 
         {
-            result = InternalRename( source, dest );
+            result = rename( source, dest );
         }
         else
         { 
