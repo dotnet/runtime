@@ -393,3 +393,4 @@ long_and_imm: dest:i src1:i len:48
 long_or_imm: dest:i src1:i len:48
 long_xor_imm: dest:i src1:i len:48
 
+gc_safe_point: len:0

@@ -386,3 +386,5 @@ atomic_add_i4: src1:b src2:i dest:i len:28
 atomic_add_i8: src1:b src2:i dest:i len:28
 atomic_cas_i4: src1:b src2:i src3:i dest:i len:38
 atomic_cas_i8: src1:b src2:i src3:i dest:i len:38
+
+gc_safe_point: len:0

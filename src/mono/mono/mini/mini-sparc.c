@@ -3637,6 +3637,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MEMORY_BARRIER:
 			sparc_membar (code, sparc_membar_all);
 			break;
+		case OP_GC_SAFE_POINT:
+			break;
 
 		default:
 #ifdef __GNUC__

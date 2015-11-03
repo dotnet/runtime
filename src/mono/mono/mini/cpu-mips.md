@@ -455,3 +455,5 @@ mips_cond_exc_iov: src1:i src2:i len:44
 mips_cond_exc_ino: src1:i src2:i len:44
 mips_cond_exc_ic: src1:i src2:i len:44
 mips_cond_exc_inc: src1:i src2:i len:44
+
+gc_safe_point: len:0

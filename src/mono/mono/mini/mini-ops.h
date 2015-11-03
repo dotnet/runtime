@@ -1067,6 +1067,8 @@ MINI_OP(OP_GC_SPILL_SLOT_LIVENESS_DEF, "gc_spill_slot_liveness_def", NONE, NONE,
  */
 MINI_OP(OP_GC_PARAM_SLOT_LIVENESS_DEF, "gc_param_slot_liveness_def", NONE, NONE, NONE)
 
+MINI_OP(OP_GC_SAFE_POINT, "gc_safe_point", NONE, IREG, NONE)
+
 /*
  * Check if the class given by sreg1 was inited, if not, call
  * mono_generic_class_init_trampoline () though a trampoline.
@@ -1076,10 +1078,6 @@ MINI_OP(OP_GC_PARAM_SLOT_LIVENESS_DEF, "gc_param_slot_liveness_def", NONE, NONE,
 MINI_OP(OP_GENERIC_CLASS_INIT, "generic_class_init", NONE, IREG, NONE)
 
 /* Arch specific opcodes */
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_S390X)
-MINI_OP(OP_GC_SAFE_POINT,     "gc_safe_point", NONE, IREG, NONE)
-#endif
-
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null", NONE, IREG, NONE)
 MINI_OP(OP_X86_COMPARE_MEMBASE_REG,"x86_compare_membase_reg", NONE, IREG, IREG)

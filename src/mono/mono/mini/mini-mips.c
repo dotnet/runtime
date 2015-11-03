@@ -4640,6 +4640,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info (cfg, offset, (MonoJumpInfoType)ins->inst_c1, ins->inst_p0);
 			mips_load (code, ins->dreg, 0x0f0f0f0f);
 			break;
+		case OP_GC_SAFE_POINT:
+			break;
 
 
 		default:

@@ -3102,6 +3102,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			ia64_break_i (code, 0);
 			break;
+		case OP_GC_SAFE_POINT:
+			break;
 
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
