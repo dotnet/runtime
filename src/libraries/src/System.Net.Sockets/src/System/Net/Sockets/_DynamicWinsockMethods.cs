@@ -4,6 +4,7 @@
 using System.Security;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -172,7 +173,7 @@ namespace System.Net.Sockets
 
         private void EnsureWSARecvMsg(SafeCloseSocket socketHandle)
         {
-            if (_recvMsg == null)
+            if (Volatile.Read(ref _recvMsg) == null)
             {
                 lock (_lockObject)
                 {
@@ -180,8 +181,8 @@ namespace System.Net.Sockets
                     {
                         Guid guid = new Guid("{0xf689d7c8,0x6f1f,0x436b,{0x8a,0x53,0xe5,0x4f,0xe3,0x51,0xc3,0x22}}");
                         IntPtr ptrWSARecvMsg = LoadDynamicFunctionPointer(socketHandle, ref guid);
-                        _recvMsg = Marshal.GetDelegateForFunctionPointer<WSARecvMsgDelegate>(ptrWSARecvMsg);
                         _recvMsgBlocking = Marshal.GetDelegateForFunctionPointer<WSARecvMsgDelegateBlocking>(ptrWSARecvMsg);
+                        Volatile.Write(ref _recvMsg, Marshal.GetDelegateForFunctionPointer<WSARecvMsgDelegate>(ptrWSARecvMsg));
                     }
                 }
             }
