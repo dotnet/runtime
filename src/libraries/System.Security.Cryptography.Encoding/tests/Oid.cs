@@ -8,6 +8,14 @@ namespace System.Security.Cryptography.Encoding.Tests
 {
     public static class OidTests
     {
+        [Fact]
+        public static void EmptyOid()
+        {
+            Oid oid = new Oid("");
+            Assert.Equal("", oid.Value);
+            Assert.Null(oid.FriendlyName);
+        }
+
         [Theory]
         [MemberData("ValidOidFriendlyNamePairs")]
         public static void LookupOidByValue_Ctor(string oidValue, string friendlyName)
