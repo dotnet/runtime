@@ -319,8 +319,8 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
         wtWaitType = fWAll ? MultipleObjectsWaitAll : MultipleObjectsWaitOne;
         if (nCount > MAXIMUM_STACK_WAITOBJ_ARRAY_SIZE)
         {
-            ppIPalObjs = InternalNewArray<IPalObject*>(pThread, nCount);
-            ppISyncWaitCtrlrs = InternalNewArray<ISynchWaitController*>(pThread, nCount);
+            ppIPalObjs = InternalNewArray<IPalObject*>(nCount);
+            ppISyncWaitCtrlrs = InternalNewArray<ISynchWaitController*>(nCount);
             if ((NULL == ppIPalObjs) || (NULL == ppISyncWaitCtrlrs))
             {
                 ERROR("Out of memory allocating internal structures\n");
@@ -583,11 +583,11 @@ WFMOExIntCleanup:
 WFMOExIntExit:
     if (nCount > MAXIMUM_STACK_WAITOBJ_ARRAY_SIZE)
     {
-        InternalDeleteArray(pThread, ppIPalObjs);
-        InternalDeleteArray(pThread, ppISyncWaitCtrlrs);
+        InternalDeleteArray(ppIPalObjs);
+        InternalDeleteArray(ppISyncWaitCtrlrs);
     }
     
-    return dwRet;    
+    return dwRet;
 }
 
 PAL_ERROR CorUnix::InternalSleepEx (
