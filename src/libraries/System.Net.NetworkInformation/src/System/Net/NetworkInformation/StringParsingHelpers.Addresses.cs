@@ -12,6 +12,11 @@ namespace System.Net.NetworkInformation
         // and seperates the information about by each interface.
         internal static List<GatewayIPAddressInformation> ParseGatewayAddressesFromRouteFile(string filePath, string interfaceName)
         {
+            if (!File.Exists(filePath))
+            {
+                throw ExceptionHelper.CreateForInformationUnavailable();
+            }
+
             List<GatewayIPAddressInformation> collection = new List<GatewayIPAddressInformation>();
             // Columns are as follows (first-line header):
             // Iface  Destination  Gateway  Flags  RefCnt  Use  Metric  Mask  MTU  Window  IRTT

@@ -3,7 +3,9 @@
 
 namespace System.Net.NetworkInformation
 {
+    /// <summary>
     /// Specifies the Network Basic Input/Output System (NetBIOS) node type.
+    /// </summary>
     public enum NetBiosNodeType
     {
         Unknown = 0,

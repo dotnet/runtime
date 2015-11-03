@@ -34,20 +34,20 @@ namespace System.Net.NetworkInformation
         private readonly long _timeExceededMessagesReceived;
         private readonly long _timeExceededMessagesSent;
 
-    	public OsxIcmpV6Statistics()
-    	{
-    		Interop.Sys.Icmpv6GlobalStatistics statistics;
+        public OsxIcmpV6Statistics()
+        {
+            Interop.Sys.Icmpv6GlobalStatistics statistics;
             if (Interop.Sys.GetIcmpv6GlobalStatistics(out statistics) != 0)
             {
-                throw new NetworkInformationException((int)Interop.Sys.GetLastError());
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
-			_destinationUnreachableMessagesReceived = (long)statistics.DestinationUnreachableMessagesReceived;
-			_destinationUnreachableMessagesSent = (long)statistics.DestinationUnreachableMessagesSent;
-			_echoRepliesReceived = (long)statistics.EchoRepliesReceived;
-			_echoRepliesSent = (long)statistics.EchoRepliesSent;
-			_echoRequestsReceived = (long)statistics.EchoRequestsReceived;
-			_echoRequestsSent = (long)statistics.EchoRequestsSent;
+            _destinationUnreachableMessagesReceived = (long)statistics.DestinationUnreachableMessagesReceived;
+            _destinationUnreachableMessagesSent = (long)statistics.DestinationUnreachableMessagesSent;
+            _echoRepliesReceived = (long)statistics.EchoRepliesReceived;
+            _echoRepliesSent = (long)statistics.EchoRepliesSent;
+            _echoRequestsReceived = (long)statistics.EchoRequestsReceived;
+            _echoRequestsSent = (long)statistics.EchoRequestsSent;
             _membershipQueriesReceived = (long)statistics.MembershipQueriesReceived;
             _membershipQueriesSent = (long)statistics.MembershipQueriesSent;
             _membershipReductionsReceived = (long)statistics.MembershipReductionsReceived;
@@ -60,7 +60,7 @@ namespace System.Net.NetworkInformation
             _neighborSolicitsSent = (long)statistics.NeighborSolicitsSent;
             _packetTooBigMessagesReceived = (long)statistics.PacketTooBigMessagesReceived;
             _packetTooBigMessagesSent = (long)statistics.PacketTooBigMessagesSent;
-			_parameterProblemsReceived = (long)statistics.ParameterProblemsReceived;
+            _parameterProblemsReceived = (long)statistics.ParameterProblemsReceived;
             _parameterProblemsSent = (long)statistics.ParameterProblemsSent;
             _redirectsReceived = (long)statistics.RedirectsReceived;
             _redirectsSent = (long)statistics.RedirectsSent;
@@ -70,7 +70,7 @@ namespace System.Net.NetworkInformation
             _routerSolicitsSent = (long)statistics.RouterAdvertisementsSent;
             _timeExceededMessagesReceived = (long)statistics.TimeExceededMessagesReceived;
             _timeExceededMessagesSent = (long)statistics.TimeExceededMessagesSent;
-    	}
+        }
 
         public override long DestinationUnreachableMessagesReceived { get { return _destinationUnreachableMessagesReceived; } }
 

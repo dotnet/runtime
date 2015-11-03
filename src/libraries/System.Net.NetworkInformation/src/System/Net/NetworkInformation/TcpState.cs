@@ -3,7 +3,9 @@
 
 namespace System.Net.NetworkInformation
 {
+    /// <summary>
     /// Specifies the states of a Transmission Control Protocol (TCP) connection.
+    /// </summary>
     public enum TcpState
     {
         Unknown,

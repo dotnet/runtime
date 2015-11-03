@@ -25,39 +25,15 @@ namespace System.Net.NetworkInformation
             _ipv6Properties = new LinuxIPv6InterfaceProperties(lni);
         }
 
-        public override bool IsDynamicDnsEnabled
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool IsDynamicDnsEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override IPAddressInformationCollection AnycastAddresses
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override IPAddressInformationCollection AnycastAddresses { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override GatewayIPAddressInformationCollection GatewayAddresses { get { return _gatewayAddresses; } }
 
-        public override IPAddressCollection DhcpServerAddresses
-        {
-            get
-            {
-                return _dhcpServerAddresses;
-            }
-        }
+        public override IPAddressCollection DhcpServerAddresses { get { return _dhcpServerAddresses; } }
 
-        public override IPAddressCollection WinsServersAddresses
-        {
-            get
-            {
-                return _winsServerAddresses;
-            }
-        }
+        public override IPAddressCollection WinsServersAddresses { get { return _winsServerAddresses; } }
 
         public override IPv4InterfaceProperties GetIPv4Properties()
         {

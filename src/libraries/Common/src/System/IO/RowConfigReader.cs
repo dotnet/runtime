@@ -1,4 +1,7 @@
-﻿using System.Diagnostics;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Diagnostics;
 
 namespace System.IO
 {
@@ -8,9 +11,9 @@ namespace System.IO
     /// </summary>
     internal struct RowConfigReader
     {
-        private string _buffer;
+        private readonly string _buffer;
+        private readonly StringComparison _comparisonKind;
         private int _currentIndex;
-        private StringComparison _comparisonKind;
 
         /// <summary>
         /// Constructs a new RowConfigReader which reads from the given string.
@@ -19,8 +22,8 @@ namespace System.IO
         public RowConfigReader(string buffer)
         {
             _buffer = buffer;
-            _currentIndex = 0;
             _comparisonKind = StringComparison.Ordinal;
+            _currentIndex = 0;
         }
 
         /// <summary>
@@ -31,8 +34,8 @@ namespace System.IO
         public RowConfigReader(string buffer, StringComparison comparisonKind)
         {
             _buffer = buffer;
-            _currentIndex = 0;
             _comparisonKind = comparisonKind;
+            _currentIndex = 0;
         }
 
         /// <summary>
@@ -85,6 +88,7 @@ namespace System.IO
             {
                 valueIndex = _buffer.LastIndexOf(' ', endOfLine); // try space as well
             }
+
             Debug.Assert(valueIndex != -1, "Key " + key + " was found, but no value on the same line.");
             valueIndex++; // Get the first character after the whitespace.
             value = _buffer.Substring(valueIndex, endOfLine - valueIndex); // Grab the whole value string.

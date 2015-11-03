@@ -33,7 +33,7 @@ namespace System.Net.NetworkInformation
             Interop.Sys.Icmpv4GlobalStatistics statistics;
             if (Interop.Sys.GetIcmpv4GlobalStatistics(out statistics) != 0)
             {
-                throw new NetworkInformationException((int)Interop.Sys.GetLastError());
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
             _addressMaskRepliesReceived = (long)statistics.AddressMaskRepliesReceived;

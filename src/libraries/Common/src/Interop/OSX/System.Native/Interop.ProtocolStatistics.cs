@@ -48,15 +48,6 @@ internal static partial class Interop
         public static unsafe extern int GetIPv4GlobalStatistics(out IPv4GlobalStatistics statistics);
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
-        public unsafe struct IPv6GlobalStatistics
-        {
-
-        }
-
-        [DllImport(Libraries.SystemNative)]
-        public static unsafe extern int GetIPv6GlobalStatistics(out IPv6GlobalStatistics statistics);
-
-        [StructLayoutAttribute(LayoutKind.Sequential)]
         public unsafe struct UdpGlobalStatistics
         {
             public readonly ulong DatagramsReceived;
@@ -64,7 +55,7 @@ internal static partial class Interop
             public readonly ulong IncomingDiscarded;
             public readonly ulong IncomingErrors;
             public readonly ulong UdpListeners;
-        };
+        }
 
         [DllImport(Libraries.SystemNative)]
         public static unsafe extern int GetUdpGlobalStatistics(out UdpGlobalStatistics statistics);
@@ -94,7 +85,7 @@ internal static partial class Interop
             public readonly ulong TimestampRepliesSent;
             public readonly ulong TimestampRequestsReceived;
             public readonly ulong TimestampRequestsSent;
-        };
+        }
 
         [DllImport(Libraries.SystemNative)]
         public static unsafe extern int GetIcmpv4GlobalStatistics(out Icmpv4GlobalStatistics statistics);
@@ -130,7 +121,7 @@ internal static partial class Interop
             public readonly ulong RouterSolicitsSent;
             public readonly ulong TimeExceededMessagesReceived;
             public readonly ulong TimeExceededMessagesSent;
-        };
+        }
 
         [DllImport(Libraries.SystemNative)]
         public static unsafe extern int GetIcmpv6GlobalStatistics(out Icmpv6GlobalStatistics statistics);

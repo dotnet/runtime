@@ -141,4 +141,16 @@
   <data name="net_log_exception" xml:space="preserve">
     <value>Exception in {0}::{1} - {2}.</value>
   </data>
+  <data name="net_FailedToParseNetworkFile" xml:space="preserve">
+    <value>An error was encountered while parsing network information from the operating system.</value>
+  </data>
+  <data name="net_NoLoopback" xml:space="preserve">
+    <value>No loopback interface was found on the local machine.</value>
+  </data>
+  <data name="net_InformationUnavailableOnPlatform" xml:space="preserve">
+    <value>The information requested in unavailable on the current platform.</value>
+  </data>
+  <data name="net_PInvokeError" xml:space="preserve">
+    <value>An error was encountered while querying information from the operating system.</value>
+  </data>
 </root>

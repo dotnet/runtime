@@ -3,10 +3,14 @@
 
 namespace System.Net.NetworkInformation
 {
+    /// <summary>
     /// Provides information about a network interface address.
+    /// </summary>
     public abstract class GatewayIPAddressInformation
     {
+        /// <summary>
         /// Gets the Internet Protocol (IP) address.
+        /// </summary>
         public abstract IPAddress Address { get; }
     }
 }

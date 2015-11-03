@@ -13,6 +13,11 @@ namespace System.Net.NetworkInformation
 
         internal static int ParseNumSocketConnections(string filePath, string protocolName)
         {
+            if (!File.Exists(filePath))
+            {
+                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            }
+
             // Parse the number of active connections out of /proc/net/sockstat
             string sockstatFile = File.ReadAllText(filePath);
             int indexOfTcp = sockstatFile.IndexOf(protocolName, StringComparison.Ordinal);
@@ -26,24 +31,30 @@ namespace System.Net.NetworkInformation
 
         internal static TcpConnectionInformation[] ParseActiveTcpConnectionsFromFiles(string tcp4ConnectionsFile, string tcp6ConnectionsFile)
         {
+            if (!File.Exists(tcp4ConnectionsFile) || !File.Exists(tcp6ConnectionsFile))
+            {
+                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            }
+
             string tcp4FileContents = File.ReadAllText(tcp4ConnectionsFile);
             string[] v4connections = tcp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
             string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            TcpConnectionInformation[] connections = new TcpConnectionInformation[v4connections.Length + v6connections.Length - 2]; // First line is header in each file
+            // First line is header in each file.
+            TcpConnectionInformation[] connections = new TcpConnectionInformation[v4connections.Length + v6connections.Length - 2];
             int index = 0;
 
             // TCP Connections
-            for (int i = 1; i < v4connections.Length; i++) // Skip first line header
+            for (int i = 1; i < v4connections.Length; i++) // Skip first line header.
             {
                 string line = v4connections[i];
                 connections[index++] = ParseTcpConnectionInformationFromLine(line);
             }
 
             // TCP6 Connections
-            for (int i = 1; i < v6connections.Length; i++) // Skip first line header
+            for (int i = 1; i < v6connections.Length; i++) // Skip first line header.
             {
                 string line = v6connections[i];
                 connections[index++] = ParseTcpConnectionInformationFromLine(line);
@@ -52,37 +63,37 @@ namespace System.Net.NetworkInformation
             return connections;
         }
 
-        internal static IPEndPoint[] ParseActiveTcpListenersFromFiles(string tcp4ConnectionsFile, string tcpConnections6File)
+        internal static IPEndPoint[] ParseActiveTcpListenersFromFiles(string tcp4ConnectionsFile, string tcp6ConnectionsFile)
         {
+            if (!File.Exists(tcp4ConnectionsFile) || !File.Exists(tcp6ConnectionsFile))
+            {
+                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            }
+
             string tcp4FileContents = File.ReadAllText(tcp4ConnectionsFile);
             string[] v4connections = tcp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            string tcp6FileContents = File.ReadAllText(tcpConnections6File);
+            string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            IPEndPoint[] endPoints = new IPEndPoint[v4connections.Length + v6connections.Length - 2]; // First line is header in each file
+            /// First line is header in each file.
+            IPEndPoint[] endPoints = new IPEndPoint[v4connections.Length + v6connections.Length - 2];
             int index = 0;
 
             // TCP Connections
-            for (int i = 1; i < v4connections.Length; i++) // Skip first line header
+            for (int i = 1; i < v4connections.Length; i++) // Skip first line header.
             {
                 string line = v4connections[i];
-                IPAddress remoteIPAddress;
-                int remotePort;
-                ParseLocalConnectionInformation(line, out remoteIPAddress, out remotePort);
-
-                endPoints[index++] = new IPEndPoint(remoteIPAddress, remotePort);
+                IPEndPoint endPoint = ParseLocalConnectionInformation(line);
+                endPoints[index++] = endPoint;
             }
 
             // TCP6 Connections
-            for (int i = 1; i < v6connections.Length; i++) // Skip first line header
+            for (int i = 1; i < v6connections.Length; i++) // Skip first line header.
             {
                 string line = v6connections[i];
-                IPAddress remoteIPAddress;
-                int remotePort;
-                ParseLocalConnectionInformation(line, out remoteIPAddress, out remotePort);
-
-                endPoints[index++] = new IPEndPoint(remoteIPAddress, remotePort);
+                IPEndPoint endPoint = ParseLocalConnectionInformation(line);
+                endPoints[index++] = endPoint;
             }
 
             return endPoints;
@@ -90,35 +101,35 @@ namespace System.Net.NetworkInformation
 
         public static IPEndPoint[] ParseActiveUdpListenersFromFiles(string udp4File, string udp6File)
         {
+            if (!File.Exists(udp4File) || !File.Exists(udp6File))
+            {
+                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            }
+
             string udp4FileContents = File.ReadAllText(udp4File);
             string[] v4connections = udp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
             string udp6FileContents = File.ReadAllText(udp6File);
             string[] v6connections = udp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            IPEndPoint[] endPoints = new IPEndPoint[v4connections.Length + v6connections.Length - 2]; // First line is header in each file
+            // First line is header in each file.
+            IPEndPoint[] endPoints = new IPEndPoint[v4connections.Length + v6connections.Length - 2];
             int index = 0;
 
             // UDP Connections
-            for (int i = 1; i < v4connections.Length; i++) // Skip first line header
+            for (int i = 1; i < v4connections.Length; i++) // Skip first line header.
             {
                 string line = v4connections[i];
-                IPAddress remoteIPAddress;
-                int remotePort;
-                ParseLocalConnectionInformation(line, out remoteIPAddress, out remotePort);
-
-                endPoints[index++] = new IPEndPoint(remoteIPAddress, remotePort);
+                IPEndPoint endPoint = ParseLocalConnectionInformation(line);
+                endPoints[index++] = endPoint;
             }
 
             // UDP6 Connections
-            for (int i = 1; i < v6connections.Length; i++) // Skip first line header
+            for (int i = 1; i < v6connections.Length; i++) // Skip first line header.
             {
                 string line = v6connections[i];
-                IPAddress remoteIPAddress;
-                int remotePort;
-                ParseLocalConnectionInformation(line, out remoteIPAddress, out remotePort);
-
-                endPoints[index++] = new IPEndPoint(remoteIPAddress, remotePort);
+                IPEndPoint endPoint = ParseLocalConnectionInformation(line);
+                endPoints[index++] = endPoint;
             }
 
             return endPoints;
@@ -131,31 +142,24 @@ namespace System.Net.NetworkInformation
             parser.MoveNextOrFail(); // skip Index
 
             string localAddressAndPort = parser.MoveAndExtractNext(); // local_address
-            IPAddress localAddress;
-            int localPort;
-            ParseAddressAndPort(localAddressAndPort, out localAddress, out localPort);
+            IPEndPoint localEndPoint = ParseAddressAndPort(localAddressAndPort);
 
             string remoteAddressAndPort = parser.MoveAndExtractNext(); // rem_address
-            IPAddress remoteAddress;
-            int remotePort;
-            ParseAddressAndPort(remoteAddressAndPort, out remoteAddress, out remotePort);
+            IPEndPoint remoteEndPoint = ParseAddressAndPort(remoteAddressAndPort);
 
             string socketStateHex = parser.MoveAndExtractNext();
             int state;
             if (!int.TryParse(socketStateHex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out state))
             {
-                throw new InvalidOperationException("Invalid state value: " + socketStateHex);
+                throw ExceptionHelper.CreateForParseFailure();
             }
             TcpState tcpState = MapTcpState((Interop.LinuxTcpState)state);
-
-            IPEndPoint localEndPoint = new IPEndPoint(localAddress, localPort);
-            IPEndPoint remoteEndPoint = new IPEndPoint(remoteAddress, remotePort);
 
             return new SimpleTcpConnectionInformation(localEndPoint, remoteEndPoint, tcpState);
         }
 
-        // Common parsing logic for the local connection information
-        private static void ParseLocalConnectionInformation(string line, out IPAddress remoteIPAddress, out int remotePort)
+        // Common parsing logic for the local connection information.
+        private static IPEndPoint ParseLocalConnectionInformation(string line)
         {
             StringParser parser = new StringParser(line, ' ', true);
             parser.MoveNextOrFail(); // skip Index
@@ -164,62 +168,44 @@ namespace System.Net.NetworkInformation
             int indexOfColon = localAddressAndPort.IndexOf(':');
             if (indexOfColon == -1)
             {
-                throw new InvalidOperationException("Parsing error. No colon in " + localAddressAndPort);
+                throw ExceptionHelper.CreateForParseFailure();
             }
 
             string remoteAddressString = localAddressAndPort.Substring(0, indexOfColon);
-            remoteIPAddress = ParseHexIPAddress(remoteAddressString);
+            IPAddress localIPAddress = ParseHexIPAddress(remoteAddressString);
 
             string portString = localAddressAndPort.Substring(indexOfColon + 1, localAddressAndPort.Length - (indexOfColon + 1));
-            if (!int.TryParse(portString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out remotePort))
+            int localPort;
+            if (!int.TryParse(portString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out localPort))
             {
-                throw new InvalidOperationException("Couldn't parse remote port number " + portString);
+                throw ExceptionHelper.CreateForParseFailure();
             }
+
+            return new IPEndPoint(localIPAddress, localPort);
         }
 
-        // Common parsing logic for the remote connection information
-        private static void ParseRemoteConnectionInformation(string line, out IPAddress remoteIPAddress, out int remotePort)
-        {
-            StringParser parser = new StringParser(line, ' ', true);
-            parser.MoveNextOrFail(); // skip Index
-            parser.MoveNextOrFail(); // skip local_address
-
-            string remoteAddressAndPort = parser.MoveAndExtractNext();
-            int indexOfColon = remoteAddressAndPort.IndexOf(':');
-            if (indexOfColon == -1)
-            {
-                throw new InvalidOperationException("Parsing error. No colon in " + remoteAddressAndPort);
-            }
-
-            string remoteAddressString = remoteAddressAndPort.Substring(0, indexOfColon);
-            remoteIPAddress = ParseHexIPAddress(remoteAddressString);
-
-            string portString = remoteAddressAndPort.Substring(indexOfColon + 1, remoteAddressAndPort.Length - (indexOfColon + 1));
-            if (!int.TryParse(portString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out remotePort))
-            {
-                throw new InvalidOperationException("Couldn't parse remote port number " + portString);
-            }
-        }
-
-        private static void ParseAddressAndPort(string colonSeparatedAddress, out IPAddress ipAddress, out int port)
+        private static IPEndPoint ParseAddressAndPort(string colonSeparatedAddress)
         {
             int indexOfColon = colonSeparatedAddress.IndexOf(':');
             if (indexOfColon == -1)
             {
-                throw new InvalidOperationException("Parsing error. No colon in " + colonSeparatedAddress);
+                throw ExceptionHelper.CreateForParseFailure();
             }
 
             string remoteAddressString = colonSeparatedAddress.Substring(0, indexOfColon);
-            ipAddress = ParseHexIPAddress(remoteAddressString);
+            IPAddress ipAddress = ParseHexIPAddress(remoteAddressString);
 
             string portString = colonSeparatedAddress.Substring(indexOfColon + 1, colonSeparatedAddress.Length - (indexOfColon + 1));
+            int port;
             if (!int.TryParse(portString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out port))
             {
-                throw new InvalidOperationException("Couldn't parse remote port number " + portString);
+                throw ExceptionHelper.CreateForParseFailure();
             }
+
+            return new IPEndPoint(ipAddress, port);
         }
 
-        // Maps from Linux TCP states (include/net/tcp_states.h) to .NET TcpStates
+        // Maps from Linux TCP states (include/net/tcp_states.h) to .NET TcpStates.
         // TODO: Move this to the native shim.
         private static TcpState MapTcpState(Interop.LinuxTcpState state)
         {
@@ -230,6 +216,7 @@ namespace System.Net.NetworkInformation
                 case Interop.LinuxTcpState.TCP_SYN_SENT:
                     return TcpState.SynSent;
                 case Interop.LinuxTcpState.TCP_SYN_RECV:
+                case Interop.LinuxTcpState.TCP_NEW_SYN_RECV:
                     return TcpState.SynReceived;
                 case Interop.LinuxTcpState.TCP_FIN_WAIT1:
                     return TcpState.FinWait1;
@@ -247,12 +234,8 @@ namespace System.Net.NetworkInformation
                     return TcpState.Listen;
                 case Interop.LinuxTcpState.TCP_CLOSING:
                     return TcpState.Closing;
-                case Interop.LinuxTcpState.TCP_NEW_SYN_RECV:
-                    return TcpState.Unknown;
-                case Interop.LinuxTcpState.TCP_MAX_STATES:
-                    return TcpState.Unknown;
                 default:
-                    throw new InvalidOperationException("Invalid LinuxTcpState: " + state);
+                    return TcpState.Unknown;
             }
         }
 
@@ -268,7 +251,7 @@ namespace System.Net.NetworkInformation
             }
             else
             {
-                throw new NetworkInformationException();
+                throw ExceptionHelper.CreateForParseFailure();
             }
         }
 
@@ -280,7 +263,7 @@ namespace System.Net.NetworkInformation
             long addressValue;
             if (!long.TryParse(hexAddress, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out addressValue))
             {
-                throw new NetworkInformationException();
+                throw ExceptionHelper.CreateForParseFailure();
             }
             ipAddress = new IPAddress(addressValue);
             return ipAddress;
@@ -305,13 +288,21 @@ namespace System.Net.NetworkInformation
         private static byte HexToByte(char val)
         {
             if (val <= '9' && val >= '0')
+            {
                 return (byte)(val - '0');
+            }
             else if (val >= 'a' && val <= 'f')
+            {
                 return (byte)((val - 'a') + 10);
+            }
             else if (val >= 'A' && val <= 'F')
+            {
                 return (byte)((val - 'A') + 10);
+            }
             else
-                throw new InvalidOperationException("Invalid hex character.");
+            {
+                throw ExceptionHelper.CreateForParseFailure();
+            }
         }
     }
 }

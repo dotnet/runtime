@@ -181,9 +181,6 @@ namespace System.Net.NetworkInformation
             string icmpData = fileContents.Substring(secondIpHeader, endOfSecondLine - secondIpHeader);
             StringParser parser = new StringParser(icmpData, ' ');
 
-            // NOTE: Need to verify that this order is consistent. Otherwise, we need to parse the first-line header
-            // to determine the order of information contained in the file.
-
             parser.MoveNextOrFail(); // Skip Icmp:
 
             return new Icmpv4StatisticsTable()
@@ -270,9 +267,6 @@ namespace System.Net.NetworkInformation
             string ipData = fileContents.Substring(secondIpHeader, endOfSecondLine - secondIpHeader);
             StringParser parser = new StringParser(ipData, ' ');
 
-            // NOTE: Need to verify that this order is consistent. Otherwise, we need to parse the first-line header
-            // to determine the order of information contained in the file.
-
             parser.MoveNextOrFail(); // Skip Ip:
 
             // According to RFC 1213, "1" indicates "acting as a gateway". "2" indicates "NOT acting as a gateway".
@@ -339,9 +333,6 @@ namespace System.Net.NetworkInformation
             string tcpData = fileContents.Substring(secondTcpHeader, endOfSecondLine - secondTcpHeader);
             StringParser parser = new StringParser(tcpData, ' ');
 
-            // NOTE: Need to verify that this order is consistent. Otherwise, we need to parse the first-line header
-            // to determine the order of information contained in the row.
-
             parser.MoveNextOrFail(); // Skip Tcp:
 
             return new TcpGlobalStatisticsTable()
@@ -372,9 +363,6 @@ namespace System.Net.NetworkInformation
             int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondUdpHeader, StringComparison.Ordinal);
             string tcpData = fileContents.Substring(secondUdpHeader, endOfSecondLine - secondUdpHeader);
             StringParser parser = new StringParser(tcpData, ' ');
-
-            // NOTE: Need to verify that this order is consistent. Otherwise, we need to parse the first-line header
-            // to determine the order of information contained in the file.
 
             parser.MoveNextOrFail(); // Skip Udp:
 
@@ -445,7 +433,7 @@ namespace System.Net.NetworkInformation
                     index += 1;
                 }
 
-                throw new NetworkInformationException();
+                throw ExceptionHelper.CreateForParseFailure();
             }
         }
 

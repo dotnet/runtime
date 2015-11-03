@@ -3,7 +3,9 @@
 
 namespace System.Net.NetworkInformation
 {
+    /// <summary>
     /// Specifies the current state of an IP address.
+    /// </summary>
     public enum DuplicateAddressDetectionState
     {
         Invalid = 0,
