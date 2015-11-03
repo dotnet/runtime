@@ -1,22 +1,183 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
+using System.Threading;
+
+using CFStringRef = System.IntPtr;
+using CFRunLoopRef = System.IntPtr;
+
 namespace System.Net.NetworkInformation
 {
     // OSX implementation of NetworkChange
-    // TODO: This can be implemented using the SystemConfiguration framework.
-    // See <SystemConfiguration/SystemConfiguration.h> and its documentation.
+    // See <SystemConfiguration/SystemConfiguration.h> and its documentation, as well as
+    // the documentation for CFRunLoop for more information on the components involved.
     public class NetworkChange
     {
-        static public event NetworkAddressChangedEventHandler NetworkAddressChanged
+        private static object s_lockObj = new object();
+
+        // The list of current subscribers.
+        private static NetworkAddressChangedEventHandler s_addressChangedSubscribers;
+
+        // The dynamic store. We listen to changes in the IPv4 and IPv6 address keys.
+        // When those keys change, our callback below is called (OnAddressChanged).
+        private static SafeCreateHandle s_dynamicStoreRef;
+
+        // The RunLoop source, created over the above SCDynamicStore.
+        private static SafeCreateHandle s_runLoopSource;
+
+        // Listener thread that adds the RunLoopSource to its RunLoop.
+        private static Thread s_runLoopThread;
+
+        // The listener thread's CFRunLoop.
+        private static CFRunLoopRef s_runLoop;
+
+        // Use an event to try to prevent StartRaisingEvents from returning before the
+        // RunLoop actually begins. This will mitigate a race condition where the watcher
+        // thread hasn't completed initialization and stop is called before the RunLoop even starts.
+        private static readonly AutoResetEvent s_runLoopStartedEvent = new AutoResetEvent(false);
+        private static readonly AutoResetEvent s_runLoopEndedEvent = new AutoResetEvent(false);
+
+        public static event NetworkAddressChangedEventHandler NetworkAddressChanged
         {
             add
             {
-                throw new NotImplementedException();
+                lock (s_lockObj)
+                {
+                    if (s_addressChangedSubscribers == null)
+                    {
+                        CreateAndStartRunLoop();
+                    }
+
+                    s_addressChangedSubscribers += value;
+                }
             }
             remove
             {
-                throw new NotImplementedException();
+                lock (s_lockObj)
+                {
+                    bool hadSubscribers = s_addressChangedSubscribers != null;
+                    s_addressChangedSubscribers -= value;
+
+                    if (hadSubscribers && s_addressChangedSubscribers == null)
+                    {
+                        StopRunLoop();
+                    }
+                }
+            }
+        }
+
+        private static unsafe void CreateAndStartRunLoop()
+        {
+            Debug.Assert(s_dynamicStoreRef == null);
+
+            var storeContext = new Interop.SystemConfiguration.SCDynamicStoreContext();
+            using (SafeCreateHandle storeName = Interop.CoreFoundation.CFStringCreateWithCString("NetworkAddressChange.OSX"))
+            {
+                s_dynamicStoreRef = Interop.SystemConfiguration.SCDynamicStoreCreate(
+                    storeName.DangerousGetHandle(),
+                    OnAddressChanged,
+                    &storeContext);
+            }
+
+            // Notification key string parts. We want to match notification keys
+            // for any kind of IP address change, addition, or removal.
+            using (SafeCreateHandle dynamicStoreDomainStateString = Interop.CoreFoundation.CFStringCreateWithCString("State:"))
+            using (SafeCreateHandle compAnyRegexString = Interop.CoreFoundation.CFStringCreateWithCString("[^/]+"))
+            using (SafeCreateHandle entNetIpv4String = Interop.CoreFoundation.CFStringCreateWithCString("IPv4"))
+            using (SafeCreateHandle entNetIpv6String = Interop.CoreFoundation.CFStringCreateWithCString("IPv6"))
+            {
+                if (dynamicStoreDomainStateString.IsInvalid || compAnyRegexString.IsInvalid
+                    || entNetIpv4String.IsInvalid || entNetIpv6String.IsInvalid)
+                {
+                    s_dynamicStoreRef.Dispose();
+                    s_dynamicStoreRef = null;
+                    throw new NetworkInformationException(SR.net_PInvokeError);
+                }
+
+                using (SafeCreateHandle ipv4Pattern = Interop.SystemConfiguration.SCDynamicStoreKeyCreateNetworkServiceEntity(
+                        dynamicStoreDomainStateString.DangerousGetHandle(),
+                        compAnyRegexString.DangerousGetHandle(),
+                        entNetIpv4String.DangerousGetHandle()))
+                using (SafeCreateHandle ipv6Pattern = Interop.SystemConfiguration.SCDynamicStoreKeyCreateNetworkServiceEntity(
+                        dynamicStoreDomainStateString.DangerousGetHandle(),
+                        compAnyRegexString.DangerousGetHandle(),
+                        entNetIpv6String.DangerousGetHandle()))
+                using (SafeCreateHandle patterns = Interop.CoreFoundation.CFArrayCreate(
+                        new CFStringRef[2]
+                        {
+                            ipv4Pattern.DangerousGetHandle(),
+                            ipv6Pattern.DangerousGetHandle()
+                        }, 2))
+                {
+                    // Try to register our pattern strings with the dynamic store instance.
+                    if (patterns.IsInvalid || !Interop.SystemConfiguration.SCDynamicStoreSetNotificationKeys(
+                                                s_dynamicStoreRef.DangerousGetHandle(),
+                                                IntPtr.Zero,
+                                                patterns.DangerousGetHandle()))
+                    {
+                        s_dynamicStoreRef.Dispose();
+                        s_dynamicStoreRef = null;
+                        throw new NetworkInformationException(SR.net_PInvokeError);
+                    }
+
+                    // Create a "RunLoopSource" that can be added to our listener thread's RunLoop.
+                    s_runLoopSource = Interop.SystemConfiguration.SCDynamicStoreCreateRunLoopSource(
+                        s_dynamicStoreRef.DangerousGetHandle(),
+                        IntPtr.Zero);
+                }
+            }
+            s_runLoopThread = new Thread(RunLoopThreadStart);
+            s_runLoopThread.Start();
+            s_runLoopStartedEvent.WaitOne(); // Wait for the new thread to finish initialization.
+        }
+
+        private static void RunLoopThreadStart()
+        {
+            Debug.Assert(s_runLoop == IntPtr.Zero);
+
+            s_runLoop = Interop.RunLoop.CFRunLoopGetCurrent();
+            Interop.RunLoop.CFRunLoopAddSource(
+                s_runLoop,
+                s_runLoopSource.DangerousGetHandle(),
+                Interop.RunLoop.kCFRunLoopDefaultMode.DangerousGetHandle());
+
+            s_runLoopStartedEvent.Set();
+            Interop.RunLoop.CFRunLoopRun();
+
+            Interop.RunLoop.CFRunLoopRemoveSource(
+                s_runLoop,
+                s_runLoopSource.DangerousGetHandle(),
+                Interop.RunLoop.kCFRunLoopDefaultMode.DangerousGetHandle());
+
+            s_runLoop = IntPtr.Zero;
+
+            s_runLoopSource.Dispose();
+            s_runLoopSource = null;
+
+            s_dynamicStoreRef.Dispose();
+            s_dynamicStoreRef = null;
+
+            s_runLoopEndedEvent.Set();
+        }
+
+        private static void StopRunLoop()
+        {
+            Debug.Assert(s_runLoop != IntPtr.Zero);
+            Debug.Assert(s_runLoopSource != null);
+            Debug.Assert(s_dynamicStoreRef != null);
+
+            Interop.RunLoop.CFRunLoopStop(s_runLoop);
+            s_runLoopEndedEvent.WaitOne();
+        }
+
+        private static void OnAddressChanged(IntPtr store, IntPtr changedKeys, IntPtr info)
+        {
+            NetworkAddressChangedEventHandler handler = s_addressChangedSubscribers;
+            if (handler != null)
+            {
+                handler(null, EventArgs.Empty);
             }
         }
     }

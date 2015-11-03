@@ -9,5 +9,6 @@ internal static partial class Interop
         internal const string CoreServicesLibrary   = "/System/Library/Frameworks/CoreServices.framework/CoreServices";
         internal const string libproc = "libproc";
         internal const string LibSystemKernel = "/usr/lib/system/libsystem_kernel";
+        internal const string SystemConfigurationLibrary = "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration";
     }
 }
