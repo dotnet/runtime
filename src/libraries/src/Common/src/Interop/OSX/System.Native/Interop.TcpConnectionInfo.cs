@@ -14,7 +14,7 @@ internal static partial class Interop
             public fixed byte AddressBytes[16];
             public uint NumAddressBytes;
             public uint Port;
-            private uint __padding1;
+            private uint __padding; // For native struct-size padding. Does not contain useful data.
         }
 
         [StructLayout(LayoutKind.Sequential)]

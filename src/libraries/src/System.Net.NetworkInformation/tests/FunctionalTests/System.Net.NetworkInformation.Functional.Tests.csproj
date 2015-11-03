@@ -7,6 +7,7 @@
     <ProjectGuid>{DCBB8805-4658-44BF-B5E8-B6714EC8936B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ResourcesSourceOutputDirectory>..\..\src\Resources\</ResourcesSourceOutputDirectory>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -31,15 +32,16 @@
     <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkFiles.cs">
       <Link>SharedSource\NetworkFiles.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleTcpConnectionInformation.cs">
+    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleTcpConnectionInformation.Unix.cs">
       <Link>SharedSource\SimpleTcpConnectionInformation.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.cs">
+    <Compile Include="..\..\src\System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.Unix.cs">
       <Link>SharedSource\SimpleGatewayIPAddressInformation.cs</Link>
     </Compile>
     <!-- Tests -->
     <Compile Include="AddressParsingTests.cs" />
     <Compile Include="DnsParsingTests.cs" />
+    <Compile Include="ExceptionHelper.cs" />
     <Compile Include="FileUtil.cs" />
     <Compile Include="IPInterfacePropertiesTest_Linux.cs" />
     <Compile Include="IPInterfacePropertiesTest_OSX.cs" />
@@ -145,7 +147,6 @@
     </None>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <None Include="NetworkFiles\rawint">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

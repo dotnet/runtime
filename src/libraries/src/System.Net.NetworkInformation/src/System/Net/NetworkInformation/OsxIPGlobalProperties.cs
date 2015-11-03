@@ -8,54 +8,24 @@ namespace System.Net.NetworkInformation
 {
     internal class OsxIPGlobalProperties : UnixIPGlobalProperties
     {
-        public override string DhcpScopeName
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override string DhcpScopeName { get { throw new PlatformNotSupportedException(); } }
 
-        public override string DomainName
-        {
-            get
-            {
-                return HostInformation.DomainName;
-            }
-        }
+        public override string DomainName { get { return HostInformation.DomainName; } }
 
-        public override string HostName
-        {
-            get
-            {
-                return HostInformation.HostName;
-            }
-        }
+        public override string HostName { get { return HostInformation.HostName; } }
 
-        public override bool IsWinsProxy
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool IsWinsProxy { get { throw new PlatformNotSupportedException(); } }
 
-        public override NetBiosNodeType NodeType
-        {
-            get
-            {
-                return NetBiosNodeType.Unknown;
-            }
-        }
+        public override NetBiosNodeType NodeType { get { return NetBiosNodeType.Unknown; } }
 
         public unsafe override TcpConnectionInformation[] GetActiveTcpConnections()
         {
             int realCount = Interop.Sys.GetEstimatedTcpConnectionCount();
-            int infoCount = (int)(realCount * 1.5f);
+            int infoCount = realCount * 2;
             Interop.Sys.NativeTcpConnectionInformation* infos = stackalloc Interop.Sys.NativeTcpConnectionInformation[infoCount];
             while (Interop.Sys.GetActiveTcpConnectionInfos(infos, &infoCount) == -1)
             {
-                var newAlloc = stackalloc Interop.Sys.NativeTcpConnectionInformation[infoCount];
+                Interop.Sys.NativeTcpConnectionInformation* newAlloc = stackalloc Interop.Sys.NativeTcpConnectionInformation[infoCount];
                 infos = newAlloc;
             }
 
@@ -104,7 +74,7 @@ namespace System.Net.NetworkInformation
         public unsafe override IPEndPoint[] GetActiveUdpListeners()
         {
             int realCount = Interop.Sys.GetEstimatedUdpListenerCount();
-            int infoCount = (int)(realCount * 1.5f);
+            int infoCount = realCount * 2;
             Interop.Sys.IPEndPointInfo* infos = stackalloc Interop.Sys.IPEndPointInfo[infoCount];
             while (Interop.Sys.GetActiveUdpListeners(infos, &infoCount) == -1)
             {
@@ -157,13 +127,13 @@ namespace System.Net.NetworkInformation
         {
             // Although there is a 'net.inet6.ip6.stats' sysctl variable, there
             // is no header for the ip6stat structure and therefore isn't available.
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
         }
 
         public override TcpStatistics GetTcpIPv4Statistics()
         {
             // OSX does not provide separated TCP-IPv4 and TCP-IPv6 stats.
-            return new OsxTcpStatistics();
+            throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
         }
 
         public override TcpStatistics GetTcpIPv6Statistics()

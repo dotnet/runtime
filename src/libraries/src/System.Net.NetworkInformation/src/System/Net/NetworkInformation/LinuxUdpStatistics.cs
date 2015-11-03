@@ -25,9 +25,13 @@ namespace System.Net.NetworkInformation
         }
 
         public override long DatagramsReceived { get { return _table.InDatagrams; } }
+
         public override long DatagramsSent { get { return _table.OutDatagrams; } }
-        public override long IncomingDatagramsDiscarded { get { throw new PlatformNotSupportedException(); } }
+
+        public override long IncomingDatagramsDiscarded { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
+
         public override long IncomingDatagramsWithErrors { get { return _table.InErrors; } }
+
         public override int UdpListeners { get { return _udpListeners; } }
     }
 }

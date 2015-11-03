@@ -19,53 +19,17 @@ namespace System.Net.NetworkInformation
             _gatewayAddresses = GetGatewayAddresses(oni.Index);
         }
 
-        public override IPAddressInformationCollection AnycastAddresses
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override IPAddressInformationCollection AnycastAddresses { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override IPAddressCollection DhcpServerAddresses
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override IPAddressCollection DhcpServerAddresses { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override GatewayIPAddressInformationCollection GatewayAddresses
-        {
-            get
-            {
-                return _gatewayAddresses;
-            }
-        }
+        public override GatewayIPAddressInformationCollection GatewayAddresses { get { return _gatewayAddresses; } }
 
-        public override bool IsDnsEnabled
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool IsDnsEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override bool IsDynamicDnsEnabled
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override bool IsDynamicDnsEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override IPAddressCollection WinsServersAddresses
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override IPAddressCollection WinsServersAddresses { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override IPv4InterfaceProperties GetIPv4Properties()
         {
@@ -92,7 +56,7 @@ namespace System.Net.NetworkInformation
                     addressSet.Add(ipAddress);
                 }) == -1)
             {
-                throw new NetworkInformationException();
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
             GatewayIPAddressInformationCollection collection = new GatewayIPAddressInformationCollection();

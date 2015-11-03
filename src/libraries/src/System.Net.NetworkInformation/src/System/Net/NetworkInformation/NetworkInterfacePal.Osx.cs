@@ -45,7 +45,7 @@ namespace System.Net.NetworkInformation
                     }
                 }
 
-                throw new NetworkInformationException();
+                throw new NetworkInformationException(SR.net_NoLoopback);
             }
         }
     }

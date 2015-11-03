@@ -26,7 +26,7 @@
     <Compile Include="System\Net\NetworkInformation\IcmpV6Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfaceType.cs" />
     <Compile Include="System\Net\NetworkInformation\IPAddressInformation.cs" />
-    <Compile Include="System\Net\NetworkInformation\ipaddressinformationcollection.cs" />
+    <Compile Include="System\Net\NetworkInformation\IPAddressInformationCollection.cs" />
     <Compile Include="System\Net\NetworkInformation\IPGlobalProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\IPGlobalStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\IPInterfaceProperties.cs" />
@@ -238,8 +238,8 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\NetworkInformation\IPAddressUtil.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkFiles.cs" />
-    <Compile Include="System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.cs" />
-    <Compile Include="System\Net\NetworkInformation\SimpleTcpConnectionInformation.cs" />
+    <Compile Include="System\Net\NetworkInformation\SimpleGatewayIPAddressInformation.Unix.cs" />
+    <Compile Include="System\Net\NetworkInformation\SimpleTcpConnectionInformation.Unix.cs" />
     <Compile Include="System\Net\NetworkInformation\StringParsingHelpers.Dns.cs" />
     <Compile Include="System\Net\NetworkInformation\UnixIPGlobalProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\UnixIPInterfaceProperties.cs" />
@@ -253,7 +253,7 @@
       <Link>Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.EnumerateInterfaceAddresses.cs">
-      <Link>Interop\Unix\System.Native\Interop.EnumerateInterfaceAddresses.cs" </Link>
+      <Link>Interop\Unix\System.Native\Interop.EnumerateInterfaceAddresses.cs"</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Unix.cs">
       <Link>System\Net\NetworkInformation\HostInformationPal.Unix.cs</Link>
@@ -276,6 +276,7 @@
   </ItemGroup>
   <!-- Linux -->
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <Compile Include="System\Net\NetworkInformation\ExceptionHelper.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIcmpV4Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIcmpV6Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxTcpStatistics.cs" />

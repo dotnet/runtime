@@ -108,12 +108,6 @@ extern "C" int32_t GetIPv4GlobalStatistics(IPv4GlobalStatistics* retStats)
     return 0;
 }
 
-extern "C" int32_t GetIPv6GlobalStatistics(IPv6GlobalStatistics* retStats)
-{
-    memset(retStats, 0, sizeof(IPv6GlobalStatistics));
-    return -1;
-}
-
 extern "C" int32_t GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
 {
     assert(retStats != nullptr);

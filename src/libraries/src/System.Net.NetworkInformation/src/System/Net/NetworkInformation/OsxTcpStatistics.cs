@@ -20,7 +20,7 @@ namespace System.Net.NetworkInformation
             Interop.Sys.TcpGlobalStatistics statistics;
             if (Interop.Sys.GetTcpGlobalStatistics(out statistics) != 0)
             {
-                throw new NetworkInformationException((int)Interop.Sys.GetLastError());
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
             _connectionsAccepted = (long)statistics.ConnectionsAccepted;
@@ -34,116 +34,32 @@ namespace System.Net.NetworkInformation
             _currentConnections = statistics.CurrentConnections;
         }
 
-        public override long ConnectionsAccepted
-        {
-            get
-            {
-                return _connectionsAccepted;
-            }
-        }
+        public override long ConnectionsAccepted { get { return _connectionsAccepted; } }
 
-        public override long ConnectionsInitiated
-        {
-            get
-            {
-                return _connectionsInitiated;
-            }
-        }
+        public override long ConnectionsInitiated { get { return _connectionsInitiated; } }
 
-        public override long CumulativeConnections
-        {
-            get
-            {
-                return _cumulativeConnections;
-            }
-        }
+        public override long CumulativeConnections { get { return _cumulativeConnections; } }
 
-        public override long CurrentConnections
-        {
-            get
-            {
-                return _currentConnections;
-            }
-        }
+        public override long CurrentConnections { get { return _currentConnections; } }
 
-        public override long ErrorsReceived
-        {
-            get
-            {
-                return _errorsReceived;
-            }
-        }
+        public override long ErrorsReceived { get { return _errorsReceived; } }
 
-        public override long FailedConnectionAttempts
-        {
-            get
-            {
-                return _failedConnectionAttempts;
-            }
-        }
+        public override long FailedConnectionAttempts { get { return _failedConnectionAttempts; } }
 
-        public override long MaximumConnections
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override long MaximumConnections { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override long MaximumTransmissionTimeout
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override long MaximumTransmissionTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override long MinimumTransmissionTimeout
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override long MinimumTransmissionTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override long ResetConnections
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override long ResetConnections { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override long ResetsSent
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        public override long ResetsSent { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override long SegmentsReceived
-        {
-            get
-            {
-                return _segmentsReceived;
-            }
-        }
+        public override long SegmentsReceived { get { return _segmentsReceived; } }
 
-        public override long SegmentsResent
-        {
-            get
-            {
-                return _segmentsResent;
-            }
-        }
+        public override long SegmentsResent { get { return _segmentsResent; } }
 
-        public override long SegmentsSent
-        {
-            get
-            {
-                return _segmentsSent;
-            }
-        }
+        public override long SegmentsSent { get { return _segmentsSent; } }
     }
 }

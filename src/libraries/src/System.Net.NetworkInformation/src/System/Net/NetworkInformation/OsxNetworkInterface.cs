@@ -16,7 +16,7 @@ namespace System.Net.NetworkInformation
             Interop.Sys.NativeIPInterfaceStatistics nativeStats;
             if (Interop.Sys.GetNativeIPInterfaceStatistics(name, out nativeStats) == -1)
             {
-                throw new NetworkInformationException();
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
             _speed = (long)nativeStats.Speed;
@@ -30,20 +30,20 @@ namespace System.Net.NetworkInformation
                 (name, ipAddr, maskAddr) =>
                 {
                     OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
-                    ProcessIpv4Address(oni, ipAddr, maskAddr);
+                    oni.ProcessIpv4Address(ipAddr, maskAddr);
                 },
                 (name, ipAddr, scopeId) =>
                 {
                     OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
-                    ProcessIpv6Address(oni, ipAddr, *scopeId);
+                    oni.ProcessIpv6Address(ipAddr, *scopeId);
                 },
                 (name, llAddr) =>
                 {
                     OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
-                    ProcessLinkLayerAddress(oni, llAddr);
+                    oni.ProcessLinkLayerAddress(llAddr);
                 }) != 0)
             {
-                throw new NetworkInformationException((int)Interop.Sys.GetLastError());
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
             return interfacesByName.Values.ToArray();
@@ -90,24 +90,12 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public override long Speed
-        {
-            get
-            {
-                return _speed;
-            }
-        }
+        public override long Speed { get { return _speed; } }
 
-        public override string Description { get { throw new PlatformNotSupportedException(); } }
+        public override string Description { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
-        public override bool SupportsMulticast
-        {
-            get
-            {
-                return _ipProperties.MulticastAddresses.Count > 0;
-            }
-        }
+        public override bool SupportsMulticast { get { return _ipProperties.MulticastAddresses.Count > 0; } }
 
-        public override bool IsReceiveOnly { get { throw new PlatformNotSupportedException(); } }
+        public override bool IsReceiveOnly { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
     }
 }
