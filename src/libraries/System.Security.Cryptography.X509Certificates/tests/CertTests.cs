@@ -134,12 +134,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509Cert2ToStringVerbose()
         {
-            X509Store store = new X509Store("My", StoreLocation.CurrentUser);
-            store.Open(OpenFlags.ReadOnly);
-
-            foreach (X509Certificate2 c in store.Certificates)
+            using (X509Store store = new X509Store("My", StoreLocation.CurrentUser))
             {
-                Assert.False(string.IsNullOrWhiteSpace(c.ToString(true)));
+                store.Open(OpenFlags.ReadOnly);
+
+                foreach (X509Certificate2 c in store.Certificates)
+                {
+                    Assert.False(string.IsNullOrWhiteSpace(c.ToString(true)));
+                    c.Dispose();
+                }
             }
         }
 
