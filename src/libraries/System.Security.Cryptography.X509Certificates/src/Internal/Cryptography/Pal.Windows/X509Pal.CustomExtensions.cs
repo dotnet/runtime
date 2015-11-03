@@ -162,7 +162,7 @@ namespace Internal.Cryptography.Pal
                         for (int i = 0; i < count; i++)
                         {
                             IntPtr oidValuePointer = pEnhKeyUsage->rgpszUsageIdentifier[i];
-                            String oidValue = Marshal.PtrToStringAnsi(oidValuePointer);
+                            string oidValue = Marshal.PtrToStringAnsi(oidValuePointer);
                             Oid oid = new Oid(oidValue);
                             localUsages.Add(oid);
                         }

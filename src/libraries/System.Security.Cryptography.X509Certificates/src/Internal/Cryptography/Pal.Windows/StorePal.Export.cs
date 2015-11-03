@@ -21,7 +21,7 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class StorePal : IDisposable, IStorePal
     {
-        public byte[] Export(X509ContentType contentType, String password)
+        public byte[] Export(X509ContentType contentType, string password)
         {
             switch (contentType)
             {
