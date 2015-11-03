@@ -63,6 +63,8 @@ namespace Internal.Cryptography
         {
             if (friendlyName == null)
                 throw new ArgumentNullException("friendlyName");
+            if (friendlyName.Length == 0)
+                return null;
 
             string mappedOid;
             bool shouldUseCache = ShouldUseCache(oidGroup);
