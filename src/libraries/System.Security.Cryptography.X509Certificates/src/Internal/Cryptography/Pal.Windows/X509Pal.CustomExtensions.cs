@@ -171,7 +171,6 @@ namespace Internal.Cryptography.Pal
             }
 
             usages = localUsages;
-            return;
         }
 
         public byte[] EncodeX509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier)

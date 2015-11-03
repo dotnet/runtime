@@ -48,7 +48,6 @@ namespace System.Security.Cryptography.X509Certificates
         {
             base.CopyFrom(asnEncodedData);
             _decoded = false;
-            return;
         }
 
         private bool _decoded = false;

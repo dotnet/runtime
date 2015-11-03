@@ -56,7 +56,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             Location = storeLocation;
-            return;
         }
 
         public X509Store(string storeName, StoreLocation storeLocation)
@@ -66,7 +65,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             Location = storeLocation;
             Name = storeName;
-            return;
         }
 
         public StoreLocation Location { get; private set; }
@@ -78,7 +76,6 @@ namespace System.Security.Cryptography.X509Certificates
         {
             Close();
             _storePal = StorePal.FromSystemStore(Name, Location, flags);
-            return;
         }
 
         public X509Certificate2Collection Certificates
@@ -103,7 +100,6 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
 
             _storePal.Add(certificate.Pal);
-            return;
         }
 
         public void Remove(X509Certificate2 certificate)
@@ -115,7 +111,6 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
 
             _storePal.Remove(certificate.Pal);
-            return;
         }
 
         public void Dispose()

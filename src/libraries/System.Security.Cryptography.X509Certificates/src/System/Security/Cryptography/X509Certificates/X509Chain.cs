@@ -20,7 +20,6 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Chain()
         {
             Reset();
-            return;
         }
 
         public X509ChainElementCollection ChainElements

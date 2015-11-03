@@ -19,7 +19,6 @@ namespace System.Security.Cryptography.X509Certificates
             Certificate = certificate;
             ChainElementStatus = chainElementStatus;
             Information = information;
-            return;
         }
 
         public X509Certificate2 Certificate { get; private set; }
