@@ -968,6 +968,8 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 
 #define EX_TRY EX_TRY_CUSTOM(Exception::HandlerState, , DelegatingException /* was SEHException*/)
 
+#define EX_TRY_CPP_ONLY EX_TRY_CUSTOM_CPP_ONLY(Exception::HandlerState, , DelegatingException /* was SEHException*/)
+
 #ifndef INCONTRACT
 #ifdef ENABLE_CONTRACTS
 #define INCONTRACT(x)          x
@@ -1031,40 +1033,44 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 
 #define EX_CATCH_IMPL EX_CATCH_IMPL_EX(Exception)
 
-//
-// What we really need a different version of EX_TRY with one less try scope, but this
-// gets us what we need for now...
-//
-#define EX_CATCH_IMPL_CPP_ONLY                                                          \
-                    DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                                  \
-                }                                                                       \
-                SCAN_EHMARKER_END_TRY();                                                \
-            }                                                                           \
-            PAL_CPP_CATCH_DERIVED (Exception, __pExceptionRaw)                          \
-            {                                                                           \
-                SCAN_EHMARKER_CATCH();                                                  \
-                __state.SetCaughtCxx();                                                 \
-                __state.m_pExceptionPtr = __pExceptionRaw;                              \
-                SCAN_EHMARKER_END_CATCH();                                              \
-                SCAN_IGNORE_THROW_MARKER;                                               \
-                PAL_CPP_RETHROW;                                                        \
-            }                                                                           \
-            PAL_CPP_ENDTRY                                                              \
-            SCAN_EHMARKER_END_TRY();                                                    \
-        }                                                                               \
-        PAL_CPP_CATCH_EXCEPTION_NOARG                                                   \
-        {                                                                               \
-            SCAN_EHMARKER_CATCH();                                                      \
-            VALIDATE_BACKOUT_STACK_CONSUMPTION;                                         \
-            __defaultException_t __defaultException;                                    \
-            CHECK::ResetAssert();                                                       \
-            ExceptionHolder __pException(__state.m_pExceptionPtr);                      \
-            /* work around unreachable code warning */                                  \
-            if (true) {                                                                 \
-                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_CATCH)                                  \
-                /* don't embed file names in retail to save space and avoid IP */       \
-                /* a findstr /n will allow you to locate it in a pinch */               \
-                __state.SetupCatch(INDEBUG_COMMA(__FILE__) __LINE__);                   \
+#define EX_TRY_CUSTOM_CPP_ONLY(STATETYPE, STATEARG, DEFAULT_EXCEPTION_TYPE)         \
+    {                                                                               \
+        STATETYPE               __state STATEARG;                                   \
+        typedef DEFAULT_EXCEPTION_TYPE  __defaultException_t;                       \
+        SCAN_EHMARKER();                                                            \
+        PAL_CPP_TRY                                                                 \
+        {                                                                           \
+            SCAN_EHMARKER_TRY();                                                    \
+            CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);                   \
+            /* prevent annotations from being dropped by optimizations in debug */  \
+            INDEBUG(static bool __alwayszero;)                                      \
+            INDEBUG(VolatileLoad(&__alwayszero);)                                   \
+            {                                                                       \
+                /* this is necessary for Rotor exception handling to work */        \
+                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
+
+#define EX_CATCH_IMPL_CPP_ONLY                                                      \
+                DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                                  \
+            }                                                                       \
+            SCAN_EHMARKER_END_TRY();                                                \
+        }                                                                           \
+        PAL_CPP_CATCH_DERIVED (Exception, __pExceptionRaw)                          \
+        {                                                                           \
+            SCAN_EHMARKER_CATCH();                                                  \
+            __state.SetCaughtCxx();                                                 \
+            __state.m_pExceptionPtr = __pExceptionRaw;                              \
+            SCAN_EHMARKER_END_CATCH();                                              \
+            SCAN_IGNORE_THROW_MARKER;                                               \
+            VALIDATE_BACKOUT_STACK_CONSUMPTION;                                     \
+            __defaultException_t __defaultException;                                \
+            CHECK::ResetAssert();                                                   \
+            ExceptionHolder __pException(__state.m_pExceptionPtr);                  \
+            /* work around unreachable code warning */                              \
+            if (true) {                                                             \
+                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_CATCH)                              \
+                /* don't embed file names in retail to save space and avoid IP */   \
+                /* a findstr /n will allow you to locate it in a pinch */           \
+                __state.SetupCatch(INDEBUG_COMMA(__FILE__) __LINE__);               \
 
 
 // Here we finally define the EX_CATCH* macros that will be used throughout the system.
