@@ -88,16 +88,7 @@ namespace System.Net.Security.Tests
             byte[] innerBuffer = new byte[count];
 
             Buffer.BlockCopy(buffer, offset, innerBuffer, 0, count);
-            _network.WriteFrame(_isServer, buffer);
-        }
-
-        public void DoNetworkRead()
-        {
-            byte[] innerBuffer;
-
-            _network.ReadFrame(_isServer, out innerBuffer);
-
-            _readStream = new MemoryStream(innerBuffer);
+            _network.WriteFrame(_isServer, innerBuffer);
         }
 
         private void UpdateReadStream()
@@ -107,7 +98,9 @@ namespace System.Net.Security.Tests
                 return;
             }
 
-            DoNetworkRead();
+            byte[] innerBuffer;
+            _network.ReadFrame(_isServer, out innerBuffer);
+            _readStream = new MemoryStream(innerBuffer);
         }
     }
 }

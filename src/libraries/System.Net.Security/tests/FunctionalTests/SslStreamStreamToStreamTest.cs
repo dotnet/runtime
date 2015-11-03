@@ -78,13 +78,9 @@ namespace System.Net.Security.Tests
 
                 serverSslStream.Read(recvBuf, 0, sampleMsg.Length);
 
-                clientSslStream.Write(sampleMsg);
+                Assert.True(VerifyOutput(recvBuf, sampleMsg), "verify first read data is as expected.");
 
-                // TODO Test Issue #3802
-                // The condition on which read method (UpdateReadStream) in FakeNetworkStream does a network read is flawed.
-                // That works fine in single read/write but fails in multi read write as stream size can be more, but real data can be < stream size.
-                // So I am doing an explicit read here. This issue is specific to test only & irrespective of xplat.
-                serverStream.DoNetworkRead();
+                clientSslStream.Write(sampleMsg);
 
                 serverSslStream.Read(recvBuf, 0, sampleMsg.Length);
 
