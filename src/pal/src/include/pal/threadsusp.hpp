@@ -37,10 +37,9 @@ Abstract:
 #include "pal/printfcpp.hpp"
 #include "pal/mutex.hpp"
 #include "pal/init.h"
-
-#if !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
+#if !HAVE_MACH_EXCEPTIONS
 #include <signal.h>
-#endif // !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
+#endif // !HAVE_MACH_EXCEPTIONS
 #include <semaphore.h>
 #include <sched.h>
 
@@ -96,23 +95,11 @@ namespace CorUnix
 
     class CThreadSuspensionInfo : public CThreadInfoInitializer
     {
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-        /* suspend_handler and resume_handler are friends of CThreadSuspensionInfo,
-        which allows them to call private functions: HandleSuspendSignal and 
-        HandleResumeSignal. */
-        friend void suspend_handler(int code, siginfo_t *siginfo, void *context);
-        friend void resume_handler(int code, siginfo_t *siginfo, void *context);
-#endif
-
         private:
             BOOL m_fPending; // TRUE if a suspension is pending on a thread (because the thread is in an unsafe region)
             BOOL m_fSelfsusp; // TRUE if thread is self suspending and while thread is self suspended
             BOOL m_fSuspendedForShutdown; // TRUE once the thread is suspended during PAL cleanup
             int m_nBlockingPipe; // blocking pipe used for a process that was created suspended
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION        
-            BOOL m_fSuspendSignalSent; // TRUE when a thread should expect to receive a SIGUSR1 for suspension
-            BOOL m_fResumeSignalSent; // TRUE when a thread should expect to receive a SIGUSR2 for resumption
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 #ifdef _DEBUG
             Volatile<LONG> m_lNumThreadsSuspendedByThisThread; // number of threads that this thread has suspended; used for suspension diagnostics
 #endif
@@ -122,9 +109,6 @@ namespace CorUnix
             pthread_mutex_t m_ptmSuspmutex; // thread's suspension mutex, which is used to synchronize suspension and resumption attempts
             BOOL m_fSuspmutexInitialized;
 #endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-            sigset_t m_smOrigmask; // stores a thread's signal mask immediately before a suspension retry; it is restored after the suspension retry is completed
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 #if USE_POSIX_SEMAPHORES
             sem_t m_semSusp; // suspension semaphore
             sem_t m_semResume; // resumption semaphore
@@ -242,40 +226,6 @@ namespace CorUnix
                 return &m_ptmSuspmutex;
             }
 #endif // DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX
-            
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION         	    
-            void
-            SetSuspendSignalSent(
-                BOOL fSuspendSignalSent
-                )
-            {
-                m_fSuspendSignalSent = fSuspendSignalSent;
-            };   
-
-            void
-            SetResumeSignalSent(
-                BOOL fResumeSignalSent
-                )
-            {
-                m_fResumeSignalSent = fResumeSignalSent;
-            };   
-            
-            BOOL
-            GetSuspendSignalSent(
-                void
-                )
-            {
-                return m_fSuspendSignalSent;
-            };  
-
-            BOOL
-            GetResumeSignalSent(
-                void
-                )
-            {
-                return m_fResumeSignalSent;
-            };
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 
             void
             SetSuspPending(
@@ -334,17 +284,6 @@ namespace CorUnix
                 return m_nBlockingPipe;
             };
 
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-            bool
-            HandleSuspendSignal(
-                CPalThread *pthrTarget
-            );
-
-            bool 
-            HandleResumeSignal(
-            );
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
-
         public:
             virtual PAL_ERROR InitializePreCreate();
 
@@ -353,10 +292,6 @@ namespace CorUnix
                 , m_fSelfsusp(FALSE)
                 , m_fSuspendedForShutdown(FALSE)
                 , m_nBlockingPipe(-1)
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-                , m_fSuspendSignalSent(FALSE)
-                , m_fResumeSignalSent(FALSE)
-#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 #ifdef _DEBUG
                 , m_lNumThreadsSuspendedByThisThread(0)
 #endif // _DEBUG
@@ -426,10 +361,10 @@ namespace CorUnix
                 DWORD *pdwSuspendCount
             );
 
-#if !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
+#if !HAVE_MACH_EXCEPTIONS
             static 
             VOID InitializeSignalSets();
-#endif // !HAVE_MACH_EXCEPTIONS || USE_SIGNALS_FOR_THREAD_SUSPENSION
+#endif // !HAVE_MACH_EXCEPTIONS
 
             VOID InitializeSuspensionLock();
 
