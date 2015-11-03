@@ -33,10 +33,8 @@ namespace System.ComponentModel.DataAnnotations
         {
             var attribute = new UrlAttribute();
 
-            Assert.Throws<ValidationException>(() => attribute.Validate("file:///foo.bar", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("http://user%password@foo.bar/", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("foo.png", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("http://foo\0.bar", s_testValidationContext)); // Illegal character
+            Assert.Throws<ValidationException>(() => attribute.Validate("file:///foo.bar", s_testValidationContext)); // file scheme
+            Assert.Throws<ValidationException>(() => attribute.Validate("foo.png", s_testValidationContext)); // no scheme
         }
 
         [Fact]

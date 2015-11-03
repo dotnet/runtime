@@ -17,6 +17,14 @@ namespace System.ComponentModel.DataAnnotations
         }
 
         [Fact]
+        public static void Can_set_and_get_MatchTimeout()
+        {
+            var attribute = new RegularExpressionAttribute("SomePattern");
+            attribute.MatchTimeoutInMilliseconds = 12345;
+            Assert.Equal(12345, attribute.MatchTimeoutInMilliseconds);
+        }
+
+        [Fact]
         public static void Validation_throws_InvalidOperationException_for_null_or_empty_pattern()
         {
             var attribute = new RegularExpressionAttribute(null);
@@ -42,9 +50,11 @@ namespace System.ComponentModel.DataAnnotations
         public static void Validate_successful_for_value_matching_pattern()
         {
             var attribute = new RegularExpressionAttribute("defghi");
+            attribute.MatchTimeoutInMilliseconds = 5000; // note: timeout is just a number much larger than we expect the test to take
             AssertEx.DoesNotThrow(() => attribute.Validate("defghi", s_testValidationContext));
 
             attribute = new RegularExpressionAttribute("[^a]+\\.[^z]+");
+            attribute.MatchTimeoutInMilliseconds = 10000; // note: timeout is just a number much larger than we expect the test to take
             AssertEx.DoesNotThrow(() => attribute.Validate("bcdefghijklmnopqrstuvwxyz.abcdefghijklmnopqrstuvwxy", s_testValidationContext));
         }
 
@@ -58,6 +68,7 @@ namespace System.ComponentModel.DataAnnotations
             Assert.Throws<ValidationException>(() => attribute.Validate("abcdefghijkl", s_testValidationContext)); // pattern only matches part of value
 
             attribute = new RegularExpressionAttribute("[^a]+\\.[^z]+");
+            attribute.MatchTimeoutInMilliseconds = 10000; // note: timeout is just a number much larger than we expect the test to take
             Assert.Throws<ValidationException>(() => attribute.Validate("aaaaa", s_testValidationContext));
             Assert.Throws<ValidationException>(() => attribute.Validate("zzzzz", s_testValidationContext));
             Assert.Throws<ValidationException>(() => attribute.Validate("b.z", s_testValidationContext));
