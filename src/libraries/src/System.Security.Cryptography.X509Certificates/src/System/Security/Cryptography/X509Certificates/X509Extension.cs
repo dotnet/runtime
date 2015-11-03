@@ -56,7 +56,6 @@ namespace System.Security.Cryptography.X509Certificates
         internal X509Extension(string oidValue)
         {
             base.Oid = Oid.FromOidValue(oidValue, OidGroup.ExtensionOrAttribute);
-            return;
         }
     }
 }

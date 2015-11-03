@@ -279,7 +279,6 @@ namespace Internal.Cryptography.Pal
                     CRYPTOAPI_BLOB* pValue = value ? &blob : (CRYPTOAPI_BLOB*)null;
                     if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, CertContextPropId.CERT_ARCHIVED_PROP_ID, CertSetPropertyFlags.None, pValue))
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
-                    return;
                 }
             }
         }
@@ -316,7 +315,6 @@ namespace Internal.Cryptography.Pal
                         Marshal.FreeHGlobal(pFriendlyName);
                     }
                 }
-                return;
             }
         }
 
@@ -473,7 +471,6 @@ namespace Internal.Cryptography.Pal
             {
                 certContext.Dispose();
             }
-            return;
         }
 
         internal SafeCertContextHandle CertContext
@@ -539,7 +536,6 @@ namespace Internal.Cryptography.Pal
                 GC.KeepAlive(oldCertContext);
             }
             _certContext = certContext;
-            return;
         }
 
         private SafeCertContextHandle _certContext;

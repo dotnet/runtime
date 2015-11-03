@@ -68,7 +68,6 @@ namespace System.Security.Cryptography.X509Certificates
         {
             base.CopyFrom(asnEncodedData);
             _decoded = false;
-            return;
         }
 
         private static byte[] EncodeExtension(bool certificateAuthority, bool hasPathLengthConstraint, int pathLengthConstraint)

@@ -17,7 +17,6 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public X509Certificate()
         {
-            return;
         }
 
         public X509Certificate(byte[] data)
@@ -112,7 +111,6 @@ namespace System.Security.Cryptography.X509Certificates
         public void Dispose()
         {
             Dispose(true);
-            return;
         }
 
         protected virtual void Dispose(bool disposing)
@@ -335,7 +333,6 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (Pal == null)
                 throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHandle, "m_safeCertContext")); // Keeping "m_safeCertContext" string for backward compat sake.
-            return;
         }
 
         /// <summary>

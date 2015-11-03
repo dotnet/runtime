@@ -37,7 +37,6 @@ namespace Internal.Cryptography.Pal
         {
             if (!Interop.crypt32.CertAddCertificateContextToStore(_certStore, ((CertificatePal)certificate).CertContext, CertStoreAddDisposition.CERT_STORE_ADD_REPLACE_EXISTING_INHERIT_PROPERTIES, IntPtr.Zero))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
-            return;
         }
 
         public void Remove(ICertificatePal certificate)
@@ -55,7 +54,6 @@ namespace Internal.Cryptography.Pal
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
                 GC.KeepAlive(existingCertContext);
-                return;
             }
         }
 
@@ -65,7 +63,6 @@ namespace Internal.Cryptography.Pal
             _certStore = null;
             if (certStore != null)
                 certStore.Dispose();
-            return;
         }
 
         internal SafeCertStoreHandle SafeCertStoreHandle

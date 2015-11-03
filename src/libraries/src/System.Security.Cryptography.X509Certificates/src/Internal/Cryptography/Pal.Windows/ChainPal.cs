@@ -103,7 +103,6 @@ namespace Internal.Cryptography.Pal
             _chain = null;
             if (chain != null)
                 chain.Dispose();
-            return;
         }
 
         private SafeX509ChainHandle _chain;
