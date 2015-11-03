@@ -75,6 +75,9 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                 buildCommands += "build.cmd ${lowerConfiguration} ${architecture} linuxmscorlib"
                 buildCommands += "build.cmd ${lowerConfiguration} ${architecture} freebsdmscorlib"
                 buildCommands += "build.cmd ${lowerConfiguration} ${architecture} osxmscorlib"
+                // Pack up the tests directory so that we don't use so much space/time copying
+                // 10s of thousands of files around.
+                buildCommands += "C:\\Packer\\Packer.exe .\\bin\\tests\\tests.pack .\\bin\\tests\\${osGroup}.${architecture}.${configuration}"
             }
             else {
                 // On other OS's we skipmscorlib but run the pal tests
@@ -154,13 +157,13 @@ def static getBuildJobName(def configuration, def architecture, def os) {
             [newPRJob, newCommitJob].each { newJob ->
                 Utilities.addStandardOptions(newJob)
                 
+                // Instead of packing up all the 
                 if (osGroup == 'Windows_NT') {
                     Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
-                    Utilities.addArchival(newJob, "bin/Product/**,bin/tests/**", "bin/tests/obj/**")
+                    Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.pack")
                 } else {
                     // Add .NET results for the 
                     Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
-                    Utilities.addArchival(newJob, "bin/Product/**")
                     Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**")
                 }
             }
@@ -297,8 +300,10 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                             }
                         }
                         
-                        // Execute the shell command
+                        // Unpack the tests first
+                        shell("unpacker ./bin/tests/tests.pack ./bin/tests/Windows_NT.${architecture}.${configuration}")
                         
+                        // Execute the tests
                         shell("""
     ./tests/runtest.sh \\
         --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
