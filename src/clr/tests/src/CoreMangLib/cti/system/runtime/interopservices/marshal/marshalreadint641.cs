@@ -99,10 +99,10 @@ public class MarshalReadInt641
     #endregion
 
     #region Macintosh P/invoke Declarations
-    [DllImport("libc.dylib")]
+    [DllImport("libc")]
     private static extern IntPtr malloc(uint siz);
 
-    [DllImport("libc.dylib")]
+    [DllImport("libc")]
     private static extern void free(IntPtr ptr);
     #endregion
 

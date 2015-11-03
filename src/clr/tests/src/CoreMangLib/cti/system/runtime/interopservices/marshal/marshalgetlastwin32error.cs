@@ -29,12 +29,11 @@ public class MarshalGetLastWin32Error
             retVal = PosTest2() && retVal;
             retVal = PosTest3() && retVal;
         }
-#if !WinCoreSys
         else
         {
-            retVal = PosMacTest1() && retVal;
+            retVal = PosNonWinTest1() && retVal;
         }
-#endif
+
         return retVal;
     }
 
@@ -144,8 +143,7 @@ public class MarshalGetLastWin32Error
 
         return retVal;
     }
-#if !WinCoreSys
-    public bool PosMacTest1()
+    public bool PosNonWinTest1()
     {
         bool   retVal = true;
         string pwd    = null;
@@ -154,7 +152,7 @@ public class MarshalGetLastWin32Error
 
         try
         {
-            pwd = getenv("PWD");
+            pwd = Marshal.PtrToStringUni(getenv("PWD"));
 
             if (Marshal.GetLastWin32Error() != 0)
             {
@@ -170,7 +168,6 @@ public class MarshalGetLastWin32Error
 
         return retVal;
     }
-#endif
     #endregion
     #endregion
 
@@ -196,11 +193,9 @@ public class MarshalGetLastWin32Error
 
     #region Private Methods
 
-#if !WinCoreSys
     [SecurityCritical]
-    [DllImport("/usr/lib/libc.dylib")]
-    private static extern string getenv(string key);
-#endif
+    [DllImport("libc")]
+    private static extern IntPtr getenv(string key);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private extern static void SetLastError(uint dwErrCode);
