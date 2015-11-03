@@ -682,7 +682,7 @@ ReadProcessMemory(
 #else   // HAVE_VM_READ
 #if HAVE_PROCFS_CTL
     snprintf(memPath, sizeof(memPath), "/proc/%u/%s", processId, PROCFS_MEM_NAME);
-    fd = InternalOpen(pThread, memPath, O_RDONLY);
+    fd = InternalOpen(memPath, O_RDONLY);
     if (fd == -1)
     {
         ERROR("Failed to open %s\n", memPath);
@@ -957,7 +957,7 @@ WriteProcessMemory(
 #else   // HAVE_VM_READ
 #if HAVE_PROCFS_CTL
     snprintf(memPath, sizeof(memPath), "/proc/%u/%s", processId, PROCFS_MEM_NAME);
-    fd = InternalOpen(pThread, memPath, O_WRONLY);
+    fd = InternalOpen(memPath, O_WRONLY);
     if (fd == -1)
     {
         ERROR("Failed to open %s\n", memPath);
@@ -1280,7 +1280,7 @@ DBGAttachProcess(
         nanosleep(&waitTime, NULL);
         
         sprintf_s(ctlPath, sizeof(ctlPath), "/proc/%d/ctl", processId);
-        fd = InternalOpen(pThread, ctlPath, O_WRONLY);
+        fd = InternalOpen(ctlPath, O_WRONLY);
         if (fd == -1)
         {
             ERROR("Failed to open %s: errno is %d (%s)\n", ctlPath,
