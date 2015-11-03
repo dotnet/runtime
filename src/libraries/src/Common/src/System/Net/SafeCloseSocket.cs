@@ -52,9 +52,10 @@ namespace System.Net.Sockets
             try
             {
                 // The inner socket can be closed by CloseAsIs and when SafeHandle runs ReleaseHandle.
-                if (_innerSocket != null)
+                InnerSafeCloseSocket innerSocket = Volatile.Read(ref _innerSocket);
+                if (innerSocket != null)
                 {
-                    _innerSocket.AddRef();
+                    innerSocket.AddRef();
                 }
             }
             catch (Exception e)
@@ -68,9 +69,10 @@ namespace System.Net.Sockets
             try
             {
                 // The inner socket can be closed by CloseAsIs and when SafeHandle runs ReleaseHandle.
-                if (_innerSocket != null)
+                InnerSafeCloseSocket innerSocket = Volatile.Read(ref _innerSocket);
+                if (innerSocket != null)
                 {
-                    _innerSocket.Release();
+                    innerSocket.Release();
                 }
             }
             catch (Exception e)
