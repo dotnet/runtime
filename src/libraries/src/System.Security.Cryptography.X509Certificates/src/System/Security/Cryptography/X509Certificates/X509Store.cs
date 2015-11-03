@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Store(StoreName storeName, StoreLocation storeLocation)
         {
             if (storeLocation != StoreLocation.CurrentUser && storeLocation != StoreLocation.LocalMachine)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "storeLocation"));
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "storeLocation"));
 
             switch (storeName)
             {
@@ -52,33 +52,30 @@ namespace System.Security.Cryptography.X509Certificates
                     Name = "TrustedPublisher";
                     break;
                 default:
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "storeName"));
+                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "storeName"));
             }
 
             Location = storeLocation;
-            return;
         }
 
-        public X509Store(String storeName, StoreLocation storeLocation)
+        public X509Store(string storeName, StoreLocation storeLocation)
         {
             if (storeLocation != StoreLocation.CurrentUser && storeLocation != StoreLocation.LocalMachine)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "storeLocation"));
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "storeLocation"));
 
             Location = storeLocation;
             Name = storeName;
-            return;
         }
 
         public StoreLocation Location { get; private set; }
 
-        public String Name { get; private set; }
+        public string Name { get; private set; }
 
 
         public void Open(OpenFlags flags)
         {
             Close();
             _storePal = StorePal.FromSystemStore(Name, Location, flags);
-            return;
         }
 
         public X509Certificate2Collection Certificates
@@ -103,7 +100,6 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
 
             _storePal.Add(certificate.Pal);
-            return;
         }
 
         public void Remove(X509Certificate2 certificate)
@@ -115,7 +111,6 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
 
             _storePal.Remove(certificate.Pal);
-            return;
         }
 
         public void Dispose()
@@ -133,7 +128,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private IStorePal _storePal = null;
+        private IStorePal _storePal;
     }
 }
 

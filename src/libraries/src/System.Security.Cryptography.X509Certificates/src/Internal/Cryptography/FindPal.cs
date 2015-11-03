@@ -86,7 +86,7 @@ namespace Internal.Cryptography.Pal
                         // it compares against both interpretations and treats a match
                         // of either as a successful find.
 
-                        // String is big-endian, BigInteger constructor requires little-endian.
+                        // string is big-endian, BigInteger constructor requires little-endian.
                         byte[] hexBytes = decimalOrHexString.DecodeHexString();
                         Array.Reverse(hexBytes);
 

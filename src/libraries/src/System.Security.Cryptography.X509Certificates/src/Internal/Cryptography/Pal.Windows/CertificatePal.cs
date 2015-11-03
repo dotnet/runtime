@@ -42,7 +42,7 @@ namespace Internal.Cryptography.Pal
             get { return _certContext.DangerousGetHandle(); }
         }
 
-        public String Issuer
+        public string Issuer
         {
             get
             {
@@ -50,7 +50,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public String Subject
+        public string Subject
         {
             get
             {
@@ -73,14 +73,14 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public String KeyAlgorithm
+        public string KeyAlgorithm
         {
             get
             {
                 unsafe
                 {
                     CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    String keyAlgorithm = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId);
+                    string keyAlgorithm = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId);
                     GC.KeepAlive(this);
                     return keyAlgorithm;
                 }
@@ -94,7 +94,7 @@ namespace Internal.Cryptography.Pal
                 unsafe
                 {
                     CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    String keyAlgorithmOid = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId);
+                    string keyAlgorithmOid = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId);
 
                     int algId;
                     if (keyAlgorithmOid == Oids.RsaRsa)
@@ -190,14 +190,14 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public String SignatureAlgorithm
+        public string SignatureAlgorithm
         {
             get
             {
                 unsafe
                 {
                     CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    String signatureAlgorithm = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SignatureAlgorithm.pszObjId);
+                    string signatureAlgorithm = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SignatureAlgorithm.pszObjId);
                     GC.KeepAlive(this);
                     return signatureAlgorithm;
                 }
@@ -279,29 +279,28 @@ namespace Internal.Cryptography.Pal
                     CRYPTOAPI_BLOB* pValue = value ? &blob : (CRYPTOAPI_BLOB*)null;
                     if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, CertContextPropId.CERT_ARCHIVED_PROP_ID, CertSetPropertyFlags.None, pValue))
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
-                    return;
                 }
             }
         }
 
-        public String FriendlyName
+        public string FriendlyName
         {
             get
             {
                 int cbData = 0;
                 if (!Interop.crypt32.CertGetCertificateContextPropertyString(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, null, ref cbData))
-                    return String.Empty;
+                    return string.Empty;
 
                 StringBuilder sb = new StringBuilder((cbData + 1) / 2);
                 if (!Interop.crypt32.CertGetCertificateContextPropertyString(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, sb, ref cbData))
-                    return String.Empty;
+                    return string.Empty;
 
                 return sb.ToString();
             }
 
             set
             {
-                String friendlyName = (value == null) ? String.Empty : value;
+                string friendlyName = (value == null) ? string.Empty : value;
                 unsafe
                 {
                     IntPtr pFriendlyName = Marshal.StringToHGlobalUni(friendlyName);
@@ -316,7 +315,6 @@ namespace Internal.Cryptography.Pal
                         Marshal.FreeHGlobal(pFriendlyName);
                     }
                 }
-                return;
             }
         }
 
@@ -360,7 +358,7 @@ namespace Internal.Cryptography.Pal
                     for (int i = 0; i < numExtensions; i++)
                     {
                         CERT_EXTENSION* pCertExtension = pCertInfo->rgExtension + i;
-                        String oidValue = Marshal.PtrToStringAnsi(pCertExtension->pszObjId);
+                        string oidValue = Marshal.PtrToStringAnsi(pCertExtension->pszObjId);
                         Oid oid = new Oid(oidValue);
                         bool critical = pCertExtension->fCritical != 0;
                         byte[] rawData = pCertExtension->Value.ToByteArray();
@@ -373,7 +371,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public String GetNameInfo(X509NameType nameType, bool forIssuer)
+        public string GetNameInfo(X509NameType nameType, bool forIssuer)
         {
             CertNameType certNameType = MapNameType(nameType);
             CertNameFlags certNameFlags = forIssuer ? CertNameFlags.CERT_NAME_ISSUER_FLAG : CertNameFlags.None;
@@ -430,7 +428,7 @@ namespace Internal.Cryptography.Pal
 
             try
             {
-                String uniqueKeyContainer = cspKeyContainerInfo.UniqueKeyContainerName;
+                string uniqueKeyContainer = cspKeyContainerInfo.UniqueKeyContainerName;
                 sb.Append(Environment.NewLine + "  Unique Key Container Name: ");
                 sb.Append(uniqueKeyContainer);
             }
@@ -473,7 +471,6 @@ namespace Internal.Cryptography.Pal
             {
                 certContext.Dispose();
             }
-            return;
         }
 
         internal SafeCertContextHandle CertContext
@@ -511,7 +508,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private String GetIssuerOrSubject(bool issuer)
+        private string GetIssuerOrSubject(bool issuer)
         {
             CertNameFlags flags = issuer ? CertNameFlags.CERT_NAME_ISSUER_FLAG : CertNameFlags.None;
             CertNameStringType stringType = CertNameStringType.CERT_X500_NAME_STR | CertNameStringType.CERT_NAME_STR_REVERSE_FLAG;
@@ -539,7 +536,6 @@ namespace Internal.Cryptography.Pal
                 GC.KeepAlive(oldCertContext);
             }
             _certContext = certContext;
-            return;
         }
 
         private SafeCertContextHandle _certContext;

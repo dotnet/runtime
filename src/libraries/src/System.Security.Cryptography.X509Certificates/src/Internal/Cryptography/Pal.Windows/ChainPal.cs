@@ -57,7 +57,7 @@ namespace Internal.Cryptography.Pal
 
                         X509Certificate2 certificate = new X509Certificate2((IntPtr)(pChainElement->pCertContext));
                         X509ChainStatus[] chainElementStatus = GetChainStatusInformation(pChainElement->TrustStatus.dwErrorStatus);
-                        String information = Marshal.PtrToStringUni(pChainElement->pwszExtendedErrorInfo);
+                        string information = Marshal.PtrToStringUni(pChainElement->pwszExtendedErrorInfo);
 
                         X509ChainElement chainElement = new X509ChainElement(certificate, chainElementStatus, information);
                         chainElements[i] = chainElement;
@@ -103,7 +103,6 @@ namespace Internal.Cryptography.Pal
             _chain = null;
             if (chain != null)
                 chain.Dispose();
-            return;
         }
 
         private SafeX509ChainHandle _chain;

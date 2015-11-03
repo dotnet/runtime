@@ -211,7 +211,7 @@ namespace Internal.Cryptography.Pal
             return chainStatus;
         }
 
-        private static String GetSystemErrorString(int errorCode)
+        private static string GetSystemErrorString(int errorCode)
         {
             StringBuilder strMessage = new StringBuilder(512);
             int dwErrorCode = Interop.localization.FormatMessage(

@@ -10,12 +10,12 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public X509ChainStatusFlags Status { get; set; }
 
-        public String StatusInformation
+        public string StatusInformation
         {
             get
             {
                 if (_statusInformation == null)
-                    return String.Empty;
+                    return string.Empty;
                 return _statusInformation;
             }
             set
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private String _statusInformation;
+        private string _statusInformation;
     }
 }
 

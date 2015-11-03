@@ -1,15 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Text;
 using System.Collections;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -23,18 +15,12 @@ namespace System.Security.Cryptography.X509Certificates
 
         public X509Extension Current
         {
-            get
-            {
-                return _extensions[_current];
-            }
+            get { return _extensions[_current]; }
         }
 
-        Object IEnumerator.Current
+        object IEnumerator.Current
         {
-            get
-            {
-                return _extensions[_current];
-            }
+            get { return Current; }
         }
 
         public bool MoveNext()

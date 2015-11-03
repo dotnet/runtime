@@ -52,7 +52,6 @@ namespace System.Security.Cryptography.X509Certificates
         public void CopyTo(X509ChainElement[] array, int index)
         {
             ((ICollection)this).CopyTo(array, index);
-            return;
         }
 
         void ICollection.CopyTo(Array array, int index)
@@ -71,8 +70,6 @@ namespace System.Security.Cryptography.X509Certificates
                 array.SetValue(this[i], index);
                 index++;
             }
-
-            return;
         }
 
         public X509ChainElementEnumerator GetEnumerator()
