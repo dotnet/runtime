@@ -3778,7 +3778,7 @@ namespace CorUnix
             {
                 /* Some how no one deleted the pipe, perhaps it was left behind
                 from a crash?? Delete the pipe and try again. */
-                if ( -1 == InternalUnlink( szPipeFilename ) )
+                if ( -1 == unlink( szPipeFilename ) )
                 {
                     ERROR( "Unable to delete the process pipe that was left behind.\n" );
                     fRet = false;
@@ -3858,7 +3858,7 @@ namespace CorUnix
             // Failed
             if (0 != szPipeFilename[0])
             {
-                InternalUnlink(szPipeFilename);
+                unlink(szPipeFilename);
             }
             if (-1 != iPipeRd)
             {
@@ -3901,13 +3901,13 @@ namespace CorUnix
     PAL_ERROR CPalSynchronizationManager::ShutdownProcessPipe(
         CPalThread *pthrCurrent)
     {
-        PAL_ERROR palErr = NO_ERROR;        
+        PAL_ERROR palErr = NO_ERROR;
 #ifndef CORECLR
         char szPipeFilename[MAX_PATH];
 
         if(GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
         {
-            if (InternalUnlink(szPipeFilename) == -1)
+            if (unlink(szPipeFilename) == -1)
             {
                 ERROR("Unable to unlink the pipe file name errno=%d (%s)\n", 
                       errno, strerror(errno));

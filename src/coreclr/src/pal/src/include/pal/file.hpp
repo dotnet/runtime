@@ -186,25 +186,6 @@ namespace CorUnix
         );
 
     /*++
-    InternalGetcwd
-    Wraps getcwd
-    --*/
-    char *
-    InternalGetcwd(
-        char *szBuf,
-        size_t nSize
-        );
-
-    /*++
-    InternalFflush
-    Wraps fflush
-    --*/
-    int
-    InternalFflush(
-        FILE * stream
-        );
-
-    /*++
     InternalMkstemp
     Wraps mkstemp
     --*/
@@ -214,31 +195,12 @@ namespace CorUnix
         );
 
     /*++
-    InternalUnlink
-    Wraps unlink
-    --*/
-    int
-    InternalUnlink(
-        const char *szPath
-        );
-
-    /*++
     InternalDeleteFile
     Wraps SYS_delete
     --*/
     int 
     InternalDeleteFile(
         const char *szPath
-        );
-
-    /*++
-    InternalRename
-    Wraps rename
-    --*/
-    int 
-    InternalRename(
-        const char *szOldName, 
-        const char *szNewName
         );
 
     /*++
@@ -275,17 +237,6 @@ namespace CorUnix
         const char *szFilename,
         int nFlags,
         ...
-        );
-
-    /*++
-    InternalFseek
-    Wraps fseek
-    --*/
-    int
-    InternalFseek(
-        FILE *f,
-        long lOffset,
-        int nWhence
         );
 }
 
