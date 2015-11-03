@@ -179,7 +179,7 @@ FileMappingCleanupRoutine(
 
         if (pImmutableData->bPALCreatedTempFile)
         {
-            InternalUnlink(pThread, pImmutableData->szFileName);
+            InternalUnlink(pImmutableData->szFileName);
         }
     }
 
@@ -240,7 +240,6 @@ FileMappingInitializationRoutine(
         reinterpret_cast<CFileMappingProcessLocalData *>(pvProcessLocalData);
 
     pProcessLocalData->UnixFd = InternalOpen(
-        pThread,
         pImmutableData->szFileName,
         MAPProtectionToFileOpenFlags(pImmutableData->flProtect)
         );
@@ -506,7 +505,7 @@ CorUnix::InternalCreateFileMapping(
 
 #if HAVE_MMAP_DEV_ZERO
 
-        UnixFd = InternalOpen(pThread, pImmutableData->szFileName, O_RDWR);
+        UnixFd = InternalOpen(pImmutableData->szFileName, O_RDWR);
         if ( -1 == UnixFd )
         {
             ERROR( "Unable to open the file.\n");
@@ -767,7 +766,7 @@ ExitInternalCreateFileMapping:
 
         if (bPALCreatedTempFile)
         {
-            InternalUnlink(pThread, pImmutableData->szFileName);
+            InternalUnlink(pImmutableData->szFileName);
         }
 
         if (-1 != UnixFd)
@@ -784,9 +783,9 @@ ExitInternalCreateFileMapping:
     if (NULL != pFileObject)
     {
         pFileObject->ReleaseReference(pThread);
-    }  
+    }
 
-    return palError;    
+    return palError;
 }
 
 /*++

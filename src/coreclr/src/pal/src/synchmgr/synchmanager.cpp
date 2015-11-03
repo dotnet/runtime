@@ -2899,7 +2899,7 @@ namespace CorUnix
 
         _ASSERT_MSG(fRet, "Failed to retrieve process pipe's name!\n");
 
-        iProcessPipe = InternalOpen(pthrCurrent, strPipeFilename, O_WRONLY);
+        iProcessPipe = InternalOpen(strPipeFilename, O_WRONLY);
         if (-1 == iProcessPipe)
         {
             ERROR("Unable to open a process pipe to wake up a remote thread "
@@ -3778,7 +3778,7 @@ namespace CorUnix
             {
                 /* Some how no one deleted the pipe, perhaps it was left behind
                 from a crash?? Delete the pipe and try again. */
-                if ( -1 == InternalUnlink( pthrCurrent, szPipeFilename ) )
+                if ( -1 == InternalUnlink( szPipeFilename ) )
                 {
                     ERROR( "Unable to delete the process pipe that was left behind.\n" );
                     fRet = false;
@@ -3802,7 +3802,7 @@ namespace CorUnix
             }
         }
 
-        iPipeRd = InternalOpen(pthrCurrent, szPipeFilename, O_RDONLY | O_NONBLOCK);
+        iPipeRd = InternalOpen(szPipeFilename, O_RDONLY | O_NONBLOCK);
         if (iPipeRd == -1)
         {
             ERROR("Unable to open the process pipe for read\n");
@@ -3810,7 +3810,7 @@ namespace CorUnix
             goto CPP_exit;
         }
 
-        iPipeWr = InternalOpen(pthrCurrent, szPipeFilename, O_WRONLY | O_NONBLOCK);
+        iPipeWr = InternalOpen(szPipeFilename, O_WRONLY | O_NONBLOCK);
         if (iPipeWr == -1)
         {
             ERROR("Unable to open the process pipe for write\n");
@@ -3858,7 +3858,7 @@ namespace CorUnix
             // Failed
             if (0 != szPipeFilename[0])
             {
-                InternalUnlink(pthrCurrent, szPipeFilename);
+                InternalUnlink(szPipeFilename);
             }
             if (-1 != iPipeRd)
             {
@@ -3907,7 +3907,7 @@ namespace CorUnix
 
         if(GetProcessPipeName(szPipeFilename, MAX_PATH, gPID))
         {
-            if (InternalUnlink(pthrCurrent, szPipeFilename) == -1)
+            if (InternalUnlink(szPipeFilename) == -1)
             {
                 ERROR("Unable to unlink the pipe file name errno=%d (%s)\n", 
                       errno, strerror(errno));
