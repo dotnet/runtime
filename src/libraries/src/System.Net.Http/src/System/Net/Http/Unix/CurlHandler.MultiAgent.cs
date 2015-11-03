@@ -17,7 +17,7 @@ using CURLMcode = Interop.Http.CURLMcode;
 using CURLMSG = Interop.Http.CURLMSG;
 using CURLoption = Interop.Http.CURLoption;
 using SafeCurlMultiHandle = Interop.Http.SafeCurlMultiHandle;
-using size_t = System.UInt64; // TODO: IntPtr
+using CurlSeekResult = Interop.Http.CurlSeekResult;
 
 namespace System.Net.Http
 {
@@ -26,10 +26,10 @@ namespace System.Net.Http
         /// <summary>Provides a multi handle and the associated processing for all requests on the handle.</summary>
         private sealed class MultiAgent
         {
-            private static readonly Interop.libcurl.curl_readwrite_callback s_receiveHeadersCallback = CurlReceiveHeadersCallback;
-            private static readonly Interop.libcurl.curl_readwrite_callback s_sendCallback = CurlSendCallback;
-            private static readonly Interop.libcurl.seek_callback s_seekCallback = CurlSeekCallback;
-            private static readonly Interop.libcurl.curl_readwrite_callback s_receiveBodyCallback = CurlReceiveBodyCallback;
+            private static readonly Interop.Http.ReadWriteCallback s_receiveHeadersCallback = CurlReceiveHeadersCallback;
+            private static readonly Interop.Http.ReadWriteCallback s_sendCallback = CurlSendCallback;
+            private static readonly Interop.Http.SeekCallback s_seekCallback = CurlSeekCallback;
+            private static readonly Interop.Http.ReadWriteCallback s_receiveBodyCallback = CurlReceiveBodyCallback;
             
             /// <summary>
             /// A collection of not-yet-processed incoming requests for work to be done
@@ -391,7 +391,7 @@ namespace System.Net.Http
                 {
                     easy._associatedMultiAgent = this;
                     easy.SetCurlOption(CURLoption.CURLOPT_PRIVATE, gcHandlePtr);
-                    SetCurlCallbacks(easy, gcHandlePtr);
+                    easy.SetCurlCallbacks(gcHandlePtr, s_receiveHeadersCallback, s_sendCallback, s_seekCallback, s_receiveBodyCallback);
                     ThrowIfCURLMError(Interop.Http.MultiAddHandle(multiHandle, easy._easyHandle));
                 }
                 catch (Exception exc)
@@ -528,7 +528,7 @@ namespace System.Net.Http
                 completedOperation.Cleanup();
             }
 
-            private static size_t CurlReceiveHeadersCallback(IntPtr buffer, size_t size, size_t nitems, IntPtr context)
+            private static ulong CurlReceiveHeadersCallback(IntPtr buffer, ulong size, ulong nitems, IntPtr context)
             {
                 CurlHandler.VerboseTrace("size: " + size + ", nitems: " + nitems);
                 size *= nitems;
@@ -577,8 +577,8 @@ namespace System.Net.Http
                 return size - 1;
             }
 
-            private static size_t CurlReceiveBodyCallback(
-                IntPtr buffer, size_t size, size_t nitems, IntPtr context)
+            private static ulong CurlReceiveBodyCallback(
+                IntPtr buffer, ulong size, ulong nitems, IntPtr context)
             {
                 CurlHandler.VerboseTrace("size: " + size + ", nitems: " + nitems);
                 size *= nitems;
@@ -613,7 +613,7 @@ namespace System.Net.Http
                 return (size > 0) ? size - 1 : 1;
             }
 
-            private static size_t CurlSendCallback(IntPtr buffer, size_t size, size_t nitems, IntPtr context)
+            private static ulong CurlSendCallback(IntPtr buffer, ulong size, ulong nitems, IntPtr context)
             {
                 CurlHandler.VerboseTrace("size: " + size + ", nitems: " + nitems);
                 int length = checked((int)(size * nitems));
@@ -641,7 +641,7 @@ namespace System.Net.Http
                 }
 
                 // Something went wrong.
-                return Interop.libcurl.CURL_READFUNC_ABORT;
+                return Interop.Http.CURL_READFUNC_ABORT;
             }
 
             /// <summary>
@@ -649,7 +649,7 @@ namespace System.Net.Http
             /// request content (non-memory) stream to the buffer.
             /// </summary>
             /// <returns>The number of bytes transferred.</returns>
-            private static size_t TransferDataFromRequestStream(IntPtr buffer, int length, EasyRequest easy)
+            private static ulong TransferDataFromRequestStream(IntPtr buffer, int length, EasyRequest easy)
             {
                 MultiAgent multi = easy._associatedMultiAgent;
 
@@ -708,7 +708,7 @@ namespace System.Net.Http
 
                         // Return the amount of data copied
                         Debug.Assert(bytesToCopy > 0, "We should never return 0 bytes here.");
-                        return (size_t)bytesToCopy;
+                        return (ulong)bytesToCopy;
                     }
 
                     // sts was non-null but sts.Task was null, meaning there was no previous task/data
@@ -759,7 +759,7 @@ namespace System.Net.Http
                     }
 
                     // Return the number of bytes read.
-                    return (size_t)bytesToCopy;
+                    return (ulong)bytesToCopy;
                 }
 
                 // Otherwise, the read completed asynchronously.  Store the task, and hook up a continuation 
@@ -773,10 +773,10 @@ namespace System.Net.Http
 
                 // Then pause the connection.
                 multi.VerboseTrace("Pausing the connection", easy: easy);
-                return Interop.libcurl.CURL_READFUNC_PAUSE;
+                return Interop.Http.CURL_READFUNC_PAUSE;
             }
 
-            private static int CurlSeekCallback(IntPtr context, long offset, int origin)
+            private static CurlSeekResult CurlSeekCallback(IntPtr context, long offset, int origin)
             {
                 CurlHandler.VerboseTrace("offset: " + offset + ", origin: " + origin);
                 EasyRequest easy;
@@ -799,11 +799,11 @@ namespace System.Net.Http
                             // Restart the transfer
                             easy._requestContentStream.Run();
 
-                            return Interop.libcurl.CURL_SEEKFUNC.CURL_SEEKFUNC_OK;
+                            return CurlSeekResult.CURL_SEEKFUNC_OK;
                         }
                         else
                         {
-                            return Interop.libcurl.CURL_SEEKFUNC.CURL_SEEKFUNC_CANTSEEK;
+                            return CurlSeekResult.CURL_SEEKFUNC_CANTSEEK;
                         }
                     }
                     catch (Exception ex)
@@ -813,7 +813,7 @@ namespace System.Net.Http
                 }
 
                 // Something went wrong
-                return Interop.libcurl.CURL_SEEKFUNC.CURL_SEEKFUNC_FAIL;
+                return CurlSeekResult.CURL_SEEKFUNC_FAIL;
             }
 
             private static bool TryGetEasyRequestFromContext(IntPtr context, out EasyRequest easy)
@@ -837,30 +837,6 @@ namespace System.Net.Http
 
                 easy = null;
                 return false;
-            }
-
-            private static void SetCurlCallbacks(EasyRequest easy, IntPtr easyGCHandle)
-            {
-                // Add callback for processing headers
-                easy.SetCurlOption(CURLoption.CURLOPT_HEADERFUNCTION, s_receiveHeadersCallback);
-                easy.SetCurlOption(CURLoption.CURLOPT_HEADERDATA, easyGCHandle);
-
-                // If we're sending data as part of the request, add callbacks for sending request data
-                if (easy._requestMessage.Content != null)
-                {
-                    easy.SetCurlOption(CURLoption.CURLOPT_READFUNCTION, s_sendCallback);
-                    easy.SetCurlOption(CURLoption.CURLOPT_READDATA, easyGCHandle);
-
-                    easy.SetCurlOption(CURLoption.CURLOPT_SEEKFUNCTION, s_seekCallback);
-                    easy.SetCurlOption(CURLoption.CURLOPT_SEEKDATA, easyGCHandle);
-                }
-
-                // If we're expecting any data in response, add a callback for receiving body data
-                if (easy._requestMessage.Method != HttpMethod.Head)
-                {
-                    easy.SetCurlOption(CURLoption.CURLOPT_WRITEFUNCTION, s_receiveBodyCallback);
-                    easy.SetCurlOption(CURLoption.CURLOPT_WRITEDATA, easyGCHandle);
-                }
             }
 
             [Conditional(VerboseDebuggingConditional)]

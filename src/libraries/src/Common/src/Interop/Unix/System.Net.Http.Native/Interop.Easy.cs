@@ -27,9 +27,6 @@ internal static partial class Interop
         public static extern CURLcode EasySetOptionPointer(SafeCurlHandle curl, CURLoption option, SafeHandle value);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern CURLcode EasySetOptionPointer(SafeCurlHandle curl, CURLoption option, Delegate callback);
-
-        [DllImport(Libraries.HttpNative)]
         public static extern IntPtr EasyGetErrorString(int code);
 
         [DllImport(Libraries.HttpNative)]
@@ -44,10 +41,31 @@ internal static partial class Interop
         [DllImport(Libraries.HttpNative)]
         public static extern CURLcode EasyUnpause(SafeCurlHandle easy);
 
+        public delegate CurlSeekResult SeekCallback(IntPtr userPointer, long offset, int origin);
+
+        public delegate ulong ReadWriteCallback(IntPtr buffer, ulong bufferSize, ulong nitems, IntPtr userPointer);
+
+        public delegate CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx);
+
+        [DllImport(Libraries.HttpNative)]
+        public static extern SafeCallbackHandle RegisterSeekCallback(SafeCurlHandle curl, SeekCallback callback, IntPtr userPointer);
+
+        [DllImport(Libraries.HttpNative)]
+        public static extern SafeCallbackHandle RegisterReadWriteCallback(
+            SafeCurlHandle curl,
+            ReadWriteFunction functionType,
+            ReadWriteCallback callback,
+            IntPtr userPointer);
+
+        [DllImport(Libraries.HttpNative)]
+        public static extern SafeCallbackHandle RegisterSslCtxCallback(SafeCurlHandle curl, SslCtxCallback callback, out CURLcode result);
+
+        [DllImport(Libraries.HttpNative)]
+        private static extern void FreeCallbackHandle(IntPtr handle);
+
         // Curl options are of the format <type base> + <n>
         private const int CurlOptionLongBase = 0;
         private const int CurlOptionObjectPointBase = 10000;
-        private const int CurlOptionFunctionPointBase = 20000;
 
         // Enum for constants defined for the enum CURLoption in curl.h
         internal enum CURLoption
@@ -67,27 +85,24 @@ internal static partial class Interop
             CURLOPT_PROTOCOLS = CurlOptionLongBase + 181,
             CURLOPT_REDIR_PROTOCOLS = CurlOptionLongBase + 182,
 
-            CURLOPT_WRITEDATA = CurlOptionObjectPointBase + 1,
             CURLOPT_URL = CurlOptionObjectPointBase + 2,
             CURLOPT_PROXY = CurlOptionObjectPointBase + 4,
             CURLOPT_PROXYUSERPWD = CurlOptionObjectPointBase + 6,
-            CURLOPT_READDATA = CurlOptionObjectPointBase + 9,
             CURLOPT_COOKIE = CurlOptionObjectPointBase + 22,
             CURLOPT_HTTPHEADER = CurlOptionObjectPointBase + 23,
-            CURLOPT_HEADERDATA = CurlOptionObjectPointBase + 29,
             CURLOPT_CUSTOMREQUEST = CurlOptionObjectPointBase + 36,
             CURLOPT_ACCEPT_ENCODING = CurlOptionObjectPointBase + 102,
             CURLOPT_PRIVATE = CurlOptionObjectPointBase + 103,
             CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165,
-            CURLOPT_SEEKDATA = CurlOptionObjectPointBase + 168,
             CURLOPT_USERNAME = CurlOptionObjectPointBase + 173,
             CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174,
+        }
 
-            CURLOPT_WRITEFUNCTION = CurlOptionFunctionPointBase + 11,
-            CURLOPT_READFUNCTION = CurlOptionFunctionPointBase + 12,
-            CURLOPT_HEADERFUNCTION = CurlOptionFunctionPointBase + 79,
-            CURLOPT_SSL_CTX_FUNCTION = CurlOptionFunctionPointBase + 108,
-            CURLOPT_SEEKFUNCTION = CurlOptionFunctionPointBase + 167,
+        internal enum ReadWriteFunction
+        {
+            Write = 0,
+            Read = 1,
+            Header = 2,
         }
 
         // Curl info are of the format <type base> + <n>
@@ -124,6 +139,19 @@ internal static partial class Interop
             CURLPROTO_HTTPS = (1 << 1),
         }
 
+        // Enum for constants defined for the results of CURL_SEEKFUNCTION
+        internal enum CurlSeekResult : int
+        {
+            CURL_SEEKFUNC_OK = 0,
+            CURL_SEEKFUNC_FAIL = 1,
+            CURL_SEEKFUNC_CANTSEEK = 2,
+        }
+
+        // constants defined for the results of a CURL_READ or CURL_WRITE function
+        internal const ulong CURL_READFUNC_ABORT = 0x10000000;
+        internal const ulong CURL_READFUNC_PAUSE = 0x10000001;
+        internal const ulong CURL_WRITEFUNC_PAUSE = 0x10000001;
+
         internal sealed class SafeCurlHandle : SafeHandle
         {
             public SafeCurlHandle() : base(IntPtr.Zero, true)
@@ -138,6 +166,26 @@ internal static partial class Interop
             protected override bool ReleaseHandle()
             {
                 EasyDestroy(handle);
+                SetHandle(IntPtr.Zero);
+                return true;
+            }
+        }
+
+        internal sealed class SafeCallbackHandle : SafeHandle
+        {
+            public SafeCallbackHandle()
+                : base(IntPtr.Zero, true)
+            {
+            }
+
+            public override bool IsInvalid
+            {
+                get { return handle == IntPtr.Zero; }
+            }
+
+            protected override bool ReleaseHandle()
+            {
+                FreeCallbackHandle(handle);
                 SetHandle(IntPtr.Zero);
                 return true;
             }

@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using size_t = System.UInt64; // TODO: IntPtr
 
 namespace System.Net.Http
 {
@@ -158,7 +157,7 @@ namespace System.Net.Http
             /// <see cref="Interop.libcurl.CURL_WRITEFUNC_PAUSE"/> if the data wasn't copied and the connection
             /// should be paused until a reader is available.
             /// </returns>
-            internal size_t TransferDataToStream(IntPtr pointer, long length)
+            internal ulong TransferDataToStream(IntPtr pointer, long length)
             {
                 Debug.Assert(pointer != IntPtr.Zero, "Expected a non-null pointer");
                 Debug.Assert(length >= 0, "Expected a non-negative length");
@@ -181,7 +180,7 @@ namespace System.Net.Http
                     if (_remainingDataCount > 0 || _pendingReadRequest == null)
                     {
                         VerboseTrace("Pausing due to _remainingDataCount: " + _remainingDataCount + ", _pendingReadRequest: " + (_pendingReadRequest != null));
-                        return Interop.libcurl.CURL_WRITEFUNC_PAUSE;
+                        return Interop.Http.CURL_WRITEFUNC_PAUSE;
                     }
 
                     // There's no data in the buffer and there is a pending read request.  

@@ -10,7 +10,7 @@ namespace Internal.Cryptography.Pal
 {
     internal static class CertificateAssetDownloader
     {
-        private static readonly Interop.libcurl.curl_readwrite_callback s_writeCallback = CurlWriteCallback;
+        private static readonly Interop.Http.ReadWriteCallback s_writeCallback = CurlWriteCallback;
 
         internal static X509Certificate2 DownloadCertificate(string uri, ref TimeSpan remainingDownloadTime)
         {
@@ -78,23 +78,28 @@ namespace Internal.Cryptography.Pal
 
                 try
                 {
-                    IntPtr dataHandlePtr = GCHandle.ToIntPtr(gcHandle);
                     Interop.Http.EasySetOptionString(curlHandle, Interop.Http.CURLoption.CURLOPT_URL, uri);
-                    Interop.Http.EasySetOptionPointer(curlHandle, Interop.Http.CURLoption.CURLOPT_WRITEDATA, dataHandlePtr);
-                    Interop.Http.EasySetOptionPointer(curlHandle, Interop.Http.CURLoption.CURLOPT_WRITEFUNCTION, s_writeCallback);
                     Interop.Http.EasySetOptionLong(curlHandle, Interop.Http.CURLoption.CURLOPT_FOLLOWLOCATION, 1L);
 
-                    Stopwatch stopwatch = Stopwatch.StartNew();
-                    Interop.Http.CURLcode res = Interop.Http.EasyPerform(curlHandle);
-                    stopwatch.Stop();
-
-                    // TimeSpan.Zero isn't a worrisome value on the subtraction, it only
-                    // means "no limit" on the original input.
-                    remainingDownloadTime -= stopwatch.Elapsed;
-
-                    if (res != Interop.Http.CURLcode.CURLE_OK)
+                    IntPtr dataHandlePtr = GCHandle.ToIntPtr(gcHandle);
+                    using (Interop.Http.RegisterReadWriteCallback(
+                        curlHandle,
+                        Interop.Http.ReadWriteFunction.Write,
+                        s_writeCallback,
+                        dataHandlePtr))
                     {
-                        return null;
+                        Stopwatch stopwatch = Stopwatch.StartNew();
+                        Interop.Http.CURLcode res = Interop.Http.EasyPerform(curlHandle);
+                        stopwatch.Stop();
+
+                        // TimeSpan.Zero isn't a worrisome value on the subtraction, it only
+                        // means "no limit" on the original input.
+                        remainingDownloadTime -= stopwatch.Elapsed;
+
+                        if (res != Interop.Http.CURLcode.CURLE_OK)
+                        {
+                            return null;
+                        }
                     }
                 }
                 finally
