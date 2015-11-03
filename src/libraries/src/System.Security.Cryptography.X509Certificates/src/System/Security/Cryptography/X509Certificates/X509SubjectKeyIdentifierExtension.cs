@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         private string _subjectKeyIdentifier;
-        private bool _decoded = false;
+        private bool _decoded;
     }
 }
 

@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private IStorePal _storePal = null;
+        private IStorePal _storePal;
     }
 }
 

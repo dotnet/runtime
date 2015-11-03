@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.X509Certificates
             _decoded = false;
         }
 
-        private bool _decoded = false;
+        private bool _decoded;
         private X509KeyUsageFlags _keyUsages;
     }
 }
