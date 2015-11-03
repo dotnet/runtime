@@ -96,7 +96,7 @@ _open_osfhandle( INT_PTR osfhandle, int flags )
     {
         if ('\0' != pLocalData->unix_filename[0])
         {
-            nRetVal = InternalOpen(pthrCurrent, pLocalData->unix_filename, openFlags);
+            nRetVal = InternalOpen(pLocalData->unix_filename, openFlags);
         }
         else /* the only file object with no unix_filename is a pipe */
         {
@@ -153,7 +153,7 @@ PAL_fflush( PAL_FILE *stream )
     PERF_ENTRY(fflush);
     ENTRY( "fflush( %p )\n", stream );
 
-    nRetVal = InternalFflush(InternalGetCurrentThread(), stream ? stream->bsdFilePtr : NULL);
+    nRetVal = fflush(stream ? stream->bsdFilePtr : NULL);
 
     LOGEXIT( "fflush returning %d\n", nRetVal );
     PERF_EXIT(fflush);
@@ -162,36 +162,9 @@ PAL_fflush( PAL_FILE *stream )
 
 
 /*++
-Function:
-    InternalFflush
-
-Wrapper for fflush. If stream points to an output stream or an
-update stream, fflush causes any unwritten data for that stream 
-to be written to the file.
-
-InternalFflush is called in DBG_printf_gcc and DBG_printf_c99, 
-in dbgmsg.cpp. We can do this since InternalFflush doesn't use 
-ENTRY/LOGEXIT macros, which would cause a recursion otherwise.
-
-fflush takes an internal lock so the thread calling it
-should not be suspended while inside it.
---*/
-int
-CorUnix::InternalFflush(
-    CPalThread *pthrCurrent,
-    FILE *stream
-    )
-{
-    int nRet = 0;
-    nRet = fflush(stream);
-    return nRet;
-}
-
-
-/*++
 PAL__getcwd
 
-Wrapper function for InternalGetcwd.
+Wrapper function for getcwd.
 
 Input parameters:
 
@@ -209,45 +182,7 @@ PAL__getcwd(
     size_t nSize
     )
 {
-    return InternalGetcwd(InternalGetCurrentThread(), szBuf, nSize);
-}
-
-
-/*++
-InternalGetcwd
-
-Wrapper for getcwd. getcwd returns a pointer to the current directory pathname. 
-getcwd invokes malloc when szBuf is NULL to allocate space to store the path name.
-
-Input parameters:
-
-szBuf = a copy of the absolute pathname of the current working directory
-is copied into szBuf.
-nSize = size, in bytes, of the array referenced by szBuf.
-
-Return value:
-    A pointer to the pathname if successful, otherwise NULL is returned 
-    and errno is set.
---*/
-char *
-CorUnix::InternalGetcwd(
-    CPalThread *pthrCurrent,
-    char *szBuf,
-    size_t nSize
-    )
-{
-    char *szBufCopy;
-    if (szBuf == NULL)
-    {
-        // malloc is used to allocate space to store the pathname when szBuf is NULL.
-        szBufCopy = (char *)getcwd(szBuf, nSize);
-    }
-    else
-    {
-        szBufCopy = (char *)getcwd(szBuf, nSize);
-    }
-    
-    return szBufCopy;
+    return (char *)getcwd(szBuf, nSize);
 }
 
 
@@ -267,20 +202,16 @@ int
 __cdecl 
 PAL_mkstemp(char *szNameTemplate)
 {
-    return InternalMkstemp(InternalGetCurrentThread(), szNameTemplate);
+    return InternalMkstemp(szNameTemplate);
 }
 
 /*++
 InternalMkstemp
 
-Wrapper for mkstemp. mkstemp may invoke malloc, in which case a thread 
-suspended inside it could be holding an internal lock. This function prevents 
-such a suspension from occuring by ensuring that a thread cannot be suspended 
-while inside mkstemp.
+Wrapper for mkstemp.
 
 Input parameters:
 
-pthrCurrent = reference to executing thread
 szNameTemplate = template to follow when naming the created file
 
 Return value:
@@ -288,7 +219,6 @@ Return value:
 --*/
 int 
 CorUnix::InternalMkstemp(
-    CPalThread *pthrCurrent,
     char *szNameTemplate
     )
 {
@@ -336,21 +266,17 @@ PAL__open(
         va_end(ap);
     }
     
-    nRet = InternalOpen(InternalGetCurrentThread(), szPath, nFlags, mode);
+    nRet = InternalOpen(szPath, nFlags, mode);
     return nRet;
 }
 
 /*++
 InternalOpen
 
-Wrapper for open. open can take a internal file lock, in which case a thread
-suspended inside it could be holding an internal lock. This function prevents 
-such a suspension from occuring by ensuring that a thread cannot be suspended 
-while inside open.
+Wrapper for open.
 
 Input parameters:
 
-pthrCurrent = reference to executing thread
 szPath = pointer to a pathname of a file to be opened
 nFlags = arguments that control how the file should be accessed
 mode = file permission settings that are used only when a file is created
@@ -360,7 +286,6 @@ Return value:
 --*/
 int
 CorUnix::InternalOpen(
-    CPalThread *pthrCurrent,
     const char *szPath,
     int nFlags,
     ...
@@ -390,7 +315,7 @@ CorUnix::InternalOpen(
 /*++
 PAL_unlink
 
-Wrapper function for InternalUnlink.
+Wrapper function for unlink.
 
 Input parameters:
 
@@ -403,46 +328,18 @@ int
 __cdecl
 PAL_unlink(const char *szPath)
 {
-    return InternalUnlink(InternalGetCurrentThread(), szPath);
-}
-
-/*++
-InternalUnlink
-
-Wrapper for unlink. unlink can take a internal file lock, in which case a thread
-suspended inside it could be holding an internal lock. This function prevents 
-such a suspension from occuring by ensuring that a thread cannot be suspended 
-while inside unlink.
-
-Input parameters:
-
-pthrCurrent = reference to executing thread
-szPath = a symbolic link or a hard link to a file
-
-Return value:
-    Returns 0 on success and -1 on failure
---*/
-int
-CorUnix::InternalUnlink(
-    CPalThread *pthrCurrent,
-    const char *szPath
-    )
-{
-    int nRet = -1;
-    nRet = unlink(szPath);
-    return nRet;
+    return unlink(szPath);
 }
 
 
 /*++
 InternalDeleteFile
 
-Wrapper that does the same thing as InternalUnlink, except that
+Wrapper that does the same thing as unlink, except that
 it uses the SYS_Delete system call present on Apple instead of unlink.
 
 Input parameters:
 
-pthrCurrent = reference to executing thread
 szPath = a symbolic link or a hard link to a file
 
 Return value:
@@ -450,7 +347,6 @@ Return value:
 --*/
 int
 CorUnix::InternalDeleteFile(
-    CPalThread *pthrCurrent,
     const char *szPath
     )
 {
@@ -467,7 +363,7 @@ CorUnix::InternalDeleteFile(
 /*++
 PAL_rename
 
-Wrapper function for InternalRename.
+Wrapper function for rename.
 
 Input parameters:
 
@@ -484,37 +380,9 @@ PAL_rename(
     const char *szNewName
     )
 {
-    return InternalRename(InternalGetCurrentThread(), szOldName, szNewName);
+    return rename(szOldName, szNewName);
 }
 
-/*++
-InternalRename
-
-Wrapper for rename. rename can take a internal file lock, in which case a thread
-suspended inside it could be holding an internal lock. This function prevents 
-such a suspension from occuring by ensuring that a thread cannot be suspended 
-while inside rename.
-
-Input parameters:
-
-pthrCurrent = reference to executing thread
-szOldName = pointer to the pathname of the file to be renamed
-szNewName = pointer to the new pathname of the file
-
-Return value:
-    Returns 0 on success and -1 on failure
---*/
-int
-CorUnix::InternalRename(
-    CPalThread *pthrCurrent, 
-    const char *szOldName, 
-    const char *szNewName
-    )
-{
-    int nRet = -1;
-    nRet = rename(szOldName, szNewName);
-    return nRet;
-}
 
 /*++
 PAL_fgets
@@ -546,7 +414,7 @@ PAL_fgets(
     
     if (pf != NULL)
     {
-        szBuf = InternalFgets(InternalGetCurrentThread(), sz, nSize, pf->bsdFilePtr, pf->bTextMode);
+        szBuf = InternalFgets(sz, nSize, pf->bsdFilePtr, pf->bTextMode);
     }
     else
     {
@@ -562,14 +430,10 @@ PAL_fgets(
 /*++
 InternalFgets
 
-Wrapper for fgets. fgets can take a internal file lock, in which case a thread
-suspended inside it could be holding an internal lock. This function prevents 
-such a suspension from occuring by ensuring that a thread cannot be suspended 
-while inside fgets.
+Wrapper for fgets.
 
 Input parameters:
 
-pthrCurrent = reference to executing thread
 sz = stores characters read from the given file stream
 nSize = number of characters to be read
 f = stream to read characters from
@@ -586,7 +450,6 @@ happens, it is SOP to call fgets again.
 --*/
 char *
 CorUnix::InternalFgets(
-    CPalThread *pthrCurrent,
     char *sz,
     int nSize,
     FILE *f,
@@ -670,7 +533,7 @@ PAL_fwrite(
            pvBuffer, nSize, nCount, pf);
     _ASSERTE(pf != NULL);
 
-    nWrittenBytes = InternalFwrite(InternalGetCurrentThread(), pvBuffer, nSize, nCount, pf->bsdFilePtr, &pf->PALferrorCode);
+    nWrittenBytes = InternalFwrite(pvBuffer, nSize, nCount, pf->bsdFilePtr, &pf->PALferrorCode);
 
     LOGEXIT( "fwrite returning size_t %d\n", nWrittenBytes );
     PERF_EXIT(fwrite);
@@ -680,14 +543,10 @@ PAL_fwrite(
 /*++
 InternalFwrite
 
-Wrapper for fwrite. fwrite can take a internal file lock, in which case a thread
-suspended inside it could be holding an internal lock. This function prevents 
-such a suspension from occuring by ensuring that a thread cannot be suspended 
-while inside fwrite.
+Wrapper for fwrite.
 
 Input parameters:
 
-pthrCurrent = reference to executing thread
 pvBuffer = array of objects to write to the given file stream
 nSize = size of a object in bytes
 nCount = number of objects to write
@@ -699,10 +558,9 @@ Return value:
 --*/
 size_t
 CorUnix::InternalFwrite(
-    CPalThread *pthrCurrent,
-    const void *pvBuffer, 
-    size_t nSize, 
-    size_t nCount,     
+    const void *pvBuffer,
+    size_t nSize,
+    size_t nCount,
     FILE *f,
     INT *pnErrorCode
     )
@@ -730,7 +588,7 @@ CorUnix::InternalFwrite(
 /*++
 PAL_fseek
 
-Wrapper function for InternalFseek.
+Wrapper function for fseek.
 
 Input parameters:
 
@@ -754,42 +612,9 @@ PAL_fseek(
     PERF_ENTRY(fseek);
     ENTRY( "fseek( %p, %ld, %d )\n", pf, lOffset, nWhence );
 
-    nRet = InternalFseek(InternalGetCurrentThread(), pf ? pf->bsdFilePtr : NULL, lOffset, nWhence);
+    nRet = fseek(pf ? pf->bsdFilePtr : NULL, lOffset, nWhence);
 
     LOGEXIT("fseek returning %d\n", nRet);
     PERF_EXIT(fseek);
-    return nRet;
-}
-
-/*++
-InternalFseek
-
-Wrapper for fseek. fseek can take a internal file lock, in which case a thread
-suspended inside it could be holding an internal lock. This function prevents 
-such a suspension from occuring by ensuring that a thread cannot be suspended 
-while inside fseek.
-
-Input parameters:
-
-pthrCurrent = reference to executing thread
-f = a given file stream
-lOffset = distance from position to set file-position indicator
-nWhence = method used to determine the file_position indicator location relative to lOffset
-
-Return value:
-    0 on success, -1 on failure.
---*/
-int
-CorUnix::InternalFseek(
-    CPalThread *pthrCurrent,
-    FILE *f,
-    long lOffset,
-    int nWhence
-    )
-{
-    int nRet = -1;
-    _ASSERTE(f != NULL);
-    
-    nRet = fseek(f, lOffset, nWhence);
     return nRet;
 }
