@@ -3195,11 +3195,13 @@ select_container (MonoGenericContainer *gc, MonoTypeEnum type)
  */
 static MonoGenericParam *
 mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_container,
-				   MonoTypeEnum type, const char *ptr, const char **rptr)
+				   MonoTypeEnum type, const char *ptr, const char **rptr, MonoError *error)
 {
 	int index = mono_metadata_decode_value (ptr, &ptr);
 	if (rptr)
 		*rptr = ptr;
+
+	mono_error_init (error);
 
 	generic_container = select_container (generic_container, type);
 	if (!generic_container) {
@@ -3213,9 +3215,14 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 		return param;
 	}
 
-	if (index >= generic_container->type_argc)
+	if (index >= generic_container->type_argc) {
+		mono_error_set_bad_image (error, m, "Invalid generic %s parameter index %d, max index is %d",
+			generic_container->is_method ? "method" : "type",
+			index, generic_container->type_argc);
 		return NULL;
+	}
 
+	//This can't return NULL
 	return mono_generic_container_get_param (generic_container, index);
 }
 
@@ -3301,6 +3308,25 @@ compare_type_literals (MonoImage *image, int class_type, int type_type, MonoErro
 		mono_error_set_bad_image (error, image, "Expected value type but got type kind %d", class_type);
 		return FALSE;
 	}
+}
+
+static gboolean
+verify_var_type_and_container (MonoImage *image, int var_type, MonoGenericContainer *container, MonoError *error)
+{
+	mono_error_init (error);
+	if (var_type == MONO_TYPE_MVAR) {
+		if (!container->is_method) { //MVAR and a method container
+			mono_error_set_bad_image (error, image, "MVAR parsed in a context without a method container");
+			return FALSE;
+		}
+	} else {
+		if (!(!container->is_method || //VAR and class container
+			(container->is_method && container->parent))) { //VAR and method container with parent
+			mono_error_set_bad_image (error, image, "VAR parsed in a context without a class container");
+			return FALSE;
+		}
+	}
+	return TRUE;
 }
 
 /* 
@@ -3416,13 +3442,21 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		break;
 	}
 	case MONO_TYPE_MVAR:
-		if (container && !container->is_method)
+	case MONO_TYPE_VAR: {
+		MonoError error;
+		if (container && !verify_var_type_and_container (m, type->type, container, &error)) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 			return FALSE;
-	case MONO_TYPE_VAR:
-		type->data.generic_param = mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr);
-		if (!type->data.generic_param)
+		}
+		type->data.generic_param = mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr, &error);
+		if (!type->data.generic_param) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 			return FALSE;
+		}
 		break;
+	}
 	case MONO_TYPE_GENERICINST:
 		ok = do_mono_metadata_parse_generic_class (type, m, container, ptr, &ptr);
 		break;
