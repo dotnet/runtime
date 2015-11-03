@@ -24,7 +24,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue(3954, PlatformID.AnyUnix)]
         public void TransportContext_ConnectToServerWithSsl_GetExpectedChannelBindings()
         {
             using (var testServer = new DummyTcpServer(
