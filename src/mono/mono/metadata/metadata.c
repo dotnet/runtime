@@ -3103,16 +3103,17 @@ cleanup:
 
 MonoGenericInst *
 mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *container,
-				  int count, const char *ptr, const char **rptr)
+				  int count, const char *ptr, const char **rptr, MonoError *error)
 {
 	MonoType **type_argv;
 	MonoGenericInst *ginst;
 	int i;
 
+	mono_error_init (error);
 	type_argv = g_new0 (MonoType*, count);
 
 	for (i = 0; i < count; i++) {
-		MonoType *t = mono_metadata_parse_type_full (m, container, 0, ptr, &ptr);
+		MonoType *t = mono_metadata_parse_type_checked (m, container, 0, FALSE, ptr, &ptr, error);
 		if (!t) {
 			g_free (type_argv);
 			return NULL;
@@ -3134,6 +3135,7 @@ static gboolean
 do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 				      const char *ptr, const char **rptr)
 {
+	MonoError error;
 	MonoGenericInst *inst;
 	MonoClass *gklass;
 	MonoType *gtype;
@@ -3148,9 +3150,12 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 		return FALSE;
 
 	count = mono_metadata_decode_value (ptr, &ptr);
-	inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr);
-	if (inst == NULL)
+	inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr, &error);
+	if (inst == NULL) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 		return FALSE;
+	}
 
 	if (rptr)
 		*rptr = ptr;
