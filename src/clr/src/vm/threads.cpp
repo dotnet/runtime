@@ -10105,7 +10105,7 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
     // also invokes SO_INTOLERANT code.
     BEGIN_SO_INTOLERANT_CODE(GetThread());
 
-    EX_TRY
+    EX_TRY_CPP_ONLY
     {
         // During an unwind, we have some cleanup:
         //
