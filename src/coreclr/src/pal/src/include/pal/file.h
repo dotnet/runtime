@@ -221,8 +221,7 @@ int _cdecl PAL_fflush( PAL_FILE *stream );
 /*++
 PAL_mkstemp
     
-Calls InternalMkstemp to call mkstemp with a thread that is marked
-as suspension unsafe. 
+Calls InternalMkstemp to call mkstemp
 
 Input parameters:
 
