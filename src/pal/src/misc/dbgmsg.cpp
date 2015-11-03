@@ -550,7 +550,7 @@ int DBG_printf_gcc(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
     /* Can call InternalFflush since InternalFflush does not have ENTRY/LOGEXIT 
     macros. If that changes, then this will need to be switched back to calling the 
     cruntime fflush with some other protection from suspension. */    
-    if (InternalFflush(pthrCurrent, output_file) != 0)
+    if (InternalFflush(output_file) != 0)
     {
         fprintf(stderr, "ERROR : fflush() failed errno:%d (%s)\n", 
                 errno, strerror(errno));
@@ -661,7 +661,7 @@ int DBG_printf_c99(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
         ENTRY/LOGEXIT macros. If that changes, then this will need
         to be switched back to calling the cruntime fflush with some 
         other protection from suspension. */
-        if (InternalFflush(pthrCurrent, output_file) != 0)
+        if (InternalFflush(output_file) != 0)
         {
             fprintf(stderr, "ERROR : fflush() failed errno:%d (%s)\n", 
                    errno, strerror(errno));
