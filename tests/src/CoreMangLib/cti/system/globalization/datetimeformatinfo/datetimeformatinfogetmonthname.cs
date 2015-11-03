@@ -117,17 +117,17 @@ public class DateTimeFormatInfoGetMonthName
             string[] expected = new string[] {
                 "",
                 "janvier",
-                "février", 
+                "f\u00e9vrier", 
                 "mars",
                 "avril",
                 "mai",
                 "juin",
                 "juillet",
-                "août",
+                "ao\u00fbt",
                 "septembre",
                 "octobre",
                 "novembre",
-                "décembre",
+                "d\u00e9cembre",
                 "",
             };
 
