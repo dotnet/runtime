@@ -42,11 +42,11 @@ namespace CorUnix
 
         int  unix_fd;
         DWORD dwDesiredAccess; /* Unix assumes files are always opened for reading.
-                                  In Windows we can open a file for writing only */                             
+                                  In Windows we can open a file for writing only */
         int  open_flags;       /* stores Unix file creation flags */
         BOOL open_flags_deviceaccessonly;
         char unix_filename[MAXPATHLEN];
-        BOOL inheritable;        
+        BOOL inheritable;
     };
 
     PAL_ERROR
@@ -180,82 +180,73 @@ namespace CorUnix
       --*/
     PAL_ERROR
     InternalCanonicalizeRealPath(
-        CPalThread *pThread,
         LPCSTR lpUnixPath,
         LPSTR lpBuffer,
         DWORD cch
-        );  
+        );
 
     /*++
-    InternalGetcwd     
-    Wraps getcwd so the thread calling it can't be suspended holding an internal lock.
+    InternalGetcwd
+    Wraps getcwd
     --*/
     char *
     InternalGetcwd(
-        CPalThread *pthrCurrent,
         char *szBuf,
         size_t nSize
         );
 
     /*++
-    InternalFflush    
-    Wraps fflush so the thread calling it can't be suspended holding an internal lock.
+    InternalFflush
+    Wraps fflush
     --*/
     int
     InternalFflush(
-        CPalThread *pthrCurrent,
         FILE * stream
         );
 
     /*++
-    InternalMkstemp     
-    Wraps mkstemp so the thread calling it can't be suspended holding an internal lock.
+    InternalMkstemp
+    Wraps mkstemp
     --*/
     int 
     InternalMkstemp(
-        CPalThread *pthrCurrent,
         char *szNameTemplate
         );
 
     /*++
     InternalUnlink
-    Wraps unlink so the thread calling it can't be suspended holding an internal lock.
+    Wraps unlink
     --*/
     int
     InternalUnlink(
-        CPalThread *pthrCurrent,
         const char *szPath
         );
 
-
     /*++
     InternalDeleteFile
-    Wraps SYS_delete so the thread calling it can't be suspended holding an internal lock.
+    Wraps SYS_delete
     --*/
     int 
     InternalDeleteFile(
-        CPalThread *pthrCurrent,
         const char *szPath
         );
 
     /*++
     InternalRename
-    Wraps rename so the thread calling it can't be suspended holding an internal lock.
+    Wraps rename
     --*/
     int 
     InternalRename(
-        CPalThread *pthrCurrent, 
         const char *szOldName, 
         const char *szNewName
         );
 
     /*++
     InternalFgets
-    Wraps fgets so the thread calling it can't be suspended holding an internal lock.
+    Wraps fgets
     --*/
     char *
     InternalFgets(
-        CPalThread *pthrCurrent,
         char *sz,
         int nSize,
         FILE *f,
@@ -264,25 +255,23 @@ namespace CorUnix
 
     /*++
     InternalFwrite
-    Wraps fwrite so the thread calling it can't be suspended holding an internal lock.
+    Wraps fwrite
     --*/
     size_t
     InternalFwrite(
-        CPalThread *pthrCurrent,
-        const void *pvBuffer, 
-        size_t nSize, 
-        size_t nCount,     
+        const void *pvBuffer,
+        size_t nSize,
+        size_t nCount,
         FILE *f,
         INT *pnErrorCode
         );
 
     /*++
     InternalOpen
-    Wraps open so the thread calling it can't be suspended holding an internal lock.
+    Wraps open
     --*/
     int
     InternalOpen(
-        CPalThread *pthrCurrent,
         const char *szFilename,
         int nFlags,
         ...
@@ -290,11 +279,10 @@ namespace CorUnix
 
     /*++
     InternalFseek
-    Wraps fseek so the thread calling it can't be suspended holding an internal lock.
+    Wraps fseek
     --*/
     int
     InternalFseek(
-        CPalThread *pthrCurrent,
         FILE *f,
         long lOffset,
         int nWhence
