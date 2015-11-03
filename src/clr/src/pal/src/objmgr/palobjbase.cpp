@@ -60,7 +60,7 @@ CPalObjectBase::Initialize(
 
     if (0 != m_pot->GetImmutableDataSize())
     {
-        m_pvImmutableData = InternalMalloc(pthr, m_pot->GetImmutableDataSize());
+        m_pvImmutableData = InternalMalloc(m_pot->GetImmutableDataSize());
         if (NULL != m_pvImmutableData)
         {
             ZeroMemory(m_pvImmutableData, m_pot->GetImmutableDataSize());
@@ -82,7 +82,7 @@ CPalObjectBase::Initialize(
             goto IntializeExit;
         }
         
-        m_pvLocalData = InternalMalloc(pthr, m_pot->GetProcessLocalDataSize());
+        m_pvLocalData = InternalMalloc(m_pot->GetProcessLocalDataSize());
         if (NULL != m_pvLocalData)
         {
             ZeroMemory(m_pvLocalData, m_pot->GetProcessLocalDataSize());
@@ -314,8 +314,8 @@ CPalObjectBase::ReleaseReference(
                 fCleanupSharedState
                 );
         }
-            
-        InternalDelete(pthr, this);
+
+        InternalDelete(this);
 
         pthr->ReleaseThreadReference();
     }
@@ -347,12 +347,12 @@ CPalObjectBase::~CPalObjectBase()
 
     if (NULL != m_pvImmutableData)
     {
-        InternalFree(m_pthrCleanup, m_pvImmutableData);
+        InternalFree(m_pvImmutableData);
     }
 
     if (NULL != m_pvLocalData)
     {
-        InternalFree(m_pthrCleanup, m_pvLocalData);
+        InternalFree(m_pvLocalData);
     }
 
     if (NULL != m_oa.sObjectName.GetString())
