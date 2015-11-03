@@ -3133,29 +3133,30 @@ mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *container,
 
 static gboolean
 do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericContainer *container,
-				      const char *ptr, const char **rptr)
+				      const char *ptr, const char **rptr, MonoError *error)
 {
-	MonoError error;
 	MonoGenericInst *inst;
 	MonoClass *gklass;
 	MonoType *gtype;
 	int count;
 
-	gtype = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	mono_error_init (error);
+
+	// XXX how about transient?
+	gtype = mono_metadata_parse_type_checked (m, NULL, 0, FALSE, ptr, &ptr, error);
 	if (gtype == NULL)
 		return FALSE;
 
 	gklass = mono_class_from_mono_type (gtype);
-	if (!gklass->generic_container)
-		return FALSE;
-
-	count = mono_metadata_decode_value (ptr, &ptr);
-	inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr, &error);
-	if (inst == NULL) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+	if (!gklass->generic_container) {
+		mono_error_set_bad_image (error, m, "Generic instance with non-generic definition");
 		return FALSE;
 	}
+
+	count = mono_metadata_decode_value (ptr, &ptr);
+	inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr, error);
+	if (inst == NULL)
+		return FALSE;
 
 	if (rptr)
 		*rptr = ptr;
@@ -3359,7 +3360,6 @@ static gboolean
 do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
 							 gboolean transient, const char *ptr, const char **rptr)
 {
-	gboolean ok = TRUE;
 	type->type = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (type->type){
@@ -3462,9 +3462,15 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		}
 		break;
 	}
-	case MONO_TYPE_GENERICINST:
-		ok = do_mono_metadata_parse_generic_class (type, m, container, ptr, &ptr);
+	case MONO_TYPE_GENERICINST: {
+		MonoError error;
+		if (!do_mono_metadata_parse_generic_class (type, m, container, ptr, &ptr, &error)) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+			return FALSE;
+		}
 		break;
+	}
 	default:
 		g_warning ("type 0x%02x not handled in do_mono_metadata_parse_type on image %s", type->type, m->name);
 		return FALSE;
@@ -3472,7 +3478,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 	
 	if (rptr)
 		*rptr = ptr;
-	return ok;
+	return TRUE;
 }
 
 /*
