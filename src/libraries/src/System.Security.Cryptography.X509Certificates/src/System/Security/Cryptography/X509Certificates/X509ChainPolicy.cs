@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates
             set
             {
                 if (value < X509RevocationMode.NoCheck || value > X509RevocationMode.Offline)
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "value"));
+                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "value"));
                 _revocationMode = value;
             }
         }
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.X509Certificates
             set
             {
                 if (value < X509RevocationFlag.EndCertificateOnly || value > X509RevocationFlag.ExcludeRoot)
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "value"));
+                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "value"));
                 _revocationFlag = value;
             }
         }
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.X509Certificates
             set
             {
                 if (value < X509VerificationFlags.NoFlag || value > X509VerificationFlags.AllFlags)
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "value"));
+                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "value"));
                 _verificationFlags = value;
             }
         }

@@ -42,12 +42,12 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
-        public X509SubjectKeyIdentifierExtension(String subjectKeyIdentifier, bool critical)
+        public X509SubjectKeyIdentifierExtension(string subjectKeyIdentifier, bool critical)
             : base(Oids.SubjectKeyIdentifier, EncodeExtension(subjectKeyIdentifier), critical)
         {
         }
 
-        public String SubjectKeyIdentifier
+        public string SubjectKeyIdentifier
         {
             get
             {
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates
             return X509Pal.Instance.EncodeX509SubjectKeyIdentifierExtension(subjectKeyIdentifier);
         }
 
-        private static byte[] EncodeExtension(String subjectKeyIdentifier)
+        private static byte[] EncodeExtension(string subjectKeyIdentifier)
         {
             if (subjectKeyIdentifier == null)
                 throw new ArgumentNullException("subjectKeyIdentifier");
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private String _subjectKeyIdentifier;
+        private string _subjectKeyIdentifier;
         private bool _decoded = false;
     }
 }

@@ -21,17 +21,17 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed partial class StorePal : IDisposable, IStorePal
     {
-        public static IStorePal FromBlob(byte[] rawData, String password, X509KeyStorageFlags keyStorageFlags)
+        public static IStorePal FromBlob(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(rawData, null, password, keyStorageFlags);
         }
 
-        public static IStorePal FromFile(String fileName, String password, X509KeyStorageFlags keyStorageFlags)
+        public static IStorePal FromFile(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
             return FromBlobOrFile(null, fileName, password, keyStorageFlags);
         }
 
-        private static StorePal FromBlobOrFile(byte[] rawData, String fileName, String password, X509KeyStorageFlags keyStorageFlags)
+        private static StorePal FromBlobOrFile(byte[] rawData, string fileName, string password, X509KeyStorageFlags keyStorageFlags)
         {
             bool fromFile = fileName != null;
 
@@ -151,7 +151,7 @@ namespace Internal.Cryptography.Pal
             return new StorePal(certStore);
         }
 
-        public static IStorePal FromSystemStore(String storeName, StoreLocation storeLocation, OpenFlags openFlags)
+        public static IStorePal FromSystemStore(string storeName, StoreLocation storeLocation, OpenFlags openFlags)
         {
             CertStoreFlags certStoreFlags = MapX509StoreFlags(storeLocation, openFlags);
 

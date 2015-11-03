@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        Object IEnumerator.Current
+        object IEnumerator.Current
         {
             get
             {

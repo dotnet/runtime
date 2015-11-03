@@ -52,7 +52,7 @@ namespace Internal.Cryptography.Pal
             return MapContentType(contentType);
         }
 
-        public X509ContentType GetCertContentType(String fileName)
+        public X509ContentType GetCertContentType(string fileName)
         {
             ContentType contentType;
 

@@ -93,7 +93,7 @@ namespace Internal.Cryptography.Pal.Native
             return;
         }
 
-        public static void DecodeObject(this byte[] encoded, String lpszStructType, DecodedObjectReceiver receiver)
+        public static void DecodeObject(this byte[] encoded, string lpszStructType, DecodedObjectReceiver receiver)
         {
             unsafe
             {
