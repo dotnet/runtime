@@ -38,6 +38,8 @@ namespace System.ComponentModel.DataAnnotations
             AssertEx.DoesNotThrow(() => attribute.Validate("425-555-1212 x 123", s_testValidationContext));
             AssertEx.DoesNotThrow(() => attribute.Validate("425-555-1212 ext123", s_testValidationContext));
             AssertEx.DoesNotThrow(() => attribute.Validate("425-555-1212 ext 123", s_testValidationContext));
+            AssertEx.DoesNotThrow(() => attribute.Validate("425-555-1212 ext.123", s_testValidationContext));
+            AssertEx.DoesNotThrow(() => attribute.Validate("425-555-1212 ext. 123", s_testValidationContext));
         }
 
         [Fact]
@@ -47,8 +49,13 @@ namespace System.ComponentModel.DataAnnotations
             Assert.Throws<ValidationException>(() => attribute.Validate(new object(), s_testValidationContext));
             Assert.Throws<ValidationException>(() => attribute.Validate(string.Empty, s_testValidationContext));
             Assert.Throws<ValidationException>(() => attribute.Validate("abcdefghij", s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("425+555+1212", s_testValidationContext));
             Assert.Throws<ValidationException>(() => attribute.Validate("425-555-1212 ext 123 ext 456", s_testValidationContext));
+            Assert.Throws<ValidationException>(() => attribute.Validate("425-555-1212 x", s_testValidationContext));
+            Assert.Throws<ValidationException>(() => attribute.Validate("425-555-1212 ext", s_testValidationContext));
+            Assert.Throws<ValidationException>(() => attribute.Validate("425-555-1212 ext.", s_testValidationContext));
+            Assert.Throws<ValidationException>(() => attribute.Validate("425-555-1212 x abc", s_testValidationContext));
+            Assert.Throws<ValidationException>(() => attribute.Validate("425-555-1212 ext def", s_testValidationContext));
+            Assert.Throws<ValidationException>(() => attribute.Validate("425-555-1212 ext. xyz", s_testValidationContext));
         }
 
         [Fact]

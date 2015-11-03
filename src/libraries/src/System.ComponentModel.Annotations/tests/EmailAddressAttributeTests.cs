@@ -56,12 +56,7 @@ namespace System.ComponentModel.DataAnnotations
             var attribute = new EmailAddressAttribute();
 
             Assert.Throws<ValidationException>(() => attribute.Validate("@someDomain.com", s_testValidationContext)); // no local part
-            Assert.Throws<ValidationException>(() => attribute.Validate("\0@someDomain.com", s_testValidationContext)); // illegal character
-            Assert.Throws<ValidationException>(() => attribute.Validate(".someName@someDomain.com", s_testValidationContext)); // initial dot not allowed
-            Assert.Throws<ValidationException>(() => attribute.Validate("someName.@someDomain.com", s_testValidationContext)); // final dot not allowed
-            Assert.Throws<ValidationException>(() => attribute.Validate("firstName..lastName@someDomain.com", s_testValidationContext)); // two adjacent dots not allowed
-            Assert.Throws<ValidationException>(() => attribute.Validate("firstName(comment)lastName@someDomain.com", s_testValidationContext)); // parens not allowed
-            Assert.Throws<ValidationException>(() => attribute.Validate("firstName\"middleName\"lastName@someDomain.com", s_testValidationContext)); // quotes in middle not allowed
+            Assert.Throws<ValidationException>(() => attribute.Validate("@someDomain@abc.com", s_testValidationContext)); // multiple @'s
         }
 
         [Fact]
@@ -71,10 +66,7 @@ namespace System.ComponentModel.DataAnnotations
 
             Assert.Throws<ValidationException>(() => attribute.Validate("someName", s_testValidationContext)); // no domain
             Assert.Throws<ValidationException>(() => attribute.Validate("someName@", s_testValidationContext)); // no domain
-            Assert.Throws<ValidationException>(() => attribute.Validate("someName@someDomain", s_testValidationContext)); // Domain must have at least 1 dot
             Assert.Throws<ValidationException>(() => attribute.Validate("someName@a@b.com", s_testValidationContext)); // multiple @'s
-            Assert.Throws<ValidationException>(() => attribute.Validate("someName@\0.com", s_testValidationContext)); // illegal character
-            Assert.Throws<ValidationException>(() => attribute.Validate("someName@someDomain..com", s_testValidationContext)); // two adjacent dots not allowed
         }
 
         [Fact]
