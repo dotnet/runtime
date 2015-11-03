@@ -246,12 +246,12 @@ InternalCanonicalizeRealPath
     realpath() requires the buffer to be atleast PATH_MAX).
 --*/
 PAL_ERROR
-CorUnix::InternalCanonicalizeRealPath(CPalThread *pThread, LPCSTR lpUnixPath, LPSTR lpBuffer, DWORD cch)
+CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, LPSTR lpBuffer, DWORD cch)
 {
     PAL_ERROR palError = NO_ERROR;
     LPSTR lpRealPath = NULL;
 
-#if !REALPATH_SUPPORTS_NONEXISTENT_FILES    
+#if !REALPATH_SUPPORTS_NONEXISTENT_FILES
     LPSTR lpExistingPath = NULL;
     LPSTR pchSeparator = NULL;
     LPSTR lpFilename = NULL;
@@ -284,9 +284,9 @@ CorUnix::InternalCanonicalizeRealPath(CPalThread *pThread, LPCSTR lpUnixPath, LP
         char pszCwdBuffer[MAXPATHLEN+1]; // MAXPATHLEN is for getcwd()
         DWORD cchCwdBuffer = sizeof(pszCwdBuffer)/sizeof(pszCwdBuffer[0]);
 
-        if (InternalGetcwd(pThread, pszCwdBuffer, cchCwdBuffer) == NULL)
+        if (getcwd(pszCwdBuffer, cchCwdBuffer) == NULL)
         {
-            WARN("InternalGetcwd(NULL) failed with error %d\n", errno);
+            WARN("getcwd(NULL) failed with error %d\n", errno);
             palError = DIRGetLastErrorFromErrno();
             goto LExit;
         }
@@ -484,8 +484,8 @@ CorUnix::InternalCreateFile(
 
     const char* szNonfilePrefix = "\\\\.\\";
     LPSTR lpFullUnixPath = NULL;
-    DWORD cchFullUnixPath = PATH_MAX+1;// InternalCanonicalizeRealPath requires this to be atleast PATH_MAX
-    
+    DWORD cchFullUnixPath = PATH_MAX+1; // InternalCanonicalizeRealPath requires this to be atleast PATH_MAX
+
     /* for dwShareMode only three flags are accepted */
     if ( dwShareMode & ~(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE) )
     {
@@ -539,7 +539,7 @@ CorUnix::InternalCreateFile(
 
     // Compute the absolute pathname to the file.  This pathname is used
     // to determine if two file names represent the same file.
-    palError = InternalCanonicalizeRealPath(pThread, lpUnixPath, lpFullUnixPath, cchFullUnixPath);
+    palError = InternalCanonicalizeRealPath(lpUnixPath, lpFullUnixPath, cchFullUnixPath);
     if (palError != NO_ERROR)
     {
         goto done;
@@ -692,7 +692,7 @@ CorUnix::InternalCreateFile(
         TRACE("I/O will be buffered\n");
     }
 
-    filed = InternalOpen(pThread, lpUnixPath, open_flags, create_flags);
+    filed = InternalOpen(lpUnixPath, open_flags, create_flags);
     TRACE("Allocated file descriptor [%d]\n", filed);
 
     if ( filed < 0 )
@@ -842,7 +842,7 @@ done:
         }
         if (bFileCreated)
         {
-            if (-1 == InternalUnlink(pThread, lpUnixPath))
+            if (-1 == unlink(lpUnixPath))
             {
                 WARN("can't delete file; unlink() failed with errno %d (%s)\n",
                      errno, strerror(errno));
@@ -1216,7 +1216,7 @@ DeleteFileA(
     
     // Compute the absolute pathname to the file.  This pathname is used
     // to determine if two file names represent the same file.
-    palError = InternalCanonicalizeRealPath(pThread, lpUnixFileName, lpFullUnixFileName, cchFullUnixFileName);
+    palError = InternalCanonicalizeRealPath(lpUnixFileName, lpFullUnixFileName, cchFullUnixFileName);
     if (palError != NO_ERROR)
     {
         InternalFree(lpFullUnixFileName);
@@ -1243,14 +1243,14 @@ DeleteFileA(
     //   Instead, we call unlink which will succeed.
 
     if (palError == NO_ERROR &&
-	dwShareMode != SHARE_MODE_NOT_INITALIZED &&
-	(dwShareMode & FILE_SHARE_DELETE) != 0)
+    dwShareMode != SHARE_MODE_NOT_INITALIZED &&
+    (dwShareMode & FILE_SHARE_DELETE) != 0)
     {
-      result = InternalUnlink( pThread, lpFullUnixFileName );
+      result = unlink( lpFullUnixFileName );
     }
     else
     {
-      result = InternalDeleteFile( pThread, lpFullUnixFileName );
+      result = InternalDeleteFile( lpFullUnixFileName );
     }
 
     if ( result < 0 )
@@ -1497,7 +1497,7 @@ MoveFileExA(
         }
     }
 
-    result = InternalRename( pThread, source, dest );
+    result = rename( source, dest );
     if ((result < 0) && (dwFlags & MOVEFILE_REPLACE_EXISTING) &&
         ((errno == ENOTDIR) || (errno == EEXIST)))
     {
@@ -1505,7 +1505,7 @@ MoveFileExA(
         
         if ( bRet ) 
         {
-            result = InternalRename( pThread, source, dest );
+            result = rename( source, dest );
         }
         else
         { 
