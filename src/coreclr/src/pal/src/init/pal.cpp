@@ -356,7 +356,7 @@ Initialize(
         // Initialize the object manager
         //
 
-        pshmom = InternalNew<CSharedMemoryObjectManager>(pThread);
+        pshmom = InternalNew<CSharedMemoryObjectManager>();
         if (NULL == pshmom)
         {
             ERROR("Unable to allocate new object manager\n");
@@ -368,7 +368,7 @@ Initialize(
         if (NO_ERROR != palError)
         {
             ERROR("object manager initialization failed!\n");
-            InternalDelete(pThread, pshmom);
+            InternalDelete(pshmom);
             goto CLEANUP1b;
         }
 
@@ -557,9 +557,9 @@ CLEANUP6:
 CLEANUP5:
     PROCCleanupInitialProcess();
 CLEANUP2:
-    InternalFree(pThread, exe_path);
+    InternalFree(exe_path);
 CLEANUP1e:
-    InternalFree(pThread, command_line);
+    InternalFree(command_line);
 CLEANUP1d:
     // Cleanup synchronization manager
 CLEANUP1c:
@@ -1021,7 +1021,7 @@ static LPWSTR INIT_FormatCommandLine (CPalThread *pThread, int argc, const char 
         length+=3;
         length+=strlen(argv[i])*2;
     }
-    command_line = reinterpret_cast<LPSTR>(InternalMalloc(pThread, length));
+    command_line = reinterpret_cast<LPSTR>(InternalMalloc(length));
 
     if(!command_line)
     {
@@ -1069,28 +1069,28 @@ static LPWSTR INIT_FormatCommandLine (CPalThread *pThread, int argc, const char 
     if (i == 0)
     {
         ASSERT("MultiByteToWideChar failure\n");
-        InternalFree(pThread, command_line);
+        InternalFree(command_line);
         return NULL;
     }
 
-    retval = reinterpret_cast<LPWSTR>(InternalMalloc(pThread, (sizeof(WCHAR)*i)));
+    retval = reinterpret_cast<LPWSTR>(InternalMalloc((sizeof(WCHAR)*i)));
     if(retval == NULL)
     {
         ERROR("can't allocate memory for Unicode command line!\n");
-        InternalFree(pThread, command_line);
+        InternalFree(command_line);
         return NULL;
     }
 
     if(!MultiByteToWideChar(CP_ACP, 0,command_line, i, retval, i))
     {
         ASSERT("MultiByteToWideChar failure\n");
-        InternalFree(pThread, retval);
+        InternalFree(retval);
         retval = NULL;
     }
     else
         TRACE("Command line is %s\n", command_line);
 
-    InternalFree(pThread, command_line);
+    InternalFree(command_line);
     return retval;
 }
 
@@ -1153,7 +1153,7 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
                 return NULL;
             }
 
-            return_value = reinterpret_cast<LPWSTR>(InternalMalloc(pThread, (return_size*sizeof(WCHAR))));
+            return_value = reinterpret_cast<LPWSTR>(InternalMalloc((return_size*sizeof(WCHAR))));
             if ( NULL == return_value )
             {
                 ERROR("Not enough memory to create full path\n");
@@ -1165,7 +1165,7 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
                                         return_value, return_size))
                 {
                     ASSERT("MultiByteToWideChar failure\n");
-                    InternalFree(pThread, return_value);
+                    InternalFree(return_value);
                     return_value = NULL;
                 }
                 else
@@ -1187,7 +1187,7 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
     }
 
     /* get our own copy of env_path so we can modify it */
-    env_path=InternalStrdup(pThread, env_path);
+    env_path=InternalStrdup(env_path);
     if(!env_path)
     {
         ERROR("Not enough memory to copy $PATH!\n");
@@ -1233,7 +1233,7 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
 
         /* build tentative full file name */
         int iLength = (strlen(cur_dir)+exe_name_length+2);
-        full_path = reinterpret_cast<LPSTR>(InternalMalloc(pThread, iLength));
+        full_path = reinterpret_cast<LPSTR>(InternalMalloc(iLength));
         if(!full_path)
         {
             ERROR("Not enough memory!\n");
@@ -1243,8 +1243,8 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
         if (strcpy_s(full_path, iLength, cur_dir) != SAFECRT_SUCCESS)
         {
             ERROR("strcpy_s failed!\n");
-            InternalFree(pThread, full_path);
-            InternalFree(pThread, env_path);
+            InternalFree(full_path);
+            InternalFree(env_path);
             return NULL;
         }
 
@@ -1253,8 +1253,8 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
             if (strcat_s(full_path, iLength, "/") != SAFECRT_SUCCESS)
             {
                 ERROR("strcat_s failed!\n");
-                InternalFree(pThread, full_path);
-                InternalFree(pThread, env_path);
+                InternalFree(full_path);
+                InternalFree(env_path);
                 return NULL;
             }
         }
@@ -1262,8 +1262,8 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
         if (strcat_s(full_path, iLength, exe_name) != SAFECRT_SUCCESS)
         {
             ERROR("strcat_s failed!\n");
-            InternalFree(pThread, full_path);
-            InternalFree(pThread, env_path);
+            InternalFree(full_path);
+            InternalFree(env_path);
             return NULL;
         }
 
@@ -1276,25 +1276,25 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
                 if(!realpath(full_path, real_path))
                 {
                     ERROR("realpath() failed!\n");
-                    InternalFree(pThread, full_path);
-                    InternalFree(pThread, env_path);
+                    InternalFree(full_path);
+                    InternalFree(env_path);
                     return NULL;
                 }
-                InternalFree(pThread, full_path);
-    
+                InternalFree(full_path);
+
                 return_size = MultiByteToWideChar(CP_ACP,0,real_path,-1,NULL,0);
                 if ( 0 == return_size )
                 {
                     ASSERT("MultiByteToWideChar failure\n");
-                    InternalFree(pThread, env_path);
+                    InternalFree(env_path);
                     return NULL;
                 }
 
-                return_value = reinterpret_cast<LPWSTR>(InternalMalloc(pThread, (return_size*sizeof(WCHAR))));
+                return_value = reinterpret_cast<LPWSTR>(InternalMalloc((return_size*sizeof(WCHAR))));
                 if ( NULL == return_value )
                 {
                     ERROR("Not enough memory to create full path\n");
-                    InternalFree(pThread, env_path);
+                    InternalFree(env_path);
                     return NULL;
                 }
 
@@ -1302,7 +1302,7 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
                                     return_size))
                 {
                     ASSERT("MultiByteToWideChar failure\n");
-                    InternalFree(pThread, return_value);
+                    InternalFree(return_value);
                     return_value = NULL;
                 }
                 else
@@ -1310,17 +1310,17 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
                     TRACE("found %s in %s; real path is %s\n", exe_name,
                           cur_dir,real_path);
                 }
-                InternalFree(pThread, env_path);
+                InternalFree(env_path);
                 return return_value;
             }
         }
         /* file doesn't exist : keep searching */
-        InternalFree(pThread, full_path);
+        InternalFree(full_path);
 
         /* path_ptr is NULL if there's no ':' after this directory */
         cur_dir=path_ptr;
     }
-    InternalFree(pThread, env_path);
+    InternalFree(env_path);
     TRACE("No %s found in $PATH (%s)\n", exe_name, MiscGetenv("PATH"));
 
 last_resort:
@@ -1343,7 +1343,7 @@ last_resort:
                 return NULL;
             }
 
-            return_value = reinterpret_cast<LPWSTR>(InternalMalloc(pThread, (return_size*sizeof(WCHAR))));
+            return_value = reinterpret_cast<LPWSTR>(InternalMalloc((return_size*sizeof(WCHAR))));
             if (NULL == return_value)
             {
                 ERROR("Not enough memory to create full path\n");
@@ -1355,7 +1355,7 @@ last_resort:
                                         return_value, return_size))
                 {
                     ASSERT("MultiByteToWideChar failure\n");
-                    InternalFree(pThread, return_value);
+                    InternalFree(return_value);
                     return_value = NULL;
                 }
                 else
@@ -1399,7 +1399,7 @@ last_resort:
         return NULL;
     }
 
-    return_value = reinterpret_cast<LPWSTR>(InternalMalloc(pThread, (return_size*sizeof(WCHAR))));
+    return_value = reinterpret_cast<LPWSTR>(InternalMalloc((return_size*sizeof(WCHAR))));
     if (NULL == return_value)
     {
         ERROR("Not enough memory to create full path\n");
@@ -1411,7 +1411,7 @@ last_resort:
                                 return_value, return_size))
         {
             ASSERT("MultiByteToWideChar failure\n");
-            InternalFree(pThread, return_value);
+            InternalFree(return_value);
             return_value = NULL;
         }
         else

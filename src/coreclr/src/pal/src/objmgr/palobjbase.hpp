@@ -87,7 +87,7 @@ namespace CorUnix
     
     class CPalObjectBase : public IPalObject
     { 
-        template <class T> friend void InternalDelete(CorUnix::CPalThread *, T *p);
+        template <class T> friend void InternalDelete(T *p);
         
     protected:
 

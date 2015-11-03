@@ -160,7 +160,6 @@ void FILEGetProperNotFoundError( LPSTR lpPath, LPDWORD lpErrorCode )
     struct stat stat_data;
     LPSTR lpDupedPath = NULL;
     LPSTR lpLastPathSeparator = NULL;
-    CPalThread *pthrCurrent = NULL;
 
     TRACE( "FILEGetProperNotFoundError( %s )\n", lpPath?lpPath:"(null)" );
 
@@ -170,8 +169,7 @@ void FILEGetProperNotFoundError( LPSTR lpPath, LPDWORD lpErrorCode )
         return;
     }
 
-    pthrCurrent = InternalGetCurrentThread();
-    if ( NULL == ( lpDupedPath = InternalStrdup( pthrCurrent, lpPath ) ) )
+    if ( NULL == ( lpDupedPath = InternalStrdup( lpPath ) ) )
     {
         ERROR( "InternalStrdup() failed!\n" );
         *lpErrorCode = ERROR_NOT_ENOUGH_MEMORY;
@@ -206,7 +204,7 @@ void FILEGetProperNotFoundError( LPSTR lpPath, LPDWORD lpErrorCode )
         *lpErrorCode = ERROR_FILE_NOT_FOUND;
     }
     
-    InternalFree(pthrCurrent, lpDupedPath);
+    InternalFree(lpDupedPath);
     lpDupedPath = NULL;
     TRACE( "FILEGetProperNotFoundError returning TRUE\n" );
     return;
@@ -272,7 +270,7 @@ CorUnix::InternalCanonicalizeRealPath(CPalThread *pThread, LPCSTR lpUnixPath, LP
     lpRealPath = realpath(lpUnixPath, lpBuffer);
 #else   // !REALPATH_SUPPORTS_NONEXISTENT_FILES
 
-    lpExistingPath = InternalStrdup(pThread, lpUnixPath);
+    lpExistingPath = InternalStrdup(lpUnixPath);
     if (lpExistingPath == NULL)
     {
         ERROR ("InternalStrdup failed with error %d\n", errno);
@@ -437,7 +435,7 @@ CorUnix::InternalCanonicalizeRealPath(CPalThread *pThread, LPCSTR lpUnixPath, LP
 LExit:
     if (lpExistingPath != NULL)
     {
-        InternalFree(pThread, lpExistingPath);
+        InternalFree(lpExistingPath);
     }
 #endif // REALPATH_SUPPORTS_NONEXISTENT_FILES
 
@@ -518,7 +516,7 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    lpUnixPath = InternalStrdup( pThread, lpFileName );
+    lpUnixPath = InternalStrdup(lpFileName);
     if ( lpUnixPath == NULL )
     {
         ERROR("InternalStrdup() failed\n");
@@ -526,7 +524,7 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    lpFullUnixPath =  reinterpret_cast<LPSTR>(InternalMalloc(pThread, cchFullUnixPath));
+    lpFullUnixPath =  reinterpret_cast<LPSTR>(InternalMalloc(cchFullUnixPath));
     if ( lpFullUnixPath == NULL )
     {
         ERROR("InternalMalloc() failed\n");
@@ -547,7 +545,7 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    InternalFree(pThread, lpUnixPath);
+    InternalFree(lpUnixPath);
     lpUnixPath = lpFullUnixPath;
     lpFullUnixPath = NULL;
 
@@ -874,12 +872,12 @@ done:
     
     if (NULL != lpUnixPath)
     {
-        InternalFree(pThread, lpUnixPath);
+        InternalFree(lpUnixPath);
     }
 
     if (NULL != lpFullUnixPath)
     {
-        InternalFree(pThread, lpFullUnixPath);
+        InternalFree(lpFullUnixPath);
     }
 
     if (NO_ERROR == palError && fFileExists)
@@ -1205,7 +1203,7 @@ DeleteFileA(
         goto done;
     }
 
-    lpFullUnixFileName =  reinterpret_cast<LPSTR>(InternalMalloc(pThread, cchFullUnixFileName));
+    lpFullUnixFileName =  reinterpret_cast<LPSTR>(InternalMalloc(cchFullUnixFileName));
     if ( lpFullUnixFileName == NULL )
     {
         ERROR("InternalMalloc() failed\n");
@@ -1221,8 +1219,8 @@ DeleteFileA(
     palError = InternalCanonicalizeRealPath(pThread, lpUnixFileName, lpFullUnixFileName, cchFullUnixFileName);
     if (palError != NO_ERROR)
     {
-        InternalFree(pThread, lpFullUnixFileName);
-        lpFullUnixFileName = InternalStrdup(pThread, lpUnixFileName);
+        InternalFree(lpFullUnixFileName);
+        lpFullUnixFileName = InternalStrdup(lpUnixFileName);
         if (!lpFullUnixFileName)
         {
             palError = ERROR_NOT_ENOUGH_MEMORY;
@@ -1272,7 +1270,7 @@ done:
     }
     if (NULL != lpFullUnixFileName)
     {
-        InternalFree(pThread, lpFullUnixFileName);
+        InternalFree(lpFullUnixFileName);
     }
     LOGEXIT("DeleteFileA returns BOOL %d\n", bRet);
     PERF_EXIT(DeleteFileA);
@@ -3790,7 +3788,7 @@ GetTempFileNameW(
         }
     }
     
-    tempfile_name = (char*)InternalMalloc(pThread, MAX_LONGPATH);
+    tempfile_name = (char*)InternalMalloc(MAX_LONGPATH);
     if (tempfile_name == NULL)
     {
         pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -3806,7 +3804,7 @@ GetTempFileNameW(
         path_size = MultiByteToWideChar( CP_ACP, 0, tempfile_name, -1, 
                                            lpTempFileName, MAX_LONGPATH );
 
-        InternalFree(pThread, tempfile_name);
+        InternalFree(tempfile_name);
         tempfile_name = NULL;
         if (!path_size)
         {
@@ -3993,7 +3991,7 @@ CopyFileA(
     }
 
     /* Need to preserve the owner/group and chmod() flags */
-    lpUnixPath = InternalStrdup(pThread, lpExistingFileName);
+    lpUnixPath = InternalStrdup(lpExistingFileName);
     if ( lpUnixPath == NULL )
     {
         ERROR("InternalStrdup() failed\n");
@@ -4022,8 +4020,8 @@ CopyFileA(
         goto done;
     }
 
-    InternalFree(pThread, lpUnixPath);
-    lpUnixPath = InternalStrdup(pThread, lpNewFileName);
+    InternalFree(lpUnixPath);
+    lpUnixPath = InternalStrdup(lpNewFileName);
     if ( lpUnixPath == NULL )
     {
         ERROR("InternalStrdup() failed\n");
@@ -4085,7 +4083,7 @@ done:
     }
     if (lpUnixPath) 
     {
-        InternalFree(pThread, lpUnixPath);
+        InternalFree(lpUnixPath);
     }
 
     LOGEXIT("CopyFileA returns BOOL %d\n", bGood);
@@ -4150,7 +4148,7 @@ SetFileAttributesA(
         goto done;
     }
 
-    if ((UnixFileName = InternalStrdup(pThread, lpFileName)) == NULL)
+    if ((UnixFileName = InternalStrdup(lpFileName)) == NULL)
     {
         ERROR("InternalStrdup() failed\n");
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
@@ -4212,7 +4210,7 @@ done:
         pThread->SetLastError(dwLastError);
     }
     
-    InternalFree(pThread, UnixFileName);
+    InternalFree(UnixFileName);
 
     LOGEXIT("SetFileAttributesA returns BOOL %d\n", bRet);
     PERF_EXIT(SetFileAttributesA);
@@ -4970,8 +4968,7 @@ Return value:
 BOOL FILEGetFileNameFromSymLink(char *source)
 {
     int ret;
-    CPalThread* pThread = InternalGetCurrentThread();
-    char * sLinkData = (char*)InternalMalloc(pThread, MAX_LONGPATH);
+    char * sLinkData = (char*)InternalMalloc(MAX_LONGPATH);
 
     do
     {
@@ -4983,7 +4980,7 @@ BOOL FILEGetFileNameFromSymLink(char *source)
         }
     } while (ret > 0);
 
-    InternalFree(pThread, sLinkData);
+    InternalFree(sLinkData);
     return (errno == EINVAL);
 }
 

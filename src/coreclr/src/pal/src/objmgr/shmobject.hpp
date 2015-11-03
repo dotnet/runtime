@@ -76,7 +76,7 @@ namespace CorUnix
 
     class CSharedMemoryObject : public CPalObjectBase
     {
-        template <class T> friend void InternalDelete(CorUnix::CPalThread *, T *p);
+        template <class T> friend void InternalDelete(T *p);
         
     protected:
 
@@ -310,7 +310,7 @@ namespace CorUnix
 
     class CSharedMemoryWaitableObject : public CSharedMemoryObject
     {
-        template <class T> friend void InternalDelete(CorUnix::CPalThread *, T *p);
+        template <class T> friend void InternalDelete(T *p);
         
     protected:
 
