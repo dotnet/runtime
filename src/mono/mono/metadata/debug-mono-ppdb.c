@@ -97,7 +97,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 	MonoPPDBFile *ppdb;
 
 	if (raw_contents) {
-		ppdb_image = mono_image_open_from_data_internal ((char*)raw_contents, size, TRUE, NULL, FALSE, TRUE, NULL);
+		ppdb_image = mono_image_open_from_data_internal ((char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL);
 	} else {
 		/* ppdb files drop the .exe/.dll extension */
 		filename = mono_image_get_filename (image);
