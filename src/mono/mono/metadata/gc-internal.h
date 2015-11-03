@@ -370,7 +370,9 @@ void mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer alts
 extern gboolean log_finalizers;
 
 /* If set, do not run finalizers. */
-extern gboolean do_not_finalize;
+extern gboolean mono_do_not_finalize;
+/* List of names of classes not to finalize. */
+extern gchar **mono_do_not_finalize_class_names;
 
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 

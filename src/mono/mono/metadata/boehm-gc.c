@@ -180,7 +180,7 @@ mono_gc_base_init (void)
 			for (char **ptr = opts; ptr && *ptr; ptr ++) {
 				char *opt = *ptr;
 				if (!strcmp (opt, "do-not-finalize")) {
-					do_not_finalize = 1;
+					mono_do_not_finalize = 1;
 				} else if (!strcmp (opt, "log-finalizers")) {
 					log_finalizers = 1;
 				}
