@@ -179,7 +179,7 @@ FileMappingCleanupRoutine(
 
         if (pImmutableData->bPALCreatedTempFile)
         {
-            InternalUnlink(pImmutableData->szFileName);
+            unlink(pImmutableData->szFileName);
         }
     }
 
@@ -766,7 +766,7 @@ ExitInternalCreateFileMapping:
 
         if (bPALCreatedTempFile)
         {
-            InternalUnlink(pImmutableData->szFileName);
+            unlink(pImmutableData->szFileName);
         }
 
         if (-1 != UnixFd)
