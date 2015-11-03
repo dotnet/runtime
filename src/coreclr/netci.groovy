@@ -369,7 +369,8 @@ build(globalParams + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number,
                     if (architecture == 'x64') {
                         if (configuration == 'Release') {
                             // Tests will be run on x64 Release by default (no trigger phase required).
-                            Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test")
+                            Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test",
+                            "(?i).*test\\W+ubuntu\\W+release.*")
                         } else {
                             Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test", "(?i).*test\\W+ubuntu\\W+debug.*")
                         }
