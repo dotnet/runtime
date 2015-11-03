@@ -34,6 +34,9 @@ static int abort_signal_num;
 static sigset_t suspend_signal_mask;
 static sigset_t suspend_ack_signal_mask;
 
+//Can't avoid the circular dep on this. Will be gone pretty soon
+extern int mono_gc_get_suspend_signal (void);
+
 static int
 signal_search_alternative (int min_signal)
 {
@@ -261,6 +264,8 @@ mono_threads_posix_init_signals (MonoThreadPosixInitSignals signals)
 
 		sigfillset (&suspend_signal_mask);
 		sigdelset (&suspend_signal_mask, restart_signal_num);
+		if (!mono_thread_info_unified_management_enabled ())
+			sigdelset (&suspend_signal_mask, mono_gc_get_suspend_signal ());
 
 		sigemptyset (&suspend_ack_signal_mask);
 		sigaddset (&suspend_ack_signal_mask, restart_signal_num);
