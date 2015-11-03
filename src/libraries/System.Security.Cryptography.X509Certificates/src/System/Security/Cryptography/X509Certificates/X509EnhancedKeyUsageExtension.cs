@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         private OidCollection _enhancedKeyUsages;
-        private bool _decoded = false;
+        private bool _decoded;
     }
 }
 
