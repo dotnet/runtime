@@ -321,9 +321,9 @@ NativeExceptionHolderBase::Push()
 }
 
 NativeExceptionHolderBase *
-NativeExceptionHolderBase::FindNextHolder(void *stackLowAddress, void *stackHighAddress)
+NativeExceptionHolderBase::FindNextHolder(NativeExceptionHolderBase *currentHolder, void *stackLowAddress, void *stackHighAddress)
 {
-    NativeExceptionHolderBase *holder = this;
+    NativeExceptionHolderBase *holder = (currentHolder == nullptr) ? t_nativeExceptionHolderHead : currentHolder->m_next;
 
     while (holder != nullptr)
     {
@@ -336,17 +336,6 @@ NativeExceptionHolderBase::FindNextHolder(void *stackLowAddress, void *stackHigh
     }
 
     return nullptr;
-}
-
-NativeExceptionHolderBase *
-NativeExceptionHolderBase::FindHolder(void *stackLowAddress, void *stackHighAddress)
-{
-    NativeExceptionHolderBase *head = t_nativeExceptionHolderHead;
-    if (head == nullptr)
-    {
-        return nullptr;
-    }
-    return head->FindNextHolder(stackLowAddress, stackHighAddress);
 }
 
 #include "seh-unwind.cpp"
