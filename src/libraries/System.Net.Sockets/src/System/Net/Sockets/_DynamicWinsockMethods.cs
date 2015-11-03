@@ -3,6 +3,7 @@
 
 using System.Security;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -62,31 +63,37 @@ namespace System.Net.Sockets
             if (typeof(T) == typeof(AcceptExDelegate))
             {
                 EnsureAcceptEx(socketHandle);
+                Debug.Assert(_acceptEx != null);
                 return (T)(object)_acceptEx;
             }
             else if (typeof(T) == typeof(GetAcceptExSockaddrsDelegate))
             {
                 EnsureGetAcceptExSockaddrs(socketHandle);
+                Debug.Assert(_getAcceptExSockaddrs != null);
                 return (T)(object)_getAcceptExSockaddrs;
             }
             else if (typeof(T) == typeof(ConnectExDelegate))
             {
                 EnsureConnectEx(socketHandle);
+                Debug.Assert(_connectEx != null);
                 return (T)(object)_connectEx;
             }
             else if (typeof(T) == typeof(WSARecvMsgDelegate))
             {
                 EnsureWSARecvMsg(socketHandle);
+                Debug.Assert(_recvMsg != null);
                 return (T)(object)_recvMsg;
             }
             else if (typeof(T) == typeof(WSARecvMsgDelegateBlocking))
             {
                 EnsureWSARecvMsgBlocking(socketHandle);
+                Debug.Assert(_recvMsgBlocking != null);
                 return (T)(object)_recvMsgBlocking;
             }
             else if (typeof(T) == typeof(TransmitPacketsDelegate))
             {
                 EnsureTransmitPackets(socketHandle);
+                Debug.Assert(_transmitPackets != null);
                 return (T)(object)_transmitPackets;
             }
 
