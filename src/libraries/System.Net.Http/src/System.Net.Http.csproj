@@ -173,9 +173,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\libc\Interop.Write.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_types.cs">
-      <Link>Common\Interop\Unix\libcurl\Interop.libcurl_types.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs">
       <Link>Common\Interop\Unix\System.Net.Http.Native\Interop.CURLcode.cs</Link>
     </Compile>
