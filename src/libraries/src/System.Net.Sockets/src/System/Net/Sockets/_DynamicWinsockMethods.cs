@@ -81,7 +81,7 @@ namespace System.Net.Sockets
             }
             else if (typeof(T) == typeof(WSARecvMsgDelegateBlocking))
             {
-                EnsureWSARecvMsg(socketHandle);
+                EnsureWSARecvMsgBlocking(socketHandle);
                 return (T)(object)_recvMsgBlocking;
             }
             else if (typeof(T) == typeof(TransmitPacketsDelegate))
@@ -123,6 +123,10 @@ namespace System.Net.Sockets
             return ptr;
         }
 
+        // NOTE: the volatile writes in the functions below are necessary to ensure that all writes
+        //       to the fields of the delegate instances are visible before the write to the field
+        //       that holds the reference to the delegate instance.
+
         private void EnsureAcceptEx(SafeCloseSocket socketHandle)
         {
             if (_acceptEx == null)
@@ -133,7 +137,7 @@ namespace System.Net.Sockets
                     {
                         Guid guid = new Guid("{0xb5367df1,0xcbac,0x11cf,{0x95, 0xca, 0x00, 0x80, 0x5f, 0x48, 0xa1, 0x92}}");
                         IntPtr ptrAcceptEx = LoadDynamicFunctionPointer(socketHandle, ref guid);
-                        _acceptEx = Marshal.GetDelegateForFunctionPointer<AcceptExDelegate>(ptrAcceptEx);
+                        Volatile.Write(ref _acceptEx, Marshal.GetDelegateForFunctionPointer<AcceptExDelegate>(ptrAcceptEx));
                     }
                 }
             }
@@ -149,7 +153,7 @@ namespace System.Net.Sockets
                     {
                         Guid guid = new Guid("{0xb5367df2,0xcbac,0x11cf,{0x95, 0xca, 0x00, 0x80, 0x5f, 0x48, 0xa1, 0x92}}");
                         IntPtr ptrGetAcceptExSockaddrs = LoadDynamicFunctionPointer(socketHandle, ref guid);
-                        _getAcceptExSockaddrs = Marshal.GetDelegateForFunctionPointer<GetAcceptExSockaddrsDelegate>(ptrGetAcceptExSockaddrs);
+                        Volatile.Write(ref _getAcceptExSockaddrs, Marshal.GetDelegateForFunctionPointer<GetAcceptExSockaddrsDelegate>(ptrGetAcceptExSockaddrs));
                     }
                 }
             }
@@ -165,7 +169,7 @@ namespace System.Net.Sockets
                     {
                         Guid guid = new Guid("{0x25a207b9,0x0ddf3,0x4660,{0x8e,0xe9,0x76,0xe5,0x8c,0x74,0x06,0x3e}}");
                         IntPtr ptrConnectEx = LoadDynamicFunctionPointer(socketHandle, ref guid);
-                        _connectEx = Marshal.GetDelegateForFunctionPointer<ConnectExDelegate>(ptrConnectEx);
+                        Volatile.Write(ref _connectEx, Marshal.GetDelegateForFunctionPointer<ConnectExDelegate>(ptrConnectEx));
                     }
                 }
             }
@@ -173,7 +177,7 @@ namespace System.Net.Sockets
 
         private void EnsureWSARecvMsg(SafeCloseSocket socketHandle)
         {
-            if (Volatile.Read(ref _recvMsg) == null)
+            if (_recvMsg == null)
             {
                 lock (_lockObject)
                 {
@@ -183,6 +187,22 @@ namespace System.Net.Sockets
                         IntPtr ptrWSARecvMsg = LoadDynamicFunctionPointer(socketHandle, ref guid);
                         _recvMsgBlocking = Marshal.GetDelegateForFunctionPointer<WSARecvMsgDelegateBlocking>(ptrWSARecvMsg);
                         Volatile.Write(ref _recvMsg, Marshal.GetDelegateForFunctionPointer<WSARecvMsgDelegate>(ptrWSARecvMsg));
+                    }
+                }
+            }
+        }
+
+        private void EnsureWSARecvMsgBlocking(SafeCloseSocket socketHandle)
+        {
+            if (_recvMsgBlocking == null)
+            {
+                lock (_lockObject)
+                {
+                    if (_recvMsgBlocking == null)
+                    {
+                        Guid guid = new Guid("{0xf689d7c8,0x6f1f,0x436b,{0x8a,0x53,0xe5,0x4f,0xe3,0x51,0xc3,0x22}}");
+                        IntPtr ptrWSARecvMsg = LoadDynamicFunctionPointer(socketHandle, ref guid);
+                        Volatile.Write(ref _recvMsgBlocking, Marshal.GetDelegateForFunctionPointer<WSARecvMsgDelegateBlocking>(ptrWSARecvMsg));
                     }
                 }
             }
@@ -198,7 +218,7 @@ namespace System.Net.Sockets
                     {
                         Guid guid = new Guid("{0xd9689da0,0x1f90,0x11d3,{0x99,0x71,0x00,0xc0,0x4f,0x68,0xc8,0x76}}");
                         IntPtr ptrTransmitPackets = LoadDynamicFunctionPointer(socketHandle, ref guid);
-                        _transmitPackets = Marshal.GetDelegateForFunctionPointer<TransmitPacketsDelegate>(ptrTransmitPackets);
+                        Volatile.Write(ref _transmitPackets, Marshal.GetDelegateForFunctionPointer<TransmitPacketsDelegate>(ptrTransmitPackets));
                     }
                 }
             }
