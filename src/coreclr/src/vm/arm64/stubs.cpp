@@ -271,6 +271,7 @@ static BYTE gLoadFromLabelIF[sizeof(LoadFromLabelInstructionFormat)];
 #ifndef CROSSGEN_COMPILE
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
+                                    DWORD threadId,
                                     int funCallDepth,
                                     HostCallPreference hostCallPreference)
 {
