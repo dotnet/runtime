@@ -437,6 +437,7 @@ namespace System
         public static string StackTrace { get { return default(string); } }
         public static int TickCount { get { return default(int); } }
         public static string ExpandEnvironmentVariables(string name) { return default(string); }
+        public static void Exit(int exitCode) {}
         [System.Security.SecurityCriticalAttribute]
         public static void FailFast(string message) { }
         [System.Security.SecurityCriticalAttribute]
