@@ -83,7 +83,7 @@ mono_threads_state_poll (void)
 static void *
 return_stack_ptr ()
 {
-	int i;
+	gpointer i;
 	return &i;
 }
 
@@ -99,6 +99,12 @@ copy_stack_data (MonoThreadInfo *info, void* stackdata_begin)
 	state = &info->thread_saved_state [SELF_SUSPEND_STATE_INDEX];
 
 	stackdata_size = (char*)stackdata_begin - (char*)stackdata_end;
+
+	if (((gsize) stackdata_begin & (SIZEOF_VOID_P - 1)) != 0)
+		g_error ("stackdata_begin (%p) must be %d-byte aligned", stackdata_begin, SIZEOF_VOID_P);
+	if (((gsize) stackdata_end & (SIZEOF_VOID_P - 1)) != 0)
+		g_error ("stackdata_end (%p) must be %d-byte aligned", stackdata_end, SIZEOF_VOID_P);
+
 	if (stackdata_size <= 0)
 		g_error ("stackdata_size = %d, but must be > 0, stackdata_begin = %p, stackdata_end = %p", stackdata_size, stackdata_begin, stackdata_end);
 
