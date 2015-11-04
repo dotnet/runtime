@@ -36,8 +36,13 @@ namespace Internal.Cryptography.Pal
                     return ExportX509Der();
                 case X509ContentType.Pfx:
                     return ExportPfx(password);
+                case X509ContentType.Pkcs7:
+                    return ExportPkcs7();
+                case X509ContentType.SerializedCert:
+                case X509ContentType.SerializedStore:
+                    throw new PlatformNotSupportedException(SR.Cryptography_Unix_X509_SerializedExport);
                 default:
-                    throw new NotImplementedException();
+                    throw new CryptographicException(SR.Cryptography_X509_InvalidContentType);
             }
         }
 
@@ -127,6 +132,27 @@ namespace Internal.Cryptography.Pal
                         Interop.Crypto.EncodePkcs12,
                         pkcs12);
                 }
+            }
+        }
+
+        private byte[] ExportPkcs7()
+        {
+            using (SafePkcs7Handle pkcs7 = Interop.Crypto.Pkcs7CreateSigned())
+            {
+                Interop.Crypto.CheckValidOpenSslHandle(pkcs7);
+
+                foreach (X509Certificate2 cert in _certs)
+                {
+                    if (!Interop.Crypto.Pkcs7AddCertificate(pkcs7, cert.Handle))
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+                }
+
+                return Interop.Crypto.OpenSslEncode(
+                    handle => Interop.Crypto.GetPkcs7DerSize(handle),
+                    (handle, buf) => Interop.Crypto.EncodePkcs7(handle, buf),
+                    pkcs7);
             }
         }
 
