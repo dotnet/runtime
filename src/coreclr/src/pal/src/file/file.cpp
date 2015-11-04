@@ -113,7 +113,7 @@ FileCleanupRoutine(
 
     if (pLocalData->pLockController != NULL)
     {
-        pLocalData->pLockController->ReleaseController(pThread);
+        pLocalData->pLockController->ReleaseController();
     }
 
     if (!fShutdown && -1 != pLocalData->unix_fd)
@@ -852,7 +852,7 @@ done:
 
     if (NULL != pLockController)
     {
-        pLockController->ReleaseController(pThread);
+        pLockController->ReleaseController();
     }
 
     if (NULL != pDataLock)
@@ -1228,9 +1228,8 @@ DeleteFileA(
         }
     }
 
-    palError = g_pFileLockManager->GetFileShareModeForFile(pThread,
-							   lpFullUnixFileName,
-							   &dwShareMode);
+    palError = g_pFileLockManager->GetFileShareModeForFile(lpFullUnixFileName, &dwShareMode);
+
     // Use unlink if we succesfully found the file to be opened with
     // a FILE_SHARE_DELETE mode.
     // Note that there is a window here where a race condition can occur:
@@ -2214,7 +2213,7 @@ done:
     
     if (NULL != pTransactionLock)
     {
-        pTransactionLock->ReleaseLock(pThread);
+        pTransactionLock->ReleaseLock();
     }
 
     if (NULL != pLocalDataLock)
@@ -2439,7 +2438,7 @@ done:
 
     if (NULL != pTransactionLock)
     {
-        pTransactionLock->ReleaseLock(pThread);
+        pTransactionLock->ReleaseLock();
     }
 
     if (NULL != pLocalDataLock)
@@ -4843,7 +4842,7 @@ done:
 
     if (NULL != pLockController)
     {
-        pLockController->ReleaseController(pThread);
+        pLockController->ReleaseController();
     }
 
     if (NULL != pDataLock)

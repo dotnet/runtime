@@ -1239,9 +1239,7 @@ namespace CorUnix
 
         virtual
         void
-        ReleaseLock(
-            CPalThread *pThread                 // IN, OPTIONAL
-            ) = 0;
+        ReleaseLock() = 0;
     };
 
     class IFileLockController
@@ -1316,10 +1314,7 @@ namespace CorUnix
 
         virtual
         void
-        ReleaseController(
-            CPalThread *pThread                 // IN, OPTIONAL
-            ) = 0;
-        
+        ReleaseController() = 0;
     };
 
     class IFileLockManager
@@ -1349,9 +1344,8 @@ namespace CorUnix
         // not found)
         // 
         virtual
-	PAL_ERROR
-	GetFileShareModeForFile(
-            CPalThread *pThread,
+        PAL_ERROR
+        GetFileShareModeForFile(
             LPCSTR szFileName,
             DWORD* pdwShareMode) = 0;
     };
