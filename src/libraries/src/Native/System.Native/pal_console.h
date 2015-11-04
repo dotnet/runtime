@@ -44,11 +44,11 @@ enum CtrlCode : int32_t
     Break = 1
 };
 
-typedef int32_t(*CtrlCallback)(CtrlCode signalCode);
+typedef int32_t (*CtrlCallback)(CtrlCode signalCode);
 
 /**
  * Hooks up the specified callback for notifications when SIGINT or SIGQUIT is received.
- * 
+ *
  * Not thread safe.  Caller must provide its owns synchronization to ensure RegisterForCtrl
  * is not called concurrently with itself or with UnregisterForCtrl.
  *
