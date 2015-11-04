@@ -58,16 +58,6 @@ const UINT RESERVED_SEH_BIT = 0x800000;
 
 PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
 
-/* Internal function declarations *********************************************/
-
-BOOL SEHInitializeConsole();
-
-#if !HAVE_MACH_EXCEPTIONS
-PAL_ERROR
-StartExternalSignalHandlerThread(
-    CPalThread *pthr);
-#endif // !HAVE_MACH_EXCEPTIONS
-
 /* Internal function definitions **********************************************/
 
 /*++
@@ -89,30 +79,12 @@ SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
 {
     BOOL bRet = FALSE;
 
-    if (!SEHInitializeConsole())
-    {
-        ERROR("SEHInitializeConsole failed!\n");
-        SEHCleanup();
-        goto SEHInitializeExit;
-    }
-
 #if !HAVE_MACH_EXCEPTIONS
     if (!SEHInitializeSignals())
     {
         ERROR("SEHInitializeSignals failed!\n");
         SEHCleanup();
         goto SEHInitializeExit;
-    }
-
-    if (flags & PAL_INITIALIZE_SIGNAL_THREAD)
-    {
-        PAL_ERROR palError = StartExternalSignalHandlerThread(pthrCurrent);
-        if (NO_ERROR != palError)
-        {
-            ERROR("StartExternalSignalHandlerThread returned %d\n", palError);
-            SEHCleanup();
-            goto SEHInitializeExit;
-        }
     }
 #endif
     bRet = TRUE;
