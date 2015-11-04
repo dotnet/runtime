@@ -236,6 +236,11 @@ extern "C" X509VerifyStatusCode X509StoreCtxGetError(X509_STORE_CTX* ctx)
     return static_cast<X509VerifyStatusCode>(X509_STORE_CTX_get_error(ctx));
 }
 
+extern "C" void X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X509StoreVerifyCallback callback)
+{
+    X509_STORE_CTX_set_verify_cb(ctx, callback);
+}
+
 extern "C" int32_t X509StoreCtxGetErrorDepth(X509_STORE_CTX* ctx)
 {
     return X509_STORE_CTX_get_error_depth(ctx);
