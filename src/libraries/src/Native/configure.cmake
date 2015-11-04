@@ -234,6 +234,20 @@ check_cxx_source_compiles(
 
 check_cxx_source_compiles(
     "
+    #include <netinet/tcp.h>
+    int main() { int x = TCP_ESTABLISHED; return x; }
+    "
+    HAVE_TCP_H_TCPSTATE_ENUM
+)
+
+check_symbol_exists(
+    TCPS_ESTABLISHED
+    "netinet/tcp_fsm.h"
+    HAVE_TCP_FSM_H
+)
+
+check_cxx_source_compiles(
+    "
     #include <sys/types.h>
     #include <net/route.h>
     int main() { rt_msghdr* hdr; return 0; }

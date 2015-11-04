@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "pal_tcpstate.h"
+
 // Exchange types used to normalize Network protocol statistics information
 // from the OS, for use in the NetworkInformation library.
 
@@ -113,31 +115,12 @@ struct IPEndPointInfo
     uint32_t __padding1;
 };
 
-enum TcpState
-{
-    Unknown,
-    Closed,
-    Listen,
-    SynSent,
-    SynReceived,
-    Established,
-    FinWait1,
-    FinWait2,
-    CloseWait,
-    Closing,
-    LastAck,
-    TimeWait,
-    DeleteTcb
-};
-
 struct NativeTcpConnectionInformation
 {
     IPEndPointInfo LocalEndPoint;
     IPEndPointInfo RemoteEndPoint;
     TcpState State;
 };
-
-TcpState MapTcpState(int tcpState);
 
 struct NativeIPInterfaceStatistics
 {
