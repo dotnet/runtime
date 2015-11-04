@@ -74,10 +74,10 @@ namespace CorUnix
             DWORD dwShareMode,
             IFileLockController **ppLockController  // OUT
             );
+
         virtual
-	PAL_ERROR
-	GetFileShareModeForFile(
-            CPalThread *pThread,
+        PAL_ERROR
+        GetFileShareModeForFile(
             LPCSTR szFileName,
             DWORD* pdwShareMode);
     };
@@ -142,9 +142,7 @@ namespace CorUnix
 
         virtual
         void
-        ReleaseController(
-            CPalThread *pThread                 // IN, OPTIONAL
-            );
+        ReleaseController();
     };
 
     class CSharedMemoryFileTransactionLock : public IFileTransactionLock
@@ -180,9 +178,7 @@ namespace CorUnix
 
         virtual
         void
-        ReleaseLock(
-            CPalThread *pThread                 // IN, OPTIONAL
-            );
+        ReleaseLock();
     };
 }
 
