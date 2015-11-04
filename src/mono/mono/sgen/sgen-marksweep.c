@@ -532,10 +532,11 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	 * Blocks that are to-space are not evacuated from.  During an major collection
 	 * blocks are allocated for two reasons: evacuating objects from the nursery and
 	 * evacuating them from major blocks marked for evacuation.  In both cases we don't
-	 * want further evacuation.
+	 * want further evacuation. We also don't want to evacuate objects allocated during
+	 * the concurrent mark since it would add pointless stress on the finishing pause.
 	 */
-	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD);
-	info->state = (info->is_to_space || sgen_concurrent_collection_in_progress ()) ? BLOCK_STATE_MARKING : BLOCK_STATE_SWEPT;
+	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD) || sgen_concurrent_collection_in_progress ();
+	info->state = info->is_to_space ? BLOCK_STATE_MARKING : BLOCK_STATE_SWEPT;
 	SGEN_ASSERT (6, !sweep_in_progress () || info->state == BLOCK_STATE_SWEPT, "How do we add a new block to be swept while sweeping?");
 	info->cardtable_mod_union = NULL;
 
@@ -1078,6 +1079,16 @@ mark_mod_union_card (GCObject *obj, void **ptr)
 	}
 }
 
+static inline gboolean
+major_block_is_evacuating (MSBlockInfo *block)
+{
+	if (evacuate_block_obj_sizes [block->obj_size_index] &&
+			!block->has_pinned &&
+			!block->is_to_space)
+		return TRUE;
+	return FALSE;
+}
+
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
 #define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,desc,block,queue) do {	\
@@ -1220,7 +1231,7 @@ major_copy_or_mark_object_concurrent_canonical (GCObject **ptr, SgenGrayQueue *q
 static void
 major_copy_or_mark_object_concurrent_finish_canonical (GCObject **ptr, SgenGrayQueue *queue)
 {
-	major_copy_or_mark_object_no_evacuation (ptr, *ptr, queue);
+	major_copy_or_mark_object_with_evacuation (ptr, *ptr, queue);
 }
 
 static void
@@ -2479,9 +2490,9 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		collector->major_ops_concurrent_start.drain_gray_stack = drain_gray_stack_concurrent;
 
 		collector->major_ops_concurrent_finish.copy_or_mark_object = major_copy_or_mark_object_concurrent_finish_canonical;
-		collector->major_ops_concurrent_finish.scan_object = major_scan_object_no_evacuation;
+		collector->major_ops_concurrent_finish.scan_object = major_scan_object_with_evacuation;
 		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_concurrent_finish;
-		collector->major_ops_concurrent_finish.drain_gray_stack = drain_gray_stack_no_evacuation;
+		collector->major_ops_concurrent_finish.drain_gray_stack = drain_gray_stack;
 	}
 
 #ifdef HEAVY_STATISTICS
