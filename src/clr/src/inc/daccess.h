@@ -663,7 +663,6 @@ HRESULT DacFreeVirtual(TADDR mem, ULONG32 size, ULONG32 typeFlags,
 PVOID   DacInstantiateTypeByAddress(TADDR addr, ULONG32 size, bool throwEx);
 PVOID   DacInstantiateTypeByAddressNoReport(TADDR addr, ULONG32 size, bool throwEx);
 PVOID   DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx);
-HRESULT DacVirtualUnwind(ULONG32 threadId, PCONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers);
 
 // Copy a null-terminated ascii or unicode string from the target to the host.
 // Note that most of the work here is to find the null terminator.  If you know the exact length,
@@ -780,6 +779,11 @@ struct _UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo);
 // virtually unwind a CONTEXT out-of-process
 struct _KNONVOLATILE_CONTEXT_POINTERS;
 BOOL DacUnwindStackFrame(T_CONTEXT * pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers);
+
+#if defined(FEATURE_PAL)
+// call back through data target to unwind out-of-process
+HRESULT DacVirtualUnwind(ULONG32 threadId, PCONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers);
+#endif // FEATURE_PAL
 #endif // _WIN64
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
