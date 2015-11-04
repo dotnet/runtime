@@ -6,15 +6,15 @@
 
 struct arguments_t
 {
-	trace::level_t trace_level;
-	pal::string_t own_path;
-	pal::string_t managed_application;
-	pal::string_t clr_path;
+    trace::level_t trace_level;
+    pal::string_t own_path;
+    pal::string_t managed_application;
+    pal::string_t clr_path;
 
-	int app_argc;
-	const pal::char_t** app_argv;
+    int app_argc;
+    const pal::char_t** app_argv;
 
-	arguments_t();
+    arguments_t();
 };
 
 bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& args);
