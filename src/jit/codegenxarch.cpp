@@ -386,7 +386,7 @@ void                CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
-        /* Figure out which registers hold variables on entry to this block */
+        // Figure out which registers hold variables on entry to this block
 
         regSet.rsMaskVars       = RBM_NONE;
         gcInfo.gcRegGCrefSetCur = RBM_NONE;
@@ -2908,10 +2908,18 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 }
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-// This method handles storing double register return struct value to a 
+//------------------------------------------------------------------------
+// genStoreRegisterReturnInLclVar: This method handles storing double register return struct value to a 
 // local homing stack location.
-// It returns true if this is a struct and storing of the returned
-// register value is handled. It returns false otherwise.
+//
+// Arguments:
+//    treeNode  - the tree which should be homed in local frame stack location.
+//
+// Return Value:
+//    It returns true if this is a struct and storing of the returned
+//    register value is handled. It returns false otherwise.
+//
+
 bool
 CodeGen::genStoreRegisterReturnInLclVar(GenTreePtr treeNode)
 {
@@ -2935,78 +2943,45 @@ CodeGen::genStoreRegisterReturnInLclVar(GenTreePtr treeNode)
         genConsumeRegs(op1);
 
         regNumber retReg0 = REG_NA;
-        emitAttr size0 = EA_UNKNOWN;
-        unsigned offset0 = structDesc.eightByteOffsets[0];
         regNumber retReg1 = REG_NA;
-        emitAttr size1 = EA_UNKNOWN;
-        unsigned offset1 = structDesc.eightByteOffsets[1];
 
-        bool firstIntUsed = false;
-        bool firstFloatUsed = false;
+        emitAttr size0 = EA_UNKNOWN;
+        emitAttr size1 = EA_UNKNOWN;
+
+        unsigned __int8 offset0 = 0;
+        unsigned __int8 offset1 = 0;
 
         var_types type0 = TYP_UNKNOWN;
         var_types type1 = TYP_UNKNOWN;
 
-        // Set the first eightbyte data
-        switch (structDesc.eightByteClassifications[0])
+        bool firstIntUsed = false;
+        bool firstFloatUsed = false;
+
+        genGetStructTypeSizeOffset(structDesc, &type0, &type1, &size0, &size1, &offset0, &offset1);
+
+        if (type0 != TYP_UNKNOWN)
         {
-        case SystemVClassificationTypeInteger:
-            if (structDesc.eightByteSizes[0] <= 4)
+            if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeIntegerReference ||
+                structDesc.eightByteClassifications[0] == SystemVClassificationTypeInteger)
             {
                 retReg0 = REG_INTRET;
-                size0 = EA_4BYTE;
-                type0 = TYP_INT;
                 firstIntUsed = true;
             }
-            else if (structDesc.eightByteSizes[0] <= 8)
-            {
-                retReg0 = REG_LNGRET;
-                size0 = EA_8BYTE;
-                type0 = TYP_LONG;
-                firstIntUsed = true;
-            }
-            else
-            {
-                assert(false && "Bad int type.");
-            }
-            break;
-        case SystemVClassificationTypeIntegerReference:
-            assert(structDesc.eightByteSizes[0] == REGSIZE_BYTES);
-            retReg0 = REG_LNGRET;
-            size0 = EA_GCREF;
-            type0 = TYP_REF;
-            firstIntUsed = true;
-            break;
-        case SystemVClassificationTypeSSE:
-            if (structDesc.eightByteSizes[0] <= 4)
+            else if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
             {
                 retReg0 = REG_FLOATRET;
-                size0 = EA_4BYTE;
-                type0 = TYP_FLOAT;
-                firstFloatUsed = true;
-            }
-            else if (structDesc.eightByteSizes[0] <= 8)
-            {
-                retReg0 = REG_DOUBLERET;
-                size0 = EA_8BYTE;
-                type0 = TYP_DOUBLE;
                 firstFloatUsed = true;
             }
             else
             {
-                assert(false && "Bat float type."); // Not possible.
+                assert(false && "Invalid eightbyte type");
             }
-            break;
-        default:
-            assert(false && "Bad EightByte classification.");
-            break;
         }
 
-        // Set the second eight byte data
-        switch (structDesc.eightByteClassifications[1])
+        if (type1 != TYP_UNKNOWN)
         {
-        case SystemVClassificationTypeInteger:
-            if (structDesc.eightByteSizes[1] <= 4)
+            if (structDesc.eightByteClassifications[1] == SystemVClassificationTypeIntegerReference ||
+                structDesc.eightByteClassifications[1] == SystemVClassificationTypeInteger)
             {
                 if (firstIntUsed)
                 {
@@ -3016,42 +2991,8 @@ CodeGen::genStoreRegisterReturnInLclVar(GenTreePtr treeNode)
                 {
                     retReg1 = REG_INTRET;
                 }
-                type1 = TYP_INT;
-                size1 = EA_4BYTE;
             }
-            else if (structDesc.eightByteSizes[1] <= 8)
-            {
-                if (firstIntUsed)
-                {
-                    retReg1 = REG_LNGRET_1;
-                }
-                else
-                {
-                    retReg1 = REG_LNGRET;
-                }
-                type1 = TYP_LONG;
-                size1 = EA_8BYTE;
-            }
-            else
-            {
-                assert(false && "Bad int type.");
-            }
-            break;
-        case SystemVClassificationTypeIntegerReference:
-            assert(structDesc.eightByteSizes[1] == REGSIZE_BYTES);
-            if (firstIntUsed)
-            {
-                retReg1 = REG_LNGRET_1;
-            }
-            else
-            {
-                retReg1 = REG_LNGRET;
-            }
-            type1 = TYP_REF;
-            size1 = EA_GCREF;
-            break;
-        case SystemVClassificationTypeSSE:
-            if (structDesc.eightByteSizes[1] <= 4)
+            else if (structDesc.eightByteClassifications[1] == SystemVClassificationTypeSSE)
             {
                 if (firstFloatUsed)
                 {
@@ -3061,37 +3002,22 @@ CodeGen::genStoreRegisterReturnInLclVar(GenTreePtr treeNode)
                 {
                     retReg1 = REG_FLOATRET;
                 }
-                type1 = TYP_FLOAT;
-                size1 = EA_4BYTE;
-            }
-            else if (structDesc.eightByteSizes[1] <= 8)
-            {
-                if (firstFloatUsed)
-                {
-                    retReg1 = REG_DOUBLERET_1;
-                }
-                else
-                {
-                    retReg1 = REG_DOUBLERET;
-                }
-                type1 = TYP_DOUBLE;
-                size1 = EA_8BYTE;
             }
             else
             {
-                assert(false && "Bat float type."); // Not possible.
+                assert(false && "Invalid eightbyte type");
             }
-            break;
-        default:
-            assert(false && "Bad EightByte classification.");
-            break;
         }
 
-        // Move the values into the return registers.
-        // 
+        if (retReg0 != REG_NA)
+        {
+            getEmitter()->emitIns_S_R(ins_Store(type0), size0, retReg0, lclVarPtr->gtLclNum, offset0);
+        }
 
-        getEmitter()->emitIns_S_R(ins_Store(type0), size0, retReg0, lclVarPtr->gtLclNum, offset0);
-        getEmitter()->emitIns_S_R(ins_Store(type1), size1, retReg1, lclVarPtr->gtLclNum, offset1);
+        if (retReg1 != REG_NA)
+        {
+            getEmitter()->emitIns_S_R(ins_Store(type1), size1, retReg1, lclVarPtr->gtLclNum, offset1);
+        }
 
         return true;
     }
@@ -5075,9 +5001,8 @@ regNumber CodeGen::genConsumeReg(GenTree *tree)
 
     // genUpdateLife() will also spill local var if marked as GTF_SPILL by calling CodeGen::genSpillVar
     genUpdateLife(tree);
-#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
+
     assert(tree->gtRegNum != REG_NA);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     // there are three cases where consuming a reg means clearing the bit in the live mask
     // 1. it was not produced by a local
@@ -5527,7 +5452,7 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         {
             GenTreeArgList* argListPtr = argNode->AsArgList();
             unsigned iterationNum = 0;
-            for (; argListPtr; argListPtr = argListPtr->Rest(), iterationNum++)
+            for (; argListPtr != nullptr; argListPtr = argListPtr->Rest(), iterationNum++)
             {
                 GenTreePtr putArgRegNode = argListPtr->gtOp.gtOp1;
                 assert(putArgRegNode->gtOper == GT_PUTARG_REG);
@@ -5598,11 +5523,10 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
             if (genActualType(arg->TypeGet()) == TYP_STRUCT)
             {
-                if (arg->OperGet() == GT_PUTARG_STK)
-                {
-                    GenTreeLdObj* ldObj = arg->gtGetOp1()->AsLdObj();
-                    stackArgBytes = compiler->info.compCompHnd->getClassSize(ldObj->gtClass);
-                }
+                assert(arg->OperGet() == GT_PUTARG_STK);
+
+                GenTreeLdObj* ldObj = arg->gtGetOp1()->AsLdObj();
+                stackArgBytes = compiler->info.compCompHnd->getClassSize(ldObj->gtClass);
             }
             else
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -5871,6 +5795,7 @@ void CodeGen::genCallInstruction(GenTreePtr node)
     }
 }
 
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 //------------------------------------------------------------------------
 // genGetStructTypeSizeOffset: Gets the type, size and offset of the eightbytes of a struct for System V systems.
 //
@@ -5884,10 +5809,13 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 //    'offset1' returns the offset of the second eightbyte.
 //
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 void CodeGen::genGetStructTypeSizeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
-    var_types* type0, var_types* type1, emitAttr* size0, emitAttr* size1,
-    unsigned __int8* offset0, unsigned __int8* offset1)
+                                         var_types* type0, 
+                                         var_types* type1, 
+                                         emitAttr* size0, 
+                                         emitAttr* size1,
+                                         unsigned __int8* offset0,
+                                         unsigned __int8* offset1)
 {
     *size0 = EA_UNKNOWN;
     *offset0 = structDesc.eightByteOffsets[0];
@@ -6118,14 +6046,14 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
 
             // Move the values into the right registers.
             // 
+
+            // Update varDsc->lvArgReg and lvOtherArgReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
+            // Note that we cannot modify varDsc->lvRegNum and lvOtherArgReg here because another basic block may not be expecting it.
+            // Therefore manually update life of argReg.  Note that GT_JMP marks the end of the basic block
+            // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
             if (type0 != TYP_UNKNOWN)
             {
                 getEmitter()->emitIns_R_S(ins_Load(type0), size0, varDsc->lvArgReg, varNum, offset0);
-
-                // Update varDsc->lvArgReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
-                // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
-                // Therefore manually update life of argReg.  Note that GT_JMP marks the end of the basic block
-                // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
                 regSet.rsMaskVars |= genRegMask(varDsc->lvArgReg);
                 gcInfo.gcMarkRegPtrVal(varDsc->lvArgReg, type0);
             }
@@ -6133,18 +6061,13 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
             if (type1 != TYP_UNKNOWN)
             {
                 getEmitter()->emitIns_R_S(ins_Load(type1), size1, varDsc->lvOtherArgReg, varNum, offset1);
-
-                // Update varDsc->lvArgReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
-                // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
-                // Therefore manually update life of argReg.  Note that GT_JMP marks the end of the basic block
-                // and after which reg life and gc info will be recomputed for the new block in genCodeForBBList().
                 regSet.rsMaskVars |= genRegMask(varDsc->lvOtherArgReg);
                 gcInfo.gcMarkRegPtrVal(varDsc->lvOtherArgReg, type1);
             }
 
             if (varDsc->lvTracked)
             {
-                VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varNum);
+                VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
             }
         }
         else
@@ -7534,33 +7457,33 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode
             case TYPE_GC_NONE:
                 // Let's see if we can use rep movsq instead of a sequence of movsq instructions
                 // to save cycles and code size.
-            {
-                unsigned nonGcSlotCount = 0;
-
-                do
                 {
-                    nonGcSlotCount++;
-                    i++;
-                } while (i < slots && gcPtrs[i] == TYPE_GC_NONE);
+                    unsigned nonGcSlotCount = 0;
 
-                // If we have a very small contiguous non-gc region, it's better just to
-                // emit a sequence of movsq instructions
-                if (nonGcSlotCount < CPOBJ_NONGC_SLOTS_LIMIT)
-                {
-                    copiedSlots += nonGcSlotCount;
-                    while (nonGcSlotCount > 0)
+                    do
                     {
-                        instGen(INS_movsq);
-                        nonGcSlotCount--;
+                        nonGcSlotCount++;
+                        i++;
+                    } while (i < slots && gcPtrs[i] == TYPE_GC_NONE);
+
+                    // If we have a very small contiguous non-gc region, it's better just to
+                    // emit a sequence of movsq instructions
+                    if (nonGcSlotCount < CPOBJ_NONGC_SLOTS_LIMIT)
+                    {
+                        copiedSlots += nonGcSlotCount;
+                        while (nonGcSlotCount > 0)
+                        {
+                            instGen(INS_movsq);
+                            nonGcSlotCount--;
+                        }
+                    }
+                    else
+                    {
+                        getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
+                        copiedSlots += nonGcSlotCount;
+                        instGen(INS_r_movsq);
                     }
                 }
-                else
-                {
-                    getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
-                    copiedSlots += nonGcSlotCount;
-                    instGen(INS_r_movsq);
-                }
-            }
                 break;
             default:
                 // We have a GC pointer
@@ -7585,7 +7508,6 @@ CodeGen::genPutStructArgStk(GenTreePtr treeNode
         gcInfo.gcMarkRegSetNpt(RBM_RSI);
         gcInfo.gcMarkRegSetNpt(RBM_RDI);
     }
-    return;
 }
 #endif //defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
