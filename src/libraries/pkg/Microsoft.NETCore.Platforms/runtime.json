@@ -1,0 +1,248 @@
+{
+    "runtimes": {
+        "base": {
+        },
+
+        "any": {
+            "#import": [ "base" ]
+        },
+
+        "win": {
+            "#import": [ "any" ]
+        },
+        "win-x86": {
+            "#import": [ "win" ]
+        },
+        "win-x64": {
+            "#import": [ "win" ]
+        },
+
+        "win7": {
+            "#import": [ "win" ]
+        },
+        "win7-x86": {
+            "#import": [ "win7", "win-x86" ]
+        },
+        "win7-x64": {
+            "#import": [ "win7", "win-x64" ]
+        },
+
+        "win8": {
+            "#import": [ "win7" ]
+        },
+        "win8-x86": {
+            "#import": [ "win8", "win7-x86" ]
+        },
+        "win8-x64": {
+            "#import": [ "win8", "win7-x64" ]
+        },
+        "win8-arm": {
+            "#import": [ "win8" ]
+        },
+
+        "win81": {
+            "#import": [ "win8" ]
+        },
+        "win81-x86": {
+            "#import": [ "win81", "win8-x86" ]
+        },
+        "win81-x64": {
+            "#import": [ "win81", "win8-x64" ]
+        },
+        "win81-arm": {
+            "#import": [ "win81", "win8-arm" ]
+        },
+
+        "win10": {
+            "#import": [ "win81" ]
+        },
+        "win10-x86": {
+            "#import": [ "win10", "win81-x86" ]
+        },
+        "win10-x64": {
+            "#import": [ "win10", "win81-x64" ]
+        },
+        "win10-arm": {
+            "#import": [ "win10", "win81-arm" ]
+        },
+
+
+        "aot": {
+            "#import": [ "any" ]
+        },
+
+        "win-aot": {
+            "#import": [ "win", "aot" ]
+        },
+        "win-x86-aot": {
+            "#import": [ "win-aot", "win-x86" ]
+        },
+        "win-x64-aot": {
+            "#import": [ "win-aot", "win-x64" ]
+        },
+
+        "win7-aot": {
+            "#import": [ "win-aot", "win7" ]
+        },
+        "win7-x86-aot": {
+            "#import": [ "win7-aot", "win7-x86" ]
+        },
+        "win7-x64-aot": {
+            "#import": [ "win7-aot", "win7-x64" ]
+        },
+
+        "win8-aot": {
+            "#import": [ "win8", "win7-aot" ]
+        },
+        "win8-x86-aot": {
+            "#import": [ "win8-aot", "win8-x86", "win7-x86-aot" ]
+        },
+        "win8-x64-aot": {
+            "#import": [ "win8-aot", "win8-x64", "win7-x64-aot" ]
+        },
+        "win8-arm-aot": {
+            "#import": [ "win8-aot", "win8-arm" ]
+        },
+
+        "win81-aot": {
+            "#import": [ "win81", "win8-aot" ]
+        },
+        "win81-x86-aot": {
+            "#import": [ "win81-aot", "win81-x86", "win8-x86-aot" ]
+        },
+        "win81-x64-aot": {
+            "#import": [ "win81-aot", "win81-x64", "win8-x64-aot" ]
+        },
+        "win81-arm-aot": {
+            "#import": [ "win81-aot", "win81-arm", "win8-arm-aot" ]
+        },
+
+        "win10-aot": {
+            "#import": [ "win10", "win81-aot" ]
+        },
+        "win10-x86-aot": {
+            "#import": [ "win10-aot", "win10-x86", "win81-x86-aot" ]
+        },
+        "win10-x64-aot": {
+            "#import": [ "win10-aot", "win10-x64", "win81-x64-aot" ]
+        },
+        "win10-arm-aot": {
+            "#import": [ "win10-aot", "win10-arm", "win81-arm-aot" ]
+        },
+
+        "unix": {
+            "#import": [ "any" ]
+        },
+        "unix-x64": {
+            "#import": [ "unix" ]
+        },
+
+        "osx": {
+            "#import": [ "unix" ]
+        },
+        "osx-x64": {
+            "#import": [ "osx", "unix-x64" ]
+        },
+
+        "osx.10.10": {
+            "#import": [ "osx" ]
+        },
+        "osx.10.10-x64": {
+            "#import": [ "osx.10.10", "osx-x64" ]
+        },
+
+        "osx.10.11": {
+            "#import": [ "osx.10.10" ]
+        },
+        "osx.10.11-x64": {
+            "#import": [ "osx.10.11", "osx.10.10-x64" ]
+        },
+        
+        "linux": {
+            "#import": [ "unix" ]
+        },
+        "linux-x64": {
+            "#import": [ "unix", "unix-x64" ]
+        },
+
+        "centos": {
+            "#import": [ "linux" ]
+        },
+        "centos-x64": {
+            "#import": [ "centos", "linux-x64" ]
+        },
+
+        "centos.7.1": {
+            "#import": [ "centos" ]
+        },
+
+        "centos.7.1-x64": {
+            "#import": [ "centos.7.1", "centos-x64" ]
+        },
+
+        "centos.7": {
+            "#import": [ "centos.7.1" ]
+        },
+
+        "centos.7-x64": {
+            "#import": [ "centos.7", "centos.7.1-x64" ]
+        },
+        
+        "ubuntu": {
+            "#import": [ "linux" ]
+        },
+        "ubuntu-x64": {
+            "#import": [ "ubuntu", "linux-x64" ]
+        },
+
+        "ubuntu.14.04": {
+            "#import": [ "ubuntu" ]
+        },
+        "ubuntu.14.04-x64": {
+            "#import": [ "ubuntu.14.04", "ubuntu-x64" ]
+        },
+
+        "ubuntu.14.10": {
+            "#import": [ "ubuntu.14.04" ]
+        },
+        "ubuntu.14.10-x64": {
+            "#import": [ "ubuntu.14.10", "ubuntu.14.04-x64" ]
+        },
+
+        "ubuntu.15.04": {
+            "#import": [ "ubuntu.14.10" ]
+        },
+        "ubuntu.15.04-x64": {
+            "#import": [ "ubuntu.15.04", "ubuntu.14.10-x64" ]
+        },
+        
+        "linuxmint.17": {
+            "#import": [ "ubuntu.14.04" ]
+        },
+        "linuxmint.17-x64": {
+            "#import": [ "linuxmint.17", "ubuntu.14.04-x64" ]
+        },
+        
+        "linuxmint.17.1": {
+            "#import": [ "linuxmint.17" ]
+        },
+        "linuxmint.17.1-x64": {
+            "#import": [ "linuxmint.17.1", "linuxmint.17-x64" ]
+        },
+        
+        "linuxmint.17.2": {
+            "#import": [ "linuxmint.17.1" ]
+        },
+        "linuxmint.17.2-x64": {
+            "#import": [ "linuxmint.17.2", "linuxmint.17.1-x64" ]
+        },
+        
+        "linuxmint.17.3": {
+            "#import": [ "linuxmint.17.2" ]
+        },
+        "linuxmint.17.2-x64": {
+            "#import": [ "linuxmint.17.3", "linuxmint.17.2-x64" ]
+        }
+    }
+ }
+
