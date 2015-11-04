@@ -6892,8 +6892,13 @@ HRESULT HandleCLRNotificationEvent()
 
     if (!CheckCLRNotificationEvent(&dle))
     {
+#ifndef FEATURE_PAL
         ExtOut("Expecting first chance CLRN exception\n");
         return E_FAIL;
+#else
+        g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, "process continue", 0);
+        return S_OK;
+#endif
     }
 
     // Notification only needs to live for the lifetime of the call below, so it's a non-static

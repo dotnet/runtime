@@ -13,9 +13,10 @@ private:
     lldb::SBProcess GetCurrentProcess();
     lldb::SBThread GetCurrentThread();
     lldb::SBFrame GetCurrentFrame();
-    ULONG64 GetModuleBase(lldb::SBTarget target, lldb::SBModule module);
-    DWORD_PTR GetExpression(lldb::SBFrame frame, lldb::SBError& error, PCSTR exp);
-    DWORD_PTR GetRegister(lldb::SBFrame frame, const char *name);
+    ULONG64 GetModuleBase(lldb::SBTarget& target, lldb::SBModule& module);
+    DWORD_PTR GetExpression(lldb::SBFrame& frame, lldb::SBError& error, PCSTR exp);
+    void GetContextFromFrame(lldb::SBFrame& frame, DT_CONTEXT *dtcontext);
+    DWORD_PTR GetRegister(lldb::SBFrame& frame, const char *name);
 
 public:
     DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject);
@@ -192,4 +193,9 @@ public:
 
     DWORD_PTR GetExpression(
         PCSTR exp);
+
+    HRESULT VirtualUnwind(
+        DWORD threadID,
+        ULONG32 contextSize,
+        PBYTE context);
 };

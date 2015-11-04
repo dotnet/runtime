@@ -219,7 +219,7 @@ DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
 }
 
 HRESULT 
-DacGetPid(DWORD *pid)
+DacVirtualUnwind(DWORD threadId, CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
     if (!g_dacImpl)
     {
@@ -227,11 +227,17 @@ DacGetPid(DWORD *pid)
         UNREACHABLE();
     }
 
+    // The DAC code doesn't use these context pointers but zero them out to be safe.
+    if (contextPointers != NULL)
+    {
+        memset(contextPointers, 0, sizeof(KNONVOLATILE_CONTEXT_POINTERS));
+    }
+
     ReleaseHolder<ICorDebugDataTarget4> dt;
     HRESULT hr = g_dacImpl->m_pTarget->QueryInterface(IID_ICorDebugDataTarget4, (void **)&dt);
     if (SUCCEEDED(hr))
     {
-        hr = dt->GetPid(pid);
+        hr = dt->VirtualUnwind(threadId, sizeof(CONTEXT), (BYTE*)context);
     }
 
     return hr;

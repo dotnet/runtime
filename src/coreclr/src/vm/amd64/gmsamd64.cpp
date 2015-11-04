@@ -10,16 +10,9 @@
 #include "common.h"
 #include "gmscpu.h"
 
-#if defined(DACCESS_COMPILE)
-static BOOL DacReadAllAdapter(SIZE_T address, SIZE_T *value)
-{
-    HRESULT hr = DacReadAll((TADDR)address, (PVOID)value, sizeof(*value), false);
-    return SUCCEEDED(hr);
-}
-#endif //DACCESS_COMPILE
-
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundState,
+                                    DWORD threadId,
                                     int funCallDepth /* = 1 */,
                                     HostCallPreference hostCallPreference /* = (HostCallPreference)(-1) */)
 {
@@ -64,16 +57,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 #else // !FEATURE_PAL
         
 #if defined(DACCESS_COMPILE)
-        DWORD pid;
-        HRESULT hr = DacGetPid(&pid);
-        if (SUCCEEDED(hr))
-        {
-            if (!PAL_VirtualUnwindOutOfProc(&ctx, &nonVolRegPtrs, pid, DacReadAllAdapter))
-            {
-                DacError(E_FAIL);   
-            }
-        } 
-        else 
+        HRESULT hr = DacVirtualUnwind(threadId, &ctx, &nonVolRegPtrs);
+        if (FAILED(hr))
         {
             DacError(hr);
         }
