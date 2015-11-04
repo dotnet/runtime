@@ -1,12 +1,19 @@
-//
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
-//
+
 
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.00.0603 */
+ /* File created by MIDL compiler version 8.00.0613 */
+/* at Mon Jan 18 19:14:07 2038
+ */
+/* Compiler settings for C:/ssd/coreclr/src/inc/cordebug.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.00.0613 
+    protocol : dce , ms_ext, c_ext, robust
+    error checks: allocation ref bounds_check enum stub_data 
+    VC __declspec() decoration level: 
+         __declspec(uuid()), __declspec(selectany), __declspec(novtable)
+         DECLSPEC_UUID(), MIDL_INTERFACE()
+*/
 /* @@MIDL_FILE_HEADING(  ) */
 
 #pragma warning( disable: 4049 )  /* more than 64k source lines */
@@ -22,7 +29,7 @@
 
 #ifndef __RPCNDR_H_VERSION__
 #error this stub requires an updated version of <rpcndr.h>
-#endif // __RPCNDR_H_VERSION__
+#endif /* __RPCNDR_H_VERSION__ */
 
 #ifndef COM_NO_WINDOWS_H
 #include "windows.h"
@@ -2853,8 +2860,10 @@ EXTERN_C const IID IID_ICorDebugDataTarget4;
     ICorDebugDataTarget4 : public IUnknown
     {
     public:
-        virtual HRESULT STDMETHODCALLTYPE GetPid( 
-            /* [out] */ DWORD *pdwProcessId) = 0;
+        virtual HRESULT STDMETHODCALLTYPE VirtualUnwind( 
+            /* [in] */ DWORD threadId,
+            /* [in] */ ULONG32 contextSize,
+            /* [size_is][out][in] */ BYTE *context) = 0;
         
     };
     
@@ -2877,9 +2886,11 @@ EXTERN_C const IID IID_ICorDebugDataTarget4;
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugDataTarget4 * This);
         
-        HRESULT ( STDMETHODCALLTYPE *GetPid )( 
+        HRESULT ( STDMETHODCALLTYPE *VirtualUnwind )( 
             ICorDebugDataTarget4 * This,
-            /* [out] */ DWORD *pdwProcessId);
+            /* [in] */ DWORD threadId,
+            /* [in] */ ULONG32 contextSize,
+            /* [size_is][out][in] */ BYTE *context);
         
         END_INTERFACE
     } ICorDebugDataTarget4Vtbl;
@@ -2904,8 +2915,8 @@ EXTERN_C const IID IID_ICorDebugDataTarget4;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorDebugDataTarget4_GetPid(This,pdwProcessId)	\
-    ( (This)->lpVtbl -> GetPid(This,pdwProcessId) ) 
+#define ICorDebugDataTarget4_VirtualUnwind(This,threadId,contextSize,context)	\
+    ( (This)->lpVtbl -> VirtualUnwind(This,threadId,contextSize,context) ) 
 
 #endif /* COBJMACROS */
 
