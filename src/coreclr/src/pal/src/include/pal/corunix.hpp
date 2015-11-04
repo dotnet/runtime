@@ -103,7 +103,6 @@ namespace CorUnix
 
         PAL_ERROR
         CopyString(
-            CPalThread *pthr,
             CPalString *psSource
             );
 
@@ -1358,19 +1357,6 @@ namespace CorUnix
     };
 
     extern IFileLockManager *g_pFileLockManager;
-
-    //
-    // Utility function for converting sz object names to wsz
-    //
-
-    PAL_ERROR
-    InternalWszNameFromSzName(
-        CPalThread *pthr,
-        LPCSTR pszName,
-        LPWSTR pwszName,
-        DWORD cch
-        );
-
 }
 
 #endif // _CORUNIX_H

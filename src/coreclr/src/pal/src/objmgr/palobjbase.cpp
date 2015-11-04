@@ -97,7 +97,7 @@ CPalObjectBase::Initialize(
 
     if (0 != poa->sObjectName.GetStringLength())
     {
-        palError = m_oa.sObjectName.CopyString(pthr, &poa->sObjectName);
+        palError = m_oa.sObjectName.CopyString(&poa->sObjectName);
     }
 
 IntializeExit:
