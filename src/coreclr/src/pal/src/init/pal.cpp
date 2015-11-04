@@ -95,8 +95,8 @@ static PCRITICAL_SECTION init_critsec = NULL;
 
 static int Initialize(int argc, const char *const argv[], DWORD flags);
 static BOOL INIT_IncreaseDescriptorLimit(void);
-static LPWSTR INIT_FormatCommandLine (CPalThread *pThread, int argc, const char * const *argv);
-static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name);
+static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
+static LPWSTR INIT_FindEXEPath(LPCSTR exe_name);
 
 #ifdef _DEBUG
 extern void PROCDumpThreadList(void);
@@ -397,7 +397,7 @@ Initialize(
     if (argc > 0 && argv != NULL)
     {
         /* build the command line */
-        command_line = INIT_FormatCommandLine(pThread, argc, argv);
+        command_line = INIT_FormatCommandLine(argc, argv);
         if (NULL == command_line)
         {
             ERROR("Error building command line\n");
@@ -405,7 +405,7 @@ Initialize(
         }
 
         /* find out the application's full path */
-        exe_path = INIT_FindEXEPath(pThread, argv[0]);
+        exe_path = INIT_FindEXEPath(argv[0]);
         if (NULL == exe_path)
         {
             ERROR("Unable to find exe path\n");
@@ -998,7 +998,7 @@ Note : not all peculiarities of Windows command-line processing are supported;
      passed to argv as \\a... there may be other similar cases
     -there may be other characters which must be escaped 
 --*/
-static LPWSTR INIT_FormatCommandLine (CPalThread *pThread, int argc, const char * const *argv)
+static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
 {
     LPWSTR retval;
     LPSTR command_line=NULL, command_ptr;
@@ -1032,7 +1032,7 @@ static LPWSTR INIT_FormatCommandLine (CPalThread *pThread, int argc, const char 
     command_ptr=command_line;
     for(i=0; i<argc; i++)
     {
-        /* double-quote at beginning of argument containing at leat one space */
+        /* double-quote at beginning of argument containing at least one space */
         for(j = 0; (argv[i][j] != 0) && (!isspace((unsigned char) argv[i][j])); j++);
 
         if (argv[i][j] != 0)
@@ -1116,7 +1116,7 @@ Notes 2:
     This doesn't handle the case of directories with the desired name
     (and directories are usually executable...)
 --*/
-static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name)
+static LPWSTR INIT_FindEXEPath(LPCSTR exe_name)
 {
 #ifndef __APPLE__
     CHAR real_path[PATH_MAX+1];
