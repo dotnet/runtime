@@ -196,8 +196,14 @@ DataTarget::Request(
 }
 
 HRESULT STDMETHODCALLTYPE 
-DataTarget::GetPid(
-    /* [out] */ DWORD *pdwProcessId)
+DataTarget::VirtualUnwind(
+    /* [in] */ DWORD threadId,
+    /* [in] */ ULONG32 contextSize,
+    /* [in, out, size_is(contextSize)] */ PBYTE context)
 {
-    return g_ExtSystem->GetCurrentProcessId(pdwProcessId);
+    if (g_ExtClient == NULL)
+    {
+        return E_UNEXPECTED;
+    }
+    return g_ExtClient->VirtualUnwind(threadId, contextSize, context);
 }

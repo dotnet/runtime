@@ -1823,6 +1823,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     // Work with a copy so that we only write the values once.
     // this avoids race conditions.
     LazyMachState* lazy = &m_MachState;
+    DWORD threadId = m_pThread->GetOSThreadId();
     MachState unwound;
     
     if (!initialInit &&
@@ -1832,6 +1833,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
         LazyMachState::unwindLazyState(
             lazy, 
             &unwound, 
+            threadId,
             0,
             hostCallPreference);
 
@@ -1859,12 +1861,12 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
              (m_Attribs & Frame::FRAME_ATTR_CAPTURE_DEPTH_2) != 0)
     {
         // explictly told depth
-        LazyMachState::unwindLazyState(lazy, &unwound, 2);
+        LazyMachState::unwindLazyState(lazy, &unwound, threadId, 2);
     }
     else
     {
         // True FCall 
-        LazyMachState::unwindLazyState(lazy, &unwound, 1);
+        LazyMachState::unwindLazyState(lazy, &unwound, threadId, 1);
     }
 
     _ASSERTE(unwound.isValid());

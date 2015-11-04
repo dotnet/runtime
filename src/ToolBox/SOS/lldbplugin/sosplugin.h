@@ -7,6 +7,7 @@
 #include "mstypes.h"
 #define DEFINE_EXCEPTION_RECORD
 #include <dbgeng.h>
+#include <dbgtargetcontext.h>
 #include "debugclient.h"
 
 typedef HRESULT (*CommandFunc)(PDEBUG_CLIENT client, const char *args);
