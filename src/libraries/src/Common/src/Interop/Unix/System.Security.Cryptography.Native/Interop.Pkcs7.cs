@@ -19,10 +19,22 @@ internal static partial class Interop
         internal static extern SafePkcs7Handle D2IPkcs7Bio(SafeBioHandle bp);
 
         [DllImport(Libraries.CryptoNative)]
+        internal static extern SafePkcs7Handle Pkcs7CreateSigned();
+
+        [DllImport(Libraries.CryptoNative)]
         internal static extern void Pkcs7Destroy(IntPtr p7);
 
         [DllImport(Libraries.CryptoNative)]
         private static extern int GetPkcs7Certificates(SafePkcs7Handle p7, out SafeSharedX509StackHandle certs);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern bool Pkcs7AddCertificate(SafePkcs7Handle p7, IntPtr x509);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int GetPkcs7DerSize(SafePkcs7Handle p7);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int EncodePkcs7(SafePkcs7Handle p7, byte[] buf);
 
         internal static SafeSharedX509StackHandle GetPkcs7Certificates(SafePkcs7Handle p7)
         {

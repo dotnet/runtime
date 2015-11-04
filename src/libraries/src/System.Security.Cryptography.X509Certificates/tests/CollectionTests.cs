@@ -620,7 +620,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ExportPkcs7()
         {
             TestExportStore(X509ContentType.Pkcs7);
