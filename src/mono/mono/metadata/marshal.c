@@ -5625,10 +5625,11 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		conv_arg = mono_mb_add_local (mb, &klass->byval_arg);
 
 		if (klass->delegate) {
-			g_assert (!t->byref);
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_op (mb, CEE_MONO_CLASSCONST, klass);
 			mono_mb_emit_ldarg (mb, argnum);
+			if (t->byref)
+				mono_mb_emit_byte (mb, CEE_LDIND_I);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL));
 			mono_mb_emit_stloc (mb, conv_arg);
 			break;
@@ -5701,6 +5702,16 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT:
+		if (klass->delegate) {
+			if (t->byref) {
+				mono_mb_emit_ldarg (mb, argnum);
+				mono_mb_emit_ldloc (mb, conv_arg);
+				mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_DEL_FTN));
+				mono_mb_emit_byte (mb, CEE_STIND_I);
+				break;
+			}
+		}
+
 		if (t->byref) {
 			/* Check for null */
 			mono_mb_emit_ldloc (mb, conv_arg);
