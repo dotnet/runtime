@@ -40,6 +40,7 @@
 #cmakedefine01 HAVE_INOTIFY
 #cmakedefine01 HAVE_CLOCK_MONOTONIC
 #cmakedefine01 HAVE_MACH_ABSOLUTE_TIME
+#cmakedefine01 HAVE_CURLM_ADDED_ALREADY
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

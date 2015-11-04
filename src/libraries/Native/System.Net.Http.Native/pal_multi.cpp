@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#include "pal_config.h"
 #include "pal_multi.h"
 
 #include <assert.h>
@@ -12,7 +13,9 @@ static_assert(PAL_CURLM_OUT_OF_MEMORY == CURLM_OUT_OF_MEMORY, "");
 static_assert(PAL_CURLM_INTERNAL_ERROR == CURLM_INTERNAL_ERROR, "");
 static_assert(PAL_CURLM_BAD_SOCKET == CURLM_BAD_SOCKET, "");
 static_assert(PAL_CURLM_UNKNOWN_OPTION == CURLM_UNKNOWN_OPTION, "");
+#if HAVE_CURLM_ADDED_ALREADY
 static_assert(PAL_CURLM_ADDED_ALREADY == CURLM_ADDED_ALREADY, "");
+#endif
 
 static_assert(PAL_CURLMSG_DONE == CURLMSG_DONE, "");
 

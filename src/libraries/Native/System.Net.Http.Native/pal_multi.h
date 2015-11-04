@@ -16,7 +16,7 @@ enum PAL_CURLMcode : int32_t
     PAL_CURLM_INTERNAL_ERROR = 4,
     PAL_CURLM_BAD_SOCKET = 5,
     PAL_CURLM_UNKNOWN_OPTION = 6,
-    PAL_CURLM_ADDED_ALREADY = 7,
+    PAL_CURLM_ADDED_ALREADY = 7, // Added in libcurl 7.32.1
 };
 
 enum PAL_CURLMSG : int32_t
