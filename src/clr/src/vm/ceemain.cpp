@@ -498,6 +498,7 @@ HRESULT EnsureEEStarted(COINITIEE flags)
 
 #ifndef CROSSGEN_COMPILE
 
+#ifndef FEATURE_PAL
 // This is our Ctrl-C, Ctrl-Break, etc. handler.
 static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
 {
@@ -519,9 +520,10 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
 #endif // DEBUGGING_SUPPORTED
     {         
         g_fInControlC = true;     // only for weakening assertions in checked build.
-        return FALSE;               // keep looking for a real handler.
+        return FALSE;             // keep looking for a real handler.
     }
 }
+#endif
 
 // A host can specify that it only wants one version of hosting interface to be used.
 BOOL g_singleVersionHosting;
@@ -832,7 +834,9 @@ void EEStartupHelper(COINITIEE fFlags)
         DisableGlobalAllocStore();
 #endif //_DEBUG
 
+#ifndef FEATURE_PAL
         ::SetConsoleCtrlHandler(DbgCtrlCHandler, TRUE/*add*/);
+#endif
 
 #endif // CROSSGEN_COMPILE
 

@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 2.8.12.2)
 
-# TODO: make these tests compile if they are needed
-# add_subdirectory(SetConsoleCtrlHandler)
-
 add_subdirectory(CreateEventA)
 add_subdirectory(CreateEventW)
 add_subdirectory(CreateMutexA_ReleaseMutex)
