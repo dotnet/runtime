@@ -731,6 +731,7 @@ typedef struct MonoMemcpyArgs {
 
 typedef enum {
 	LLVMArgNone,
+	LLVMArgNormal,
 	LLVMArgInIReg,
 	LLVMArgInFPReg,
 	LLVMArgVtypeInReg,
@@ -749,6 +750,10 @@ typedef enum {
 	LLVMArgVtypeByRef,
 	/* Vtype returned as an int */
 	LLVMArgVtypeAsScalar,
+	/* Scalar returned by ref using an additional argument */
+	LLVMArgScalarRetAddr,
+	/* Scalar passed by ref */
+	LLVMArgScalarByRef
 } LLVMArgStorage;
 
 typedef struct {
