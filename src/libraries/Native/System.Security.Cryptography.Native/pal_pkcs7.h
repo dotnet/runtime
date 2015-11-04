@@ -29,6 +29,14 @@ Returns the new PKCS7 instance.
 extern "C" PKCS7* D2IPkcs7Bio(BIO* bp);
 
 /*
+Create a new PKCS7 instance and prepare it to be a signed PKCS7
+with a data payload.
+
+Returns the new PKCS7 instance.
+*/
+extern "C" PKCS7* Pkcs7CreateSigned();
+
+/*
 Cleans up and deletes a PKCS7 instance.
 
 Implemented by calling PKCS7_free.
@@ -52,3 +60,21 @@ Return values:
 certificate contents of the structure.
 */
 extern "C" int32_t GetPkcs7Certificates(PKCS7* p7, X509Stack** certs);
+
+/*
+Shims the PKCS7_add_certificate function and makes it easier to invoke from managed code.
+*/
+extern "C" int32_t Pkcs7AddCertificate(PKCS7* p7, X509* x509);
+
+/*
+Returns the number of bytes it will take to convert
+the PKCS7 to a DER format.
+*/
+extern "C" int32_t GetPkcs7DerSize(PKCS7* p7);
+
+/*
+Shims the i2d_PKCS7 method.
+
+Returns the number of bytes written to buf.
+*/
+extern "C" int32_t EncodePkcs7(PKCS7* p7, uint8_t* buf);
