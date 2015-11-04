@@ -145,7 +145,6 @@ typedef struct {
 	gboolean *unreachable;
 	gboolean llvm_only;
 	gboolean has_got_access;
-	int *pindexes;
 	int this_arg_pindex, rgctx_arg_pindex;
 	LLVMValueRef imt_rgctx_loc;
 	GHashTable *llvm_types;
@@ -1215,7 +1214,6 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	LLVMTypeRef *param_types = NULL;
 	LLVMTypeRef res;
 	int i, j, pindex, vret_arg_pindex = 0;
-	int *pindexes;
 	gboolean vretaddr = FALSE;
 	MonoType *rtype;
 
@@ -1278,7 +1276,6 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		break;
 	}
 
-	pindexes = g_new0 (int, sig->param_count);
 	param_types = g_new0 (LLVMTypeRef, (sig->param_count * 8) + 3);
 	pindex = 0;
 	if (cinfo->ret.storage == LLVMArgVtypeByRef) {
@@ -1337,7 +1334,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 
 		if (vretaddr && vret_arg_pindex == pindex)
 			param_types [pindex ++] = IntPtrType ();
-		pindexes [i] = pindex;
+		ainfo->pindex = pindex;
 
 		switch (ainfo->storage) {
 		case LLVMArgVtypeInReg:
@@ -1399,8 +1396,6 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 
 	res = LLVMFunctionType (ret_type, param_types, pindex, FALSE);
 	g_free (param_types);
-
-	cinfo->pindexes = pindexes;
 
 	return res;
 
@@ -2732,6 +2727,8 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		int reg = cfg->args [i + sig->hasthis]->dreg;
 		char *name;
 
+		pindex = ainfo->pindex;
+
 		switch (ainfo->storage) {
 		case LLVMArgVtypeInReg:
 		case LLVMArgAsFpArgs: {
@@ -2740,7 +2737,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 			/* The argument is received as a set of int/fp arguments, store them into the real argument */
 			memset (args, 0, sizeof (args));
-			pindex = ctx->pindexes [i];
 			if (ainfo->storage == LLVMArgVtypeInReg) {
 				args [0] = LLVMGetParam (ctx->lmethod, pindex);
 				if (ainfo->pair_storage [1] != LLVMArgNone)
@@ -2748,7 +2744,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			} else {
 				g_assert (ainfo->nslots <= 8);
 				for (j = 0; j < ainfo->nslots; ++j)
-					args [j] = LLVMGetParam (ctx->lmethod, ctx->pindexes [i] + j);
+					args [j] = LLVMGetParam (ctx->lmethod, pindex + j);
 			}
 			ctx->addresses [reg] = build_alloca (ctx, sig->params [i]);
 
@@ -2761,7 +2757,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			break;
 		}
 		case LLVMArgVtypeByVal: {
-			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, ctx->pindexes [i]);
+			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
 
 			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (sig->params [i]))) {
 				/* Treat these as normal values */
@@ -2771,7 +2767,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		}
 		case LLVMArgVtypeByRef: {
 			/* The argument is passed by ref */
-			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, ctx->pindexes [i]);
+			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
 			break;
 		}
 		case LLVMArgScalarByRef: {
@@ -2779,12 +2775,12 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 				name = g_strdup_printf ("arg_%s", names [i]);
 			else
 				name = g_strdup_printf ("arg_%d", i);
-			ctx->values [reg] = LLVMBuildLoad (builder, LLVMGetParam (ctx->lmethod, ctx->pindexes [i]), name);
+			ctx->values [reg] = LLVMBuildLoad (builder, LLVMGetParam (ctx->lmethod, pindex), name);
 			g_free (name);
 			break;
 		}
 		case LLVMArgAsIArgs: {
-			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, ctx->pindexes [i]);
+			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
 
 			ctx->addresses [reg] = build_alloca (ctx, sig->params [i]);
 
@@ -3111,14 +3107,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		int reg, pindex;
 		LLVMArgInfo *ainfo = &call->cinfo->args [i];
 
-		if (sig->hasthis) {
-			if (i == 0)
-				pindex = cinfo->this_arg_pindex;
-			else
-				pindex = cinfo->pindexes [i - 1];
-		} else {
-			pindex = cinfo->pindexes [i];
-		}
+		pindex = ainfo->pindex;
 
 		regpair = (guint32)(gssize)(l->data);
 		reg = regpair & 0xffffff;
@@ -3196,9 +3185,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	for (i = 0; i < sig->param_count; ++i) {
 		LLVMArgInfo *ainfo = &call->cinfo->args [i + sig->hasthis];
 
-		if (ainfo && ainfo->storage == LLVMArgVtypeByVal) {
-			LLVMAddInstrAttribute (lcall, 1 + cinfo->pindexes [i], LLVMByValAttribute);
-		}
+		if (ainfo && ainfo->storage == LLVMArgVtypeByVal)
+			LLVMAddInstrAttribute (lcall, 1 + ainfo->pindex, LLVMByValAttribute);
 	}
 
 	/*
@@ -3252,8 +3240,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 	*builder_ref = ctx->builder;
 
-	g_free (cinfo->pindexes);
-	
 	return;
  FAILURE:
 	return;
@@ -6126,12 +6112,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	method_type = sig_to_llvm_sig_full (ctx, sig, linfo);
 	CHECK_FAILURE (ctx);
 
-	/* 
-	 * This maps parameter indexes in the original signature to the indexes in
-	 * the LLVM signature.
-	 */
-	ctx->pindexes = linfo->pindexes;
-
 	method = LLVMAddFunction (lmodule, method_name, method_type);
 	ctx->lmethod = method;
 
@@ -6207,7 +6187,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		LLVMArgInfo *ainfo = &linfo->args [i + sig->hasthis];
 		char *name;
 
-		values [cfg->args [i + sig->hasthis]->dreg] = LLVMGetParam (method, linfo->pindexes [i]);
+		values [cfg->args [i + sig->hasthis]->dreg] = LLVMGetParam (method, ainfo->pindex);
 		if (ainfo->storage == LLVMArgScalarByRef) {
 			if (names [i] && names [i][0] != '\0')
 				name = g_strdup_printf ("p_arg_%s", names [i]);
@@ -6222,7 +6202,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		LLVMSetValueName (values [cfg->args [i + sig->hasthis]->dreg], name);
 		g_free (name);
 		if (ainfo->storage == LLVMArgVtypeByVal)
-			LLVMAddAttribute (LLVMGetParam (method, linfo->pindexes [i]), LLVMByValAttribute);
+			LLVMAddAttribute (LLVMGetParam (method, ainfo->pindex), LLVMByValAttribute);
 
 		if (ainfo->storage == LLVMArgVtypeByRef) {
 			/* For OP_LDADDR */
@@ -6573,7 +6553,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	g_free (ctx->addresses);
 	g_free (ctx->vreg_types);
 	g_free (ctx->vreg_cli_types);
-	g_free (ctx->pindexes);
 	g_free (ctx->is_dead);
 	g_free (ctx->unreachable);
 	g_ptr_array_free (phi_values, TRUE);
