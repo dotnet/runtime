@@ -759,7 +759,8 @@ mono_metadata_parse_generic_inst            (MonoImage             *image,
 					     MonoGenericContainer  *container,
 					     int                    count,
 					     const char            *ptr,
-					     const char           **rptr);
+					     const char           **rptr,
+						 MonoError *error);
 
 MonoGenericInst *
 mono_metadata_get_generic_inst              (int 		    type_argc,

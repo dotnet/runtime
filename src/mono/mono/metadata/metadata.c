@@ -36,7 +36,7 @@ typedef struct {
 } MonoInflatedMethodSignature;
 
 static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container, gboolean transient,
-					 const char *ptr, const char **rptr);
+					 const char *ptr, const char **rptr, MonoError *error);
 
 static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
 static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only);
@@ -1322,16 +1322,17 @@ mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *p
  */
 static MonoArrayType *
 mono_metadata_parse_array_internal (MonoImage *m, MonoGenericContainer *container,
-									gboolean transient, const char *ptr, const char **rptr)
+									gboolean transient, const char *ptr, const char **rptr, MonoError *error)
 {
 	int i;
 	MonoArrayType *array;
 	MonoType *etype;
 	
-	array = transient ? g_malloc0 (sizeof (MonoArrayType)) : mono_image_alloc0 (m, sizeof (MonoArrayType));
-	etype = mono_metadata_parse_type_full (m, container, 0, ptr, &ptr);
+	etype = mono_metadata_parse_type_checked (m, container, 0, FALSE, ptr, &ptr, error); //FIXME this doesn't respect @transient
 	if (!etype)
 		return NULL;
+
+	array = transient ? g_malloc0 (sizeof (MonoArrayType)) : mono_image_alloc0 (m, sizeof (MonoArrayType));
 	array->eklass = mono_class_from_mono_type (etype);
 	array->rank = mono_metadata_decode_value (ptr, &ptr);
 
@@ -1356,7 +1357,13 @@ MonoArrayType *
 mono_metadata_parse_array_full (MonoImage *m, MonoGenericContainer *container,
 								const char *ptr, const char **rptr)
 {
-	return mono_metadata_parse_array_internal (m, container, FALSE, ptr, rptr);
+	MonoError error;
+	MonoArrayType *ret = mono_metadata_parse_array_internal (m, container, FALSE, ptr, rptr, &error);
+	if (!ret) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+	}
+	return ret;
 }
 
 MonoArrayType *
@@ -1598,6 +1605,7 @@ static MonoType*
 mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container,
 								   short opt_attrs, gboolean transient, const char *ptr, const char **rptr)
 {
+	MonoError error;
 	MonoType *type, *cached;
 	MonoType stype;
 	gboolean byref = FALSE;
@@ -1677,7 +1685,9 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	type->byref = byref;
 	type->pinned = pinned ? 1 : 0;
 
-	if (!do_mono_metadata_parse_type (type, m, container, transient, ptr, &ptr)) {
+	if (!do_mono_metadata_parse_type (type, m, container, transient, ptr, &ptr, &error)) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 		return NULL;
 	}
 
@@ -3096,16 +3106,17 @@ cleanup:
 
 MonoGenericInst *
 mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *container,
-				  int count, const char *ptr, const char **rptr)
+				  int count, const char *ptr, const char **rptr, MonoError *error)
 {
 	MonoType **type_argv;
 	MonoGenericInst *ginst;
 	int i;
 
+	mono_error_init (error);
 	type_argv = g_new0 (MonoType*, count);
 
 	for (i = 0; i < count; i++) {
-		MonoType *t = mono_metadata_parse_type_full (m, container, 0, ptr, &ptr);
+		MonoType *t = mono_metadata_parse_type_checked (m, container, 0, FALSE, ptr, &ptr, error);
 		if (!t) {
 			g_free (type_argv);
 			return NULL;
@@ -3125,23 +3136,28 @@ mono_metadata_parse_generic_inst (MonoImage *m, MonoGenericContainer *container,
 
 static gboolean
 do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericContainer *container,
-				      const char *ptr, const char **rptr)
+				      const char *ptr, const char **rptr, MonoError *error)
 {
 	MonoGenericInst *inst;
 	MonoClass *gklass;
 	MonoType *gtype;
 	int count;
 
-	gtype = mono_metadata_parse_type (m, MONO_PARSE_TYPE, 0, ptr, &ptr);
+	mono_error_init (error);
+
+	// XXX how about transient?
+	gtype = mono_metadata_parse_type_checked (m, NULL, 0, FALSE, ptr, &ptr, error);
 	if (gtype == NULL)
 		return FALSE;
 
 	gklass = mono_class_from_mono_type (gtype);
-	if (!gklass->generic_container)
+	if (!gklass->generic_container) {
+		mono_error_set_bad_image (error, m, "Generic instance with non-generic definition");
 		return FALSE;
+	}
 
 	count = mono_metadata_decode_value (ptr, &ptr);
-	inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr);
+	inst = mono_metadata_parse_generic_inst (m, container, count, ptr, &ptr, error);
 	if (inst == NULL)
 		return FALSE;
 
@@ -3188,11 +3204,13 @@ select_container (MonoGenericContainer *gc, MonoTypeEnum type)
  */
 static MonoGenericParam *
 mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_container,
-				   MonoTypeEnum type, const char *ptr, const char **rptr)
+				   MonoTypeEnum type, const char *ptr, const char **rptr, MonoError *error)
 {
 	int index = mono_metadata_decode_value (ptr, &ptr);
 	if (rptr)
 		*rptr = ptr;
+
+	mono_error_init (error);
 
 	generic_container = select_container (generic_container, type);
 	if (!generic_container) {
@@ -3206,9 +3224,14 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 		return param;
 	}
 
-	if (index >= generic_container->type_argc)
+	if (index >= generic_container->type_argc) {
+		mono_error_set_bad_image (error, m, "Invalid generic %s parameter index %d, max index is %d",
+			generic_container->is_method ? "method" : "type",
+			index, generic_container->type_argc);
 		return NULL;
+	}
 
+	//This can't return NULL
 	return mono_generic_container_get_param (generic_container, index);
 }
 
@@ -3296,6 +3319,25 @@ compare_type_literals (MonoImage *image, int class_type, int type_type, MonoErro
 	}
 }
 
+static gboolean
+verify_var_type_and_container (MonoImage *image, int var_type, MonoGenericContainer *container, MonoError *error)
+{
+	mono_error_init (error);
+	if (var_type == MONO_TYPE_MVAR) {
+		if (!container->is_method) { //MVAR and a method container
+			mono_error_set_bad_image (error, image, "MVAR parsed in a context without a method container");
+			return FALSE;
+		}
+	} else {
+		if (!(!container->is_method || //VAR and class container
+			(container->is_method && container->parent))) { //VAR and method container with parent
+			mono_error_set_bad_image (error, image, "VAR parsed in a context without a class container");
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 /* 
  * do_mono_metadata_parse_type:
  * @type: MonoType to be filled in with the return value
@@ -3319,9 +3361,10 @@ compare_type_literals (MonoImage *image, int class_type, int type_type, MonoErro
  */
 static gboolean
 do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container,
-							 gboolean transient, const char *ptr, const char **rptr)
+							 gboolean transient, const char *ptr, const char **rptr, MonoError *error)
 {
-	gboolean ok = TRUE;
+	mono_error_init (error);
+
 	type->type = mono_metadata_decode_value (ptr, &ptr);
 	
 	switch (type->type){
@@ -3348,80 +3391,68 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 	case MONO_TYPE_CLASS: {
 		guint32 token;
 		MonoClass *class;
-		MonoError error;
 		token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
-		class = mono_class_get_checked (m, token, &error);
+		class = mono_class_get_checked (m, token, error);
 		type->data.klass = class;
-		if (!class) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+		if (!class)
 			return FALSE;
-		}
 
-		if (!compare_type_literals (m, class->byval_arg.type, type->type, &error)) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+		if (!compare_type_literals (m, class->byval_arg.type, type->type, error))
 			return FALSE;
-		}
 
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
-		MonoError error;
-		MonoType *etype = mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, &error);
-		if (!etype) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+		MonoType *etype = mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, error);
+		if (!etype)
 			return FALSE;
-		}
+
 		type->data.klass = mono_class_from_mono_type (etype);
-		g_assert (type->data.klass); //This was previously an assert, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
+		g_assert (type->data.klass); //This was previously a check for NULL, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
 		break;
 	}
 	case MONO_TYPE_PTR: {
-		MonoError error;
-		type->data.type = mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, &error);
-		if (!type->data.type) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+		type->data.type = mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, error);
+		if (!type->data.type)
 			return FALSE;
-		}
 		break;
 	}
 	case MONO_TYPE_FNPTR: {
-		MonoError error;
-		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, &error);
-		if (!type->data.method) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, error);
+		if (!type->data.method)
 			return FALSE;
-		}
 		break;
 	}
-	case MONO_TYPE_ARRAY:
-		type->data.array = mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr);
+	case MONO_TYPE_ARRAY: {
+		type->data.array = mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr, error);
 		if (!type->data.array)
 			return FALSE;
 		break;
+	}
 	case MONO_TYPE_MVAR:
-		if (container && !container->is_method)
+	case MONO_TYPE_VAR: {
+		if (container && !verify_var_type_and_container (m, type->type, container, error))
 			return FALSE;
-	case MONO_TYPE_VAR:
-		type->data.generic_param = mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr);
+
+		type->data.generic_param = mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr, error);
 		if (!type->data.generic_param)
 			return FALSE;
+
 		break;
-	case MONO_TYPE_GENERICINST:
-		ok = do_mono_metadata_parse_generic_class (type, m, container, ptr, &ptr);
+	}
+	case MONO_TYPE_GENERICINST: {
+		if (!do_mono_metadata_parse_generic_class (type, m, container, ptr, &ptr, error))
+			return FALSE;
 		break;
+	}
 	default:
-		g_warning ("type 0x%02x not handled in do_mono_metadata_parse_type on image %s", type->type, m->name);
+		mono_error_set_bad_image (error, m, "type 0x%02x not handled in do_mono_metadata_parse_type on image %s", type->type, m->name);
 		return FALSE;
 	}
 	
 	if (rptr)
 		*rptr = ptr;
-	return ok;
+	return TRUE;
 }
 
 /*
