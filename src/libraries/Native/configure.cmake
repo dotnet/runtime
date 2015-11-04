@@ -270,19 +270,19 @@ check_function_exists(
     inotify_rm_watch
     HAVE_INOTIFY_RM_WATCH)
 
-check_cxx_source_compiles(
-    "
-    #include <curl/multi.h>
-    int main() { int i = CURLM_ADDED_ALREADY; }
-    "
-    HAVE_CURLM_ADDED_ALREADY)
-
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
 	set (HAVE_INOTIFY 1)
 elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
 	message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
+
+check_cxx_source_compiles(
+    "
+    #include <curl/multi.h>
+    int main() { int i = CURLM_ADDED_ALREADY; }
+    "
+    HAVE_CURLM_ADDED_ALREADY)
 
 set (CMAKE_REQUIRED_LIBRARIES)
 
