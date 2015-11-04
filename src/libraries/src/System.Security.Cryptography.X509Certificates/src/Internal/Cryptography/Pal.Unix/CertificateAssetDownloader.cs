@@ -75,6 +75,7 @@ namespace Internal.Cryptography.Pal
             using (Interop.Http.SafeCurlHandle curlHandle = Interop.Http.EasyCreate())
             {
                 GCHandle gcHandle = GCHandle.Alloc(dataPieces);
+                Interop.Http.SafeCallbackHandle callbackHandle = new Interop.Http.SafeCallbackHandle();
 
                 try
                 {
@@ -82,29 +83,30 @@ namespace Internal.Cryptography.Pal
                     Interop.Http.EasySetOptionLong(curlHandle, Interop.Http.CURLoption.CURLOPT_FOLLOWLOCATION, 1L);
 
                     IntPtr dataHandlePtr = GCHandle.ToIntPtr(gcHandle);
-                    using (Interop.Http.RegisterReadWriteCallback(
+                    Interop.Http.RegisterReadWriteCallback(
                         curlHandle,
                         Interop.Http.ReadWriteFunction.Write,
                         s_writeCallback,
-                        dataHandlePtr))
+                        dataHandlePtr,
+                        ref callbackHandle);
+
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    Interop.Http.CURLcode res = Interop.Http.EasyPerform(curlHandle);
+                    stopwatch.Stop();
+
+                    // TimeSpan.Zero isn't a worrisome value on the subtraction, it only
+                    // means "no limit" on the original input.
+                    remainingDownloadTime -= stopwatch.Elapsed;
+
+                    if (res != Interop.Http.CURLcode.CURLE_OK)
                     {
-                        Stopwatch stopwatch = Stopwatch.StartNew();
-                        Interop.Http.CURLcode res = Interop.Http.EasyPerform(curlHandle);
-                        stopwatch.Stop();
-
-                        // TimeSpan.Zero isn't a worrisome value on the subtraction, it only
-                        // means "no limit" on the original input.
-                        remainingDownloadTime -= stopwatch.Elapsed;
-
-                        if (res != Interop.Http.CURLcode.CURLE_OK)
-                        {
-                            return null;
-                        }
+                        return null;
                     }
                 }
                 finally
                 {
                     gcHandle.Free();
+                    callbackHandle.Dispose();
                 }
             }
 
