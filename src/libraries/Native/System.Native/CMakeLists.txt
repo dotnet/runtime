@@ -1,6 +1,7 @@
 project(System.Native)
 
 set(NATIVE_SOURCES
+    pal_console.cpp
     pal_errno.cpp
     pal_interfaceaddresses.cpp
     pal_io.cpp
