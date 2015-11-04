@@ -1801,7 +1801,8 @@ init_amodule_got (MonoAotModule *amodule)
 			if (mono_defaults.corlib) {
 				MonoAotModule *mscorlib_amodule = mono_defaults.corlib->aot_module;
 
-				amodule->shared_got [i] = mscorlib_amodule->got;
+				if (mscorlib_amodule)
+					amodule->shared_got [i] = mscorlib_amodule->got;
 			} else {
 				amodule->shared_got [i] = amodule->got;
 			}
