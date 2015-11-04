@@ -7,7 +7,7 @@
 
 /*
  * Window Size of the terminal
-*/
+ */
 struct WinSize
 {
     uint16_t Row;
@@ -32,8 +32,40 @@ extern "C" int32_t GetWindowSize(WinSize* windowsSize);
 extern "C" int32_t IsATty(int filedes);
 
 /**
-* Reads the number of bytes specified into the provided buffer from stdin.
-* in a non-echo and non-canonical mode.
-* Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
-*/
+ * Reads the number of bytes specified into the provided buffer from stdin.
+ * in a non-echo and non-canonical mode.
+ * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
+ */
 extern "C" int32_t ReadStdinUnbuffered(void* buffer, int32_t bufferSize);
+
+enum CtrlCode : int32_t
+{
+    Interrupt = 0,
+    Break = 1
+};
+
+typedef int32_t(*CtrlCallback)(CtrlCode signalCode);
+
+/**
+ * Hooks up the specified callback for notifications when SIGINT or SIGQUIT is received.
+ * 
+ * Not thread safe.  Caller must provide its owns synchronization to ensure RegisterForCtrl
+ * is not called concurrently with itself or with UnregisterForCtrl.
+ *
+ * Should only be called when a callback is not currently registered.
+ *
+ * Returns 1 on success, 0 on failure.
+ */
+extern "C" int32_t RegisterForCtrl(CtrlCallback callback);
+
+/**
+ * Unregisters the previously registered ctrlCCallback.
+ *
+ * Not thread safe.  Caller must provide its owns synchronization to ensure UnregisterForCtrl
+ * is not called concurrently with itself or with RegisterForCtrl.
+ *
+ * Should only be called when a callback is currently registered. The pointer
+ * previously registered must remain valid until all ctrl handling activity
+ * has quiesced.
+ */
+extern "C" void UnregisterForCtrl();
