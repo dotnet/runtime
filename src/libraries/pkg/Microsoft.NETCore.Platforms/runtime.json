@@ -240,7 +240,7 @@
         "linuxmint.17.3": {
             "#import": [ "linuxmint.17.2" ]
         },
-        "linuxmint.17.2-x64": {
+        "linuxmint.17.3-x64": {
             "#import": [ "linuxmint.17.3", "linuxmint.17.2-x64" ]
         }
     }
