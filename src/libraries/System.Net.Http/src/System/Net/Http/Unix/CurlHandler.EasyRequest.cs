@@ -44,11 +44,7 @@ namespace System.Net.Http
             internal SendTransferState _sendTransferState;
             internal bool _isRedirect = false;
 
-            private SafeCallbackHandle _headerCallbackHandle;
-            private SafeCallbackHandle _sendCallbackHandle;
-            private SafeCallbackHandle _receiveBodyCallback;
-            private SafeCallbackHandle _seekCallbackHandle;
-            private SafeCallbackHandle _sslCtxCallbackHandle;
+            private SafeCallbackHandle _callbackHandle;
 
             public EasyRequest(CurlHandler handler, HttpRequestMessage requestMessage, CancellationToken cancellationToken) :
                 base(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -154,20 +150,8 @@ namespace System.Net.Http
                 if (_requestHeaders != null)
                     _requestHeaders.Dispose();
 
-                if (_headerCallbackHandle != null)
-                    _headerCallbackHandle.Dispose();
-
-                if (_sendCallbackHandle != null)
-                    _sendCallbackHandle.Dispose();
-
-                if (_receiveBodyCallback != null)
-                    _receiveBodyCallback.Dispose();
-
-                if (_seekCallbackHandle != null)
-                    _seekCallbackHandle.Dispose();
-
-                if (_sslCtxCallbackHandle != null)
-                    _sslCtxCallbackHandle.Dispose();
+                if (_callbackHandle != null)
+                    _callbackHandle.Dispose();
             }
 
             private void SetUrl()
@@ -440,40 +424,56 @@ namespace System.Net.Http
                 SeekCallback seekCallback,
                 ReadWriteCallback receiveBodyCallback)
             {
+                if (_callbackHandle == null)
+                {
+                    _callbackHandle = new SafeCallbackHandle();
+                }
+
                 // Add callback for processing headers
-                _headerCallbackHandle = Interop.Http.RegisterReadWriteCallback(
+                Interop.Http.RegisterReadWriteCallback(
                     _easyHandle,
                     ReadWriteFunction.Header,
                     receiveHeadersCallback,
-                    easyGCHandle);
+                    easyGCHandle,
+                    ref _callbackHandle);
 
                 // If we're sending data as part of the request, add callbacks for sending request data
                 if (_requestMessage.Content != null)
                 {
-                    _sendCallbackHandle = Interop.Http.RegisterReadWriteCallback(
+                    Interop.Http.RegisterReadWriteCallback(
                         _easyHandle,
                         ReadWriteFunction.Read,
                         sendCallback,
-                        easyGCHandle);
+                        easyGCHandle,
+                        ref _callbackHandle);
 
-                    _seekCallbackHandle = Interop.Http.RegisterSeekCallback(_easyHandle, seekCallback, easyGCHandle);
+                    Interop.Http.RegisterSeekCallback(
+                        _easyHandle,
+                        seekCallback,
+                        easyGCHandle,
+                        ref _callbackHandle);
                 }
 
                 // If we're expecting any data in response, add a callback for receiving body data
                 if (_requestMessage.Method != HttpMethod.Head)
                 {
-                    _receiveBodyCallback = Interop.Http.RegisterReadWriteCallback(
+                    Interop.Http.RegisterReadWriteCallback(
                         _easyHandle,
                         ReadWriteFunction.Write,
                         receiveBodyCallback,
-                        easyGCHandle);
+                        easyGCHandle,
+                        ref _callbackHandle);
                 }
             }
 
             internal CURLcode SetSslCtxCallback(SslCtxCallback callback)
             {
-                CURLcode result;
-                _sslCtxCallbackHandle = Interop.Http.RegisterSslCtxCallback(_easyHandle, callback, out result);
+                if (_callbackHandle == null)
+                {
+                    _callbackHandle = new SafeCallbackHandle();
+                }
+
+                CURLcode result = Interop.Http.RegisterSslCtxCallback(_easyHandle, callback, ref _callbackHandle);
 
                 return result;
             }

@@ -48,17 +48,25 @@ internal static partial class Interop
         public delegate CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern SafeCallbackHandle RegisterSeekCallback(SafeCurlHandle curl, SeekCallback callback, IntPtr userPointer);
+        public static extern void RegisterSeekCallback(
+            SafeCurlHandle curl,
+            SeekCallback callback,
+            IntPtr userPointer,
+            ref SafeCallbackHandle callbackHandle);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern SafeCallbackHandle RegisterReadWriteCallback(
+        public static extern void RegisterReadWriteCallback(
             SafeCurlHandle curl,
             ReadWriteFunction functionType,
             ReadWriteCallback callback,
-            IntPtr userPointer);
+            IntPtr userPointer,
+            ref SafeCallbackHandle callbackHandle);
 
         [DllImport(Libraries.HttpNative)]
-        public static extern SafeCallbackHandle RegisterSslCtxCallback(SafeCurlHandle curl, SslCtxCallback callback, out CURLcode result);
+        public static extern CURLcode RegisterSslCtxCallback(
+            SafeCurlHandle curl,
+            SslCtxCallback callback,
+            ref SafeCallbackHandle callbackHandle);
 
         [DllImport(Libraries.HttpNative)]
         private static extern void FreeCallbackHandle(IntPtr handle);

@@ -150,10 +150,6 @@ Returns CURLE_OK (0) if everything was ok, non-zero means an error occurred.
 */
 extern "C" int32_t EasyUnpause(CURL* handle);
 
-// A "base type" for the below function pointers, so they can be held generically
-// by the CallbackHandle type.
-typedef void(*FunctionPointer)();
-
 // the function pointer definition for the callback used in RegisterSeekCallback
 typedef int32_t(*SeekCallback)(void* userPointer, int64_t offset, int32_t origin);
 
@@ -167,30 +163,20 @@ typedef int32_t(*SslCtxCallback)(CURL* curl, void* sslCtx);
 The object that is returned from RegisterXXXCallback functions.
 This holds the data necessary to know what managed callback to invoke and with what args.
 */
-struct CallbackHandle
-{
-    FunctionPointer callback;
-    void* userPointer;
-};
+struct CallbackHandle;
 
 /*
 Registers a callback in libcurl for seeking in an input stream.
 
 This function gets called by libcurl to seek to a certain position in the input stream
 and can be used to fast forward a file in a resumed upload.
-
-Returns a CallbackHandle that needs to be freed by calling FreeCallbackHandle when
-the CURL handle is no longer used.
 */
-extern "C" CallbackHandle* RegisterSeekCallback(CURL* handle, SeekCallback callback, void* userPointer);
+extern "C" void RegisterSeekCallback(CURL* curl, SeekCallback callback, void* userPointer, CallbackHandle** callbackHandle);
 
 /*
 Registers a callback in libcurl for reading/writing input/output streams.
-
-Returns a CallbackHandle that needs to be freed by calling FreeCallbackHandle when
-the CURL handle is no longer used.
 */
-extern "C" CallbackHandle* RegisterReadWriteCallback(CURL* handle, ReadWriteFunction functionType, ReadWriteCallback callback, void* userPointer);
+extern "C" void RegisterReadWriteCallback(CURL* curl, ReadWriteFunction functionType, ReadWriteCallback callback, void* userPointer, CallbackHandle** callbackHandle);
 
 /*
 Registers a callback in libcurl for initializing SSL connections.
@@ -199,10 +185,9 @@ This callback function gets called by libcurl just before the initialization of 
 after having processed all other SSL related options to give a last chance to an application
 to modify the behaviour of the SSL initialization.
 
-Returns a CallbackHandle that needs to be freed by calling FreeCallbackHandle when
-the CURL handle is no longer used.
+Returns a CURLcode that describes whether registering the callback was successful or not.
 */
-extern "C" CallbackHandle* RegisterSslCtxCallback(CURL* handle, SslCtxCallback callback, int32_t* result);
+extern "C" int32_t RegisterSslCtxCallback(CURL* curl, SslCtxCallback callback, CallbackHandle** callbackHandle);
 
 /*
 Frees the CallbackHandle created by a RegisterXXXCallback function.

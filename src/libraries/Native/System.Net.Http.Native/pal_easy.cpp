@@ -118,82 +118,117 @@ extern "C" int32_t EasyUnpause(CURL* handle)
     return curl_easy_pause(handle, CURLPAUSE_CONT);
 }
 
+struct CallbackHandle
+{
+    SeekCallback seekCallback;
+    void* seekUserPointer;
+
+    ReadWriteCallback writeCallback;
+    void* writeUserPointer;
+
+    ReadWriteCallback readCallback;
+    void* readUserPointer;
+
+    ReadWriteCallback headerCallback;
+    void* headerUserPointer;
+    
+    SslCtxCallback sslCtxCallback;
+};
+
+static inline void EnsureCallbackHandle(CallbackHandle** callbackHandle)
+{
+    assert(callbackHandle != nullptr);
+
+    if (*callbackHandle == nullptr)
+    {
+        *callbackHandle = new CallbackHandle();
+    }
+}
+
 static int seek_callback(void* userp, curl_off_t offset, int origin)
 {
-    CallbackHandle* callbackHandle = static_cast<CallbackHandle*>(userp);
-    SeekCallback callback = reinterpret_cast<SeekCallback>(callbackHandle->callback);
-
-    return callback(callbackHandle->userPointer, offset, origin);
+    CallbackHandle* handle = static_cast<CallbackHandle*>(userp);
+    return handle->seekCallback(handle->seekUserPointer, offset, origin);
 }
 
-extern "C" CallbackHandle* RegisterSeekCallback(CURL* handle, SeekCallback callback, void* userPointer)
+extern "C" void RegisterSeekCallback(CURL* curl, SeekCallback callback, void* userPointer, CallbackHandle** callbackHandle)
 {
-    CallbackHandle* callbackHandle = new CallbackHandle();
-    callbackHandle->callback = reinterpret_cast<FunctionPointer>(callback);
-    callbackHandle->userPointer = userPointer;
+    EnsureCallbackHandle(callbackHandle);
 
-    curl_easy_setopt(handle, CURLOPT_SEEKDATA, callbackHandle);
-    curl_easy_setopt(handle, CURLOPT_SEEKFUNCTION, &seek_callback);
+    CallbackHandle* handle = *callbackHandle;
+    handle->seekCallback = callback;
+    handle->seekUserPointer = userPointer;
 
-    return callbackHandle;
+    curl_easy_setopt(curl, CURLOPT_SEEKDATA, handle);
+    curl_easy_setopt(curl, CURLOPT_SEEKFUNCTION, &seek_callback);
 }
 
-static size_t readwrite_callback(char* buffer, size_t size, size_t nitems, void* instream)
+static size_t write_callback(char* buffer, size_t size, size_t nitems, void* instream)
 {
-    CallbackHandle* callbackHandle = static_cast<CallbackHandle*>(instream);
-    ReadWriteCallback callback = reinterpret_cast<ReadWriteCallback>(callbackHandle->callback);
-
-    return callback(reinterpret_cast<uint8_t*>(buffer), size, nitems, callbackHandle->userPointer);
+    CallbackHandle* handle = static_cast<CallbackHandle*>(instream);
+    return handle->writeCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->writeUserPointer);
 }
 
-extern "C" CallbackHandle* RegisterReadWriteCallback(CURL* handle, ReadWriteFunction functionType, ReadWriteCallback callback, void* userPointer)
+static size_t read_callback(char* buffer, size_t size, size_t nitems, void* instream)
 {
-    CallbackHandle* callbackHandle = new CallbackHandle();
-    callbackHandle->callback = reinterpret_cast<FunctionPointer>(callback);
-    callbackHandle->userPointer = userPointer;
+    CallbackHandle* handle = static_cast<CallbackHandle*>(instream);
+    return handle->readCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->readUserPointer);
+}
+
+static size_t header_callback(char* buffer, size_t size, size_t nitems, void* instream)
+{
+    CallbackHandle* handle = static_cast<CallbackHandle*>(instream);
+    return handle->headerCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->headerUserPointer);
+}
+
+extern "C" void RegisterReadWriteCallback(CURL* curl, ReadWriteFunction functionType, ReadWriteCallback callback, void* userPointer, CallbackHandle** callbackHandle)
+{
+    EnsureCallbackHandle(callbackHandle);
+
+    CallbackHandle* handle = *callbackHandle;
 
     switch (functionType)
     {
         case ReadWriteFunction::Write:
-            curl_easy_setopt(handle, CURLOPT_WRITEDATA, callbackHandle);
-            curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, &readwrite_callback);
+            handle->writeCallback = callback;
+            handle->writeUserPointer = userPointer;
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, handle);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &write_callback);
             break;
 
         case ReadWriteFunction::Read:
-            curl_easy_setopt(handle, CURLOPT_READDATA, callbackHandle);
-            curl_easy_setopt(handle, CURLOPT_READFUNCTION, &readwrite_callback);
+            handle->readCallback = callback;
+            handle->readUserPointer = userPointer;
+            curl_easy_setopt(curl, CURLOPT_READDATA, handle);
+            curl_easy_setopt(curl, CURLOPT_READFUNCTION, &read_callback);
             break;
 
         case ReadWriteFunction::Header:
-            curl_easy_setopt(handle, CURLOPT_HEADERDATA, callbackHandle);
-            curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, &readwrite_callback);
+            handle->headerCallback = callback;
+            handle->headerUserPointer = userPointer;
+            curl_easy_setopt(curl, CURLOPT_HEADERDATA, handle);
+            curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &header_callback);
             break;
     }
-
-    return callbackHandle;
 }
 
 static CURLcode ssl_ctx_callback(CURL* curl, void* sslCtx, void* userPointer)
 {
-    CallbackHandle* callbackHandle = static_cast<CallbackHandle*>(userPointer);
-    SslCtxCallback callback = reinterpret_cast<SslCtxCallback>(callbackHandle->callback);
+    CallbackHandle* handle = static_cast<CallbackHandle*>(userPointer);
 
-    int32_t result = callback(curl, sslCtx);
-
+    int32_t result = handle->sslCtxCallback(curl, sslCtx);
     return static_cast<CURLcode>(result);
 }
 
-extern "C" CallbackHandle* RegisterSslCtxCallback(CURL* handle, SslCtxCallback callback, int32_t* result)
+extern "C" int32_t RegisterSslCtxCallback(CURL* curl, SslCtxCallback callback, CallbackHandle** callbackHandle)
 {
-    assert(result != nullptr);
+    EnsureCallbackHandle(callbackHandle);
 
-    CallbackHandle* callbackHandle = new CallbackHandle();
-    callbackHandle->callback = reinterpret_cast<FunctionPointer>(callback);
+    CallbackHandle* handle = *callbackHandle;
+    handle->sslCtxCallback = callback;
 
-    curl_easy_setopt(handle, CURLOPT_SSL_CTX_DATA, callbackHandle);
-    *result = curl_easy_setopt(handle, CURLOPT_SSL_CTX_FUNCTION, &ssl_ctx_callback);
-
-    return callbackHandle;
+    curl_easy_setopt(curl, CURLOPT_SSL_CTX_DATA, handle);
+    return curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, &ssl_ctx_callback);
 }
 
 extern "C" void FreeCallbackHandle(CallbackHandle* callbackHandle)
