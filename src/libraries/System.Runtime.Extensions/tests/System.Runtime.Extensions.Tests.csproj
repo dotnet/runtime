@@ -50,6 +50,7 @@
     <Compile Include="System\Environment.SetEnvironmentVariable.cs" />
     <Compile Include="System\Environment.StackTrace.cs" />
     <Compile Include="System\Environment.TickCount.cs" />
+    <Compile Include="System\Environment.Exit.cs" />
     <Compile Include="System\Math.cs" />
     <Compile Include="System\Progress.cs" />
     <Compile Include="System\Random.cs" />
@@ -68,11 +69,18 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ref\System.Runtime.Extensions.csproj">
+      <Project>{da96367e-04d1-4057-997e-aed4a2773f0d}</Project>
+      <Name>System.Runtime.Extensions</Name>
+      <!-- Don't deploy reference assembly -->
+      <Private>false</Private>
+    </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.Extensions.CoreCLR.csproj">
+      <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
+      <Name>System.Runtime.Extensions.CoreCLR</Name>
+      <!-- Don't reference implementation assembly, but do deploy it. -->
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.CoreCLR.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -85,6 +93,14 @@
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Diagnostics.Process\src\System.Diagnostics.Process.csproj">
+      <Project>{63634289-90D7-4947-8BF3-DBBE98D76C85}</Project>
+      <Name>System.Diagnostics.Process</Name>
+    </ProjectReference>
+    <ProjectReference Include="EnvironmentExitConsoleApp\EnvironmentExitConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

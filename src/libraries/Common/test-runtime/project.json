@@ -1,9 +1,9 @@
 {
     "dependencies": {
-      "Microsoft.NETCore.Platforms": "1.0.1-beta-23419",
-      "Microsoft.NETCore.TestHost": "1.0.0-beta-23419",
-      "Microsoft.NETCore.Console": "1.0.0-beta-23419",
-      "System.IO.Compression": "4.1.0-beta-23419",
+      "Microsoft.NETCore.Platforms": "1.0.1-beta-23429",
+      "Microsoft.NETCore.TestHost": "1.0.0-beta-23429",
+      "Microsoft.NETCore.Console": "1.0.0-beta-23429",
+      "System.IO.Compression": "4.1.0-beta-23429",
 
       "coveralls.io": "1.4",
       "OpenCover": "4.6.166",
