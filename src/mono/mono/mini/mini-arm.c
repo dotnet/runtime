@@ -678,6 +678,7 @@ mono_arm_have_fast_tls (void)
 gboolean
 mono_arm_have_tls_get (void)
 {
+	return FALSE;
 #ifdef HAVE_FAST_TLS
 	return TRUE;
 #else
