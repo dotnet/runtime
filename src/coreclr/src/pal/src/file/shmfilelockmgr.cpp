@@ -245,7 +245,7 @@ GetLockControllerForFileExit:
     {
         if (NULL != pController)
         {
-            pController->ReleaseController(pThread);
+            pController->ReleaseController();
         }
 
         if (SHMNULL != shmFileLocks)
@@ -265,7 +265,6 @@ GetLockControllerForFileExit:
 
 PAL_ERROR
 CSharedMemoryFileLockMgr::GetFileShareModeForFile(
-   CPalThread *pThread,
    LPCSTR szFileName,
    DWORD* pdwShareMode)
 {
@@ -273,7 +272,6 @@ CSharedMemoryFileLockMgr::GetFileShareModeForFile(
     *pdwShareMode = SHARE_MODE_NOT_INITALIZED;
     SHMPTR shmFileLocks = SHMNULL;
     SHMFILELOCKS* fileLocks = NULL;
-
 
     SHMLock();
 
@@ -306,7 +304,6 @@ GetLockControllerForFileExit:
     SHMRelease();
 
     return palError;
-  
 }
 
 PAL_ERROR
@@ -427,9 +424,7 @@ CSharedMemoryFileLockController::ReleaseFileLock(
 }
 
 void
-CSharedMemoryFileLockController::ReleaseController(
-    CPalThread *pThread                 // IN, OPTIONAL
-    )
+CSharedMemoryFileLockController::ReleaseController()
 {
     if (SHMNULL != m_shmFileLocks)
     {
@@ -444,9 +439,7 @@ CSharedMemoryFileLockController::ReleaseController(
 }
 
 void
-CSharedMemoryFileTransactionLock::ReleaseLock(
-    CPalThread *pThread
-    )
+CSharedMemoryFileTransactionLock::ReleaseLock()
 {
     FILEUnlockFileRegion(
         m_shmFileLocks,
