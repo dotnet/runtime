@@ -15,11 +15,6 @@ namespace System.Net
 
         static StreamSizes()
         {
-            // TODO (Issue #3362) : Trailer size requirement is changing based on protocol
-            //       SSL3/TLS1.0 - 68, TLS1.1 - 37 and TLS1.2 - 24
-            //       Current usage is only to compute max input buffer size for
-            //       encryption and so the native code returns the max
-
             Interop.Ssl.GetStreamSizes(
                 out s_header,
                 out s_trailer,
