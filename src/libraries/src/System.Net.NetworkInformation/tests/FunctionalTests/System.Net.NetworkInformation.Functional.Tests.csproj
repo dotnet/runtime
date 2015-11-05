@@ -47,6 +47,7 @@
     <Compile Include="IPInterfacePropertiesTest_OSX.cs" />
     <Compile Include="IPInterfacePropertiesTest_Windows.cs" />
     <Compile Include="MiscParsingTests.cs" />
+    <Compile Include="MockMapTcpState.cs" />
     <Compile Include="NetworkChangeTest.cs" />
     <Compile Include="NetworkInterfaceBasicTest.cs" />
     <Compile Include="PhysicalAddressTest.cs" />
@@ -70,9 +71,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\RowConfigReader.cs">
       <Link>Common\System\IO\RowConfigReader.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\Interop.LinuxTcpState.cs">
-      <Link>Interop\Linux\Interop.LinuxTcpState.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- TODO: Remove after the packages are not using System.Private.Networking. -->

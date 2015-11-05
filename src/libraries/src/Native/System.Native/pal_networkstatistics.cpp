@@ -13,6 +13,7 @@
 #include "pal_utilities.h"
 #include "pal_networkstatistics.h"
 #include "pal_errno.h"
+#include "pal_tcpstate.h"
 
 #include <errno.h>
 #include <net/route.h>
@@ -306,35 +307,6 @@ extern "C" int32_t GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* i
 
     delete[] buffer;
     return 0;
-}
-
-TcpState MapTcpState(int tcpState)
-{
-    switch (tcpState)
-    {
-        case TCPS_CLOSED:
-            return Closed;
-        case TCPS_LISTEN:
-            return Listen;
-        case TCPS_SYN_SENT:
-            return SynSent;
-        case TCPS_SYN_RECEIVED:
-            return SynReceived;
-        case TCPS_ESTABLISHED:
-            return Established;
-        case TCPS_CLOSE_WAIT:
-            return CloseWait;
-        case TCPS_FIN_WAIT_1:
-            return FinWait1;
-        case TCPS_CLOSING:
-            return Closing;
-        case TCPS_FIN_WAIT_2:
-            return FinWait2;
-        case TCPS_TIME_WAIT:
-            return TimeWait;
-        default:
-            return Unknown;
-    }
 }
 
 extern "C" int32_t GetEstimatedUdpListenerCount()

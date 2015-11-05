@@ -10,6 +10,7 @@ set(NATIVE_SOURCES
     pal_networkstatistics.cpp
     pal_process.cpp
     pal_string.cpp
+    pal_tcpstate.cpp
     pal_time.cpp
     pal_uid.cpp
 )

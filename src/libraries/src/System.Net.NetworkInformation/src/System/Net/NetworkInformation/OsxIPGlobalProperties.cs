@@ -23,10 +23,9 @@ namespace System.Net.NetworkInformation
             int realCount = Interop.Sys.GetEstimatedTcpConnectionCount();
             int infoCount = realCount * 2;
             Interop.Sys.NativeTcpConnectionInformation* infos = stackalloc Interop.Sys.NativeTcpConnectionInformation[infoCount];
-            while (Interop.Sys.GetActiveTcpConnectionInfos(infos, &infoCount) == -1)
+            if (Interop.Sys.GetActiveTcpConnectionInfos(infos, &infoCount) == -1)
             {
-                Interop.Sys.NativeTcpConnectionInformation* newAlloc = stackalloc Interop.Sys.NativeTcpConnectionInformation[infoCount];
-                infos = newAlloc;
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
             TcpConnectionInformation[] connectionInformations = new TcpConnectionInformation[infoCount];
@@ -76,10 +75,9 @@ namespace System.Net.NetworkInformation
             int realCount = Interop.Sys.GetEstimatedUdpListenerCount();
             int infoCount = realCount * 2;
             Interop.Sys.IPEndPointInfo* infos = stackalloc Interop.Sys.IPEndPointInfo[infoCount];
-            while (Interop.Sys.GetActiveUdpListeners(infos, &infoCount) == -1)
+            if (Interop.Sys.GetActiveUdpListeners(infos, &infoCount) == -1)
             {
-                var newAlloc = stackalloc Interop.Sys.IPEndPointInfo[infoCount];
-                infos = newAlloc;
+                throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
             IPEndPoint[] endPoints = new IPEndPoint[infoCount];
