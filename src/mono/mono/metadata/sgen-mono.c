@@ -2911,7 +2911,11 @@ sgen_client_handle_gc_debug (const char *opt)
 	if (!strcmp (opt, "xdomain-checks")) {
 		sgen_mono_xdomain_checks = TRUE;
 	} else if (!strcmp (opt, "do-not-finalize")) {
-		do_not_finalize = TRUE;
+		mono_do_not_finalize = TRUE;
+	} else if (g_str_has_prefix (opt, "do-not-finalize=")) {
+		opt = strchr (opt, '=') + 1;
+		mono_do_not_finalize = TRUE;
+		mono_do_not_finalize_class_names = g_strsplit (opt, ",", 0);
 	} else if (!strcmp (opt, "log-finalizers")) {
 		log_finalizers = TRUE;
 	} else if (!strcmp (opt, "no-managed-allocator")) {
