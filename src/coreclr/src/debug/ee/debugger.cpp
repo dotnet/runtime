@@ -16566,6 +16566,7 @@ DebuggerHeap::DebuggerHeap()
 #ifdef USE_INTEROPSAFE_HEAP
     m_hHeap = NULL;
 #endif
+    m_fExecutable = FALSE;
 }
 
 
@@ -16615,6 +16616,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
 
     // Have knob catch if we don't want to lazy init the debugger.
     _ASSERTE(!g_DbgShouldntUseDebugger);
+    m_fExecutable = fExecutable;
 
 #ifdef USE_INTEROPSAFE_HEAP
     // If already inited, then we're done. 
@@ -16742,14 +16744,17 @@ void *DebuggerHeap::Alloc(DWORD size)
 #endif
 
 #ifdef FEATURE_PAL
-    // We don't have executable heap in PAL, but we still need to allocate 
-    // executable memory, that's why have change protection level for 
-    // each allocation. 
-    // UNIXTODO: We need to look how JIT solves this problem.
-    DWORD unusedFlags;
-    if (!VirtualProtect(ret, size, PAGE_EXECUTE_READWRITE, &unusedFlags))
+    if (m_fExecutable)
     {
-        _ASSERTE(!"VirtualProtect failed to make this memory executable");
+        // We don't have executable heap in PAL, but we still need to allocate 
+        // executable memory, that's why have change protection level for 
+        // each allocation. 
+        // UNIXTODO: We need to look how JIT solves this problem.
+        DWORD unusedFlags;
+        if (!VirtualProtect(ret, size, PAGE_EXECUTE_READWRITE, &unusedFlags))
+        {
+            _ASSERTE(!"VirtualProtect failed to make this memory executable");
+        }
     }
 #endif // FEATURE_PAL
 
