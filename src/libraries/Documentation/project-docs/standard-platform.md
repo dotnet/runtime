@@ -31,6 +31,9 @@ The .NET Standard Platform version represents binary portability across platform
 - Any change in a reference assembly's API surface causes the .NET Standard Platform to version.
 - Lower versions are always compatible with higher versions.
 
+## Relationship to Platforms
+The .NET Standard Platform is not a real platform itself. It is a standard that platforms are based on. The .NET Standard Platform defines reference assemblies (contracts) that platforms implement. These contracts are defined in corefx (see [The list of contracts](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/standard-platform.md#list-of-net-corefx-apis-and-their-associated-net-standard-platform-version-tentative)) and are either implemented in corefx itself, or in the specific platform. As an example, of this, [System.Xml.XDocument](https://github.com/dotnet/corefx/tree/master/src/System.Xml.XDocument/src) is implemented as stand alone managed code on corefx itself on CoreCLR but on the .NET Framework, it is actually an assembly in the GAC.
+
 ## Existing .NET Standard Platform versions
 Mapping the .NET Standard Platform to existing platforms versions.
 
