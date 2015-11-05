@@ -1050,17 +1050,6 @@ namespace System.Net.Sockets
             }
         }
 
-        public void Close(int timeout)
-        {
-            if (timeout < -1)
-            {
-                throw new ArgumentOutOfRangeException("timeout");
-            }
-            _closeTimeout = timeout;
-            GlobalLog.Print("Socket#" + Logging.HashString(this) + "::Close() timeout = " + _closeTimeout);
-            ((IDisposable)this).Dispose();
-        }
-
         // Places a socket in a listening state.
         public void Listen(int backlog)
         {
