@@ -281,5 +281,53 @@ namespace Tests
         }
 
         #endregion
+
+        #region Constructor_IEnumerable / HashSet
+
+        [Fact]
+        public static void Ctor_IEnumerable_HashSet_Empty()
+        {
+            var items = new int[0];
+            HashSet<int> source = new HashSet<int>(items);
+
+            HashSet<int> hashSet = new HashSet<int>(source);
+            HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, items);
+            driver.VerifyHashSetTests();
+        }
+
+        [Fact]
+        public static void Ctor_IEnumerable_HashSet_Empty_Neg()
+        {
+            var items = new int[0];
+            HashSet<int> source = new HashSet<int>(items);
+
+            HashSet<int> hashSet = new HashSet<int>(source);
+            HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, items);
+            driver.VerifyHashSet_NegativeTests();
+        }
+
+        [Fact]
+        public static void Ctor_IEnumerable_HashSet_Multiple()
+        {
+            var items = new[] { 1, 2, 3, 4, 5 };
+            HashSet<int> source = new HashSet<int>(items);
+
+            HashSet<int> hashSet = new HashSet<int>(source);
+            HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, items);
+            driver.VerifyHashSetTests();
+        }
+
+        [Fact]
+        public static void Ctor_IEnumerable_HashSet_Multiple_Neg()
+        {
+            var items = new[] { 1, 2, 3, 4, 5 };
+            HashSet<int> source = new HashSet<int>(items);
+
+            HashSet<int> hashSet = new HashSet<int>(source);
+            HashSetTestSupport<int> driver = new HashSetTestSupport<int>(hashSet, s_intGenerator, items);
+            driver.VerifyHashSet_NegativeTests();
+        }
+
+        #endregion
     }
 }
