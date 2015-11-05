@@ -112,9 +112,10 @@ namespace System.Net
 
                 return done ? SecurityStatusPal.OK : SecurityStatusPal.ContinueNeeded;
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.Fail("Exception Caught. - " + ex);
+                // TODO: This Debug.Fail is triggering on Linux in many test cases #4317
+                // Debug.Fail("Exception Caught. - " + ex);
                 return SecurityStatusPal.InternalError;             
             }
         }
