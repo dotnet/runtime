@@ -24,6 +24,9 @@ namespace System.Net.NetworkInformation
         // When those keys change, our callback below is called (OnAddressChanged).
         private static SafeCreateHandle s_dynamicStoreRef;
 
+        // The callback used when registered keys in the dynamic store change.
+        private static readonly Interop.SystemConfiguration.SCDynamicStoreCallBack s_storeCallback = OnAddressChanged;
+
         // The RunLoop source, created over the above SCDynamicStore.
         private static SafeCreateHandle s_runLoopSource;
 
@@ -35,7 +38,7 @@ namespace System.Net.NetworkInformation
 
         // Use an event to try to prevent StartRaisingEvents from returning before the
         // RunLoop actually begins. This will mitigate a race condition where the watcher
-        // thread hasn't completed initialization and stop is called before the RunLoop even starts.
+        // thread hasn't completed initialization and stop is called before the RunLoop has even started.
         private static readonly AutoResetEvent s_runLoopStartedEvent = new AutoResetEvent(false);
         private static readonly AutoResetEvent s_runLoopEndedEvent = new AutoResetEvent(false);
 
@@ -77,7 +80,7 @@ namespace System.Net.NetworkInformation
             {
                 s_dynamicStoreRef = Interop.SystemConfiguration.SCDynamicStoreCreate(
                     storeName.DangerousGetHandle(),
-                    OnAddressChanged,
+                    s_storeCallback,
                     &storeContext);
             }
 
