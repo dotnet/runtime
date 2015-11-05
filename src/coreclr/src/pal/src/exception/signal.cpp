@@ -65,8 +65,6 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context);
 static void sigsegv_handler(int code, siginfo_t *siginfo, void *context);
 static void sigtrap_handler(int code, siginfo_t *siginfo, void *context);
 static void sigbus_handler(int code, siginfo_t *siginfo, void *context);
-static void sigint_handler(int code, siginfo_t *siginfo, void *context);
-static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
 
 static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code, 
                                   native_context_t *ucontext);
@@ -83,15 +81,6 @@ struct sigaction g_previous_sigtrap;
 struct sigaction g_previous_sigfpe;
 struct sigaction g_previous_sigbus;
 struct sigaction g_previous_sigsegv;
-struct sigaction g_previous_sigint;
-struct sigaction g_previous_sigquit;
-
-// Pipe used for sending SIGINT / SIGQUIT signals notifications to a helper thread
-// that invokes the actual handler.
-int g_signalPipe[2] = { 0, 0 };
-
-DWORD g_dwExternalSignalHandlerThreadId = 0;
-
 
 
 /* public function definitions ************************************************/
@@ -173,14 +162,6 @@ void SEHCleanupSignals()
     restore_signal(SIGFPE, &g_previous_sigfpe);
     restore_signal(SIGBUS, &g_previous_sigbus);
     restore_signal(SIGSEGV, &g_previous_sigsegv);
-
-    // Only restore these signals if the signal handler thread was started and
-    // the previous handlers saved.
-    if (g_dwExternalSignalHandlerThreadId != 0)
-    {
-        restore_signal(SIGINT, &g_previous_sigint);
-        restore_signal(SIGQUIT, &g_previous_sigquit);
-    }
 }
 
 /* internal function definitions **********************************************/
@@ -371,91 +352,6 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
         // We abort instead of restore the original or default handler and returning
         // because returning from a SIGTRAP handler continues execution past the trap.
         abort();
-    }
-}
-
-/*++
-Function :
-    HandleExternalSignal
-
-    Handle the SIGINT and SIGQUIT signals.
-
-
-Parameters :
-    signalCode - code of the external signal
-
-    (no return value)
---*/
-static void HandleExternalSignal(int signalCode)
-{
-    BYTE signalCodeByte = (BYTE)signalCode;
-    ssize_t writtenBytes;
-    do
-    {
-        writtenBytes = write(g_signalPipe[1], &signalCodeByte, 1);
-    }
-    while ((writtenBytes == -1) && (errno == EINTR));
-
-    if (writtenBytes == -1)
-    {
-        // Fatal error
-        abort();
-    }
-}
-
-/*++
-Function :
-    sigint_handler
-
-    handle SIGINT signal
-
-Parameters :
-    POSIX signal handler parameter list ("man sigaction" for details)
-
-    (no return value)
---*/
-static void sigint_handler(int code, siginfo_t *siginfo, void *context)
-{
-    if (PALIsInitialized())
-    {
-        HandleExternalSignal(code);
-    }
-    else 
-    {
-        TRACE("SIGINT signal was unhandled; chaining to previous sigaction\n");
-
-        if (g_previous_sigint.sa_sigaction != NULL)
-        {
-            g_previous_sigint.sa_sigaction(code, siginfo, context);
-        }
-    }
-}
-
-/*++
-Function :
-    sigquit_handler
-
-    handle SIGQUIT signal
-
-Parameters :
-    POSIX signal handler parameter list ("man sigaction" for details)
-
-    (no return value)
---*/
-static void sigquit_handler(int code, siginfo_t *siginfo, void *context)
-{
-    if (PALIsInitialized())
-    {
-        HandleExternalSignal(code);
-    }
-    else 
-    {
-        TRACE("SIGQUIT signal was unhandled; chaining to previous sigaction\n");
-
-        if (g_previous_sigquit.sa_sigaction != NULL)
-        {
-            g_previous_sigquit.sa_sigaction(code, siginfo, context);
-        }
     }
 }
 
@@ -721,182 +617,6 @@ void restore_signal(int signal_id, struct sigaction *previousAction)
         ASSERT("restore_signal: sigaction() call failed with error code %d (%s)\n",
             errno, strerror(errno));
     }
-}
-
-static
-DWORD
-PALAPI
-ExternalSignalHandlerThreadRoutine(
-    PVOID
-    );
-
-static
-DWORD
-PALAPI
-ControlHandlerThreadRoutine(
-    PVOID pvSignal
-    );
-
-PAL_ERROR
-StartExternalSignalHandlerThread(
-    CPalThread *pthr)
-{
-    PAL_ERROR palError = NO_ERROR;
-    
-#ifndef DO_NOT_USE_SIGNAL_HANDLING_THREAD
-    HANDLE hThread;
-
-    if (pipe(g_signalPipe) != 0)
-    {
-        palError = ERROR_CANNOT_MAKE;
-        goto done;
-    }
-
-    palError = InternalCreateThread(
-        pthr,
-        NULL,
-        0,
-        ExternalSignalHandlerThreadRoutine,
-        NULL,
-        0,
-        SignalHandlerThread, // Want no_suspend variant
-        &g_dwExternalSignalHandlerThreadId,
-        &hThread
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ERROR("Failure creating external signal handler thread (%d)\n", palError);
-        goto done;
-    }
-
-    InternalCloseHandle(pthr, hThread);
-
-    handle_signal(SIGINT, sigint_handler, &g_previous_sigint);
-    handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit);
-#endif // DO_NOT_USE_SIGNAL_HANDLING_THREAD
-
-done:
-
-    return palError;        
-}
-
-static
-DWORD
-PALAPI
-ExternalSignalHandlerThreadRoutine(
-    PVOID
-    )
-{
-    DWORD dwThreadId;
-    bool fContinue = TRUE;
-    HANDLE hThread;
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pthr = InternalGetCurrentThread();
-
-    //
-    // Wait for a signal to occur
-    //
-
-    while (fContinue)
-    {
-        BYTE signalCode;
-        ssize_t bytesRead;
-
-        do
-        {
-            bytesRead = read(g_signalPipe[0], &signalCode, 1);
-        }
-        while ((bytesRead == -1) && (errno == EINTR));
-
-        if (bytesRead == -1)
-        {
-            // Fatal error 
-            abort();
-        }
-
-        switch (signalCode)
-        {
-            case SIGINT:
-            case SIGQUIT:
-            {
-                //
-                // Spin up a new thread to run the console handlers. We want
-                // to do this even if no handlers are installed, as in that
-                // case we want to do a normal shutdown from the new thread
-                // while still having this thread available to handle any
-                // other incoming signals.
-                //
-                // The new thread is always spawned, even if there are already
-                // currently console handlers running; this follows the
-                // Windows behavior. Yes, this means that poorly written
-                // console handler routines can make it impossible to kill
-                // a process using Ctrl-C or Ctrl-Break. "kill -9" is
-                // your friend.
-                //
-                // This thread must not be marked as a PalWorkerThread --
-                // since it may run user code it needs to make
-                // DLL_THREAD_ATTACH notifications.
-                //
-
-                PVOID pvCtrlCode = UintToPtr(
-                    SIGINT == signalCode ? CTRL_C_EVENT : CTRL_BREAK_EVENT
-                    );
-
-                palError = InternalCreateThread(
-                    pthr,
-                    NULL,
-                    0,
-                    ControlHandlerThreadRoutine,
-                    pvCtrlCode,
-                    0,
-                    UserCreatedThread,
-                    &dwThreadId,
-                    &hThread
-                    );
-
-                if (NO_ERROR != palError)
-                {
-                    if (!PALIsShuttingDown())
-                    {
-                        // If PAL is not shutting down, failure to create a thread is 
-                        // a fatal error.
-                        abort();
-                    }
-                    fContinue = FALSE;
-                    break;
-                }
-
-                InternalCloseHandle(pthr, hThread);                
-                break;
-            }
-
-            default:
-                ASSERT("Unexpected signal %d in signal thread\n", signalCode);
-                abort();
-                break;
-        }
-    }
-
-    //
-    // Perform an immediate (non-graceful) shutdown
-    //
-
-    _exit(EXIT_FAILURE);    
-
-    return 0;
-}
-
-static
-DWORD
-PALAPI
-ControlHandlerThreadRoutine(
-    PVOID pvSignal
-    )
-{
-    // Uint and DWORD are implicitly the same.
-    SEHHandleControlEvent(PtrToUint(pvSignal), NULL);
-    return 0;
 }
 
 #endif // !HAVE_MACH_EXCEPTIONS

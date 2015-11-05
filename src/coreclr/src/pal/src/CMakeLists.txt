@@ -106,7 +106,6 @@ set(SOURCES
   cruntime/wchar.cpp
   cruntime/wchartls.cpp
   debug/debug.cpp
-  exception/console.cpp
   exception/seh.cpp
   exception/signal.cpp
   file/directory.cpp
