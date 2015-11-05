@@ -704,6 +704,7 @@ namespace System.Data.SqlClient
                 case TdsEnums.SQLNVARCHAR: return MetaNVarChar;
                 case TdsEnums.SQLNTEXT: return MetaNText;
                 case TdsEnums.SQLVARIANT: return s_metaVariant;
+                case TdsEnums.SQLUDT: return s_metaUdt;
                 case TdsEnums.SQLXMLTYPE: return MetaXml;
                 case TdsEnums.SQLTABLE: return s_metaTable;
                 case TdsEnums.SQLDATE: return s_metaDate;
@@ -832,6 +833,8 @@ namespace System.Data.SqlClient
         private static readonly MetaType s_metaVariant = new MetaType
             (255, 255, -1, true, false, false, TdsEnums.SQLVARIANT, TdsEnums.SQLVARIANT, MetaTypeName.VARIANT, typeof(System.Object), typeof(System.Object), SqlDbType.Variant, DbType.Object, 0);
 
+        private static readonly MetaType s_metaUdt = new MetaType
+           (255, 255, -1, false, false, true, TdsEnums.SQLUDT, TdsEnums.SQLUDT, MetaTypeName.UDT, typeof(System.Object), typeof(System.Object), SqlDbType.Udt, DbType.Object, 0);
 
         private static readonly MetaType s_metaTable = new MetaType
             (255, 255, -1, false, false, false, TdsEnums.SQLTABLE, TdsEnums.SQLTABLE, MetaTypeName.TABLE, typeof(IEnumerable<DbDataRecord>), typeof(IEnumerable<DbDataRecord>), SqlDbType.Structured, DbType.Object, 0);
