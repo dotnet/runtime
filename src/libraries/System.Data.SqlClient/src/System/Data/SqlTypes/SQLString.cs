@@ -49,7 +49,7 @@ namespace System.Data.SqlTypes
         /// </devdoc>
         public static readonly SqlString Null = new SqlString(true);
 
-        internal static readonly Encoding x_UnicodeEncoding = Encoding.Unicode;
+        internal static readonly UnicodeEncoding x_UnicodeEncoding = new UnicodeEncoding();
 
         /// <devdoc>
         /// </devdoc>
