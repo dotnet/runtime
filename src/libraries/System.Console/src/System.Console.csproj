@@ -169,6 +169,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPwUid.cs">
       <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.RegisterForCtrlC.cs">
+      <Link>Common\Interop\Unix\Interop.RegisterForCtrlC.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SNPrintF.cs">
       <Link>Common\Interop\Unix\Interop.SNPrintF.cs</Link>
     </Compile>
@@ -180,9 +183,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\Interop.Write.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.SetConsoleCtrlHandler.cs">
-      <Link>Common\Interop\Unix\Interop.SetConsoleCtrlHandler.cs"</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetWindowWidth.cs">
       <Link>Common\Interop\Unix\Interop.GetWindowWidth.cs"</Link>
