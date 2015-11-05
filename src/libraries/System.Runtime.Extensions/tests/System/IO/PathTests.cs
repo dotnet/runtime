@@ -33,19 +33,49 @@ public static class PathTests
         Assert.Equal(expected, Path.ChangeExtension(path, newExtension));
     }
 
-    [Fact]
-    public static void GetDirectoryName()
+    [Theory,
+        InlineData(null, null),
+        InlineData(@"", null),
+        InlineData(@".", @""),
+        InlineData(@"..", @""),
+        InlineData(@"baz", @"")
+        ]
+    public static void GetDirectoryName(string path, string expected)
     {
-        Assert.Null(Path.GetDirectoryName(null));
-        Assert.Null(Path.GetDirectoryName(string.Empty));
+        Assert.Equal(expected, Path.GetDirectoryName(path));
+    }
 
-        Assert.Equal(string.Empty, Path.GetDirectoryName("."));
-        Assert.Equal(string.Empty, Path.GetDirectoryName(".."));
+    [Theory,
+        InlineData(@"dir/baz", @"dir"),
+        InlineData(@"dir\baz", @"dir"),
+        InlineData(@"dir\baz\bar", @"dir\baz"),
+        InlineData(@"dir\\baz", @"dir"),
+        InlineData(@" dir\baz", @" dir"),
+        InlineData(@" C:\dir\baz", @"C:\dir"),
+        InlineData(@"..\..\files.txt", @"..\..")
+        ]
+    [PlatformSpecific(PlatformID.Windows)]
+    public static void GetDirectoryName_Windows(string path, string expected)
+    {
+        Assert.Equal(expected, Path.GetDirectoryName(path));
+    }
 
-        Assert.Equal(string.Empty, Path.GetDirectoryName("baz"));
-        Assert.Equal("dir", Path.GetDirectoryName(Path.Combine("dir", "baz")));
-        Assert.Equal(Path.Combine("dir", "baz"), Path.GetDirectoryName(Path.Combine("dir", "baz", "bar")));
+    [Theory,
+        InlineData(@"dir/baz", @"dir"),
+        InlineData(@"dir//baz", @"dir"),
+        InlineData(@"dir\baz", @""),
+        InlineData(@"dir/baz/bar", @"dir/baz"),
+        InlineData(@"../../files.txt", @"../..")
+        ]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public static void GetDirectoryName_Unix(string path, string expected)
+    {
+        Assert.Equal(expected, Path.GetDirectoryName(path));
+    }
 
+    [Fact]
+    public static void GetDirectoryName_CurrentDirectory()
+    {
         string curDir = Directory.GetCurrentDirectory();
         Assert.Equal(curDir, Path.GetDirectoryName(Path.Combine(curDir, "baz")));
         Assert.Equal(null, Path.GetDirectoryName(Path.GetPathRoot(curDir)));
@@ -53,7 +83,7 @@ public static class PathTests
 
     [PlatformSpecific(PlatformID.AnyUnix)]
     [Fact]
-    public static void GetDirectoryName_Unix()
+    public static void GetDirectoryName_ControlCharacters_Unix()
     {
         Assert.Equal(new string('\t', 1), Path.GetDirectoryName(Path.Combine(new string('\t', 1), "file")));
         Assert.Equal(new string('\b', 2), Path.GetDirectoryName(Path.Combine(new string('\b', 2), "fi le")));

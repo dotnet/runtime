@@ -221,7 +221,9 @@ namespace System.IO
 
             if (searchCriteria != null)
             {
-                PathInternal.CheckInvalidPathChars(fullPath, true);
+                PathInternal.CheckInvalidPathChars(fullPath);
+                if (PathInternal.HasWildCardCharacters(fullPath))
+                    throw new ArgumentException(SR.Argument_InvalidPathChars, "fullPath");
 
                 _searchData = new PathPair(userPath, normalizedSearchPath);
                 CommonInit();
