@@ -9,8 +9,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
-using System.Net.Configuration;
-using System.Runtime.Versioning;
 using System.Text;
 
 namespace System.Net
@@ -27,15 +25,6 @@ namespace System.Net
 
         private const int UnicodeReplacementChar = '\uFFFD';
 
-        private static readonly UnicodeDecodingConformance s_htmlDecodeConformance;
-        private static readonly UnicodeEncodingConformance s_htmlEncodeConformance;
-
-        static WebUtility()
-        {
-            s_htmlDecodeConformance = UnicodeDecodingConformance.Strict;
-            s_htmlEncodeConformance = UnicodeEncodingConformance.Strict;
-        }
-
         #region HtmlEncode / HtmlDecode methods
 
         private static readonly char[] s_htmlEntityEndingChars = new char[] { ';', '&' };
@@ -47,36 +36,21 @@ namespace System.Net
                 return value;
             }
 
-            // Don't create string writer if we don't have nothing to encode
+            // Don't create StringBuilder if we don't have anything to encode
             int index = IndexOfHtmlEncodingChars(value, 0);
             if (index == -1)
             {
                 return value;
             }
 
-            LowLevelStringWriter writer = new LowLevelStringWriter();
-            HtmlEncode(value, writer);
-            return writer.ToString();
+            StringBuilder sb = StringBuilderCache.Acquire(value.Length);
+            HtmlEncode(value, index, sb);
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        private static unsafe void HtmlEncode(string value, LowLevelTextWriter output)
+        private static unsafe void HtmlEncode(string value, int index, StringBuilder output)
         {
-            if (value == null)
-            {
-                return;
-            }
-            if (output == null)
-            {
-                throw new ArgumentNullException("output");
-            }
-
-            int index = IndexOfHtmlEncodingChars(value, 0);
-            if (index == -1)
-            {
-                output.Write(value);
-                return;
-            }
-
+            Debug.Assert(output != null);
             Debug.Assert(0 <= index && index <= value.Length, "0 <= index && index <= value.Length");
 
             int cch = value.Length - index;
@@ -85,7 +59,7 @@ namespace System.Net
                 char* pch = str;
                 while (index-- > 0)
                 {
-                    output.Write(*pch++);
+                    output.Append(*pch++);
                 }
 
                 for (; cch > 0; cch--, pch++)
@@ -96,22 +70,22 @@ namespace System.Net
                         switch (ch)
                         {
                             case '<':
-                                output.Write("&lt;");
+                                output.Append("&lt;");
                                 break;
                             case '>':
-                                output.Write("&gt;");
+                                output.Append("&gt;");
                                 break;
                             case '"':
-                                output.Write("&quot;");
+                                output.Append("&quot;");
                                 break;
                             case '\'':
-                                output.Write("&#39;");
+                                output.Append("&#39;");
                                 break;
                             case '&':
-                                output.Write("&amp;");
+                                output.Append("&amp;");
                                 break;
                             default:
-                                output.Write(ch);
+                                output.Append(ch);
                                 break;
                         }
                     }
@@ -127,7 +101,7 @@ namespace System.Net
                         }
                         else
 #endif // ENTITY_ENCODE_HIGH_ASCII_CHARS
-                        if (s_htmlEncodeConformance == UnicodeEncodingConformance.Strict && Char.IsSurrogate(ch))
+                        if (Char.IsSurrogate(ch))
                         {
                             int scalarValue = GetNextUnicodeScalarValueFromUtf16Surrogate(ref pch, ref cch);
                             if (scalarValue >= UNICODE_PLANE01_START)
@@ -145,14 +119,14 @@ namespace System.Net
                         if (valueToEncode >= 0)
                         {
                             // value needs to be encoded
-                            output.Write("&#");
-                            output.Write(valueToEncode.ToString(CultureInfo.InvariantCulture));
-                            output.Write(';');
+                            output.Append("&#");
+                            output.Append(valueToEncode.ToString(CultureInfo.InvariantCulture));
+                            output.Append(';');
                         }
                         else
                         {
                             // write out the character directly
-                            output.Write(ch);
+                            output.Append(ch);
                         }
                     }
                 }
@@ -166,34 +140,21 @@ namespace System.Net
                 return value;
             }
 
-            // Don't create string writer if we don't have nothing to encode
+            // Don't create StringBuilder if we don't have anything to encode
             if (!StringRequiresHtmlDecoding(value))
             {
                 return value;
             }
 
-            LowLevelStringWriter writer = new LowLevelStringWriter();
-            HtmlDecode(value, writer);
-            return writer.ToString();
+            StringBuilder sb = StringBuilderCache.Acquire(value.Length);
+            HtmlDecode(value, sb);
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         [SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "System.UInt16.TryParse(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt16@)", Justification = "UInt16.TryParse guarantees that result is zero if the parse fails.")]
-        private static void HtmlDecode(string value, LowLevelTextWriter output)
+        private static void HtmlDecode(string value, StringBuilder output)
         {
-            if (value == null)
-            {
-                return;
-            }
-            if (output == null)
-            {
-                throw new ArgumentNullException("output");
-            }
-
-            if (!StringRequiresHtmlDecoding(value))
-            {
-                output.Write(value);        // good as is
-                return;
-            }
+            Debug.Assert(output != null);
 
             int l = value.Length;
             for (int i = 0; i < l; i++)
@@ -230,29 +191,8 @@ namespace System.Net
 
                             if (parsedSuccessfully)
                             {
-                                switch (s_htmlDecodeConformance)
-                                {
-                                    case UnicodeDecodingConformance.Strict:
-                                        // decoded character must be U+0000 .. U+10FFFF, excluding surrogates
-                                        parsedSuccessfully = ((parsedValue < HIGH_SURROGATE_START) || (LOW_SURROGATE_END < parsedValue && parsedValue <= UNICODE_PLANE16_END));
-                                        break;
-
-                                    case UnicodeDecodingConformance.Compat:
-                                        // decoded character must be U+0001 .. U+FFFF
-                                        // null chars disallowed for compat with 4.0
-                                        parsedSuccessfully = (0 < parsedValue && parsedValue <= UNICODE_PLANE00_END);
-                                        break;
-
-                                    case UnicodeDecodingConformance.Loose:
-                                        // decoded character must be U+0000 .. U+10FFFF
-                                        parsedSuccessfully = (parsedValue <= UNICODE_PLANE16_END);
-                                        break;
-
-                                    default:
-                                        Debug.Assert(false, "Should never get here!");
-                                        parsedSuccessfully = false;
-                                        break;
-                                }
+                                // decoded character must be U+0000 .. U+10FFFF, excluding surrogates
+                                parsedSuccessfully = ((parsedValue < HIGH_SURROGATE_START) || (LOW_SURROGATE_END < parsedValue && parsedValue <= UNICODE_PLANE16_END));
                             }
 
                             if (parsedSuccessfully)
@@ -260,15 +200,15 @@ namespace System.Net
                                 if (parsedValue <= UNICODE_PLANE00_END)
                                 {
                                     // single character
-                                    output.Write((char)parsedValue);
+                                    output.Append((char)parsedValue);
                                 }
                                 else
                                 {
                                     // multi-character
                                     char leadingSurrogate, trailingSurrogate;
                                     ConvertSmpToUtf16(parsedValue, out leadingSurrogate, out trailingSurrogate);
-                                    output.Write(leadingSurrogate);
-                                    output.Write(trailingSurrogate);
+                                    output.Append(leadingSurrogate);
+                                    output.Append(trailingSurrogate);
                                 }
 
                                 i = index; // already looked at everything until semicolon
@@ -286,16 +226,16 @@ namespace System.Net
                             }
                             else
                             {
-                                output.Write('&');
-                                output.Write(entity);
-                                output.Write(';');
+                                output.Append('&');
+                                output.Append(entity);
+                                output.Append(';');
                                 continue;
                             }
                         }
                     }
                 }
 
-                output.Write(ch);
+                output.Append(ch);
             }
         }
 
@@ -327,7 +267,7 @@ namespace System.Net
                         return s.Length - cch;
                     }
 #endif // ENTITY_ENCODE_HIGH_ASCII_CHARS
-                    else if (s_htmlEncodeConformance == UnicodeEncodingConformance.Strict && Char.IsSurrogate(ch))
+                    else if (Char.IsSurrogate(ch))
                     {
                         return s.Length - cch;
                     }
@@ -649,24 +589,16 @@ namespace System.Net
 
         private static bool StringRequiresHtmlDecoding(string s)
         {
-            if (s_htmlDecodeConformance == UnicodeDecodingConformance.Compat)
+            // this string requires html decoding if it contains '&' or a surrogate character
+            for (int i = 0; i < s.Length; i++)
             {
-                // this string requires html decoding only if it contains '&'
-                return (s.IndexOf('&') >= 0);
-            }
-            else
-            {
-                // this string requires html decoding if it contains '&' or a surrogate character
-                for (int i = 0; i < s.Length; i++)
+                char c = s[i];
+                if (c == '&' || Char.IsSurrogate(c))
                 {
-                    char c = s[i];
-                    if (c == '&' || Char.IsSurrogate(c))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
-                return false;
             }
+            return false;
         }
 
         #endregion
