@@ -3,14 +3,14 @@
 ## Why?
 To provide a more concrete guarantee of binary portability to future .NET-capable platforms with an easier-to-understand platform versioning plan.
 
-Today, Portable Class Libraries (PCL) target an intersection of APIs depending on your platform selection when making the project. This gives you a specific surface area that guarantees you work on the chosen platforms. Those combinations are precomputed to give you the right set of surface area. When these portable libraries are packaged into NuGet, they are expressed with a static set of frameworks e.g. **portable-net45+win8**. While this describes the intent that you want to run on .NET Framework 4.5 and Windows 8.0, it is also restrictive, since new platforms can appear in the future that are perfectly capable of running those PCLs but are blocked due to the platforms that were selected when the project was created. In fact, putting the portable dll inside of a folder with a static list of profiles *essentially* makes it platform-specific. It's no different to doing:
+Today, Portable Class Libraries (PCL) target an intersection of APIs depending on your platform selection when making the project. This gives you a specific surface area that guarantees you work on the chosen platforms. Those combinations are precomputed to give you the right set of surface area. When these portable libraries are packaged into NuGet, they are expressed with a static set of frameworks e.g. **portable-net45+win8**. While this describes the intent that you want to run on .NET Framework 4.5 and Windows 8.0, it is also restrictive, since new platforms can appear in the future that are perfectly capable of running those PCLs but are blocked due to the platforms that were selected when the project was created. In fact, putting the portable dll inside of a folder with a static list of profiles *essentially* makes it platform-specific. It's no different than doing:
 
 ```
 MyLibrary/net45/MyLibrary.dll
 MyLibrary/win8/MyLibrary.dll
 ```
 
-The biggest difference is that you wouldn't be able to consume it in a Portable Class Library project type.
+The biggest difference is that you wouldn't be able to consume it in a PCL project type.
 
 The .NET Standard Platform version represents binary portability across platforms using a **single** moniker. They are an evolution of the existing Portable Class Library system. They are "open-ended" in that they aren't tied down to a static list of monikers like **portable-a+b+c** is.
 
@@ -34,7 +34,7 @@ The .NET Standard Platform version represents binary portability across platform
 ## Existing .NET Standard Platform versions
 Mapping the .NET Standard Platform to existing platforms versions.
 
-In general class libraries which target a lower .NET Standard Platform version like 5.1 can be loaded by the largest number of older target platforms, but will have access to a more limited, older set of system APIs. On the other hand class libraries which target a higher .NET Standard Platform version like 5.4 can be loaded by a smaller number of newer target platforms, but will have access to a larger, more recent set of system APIs. 
+In general, class libraries which target a lower .NET Standard Platform version like 5.1 can be loaded by the largest number of older target platforms, but will have access to a more limited, older set of system APIs. On the other hand class libraries which target a higher .NET Standard Platform version like 5.4 can be loaded by a smaller number of newer target platforms, but will have access to a larger, more recent set of system APIs. 
 
 | Target Platform Name | Alias |  |  |  |  |  |
 | :---------- | :--------- |:--------- |:--------- |:--------- |:--------- |:--------- |
