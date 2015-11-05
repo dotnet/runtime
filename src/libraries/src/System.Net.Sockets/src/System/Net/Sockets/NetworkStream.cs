@@ -111,7 +111,7 @@ namespace System.Net.Sockets
 
             try
             {
-                chkSocket.Close(0);
+                chkSocket.Dispose();
             }
             catch (ObjectDisposedException)
             {
@@ -519,25 +519,6 @@ namespace System.Net.Sockets
 #endif
         }
 
-        private int _closeTimeout = Socket.DefaultCloseTimeout; // 1 ms; -1 = respect linger options
-
-        public void Close(int timeout)
-        {
-#if DEBUG
-            using (GlobalLog.SetThreadKind(ThreadKinds.User | ThreadKinds.Sync))
-            {
-#endif
-                if (timeout < -1)
-                {
-                    throw new ArgumentOutOfRangeException("timeout");
-                }
-                _closeTimeout = timeout;
-                Dispose();
-#if DEBUG
-            }
-#endif
-        }
-
         private volatile bool _cleanedUp = false;
         protected override void Dispose(bool disposing)
         {
@@ -568,7 +549,7 @@ namespace System.Net.Sockets
                             if (chkStreamSocket != null)
                             {
                                 chkStreamSocket.InternalShutdown(SocketShutdown.Both);
-                                chkStreamSocket.Close(_closeTimeout);
+                                chkStreamSocket.Dispose();
                             }
                         }
                     }

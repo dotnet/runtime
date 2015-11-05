@@ -211,12 +211,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        public void Close_TimeoutLessThanNegativeOne_ArgumentOutOfRange()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => GetSocket().Close(-2));
-        }
-
-        [Fact]
         public void Accept_NotBound_Throws_InvalidOperation()
         {
             Assert.Throws<InvalidOperationException>(() => GetSocket().Accept());
