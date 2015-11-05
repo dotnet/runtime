@@ -2,7 +2,7 @@
   "locked": true,
   "version": 2,
   "targets": {
-    ".NETPlatform,Version=v5.5": {
+    ".NETPlatform,Version=v5.4": {
       "System.IO/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -58,7 +58,7 @@
         }
       }
     },
-    ".NETPlatform,Version=v5.5/win7-x86": {
+    ".NETPlatform,Version=v5.4/win7-x86": {
       "System.IO/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -114,7 +114,7 @@
         }
       }
     },
-    ".NETPlatform,Version=v5.5/win7-x64": {
+    ".NETPlatform,Version=v5.4/win7-x64": {
       "System.IO/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -439,6 +439,6 @@
       "System.Runtime >= 4.0.0",
       "System.Threading.Tasks >= 4.0.0"
     ],
-    ".NETPlatform,Version=v5.5": []
+    ".NETPlatform,Version=v5.4": []
   }
 }
