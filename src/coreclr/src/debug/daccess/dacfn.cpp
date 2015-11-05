@@ -219,7 +219,7 @@ DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
 }
 
 HRESULT 
-DacVirtualUnwind(DWORD threadId, CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
+DacVirtualUnwind(DWORD threadId, PCONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers)
 {
     if (!g_dacImpl)
     {
@@ -230,7 +230,7 @@ DacVirtualUnwind(DWORD threadId, CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS
     // The DAC code doesn't use these context pointers but zero them out to be safe.
     if (contextPointers != NULL)
     {
-        memset(contextPointers, 0, sizeof(KNONVOLATILE_CONTEXT_POINTERS));
+        memset(contextPointers, 0, sizeof(T_KNONVOLATILE_CONTEXT_POINTERS));
     }
 
     ReleaseHolder<ICorDebugDataTarget4> dt;
