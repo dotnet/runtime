@@ -60,6 +60,8 @@ enum X509VerifyStatusCode : int32_t
     PAL_X509_V_ERR_NO_EXPLICIT_POLICY = 43,
 };
 
+typedef int32_t (*X509StoreVerifyCallback)(int32_t, X509_STORE_CTX*);
+
 /*
 Function:
 GetX509EvpPublicKey
@@ -248,6 +250,11 @@ extern "C" X509VerifyStatusCode X509StoreCtxGetError(X509_STORE_CTX* ctx);
 Shims the X509_STORE_CTX_get_error_depth method.
 */
 extern "C" int32_t X509StoreCtxGetErrorDepth(X509_STORE_CTX* ctx);
+
+/*
+Shims the X509_STORE_CTX_set_verify_cb function.
+*/
+extern "C" void X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X509StoreVerifyCallback callback);
 
 /*
 Shims the X509_verify_cert_error_string method.

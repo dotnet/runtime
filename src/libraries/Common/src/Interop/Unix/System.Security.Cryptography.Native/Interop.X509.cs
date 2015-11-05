@@ -11,6 +11,8 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        internal delegate int X509StoreVerifyCallback(int ok, IntPtr ctx);
+
         [DllImport(Libraries.CryptoNative)]
         internal static extern SafeEvpPKeyHandle GetX509EvpPublicKey(SafeX509Handle x509);
 
@@ -116,6 +118,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern int X509StoreCtxGetErrorDepth(SafeX509StoreCtxHandle ctx);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern void X509StoreCtxSetVerifyCallback(SafeX509StoreCtxHandle ctx, X509StoreVerifyCallback callback);
 
         internal static string GetX509VerifyCertErrorString(X509VerifyStatusCode n)
         {
