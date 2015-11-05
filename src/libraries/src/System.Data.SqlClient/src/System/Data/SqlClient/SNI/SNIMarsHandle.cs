@@ -427,9 +427,9 @@ namespace System.Data.SqlClient.SNI
         /// Receive a packet synchronously
         /// </summary>
         /// <param name="packet">SNI packet</param>
-        /// <param name="timeout">Timeout</param>
+        /// <param name="timeoutInMilliseconds">Timeout in Milliseconds</param>
         /// <returns>SNI error code</returns>
-        public override uint Receive(ref SNIPacket packet, int timeout)
+        public override uint Receive(ref SNIPacket packet, int timeoutInMilliseconds)
         {
             int queueCount;
             uint result = TdsEnums.SNI_SUCCESS_IO_PENDING;
@@ -470,7 +470,7 @@ namespace System.Data.SqlClient.SNI
                     return result;
                 }
 
-                if (!_packetEvent.Wait(timeout))
+                if (!_packetEvent.Wait(timeoutInMilliseconds))
                 {
                     SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SMUX_PROV, 0, 0, "Timeout error");
                     return TdsEnums.SNI_WAIT_TIMEOUT;

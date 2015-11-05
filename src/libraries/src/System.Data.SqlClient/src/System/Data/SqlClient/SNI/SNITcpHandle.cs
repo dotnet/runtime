@@ -264,15 +264,27 @@ namespace System.Data.SqlClient.SNI
         /// Receive a packet synchronously
         /// </summary>
         /// <param name="packet">SNI packet</param>
-        /// <param name="timeout">Timeout</param>
+        /// <param name="timeoutInMilliseconds">Timeout in Milliseconds</param>
         /// <returns>SNI error code</returns>
-        public override uint Receive(ref SNIPacket packet, int timeout)
+        public override uint Receive(ref SNIPacket packet, int timeoutInMilliseconds)
         {
             lock (this)
             {
                 try
                 {
-                    _tcpClient.ReceiveTimeout = (timeout != 0) ? timeout : 1;
+                    if (timeoutInMilliseconds < 0)
+                    {   //  infinite timeout (-1) means (0) in TCPClient 
+                        _tcpClient.ReceiveTimeout = 0;
+                    }
+                    else if (timeoutInMilliseconds == 0)
+                    {
+                        // 0 timeout is equal -1 in TCPClient
+                        _tcpClient.ReceiveTimeout = -1;
+                    }
+                    else
+                    {
+                        _tcpClient.ReceiveTimeout = timeoutInMilliseconds;
+                    }
                     packet = new SNIPacket(null);
                     packet.Allocate(_bufferSize);
                     packet.ReadFromStream(_stream);
