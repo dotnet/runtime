@@ -1057,7 +1057,7 @@ create_allocator (int atype, gboolean slowpath)
 	static gboolean registered = FALSE;
 	int tlab_next_addr_var, new_next_var;
 	const char *name = NULL;
-	AllocatorWrapperInfo *info;
+	WrapperInfo *info;
 	int num_params, i;
 
 	if (!registered) {
@@ -1381,16 +1381,16 @@ create_allocator (int atype, gboolean slowpath)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-	res = mono_mb_create_method (mb, csig, 8);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.alloc.gc_name = "sgen";
+	info->d.alloc.alloc_type = atype;
+
+	res = mono_mb_create (mb, csig, 8, info);
 	mono_mb_free (mb);
 #ifndef DISABLE_JIT
 	mono_method_get_header (res)->init_locals = FALSE;
 #endif
 
-	info = mono_image_alloc0 (mono_defaults.corlib, sizeof (AllocatorWrapperInfo));
-	info->gc_name = "sgen";
-	info->alloc_type = atype;
-	mono_marshal_set_wrapper_info (res, info);
 
 	return res;
 }

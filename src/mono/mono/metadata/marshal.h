@@ -170,6 +170,11 @@ typedef struct {
 	int nursery_bits;
 } WriteBarrierWrapperInfo;
 
+typedef struct {
+	const char *gc_name;
+	int alloc_type;
+} AllocatorWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -202,6 +207,8 @@ typedef struct {
 		ProxyWrapperInfo proxy;
 		/* WRITE_BARRIER */
 		WriteBarrierWrapperInfo wbarrier;
+		/* ALLOC */
+		AllocatorWrapperInfo alloc;
 	} d;
 } WrapperInfo;
 

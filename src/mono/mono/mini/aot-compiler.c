@@ -2812,11 +2812,11 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_STFLD_REMOTE:
 			break;
 		case MONO_WRAPPER_ALLOC: {
-			AllocatorWrapperInfo *info = mono_marshal_get_wrapper_info (method);
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
 			/* The GC name is saved once in MonoAotFileInfo */
-			g_assert (info->alloc_type != -1);
-			encode_value (info->alloc_type, p, &p);
+			g_assert (info->d.alloc.alloc_type != -1);
+			encode_value (info->d.alloc.alloc_type, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_WRITE_BARRIER: {
