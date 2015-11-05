@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -31,13 +32,13 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void ServerAllowNoEncryption_ClientRequireEncryption_ConnectWithEncryption()
+        public async Task ServerAllowNoEncryption_ClientRequireEncryption_ConnectWithEncryption()
         {
             using (var serverAllowNoEncryption = new DummyTcpServer(
                 new IPEndPoint(IPAddress.Loopback, 0), EncryptionPolicy.AllowNoEncryption))
             using (var client = new TcpClient())
             {
-                client.Connect(serverAllowNoEncryption.RemoteEndPoint);
+                await client.ConnectAsync(serverAllowNoEncryption.RemoteEndPoint.Address, serverAllowNoEncryption.RemoteEndPoint.Port);
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.RequireEncryption))
                 {
@@ -52,13 +53,13 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void ServerAllowNoEncryption_ClientAllowNoEncryption_ConnectWithEncryption()
+        public async Task ServerAllowNoEncryption_ClientAllowNoEncryption_ConnectWithEncryption()
         {
             using (var serverAllowNoEncryption = new DummyTcpServer(
                 new IPEndPoint(IPAddress.Loopback, 0), EncryptionPolicy.AllowNoEncryption))
             using (var client = new TcpClient())
             {
-                client.Connect(serverAllowNoEncryption.RemoteEndPoint);
+                await client.ConnectAsync(serverAllowNoEncryption.RemoteEndPoint.Address, serverAllowNoEncryption.RemoteEndPoint.Port);
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.AllowNoEncryption))
                 {
@@ -73,13 +74,13 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void ServerAllowNoEncryption_ClientNoEncryption_ConnectWithNoEncryption()
+        public async Task ServerAllowNoEncryption_ClientNoEncryption_ConnectWithNoEncryption()
         {
             using (var serverAllowNoEncryption = new DummyTcpServer(
                 new IPEndPoint(IPAddress.Loopback, 0), EncryptionPolicy.AllowNoEncryption))
             using (var client = new TcpClient())
             {
-                client.Connect(serverAllowNoEncryption.RemoteEndPoint);
+                await client.ConnectAsync(serverAllowNoEncryption.RemoteEndPoint.Address, serverAllowNoEncryption.RemoteEndPoint.Port);
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.NoEncryption))
                 {
