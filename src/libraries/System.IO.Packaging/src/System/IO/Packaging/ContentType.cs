@@ -231,8 +231,8 @@ namespace System.IO.Packaging
                 // safe comparison because the _type and _subType strings have been restricted to
                 // ASCII characters, digits, and a small set of symbols.  This is not a safe comparison
                 // for the broader set of strings that have not been restricted in the same way.
-                result = (String.Compare(_type, contentType.TypeComponent, StringComparison.OrdinalIgnoreCase) == 0 &&
-                          String.Compare(_subType, contentType.SubTypeComponent, StringComparison.OrdinalIgnoreCase) == 0);
+                result = (String.Equals(_type, contentType.TypeComponent, StringComparison.OrdinalIgnoreCase) &&
+                          String.Equals(_subType, contentType.SubTypeComponent, StringComparison.OrdinalIgnoreCase));
             }
             return result;
         }
@@ -524,25 +524,14 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If the token is Empty</exception>
         private static string ValidateToken(string token)
         {
-            if (String.CompareOrdinal(token, String.Empty) == 0)
+            if (String.IsNullOrEmpty(token))
                 throw new ArgumentException(SR.InvalidToken);
 
             for (int i = 0; i < token.Length; i++)
             {
-                if (IsAsciiLetterOrDigit(token[i]))
+                if (!IsAsciiLetterOrDigit(token[i]) && !IsAllowedCharacter(token[i]))
                 {
-                    continue;
-                }
-                else
-                {
-                    if (IsAllowedCharacter(token[i]))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        throw new ArgumentException(SR.InvalidToken);
-                    }
+                    throw new ArgumentException(SR.InvalidToken);
                 }
             }
 
@@ -558,7 +547,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If the paramter value is empty</exception>
         private static string ValidateQuotedStringOrToken(string parameterValue)
         {
-            if (String.CompareOrdinal(parameterValue, String.Empty) == 0)
+            if (String.IsNullOrEmpty(parameterValue))
                 throw new ArgumentException(SR.InvalidParameterValue);
 
             if (parameterValue.Length >= 2 &&
@@ -619,15 +608,7 @@ namespace System.IO.Packaging
         /// <returns></returns>
         private static bool IsAsciiLetterOrDigit(char character)
         {
-            if (IsAsciiLetter(character))
-            {
-                return true;
-            }
-            if (character >= '0')
-            {
-                return (character <= '9');
-            }
-            return false;
+            return (IsAsciiLetter(character) || (character >= '0' && character <= '9'));
         }
 
         /// <summary>
