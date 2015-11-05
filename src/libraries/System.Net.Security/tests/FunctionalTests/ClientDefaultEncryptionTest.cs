@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -32,13 +33,13 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void ClientDefaultEncryption_ServerRequireEncryption_ConnectWithEncryption()
+        public async Task ClientDefaultEncryption_ServerRequireEncryption_ConnectWithEncryption()
         {
             using (var serverRequireEncryption = new DummyTcpServer(
                 new IPEndPoint(IPAddress.Loopback, 0), EncryptionPolicy.RequireEncryption))
             using (var client = new TcpClient())
             {
-                client.Connect(serverRequireEncryption.RemoteEndPoint);
+                await client.ConnectAsync(serverRequireEncryption.RemoteEndPoint.Address, serverRequireEncryption.RemoteEndPoint.Port);
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null))
                 {
@@ -53,13 +54,13 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void ClientDefaultEncryption_ServerAllowNoEncryption_ConnectWithEncryption()
+        public async Task ClientDefaultEncryption_ServerAllowNoEncryption_ConnectWithEncryption()
         {
             using (var serverAllowNoEncryption = new DummyTcpServer(
                 new IPEndPoint(IPAddress.Loopback, 0), EncryptionPolicy.AllowNoEncryption))
             using (var client = new TcpClient())
             {
-                client.Connect(serverAllowNoEncryption.RemoteEndPoint);
+                await client.ConnectAsync(serverAllowNoEncryption.RemoteEndPoint.Address, serverAllowNoEncryption.RemoteEndPoint.Port);
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null))
                 {
@@ -74,13 +75,13 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void ClientDefaultEncryption_ServerNoEncryption_NoConnect()
+        public async Task ClientDefaultEncryption_ServerNoEncryption_NoConnect()
         {
             using (var serverNoEncryption = new DummyTcpServer(
                 new IPEndPoint(IPAddress.Loopback, 0), EncryptionPolicy.NoEncryption))
             using (var client = new TcpClient())
             {
-                client.Connect(serverNoEncryption.RemoteEndPoint);
+                await client.ConnectAsync(serverNoEncryption.RemoteEndPoint.Address, serverNoEncryption.RemoteEndPoint.Port);
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null))
                 {
