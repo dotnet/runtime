@@ -445,6 +445,7 @@ namespace System
         public static string GetEnvironmentVariable(string variable) { return default(string); }
         public static System.Collections.IDictionary GetEnvironmentVariables() { return default(System.Collections.IDictionary); }
         public static void SetEnvironmentVariable(string variable, string value) { }
+        public static string[] GetCommandLineArgs() { return default(string[]); }
     }
     public static partial class Math
     {
