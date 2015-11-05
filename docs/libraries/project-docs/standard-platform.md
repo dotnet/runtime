@@ -134,7 +134,7 @@ Exising PCL projects in VS2013 and VS2015 (excluding UWP targets), can only targ
 | Windows 8 | winrt |
 
 ### Package authoring
-When building a NuGet package, specifing folders named for platform monikers is enough to indicate what platforms your package targets.
+When building a NuGet package, specifying folders named for platform monikers is enough to indicate what platforms your package targets.
 
 MyPackage
 ```
@@ -151,7 +151,7 @@ Newtonsoft.Json/7.0.1/lib/portable-net40+sl5+wp80+win8+wpa81/Newtonsoft.Json.dll
 Newtonsoft.Json/7.0.1/lib/portable-net45+wp80+win8+wpa81+dnxcore50/Newtonsoft.Json.dll
 ```
 
-Only one of these can be converted to a dotnet5.x based reference. Based on this csproj, we can see that the second PCL project is really profile 259.
+Only the second of these can be converted to a dotnet5.x based reference, because the first one target .NET 4.0, which is not supported in the .NET Standard Platform. Based on this csproj, we can see that the second PCL project is really profile 259.
 
 https://github.com/JamesNK/Newtonsoft.Json/blob/d4916a76b5ed94342944cc665372dcc5dbd9e389/Src/Newtonsoft.Json/Newtonsoft.Json.Portable.csproj#L12
 
