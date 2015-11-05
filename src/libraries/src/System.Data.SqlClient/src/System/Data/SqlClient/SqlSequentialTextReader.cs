@@ -484,38 +484,13 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class SqlUnicodeEncoding : Encoding
+    sealed internal class SqlUnicodeEncoding : UnicodeEncoding
     {
         private static SqlUnicodeEncoding s_singletonEncoding = new SqlUnicodeEncoding();
 
-        private SqlUnicodeEncoding()
+        private SqlUnicodeEncoding() : base(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: false)
         { }
-
-        public override int GetByteCount(char[] chars, int index, int count)
-        {
-            return GetMaxByteCount(count);
-        }
-
-        public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
-        {
-            throw NotImplemented.ByDesignWithMessage("Not required");
-        }
-
-        public override int GetCharCount(byte[] bytes, int index, int count)
-        {
-            return GetMaxCharCount(count);
-        }
-
-        public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
-        {
-            throw NotImplemented.ByDesignWithMessage("Not required");
-        }
-
-        public override int GetMaxCharCount(int byteCount)
-        {
-            return byteCount / 2;
-        }
-
+        
         public override Decoder GetDecoder()
         {
             return new SqlUnicodeDecoder();
