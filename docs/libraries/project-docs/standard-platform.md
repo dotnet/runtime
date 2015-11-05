@@ -41,7 +41,7 @@ In general, class libraries which target a lower .NET Platform Standard version 
 
 | Target Platform Name | Alias |  |  |  |  |  |
 | :---------- | :--------- |:--------- |:--------- |:--------- |:--------- |:--------- |
-|.NET Platform Standard | dotnet | 5.1 | 5.2 | 5.3 | 5.4 | 5.5 |
+|.NET Platform Standard | netstandard | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 |
 |.NET Framework|net|⇢|⇢|⇢|⇢|4.6.x|
 |||⇢|⇢|⇢|4.6||
 |||⇢|⇢|4.5.2||
@@ -60,8 +60,8 @@ In general, class libraries which target a lower .NET Platform Standard version 
 
 ### Observations
 
-- If a library targets .NET Platform Standard version 5.4, it can *only* run on .NET Framework 4.6 or later, Universal Windows Platform 10 (UWP), DNX Core 5.0 and Mono/Xamarin platforms. 
-- If a library targets .NET Platform Standard version 5.4, it can consume libraries from all previous .NET Platform Standard versions (5.3, 5.2, 5.1).
+- If a library targets .NET Platform Standard version 1.3, it can *only* run on .NET Framework 4.6 or later, Universal Windows Platform 10 (UWP), DNX Core 5.0 and Mono/Xamarin platforms. 
+- If a library targets .NET Platform Standard version 1.3, it can consume libraries from all previous .NET Platform Standard versions (1.2, 1.1, 1.0).
 - The earliest .NET Framework to support a .NET Platform Standard version is .NET Framework 4.5. This is because the new portable API surface area (aka **System.Runtime** based surface area) that is used as the foundation for .NET Platform Standard only became available in that version of .NET Framework. Targeting .NET Framework <= 4.0 requires cross-compilation.
 - Each .NET Platform Standard version enables more API surface, which means it's available on fewer platforms. As the platforms update, their newer versions jump up into newer .NET Platform Standard versions.
 - Platforms which have stopped updating -- like Silverlight on Windows Phone -- will only ever be available in the earliest .NET Platform Standard versions.
@@ -72,21 +72,21 @@ PCL projects will be able to consume packages built for .NET Platform Standard (
 
 | Profile | .NET Platform Standard version |
 | ---------| --------------- |
-| Profile7  .NET Portable Subset (.NET Framework 4.5, Windows 8) | 5.2 |
-| Profile31 .NET Portable Subset (Windows 8.1, Windows Phone Silverlight 8.1)| 5.1|
-| Profile32 .NET Portable Subset (Windows 8.1, Windows Phone 8.1) | 5.3 |
-| Profile44 .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1) | 5.3 |
-| Profile49 .NET Portable Subset (.NET Framework 4.5, Windows Phone Silverlight 8) | 5.1 |
-| Profile78 .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone Silverlight 8) | 5.1 |
-| Profile84 .NET Portable Subset (Windows Phone 8.1, Windows Phone Silverlight 8.1) | 5.1 |
-| Profile111 .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1) | 5.2 |
-| Profile151 .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1, Windows Phone 8.1) | 5.3 |
-| Profile157 .NET Portable Subset (Windows 8.1, Windows Phone 8.1, Windows Phone Silverlight 8.1) | 5.1 |
-| Profile259 .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8) | 5.1 |
+| Profile7  .NET Portable Subset (.NET Framework 4.5, Windows 8) | 1.1 |
+| Profile31 .NET Portable Subset (Windows 8.1, Windows Phone Silverlight 8.1)| 1.0 |
+| Profile32 .NET Portable Subset (Windows 8.1, Windows Phone 8.1) | 1.2 |
+| Profile44 .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1) | 1.2 |
+| Profile49 .NET Portable Subset (.NET Framework 4.5, Windows Phone Silverlight 8) | 1.0 |
+| Profile78 .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone Silverlight 8) | 1.0 |
+| Profile84 .NET Portable Subset (Windows Phone 8.1, Windows Phone Silverlight 8.1) | 1.0 |
+| Profile111 .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1) | 1.1 |
+| Profile151 .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1, Windows Phone 8.1) | 1.2 |
+| Profile157 .NET Portable Subset (Windows 8.1, Windows Phone 8.1, Windows Phone Silverlight 8.1) | 1.0 |
+| Profile259 .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8) | 1.0 |
 
 **NOTE: Xamarin Platforms augment the existing profile numbers above.**
 
-Exising PCL projects in VS2013 and VS2015 (excluding UWP targets), can only target up to .NET Platform Standard version 5.3. To build libraries for .NET Platform Standard version >= 5.4 you have 2 options:
+Exising PCL projects in VS2013 and VS2015 (excluding UWP targets), can only target up to .NET Platform Standard version 1.2. To build libraries for .NET Platform Standard version >= 1.3 you have 2 options:
 
 - Use project.json in csproj-based projects
 - Use xproj-based projects, i.e. "Class Library (Package)" project template
@@ -97,7 +97,7 @@ Exising PCL projects in VS2013 and VS2015 (excluding UWP targets), can only targ
 
 | .NET Platform Standard version | NuGet identifier |
 | ---------| --------------- |
-| 5.1 - 5.5 | dotnet5.1 - dotnet5.5 |
+| 1.0 - 1.4 | netstandard1.0 - netstandard1.4 |
 
 ### Specific platform mapping
 
@@ -138,10 +138,10 @@ When building a NuGet package, specifying folders named for platform monikers is
 
 MyPackage
 ```
-MyPackage/lib/dotnet5.4/MyPackage.dll
+MyPackage/lib/netstandard1.3/MyPackage.dll
 ```
 
-The above package targets .NET Platform 5.4 (.NET Platform Standard 5.4)
+The above package targets .NET Platform 1.3 (.NET Platform Standard 1.3)
 
 #### Migrating existing PCLs in NuGet packages
 Using the table outlined above, use the profile number of the csproj used to build the portable assembly to determine what NuGet folder it should go into. For example, **Newtonsoft.Json 7.0.1** has 2 portable folders:
@@ -157,7 +157,7 @@ https://github.com/JamesNK/Newtonsoft.Json/blob/d4916a76b5ed94342944cc665372dcc5
 
 ```
 Newtonsoft.Json/7.0.1/lib/portable-net40+sl5+wp80+win8+wpa81/Newtonsoft.Json.dll
-Newtonsoft.Json/7.0.1/lib/dotnet5.1/Newtonsoft.Json.dll
+Newtonsoft.Json/7.0.1/lib/netstandard1.0/Newtonsoft.Json.dll
 ```
 
 #### Generating dependency references
@@ -193,13 +193,13 @@ PCLCrypto/1.0.80/lib/monotouch/PCLCrypto.dll
 PCLCrypto/1.0.80/lib/win81/PCLCrypto.dll
 PCLCrypto/1.0.80/lib/wp8/PCLCrypto.dll
 PCLCrypto/1.0.80/lib/wpa81/PCLCrypto.dll
-PCLCrypto/1.0.80/ref/dotnet5.1/PCLCrypto.dll
+PCLCrypto/1.0.80/ref/netstandard1.0/PCLCrypto.dll
 ```
 
 The `ref` folder (`ref` being short for "reference assembly") is used to instruct the compiler what assembly should be used for compilation. The .NET Platform Standard version should be chosen such that it covers all of the specific platforms in the package (as indicated by the other sub-folders of "lib").
 
 ### Guard rails (supports)
-In order to support platforms that implement a subset of the reference assemblies in a .NET Platform Standard version, **guard rails** were introduced to help class library authors predict where their libraries will run. As an example, let's introduce a new platform: **.NET Banana 1.0**. **.NET Banana 1.0** indicates it is based on .NET Platform Standard 5.4, but it did not implement the `System.AppContext` reference assembly. Class libraries authors targeting .NET Platform Standard version 5.4 need to know that their package may not work on **.NET Banana 1.0**.
+In order to support platforms that implement a subset of the reference assemblies in a .NET Platform Standard version, **guard rails** were introduced to help class library authors predict where their libraries will run. As an example, let's introduce a new platform: **.NET Banana 1.0**. **.NET Banana 1.0** indicates it is based on .NET Platform Standard 1.3, but it did not implement the `System.AppContext` reference assembly. Class libraries authors targeting .NET Platform Standard version 1.3 need to know that their package may not work on **.NET Banana 1.0**.
 
 ```JSON
 {
@@ -210,7 +210,7 @@ In order to support platforms that implement a subset of the reference assemblie
       "System.AppContext": "5.0.0"
    },
    "frameworks": {
-      "dotnet5.4": { }
+      "netstandard1.3": { }
    } 
 }
 ```
@@ -222,7 +222,7 @@ The above `project.json` will cause NuGet to do a compatibiltiy check, enforcing
 ```JSON
 {
    "frameworks": {
-      "dotnet5.4": { 
+      "netstandard1.3": { 
          "dependencies": {
             "System.AppContext": "5.0.0"
          }
@@ -236,9 +236,9 @@ The above `project.json` will cause NuGet to do a compatibiltiy check, enforcing
 
 ### Legend 
 - `X` - API appeared in specific .NET Platform Standard version
-- `⇠` - API version determined by nearest `X` e.g. In the table below, if you target .NET Platform Standard version 5.5 and reference Microsoft.CSharp, you'd get the 5.1 API version.
+- `⇠` - API version determined by nearest `X` e.g. In the table below, if you target .NET Platform Standard version 1.4 and reference Microsoft.CSharp, you'd get the 1.0 API version.
 
-| Contract | 5.1 | 5.2 | 5.3 | 5.4 | 5.5 |
+| Contract | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 |
 | -------- | --- | --- | --- | --- | --- |
 | Microsoft.CSharp | X | ⇠ | ⇠ | ⇠ | ⇠ |
 | Microsoft.VisualBasic |  | X | ⇠ | ⇠ | ⇠ |
