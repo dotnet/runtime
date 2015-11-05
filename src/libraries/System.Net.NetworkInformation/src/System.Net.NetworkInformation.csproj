@@ -264,6 +264,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MapTcpState.cs">
+      <Link>Interop\Unix\System.Native\Interop.MapTcpState.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
@@ -302,9 +305,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.LinuxNetDeviceFlags.cs">
       <Link>Interop\Linux\Interop.LinuxNetDeviceFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\Interop.LinuxTcpState.cs">
-      <Link>Interop\Linux\Interop.LinuxTcpState.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\System.Native\Interop.NetworkChange.cs">
       <Link>Interop\Linux\System.Native\Interop.NetworkChange.cs</Link>
