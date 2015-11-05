@@ -148,6 +148,10 @@ typedef struct {
 
 typedef struct {
 	MonoMethod *method;
+} SynchronizedWrapperInfo;
+
+typedef struct {
+	MonoMethod *method;
 } SynchronizedInnerWrapperInfo;
 
 typedef struct {
@@ -175,6 +179,14 @@ typedef struct {
 	int alloc_type;
 } AllocatorWrapperInfo;
 
+typedef struct {
+	MonoMethod *method;
+} UnboxWrapperInfo;
+
+typedef struct {
+	MonoMethod *method;
+} RemotingWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -195,6 +207,8 @@ typedef struct {
 		NativeToManagedWrapperInfo native_to_managed;
 		/* MONO_WRAPPER_MANAGED_TO_NATIVE */
 		ManagedToNativeWrapperInfo managed_to_native;
+		/* SYNCHRONIZED */
+		SynchronizedWrapperInfo synchronized;
 		/* SYNCHRONIZED_INNER */
 		SynchronizedInnerWrapperInfo synchronized_inner;
 		/* GENERIC_ARRAY_HELPER */
@@ -209,6 +223,10 @@ typedef struct {
 		WriteBarrierWrapperInfo wbarrier;
 		/* ALLOC */
 		AllocatorWrapperInfo alloc;
+		/* UNBOX */
+		UnboxWrapperInfo unbox;
+		/* MONO_WRAPPER_REMOTING_INVOKE/MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK/MONO_WRAPPER_XDOMAIN_INVOKE */
+		RemotingWrapperInfo remoting;
 	} d;
 } WrapperInfo;
 

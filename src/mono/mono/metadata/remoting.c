@@ -288,7 +288,7 @@ mono_marshal_remoting_find_in_cache (MonoMethod *method, int wrapper_type)
 /* Create the method from the builder and place it in the cache */
 static inline MonoMethod*
 mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb, 
-								MonoMethodSignature *sig, int max_stack)
+								   MonoMethodSignature *sig, int max_stack, WrapperInfo *info)
 {
 	MonoMethod **res = NULL;
 	MonoRemotingMethods *wrps;
@@ -319,7 +319,7 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 		mono_marshal_lock_internal ();
 		if (!*res) {
 			*res = newm;
-			mono_marshal_set_wrapper_info (*res, key);
+			mono_marshal_set_wrapper_info (*res, info);
 			mono_marshal_unlock_internal ();
 		} else {
 			mono_marshal_unlock_internal ();
@@ -392,6 +392,7 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	int params_var;
+	WrapperInfo *info;
 
 	g_assert (method);
 
@@ -441,7 +442,9 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	}
 #endif
 
-	res = mono_remoting_mb_create_and_cache (method, mb, sig, sig->param_count + 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.remoting.method = method;
+	res = mono_remoting_mb_create_and_cache (method, mb, sig, sig->param_count + 16, info);
 	mono_mb_free (mb);
 
 	return res;
@@ -586,6 +589,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	MonoExceptionClause *main_clause;
 	int pos, pos_leave;
 	gboolean copy_return;
+	WrapperInfo *info;
 
 	if ((res = mono_marshal_remoting_find_in_cache (method, MONO_WRAPPER_XDOMAIN_DISPATCH)))
 		return res;
@@ -824,7 +828,9 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	mono_mb_set_clauses (mb, 1, main_clause);
 #endif
 
-	res = mono_remoting_mb_create_and_cache (method, mb, csig, csig->param_count + 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.remoting.method = method;
+	res = mono_remoting_mb_create_and_cache (method, mb, csig, csig->param_count + 16, info);
 	mono_mb_free (mb);
 
 	return res;
@@ -848,6 +854,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	int loc_old_domainid, loc_domainid, loc_return=0, loc_serialized_exc=0, loc_context;
 	int pos, pos_dispatch, pos_noex;
 	gboolean copy_return = FALSE;
+	WrapperInfo *info;
 
 	g_assert (method);
 	
@@ -1151,7 +1158,9 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif /* DISABLE_JIT */
 
-	res = mono_remoting_mb_create_and_cache (method, mb, sig, sig->param_count + 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.remoting.method = method;
+	res = mono_remoting_mb_create_and_cache (method, mb, sig, sig->param_count + 16, info);
 	mono_mb_free (mb);
 
 	return res;
@@ -1190,6 +1199,7 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res, *native;
+	WrapperInfo *info;
 	int i, pos, pos_rem;
 
 	g_assert (method);
@@ -1236,7 +1246,9 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-	res = mono_remoting_mb_create_and_cache (method, mb, sig, sig->param_count + 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.remoting.method = method;
+	res = mono_remoting_mb_create_and_cache (method, mb, sig, sig->param_count + 16, info);
 	mono_mb_free (mb);
 
 	return res;
