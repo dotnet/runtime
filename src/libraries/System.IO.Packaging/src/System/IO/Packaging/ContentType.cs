@@ -80,7 +80,7 @@ namespace System.IO.Packaging
             if (contentType == null)
                 throw new ArgumentNullException("contentType");
 
-            if (String.CompareOrdinal(contentType, String.Empty) == 0)
+            if (contentType.Length == 0)
             {
                 _contentType = String.Empty;
             }
@@ -259,14 +259,14 @@ namespace System.IO.Packaging
 
                 if (_parameterDictionary != null && _parameterDictionary.Count > 0)
                 {
-                    foreach (string paramterKey in _parameterDictionary.Keys)
+                    foreach (string parameterKey in _parameterDictionary.Keys)
                     {
                         stringBuilder.Append(s_linearWhiteSpaceChars[0]);
                         stringBuilder.Append(SemicolonSeparator);
                         stringBuilder.Append(s_linearWhiteSpaceChars[0]);
-                        stringBuilder.Append(paramterKey);
+                        stringBuilder.Append(parameterKey);
                         stringBuilder.Append(EqualSeparator);
-                        stringBuilder.Append(_parameterDictionary[paramterKey]);
+                        stringBuilder.Append(_parameterDictionary[parameterKey]);
                     }
                 }
 
@@ -387,7 +387,7 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// Parses the type ans subType tokens from the string. 
+        /// Parses the type and subType tokens from the string. 
         /// Also verifies if the Tokens are valid as per the grammar.
         /// </summary>
         /// <param name="typeAndSubType">substring that has the type and subType of the content type</param>
@@ -662,14 +662,9 @@ namespace System.IO.Packaging
             {
                 return false;
             }
-
-            foreach (char c in s_linearWhiteSpaceChars)
-            {
-                if (ch == c)
-                    return true;
-            }
-
-            return false;
+            
+            int whiteSpaceIndex = Array.IndexOf(s_linearWhiteSpaceChars, ch);
+            return whiteSpaceIndex != -1;
         }
 
         /// <summary>
