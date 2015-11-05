@@ -112,18 +112,35 @@ namespace System.Collections.Generic
             }
             Contract.EndContractBlock();
 
-            // to avoid excess resizes, first set size based on collection's count. Collection
-            // may contain duplicates, so call TrimExcess if resulting hashset is larger than
-            // threshold
-            int suggestedCapacity = 0;
-            ICollection<T> coll = collection as ICollection<T>;
-            if (coll != null)
+            var otherAsHashSet = collection as HashSet<T>;
+            if (otherAsHashSet != null && AreEqualityComparersEqual(this, otherAsHashSet))
             {
-                suggestedCapacity = coll.Count;
-            }
-            Initialize(suggestedCapacity);
+                _buckets = (int[])otherAsHashSet._buckets.Clone();
+                _slots = (Slot[])otherAsHashSet._slots.Clone();
 
-            this.UnionWith(collection);
+                _count = otherAsHashSet._count;
+                _lastIndex = otherAsHashSet._lastIndex;
+                _freeList = otherAsHashSet._freeList;
+                _version = otherAsHashSet._version;
+
+                // _comparer is already the same
+            }
+            else
+            {
+                // to avoid excess resizes, first set size based on collection's count. Collection
+                // may contain duplicates, so call TrimExcess if resulting hashset is larger than
+                // threshold
+                int suggestedCapacity = 0;
+                ICollection<T> coll = collection as ICollection<T>;
+                if (coll != null)
+                {
+                    suggestedCapacity = coll.Count;
+                }
+                Initialize(suggestedCapacity);
+
+                this.UnionWith(collection);
+            }
+
             if ((_count == 0 && _slots.Length > HashHelpers.GetMinPrime()) ||
                 (_count > 0 && _slots.Length / _count > ShrinkThreshold))
             {
