@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
-
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -24,13 +24,13 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void TransportContext_ConnectToServerWithSsl_GetExpectedChannelBindings()
+        public async Task TransportContext_ConnectToServerWithSsl_GetExpectedChannelBindings()
         {
             using (var testServer = new DummyTcpServer(
                 new IPEndPoint(IPAddress.Loopback, 0), EncryptionPolicy.RequireEncryption))
             using (var client = new TcpClient())
             {
-                client.Connect(testServer.RemoteEndPoint);
+                await client.ConnectAsync(testServer.RemoteEndPoint.Address, testServer.RemoteEndPoint.Port);
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.RequireEncryption))
                 {

@@ -3,6 +3,7 @@
 
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 using Xunit;
 
@@ -21,13 +22,13 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void SslStreamConstructor_BadEncryptionPolicy_ThrowException()
+        public async Task SslStreamConstructor_BadEncryptionPolicy_ThrowException()
         {
             using (var _remoteServer = new DummyTcpServer(
                 new IPEndPoint(IPAddress.Loopback, 0), EncryptionPolicy.RequireEncryption))
             using (var client = new TcpClient())
             {
-                client.Connect(_remoteServer.RemoteEndPoint);
+                await client.ConnectAsync(_remoteServer.RemoteEndPoint.Address, _remoteServer.RemoteEndPoint.Port);
 
                 Assert.Throws<ArgumentException>(() =>
                 {

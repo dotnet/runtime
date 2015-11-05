@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -33,7 +33,7 @@ namespace System.Net.Security.Tests
             _listener = new TcpListener(endPoint);
             _listener.Start(5);
             _log.WriteLine("Server {0} listening", endPoint.Address.ToString());
-            _listener.BeginAcceptTcpClient(OnAccept, null);
+            _listener.AcceptTcpClientAsync().ContinueWith(t => OnAccept(t), TaskScheduler.Default);
         }
 
         public DummyTcpServer(IPEndPoint endPoint) : this(endPoint, null)
@@ -88,14 +88,13 @@ namespace System.Net.Security.Tests
         {
         }
 
-        private void OnAuthenticate(IAsyncResult result)
+        private void OnAuthenticate(Task result, ClientState state)
         {
-            ClientState state = (ClientState)result.AsyncState;
             SslStream sslStream = (SslStream)state.Stream;
 
             try
             {
-                sslStream.EndAuthenticateAsServer(result);
+                result.GetAwaiter().GetResult();
                 _log.WriteLine("Server({0}) authenticated to client({1}) with encryption cipher: {2} {3}-bit strength",
                     state.TcpClient.Client.LocalEndPoint, state.TcpClient.Client.RemoteEndPoint,
                     sslStream.CipherAlgorithm, sslStream.CipherStrength);
@@ -122,14 +121,14 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private void OnAccept(IAsyncResult result)
+        private void OnAccept(Task<TcpClient> result)
         {
             TcpClient client = null;
 
             // Accept current connection
             try
             {
-                client = _listener.EndAcceptTcpClient(result);
+                client = result.Result;
             }
             catch
             {
@@ -157,7 +156,7 @@ namespace System.Net.Security.Tests
                         sslStream = (SslStream)state.Stream;
 
                         _log.WriteLine("Server: attempting to open SslStream.");
-                        sslStream.BeginAuthenticateAsServer(certificate, false, _sslProtocols, false, OnAuthenticate, state);
+                        sslStream.AuthenticateAsServerAsync(certificate, false, _sslProtocols, false).ContinueWith(t => OnAuthenticate(t, state), TaskScheduler.Default);
                     }
                     catch (Exception ex)
                     {
@@ -184,7 +183,7 @@ namespace System.Net.Security.Tests
             // Listen for more client connections
             try
             {
-                _listener.BeginAcceptTcpClient(OnAccept, null);
+                _listener.AcceptTcpClientAsync().ContinueWith(t => OnAccept(t), TaskScheduler.Default);
             }
             catch
             {

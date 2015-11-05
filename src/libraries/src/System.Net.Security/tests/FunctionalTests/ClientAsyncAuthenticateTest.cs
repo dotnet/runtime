@@ -8,7 +8,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -78,123 +78,114 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void ClientAsyncAuthenticate_ServerRequireEncryption_ConnectWithEncryption()
+        public async Task ClientAsyncAuthenticate_ServerRequireEncryption_ConnectWithEncryption()
         {
-            ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption);
+            await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption);
         }
 
         [Fact]
-        public void ClientAsyncAuthenticate_ServerNoEncryption_NoConnect()
+        public async Task ClientAsyncAuthenticate_ServerNoEncryption_NoConnect()
         {
-            Assert.Throws<IOException>(() =>
-            {
-                ClientAsyncSslHelper(EncryptionPolicy.NoEncryption);
-            });
+            await Assert.ThrowsAsync<IOException>(() => ClientAsyncSslHelper(EncryptionPolicy.NoEncryption));
         }
 
         [Fact]
-        public void ClientAsyncAuthenticate_EachProtocol_Success()
+        public async Task ClientAsyncAuthenticate_EachProtocol_Success()
         {
             foreach (SslProtocols protocol in s_eachSslProtocol)
             {
-                ClientAsyncSslHelper(protocol, protocol);
+                await ClientAsyncSslHelper(protocol, protocol);
             }
         }
 
         [Theory]
         [MemberData("ProtocolMismatchData")]
-        public void ClientAsyncAuthenticate_MismatchProtocols_Fails(SslProtocols server, SslProtocols client, Type expected)
+        public async Task ClientAsyncAuthenticate_MismatchProtocols_Fails(SslProtocols server, SslProtocols client, Type expected)
         {
-            Assert.Throws(expected, () => ClientAsyncSslHelper(server, client));
+            await Assert.ThrowsAsync(expected, () => ClientAsyncSslHelper(server, client));
         }
 
         [Theory]
         [MemberData("ProtocolMismatchDataSsl2SpecificWindows")]
         [PlatformSpecific(PlatformID.Windows)]
-        public void ClientAsyncAuthenticate_MismatchProtocols_Ssl2_Fails_Windows(SslProtocols server, SslProtocols client, Type expected)
+        public async Task ClientAsyncAuthenticate_MismatchProtocols_Ssl2_Fails_Windows(SslProtocols server, SslProtocols client, Type expected)
         {
-            Assert.Throws(expected, () => ClientAsyncSslHelper(server, client));
+            await Assert.ThrowsAsync(expected, () => ClientAsyncSslHelper(server, client));
         }
 
         [Theory]
         [MemberData("ProtocolMismatchDataSsl2SpecificLinux")]
         [PlatformSpecific(PlatformID.Linux)]
-        public void ClientAsyncAuthenticate_MismatchProtocols_Ssl2_Fails_Linux(SslProtocols server, SslProtocols client, Type expected)
+        public async Task ClientAsyncAuthenticate_MismatchProtocols_Ssl2_Fails_Linux(SslProtocols server, SslProtocols client, Type expected)
         {
-            Assert.Throws(expected, () => ClientAsyncSslHelper(server, client));
+            await Assert.ThrowsAsync(expected, () => ClientAsyncSslHelper(server, client));
         }
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void ClientAsyncAuthenticate_EachProtocol_Ssl2_Success()
+        public async Task ClientAsyncAuthenticate_EachProtocol_Ssl2_Success()
         {
-            ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2);
+            await ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2);
         }
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void ClientAsyncAuthenticate_Ssl2Tls12ServerSsl2Client_Fails()
+        public async Task ClientAsyncAuthenticate_Ssl2Tls12ServerSsl2Client_Fails()
         {
-            Assert.Throws<Win32Exception>(() =>
-            {
-                // Ssl2 and Tls 1.2 are mutually exclusive.
-                ClientAsyncSslHelper(SslProtocols.Ssl2 | SslProtocols.Tls12, SslProtocols.Ssl2);
-            });
+            // Ssl2 and Tls 1.2 are mutually exclusive.
+            await Assert.ThrowsAsync<Win32Exception>(() => ClientAsyncSslHelper(SslProtocols.Ssl2 | SslProtocols.Tls12, SslProtocols.Ssl2));
         }
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void ClientAsyncAuthenticate_Ssl2Tls12ServerTls12Client_Fails()
+        public async Task ClientAsyncAuthenticate_Ssl2Tls12ServerTls12Client_Fails()
         {
-            Assert.Throws<Win32Exception>(() =>
-            {
-                // Ssl2 and Tls 1.2 are mutually exclusive.
-                ClientAsyncSslHelper(SslProtocols.Ssl2 | SslProtocols.Tls12, SslProtocols.Tls12);
-            });
+            // Ssl2 and Tls 1.2 are mutually exclusive.
+            await Assert.ThrowsAsync<Win32Exception>(() => ClientAsyncSslHelper(SslProtocols.Ssl2 | SslProtocols.Tls12, SslProtocols.Tls12));
         }
 
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        public void ClientAsyncAuthenticate_Ssl2ServerSsl2Tls12Client_Success()
+        public async Task ClientAsyncAuthenticate_Ssl2ServerSsl2Tls12Client_Success()
         {
-            ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2 | SslProtocols.Tls12);
+            await ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2 | SslProtocols.Tls12);
         }
 
         [Fact]
-        public void ClientAsyncAuthenticate_Tls12ServerSsl2Tls12Client_Success()
+        public async Task ClientAsyncAuthenticate_Tls12ServerSsl2Tls12Client_Success()
         {
-            ClientAsyncSslHelper(SslProtocols.Tls12, SslProtocols.Ssl2 | SslProtocols.Tls12);
+            await ClientAsyncSslHelper(SslProtocols.Tls12, SslProtocols.Ssl2 | SslProtocols.Tls12);
         }
 
         [Fact]
-        public void ClientAsyncAuthenticate_AllServerAllClient_Success()
+        public async Task ClientAsyncAuthenticate_AllServerAllClient_Success()
         {
             // Drop Ssl2, it's incompatible with Tls 1.2
             SslProtocols sslProtocols = AllSslProtocols & ~SslProtocols.Ssl2;
-            ClientAsyncSslHelper(sslProtocols, sslProtocols);
+            await ClientAsyncSslHelper(sslProtocols, sslProtocols);
         }
 
         [Fact]
-        public void ClientAsyncAuthenticate_AllServerVsIndividualClientProtocols_Success()
+        public async Task ClientAsyncAuthenticate_AllServerVsIndividualClientProtocols_Success()
         {
             foreach (SslProtocols clientProtocol in s_eachSslProtocol)
             {
                 if (clientProtocol != SslProtocols.Ssl2) // Incompatible with Tls 1.2
                 {
-                    ClientAsyncSslHelper(clientProtocol, AllSslProtocols);
+                    await ClientAsyncSslHelper(clientProtocol, AllSslProtocols);
                 }
             }
         }
 
         [Fact]
-        public void ClientAsyncAuthenticate_IndividualServerVsAllClientProtocols_Success()
+        public async Task ClientAsyncAuthenticate_IndividualServerVsAllClientProtocols_Success()
         {
             SslProtocols clientProtocols = AllSslProtocols & ~SslProtocols.Ssl2; // Incompatible with Tls 1.2
             foreach (SslProtocols serverProtocol in s_eachSslProtocol)
             {
                 if (serverProtocol != SslProtocols.Ssl2) // Incompatible with Tls 1.2
                 {
-                    ClientAsyncSslHelper(clientProtocols, serverProtocol);
+                    await ClientAsyncSslHelper(clientProtocols, serverProtocol);
                     // Cached Tls creds fail when used against Tls servers of higher versions.
                     // Servers are not expected to dynamically change versions.
                 }
@@ -203,17 +194,17 @@ namespace System.Net.Security.Tests
 
         #region Helpers
 
-        private void ClientAsyncSslHelper(EncryptionPolicy encryptionPolicy)
+        private Task ClientAsyncSslHelper(EncryptionPolicy encryptionPolicy)
         {
-            ClientAsyncSslHelper(encryptionPolicy, TestConfiguration.DefaultSslProtocols, TestConfiguration.DefaultSslProtocols);
+            return ClientAsyncSslHelper(encryptionPolicy, TestConfiguration.DefaultSslProtocols, TestConfiguration.DefaultSslProtocols);
         }
 
-        private void ClientAsyncSslHelper(SslProtocols clientSslProtocols, SslProtocols serverSslProtocols)
+        private Task ClientAsyncSslHelper(SslProtocols clientSslProtocols, SslProtocols serverSslProtocols)
         {
-            ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption, clientSslProtocols, serverSslProtocols);
+            return ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption, clientSslProtocols, serverSslProtocols);
         }
 
-        private void ClientAsyncSslHelper(EncryptionPolicy encryptionPolicy, SslProtocols clientSslProtocols,
+        private async Task ClientAsyncSslHelper(EncryptionPolicy encryptionPolicy, SslProtocols clientSslProtocols,
             SslProtocols serverSslProtocols)
         {
             _log.WriteLine("Server: " + serverSslProtocols + "; Client: " + clientSslProtocols);
@@ -224,12 +215,12 @@ namespace System.Net.Security.Tests
             using (var client = new TcpClient(AddressFamily.InterNetworkV6))
             {
                 server.SslProtocols = serverSslProtocols;
-                client.Connect(server.RemoteEndPoint);
+                await client.ConnectAsync(server.RemoteEndPoint.Address, server.RemoteEndPoint.Port);
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null))
                 {
-                    IAsyncResult async = sslStream.BeginAuthenticateAsClient("localhost", null, clientSslProtocols, false, null, null);
-                    Assert.True(async.AsyncWaitHandle.WaitOne(TestConfiguration.TestTimeoutSeconds * 1000), "Timed Out");
-                    sslStream.EndAuthenticateAsClient(async);
+                    Task async = sslStream.AuthenticateAsClientAsync("localhost", null, clientSslProtocols, false);
+                    Assert.True(((IAsyncResult)async).AsyncWaitHandle.WaitOne(TestConfiguration.TestTimeoutSeconds * 1000), "Timed Out");
+                    async.GetAwaiter().GetResult();
 
                     _log.WriteLine("Client({0}) authenticated to server({1}) with encryption cipher: {2} {3}-bit strength",
                         client.Client.LocalEndPoint, client.Client.RemoteEndPoint,
