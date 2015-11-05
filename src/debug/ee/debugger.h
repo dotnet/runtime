@@ -1103,6 +1103,7 @@ protected:
 #ifdef USE_INTEROPSAFE_HEAP
     HANDLE m_hHeap;
 #endif
+    BOOL m_fExecutable;
 };
 
 class DebuggerJitInfo;
