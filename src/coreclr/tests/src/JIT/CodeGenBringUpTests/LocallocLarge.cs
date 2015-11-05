@@ -62,7 +62,7 @@ public class BringUpTest
 
     public static int Main()
     {
-        for (int j = 2; j < 1024 * 100; j += 33)
+        for (int j = 2; j < 1024 * 100; j += 331)
         {
             bool b = RunTest(j);
             if (!b) return Fail;
