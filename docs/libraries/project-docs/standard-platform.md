@@ -193,7 +193,7 @@ PCLCrypto/1.0.80/lib/wpa81/PCLCrypto.dll
 PCLCrypto/1.0.80/ref/dotnet5.1/PCLCrypto.dll
 ```
 
-The `ref` folder (`ref` being short for "reference assembly") is used to instruct the compiler what assembly should be used for compilation. The .NET Standard Platform version should be chosen such that it covesr all of the specific platforms in the package (as indicated by the other sub-folders of "lib").
+The `ref` folder (`ref` being short for "reference assembly") is used to instruct the compiler what assembly should be used for compilation. The .NET Standard Platform version should be chosen such that it covers all of the specific platforms in the package (as indicated by the other sub-folders of "lib").
 
 ### Guard rails (supports)
 In order to support platforms that implement a subset of the reference assemblies in a .NET Standard Platform version, **guard rails** were introduced to help class library authors predict where their libraries will run. As an example, let's introduce a new platform: **.NET Banana 1.0**. **.NET Banana 1.0** indicates it is based on .NET Standard Platform 5.4, but it did not implement the `System.AppContext` reference assembly. Class libraries authors targeting .NET Standard Platform version 5.4 need to know that their package may not work on **.NET Banana 1.0**.
