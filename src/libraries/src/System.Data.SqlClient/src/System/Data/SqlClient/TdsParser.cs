@@ -3199,6 +3199,8 @@ namespace System.Data.SqlClient
 
             if (tdsType == TdsEnums.SQLUDT)
             {
+                _state = TdsParserState.Broken;
+                _connHandler.BreakConnection();
                 throw SQL.UnsupportedFeatureAndToken(_connHandler, SqlDbType.Udt.ToString());
             }
 
