@@ -75,9 +75,9 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                 buildCommands += "build.cmd ${lowerConfiguration} ${architecture} linuxmscorlib"
                 buildCommands += "build.cmd ${lowerConfiguration} ${architecture} freebsdmscorlib"
                 buildCommands += "build.cmd ${lowerConfiguration} ${architecture} osxmscorlib"
-                // Pack up the tests directory so that we don't use so much space/time copying
+                // Zip up the tests directory so that we don't use so much space/time copying
                 // 10s of thousands of files around.
-                buildCommands += "C:\\Packer\\Packer.exe .\\bin\\tests\\tests.pack .\\bin\\tests\\${osGroup}.${architecture}.${configuration}"
+                buildCommands += "powershell -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('.\\bin\\tests\\${osGroup}.${architecture}.${configuration}', '.\\bin\\tests\\tests.zip')\"";
             }
             else {
                 // On other OS's we skipmscorlib but run the pal tests
@@ -160,7 +160,7 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                 // Instead of packing up all the 
                 if (osGroup == 'Windows_NT') {
                     Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
-                    Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.pack")
+                    Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
                 } else {
                     // Add .NET results for the 
                     Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
@@ -300,8 +300,8 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                             }
                         }
                         
-                        // Unpack the tests first
-                        shell("unpacker ./bin/tests/tests.pack ./bin/tests/Windows_NT.${architecture}.${configuration}")
+                        // Unzip the tests first
+                        shell("unzip ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration}")
                         
                         // Execute the tests
                         shell("""
