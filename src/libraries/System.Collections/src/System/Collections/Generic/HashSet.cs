@@ -348,6 +348,12 @@ namespace System.Collections.Generic
                 return;
             }
 
+            // set intersecting with itself is the same set
+            if (other == this)
+            {
+                return;
+            }
+
             // if other is empty, intersection is empty set; remove all elements and we're done
             // can only figure this out if implements ICollection<T>. (IEnumerable<T> has no count)
             ICollection<T> otherAsCollection = other as ICollection<T>;
@@ -474,6 +480,12 @@ namespace System.Collections.Generic
                 return true;
             }
 
+            // Set is always a subset of itself
+            if (other == this)
+            {
+                return true;
+            }
+
             HashSet<T> otherAsSet = other as HashSet<T>;
             // faster if other has unique elements according to this equality comparer; so check 
             // that other is a hashset using the same equality comparer.
@@ -519,9 +531,21 @@ namespace System.Collections.Generic
             }
             Contract.EndContractBlock();
 
+            // no set is a proper subset of itself.
+            if (other == this)
+            {
+                return false;
+            }
+
             ICollection<T> otherAsCollection = other as ICollection<T>;
             if (otherAsCollection != null)
             {
+                // no set is a proper subset of an empty set
+                if (otherAsCollection.Count == 0)
+                {
+                    return false;
+                }
+
                 // the empty set is a proper subset of anything but the empty set
                 if (_count == 0)
                 {
@@ -565,6 +589,12 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException("other");
             }
             Contract.EndContractBlock();
+
+            // a set is always a superset of itself
+            if (other == this)
+            {
+                return true;
+            }
 
             // try to fall out early based on counts
             ICollection<T> otherAsCollection = other as ICollection<T>;
@@ -624,6 +654,12 @@ namespace System.Collections.Generic
                 return false;
             }
 
+            // a set is never a strict superset of itself
+            if (other == this)
+            {
+                return false;
+            }
+
             ICollection<T> otherAsCollection = other as ICollection<T>;
             if (otherAsCollection != null)
             {
@@ -668,6 +704,12 @@ namespace System.Collections.Generic
                 return false;
             }
 
+            // set overlaps itself
+            if (other == this)
+            {
+                return true;
+            }
+
             foreach (T element in other)
             {
                 if (Contains(element))
@@ -691,6 +733,12 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException("other");
             }
             Contract.EndContractBlock();
+
+            // a set is equal to itself
+            if (other == this)
+            {
+                return true;
+            }
 
             HashSet<T> otherAsSet = other as HashSet<T>;
             // faster if other is a hashset and we're using same equality comparer
