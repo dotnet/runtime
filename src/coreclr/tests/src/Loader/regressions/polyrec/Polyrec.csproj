@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>polyrec</AssemblyName>
+    <AssemblyName>Polyrec</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{B50A2D18-32B1-4051-A3E4-B004A6BBBF4D}</ProjectGuid>
     <OutputType>Exe</OutputType>
