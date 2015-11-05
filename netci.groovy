@@ -302,7 +302,7 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                         }
                         
                         // Unzip the tests first.  Exit with 0
-                        shell("unzip ./bin/tests/tests.zip -q -o -d ./bin/tests/Windows_NT.${architecture}.${configuration}; exit 0")
+                        shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration}; exit 0")
                         
                         // Execute the tests
                         shell("""
