@@ -249,6 +249,7 @@ mono_gc_get_specific_write_barrier (gboolean is_concurrent)
 	MonoMethodBuilder *mb;
 	MonoMethodSignature *sig;
 	MonoMethod **write_barrier_method_addr;
+	WrapperInfo *info;
 #ifdef MANAGED_WBARRIER
 	int i, nursery_check_labels [2];
 #endif
@@ -327,6 +328,10 @@ mono_gc_get_specific_write_barrier (gboolean is_concurrent)
 #endif
 #endif
 	res = mono_mb_create_method (mb, sig, 16);
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	/* The generated barrier depends on this being the same at runtime */
+	info->d.wbarrier.nursery_bits = DEFAULT_NURSERY_BITS;
+	mono_marshal_set_wrapper_info (res, info);
 	mono_mb_free (mb);
 
 	LOCK_GC;

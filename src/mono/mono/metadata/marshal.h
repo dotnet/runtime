@@ -166,6 +166,10 @@ typedef struct {
 	MonoClass *klass;
 } ProxyWrapperInfo;
 
+typedef struct {
+	int nursery_bits;
+} WriteBarrierWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -196,6 +200,8 @@ typedef struct {
 		ArrayAccessorWrapperInfo array_accessor;
 		/* PROXY_ISINST etc. */
 		ProxyWrapperInfo proxy;
+		/* WRITE_BARRIER */
+		WriteBarrierWrapperInfo wbarrier;
 	} d;
 } WrapperInfo;
 

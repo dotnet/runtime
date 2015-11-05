@@ -893,9 +893,19 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				g_error ("Error: No managed allocator, but we need one for AOT.\nAre you using non-standard GC options?\n");
 			break;
 		}
-		case MONO_WRAPPER_WRITE_BARRIER:
+		case MONO_WRAPPER_WRITE_BARRIER: {
+			int nursery_bits = decode_value (p, &p);
+			WrapperInfo *info;
+
 			ref->method = mono_gc_get_write_barrier ();
+			if (ref->method) {
+				/* Sanity check */
+				info = mono_marshal_get_wrapper_info (ref->method);
+				g_assert (info);
+				g_assert (info->d.wbarrier.nursery_bits == nursery_bits);
+			}
 			break;
+		}
 		case MONO_WRAPPER_STELEMREF: {
 			int subtype = decode_value (p, &p);
 
