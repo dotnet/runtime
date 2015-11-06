@@ -1429,10 +1429,14 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 	case CEE_NEWOBJ:
 	case CEE_CALL:
 	case CEE_CALLVIRT:
-		if (method->wrapper_type)
+		if (method->wrapper_type) {
 			cmethod = (MonoMethod *)data;
-		else
-			cmethod = mono_get_method_full (method->klass->image, token, NULL, NULL);
+		} else {
+			MonoError error;
+			cmethod = mono_get_method_checked (method->klass->image, token, NULL, NULL, &error);
+			if (!cmethod)
+				g_error ("Could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
+		}
 		desc = mono_method_full_name (cmethod, TRUE);
 		res = g_strdup_printf ("<%s>", desc);
 		g_free (desc);

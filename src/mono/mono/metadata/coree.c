@@ -136,6 +136,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 /* Called by ntdll.dll reagardless of entry point after _CorValidateImage. */
 __int32 STDMETHODCALLTYPE _CorExeMain(void)
 {
+	MonoError error;
 	MonoDomain* domain;
 	MonoAssembly* assembly;
 	MonoImage* image;
@@ -179,9 +180,10 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 		ExitProcess (1);
 	}
 
-	method = mono_get_method (image, entry, NULL);
+	method = mono_get_method_checked (image, entry, NULL, NULL, &error);
 	if (method == NULL) {
 		g_free (file_name);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		MessageBox (NULL, L"The entry point method could not be loaded.", NULL, MB_ICONERROR);
 		mono_runtime_quit ();
 		ExitProcess (1);

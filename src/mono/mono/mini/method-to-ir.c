@@ -7375,17 +7375,18 @@ exception_exit:
 static inline MonoMethod *
 mini_get_method_allow_open (MonoMethod *m, guint32 token, MonoClass *klass, MonoGenericContext *context)
 {
+	MonoError error;
 	MonoMethod *method;
 
 	if (m->wrapper_type != MONO_WRAPPER_NONE) {
 		method = (MonoMethod *)mono_method_get_wrapper_data (m, token);
 		if (context) {
-			MonoError error;
 			method = mono_class_inflate_generic_method_checked (method, context, &error);
 			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		}
 	} else {
-		method = mono_get_method_full (m->klass->image, token, klass, context);
+		method = mono_get_method_checked (m->klass->image, token, klass, context, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 	}
 
 	return method;

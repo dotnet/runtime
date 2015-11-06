@@ -4117,7 +4117,13 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 		printf ("PRECOMPILE: %s.\n", mono_image_get_filename (image));
 
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
-		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL);
+		MonoError error;
+
+		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		if (!method) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			continue;
+		}
 		if (method->flags & METHOD_ATTRIBUTE_ABSTRACT)
 			continue;
 		if (method->is_generic || method->klass->generic_container)
