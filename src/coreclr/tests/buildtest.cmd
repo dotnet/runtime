@@ -12,10 +12,12 @@ set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 
 :: Default to highest Visual Studio version available
-set __VSVersion=vs2015
+if not defined __VSVersion (
+    set __VSVersion=vs2015
 
-if defined VS120COMNTOOLS set __VSVersion=vs2013
-if defined VS140COMNTOOLS set __VSVersion=vs2015
+    if defined VS120COMNTOOLS set __VSVersion=vs2013
+    if defined VS140COMNTOOLS set __VSVersion=vs2015
+)
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
