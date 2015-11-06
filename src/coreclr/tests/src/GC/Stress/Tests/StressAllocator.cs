@@ -518,7 +518,7 @@ namespace StressAllocator
                     else if (String.Compare(currentArg.ToLower(), "pinned") == 0)
                     {
                         currentArgValue = args[++i];
-                        percentPinned = float.Parse(currentArgValue);
+                        percentPinned = float.Parse(currentArgValue, System.Globalization.CultureInfo.InvariantCulture);
                     }
                     else if (String.Compare(currentArg.ToLower(), "lohpin") == 0)  //for LOH compacting testing, this is the option to apply the pinning percentage to LOH
                     {
@@ -527,22 +527,22 @@ namespace StressAllocator
                     else if (String.Compare(currentArg.ToLower(), "bucket1") == 0)
                     {
                         currentArgValue = args[++i];
-                        percentBucket1 = float.Parse(currentArgValue);
+                        percentBucket1 = float.Parse(currentArgValue, System.Globalization.CultureInfo.InvariantCulture);
                     }
                     else if (String.Compare(currentArg.ToLower(), "bucket2") == 0)
                     {
                         currentArgValue = args[++i];
-                        percentBucket2 = float.Parse(currentArgValue);
+                        percentBucket2 = float.Parse(currentArgValue, System.Globalization.CultureInfo.InvariantCulture);
                     }
                     else if (String.Compare(currentArg.ToLower(), "bucket3") == 0)
                     {
                         currentArgValue = args[++i];
-                        percentBucket3 = float.Parse(currentArgValue);
+                        percentBucket3 = float.Parse(currentArgValue, System.Globalization.CultureInfo.InvariantCulture);
                     }
                     else if (String.Compare(currentArg.ToLower(), "bucket4") == 0)
                     {
                         currentArgValue = args[++i];
-                        percentBucket4 = float.Parse(currentArgValue);
+                        percentBucket4 = float.Parse(currentArgValue, System.Globalization.CultureInfo.InvariantCulture);
                     }
                     else if (String.Compare(currentArg.ToLower(), "nolocks") == 0)
                     {
