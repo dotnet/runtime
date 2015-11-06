@@ -1,5 +1,8 @@
 # .NET Platform Standard
 
+## Disclaimer
+We're sharing early plans for the future of building .NET class libraries. To track the progress of this work refer to https://github.com/dotnet/corefx/issues/4367
+
 ## Why?
 To provide a more concrete guarantee of binary portability to future .NET-capable platforms with an easier-to-understand platform versioning plan.
 
