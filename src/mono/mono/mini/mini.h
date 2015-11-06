@@ -776,6 +776,7 @@ typedef struct {
 	int esize;
 	/* Parameter index in the LLVM signature */
 	int pindex;
+	MonoType *type;
 } LLVMArgInfo;
 
 typedef struct {

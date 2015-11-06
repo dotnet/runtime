@@ -1351,7 +1351,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			}
 			break;
 		case LLVMArgVtypeByVal:
-			param_types [pindex] = type_to_llvm_arg_type (ctx, sig->params [i]);
+			param_types [pindex] = type_to_llvm_arg_type (ctx, ainfo->type);
 			CHECK_FAILURE (ctx);
 			param_types [pindex] = LLVMPointerType (param_types [pindex], 0);
 			pindex ++;
@@ -1362,7 +1362,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			break;
 		case LLVMArgVtypeByRef:
 		case LLVMArgScalarByRef:
-			param_types [pindex] = type_to_llvm_arg_type (ctx, sig->params [i]);
+			param_types [pindex] = type_to_llvm_arg_type (ctx, ainfo->type);
 			CHECK_FAILURE (ctx);
 			param_types [pindex] = LLVMPointerType (param_types [pindex], 0);
 			pindex ++;
@@ -1379,7 +1379,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			g_assert_not_reached ();
 			break;
 		default:
-			param_types [pindex ++] = type_to_llvm_arg_type (ctx, sig->params [i]);
+			param_types [pindex ++] = type_to_llvm_arg_type (ctx, ainfo->type);
 			break;
 		}
 	}
@@ -2746,11 +2746,11 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 				for (j = 0; j < ainfo->nslots; ++j)
 					args [j] = LLVMGetParam (ctx->lmethod, pindex + j);
 			}
-			ctx->addresses [reg] = build_alloca (ctx, sig->params [i]);
+			ctx->addresses [reg] = build_alloca (ctx, ainfo->type);
 
-			emit_args_to_vtype (ctx, builder, sig->params [i], ctx->addresses [reg], ainfo, args);
+			emit_args_to_vtype (ctx, builder, ainfo->type, ctx->addresses [reg], ainfo, args);
 
-			if (ainfo->storage == LLVMArgVtypeInReg && MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (sig->params [i]))) {
+			if (ainfo->storage == LLVMArgVtypeInReg && MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (ainfo->type))) {
 				/* Treat these as normal values */
 				ctx->values [reg] = LLVMBuildLoad (builder, ctx->addresses [reg], "");
 			}
@@ -2759,7 +2759,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeByVal: {
 			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
 
-			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (sig->params [i]))) {
+			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type (ainfo->type))) {
 				/* Treat these as normal values */
 				ctx->values [reg] = LLVMBuildLoad (builder, ctx->addresses [reg], "");
 			}
@@ -2782,7 +2782,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgAsIArgs: {
 			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
 
-			ctx->addresses [reg] = build_alloca (ctx, sig->params [i]);
+			ctx->addresses [reg] = build_alloca (ctx, ainfo->type);
 
 			/* The argument is received as an array of ints, store it into the real argument */
 			LLVMBuildStore (ctx->builder, arg, convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMTypeOf (arg), 0)));
@@ -2792,7 +2792,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			g_assert_not_reached ();
 			break;
 		default:
-			ctx->values [reg] = convert_full (ctx, ctx->values [reg], llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, sig->params [i])), type_is_unsigned (ctx, sig->params [i]));
+			ctx->values [reg] = convert_full (ctx, ctx->values [reg], llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, ainfo->type)), type_is_unsigned (ctx, ainfo->type));
 			break;
 		}
 	}
@@ -3118,7 +3118,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			guint32 nargs;
 
 			g_assert (addresses [reg]);
-			emit_vtype_to_args (ctx, builder, sig->params [i - sig->hasthis], addresses [reg], ainfo, args + pindex, &nargs);
+			emit_vtype_to_args (ctx, builder, ainfo->type, addresses [reg], ainfo, args + pindex, &nargs);
 			pindex += nargs;
 
 			// FIXME: alignment
@@ -3132,7 +3132,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		case LLVMArgVtypeByRef:
 		case LLVMArgScalarByRef: {
 			g_assert (addresses [reg]);
-			args [pindex] = convert (ctx, addresses [reg], LLVMPointerType (type_to_llvm_arg_type (ctx, sig->params [i - sig->hasthis]), 0));
+			args [pindex] = convert (ctx, addresses [reg], LLVMPointerType (type_to_llvm_arg_type (ctx, ainfo->type), 0));
 			break;
 		}
 		case LLVMArgAsIArgs:
@@ -3147,7 +3147,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			if (i == 0 && sig->hasthis)
 				args [pindex] = convert (ctx, args [pindex], ThisType ());
 			else
-				args [pindex] = convert (ctx, args [pindex], type_to_llvm_arg_type (ctx, sig->params [i - sig->hasthis]));
+				args [pindex] = convert (ctx, args [pindex], type_to_llvm_arg_type (ctx, ainfo->type));
 			break;
 		}
 		g_assert (pindex <= nargs);
@@ -6004,6 +6004,19 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 		return;
 }
 
+static LLVMCallInfo*
+get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
+{
+	LLVMCallInfo *linfo;
+	int i;
+
+	linfo = mono_arch_get_llvm_call_info (cfg, sig);
+	for (i = 0; i < sig->param_count; ++i)
+		linfo->args [i + sig->hasthis].type = sig->params [i];
+
+	return linfo;
+}
+
 /*
  * mono_llvm_emit_method:
  *
@@ -6103,7 +6116,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 	ctx->sig = sig;
 
-	linfo = mono_arch_get_llvm_call_info (cfg, sig);
+	linfo = get_llvm_call_info (cfg, sig);
 	ctx->linfo = linfo;
 	CHECK_FAILURE (ctx);
 
@@ -6592,7 +6605,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 
-	call->cinfo = mono_arch_get_llvm_call_info (cfg, sig);
+	call->cinfo = get_llvm_call_info (cfg, sig);
 
 	if (cfg->disable_llvm)
 		return;
@@ -6613,7 +6626,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		switch (ainfo->storage) {
 		case LLVMArgInIReg:
 		case LLVMArgInFPReg: {
-			MonoType *t = (sig->hasthis && i == 0) ? &mono_get_intptr_class ()->byval_arg : sig->params [i - sig->hasthis];
+			MonoType *t = (sig->hasthis && i == 0) ? &mono_get_intptr_class ()->byval_arg : ainfo->type;
 			int opcode;
 
 			opcode = mono_type_to_regmove (cfg, t);
@@ -6645,11 +6658,10 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			ins->sreg1 = in->dreg;
 			ins->inst_p0 = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMArgInfo));
 			memcpy (ins->inst_p0, ainfo, sizeof (LLVMArgInfo));
-			ins->inst_vtype = sig->params [i - sig->hasthis];
-			ins->klass = mono_class_from_mono_type (sig->params [i - sig->hasthis]);
+			ins->inst_vtype = ainfo->type;
+			ins->klass = mono_class_from_mono_type (ainfo->type);
 			break;
 		default:
-			call->cinfo = mono_arch_get_llvm_call_info (cfg, sig);
 			cfg->exception_message = g_strdup ("ainfo->storage");
 			cfg->disable_llvm = TRUE;
 			return;
