@@ -6624,8 +6624,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			
 		/* Simply remember the arguments */
 		switch (ainfo->storage) {
-		case LLVMArgInIReg:
-		case LLVMArgInFPReg: {
+		case LLVMArgNormal: {
 			MonoType *t = (sig->hasthis && i == 0) ? &mono_get_intptr_class ()->byval_arg : ainfo->type;
 			int opcode;
 
