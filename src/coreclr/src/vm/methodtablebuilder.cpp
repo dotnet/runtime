@@ -8472,10 +8472,10 @@ void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
         return;
     }
 
+    const bool useNativeLayout = false;
     // Iterate through the fields and make sure they meet requirements to pass in registers
     SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
-
-    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0))
+    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout))
     {
         // All the above tests passed. It's registers passed struct!
         GetHalfBakedMethodTable()->SetRegPassedStruct();
@@ -8510,10 +8510,10 @@ void MethodTableBuilder::SystemVAmd64CheckForPassNativeStructInRegister()
     _ASSERTE(HasLayout());
 
     // Classify the native layout for this struct.
-   
+    const bool useNativeLayout = true;
     // Iterate through the fields and make sure they meet requirements to pass in registers
     SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
-    if (GetHalfBakedMethodTable()->ClassifyEightBytesForNativeStruct(&helper, 0, 0))
+    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout))
     {
         GetLayoutInfo()->SetNativeStructPassedInRegisters();
     }

@@ -1048,12 +1048,11 @@ public:
     void CheckRunClassInitAsIfConstructingThrowing();
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
-    // Helper function for ClassifyEightBytes
+    // Helper function for ClassifyEightBytesWithManagedLayout and ClassifyEightBytesWithNativeLayout
     static SystemVClassificationType ReClassifyField(SystemVClassificationType originalClassification, SystemVClassificationType newFieldClassification);
 
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
-    bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct);
-    bool ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct);
+    bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
 
     // Copy m_dwFlags from another method table
@@ -1093,6 +1092,9 @@ private:
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
     void AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel);
+    // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
+    bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
+    bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
 
     DWORD   GetClassIndexFromToken(mdTypeDef typeToken)
