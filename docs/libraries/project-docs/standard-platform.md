@@ -3,6 +3,8 @@
 ## Disclaimer
 We're sharing early plans for the future of building .NET class libraries. To track the progress of this work refer to https://github.com/dotnet/corefx/issues/4367
 
+**NOTE:The netstandard TFM does not work in packages as yet. It's still implemented as dotnet. Please follow the issues for more details and progress updates.**
+
 ## Why?
 To provide a more concrete guarantee of binary portability to future .NET-capable platforms with an easier-to-understand platform versioning plan.
 
