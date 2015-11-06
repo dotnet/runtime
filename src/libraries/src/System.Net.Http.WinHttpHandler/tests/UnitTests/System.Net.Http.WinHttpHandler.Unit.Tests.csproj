@@ -13,12 +13,6 @@
   </PropertyGroup>
   
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
 
@@ -92,12 +86,6 @@
     <Compile Include="..\..\src\System\Net\Http\WinInetProxyHelper.cs">
       <Link>ProductionCode\WinInetProxyHelper.cs</Link>
     </Compile>
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-  </ItemGroup>
-  
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="APICallHistory.cs" />
     <Compile Include="ClientCertificateHelper.cs" />
     <Compile Include="ClientCertificateScenarioTest.cs" />
