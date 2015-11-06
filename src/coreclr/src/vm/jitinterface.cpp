@@ -2584,7 +2584,14 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
         _ASSERTE(CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct);
 
         MethodTable* methodTablePtr = nullptr;
-        bool isNativeStruct = false;
+
+        // The useNativeLayout in this case tracks whether the classification
+        // is for a native layout of the struct or not.
+        // If the struct has special marshaling it has a native layout. 
+        // In such cases the classifier needs to use the native layout.
+        // For structs with no native layout, the managed layout should be used
+        // even if classified for the purposes of marshaling/PInvoke passing.
+        bool useNativeLayout = false;
         if (!th.IsTypeDesc())
         {
             methodTablePtr = th.AsMethodTable();
@@ -2595,7 +2602,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
             if (th.IsNativeValueType())
             {
                 methodTablePtr = th.AsNativeValueType();
-                isNativeStruct = true;
+                useNativeLayout = true;
                 _ASSERTE(methodTablePtr != nullptr);
             }
             else
@@ -2606,12 +2613,14 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 
         bool isPassableInRegs = false;
 
-        if (isNativeStruct)
+        if (useNativeLayout)
         {
+            _ASSERTE(th.IsNativeValueType());
             isPassableInRegs = methodTablePtr->GetLayoutInfo()->IsNativeStructPassedInRegisters();
         }
         else
         {
+            _ASSERTE(!th.IsNativeValueType());
             isPassableInRegs = methodTablePtr->IsRegPassedStruct();
         }
 
@@ -2621,10 +2630,12 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
         }
         else
         {
-            structPassInRegDescPtr->passedInRegisters = true;
-
             SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
-            bool result = methodTablePtr->ClassifyEightBytes(&helper, 0, 0);
+            bool result = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
+
+            // The answer must be true at this point.
+            _ASSERTE(result);
+            structPassInRegDescPtr->passedInRegisters = true;
 
             structPassInRegDescPtr->eightByteCount = helper.eightByteCount;
             _ASSERTE(structPassInRegDescPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
