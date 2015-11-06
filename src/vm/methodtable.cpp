@@ -2952,108 +2952,82 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 // Assigns the classification types to the array with eightbyte types.
 void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel)
 {
+    static const size_t CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS = CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS * SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
+    static_assert_no_msg(CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS == SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
+
     if (!helperPtr->inEmbeddedStruct)
     {
         _ASSERTE(nestingLevel == 0);
 
+        int largestFieldOffset = helperPtr->largestFieldOffset;
+        _ASSERTE(largestFieldOffset != -1);
+
         // We're at the top level of the recursion, and we're done looking at the fields.
         // Now sort the fields by offset and set the output data.
 
-        int sortedFieldOrder[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
-        for (unsigned i = 0; i < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT; i++)
+        int sortedFieldOrder[CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS];
+        for (unsigned i = 0; i < CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS; i++)
         {
             sortedFieldOrder[i] = -1;
         }
 
-        for (unsigned i = 0; i < helperPtr->currentUniqueOffsetField; i++)
+        unsigned numFields = helperPtr->currentUniqueOffsetField;
+        for (unsigned i = 0; i < numFields; i++)
         {
-            _ASSERTE(helperPtr->fieldOffsets[i] < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
+            _ASSERTE(helperPtr->fieldOffsets[i] < CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS);
             _ASSERTE(sortedFieldOrder[helperPtr->fieldOffsets[i]] == -1); // we haven't seen this field offset yet.
             sortedFieldOrder[helperPtr->fieldOffsets[i]] = i;
         }
 
-        // Set the layoutSizes (includes holes from alignment of the fields.)
-        int lastField = -1;
-        for (unsigned i = 0; i < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT; i++)
-        {
-            int ordinal = sortedFieldOrder[i];
-            if (ordinal == -1)
-            {
-                continue;
-            }
-
-            if (lastField == -1)
-            {
-                lastField = ordinal;
-                continue;
-            }
-
-            helperPtr->fieldLayoutSizes[lastField] = helperPtr->fieldOffsets[ordinal] - helperPtr->fieldOffsets[lastField];
-
-            lastField = ordinal;
-        }
-        // Now the last field
-        _ASSERTE(lastField != -1); // if lastField==-1, then the struct has no fields!
-
-        // A field size cannot be bigger than the size of an eightbyte.
-        // There are cases where for the native layout of a struct the VM allocates 16 
-        // bytes space, but the struct has one eight-byte field.
-        // This field is of classification type INTEGER or INTEGERREFERENCE.
-        // Make sure the field layout size does not extend beyound an eightbyte.
-        _ASSERTE(helperPtr->fieldSizes[lastField] <= SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES);
-        helperPtr->fieldLayoutSizes[lastField] = min(helperPtr->structSize - helperPtr->fieldOffsets[lastField], SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES);
-
         // Calculate the eightbytes and their types.
         unsigned int accumulatedSizeForEightByte = 0;
-        unsigned int lastEightByteOffset = 0;
+        unsigned int currentEightByteOffset = 0;
         unsigned int currentEightByte = 0;
 
-        for (unsigned i = 0; i < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT; i++)
+        int lastFieldOrdinal = sortedFieldOrder[largestFieldOffset];
+        unsigned int offsetAfterLastFieldByte = largestFieldOffset + helperPtr->fieldSizes[lastFieldOrdinal];
+        SystemVClassificationType lastFieldClassification = helperPtr->fieldClassifications[lastFieldOrdinal];
+
+        unsigned offset = 0;
+        for (unsigned fieldSize = 0; offset < helperPtr->structSize; offset += fieldSize)
         {
-            int ordinal = sortedFieldOrder[i];
+            SystemVClassificationType fieldClassificationType;
+
+            int ordinal = sortedFieldOrder[offset];
             if (ordinal == -1)
             {
-                continue;
-            }
-
-            _ASSERTE(helperPtr->fieldLayoutSizes[ordinal] <= SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES);
-
-            if ((accumulatedSizeForEightByte + helperPtr->fieldLayoutSizes[ordinal]) > SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
-            {
-                // Save data for this eightbyte.
-                helperPtr->eightByteSizes[currentEightByte] = accumulatedSizeForEightByte;
-                helperPtr->eightByteOffsets[currentEightByte] = lastEightByteOffset;
-
-                // Set up for next eightbyte.
-                currentEightByte++;
-                _ASSERTE(currentEightByte < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-
-                lastEightByteOffset = helperPtr->fieldOffsets[ordinal];
-                accumulatedSizeForEightByte = (accumulatedSizeForEightByte + helperPtr->fieldLayoutSizes[ordinal]) - SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
+                // If there is no field that starts as this offset, treat its contents as padding.
+                // Any padding that follows the last field receives the same classification as the
+                // last field; padding between fields receives the NO_CLASS classification as per
+                // the SysV ABI spec.
+                fieldSize = 1;
+                fieldClassificationType = offset < offsetAfterLastFieldByte ? SystemVClassificationTypeNoClass : lastFieldClassification;
             }
             else
             {
-                accumulatedSizeForEightByte += helperPtr->fieldLayoutSizes[ordinal];
+                fieldSize = helperPtr->fieldSizes[ordinal];
+                _ASSERTE(fieldSize > 0 && fieldSize <= SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES);
+
+                fieldClassificationType = helperPtr->fieldClassifications[ordinal];
+                _ASSERTE(fieldClassificationType != SystemVClassificationTypeMemory && fieldClassificationType != SystemVClassificationTypeUnknown);
             }
 
-            _ASSERTE(helperPtr->fieldClassifications[ordinal] != SystemVClassificationTypeMemory);
-
-            if (helperPtr->eightByteClassifications[currentEightByte] == helperPtr->fieldClassifications[ordinal])
+            if (helperPtr->eightByteClassifications[currentEightByte] == fieldClassificationType)
             {
-                // Do nothing. The eight-byte is already classified.
+                // Do nothing. The eight-byte already has this classification.
             }
             else if (helperPtr->eightByteClassifications[currentEightByte] == SystemVClassificationTypeNoClass)
             {
-                helperPtr->eightByteClassifications[currentEightByte] = helperPtr->fieldClassifications[ordinal];
+                helperPtr->eightByteClassifications[currentEightByte] = fieldClassificationType;
             }
             else if ((helperPtr->eightByteClassifications[currentEightByte] == SystemVClassificationTypeInteger) ||
-                (helperPtr->fieldClassifications[ordinal] == SystemVClassificationTypeInteger))
+                (fieldClassificationType == SystemVClassificationTypeInteger))
             {
-                _ASSERTE(helperPtr->fieldClassifications[ordinal] != SystemVClassificationTypeIntegerReference);
+                _ASSERTE(fieldClassificationType != SystemVClassificationTypeIntegerReference);
                 helperPtr->eightByteClassifications[currentEightByte] = SystemVClassificationTypeInteger;
             }
             else if ((helperPtr->eightByteClassifications[currentEightByte] == SystemVClassificationTypeIntegerReference) ||
-                (helperPtr->fieldClassifications[ordinal] == SystemVClassificationTypeIntegerReference))
+                (fieldClassificationType == SystemVClassificationTypeIntegerReference))
             {
                 helperPtr->eightByteClassifications[currentEightByte] = SystemVClassificationTypeIntegerReference;
             }
@@ -3061,11 +3035,37 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
             {
                 helperPtr->eightByteClassifications[currentEightByte] = SystemVClassificationTypeSSE;
             }
+
+            accumulatedSizeForEightByte += fieldSize;
+            if (accumulatedSizeForEightByte == SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
+            {
+                // Save data for this eightbyte.
+                helperPtr->eightByteSizes[currentEightByte] = SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
+                helperPtr->eightByteOffsets[currentEightByte] = currentEightByteOffset;
+
+                // Set up for next eightbyte.
+                currentEightByte++;
+                _ASSERTE(currentEightByte <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+
+                currentEightByteOffset = offset + fieldSize;
+                accumulatedSizeForEightByte = 0;
+            }
+
+            _ASSERTE(accumulatedSizeForEightByte < SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES);
         }
 
-        helperPtr->eightByteCount = currentEightByte + 1;
-        helperPtr->eightByteSizes[currentEightByte] = accumulatedSizeForEightByte;
-        helperPtr->eightByteOffsets[currentEightByte] = lastEightByteOffset;
+        // Handle structs that end in the middle of an eightbyte.
+        if (accumulatedSizeForEightByte > 0 && accumulatedSizeForEightByte < SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
+        {
+            _ASSERTE((helperPtr->structSize % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES) != 0);
+
+            helperPtr->eightByteSizes[currentEightByte] = accumulatedSizeForEightByte;
+            helperPtr->eightByteOffsets[currentEightByte] = currentEightByteOffset;
+            currentEightByte++;
+        }
+
+        helperPtr->eightByteCount = currentEightByte;
+
         _ASSERTE(helperPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 
 #ifdef _DEBUG
