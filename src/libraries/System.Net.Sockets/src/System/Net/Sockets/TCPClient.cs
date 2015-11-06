@@ -340,7 +340,7 @@ namespace System.Net.Sockets
             }
         }
 
-        // Gets or sets the receive time out value of the connection in seconds.
+        // Gets or sets the receive time out value of the connection in milliseconds.
         public int ReceiveTimeout
         {
             get
@@ -355,7 +355,7 @@ namespace System.Net.Sockets
             }
         }
 
-        // Gets or sets the send time out value of the connection in seconds.
+        // Gets or sets the send time out value of the connection in milliseconds.
         public int SendTimeout
         {
             get
