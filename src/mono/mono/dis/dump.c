@@ -944,6 +944,7 @@ dump_table_customattr (MonoImage *m)
 
 	fprintf (output, "Custom Attributes Table (1..%d)\n", t->rows);
 	for (i = 1; i <= t->rows; i++) {
+		MonoError error;
 		guint32 cols [MONO_CUSTOM_ATTR_SIZE];
 		guint32 mtoken;
 		char * desc;
@@ -966,12 +967,18 @@ dump_table_customattr (MonoImage *m)
 			break;
 		}
 		method = get_method (m, mtoken, NULL);
-		meth = mono_get_method (m, mtoken, NULL);
-		params = custom_attr_params (m, mono_method_signature (meth), mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]));
-		fprintf (output, "%d: %s: %s [%s]\n", i, desc, method, params);
+		meth = mono_get_method_checked (m, mtoken, NULL, NULL, &error);
+		if (meth) {
+			params = custom_attr_params (m, mono_method_signature (meth), mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]));
+			fprintf (output, "%d: %s: %s [%s]\n", i, desc, method, params);
+			g_free (params);
+		} else {
+			fprintf (output, "Could not decode method due to %s", mono_error_get_message (&error));
+			mono_error_cleanup (&error);
+		}
+
 		g_free (desc);
 		g_free (method);
-		g_free (params);
 	}
 }
 

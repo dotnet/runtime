@@ -20,6 +20,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/marshal.h>
+#include <mono/metadata/metadata-internals.h>
 
 extern gboolean substitute_with_mscorlib_p;
 
@@ -1900,6 +1901,7 @@ get_memberref_parent (MonoImage *m, guint32 mrp_token, MonoGenericContainer *con
 static char *
 get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericContainer *container)
 {
+	MonoError error;
 	int idx = mono_metadata_token_index (token);
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
 	char *sig = NULL, *esname;
@@ -1908,7 +1910,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConta
 	MonoMethod *mh;
 	MonoGenericContainer *type_container = container;
 
-	mh = mono_get_method_full (m, token, NULL, (MonoGenericContext *) container);
+	mh = mono_get_method_checked (m, token, NULL, (MonoGenericContext *) container, &error);
 	if (mh) {
 		if (mono_method_signature (mh)->is_inflated)
 			container = mono_method_get_generic_container (((MonoMethodInflated *) mh)->declaring);
@@ -1920,8 +1922,10 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConta
 			name = g_strdup_printf ("%s%s%s", sig ? sig : "", sig ? "::" : "", esname);
 		g_free (sig);
 		g_free (esname);
-	} else
+	} else {
 		name = NULL;
+		mono_error_cleanup (&error);
+	}
 
 	switch (mono_metadata_token_code (token)){
 	case MONO_TOKEN_METHOD_DEF:
@@ -2005,13 +2009,14 @@ get_method (MonoImage *m, guint32 token, MonoGenericContainer *container)
 char *
 get_methoddef (MonoImage *m, guint32 idx)
 {
-        guint32 cols [MONO_METHOD_SIZE];
+	MonoError error;
+	guint32 cols [MONO_METHOD_SIZE];
 	char *sig;
 	const char *name;
 
 	MonoMethod *mh;
 
-	mh = mono_get_method (m, MONO_TOKEN_METHOD_DEF | idx, NULL);
+	mh = mono_get_method_checked (m, MONO_TOKEN_METHOD_DEF | idx, NULL, NULL, &error);
 	if (mh) {
 		sig = dis_stringify_type (m, &mh->klass->byval_arg, FALSE);
 		name = g_strdup_printf ("%s%s%s", 
@@ -2019,13 +2024,15 @@ get_methoddef (MonoImage *m, guint32 idx)
 				sig ? "::" : "",
 				mh->name);
 		g_free (sig);
-	} else
-		name = NULL;
-        mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
-                        idx - 1, cols, MONO_METHOD_SIZE);
-        sig = get_methodref_signature (m, cols [MONO_METHOD_SIGNATURE], name);
+	} else {
+		name = g_strdup_printf ("!bad-method-name!");
+		mono_error_cleanup (&error);
+	}
+    mono_metadata_decode_row (&m->tables [MONO_TABLE_METHOD], 
+                    idx - 1, cols, MONO_METHOD_SIZE);
+    sig = get_methodref_signature (m, cols [MONO_METHOD_SIGNATURE], name);
         
-        return sig;
+	return sig;
 }
 
 char *
@@ -2068,7 +2075,8 @@ get_method_type_param (MonoImage *m, guint32 blob_signature, MonoGenericContaine
 char *
 get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name, MonoGenericContainer *type_container)
 {
-        GString *res = g_string_new ("");
+	MonoError error;
+	GString *res = g_string_new ("");
 	guint32 member_cols [MONO_MEMBERREF_SIZE], method_cols [MONO_METHOD_SIZE];
         char *s, *type_param;
         const char *ptr;
@@ -2097,8 +2105,13 @@ get_methodspec (MonoImage *m, int idx, guint32 token, const char *fancy_name, Mo
 	ptr = mono_metadata_blob_heap (m, sig);
 	mono_metadata_decode_value (ptr, &ptr);
 	
-	mh = mono_get_method_full (m, method_dor_to_token (token), NULL, (MonoGenericContext *) type_container);
-	g_assert (mh);
+	mh = mono_get_method_checked (m, method_dor_to_token (token), NULL, (MonoGenericContext *) type_container, &error);
+	if (!mh) {
+		g_string_append_printf (res, "Could not decode method token 0x%x due to %s", token, mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+		return g_string_free (res, FALSE);
+	}
+
 	container = mono_method_get_generic_container (mh);
 	if (!container)
 		container = type_container;
@@ -3098,8 +3111,9 @@ get_method_override (MonoImage *m, guint32 token, MonoGenericContainer *containe
 		decl = method_dor_to_token (cols [MONO_METHODIMPL_DECLARATION]);
 
 		if (token == impl) {
+			MonoError error;
 			MonoMethod *mh = NULL;
-			mh = mono_get_method_full (m, decl, NULL, (MonoGenericContext *) container);
+			mh = mono_get_method_checked (m, decl, NULL, (MonoGenericContext *) container, &error);
 
 			if (mh && (mh->klass && (mh->klass->generic_class || mh->klass->generic_container))) {
 				char *meth_str;
@@ -3110,7 +3124,12 @@ get_method_override (MonoImage *m, guint32 token, MonoGenericContainer *containe
 				g_free (meth_str);
 				return ret;
 			} else {
-				return get_method_core (m, decl, FALSE, container);
+				char *meth_str = get_method_core (m, decl, FALSE, container);
+				char *ret = g_strdup_printf ("Could not decode method override %s due to %s", meth_str, mono_error_get_message (&error));
+
+				mono_error_cleanup (&error);
+				g_free (meth_str);
+				return ret;
 			}
 		}
 	}
