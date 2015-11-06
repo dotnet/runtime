@@ -33,10 +33,10 @@
           "lib/dotnet5.4/Microsoft.CSharp.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0025": {
         "type": "package"
       },
-      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "xunit.runner.console": "2.1.0"
@@ -1986,10 +1986,10 @@
           "lib/dotnet5.4/Microsoft.CSharp.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0025": {
         "type": "package"
       },
-      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "xunit.runner.console": "2.1.0"
@@ -4726,10 +4726,10 @@
           "lib/dotnet5.4/Microsoft.CSharp.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0025": {
         "type": "package"
       },
-      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "xunit.runner.console": "2.1.0"
@@ -7466,10 +7466,10 @@
           "lib/dotnet5.4/Microsoft.CSharp.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0025": {
         "type": "package"
       },
-      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "xunit.runner.console": "2.1.0"
@@ -10099,10 +10099,10 @@
           "lib/dotnet5.4/Microsoft.CSharp.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0025": {
         "type": "package"
       },
-      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0022": {
+      "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "xunit.runner.console": "2.1.0"
@@ -12772,13 +12772,13 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0022": {
+    "Microsoft.DotNet.xunit.performance.analysis/1.0.0-alpha-build0025": {
       "type": "package",
       "serviceable": true,
-      "sha512": "JwQJjSTP1HXDf9J2isVDlVauz/tcN9QJRuaABaAe9Y3qVlX56kcIr6mT22oEaWUOGo9kGIzt4iGHlZ/E655lhg==",
+      "sha512": "2J6XPeQ+/faZXR4l1bcxlzCDtHqHnoo1YytQBllfvs4oPnw5DEvmWstb2AcFuyeFjhuiAZ9gezDmoIqFurTqPA==",
       "files": [
-        "Microsoft.DotNet.xunit.performance.analysis.1.0.0-alpha-build0022.nupkg",
-        "Microsoft.DotNet.xunit.performance.analysis.1.0.0-alpha-build0022.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.analysis.1.0.0-alpha-build0025.nupkg",
+        "Microsoft.DotNet.xunit.performance.analysis.1.0.0-alpha-build0025.nupkg.sha512",
         "Microsoft.DotNet.xunit.performance.analysis.nuspec",
         "tools/MathNet.Numerics.dll",
         "tools/Microsoft.Diagnostics.Tracing.TraceEvent.dll",
@@ -12787,13 +12787,13 @@
         "tools/xunit.performance.analysis.pdb"
       ]
     },
-    "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0022": {
+    "Microsoft.DotNet.xunit.performance.runner.Windows/1.0.0-alpha-build0025": {
       "type": "package",
       "serviceable": true,
-      "sha512": "YiCRPElKD5Rl1z8EVHYCeh9G74QSXe5EkSIFbSNbyGysEoS01i7apL6CzPUlJGyAigbLNUCsWmqtDsMhWTBvDA==",
+      "sha512": "ru0tFfvyUso/7UmFs7cNelA/uW4VcJsURXZfH6IT5lf2kZH7X2DqByh0S/mDzbea1/zViMe/DRk33U1T+TQeEw==",
       "files": [
-        "Microsoft.DotNet.xunit.performance.runner.Windows.1.0.0-alpha-build0022.nupkg",
-        "Microsoft.DotNet.xunit.performance.runner.Windows.1.0.0-alpha-build0022.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.runner.Windows.1.0.0-alpha-build0025.nupkg",
+        "Microsoft.DotNet.xunit.performance.runner.Windows.1.0.0-alpha-build0025.nupkg.sha512",
         "Microsoft.DotNet.xunit.performance.runner.Windows.nuspec",
         "tools/amd64/KernelTraceControl.dll",
         "tools/amd64/msdia120.dll",
@@ -12803,6 +12803,7 @@
         "tools/x86/KernelTraceControl.dll",
         "tools/x86/msdia120.dll",
         "tools/xunit.abstractions.dll",
+        "tools/xunit.core.dll",
         "tools/xunit.performance.core.dll",
         "tools/xunit.performance.core.pdb",
         "tools/xunit.performance.logger.exe",
@@ -19039,8 +19040,8 @@
       "coveralls.io >= 1.4.0",
       "OpenCover >= 4.6.166",
       "ReportGenerator >= 2.3.1",
-      "Microsoft.DotNet.xunit.performance.analysis >= 1.0.0-alpha-build0022",
-      "Microsoft.DotNet.xunit.performance.runner.Windows >= 1.0.0-alpha-build0022",
+      "Microsoft.DotNet.xunit.performance.analysis >= 1.0.0-alpha-build0025",
+      "Microsoft.DotNet.xunit.performance.runner.Windows >= 1.0.0-alpha-build0025",
       "xunit >= 2.1.0",
       "xunit.console.netcore >= 1.0.2-prerelease-00101",
       "xunit.runner.utility >= 2.1.0"
