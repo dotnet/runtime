@@ -326,9 +326,9 @@ WrapperInfo*
 mono_wrapper_info_create (MonoMethodBuilder *mb, WrapperSubtype subtype);
 
 void
-mono_marshal_set_wrapper_info (MonoMethod *method, gpointer data);
+mono_marshal_set_wrapper_info (MonoMethod *method, WrapperInfo *info);
 
-gpointer
+WrapperInfo*
 mono_marshal_get_wrapper_info (MonoMethod *wrapper);
 
 MonoMethod *

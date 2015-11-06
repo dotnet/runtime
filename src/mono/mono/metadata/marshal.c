@@ -2402,10 +2402,7 @@ mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 		if (!res) {
 			res = newm;
 			g_hash_table_insert (cache, key, res);
-			if (info)
-				mono_marshal_set_wrapper_info (res, info);
-			else
-				mono_marshal_set_wrapper_info (res, key);
+			mono_marshal_set_wrapper_info (res, info);
 			mono_marshal_unlock ();
 		} else {
 			if (out_found)
@@ -2477,11 +2474,9 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 /*
  * mono_marshal_get_wrapper_info:
  *
- *   Retrieve the pointer stored by mono_marshal_set_wrapper_info. The type of data
- * returned depends on the wrapper type. It is usually a method, a class, or a
- * WrapperInfo structure.
+ *   Retrieve the WrapperInfo structure associated with WRAPPER.
  */
-gpointer
+WrapperInfo*
 mono_marshal_get_wrapper_info (MonoMethod *wrapper)
 {
 	g_assert (wrapper->wrapper_type);
@@ -2492,12 +2487,11 @@ mono_marshal_get_wrapper_info (MonoMethod *wrapper)
 /*
  * mono_marshal_set_wrapper_info:
  *
- *   Store an arbitrary pointer inside the wrapper which is retrievable by 
- * mono_marshal_get_wrapper_info. The format of the data depends on the type of the
- * wrapper (method->wrapper_type).
+ *   Set the WrapperInfo structure associated with the wrapper
+ * method METHOD to INFO.
  */
 void
-mono_marshal_set_wrapper_info (MonoMethod *method, gpointer data)
+mono_marshal_set_wrapper_info (MonoMethod *method, WrapperInfo *info)
 {
 	void **datav;
 	/* assert */
@@ -2505,7 +2499,7 @@ mono_marshal_set_wrapper_info (MonoMethod *method, gpointer data)
 		return;
 
 	datav = ((MonoMethodWrapper *)method)->method_data;
-	datav [1] = data;
+	datav [1] = info;
 }
 
 WrapperInfo*
@@ -8835,6 +8829,9 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_SYNCHRONIZED);
 
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.synchronized.method = method;
+
 #ifndef DISABLE_JIT
 	mb->skip_visibility = 1;
 	/* result */
@@ -8855,8 +8852,8 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-		res = mono_mb_create_and_cache (cache, method,
-										mb, sig, sig->param_count + 16);
+		res = mono_mb_create_and_cache_full (cache, method,
+											 mb, sig, sig->param_count + 16, info, NULL);
 		mono_mb_free (mb);
 
 		return res;
@@ -8955,9 +8952,6 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 
 	mono_mb_set_clauses (mb, 1, clause);
 #endif
-
-	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
-	info->d.synchronized.method = method;
 
 	if (ctx) {
 		MonoMethod *def;
@@ -9991,14 +9985,14 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ARRAY_ACCESSOR);
+	info->d.array_accessor.method = method;
+
 	if (ctx) {
 		MonoMethod *def;
-		def = mono_mb_create_and_cache (cache, method, mb, sig, sig->param_count + 16);
+		def = mono_mb_create_and_cache_full (cache, method, mb, sig, sig->param_count + 16, info, NULL);
 		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);
 	} else {
-		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ARRAY_ACCESSOR);
-		info->d.array_accessor.method = method;
-
 		res = mono_mb_create_and_cache_full (cache, method,
 											 mb, sig, sig->param_count + 16,
 											 info, NULL);
@@ -11227,7 +11221,6 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	image = method->klass->image;
 
 	cache = get_cache (&mono_method_get_wrapper_cache (method)->thunk_invoke_cache, mono_aligned_addr_hash, NULL);
-
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
