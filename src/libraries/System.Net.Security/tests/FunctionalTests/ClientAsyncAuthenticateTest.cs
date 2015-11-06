@@ -45,12 +45,9 @@ namespace System.Net.Security.Tests
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(IOException) };
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(IOException) };
 
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Ssl2, typeof(IOException) };
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Ssl3, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };
-            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(IOException) };
-
-            yield return new object[] { SslProtocols.Tls12, SslProtocols.Ssl2, typeof(IOException) };
+      
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Ssl3, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls11, typeof(AuthenticationException) };
@@ -70,6 +67,20 @@ namespace System.Net.Security.Tests
             yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls11, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(AuthenticationException) };
+        }
+
+        private static IEnumerable<object[]> ProtocolMismatchData_Tls11_Tls12_Windows_Linux()
+        {
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Ssl2, typeof(IOException) };
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(IOException) };
+            yield return new object[] { SslProtocols.Tls12, SslProtocols.Ssl2, typeof(IOException) };
+        }
+
+        private static IEnumerable<object[]> ProtocolMismatchData_Tls11_Tls12_OSX()
+        {
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Ssl2, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls12, SslProtocols.Ssl2, typeof(AuthenticationException) };
         }
 
         public ClientAsyncAuthenticateTest()
@@ -121,6 +132,23 @@ namespace System.Net.Security.Tests
             await Assert.ThrowsAsync(expected, () => ClientAsyncSslHelper(server, client));
         }
 
+        [Theory]
+        [MemberData("ProtocolMismatchData_Tls11_Tls12_Windows_Linux")]
+        [PlatformSpecific(PlatformID.Windows | PlatformID.Linux)]
+        public async Task ClientAsyncAuthenticate_MismatchProtocols_Tls11_Tls12_Fails_Linux_Windows(SslProtocols server, SslProtocols client, Type expected)
+        {
+            await Assert.ThrowsAsync(expected, () => ClientAsyncSslHelper(server, client));
+        }
+
+        [Theory]
+        [MemberData("ProtocolMismatchData_Tls11_Tls12_OSX")]
+        [PlatformSpecific(PlatformID.OSX)]
+        public async Task ClientAsyncAuthenticate_MismatchProtocols_Tls11_Tls12_Fails_OSX(SslProtocols server, SslProtocols client, Type expected)
+        {
+            await Assert.ThrowsAsync(expected, () => ClientAsyncSslHelper(server, client));
+        }
+
+
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public async Task ClientAsyncAuthenticate_EachProtocol_Ssl2_Success()
@@ -152,6 +180,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows | PlatformID.Linux)]
         public async Task ClientAsyncAuthenticate_Tls12ServerSsl2Tls12Client_Success()
         {
             await ClientAsyncSslHelper(SslProtocols.Tls12, SslProtocols.Ssl2 | SslProtocols.Tls12);
