@@ -14,17 +14,12 @@ namespace System.Net.Http
     {
         private static class SslProvider
         {
-            private delegate CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx, IntPtr userPtr);
-
-            private static readonly SslCtxCallback s_sslCtxCallback = SetSslCtxVerifyCallback;
+            private static readonly Interop.Http.SslCtxCallback s_sslCtxCallback = SetSslCtxVerifyCallback;
             private static readonly Interop.Ssl.AppVerifyCallback s_sslVerifyCallback = VerifyCertChain;
 
             internal static void SetSslOptions(EasyRequest easy)
             {
-                CURLcode answer = Interop.Http.EasySetOptionPointer(
-                    easy._easyHandle,
-                    Interop.Http.CURLoption.CURLOPT_SSL_CTX_FUNCTION,
-                    s_sslCtxCallback);
+                CURLcode answer = easy.SetSslCtxCallback(s_sslCtxCallback);
 
                 switch (answer)
                 {
@@ -44,12 +39,11 @@ namespace System.Net.Http
 
             private static CURLcode SetSslCtxVerifyCallback(
                 IntPtr curl,
-                IntPtr sslCtx,
-                IntPtr userPtr)
+                IntPtr sslCtx)
             {
                 using (SafeSslContextHandle ctx = new SafeSslContextHandle(sslCtx, ownsHandle: false))
                 {
-                    Interop.Ssl.SslCtxSetCertVerifyCallback(ctx, s_sslVerifyCallback, userPtr);
+                    Interop.Ssl.SslCtxSetCertVerifyCallback(ctx, s_sslVerifyCallback, IntPtr.Zero);
                 }
 
                 return CURLcode.CURLE_OK;

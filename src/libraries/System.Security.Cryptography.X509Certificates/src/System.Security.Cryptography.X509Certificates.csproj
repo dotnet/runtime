@@ -216,9 +216,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcurl\Interop.libcurl_types.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.libcurl_types.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
     </Compile>
