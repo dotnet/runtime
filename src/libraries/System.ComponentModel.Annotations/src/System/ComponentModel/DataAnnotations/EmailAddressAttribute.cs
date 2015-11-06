@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Linq;
-
 namespace System.ComponentModel.DataAnnotations
 {
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter,
@@ -25,10 +23,27 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             var valueAsString = value as string;
-            return (valueAsString != null
-                && valueAsString.Count(c => c == '@') == 1
-                && valueAsString[0] != '@'
-                && valueAsString[valueAsString.Length-1] != '@');
+            if (valueAsString == null)
+            {
+                return false;
+            }
+
+            // only return true is there is only 1 '@' character
+            // and it is neither the first nor the last character
+            bool found = false;
+            for (int i = 0; i < valueAsString.Length; i++)
+            {
+                if (valueAsString[i] == '@')
+                {
+                    if (found || i == 0 || i == valueAsString.Length - 1)
+                    {
+                        return false;
+                    }
+                    found = true;
+                }
+            }
+
+            return found;
         }
     }
 }
