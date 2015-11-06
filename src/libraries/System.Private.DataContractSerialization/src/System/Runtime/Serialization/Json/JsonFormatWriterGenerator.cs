@@ -10,7 +10,7 @@ namespace System.Runtime.Serialization.Json
     public delegate void JsonFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, ClassDataContract dataContract, XmlDictionaryString[] memberNames);
     public delegate void JsonFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract dataContract);
 }
-#elif MERGE_DCJS
+#else
 namespace System.Runtime.Serialization.Json
 {
     using System;

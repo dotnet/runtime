@@ -103,7 +103,7 @@ namespace System.Runtime.Serialization
         }
 #endif
 
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
         internal MethodInfo ParseMethod
         {
             get { return _helper.ParseMethod; }
@@ -529,7 +529,7 @@ namespace System.Runtime.Serialization
             private XmlDictionaryString _name;
             private XmlDictionaryString _ns;
 
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
             private MethodInfo _parseMethod;
             private bool _parseMethodSet;
 #endif
@@ -1162,7 +1162,7 @@ namespace System.Runtime.Serialization
                 get { return false; }
             }
 
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
             internal MethodInfo ParseMethod
             {
                 get
@@ -2206,7 +2206,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
         internal static string SanitizeTypeName(string typeName)
         {
             return typeName.Replace('.', '_');

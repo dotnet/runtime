@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (_helper.JsonFormatReaderDelegate == null)
                         {
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
                             JsonFormatCollectionReaderDelegate tempDelegate = new JsonFormatReaderGenerator().GenerateCollectionReader(TraditionalCollectionDataContract);
                             Interlocked.MemoryBarrier();
 #else
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization.Json
                             {
                                 throw new InvalidDataContractException(SR.Format(SR.GetOnlyCollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(this.TraditionalDataContract.UnderlyingType)));
                             }
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
                             JsonFormatGetOnlyCollectionReaderDelegate tempDelegate = new JsonFormatReaderGenerator().GenerateGetOnlyCollectionReader(TraditionalCollectionDataContract);
                             Interlocked.MemoryBarrier();
 #else
@@ -85,7 +85,7 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (_helper.JsonFormatWriterDelegate == null)
                         {
-#if !NET_NATIVE && MERGE_DCJS
+#if !NET_NATIVE
                             JsonFormatCollectionWriterDelegate tempDelegate = new JsonFormatWriterGenerator().GenerateCollectionWriter(TraditionalCollectionDataContract);
                             Interlocked.MemoryBarrier();
 #else

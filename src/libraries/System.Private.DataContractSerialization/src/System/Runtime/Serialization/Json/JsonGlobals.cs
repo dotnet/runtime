@@ -25,7 +25,6 @@ namespace System.Runtime.Serialization.Json
         public const string PositiveInf = "INF";
         public const string NegativeInf = "-INF";
         public static readonly char[] FloatingPointCharacters = new char[] { '.', 'e', 'E' };
-#if NET_NATIVE || MERGE_DCJS
         public const string typeString = "type";
         public const string nullString = "null";
         public const string arrayString = "array";
@@ -60,7 +59,6 @@ namespace System.Runtime.Serialization.Json
         public const int maxScopeSize = 25;
         public static readonly XmlDictionaryString itemDictionaryString = new XmlDictionary().Add("item");
         public static readonly XmlDictionaryString rootDictionaryString = new XmlDictionary().Add("root");
-#endif
 
         public const string SimpleSMWInternalsVisiblePattern = @"^[\s]*System\.ServiceModel\.Web[\s]*$";
         public const string FullSMWInternalsVisiblePattern = @"^[\s]*System\.ServiceModel\.Web[\s]*,[\s]*PublicKey[\s]*=[\s]*(?i:00240000048000009400000006020000002400005253413100040000010001008d56c76f9e8649383049f383c44be0ec204181822a6c31cf5eb7ef486944d032188ea1d3920763712ccb12d75fb77e9811149e6148e5d32fbaab37611c1878ddc19e20ef135d0cb2cff2bfec3d115810c3d9069638fe4be215dbf795861920e5ab6f7db2e2ceef136ac23d5dd2bf031700aec232f6c6b1c785b4305c123b37ab)[\s]*$";
