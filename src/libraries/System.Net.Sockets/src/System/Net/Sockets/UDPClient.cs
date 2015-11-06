@@ -604,27 +604,57 @@ namespace System.Net.Sockets
 
         public Task<int> SendAsync(byte[] datagram, int bytes)
         {
-            return Task<int>.Factory.FromAsync(BeginSend, EndSend, datagram, bytes, null);
+            return Task<int>.Factory.FromAsync(
+                (targetDatagram, targetBytes, callback, state) => ((UdpClient)state).BeginSend(targetDatagram, targetBytes, callback, state),
+                asyncResult => ((UdpClient)asyncResult.AsyncState).EndSend(asyncResult),
+                datagram,
+                bytes,
+                state: this);
         }
 
         public Task<int> SendAsync(byte[] datagram, int bytes, IPEndPoint endPoint)
         {
-            return Task<int>.Factory.FromAsync(BeginSend, EndSend, datagram, bytes, endPoint, null);
+            return Task<int>.Factory.FromAsync(
+                (targetDatagram, targetBytes, targetEndpoint, callback, state) => ((UdpClient)state).BeginSend(targetDatagram, targetBytes, targetEndpoint, callback, state),
+                asyncResult => ((UdpClient)asyncResult.AsyncState).EndSend(asyncResult),
+                datagram,
+                bytes,
+                endPoint,
+                state: this);
         }
 
         public Task<int> SendAsync(byte[] datagram, int bytes, string hostname, int port)
         {
-            return Task<int>.Factory.FromAsync((callback, state) => BeginSend(datagram, bytes, hostname, port, callback, state), EndSend, null);
+            Tuple<byte[], string> packedArguments = Tuple.Create(datagram, hostname);
+
+            return Task<int>.Factory.FromAsync(
+                (targetPackedArguments, targetBytes, targetPort, callback, state) =>
+                {
+                    byte[] targetDatagram = targetPackedArguments.Item1;
+                    string targetHostname = targetPackedArguments.Item2;
+                    var client = (UdpClient)state;
+
+                    return client.BeginSend(targetDatagram, targetBytes, targetHostname, targetPort, callback, state);
+                },
+                asyncResult => ((UdpClient)asyncResult.AsyncState).EndSend(asyncResult),
+                packedArguments,
+                bytes,
+                port,
+                state: this);
         }
 
         public Task<UdpReceiveResult> ReceiveAsync()
         {
-            return Task<UdpReceiveResult>.Factory.FromAsync((callback, state) => BeginReceive(callback, state), (ar) =>
-            {
-                IPEndPoint remoteEP = null;
-                Byte[] buffer = EndReceive(ar, ref remoteEP);
-                return new UdpReceiveResult(buffer, remoteEP);
-            }, null);
+            return Task<UdpReceiveResult>.Factory.FromAsync(
+                (callback, state) => ((UdpClient)state).BeginReceive(callback, state),
+                asyncResult =>
+                {
+                    var client = (UdpClient)asyncResult.AsyncState;
+                    IPEndPoint remoteEP = null;
+                    byte[] buffer = client.EndReceive(asyncResult, ref remoteEP);
+                    return new UdpReceiveResult(buffer, remoteEP);
+                },
+                state: this);
         }
 
         private void CreateClientSocket()

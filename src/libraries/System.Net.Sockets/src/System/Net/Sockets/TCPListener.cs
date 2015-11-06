@@ -309,12 +309,18 @@ namespace System.Net.Sockets
 
         public Task<Socket> AcceptSocketAsync()
         {
-            return Task<Socket>.Factory.FromAsync(BeginAcceptSocket, EndAcceptSocket, null);
+            return Task<Socket>.Factory.FromAsync(
+                (callback, state) => ((TcpListener)state).BeginAcceptSocket(callback, state),
+                asyncResult => ((TcpListener)asyncResult.AsyncState).EndAcceptSocket(asyncResult),
+                state: this);
         }
 
         public Task<TcpClient> AcceptTcpClientAsync()
         {
-            return Task<TcpClient>.Factory.FromAsync(BeginAcceptTcpClient, EndAcceptTcpClient, null);
+            return Task<TcpClient>.Factory.FromAsync(
+                (callback, state) => ((TcpListener)state).BeginAcceptTcpClient(callback, state),
+                asyncResult => ((TcpListener)asyncResult.AsyncState).EndAcceptTcpClient(asyncResult),
+                state: this);
         }
     }
 }
