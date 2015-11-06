@@ -242,7 +242,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     else()
       clr_unknown_arch()
     endif()
-      
   endif(CLR_CMAKE_PLATFORM_LINUX)
 
   if(CLR_CMAKE_PLATFORM_DARWIN)
@@ -253,23 +252,52 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     message("Detected FreeBSD amd64")
   endif(CLR_CMAKE_PLATFORM_FREEBSD)
 
-endif(CLR_CMAKE_PLATFORM_UNIX)
+  # Disable frame pointer optimizations so profilers can get better call stacks
+  add_compile_options(-fno-omit-frame-pointer)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
-    add_subdirectory(src/ToolBox/SOS/lldbplugin)
-    add_subdirectory(src/pal)
-    add_subdirectory(src/corefx)
-    add_subdirectory(src/coreclr/hosts/unixcorerun)
-    add_subdirectory(src/coreclr/hosts/unixcoreconsole)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+  # set the CLANG sanitizer flags for debug build
+  if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+    # obtain settings from running enablesanitizers.sh
+    string(FIND "$ENV{DEBUG_SANITIZERS}" "asan" __ASAN_POS)
+    string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_POS)
+    if ((${__ASAN_POS} GREATER -1) OR (${__UBSAN_POS} GREATER -1))
+      set(CLR_SANITIZE_CXX_FLAGS "${CLR_SANITIZE_CXX_FLAGS} -fsanitize=")
+      set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS} -fsanitize=")
+      if (${__ASAN_POS} GREATER -1) 
+        set(CLR_SANITIZE_CXX_FLAGS "${CLR_SANITIZE_CXX_FLAGS}address,")
+        set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}address,")
+        message("Address Sanitizer (asan) enabled")
+      endif ()
+      if (${__UBSAN_POS} GREATER -1)
+        set(CLR_SANITIZE_CXX_FLAGS "${CLR_SANITIZE_CXX_FLAGS}undefined")
+        set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}undefined")
+        message("Undefined Behavior Sanitizer (ubsan) enabled")
+      endif ()
 
+      # -fdata-sections -ffunction-sections: each function has own section instead of one per .o file (needed for --gc-sections)
+      # -fPIC: enable Position Independent Code normally just for shared libraries but required when linking with address sanitizer
+      # -O1: optimization level used instead of -O0 to avoid compile error "invalid operand for inline asm constraint"
+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${CLR_SANITIZE_CXX_FLAGS} -fdata-sections -ffunction-sections -fPIC -O1")
+
+      set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS}")
+
+      # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
+      set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
+    endif ()
+  endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
+
+  add_subdirectory(src/ToolBox/SOS/lldbplugin)
+  add_subdirectory(src/pal)
+  add_subdirectory(src/corefx)
+  add_subdirectory(src/coreclr/hosts/unixcorerun)
+  add_subdirectory(src/coreclr/hosts/unixcoreconsole)
+endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if(CLR_CMAKE_PLATFORM_DARWIN)
-    add_subdirectory(src/coreclr/hosts/osxbundlerun)
+  add_subdirectory(src/coreclr/hosts/osxbundlerun)
 endif(CLR_CMAKE_PLATFORM_DARWIN)
 
 # Add this subdir. We install the headers for the jit.
-
 add_subdirectory(src/pal/prebuilt/inc)
 
 # Set to 1 if you want to clear the CMAKE initial compiler flags and set all the flags explicitly
@@ -437,9 +465,6 @@ add_compile_options(-Wno-incompatible-ms-struct)
 add_compile_options(-fms-extensions )
 #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
 #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
-
-# Disable frame pointer optimizations so profilers can get better call stacks
-add_compile_options(-fno-omit-frame-pointer)
 
 endif(CLR_CMAKE_PLATFORM_UNIX)
 

@@ -17,6 +17,12 @@
 #include "contract.h"
 #include "tls.h"
 
+#if defined __llvm__
+#  if defined(__has_feature) && __has_feature(address_sanitizer)
+#    define HAS_ADDRESS_SANITIZER
+#  endif
+#endif
+
 #ifdef _DEBUG_IMPL
 
 //
@@ -37,6 +43,10 @@ void DisableThrowCheck()
     dbg_fDisableThrowCheck = TRUE;
 }
 
+#ifdef HAS_ADDRESS_SANITIZER
+// use the functionality from address santizier (which does not throw exceptions)
+#else
+
 #define CLRThrowsExceptionWorker() RealCLRThrowsExceptionWorker(__FUNCTION__, __FILE__, __LINE__)
 
 static void RealCLRThrowsExceptionWorker(__in_z const char *szFunction,
@@ -53,6 +63,7 @@ static void RealCLRThrowsExceptionWorker(__in_z const char *szFunction,
     CONTRACT_THROWSEX(szFunction, szFile, lineNum);
 }
 
+#endif // HAS_ADDRESS_SANITIZER
 #endif //_DEBUG_IMPL
 
 #if defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS_IMPL)
@@ -383,6 +394,10 @@ FastFreeInProcessHeapFunc __ClrFreeInProcessHeap = (FastFreeInProcessHeapFunc) C
 
 const NoThrow nothrow = { 0 };
 
+#ifdef HAS_ADDRESS_SANITIZER
+// use standard heap functions for address santizier
+#else
+
 #ifdef __llvm__
 __attribute__((visibility("hidden")))
 #endif
@@ -431,11 +446,17 @@ operator new[](size_t n)
     return result;
 };
 
+#endif // HAS_ADDRESS_SANITIZER
+
 #ifdef __llvm__
 __attribute__((visibility("hidden")))
 #endif
 void * __cdecl operator new(size_t n, const NoThrow&)
 {
+#ifdef HAS_ADDRESS_SANITIZER
+    // use standard heap functions for address santizier (which doesn't provide for NoThrow)
+	void * result = operator new(n);
+#else
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
@@ -445,7 +466,8 @@ void * __cdecl operator new(size_t n, const NoThrow&)
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     void * result = ClrAllocInProcessHeap(0, S_SIZE_T(n));
-    TRASH_LASTERROR;
+#endif // HAS_ADDRESS_SANITIZER
+	TRASH_LASTERROR;
     return result;
 }
 
@@ -454,6 +476,10 @@ __attribute__((visibility("hidden")))
 #endif
 void * __cdecl operator new[](size_t n, const NoThrow&)
 {
+#ifdef HAS_ADDRESS_SANITIZER
+    // use standard heap functions for address santizier (which doesn't provide for NoThrow)
+	void * result = operator new[](n);
+#else
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
@@ -463,10 +489,14 @@ void * __cdecl operator new[](size_t n, const NoThrow&)
     INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     void * result = ClrAllocInProcessHeap(0, S_SIZE_T(n));
-    TRASH_LASTERROR;
+#endif // HAS_ADDRESS_SANITIZER
+	TRASH_LASTERROR;
     return result;
 }
 
+#ifdef HAS_ADDRESS_SANITIZER
+// use standard heap functions for address santizier
+#else
 #ifdef __llvm__
 __attribute__((visibility("hidden")))
 #endif
@@ -498,6 +528,9 @@ operator delete[](void *p) NOEXCEPT
         ClrFreeInProcessHeap(0, p);
     TRASH_LASTERROR;
 }
+
+#endif // HAS_ADDRESS_SANITIZER
+
 
 /* ------------------------------------------------------------------------ *
  * New operator overloading for the executable heap
