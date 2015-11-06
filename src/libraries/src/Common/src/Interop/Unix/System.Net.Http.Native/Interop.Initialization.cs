@@ -8,16 +8,8 @@ internal static partial class Interop
 {
     // Initialization of libcurl is done in a static constructor.
     // This enables a project simply to include this file, and any usage of any of
-    // the libcurl or System.Net.Native functions will trigger initialization.
+    // the Http functions will trigger initialization.
     
-    internal static partial class libcurl
-    {
-        static libcurl()
-        {
-            HttpInitializer.Initialize();
-        }
-    }
-
     internal static partial class Http
     {
         static Http()

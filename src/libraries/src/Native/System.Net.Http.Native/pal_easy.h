@@ -11,7 +11,6 @@ enum
 {
     CurlOptionLongBase = 0,
     CurlOptionObjectPointBase = 10000,
-    CurlOptionFunctionPointBase = 20000,
 };
 
 enum PAL_CURLoption : int32_t
@@ -31,27 +30,24 @@ enum PAL_CURLoption : int32_t
     PAL_CURLOPT_PROTOCOLS = CurlOptionLongBase + 181,
     PAL_CURLOPT_REDIR_PROTOCOLS = CurlOptionLongBase + 182,
 
-    PAL_CURLOPT_WRITEDATA = CurlOptionObjectPointBase + 1,
     PAL_CURLOPT_URL = CurlOptionObjectPointBase + 2,
     PAL_CURLOPT_PROXY = CurlOptionObjectPointBase + 4,
     PAL_CURLOPT_PROXYUSERPWD = CurlOptionObjectPointBase + 6,
-    PAL_CURLOPT_READDATA = CurlOptionObjectPointBase + 9,
     PAL_CURLOPT_COOKIE = CurlOptionObjectPointBase + 22,
     PAL_CURLOPT_HTTPHEADER = CurlOptionObjectPointBase + 23,
-    PAL_CURLOPT_HEADERDATA = CurlOptionObjectPointBase + 29,
     PAL_CURLOPT_CUSTOMREQUEST = CurlOptionObjectPointBase + 36,
     PAL_CURLOPT_ACCEPT_ENCODING = CurlOptionObjectPointBase + 102,
     PAL_CURLOPT_PRIVATE = CurlOptionObjectPointBase + 103,
     PAL_CURLOPT_COPYPOSTFIELDS = CurlOptionObjectPointBase + 165,
-    PAL_CURLOPT_SEEKDATA = CurlOptionObjectPointBase + 168,
     PAL_CURLOPT_USERNAME = CurlOptionObjectPointBase + 173,
     PAL_CURLOPT_PASSWORD = CurlOptionObjectPointBase + 174,
+};
 
-    PAL_CURLOPT_WRITEFUNCTION = CurlOptionFunctionPointBase + 11,
-    PAL_CURLOPT_READFUNCTION = CurlOptionFunctionPointBase + 12,
-    PAL_CURLOPT_HEADERFUNCTION = CurlOptionFunctionPointBase + 79,
-    PAL_CURLOPT_SSL_CTX_FUNCTION = CurlOptionFunctionPointBase + 108,
-    PAL_CURLOPT_SEEKFUNCTION = CurlOptionFunctionPointBase + 167,
+enum class ReadWriteFunction : int32_t
+{
+    Write = 0,
+    Read = 1,
+    Header = 2,
 };
 
 enum PAL_CURLcode : int32_t
@@ -92,6 +88,17 @@ enum PAL_CURLPROTO : int32_t
     PAL_CURLPROTO_HTTP = (1 << 0),
     PAL_CURLPROTO_HTTPS = (1 << 1),
 };
+
+enum PAL_CurlSeekResult : int32_t
+{
+    PAL_CURL_SEEKFUNC_OK = 0,
+    PAL_CURL_SEEKFUNC_FAIL = 1,
+    PAL_CURL_SEEKFUNC_CANTSEEK = 2,
+};
+
+const uint64_t PAL_CURL_READFUNC_ABORT = 0x10000000;
+const uint64_t PAL_CURL_READFUNC_PAUSE = 0x10000001;
+const uint64_t PAL_CURL_WRITEFUNC_PAUSE = 0x10000001;
 
 /*
 Creates a new CURL instance.
@@ -142,3 +149,47 @@ Unpauses the CURL request.
 Returns CURLE_OK (0) if everything was ok, non-zero means an error occurred.
 */
 extern "C" int32_t EasyUnpause(CURL* handle);
+
+// the function pointer definition for the callback used in RegisterSeekCallback
+typedef int32_t(*SeekCallback)(void* userPointer, int64_t offset, int32_t origin);
+
+// the function pointer definition for the callback used in RegisterReadWriteCallback
+typedef uint64_t(*ReadWriteCallback)(uint8_t* buffer, uint64_t bufferSize, uint64_t nitems, void* userPointer);
+
+// the function pointer definition for the callback used in RegisterSslCtxCallback
+typedef int32_t(*SslCtxCallback)(CURL* curl, void* sslCtx);
+
+/*
+The object that is returned from RegisterXXXCallback functions.
+This holds the data necessary to know what managed callback to invoke and with what args.
+*/
+struct CallbackHandle;
+
+/*
+Registers a callback in libcurl for seeking in an input stream.
+
+This function gets called by libcurl to seek to a certain position in the input stream
+and can be used to fast forward a file in a resumed upload.
+*/
+extern "C" void RegisterSeekCallback(CURL* curl, SeekCallback callback, void* userPointer, CallbackHandle** callbackHandle);
+
+/*
+Registers a callback in libcurl for reading/writing input/output streams.
+*/
+extern "C" void RegisterReadWriteCallback(CURL* curl, ReadWriteFunction functionType, ReadWriteCallback callback, void* userPointer, CallbackHandle** callbackHandle);
+
+/*
+Registers a callback in libcurl for initializing SSL connections.
+
+This callback function gets called by libcurl just before the initialization of an SSL connection
+after having processed all other SSL related options to give a last chance to an application
+to modify the behaviour of the SSL initialization.
+
+Returns a CURLcode that describes whether registering the callback was successful or not.
+*/
+extern "C" int32_t RegisterSslCtxCallback(CURL* curl, SslCtxCallback callback, CallbackHandle** callbackHandle);
+
+/*
+Frees the CallbackHandle created by a RegisterXXXCallback function.
+*/
+extern "C" void FreeCallbackHandle(CallbackHandle* callbackHandle);

@@ -11,11 +11,17 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using CURLAUTH = Interop.Http.CURLAUTH;
+using CURLcode = Interop.Http.CURLcode;
 using CURLoption = Interop.Http.CURLoption;
 using CurlProtocols = Interop.Http.CurlProtocols;
 using CURLProxyType = Interop.Http.curl_proxytype;
 using SafeCurlHandle = Interop.Http.SafeCurlHandle;
 using SafeCurlSListHandle = Interop.Http.SafeCurlSListHandle;
+using SafeCallbackHandle = Interop.Http.SafeCallbackHandle;
+using SeekCallback = Interop.Http.SeekCallback;
+using ReadWriteCallback = Interop.Http.ReadWriteCallback;
+using ReadWriteFunction = Interop.Http.ReadWriteFunction;
+using SslCtxCallback = Interop.Http.SslCtxCallback;
 
 namespace System.Net.Http
 {
@@ -37,6 +43,8 @@ namespace System.Net.Http
             internal MultiAgent _associatedMultiAgent;
             internal SendTransferState _sendTransferState;
             internal bool _isRedirect = false;
+
+            private SafeCallbackHandle _callbackHandle;
 
             public EasyRequest(CurlHandler handler, HttpRequestMessage requestMessage, CancellationToken cancellationToken) :
                 base(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -78,7 +86,7 @@ namespace System.Net.Http
                 SetVerb();
                 SetDecompressionOptions();
                 SetProxyOptions(_requestMessage.RequestUri);
-                SetCredentialsOptions(_handler.GetNetworkCredentials(_handler._serverCredentials,_requestMessage.RequestUri));
+                SetCredentialsOptions(_handler.GetNetworkCredentials(_handler._serverCredentials, _requestMessage.RequestUri));
                 SetCookieOption(_requestMessage.RequestUri);
                 SetRequestHeaders();
                 SetSslOptions();
@@ -141,6 +149,9 @@ namespace System.Net.Http
                 // doing any processing that assumes it's valid.
                 if (_requestHeaders != null)
                     _requestHeaders.Dispose();
+
+                if (_callbackHandle != null)
+                    _callbackHandle.Dispose();
             }
 
             private void SetUrl()
@@ -250,7 +261,7 @@ namespace System.Net.Http
                     return;
                 }
 
-                if ((_handler._proxyPolicy == ProxyUsePolicy.UseDefaultProxy) || 
+                if ((_handler._proxyPolicy == ProxyUsePolicy.UseDefaultProxy) ||
                     (_handler.Proxy == null))
                 {
                     VerboseTrace("Default proxy");
@@ -374,7 +385,7 @@ namespace System.Net.Http
 
                 // Since libcurl always adds a Transfer-Encoding header, we need to explicitly block
                 // it if caller specifically does not want to set the header
-                if (_requestMessage.Headers.TransferEncodingChunked.HasValue && 
+                if (_requestMessage.Headers.TransferEncodingChunked.HasValue &&
                     !_requestMessage.Headers.TransferEncodingChunked.Value)
                 {
                     if (!Interop.Http.SListAppend(slist, NoTransferEncoding))
@@ -406,6 +417,67 @@ namespace System.Net.Http
                 SslProvider.SetSslOptions(this);
             }
 
+            internal void SetCurlCallbacks(
+                IntPtr easyGCHandle,
+                ReadWriteCallback receiveHeadersCallback,
+                ReadWriteCallback sendCallback,
+                SeekCallback seekCallback,
+                ReadWriteCallback receiveBodyCallback)
+            {
+                if (_callbackHandle == null)
+                {
+                    _callbackHandle = new SafeCallbackHandle();
+                }
+
+                // Add callback for processing headers
+                Interop.Http.RegisterReadWriteCallback(
+                    _easyHandle,
+                    ReadWriteFunction.Header,
+                    receiveHeadersCallback,
+                    easyGCHandle,
+                    ref _callbackHandle);
+
+                // If we're sending data as part of the request, add callbacks for sending request data
+                if (_requestMessage.Content != null)
+                {
+                    Interop.Http.RegisterReadWriteCallback(
+                        _easyHandle,
+                        ReadWriteFunction.Read,
+                        sendCallback,
+                        easyGCHandle,
+                        ref _callbackHandle);
+
+                    Interop.Http.RegisterSeekCallback(
+                        _easyHandle,
+                        seekCallback,
+                        easyGCHandle,
+                        ref _callbackHandle);
+                }
+
+                // If we're expecting any data in response, add a callback for receiving body data
+                if (_requestMessage.Method != HttpMethod.Head)
+                {
+                    Interop.Http.RegisterReadWriteCallback(
+                        _easyHandle,
+                        ReadWriteFunction.Write,
+                        receiveBodyCallback,
+                        easyGCHandle,
+                        ref _callbackHandle);
+                }
+            }
+
+            internal CURLcode SetSslCtxCallback(SslCtxCallback callback)
+            {
+                if (_callbackHandle == null)
+                {
+                    _callbackHandle = new SafeCallbackHandle();
+                }
+
+                CURLcode result = Interop.Http.RegisterSslCtxCallback(_easyHandle, callback, ref _callbackHandle);
+
+                return result;
+            }
+
             private static void AddRequestHeaders(HttpHeaders headers, SafeCurlSListHandle handle)
             {
                 foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
@@ -429,11 +501,6 @@ namespace System.Net.Http
             }
 
             internal void SetCurlOption(CURLoption option, IntPtr value)
-            {
-                ThrowIfCURLEError(Interop.Http.EasySetOptionPointer(_easyHandle, option, value));
-            }
-
-            internal void SetCurlOption(CURLoption option, Delegate value)
             {
                 ThrowIfCURLEError(Interop.Http.EasySetOptionPointer(_easyHandle, option, value));
             }
