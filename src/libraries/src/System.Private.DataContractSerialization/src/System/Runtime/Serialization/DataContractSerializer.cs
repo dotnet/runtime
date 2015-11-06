@@ -68,14 +68,12 @@ namespace System.Runtime.Serialization
 
 #if NET_NATIVE
         public DataContractSerializer(Type type, IEnumerable<Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
-#elif MERGE_DCJS
+#else
         internal DataContractSerializer(Type type, IEnumerable<Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
 #endif
-#if NET_NATIVE || MERGE_DCJS
         {
             Initialize(type, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, preserveObjectReferences, null, false);
         }
-#endif
 
         public DataContractSerializer(Type type, XmlDictionaryString rootName, XmlDictionaryString rootNamespace,
             IEnumerable<Type> knownTypes,
