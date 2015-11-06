@@ -90,6 +90,9 @@ SetEvent
 SetFileAttributesW
 SetFilePointer
 SetFileTime
+SysAllocStringLen
+SysFreeString
+SysStringLen
 UnlockFile
 UnmapViewOfFile
 VirtualAlloc
