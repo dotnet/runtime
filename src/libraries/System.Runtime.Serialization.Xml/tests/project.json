@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.DotNet.xunit.performance": "1.0.0-*",
     "System.Collections": "4.0.10",
     "System.Collections.Concurrent": "4.0.10",
     "System.Collections.NonGeneric": "4.0.0",
@@ -27,7 +28,6 @@
     "System.Xml.XmlDocument": "4.0.0",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-*",
-    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0022",
   },
   "frameworks": {
     "dnxcore50": {}

@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Linq.Tests</AssemblyName>
     <RootNamespace>System.Linq.Tests</RootNamespace>
+    <IncludePerformanceTests>true</IncludePerformanceTests>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -67,9 +68,7 @@
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
-  </ItemGroup>
-  <!-- Performance Tests -->
-  <ItemGroup Condition="'$(RunPerfTestsForProject)' == 'true'">
+    <!-- Performance Tests -->
     <Compile Include="Performance\Perf.Linq.cs" />
     <Compile Include="Performance\Perf.LinqTestBase.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
