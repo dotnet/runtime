@@ -828,6 +828,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 	}
 
 	if (image_index == MONO_AOT_METHODREF_WRAPPER) {
+		WrapperInfo *info;
 		guint32 wrapper_type;
 
 		wrapper_type = decode_value (p, &p);
@@ -895,7 +896,6 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		}
 		case MONO_WRAPPER_WRITE_BARRIER: {
 			int nursery_bits = decode_value (p, &p);
-			WrapperInfo *info;
 
 			ref->method = mono_gc_get_write_barrier ();
 			if (ref->method) {
@@ -913,7 +913,6 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				ref->method = mono_marshal_get_stelemref ();
 			} else if (subtype == WRAPPER_SUBTYPE_VIRTUAL_STELEMREF) {
 				int kind;
-				WrapperInfo *info;
 				
 				kind = decode_value (p, &p);
 
@@ -997,7 +996,6 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 
 				ref->method = mono_marshal_get_array_address (rank, elem_size);
 			} else if (subtype == WRAPPER_SUBTYPE_STRING_CTOR) {
-				WrapperInfo *info;
 				MonoMethod *m;
 
 				m = decode_resolve_method_ref (module, p, &p);
@@ -1083,7 +1081,6 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				ref->method = mono_marshal_get_runtime_invoke (m, TRUE, pass_rgctx);
 			} else {
 				MonoMethodSignature *sig;
-				WrapperInfo *info;
 
 				sig = decode_signature_with_target (module, NULL, p, &p);
 				info = mono_marshal_get_wrapper_info (target);
@@ -1144,8 +1141,6 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 
 				if (wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
-					WrapperInfo *info;
-
 					subtype = decode_value (p, &p);
 					info = mono_marshal_get_wrapper_info (target);
 					if (info) {

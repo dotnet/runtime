@@ -2782,6 +2782,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		encode_value ((MONO_AOT_METHODREF_NO_AOT_TRAMPOLINE << 24), p, &p);
 
 	if (method->wrapper_type) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
 		encode_value ((MONO_AOT_METHODREF_WRAPPER << 24), p, &p);
 
 		encode_value (method->wrapper_type, p, &p);
@@ -2802,8 +2804,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_LDFLDA:
 		case MONO_WRAPPER_STFLD:
 		case MONO_WRAPPER_ISINST: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
 			g_assert (info);
 			encode_klass_ref (acfg, info->d.proxy.klass, p, &p);
 			break;
@@ -2812,22 +2812,17 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		case MONO_WRAPPER_STFLD_REMOTE:
 			break;
 		case MONO_WRAPPER_ALLOC: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
 			/* The GC name is saved once in MonoAotFileInfo */
 			g_assert (info->d.alloc.alloc_type != -1);
 			encode_value (info->d.alloc.alloc_type, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_WRITE_BARRIER: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
+			g_assert (info);
 			encode_value (info->d.wbarrier.nursery_bits, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_STELEMREF: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
 			if (info->subtype == WRAPPER_SUBTYPE_VIRTUAL_STELEMREF)
@@ -2835,8 +2830,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			break;
 		}
 		case MONO_WRAPPER_UNKNOWN: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
 			if (info->subtype == WRAPPER_SUBTYPE_PTR_TO_STRUCTURE ||
@@ -2849,8 +2842,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			break;
 		}
 		case MONO_WRAPPER_MANAGED_TO_NATIVE: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
 			if (info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
@@ -2874,8 +2865,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			break;
 		}
 		case MONO_WRAPPER_MANAGED_TO_MANAGED: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
 
@@ -2890,15 +2879,11 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			break;
 		}
 		case MONO_WRAPPER_CASTCLASS: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
 			encode_value (info->d.runtime_invoke.pass_rgctx, p, &p);
@@ -2927,8 +2912,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			break;
 		}
 		case MONO_WRAPPER_NATIVE_TO_MANAGED: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
 			g_assert (info);
 			encode_method_ref (acfg, info->d.native_to_managed.method, p, &p);
 			encode_klass_ref (acfg, info->d.native_to_managed.klass, p, &p);
