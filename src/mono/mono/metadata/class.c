@@ -5267,7 +5267,7 @@ mono_class_init (MonoClass *klass)
 		if (!MONO_CLASS_IS_INTERFACE (klass) || klass->image != mono_defaults.corlib) {
 			MonoMethod *cmethod = NULL;
 
-			if (klass->type_token) {
+			if (klass->type_token && !image_is_dynamic(klass->image)) {
 				cmethod = find_method_in_metadata (klass, ".cctor", 0, METHOD_ATTRIBUTE_SPECIAL_NAME);
 				/* The find_method function ignores the 'flags' argument */
 				if (cmethod && (cmethod->flags & METHOD_ATTRIBUTE_SPECIAL_NAME))
