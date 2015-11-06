@@ -2226,8 +2226,6 @@ void
 mono_jit_set_aot_only (gboolean val)
 {
 	mono_aot_only = val;
-	if (mono_aot_only)
-		mono_llvm_only = TRUE;
 }
 
 void
