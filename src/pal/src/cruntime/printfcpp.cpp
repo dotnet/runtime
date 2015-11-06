@@ -104,8 +104,8 @@ static int Internal_Convertfwrite(CPalThread *pthrCurrent, const void *buffer, s
    }
    return ret;
 
-}    
-    
+}
+
 /*******************************************************************************
 Function:
   Internal_ExtractFormatA
@@ -979,7 +979,6 @@ static INT Internal_AddPaddingVfwprintf(CPalThread *pthrCurrent, PAL_FILE *strea
     LengthInStr = PAL_wcslen(In);
     Length = LengthInStr;
 
-
     if (Padding > 0)
     {
         Length += Padding;
@@ -1141,20 +1140,6 @@ int CorUnix::InternalVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const c
 int CorUnix::InternalVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *format, va_list ap)
 {
     return CoreVfwprintf(pthrCurrent, stream, format, ap);
-}
-
-int NativeVsnprintf(CPalThread *pthrCurrent, LPSTR Buffer, size_t Count, LPCSTR Format, va_list ap)
-{
-    int retVal = 0;
-    retVal = vsnprintf(Buffer, Count, Format, ap);
-    return retVal;
-}
-
-int NativeVfprintf(CPalThread *pthrCurrent, FILE *filePtr, const char *format, va_list ap)
-{
-    int retVal = 0;
-    retVal = vfprintf(filePtr, format, ap);
-    return retVal;
 }
 
 int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *format, va_list aparg)
@@ -1471,7 +1456,7 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                     va_list apcopy;
 
                     va_copy(apcopy, ap);
-                    TempInt = NativeVsnprintf(pthrCurrent, TempSprintfStr, TEMP_COUNT, TempBuff, apcopy);
+                    TempInt = vsnprintf(TempSprintfStr, TEMP_COUNT, TempBuff, apcopy);
                     va_end(apcopy);
                     PAL_printf_arg_remover(&ap, Width, Precision, Type, Prefix);
 
@@ -1489,7 +1474,7 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                         
                         TempSprintfStr = TempSprintfStrPtr;
                         va_copy(apcopy, ap);
-                        NativeVsnprintf(pthrCurrent, TempSprintfStr, TempInt, TempBuff, apcopy);
+                        vsnprintf(TempSprintfStr, TempInt, TempBuff, apcopy);
                         va_end(apcopy);
                         PAL_printf_arg_remover(&ap, Width, Precision, Type, Prefix);
                     }
@@ -1841,7 +1826,7 @@ int CoreVsnprintf(CPalThread *pthrCurrent, LPSTR Buffer, size_t Count, LPCSTR Fo
                 {
                     va_list apcopy;
                     va_copy(apcopy, ap);
-                    TempInt = NativeVsnprintf(pthrCurrent, BufferPtr, TempCount, TempBuff, apcopy);
+                    TempInt = vsnprintf(BufferPtr, TempCount, TempBuff, apcopy);
                     va_end(apcopy);
                     PAL_printf_arg_remover(&ap, Width, Precision, Type, Prefix);
                 }
@@ -2139,7 +2124,7 @@ int CoreWvsnprintf(CPalThread *pthrCurrent, LPWSTR Buffer, size_t Count, LPCWSTR
                 {
                     va_list apcopy;
                     va_copy(apcopy, ap);
-                    TempInt = NativeVsnprintf(pthrCurrent, (LPSTR) BufferPtr, TempCount, TempBuff, apcopy);
+                    TempInt = vsnprintf((LPSTR) BufferPtr, TempCount, TempBuff, apcopy);
                     va_end(apcopy);
                     PAL_printf_arg_remover(&ap, Width, Precision, Type, Prefix);
                 }
@@ -2520,7 +2505,7 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
                 {
                     va_list apcopy;
                     va_copy(apcopy, ap);
-                    TempInt = NativeVfprintf(pthrCurrent, stream->bsdFilePtr, TempBuff, apcopy);
+                    TempInt = vfprintf(stream->bsdFilePtr, TempBuff, apcopy);
                     va_end(apcopy);
                     PAL_printf_arg_remover(&ap, Width, Precision, Type, Prefix);
                 }
