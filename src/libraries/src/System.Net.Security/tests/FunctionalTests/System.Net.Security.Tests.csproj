@@ -23,7 +23,6 @@
     <Compile Include="ServerRequireEncryptionTest.cs" />
     <Compile Include="SslStreamStreamToStreamTest.cs" />
     <Compile Include="StreamAPMExtensions.cs" />
-    <Compile Include="SslStreamAPMExtensions.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="TransportContextTest.cs" />
     <!-- Common test files -->
