@@ -32,12 +32,11 @@ The .NET Platform Standard version represents binary portability across platform
 - Lower versions are always compatible with higher versions.
 
 ## Relationship to Platforms
-The .NET Platform Standard is not a real platform itself. It is a standard that platforms are based on. The .NET Platform Standard defines reference assemblies (contracts) that platforms implement. These contracts are defined in corefx (see [The list of contracts](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/standard-platform.md#list-of-net-corefx-apis-and-their-associated-net-standard-platform-version-tentative)) and are either implemented in corefx itself, or in the specific platform. As an example, of this, [System.Xml.XDocument](https://github.com/dotnet/corefx/tree/master/src/System.Xml.XDocument/src) is implemented as stand alone managed code on corefx itself on CoreCLR but on the .NET Framework, it is actually an assembly in the GAC.
+The .NET Platform Standard is not a platform in of itself. It is a standard that platforms are implemented against. The .NET Platform Standard defines reference assemblies (contracts) that platforms implement. [These contracts are defined by CoreFX](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/standard-platform.md#list-of-net-corefx-apis-and-their-associated-net-standard-platform-version-tentative) and are either implemented in CoreFX as stand-alone managed code, or provided by a specific platform. For example, [System.Xml.XDocument](https://github.com/dotnet/corefx/tree/master/src/System.Xml.XDocument/src) is implemented as stand-alone managed code in CoreFx, but is an assembly in the GAC as part of the .NET Framework.
 
-## Existing .NET Platform Standard versions
-Mapping the .NET Platform Standard to existing platforms versions.
+## Mapping the .NET Platform Standard to platforms
 
-In general, class libraries which target a lower .NET Platform Standard version like 5.1 can be loaded by the largest number of older target platforms, but will have access to a more limited, older set of system APIs. On the other hand class libraries which target a higher .NET Platform Standard version like 5.4 can be loaded by a smaller number of newer target platforms, but will have access to a larger, more recent set of system APIs. 
+In general, class libraries which target a lower .NET Platform Standard version, like 1.0, can be loaded by the largest number of existing platforms, but will have access to a smaller set of APIs. On the other hand, class libraries which target a higher .NET Platform Standard version, like 1.3, can be loaded by a smaller number of newer platforms, but will have access to a larger, more recent set of APIs.
 
 | Target Platform Name | Alias |  |  |  |  |  |
 | :---------- | :--------- |:--------- |:--------- |:--------- |:--------- |:--------- |
@@ -62,13 +61,13 @@ In general, class libraries which target a lower .NET Platform Standard version 
 
 - If a library targets .NET Platform Standard version 1.3, it can *only* run on .NET Framework 4.6 or later, Universal Windows Platform 10 (UWP), DNX Core 5.0 and Mono/Xamarin platforms. 
 - If a library targets .NET Platform Standard version 1.3, it can consume libraries from all previous .NET Platform Standard versions (1.2, 1.1, 1.0).
-- The earliest .NET Framework to support a .NET Platform Standard version is .NET Framework 4.5. This is because the new portable API surface area (aka **System.Runtime** based surface area) that is used as the foundation for .NET Platform Standard only became available in that version of .NET Framework. Targeting .NET Framework <= 4.0 requires cross-compilation.
+- The earliest .NET Framework to support a .NET Platform Standard version is .NET Framework 4.5. This is because the new portable API surface area (aka **System.Runtime** based surface area) that is used as the foundation for the .NET Platform Standard only became available in that version of .NET Framework. Targeting .NET Framework <= 4.0 requires cross-compilation.
 - Each .NET Platform Standard version enables more API surface, which means it's available on fewer platforms. As the platforms update, their newer versions jump up into newer .NET Platform Standard versions.
 - Platforms which have stopped updating -- like Silverlight on Windows Phone -- will only ever be available in the earliest .NET Platform Standard versions.
 
 ### Portable Profiles
 
-PCL projects will be able to consume packages built for .NET Platform Standard (dotnet5.x) but not vice versa. The table below outlines the mapping of PCL portable profiles to the supported .NET Platform Standard version.
+PCL projects will be able to consume packages built for .NET Platform Standard (netstandard1.x) but not vice versa. The table below outlines the mapping of PCL portable profiles to the supported .NET Platform Standard version.
 
 | Profile | .NET Platform Standard version |
 | ---------| --------------- |
@@ -151,7 +150,7 @@ Newtonsoft.Json/7.0.1/lib/portable-net40+sl5+wp80+win8+wpa81/Newtonsoft.Json.dll
 Newtonsoft.Json/7.0.1/lib/portable-net45+wp80+win8+wpa81+dnxcore50/Newtonsoft.Json.dll
 ```
 
-Only the second of these can be converted to a dotnet5.x based reference, because the first one target .NET 4.0, which is not supported in the .NET Platform Standard. Based on this csproj, we can see that the second PCL project is really profile 259.
+Only the second of these can be converted to a netstandard1.x based reference, because the first one target .NET 4.0, which is not supported in the .NET Platform Standard. Based on this csproj, we can see that the second PCL project is really profile 259.
 
 https://github.com/JamesNK/Newtonsoft.Json/blob/d4916a76b5ed94342944cc665372dcc5dbd9e389/Src/Newtonsoft.Json/Newtonsoft.Json.Portable.csproj#L12
 
