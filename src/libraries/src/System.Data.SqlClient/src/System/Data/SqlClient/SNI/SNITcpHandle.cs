@@ -272,19 +272,21 @@ namespace System.Data.SqlClient.SNI
             {
                 try
                 {
-                    if (timeoutInMilliseconds < 0)
-                    {   //  infinite timeout (-1) means (0) in TCPClient 
-                        _tcpClient.ReceiveTimeout = 0;
-                    }
-                    else if (timeoutInMilliseconds == 0)
-                    {
-                        // 0 timeout is equal -1 in TCPClient
-                        _tcpClient.ReceiveTimeout = -1;
-                    }
-                    else
+                    if (timeoutInMilliseconds > 0)
                     {
                         _tcpClient.ReceiveTimeout = timeoutInMilliseconds;
                     }
+                    else if (timeoutInMilliseconds == -1)
+                    {   // SqlCient internally represents infinite timeout by -1, and for TcpClient this is translated to a timeout of 0 
+                        _tcpClient.ReceiveTimeout = 0;
+                    }
+                    else
+                    {
+                        // otherwise it is timeout for 0 or less than -1
+                        ReportTcpSNIError(SR.SNI_ERROR_11); //timeout error message
+                        return TdsEnums.SNI_WAIT_TIMEOUT;
+                    }
+
                     packet = new SNIPacket(null);
                     packet.Allocate(_bufferSize);
                     packet.ReadFromStream(_stream);
