@@ -14,6 +14,7 @@
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
+    <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
     <NoWarn>0649</NoWarn>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
