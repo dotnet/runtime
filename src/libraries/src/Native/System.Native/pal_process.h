@@ -263,7 +263,7 @@ extern "C" char* GetCwd(char* buffer, int32_t bufferSize);
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set
  */
-extern "C" int32_t SchedSetAffinity(int32_t pid, CpuSetBits* mask);
+extern "C" int32_t SchedSetAffinity(int32_t pid, intptr_t* mask);
 #endif
 
 #if HAVE_SCHED_GETAFFINITY
@@ -272,15 +272,5 @@ extern "C" int32_t SchedSetAffinity(int32_t pid, CpuSetBits* mask);
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set.
  */
-extern "C" int32_t SchedGetAffinity(int32_t pid, CpuSetBits* mask);
-#endif
-
-#if HAVE_SCHED_GETAFFINITY || HAVE_SCHED_SETAFFINITY
-
-/**
- * Shim's for the macros of the same name. Sets a CPU bit or
- * retrieves if the CPU bit is set
- */
-extern "C" void CpuSet(int32_t cpu, CpuSetBits* set);
-extern "C" bool CpuIsSet(int32_t cpu, CpuSetBits* set);
+extern "C" int32_t SchedGetAffinity(int32_t pid, intptr_t* mask);
 #endif
