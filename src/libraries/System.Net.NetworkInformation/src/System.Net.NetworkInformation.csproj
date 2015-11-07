@@ -349,6 +349,12 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
     </Compile>
   </ItemGroup>
+  <!-- Unknown Unix -->
+  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
+    <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.UnknownUnix.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.UnknownUnix.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

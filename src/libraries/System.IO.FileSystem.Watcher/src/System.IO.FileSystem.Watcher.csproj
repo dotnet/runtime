@@ -115,6 +115,9 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEventStreamHandle.OSX.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
+    <Compile Include="System\IO\FileSystemWatcher.UnknownUnix.cs" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
