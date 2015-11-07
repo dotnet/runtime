@@ -376,8 +376,8 @@ namespace System {
 #if AMD64
                 // for AMD64 bit platform we unroll by 12 and
                 // check 3 qword at a time. This is less code
-                // than the 32 bit case and is shorter
-                // pathlength
+                // than the 32 bit case and is a shorter path length.
+                // Reads are unaligned
 
                 while (length >= 12)
                 {
@@ -470,10 +470,11 @@ namespace System {
                     return ((int)*(a+1) - (int)*(b+1));                    
                 }
 
-                // now go back to slower code path and do comparison on 4 bytes one time.
-                // Following code also take advantage of the fact strings will 
-                // use even numbers of characters (runtime will have a extra zero at the end.)
-                // so even if length is 1 here, we can still do the comparsion.  
+                // now go back to slower code path and do comparison on 4 bytes at a time.
+                // This depends on the fact that the String objects are
+                // always zero terminated and that the terminating zero is not included
+                // in the length. For odd string sizes, the last compare will include
+                // the zero terminator.
                 while (length > 0) {
                     if (*(int*)a != *(int*)b) {
                         break;
@@ -684,9 +685,9 @@ namespace System {
         }
 
         // Converts a substring of this string to an array of characters.  Copies the
-        // characters of this string beginning at position startIndex and ending at
-        // startIndex + length - 1 to the character array buffer, beginning
-        // at bufferStartIndex.
+        // characters of this string beginning at position sourceIndex and ending at
+        // sourceIndex + count - 1 to the character array buffer, beginning
+        // at destinationIndex.
         //
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
@@ -910,7 +911,7 @@ namespace System {
         //
         /// This is a EE implemented function so that the JIT can recognise is specially
         /// and eliminate checks on character fetchs in a loop like:
-        ///        for(int I = 0; I < str.Length; i++) str[i]
+        ///        for(int i = 0; i < str.Length; i++) str[i]
         /// The actually code generated for this will be one instruction and will be inlined.
         //
         // Spec#: Add postcondition in a contract assembly.  Potential perf problem.
@@ -921,10 +922,10 @@ namespace System {
         }
 
         // Creates an array of strings by splitting this string at each
-        // occurence of a separator.  The separator is searched for, and if found,
-        // the substring preceding the occurence is stored as the first element in
+        // occurrence of a separator.  The separator is searched for, and if found,
+        // the substring preceding the occurrence is stored as the first element in
         // the array of strings.  We then continue in this manner by searching
-        // the substring that follows the occurence.  On the other hand, if the separator
+        // the substring that follows the occurrence.  On the other hand, if the separator
         // is not found, the array of strings will contain this instance as its only element.
         // If the separator is null
         // whitespace (i.e., Character.IsWhitespace) is used as the separator.
@@ -935,12 +936,12 @@ namespace System {
         }
 
         // Creates an array of strings by splitting this string at each
-        // occurence of a separator.  The separator is searched for, and if found,
-        // the substring preceding the occurence is stored as the first element in
+        // occurrence of a separator.  The separator is searched for, and if found,
+        // the substring preceding the occurrence is stored as the first element in
         // the array of strings.  We then continue in this manner by searching
-        // the substring that follows the occurence.  On the other hand, if the separator
+        // the substring that follows the occurrence.  On the other hand, if the separator
         // is not found, the array of strings will contain this instance as its only element.
-        // If the spearator is the empty string (i.e., String.Empty), then
+        // If the separator is the empty string (i.e., String.Empty), then
         // whitespace (i.e., Character.IsWhitespace) is used as the separator.
         // If there are more than count different strings, the last n-(count-1)
         // elements are concatenated and added as the last String.
@@ -1066,7 +1067,7 @@ namespace System {
             }
         }                        
         
-        // Note a few special case in this function:
+        // Note a special case in this function:
         //     If there is no separator in the string, a string array which only contains 
         //     the original string will be returned regardless of the count. 
         //
@@ -1155,8 +1156,8 @@ namespace System {
         }       
 
         //--------------------------------------------------------------------    
-        // This function returns number of the places within baseString where 
-        // instances of characters in Separator occur.         
+        // This function returns the number of the places within this instance where 
+        // characters in Separator occur.
         // Args: separator  -- A string containing all of the split characters.
         //       sepList    -- an array of ints for split char indicies.
         //--------------------------------------------------------------------    
@@ -1194,8 +1195,8 @@ namespace System {
         }        
         
         //--------------------------------------------------------------------    
-        // This function returns number of the places within baseString where 
-        // instances of separator strings occur.         
+        // This function returns the number of the places within this instance where 
+        // instances of separator strings occur.
         // Args: separators -- An array containing all of the split strings.
         //       sepList    -- an array of ints for split string indicies.
         //       lengthList -- an array of ints for split string lengths.
@@ -1288,7 +1289,7 @@ namespace System {
         }
     
     
-        // Removes a string of characters from the ends of this string.
+        // Removes a set of characters from the end of this string.
         [Pure]
         public String Trim(params char[] trimChars) {
             if (null==trimChars || trimChars.Length == 0) {
@@ -1297,7 +1298,7 @@ namespace System {
             return TrimHelper(trimChars,TrimBoth);
         }
     
-        // Removes a string of characters from the beginning of this string.
+        // Removes a set of characters from the beginning of this string.
         public String TrimStart(params char[] trimChars) {
             if (null==trimChars || trimChars.Length == 0) {
                 return TrimHelper(TrimHead);
@@ -1306,7 +1307,7 @@ namespace System {
         }
     
     
-        // Removes a string of characters from the end of this string.
+        // Removes a set of characters from the end of this string.
         public String TrimEnd(params char[] trimChars) {
             if (null==trimChars || trimChars.Length == 0) {
                 return TrimHelper(TrimTail);
@@ -2054,12 +2055,9 @@ namespace System {
 
         }
 
-        // Compares this object to another object, returning an integer that
+        // Compares this String to another String (cast as object), returning an integer that
         // indicates the relationship. This method returns a value less than 0 if this is less than value, 0
-        // if this is equal to value, or a value greater than 0
-        // if this is greater than value.  Strings are considered to be
-        // greater than all non-String objects.  Note that this means sorted 
-        // arrays would contain nulls, other objects, then Strings in that order.
+        // if this is equal to value, or a value greater than 0 if this is greater than value.
         //
         [Pure]
         public int CompareTo(Object value) {
@@ -2223,7 +2221,7 @@ namespace System {
         }
     
     
-        // Returns the index of the first occurance of value in the current instance.
+        // Returns the index of the first occurrence of a specified character in the current instance.
         // The search starts at startIndex and runs thorough the next count characters.
         //
         [Pure]
@@ -2241,8 +2239,8 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern int IndexOf(char value, int startIndex, int count);
     
-        // Returns the index of the first occurance of any character in value in the current instance.
-        // The search starts at startIndex and runs to endIndex-1. [startIndex,endIndex).
+        // Returns the index of the first occurrence of any specified character in the current instance.
+        // The search starts at startIndex and runs to startIndex + count -1.
         //
         [Pure]        
         public int IndexOfAny(char [] anyOf) {
@@ -2260,9 +2258,9 @@ namespace System {
         public extern int IndexOfAny(char [] anyOf, int startIndex, int count);
     
         
-        // Determines the position within this string of the first occurence of the specified
+        // Determines the position within this string of the first occurrence of the specified
         // string, according to the specified search criteria.  The search begins at
-        // the first character of this string, it is case-sensitive and ordinal (code-point)
+        // the first character of this string, it is case-sensitive and the current culture
         // comparison is used.
         //
         [Pure]
@@ -2270,18 +2268,18 @@ namespace System {
             return IndexOf(value, StringComparison.CurrentCulture);
         }
 
-        // Determines the position within this string of the first occurence of the specified
+        // Determines the position within this string of the first occurrence of the specified
         // string, according to the specified search criteria.  The search begins at
-        // startIndex, it is case-sensitive and ordinal (code-point) comparison is used.
+        // startIndex, it is case-sensitive and the current culture comparison is used.
         //
         [Pure]
         public int IndexOf(String value, int startIndex) {
             return IndexOf(value, startIndex, StringComparison.CurrentCulture);
         }
 
-        // Determines the position within this string of the first occurence of the specified
+        // Determines the position within this string of the first occurrence of the specified
         // string, according to the specified search criteria.  The search begins at
-        // startIndex, ends at endIndex and ordinal (code-point) comparison is used.
+        // startIndex, ends at endIndex and the current culture comparison is used.
         //
         [Pure]
         public int IndexOf(String value, int startIndex, int count) {
@@ -2348,8 +2346,8 @@ namespace System {
             }  
         }
 
-        // Returns the index of the last occurance of value in the current instance.
-        // The search starts at startIndex and runs to endIndex. [startIndex,endIndex].
+        // Returns the index of the last occurrence of a specified character in the current instance.
+        // The search starts at startIndex and runs backwards to startIndex - count + 1.
         // The character at position startIndex is included in the search.  startIndex is the larger
         // index within the string.
         //
@@ -2368,8 +2366,8 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern int LastIndexOf(char value, int startIndex, int count);
     
-        // Returns the index of the last occurance of any character in value in the current instance.
-        // The search starts at startIndex and runs to endIndex. [startIndex,endIndex].
+        // Returns the index of the last occurrence of any specified character in the current instance.
+        // The search starts at startIndex and runs backwards to startIndex - count + 1.
         // The character at position startIndex is included in the search.  startIndex is the larger
         // index within the string.
         //
@@ -2391,8 +2389,8 @@ namespace System {
         public extern int LastIndexOfAny(char [] anyOf, int startIndex, int count);
     
     
-        // Returns the index of the last occurance of any character in value in the current instance.
-        // The search starts at startIndex and runs to endIndex. [startIndex,endIndex].
+        // Returns the index of the last occurrence of any character in value in the current instance.
+        // The search starts at startIndex and runs backwards to startIndex - count + 1.
         // The character at position startIndex is included in the search.  startIndex is the larger
         // index within the string.
         //
@@ -2769,7 +2767,6 @@ namespace System {
 
         [System.Security.SecurityCritical]  // auto-generated
         private String CreateTrimmedString(int start, int end) {
-            //Create a new STRINGREF and initialize it from the range determined above.
             int len = end -start + 1;
             if (len == this.Length) {
                 // Don't allocate a new string as the trimmed string has not changed.
