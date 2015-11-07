@@ -249,11 +249,12 @@
   <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
     <TargetsWindows Condition="'$(OSGroup)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsUnix Condition="'$(TargetsWindows)' != 'true'">true</TargetsUnix>
+
     <TargetsLinux Condition="'$(OSGroup)' == 'Linux'">true</TargetsLinux>
     <TargetsOSX Condition="'$(OSGroup)' == 'OSX'">true</TargetsOSX>
     <TargetsFreeBSD Condition="'$(OSGroup)' == 'FreeBSD'">true</TargetsFreeBSD>
-
-    <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">true</TargetsUnix>
+	<TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
   </PropertyGroup>
   <!-- Make some assumptions based on TargetsPlatform -->
   <PropertyGroup Condition="'$(UseUnixPackageTargetRuntimeDefaults)' == 'true' OR '$(UsePackageTargetRuntimeDefaults)' == 'true'">
