@@ -1055,16 +1055,27 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg1 == null) arg1 = Array.Empty<byte>();
-                int blobSize = arg1.Length;
-                fixed (byte* blob = &arg1[0])
+                EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
+                if (arg1 == null || arg1.Length == 0)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
+                    int blobSize = 0;
                     descrs[0].DataPointer = (IntPtr)(&blobSize);
                     descrs[0].Size = 4;
-                    descrs[1].DataPointer = (IntPtr)blob;
-                    descrs[1].Size = blobSize;
+                    descrs[1].DataPointer = (IntPtr)(&blobSize); // valid address instead of empty content
+                    descrs[1].Size = 0;
                     WriteEventCore(eventId, 2, descrs);
+                }
+                else
+                {
+                    int blobSize = arg1.Length;
+                    fixed (byte* blob = &arg1[0])
+                    {
+                        descrs[0].DataPointer = (IntPtr)(&blobSize);
+                        descrs[0].Size = 4;
+                        descrs[1].DataPointer = (IntPtr)blob;
+                        descrs[1].Size = blobSize;
+                        WriteEventCore(eventId, 2, descrs);
+                    }
                 }
             }
         }
@@ -1075,18 +1086,29 @@ namespace System.Diagnostics.Tracing
         {
             if (m_eventSourceEnabled)
             {
-                if (arg2 == null) arg2 = Array.Empty<byte>();
-                int blobSize = arg2.Length;
-                fixed (byte* blob = &arg2[0])
+                EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
+                descrs[0].DataPointer = (IntPtr)(&arg1);
+                descrs[0].Size = 8;
+                if (arg2 == null || arg2.Length == 0)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
-                    descrs[0].DataPointer = (IntPtr)(&arg1);
-                    descrs[0].Size = 8;
+                    int blobSize = 0;
                     descrs[1].DataPointer = (IntPtr)(&blobSize);
                     descrs[1].Size = 4;
-                    descrs[2].DataPointer = (IntPtr)blob;
-                    descrs[2].Size = blobSize;
+                    descrs[2].DataPointer = (IntPtr)(&blobSize); // valid address instead of empty contents
+                    descrs[2].Size = 0;
                     WriteEventCore(eventId, 3, descrs);
+                }
+                else
+                {
+                    int blobSize = arg2.Length;
+                    fixed (byte* blob = &arg2[0])
+                    {
+                        descrs[1].DataPointer = (IntPtr)(&blobSize);
+                        descrs[1].Size = 4;
+                        descrs[2].DataPointer = (IntPtr)blob;
+                        descrs[2].Size = blobSize;
+                        WriteEventCore(eventId, 3, descrs);
+                    }
                 }
             }
         }
