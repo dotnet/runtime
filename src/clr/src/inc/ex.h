@@ -966,7 +966,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 
 //#define IsCLRException(ex) ((ex !=NULL) && ex->IsType(CLRException::GetType())
 
-#define EX_TRY EX_TRY_CUSTOM(Exception::HandlerState, , DelegatingException /* was SEHException*/)
+#define EX_TRY_IMPL EX_TRY_CUSTOM(Exception::HandlerState, , DelegatingException /* was SEHException*/)
 
 #define EX_TRY_CPP_ONLY EX_TRY_CUSTOM_CPP_ONLY(Exception::HandlerState, , DelegatingException /* was SEHException*/)
 
@@ -1082,11 +1082,13 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 // Likewise, in the C++ only version, EX_CATCH_CPP_ONLY is redundant with EX_CATCH.
 
 #ifndef NO_HOST_CPP_EH_ONLY
+#define EX_TRY                  EX_TRY_IMPL
 #define EX_CATCH                EX_CATCH_IMPL
 #define EX_CATCH_EX             EX_CATCH_IMPL_EX
 #define EX_CATCH_CPP_ONLY       EX_CATCH_IMPL_CPP_ONLY
 #define EX_CATCH_CPP_AND_SEH    Dont_Use_EX_CATCH_CPP_AND_SEH
 #else
+#define EX_TRY                  EX_TRY_CPP_ONLY
 #define EX_CATCH                EX_CATCH_IMPL_CPP_ONLY
 #define EX_CATCH_CPP_ONLY       Dont_Use_EX_CATCH_CPP_ONLY
 #define EX_CATCH_CPP_AND_SEH    EX_CATCH_IMPL
