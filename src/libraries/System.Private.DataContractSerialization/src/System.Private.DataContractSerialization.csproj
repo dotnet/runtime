@@ -148,12 +148,6 @@
     <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" Condition="!$(NetNative)" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj">
-      <Project>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</Project>
-      <Name>System.Runtime.Serialization.Primitives</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
