@@ -80,7 +80,6 @@ static PMAPPED_VIEW_LIST FindSharedMappingReplacement(CPalThread *pThread, dev_t
 
 static PAL_ERROR
 MAPRecordMapping(
-    CPalThread *pThread,
     IPalObject *pMappingObject,
     void *pPEBaseAddress,
     void *addr,
@@ -90,7 +89,6 @@ MAPRecordMapping(
 
 static PAL_ERROR
 MAPmmapAndRecord(
-    CPalThread *pThread,
     IPalObject *pMappingObject,
     void *pPEBaseAddress,
     void *addr,
@@ -2185,7 +2183,6 @@ static LONG NativeMapHolderRelease(CPalThread *pThread, NativeMapHolder * thisNM
 // This call assumes the mapping_critsec has already been taken.
 static PAL_ERROR
 MAPRecordMapping(
-    CPalThread *pThread,
     IPalObject *pMappingObject,
     void *pPEBaseAddress,
     void *addr,
@@ -2225,7 +2222,6 @@ MAPRecordMapping(
 // This call assumes the mapping_critsec has already been taken.
 static PAL_ERROR
 MAPmmapAndRecord(
-    CPalThread *pThread,
     IPalObject *pMappingObject,
     void *pPEBaseAddress,
     void *addr,
@@ -2250,7 +2246,7 @@ MAPmmapAndRecord(
     }
     else
     {
-        palError = MAPRecordMapping(pThread, pMappingObject, pPEBaseAddress, pvBaseAddress, len, prot);
+        palError = MAPRecordMapping(pMappingObject, pPEBaseAddress, pvBaseAddress, len, prot);
         if (NO_ERROR != palError)
         {
             if (-1 == munmap(pvBaseAddress, len))
@@ -2475,7 +2471,7 @@ void * MAPMapPEFile(HANDLE hFile)
     headerSize = VIRTUAL_PAGE_SIZE; // if there are lots of sections, this could be wrong
 
     //first, map the PE header to the first page in the image.  Get pointers to the section headers
-    palError = MAPmmapAndRecord(pThread, pFileObject, loadedBase,
+    palError = MAPmmapAndRecord(pFileObject, loadedBase,
                     loadedBase, headerSize, PROT_READ, MAP_FILE|MAP_PRIVATE|MAP_FIXED, fd, 0,
                     (void**)&loadedHeader);
     if (NO_ERROR != palError)
@@ -2543,7 +2539,7 @@ void * MAPMapPEFile(HANDLE hFile)
         if ((char*)prevSectionBase + prevSectionSizeInMemory < sectionBase)
         {
             char* gapBase = (char*)prevSectionBase + prevSectionSizeInMemory;
-            palError = MAPRecordMapping(pThread, pFileObject,
+            palError = MAPRecordMapping(pFileObject,
                             loadedBase,
                             (void*)gapBase,
                             (char*)sectionBase - gapBase,
@@ -2565,7 +2561,7 @@ void * MAPMapPEFile(HANDLE hFile)
         if (currentHeader.Characteristics & IMAGE_SCN_MEM_WRITE)
             prot |= PROT_WRITE;
 
-        palError = MAPmmapAndRecord(pThread, pFileObject, loadedBase,
+        palError = MAPmmapAndRecord(pFileObject, loadedBase,
                         sectionBase,
                         currentHeader.SizeOfRawData,
                         prot,
@@ -2600,7 +2596,7 @@ void * MAPMapPEFile(HANDLE hFile)
     if ((char*)prevSectionBase + prevSectionSizeInMemory < imageEnd)
     {
         char* gapBase = (char*)prevSectionBase + prevSectionSizeInMemory;
-        palError = MAPRecordMapping(pThread, pFileObject,
+        palError = MAPRecordMapping(pFileObject,
                         loadedBase,
                         (void*)gapBase,
                         imageEnd - gapBase,

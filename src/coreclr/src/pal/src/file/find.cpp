@@ -43,7 +43,6 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE);
 namespace CorUnix
 {
     int InternalGlob(
-        CPalThread *pthrCurrent,
         const char *szPattern,
         int nFlags,
 #if ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS    
@@ -59,7 +58,6 @@ namespace CorUnix
 
     Input parameters:
 
-    pthrCurrent = reference to executing thread
     szPattern = pointer to a pathname pattern to be expanded
     nFlags = arguments to modify the behavior of glob
     pnErrFunc = pointer to a routine that handles errors during the glob call
@@ -76,7 +74,6 @@ namespace CorUnix
     --*/
     int
     InternalGlob(
-        CPalThread *pthrCurrent,
         const char *szPattern,
         int nFlags,
 #if ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS
@@ -102,7 +99,6 @@ static BOOL FILEDosGlobA(
 static int FILEGlobQsortCompare(const void *in_str1, const void *in_str2);
 
 static int FILEGlobFromSplitPath( 
-        CPalThread *pthrCurrent,
         const char *dir,
         const char *fname,
         const char *ext,
@@ -767,8 +763,7 @@ in broken-down form like _splitpath produces.
 ie. calling splitpath on a pattern then calling this function should
 produce the same result as just calling glob() on the pattern.
 --*/
-static int FILEGlobFromSplitPath( CPalThread *pthrCurrent,
-                                  const char *dir,
+static int FILEGlobFromSplitPath( const char *dir,
                                   const char *fname,
                                   const char *ext,
                                   int flags, 
@@ -811,7 +806,7 @@ static int FILEGlobFromSplitPath( CPalThread *pthrCurrent,
 #ifdef GLOB_QUOTE
     flags |= GLOB_QUOTE;
 #endif  // GLOB_QUOTE
-    Ret = InternalGlob(pthrCurrent, EscapedPattern, flags, NULL, pgGlob);
+    Ret = InternalGlob(EscapedPattern, flags, NULL, pgGlob);
 
 #ifdef GLOB_NOMATCH
     if (Ret == GLOB_NOMATCH)
@@ -950,7 +945,7 @@ static BOOL FILEDosGlobA( CPalThread *pthrCurrent,
     if ( !(A && B) ) 
     {
         /* the original pattern */
-        globResult = FILEGlobFromSplitPath(pthrCurrent, Dir, Filename, Ext, 0, pgGlob);
+        globResult = FILEGlobFromSplitPath(Dir, Filename, Ext, 0, pgGlob);
         if ( globResult != 0 )
         {
             goto done;
@@ -959,7 +954,7 @@ static BOOL FILEDosGlobA( CPalThread *pthrCurrent,
         if (C)
         {
             /* the original pattern but '.' prepended to filename */
-            globResult = FILEGlobFromSplitPath(pthrCurrent, Dir, Filename - 1, Ext,
+            globResult = FILEGlobFromSplitPath(Dir, Filename - 1, Ext,
                                                GLOB_APPEND, pgGlob);
             if ( globResult != 0 )
             {
@@ -973,7 +968,7 @@ static BOOL FILEDosGlobA( CPalThread *pthrCurrent,
         /* if (A && B), this is the first glob() call. The first call
            to glob must use flags = 0, while proceeding calls should
            set the GLOB_APPEND flag. */
-        globResult = FILEGlobFromSplitPath(pthrCurrent, Dir, Filename, "",
+        globResult = FILEGlobFromSplitPath(Dir, Filename, "",
                                            (A && B)?0:GLOB_APPEND, pgGlob);
         if ( globResult != 0 )
         {
@@ -983,7 +978,7 @@ static BOOL FILEDosGlobA( CPalThread *pthrCurrent,
         if (C)
         {
             /* omit the extension and prepend '.' to filename */
-            globResult = FILEGlobFromSplitPath(pthrCurrent, Dir, Filename - 1, "",
+            globResult = FILEGlobFromSplitPath(Dir, Filename - 1, "",
                                                GLOB_APPEND, pgGlob);
             if ( globResult != 0 )
             {
