@@ -279,7 +279,6 @@ public static unsafe class StringTests
 
         Assert.Equal<int>(0, String.Compare("Hello", 2, "Hello", 2, 3));
 
-        Assert.Equal<int>(0, String.Compare("Hello", 2, "Hello", 2, 3, StringComparison.Ordinal));
         Assert.Equal<int>(0, String.Compare("HELLO", 2, "hello", 2, 3, StringComparison.OrdinalIgnoreCase));
 
         Assert.Equal<int>(0, String.Compare("Hello", 2, "Hello", 2, 3, StringComparison.CurrentCulture));
@@ -289,12 +288,6 @@ public static unsafe class StringTests
         Assert.Equal<int>(0, String.Compare("HELLO", 2, "hello", 2, 3, StringComparison.CurrentCultureIgnoreCase));
 
         int i;
-
-        i = String.Compare("HELLO", 2, "Hello", 2, 3, StringComparison.Ordinal);
-        Assert.True(i < 0);
-
-        i = String.Compare("Hello", 2, "HELLO", 2, 3, StringComparison.Ordinal);
-        Assert.True(i > 0);
 
         i = String.Compare("Hello", 2, "HELLO", 2, 3, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(0, i);
@@ -374,7 +367,10 @@ public static unsafe class StringTests
     {
         int result = String.CompareOrdinal(strA, indexA, strB, indexB, length);
         result = Math.Max(-1, Math.Min(1, result));
+        Assert.Equal(expectedResult, result);
 
+        result = String.Compare(strA, indexA, strB, indexB, length, StringComparison.Ordinal);
+        result = Math.Max(-1, Math.Min(1, result));
         Assert.Equal(expectedResult, result);
     }
 
@@ -386,6 +382,12 @@ public static unsafe class StringTests
         Assert.Throws<ArgumentOutOfRangeException>(() => String.CompareOrdinal("Hello", 0, "Hello", 0, -1));
         Assert.Throws<ArgumentOutOfRangeException>(() => String.CompareOrdinal("Hello", 6, "Hello", 0, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => String.CompareOrdinal("Hello", 0, "Hello", 6, 1));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => String.Compare("Hello", -1, "Hello", 0, 1, StringComparison.Ordinal));
+        Assert.Throws<ArgumentOutOfRangeException>(() => String.Compare("Hello", 0, "Hello", -1, 1, StringComparison.Ordinal));
+        Assert.Throws<ArgumentOutOfRangeException>(() => String.Compare("Hello", 0, "Hello", 0, -1, StringComparison.Ordinal));
+        Assert.Throws<ArgumentOutOfRangeException>(() => String.Compare("Hello", 6, "Hello", 0, 1, StringComparison.Ordinal));
+        Assert.Throws<ArgumentOutOfRangeException>(() => String.Compare("Hello", 0, "Hello", 6, 1, StringComparison.Ordinal));
     }
 
     [Fact]
