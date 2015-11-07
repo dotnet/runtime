@@ -11,8 +11,12 @@ namespace System.Net.Tests
         // while the test infrastructure issues (#2383 et. al) are being worked out.
         public const string Host = "corefx-networking.azurewebsites.net";
 
+        private const string HttpScheme = "http";
+        private const string HttpsScheme = "https";
+        
         private const string EchoHandler = "Echo.ashx";
         private const string EmptyContentHandler = "EmptyContent.ashx";
+        private const string StatusCodeHandler = "StatusCode.ashx";
         
         public readonly static Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
         public readonly static Uri SecureRemoteEchoServer = new Uri("https://" + Host + "/" + EchoHandler);
@@ -23,25 +27,25 @@ namespace System.Net.Tests
 
         public static Uri BasicAuthUriForCreds(bool secure, string userName, string password)
         {
-            string scheme;
-            
-            if (secure)
-            {
-                scheme = "https";
-            }
-            else
-            {
-                scheme = "http";
-            }
-            
             return new Uri(
                 string.Format(
                     "{0}://{1}/{2}?auth=basic&user={3}&password={4}",
-                    scheme,
+                    secure ? HttpsScheme : HttpScheme,
                     Host,
                     EchoHandler,
                     userName,
                     password));
+        }
+
+        public static Uri StatusCodeUri(bool secure, int statusCode)
+        {
+            return new Uri(
+                string.Format(
+                    "{0}://{1}/{2}?statuscode={3}",
+                    secure ? HttpsScheme : HttpScheme,
+                    Host,
+                    StatusCodeHandler,
+                    statusCode));
         }
     }
 }
