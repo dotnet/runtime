@@ -236,6 +236,16 @@ The above `project.json` will cause NuGet to do a compatibiltiy check, enforcing
 }
 ```
 
+## Tool Support
+Tooling support for the `netstandard` TFM is as follows. This table will be updated regularly to reflect current status.
+
+- **Visual Studio 2015**: With Update 1 RTM
+- **Visual Studio 2013**: With NuGet Extension `<TBD>` 
+- **NuGet CLI**: 3.3
+- **NuGet CLI**: 2.10?
+- **DNU**: RC1
+
+
 ## List of .NET CoreFx APIs and their associated .NET Platform Standard version (tentative)
 
 ### Legend 
