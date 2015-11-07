@@ -241,6 +241,7 @@ Tooling support for the `netstandard` TFM is as follows. This table will be upda
 
 - **Visual Studio 2015**: With Update 1 RTM
 - **Visual Studio 2013**: With NuGet Extension `<TBD>` 
+- **Visual Studio 2012**: With NuGet Extension `<TBD>` 
 - **NuGet CLI**: 3.3
 - **NuGet CLI**: 2.10?
 - **DNU**: RC1
