@@ -31,7 +31,6 @@ CreateMutexW
 CreateSemaphoreW
 DeleteFileW
 DuplicateHandle
-EnterCriticalSection
 FindClose
 FindFirstFileW
 FindNextFileW
@@ -57,7 +56,6 @@ GetStdHandle
 GetSystemInfo
 GetTempFileNameW
 GetTempPathW
-LeaveCriticalSection
 LocalAlloc
 LocalReAlloc
 LocalFree
