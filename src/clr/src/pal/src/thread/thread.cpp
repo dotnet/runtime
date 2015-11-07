@@ -214,7 +214,7 @@ Abstract:
 Return:
     The fresh thread structure, NULL otherwise
 --*/
-CPalThread* AllocTHREAD(CPalThread *pthr)
+CPalThread* AllocTHREAD()
 {
     CPalThread* pThread = NULL;
 
@@ -574,7 +574,7 @@ CorUnix::InternalCreateThread(
     // Create the CPalThread for the thread
     //
 
-    pNewThread = AllocTHREAD(pThread);
+    pNewThread = AllocTHREAD();
     if (NULL == pNewThread)
     {
         palError = ERROR_OUTOFMEMORY;
@@ -1613,8 +1613,7 @@ CorUnix::CreateThreadData(
     CPalThread *pThread = NULL;
     
     /* Create the thread object */
-    /* Passing NULL to AllocTHREAD since there is no thread reference to pass in. */
-    pThread = AllocTHREAD(NULL);
+    pThread = AllocTHREAD();
 
     if (NULL == pThread)
     {
@@ -1830,7 +1829,7 @@ CorUnix::InternalCreateDummyThread(
     CObjectAttributes oa(NULL, lpThreadAttributes);
     bool fThreadDataStoredInObject = FALSE;
 
-    pDummyThread = AllocTHREAD(pThread);
+    pDummyThread = AllocTHREAD();
     if (NULL == pDummyThread)
     {
         palError = ERROR_OUTOFMEMORY;

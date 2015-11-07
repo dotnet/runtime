@@ -2313,7 +2313,6 @@ Abstract
     Initializes (or re-initializes) the saved command line and exe path.
 
 Parameter
-    pThread - the initial thread
     lpwstrCmdLine
     lpwstrFullPath
  
@@ -2326,7 +2325,6 @@ Notes
 
 PAL_ERROR
 CorUnix::InitializeProcessCommandLine(
-    CPalThread *pThread,
     LPWSTR lpwstrCmdLine,
     LPWSTR lpwstrFullPath
 )
