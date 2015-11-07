@@ -63,12 +63,6 @@ static_assert(PAL_PRIO_PROCESS == static_cast<int>(PRIO_PROCESS), "");
 static_assert(PAL_PRIO_PGRP == static_cast<int>(PRIO_PGRP), "");
 static_assert(PAL_PRIO_USER == static_cast<int>(PRIO_USER), "");
 
-#if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
-// Validate that the number of bits in the PAL CPU affinity struct is
-// greater than or equal to the native one so we can memcpy correctly
-static_assert(sizeof(CpuSetBits) >= sizeof(cpu_set_t), "");
-#endif
-
 enum
 {
     READ_END_OF_PIPE = 0,
@@ -429,66 +423,57 @@ extern "C" char* GetCwd(char* buffer, int32_t bufferSize)
 }
 
 #if HAVE_SCHED_SETAFFINITY
-static bool ConvertPalToNativeCpuSet(const CpuSetBits& pal, cpu_set_t& native)
-{
-    if (sizeof(pal) > sizeof(native))
-    {
-        // If the PAL struct is bigger than the native struct
-        // then make sure the user hasn't put data in the
-        // bits that would be inaccessible to the underlying OS
-        for (size_t i = sizeof(native); i < sizeof(pal); i++)
-        {
-            if (pal.Bits[i] != 0)
-                return false;
-        }
-    }
-
-    memcpy(native.__bits, pal.Bits, ARRAY_SIZE(native.__bits));
-    return true;
-}
-
-extern "C" int32_t SchedSetAffinity(int32_t pid, CpuSetBits* mask)
+extern "C" int32_t SchedSetAffinity(int32_t pid, intptr_t* mask)
 {
     assert(mask != nullptr);
-    cpu_set_t set = {};
-    if (!ConvertPalToNativeCpuSet(*mask, set))
+
+    int maxCpu = sizeof(intptr_t) * 8;
+    assert(maxCpu <= CPU_SETSIZE);
+
+    cpu_set_t set;
+    CPU_ZERO(&set);
+
+    intptr_t bits = *mask; 
+    for (int cpu = 0; cpu < maxCpu; cpu++)
     {
-        errno = EINVAL;
-        return -1;
+        if ((bits & (1u << cpu)) != 0)
+        {
+            CPU_SET(cpu, &set);
+        }
     }
+ 
     return sched_setaffinity(pid, sizeof(cpu_set_t), &set);
 }
 #endif
 
 #if HAVE_SCHED_GETAFFINITY
-static void ConvertNativeToPalCpuSet(const cpu_set_t& native, CpuSetBits& pal)
-{
-    pal = {};
-    memcpy(pal.Bits, native.__bits, ARRAY_SIZE(native.__bits));
-}
-
-extern "C" int32_t SchedGetAffinity(int32_t pid, CpuSetBits* mask)
+extern "C" int32_t SchedGetAffinity(int32_t pid, intptr_t* mask)
 {
     assert(mask != nullptr);
+
     cpu_set_t set;
     int32_t result = sched_getaffinity(pid, sizeof(cpu_set_t), &set);
     if (result == 0)
     {
-        ConvertNativeToPalCpuSet(set, *mask);
+        int maxCpu = sizeof(intptr_t) * 8;
+        assert(maxCpu <= CPU_SETSIZE);
+
+        intptr_t bits = 0;
+        for (int cpu = 0; cpu < maxCpu; cpu++)
+        {
+            if (CPU_ISSET(cpu, &set))
+            {
+                bits |= (1u << cpu);
+            }
+        }
+
+        *mask = bits;
+    }
+    else
+    {
+        *mask = 0;
     }
 
     return result;
-}
-#endif
-
-#if HAVE_SCHED_GETAFFINITY || HAVE_SCHED_SETAFFINITY
-extern "C" void CpuSet(int32_t cpu, CpuSetBits* set)
-{
-    set->Bits[__CPUELT(cpu)] |= __CPUMASK(cpu);
-}
-
-extern "C" bool CpuIsSet(int32_t cpu, CpuSetBits* set)
-{
-    return (set->Bits[__CPUELT(cpu)] & __CPUMASK(cpu)) != 0;
 }
 #endif

@@ -91,42 +91,24 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveId);
 
-                Interop.Sys.CpuSetBits set = default(Interop.Sys.CpuSetBits);
+                IntPtr set;
                 if (Interop.Sys.SchedGetAffinity(_processId, out set) != 0)
                 {
                     throw new Win32Exception(); // match Windows exception
                 }
 
-                ulong bits = 0;
-                int maxCpu = IntPtr.Size == 4 ? 32 : 64;
-                for (int cpu = 0; cpu < maxCpu; cpu++)
-                {
-                    if (Interop.Sys.CpuIsSet(cpu, ref set))
-                        bits |= (1u << cpu);
-                }
-                return (IntPtr)bits;
+                return set;
             }
             set
             {
                 EnsureState(State.HaveId);
 
-                Interop.Sys.CpuSetBits set = default(Interop.Sys.CpuSetBits);
-
-                long bits = (long)value;
-                int maxCpu = IntPtr.Size == 4 ? 32 : 64;
-                for (int cpu = 0; cpu < maxCpu; cpu++)
-                {
-                    if ((bits & (1u << cpu)) != 0)
-                        Interop.Sys.CpuSet(cpu, ref set);
-                }
-
-                if (Interop.Sys.SchedSetAffinity(_processId, ref set) != 0)
+                if (Interop.Sys.SchedSetAffinity(_processId, ref value) != 0)
                 {
                     throw new Win32Exception(); // match Windows exception
                 }
             }
         }
-
 
         /// <summary>
         /// Make sure we have obtained the min and max working set limits.
