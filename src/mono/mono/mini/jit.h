@@ -51,7 +51,9 @@ typedef enum {
 	MONO_AOT_MODE_HYBRID,
 	/* Enables full AOT mode, JIT is disabled and not allowed,
 	 * equivalent to mono_jit_set_aot_only (true) */
-	MONO_AOT_MODE_FULL
+	MONO_AOT_MODE_FULL,
+	/* Same as full, but use only llvm compiled code */
+	MONO_AOT_MODE_LLVMONLY
 } MonoAotMode;
 
 MONO_API void

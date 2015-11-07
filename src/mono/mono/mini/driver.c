@@ -2232,6 +2232,8 @@ void
 mono_jit_set_aot_mode (MonoAotMode mode)
 {
 	mono_aot_mode = mode;
+	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY)
+		mono_llvm_only = TRUE;
 }
 
 /**
