@@ -416,42 +416,54 @@ public static unsafe class StringTests
             });
     }
 
-    [Fact]
-    public static void TestEndsWith()
+    [Theory]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "llo", true)]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "Hello", true)]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "", true)]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "HELLO", false)]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "Abc", false)]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "llo" + c_SoftHyphen, true)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "llo", true)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "Hello", true)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "", true)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "LLO", true)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "Abc", false)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase, "Hello", "llo" + c_SoftHyphen, true)]
+    [InlineData(StringComparison.Ordinal, "Hello", "o", true)]
+    [InlineData(StringComparison.Ordinal, "Hello", "llo", true)]
+    [InlineData(StringComparison.Ordinal, "Hello", "Hello", true)]
+    [InlineData(StringComparison.Ordinal, "Hello", "Larger Hello", false)]
+    [InlineData(StringComparison.Ordinal, "Hello", "", true)]
+    [InlineData(StringComparison.Ordinal, "Hello", "LLO", false)]
+    [InlineData(StringComparison.Ordinal, "Hello", "Abc", false)]
+    [InlineData(StringComparison.Ordinal, "Hello", "llo" + c_SoftHyphen, false)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "llo", true)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "Hello", true)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "Larger Hello", false)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "", true)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "LLO", true)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "Abc", false)]
+    [InlineData(StringComparison.OrdinalIgnoreCase, "Hello", "llo" + c_SoftHyphen, false)]
+    public static void TestEndsWith(StringComparison comparisonType, string text, string value, bool expected)
     {
-        String s = "Hello";
-        bool b;
-        b = s.EndsWith("ello");
-        Assert.True(b);
-        b = s.EndsWith("Hello");
-        Assert.True(b);
-        b = s.EndsWith("");
-        Assert.True(b);
-        b = s.EndsWith("ELLO");
-        Assert.False(b);
+        if (comparisonType == StringComparison.CurrentCulture)
+        {
+            Assert.Equal(expected, text.EndsWith(value));
+        }
+        Assert.Equal(expected, text.EndsWith(value, comparisonType));
+    }
 
-        Assert.Throws<ArgumentNullException>(
-            delegate ()
-            {
-                s.EndsWith(null);
-            });
+    [Fact]
+    public static void TestEndsWithInvalid()
+    {
+        string s = "Hello";
 
-        b = s.EndsWith("ello", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(b);
-        b = s.EndsWith("Hello", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(b);
-        b = s.EndsWith("", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(b);
-        b = s.EndsWith("ELLO", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(b);
-        b = s.EndsWith("Goodbye", StringComparison.CurrentCultureIgnoreCase);
-        Assert.False(b);
-
-        Assert.Throws<ArgumentNullException>(
-            delegate ()
-            {
-                s.EndsWith(null, StringComparison.CurrentCultureIgnoreCase);
-            });
+        Assert.Throws<ArgumentException>(() => s.EndsWith("o", (StringComparison.CurrentCulture - 1)));
+        Assert.Throws<ArgumentException>(() => s.EndsWith("o", (StringComparison.OrdinalIgnoreCase + 1)));
+        Assert.Throws<ArgumentNullException>(() => s.EndsWith(null));
+        Assert.Throws<ArgumentNullException>(() => s.EndsWith(null, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Throws<ArgumentNullException>(() => s.EndsWith(null, StringComparison.Ordinal));
+        Assert.Throws<ArgumentNullException>(() => s.EndsWith(null, StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
