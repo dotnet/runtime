@@ -42,7 +42,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="packet">SNI packet</param>
         /// <param name="timeoutInMilliseconds">Timeout in Milliseconds</param>
         /// <returns>SNI error code</returns>
-        public abstract uint Receive(ref SNIPacket packet, int timeoutInMilliseconds);
+        public abstract uint Receive(out SNIPacket packet, int timeoutInMilliseconds);
 
         /// <summary>
         /// Receive a packet asynchronously

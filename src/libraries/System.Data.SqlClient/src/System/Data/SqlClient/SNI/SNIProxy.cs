@@ -147,9 +147,9 @@ namespace System.Data.SqlClient.SNI
         /// <param name="packet">SNI packet</param>
         /// <param name="timeout">Timeout</param>
         /// <returns>SNI error status</returns>
-        public uint ReadSyncOverAsync(SNIHandle handle, ref SNIPacket packet, int timeout)
+        public uint ReadSyncOverAsync(SNIHandle handle, out SNIPacket packet, int timeout)
         {
-            return handle.Receive(ref packet, timeout);
+            return handle.Receive(out packet, timeout);
         }
 
         /// <summary>

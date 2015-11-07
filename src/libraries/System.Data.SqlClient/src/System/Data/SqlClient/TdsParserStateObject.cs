@@ -2193,7 +2193,7 @@ namespace System.Data.SqlClient
                 }
 
 #if MANAGED_SNI
-                error = SNIProxy.Singleton.ReadSyncOverAsync(handle, ref readPacket, GetTimeoutRemaining());
+                error = SNIProxy.Singleton.ReadSyncOverAsync(handle, out readPacket, GetTimeoutRemaining());
 #else
                 error = SNINativeMethodWrapper.SNIReadSyncOverAsync(handle, ref readPacket, GetTimeoutRemaining());
 #endif // MANAGED_SNI
@@ -2702,7 +2702,7 @@ namespace System.Data.SqlClient
                                 {
                                     IncrementPendingCallbacks();
                                 }
-                                error = SNIProxy.Singleton.ReadSyncOverAsync(handle, ref syncReadPacket, stateObj.GetTimeoutRemaining());
+                                error = SNIProxy.Singleton.ReadSyncOverAsync(handle, out syncReadPacket, stateObj.GetTimeoutRemaining());
 #else								
                                 error = SNINativeMethodWrapper.SNIReadSyncOverAsync(handle, ref syncReadPacket, stateObj.GetTimeoutRemaining());
 #endif // MANAGED_SNI

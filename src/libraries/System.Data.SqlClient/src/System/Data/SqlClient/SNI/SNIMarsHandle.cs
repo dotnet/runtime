@@ -429,8 +429,9 @@ namespace System.Data.SqlClient.SNI
         /// <param name="packet">SNI packet</param>
         /// <param name="timeoutInMilliseconds">Timeout in Milliseconds</param>
         /// <returns>SNI error code</returns>
-        public override uint Receive(ref SNIPacket packet, int timeoutInMilliseconds)
+        public override uint Receive(out SNIPacket packet, int timeoutInMilliseconds)
         {
+            packet = null;
             int queueCount;
             uint result = TdsEnums.SNI_SUCCESS_IO_PENDING;
 
