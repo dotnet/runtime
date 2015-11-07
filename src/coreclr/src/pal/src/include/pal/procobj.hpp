@@ -114,7 +114,6 @@ namespace CorUnix
 
     PAL_ERROR
     InitializeProcessCommandLine(
-        CPalThread *pThread,
         LPWSTR lpwstrCmdLine,
         LPWSTR lpwstrFullPath
         );

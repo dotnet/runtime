@@ -587,7 +587,7 @@ namespace CorUnix
         COwnedObjectsListNodeCache      m_cacheOwnedObjectsListNodes;
 
         // static methods
-        static PAL_ERROR Initialize(CPalThread * pthrCurrent);
+        static PAL_ERROR Initialize();
         static DWORD PALAPI WorkerThread(LPVOID pArg);
 
     protected:
@@ -601,8 +601,7 @@ namespace CorUnix
             CSynchControllerBase::ControllerType ctCtrlrType);
 
     private:
-        static IPalSynchronizationManager * CreatePalSynchronizationManager(
-            CPalThread * pthrCurrent);
+        static IPalSynchronizationManager * CreatePalSynchronizationManager();
         static PAL_ERROR StartWorker(CPalThread * pthrCurrent);
         static PAL_ERROR PrepareForShutdown(void);
 
@@ -637,7 +636,7 @@ namespace CorUnix
                 InternalLeaveCriticalSection(pthrCurrent, &s_csSynchProcessLock);
                 
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING && !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-                pthrCurrent->synchronizationInfo.RunDeferredThreadConditionSignalings(pthrCurrent);
+                pthrCurrent->synchronizationInfo.RunDeferredThreadConditionSignalings();
 #endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING && !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
             }
         }
@@ -652,14 +651,14 @@ namespace CorUnix
                 InternalLeaveCriticalSection(pthrCurrent, &s_csSynchProcessLock);
 
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING && !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
-                pthrCurrent->synchronizationInfo.RunDeferredThreadConditionSignalings(pthrCurrent);
+                pthrCurrent->synchronizationInfo.RunDeferredThreadConditionSignalings();
 #endif // SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING && !SYNCHMGR_PIPE_BASED_THREAD_BLOCKING
             }            
             return lRet;
         }
         static LONG GetLocalSynchLockCount(CPalThread * pthrCurrent) 
         {
-            _ASSERTE(0 <= pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount);            
+            _ASSERTE(0 <= pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount);
             return pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount;
         }
 
@@ -962,7 +961,6 @@ namespace CorUnix
             DWORD * pdwData);
 
         PAL_ERROR WakeUpLocalWorkerThread(
-            CPalThread * pthrCurrent,
             SynchWorkerCmd swcWorkerCmd);
 
         void DiscardAllPendingAPCs(
@@ -974,9 +972,9 @@ namespace CorUnix
             BYTE * pRecvBuf,
             LONG lBytes);
 
-        bool CreateProcessPipe(CPalThread * pthrCurrent);
+        bool CreateProcessPipe();
 
-        PAL_ERROR ShutdownProcessPipe(CPalThread * pthrCurrent);
+        PAL_ERROR ShutdownProcessPipe();
 
     public:
         //

@@ -107,9 +107,7 @@ namespace CorUnix
             );
 
         void
-        FreeBuffer(
-            CPalThread *pthr
-            );            
+        FreeBuffer();
 
         const WCHAR *
         GetString()

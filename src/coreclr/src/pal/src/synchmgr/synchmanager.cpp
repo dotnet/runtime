@@ -94,10 +94,9 @@ namespace CorUnix
 
     Creates the Synchronization Manager. It must be called once per process.
     --*/
-    IPalSynchronizationManager * CPalSynchMgrController::CreatePalSynchronizationManager(
-        CPalThread *pthrCurrent)
+    IPalSynchronizationManager * CPalSynchMgrController::CreatePalSynchronizationManager()
     { 
-        return CPalSynchronizationManager::CreatePalSynchronizationManager(pthrCurrent);
+        return CPalSynchronizationManager::CreatePalSynchronizationManager();
     };
 
     /*++
@@ -1474,13 +1473,12 @@ namespace CorUnix
     Creates the Synchronization Manager.
     Private method, it is called only by CPalSynchMgrController.
     --*/
-    IPalSynchronizationManager * CPalSynchronizationManager::CreatePalSynchronizationManager(
-        CPalThread *pthrCurrent)
+    IPalSynchronizationManager * CPalSynchronizationManager::CreatePalSynchronizationManager()
     { 
-        IPalSynchronizationManager * pRet = NULL;    
+        IPalSynchronizationManager * pRet = NULL;
         if (s_pObjSynchMgr == NULL)
         {
-            Initialize(pthrCurrent);
+            Initialize();
             pRet = static_cast<IPalSynchronizationManager *>(s_pObjSynchMgr);
         }
         else
@@ -1497,9 +1495,8 @@ namespace CorUnix
 
     Internal Synchronization Manager initialization
     --*/
-    PAL_ERROR CPalSynchronizationManager::Initialize(
-        CPalThread *pthrCurrent)
-    {        
+    PAL_ERROR CPalSynchronizationManager::Initialize()
+    {
         PAL_ERROR palErr = NO_ERROR;
         LONG lInit;
         CPalSynchronizationManager * pSynchManager = NULL;
@@ -1525,7 +1522,7 @@ namespace CorUnix
             goto I_exit;
         }
 
-        if (!pSynchManager->CreateProcessPipe(pthrCurrent))
+        if (!pSynchManager->CreateProcessPipe())
         {
             ERROR("Unable to create process pipe \n");
             palErr = ERROR_OPEN_FAILED;
@@ -1535,8 +1532,8 @@ namespace CorUnix
         s_pObjSynchMgr = pSynchManager;
 
         // Initialization was successful
-        g_pSynchronizationManager = 
-            static_cast<IPalSynchronizationManager *>(pSynchManager);                    
+        g_pSynchronizationManager =
+            static_cast<IPalSynchronizationManager *>(pSynchManager);
         s_lInitStatus = (LONG)SynchMgrStatusRunning;
         
     I_exit:
@@ -1545,7 +1542,7 @@ namespace CorUnix
             s_lInitStatus = (LONG)SynchMgrStatusError;
             if (NULL != pSynchManager)
             {
-                pSynchManager->ShutdownProcessPipe(pthrCurrent);
+                pSynchManager->ShutdownProcessPipe();
             }
             s_pObjSynchMgr = NULL;
             g_pSynchronizationManager = NULL;
@@ -1648,13 +1645,13 @@ namespace CorUnix
                    SynchMgrStatusRunning, lInit);
             // We intentionally not set s_lInitStatus to SynchMgrStatusError
             // cause this could interfere with a previous thread already 
-            // executing shutdown            
+            // executing shutdown
             palErr = ERROR_INTERNAL_ERROR;
             goto PFS_exit;
         }
 
         // Discard process monitoring for process waits
-        pSynchManager->DiscardMonitoredProcesses(pthrCurrent);        
+        pSynchManager->DiscardMonitoredProcesses(pthrCurrent);
 
         if (NULL == pSynchManager->m_pipoThread)
         {
@@ -1663,10 +1660,9 @@ namespace CorUnix
             // sometime after having called CreatePalSynchronizationManager,
             // but before calling StartWorker. Nothing else to do here.
             goto PFS_exit;
-        }            
+        }
 
-        palErr = pSynchManager->WakeUpLocalWorkerThread(pthrCurrent, 
-                                                        SynchWorkerCmdShutdown);
+        palErr = pSynchManager->WakeUpLocalWorkerThread(SynchWorkerCmdShutdown);
         if (NO_ERROR != palErr)
         {
             ERROR("Failed stopping worker thread [palErr=%u]\n", palErr);
@@ -1684,7 +1680,7 @@ namespace CorUnix
             ERROR("Failed to convert timeout to absolute timeout\n");
             s_lInitStatus = SynchMgrStatusError;
             goto PFS_exit;
-        }            
+        }
 
         // Using the worker thread's predicate/condition/mutex
         // to wait for worker thread to be done
@@ -2040,7 +2036,7 @@ namespace CorUnix
                     // be read). That will allow the worker thread to process 
                     // possible commands already successfully written to the 
                     // pipe by some other process, before shutting down.
-                    pSynchManager->ShutdownProcessPipe(pthrWorker);
+                    pSynchManager->ShutdownProcessPipe();
 
                     // Shutting down: this will cause the worker thread to
                     // fetch residual cmds from the process pipe until an
@@ -2959,7 +2955,6 @@ namespace CorUnix
     process pipe.
     --*/
     PAL_ERROR CPalSynchronizationManager::WakeUpLocalWorkerThread(
-        CPalThread * pthrCurrent,
         SynchWorkerCmd swcWorkerCmd)
     {
         PAL_ERROR palErr = NO_ERROR;
@@ -3407,8 +3402,7 @@ namespace CorUnix
         {
             CPalSynchronizationManager * pSynchManager = GetInstance();
 
-            palErr = pSynchManager->WakeUpLocalWorkerThread(pthrCurrent, 
-                                                            SynchWorkerCmdNop);
+            palErr = pSynchManager->WakeUpLocalWorkerThread(SynchWorkerCmdNop);
             if (NO_ERROR != palErr)
             {
                 ERROR("Failed waking up worker thread for process "
@@ -3750,8 +3744,7 @@ namespace CorUnix
 
     Creates the process pipe for the current process
     --*/
-    bool CPalSynchronizationManager::CreateProcessPipe(
-        CPalThread * pthrCurrent)
+    bool CPalSynchronizationManager::CreateProcessPipe()
     {
         bool fRet = true;
 #if HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
@@ -3892,14 +3885,13 @@ namespace CorUnix
 
     Shuts down the process pipe and removes the fifo so that other processes
     can no longer open it. It also closes the local write end of the pipe (see
-    comment below). From this moment on the worker thread will process any 
+    comment below). From this moment on the worker thread will process any
     possible data already received in the pipe (but not yet consumed) and any
-    data written by processes that still have a opened write end of this pipe; 
+    data written by processes that still have a opened write end of this pipe;
     it will wait (with timeout) until the last remote process which has a write
-    end opened closes it, and then it will yield to process shutdown    
+    end opened closes it, and then it will yield to process shutdown.
     --*/
-    PAL_ERROR CPalSynchronizationManager::ShutdownProcessPipe(
-        CPalThread *pthrCurrent)
+    PAL_ERROR CPalSynchronizationManager::ShutdownProcessPipe()
     {
         PAL_ERROR palErr = NO_ERROR;
 #ifndef CORECLR
@@ -4580,8 +4572,7 @@ namespace CorUnix
 
     Carries out all the pending condition signalings for the current thread.
     --*/
-    PAL_ERROR CThreadSynchronizationInfo::RunDeferredThreadConditionSignalings(
-        CPalThread * pthrCurrent)
+    PAL_ERROR CThreadSynchronizationInfo::RunDeferredThreadConditionSignalings()
     {
         PAL_ERROR palErr = NO_ERROR;
 
