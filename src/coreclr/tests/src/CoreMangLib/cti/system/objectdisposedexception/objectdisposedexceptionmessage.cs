@@ -43,9 +43,9 @@ public class ObjectDisposedExceptionMessage
                 if (index == -1)
                 {
                     string errorDesc = "Message shoule contains the object name";
-                    errorDesc += TestLibrary.Env.NewLine + "objectName is " + name;
-                    errorDesc += TestLibrary.Env.NewLine + "message is " + message;
-                    errorDesc += TestLibrary.Env.NewLine + "exception's message is " + exception.Message;
+                    errorDesc += Environment.NewLine + "objectName is " + name;
+                    errorDesc += Environment.NewLine + "message is " + message;
+                    errorDesc += Environment.NewLine + "exception's message is " + exception.Message;
                     TestLibrary.TestFramework.LogError("001 " + "TestID_" + c_TEST_ID, errorDesc);
                     retVal = false;
                 }
@@ -53,9 +53,9 @@ public class ObjectDisposedExceptionMessage
                 if (index == -1)
                 {
                     string errorDesc = "Message shoule contains the message";
-                    errorDesc += TestLibrary.Env.NewLine + "objectName is " + name;
-                    errorDesc += TestLibrary.Env.NewLine + "message is " + message;
-                    errorDesc += TestLibrary.Env.NewLine + "exception's message is " + exception.Message;
+                    errorDesc += Environment.NewLine + "objectName is " + name;
+                    errorDesc += Environment.NewLine + "message is " + message;
+                    errorDesc += Environment.NewLine + "exception's message is " + exception.Message;
                     TestLibrary.TestFramework.LogError("001 " + "TestID_" + c_TEST_ID, errorDesc);
                     retVal = false;
                 }
@@ -92,9 +92,9 @@ public class ObjectDisposedExceptionMessage
                 if (index == -1)
                 {
                     string errorDesc = "Message shoule contains the message";
-                    errorDesc += TestLibrary.Env.NewLine + "objectName is empty";
-                    errorDesc += TestLibrary.Env.NewLine + "message parameter" + message;
-                    errorDesc += TestLibrary.Env.NewLine + "exception's message is " + exception.Message;
+                    errorDesc += Environment.NewLine + "objectName is empty";
+                    errorDesc += Environment.NewLine + "message parameter" + message;
+                    errorDesc += Environment.NewLine + "exception's message is " + exception.Message;
                     TestLibrary.TestFramework.LogError("003 " + "TestID_" + c_TEST_ID, errorDesc);
                     retVal = false;
                 }
