@@ -8,16 +8,6 @@ namespace System.Net.NetworkInformation
 {
     internal class OsxIPGlobalProperties : UnixIPGlobalProperties
     {
-        public override string DhcpScopeName { get { throw new PlatformNotSupportedException(); } }
-
-        public override string DomainName { get { return HostInformation.DomainName; } }
-
-        public override string HostName { get { return HostInformation.HostName; } }
-
-        public override bool IsWinsProxy { get { throw new PlatformNotSupportedException(); } }
-
-        public override NetBiosNodeType NodeType { get { return NetBiosNodeType.Unknown; } }
-
         public unsafe override TcpConnectionInformation[] GetActiveTcpConnections()
         {
             int realCount = Interop.Sys.GetEstimatedTcpConnectionCount();
