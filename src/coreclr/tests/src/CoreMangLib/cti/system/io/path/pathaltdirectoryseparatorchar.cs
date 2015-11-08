@@ -45,7 +45,7 @@ public class PathAltDirectorySeparatorChar
         const string c_TEST_DESC = "PosTest1: Verify the Path.AltDirectorySeparatorChar value is '/' ";
         const string c_TEST_ID = "P001";
 
-        char correctChar = Env.AltFileSeperator[0];
+        char correctChar = Utilities.IsWindows ? '/' : '/';
 
         TestLibrary.TestFramework.BeginScenario(c_TEST_DESC);
 

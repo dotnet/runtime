@@ -10,6 +10,7 @@ using TestLibrary;
 /// </summary>
 public class PathCombine
 {
+    char fileSeperator = Utilities.IsWindows ? '\\' : '/';
 
     public static int Main()
     {
@@ -59,9 +60,9 @@ public class PathCombine
         const string c_TEST_DESC = "PosTest1: Verify Combine  two paths . ";
         const string c_TEST_ID = "P001";
 
-        string path1 = @"mydir" + Env.FileSeperator + "myfolder" + Env.FileSeperator + "";
-        string path2 = @"youfolder" + Env.FileSeperator + "youfile";
-        string resPath = @"mydir" + Env.FileSeperator + "myfolder" + Env.FileSeperator + "youfolder" + Env.FileSeperator + "youfile";
+        string path1 = @"mydir" + fileSeperator + "myfolder" + fileSeperator + "";
+        string path2 = @"youfolder" + fileSeperator + "youfile";
+        string resPath = @"mydir" + fileSeperator + "myfolder" + fileSeperator + "youfolder" + fileSeperator + "youfile";
         string newPath ;
 
         TestLibrary.TestFramework.BeginScenario(c_TEST_DESC);
@@ -93,9 +94,9 @@ public class PathCombine
         const string c_TEST_DESC = "PosTest2: path1 does not end with a valid separator character. ";
         const string c_TEST_ID = "P002";
 
-        string path1 = @"mydir" + Env.FileSeperator + "myfolder";
-        string path2 = @"youfolder" + Env.FileSeperator + "youfile";
-        string resPath = @"mydir" + Env.FileSeperator + "myfolder" + Env.FileSeperator + "youfolder" + Env.FileSeperator + "youfile";
+        string path1 = @"mydir" + fileSeperator + "myfolder";
+        string path2 = @"youfolder" + fileSeperator + "youfile";
+        string resPath = @"mydir" + fileSeperator + "myfolder" + fileSeperator + "youfolder" + fileSeperator + "youfile";
         string newPath;
 
         TestLibrary.TestFramework.BeginScenario(c_TEST_DESC);
@@ -128,8 +129,8 @@ public class PathCombine
         const string c_TEST_ID = "P003";
 
         string path1 = "";
-        string path2 = @"yourfolder" + Env.FileSeperator + "" + Env.FileSeperator + "youfile";
-        string resPath = @"yourfolder" + Env.FileSeperator + "" + Env.FileSeperator + "youfile";
+        string path2 = @"yourfolder" + fileSeperator + "" + fileSeperator + "youfile";
+        string resPath = @"yourfolder" + fileSeperator + "" + fileSeperator + "youfile";
         string newPath;
 
         TestLibrary.TestFramework.BeginScenario(c_TEST_DESC);
@@ -229,9 +230,9 @@ public class PathCombine
         const string c_TEST_DESC = "PosTest6: path2 have a willcard";
         const string c_TEST_ID = "P006";
 
-        string path1 = "mydir" + Env.FileSeperator + "my folder";
+        string path1 = "mydir" + fileSeperator + "my folder";
         string path2 = "*.txt";
-        string resPath = "mydir" + Env.FileSeperator + "my folder" + Env.FileSeperator + "*.txt";
+        string resPath = "mydir" + fileSeperator + "my folder" + fileSeperator + "*.txt";
         string newPath;
 
         TestLibrary.TestFramework.BeginScenario(c_TEST_DESC);
