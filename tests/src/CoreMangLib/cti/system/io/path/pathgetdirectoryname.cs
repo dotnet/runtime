@@ -9,6 +9,7 @@ using TestLibrary;
 public class PathGetDirectoryName
 {
     private const int c_MAX_PATH_LEN = 256;
+    char fileSeperator = Utilities.IsWindows ? '\\' : '/';
 
     public static int Main()
     {
@@ -54,8 +55,8 @@ public class PathGetDirectoryName
         const string c_TEST_DESC = "PosTest1:the source path is a file name.";
         const string c_TEST_ID = "P001";
 
-        string sourcePath = @"C:" + Env.FileSeperator + "mydir" + Env.FileSeperator + "myfolder" + Env.FileSeperator + "test.txt";
-        string directoryName = @"C:" + Env.FileSeperator + "mydir" + Env.FileSeperator + "myfolder";
+        string sourcePath = @"C:" + fileSeperator + "mydir" + fileSeperator + "myfolder" + fileSeperator + "test.txt";
+        string directoryName = @"C:" + fileSeperator + "mydir" + fileSeperator + "myfolder";
 
         TestLibrary.TestFramework.BeginScenario(c_TEST_DESC);
 

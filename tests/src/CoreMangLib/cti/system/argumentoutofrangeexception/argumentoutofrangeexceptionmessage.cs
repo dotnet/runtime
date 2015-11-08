@@ -34,7 +34,7 @@ public class ArgumentOutOfRangeExceptionMessage
         {
             string randValue = TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
             ArgumentOutOfRangeException argumentOutOfRangeException = new ArgumentOutOfRangeException(randValue);
-            if ((argumentOutOfRangeException.Message != "Specified argument was out of the range of valid values." + TestLibrary.Env.NewLine + "Parameter name: " + randValue) &
+            if ((argumentOutOfRangeException.Message != "Specified argument was out of the range of valid values." + Environment.NewLine + "Parameter name: " + randValue) &
                 (!argumentOutOfRangeException.Message.Contains("[Arg_ArgumentOutOfRangeException]")))
             {
                 TestLibrary.TestFramework.LogError("001", "The result is not the value as expected");
@@ -61,7 +61,7 @@ public class ArgumentOutOfRangeExceptionMessage
             string randValue = TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
             string paramName = TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
             ArgumentOutOfRangeException argumentOutOfRangeException = new ArgumentOutOfRangeException(paramName, randValue);
-            if ((argumentOutOfRangeException.Message != randValue + "" + TestLibrary.Env.NewLine + "Parameter name: " + paramName) &
+            if ((argumentOutOfRangeException.Message != randValue + "" + Environment.NewLine + "Parameter name: " + paramName) &
                 (argumentOutOfRangeException.Message != randValue))
             {
                 TestLibrary.TestFramework.LogError("003", "The result is not the value as expected");
@@ -88,7 +88,7 @@ public class ArgumentOutOfRangeExceptionMessage
             string paramName = TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
             string Value = null;
             ArgumentOutOfRangeException argumentOutOfRangeException = new ArgumentOutOfRangeException(paramName, Value);
-            if ((argumentOutOfRangeException.Message != "Exception of type 'System.ArgumentOutOfRangeException' was thrown." + TestLibrary.Env.NewLine + "Parameter name: " + paramName) &
+            if ((argumentOutOfRangeException.Message != "Exception of type 'System.ArgumentOutOfRangeException' was thrown." + Environment.NewLine + "Parameter name: " + paramName) &
                 (argumentOutOfRangeException.Message != "Exception of type 'System.ArgumentOutOfRangeException' was thrown."))
             {
                 TestLibrary.TestFramework.LogError("005", "The result is not the value as expected");

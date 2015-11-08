@@ -37,7 +37,7 @@ public class ArgumentOutOfRangeExceptionCtor2
                 TestLibrary.TestFramework.LogError("001", "The result is not the value as expected");
                 retVal = false;
             }
-            if ((argumentOutOfRangeException.Message != "Specified argument was out of the range of valid values."+TestLibrary.Env.NewLine+"Parameter name: " + randValue) &
+            if ((argumentOutOfRangeException.Message != "Specified argument was out of the range of valid values."+Environment.NewLine+"Parameter name: " + randValue) &
                 (!argumentOutOfRangeException.Message.Contains("[Arg_ArgumentOutOfRangeException]")))
             {
                 TestLibrary.TestFramework.LogError("002", "The result is not the value as expected" + argumentOutOfRangeException.Message);
