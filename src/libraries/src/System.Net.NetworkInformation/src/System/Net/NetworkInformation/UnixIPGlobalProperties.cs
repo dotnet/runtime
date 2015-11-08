@@ -5,6 +5,16 @@ namespace System.Net.NetworkInformation
 {
     internal abstract class UnixIPGlobalProperties : IPGlobalProperties
     {
+        public override string DhcpScopeName { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
+
+        public override string DomainName { get { return HostInformation.DomainName; } }
+
+        public override string HostName { get { return HostInformation.HostName; } }
+
+        public override bool IsWinsProxy { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
+
+        public override NetBiosNodeType NodeType { get { return NetBiosNodeType.Unknown; } }
+
         public sealed override Task<UnicastIPAddressInformationCollection> GetUnicastAddressesAsync()
         {
             return Task.Factory.StartNew(s => ((UnixIPGlobalProperties)s).GetUnicastAddresses(), this,
