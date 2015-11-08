@@ -1962,6 +1962,7 @@
       <Member Name="GetFolderPath(System.Environment+SpecialFolder)" Condition="FEATURE_LEGACYSURFACE" />
       <Member Name="GetEnvironmentVariable(System.String)" />
       <Member Name="GetEnvironmentVariables" />
+      <Member Name="GetCommandLineArgs" />
       <Member Name="SetEnvironmentVariable(System.String,System.String)" />
       <Member Name="ExpandEnvironmentVariables(System.String)" />
       <Member MemberType="Property" Name="OSVersion" />
@@ -1976,10 +1977,11 @@
       <Member MemberType="Property" Name="TickCount" />
       <Member MemberType="Property" Name="Version" />
       <Member MemberType="Property" Name="ExitCode" />
-      <Member Status="ImplRoot" Name="GetResourceStringLocal(System.String)" />      
+      <Member Status="ImplRoot" Name="GetResourceStringLocal(System.String)" />
+      <Member Status="ImplRoot" Name="SetCommandLineArgs(System.String[])" />
       <Member Name="FailFast(System.String)"  />
       <Member Name="FailFast(System.String,System.Exception)"  />
-	  <Member Name="Exit(System.Int32)"  />
+      <Member Name="Exit(System.Int32)" />
       <Member Status="ApiFxInternal" Name="UnsafeGetFolderPath(System.Environment+SpecialFolder)"  Condition="FEATURE_LEGACYSURFACE" />
     </Type>
     <Type Name="System.Environment+SpecialFolder" Condition="FEATURE_LEGACYSURFACE">
