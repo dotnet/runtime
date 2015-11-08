@@ -13,6 +13,10 @@
     <PackageTargetFramework>dotnet5.5</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
+    <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
+    <NoWarn>0649</NoWarn>
+  </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
@@ -288,6 +292,11 @@
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
+    <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.UnknownUnix.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.UnknownUnix.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
