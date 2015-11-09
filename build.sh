@@ -2,12 +2,13 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [skipcoreclr] [skipmscorlib] [skiptests]"
+    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [ninja] [skipcoreclr] [skipmscorlib] [skiptests]"
     echo "BuildArch can be: x64, ARM"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
     echo "coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
+    echo "ninja - target ninja instead of GNU make"
     echo "clangx.y - optional argument to build using clang version x.y."
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
@@ -68,13 +69,22 @@ build_coreclr()
     echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType"
     cd "$__IntermediatesDir"
 
+    generator=""
+    buildFile="Makefile"
+    buildTool="make"
+    if [ $__UseNinja == 1 ]; then
+        generator="ninja"
+        buildFile="build.ninja"
+        buildTool="ninja"
+    fi
+
     # Regenerate the CMake solution
     echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__BuildType $__CodeCoverage"
-    "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests
+    "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType $__CodeCoverage $__IncludeTests $generator
 
     # Check that the makefiles were created.
 
-    if [ ! -f "$__IntermediatesDir/Makefile" ]; then
+    if [ ! -f "$__IntermediatesDir/$buildFile" ]; then
         echo "Failed to generate native component build project!"
         exit 1
     fi
@@ -92,7 +102,7 @@ build_coreclr()
 
     echo "Executing make install -j $NumProc $__UnprocessedBuildArgs"
 
-    make install -j $NumProc $__UnprocessedBuildArgs
+    $buildTool install -j $NumProc $__UnprocessedBuildArgs
     if [ $? != 0 ]; then
         echo "Failed to build coreclr components."
         exit 1
@@ -219,6 +229,7 @@ __RootBinDir="$__ProjectDir/bin"
 __LogsDir="$__RootBinDir/Logs"
 __UnprocessedBuildArgs=
 __MSBCleanBuildArgs=
+__UseNinja=false
 __SkipCoreCLR=false
 __SkipMSCorLib=false
 __CleanBuild=false
@@ -280,6 +291,9 @@ for i in "$@"
         clang3.7)
         __ClangMajorVersion=3
         __ClangMinorVersion=7
+        ;;
+        ninja)
+        __UseNinja=1
         ;;
         skipcoreclr)
         __SkipCoreCLR=1
