@@ -12171,6 +12171,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				inline_costs += 10 * num_calls++;
 				break;
 			}
+			case CEE_MONO_LDPTR_NURSERY_BITS: {
+				int shift_bits;
+				size_t size;
+				CHECK_STACK_OVF (1);
+
+				if (cfg->compile_aot) {
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_NURSERY_BITS, NULL);
+				} else {
+					mono_gc_get_nursery (&shift_bits, &size);
+					EMIT_NEW_PCONST (cfg, ins, (gpointer)(mgreg_t)shift_bits);
+				}
+
+				*sp++ = ins;
+				ip += 2;
+				inline_costs += 10 * num_calls++;
+				break;
+			}
 			case CEE_MONO_LDPTR_INT_REQ_FLAG: {
 				CHECK_STACK_OVF (1);
 

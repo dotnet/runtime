@@ -220,12 +220,14 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels, gbo
 	 */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_START);
-	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_BITS);
 	mono_mb_emit_byte (mb, CEE_SHR_UN);
 	mono_mb_emit_stloc (mb, shifted_nursery_start);
 
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_BITS);
 	mono_mb_emit_byte (mb, CEE_SHR_UN);
 	mono_mb_emit_ldloc (mb, shifted_nursery_start);
 	nursery_check_return_labels [0] = mono_mb_emit_branch (mb, CEE_BEQ);
@@ -234,7 +236,8 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels, gbo
 		// if (!ptr_in_nursery (*ptr)) return;
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_BITS);
 		mono_mb_emit_byte (mb, CEE_SHR_UN);
 		mono_mb_emit_ldloc (mb, shifted_nursery_start);
 		nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BNE_UN);
