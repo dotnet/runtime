@@ -122,12 +122,12 @@
           "ref/dotnet/System.Runtime.Handles.dll": {}
         }
       },
-      "System.Security.AccessControl/4.0.0-beta-23420": {
+      "System.Security.AccessControl/4.0.0-beta-23504": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Principal.Windows": "4.0.0-beta-23420"
+          "System.Security.Principal.Windows": "4.0.0-beta-23504"
         },
         "compile": {
           "ref/dotnet5.4/System.Security.AccessControl.dll": {}
@@ -164,7 +164,7 @@
           "lib/dotnet/System.Security.Principal.dll": {}
         }
       },
-      "System.Security.Principal.Windows/4.0.0-beta-23420": {
+      "System.Security.Principal.Windows/4.0.0-beta-23504": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -315,12 +315,12 @@
           "ref/dotnet/System.Runtime.Handles.dll": {}
         }
       },
-      "System.Security.AccessControl/4.0.0-beta-23420": {
+      "System.Security.AccessControl/4.0.0-beta-23504": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Principal.Windows": "4.0.0-beta-23420"
+          "System.Security.Principal.Windows": "4.0.0-beta-23504"
         },
         "compile": {
           "ref/dotnet5.4/System.Security.AccessControl.dll": {}
@@ -357,7 +357,7 @@
           "lib/dotnet/System.Security.Principal.dll": {}
         }
       },
-      "System.Security.Principal.Windows/4.0.0-beta-23420": {
+      "System.Security.Principal.Windows/4.0.0-beta-23504": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -508,12 +508,12 @@
           "ref/dotnet/System.Runtime.Handles.dll": {}
         }
       },
-      "System.Security.AccessControl/4.0.0-beta-23420": {
+      "System.Security.AccessControl/4.0.0-beta-23504": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
           "System.Runtime.Handles": "4.0.0",
-          "System.Security.Principal.Windows": "4.0.0-beta-23420"
+          "System.Security.Principal.Windows": "4.0.0-beta-23504"
         },
         "compile": {
           "ref/dotnet5.4/System.Security.AccessControl.dll": {}
@@ -550,7 +550,7 @@
           "lib/dotnet/System.Security.Principal.dll": {}
         }
       },
-      "System.Security.Principal.Windows/4.0.0-beta-23420": {
+      "System.Security.Principal.Windows/4.0.0-beta-23504": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0",
@@ -1086,10 +1086,10 @@
         "System.Runtime.Handles.nuspec"
       ]
     },
-    "System.Security.AccessControl/4.0.0-beta-23420": {
+    "System.Security.AccessControl/4.0.0-beta-23504": {
       "type": "package",
       "serviceable": true,
-      "sha512": "P9hwf8OI1gBN+ecbVTlqZoTVWXw2VWmgJMgFe4JURHnYJgxKic04Gc3bkUjdhImVhCIkj5mieKR96aKd93MfGA==",
+      "sha512": "fpZe2TZt9iietJrxLGM7Sron+ZINUt6aSxf04lNkAVn9mSVJ+CvdJBekcR5VRHQk3gH0Tm4N9zfUO4olCkq6Lg==",
       "files": [
         "lib/DNXCore50/System.Security.AccessControl.dll",
         "lib/net46/System.Security.AccessControl.dll",
@@ -1105,8 +1105,8 @@
         "ref/dotnet5.4/zh-hans/System.Security.AccessControl.xml",
         "ref/dotnet5.4/zh-hant/System.Security.AccessControl.xml",
         "ref/net46/System.Security.AccessControl.dll",
-        "System.Security.AccessControl.4.0.0-beta-23420.nupkg",
-        "System.Security.AccessControl.4.0.0-beta-23420.nupkg.sha512",
+        "System.Security.AccessControl.4.0.0-beta-23504.nupkg",
+        "System.Security.AccessControl.4.0.0-beta-23504.nupkg.sha512",
         "System.Security.AccessControl.nuspec"
       ]
     },
@@ -1175,10 +1175,10 @@
         "System.Security.Principal.nuspec"
       ]
     },
-    "System.Security.Principal.Windows/4.0.0-beta-23420": {
+    "System.Security.Principal.Windows/4.0.0-beta-23504": {
       "type": "package",
       "serviceable": true,
-      "sha512": "vpW55QEeC234v+eDhZZS/WCHwKShHsjsnC2a1yAzDI/JHOG098byKFLi6EPTUnLSZbGOb+fnsT/zeAv7Yb9uhQ==",
+      "sha512": "hU0ceSlYTWX211SUgHWrIpK275QXFLYlV6ouoQRCmc7BhjeCh05jnd/tyGfM0U1OGH52pzRGQxnLxtDax9TwOA==",
       "files": [
         "lib/DNXCore50/System.Security.Principal.Windows.dll",
         "lib/net46/System.Security.Principal.Windows.dll",
@@ -1194,8 +1194,8 @@
         "ref/dotnet5.4/zh-hans/System.Security.Principal.Windows.xml",
         "ref/dotnet5.4/zh-hant/System.Security.Principal.Windows.xml",
         "ref/net46/System.Security.Principal.Windows.dll",
-        "System.Security.Principal.Windows.4.0.0-beta-23420.nupkg",
-        "System.Security.Principal.Windows.4.0.0-beta-23420.nupkg.sha512",
+        "System.Security.Principal.Windows.4.0.0-beta-23504.nupkg",
+        "System.Security.Principal.Windows.4.0.0-beta-23504.nupkg.sha512",
         "System.Security.Principal.Windows.nuspec"
       ]
     },
@@ -1298,9 +1298,7 @@
   },
   "projectFileDependencyGroups": {
     "": [
-      "System.IO >= 4.0.0",
       "System.IO.FileSystem >= 4.0.0",
-      "System.IO.FileSystem.Primitives >= 4.0.0",
       "System.Runtime >= 4.0.0",
       "System.Security.AccessControl >= 4.0.0-beta-*",
       "System.Security.Principal.Windows >= 4.0.0-beta-*"

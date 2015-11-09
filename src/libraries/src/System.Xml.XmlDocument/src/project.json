@@ -10,8 +10,7 @@
     "System.Runtime.Extensions": "4.0.10",
     "System.Threading": "4.0.10",
     "System.Diagnostics.Tools": "4.0.0",
-    "System.Diagnostics.Debug": "4.0.10",
-    "System.Reflection": "4.0.10"
+    "System.Diagnostics.Debug": "4.0.10"
   },
   "frameworks": {
     "dnxcore50": {}

@@ -16,7 +16,7 @@
           "lib/dotnet/Microsoft.Win32.Primitives.dll": {}
         }
       },
-      "Microsoft.Win32.Registry/4.0.0-beta-23504": {
+      "Microsoft.Win32.Registry/4.0.0-beta-23506": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -153,18 +153,15 @@
           "lib/DNXCore50/System.Private.Uri.dll": {}
         }
       },
-      "System.Reflection/4.0.10": {
+      "System.Reflection/4.0.0": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
           "System.Reflection.Primitives": "4.0.0",
-          "System.Runtime": "4.0.20"
+          "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Reflection.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.dll": {}
         }
       },
       "System.Reflection.Primitives/4.0.0": {
@@ -254,28 +251,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Text.Encoding.dll": {}
-        }
-      },
-      "System.Text.Encoding.CodePages/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Collections": "4.0.10",
-          "System.Globalization": "4.0.10",
-          "System.IO": "4.0.10",
-          "System.Reflection": "4.0.10",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Extensions": "4.0.10",
-          "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Text.Encoding": "4.0.10",
-          "System.Threading": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.Text.Encoding.CodePages.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.Text.Encoding.CodePages.dll": {}
         }
       },
       "System.Text.Encoding.Extensions/4.0.10": {
@@ -369,7 +344,7 @@
           "lib/dotnet/Microsoft.Win32.Primitives.dll": {}
         }
       },
-      "Microsoft.Win32.Registry/4.0.0-beta-23504": {
+      "Microsoft.Win32.Registry/4.0.0-beta-23506": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -506,18 +481,15 @@
           "lib/DNXCore50/System.Private.Uri.dll": {}
         }
       },
-      "System.Reflection/4.0.10": {
+      "System.Reflection/4.0.0": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
           "System.Reflection.Primitives": "4.0.0",
-          "System.Runtime": "4.0.20"
+          "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Reflection.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.dll": {}
         }
       },
       "System.Reflection.Primitives/4.0.0": {
@@ -607,28 +579,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Text.Encoding.dll": {}
-        }
-      },
-      "System.Text.Encoding.CodePages/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Collections": "4.0.10",
-          "System.Globalization": "4.0.10",
-          "System.IO": "4.0.10",
-          "System.Reflection": "4.0.10",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Extensions": "4.0.10",
-          "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Text.Encoding": "4.0.10",
-          "System.Threading": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.Text.Encoding.CodePages.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.Text.Encoding.CodePages.dll": {}
         }
       },
       "System.Text.Encoding.Extensions/4.0.10": {
@@ -722,7 +672,7 @@
           "lib/dotnet/Microsoft.Win32.Primitives.dll": {}
         }
       },
-      "Microsoft.Win32.Registry/4.0.0-beta-23504": {
+      "Microsoft.Win32.Registry/4.0.0-beta-23506": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -859,18 +809,15 @@
           "lib/DNXCore50/System.Private.Uri.dll": {}
         }
       },
-      "System.Reflection/4.0.10": {
+      "System.Reflection/4.0.0": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
           "System.Reflection.Primitives": "4.0.0",
-          "System.Runtime": "4.0.20"
+          "System.Runtime": "4.0.0"
         },
         "compile": {
           "ref/dotnet/System.Reflection.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.dll": {}
         }
       },
       "System.Reflection.Primitives/4.0.0": {
@@ -960,28 +907,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Text.Encoding.dll": {}
-        }
-      },
-      "System.Text.Encoding.CodePages/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Collections": "4.0.10",
-          "System.Globalization": "4.0.10",
-          "System.IO": "4.0.10",
-          "System.Reflection": "4.0.10",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Extensions": "4.0.10",
-          "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Text.Encoding": "4.0.10",
-          "System.Threading": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.Text.Encoding.CodePages.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.Text.Encoding.CodePages.dll": {}
         }
       },
       "System.Text.Encoding.Extensions/4.0.10": {
@@ -1095,15 +1020,15 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "Microsoft.Win32.Registry/4.0.0-beta-23504": {
+    "Microsoft.Win32.Registry/4.0.0-beta-23506": {
       "type": "package",
       "serviceable": true,
-      "sha512": "y9W7gR5abJ41ZTRmRMMsxfkhQKh2frkNOgI1WmiHNhkrJCkui0S+EHXVMK60VosO3ZBlTE2fV8UIxxrPSw4o7w==",
+      "sha512": "/nVvFIZCHWkHRnkiR9NGjNn5/JdCNG6lFP5pA5Io6nJYDDoDlUpo/RtNmNLfWmT2xJgsUTTLoWY24CNs7DgqgQ==",
       "files": [
         "lib/DNXCore50/Microsoft.Win32.Registry.dll",
         "lib/net46/Microsoft.Win32.Registry.dll",
-        "Microsoft.Win32.Registry.4.0.0-beta-23504.nupkg",
-        "Microsoft.Win32.Registry.4.0.0-beta-23504.nupkg.sha512",
+        "Microsoft.Win32.Registry.4.0.0-beta-23506.nupkg",
+        "Microsoft.Win32.Registry.4.0.0-beta-23506.nupkg.sha512",
         "Microsoft.Win32.Registry.nuspec",
         "ref/dotnet5.4/de/Microsoft.Win32.Registry.xml",
         "ref/dotnet5.4/es/Microsoft.Win32.Registry.xml",
@@ -1401,17 +1326,19 @@
         "System.Private.Uri.nuspec"
       ]
     },
-    "System.Reflection/4.0.10": {
+    "System.Reflection/4.0.0": {
       "type": "package",
-      "sha512": "WZ+4lEE4gqGx6mrqLhSiW4oi6QLPWwdNjzhhTONmhELOrW8Cw9phlO9tltgvRUuQUqYtBiliFwhO5S5fCJElVw==",
+      "sha512": "g96Rn8XuG7y4VfxPj/jnXroRJdQ8L3iN3k3zqsuzk4k3Nq4KMXARYiIO4BLW4GwX06uQpuYwRMcAC/aF117knQ==",
       "files": [
-        "lib/DNXCore50/System.Reflection.dll",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
-        "lib/net46/_._",
-        "lib/netcore50/System.Reflection.dll",
+        "lib/net45/_._",
+        "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
+        "License.rtf",
         "ref/dotnet/de/System.Reflection.xml",
         "ref/dotnet/es/System.Reflection.xml",
         "ref/dotnet/fr/System.Reflection.xml",
@@ -1425,12 +1352,25 @@
         "ref/dotnet/zh-hant/System.Reflection.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
-        "ref/net46/_._",
+        "ref/net45/_._",
+        "ref/netcore50/de/System.Reflection.xml",
+        "ref/netcore50/es/System.Reflection.xml",
+        "ref/netcore50/fr/System.Reflection.xml",
+        "ref/netcore50/it/System.Reflection.xml",
+        "ref/netcore50/ja/System.Reflection.xml",
+        "ref/netcore50/ko/System.Reflection.xml",
+        "ref/netcore50/ru/System.Reflection.xml",
+        "ref/netcore50/System.Reflection.dll",
+        "ref/netcore50/System.Reflection.xml",
+        "ref/netcore50/zh-hans/System.Reflection.xml",
+        "ref/netcore50/zh-hant/System.Reflection.xml",
+        "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "runtimes/win8-aot/lib/netcore50/System.Reflection.dll",
-        "System.Reflection.4.0.10.nupkg",
-        "System.Reflection.4.0.10.nupkg.sha512",
+        "System.Reflection.4.0.0.nupkg",
+        "System.Reflection.4.0.0.nupkg.sha512",
         "System.Reflection.nuspec"
       ]
     },
@@ -1671,36 +1611,6 @@
         "System.Text.Encoding.nuspec"
       ]
     },
-    "System.Text.Encoding.CodePages/4.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "ZHBTr1AXLjY9OuYR7pKx5xfN6QFye1kgd5QAbGrvfCOu7yxRnJs3VUaxERe1fOlnF0mi/xD/Dvb3T3x3HNuPWQ==",
-      "files": [
-        "lib/dotnet/System.Text.Encoding.CodePages.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet/de/System.Text.Encoding.CodePages.xml",
-        "ref/dotnet/es/System.Text.Encoding.CodePages.xml",
-        "ref/dotnet/fr/System.Text.Encoding.CodePages.xml",
-        "ref/dotnet/it/System.Text.Encoding.CodePages.xml",
-        "ref/dotnet/ja/System.Text.Encoding.CodePages.xml",
-        "ref/dotnet/ko/System.Text.Encoding.CodePages.xml",
-        "ref/dotnet/ru/System.Text.Encoding.CodePages.xml",
-        "ref/dotnet/System.Text.Encoding.CodePages.dll",
-        "ref/dotnet/System.Text.Encoding.CodePages.xml",
-        "ref/dotnet/zh-hans/System.Text.Encoding.CodePages.xml",
-        "ref/dotnet/zh-hant/System.Text.Encoding.CodePages.xml",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "System.Text.Encoding.CodePages.4.0.0.nupkg",
-        "System.Text.Encoding.CodePages.4.0.0.nupkg.sha512",
-        "System.Text.Encoding.CodePages.nuspec"
-      ]
-    },
     "System.Text.Encoding.Extensions/4.0.10": {
       "type": "package",
       "sha512": "TZvlwXMxKo3bSRIcsWZLCIzIhLbvlz+mGeKYRZv/zUiSoQzGOwkYeBu6hOw2XPQgKqT0F4Rv8zqKdvmp2fWKYg==",
@@ -1901,7 +1811,6 @@
       "System.IO >= 4.0.10",
       "System.IO.FileSystem >= 4.0.0",
       "System.Text.Encoding >= 4.0.10",
-      "System.Text.Encoding.CodePages >= 4.0.0",
       "System.Text.Encoding.Extensions >= 4.0.10",
       "System.Threading >= 4.0.10",
       "System.Threading.Tasks >= 4.0.10",
@@ -1912,7 +1821,6 @@
       "System.Diagnostics.Contracts >= 4.0.0",
       "System.Diagnostics.Tools >= 4.0.0",
       "System.Diagnostics.Debug >= 4.0.10",
-      "System.Reflection >= 4.0.10",
       "System.IO.FileSystem.Primitives >= 4.0.0",
       "System.Collections >= 4.0.10",
       "Microsoft.Win32.Primitives >= 4.0.0",

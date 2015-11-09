@@ -15,26 +15,6 @@
           "lib/DNXCore50/System.Collections.dll": {}
         }
       },
-      "System.Collections.Concurrent/4.0.10": {
-        "type": "package",
-        "dependencies": {
-          "System.Collections": "4.0.10",
-          "System.Diagnostics.Debug": "4.0.10",
-          "System.Diagnostics.Tracing": "4.0.20",
-          "System.Globalization": "4.0.10",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Extensions": "4.0.10",
-          "System.Threading": "4.0.10",
-          "System.Threading.Tasks": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.Collections.Concurrent.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.Collections.Concurrent.dll": {}
-        }
-      },
       "System.Collections.NonGeneric/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -74,18 +54,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Diagnostics.Tools.dll": {}
-        }
-      },
-      "System.Diagnostics.Tracing/4.0.20": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Diagnostics.Tracing.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Diagnostics.Tracing.dll": {}
         }
       },
       "System.Globalization/4.0.10": {
@@ -208,35 +176,6 @@
           "lib/DNXCore50/System.Reflection.dll": {}
         }
       },
-      "System.Reflection.Emit.ILGeneration/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.0.0",
-          "System.Reflection.Primitives": "4.0.0",
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Reflection.Emit.ILGeneration.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.Emit.ILGeneration.dll": {}
-        }
-      },
-      "System.Reflection.Emit.Lightweight/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.0.0",
-          "System.Reflection.Emit.ILGeneration": "4.0.0",
-          "System.Reflection.Primitives": "4.0.0",
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Reflection.Emit.Lightweight.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.Emit.Lightweight.dll": {}
-        }
-      },
       "System.Reflection.Extensions/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -260,19 +199,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Reflection.Primitives.dll": {}
-        }
-      },
-      "System.Reflection.TypeExtensions/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.0.0",
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Reflection.TypeExtensions.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.TypeExtensions.dll": {}
         }
       },
       "System.Resources.ResourceManager/4.0.0": {
@@ -596,7 +522,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00111": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00118": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -635,26 +561,6 @@
           "lib/DNXCore50/System.Collections.dll": {}
         }
       },
-      "System.Collections.Concurrent/4.0.10": {
-        "type": "package",
-        "dependencies": {
-          "System.Collections": "4.0.10",
-          "System.Diagnostics.Debug": "4.0.10",
-          "System.Diagnostics.Tracing": "4.0.20",
-          "System.Globalization": "4.0.10",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Extensions": "4.0.10",
-          "System.Threading": "4.0.10",
-          "System.Threading.Tasks": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.Collections.Concurrent.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.Collections.Concurrent.dll": {}
-        }
-      },
       "System.Collections.NonGeneric/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -694,18 +600,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Diagnostics.Tools.dll": {}
-        }
-      },
-      "System.Diagnostics.Tracing/4.0.20": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Diagnostics.Tracing.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Diagnostics.Tracing.dll": {}
         }
       },
       "System.Globalization/4.0.10": {
@@ -828,35 +722,6 @@
           "lib/DNXCore50/System.Reflection.dll": {}
         }
       },
-      "System.Reflection.Emit.ILGeneration/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.0.0",
-          "System.Reflection.Primitives": "4.0.0",
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Reflection.Emit.ILGeneration.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.Emit.ILGeneration.dll": {}
-        }
-      },
-      "System.Reflection.Emit.Lightweight/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.0.0",
-          "System.Reflection.Emit.ILGeneration": "4.0.0",
-          "System.Reflection.Primitives": "4.0.0",
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Reflection.Emit.Lightweight.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.Emit.Lightweight.dll": {}
-        }
-      },
       "System.Reflection.Extensions/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -880,19 +745,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Reflection.Primitives.dll": {}
-        }
-      },
-      "System.Reflection.TypeExtensions/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.0.0",
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Reflection.TypeExtensions.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.TypeExtensions.dll": {}
         }
       },
       "System.Resources.ResourceManager/4.0.0": {
@@ -1216,7 +1068,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00111": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00118": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1255,26 +1107,6 @@
           "lib/DNXCore50/System.Collections.dll": {}
         }
       },
-      "System.Collections.Concurrent/4.0.10": {
-        "type": "package",
-        "dependencies": {
-          "System.Collections": "4.0.10",
-          "System.Diagnostics.Debug": "4.0.10",
-          "System.Diagnostics.Tracing": "4.0.20",
-          "System.Globalization": "4.0.10",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Extensions": "4.0.10",
-          "System.Threading": "4.0.10",
-          "System.Threading.Tasks": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.Collections.Concurrent.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.Collections.Concurrent.dll": {}
-        }
-      },
       "System.Collections.NonGeneric/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -1314,18 +1146,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Diagnostics.Tools.dll": {}
-        }
-      },
-      "System.Diagnostics.Tracing/4.0.20": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Diagnostics.Tracing.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Diagnostics.Tracing.dll": {}
         }
       },
       "System.Globalization/4.0.10": {
@@ -1448,35 +1268,6 @@
           "lib/DNXCore50/System.Reflection.dll": {}
         }
       },
-      "System.Reflection.Emit.ILGeneration/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.0.0",
-          "System.Reflection.Primitives": "4.0.0",
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Reflection.Emit.ILGeneration.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.Emit.ILGeneration.dll": {}
-        }
-      },
-      "System.Reflection.Emit.Lightweight/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.0.0",
-          "System.Reflection.Emit.ILGeneration": "4.0.0",
-          "System.Reflection.Primitives": "4.0.0",
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Reflection.Emit.Lightweight.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.Emit.Lightweight.dll": {}
-        }
-      },
       "System.Reflection.Extensions/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -1500,19 +1291,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Reflection.Primitives.dll": {}
-        }
-      },
-      "System.Reflection.TypeExtensions/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.0.0",
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet/System.Reflection.TypeExtensions.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Reflection.TypeExtensions.dll": {}
         }
       },
       "System.Resources.ResourceManager/4.0.0": {
@@ -1836,7 +1614,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00111": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00118": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1896,38 +1674,6 @@
         "System.Collections.4.0.10.nupkg",
         "System.Collections.4.0.10.nupkg.sha512",
         "System.Collections.nuspec"
-      ]
-    },
-    "System.Collections.Concurrent/4.0.10": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "ZtMEqOPAjAIqR8fqom9AOKRaB94a+emO2O8uOP6vyJoNswSPrbiwN7iH53rrVpvjMVx0wr4/OMpI7486uGZjbw==",
-      "files": [
-        "lib/dotnet/System.Collections.Concurrent.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/_._",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet/de/System.Collections.Concurrent.xml",
-        "ref/dotnet/es/System.Collections.Concurrent.xml",
-        "ref/dotnet/fr/System.Collections.Concurrent.xml",
-        "ref/dotnet/it/System.Collections.Concurrent.xml",
-        "ref/dotnet/ja/System.Collections.Concurrent.xml",
-        "ref/dotnet/ko/System.Collections.Concurrent.xml",
-        "ref/dotnet/ru/System.Collections.Concurrent.xml",
-        "ref/dotnet/System.Collections.Concurrent.dll",
-        "ref/dotnet/System.Collections.Concurrent.xml",
-        "ref/dotnet/zh-hans/System.Collections.Concurrent.xml",
-        "ref/dotnet/zh-hant/System.Collections.Concurrent.xml",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/_._",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "System.Collections.Concurrent.4.0.10.nupkg",
-        "System.Collections.Concurrent.4.0.10.nupkg.sha512",
-        "System.Collections.Concurrent.nuspec"
       ]
     },
     "System.Collections.NonGeneric/4.0.0": {
@@ -2028,40 +1774,6 @@
         "System.Diagnostics.Tools.4.0.0.nupkg",
         "System.Diagnostics.Tools.4.0.0.nupkg.sha512",
         "System.Diagnostics.Tools.nuspec"
-      ]
-    },
-    "System.Diagnostics.Tracing/4.0.20": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "gn/wexGHc35Fv++5L1gYHMY5g25COfiZ0PGrL+3PfwzoJd4X2LbTAm/U8d385SI6BKQBI/z4dQfvneS9J27+Tw==",
-      "files": [
-        "lib/DNXCore50/System.Diagnostics.Tracing.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/_._",
-        "lib/netcore50/System.Diagnostics.Tracing.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet/de/System.Diagnostics.Tracing.xml",
-        "ref/dotnet/es/System.Diagnostics.Tracing.xml",
-        "ref/dotnet/fr/System.Diagnostics.Tracing.xml",
-        "ref/dotnet/it/System.Diagnostics.Tracing.xml",
-        "ref/dotnet/ja/System.Diagnostics.Tracing.xml",
-        "ref/dotnet/ko/System.Diagnostics.Tracing.xml",
-        "ref/dotnet/ru/System.Diagnostics.Tracing.xml",
-        "ref/dotnet/System.Diagnostics.Tracing.dll",
-        "ref/dotnet/System.Diagnostics.Tracing.xml",
-        "ref/dotnet/zh-hans/System.Diagnostics.Tracing.xml",
-        "ref/dotnet/zh-hant/System.Diagnostics.Tracing.xml",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/_._",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Tracing.dll",
-        "System.Diagnostics.Tracing.4.0.20.nupkg",
-        "System.Diagnostics.Tracing.4.0.20.nupkg.sha512",
-        "System.Diagnostics.Tracing.nuspec"
       ]
     },
     "System.Globalization/4.0.10": {
@@ -2373,58 +2085,6 @@
         "System.Reflection.nuspec"
       ]
     },
-    "System.Reflection.Emit.ILGeneration/4.0.0": {
-      "type": "package",
-      "sha512": "02okuusJ0GZiHZSD2IOLIN41GIn6qOr7i5+86C98BPuhlwWqVABwebiGNvhDiXP1f9a6CxEigC7foQD42klcDg==",
-      "files": [
-        "lib/DNXCore50/System.Reflection.Emit.ILGeneration.dll",
-        "lib/net45/_._",
-        "lib/netcore50/System.Reflection.Emit.ILGeneration.dll",
-        "lib/wp80/_._",
-        "ref/dotnet/de/System.Reflection.Emit.ILGeneration.xml",
-        "ref/dotnet/es/System.Reflection.Emit.ILGeneration.xml",
-        "ref/dotnet/fr/System.Reflection.Emit.ILGeneration.xml",
-        "ref/dotnet/it/System.Reflection.Emit.ILGeneration.xml",
-        "ref/dotnet/ja/System.Reflection.Emit.ILGeneration.xml",
-        "ref/dotnet/ko/System.Reflection.Emit.ILGeneration.xml",
-        "ref/dotnet/ru/System.Reflection.Emit.ILGeneration.xml",
-        "ref/dotnet/System.Reflection.Emit.ILGeneration.dll",
-        "ref/dotnet/System.Reflection.Emit.ILGeneration.xml",
-        "ref/dotnet/zh-hans/System.Reflection.Emit.ILGeneration.xml",
-        "ref/dotnet/zh-hant/System.Reflection.Emit.ILGeneration.xml",
-        "ref/net45/_._",
-        "ref/wp80/_._",
-        "System.Reflection.Emit.ILGeneration.4.0.0.nupkg",
-        "System.Reflection.Emit.ILGeneration.4.0.0.nupkg.sha512",
-        "System.Reflection.Emit.ILGeneration.nuspec"
-      ]
-    },
-    "System.Reflection.Emit.Lightweight/4.0.0": {
-      "type": "package",
-      "sha512": "DJZhHiOdkN08xJgsJfDjkuOreLLmMcU8qkEEqEHqyhkPUZMMQs0lE8R+6+68BAFWgcdzxtNu0YmIOtEug8j00w==",
-      "files": [
-        "lib/DNXCore50/System.Reflection.Emit.Lightweight.dll",
-        "lib/net45/_._",
-        "lib/netcore50/System.Reflection.Emit.Lightweight.dll",
-        "lib/wp80/_._",
-        "ref/dotnet/de/System.Reflection.Emit.Lightweight.xml",
-        "ref/dotnet/es/System.Reflection.Emit.Lightweight.xml",
-        "ref/dotnet/fr/System.Reflection.Emit.Lightweight.xml",
-        "ref/dotnet/it/System.Reflection.Emit.Lightweight.xml",
-        "ref/dotnet/ja/System.Reflection.Emit.Lightweight.xml",
-        "ref/dotnet/ko/System.Reflection.Emit.Lightweight.xml",
-        "ref/dotnet/ru/System.Reflection.Emit.Lightweight.xml",
-        "ref/dotnet/System.Reflection.Emit.Lightweight.dll",
-        "ref/dotnet/System.Reflection.Emit.Lightweight.xml",
-        "ref/dotnet/zh-hans/System.Reflection.Emit.Lightweight.xml",
-        "ref/dotnet/zh-hant/System.Reflection.Emit.Lightweight.xml",
-        "ref/net45/_._",
-        "ref/wp80/_._",
-        "System.Reflection.Emit.Lightweight.4.0.0.nupkg",
-        "System.Reflection.Emit.Lightweight.4.0.0.nupkg.sha512",
-        "System.Reflection.Emit.Lightweight.nuspec"
-      ]
-    },
     "System.Reflection.Extensions/4.0.0": {
       "type": "package",
       "serviceable": true,
@@ -2491,40 +2151,6 @@
         "System.Reflection.Primitives.4.0.0.nupkg",
         "System.Reflection.Primitives.4.0.0.nupkg.sha512",
         "System.Reflection.Primitives.nuspec"
-      ]
-    },
-    "System.Reflection.TypeExtensions/4.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "YRM/msNAM86hdxPyXcuZSzmTO0RQFh7YMEPBLTY8cqXvFPYIx2x99bOyPkuU81wRYQem1c1HTkImQ2DjbOBfew==",
-      "files": [
-        "lib/DNXCore50/System.Reflection.TypeExtensions.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/System.Reflection.TypeExtensions.dll",
-        "lib/netcore50/System.Reflection.TypeExtensions.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet/de/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet/es/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet/fr/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet/it/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet/ja/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet/ko/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet/ru/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet/System.Reflection.TypeExtensions.dll",
-        "ref/dotnet/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet/zh-hans/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet/zh-hant/System.Reflection.TypeExtensions.xml",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/System.Reflection.TypeExtensions.dll",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "runtimes/win8-aot/lib/netcore50/System.Reflection.TypeExtensions.dll",
-        "System.Reflection.TypeExtensions.4.0.0.nupkg",
-        "System.Reflection.TypeExtensions.4.0.0.nupkg.sha512",
-        "System.Reflection.TypeExtensions.nuspec"
       ]
     },
     "System.Resources.ResourceManager/4.0.0": {
@@ -3121,14 +2747,14 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00111": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00118": {
       "type": "package",
       "serviceable": true,
-      "sha512": "AEZMbhTNb9ExGoAYjM36PxFS++KEtOQTgP/eIBwqHQi2dW5KCR4r+rtM37F0l9v0IhWClXg9mMTLJUqK6vSJtA==",
+      "sha512": "L+kZbVpZcKGS73PtPUi9uT3NsyFiGpRnDzFvgbrxlCUmuvWi5JIZ7WztGdpA3nlUGz2Fdz3HYxBtdmWLfjgLCQ==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00111.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00111.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00118.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00118.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }
@@ -3136,26 +2762,14 @@
   "projectFileDependencyGroups": {
     "": [
       "System.Collections >= 4.0.10",
-      "System.Collections.Concurrent >= 4.0.10",
       "System.Collections.NonGeneric >= 4.0.0",
       "System.Diagnostics.Debug >= 4.0.10",
       "System.Diagnostics.Tools >= 4.0.0",
       "System.Globalization >= 4.0.10",
       "System.IO >= 4.0.10",
       "System.Linq >= 4.0.0",
-      "System.Reflection >= 4.0.10",
-      "System.Reflection.Emit.ILGeneration >= 4.0.0",
-      "System.Reflection.Emit.Lightweight >= 4.0.0",
-      "System.Reflection.Extensions >= 4.0.0",
-      "System.Reflection.Primitives >= 4.0.0",
-      "System.Reflection.TypeExtensions >= 4.0.0",
-      "System.Resources.ResourceManager >= 4.0.0",
       "System.Runtime >= 4.0.20",
       "System.Runtime.Extensions >= 4.0.10",
-      "System.Text.Encoding >= 4.0.10",
-      "System.Text.Encoding.Extensions >= 4.0.10",
-      "System.Text.RegularExpressions >= 4.0.10",
-      "System.Threading >= 4.0.10",
       "System.Threading.Tasks >= 4.0.10",
       "System.Xml.ReaderWriter >= 4.0.10",
       "System.Xml.XDocument >= 4.0.10",

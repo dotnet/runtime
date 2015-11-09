@@ -1,13 +1,8 @@
 {
   "dependencies": {
     "System.Collections": "4.0.10",
-    "System.Console": "4.0.0-beta-*",
-    "System.Diagnostics.Debug": "4.0.10",
-    "System.Globalization": "4.0.10",
-    "System.IO.Compression": "4.0.0",
     "System.IO.FileSystem.Primitives": "4.0.0",
     "System.IO.FileSystem": "4.0.0",
-    "System.IO.Packaging.TestData": "1.0.0-prerelease",
     "System.Linq": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Xml.ReaderWriter": "4.0.0",

@@ -1,8 +1,7 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.20",
-    "System.Collections": "4.0.10",
     "System.Globalization": "4.0.10",
+    "System.Runtime": "4.0.20",
     "System.IO": "4.0.10",
     "System.Text.Encoding": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
