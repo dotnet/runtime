@@ -174,25 +174,13 @@ namespace System.Data.Common
 
         public override char GetChar(int i)
         {
-            string s;
-
-            s = (string)_values[i];
-            char[] c = s.ToCharArray();
-            return c[0];
+            return ((string)_values[i])[0];
         }
 
         public override long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length)
         {
-            int cchars = 0;
-            string s;
-            int ndataIndex;
-
-            // if the object doesn't contain a char[] then the user will get an exception
-            s = (string)_values[i];
-
-            char[] data = s.ToCharArray();
-
-            cchars = data.Length;
+            var s = (string)_values[i];
+            int cchars = s.Length;
 
             // since arrays can't handle 64 bit values and this interface doesn't
             // allow chunked access to data, a dataIndex outside the rang of Int32
@@ -202,8 +190,7 @@ namespace System.Data.Common
                 throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, "dataIndex");
             }
 
-            ndataIndex = (int)dataIndex;
-
+            int ndataIndex = (int)dataIndex;
 
             // if no buffer is passed in, return the number of characters we have
             if (null == buffer)
@@ -220,13 +207,13 @@ namespace System.Data.Common
                         cchars = length;
                 }
 
-                Array.Copy(data, ndataIndex, buffer, bufferIndex, cchars);
+                s.CopyTo(ndataIndex, buffer, bufferIndex, cchars);
             }
             catch (Exception e)
             {
                 if (ADP.IsCatchableExceptionType(e))
                 {
-                    cchars = data.Length;
+                    cchars = s.Length;
 
                     if (length < 0)
                         throw ADP.InvalidDataLength(length);
