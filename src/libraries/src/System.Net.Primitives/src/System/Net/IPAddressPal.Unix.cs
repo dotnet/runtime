@@ -52,7 +52,7 @@ namespace System.Net
 
             for (int i = startIndex + 2; i < input.Length; i++)
             {
-                var c = input[i];
+                char c = input[i];
                 if ((c < 'A' || c > 'F') && (c < 'a' || c > 'f') && (c < '0' || c > '9'))
                 {
                     return false;
@@ -75,9 +75,9 @@ namespace System.Net
                 return false;
             }
 
-            var hasLeadingBracket = input[0] == '[';
-            var trailingBracketIndex = -1;
-            var portSeparatorIndex = -1;
+            bool hasLeadingBracket = input[0] == '[';
+            int trailingBracketIndex = -1;
+            int portSeparatorIndex = -1;
             for (int i = input.Length - 1; i >= 0; i--)
             {
                 if (input[i] == ']')
@@ -98,7 +98,7 @@ namespace System.Net
                 }
             }
 
-            var hasTrailingBracket = trailingBracketIndex != -1;
+            bool hasTrailingBracket = trailingBracketIndex != -1;
             if (hasLeadingBracket != hasTrailingBracket)
             {
                 host = null;
