@@ -2578,10 +2578,9 @@ mono_find_mempool_owner (void *ptr)
 	gboolean searching = TRUE;
 
 	// Iterate over both by-path image hashes
-	const int hash_count = 2;
-	const int hash_candidates[hash_count] = {IMAGES_HASH_PATH, IMAGES_HASH_PATH_REFONLY};
+	const int hash_candidates[] = {IMAGES_HASH_PATH, IMAGES_HASH_PATH_REFONLY};
 	int hash_idx;
-	for (hash_idx = 0; searching && hash_idx < IMAGES_HASH_COUNT; hash_idx++)
+	for (hash_idx = 0; searching && hash_idx < G_N_ELEMENTS (hash_candidates); hash_idx++)
 	{
 		GHashTable *target = loaded_images_hashes [hash_candidates [hash_idx]];
 		GHashTableIter iter;
