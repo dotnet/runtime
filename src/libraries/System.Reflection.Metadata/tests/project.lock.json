@@ -152,38 +152,6 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
-      "System.IO.MemoryMappedFiles/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.IO.FileSystem": "4.0.0",
-          "System.IO.FileSystem.Primitives": "4.0.0",
-          "System.IO.UnmanagedMemoryStream": "4.0.0",
-          "System.Runtime": "4.0.0",
-          "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20"
-        },
-        "compile": {
-          "ref/dotnet5.4/System.IO.MemoryMappedFiles.dll": {}
-        }
-      },
-      "System.IO.UnmanagedMemoryStream/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.IO": "4.0.10",
-          "System.IO.FileSystem.Primitives": "4.0.0",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Threading": "4.0.10",
-          "System.Threading.Tasks": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.IO.UnmanagedMemoryStream.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.IO.UnmanagedMemoryStream.dll": {}
-        }
-      },
       "System.Linq/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -531,7 +499,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00108": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00117": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -558,27 +526,6 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x86": {
-      "runtime.win7.System.IO.MemoryMappedFiles/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.IO": "4.0.10",
-          "System.IO.FileSystem": "4.0.0",
-          "System.IO.FileSystem.Primitives": "4.0.0",
-          "System.IO.UnmanagedMemoryStream": "4.0.0",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Threading": "4.0.10",
-          "System.Threading.Tasks": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/_._": {}
-        },
-        "runtime": {
-          "runtimes/win7/lib/dotnet5.4/System.IO.MemoryMappedFiles.dll": {}
-        }
-      },
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -726,38 +673,6 @@
         },
         "runtime": {
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
-        }
-      },
-      "System.IO.MemoryMappedFiles/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.IO.FileSystem": "4.0.0",
-          "System.IO.FileSystem.Primitives": "4.0.0",
-          "System.IO.UnmanagedMemoryStream": "4.0.0",
-          "System.Runtime": "4.0.0",
-          "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20"
-        },
-        "compile": {
-          "ref/dotnet5.4/System.IO.MemoryMappedFiles.dll": {}
-        }
-      },
-      "System.IO.UnmanagedMemoryStream/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.IO": "4.0.10",
-          "System.IO.FileSystem.Primitives": "4.0.0",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Threading": "4.0.10",
-          "System.Threading.Tasks": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.IO.UnmanagedMemoryStream.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.IO.UnmanagedMemoryStream.dll": {}
         }
       },
       "System.Linq/4.0.0": {
@@ -1107,7 +1022,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00108": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00117": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1134,27 +1049,6 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x64": {
-      "runtime.win7.System.IO.MemoryMappedFiles/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.IO": "4.0.10",
-          "System.IO.FileSystem": "4.0.0",
-          "System.IO.FileSystem.Primitives": "4.0.0",
-          "System.IO.UnmanagedMemoryStream": "4.0.0",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Threading": "4.0.10",
-          "System.Threading.Tasks": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/_._": {}
-        },
-        "runtime": {
-          "runtimes/win7/lib/dotnet5.4/System.IO.MemoryMappedFiles.dll": {}
-        }
-      },
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -1302,38 +1196,6 @@
         },
         "runtime": {
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
-        }
-      },
-      "System.IO.MemoryMappedFiles/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.IO.FileSystem": "4.0.0",
-          "System.IO.FileSystem.Primitives": "4.0.0",
-          "System.IO.UnmanagedMemoryStream": "4.0.0",
-          "System.Runtime": "4.0.0",
-          "System.Runtime.Handles": "4.0.0",
-          "System.Runtime.InteropServices": "4.0.20"
-        },
-        "compile": {
-          "ref/dotnet5.4/System.IO.MemoryMappedFiles.dll": {}
-        }
-      },
-      "System.IO.UnmanagedMemoryStream/4.0.0": {
-        "type": "package",
-        "dependencies": {
-          "System.IO": "4.0.10",
-          "System.IO.FileSystem.Primitives": "4.0.0",
-          "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.20",
-          "System.Runtime.InteropServices": "4.0.20",
-          "System.Threading": "4.0.10",
-          "System.Threading.Tasks": "4.0.10"
-        },
-        "compile": {
-          "ref/dotnet/System.IO.UnmanagedMemoryStream.dll": {}
-        },
-        "runtime": {
-          "lib/dotnet/System.IO.UnmanagedMemoryStream.dll": {}
         }
       },
       "System.Linq/4.0.0": {
@@ -1683,7 +1545,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00108": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00117": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1711,23 +1573,6 @@
     }
   },
   "libraries": {
-    "runtime.win7.System.IO.MemoryMappedFiles/4.0.0-beta-23420": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "ve3rff1K2Kv7Ab5PnUx6id8Cy8AnBwQ0D33hcZyC7+SSY4F+P0K+VNVWC52T1BW0CNj7EyUAqmzC7/AK7XooJQ==",
-      "files": [
-        "ref/dotnet/_._",
-        "runtime.win7.System.IO.MemoryMappedFiles.4.0.0-beta-23420.nupkg",
-        "runtime.win7.System.IO.MemoryMappedFiles.4.0.0-beta-23420.nupkg.sha512",
-        "runtime.win7.System.IO.MemoryMappedFiles.nuspec",
-        "runtimes/win7/lib/dotnet5.4/System.IO.MemoryMappedFiles.dll",
-        "runtimes/win7/lib/net/_._",
-        "runtimes/win7/lib/netcore50/_._",
-        "runtimes/win7/lib/win8/_._",
-        "runtimes/win7/lib/wp8/_._",
-        "runtimes/win7/lib/wpa81/_._"
-      ]
-    },
     "System.Collections/4.0.10": {
       "type": "package",
       "serviceable": true,
@@ -2040,70 +1885,6 @@
         "System.IO.FileSystem.Primitives.4.0.0.nupkg",
         "System.IO.FileSystem.Primitives.4.0.0.nupkg.sha512",
         "System.IO.FileSystem.Primitives.nuspec"
-      ]
-    },
-    "System.IO.MemoryMappedFiles/4.0.0-beta-23420": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "ysR7BeEuX3l7nCJIrjQ1dVbVE/8ERtt4VMLAW2UKuK+8FWtr9NTKsn6dxDhF8QOKbsKp7uUYHukimGaut2RBRw==",
-      "files": [
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/System.IO.MemoryMappedFiles.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet5.4/de/System.IO.MemoryMappedFiles.xml",
-        "ref/dotnet5.4/es/System.IO.MemoryMappedFiles.xml",
-        "ref/dotnet5.4/fr/System.IO.MemoryMappedFiles.xml",
-        "ref/dotnet5.4/it/System.IO.MemoryMappedFiles.xml",
-        "ref/dotnet5.4/ja/System.IO.MemoryMappedFiles.xml",
-        "ref/dotnet5.4/ko/System.IO.MemoryMappedFiles.xml",
-        "ref/dotnet5.4/ru/System.IO.MemoryMappedFiles.xml",
-        "ref/dotnet5.4/System.IO.MemoryMappedFiles.dll",
-        "ref/dotnet5.4/System.IO.MemoryMappedFiles.xml",
-        "ref/dotnet5.4/zh-hans/System.IO.MemoryMappedFiles.xml",
-        "ref/dotnet5.4/zh-hant/System.IO.MemoryMappedFiles.xml",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/System.IO.MemoryMappedFiles.dll",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "runtime.json",
-        "System.IO.MemoryMappedFiles.4.0.0-beta-23420.nupkg",
-        "System.IO.MemoryMappedFiles.4.0.0-beta-23420.nupkg.sha512",
-        "System.IO.MemoryMappedFiles.nuspec"
-      ]
-    },
-    "System.IO.UnmanagedMemoryStream/4.0.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "i2xczgQfwHmolORBNHxV9b5izP8VOBxgSA2gf+H55xBvwqtR+9r9adtzlc7at0MAwiLcsk6V1TZlv2vfRQr8Sw==",
-      "files": [
-        "lib/dotnet/System.IO.UnmanagedMemoryStream.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/System.IO.UnmanagedMemoryStream.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet/de/System.IO.UnmanagedMemoryStream.xml",
-        "ref/dotnet/es/System.IO.UnmanagedMemoryStream.xml",
-        "ref/dotnet/fr/System.IO.UnmanagedMemoryStream.xml",
-        "ref/dotnet/it/System.IO.UnmanagedMemoryStream.xml",
-        "ref/dotnet/ja/System.IO.UnmanagedMemoryStream.xml",
-        "ref/dotnet/ko/System.IO.UnmanagedMemoryStream.xml",
-        "ref/dotnet/ru/System.IO.UnmanagedMemoryStream.xml",
-        "ref/dotnet/System.IO.UnmanagedMemoryStream.dll",
-        "ref/dotnet/System.IO.UnmanagedMemoryStream.xml",
-        "ref/dotnet/zh-hans/System.IO.UnmanagedMemoryStream.xml",
-        "ref/dotnet/zh-hant/System.IO.UnmanagedMemoryStream.xml",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/System.IO.UnmanagedMemoryStream.dll",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "System.IO.UnmanagedMemoryStream.4.0.0.nupkg",
-        "System.IO.UnmanagedMemoryStream.4.0.0.nupkg.sha512",
-        "System.IO.UnmanagedMemoryStream.nuspec"
       ]
     },
     "System.Linq/4.0.0": {
@@ -2896,14 +2677,14 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00108": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00117": {
       "type": "package",
       "serviceable": true,
-      "sha512": "rNaXYaJhr7Vh28CjaKZoUgOXf9wIXYXYEyWvdyCr2NgrjTEaQwx+fn/PYD6BSt6orxNjgwrsQdAGzFJrhallQw==",
+      "sha512": "J/h6fIXbUFA1Wod9YJJmUH5dbe4F2Pp2cgdYvh2yTRE3O+FEfYr1kN34K+e00thhK5HQoPZ9pRdpkrS9w42InA==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00108.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00108.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00117.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00117.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }
@@ -2914,23 +2695,16 @@
       "System.Collections.Immutable >= 1.1.37",
       "System.Diagnostics.Debug >= 4.0.10",
       "System.Diagnostics.Tools >= 4.0.0",
-      "System.Globalization >= 4.0.10",
       "System.IO >= 4.0.10",
       "System.IO.FileSystem >= 4.0.0",
       "System.IO.FileSystem.Primitives >= 4.0.0",
-      "System.IO.MemoryMappedFiles >= 4.0.0-beta-*",
-      "System.IO.UnmanagedMemoryStream >= 4.0.0",
       "System.Linq >= 4.0.0",
       "System.Reflection >= 4.0.10",
       "System.Reflection.Primitives >= 4.0.0",
-      "System.Resources.ResourceManager >= 4.0.0",
       "System.Runtime >= 4.0.20",
       "System.Runtime.Extensions >= 4.0.10",
-      "System.Runtime.Handles >= 4.0.0",
       "System.Runtime.InteropServices >= 4.0.20",
       "System.Text.Encoding >= 4.0.10",
-      "System.Threading >= 4.0.10",
-      "System.Threading.Overlapped >= 4.0.0",
       "System.Threading.Tasks >= 4.0.10",
       "System.Threading.Tasks.Parallel >= 4.0.0",
       "xunit >= 2.1.0",

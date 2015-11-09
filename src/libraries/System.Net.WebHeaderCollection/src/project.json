@@ -3,8 +3,7 @@
     "System.Collections": "4.0.10",
     "System.Collections.Specialized": "4.0.0",
     "System.Resources.ResourceManager": "4.0.0",
-    "System.Runtime": "4.0.20",
-    "System.Text.Encoding": "4.0.10"
+    "System.Runtime": "4.0.20"
   },
   "frameworks": {
     "dnxcore50": {}

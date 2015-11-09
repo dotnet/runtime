@@ -1,16 +1,8 @@
 {
   "dependencies": {
-    "Microsoft.Win32.Primitives": "4.0.0",
     "Microsoft.Win32.Registry": "4.0.0-beta-*",
-    "System.Console": "4.0.0-beta-*",
     "System.Diagnostics.Process": "4.0.0-beta-*",
-    "System.IO": "4.0.10",
-    "System.Reflection": "4.0.10",
-    "System.Reflection.Primitives": "4.0.0",
     "System.Runtime": "4.0.20",
-    "System.Runtime.Handles": "4.0.0",
-    "System.Runtime.InteropServices": "4.0.20",
-    "System.Text.Encoding": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"

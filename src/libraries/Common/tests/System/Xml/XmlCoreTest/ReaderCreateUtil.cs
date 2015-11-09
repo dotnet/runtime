@@ -14,7 +14,6 @@ using System.Xml;
 using System.Text;
 using System.IO;
 using OLEDB.Test.ModuleCore;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace XmlCoreTest.Common

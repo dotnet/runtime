@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "1.0.1-beta-*",
     "System.Diagnostics.TraceSource": "4.0.0-beta-*",
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
@@ -8,10 +7,6 @@
     "System.IO.FileSystem.Primitives": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
-    "System.Runtime.Handles": "4.0.0",
-    "System.Text.Encoding": "4.0.10",
-    "System.Threading": "4.0.10",
-    "System.Threading.Overlapped": "4.0.0",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
@@ -22,7 +17,7 @@
   "runtimes": {
     "win7-x86": {},
     "win7-x64": {},
-    "ubuntu.14.04-x64" : {},
-    "osx.10.10-x64" : {},
+    "ubuntu.14.04-x64": {},
+    "osx.10.10-x64": {}
   }
 }

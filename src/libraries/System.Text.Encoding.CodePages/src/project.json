@@ -5,7 +5,6 @@
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
     "System.Diagnostics.Tools": "4.0.0",
-    "System.Diagnostics.Tracing": "4.0.20",
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
     "System.Reflection": "4.0.10",

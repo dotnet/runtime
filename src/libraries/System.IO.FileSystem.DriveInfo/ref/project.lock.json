@@ -516,8 +516,7 @@
     "": [
       "System.Runtime >= 4.0.0",
       "System.IO >= 4.0.0",
-      "System.IO.FileSystem >= 4.0.0",
-      "System.IO.FileSystem.Primitives >= 4.0.0"
+      "System.IO.FileSystem >= 4.0.0"
     ],
     ".NETPlatform,Version=v5.4": []
   }

@@ -60,7 +60,7 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Runtime.Serialization.Primitives/4.1.0-beta-23428": {
+      "System.Runtime.Serialization.Primitives/4.1.0-beta-23504": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
@@ -162,7 +162,7 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Runtime.Serialization.Primitives/4.1.0-beta-23428": {
+      "System.Runtime.Serialization.Primitives/4.1.0-beta-23504": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
@@ -264,7 +264,7 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Runtime.Serialization.Primitives/4.1.0-beta-23428": {
+      "System.Runtime.Serialization.Primitives/4.1.0-beta-23504": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
@@ -570,10 +570,10 @@
         "System.Runtime.nuspec"
       ]
     },
-    "System.Runtime.Serialization.Primitives/4.1.0-beta-23428": {
+    "System.Runtime.Serialization.Primitives/4.1.0-beta-23504": {
       "type": "package",
       "serviceable": true,
-      "sha512": "hdo5/ZVhzN2sAkHOcHhodot9GPJNNyPDiZf3xdz6qTfpgIPni/9Q3jPxWY0z0PUtWE8OTHPpM1a8ChvltmFREQ==",
+      "sha512": "wcRM7vElycBn6XVkx4o5EAUfFrUA8cywsgfq89xTwgxU6vCvXCqElD8/da+68hezGirpaRfiF8dsvbxN3ieFWg==",
       "files": [
         "lib/dotnet5.4/System.Runtime.Serialization.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -626,8 +626,8 @@
         "ref/wpa81/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Runtime.Serialization.Primitives.4.1.0-beta-23428.nupkg",
-        "System.Runtime.Serialization.Primitives.4.1.0-beta-23428.nupkg.sha512",
+        "System.Runtime.Serialization.Primitives.4.1.0-beta-23504.nupkg",
+        "System.Runtime.Serialization.Primitives.4.1.0-beta-23504.nupkg.sha512",
         "System.Runtime.Serialization.Primitives.nuspec"
       ]
     },

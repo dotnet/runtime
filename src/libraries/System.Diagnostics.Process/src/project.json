@@ -7,7 +7,6 @@
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
     "System.Text.Encoding": "4.0.10",
-    "System.Text.Encoding.CodePages": "4.0.0",
     "System.Text.Encoding.Extensions": "4.0.10",
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
@@ -18,11 +17,10 @@
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Tools": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
-    "System.Reflection": "4.0.10",
     "System.IO.FileSystem.Primitives": "4.0.0",
     "System.Collections": "4.0.10",
     "Microsoft.Win32.Primitives": "4.0.0",
-    "Microsoft.Win32.Registry": "4.0.0-beta-*",
+    "Microsoft.Win32.Registry": "4.0.0-beta-*"
   },
   "frameworks": {
     "dnxcore50": {}
