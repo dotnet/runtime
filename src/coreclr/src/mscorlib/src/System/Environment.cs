@@ -564,7 +564,6 @@ namespace System {
             }
         }
 
-#if !FEATURE_CORECLR
         /*==============================GetCommandLineArgs==============================
         **Action: Gets the command line and splits it appropriately to deal with whitespace,
         **        quotes, and escape characters.
@@ -573,15 +572,34 @@ namespace System {
         **Exceptions: None.
         ==============================================================================*/
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public static String[] GetCommandLineArgs() {
+        public static String[] GetCommandLineArgs()
+        {
             new EnvironmentPermission(EnvironmentPermissionAccess.Read, "Path").Demand();
+#if FEATURE_CORECLR
+            /*
+             * There are multiple entry points to a hosted app.
+             * The host could use ::ExecuteAssembly() or ::CreateDelegate option
+             * ::ExecuteAssembly() -> In this particular case, the runtime invokes the main 
+               method based on the arguments set by the host, and we return those arguments
+             *
+             * ::CreateDelegate() -> In this particular case, the host is asked to create a 
+             * delegate based on the appDomain, assembly and methodDesc passed to it.
+             * which the caller uses to invoke the method. In this particular case we do not have
+             * any information on what arguments would be passed to the delegate.
+             * So our best bet is to simply use the commandLine that was used to invoke the process.
+             * in case it is present.
+             */
+            if(s_CommandLineArgs != null)
+                return s_CommandLineArgs;
+#endif
             return GetCommandLineArgsNative();
         }
 
         [System.Security.SecurityCritical]  // auto-generated
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern String[] GetCommandLineArgsNative();
-        
+
+#if !FEATURE_CORECLR
         // We need to keep this Fcall since it is used in AppDomain.cs.
         // If we call GetEnvironmentVariable from AppDomain.cs, we will use StringBuilder class.
         // That has side effect to change the ApartmentState of the calling Thread to MTA.
@@ -590,7 +608,15 @@ namespace System {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String nativeGetEnvironmentVariable(String variable);
 #endif //!FEATURE_CORECLR
-        
+
+#if FEATURE_CORECLR
+        private static string[] s_CommandLineArgs = null;
+        private static void SetCommandLineArgs(string[] cmdLineArgs)
+        {
+            s_CommandLineArgs = cmdLineArgs;
+        }
+#endif
+
         /*============================GetEnvironmentVariable============================
         **Action:
         **Returns:
