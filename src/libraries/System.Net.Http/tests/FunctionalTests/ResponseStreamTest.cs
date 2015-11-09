@@ -25,7 +25,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClient client = GetHttpClient();
             
-            Stream stream = await client.GetStreamAsync(HttpTestServers2.RemoteEchoServer);
+            Stream stream = await client.GetStreamAsync(HttpTestServers.RemoteEchoServer);
             using (var reader = new StreamReader(stream))
             {
                 string responseBody = reader.ReadToEnd();
@@ -40,7 +40,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClient client = GetHttpClient();
             
             HttpResponseMessage response =
-                await client.GetAsync(HttpTestServers2.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead);
+                await client.GetAsync(HttpTestServers.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead);
             await response.Content.LoadIntoBufferAsync();
 
             string responseBody = await response.Content.ReadAsStringAsync();
@@ -54,7 +54,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClient client = GetHttpClient();
             
             HttpResponseMessage response =
-                await client.GetAsync(HttpTestServers2.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead);
+                await client.GetAsync(HttpTestServers.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead);
 
             var memoryStream = new MemoryStream();
             await response.Content.CopyToAsync(memoryStream);

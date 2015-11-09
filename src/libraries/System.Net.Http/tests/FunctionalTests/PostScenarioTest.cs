@@ -22,13 +22,13 @@ namespace System.Net.Http.Functional.Tests
         private const string UserName = "user1";
         private const string Password = "password1";
         private readonly static Uri BasicAuthServerUri =
-            HttpTestServers2.BasicAuthUriForCreds(false, UserName, Password);
+            HttpTestServers.BasicAuthUriForCreds(false, UserName, Password);
         private readonly static Uri SecureBasicAuthServerUri =
-            HttpTestServers2.BasicAuthUriForCreds(true, UserName, Password);
+            HttpTestServers.BasicAuthUriForCreds(true, UserName, Password);
 
         private readonly ITestOutputHelper _output;
 
-        public readonly static object[][] EchoServers = HttpTestServers2.EchoServers;
+        public readonly static object[][] EchoServers = HttpTestServers.EchoServers;
 
         public readonly static object[][] BasicAuthEchoServers =
             new object[][]

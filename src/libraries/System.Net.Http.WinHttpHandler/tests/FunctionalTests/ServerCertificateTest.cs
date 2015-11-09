@@ -33,7 +33,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             var handler = new WinHttpHandler();
             using (var client = new HttpClient(handler))
             {
-                HttpResponseMessage response = await client.GetAsync(HttpTestServers2.SecureRemoteEchoServer);
+                HttpResponseMessage response = await client.GetAsync(HttpTestServers.SecureRemoteEchoServer);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.False(_validationCallbackHistory.WasCalled);
             }
@@ -46,7 +46,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
             using (var client = new HttpClient(handler))
             {
-                HttpResponseMessage response = await client.GetAsync(HttpTestServers2.RemoteEchoServer);
+                HttpResponseMessage response = await client.GetAsync(HttpTestServers.RemoteEchoServer);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.False(_validationCallbackHistory.WasCalled);
             }
@@ -59,18 +59,18 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
             using (var client = new HttpClient(handler))
             {
-                HttpResponseMessage response = await client.GetAsync(HttpTestServers2.SecureRemoteEchoServer);
+                HttpResponseMessage response = await client.GetAsync(HttpTestServers.SecureRemoteEchoServer);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.True(_validationCallbackHistory.WasCalled);
                 
-                ConfirmValidCertificate(HttpTestServers2.Host);
+                ConfirmValidCertificate(HttpTestServers.Host);
             }
         }
 
         [Fact]
         public async Task UseCallback_RedirectandValidCertificate_ExpectedValuesDuringCallback()
         {
-            Uri uri = HttpTestServers2.RedirectUriForDestinationUri(true, HttpTestServers2.SecureRemoteEchoServer, 1);
+            Uri uri = HttpTestServers.RedirectUriForDestinationUri(true, HttpTestServers.SecureRemoteEchoServer, 1);
 
             var handler = new WinHttpHandler();
             handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
@@ -80,7 +80,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.True(_validationCallbackHistory.WasCalled);
                 
-                ConfirmValidCertificate(HttpTestServers2.Host);
+                ConfirmValidCertificate(HttpTestServers.Host);
             }
         }
 
@@ -93,10 +93,10 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             handler.ServerCertificateValidationCallback = CustomServerCertificateValidationCallback;
             using (var client = new HttpClient(handler))
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, HttpTestServers2.SecureRemoteEchoServer);
+                var request = new HttpRequestMessage(HttpMethod.Get, HttpTestServers.SecureRemoteEchoServer);
                 _validationCallbackHistory.ReturnFailure = true;
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() =>
-                    client.GetAsync(HttpTestServers2.SecureRemoteEchoServer));
+                    client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
                 var innerEx = (Win32Exception)ex.InnerException;
                 Assert.Equal(ERROR_WINHTTP_SECURE_FAILURE, innerEx.NativeErrorCode);
             }
@@ -110,7 +110,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             using (var client = new HttpClient(handler))
             {
                 _validationCallbackHistory.ThrowException = true;
-                await Assert.ThrowsAsync<CustomException>(() => client.GetAsync(HttpTestServers2.SecureRemoteEchoServer));
+                await Assert.ThrowsAsync<CustomException>(() => client.GetAsync(HttpTestServers.SecureRemoteEchoServer));
             }
         }
 
