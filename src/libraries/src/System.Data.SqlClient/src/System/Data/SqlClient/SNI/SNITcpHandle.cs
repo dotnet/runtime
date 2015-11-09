@@ -266,10 +266,11 @@ namespace System.Data.SqlClient.SNI
         /// <param name="packet">SNI packet</param>
         /// <param name="timeoutInMilliseconds">Timeout in Milliseconds</param>
         /// <returns>SNI error code</returns>
-        public override uint Receive(ref SNIPacket packet, int timeoutInMilliseconds)
+        public override uint Receive(out SNIPacket packet, int timeoutInMilliseconds)
         {
             lock (this)
             {
+                packet = null;
                 try
                 {
                     if (timeoutInMilliseconds > 0)
@@ -454,7 +455,10 @@ namespace System.Data.SqlClient.SNI
 
         private uint ReportErrorAndReleasePacket(SNIPacket packet, string errorMessage)
         {
-            packet.Release();
+            if (packet != null)
+            {
+                packet.Release();                
+            }
             return ReportTcpSNIError(0, 0, errorMessage);
         }
 
