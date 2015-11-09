@@ -41,6 +41,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [ActiveIssue(4363)]
         [Fact]
         public void BeginSend_AsyncOperationCompletes_Success()
         {
