@@ -7515,6 +7515,22 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 	return NULL;
 }
 
+static void
+emit_runtime_constant (MonoCompile *cfg, MonoInst **ins, MonoJumpInfoType patch_type)
+{
+	if (cfg->compile_aot) {
+		EMIT_NEW_AOTCONST (cfg, *ins, patch_type, NULL);
+	} else {
+		MonoJumpInfo ji;
+		gpointer target;
+
+		ji.type = patch_type;
+		target = mono_resolve_patch_target (NULL, NULL, NULL, &ji, FALSE);
+
+		EMIT_NEW_PCONST (cfg, *ins, target);
+	}
+}
+
 static gboolean
 is_exception_class (MonoClass *klass)
 {
@@ -12141,60 +12157,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				break;
 			}
-			case CEE_MONO_LDPTR_CARD_TABLE: {
-				int shift_bits;
-				gpointer card_mask;
-				CHECK_STACK_OVF (1);
-
-				if (cfg->compile_aot)
-					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR, NULL);
-				else
-					EMIT_NEW_PCONST (cfg, ins, mono_gc_get_card_table (&shift_bits, &card_mask));
-
-				*sp++ = ins;
-				ip += 2;
-				inline_costs += 10 * num_calls++;
-				break;
-			}
-			case CEE_MONO_LDPTR_NURSERY_START: {
-				int shift_bits;
-				size_t size;
-				CHECK_STACK_OVF (1);
-
-				if (cfg->compile_aot)
-					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_NURSERY_START, NULL);
-				else
-					EMIT_NEW_PCONST (cfg, ins, mono_gc_get_nursery (&shift_bits, &size));
-
-				*sp++ = ins;
-				ip += 2;
-				inline_costs += 10 * num_calls++;
-				break;
-			}
-			case CEE_MONO_LDPTR_NURSERY_BITS: {
-				int shift_bits;
-				size_t size;
-				CHECK_STACK_OVF (1);
-
-				if (cfg->compile_aot) {
-					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_NURSERY_BITS, NULL);
-				} else {
-					mono_gc_get_nursery (&shift_bits, &size);
-					EMIT_NEW_PCONST (cfg, ins, (gpointer)(mgreg_t)shift_bits);
-				}
-
-				*sp++ = ins;
-				ip += 2;
-				inline_costs += 10 * num_calls++;
-				break;
-			}
+			case CEE_MONO_LDPTR_CARD_TABLE:
+			case CEE_MONO_LDPTR_NURSERY_START:
+			case CEE_MONO_LDPTR_NURSERY_BITS:
 			case CEE_MONO_LDPTR_INT_REQ_FLAG: {
 				CHECK_STACK_OVF (1);
 
-				if (cfg->compile_aot)
-					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
-				else
-					EMIT_NEW_PCONST (cfg, ins, mono_thread_interruption_request_flag ());
+				switch (ip [1]) {
+					case CEE_MONO_LDPTR_CARD_TABLE:
+						emit_runtime_constant (cfg, &ins, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR);
+						break;
+					case CEE_MONO_LDPTR_NURSERY_START:
+						emit_runtime_constant (cfg, &ins, MONO_PATCH_INFO_GC_NURSERY_START);
+						break;
+					case CEE_MONO_LDPTR_NURSERY_BITS:
+						emit_runtime_constant (cfg, &ins, MONO_PATCH_INFO_GC_NURSERY_BITS);
+						break;
+					case CEE_MONO_LDPTR_INT_REQ_FLAG:
+						emit_runtime_constant (cfg, &ins, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG);
+						break;
+				}
 
 				*sp++ = ins;
 				ip += 2;
