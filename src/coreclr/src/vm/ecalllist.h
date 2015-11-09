@@ -301,9 +301,9 @@ FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("nativeGetEnvironmentVariable", SystemNative::_GetEnvironmentVariable)
     FCFuncElement("GetCompatibilityFlag", SystemNative::_GetCompatibilityFlag)
     QCFuncElement("GetCommandLine", SystemNative::_GetCommandLine)
-    FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
     FCFuncElement("GetResourceFromDefault", GetResourceFromDefault)
 #endif // !FEATURE_CORECLR
+    FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
 
 #if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
     QCFuncElement("WinRTSupported", SystemNative::WinRTSupported)
