@@ -18,8 +18,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />  
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers2.cs">
-      <Link>Common\System\Net\HttpTestServers2.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\HttpTestServers.cs">
+      <Link>Common\System\Net\HttpTestServers.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\DelegateStream.cs">
       <Link>Common\Streams\DelegateStream.cs</Link>
