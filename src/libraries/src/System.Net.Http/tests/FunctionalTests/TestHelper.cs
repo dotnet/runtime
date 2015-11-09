@@ -34,28 +34,27 @@ namespace System.Net.Http.Functional.Tests
             bool chunkedUpload,
             string requestBody)
         {
-            // Compare computed hash with transmitted hash.
-            using (MD5 md5 = MD5.Create())
-            {
-                byte[] bytes = Encoding.ASCII.GetBytes(responseContent);
-                byte[] actualMD5Hash = md5.ComputeHash(bytes);
-                Assert.Equal(expectedMD5Hash, actualMD5Hash);
-            }
+            // Verify that response body from the server was corrected received by comparing MD5 hash.
+            byte[] actualMD5Hash = ComputeMD5Hash(responseContent);
+            Assert.Equal(expectedMD5Hash, actualMD5Hash);
 
             // Verify upload semsntics: 'Content-Length' vs. 'Transfer-Encoding: chunked'.
-            bool requestUsedContentLengthUpload =
-                JsonMessageContainsKeyValue(responseContent, "Content-Length", requestBody.Length.ToString());
-            bool requestUsedChunkedUpload =
-                JsonMessageContainsKeyValue(responseContent, "Transfer-Encoding", "chunked");
-            if (requestBody.Length > 0)
+            if (requestBody != null)
             {
-                Assert.NotEqual(requestUsedContentLengthUpload, requestUsedChunkedUpload);
-                Assert.Equal(chunkedUpload, requestUsedChunkedUpload);
-                Assert.Equal(!chunkedUpload, requestUsedContentLengthUpload);
-            }
+                bool requestUsedContentLengthUpload =
+                    JsonMessageContainsKeyValue(responseContent, "Content-Length", requestBody.Length.ToString());
+                bool requestUsedChunkedUpload =
+                    JsonMessageContainsKeyValue(responseContent, "Transfer-Encoding", "chunked");
+                if (requestBody.Length > 0)
+                {
+                    Assert.NotEqual(requestUsedContentLengthUpload, requestUsedChunkedUpload);
+                    Assert.Equal(chunkedUpload, requestUsedChunkedUpload);
+                    Assert.Equal(!chunkedUpload, requestUsedContentLengthUpload);
+                }
 
-            // Verify that request body content was correctly sent to server.
-            Assert.True(JsonMessageContainsKeyValue(responseContent, "BodyContent", requestBody), "Valid request body");
+                // Verify that request body content was correctly sent to server.
+                Assert.True(JsonMessageContainsKeyValue(responseContent, "BodyContent", requestBody), "Valid request body");
+            }
         }
 
         public static void VerifyRequestMethod(HttpResponseMessage response, string expectedMethod)
@@ -65,6 +64,19 @@ namespace System.Net.Http.Functional.Tests
            {
                Assert.Equal(expectedMethod, value);
            }
+        }
+
+        public static byte[] ComputeMD5Hash(string data)
+        {
+            return ComputeMD5Hash(Encoding.UTF8.GetBytes(data));
+        }
+
+        public static byte[] ComputeMD5Hash(byte[] data)
+        {
+            using (MD5 md5 = MD5.Create())
+            {
+                return md5.ComputeHash(data);
+            }        
         }
     }
 }
