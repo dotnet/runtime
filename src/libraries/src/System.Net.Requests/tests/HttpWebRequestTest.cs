@@ -23,7 +23,7 @@ namespace System.Net.Tests
         private int _requestStreamCallbackCallCount = 0;
         private int _responseCallbackCallCount = 0;
 
-        public readonly static object[][] EchoServers = HttpTestServers2.EchoServers;
+        public readonly static object[][] EchoServers = HttpTestServers.EchoServers;
 
         [Theory, MemberData("EchoServers")]
         public void Ctor_VerifyDefaults_Success(Uri remoteServer)
@@ -324,7 +324,7 @@ namespace System.Net.Tests
             {
                 strContent = sr.ReadToEnd();
             }
-            Assert.True(strContent.Contains("\"Host\": \"" + HttpTestServers2.Host + "\""));
+            Assert.True(strContent.Contains("\"Host\": \"" + HttpTestServers.Host + "\""));
         }
 
         [Theory, MemberData("EchoServers")]
@@ -365,8 +365,8 @@ namespace System.Net.Tests
         }
 
         public static object[][] StatusCodeServers = {
-            new object[] { HttpTestServers2.StatusCodeUri(false, 404) },
-            new object[] { HttpTestServers2.StatusCodeUri(true, 404) },
+            new object[] { HttpTestServers.StatusCodeUri(false, 404) },
+            new object[] { HttpTestServers.StatusCodeUri(true, 404) },
         };
 
         [Theory, MemberData("StatusCodeServers")]
