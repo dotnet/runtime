@@ -561,6 +561,11 @@ sgen_client_binary_protocol_global_remset (gpointer ptr, gpointer value, gpointe
 }
 
 static void G_GNUC_UNUSED
+sgen_client_binary_protocol_mod_union_remset (gpointer obj, gpointer ptr, gpointer value, gpointer value_vtable)
+{
+}
+
+static void G_GNUC_UNUSED
 sgen_client_binary_protocol_ptr_update (gpointer ptr, gpointer old_value, gpointer new_value, gpointer vtable, size_t size)
 {
 }
