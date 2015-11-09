@@ -8,25 +8,31 @@
     <OutputType>Library</OutputType>
     <UnsupportedPlatforms>FreeBSD</UnsupportedPlatforms>
   </PropertyGroup>
-  
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
-
   <ItemGroup>
-    <Compile Include="IPAddressMappingTest.cs" />
-    <Compile Include="IPAddressParsing.cs" />
+    <Compile Include="CookieTest.cs" />
+    <Compile Include="CookieCollectionTest.cs" />
+    <Compile Include="CookieContainerTest.cs" />
     <Compile Include="CookieTest\CookieContainerTest.cs" />
     <Compile Include="CookieTest\CookiePortTest.cs" />
+    <Compile Include="CredentialCacheTest.cs" />
+    <Compile Include="DnsEndPointTest.cs" />
+    <Compile Include="EndPointTest.cs" />
+    <Compile Include="IPAddressParsing.cs" />
+    <Compile Include="IPAddressTest.cs" />
+    <Compile Include="IPAddressMappingTest.cs" />
+    <Compile Include="IPEndPointTest.cs" />
+    <Compile Include="NetworkCredentialTest.cs" />
+    <Compile Include="SocketAddressTest.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\System.Net.Primitives.csproj">
       <Project>{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}</Project>
       <Name>System.Net.Primitives</Name>
     </ProjectReference>
   </ItemGroup>
-
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
