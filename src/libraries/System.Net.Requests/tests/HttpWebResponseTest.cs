@@ -13,7 +13,7 @@ namespace System.Net.Tests
         [Fact]
         public async Task ContentType_ServerResponseHasContentTypeHeader_ContentTypeIsNonEmptyString()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(HttpTestServers2.RemoteEchoServer);
+            HttpWebRequest request = WebRequest.CreateHttp(HttpTestServers.RemoteEchoServer);
             request.Method = HttpMethod.Get.Method;
             WebResponse response = await request.GetResponseAsync();
             Assert.True(!string.IsNullOrEmpty(response.ContentType));
@@ -22,7 +22,7 @@ namespace System.Net.Tests
         [Fact]
         public async Task ContentType_ServerResponseMissingContentTypeHeader_ContentTypeIsEmptyString()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(HttpTestServers2.RemoteEmptyContentServer);
+            HttpWebRequest request = WebRequest.CreateHttp(HttpTestServers.RemoteEmptyContentServer);
             request.Method = HttpMethod.Get.Method;
             WebResponse response = await request.GetResponseAsync();
             Assert.Equal(string.Empty, response.ContentType);

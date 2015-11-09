@@ -5,10 +5,8 @@ using System;
 
 namespace System.Net.Tests
 {
-    internal class HttpTestServers2
+    internal class HttpTestServers
     {
-        // TODO: This class will be used to replace the HttpTestServers class. For now, it is separate
-        // while the test infrastructure issues (#2383 et. al) are being worked out.
         public const string Host = "corefx-networking.azurewebsites.net";
 
         private const string HttpScheme = "http";
