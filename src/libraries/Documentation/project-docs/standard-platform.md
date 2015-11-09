@@ -72,7 +72,7 @@ In general, class libraries which target a lower .NET Platform Standard version,
 
 ### Portable Profiles
 
-PCL projects will be able to consume packages built for .NET Platform Standard (netstandard1.x) but not vice versa. The table below outlines the mapping of PCL portable profiles to the supported .NET Platform Standard version.
+PCL projects will be able to consume packages built for .NET Platform Standard (netstandard1.x).  The table below outlines the mapping of PCL portable profiles to the supported .NET Platform Standard version.  In order to ease transition to .NET Platform Standard, packages targeting it will be able to depend on PCL packages through the `imports` element (see [docs](http://docs.nuget.org/consume/projectjson-format)).  Since `portable-` packages don't include their dependencies explicitly, a .NET Platform Standard package with a dependency on a `portable-` package will need to include those dependencies itself.
 
 | Profile | .NET Platform Standard version |
 | ---------| --------------- |
