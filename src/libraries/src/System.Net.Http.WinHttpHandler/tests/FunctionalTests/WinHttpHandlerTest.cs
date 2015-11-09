@@ -36,7 +36,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             using (var client = new HttpClient(handler))
             {
                 // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
-                var response = client.GetAsync(HttpTestServers.RemoteGetServer).Result;
+                var response = client.GetAsync(HttpTestServers2.RemoteEchoServer).Result;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 var responseContent = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                 _output.WriteLine(responseContent);
