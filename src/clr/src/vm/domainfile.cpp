@@ -39,6 +39,10 @@
 #endif
 #include "winrthelpers.h"
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif // FEATURE_PERFMAP
+
 BOOL DomainAssembly::IsUnloading()
 {
     WRAPPER_NO_CONTRACT;
@@ -1298,6 +1302,11 @@ void DomainFile::FinishLoad()
         // Inform metadata that it has been loaded from a native image
         // (and so there was an opportunity to check for or fix inconsistencies in the original IL metadata)
         m_pFile->GetMDImport()->SetVerifiedByTrustedSource(TRUE);
+
+#ifdef FEATURE_PERFMAP
+        // Notify the perfmap of the native image load.
+        PerfMap::LogNativeImageLoad(m_pFile);
+#endif
     }
 
     // Are we absolutely required to use a native image?
