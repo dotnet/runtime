@@ -133,9 +133,7 @@ VOID
 PALAPI 
 PAL_SetHardwareExceptionHandler(
     IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler)
-
 {
-    //TRACE("Hardware exception installed: %p\n", exceptionHandler);
     g_hardwareExceptionHandler = exceptionHandler;
 }
 
@@ -154,16 +152,19 @@ Return value:
 VOID
 SEHProcessException(PEXCEPTION_POINTERS pointers)
 {
-    PAL_SEHException exception(pointers->ExceptionRecord, pointers->ContextRecord);
-
-    if (g_hardwareExceptionHandler != NULL)
+    if (!IsInDebugBreak(pointers->ExceptionRecord->ExceptionAddress))
     {
-        g_hardwareExceptionHandler(&exception);
-    }
+        PAL_SEHException exception(pointers->ExceptionRecord, pointers->ContextRecord);
 
-    if (CatchHardwareExceptionHolder::IsEnabled())
-    {
-        throw exception;
+        if (g_hardwareExceptionHandler != NULL)
+        {
+            g_hardwareExceptionHandler(&exception);
+        }
+
+        if (CatchHardwareExceptionHolder::IsEnabled())
+        {
+            throw exception;
+        }
     }
 
     TRACE("Unhandled hardware exception %08x at %p\n", 
@@ -230,26 +231,22 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
 
 --*/
 
-#ifdef __llvm__
-__thread 
-#else // __llvm__
-__declspec(thread)
-#endif // !__llvm__
-int t_holderCount = 0;
-
 CatchHardwareExceptionHolder::CatchHardwareExceptionHolder()
 {
-    ++t_holderCount;
+    CPalThread *pThread = InternalGetCurrentThread();
+    ++pThread->m_hardwareExceptionHolderCount;
 }
 
 CatchHardwareExceptionHolder::~CatchHardwareExceptionHolder()
 {
-    --t_holderCount;
+    CPalThread *pThread = InternalGetCurrentThread();
+    --pThread->m_hardwareExceptionHolderCount;
 }
 
 bool CatchHardwareExceptionHolder::IsEnabled()
 {
-    return t_holderCount > 0;
+    CPalThread *pThread = InternalGetCurrentThread();
+    return pThread->IsHardwareExceptionsEnabled();
 }
 
 /*++
