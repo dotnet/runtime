@@ -15,9 +15,9 @@ internal class Test
     private static Foo s_foo = new Foo();
     private static Foo[] s_fooArray = new Foo[10];
 
-    static public int Main()
+    public static int Main()
     {
-        int iReturn = 100;
+        int returnCode = 100;
         try
         {
             IsObjectType(s_object, true);
@@ -52,10 +52,10 @@ internal class Test
             Console.WriteLine(e);
             Console.WriteLine("Test FAILED");
 
-            iReturn = 666;
+            returnCode = 666;
         }
 
-        return iReturn;
+        return returnCode;
     }
 
     private static void IsResultCorrect(bool result, bool baseline)
