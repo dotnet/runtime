@@ -125,27 +125,27 @@ mono_security_core_clr_is_platform_image (MonoImage *image)
 static MonoClass*
 security_critical_attribute (void)
 {
-	static MonoClass *class = NULL;
+	static MonoClass *klass = NULL;
 
-	if (!class) {
-		class = mono_class_from_name (mono_defaults.corlib, "System.Security", 
+	if (!klass) {
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Security", 
 			"SecurityCriticalAttribute");
 	}
-	g_assert (class);
-	return class;
+	g_assert (klass);
+	return klass;
 }
 
 static MonoClass*
 security_safe_critical_attribute (void)
 {
-	static MonoClass *class = NULL;
+	static MonoClass *klass = NULL;
 
-	if (!class) {
-		class = mono_class_from_name (mono_defaults.corlib, "System.Security", 
+	if (!klass) {
+		klass = mono_class_from_name (mono_defaults.corlib, "System.Security", 
 			"SecuritySafeCriticalAttribute");
 	}
-	g_assert (class);
-	return class;
+	g_assert (klass);
+	return klass;
 }
 
 /* sometime we get a NULL (not found) caller (e.g. get_reflection_caller) */
@@ -164,17 +164,17 @@ get_method_full_name (MonoMethod * method)
  *	debugging purposes.
  */
 static void
-set_type_load_exception_type (const char *format, MonoClass *class)
+set_type_load_exception_type (const char *format, MonoClass *klass)
 {
-	char *type_name = mono_type_get_full_name (class);
-	char *parent_name = mono_type_get_full_name (class->parent);
+	char *type_name = mono_type_get_full_name (klass);
+	char *parent_name = mono_type_get_full_name (klass->parent);
 	char *message = g_strdup_printf (format, type_name, parent_name);
 
 	g_free (parent_name);
 	g_free (type_name);
 	
 	mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_SECURITY, message);
-	mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, message);
+	mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, message);
 	// note: do not free string given to mono_class_set_failure
 }
 
@@ -255,30 +255,30 @@ get_default_ctor (MonoClass *klass)
  *	Reference: fxcop CA2132 rule
  */
 void
-mono_security_core_clr_check_inheritance (MonoClass *class)
+mono_security_core_clr_check_inheritance (MonoClass *klass)
 {
 	MonoSecurityCoreCLRLevel class_level, parent_level;
-	MonoClass *parent = class->parent;
+	MonoClass *parent = klass->parent;
 
 	if (!parent)
 		return;
 
-	class_level = mono_security_core_clr_class_level (class);
+	class_level = mono_security_core_clr_class_level (klass);
 	parent_level = mono_security_core_clr_class_level (parent);
 
 	if (class_level < parent_level) {
 		set_type_load_exception_type (
 			"Inheritance failure for type %s. Parent class %s is more restricted.",
-			class);
+			klass);
 	} else {
 		MonoMethod *parent_ctor = get_default_ctor (parent);
 		if (parent_ctor && ((parent_ctor->flags & METHOD_ATTRIBUTE_PUBLIC) != 0)) {
-			class_level = mono_security_core_clr_method_level (get_default_ctor (class), FALSE);
+			class_level = mono_security_core_clr_method_level (get_default_ctor (klass), FALSE);
 			parent_level = mono_security_core_clr_method_level (parent_ctor, FALSE);
 			if (class_level < parent_level) {
 				set_type_load_exception_type (
 					"Inheritance failure for type %s. Default constructor security mismatch with %s.",
-					class);
+					klass);
 			}
 		}
 	}
@@ -299,7 +299,7 @@ mono_security_core_clr_check_inheritance (MonoClass *class)
  *	Reference: http://msdn.microsoft.com/en-us/magazine/cc765416.aspx#id0190030
  */
 void
-mono_security_core_clr_check_override (MonoClass *class, MonoMethod *override, MonoMethod *base)
+mono_security_core_clr_check_override (MonoClass *klass, MonoMethod *override, MonoMethod *base)
 {
 	MonoSecurityCoreCLRLevel base_level = mono_security_core_clr_method_level (base, FALSE);
 	MonoSecurityCoreCLRLevel override_level = mono_security_core_clr_method_level (override, FALSE);
@@ -930,17 +930,17 @@ mono_security_core_clr_level_from_cinfo (MonoCustomAttrInfo *cinfo, MonoImage *i
  *	- a check for the class and outer class(es) ...
  */
 static MonoSecurityCoreCLRLevel
-mono_security_core_clr_class_level_no_platform_check (MonoClass *class)
+mono_security_core_clr_class_level_no_platform_check (MonoClass *klass)
 {
 	MonoSecurityCoreCLRLevel level = MONO_SECURITY_CORE_CLR_TRANSPARENT;
-	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_class (class);
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_class (klass);
 	if (cinfo) {
-		level = mono_security_core_clr_level_from_cinfo (cinfo, class->image);
+		level = mono_security_core_clr_level_from_cinfo (cinfo, klass->image);
 		mono_custom_attrs_free (cinfo);
 	}
 
-	if (level == MONO_SECURITY_CORE_CLR_TRANSPARENT && class->nested_in)
-		level = mono_security_core_clr_class_level_no_platform_check (class->nested_in);
+	if (level == MONO_SECURITY_CORE_CLR_TRANSPARENT && klass->nested_in)
+		level = mono_security_core_clr_class_level_no_platform_check (klass->nested_in);
 
 	return level;
 }
@@ -951,13 +951,13 @@ mono_security_core_clr_class_level_no_platform_check (MonoClass *class)
  *	Return the MonoSecurityCoreCLRLevel for the specified class.
  */
 MonoSecurityCoreCLRLevel
-mono_security_core_clr_class_level (MonoClass *class)
+mono_security_core_clr_class_level (MonoClass *klass)
 {
 	/* non-platform code is always Transparent - whatever the attributes says */
-	if (!mono_security_core_clr_test && !mono_security_core_clr_is_platform_image (class->image))
+	if (!mono_security_core_clr_test && !mono_security_core_clr_is_platform_image (klass->image))
 		return MONO_SECURITY_CORE_CLR_TRANSPARENT;
 
-	return mono_security_core_clr_class_level_no_platform_check (class);
+	return mono_security_core_clr_class_level_no_platform_check (klass);
 }
 
 /*
@@ -1043,12 +1043,12 @@ mono_security_enable_core_clr ()
 #else
 
 void
-mono_security_core_clr_check_inheritance (MonoClass *class)
+mono_security_core_clr_check_inheritance (MonoClass *klass)
 {
 }
 
 void
-mono_security_core_clr_check_override (MonoClass *class, MonoMethod *override, MonoMethod *base)
+mono_security_core_clr_check_override (MonoClass *klass, MonoMethod *override, MonoMethod *base)
 {
 }
 
@@ -1099,7 +1099,7 @@ mono_security_core_clr_is_call_allowed (MonoMethod *caller, MonoMethod *callee)
 }
 
 MonoSecurityCoreCLRLevel
-mono_security_core_clr_class_level (MonoClass *class)
+mono_security_core_clr_class_level (MonoClass *klass)
 {
 	return MONO_SECURITY_CORE_CLR_TRANSPARENT;
 }

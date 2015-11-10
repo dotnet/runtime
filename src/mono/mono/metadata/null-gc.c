@@ -518,7 +518,7 @@ BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reser
 #endif
 
 guint
-mono_gc_get_vtable_bits (MonoClass *class)
+mono_gc_get_vtable_bits (MonoClass *klass)
 {
 	return 0;
 }

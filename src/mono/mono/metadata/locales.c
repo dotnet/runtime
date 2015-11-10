@@ -575,7 +575,7 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 		MonoBoolean specific, MonoBoolean installed)
 {
 	MonoArray *ret;
-	MonoClass *class;
+	MonoClass *klass;
 	MonoCultureInfo *culture;
 	MonoDomain *domain;
 	const CultureInfoEntry *ci;
@@ -592,7 +592,7 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 			len++;
 	}
 
-	class = mono_class_from_name (mono_get_corlib (),
+	klass = mono_class_from_name (mono_get_corlib (),
 			"System.Globalization", "CultureInfo");
 
 	/* The InvariantCulture is not in culture_entries */
@@ -600,7 +600,7 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 	if (neutral)
 		len++;
 
-	ret = mono_array_new (domain, class, len);
+	ret = mono_array_new (domain, klass, len);
 
 	if (len == 0)
 		return ret;
@@ -613,7 +613,7 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 		ci = &culture_entries [i];
 		is_neutral = ci->territory == 0;
 		if ((neutral && is_neutral) || (specific && !is_neutral)) {
-			culture = (MonoCultureInfo *) mono_object_new (domain, class);
+			culture = (MonoCultureInfo *) mono_object_new (domain, klass);
 			mono_runtime_object_init ((MonoObject *) culture);
 			construct_culture (culture, ci);
 			culture->use_user_override = TRUE;

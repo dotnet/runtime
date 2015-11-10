@@ -171,21 +171,21 @@ static void get_default_param_value_blobs (MonoMethod *method, char **blobs, gui
 static MonoReflectionType *mono_reflection_type_get_underlying_system_type (MonoReflectionType* t);
 static MonoType* mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve);
 static MonoReflectionType* mono_reflection_type_resolve_user_types (MonoReflectionType *type);
-static gboolean is_sre_array (MonoClass *class);
-static gboolean is_sre_byref (MonoClass *class);
-static gboolean is_sre_pointer (MonoClass *class);
-static gboolean is_sre_type_builder (MonoClass *class);
-static gboolean is_sre_method_builder (MonoClass *class);
-static gboolean is_sre_ctor_builder (MonoClass *class);
-static gboolean is_sre_field_builder (MonoClass *class);
-static gboolean is_sr_mono_method (MonoClass *class);
-static gboolean is_sr_mono_cmethod (MonoClass *class);
-static gboolean is_sr_mono_generic_method (MonoClass *class);
-static gboolean is_sr_mono_generic_cmethod (MonoClass *class);
-static gboolean is_sr_mono_field (MonoClass *class);
-static gboolean is_sr_mono_property (MonoClass *class);
-static gboolean is_sre_method_on_tb_inst (MonoClass *class);
-static gboolean is_sre_ctor_on_tb_inst (MonoClass *class);
+static gboolean is_sre_array (MonoClass *klass);
+static gboolean is_sre_byref (MonoClass *klass);
+static gboolean is_sre_pointer (MonoClass *klass);
+static gboolean is_sre_type_builder (MonoClass *klass);
+static gboolean is_sre_method_builder (MonoClass *klass);
+static gboolean is_sre_ctor_builder (MonoClass *klass);
+static gboolean is_sre_field_builder (MonoClass *klass);
+static gboolean is_sr_mono_method (MonoClass *klass);
+static gboolean is_sr_mono_cmethod (MonoClass *klass);
+static gboolean is_sr_mono_generic_method (MonoClass *klass);
+static gboolean is_sr_mono_generic_cmethod (MonoClass *klass);
+static gboolean is_sr_mono_field (MonoClass *klass);
+static gboolean is_sr_mono_property (MonoClass *klass);
+static gboolean is_sre_method_on_tb_inst (MonoClass *klass);
+static gboolean is_sre_ctor_on_tb_inst (MonoClass *klass);
 
 static guint32 mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method);
 static guint32 mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m);
@@ -1852,10 +1852,10 @@ fieldref_encode_signature (MonoDynamicImage *assembly, MonoImage *field_image, M
 		for (i = 0; i < type->num_mods; ++i) {
 			if (field_image) {
 				MonoError error;
-				MonoClass *class = mono_class_get_checked (field_image, type->modifiers [i].token, &error);
+				MonoClass *klass = mono_class_get_checked (field_image, type->modifiers [i].token, &error);
 				g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
-				token = mono_image_typedef_or_ref (assembly, &class->byval_arg);
+				token = mono_image_typedef_or_ref (assembly, &klass->byval_arg);
 			} else {
 				token = type->modifiers [i].token;
 			}
@@ -1884,12 +1884,12 @@ field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *
 	guint32 idx;
 	guint32 typespec = 0;
 	MonoType *type;
-	MonoClass *class;
+	MonoClass *klass;
 
 	init_type_builder_generics (fb->type);
 
 	type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type);
-	class = mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type (type);
 
 	sigbuffer_init (&buf, 32);
 	
@@ -1897,12 +1897,12 @@ field_encode_signature (MonoDynamicImage *assembly, MonoReflectionFieldBuilder *
 	encode_custom_modifiers (assembly, fb->modreq, fb->modopt, &buf);
 	/* encode custom attributes before the type */
 
-	if (class->generic_container)
+	if (klass->generic_container)
 		typespec = create_typespec (assembly, type);
 
 	if (typespec) {
 		MonoGenericClass *gclass;
-		gclass = mono_metadata_lookup_generic_class (class, class->generic_container->context.class_inst, TRUE);
+		gclass = mono_metadata_lookup_generic_class (klass, klass->generic_container->context.class_inst, TRUE);
 		encode_generic_class (assembly, gclass, &buf);
 	} else {
 		encode_type (assembly, type, &buf);
@@ -2895,7 +2895,7 @@ is_field_on_inst (MonoClassField *field)
 static MonoType*
 get_field_on_inst_generic_type (MonoClassField *field)
 {
-	MonoClass *class, *gtd;
+	MonoClass *klass, *gtd;
 	MonoDynamicGenericClass *dgclass;
 	int field_index;
 
@@ -2908,11 +2908,11 @@ get_field_on_inst_generic_type (MonoClassField *field)
 		return dgclass->field_generic_types [field_index];		
 	}
 
-	class = field->parent;
-	gtd = class->generic_class->container_class;
+	klass = field->parent;
+	gtd = klass->generic_class->container_class;
 
-	if (field >= class->fields && field - class->fields < class->field.count) {
-		field_index = field - class->fields;
+	if (field >= klass->fields && field - klass->fields < klass->field.count) {
+		field_index = field - klass->fields;
 		return gtd->fields [field_index].type;
 	}
 
@@ -6437,11 +6437,11 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 	
 	CHECK_OBJECT (MonoReflectionAssembly *, assembly, NULL);
 	if (!assembly_type) {
-		MonoClass *class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoAssembly");
-		if (class == NULL)
-			class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Assembly");
-		g_assert (class);
-		assembly_type = class;
+		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoAssembly");
+		if (klass == NULL)
+			klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Assembly");
+		g_assert (klass);
+		assembly_type = klass;
 	}
 	res = (MonoReflectionAssembly *)mono_object_new (domain, assembly_type);
 	res->assembly = assembly;
@@ -6460,11 +6460,11 @@ mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 	
 	CHECK_OBJECT (MonoReflectionModule *, image, NULL);
 	if (!module_type) {
-		MonoClass *class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoModule");
-		if (class == NULL)
-			class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
-		g_assert (class);
-		module_type = class;
+		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoModule");
+		if (klass == NULL)
+			klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
+		g_assert (klass);
+		module_type = klass;
 	}
 	res = (MonoReflectionModule *)mono_object_new (domain, module_type);
 
@@ -6507,11 +6507,11 @@ mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_ind
 	const char *val;
 	
 	if (!module_type) {
-		MonoClass *class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoModule");
-		if (class == NULL)
-			class = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
-		g_assert (class);
-		module_type = class;
+		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "MonoModule");
+		if (klass == NULL)
+			klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
+		g_assert (klass);
+		module_type = klass;
 	}
 	res = (MonoReflectionModule *)mono_object_new (domain, module_type);
 
@@ -9485,9 +9485,9 @@ mono_reflection_type_get_underlying_system_type (MonoReflectionType* t)
 
 
 static gboolean
-is_corlib_type (MonoClass *class)
+is_corlib_type (MonoClass *klass)
 {
-	return class->image == mono_defaults.corlib;
+	return klass->image == mono_defaults.corlib;
 }
 
 #define check_corlib_type_cached(_class, _namespace, _name) do { \
@@ -9504,69 +9504,69 @@ is_corlib_type (MonoClass *class)
 
 #ifndef DISABLE_REFLECTION_EMIT
 static gboolean
-is_sre_array (MonoClass *class)
+is_sre_array (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection.Emit", "ArrayType");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "ArrayType");
 }
 
 static gboolean
-is_sre_byref (MonoClass *class)
+is_sre_byref (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection.Emit", "ByRefType");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "ByRefType");
 }
 
 static gboolean
-is_sre_pointer (MonoClass *class)
+is_sre_pointer (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection.Emit", "PointerType");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "PointerType");
 }
 
 static gboolean
-is_sre_generic_instance (MonoClass *class)
+is_sre_generic_instance (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection", "MonoGenericClass");
+	check_corlib_type_cached (klass, "System.Reflection", "MonoGenericClass");
 }
 
 static gboolean
-is_sre_type_builder (MonoClass *class)
+is_sre_type_builder (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection.Emit", "TypeBuilder");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "TypeBuilder");
 }
 
 static gboolean
-is_sre_method_builder (MonoClass *class)
+is_sre_method_builder (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection.Emit", "MethodBuilder");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "MethodBuilder");
 }
 
 static gboolean
-is_sre_ctor_builder (MonoClass *class)
+is_sre_ctor_builder (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection.Emit", "ConstructorBuilder");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "ConstructorBuilder");
 }
 
 static gboolean
-is_sre_field_builder (MonoClass *class)
+is_sre_field_builder (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection.Emit", "FieldBuilder");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "FieldBuilder");
 }
 
 static gboolean
-is_sre_method_on_tb_inst (MonoClass *class)
+is_sre_method_on_tb_inst (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection.Emit", "MethodOnTypeBuilderInst");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "MethodOnTypeBuilderInst");
 }
 
 static gboolean
-is_sre_ctor_on_tb_inst (MonoClass *class)
+is_sre_ctor_on_tb_inst (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection.Emit", "ConstructorOnTypeBuilderInst");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "ConstructorOnTypeBuilderInst");
 }
 
 MonoType*
 mono_reflection_type_get_handle (MonoReflectionType* ref)
 {
-	MonoClass *class;
+	MonoClass *klass;
 	if (!ref)
 		return NULL;
 	if (ref->type)
@@ -9580,9 +9580,9 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 			return ref->type;
 	}
 
-	class = mono_object_class (ref);
+	klass = mono_object_class (ref);
 
-	if (is_sre_array (class)) {
+	if (is_sre_array (klass)) {
 		MonoType *res;
 		MonoReflectionArrayType *sre_array = (MonoReflectionArrayType*)ref;
 		MonoType *base = mono_reflection_type_get_handle (sre_array->element_type);
@@ -9593,7 +9593,7 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 			res = &mono_bounded_array_class_get (mono_class_from_mono_type (base), sre_array->rank, TRUE)->byval_arg;
 		sre_array->type.type = res;
 		return res;
-	} else if (is_sre_byref (class)) {
+	} else if (is_sre_byref (klass)) {
 		MonoType *res;
 		MonoReflectionDerivedType *sre_byref = (MonoReflectionDerivedType*)ref;
 		MonoType *base = mono_reflection_type_get_handle (sre_byref->element_type);
@@ -9601,7 +9601,7 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 		res = &mono_class_from_mono_type (base)->this_arg;
 		sre_byref->type.type = res;
 		return res;
-	} else if (is_sre_pointer (class)) {
+	} else if (is_sre_pointer (klass)) {
 		MonoType *res;
 		MonoReflectionDerivedType *sre_pointer = (MonoReflectionDerivedType*)ref;
 		MonoType *base = mono_reflection_type_get_handle (sre_pointer->element_type);
@@ -9609,7 +9609,7 @@ mono_reflection_type_get_handle (MonoReflectionType* ref)
 		res = &mono_ptr_class_get (base)->byval_arg;
 		sre_pointer->type.type = res;
 		return res;
-	} else if (is_sre_generic_instance (class)) {
+	} else if (is_sre_generic_instance (klass)) {
 		MonoType *res, **types;
 		MonoReflectionGenericClass *gclass = (MonoReflectionGenericClass*)ref;
 		int i, count;
@@ -9649,18 +9649,18 @@ mono_reflection_register_with_runtime (MonoReflectionType *type)
 {
 	MonoType *res = mono_reflection_type_get_handle (type);
 	MonoDomain *domain = mono_object_domain ((MonoObject*)type);
-	MonoClass *class;
+	MonoClass *klass;
 
 	if (!res)
 		mono_raise_exception (mono_get_exception_argument (NULL, "Invalid generic instantiation, one or more arguments are not proper user types"));
 
-	class = mono_class_from_mono_type (res);
+	klass = mono_class_from_mono_type (res);
 
 	mono_loader_lock (); /*same locking as mono_type_get_object*/
 	mono_domain_lock (domain);
 
-	if (!image_is_dynamic (class->image)) {
-		mono_class_setup_supertypes (class);
+	if (!image_is_dynamic (klass->image)) {
+		mono_class_setup_supertypes (klass);
 	} else {
 		if (!domain->type_hash)
 			domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mono_metadata_type_hash, 
@@ -9769,13 +9769,13 @@ mono_reflection_register_with_runtime (MonoReflectionType *type)
 }
 
 static gboolean
-is_sre_type_builder (MonoClass *class)
+is_sre_type_builder (MonoClass *klass)
 {
 	return FALSE;
 }
 
 static gboolean
-is_sre_generic_instance (MonoClass *class)
+is_sre_generic_instance (MonoClass *klass)
 {
 	return FALSE;
 }
@@ -9789,52 +9789,52 @@ init_type_builder_generics (MonoObject *type)
 
 
 static gboolean
-is_sr_mono_field (MonoClass *class)
+is_sr_mono_field (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection", "MonoField");
+	check_corlib_type_cached (klass, "System.Reflection", "MonoField");
 }
 
 static gboolean
-is_sr_mono_property (MonoClass *class)
+is_sr_mono_property (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection", "MonoProperty");
+	check_corlib_type_cached (klass, "System.Reflection", "MonoProperty");
 }
 
 static gboolean
-is_sr_mono_method (MonoClass *class)
+is_sr_mono_method (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection", "MonoMethod");
+	check_corlib_type_cached (klass, "System.Reflection", "MonoMethod");
 }
 
 static gboolean
-is_sr_mono_cmethod (MonoClass *class)
+is_sr_mono_cmethod (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection", "MonoCMethod");
+	check_corlib_type_cached (klass, "System.Reflection", "MonoCMethod");
 }
 
 static gboolean
-is_sr_mono_generic_method (MonoClass *class)
+is_sr_mono_generic_method (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection", "MonoGenericMethod");
+	check_corlib_type_cached (klass, "System.Reflection", "MonoGenericMethod");
 }
 
 static gboolean
-is_sr_mono_generic_cmethod (MonoClass *class)
+is_sr_mono_generic_cmethod (MonoClass *klass)
 {
-	check_corlib_type_cached (class, "System.Reflection", "MonoGenericCMethod");
+	check_corlib_type_cached (klass, "System.Reflection", "MonoGenericCMethod");
 }
 
 gboolean
-mono_class_is_reflection_method_or_constructor (MonoClass *class)
+mono_class_is_reflection_method_or_constructor (MonoClass *klass)
 {
-	return is_sr_mono_method (class) || is_sr_mono_cmethod (class) || is_sr_mono_generic_method (class) || is_sr_mono_generic_cmethod (class);
+	return is_sr_mono_method (klass) || is_sr_mono_cmethod (klass) || is_sr_mono_generic_method (klass) || is_sr_mono_generic_cmethod (klass);
 }
 
 static gboolean
 is_usertype (MonoReflectionType *ref)
 {
-	MonoClass *class = mono_object_class (ref);
-	return class->image != mono_defaults.corlib || strcmp ("TypeDelegator", class->name) == 0;
+	MonoClass *klass = mono_object_class (ref);
+	return klass->image != mono_defaults.corlib || strcmp ("TypeDelegator", klass->name) == 0;
 }
 
 static MonoReflectionType*
@@ -11345,16 +11345,16 @@ ensure_runtime_vtable (MonoClass *klass)
 static MonoMethod*
 mono_reflection_method_get_handle (MonoObject *method)
 {
-	MonoClass *class = mono_object_class (method);
-	if (is_sr_mono_method (class) || is_sr_mono_generic_method (class)) {
+	MonoClass *klass = mono_object_class (method);
+	if (is_sr_mono_method (klass) || is_sr_mono_generic_method (klass)) {
 		MonoReflectionMethod *sr_method = (MonoReflectionMethod*)method;
 		return sr_method->method;
 	}
-	if (is_sre_method_builder (class)) {
+	if (is_sre_method_builder (klass)) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder*)method;
 		return mb->mhandle;
 	}
-	if (is_sre_method_on_tb_inst (class)) {
+	if (is_sre_method_on_tb_inst (klass)) {
 		MonoReflectionMethodOnTypeBuilderInst *m = (MonoReflectionMethodOnTypeBuilderInst*)method;
 		MonoMethod *result;
 		/*FIXME move this to a proper method and unify with resolve_object*/
@@ -11377,7 +11377,7 @@ mono_reflection_method_get_handle (MonoObject *method)
 		return result;
 	}
 
-	g_error ("Can't handle methods of type %s:%s", class->name_space, class->name);
+	g_error ("Can't handle methods of type %s:%s", klass->name_space, klass->name);
 	return NULL;
 }
 
@@ -12284,11 +12284,11 @@ resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, Mon
 		ensure_complete_type (field->parent);
 		if (context) {
 			MonoType *inflated = mono_class_inflate_generic_type (&field->parent->byval_arg, context);
-			MonoClass *class = mono_class_from_mono_type (inflated);
+			MonoClass *klass = mono_class_from_mono_type (inflated);
 			MonoClassField *inflated_field;
 			gpointer iter = NULL;
 			mono_metadata_free_type (inflated);
-			while ((inflated_field = mono_class_get_fields (class, &iter))) {
+			while ((inflated_field = mono_class_get_fields (klass, &iter))) {
 				if (!strcmp (field->name, inflated_field->name))
 					break;
 			}

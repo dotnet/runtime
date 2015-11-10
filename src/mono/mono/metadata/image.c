@@ -697,17 +697,17 @@ mono_image_load_module (MonoImage *image, int idx)
 static gpointer
 class_key_extract (gpointer value)
 {
-	MonoClass *class = value;
+	MonoClass *klass = value;
 
-	return GUINT_TO_POINTER (class->type_token);
+	return GUINT_TO_POINTER (klass->type_token);
 }
 
 static gpointer*
 class_next_value (gpointer value)
 {
-	MonoClass *class = value;
+	MonoClass *klass = value;
 
-	return (gpointer*)&class->next_class_cache;
+	return (gpointer*)&klass->next_class_cache;
 }
 
 void
@@ -2527,12 +2527,12 @@ mono_image_property_remove (MonoImage *image, gpointer subject)
 }
 
 void
-mono_image_append_class_to_reflection_info_set (MonoClass *class)
+mono_image_append_class_to_reflection_info_set (MonoClass *klass)
 {
-	MonoImage *image = class->image;
+	MonoImage *image = klass->image;
 	g_assert (image_is_dynamic (image));
 	mono_image_lock (image);
-	image->reflection_info_unregister_classes = g_slist_prepend_mempool (image->mempool, image->reflection_info_unregister_classes, class);
+	image->reflection_info_unregister_classes = g_slist_prepend_mempool (image->mempool, image->reflection_info_unregister_classes, klass);
 	mono_image_unlock (image);
 }
 

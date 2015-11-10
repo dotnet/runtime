@@ -11105,7 +11105,7 @@ mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_e
 }
 
 MonoMethod *
-mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar *name, MonoMethod *method)
+mono_marshal_get_generic_array_helper (MonoClass *klass, MonoClass *iface, gchar *name, MonoMethod *method)
 {
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
@@ -11113,7 +11113,7 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 	WrapperInfo *info;
 	int i;
 
-	mb = mono_mb_new_no_dup_name (class, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
+	mb = mono_mb_new_no_dup_name (klass, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 	mb->method->slot = -1;
 
 	mb->method->flags = METHOD_ATTRIBUTE_PRIVATE | METHOD_ATTRIBUTE_VIRTUAL |

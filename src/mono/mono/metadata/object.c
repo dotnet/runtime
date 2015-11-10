@@ -680,7 +680,7 @@ mono_runtime_free_method (MonoDomain *domain, MonoMethod *method)
 #define BITMAP_EL_SIZE (sizeof (gsize) * 8)
 
 static gsize*
-compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields)
+compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -690,9 +690,9 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 	int max_size;
 
 	if (static_fields)
-		max_size = mono_class_data_size (class) / sizeof (gpointer);
+		max_size = mono_class_data_size (klass) / sizeof (gpointer);
 	else
-		max_size = class->instance_size / sizeof (gpointer);
+		max_size = klass->instance_size / sizeof (gpointer);
 	if (max_size > size) {
 		g_assert (offset <= 0);
 		bitmap = g_malloc0 ((max_size + BITMAP_EL_SIZE - 1) / BITMAP_EL_SIZE * sizeof (gsize));
@@ -701,14 +701,14 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
 
 #ifdef HAVE_SGEN_GC
 	/*An Ephemeron cannot be marked by sgen*/
-	if (!static_fields && class->image == mono_defaults.corlib && !strcmp ("Ephemeron", class->name)) {
+	if (!static_fields && klass->image == mono_defaults.corlib && !strcmp ("Ephemeron", klass->name)) {
 		*max_set = 0;
 		memset (bitmap, 0, size / 8);
 		return bitmap;
 	}
 #endif
 
-	for (p = class; p != NULL; p = p->parent) {
+	for (p = klass; p != NULL; p = p->parent) {
 		gpointer iter = NULL;
 		while ((field = mono_class_get_fields (p, &iter))) {
 			MonoType *type;
@@ -806,11 +806,11 @@ compute_class_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int
  * Mono internal function to compute a bitmap of reference fields in a class.
  */
 gsize*
-mono_class_compute_bitmap (MonoClass *class, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields)
+mono_class_compute_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int *max_set, gboolean static_fields)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	return compute_class_bitmap (class, bitmap, size, offset, max_set, static_fields);
+	return compute_class_bitmap (klass, bitmap, size, offset, max_set, static_fields);
 }
 
 #if 0
@@ -819,7 +819,7 @@ mono_class_compute_bitmap (MonoClass *class, gsize *bitmap, int size, int offset
  * and ignores static fields
  */
 static gsize*
-compute_class_non_ref_bitmap (MonoClass *class, gsize *bitmap, int size, int offset)
+compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset)
 {
 	MonoClassField *field;
 	MonoClass *p;
@@ -963,7 +963,7 @@ mono_string_alloc (int length)
 }
 
 void
-mono_class_compute_gc_descriptor (MonoClass *class)
+mono_class_compute_gc_descriptor (MonoClass *klass)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
@@ -982,29 +982,29 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		mono_loader_unlock ();
 	}
 
-	if (!class->inited)
-		mono_class_init (class);
+	if (!klass->inited)
+		mono_class_init (klass);
 
-	if (class->gc_descr_inited)
+	if (klass->gc_descr_inited)
 		return;
 
-	class->gc_descr_inited = TRUE;
-	class->gc_descr = MONO_GC_DESCRIPTOR_NULL;
+	klass->gc_descr_inited = TRUE;
+	klass->gc_descr = MONO_GC_DESCRIPTOR_NULL;
 
 	bitmap = default_bitmap;
-	if (class == mono_defaults.string_class) {
-		class->gc_descr = mono_gc_make_descr_for_string (bitmap, 2);
-	} else if (class->rank) {
-		mono_class_compute_gc_descriptor (class->element_class);
-		if (MONO_TYPE_IS_REFERENCE (&class->element_class->byval_arg)) {
+	if (klass == mono_defaults.string_class) {
+		klass->gc_descr = mono_gc_make_descr_for_string (bitmap, 2);
+	} else if (klass->rank) {
+		mono_class_compute_gc_descriptor (klass->element_class);
+		if (MONO_TYPE_IS_REFERENCE (&klass->element_class->byval_arg)) {
 			gsize abm = 1;
-			class->gc_descr = mono_gc_make_descr_for_array (class->byval_arg.type == MONO_TYPE_SZARRAY, &abm, 1, sizeof (gpointer));
+			klass->gc_descr = mono_gc_make_descr_for_array (klass->byval_arg.type == MONO_TYPE_SZARRAY, &abm, 1, sizeof (gpointer));
 			/*printf ("new array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
 		} else {
 			/* remove the object header */
-			bitmap = compute_class_bitmap (class->element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
-			class->gc_descr = mono_gc_make_descr_for_array (class->byval_arg.type == MONO_TYPE_SZARRAY, bitmap, mono_array_element_size (class) / sizeof (gpointer), mono_array_element_size (class));
+			bitmap = compute_class_bitmap (klass->element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
+			klass->gc_descr = mono_gc_make_descr_for_array (klass->byval_arg.type == MONO_TYPE_SZARRAY, bitmap, mono_array_element_size (klass) / sizeof (gpointer), mono_array_element_size (klass));
 			/*printf ("new vt array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
 			if (bitmap != default_bitmap)
@@ -1014,8 +1014,8 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		/*static int count = 0;
 		if (count++ > 58)
 			return;*/
-		bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
-		class->gc_descr = mono_gc_make_descr_for_object (bitmap, max_set + 1, class->instance_size);
+		bitmap = compute_class_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
+		klass->gc_descr = mono_gc_make_descr_for_object (bitmap, max_set + 1, klass->instance_size);
 		/*
 		if (class->gc_descr == MONO_GC_DESCRIPTOR_NULL)
 			g_print ("disabling typed alloc (%d) for %s.%s\n", max_set, class->name_space, class->name);
@@ -1822,7 +1822,7 @@ mono_method_add_generic_virtual_invocation (MonoDomain *domain, MonoVTable *vtab
 	mono_domain_unlock (domain);
 }
 
-static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean raise_on_error);
+static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean raise_on_error);
 
 /**
  * mono_class_vtable:
@@ -1834,9 +1834,9 @@ static MonoVTable *mono_class_create_runtime_vtable (MonoDomain *domain, MonoCla
  * On failure, NULL is returned, and class->exception_type is set.
  */
 MonoVTable *
-mono_class_vtable (MonoDomain *domain, MonoClass *class)
+mono_class_vtable (MonoDomain *domain, MonoClass *klass)
 {
-	return mono_class_vtable_full (domain, class, FALSE);
+	return mono_class_vtable_full (domain, klass, FALSE);
 }
 
 /**
@@ -1849,25 +1849,25 @@ mono_class_vtable (MonoDomain *domain, MonoClass *class)
  * they contain the domain specific static class data.
  */
 MonoVTable *
-mono_class_vtable_full (MonoDomain *domain, MonoClass *class, gboolean raise_on_error)
+mono_class_vtable_full (MonoDomain *domain, MonoClass *klass, gboolean raise_on_error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoClassRuntimeInfo *runtime_info;
 
-	g_assert (class);
+	g_assert (klass);
 
-	if (class->exception_type) {
+	if (klass->exception_type) {
 		if (raise_on_error)
-			mono_raise_exception (mono_class_get_exception_for_failure (class));
+			mono_raise_exception (mono_class_get_exception_for_failure (klass));
 		return NULL;
 	}
 
 	/* this check can be inlined in jitted code, too */
-	runtime_info = class->runtime_info;
+	runtime_info = klass->runtime_info;
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id])
 		return runtime_info->domain_vtables [domain->domain_id];
-	return mono_class_create_runtime_vtable (domain, class, raise_on_error);
+	return mono_class_create_runtime_vtable (domain, klass, raise_on_error);
 }
 
 /**
@@ -1879,15 +1879,15 @@ mono_class_vtable_full (MonoDomain *domain, MonoClass *class, gboolean raise_on_
  * it was already created.
  */
 MonoVTable *
-mono_class_try_get_vtable (MonoDomain *domain, MonoClass *class)
+mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	MonoClassRuntimeInfo *runtime_info;
 
-	g_assert (class);
+	g_assert (klass);
 
-	runtime_info = class->runtime_info;
+	runtime_info = klass->runtime_info;
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id])
 		return runtime_info->domain_vtables [domain->domain_id];
 	return NULL;
@@ -1917,7 +1917,7 @@ alloc_vtable (MonoDomain *domain, size_t vtable_size, size_t imt_table_bytes)
 }
 
 static MonoVTable *
-mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean raise_on_error)
+mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, gboolean raise_on_error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -1934,25 +1934,25 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 
 	mono_loader_lock (); /*FIXME mono_class_init acquires it*/
 	mono_domain_lock (domain);
-	runtime_info = class->runtime_info;
+	runtime_info = klass->runtime_info;
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id]) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
 		return runtime_info->domain_vtables [domain->domain_id];
 	}
-	if (!class->inited || class->exception_type) {
-		if (!mono_class_init (class) || class->exception_type) {
+	if (!klass->inited || klass->exception_type) {
+		if (!mono_class_init (klass) || klass->exception_type) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			if (raise_on_error)
-				mono_raise_exception (mono_class_get_exception_for_failure (class));
+				mono_raise_exception (mono_class_get_exception_for_failure (klass));
 			return NULL;
 		}
 	}
 
 	/* Array types require that their element type be valid*/
-	if (class->byval_arg.type == MONO_TYPE_ARRAY || class->byval_arg.type == MONO_TYPE_SZARRAY) {
-		MonoClass *element_class = class->element_class;
+	if (klass->byval_arg.type == MONO_TYPE_ARRAY || klass->byval_arg.type == MONO_TYPE_SZARRAY) {
+		MonoClass *element_class = klass->element_class;
 		if (!element_class->inited)
 			mono_class_init (element_class);
 
@@ -1962,44 +1962,44 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		
 		if (element_class->exception_type != MONO_EXCEPTION_NONE) {
 			/*Can happen if element_class only got bad after mono_class_setup_vtable*/
-			if (class->exception_type == MONO_EXCEPTION_NONE)
-				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
+			if (klass->exception_type == MONO_EXCEPTION_NONE)
+				mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			if (raise_on_error)
-				mono_raise_exception (mono_class_get_exception_for_failure (class));
+				mono_raise_exception (mono_class_get_exception_for_failure (klass));
 			return NULL;
 		}
 	}
 
 	/* 
-	 * For some classes, mono_class_init () already computed class->vtable_size, and 
+	 * For some classes, mono_class_init () already computed klass->vtable_size, and 
 	 * that is all that is needed because of the vtable trampolines.
 	 */
-	if (!class->vtable_size)
-		mono_class_setup_vtable (class);
+	if (!klass->vtable_size)
+		mono_class_setup_vtable (klass);
 
-	if (class->generic_class && !class->vtable)
-		mono_class_check_vtable_constraints (class, NULL);
+	if (klass->generic_class && !klass->vtable)
+		mono_class_check_vtable_constraints (klass, NULL);
 
 	/* Initialize klass->has_finalize */
-	mono_class_has_finalizer (class);
+	mono_class_has_finalizer (klass);
 
-	if (class->exception_type) {
+	if (klass->exception_type) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
 		if (raise_on_error)
-			mono_raise_exception (mono_class_get_exception_for_failure (class));
+			mono_raise_exception (mono_class_get_exception_for_failure (klass));
 		return NULL;
 	}
 
-	vtable_slots = class->vtable_size;
+	vtable_slots = klass->vtable_size;
 	/* we add an additional vtable slot to store the pointer to static field data only when needed */
-	class_size = mono_class_data_size (class);
+	class_size = mono_class_data_size (klass);
 	if (class_size)
 		vtable_slots++;
 
-	if (class->interface_offsets_count) {
+	if (klass->interface_offsets_count) {
 		imt_table_bytes = sizeof (gpointer) * (MONO_IMT_SIZE);
 		mono_stats.imt_number_of_tables++;
 		mono_stats.imt_tables_size += imt_table_bytes;
@@ -2016,11 +2016,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	vt = (MonoVTable*) ((char*)interface_offsets + imt_table_bytes);
 	g_assert (!((gsize)vt & 7));
 
-	vt->klass = class;
-	vt->rank = class->rank;
+	vt->klass = klass;
+	vt->rank = klass->rank;
 	vt->domain = domain;
 
-	mono_class_compute_gc_descriptor (class);
+	mono_class_compute_gc_descriptor (klass);
 		/*
 		 * We can't use typed allocation in the non-root domains, since the
 		 * collector needs the GC descriptor stored in the vtable even after
@@ -2038,43 +2038,43 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		vt->gc_descr = MONO_GC_DESCRIPTOR_NULL;
 	else
 #endif
-		vt->gc_descr = class->gc_descr;
+		vt->gc_descr = klass->gc_descr;
 
-	gc_bits = mono_gc_get_vtable_bits (class);
+	gc_bits = mono_gc_get_vtable_bits (klass);
 	g_assert (!(gc_bits & ~((1 << MONO_VTABLE_AVAILABLE_GC_BITS) - 1)));
 
 	vt->gc_bits = gc_bits;
 
 	if (class_size) {
 		/* we store the static field pointer at the end of the vtable: vt->vtable [class->vtable_size] */
-		if (class->has_static_refs) {
+		if (klass->has_static_refs) {
 			MonoGCDescriptor statics_gc_descr;
 			int max_set = 0;
 			gsize default_bitmap [4] = {0};
 			gsize *bitmap;
 
-			bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, TRUE);
-			/*g_print ("bitmap 0x%x for %s.%s (size: %d)\n", bitmap [0], class->name_space, class->name, class_size);*/
+			bitmap = compute_class_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, TRUE);
+			/*g_print ("bitmap 0x%x for %s.%s (size: %d)\n", bitmap [0], klass->name_space, klass->name, class_size);*/
 			statics_gc_descr = mono_gc_make_descr_from_bitmap (bitmap, max_set + 1);
-			vt->vtable [class->vtable_size] = mono_gc_alloc_fixed (class_size, statics_gc_descr, MONO_ROOT_SOURCE_STATIC, "managed static variables");
-			mono_domain_add_class_static_data (domain, class, vt->vtable [class->vtable_size], NULL);
+			vt->vtable [klass->vtable_size] = mono_gc_alloc_fixed (class_size, statics_gc_descr, MONO_ROOT_SOURCE_STATIC, "managed static variables");
+			mono_domain_add_class_static_data (domain, klass, vt->vtable [klass->vtable_size], NULL);
 			if (bitmap != default_bitmap)
 				g_free (bitmap);
 		} else {
-			vt->vtable [class->vtable_size] = mono_domain_alloc0 (domain, class_size);
+			vt->vtable [klass->vtable_size] = mono_domain_alloc0 (domain, class_size);
 		}
 		vt->has_static_fields = TRUE;
 		mono_stats.class_static_data_size += class_size;
 	}
 
 	iter = NULL;
-	while ((field = mono_class_get_fields (class, &iter))) {
+	while ((field = mono_class_get_fields (klass, &iter))) {
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
-			gint32 special_static = class->no_special_static_fields ? SPECIAL_STATIC_NONE : field_is_special_static (class, field);
+			gint32 special_static = klass->no_special_static_fields ? SPECIAL_STATIC_NONE : field_is_special_static (klass, field);
 			if (special_static != SPECIAL_STATIC_NONE) {
 				guint32 size, offset;
 				gint32 align;
@@ -2131,25 +2131,25 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		}		
 	}
 
-	vt->max_interface_id = class->max_interface_id;
-	vt->interface_bitmap = class->interface_bitmap;
+	vt->max_interface_id = klass->max_interface_id;
+	vt->interface_bitmap = klass->interface_bitmap;
 	
 	//printf ("Initializing VT for class %s (interface_offsets_count = %d)\n",
-	//		class->name, class->interface_offsets_count);
+	//		class->name, klass->interface_offsets_count);
 
 	/* Initialize vtable */
 	if (callbacks.get_vtable_trampoline) {
 		// This also covers the AOT case
-		for (i = 0; i < class->vtable_size; ++i) {
+		for (i = 0; i < klass->vtable_size; ++i) {
 			vt->vtable [i] = callbacks.get_vtable_trampoline (i);
 		}
 	} else {
-		mono_class_setup_vtable (class);
+		mono_class_setup_vtable (klass);
 
-		for (i = 0; i < class->vtable_size; ++i) {
+		for (i = 0; i < klass->vtable_size; ++i) {
 			MonoMethod *cm;
 
-			if ((cm = class->vtable [i]))
+			if ((cm = klass->vtable [i]))
 				vt->vtable [i] = arch_create_jit_trampoline (cm);
 		}
 	}
@@ -2165,9 +2165,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	 * re-acquire them and check if another thread has created the vtable in the meantime.
 	 */
 	/* Special case System.MonoType to avoid infinite recursion */
-	if (class != mono_defaults.monotype_class) {
+	if (klass != mono_defaults.monotype_class) {
 		/*FIXME check for OOM*/
-		vt->type = mono_type_get_object (domain, &class->byval_arg);
+		vt->type = mono_type_get_object (domain, &klass->byval_arg);
 		if (mono_object_get_class (vt->type) != mono_defaults.monotype_class)
 			/* This is unregistered in
 			   unregister_vtable_reflection_type() in
@@ -2175,22 +2175,22 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 			MONO_GC_REGISTER_ROOT_IF_MOVING(vt->type, MONO_ROOT_SOURCE_REFLECTION, "vtable reflection type");
 	}
 
-	mono_vtable_set_is_remote (vt, mono_class_is_contextbound (class));
+	mono_vtable_set_is_remote (vt, mono_class_is_contextbound (klass));
 
 	/*  class_vtable_array keeps an array of created vtables
 	 */
 	g_ptr_array_add (domain->class_vtable_array, vt);
-	/* class->runtime_info is protected by the loader lock, both when
+	/* klass->runtime_info is protected by the loader lock, both when
 	 * it it enlarged and when it is stored info.
 	 */
 
 	/*
-	 * Store the vtable in class->runtime_info.
-	 * class->runtime_info is accessed without locking, so this do this last after the vtable has been constructed.
+	 * Store the vtable in klass->runtime_info.
+	 * klass->runtime_info is accessed without locking, so this do this last after the vtable has been constructed.
 	 */
 	mono_memory_barrier ();
 
-	old_info = class->runtime_info;
+	old_info = klass->runtime_info;
 	if (old_info && old_info->max_domain >= domain->domain_id) {
 		/* someone already created a large enough runtime info */
 		old_info->domain_vtables [domain->domain_id] = vt;
@@ -2207,7 +2207,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		/* this is a bounded memory retention issue: may want to 
 		 * handle it differently when we'll have a rcu-like system.
 		 */
-		runtime_info = mono_image_alloc0 (class->image, MONO_SIZEOF_CLASS_RUNTIME_INFO + new_size * sizeof (gpointer));
+		runtime_info = mono_image_alloc0 (klass->image, MONO_SIZEOF_CLASS_RUNTIME_INFO + new_size * sizeof (gpointer));
 		runtime_info->max_domain = new_size - 1;
 		/* copy the stuff from the older info */
 		if (old_info) {
@@ -2216,12 +2216,12 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		runtime_info->domain_vtables [domain->domain_id] = vt;
 		/* keep this last*/
 		mono_memory_barrier ();
-		class->runtime_info = runtime_info;
+		klass->runtime_info = runtime_info;
 	}
 
-	if (class == mono_defaults.monotype_class) {
+	if (klass == mono_defaults.monotype_class) {
 		/*FIXME check for OOM*/
-		vt->type = mono_type_get_object (domain, &class->byval_arg);
+		vt->type = mono_type_get_object (domain, &klass->byval_arg);
 		if (mono_object_get_class (vt->type) != mono_defaults.monotype_class)
 			/* This is unregistered in
 			   unregister_vtable_reflection_type() in
@@ -2234,8 +2234,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 
 	/* make sure the parent is initialized */
 	/*FIXME shouldn't this fail the current type?*/
-	if (class->parent)
-		mono_class_vtable_full (domain, class->parent, raise_on_error);
+	if (klass->parent)
+		mono_class_vtable_full (domain, klass->parent, raise_on_error);
 
 	return vt;
 }
@@ -2261,7 +2261,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	int i, j, vtsize, max_interface_id, extra_interface_vtsize = 0;
 	MonoClass *k;
 	GSList *extra_interfaces = NULL;
-	MonoClass *class = remote_class->proxy_class;
+	MonoClass *klass = remote_class->proxy_class;
 	gpointer *interface_offsets;
 	uint8_t *bitmap;
 	int bsize;
@@ -2271,7 +2271,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	int bcsize;
 #endif
 
-	vt = mono_class_vtable (domain, class);
+	vt = mono_class_vtable (domain, klass);
 	g_assert (vt); /*FIXME property handle failure*/
 	max_interface_id = vt->max_interface_id;
 	
@@ -2282,7 +2282,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		int method_count;
 
 		/*FIXME test for interfaces with variant generic arguments*/
-		if (MONO_CLASS_IMPLEMENTS_INTERFACE (class, iclass->interface_id))
+		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, iclass->interface_id))
 			continue;	/* interface implemented by the class */
 		if (g_slist_find (extra_interfaces, iclass))
 			continue;
@@ -2297,7 +2297,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			for (i = 0; i < ifaces->len; ++i) {
 				MonoClass *ic = g_ptr_array_index (ifaces, i);
 				/*FIXME test for interfaces with variant generic arguments*/
-				if (MONO_CLASS_IMPLEMENTS_INTERFACE (class, ic->interface_id))
+				if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, ic->interface_id))
 					continue;	/* interface implemented by the class */
 				if (g_slist_find (extra_interfaces, ic))
 					continue;
@@ -2315,7 +2315,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	mono_stats.imt_number_of_tables++;
 	mono_stats.imt_tables_size += imt_table_bytes;
 
-	vtsize = imt_table_bytes + MONO_SIZEOF_VTABLE + class->vtable_size * sizeof (gpointer);
+	vtsize = imt_table_bytes + MONO_SIZEOF_VTABLE + klass->vtable_size * sizeof (gpointer);
 
 	mono_stats.class_vtable_size += vtsize + extra_interface_vtsize;
 
@@ -2323,26 +2323,26 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	pvt = (MonoVTable*) ((char*)interface_offsets + imt_table_bytes);
 	g_assert (!((gsize)pvt & 7));
 
-	memcpy (pvt, vt, MONO_SIZEOF_VTABLE + class->vtable_size * sizeof (gpointer));
+	memcpy (pvt, vt, MONO_SIZEOF_VTABLE + klass->vtable_size * sizeof (gpointer));
 
 	pvt->klass = mono_defaults.transparent_proxy_class;
 	/* we need to keep the GC descriptor for a transparent proxy or we confuse the precise GC */
 	pvt->gc_descr = mono_defaults.transparent_proxy_class->gc_descr;
 
 	/* initialize vtable */
-	mono_class_setup_vtable (class);
-	for (i = 0; i < class->vtable_size; ++i) {
+	mono_class_setup_vtable (klass);
+	for (i = 0; i < klass->vtable_size; ++i) {
 		MonoMethod *cm;
 		    
-		if ((cm = class->vtable [i]))
+		if ((cm = klass->vtable [i]))
 			pvt->vtable [i] = arch_create_remoting_trampoline (domain, cm, target_type);
 		else
 			pvt->vtable [i] = NULL;
 	}
 
-	if (class->flags & TYPE_ATTRIBUTE_ABSTRACT) {
+	if (klass->flags & TYPE_ATTRIBUTE_ABSTRACT) {
 		/* create trampolines for abstract methods */
-		for (k = class; k; k = k->parent) {
+		for (k = klass; k; k = k->parent) {
 			MonoMethod* m;
 			gpointer iter = NULL;
 			while ((m = mono_class_get_methods (k, &iter)))
@@ -2359,13 +2359,13 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	bitmap = mono_domain_alloc0 (domain, bsize);
 #endif
 
-	for (i = 0; i < class->interface_offsets_count; ++i) {
-		int interface_id = class->interfaces_packed [i]->interface_id;
+	for (i = 0; i < klass->interface_offsets_count; ++i) {
+		int interface_id = klass->interfaces_packed [i]->interface_id;
 		bitmap [interface_id >> 3] |= (1 << (interface_id & 7));
 	}
 
 	if (extra_interfaces) {
-		int slot = class->vtable_size;
+		int slot = klass->vtable_size;
 		MonoClass* interf;
 		gpointer iter;
 		MonoMethod* cm;
@@ -2387,7 +2387,7 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	}
 
 	/* Now that the vtable is full, we can actually fill up the IMT */
-	build_imt (class, pvt, domain, interface_offsets, extra_interfaces);
+	build_imt (klass, pvt, domain, interface_offsets, extra_interfaces);
 	if (extra_interfaces) {
 		g_slist_free (extra_interfaces);
 	}
@@ -3041,12 +3041,12 @@ handle_enum:
 			t = mono_class_enum_basetype (type->data.klass)->type;
 			goto handle_enum;
 		} else {
-			MonoClass *class = mono_class_from_mono_type (type);
-			int size = mono_class_value_size (class, NULL);
+			MonoClass *klass = mono_class_from_mono_type (type);
+			int size = mono_class_value_size (klass, NULL);
 			if (value == NULL)
 				mono_gc_bzero_atomic (dest, size);
 			else
-				mono_gc_wbarrier_value_copy (dest, value, 1, class);
+				mono_gc_wbarrier_value_copy (dest, value, 1, klass);
 		}
 		return;
 	case MONO_TYPE_GENERICINST:
@@ -4639,12 +4639,12 @@ mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoError error;
-	MonoClass *class;
+	MonoClass *klass;
 
-	class = mono_class_get_checked (image, token, &error);
+	klass = mono_class_get_checked (image, token, &error);
 	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
-	return mono_object_new (domain, class);
+	return mono_object_new (domain, klass);
 }
 
 
@@ -4805,13 +4805,13 @@ mono_array_clone (MonoArray *array)
 #endif
 
 gboolean
-mono_array_calc_byte_len (MonoClass *class, uintptr_t len, uintptr_t *res)
+mono_array_calc_byte_len (MonoClass *klass, uintptr_t len, uintptr_t *res)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	uintptr_t byte_len;
 
-	byte_len = mono_array_element_size (class);
+	byte_len = mono_array_element_size (klass);
 	if (CHECK_MUL_OVERFLOW_UN (byte_len, len))
 		return FALSE;
 	byte_len *= len;
@@ -5151,7 +5151,7 @@ mono_string_new_wrapper (const char *text)
  * Returns: A newly created object which contains @value.
  */
 MonoObject *
-mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
+mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -5159,21 +5159,21 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	int size;
 	MonoVTable *vtable;
 
-	g_assert (class->valuetype);
-	if (mono_class_is_nullable (class))
-		return mono_nullable_box (value, class);
+	g_assert (klass->valuetype);
+	if (mono_class_is_nullable (klass))
+		return mono_nullable_box (value, klass);
 
-	vtable = mono_class_vtable (domain, class);
+	vtable = mono_class_vtable (domain, klass);
 	if (!vtable)
 		return NULL;
-	size = mono_class_instance_size (class);
+	size = mono_class_instance_size (klass);
 	res = mono_object_new_alloc_specific (vtable);
 
 	size = size - sizeof (MonoObject);
 
 #ifdef HAVE_SGEN_GC
-	g_assert (size == mono_class_value_size (class, NULL));
-	mono_gc_wbarrier_value_copy ((char *)res + sizeof (MonoObject), value, 1, class);
+	g_assert (size == mono_class_value_size (klass, NULL));
+	mono_gc_wbarrier_value_copy ((char *)res + sizeof (MonoObject), value, 1, klass);
 #else
 #if NO_UNALIGNED_ACCESS
 	mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
@@ -5196,7 +5196,7 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	}
 #endif
 #endif
-	if (class->has_finalize)
+	if (klass->has_finalize)
 		mono_object_register_finalizer (res);
 	return res;
 }
@@ -6492,7 +6492,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 
 	for (i = 0; i < count; i++) {
 		gpointer vpos;
-		MonoClass *class;
+		MonoClass *klass;
 		MonoObject *arg;
 
 		if (sig->params [i]->byref)
@@ -6500,10 +6500,10 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 		else 
 			vpos = params [i];
 
-		class = mono_class_from_mono_type (sig->params [i]);
+		klass = mono_class_from_mono_type (sig->params [i]);
 
-		if (class->valuetype)
-			arg = mono_value_box (domain, class, vpos);
+		if (klass->valuetype)
+			arg = mono_value_box (domain, klass, vpos);
 		else 
 			arg = *((MonoObject **)vpos);
 		      
@@ -6555,10 +6555,10 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 				mono_gc_wbarrier_generic_store (*((MonoObject ***)params [i]), (MonoObject *)arg);
 			} else {
 				if (arg) {
-					MonoClass *class = ((MonoObject*)arg)->vtable->klass;
-					size = mono_class_value_size (class, NULL);
-					if (class->has_references)
-						mono_gc_wbarrier_value_copy (*((gpointer *)params [i]), arg + sizeof (MonoObject), 1, class);
+					MonoClass *klass = ((MonoObject*)arg)->vtable->klass;
+					size = mono_class_value_size (klass, NULL);
+					if (klass->has_references)
+						mono_gc_wbarrier_value_copy (*((gpointer *)params [i]), arg + sizeof (MonoObject), 1, klass);
 					else
 						mono_gc_memmove_atomic (*((gpointer *)params [i]), arg + sizeof (MonoObject), size);
 				} else {

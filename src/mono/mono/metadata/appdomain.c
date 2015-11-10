@@ -225,7 +225,7 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 {
 	MonoAppDomainSetup *setup;
 	MonoAppDomain *ad;
-	MonoClass *class;
+	MonoClass *klass;
 
 	mono_portability_helpers_init ();
 	
@@ -244,11 +244,11 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 
 	mono_thread_init (start_cb, attach_cb);
 
-	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	setup = (MonoAppDomainSetup *) mono_object_new_pinned (domain, class);
+	klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
+	setup = (MonoAppDomainSetup *) mono_object_new_pinned (domain, klass);
 
-	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
-	ad = (MonoAppDomain *) mono_object_new_pinned (domain, class);
+	klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
+	ad = (MonoAppDomain *) mono_object_new_pinned (domain, klass);
 	ad->data = domain;
 	domain->domain = ad;
 	domain->setup = setup;
@@ -327,11 +327,11 @@ mono_check_corlib_version (void)
 void
 mono_context_init (MonoDomain *domain)
 {
-	MonoClass *class;
+	MonoClass *klass;
 	MonoAppContext *context;
 
-	class = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
-	context = (MonoAppContext *) mono_object_new_pinned (domain, class);
+	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
+	context = (MonoAppContext *) mono_object_new_pinned (domain, klass);
 	context->domain_id = domain->domain_id;
 	context->context_id = 0;
 	ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (context);
@@ -394,10 +394,10 @@ mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
 {
 	MonoAppDomain *ad;
 	MonoAppDomainSetup *setup;
-	MonoClass *class;
+	MonoClass *klass;
 
-	class = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
-	setup = (MonoAppDomainSetup *) mono_object_new (mono_domain_get (), class);
+	klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainSetup");
+	setup = (MonoAppDomainSetup *) mono_object_new (mono_domain_get (), klass);
 	setup->configuration_file = configuration_file != NULL ? mono_string_new (mono_domain_get (), configuration_file) : NULL;
 
 	ad = mono_domain_create_appdomain_internal (friendly_name, setup);
@@ -2221,9 +2221,9 @@ deregister_reflection_info_roots_from_list (MonoImage *image)
 	GSList *list = image->reflection_info_unregister_classes;
 
 	while (list) {
-		MonoClass *class = list->data;
+		MonoClass *klass = list->data;
 
-		mono_class_free_ref_info (class);
+		mono_class_free_ref_info (klass);
 
 		list = list->next;
 	}

@@ -478,22 +478,22 @@ verify_image_file (const char *fname)
 	for (i = 1; i <= table->rows; ++i) {
 		MonoError error;
 		guint32 token = i | MONO_TOKEN_TYPE_DEF;
-		MonoClass *class = mono_class_get_checked (image, token, &error);
-		if (!class) {
+		MonoClass *klass = mono_class_get_checked (image, token, &error);
+		if (!klass) {
 			printf ("Could not load class with token %x due to %s\n", token, mono_error_get_message (&error));
 			mono_error_cleanup (&error);
 			continue;
 		}
-		mono_class_init (class);
-		if (class->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ()) {
-			printf ("Error verifying class(0x%08x) %s.%s a type load error happened\n", token, class->name_space, class->name);
+		mono_class_init (klass);
+		if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ()) {
+			printf ("Error verifying class(0x%08x) %s.%s a type load error happened\n", token, klass->name_space, klass->name);
 			mono_loader_clear_error ();
 			++count;
 		}
 
-		mono_class_setup_vtable (class);
-		if (class->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ()) {
-			printf ("Error verifying class(0x%08x) %s.%s a type load error happened\n", token, class->name_space, class->name);
+		mono_class_setup_vtable (klass);
+		if (klass->exception_type != MONO_EXCEPTION_NONE || mono_loader_get_last_error ()) {
+			printf ("Error verifying class(0x%08x) %s.%s a type load error happened\n", token, klass->name_space, klass->name);
 			mono_loader_clear_error ();
 			++count;
 		}

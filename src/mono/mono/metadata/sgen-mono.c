@@ -431,12 +431,12 @@ sgen_client_zero_array_fill_header (void *p, size_t size)
 static MonoGCFinalizerCallbacks fin_callbacks;
 
 guint
-mono_gc_get_vtable_bits (MonoClass *class)
+mono_gc_get_vtable_bits (MonoClass *klass)
 {
 	guint res = 0;
 	/* FIXME move this to the bridge code */
 	if (sgen_need_bridge_processing ()) {
-		switch (sgen_bridge_class_kind (class)) {
+		switch (sgen_bridge_class_kind (klass)) {
 		case GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS:
 		case GC_BRIDGE_OPAQUE_BRIDGE_CLASS:
 			res = SGEN_GC_BIT_BRIDGE_OBJECT;
@@ -449,7 +449,7 @@ mono_gc_get_vtable_bits (MonoClass *class)
 		}
 	}
 	if (fin_callbacks.is_class_finalization_aware) {
-		if (fin_callbacks.is_class_finalization_aware (class))
+		if (fin_callbacks.is_class_finalization_aware (klass))
 			res |= SGEN_GC_BIT_FINALIZER_AWARE;
 	}
 	return res;

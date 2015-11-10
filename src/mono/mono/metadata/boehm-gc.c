@@ -1368,10 +1368,10 @@ BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reser
 #endif
 
 guint
-mono_gc_get_vtable_bits (MonoClass *class)
+mono_gc_get_vtable_bits (MonoClass *klass)
 {
 	if (fin_callbacks.is_class_finalization_aware) {
-		if (fin_callbacks.is_class_finalization_aware (class))
+		if (fin_callbacks.is_class_finalization_aware (klass))
 			return BOEHM_GC_BIT_FINALIZER_AWARE;
 	}
 	return 0;

@@ -400,9 +400,9 @@ enable_accounting (void)
 }
 
 static MonoGCBridgeObjectKind
-class_kind (MonoClass *class)
+class_kind (MonoClass *klass)
 {
-	return bridge_callbacks.bridge_class_kind (class);
+	return bridge_callbacks.bridge_class_kind (klass);
 }
 
 static HashEntry*

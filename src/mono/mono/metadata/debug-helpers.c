@@ -72,21 +72,21 @@ wrapper_type_to_str (guint32 wrapper_type)
 #endif
 
 static void
-append_class_name (GString *res, MonoClass *class, gboolean include_namespace)
+append_class_name (GString *res, MonoClass *klass, gboolean include_namespace)
 {
-	if (!class) {
+	if (!klass) {
 		g_string_append (res, "Unknown");
 		return;
 	}
-	if (class->nested_in) {
-		append_class_name (res, class->nested_in, include_namespace);
+	if (klass->nested_in) {
+		append_class_name (res, klass->nested_in, include_namespace);
 		g_string_append_c (res, '/');
 	}
-	if (include_namespace && *(class->name_space)) {
-		g_string_append (res, class->name_space);
+	if (include_namespace && *(klass->name_space)) {
+		g_string_append (res, klass->name_space);
 		g_string_append_c (res, '.');
 	}
-	g_string_append (res, class->name);
+	g_string_append (res, klass->name);
 }
 
 static MonoClass*
@@ -956,23 +956,24 @@ print_field_value (const char *field_ptr, MonoClassField *field, int type_offset
 }
 
 static void
-objval_describe (MonoClass *class, const char *addr)
+objval_describe (MonoClass *klass, const char *addr)
 {
 	MonoClassField *field;
 	MonoClass *p;
 	const char *field_ptr;
 	gssize type_offset = 0;
-	if (class->valuetype)
+
+	if (klass->valuetype)
 		type_offset = -sizeof (MonoObject);
 
-	for (p = class; p != NULL; p = p->parent) {
+	for (p = klass; p != NULL; p = p->parent) {
 		gpointer iter = NULL;
 		int printed_header = FALSE;
 		while ((field = mono_class_get_fields (p, &iter))) {
 			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 				continue;
 
-			if (p != class && !printed_header) {
+			if (p != klass && !printed_header) {
 				const char *sep;
 				g_print ("In class ");
 				sep = print_name_space (p);
@@ -995,8 +996,8 @@ objval_describe (MonoClass *class, const char *addr)
 void
 mono_object_describe_fields (MonoObject *obj)
 {
-	MonoClass *class = mono_object_class (obj);
-	objval_describe (class, (char*)obj);
+	MonoClass *klass = mono_object_class (obj);
+	objval_describe (klass, (char*)obj);
 }
 
 /**

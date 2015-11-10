@@ -179,28 +179,28 @@ enable_accounting (void)
 }
 
 static MonoGCBridgeObjectKind
-class_kind (MonoClass *class)
+class_kind (MonoClass *klass)
 {
-	MonoGCBridgeObjectKind res = bridge_callbacks.bridge_class_kind (class);
+	MonoGCBridgeObjectKind res = bridge_callbacks.bridge_class_kind (klass);
 
 	/* If it's a bridge, nothing we can do about it. */
 	if (res == GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS || res == GC_BRIDGE_OPAQUE_BRIDGE_CLASS)
 		return res;
 
 	/* Non bridge classes with no pointers will never point to a bridge, so we can savely ignore them. */
-	if (!class->has_references) {
-		SGEN_LOG (6, "class %s is opaque\n", class->name);
+	if (!klass->has_references) {
+		SGEN_LOG (6, "class %s is opaque\n", klass->name);
 		return GC_BRIDGE_OPAQUE_CLASS;
 	}
 
 	/* Some arrays can be ignored */
-	if (class->rank == 1) {
-		MonoClass *elem_class = class->element_class;
+	if (klass->rank == 1) {
+		MonoClass *elem_class = klass->element_class;
 
 		/* FIXME the bridge check can be quite expensive, cache it at the class level. */
 		/* An array of a sealed type that is not a bridge will never get to a bridge */
 		if ((elem_class->flags & TYPE_ATTRIBUTE_SEALED) && !elem_class->has_references && !bridge_callbacks.bridge_class_kind (elem_class)) {
-			SGEN_LOG (6, "class %s is opaque\n", class->name);
+			SGEN_LOG (6, "class %s is opaque\n", klass->name);
 			return GC_BRIDGE_OPAQUE_CLASS;
 		}
 	}

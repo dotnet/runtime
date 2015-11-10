@@ -354,14 +354,14 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 		gpointer* mparams = (gpointer*) alloca(count*sizeof(gpointer));
 
 		for (i=0; i<count; i++) {
-			MonoClass *class = mono_class_from_mono_type (sig->params [i]);
-			if (class->valuetype) {
+			MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
+			if (klass->valuetype) {
 				if (sig->params [i]->byref) {
 					mparams[i] = *((gpointer *)params [i]);
 				} else {
 					/* runtime_invoke expects a boxed instance */
 					if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i])))
-						mparams[i] = mono_nullable_box (params [i], class);
+						mparams[i] = mono_nullable_box (params [i], klass);
 					else
 						mparams[i] = params [i];
 				}
@@ -1334,7 +1334,7 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
  *
  * This method generates a function which can be use to load a field with type
  * @type from an object. The generated function has the following signature:
- * <@type> ldfld_wrapper (MonoObject *this, MonoClass *class, MonoClassField *field, int offset)
+ * <@type> ldfld_wrapper (MonoObject *this, MonoClass *klass, MonoClassField *field, int offset)
  */
 MonoMethod *
 mono_marshal_get_ldfld_wrapper (MonoType *type)
@@ -1491,7 +1491,7 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
  *
  * This method generates a function which can be used to load a field address
  * from an object. The generated function has the following signature:
- * gpointer ldflda_wrapper (MonoObject *this, MonoClass *class, MonoClassField *field, int offset);
+ * gpointer ldflda_wrapper (MonoObject *this, MonoClass *klass, MonoClassField *field, int offset);
  */
 MonoMethod *
 mono_marshal_get_ldflda_wrapper (MonoType *type)
@@ -1695,7 +1695,7 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
  *
  * This method generates a function which can be use to store a field with type
  * @type. The generated function has the following signature:
- * void stfld_wrapper (MonoObject *this, MonoClass *class, MonoClassField *field, int offset, <@type> val)
+ * void stfld_wrapper (MonoObject *this, MonoClass *klass, MonoClassField *field, int offset, <@type> val)
  */
 MonoMethod *
 mono_marshal_get_stfld_wrapper (MonoType *type)

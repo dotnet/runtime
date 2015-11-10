@@ -3390,14 +3390,14 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
 		guint32 token;
-		MonoClass *class;
+		MonoClass *klass;
 		token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
-		class = mono_class_get_checked (m, token, error);
-		type->data.klass = class;
-		if (!class)
+		klass = mono_class_get_checked (m, token, error);
+		type->data.klass = klass;
+		if (!klass)
 			return FALSE;
 
-		if (!compare_type_literals (m, class->byval_arg.type, type->type, error))
+		if (!compare_type_literals (m, klass->byval_arg.type, type->type, error))
 			return FALSE;
 
 		break;
@@ -4869,7 +4869,7 @@ mono_metadata_type_hash (MonoType *t1)
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY: {
-		MonoClass *class = t1->data.klass;
+		MonoClass *klass = t1->data.klass;
 		/*
 		 * Dynamic classes must not be hashed on their type since it can change
 		 * during runtime. For example, if we hash a reference type that is
@@ -4878,9 +4878,9 @@ mono_metadata_type_hash (MonoType *t1)
 		 * This is specially problematic with generic instances since they are
 		 * inserted in a bunch of hash tables before been finished.
 		 */
-		if (image_is_dynamic (class->image))
-			return (t1->byref << 6) | mono_metadata_str_hash (class->name);
-		return ((hash << 5) - hash) ^ mono_metadata_str_hash (class->name);
+		if (image_is_dynamic (klass->image))
+			return (t1->byref << 6) | mono_metadata_str_hash (klass->name);
+		return ((hash << 5) - hash) ^ mono_metadata_str_hash (klass->name);
 	}
 	case MONO_TYPE_PTR:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);

@@ -1006,8 +1006,8 @@ verifier_load_type (VerifyContext *ctx, int token, const char *opcode) {
 	MonoType* type;
 	
 	if (ctx->method->wrapper_type != MONO_WRAPPER_NONE) {
-		MonoClass *class = mono_method_get_wrapper_data (ctx->method, (guint32)token);
-		type = class ? &class->byval_arg : NULL;
+		MonoClass *klass = mono_method_get_wrapper_data (ctx->method, (guint32)token);
+		type = klass ? &klass->byval_arg : NULL;
 	} else {
 		MonoError error;
 		if (!IS_TYPE_DEF_OR_REF_OR_SPEC (token) || !token_bounds_check (ctx->image, token)) {
@@ -1655,7 +1655,7 @@ static MonoType*
 get_boxable_mono_type (VerifyContext* ctx, int token, const char *opcode)
 {
 	MonoType *type;
-	MonoClass *class;
+	MonoClass *klass;
 
 	if (!(type = verifier_load_type (ctx, token, opcode)))
 		return NULL;
@@ -1673,10 +1673,10 @@ get_boxable_mono_type (VerifyContext* ctx, int token, const char *opcode)
 	if (type->type == MONO_TYPE_TYPEDBYREF)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid use of typedbyref for %s at 0x%04x", opcode, ctx->ip_offset));
 
-	if (!(class = mono_class_from_mono_type (type)))
+	if (!(klass = mono_class_from_mono_type (type)))
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Could not retrieve type token for %s at 0x%04x", opcode, ctx->ip_offset));
 
-	if (class->generic_container && type->type != MONO_TYPE_GENERICINST)
+	if (klass->generic_container && type->type != MONO_TYPE_GENERICINST)
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Cannot use the generic type definition in a boxable type position for %s at 0x%04x", opcode, ctx->ip_offset));	
 
 	check_unverifiable_type (ctx, type);
@@ -6096,21 +6096,21 @@ get_field_end (MonoClassField *field)
 }
 
 static gboolean
-verify_class_for_overlapping_reference_fields (MonoClass *class)
+verify_class_for_overlapping_reference_fields (MonoClass *klass)
 {
 	int i = 0, j;
 	gpointer iter = NULL;
 	MonoClassField *field;
-	gboolean is_fulltrust = mono_verifier_is_class_full_trust (class);
+	gboolean is_fulltrust = mono_verifier_is_class_full_trust (klass);
 	/*We can't skip types with !has_references since this is calculated after we have run.*/
-	if (!((class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT))
+	if (!((klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT))
 		return TRUE;
 
 
 	/*We must check for stuff overlapping reference fields.
 	  The outer loop uses mono_class_get_fields to ensure that MonoClass:fields get inited.
 	*/
-	while ((field = mono_class_get_fields (class, &iter))) {
+	while ((field = mono_class_get_fields (klass, &iter))) {
 		int fieldEnd = get_field_end (field);
 		gboolean is_valuetype = !MONO_TYPE_IS_REFERENCE (field->type);
 		++i;
@@ -6118,8 +6118,8 @@ verify_class_for_overlapping_reference_fields (MonoClass *class)
 		if (mono_field_is_deleted (field) || (field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 
-		for (j = i; j < class->field.count; ++j) {
-			MonoClassField *other = &class->fields [j];
+		for (j = i; j < klass->field.count; ++j) {
+			MonoClassField *other = &klass->fields [j];
 			int otherEnd = get_field_end (other);
 			if (mono_field_is_deleted (other) || (is_valuetype && !MONO_TYPE_IS_REFERENCE (other->type)) || (other->type->attrs & FIELD_ATTRIBUTE_STATIC))
 				continue;
@@ -6151,16 +6151,16 @@ field_equals (gconstpointer _a, gconstpointer _b)
 
 
 static gboolean
-verify_class_fields (MonoClass *class)
+verify_class_fields (MonoClass *klass)
 {
 	gpointer iter = NULL;
 	MonoClassField *field;
-	MonoGenericContext *context = mono_class_get_context (class);
+	MonoGenericContext *context = mono_class_get_context (klass);
 	GHashTable *unique_fields = g_hash_table_new_full (&field_hash, &field_equals, NULL, NULL);
-	if (class->generic_container)
-		context = &class->generic_container->context;
+	if (klass->generic_container)
+		context = &klass->generic_container->context;
 
-	while ((field = mono_class_get_fields (class, &iter)) != NULL) {
+	while ((field = mono_class_get_fields (klass, &iter)) != NULL) {
 		if (!mono_type_is_valid_type_in_context (field->type, context)) {
 			g_hash_table_destroy (unique_fields);
 			return FALSE;
@@ -6176,11 +6176,11 @@ verify_class_fields (MonoClass *class)
 }
 
 static gboolean
-verify_interfaces (MonoClass *class)
+verify_interfaces (MonoClass *klass)
 {
 	int i;
-	for (i = 0; i < class->interface_count; ++i) {
-		MonoClass *iface = class->interfaces [i];
+	for (i = 0; i < klass->interface_count; ++i) {
+		MonoClass *iface = klass->interfaces [i];
 		if (!(iface->flags & TYPE_ATTRIBUTE_INTERFACE))
 			return FALSE;
 	}
@@ -6188,22 +6188,22 @@ verify_interfaces (MonoClass *class)
 }
 
 static gboolean
-verify_valuetype_layout_with_target (MonoClass *class, MonoClass *target_class)
+verify_valuetype_layout_with_target (MonoClass *klass, MonoClass *target_class)
 {
 	int type;
 	gpointer iter = NULL;
 	MonoClassField *field;
 	MonoClass *field_class;
 
-	if (!class->valuetype)
+	if (!klass->valuetype)
 		return TRUE;
 
-	type = class->byval_arg.type;
+	type = klass->byval_arg.type;
 	/*primitive type fields are not properly decoded*/
 	if ((type >= MONO_TYPE_BOOLEAN && type <= MONO_TYPE_R8) || (type >= MONO_TYPE_I && type <= MONO_TYPE_U))
 		return TRUE;
 
-	while ((field = mono_class_get_fields (class, &iter)) != NULL) {
+	while ((field = mono_class_get_fields (klass, &iter)) != NULL) {
 		if (!field->type)
 			return FALSE;
 
@@ -6212,7 +6212,7 @@ verify_valuetype_layout_with_target (MonoClass *class, MonoClass *target_class)
 
 		field_class = mono_class_get_generic_type_definition (mono_class_from_mono_type (field->type));
 
-		if (field_class == target_class || class == field_class || !verify_valuetype_layout_with_target (field_class, target_class))
+		if (field_class == target_class || klass == field_class || !verify_valuetype_layout_with_target (field_class, target_class))
 			return FALSE;
 	}
 
@@ -6220,10 +6220,10 @@ verify_valuetype_layout_with_target (MonoClass *class, MonoClass *target_class)
 }
 
 static gboolean
-verify_valuetype_layout (MonoClass *class)
+verify_valuetype_layout (MonoClass *klass)
 {
 	gboolean res;
-	res = verify_valuetype_layout_with_target (class, class);
+	res = verify_valuetype_layout_with_target (klass, klass);
 	return res;
 }
 
@@ -6257,10 +6257,10 @@ recursive_mark_constraint_args (MonoBitSet *used_args, MonoGenericContainer *gc,
 }
 
 static gboolean
-verify_generic_parameters (MonoClass *class)
+verify_generic_parameters (MonoClass *klass)
 {
 	int i;
-	MonoGenericContainer *gc = class->generic_container;
+	MonoGenericContainer *gc = klass->generic_container;
 	MonoBitSet *used_args = mono_bitset_new (gc->type_argc, 0);
 
 	for (i = 0; i < gc->type_argc; ++i) {
@@ -6277,7 +6277,7 @@ verify_generic_parameters (MonoClass *class)
 			MonoClass *ctr = *constraints;
 			MonoType *constraint_type = &ctr->byval_arg;
 
-			if (!mono_class_can_access_class (class, ctr))
+			if (!mono_class_can_access_class (klass, ctr))
 				goto fail;
 
 			if (!mono_type_is_valid_type_in_context (constraint_type, &gc->context))
@@ -6307,48 +6307,48 @@ fail:
  * 
  */
 gboolean
-mono_verifier_verify_class (MonoClass *class)
+mono_verifier_verify_class (MonoClass *klass)
 {
 	/*Neither <Module>, object or ifaces have parent.*/
-	if (!class->parent &&
-		class != mono_defaults.object_class && 
-		!MONO_CLASS_IS_INTERFACE (class) &&
-		(!image_is_dynamic (class->image) && class->type_token != 0x2000001)) /*<Module> is the first type in the assembly*/
+	if (!klass->parent &&
+		klass != mono_defaults.object_class && 
+		!MONO_CLASS_IS_INTERFACE (klass) &&
+		(!image_is_dynamic (klass->image) && klass->type_token != 0x2000001)) /*<Module> is the first type in the assembly*/
 		return FALSE;
-	if (class->parent) {
-		if (MONO_CLASS_IS_INTERFACE (class->parent))
+	if (klass->parent) {
+		if (MONO_CLASS_IS_INTERFACE (klass->parent))
 			return FALSE;
-		if (!class->generic_class && class->parent->generic_container)
+		if (!klass->generic_class && klass->parent->generic_container)
 			return FALSE;
-		if (class->parent->generic_class && !class->generic_class) {
-			MonoGenericContext *context = mono_class_get_context (class);
-			if (class->generic_container)
-				context = &class->generic_container->context;
-			if (!mono_type_is_valid_type_in_context (&class->parent->byval_arg, context))
+		if (klass->parent->generic_class && !klass->generic_class) {
+			MonoGenericContext *context = mono_class_get_context (klass);
+			if (klass->generic_container)
+				context = &klass->generic_container->context;
+			if (!mono_type_is_valid_type_in_context (&klass->parent->byval_arg, context))
 				return FALSE;
 		}
 	}
-	if (class->generic_container && (class->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
+	if (klass->generic_container && (klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
 		return FALSE;
-	if (class->generic_container && !verify_generic_parameters (class))
+	if (klass->generic_container && !verify_generic_parameters (klass))
 		return FALSE;
-	if (!verify_class_for_overlapping_reference_fields (class))
+	if (!verify_class_for_overlapping_reference_fields (klass))
 		return FALSE;
-	if (class->generic_class && !mono_class_is_valid_generic_instantiation (NULL, class))
+	if (klass->generic_class && !mono_class_is_valid_generic_instantiation (NULL, klass))
 		return FALSE;
-	if (class->generic_class == NULL && !verify_class_fields (class))
+	if (klass->generic_class == NULL && !verify_class_fields (klass))
 		return FALSE;
-	if (class->valuetype && !verify_valuetype_layout (class))
+	if (klass->valuetype && !verify_valuetype_layout (klass))
 		return FALSE;
-	if (!verify_interfaces (class))
+	if (!verify_interfaces (klass))
 		return FALSE;
 	return TRUE;
 }
 
 gboolean
-mono_verifier_class_is_valid_generic_instantiation (MonoClass *class)
+mono_verifier_class_is_valid_generic_instantiation (MonoClass *klass)
 {
-	return mono_class_is_valid_generic_instantiation (NULL, class);
+	return mono_class_is_valid_generic_instantiation (NULL, klass);
 }
 
 gboolean
@@ -6362,7 +6362,7 @@ mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method)
 #else
 
 gboolean
-mono_verifier_verify_class (MonoClass *class)
+mono_verifier_verify_class (MonoClass *klass)
 {
 	/* The verifier was disabled at compile time */
 	return TRUE;
@@ -6425,7 +6425,7 @@ mono_free_verify_list (GSList *list)
 }
 
 gboolean
-mono_verifier_class_is_valid_generic_instantiation (MonoClass *class)
+mono_verifier_class_is_valid_generic_instantiation (MonoClass *klass)
 {
 	return TRUE;
 }
