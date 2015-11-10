@@ -71,6 +71,10 @@
 #include <cvinfo.h>
 #endif
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 #ifdef MDIL
 #include <mdil.h>
 #endif
@@ -2676,7 +2680,7 @@ BOOL CEECompileInfo::AreAllClassesFullyLoaded(CORINFO_MODULE_HANDLE moduleHandle
 // public\devdiv\inc\corsym.h and debugger\sh\symwrtr\ngenpdbwriter.h,cpp
 // ----------------------------------------------------------------------------
 
-#ifdef NO_NGENPDB
+#if defined(NO_NGENPDB) && !defined(FEATURE_PERFMAP)
 BOOL CEECompileInfo::GetIsGeneratingNgenPDB() 
 {
     return FALSE; 
@@ -2690,13 +2694,7 @@ BOOL IsNgenPDBCompilationProcess()
 {
     return FALSE;
 }
-
-HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath)
-{
-    return E_NOTIMPL;
-}
-#else // NO_NGENPDB
-
+#else
 BOOL CEECompileInfo::GetIsGeneratingNgenPDB() 
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -2715,6 +2713,9 @@ BOOL IsNgenPDBCompilationProcess()
     return IsCompilationProcess() && g_pCEECompileInfo->GetIsGeneratingNgenPDB();
 }
 
+#endif // NO_NGENPDB && !FEATURE_PERFMAP
+
+#ifndef NO_NGENPDB
 // This is the prototype of "CreateNGenPdbWriter" exported by diasymreader.dll 
 typedef HRESULT (__stdcall *CreateNGenPdbWriter_t)(const WCHAR *pwszNGenImagePath, const WCHAR *pwszPdbPath, void **ppvObj);
 
@@ -4888,23 +4889,27 @@ BOOL NGenMethodLinesPdbWriter::FinalizeLinesFileBlock(
     
     return TRUE;
 }
-
-
+#endif // NO_NGENPDB
+#if defined(FEATURE_PERFMAP) || !defined(NO_NGENPDB)
 HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath)
 {
     STANDARD_VM_CONTRACT;
 
+    Assembly *pAssembly = reinterpret_cast<Assembly *>(hAssembly);
+    _ASSERTE(pAssembly);
+    _ASSERTE(pNativeImagePath);
+    _ASSERTE(pPdbPath);
+
+#if !defined(NO_NGENPDB)
     NGenPdbWriter pdbWriter(
         pNativeImagePath, 
         pPdbPath, 
         pdbLines ? kPDBLines : 0,
         pManagedPdbSearchPath);
     IfFailThrow(pdbWriter.Load());
-
-    Assembly *pAssembly = reinterpret_cast<Assembly *>(hAssembly);
-    _ASSERTE(pAssembly);
-    _ASSERTE(pNativeImagePath);
-    _ASSERTE(pPdbPath);
+#elif defined(FEATURE_PERFMAP)
+    NativeImagePerfMap perfMap(pAssembly, pPdbPath);
+#endif
 
     ModuleIterator moduleIterator = pAssembly->IterateModules();
     Module *pModule = NULL;
@@ -4916,7 +4921,11 @@ HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImage
 
         if (pModule->HasNativeImage() || pModule->IsReadyToRun())
         {
+#if !defined(NO_NGENPDB)
             IfFailThrow(pdbWriter.WritePDBDataForModule(pModule));
+#elif defined(FEATURE_PERFMAP)
+            perfMap.LogDataForModule(pModule);
+#endif
             fAtLeastOneNativeModuleFound = TRUE;
         }
     }
@@ -4929,12 +4938,21 @@ HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImage
     }
 
     GetSvcLogger()->Printf(
+#if !defined(NO_NGENPDB)
         W("Successfully generated PDB for native assembly '%s'.\n"),
+#elif defined(FEATURE_PERFMAP)
+        W("Successfully generated perfmap for native assembly '%s'.\n"),
+#endif
         pNativeImagePath);
+
     return S_OK;
 }
-
-#endif // NO_NGENPDB
+#else
+HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath)
+{
+    return E_NOTIMPL;
+}
+#endif // defined(FEATURE_PERFMAP) || !defined(NO_NGENPDB)
 
 // End of PDB writing code
 // ----------------------------------------------------------------------------
