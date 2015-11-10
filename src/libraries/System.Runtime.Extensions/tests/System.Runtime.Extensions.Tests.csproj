@@ -46,6 +46,7 @@
     <Compile Include="System\Convert.ToUInt64.cs" />
     <Compile Include="System\Environment.ExpandEnvironmentVariables.cs" />
     <Compile Include="System\Environment.GetEnvironmentVariable.cs" />
+    <Compile Include="System\Environment.GetCommandLineArgs.cs" />
     <Compile Include="System\Environment.NewLine.cs" />
     <Compile Include="System\Environment.ProcessorCount.cs" />
     <Compile Include="System\Environment.SetEnvironmentVariable.cs" />
@@ -56,6 +57,19 @@
     <Compile Include="System\Progress.cs" />
     <Compile Include="System\Random.cs" />
     <Compile Include="System\StringComparer.cs" />
+	
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\AssertWithCallerAttributes.cs">
+      <Link>Common\tests\System\Diagnostics\AssertWithCallerAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.Environment.cs" />
     <Compile Include="Performance\Perf.Path.cs" />
@@ -98,6 +112,10 @@
       <Name>System.Diagnostics.Process</Name>
     </ProjectReference>
     <ProjectReference Include="EnvironmentExitConsoleApp\EnvironmentExitConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
