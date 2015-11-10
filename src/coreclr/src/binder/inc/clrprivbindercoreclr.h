@@ -70,7 +70,8 @@ public:
 
     HRESULT BindAssemblyByNameWorker(
             BINDER_SPACE::AssemblyName *pAssemblyName,
-            BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly);
+            BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
+            bool excludeAppPaths);
 
     //=========================================================================
     // Internal implementation details
