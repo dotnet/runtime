@@ -1,10 +1,8 @@
 {
   "dependencies": {
+    "System.IO": "4.0.0",
     "System.Runtime": "4.0.0",
-    "System.Security.Cryptography.Encryption": "4.0.0-beta-*",
-    "System.Security.Cryptography.Primitives": "4.0.0-beta-*",
-    "System.Runtime.Handles": "4.0.0",
-    "System.IO": "4.0.0"
+    "System.Security.Cryptography.Primitives": "4.0.0-beta-*"
   },
   "frameworks": {
     "dotnet5.4": {}

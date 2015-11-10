@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;	//StackFrame
 using System.IO;
-using System.Xml;
 using System.Text;
 
 namespace OLEDB.Test.ModuleCore

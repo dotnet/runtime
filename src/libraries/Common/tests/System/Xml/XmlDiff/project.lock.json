@@ -1568,10 +1568,8 @@
   "projectFileDependencyGroups": {
     "": [
       "System.Runtime >= 4.0.20",
-      "System.Runtime.Extensions >= 4.0.10",
       "System.Xml.ReaderWriter >= 4.0.10",
       "System.IO >= 4.0.10",
-      "System.Collections >= 4.0.10",
       "System.Diagnostics.Debug >= 4.0.10"
     ],
     "DNXCore,Version=v5.0": []

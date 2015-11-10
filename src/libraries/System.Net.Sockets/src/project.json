@@ -1,9 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.Win32.Primitives": "4.0.0",
     "System.Collections": "4.0.0",
-    "System.Collections.NonGeneric": "4.0.0",
-    "System.ComponentModel.EventBasedAsync": "4.0.10",
     "System.Diagnostics.Debug": "4.0.10",
     "System.Diagnostics.Tracing": "4.0.20",
     "System.Globalization": "4.0.0",
@@ -17,12 +14,11 @@
     "System.Runtime.Extensions": "4.0.10",
     "System.Runtime.Handles": "4.0.0",
     "System.Runtime.InteropServices": "4.0.20",
-    "System.Security.Claims": "4.0.0",
     "System.Security.Principal.Windows": "4.0.0-beta-*",
     "System.Threading": "4.0.0",
     "System.Threading.Overlapped": "4.0.0",
-    "System.Threading.Tasks": "4.0.10",
-    "System.Threading.ThreadPool": "4.0.10-beta-*"
+    "System.Threading.ThreadPool": "4.0.10-beta-*",
+    "System.Threading.Tasks": "4.0.10"
   },
   "frameworks": {
     "dnxcore50": {}
