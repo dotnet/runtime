@@ -627,7 +627,9 @@ void GcInfoEncoder::Build()
      m_DbgEncoder.Build();
 #endif    
 
+#ifdef _DEBUG
     _ASSERTE(m_IsSlotTableFrozen || m_NumSlots == 0);
+#endif
 
     _ASSERTE((1 << NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2) == NUM_NORM_CODE_OFFSETS_PER_CHUNK);
 
