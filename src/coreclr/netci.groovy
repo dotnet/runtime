@@ -302,7 +302,7 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                         }
                         
                         // Unzip the tests first.  Exit with 0
-                        shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration}; exit 0")
+                        shell("unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.${architecture}.${configuration} || exit 0")
                         
                         // Execute the tests
                         shell("""
@@ -371,7 +371,7 @@ build(globalParams + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number,
                         if (configuration == 'Release') {
                             // Tests will be run on x64 Release by default (no trigger phase required).
                             Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test",
-                            "(?i).*test\\W+ubuntu\\W+release.*", true /* trigger by phrase only */)
+                            "(?i).*test\\W+ubuntu\\W+release.*", false /* trigger by phrase only */)
                         } else {
                             Utilities.addGithubPRTrigger(newFlowJob, "Ubuntu ${architecture} ${configuration} Build and Test", "(?i).*test\\W+ubuntu\\W+debug.*", true /* trigger by phrase only */)
                         }
