@@ -974,7 +974,7 @@
     "runtime.win7.System.Security.Cryptography.Algorithms/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "IvcSomtqAQsuiLqz3DBAT1vK1ed7PxYkW3vDGlutyYLUSQGyCTI2RpGet8eJi3rOJLAGj8su4H10MYCqMlb6VA==",
+      "sha512": "Y6LTMEqQhBBwPWhxzKPUUdRhp8YwO4MU0wWPmD1ONBwb7DWUP2oNKZ6Hu0iXUatKbfuhAXalxw2cpTC7BhiS7A==",
       "files": [
         "ref/dotnet/_._",
         "runtime.win7.System.Security.Cryptography.Algorithms.4.0.0-beta-23509.nupkg",
@@ -987,7 +987,7 @@
     "runtime.win7.System.Security.Cryptography.Encoding/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "BsUFySXdnEdrHa3DLR9zFc5rGSujRXlJZhcY/9trKrMahkKbQiqftj6J1ykLboL9LLRV6eTrVyPR0tTwLZTa/g==",
+      "sha512": "6Cu7u05XQp98z8zy0JA8cGDEZCH3mQR83AnDLYN9dZz9HYHj/AkYe3W0YrISHF0Y7tzqyVuxmRukLyQoZf/6Dw==",
       "files": [
         "ref/dotnet/_._",
         "runtime.win7.System.Security.Cryptography.Encoding.4.0.0-beta-23509.nupkg",
@@ -1000,7 +1000,7 @@
     "runtime.win7.System.Security.Cryptography.X509Certificates/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "lec5Vuyy4CoCEE661es3Q+Osx8Ff+mruzOVV6pY0q2lxz4FV8kfOVS7e1WoHdZneSoN2rL9afOkjmF7oHUvWKw==",
+      "sha512": "uPhioxwcrbY5oWUBcsGok+rGex/8/AixCHqHyeGNCwPamxFyIjM/2u6uASZN/Oi2pq/0wbYPi3ExxfNofgeibw==",
       "files": [
         "ref/dotnet/_._",
         "runtime.win7.System.Security.Cryptography.X509Certificates.4.0.0-beta-23509.nupkg",
@@ -1766,7 +1766,7 @@
     "System.Security.Cryptography.Algorithms/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "YBUhZnerH9puSUZJo1PEG0U8wGbGWCnfC2KgoUytRjOw7YlCX4CgS5CzumnPr+zEeEfH/A2O9RzEksqsNeJO1Q==",
+      "sha512": "vmyDJE83ZMCIlnAfuDAMydZm/qhDkc1I5x95d3vFnSciTUkDRVPBbUABJ3n6LyZfxpxfSN2hzg6gsZoeLGcRmQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -1788,7 +1788,7 @@
     "System.Security.Cryptography.Cng/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "eJrG23LCPaVdrRH8QxobS/qOTQubyFWzkbk4pfUx2cTaW5tVqDUgflLnCNoTo3e1gVVjwrutwnrXVis3uSkAig==",
+      "sha512": "x54y2R+whwW0yZzb5+lq7pTCWuCARxGaczx9TWLgZpwSsROI+FYEQNYRs/yt/j+qlAZF/mgyEdm5YVugADxCTA==",
       "files": [
         "lib/dotnet5.4/System.Security.Cryptography.Cng.dll",
         "lib/net46/System.Security.Cryptography.Cng.dll",
@@ -1802,7 +1802,7 @@
     "System.Security.Cryptography.Csp/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "fNSFWC9Jic4KYtMH8DSPfxGqK6wq2piM/URbH97lhuFm8W+clxt4Fx6Sjadv0fgEOGz/3+YkG1lVfEvSYUcudA==",
+      "sha512": "mGPnRgRDwZ49tKa10gKEsFtacTI9/ilkdxsiTaXPQJeq52ZwN2BXfKKEYN0aUOcsijzYTNTip675WgNF+GMngQ==",
       "files": [
         "lib/DNXCore50/System.Security.Cryptography.Csp.dll",
         "lib/MonoAndroid10/_._",
@@ -1824,7 +1824,7 @@
     "System.Security.Cryptography.Encoding/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "IB1ldLksggECahCRdw7zH1EeifdnlYsInHuekdgzv2gfct2GYKPk1R5KrmqLo1ZIS8ac6bhY0AclbEX3QNxuIA==",
+      "sha512": "hVjXY1Iw/UGZyf4pDd0Kv12JBV8EXUH9zwbI487ePy1wEz3hwQVRgJjtUp7h4CYeb7JazsswHTnSDgT4og0SgQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -1856,7 +1856,7 @@
     "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "4av3kVaRkbTUEeDSvW312Y/hehNFapnaFfGnQyGkuQ4e5n5ux5sdnoFrDZfOsBSbHuhaRraBB5ITsVLdQD0lNQ==",
+      "sha512": "z+Zt+DQ3CVXgB1ZfCfj240O4R4rNbNloCojcL5VIeYWhQncy6G5gnit1e332byFOQX2D0wz2UnDqlWEeV8D9lw==",
       "files": [
         "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -1878,7 +1878,7 @@
     "System.Security.Cryptography.X509Certificates/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "OuSdB1Nkb6WKLUObTeDnlfRKFrOJ0/d/F6vcLezLs67X3o61EQ+sXTY1oFR00WLFSXOF5X4G/uXwDZh/3PIiyQ==",
+      "sha512": "oMAcIjPkzwXl1L90Ga/SQxGuqshujfz5UdXaNVhdIadyvCVBuXy1f4onuE/tUbZ5aylwzjUfG6gWoOJXt7Parw==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -2205,6 +2205,7 @@
       "System.IO >= 4.0.0",
       "System.Net.Primitives >= 4.0.10",
       "System.Runtime >= 4.0.0",
+      "System.Runtime.Handles >= 4.0.0",
       "System.Security.Cryptography.X509Certificates >= 4.0.0-beta-*",
       "System.Security.Principal >= 4.0.0",
       "System.Threading.Tasks >= 4.0.0"

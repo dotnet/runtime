@@ -304,6 +304,9 @@
           "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll": {}
         }
       },
+      "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {
+        "type": "package"
+      },
       "System.Text.Encoding/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -861,6 +864,9 @@
         "runtime": {
           "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll": {}
         }
+      },
+      "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {
+        "type": "package"
       },
       "System.Text.Encoding/4.0.10": {
         "type": "package",
@@ -1420,6 +1426,9 @@
           "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll": {}
         }
       },
+      "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {
+        "type": "package"
+      },
       "System.Text.Encoding/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -1618,7 +1627,7 @@
     "runtime.win.System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "zU+/ra0eaHXRIewzwHjpHW+r0DI4b3xB8NtKfoaZ/TkpyuD1WU5yJB+k/CJzkOPNdbVagZm2f3nBZ5fwgxGK6g==",
+      "sha512": "8k9vB/O4+BHd88eHytBROERzHemSjbNbyA9MIyCEbiQfD/Wmadm/4H7sTnw5HMIMzq5qC4aTxuvRqVzMiGcvcQ==",
       "files": [
         "ref/dotnet/_._",
         "runtime.win.System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23509.nupkg",
@@ -1630,7 +1639,7 @@
     "runtime.win7.System.Security.Cryptography.Algorithms/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "IvcSomtqAQsuiLqz3DBAT1vK1ed7PxYkW3vDGlutyYLUSQGyCTI2RpGet8eJi3rOJLAGj8su4H10MYCqMlb6VA==",
+      "sha512": "Y6LTMEqQhBBwPWhxzKPUUdRhp8YwO4MU0wWPmD1ONBwb7DWUP2oNKZ6Hu0iXUatKbfuhAXalxw2cpTC7BhiS7A==",
       "files": [
         "ref/dotnet/_._",
         "runtime.win7.System.Security.Cryptography.Algorithms.4.0.0-beta-23509.nupkg",
@@ -1643,7 +1652,7 @@
     "runtime.win7.System.Security.Cryptography.Encoding/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "BsUFySXdnEdrHa3DLR9zFc5rGSujRXlJZhcY/9trKrMahkKbQiqftj6J1ykLboL9LLRV6eTrVyPR0tTwLZTa/g==",
+      "sha512": "6Cu7u05XQp98z8zy0JA8cGDEZCH3mQR83AnDLYN9dZz9HYHj/AkYe3W0YrISHF0Y7tzqyVuxmRukLyQoZf/6Dw==",
       "files": [
         "ref/dotnet/_._",
         "runtime.win7.System.Security.Cryptography.Encoding.4.0.0-beta-23509.nupkg",
@@ -2317,7 +2326,7 @@
     "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "lPvORgLoyn/CHFOZ2ntj++F2VjOmqIwUq5lbKISFI+26qZxqjdbuzOFw06j/+WJfIq1PCFZjx26milUnvhqRGA==",
+      "sha512": "Ni0DA1vtQWkk46nzGM2heciilSe2JqV38BQ39N6CDQ0lABsBXOQZVDY6q/lgmxXvWTdA4d5FevMxTKJTSC/KBQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -2337,7 +2346,7 @@
     "System.Security.Cryptography.Algorithms/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "YBUhZnerH9puSUZJo1PEG0U8wGbGWCnfC2KgoUytRjOw7YlCX4CgS5CzumnPr+zEeEfH/A2O9RzEksqsNeJO1Q==",
+      "sha512": "vmyDJE83ZMCIlnAfuDAMydZm/qhDkc1I5x95d3vFnSciTUkDRVPBbUABJ3n6LyZfxpxfSN2hzg6gsZoeLGcRmQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -2359,7 +2368,7 @@
     "System.Security.Cryptography.Cng/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "eJrG23LCPaVdrRH8QxobS/qOTQubyFWzkbk4pfUx2cTaW5tVqDUgflLnCNoTo3e1gVVjwrutwnrXVis3uSkAig==",
+      "sha512": "x54y2R+whwW0yZzb5+lq7pTCWuCARxGaczx9TWLgZpwSsROI+FYEQNYRs/yt/j+qlAZF/mgyEdm5YVugADxCTA==",
       "files": [
         "lib/dotnet5.4/System.Security.Cryptography.Cng.dll",
         "lib/net46/System.Security.Cryptography.Cng.dll",
@@ -2373,7 +2382,7 @@
     "System.Security.Cryptography.Encoding/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "IB1ldLksggECahCRdw7zH1EeifdnlYsInHuekdgzv2gfct2GYKPk1R5KrmqLo1ZIS8ac6bhY0AclbEX3QNxuIA==",
+      "sha512": "hVjXY1Iw/UGZyf4pDd0Kv12JBV8EXUH9zwbI487ePy1wEz3hwQVRgJjtUp7h4CYeb7JazsswHTnSDgT4og0SgQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -2405,7 +2414,7 @@
     "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "4av3kVaRkbTUEeDSvW312Y/hehNFapnaFfGnQyGkuQ4e5n5ux5sdnoFrDZfOsBSbHuhaRraBB5ITsVLdQD0lNQ==",
+      "sha512": "z+Zt+DQ3CVXgB1ZfCfj240O4R4rNbNloCojcL5VIeYWhQncy6G5gnit1e332byFOQX2D0wz2UnDqlWEeV8D9lw==",
       "files": [
         "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -2422,6 +2431,23 @@
         "System.Security.Cryptography.Primitives.4.0.0-beta-23509.nupkg",
         "System.Security.Cryptography.Primitives.4.0.0-beta-23509.nupkg.sha512",
         "System.Security.Cryptography.Primitives.nuspec"
+      ]
+    },
+    "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {
+      "type": "package",
+      "sha512": "UbpXPyovZcwfKhYg/O85pLjFEO3hkrEjCLGus7P9y45Peoqrfc8XKzdCW5k5WIDCtLw9M1PJHGlOFV/U0D1tkg==",
+      "files": [
+        "content/TestData/DummyTcpServer.pfx",
+        "content/TestData/microsoft.cer",
+        "content/TestData/MS.cer",
+        "content/TestData/My.cer",
+        "content/TestData/My.pfx",
+        "content/TestData/test.cer",
+        "content/TestData/test.pfx",
+        "content/TestData/Windows6.1-KB3004361-x64.msu",
+        "System.Security.Cryptography.X509Certificates.TestData.1.0.0-prerelease.nupkg",
+        "System.Security.Cryptography.X509Certificates.TestData.1.0.0-prerelease.nupkg.sha512",
+        "System.Security.Cryptography.X509Certificates.TestData.nuspec"
       ]
     },
     "System.Text.Encoding/4.0.10": {
@@ -2770,6 +2796,7 @@
       "System.Security.Cryptography.Algorithms >= 4.0.0-beta-*",
       "System.Security.Cryptography.Cng >= 4.0.0-beta-*",
       "System.Security.Cryptography.Encoding >= 4.0.0-beta-*",
+      "System.Security.Cryptography.X509Certificates.TestData >= 1.0.0-prerelease",
       "xunit >= 2.1.0",
       "xunit.netcore.extensions >= 1.0.0-prerelease-*"
     ],

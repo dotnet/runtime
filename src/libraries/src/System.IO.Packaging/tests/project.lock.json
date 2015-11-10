@@ -86,6 +86,9 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
+      "System.IO.Packaging.TestData/1.0.0-prerelease": {
+        "type": "package"
+      },
       "System.Linq/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -546,6 +549,9 @@
         "runtime": {
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
+      },
+      "System.IO.Packaging.TestData/1.0.0-prerelease": {
+        "type": "package"
       },
       "System.Linq/4.0.0": {
         "type": "package",
@@ -1139,6 +1145,25 @@
         "System.IO.FileSystem.Primitives.4.0.0.nupkg",
         "System.IO.FileSystem.Primitives.4.0.0.nupkg.sha512",
         "System.IO.FileSystem.Primitives.nuspec"
+      ]
+    },
+    "System.IO.Packaging.TestData/1.0.0-prerelease": {
+      "type": "package",
+      "sha512": "CJ5cM3i90nCIWxga1/fNTvootPqBeuSnfRH4vQfqRUv6q2Wgx5XvgeQ0362QO/VbyKVBim6MWML+/5fO/5zkpg==",
+      "files": [
+        "content/BadDocProps.docx",
+        "content/docprops.docx",
+        "content/EmptyRelationshipElement.docx",
+        "content/Hyperlink.docx",
+        "content/invaliddocprops.docx",
+        "content/invaliddocpropsct.docx",
+        "content/MoreDocProps.docx",
+        "content/NoDocProps.docx",
+        "content/notes.docx",
+        "content/plain.docx",
+        "System.IO.Packaging.TestData.1.0.0-prerelease.nupkg",
+        "System.IO.Packaging.TestData.1.0.0-prerelease.nupkg.sha512",
+        "System.IO.Packaging.TestData.nuspec"
       ]
     },
     "System.Linq/4.0.0": {
@@ -2013,6 +2038,7 @@
       "System.Collections >= 4.0.10",
       "System.IO.FileSystem.Primitives >= 4.0.0",
       "System.IO.FileSystem >= 4.0.0",
+      "System.IO.Packaging.TestData >= 1.0.0-prerelease",
       "System.Linq >= 4.0.0",
       "System.Runtime >= 4.0.20",
       "System.Xml.ReaderWriter >= 4.0.0",

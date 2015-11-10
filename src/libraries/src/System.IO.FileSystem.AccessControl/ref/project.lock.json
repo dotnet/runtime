@@ -1089,7 +1089,7 @@
     "System.Security.AccessControl/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "E/B33SlIvbBpLNlBPox5Y0PbIV1W7aQqSR+kdU3S5Cnni9efYcimVhAs/ghOsOfscxgxMmziNT0GrOq/60/nsg==",
+      "sha512": "PAXenrxmosZSD+A6JuD/SP17tkNeolU8RtOipT/MmQtRoNkiZVvoF3EHGfwBfhrgboJOxTx4uIxEQd2XgGuzbQ==",
       "files": [
         "lib/DNXCore50/System.Security.AccessControl.dll",
         "lib/net46/System.Security.AccessControl.dll",
@@ -1178,7 +1178,7 @@
     "System.Security.Principal.Windows/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "boE9PSE0jXjPIxlxTH7nYlL09Pxn3asXSiqpfTyVNc8ZV8EtjGjDIze4QB2tCx7jSfdh3R3hLJoI38cu08qFOA==",
+      "sha512": "1PQmyttyfFatu4cCcd3MoTp5Wq7ChhLH15tb3ATfQsZFoFXWbAmJ+ZfhrZ2sOVH6DVHfXQw59i7wzwuUFYJAaw==",
       "files": [
         "lib/DNXCore50/System.Security.Principal.Windows.dll",
         "lib/net46/System.Security.Principal.Windows.dll",
@@ -1298,7 +1298,9 @@
   },
   "projectFileDependencyGroups": {
     "": [
+      "System.IO >= 4.0.0",
       "System.IO.FileSystem >= 4.0.0",
+      "System.IO.FileSystem.Primitives >= 4.0.0",
       "System.Runtime >= 4.0.0",
       "System.Security.AccessControl >= 4.0.0-beta-*",
       "System.Security.Principal.Windows >= 4.0.0-beta-*"
