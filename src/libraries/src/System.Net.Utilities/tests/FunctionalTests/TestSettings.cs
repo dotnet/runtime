@@ -40,7 +40,7 @@ namespace System.Net.Utilities.Tests
                 }
             }
 
-            return null;
+            throw new InvalidOperationException("Unable to discover any addresses for host " + host + " of family " + family);
         }
     }
 }
