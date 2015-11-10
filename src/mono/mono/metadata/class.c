@@ -9711,7 +9711,8 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 		if (res) {
 			MonoError error;
 			res = mono_class_inflate_generic_method_full_checked (res, klass, mono_class_get_context (klass), &error);
-			g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+			if (!mono_error_ok (&error))
+				mono_error_cleanup (&error); /*FIXME don't swallow the error */
 		}
 		return res;
 	}
