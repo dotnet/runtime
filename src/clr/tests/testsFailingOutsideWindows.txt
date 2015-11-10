@@ -11,6 +11,7 @@ JIT/Directed/PREFIX/unaligned/1/arglist/arglist.sh
 JIT/Directed/PREFIX/unaligned/2/arglist/arglist.sh
 JIT/Directed/PREFIX/unaligned/4/arglist/arglist.sh
 JIT/Directed/PREFIX/volatile/1/arglist/arglist.sh
+JIT/Directed/StructABI/StructABI/StructABI.sh
 JIT/Directed/TypedReference/TypedReference/TypedReference.sh
 JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgi_ref/_il_dbgi_ref.sh
 JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgu_ref/_il_dbgu_ref.sh
