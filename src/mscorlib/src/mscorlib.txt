@@ -1470,8 +1470,9 @@ NotSupported_NoTypeInfo = Cannot resolve {0} to a TypeInfo object.
 NotSupported_PIAInAppxProcess = A Primary Interop Assembly is not supported in AppX.
 #endif
 #if FEATURE_WINDOWSPHONE
-NotSupported_WindowsPhone = {0} is not supported on Windows Phone.
-NotSupported_AssemblyLoadCodeBase = Assembly.Load with a Codebase is not supported on Windows Phone.
+; Not referring to "Windows Phone" in the messages, as FEATURE_WINDOWSPHONE is defined for .NET Core as well.
+NotSupported_WindowsPhone = {0} is not supported.
+NotSupported_AssemblyLoadCodeBase = Assembly.Load with a Codebase is not supported.
 #endif
 
 ; TypeLoadException
