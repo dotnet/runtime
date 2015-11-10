@@ -23,12 +23,14 @@ The .NET Platform Standard version represents binary portability across platform
 
 
 ## Terms
+- **.NET Platform Standard** - versioned sets of the reference assemblies that all .NET Platforms must support.
 - **PCL** - Portable Class Library
 - **Platform** - e.g. .NET Framework 4.5, Windows Phone 8.1
 - **Reference Assembly** - An assembly that contains API surface only. There is no IL in the method bodies. It is used for compilation only, and cannot be used to run. Also commonly referred to as "Contracts".
-- **Implementation Assembly** - An assembly that contains an implementation of a reference assembly. These are usually implemented in the platform itself and cannot be updated without updating the platform.
-- **.NET Platform Standard** - versioned sets of the reference assemblies.
-- **Multi-targeting** - to compile the same source code files to different target platforms, i.e. against different API sets.
+- **Implementation Assembly** - An assembly that contains an implementation of a reference assembly. These can be implemented as standalone assemblies but can sometimes be anchored by a platform and cannot be updated without updating the platform.
+- **Anchored Assembly** - An assembly that is not in the Platform Standard and is able to ship independently on top of many platforms but for specific platforms, the platform must be updated to support them. This set varies by platform.
+- **Multi-targeting** - to compile the same source code files to different target platforms, i.e. against different API sets
+- **Standard Library** - A blessed set of core .NET API's and versions that are prescribed to be used and supported together. This includes API's in the Platform Standard plus additional libraries that are core to .NET but built on top of the Platform Standard.
 
 ## Principles
 - Platform owners implement reference assemblies from a particular .NET Platform Standard version.
@@ -37,7 +39,13 @@ The .NET Platform Standard version represents binary portability across platform
 - Lower versions are always compatible with higher versions.
 
 ## Relationship to Platforms
-The .NET Platform Standard is not a platform in of itself. It is a standard that platforms are implemented against. The .NET Platform Standard defines reference assemblies (contracts) that platforms implement. [These contracts are defined by CoreFX](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/standard-platform.md#list-of-net-corefx-apis-and-their-associated-net-standard-platform-version-tentative) and are either implemented in CoreFX as stand-alone managed code, or provided by a specific platform. For example, [System.Xml.XDocument](https://github.com/dotnet/corefx/tree/master/src/System.Xml.XDocument/src) is implemented as stand-alone managed code in CoreFx, but is an assembly in the GAC as part of the .NET Framework.
+The .NET Platform Standard is not a platform in and of itself. It is a standard that platforms are implemented against. The .NET Platform Standard defines reference assemblies (contracts) that platforms implement. [These contracts are defined by CoreFX](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/standard-platform.md#list-of-net-corefx-apis-and-their-associated-net-standard-platform-version-tentative) and are either implemented in CoreFX as stand-alone managed code, or provided by a specific platform. For example, [System.Xml.XDocument](https://github.com/dotnet/corefx/tree/master/src/System.Xml.XDocument/src) is implemented as stand-alone managed code in CoreFx, but is an anchored assembly in .NET Framework.
+
+![Platform Standard and Library](https://cloud.githubusercontent.com/assets/8228359/11072769/52bc69d6-879c-11e5-8640-d92f9ee1e2d9.png)
+
+This picture is intended to show the relationship between the Platform Standard, the Standard Library, and the Anchor Platforms. The horizontal row titled "Platform Version" represents those things that, when impacted by a change, will cause support for one or more platforms to be dropped. The vertical column titled "Standard Library" represents the set of things platforms must support plus the set of libraries that are core to .NET but can update without dropping support for any platforms. More details on the Standard Library coming soon...
+
+Each platform has it own rules for how it anchors certain assemblies. In .NET Framework, every API is anchored. On CoreCLR and Mono implementations of .NET Core, everything in mscorlib (the core assembly) is anchored. The challenge with anchored assemblies is that when they update, by definition they need to drop support for existing platforms where they are anchored because the platform copy will win. In order for a platform to declare that it supports a new Platform Standard, it must bring the API's in the Standard up to the most current version as well as the anchored API's that have been updated. Platforms that anchor and owners of the libraries that get anchored will need to coordinate how updates are made.
 
 ## Mapping the .NET Platform Standard to platforms
 
@@ -378,3 +386,4 @@ Tooling support for the `netstandard` TFM is as follows. This list will be updat
 | System.Xml.XPath |  |  |  | X | ⇠ |
 | System.Xml.XPath.XDocument |  |  |  | X | ⇠ |
 | System.Xml.XPath.XmlDocument |  |  |  | X | ⇠ |
+
