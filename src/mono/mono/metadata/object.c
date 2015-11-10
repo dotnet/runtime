@@ -744,7 +744,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 #ifdef HAVE_SGEN_GC
 				break;
 #else
-				if (class->image != mono_defaults.corlib)
+				if (klass->image != mono_defaults.corlib)
 					break;
 #endif
 			case MONO_TYPE_STRING:
