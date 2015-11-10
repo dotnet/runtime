@@ -2,10 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using System;
-using System.Collections;
-using System.Collections.Specialized;
-
 using GenStrings;
 
 namespace System.Collections.Specialized.Tests
@@ -14,52 +10,89 @@ namespace System.Collections.Specialized.Tests
     {
         public const int MAX_LEN = 50;          // max length of random strings
 
-
-        [Fact]
-        [ActiveIssue(1360)]
-        public void Test01()
+        private string[] TestValues(int length)
         {
-            IntlStrings intl;
+            string[] values = new string[length];
+            for (int i = 0; i < length; i++)
+                values[i] = "Item" + i;
+            return values;
+        }
 
+        private string[] TestKeys(int length)
+        {
+            string[] keys = new string[length];
+            for (int i = 0; i < length; i++)
+                keys[i] = "keY" + i;
+            return keys;
+        }
 
-            HybridDictionary hd;
-
-            const int BIG_LENGTH = 100;
-
-            // simple string values
-            string[] valuesShort =
+        private string[] Test_EdgeCases()
+        {
+            return new string[]
             {
                 "",
                 " ",
                 "$%^#",
                 System.DateTime.Today.ToString(),
                 Int32.MaxValue.ToString()
-             };
+            };
+        }
+
+        [Theory]
+        [InlineData(50)]
+        [InlineData(100)]
+        public void Add(int size)
+        {
+            string[] values = TestValues(size);
+            string[] keys = TestKeys(size);
+
+            HybridDictionary hd = new HybridDictionary(true);
+            for (int i = 0; i < size; i++)
+            {
+                hd.Add(keys[i], values[i]);
+                Assert.Equal(hd[keys[i].ToLower()], values[i]);
+                Assert.Equal(hd[keys[i].ToUpper()], values[i]);
+            }
+        }
+
+        [Fact]
+        public void Add_EdgeCases()
+        {
+            string[] values = Test_EdgeCases();
+            string[] keys = Test_EdgeCases();
+
+            HybridDictionary hd = new HybridDictionary(true);
+            for (int i = 0; i < values.Length; i++)
+            {
+                hd.Add(keys[i], values[i]);
+                Assert.Equal(hd[keys[i].ToLower()], values[i]);
+                Assert.Equal(hd[keys[i].ToUpper()], values[i]);
+            }
+        }
+
+
+        [Fact]
+        public void Test01()
+        {
+            IntlStrings intl;
+
+            HybridDictionary hd;
+
+
+            // simple string values
+            string[] valuesShort = Test_EdgeCases();
 
             // keys for simple string values
-            string[] keysShort =
-            {
-                Int32.MaxValue.ToString(),
-                " ",
-                System.DateTime.Today.ToString(),
-                "",
-                "$%^#"
-            };
+            string[] keysShort = Test_EdgeCases();
 
-            string[] valuesLong = new string[BIG_LENGTH];
-            string[] keysLong = new string[BIG_LENGTH];
+            string[] valuesLong = TestValues(100);
+            string[] keysLong = TestKeys(100);
 
             int cnt = 0;            // Count
             Object itm;         // Item
 
             // initialize IntStrings
             intl = new IntlStrings();
-
-            for (int i = 0; i < BIG_LENGTH; i++)
-            {
-                valuesLong[i] = "Item" + i;
-                keysLong[i] = "keY" + i;
-            }
 
             // [] HybridDictionary is constructed as expected
             //-----------------------------------------------------------------
