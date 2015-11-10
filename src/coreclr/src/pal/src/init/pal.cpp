@@ -378,7 +378,7 @@ Initialize(
         // Initialize the synchronization manager
         //
         g_pSynchronizationManager =
-            CPalSynchMgrController::CreatePalSynchronizationManager(pThread);
+            CPalSynchMgrController::CreatePalSynchronizationManager();
 
         if (NULL == g_pSynchronizationManager)
         {
@@ -419,7 +419,6 @@ Initialize(
         }
 
         palError = InitializeProcessCommandLine(
-            pThread,
             command_line,
             exe_path);
         

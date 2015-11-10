@@ -87,16 +87,11 @@ Function:
 
   Frees the contained string buffer
 
-Parameters:
-  pthr -- thread data for calling thread
 --*/
 
 void
-CPalString::FreeBuffer(
-    CPalThread *pthr
-    )
+CPalString::FreeBuffer()
 {
     _ASSERTE(NULL != m_pwsz);
-    
     InternalFree(const_cast<WCHAR*>(m_pwsz));
 }
