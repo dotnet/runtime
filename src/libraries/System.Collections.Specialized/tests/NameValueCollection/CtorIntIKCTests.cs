@@ -35,141 +35,148 @@ namespace System.Collections.Specialized.Tests
 
             // Set current CultureInfo to Turkish, so we can verify CurrentCulture vs. InvariantCulture
             // comparison types.  Must be done before calling any constructors.
-            var prevCulture = CultureInfo.DefaultThreadCurrentCulture;
-            CultureInfo.DefaultThreadCurrentCulture = new System.Globalization.CultureInfo("tr-TR");
+            var prevCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
+            try
+            {
+                // [] NameValueCollection is constructed as expected
+                //-----------------------------------------------------------------
 
-            // [] NameValueCollection is constructed as expected
-            //-----------------------------------------------------------------
-
-            //
-            //  create collection
-            //
-            //  capacity=0
-            //
-            nvc = new NameValueCollection(0, new IdiotComparer());
-            int len = values.Length;
-            for (int i = 0; i < len; i++)
-            {
-                nvc.Add(names[i], values[i]);
-            }
-            if (nvc.Count != 1)
-            {
-                Assert.False(true, string.Format("Error, Count is {0} instead of {1}", nvc.Count, 1));
-            }
-            for (int i = 0; i < len; i++)
-            {
-                if (String.Compare(nvc[names[i]], exp3) != 0)
+                //
+                //  create collection
+                //
+                //  capacity=0
+                //
+                nvc = new NameValueCollection(0, new IdiotComparer());
+                int len = values.Length;
+                for (int i = 0; i < len; i++)
                 {
-                    Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc[names[i]], exp3));
+                    nvc.Add(names[i], values[i]);
                 }
-            }
-            if (nvc["Everything Is Equal!"] == null)
-            {
-                Assert.False(true, string.Format("Error, returned null instead of {0} ", exp3));
-            }
-            else if (String.Compare(nvc["Everything Is Equal!"], exp3) != 0)
-            {
-                Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc["Everything Is Equal!"], exp3));
-            }
-
-            //
-            //  capacity=10
-            //
-            nvc = new NameValueCollection(10, new IdiotComparer());
-            for (int i = 0; i < len; i++)
-            {
-                nvc.Add(names[i], values[i]);
-            }
-            if (nvc.Count != 1)
-            {
-                Assert.False(true, string.Format("Error, Count is {0} instead of {1}", nvc.Count, 1));
-            }
-            for (int i = 0; i < len; i++)
-            {
-                if (String.Compare(nvc[names[i]], exp3) != 0)
+                if (nvc.Count != 1)
                 {
-                    Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc[names[i]], exp3));
+                    Assert.False(true, string.Format("Error, Count is {0} instead of {1}", nvc.Count, 1));
                 }
-            }
-            if (nvc["Everything Is Equal!"] == null)
-            {
-                Assert.False(true, string.Format("Error, returned null instead of {0} ", exp3));
-            }
-            else if (String.Compare(nvc["Everything Is Equal!"], exp3) != 0)
-            {
-                Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc["Everything Is Equal!"], exp3));
-            }
-
-            //
-            //  capacity=100
-            //
-            nvc = new NameValueCollection(100, new IdiotComparer());
-            for (int i = 0; i < len; i++)
-            {
-                nvc.Add(names[i], values[i]);
-            }
-            if (nvc.Count != 1)
-            {
-                Assert.False(true, string.Format("Error, Count is {0} instead of {1}", nvc.Count, 1));
-            }
-            for (int i = 0; i < len; i++)
-            {
-                if (String.Compare(nvc[names[i]], exp3) != 0)
+                for (int i = 0; i < len; i++)
                 {
-                    Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc[names[i]], exp3));
+                    if (String.Compare(nvc[names[i]], exp3) != 0)
+                    {
+                        Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc[names[i]], exp3));
+                    }
                 }
-            }
-            if (nvc["Everything Is Equal!"] == null)
-            {
-                Assert.False(true, string.Format("Error, returned null instead of {0} ", exp3));
-            }
-            else if (String.Compare(nvc["Everything Is Equal!"], exp3) != 0)
-            {
-                Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc["Everything Is Equal!"], exp3));
-            }
-
-            //
-            //  capacity=1000
-            //
-            nvc = new NameValueCollection(1000, new IdiotComparer());
-            for (int i = 0; i < len; i++)
-            {
-                nvc.Add(names[i], values[i]);
-            }
-            if (nvc.Count != 1)
-            {
-                Assert.False(true, string.Format("Error, Count is {0} instead of {1}", nvc.Count, 1));
-            }
-            for (int i = 0; i < len; i++)
-            {
-                if (String.Compare(nvc[names[i]], exp3) != 0)
+                if (nvc["Everything Is Equal!"] == null)
                 {
-                    Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc[names[i]], exp3));
+                    Assert.False(true, string.Format("Error, returned null instead of {0} ", exp3));
                 }
+                else if (String.Compare(nvc["Everything Is Equal!"], exp3) != 0)
+                {
+                    Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc["Everything Is Equal!"], exp3));
+                }
+
+                //
+                //  capacity=10
+                //
+                nvc = new NameValueCollection(10, new IdiotComparer());
+                for (int i = 0; i < len; i++)
+                {
+                    nvc.Add(names[i], values[i]);
+                }
+                if (nvc.Count != 1)
+                {
+                    Assert.False(true, string.Format("Error, Count is {0} instead of {1}", nvc.Count, 1));
+                }
+                for (int i = 0; i < len; i++)
+                {
+                    if (String.Compare(nvc[names[i]], exp3) != 0)
+                    {
+                        Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc[names[i]], exp3));
+                    }
+                }
+                if (nvc["Everything Is Equal!"] == null)
+                {
+                    Assert.False(true, string.Format("Error, returned null instead of {0} ", exp3));
+                }
+                else if (String.Compare(nvc["Everything Is Equal!"], exp3) != 0)
+                {
+                    Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc["Everything Is Equal!"], exp3));
+                }
+
+                //
+                //  capacity=100
+                //
+                nvc = new NameValueCollection(100, new IdiotComparer());
+                for (int i = 0; i < len; i++)
+                {
+                    nvc.Add(names[i], values[i]);
+                }
+                if (nvc.Count != 1)
+                {
+                    Assert.False(true, string.Format("Error, Count is {0} instead of {1}", nvc.Count, 1));
+                }
+                for (int i = 0; i < len; i++)
+                {
+                    if (String.Compare(nvc[names[i]], exp3) != 0)
+                    {
+                        Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc[names[i]], exp3));
+                    }
+                }
+                if (nvc["Everything Is Equal!"] == null)
+                {
+                    Assert.False(true, string.Format("Error, returned null instead of {0} ", exp3));
+                }
+                else if (String.Compare(nvc["Everything Is Equal!"], exp3) != 0)
+                {
+                    Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc["Everything Is Equal!"], exp3));
+                }
+
+                //
+                //  capacity=1000
+                //
+                nvc = new NameValueCollection(1000, new IdiotComparer());
+                for (int i = 0; i < len; i++)
+                {
+                    nvc.Add(names[i], values[i]);
+                }
+                if (nvc.Count != 1)
+                {
+                    Assert.False(true, string.Format("Error, Count is {0} instead of {1}", nvc.Count, 1));
+                }
+                for (int i = 0; i < len; i++)
+                {
+                    if (String.Compare(nvc[names[i]], exp3) != 0)
+                    {
+                        Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc[names[i]], exp3));
+                    }
+                }
+                if (nvc["Everything Is Equal!"] == null)
+                {
+                    Assert.False(true, string.Format("Error, returned null instead of {0} ", exp3));
+                }
+                else if (String.Compare(nvc["Everything Is Equal!"], exp3) != 0)
+                {
+                    Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc["Everything Is Equal!"], exp3));
+                }
+
+                //
+                // [] capacity=Int32.MaxValue
+                //
+                Assert.Throws<OutOfMemoryException>(() => { nvc = new NameValueCollection(Int32.MaxValue, new IdiotComparer()); });
+
+                //
+                // [] capacity=Int32.MinValue
+                //
+                Assert.Throws<ArgumentOutOfRangeException>(() => { nvc = new NameValueCollection(Int32.MinValue, new IdiotComparer()); });
+
+                //
+                // [] capacity=-1
+                //
+                Assert.Throws<ArgumentOutOfRangeException>(() => { nvc = new NameValueCollection(-1, new IdiotComparer()); });
+
             }
-            if (nvc["Everything Is Equal!"] == null)
+            finally
             {
-                Assert.False(true, string.Format("Error, returned null instead of {0} ", exp3));
+                CultureInfo.CurrentCulture = prevCulture;
             }
-            else if (String.Compare(nvc["Everything Is Equal!"], exp3) != 0)
-            {
-                Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc["Everything Is Equal!"], exp3));
-            }
-
-            //
-            // [] capacity=Int32.MaxValue
-            //
-            Assert.Throws<OutOfMemoryException>(() => { nvc = new NameValueCollection(Int32.MaxValue, new IdiotComparer()); });
-
-            //
-            // [] capacity=Int32.MinValue
-            //
-            Assert.Throws<ArgumentOutOfRangeException>(() => { nvc = new NameValueCollection(Int32.MinValue, new IdiotComparer()); });
-
-            //
-            // [] capacity=-1
-            //
-            Assert.Throws<ArgumentOutOfRangeException>(() => { nvc = new NameValueCollection(-1, new IdiotComparer()); });
         }
     }
 }
