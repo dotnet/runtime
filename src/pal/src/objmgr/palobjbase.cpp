@@ -340,11 +340,6 @@ CPalObjectBase::~CPalObjectBase()
 {
     ENTRY("CPalObjectBase::~CPalObjectBase(this = %p)\n", this);
 
-    // There is no need to call InternalGetCurrentThread here because
-    // ReleaseReference already stores the thread object that
-    // deletes this object in m_pthrCleanup to make sure the
-    // thread object is alive throughout the object cleanup process.
-
     if (NULL != m_pvImmutableData)
     {
         InternalFree(m_pvImmutableData);
@@ -357,7 +352,7 @@ CPalObjectBase::~CPalObjectBase()
 
     if (NULL != m_oa.sObjectName.GetString())
     {
-        m_oa.sObjectName.FreeBuffer(m_pthrCleanup);
+        m_oa.sObjectName.FreeBuffer();
     }
 
     LOGEXIT("CPalObjectBase::~CPalObjectBase\n");
