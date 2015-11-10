@@ -2269,7 +2269,7 @@ BOOL DelegateInvokeStubManager::TraceManager(Thread *thread, TraceDestination *t
     {
         LOG((LF_CORDB, LL_INFO10000, "DISM::TraceManager: isSingle\n"));
 
-        orDelegate = (DELEGATEREF)ObjectToOBJECTREF((Object*)(size_t)pContext->Rcx);  // The "this" pointer is rcx
+        orDelegate = (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetThisPtr(pContext));
 
         // _methodPtr is where we are going to next.  However, in ngen cases, we may have a shuffle thunk
         // burned into the ngen image, in which case the shuffle thunk is not added to the range list of
@@ -2293,11 +2293,11 @@ BOOL DelegateInvokeStubManager::TraceManager(Thread *thread, TraceDestination *t
         if (pStub->GetPatchOffset() != 0)
         {
             // This stub has a hidden return buffer argument.
-            orDelegate = (DELEGATEREF)ObjectToOBJECTREF((Object*)(size_t)(pContext->Rdx));
+            orDelegate = (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetSecondArg(pContext));
         }
         else
         {
-            orDelegate = (DELEGATEREF)ObjectToOBJECTREF((Object*)(size_t)(pContext->Rcx));
+            orDelegate = (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetThisPtr(pContext));
         }
     }
 

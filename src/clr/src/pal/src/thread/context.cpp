@@ -1275,24 +1275,6 @@ EXIT:
 
 /*++
 Function:
-  DBG_DebugBreak: same as DebugBreak
-
-See MSDN doc.
---*/
-VOID
-DBG_DebugBreak()
-{
-#if defined(_AMD64_) || defined(_X86_)
-    __asm__ __volatile__("int $3");
-#elif defined(_ARM_)
-    // This assumes thumb
-    __asm__ __volatile__(".inst.w 0xde01");
-#endif
-}
-
-
-/*++
-Function:
   DBG_FlushInstructionCache: processor-specific portion of 
   FlushInstructionCache
 

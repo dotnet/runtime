@@ -1039,8 +1039,12 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, Metho
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
-    // Give debugger opportunity to stop here
-    ThePreStubPatch();
+    {
+        HardwareExceptionHolder
+
+        // Give debugger opportunity to stop here
+        ThePreStubPatch();
+    }
 
     pPFrame->Pop(CURRENT_THREAD);
 
