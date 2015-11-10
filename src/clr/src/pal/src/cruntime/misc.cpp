@@ -47,27 +47,6 @@ CRITICAL_SECTION gcsEnvironment;
 
 using namespace CorUnix;
 
-namespace CorUnix
-{
-    int InternalRand(CPalThread *pthrCurrent);
-
-    /*++
-    Function:
-    InternalRand
-
-    Wrapper for rand.
-    --*/
-    int
-    InternalRand(
-        CPalThread *pthrCurrent
-        )
-    {
-        int nRet;
-        nRet = rand();
-        return nRet;
-    }
-}
-
 /*++
 Function:
   _gcvt_s
@@ -271,7 +250,7 @@ PAL_rand(void)
     PERF_ENTRY(rand);
     ENTRY("rand(void)\n");
 
-    ret = (InternalRand(InternalGetCurrentThread()) % (PAL_RAND_MAX + 1));
+    ret = (rand() % (PAL_RAND_MAX + 1));
 
     LOGEXIT("rand() returning %d\n", ret);
     PERF_EXIT(rand);
