@@ -85,7 +85,9 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
 
     AssemblySpec spec;
     spec.InitializeSpec(TokenFromRid(mdtAssembly,1),pImage->GetMDImport(),NULL,TRUE);
+#ifndef FEATURE_CORECLR
     spec.SetCodeBase(sUrl);
+#endif
     spec.AssemblyNameInit(&gc.result, pImage);
     
     HELPER_METHOD_FRAME_END();
