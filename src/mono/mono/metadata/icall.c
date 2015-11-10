@@ -3121,16 +3121,20 @@ ves_icall_System_Enum_get_hashcode (MonoObject *eobj)
 	g_assert (basetype);
 
 	switch (basetype->type) {
-		case MONO_TYPE_I1:	
-			return *((gint8*)data);
+		case MONO_TYPE_I1:	 {
+			gint8 value = *((gint8*)data);
+			return ((int)value ^ (int)value << 8);
+		}
 		case MONO_TYPE_U1:
 			return *((guint8*)data);
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_U2:
 			return *((guint16*)data);
 		
-		case MONO_TYPE_I2:
-			return *((gint16*)data);
+		case MONO_TYPE_I2: {
+			gint16 value = *((gint16*)data);
+			return ((int)(guint16)value | (((int)value) << 16));
+		}
 		case MONO_TYPE_U4:
 			return *((guint32*)data);
 		case MONO_TYPE_I4:
