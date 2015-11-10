@@ -353,18 +353,6 @@
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.Thread/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet5.1/System.Threading.Thread.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Threading.Thread.dll": {}
-        }
-      },
       "System.Xml.ReaderWriter/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -827,15 +815,6 @@
           "lib/netcore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.Thread/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet5.1/System.Threading.Thread.dll": {}
-        }
-      },
       "System.Xml.ReaderWriter/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -1234,18 +1213,6 @@
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.Thread/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet5.1/System.Threading.Thread.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Threading.Thread.dll": {}
-        }
-      },
       "System.Xml.ReaderWriter/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -1642,18 +1609,6 @@
         },
         "runtime": {
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
-        }
-      },
-      "System.Threading.Thread/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet5.1/System.Threading.Thread.dll": {}
-        },
-        "runtime": {
-          "lib/DNXCore50/System.Threading.Thread.dll": {}
         }
       },
       "System.Xml.ReaderWriter/4.0.10": {
@@ -2118,15 +2073,6 @@
           "lib/netcore50/System.Threading.Tasks.dll": {}
         }
       },
-      "System.Threading.Thread/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet5.1/System.Threading.Thread.dll": {}
-        }
-      },
       "System.Xml.ReaderWriter/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -2587,15 +2533,6 @@
         },
         "runtime": {
           "lib/netcore50/System.Threading.Tasks.dll": {}
-        }
-      },
-      "System.Threading.Thread/4.0.0-beta-23420": {
-        "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
-        "compile": {
-          "ref/dotnet5.1/System.Threading.Thread.dll": {}
         }
       },
       "System.Xml.ReaderWriter/4.0.10": {
@@ -3589,38 +3526,6 @@
         "System.Threading.Tasks.nuspec"
       ]
     },
-    "System.Threading.Thread/4.0.0-beta-23420": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "d8eFZQv7ASAGW7nfFvhs4f3QfS9UkmN9cKxdNO0WNmEjIrHazKC7xuKQj8Idna90mN7uYF4kh51NLK1jIK1FaA==",
-      "files": [
-        "lib/DNXCore50/System.Threading.Thread.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/System.Threading.Thread.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "ref/dotnet5.1/de/System.Threading.Thread.xml",
-        "ref/dotnet5.1/es/System.Threading.Thread.xml",
-        "ref/dotnet5.1/fr/System.Threading.Thread.xml",
-        "ref/dotnet5.1/it/System.Threading.Thread.xml",
-        "ref/dotnet5.1/ja/System.Threading.Thread.xml",
-        "ref/dotnet5.1/ko/System.Threading.Thread.xml",
-        "ref/dotnet5.1/ru/System.Threading.Thread.xml",
-        "ref/dotnet5.1/System.Threading.Thread.dll",
-        "ref/dotnet5.1/System.Threading.Thread.xml",
-        "ref/dotnet5.1/zh-hans/System.Threading.Thread.xml",
-        "ref/dotnet5.1/zh-hant/System.Threading.Thread.xml",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/System.Threading.Thread.dll",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "System.Threading.Thread.4.0.0-beta-23420.nupkg",
-        "System.Threading.Thread.4.0.0-beta-23420.nupkg.sha512",
-        "System.Threading.Thread.nuspec"
-      ]
-    },
     "System.Xml.ReaderWriter/4.0.10": {
       "type": "package",
       "serviceable": true,
@@ -3703,11 +3608,9 @@
       "System.Resources.ResourceManager >= 4.0.0",
       "System.Runtime >= 4.0.20",
       "System.Runtime.Extensions >= 4.0.10",
-      "System.Text.Encoding >= 4.0.10",
       "System.Text.RegularExpressions >= 4.0.10",
       "System.Threading >= 4.0.10",
       "System.Threading.Tasks >= 4.0.10",
-      "System.Threading.Thread >= 4.0.0-beta-*",
       "System.Xml.ReaderWriter >= 4.0.10",
       "System.Xml.XmlDocument >= 4.0.0"
     ],

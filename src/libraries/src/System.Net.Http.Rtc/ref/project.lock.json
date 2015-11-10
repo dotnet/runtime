@@ -454,8 +454,8 @@
   "projectFileDependencyGroups": {
     "": [
       "System.Runtime >= 4.0.0",
-      "System.Net.Http >= 4.0.0",
-      "System.Net.Primitives >= 4.0.0"
+      "System.Net.Primitives >= 4.0.0",
+      "System.Net.Http >= 4.0.0"
     ],
     ".NETPlatform,Version=v5.2": []
   }

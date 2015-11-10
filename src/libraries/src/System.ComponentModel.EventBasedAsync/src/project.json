@@ -3,8 +3,6 @@
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
     "System.Diagnostics.Tools": "4.0.0",
-    "System.Globalization": "4.0.10",
-    "System.Reflection": "4.0.10",
     "System.Resources.ResourceManager": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Threading": "4.0.10",

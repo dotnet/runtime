@@ -1,8 +1,6 @@
 {
   "dependencies": {
     "System.Runtime": "4.0.20",
-    "System.Console": "4.0.0-beta-*",
-    "System.Collections": "4.0.10",
     "System.IO": "4.0.10",
     "System.Xml.ReaderWriter": "4.0.10",
     "xunit": "2.1.0",

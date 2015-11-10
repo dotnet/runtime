@@ -69,13 +69,7 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Security.Cryptography.Encryption/4.0.0-beta-23311": {
-        "type": "package",
-        "dependencies": {
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311"
-        }
-      },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23420": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -87,7 +81,7 @@
           "System.Threading.Tasks": "4.0.0"
         },
         "compile": {
-          "ref/dotnet5.1/System.Security.Cryptography.Primitives.dll": {}
+          "ref/dotnet5.4/System.Security.Cryptography.Primitives.dll": {}
         },
         "runtime": {
           "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll": {}
@@ -189,13 +183,7 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Security.Cryptography.Encryption/4.0.0-beta-23311": {
-        "type": "package",
-        "dependencies": {
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311"
-        }
-      },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23420": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -207,7 +195,7 @@
           "System.Threading.Tasks": "4.0.0"
         },
         "compile": {
-          "ref/dotnet5.1/System.Security.Cryptography.Primitives.dll": {}
+          "ref/dotnet5.4/System.Security.Cryptography.Primitives.dll": {}
         },
         "runtime": {
           "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll": {}
@@ -309,13 +297,7 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Security.Cryptography.Encryption/4.0.0-beta-23311": {
-        "type": "package",
-        "dependencies": {
-          "System.Security.Cryptography.Primitives": "4.0.0-beta-23311"
-        }
-      },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23420": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -327,7 +309,7 @@
           "System.Threading.Tasks": "4.0.0"
         },
         "compile": {
-          "ref/dotnet5.1/System.Security.Cryptography.Primitives.dll": {}
+          "ref/dotnet5.4/System.Security.Cryptography.Primitives.dll": {}
         },
         "runtime": {
           "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll": {}
@@ -672,31 +654,10 @@
         "System.Runtime.nuspec"
       ]
     },
-    "System.Security.Cryptography.Encryption/4.0.0-beta-23311": {
+    "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "MFD9kFWRF8nFZmcuYeI0DKl3ftmxG+JFDbK3l6hZam2WSq9Dw/9RkK+vmZIOAgaJ8Ky69G+p2KrVrZ7w2nFU/Q==",
-      "files": [
-        "de/System.Security.Cryptography.Encryption.xml",
-        "es/System.Security.Cryptography.Encryption.xml",
-        "fr/System.Security.Cryptography.Encryption.xml",
-        "it/System.Security.Cryptography.Encryption.xml",
-        "ja/System.Security.Cryptography.Encryption.xml",
-        "ko/System.Security.Cryptography.Encryption.xml",
-        "lib/DNXCore50/System.Security.Cryptography.Encryption.dll",
-        "ru/System.Security.Cryptography.Encryption.xml",
-        "System.Security.Cryptography.Encryption.4.0.0-beta-23311.nupkg",
-        "System.Security.Cryptography.Encryption.4.0.0-beta-23311.nupkg.sha512",
-        "System.Security.Cryptography.Encryption.nuspec",
-        "System.Security.Cryptography.Encryption.xml",
-        "zh-hans/System.Security.Cryptography.Encryption.xml",
-        "zh-hant/System.Security.Cryptography.Encryption.xml"
-      ]
-    },
-    "System.Security.Cryptography.Primitives/4.0.0-beta-23420": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "4u2pqJt5gS/sYQnIzv0mIjtZfFDxRZX/V2fQKAiJAbPk9MUpGUIzKxRCa+3ZdDCyp/jrHPyxAugaVN+IOlsX7g==",
+      "sha512": "z+Zt+DQ3CVXgB1ZfCfj240O4R4rNbNloCojcL5VIeYWhQncy6G5gnit1e332byFOQX2D0wz2UnDqlWEeV8D9lw==",
       "files": [
         "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -704,14 +665,14 @@
         "lib/net46/System.Security.Cryptography.Primitives.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
-        "ref/dotnet5.1/System.Security.Cryptography.Primitives.dll",
+        "ref/dotnet5.4/System.Security.Cryptography.Primitives.dll",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Security.Cryptography.Primitives.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23420.nupkg",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23420.nupkg.sha512",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23509.nupkg",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23509.nupkg.sha512",
         "System.Security.Cryptography.Primitives.nuspec"
       ]
     },
@@ -862,10 +823,9 @@
   },
   "projectFileDependencyGroups": {
     "": [
+      "System.IO >= 4.0.0",
       "System.Runtime >= 4.0.0",
-      "System.Security.Cryptography.Encryption >= 4.0.0-beta-*",
-      "System.Security.Cryptography.Primitives >= 4.0.0-beta-*",
-      "System.IO >= 4.0.0"
+      "System.Security.Cryptography.Primitives >= 4.0.0-beta-*"
     ],
     ".NETPlatform,Version=v5.4": []
   }

@@ -2,8 +2,6 @@
   "dependencies": {
     "System.Collections": "4.0.0",
     "System.Diagnostics.Contracts": "4.0.0",
-    "System.Diagnostics.Process": "4.0.0-beta-*",
-    "System.IO": "4.0.10",
     "System.Globalization": "4.0.0",
     "System.Reflection": "4.0.10",
     "System.Resources.ResourceManager": "4.0.0",

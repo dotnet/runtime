@@ -1,10 +1,8 @@
 {
   "dependencies": {
-    "System.Collections": "4.0.10",
     "System.ComponentModel": "4.0.0",
     "System.ComponentModel.Primitives": "4.0.0",
     "System.Globalization": "4.0.10",
-    "System.Reflection.Primitives": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
