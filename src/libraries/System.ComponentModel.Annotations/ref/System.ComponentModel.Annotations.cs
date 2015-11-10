@@ -211,6 +211,7 @@ namespace System.ComponentModel.DataAnnotations
     public partial class RegularExpressionAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
         public RegularExpressionAttribute(string pattern) { }
+        public int MatchTimeoutInMilliseconds { get { return default(int); } set { } }
         public string Pattern { get { return default(string); } }
         public override string FormatErrorMessage(string name) { return default(string); }
         public override bool IsValid(object value) { return default(bool); }
