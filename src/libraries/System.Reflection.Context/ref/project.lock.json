@@ -452,6 +452,7 @@
   },
   "projectFileDependencyGroups": {
     "": [
+      "System.Reflection.Primitives >= 4.0.0",
       "System.Reflection >= 4.0.0",
       "System.Runtime >= 4.0.0"
     ],
