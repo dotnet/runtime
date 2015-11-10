@@ -60,6 +60,8 @@ namespace System
         {
             get
             {
+                EnsureApplicationMode();
+
                 return Volatile.Read(ref s_stdInReader) ??
                     Console.EnsureInitialized(
                         ref s_stdInReader,
@@ -364,6 +366,43 @@ namespace System
             return false;
         }
 
+        /// <summary>Whether keypad_xmit has already been written out to the terminal.</summary>
+        private static volatile bool s_enteredApplicationMode;
+
+        /// <summary>
+        /// Ensures that keypad_xmit has been written out to the terminal.  This needs to be done
+        /// before interpreting any terminfo strings, as the mode can impact what strings are sent
+        /// by the terminal for keyboard input.
+        /// </summary>
+        private static void EnsureApplicationMode()
+        {
+            if (!s_enteredApplicationMode)
+            {
+                EnsureApplicationModeCore(); // factored out for inlinability
+            }
+        }
+
+        /// <summary>
+        /// Ensures that keypad_xmit has been written out to the terminal.  This needs to be done
+        /// before interpreting any terminfo strings, as the mode can impact what strings are sent
+        /// by the terminal for keyboard input.
+        /// </summary>
+        private static void EnsureApplicationModeCore()
+        {
+            string keypadXmit = TerminalKeyInfo.Instance.KeypadXmit;
+            lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
+            {
+                if (!s_enteredApplicationMode)
+                {
+                    if (keypadXmit != null)
+                    {
+                        WriteStdoutAnsiString(keypadXmit);
+                    }
+                    s_enteredApplicationMode = true;
+                }
+            }
+        }
+
         /// <summary>Provides a cache of color information sourced from terminfo.</summary>
         private struct TerminalColorInfo
         {
@@ -439,6 +478,8 @@ namespace System
             public int MaxKeyLength;
             /// <summary> Min key length </summary>
             public int MinKeyLength;
+            /// <summary>The ANSI string used to enter "application" / "keypad transmit" mode.</summary>
+            public string KeypadXmit;
 
             /// <summary>The cached instance.</summary>
             public static TerminalKeyInfo Instance { get { return _instance.Value; } }
@@ -454,6 +495,7 @@ namespace System
             {
                 KeyFormatToConsoleKey = new Dictionary<string, ConsoleKey>();
                 MaxKeyLength = MinKeyLength = 0;
+                KeypadXmit = db.GetString(TermInfo.Database.KeypadXmit);
                 if (db != null)
                 {
                     AddKey(db, TermInfo.Database.KeyF1, ConsoleKey.F1);
@@ -482,18 +524,19 @@ namespace System
                     AddKey(db, TermInfo.Database.KeyF24, ConsoleKey.F24);
                     AddKey(db, TermInfo.Database.KeyBackspace, ConsoleKey.Backspace);
                     AddKey(db, TermInfo.Database.KeyClear, ConsoleKey.Clear);
+                    AddKey(db, TermInfo.Database.KeyDelete, ConsoleKey.Delete);
                     AddKey(db, TermInfo.Database.KeyDown, ConsoleKey.DownArrow);
-                    AddKey(db, TermInfo.Database.KeyHome, ConsoleKey.Home);
-                    AddKey(db, TermInfo.Database.KeyLeft, ConsoleKey.LeftArrow);
-                    AddKey(db, TermInfo.Database.KeyPageDown, ConsoleKey.PageDown);
-                    AddKey(db, TermInfo.Database.KeyPageUp, ConsoleKey.PageUp);
-                    AddKey(db, TermInfo.Database.KeyRight, ConsoleKey.RightArrow);
                     AddKey(db, TermInfo.Database.KeyEnd, ConsoleKey.End);
                     AddKey(db, TermInfo.Database.KeyEnter, ConsoleKey.Enter);
                     AddKey(db, TermInfo.Database.KeyHelp, ConsoleKey.Help);
-                    AddKey(db, TermInfo.Database.KeyPrint, ConsoleKey.Print);
+                    AddKey(db, TermInfo.Database.KeyHome, ConsoleKey.Home);
                     AddKey(db, TermInfo.Database.KeyInsert, ConsoleKey.Insert);
-                    AddKey(db, TermInfo.Database.KeyDelete, ConsoleKey.Delete);
+                    AddKey(db, TermInfo.Database.KeyLeft, ConsoleKey.LeftArrow);
+                    AddKey(db, TermInfo.Database.KeyPageDown, ConsoleKey.PageDown);
+                    AddKey(db, TermInfo.Database.KeyPageUp, ConsoleKey.PageUp);
+                    AddKey(db, TermInfo.Database.KeyPrint, ConsoleKey.Print);
+                    AddKey(db, TermInfo.Database.KeyRight, ConsoleKey.RightArrow);
+                    AddKey(db, TermInfo.Database.KeyUp, ConsoleKey.UpArrow);
 
                     MaxKeyLength = KeyFormatToConsoleKey.Keys.Max(key => key.Length);
                     MinKeyLength = KeyFormatToConsoleKey.Keys.Min(key => key.Length);
@@ -948,14 +991,16 @@ namespace System
                 public const int KeyInsert = 77;
                 /// <summary>The well-known index of key_left</summary>
                 public const int KeyLeft = 79;
-                /// <summary>The well-known index of key_right</summary>
+                /// <summary>The well-known index of key_npage</summary>
                 public const int KeyPageDown = 81;
                 /// <summary>The well-known index of key_ppage</summary>
                 public const int KeyPageUp = 82;
-                /// <summary>The well-known index of key_up</summary>
+                /// <summary>The well-known index of key_right</summary>
                 public const int KeyRight = 83;
-                /// <summary>The well-known index of key_npage</summary>
+                /// <summary>The well-known index of key_up</summary>
                 public const int KeyUp = 87;
+                /// <summary>The well-known index of keypad_xmit.</summary>
+                public const int KeypadXmit = 89;
                 /// <summary>The well-known index of key_cancel</summary>
                 public const int KeyCancel = 159;
                 /// <summary>The well-known index of key_close</summary>
