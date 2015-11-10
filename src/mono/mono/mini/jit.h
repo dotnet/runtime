@@ -47,7 +47,7 @@ typedef enum {
 	MONO_AOT_MODE_NONE,
 	/* Enables normal AOT mode, equivalent to mono_jit_set_aot_only (false) */
 	MONO_AOT_MODE_NORMAL,
-	/* Enables hyrbid AOT mode, JIT can still be used for wrappers */
+	/* Enables hybrid AOT mode, JIT can still be used for wrappers */
 	MONO_AOT_MODE_HYBRID,
 	/* Enables full AOT mode, JIT is disabled and not allowed,
 	 * equivalent to mono_jit_set_aot_only (true) */
