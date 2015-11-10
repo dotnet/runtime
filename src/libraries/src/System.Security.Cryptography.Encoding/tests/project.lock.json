@@ -229,7 +229,7 @@
           "lib/dotnet/System.Runtime.Numerics.dll": {}
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23506": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -388,7 +388,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00118": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -641,7 +641,7 @@
           "lib/dotnet/System.Runtime.Numerics.dll": {}
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23506": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -800,7 +800,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00118": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1053,7 +1053,7 @@
           "lib/dotnet/System.Runtime.Numerics.dll": {}
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23506": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -1212,7 +1212,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00118": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1841,10 +1841,10 @@
         "System.Runtime.Numerics.nuspec"
       ]
     },
-    "System.Security.Cryptography.Primitives/4.0.0-beta-23506": {
+    "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "53QKTzQIXvUzkcLyCqYLIGxXfVy3JRjDJWwih2rl61wGhusaY6nn8tu3IV9rYsIkFGpdOhScUjW93N7ADu4YjQ==",
+      "sha512": "4av3kVaRkbTUEeDSvW312Y/hehNFapnaFfGnQyGkuQ4e5n5ux5sdnoFrDZfOsBSbHuhaRraBB5ITsVLdQD0lNQ==",
       "files": [
         "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -1858,8 +1858,8 @@
         "ref/net46/System.Security.Cryptography.Primitives.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23506.nupkg",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23506.nupkg.sha512",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23509.nupkg",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23509.nupkg.sha512",
         "System.Security.Cryptography.Primitives.nuspec"
       ]
     },
@@ -2129,14 +2129,14 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00118": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00119": {
       "type": "package",
       "serviceable": true,
-      "sha512": "L+kZbVpZcKGS73PtPUi9uT3NsyFiGpRnDzFvgbrxlCUmuvWi5JIZ7WztGdpA3nlUGz2Fdz3HYxBtdmWLfjgLCQ==",
+      "sha512": "oCniHZ9M9IVdGV3iInQDEja2mK+i+r9MyJzH1/gLD8drExfVuvYc1QuzOer9eu0GPZxPRsP/K9MiGR1vC555HQ==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00118.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00118.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00119.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00119.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }

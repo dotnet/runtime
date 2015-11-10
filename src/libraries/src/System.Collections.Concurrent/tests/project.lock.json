@@ -35,7 +35,7 @@
           "lib/dotnet/System.Collections.Concurrent.dll": {}
         }
       },
-      "System.Console/4.0.0-beta-23506": {
+      "System.Console/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -397,7 +397,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00117": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -424,7 +424,7 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x86": {
-      "runtime.win7.System.Console/4.0.0-beta-23506": {
+      "runtime.win7.System.Console/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.10",
@@ -476,7 +476,7 @@
           "lib/dotnet/System.Collections.Concurrent.dll": {}
         }
       },
-      "System.Console/4.0.0-beta-23506": {
+      "System.Console/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -863,7 +863,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00117": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -890,7 +890,7 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x64": {
-      "runtime.win7.System.Console/4.0.0-beta-23506": {
+      "runtime.win7.System.Console/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.10",
@@ -942,7 +942,7 @@
           "lib/dotnet/System.Collections.Concurrent.dll": {}
         }
       },
-      "System.Console/4.0.0-beta-23506": {
+      "System.Console/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -1329,7 +1329,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00117": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1357,14 +1357,14 @@
     }
   },
   "libraries": {
-    "runtime.win7.System.Console/4.0.0-beta-23506": {
+    "runtime.win7.System.Console/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "AKzJ2WO7Zbo0MHcuaQDl/h5HsWqIVtSR4jhk2OEjYhDUow0eUFXU+Hxe2ney3Ao4NbIQw0zzL7QcqpLAegF1cg==",
+      "sha512": "ASEnMAJWxwQXnvppE7TNTDnCqlrhg7WmB+c7FqGAVSa5YCSpYognGDyomzWe2rfxLDpaM/AB1+TMqC/AAVzmqQ==",
       "files": [
         "ref/dotnet/_._",
-        "runtime.win7.System.Console.4.0.0-beta-23506.nupkg",
-        "runtime.win7.System.Console.4.0.0-beta-23506.nupkg.sha512",
+        "runtime.win7.System.Console.4.0.0-beta-23509.nupkg",
+        "runtime.win7.System.Console.4.0.0-beta-23509.nupkg.sha512",
         "runtime.win7.System.Console.nuspec",
         "runtimes/win7/lib/dotnet5.4/System.Console.dll",
         "runtimes/win7/lib/net/_._"
@@ -1436,10 +1436,10 @@
         "System.Collections.Concurrent.nuspec"
       ]
     },
-    "System.Console/4.0.0-beta-23506": {
+    "System.Console/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "ICGw38+F7q2PTxDJJZ+LCpBWt/shqg6ANAPpmFzq0s9xZPlFwN0U5OhyyzeNlSGoSzljwNngCnt6mn5jivFd3g==",
+      "sha512": "lKIu7kM7havqnOAnXWLNUg3s3iGjNN3oKeuJKNnhvOx+ty4ZUPS6OXldbyMrcz7yggE2SuQIjjbsHS9aINszzQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -1463,8 +1463,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Console.4.0.0-beta-23506.nupkg",
-        "System.Console.4.0.0-beta-23506.nupkg.sha512",
+        "System.Console.4.0.0-beta-23509.nupkg",
+        "System.Console.4.0.0-beta-23509.nupkg.sha512",
         "System.Console.nuspec"
       ]
     },
@@ -2369,14 +2369,14 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00117": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00119": {
       "type": "package",
       "serviceable": true,
-      "sha512": "J/h6fIXbUFA1Wod9YJJmUH5dbe4F2Pp2cgdYvh2yTRE3O+FEfYr1kN34K+e00thhK5HQoPZ9pRdpkrS9w42InA==",
+      "sha512": "oCniHZ9M9IVdGV3iInQDEja2mK+i+r9MyJzH1/gLD8drExfVuvYc1QuzOer9eu0GPZxPRsP/K9MiGR1vC555HQ==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00117.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00117.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00119.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00119.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }

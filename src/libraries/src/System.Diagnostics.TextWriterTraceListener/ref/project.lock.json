@@ -3,7 +3,7 @@
   "version": 2,
   "targets": {
     ".NETPlatform,Version=v5.4": {
-      "System.Diagnostics.TraceSource/4.0.0-beta-23506": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -49,7 +49,7 @@
       }
     },
     ".NETPlatform,Version=v5.4/win7-x86": {
-      "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23506": {
+      "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -85,7 +85,7 @@
           "ref/dotnet/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Diagnostics.TraceSource/4.0.0-beta-23506": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -190,7 +190,7 @@
       }
     },
     ".NETPlatform,Version=v5.4/win7-x64": {
-      "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23506": {
+      "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -226,7 +226,7 @@
           "ref/dotnet/System.Diagnostics.Debug.dll": {}
         }
       },
-      "System.Diagnostics.TraceSource/4.0.0-beta-23506": {
+      "System.Diagnostics.TraceSource/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
@@ -332,14 +332,14 @@
     }
   },
   "libraries": {
-    "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23506": {
+    "runtime.win7.System.Diagnostics.TraceSource/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "soSdQZ9frbSs+Ng0mszA7HSjdph7L1Za2xidlVRaDcwI3NwIcTaCVZhDr5oi8gIa9nMkNYlzeSUjv1/MdWr4Bg==",
+      "sha512": "2YMtmvSHiwC2vVVRUNi9QEwbd7jbjENwplsxzmsWq14d8glP17fB84XSJP2h6oMdffDek7t3x5uCkFMYXLdiPA==",
       "files": [
         "ref/dotnet/_._",
-        "runtime.win7.System.Diagnostics.TraceSource.4.0.0-beta-23506.nupkg",
-        "runtime.win7.System.Diagnostics.TraceSource.4.0.0-beta-23506.nupkg.sha512",
+        "runtime.win7.System.Diagnostics.TraceSource.4.0.0-beta-23509.nupkg",
+        "runtime.win7.System.Diagnostics.TraceSource.4.0.0-beta-23509.nupkg.sha512",
         "runtime.win7.System.Diagnostics.TraceSource.nuspec",
         "runtimes/win7/lib/dotnet5.4/System.Diagnostics.TraceSource.dll",
         "runtimes/win7/lib/net/_._",
@@ -417,10 +417,10 @@
         "System.Diagnostics.Debug.nuspec"
       ]
     },
-    "System.Diagnostics.TraceSource/4.0.0-beta-23506": {
+    "System.Diagnostics.TraceSource/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "bn7vw+/9Nw/HGOY2ro+OISlTSXtfCPT88eveBYGEUtBvrq7F645vHLHtob82oHtrdjzyw6BlGEpwV4eQaYXTQg==",
+      "sha512": "yhbks6Y8z10azpBIJuZWqpDEPqIUlzydJx1hlivJ0XD45BSk4TQ+wI6RAyUq2vEBx/M8s/VeCTRWs0/dHu785Q==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -444,8 +444,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23506.nupkg",
-        "System.Diagnostics.TraceSource.4.0.0-beta-23506.nupkg.sha512",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23509.nupkg",
+        "System.Diagnostics.TraceSource.4.0.0-beta-23509.nupkg.sha512",
         "System.Diagnostics.TraceSource.nuspec"
       ]
     },

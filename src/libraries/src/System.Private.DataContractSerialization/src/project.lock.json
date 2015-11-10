@@ -272,7 +272,7 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.Serialization.Primitives/4.1.0-beta-23506": {
+      "System.Runtime.Serialization.Primitives/4.1.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
@@ -736,7 +736,7 @@
           "lib/netcore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.Serialization.Primitives/4.1.0-beta-23506": {
+      "System.Runtime.Serialization.Primitives/4.1.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
@@ -1207,7 +1207,7 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.Serialization.Primitives/4.1.0-beta-23506": {
+      "System.Runtime.Serialization.Primitives/4.1.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
@@ -1660,7 +1660,7 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.Serialization.Primitives/4.1.0-beta-23506": {
+      "System.Runtime.Serialization.Primitives/4.1.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
@@ -2140,7 +2140,7 @@
           "lib/netcore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.Serialization.Primitives/4.1.0-beta-23506": {
+      "System.Runtime.Serialization.Primitives/4.1.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
@@ -2638,7 +2638,7 @@
           "lib/netcore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.Serialization.Primitives/4.1.0-beta-23506": {
+      "System.Runtime.Serialization.Primitives/4.1.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
@@ -3525,10 +3525,10 @@
         "System.Runtime.InteropServices.nuspec"
       ]
     },
-    "System.Runtime.Serialization.Primitives/4.1.0-beta-23506": {
+    "System.Runtime.Serialization.Primitives/4.1.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "Lw8kqRXXU/QfeGt8Eui1sl8Td6t7ZRlRdlMDtFhrGWw+NOrwJl3aVSi394sLh0JIXM18jNDms3t1cPql9DZy3g==",
+      "sha512": "yaXzOEYlHb0ilBIyEcwspGk0TZQZ43yW+kPZypzF+7sf+Zwi1FhzkBVadA4t30vwptNr2uKaRXXzjpXNgg8cEQ==",
       "files": [
         "lib/dotnet5.4/System.Runtime.Serialization.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -3581,8 +3581,8 @@
         "ref/wpa81/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Runtime.Serialization.Primitives.4.1.0-beta-23506.nupkg",
-        "System.Runtime.Serialization.Primitives.4.1.0-beta-23506.nupkg.sha512",
+        "System.Runtime.Serialization.Primitives.4.1.0-beta-23509.nupkg",
+        "System.Runtime.Serialization.Primitives.4.1.0-beta-23509.nupkg.sha512",
         "System.Runtime.Serialization.Primitives.nuspec"
       ]
     },

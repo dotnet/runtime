@@ -69,7 +69,7 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23504": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -183,7 +183,7 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23504": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -297,7 +297,7 @@
           "ref/dotnet/System.Runtime.dll": {}
         }
       },
-      "System.Security.Cryptography.Primitives/4.0.0-beta-23504": {
+      "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.0",
@@ -654,10 +654,10 @@
         "System.Runtime.nuspec"
       ]
     },
-    "System.Security.Cryptography.Primitives/4.0.0-beta-23504": {
+    "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "IeEsY14NY8P4Diq3+xByaOBqQh7T5x55p38K78q3abi7MMhebZ2ulPs9/h+q+roTiarc8ZhO6v6ewllb883nyA==",
+      "sha512": "4av3kVaRkbTUEeDSvW312Y/hehNFapnaFfGnQyGkuQ4e5n5ux5sdnoFrDZfOsBSbHuhaRraBB5ITsVLdQD0lNQ==",
       "files": [
         "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -671,8 +671,8 @@
         "ref/net46/System.Security.Cryptography.Primitives.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23504.nupkg",
-        "System.Security.Cryptography.Primitives.4.0.0-beta-23504.nupkg.sha512",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23509.nupkg",
+        "System.Security.Cryptography.Primitives.4.0.0-beta-23509.nupkg.sha512",
         "System.Security.Cryptography.Primitives.nuspec"
       ]
     },
