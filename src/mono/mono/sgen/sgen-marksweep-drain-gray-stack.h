@@ -223,7 +223,7 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 #ifdef COPY_OR_MARK_CONCURRENT
 #define HANDLE_PTR(ptr,obj)	do {					\
 		GCObject *__old = *(ptr);				\
-		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
+		binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
 		if (__old && !sgen_ptr_in_nursery (__old)) {            \
 			MSBlockInfo *block = MS_BLOCK_FOR_OBJ (__old);	\
 			if (G_UNLIKELY (!sgen_ptr_in_nursery (ptr) &&	\
@@ -242,7 +242,7 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 #else
 #define HANDLE_PTR(ptr,obj)	do {					\
 		void *__old = *(ptr);					\
-		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
+		binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
 		if (__old) {						\
 			gboolean __still_in_nursery = COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
 			if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
