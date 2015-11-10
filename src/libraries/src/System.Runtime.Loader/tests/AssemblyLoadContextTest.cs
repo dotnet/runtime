@@ -15,12 +15,18 @@ namespace System.Runtime.Loader.Tests
     {
         private const string TestAssembly = "System.Runtime.Loader.Test.Assembly";
 
+        [ActiveIssue(/* dotnet/coreclr */ 1187, PlatformID.Windows)] // dependency on coreclr behavior, waiting for new coreclr
         [Fact]
         public static void GetAssemblyNameTest_ValidAssembly()
         {
             var expectedName = typeof(ISet<>).GetTypeInfo().Assembly.GetName();
             var actualAsmName = AssemblyLoadContext.GetAssemblyName("System.Runtime.dll");
             Assert.Equal(expectedName.FullName, actualAsmName.FullName);
+
+            // Verify that the AssemblyName returned by GetAssemblyName can be used to load an assembly. System.Runtime would
+            // already be loaded, but this is just verifying it does not throw some other unexpected exception.
+            var asm = Assembly.Load(actualAsmName);
+            Assert.NotNull(asm);
         }
 
         [Fact]
@@ -109,7 +115,6 @@ namespace System.Runtime.Loader.Tests
             Assert.NotNull(context);
         }
 
-        [ActiveIssue(3569, PlatformID.Windows)]
         [Fact]
         public static void InitializeDefaultContextTest()
         {
