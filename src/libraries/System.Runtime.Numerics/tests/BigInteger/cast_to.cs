@@ -275,6 +275,9 @@ namespace System.Numerics.Tests
             // Single Explicit Cast to BigInteger: Single.PositiveInfinity
             Assert.Throws<OverflowException>(() => { BigInteger temp = (BigInteger)Single.PositiveInfinity; });
 
+            // double.IsInfinity(float.MaxValue * 2.0f) == false, but we don't want this odd behavior here
+            Assert.Throws<OverflowException>(() => { BigInteger temp = (BigInteger)(float.MaxValue * 2.0f); });
+
             // Single Explicit Cast to BigInteger: Single.Epsilon
             VerifySingleExplicitCastToBigInteger(Single.Epsilon);
 
