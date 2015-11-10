@@ -9,7 +9,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
   </PropertyGroup>
-  
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
@@ -19,7 +18,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
-
   <ItemGroup>
     <Compile Include="System\Net\NetworkInformation\IPStatus.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.cs" />
@@ -28,7 +26,6 @@
     <Compile Include="System\Net\NetworkInformation\PingOptions.cs" />
     <Compile Include="System\Net\NetworkInformation\PingReply.cs" />
   </ItemGroup>
-
   <!-- System.Net Common -->
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
@@ -44,7 +41,6 @@
       <Link>Common\System\Net\SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>
-    
   <!-- Logging -->
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
@@ -63,7 +59,6 @@
       <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
   </ItemGroup>
-    
   <!-- System.Net.Internals -->
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Net\Internals\IPAddressExtensions.cs">
@@ -72,30 +67,26 @@
     <Compile Include="$(CommonPath)\System\Net\Internals\IPEndPointExtensions.cs">
       <Link>Common\System\Net\Internals\IPEndPointExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
-      <Link>Common\System\Net\Sockets\SocketType.cs</Link>
-    </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\Net\NetworkInformation\Icmpv4MessageConstants.cs" />
+    <Compile Include="System\Net\NetworkInformation\Icmpv6MessageConstants.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.Unix.cs" />
-
     <!-- System.Net Common -->
+    <Compile Include="$(CommonPath)\System\Net\RawSocketPermissions.cs">
+      <Link>Common\System\Net\RawSocketPermissions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
       <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Unix.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolType.cs">
-      <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
-    </Compile>
-
     <!-- Interop -->
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs" >
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs" >
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
@@ -108,10 +99,8 @@
       <Link>Common\Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Net\NetworkInformation\Ping.Windows.cs" />
-
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs">
       <Link>Common\System\Net\SocketAddressPal.Windows.cs</Link>
@@ -119,7 +108,6 @@
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Windows.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Windows.cs</Link>
     </Compile>
-    
     <!-- Microsoft.Win32.SafeHandles Common -->
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
@@ -127,7 +115,6 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
     </Compile>
-
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -153,8 +140,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.cs">
       <Link>Common\Interop\Windows\Winsock\Interop.WSASocketW.cs</Link>
     </Compile>
+    <!-- System.Net.Internals -->
+    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
+      <Link>Common\System\Net\Sockets\SocketType.cs</Link>
+    </Compile>
   </ItemGroup>
-  
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

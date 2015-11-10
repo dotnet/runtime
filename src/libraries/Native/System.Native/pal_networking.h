@@ -81,8 +81,10 @@ enum SocketType : int32_t
  */
 enum ProtocolType : int32_t
 {
-    PAL_PT_TCP = 6,  // System.Net.ProtocolType.Tcp
-    PAL_PT_UDP = 17, // System.Net.ProtocolType.Udp
+    PAL_PT_ICMP = 1,        // System.Net.ProtocolType.Icmp
+    PAL_PT_TCP = 6,         // System.Net.ProtocolType.Tcp
+    PAL_PT_UDP = 17,        // System.Net.ProtocolType.Udp
+    PAL_PT_ICMPV6 = 58,     // System.Net.ProtocolType.IcmpV6
 };
 
 enum MulticastOption : int32_t
