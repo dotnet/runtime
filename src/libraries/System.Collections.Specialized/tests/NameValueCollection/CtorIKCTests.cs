@@ -48,48 +48,55 @@ namespace System.Collections.Specialized.Tests
 
             // Set current CultureInfo to Turkish, so we can verify CurrentCulture vs. InvariantCulture
             // comparison types.  Must be done before calling any constructors.
-            var prevCulture = CultureInfo.DefaultThreadCurrentCulture;
-            CultureInfo.DefaultThreadCurrentCulture = new System.Globalization.CultureInfo("tr-TR");
+            var prevCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
 
-            // [] NameValueCollection is constructed as expected
-            //-----------------------------------------------------------------
+            try
+            {
+                // [] NameValueCollection is constructed as expected
+                //-----------------------------------------------------------------
 
-            //
-            //  create collection
-            //
-            //  capacity=0
-            //
-            nvc = new NameValueCollection(new IdiotComparer());
-            int len = values.Length;
-            for (int i = 0; i < len; i++)
-            {
-                nvc.Add(names[i], values[i]);
-            }
-            if (nvc.Count != 1)
-            {
-                Assert.False(true, string.Format("Error, Count is {0} instead of {1}", nvc.Count, 1));
-            }
-            for (int i = 0; i < len; i++)
-            {
-                if (String.Compare(nvc[names[i]], exp3) != 0)
+                //
+                //  create collection
+                //
+                //  capacity=0
+                //
+                nvc = new NameValueCollection(new IdiotComparer());
+                int len = values.Length;
+                for (int i = 0; i < len; i++)
                 {
-                    Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc[names[i]], exp3));
+                    nvc.Add(names[i], values[i]);
                 }
-            }
-            if (nvc["Everything Is Equal!"] == null)
-            {
-                Assert.False(true, string.Format("Error, returned null instead of {0} ", exp3));
-            }
-            else if (String.Compare(nvc["Everything Is Equal!"], exp3) != 0)
-            {
-                Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc["Everything Is Equal!"], exp3));
-            }
+                if (nvc.Count != 1)
+                {
+                    Assert.False(true, string.Format("Error, Count is {0} instead of {1}", nvc.Count, 1));
+                }
+                for (int i = 0; i < len; i++)
+                {
+                    if (String.Compare(nvc[names[i]], exp3) != 0)
+                    {
+                        Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc[names[i]], exp3));
+                    }
+                }
+                if (nvc["Everything Is Equal!"] == null)
+                {
+                    Assert.False(true, string.Format("Error, returned null instead of {0} ", exp3));
+                }
+                else if (String.Compare(nvc["Everything Is Equal!"], exp3) != 0)
+                {
+                    Assert.False(true, string.Format("Error, returned {0} instead of {1}", nvc["Everything Is Equal!"], exp3));
+                }
 
-            // Comparer is null --> use default comparer
+                // Comparer is null --> use default comparer
 
-            NameValueCollection nvc2 = new NameValueCollection((IEqualityComparer)null);
-            nvc.Add("one", "one");
-            nvc.Remove("one");
+                NameValueCollection nvc2 = new NameValueCollection((IEqualityComparer)null);
+                nvc.Add("one", "one");
+                nvc.Remove("one");
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = prevCulture;
+            }
         }
     }
 }
