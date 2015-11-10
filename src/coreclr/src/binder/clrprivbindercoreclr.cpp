@@ -15,7 +15,8 @@ using namespace BINDER_SPACE;
 //-----------------------------------------------------------------------------
 
 HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                       BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly)
+                                                       BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
+                                                       bool excludeAppPaths)
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
     HRESULT hr = S_OK;
@@ -31,6 +32,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
                                       NULL,
                                       FALSE, //fNgenExplicitBind,
                                       FALSE, //fExplicitBindToNativeImage,
+                                      excludeAppPaths,
                                       ppCoreCLRFoundAssembly);
     if (!FAILED(hr))
     {
@@ -59,7 +61,7 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
         SAFE_NEW(pAssemblyName, AssemblyName);
         IF_FAIL_GO(pAssemblyName->Init(pIAssemblyName));
         
-        hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly);
+        hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, false /* excludeAppPaths */);
         IF_FAIL_GO(hr);
             
         *ppAssembly = pCoreCLRFoundAssembly.Extract();
@@ -167,6 +169,7 @@ HRESULT CLRPrivBinderCoreCLR::Bind(SString           &assemblyDisplayName,
                                           pParentAssembly,
                                           fNgenExplicitBind,
                                           fExplicitBindToNativeImage,
+                                          false, // excludeAppPaths
                                           &pAsm);
         if(SUCCEEDED(hr))
         {
