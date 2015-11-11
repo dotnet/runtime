@@ -140,8 +140,6 @@ def static getBuildJobName(def configuration, def architecture, def os) {
             def triggerByPhraseOnly = true;
             if (os == 'OpenSUSE13.2' && architecture == 'x64') {
                 triggerPhraseString = '(?i).*test\\W+suse.*'
-            } else if (architecture == 'x86' && osGroup == 'Windows_NT') {
-                triggerPhraseString = '(?i).*test\\W+x86.*'
             } else if (architecture == 'x86' && osGroup == 'Linux') {
                 triggerPhraseString = '(?i).*test\\W+x86\\W+linux.*'
             } else if (architecture == 'x86' && osGroup == 'OSX') {
@@ -159,7 +157,7 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                 Utilities.addStandardOptions(newJob)
                 
                 // Instead of packing up all the 
-                if (osGroup == 'Windows_NT') {
+                if (osGroup == 'Windows_NT' && architecture == 'x64') {
                     Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
                     Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
                 } else {
