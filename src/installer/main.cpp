@@ -183,14 +183,22 @@ int main(const int argc, const pal::char_t* argv[])
     auto app_base = get_directory(args.managed_application);
     auto app_name = get_filename(args.managed_application);
 
+    // App-local coreclr wins
+    {
+        pal::string_t candidate;
+        candidate.assign(app_base);
+        append_path(candidate, LIBCORECLR_NAME);
+
+        if (pal::file_exists(candidate))
+        {
+            args.clr_path.assign(app_base);
+        }
+    }
+
     if (args.clr_path.empty())
     {
-        // Use the directory containing the managed assembly
-        if (!find_coreclr(app_base, args.clr_path))
-        {
-            trace::error(_X("failed to locate CLR files"));
-            return 1;
-        }
+        trace::error(_X("failed to locate CLR files, set the DOTNET_HOME environment variable"));
+        return 1;
     }
 
     if (!pal::realpath(args.clr_path))
