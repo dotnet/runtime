@@ -160,7 +160,7 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                 if (osGroup == 'Windows_NT' && architecture == 'x64') {
                     Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
                     Utilities.addArchival(newJob, "bin/Product/**,bin/tests/tests.zip")
-                } else {
+                } else if (osGroup != 'Windows_NT') {
                     // Add .NET results for the 
                     Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
                     Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**")
