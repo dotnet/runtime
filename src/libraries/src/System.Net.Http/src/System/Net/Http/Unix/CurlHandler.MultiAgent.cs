@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-// TODO: Once we upgrade to C# 6, remove all of these and simply import the libcurl class.
+// TODO: Once we upgrade to C# 6, remove all of these and simply import the Http class.
 using CURLAUTH = Interop.Http.CURLAUTH;
 using CURLcode = Interop.Http.CURLcode;
 using CURLINFO = Interop.Http.CURLINFO;
@@ -666,7 +666,18 @@ namespace System.Net.Http
                     // Is there a previous read that may still have data to be consumed?
                     if (sts._task != null)
                     {
-                        Debug.Assert(sts._task.IsCompleted, "The task must have completed if we're getting called back.");
+                        if (!sts._task.IsCompleted)
+                        {
+                            // We have a previous read that's not yet completed.  This should be quite rare, but it can
+                            // happen when we're unpaused prematurely, potentially due to the request still finishing
+                            // being sent as the server starts to send a response.  Since we still have the outstanding
+                            // read, we simply re-pause.  When the task completes (which could have happened immediately
+                            // after the check). the continuation we previously created will fire and queue an unpause.
+                            // Since all of this processing is single-threaded on the current thread, that unpause request 
+                            // is guaranteed to happen after this re-pause.
+                            multi.VerboseTrace("Re-pausing reading after a spurious un-pause", easy: easy);
+                            return Interop.Http.CURL_READFUNC_PAUSE;
+                        }
 
                         // Determine how many bytes were read on the last asynchronous read.
                         // If nothing was read, then we're done and can simply return 0 to indicate
