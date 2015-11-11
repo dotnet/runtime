@@ -28,9 +28,9 @@ The .NET Platform Standard version represents binary portability across platform
 - **Platform** - e.g. .NET Framework 4.5, Windows Phone 8.1
 - **Reference Assembly** - An assembly that contains API surface only. There is no IL in the method bodies. It is used for compilation only, and cannot be used to run. Also commonly referred to as "Contracts".
 - **Implementation Assembly** - An assembly that contains an implementation of a reference assembly. These can be implemented as standalone assemblies but can sometimes be anchored by a platform and cannot be updated without updating the platform.
-- **Anchored Assembly** - An assembly that is not in the Platform Standard and is able to ship independently on top of many platforms but for specific platforms, the platform must be updated to support them. This set varies by platform.
+- **Anchored Assembly** - An implementation assembly where at least one platform provides the implementation as part of the platform rather than on top of it. Such an "anchored assembly" may only be updated on that platform by updating the platform itself.
 - **Multi-targeting** - to compile the same source code files to different target platforms, i.e. against different API sets
-- **Standard Library** - A blessed set of core .NET API's and versions that are prescribed to be used and supported together. This includes API's in the Platform Standard plus additional libraries that are core to .NET but built on top of the Platform Standard.
+- **Standard Library** - A blessed set of core .NET API's and versions that are prescribed to be used and supported together. This includes all of the API's in the Platform Standard plus additional libraries that are core to .NET but built on top of the Platform Standard. More than one Standard Library version can support the same Platform Standard.
 
 ## Principles
 - Platform owners implement reference assemblies from a particular .NET Platform Standard version.
