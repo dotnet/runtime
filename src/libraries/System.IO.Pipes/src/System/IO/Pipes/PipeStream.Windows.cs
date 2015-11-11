@@ -187,7 +187,7 @@ namespace System.IO.Pipes
             CheckWriteOperations();
             if (!CanWrite)
             {
-                throw __Error.GetWriteNotSupported();
+                throw Error.GetWriteNotSupported();
             }
 
             // Block until other end of the pipe has read everything.
@@ -464,7 +464,7 @@ namespace System.IO.Pipes
         }
 
         /// <summary>
-        /// Filter out all pipe related errors and do some cleanup before calling __Error.WinIOError.
+        /// Filter out all pipe related errors and do some cleanup before calling Error.WinIOError.
         /// </summary>
         /// <param name="errorCode"></param>
         [SecurityCritical]
@@ -480,7 +480,7 @@ namespace System.IO.Pipes
                     return new IOException(SR.IO_PipeBroken, Win32Marshal.MakeHRFromErrorCode(errorCode));
 
                 case Interop.mincore.Errors.ERROR_HANDLE_EOF:
-                    return __Error.GetEndOfFile();
+                    return Error.GetEndOfFile();
 
                 case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
                     // For invalid handles, detect the error and mark our handle

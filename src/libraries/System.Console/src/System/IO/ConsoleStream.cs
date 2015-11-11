@@ -49,28 +49,28 @@ namespace System.IO
 
         public sealed override long Length
         {
-            get { throw __Error.GetSeekNotSupported(); }
+            get { throw Error.GetSeekNotSupported(); }
         }
 
         public sealed override long Position
         {
-            get { throw __Error.GetSeekNotSupported(); }
-            set { throw __Error.GetSeekNotSupported(); }
+            get { throw Error.GetSeekNotSupported(); }
+            set { throw Error.GetSeekNotSupported(); }
         }
 
         public override void Flush()
         {
-            if (!CanWrite) throw __Error.GetWriteNotSupported();
+            if (!CanWrite) throw Error.GetWriteNotSupported();
         }
 
         public sealed override void SetLength(long value)
         {
-            throw __Error.GetSeekNotSupported();
+            throw Error.GetSeekNotSupported();
         }
 
         public sealed override long Seek(long offset, SeekOrigin origin)
         {
-            throw __Error.GetSeekNotSupported();
+            throw Error.GetSeekNotSupported();
         }
 
         protected void ValidateRead(byte[] buffer, int offset, int count)
@@ -82,7 +82,7 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
-            if (!_canRead) throw __Error.GetReadNotSupported();
+            if (!_canRead) throw Error.GetReadNotSupported();
         }
 
         protected void ValidateWrite(byte[] buffer, int offset, int count)
@@ -94,7 +94,7 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
-            if (!_canWrite) throw __Error.GetWriteNotSupported();
+            if (!_canWrite) throw Error.GetWriteNotSupported();
         }
     }
 }

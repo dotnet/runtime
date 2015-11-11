@@ -120,7 +120,7 @@ namespace System.IO.Pipes
             CheckReadWriteArgs(buffer, offset, count);
             if (!CanRead)
             {
-                throw __Error.GetReadNotSupported();
+                throw Error.GetReadNotSupported();
             }
             CheckReadOperations();
 
@@ -133,7 +133,7 @@ namespace System.IO.Pipes
             CheckReadWriteArgs(buffer, offset, count);
             if (!CanRead)
             {
-                throw __Error.GetReadNotSupported();
+                throw Error.GetReadNotSupported();
             }
 
             if (cancellationToken.IsCancellationRequested)
@@ -169,7 +169,7 @@ namespace System.IO.Pipes
             CheckReadWriteArgs(buffer, offset, count);
             if (!CanWrite)
             {
-                throw __Error.GetWriteNotSupported();
+                throw Error.GetWriteNotSupported();
             }
             CheckWriteOperations();
 
@@ -182,7 +182,7 @@ namespace System.IO.Pipes
             CheckReadWriteArgs(buffer, offset, count);
             if (!CanWrite)
             {
-                throw __Error.GetWriteNotSupported();
+                throw Error.GetWriteNotSupported();
             }
 
             if (cancellationToken.IsCancellationRequested)
@@ -263,7 +263,7 @@ namespace System.IO.Pipes
             CheckWriteOperations();
             if (!CanWrite)
             {
-                throw __Error.GetWriteNotSupported();
+                throw Error.GetWriteNotSupported();
             }
         }
 
@@ -335,7 +335,7 @@ namespace System.IO.Pipes
 
                 if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
                 {
-                    throw __Error.GetPipeNotOpen();
+                    throw Error.GetPipeNotOpen();
                 }
                 // don't need to check transmission mode; just care about read mode. Always use
                 // cached mode; otherwise could throw for valid message when other side is shutting down
@@ -367,7 +367,7 @@ namespace System.IO.Pipes
                 }
                 if (_handle.IsClosed)
                 {
-                    throw __Error.GetPipeNotOpen();
+                    throw Error.GetPipeNotOpen();
                 }
 
                 _isHandleExposed = true;
@@ -423,7 +423,7 @@ namespace System.IO.Pipes
         {
             get
             {
-                throw __Error.GetSeekNotSupported();
+                throw Error.GetSeekNotSupported();
             }
         }
 
@@ -431,22 +431,22 @@ namespace System.IO.Pipes
         {
             get
             {
-                throw __Error.GetSeekNotSupported();
+                throw Error.GetSeekNotSupported();
             }
             set
             {
-                throw __Error.GetSeekNotSupported();
+                throw Error.GetSeekNotSupported();
             }
         }
 
         public override void SetLength(long value)
         {
-            throw __Error.GetSeekNotSupported();
+            throw Error.GetSeekNotSupported();
         }
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            throw __Error.GetSeekNotSupported();
+            throw Error.GetSeekNotSupported();
         }
 
         // anonymous pipe ends and named pipe server can get/set properties when broken 
@@ -462,7 +462,7 @@ namespace System.IO.Pipes
             // these throw object disposed
             if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
             {
-                throw __Error.GetPipeNotOpen();
+                throw Error.GetPipeNotOpen();
             }
         }
 
@@ -489,7 +489,7 @@ namespace System.IO.Pipes
             // these throw object disposed
             if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
             {
-                throw __Error.GetPipeNotOpen();
+                throw Error.GetPipeNotOpen();
             }
         }
 
@@ -521,7 +521,7 @@ namespace System.IO.Pipes
             // these throw object disposed
             if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
             {
-                throw __Error.GetPipeNotOpen();
+                throw Error.GetPipeNotOpen();
             }
         }
 

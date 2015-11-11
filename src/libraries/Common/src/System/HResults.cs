@@ -3,7 +3,7 @@
 
 //=============================================================================
 //
-// Class: __HResults
+// Class: HResults
 //
 // Purpose: Define HResult constants. Every exception has one of these.
 //
@@ -26,9 +26,9 @@ namespace System
     // Reflection will use 0x1600 -> 0x161f.  IO will use 0x1620 -> 0x163f.
     // Security will use 0x1640 -> 0x165f
 
-    // There are __HResults files in the IO, Remoting, Reflection & 
+    // There are HResults files in the IO, Remoting, Reflection & 
     // Security/Util directories as well, so choose your HResults carefully.
-    internal static class __HResults
+    internal static class HResults
     {
         internal const int APPMODEL_ERROR_NO_PACKAGE = unchecked((int)0x80073D54);
         internal const int CLDB_E_FILE_CORRUPT = unchecked((int)0x8013110e);

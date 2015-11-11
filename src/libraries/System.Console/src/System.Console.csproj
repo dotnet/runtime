@@ -33,7 +33,7 @@
     <Compile Include="System\IO\ConsoleStream.cs" />
     <Compile Include="System\IO\SyncTextReader.cs" />
     <Compile Include="System\IO\SyncTextWriter.cs" />
-    <Compile Include="System\IO\__Error.cs" />
+    <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\Text\ConsoleEncoding.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
@@ -44,7 +44,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
-	<Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConsoleCursorInfo.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConsoleCursorInfo.cs">
       <Link>Common\Interop\Windows\Interop.ConsoleCursorInfo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConsoleScreenBufferInfo.cs">
@@ -89,7 +89,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsoleInput.cs">
       <Link>Common\Interop\Windows\Interop.ReadConsoleInput.cs</Link>
     </Compile>
-	<Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCtrlHandler.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCtrlHandler.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleScreenBufferSize.cs">
@@ -116,7 +116,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\ConsolePal.Unix.cs" />
-	<Compile Include="System\IO\StdInStreamReader.cs" />
+    <Compile Include="System\IO\StdInStreamReader.cs" />
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>

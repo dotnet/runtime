@@ -10,7 +10,7 @@ using System.Diagnostics.Contracts;
 namespace System.IO
 {
     [Pure]
-    internal static class __Error
+    internal static class Error
     {
         // An alternative to Win32Marshal with friendlier messages for drives
         [System.Security.SecuritySafeCritical]  // auto-generated

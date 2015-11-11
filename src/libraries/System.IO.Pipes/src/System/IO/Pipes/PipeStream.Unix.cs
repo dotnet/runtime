@@ -122,7 +122,7 @@ namespace System.IO.Pipes
             CheckWriteOperations();
             if (!CanWrite)
             {
-                throw __Error.GetWriteNotSupported();
+                throw Error.GetWriteNotSupported();
             }
 
             throw new PlatformNotSupportedException(); // no mechanism for this on Unix
