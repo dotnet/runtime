@@ -219,6 +219,9 @@
           "ref/dotnet5.4/System.Net.Sockets.dll": {}
         }
       },
+      "System.Net.TestData/1.0.0-prerelease": {
+        "type": "package"
+      },
       "System.ObjectModel/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -523,9 +526,6 @@
         "runtime": {
           "lib/DNXCore50/System.Security.Cryptography.X509Certificates.dll": {}
         }
-      },
-      "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {
-        "type": "package"
       },
       "System.Security.Principal/4.0.0-beta-23127": {
         "type": "package",
@@ -1000,6 +1000,9 @@
           "ref/dotnet5.4/System.Net.Sockets.dll": {}
         }
       },
+      "System.Net.TestData/1.0.0-prerelease": {
+        "type": "package"
+      },
       "System.ObjectModel/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -1238,9 +1241,6 @@
         "compile": {
           "ref/dotnet5.4/System.Security.Cryptography.X509Certificates.dll": {}
         }
-      },
-      "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {
-        "type": "package"
       },
       "System.Security.Principal/4.0.0": {
         "type": "package",
@@ -1700,6 +1700,9 @@
           "ref/dotnet5.4/System.Net.Sockets.dll": {}
         }
       },
+      "System.Net.TestData/1.0.0-prerelease": {
+        "type": "package"
+      },
       "System.ObjectModel/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -1938,9 +1941,6 @@
         "compile": {
           "ref/dotnet5.4/System.Security.Cryptography.X509Certificates.dll": {}
         }
-      },
-      "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {
-        "type": "package"
       },
       "System.Security.Principal/4.0.0": {
         "type": "package",
@@ -2252,7 +2252,7 @@
     "runtime.win7.System.Net.Sockets/4.1.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "xl4jYo9kqHVu+hyBKcLlL+LxnrV8lcwkQHetWOtAF1w+Eycrug9O2AM7DLbs+GnD7EQOSQmXFTtMvtce73w7sg==",
+      "sha512": "Pz6iVeaG/r09VymifpWpGxnpDdw9dO6qIH31ox9C6SFIZs4rJVwouoL/wbhb9gQp236HDUN40IJ9SicQR0ZeAQ==",
       "files": [
         "lib/DNXCore50/System.Net.Sockets.dll",
         "lib/netcore50/System.Net.Sockets.dll",
@@ -2999,7 +2999,7 @@
     "System.Net.Sockets/4.1.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "Qvi+GpK3vNakxsarNTCKNA1JIAi0ck03XMHgon341yfnqriOJZntLNqt0w0uNJSupKgjIebPkNoL+X7cY4Kx2A==",
+      "sha512": "orozTEHJYOvUKZjSn+9zSYq4OUQyeHTkFm2bkz2yLdISQPDcwpCGN7RZYQCqu9JGKAhNvXnOTAT47tS3idhSEA==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -3026,6 +3026,22 @@
         "System.Net.Sockets.4.1.0-beta-23509.nupkg",
         "System.Net.Sockets.4.1.0-beta-23509.nupkg.sha512",
         "System.Net.Sockets.nuspec"
+      ]
+    },
+    "System.Net.TestData/1.0.0-prerelease": {
+      "type": "package",
+      "sha512": "l9+IvXxB9rkBreqYqTdQx7AbDKmdPLUS/ajm1elAJ3M0EssK6ulLnIFoYBdWXRIJMhnOufoA4xty2U3ojPz6Dw==",
+      "files": [
+        "content/TestData/contoso.com.cer",
+        "content/TestData/contoso.com.p7b",
+        "content/TestData/contoso.com.pfx",
+        "content/TestData/DummyTcpServer.pfx",
+        "content/TestData/testclient1_at_contoso.com.cer",
+        "content/TestData/testclient1_at_contoso.com.p7b",
+        "content/TestData/testclient1_at_contoso.com.pfx",
+        "System.Net.TestData.1.0.0-prerelease.nupkg",
+        "System.Net.TestData.1.0.0-prerelease.nupkg.sha512",
+        "System.Net.TestData.nuspec"
       ]
     },
     "System.ObjectModel/4.0.0": {
@@ -3093,7 +3109,7 @@
     "System.Private.Networking/4.0.1-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "44o/upd9ky/p9oeomgqxQ6itab+0xHawGgOv1pDUnlw4/Z97CTuqxbOBkeI8EneHMr+ZQ6zR5ENpMd7BxG4+8A==",
+      "sha512": "UCT1KbRKwYRK8mcsMLEGE51Co4DgRK9kvykv0PvmZjivAIuE3uJe2mla4xXgand6hRLYhR6G5tg/4Fm26/I6gg==",
       "files": [
         "lib/DNXCore50/System.Private.Networking.dll",
         "lib/netcore50/System.Private.Networking.dll",
@@ -3530,7 +3546,7 @@
     "System.Security.Cryptography.Algorithms/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "vmyDJE83ZMCIlnAfuDAMydZm/qhDkc1I5x95d3vFnSciTUkDRVPBbUABJ3n6LyZfxpxfSN2hzg6gsZoeLGcRmQ==",
+      "sha512": "YBUhZnerH9puSUZJo1PEG0U8wGbGWCnfC2KgoUytRjOw7YlCX4CgS5CzumnPr+zEeEfH/A2O9RzEksqsNeJO1Q==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -3606,7 +3622,7 @@
     "System.Security.Cryptography.Encoding/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "hVjXY1Iw/UGZyf4pDd0Kv12JBV8EXUH9zwbI487ePy1wEz3hwQVRgJjtUp7h4CYeb7JazsswHTnSDgT4og0SgQ==",
+      "sha512": "IB1ldLksggECahCRdw7zH1EeifdnlYsInHuekdgzv2gfct2GYKPk1R5KrmqLo1ZIS8ac6bhY0AclbEX3QNxuIA==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -3660,7 +3676,7 @@
     "System.Security.Cryptography.Primitives/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "z+Zt+DQ3CVXgB1ZfCfj240O4R4rNbNloCojcL5VIeYWhQncy6G5gnit1e332byFOQX2D0wz2UnDqlWEeV8D9lw==",
+      "sha512": "4av3kVaRkbTUEeDSvW312Y/hehNFapnaFfGnQyGkuQ4e5n5ux5sdnoFrDZfOsBSbHuhaRraBB5ITsVLdQD0lNQ==",
       "files": [
         "lib/dotnet5.4/System.Security.Cryptography.Primitives.dll",
         "lib/MonoAndroid10/_._",
@@ -3714,7 +3730,7 @@
     "System.Security.Cryptography.X509Certificates/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "oMAcIjPkzwXl1L90Ga/SQxGuqshujfz5UdXaNVhdIadyvCVBuXy1f4onuE/tUbZ5aylwzjUfG6gWoOJXt7Parw==",
+      "sha512": "OuSdB1Nkb6WKLUObTeDnlfRKFrOJ0/d/F6vcLezLs67X3o61EQ+sXTY1oFR00WLFSXOF5X4G/uXwDZh/3PIiyQ==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -3741,23 +3757,6 @@
         "System.Security.Cryptography.X509Certificates.4.0.0-beta-23509.nupkg",
         "System.Security.Cryptography.X509Certificates.4.0.0-beta-23509.nupkg.sha512",
         "System.Security.Cryptography.X509Certificates.nuspec"
-      ]
-    },
-    "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {
-      "type": "package",
-      "sha512": "UbpXPyovZcwfKhYg/O85pLjFEO3hkrEjCLGus7P9y45Peoqrfc8XKzdCW5k5WIDCtLw9M1PJHGlOFV/U0D1tkg==",
-      "files": [
-        "content/TestData/DummyTcpServer.pfx",
-        "content/TestData/microsoft.cer",
-        "content/TestData/MS.cer",
-        "content/TestData/My.cer",
-        "content/TestData/My.pfx",
-        "content/TestData/test.cer",
-        "content/TestData/test.pfx",
-        "content/TestData/Windows6.1-KB3004361-x64.msu",
-        "System.Security.Cryptography.X509Certificates.TestData.1.0.0-prerelease.nupkg",
-        "System.Security.Cryptography.X509Certificates.TestData.1.0.0-prerelease.nupkg.sha512",
-        "System.Security.Cryptography.X509Certificates.TestData.nuspec"
       ]
     },
     "System.Security.Principal/4.0.0-beta-23127": {
@@ -3853,7 +3852,7 @@
     "System.Security.Principal.Windows/4.0.0-beta-23509": {
       "type": "package",
       "serviceable": true,
-      "sha512": "1PQmyttyfFatu4cCcd3MoTp5Wq7ChhLH15tb3ATfQsZFoFXWbAmJ+ZfhrZ2sOVH6DVHfXQw59i7wzwuUFYJAaw==",
+      "sha512": "boE9PSE0jXjPIxlxTH7nYlL09Pxn3asXSiqpfTyVNc8ZV8EtjGjDIze4QB2tCx7jSfdh3R3hLJoI38cu08qFOA==",
       "files": [
         "lib/DNXCore50/System.Security.Principal.Windows.dll",
         "lib/net46/System.Security.Principal.Windows.dll",
@@ -4204,8 +4203,7 @@
     },
     "System.Threading.ThreadPool/4.0.10-beta-23509": {
       "type": "package",
-      "serviceable": true,
-      "sha512": "8dMI/ifZeLSbWDL1prpDlhZcmkdSVG63rcJi7mXsbzRuXeojLgsNuBn+Gmp9OC5o80/pbVBYHKLqT6Ig7Kw8rQ==",
+      "sha512": "3dB9aKVCiV7WcgOvgG21aG/JKBveZRzfk6KiTTdAnuZT1PPFNFCodkT0oZ9MFV9sxiUjJZO+RESqKRH5ehnaPQ==",
       "files": [
         "lib/DNXCore50/System.Threading.ThreadPool.dll",
         "lib/MonoAndroid10/_._",
@@ -4367,7 +4365,7 @@
     "": [
       "System.Net.Primitives >= 4.0.10-beta-*",
       "System.Net.Sockets >= 4.1.0-beta-*",
-      "System.Security.Cryptography.X509Certificates.TestData >= 1.0.0-prerelease",
+      "System.Net.TestData >= 1.0.0-prerelease-*",
       "xunit >= 2.1.0",
       "xunit.netcore.extensions >= 1.0.0-prerelease-*"
     ],
