@@ -2,41 +2,8 @@
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix)
 {
-    return (0 == value.compare(value.length() - suffix.length(), suffix.length(), suffix));
-}
-
-bool find_coreclr(const pal::string_t& appbase, pal::string_t& recv)
-{
-    pal::string_t candidate;
-    // Check if it exists in the appbase
-    candidate.assign(appbase);
-    append_path(candidate, LIBCORECLR_NAME);
-    if (pal::file_exists(candidate))
-    {
-        recv.assign(appbase);
-        return true;
-    }
-
-    // TODO: Have a cleaner search strategy that supports multiple versions
-    // Search the PATH
-    pal::string_t path;
-    if (!pal::getenv(_X("PATH"), path))
-    {
-        return false;
-    }
-    pal::stringstream_t path_stream(path);
-    pal::string_t entry;
-    while (std::getline(path_stream, entry, PATH_SEPARATOR))
-    {
-        candidate.assign(entry);
-        append_path(candidate, LIBCORECLR_NAME);
-        if (pal::file_exists(candidate))
-        {
-            recv.assign(entry);
-            return true;
-        }
-    }
-    return false;
+    return suffix.length() <= value.length() &&
+        (0 == value.compare(value.length() - suffix.length(), suffix.length(), suffix));
 }
 
 void append_path(pal::string_t& path1, const pal::char_t* path2)
