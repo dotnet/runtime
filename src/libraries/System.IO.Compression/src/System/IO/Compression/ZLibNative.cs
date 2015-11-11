@@ -18,11 +18,6 @@ namespace System.IO.Compression
     {
         #region Constants defined in zlib.h
 
-        /*
-            public const string ZLibVersion = "1.2.3";        
-        */
-        public static byte[] ZLibVersion = new byte[] { (byte)'1', (byte)'.', (byte)'2', (byte)'.', (byte)'3', 0 };
-
         // This is the NULL pointer for using with ZLib pointers;
         // we prefer it to IntPtr.Zero to mimic the definition of Z_NULL in zlib.h:
         internal static readonly IntPtr ZNullPtr = (IntPtr)((Int32)0);
@@ -224,9 +219,7 @@ namespace System.IO.Compression
                 : base(new IntPtr(-1), true)
             {
                 _zStream = new ZStream();
-                _zStream.zalloc = ZNullPtr;
-                _zStream.zfree = ZNullPtr;
-                _zStream.opaque = ZNullPtr;
+                _zStream.Init();
 
                 _initializationState = State.NotInitialized;
                 this.SetHandle(IntPtr.Zero);
@@ -272,8 +265,8 @@ namespace System.IO.Compression
 
             public UInt32 AvailIn
             {
-                [SecurityCritical] get { return (uint)_zStream.availIn; }
-                [SecurityCritical] set { _zStream.availIn = CastUInt32ToNativeuLong(value); }
+                [SecurityCritical] get { return _zStream.availIn; }
+                [SecurityCritical] set { _zStream.availIn = value; }
             }
 
             public IntPtr NextOut
@@ -284,8 +277,8 @@ namespace System.IO.Compression
 
             public UInt32 AvailOut
             {
-                [SecurityCritical] get { return (uint)_zStream.availOut; }
-                [SecurityCritical] set { _zStream.availOut = CastUInt32ToNativeuLong(value); }
+                [SecurityCritical] get { return _zStream.availOut; }
+                [SecurityCritical] set { _zStream.availOut = value; }
             }
 
             #endregion  // Expose fields on ZStream for use by user / Fx code (add more as required)
@@ -322,7 +315,7 @@ namespace System.IO.Compression
                 try { }
                 finally
                 {
-                    errC = Interop.zlib.DeflateInit2_(ref _zStream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy, ZLibVersion);
+                    errC = Interop.zlib.DeflateInit2_(ref _zStream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
                     _initializationState = State.InitializedForDeflate;
                 }
 
@@ -368,7 +361,7 @@ namespace System.IO.Compression
                 try { }
                 finally
                 {
-                    errC = Interop.zlib.InflateInit2_(ref _zStream, windowBits, ZLibVersion);
+                    errC = Interop.zlib.InflateInit2_(ref _zStream, windowBits);
                     _initializationState = State.InitializedForInflate;
                 }
 
@@ -420,7 +413,7 @@ namespace System.IO.Compression
                     return errC;
                 }
 
-                errC = Interop.zlib.InflateInit2_(ref _zStream, windowBits, ZLibVersion);
+                errC = Interop.zlib.InflateInit2_(ref _zStream, windowBits);
                 _initializationState = State.InitializedForInflate;
 
                 return errC;
