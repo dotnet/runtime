@@ -368,8 +368,8 @@ namespace System.IO
             [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
-                if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-                if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
+                if (_handle.IsClosed) throw Error.GetFileNotOpen();
+                if (!_parent.CanSeek) throw Error.GetSeekNotSupported();
                 Interop.mincore.FILE_STANDARD_INFO info = new Interop.mincore.FILE_STANDARD_INFO();
 
                 if (!Interop.mincore.GetFileInformationByHandleEx(_handle, Interop.mincore.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)Marshal.SizeOf<Interop.mincore.FILE_STANDARD_INFO>()))
@@ -400,8 +400,8 @@ namespace System.IO
             [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
-                if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-                if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
+                if (_handle.IsClosed) throw Error.GetFileNotOpen();
+                if (!_parent.CanSeek) throw Error.GetSeekNotSupported();
 
                 Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
@@ -478,7 +478,7 @@ namespace System.IO
         public override void Flush(Boolean flushToDisk)
         {
             // This code is duplicated in _parent.Dispose
-            if (_handle.IsClosed) throw __Error.GetFileNotOpen();
+            if (_handle.IsClosed) throw Error.GetFileNotOpen();
 
             FlushInternalBuffer();
 
@@ -605,9 +605,9 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
-            if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-            if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
-            if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
+            if (_handle.IsClosed) throw Error.GetFileNotOpen();
+            if (!_parent.CanSeek) throw Error.GetSeekNotSupported();
+            if (!_parent.CanWrite) throw Error.GetWriteNotSupported();
 
             // Handle buffering updates.
             if (_writePos > 0)
@@ -668,7 +668,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
             Contract.EndContractBlock();
 
-            if (_handle.IsClosed) throw __Error.GetFileNotOpen();
+            if (_handle.IsClosed) throw Error.GetFileNotOpen();
 
             Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
@@ -678,7 +678,7 @@ namespace System.IO
             // buffer, depending on number of bytes user asked for and buffer size.
             if (n == 0)
             {
-                if (!_parent.CanRead) throw __Error.GetReadNotSupported();
+                if (!_parent.CanRead) throw Error.GetReadNotSupported();
                 if (_writePos > 0) FlushWrite(false);
                 if (!_parent.CanSeek || (count >= _bufferSize))
                 {
@@ -781,8 +781,8 @@ namespace System.IO
             if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
                 throw new ArgumentException(SR.Argument_InvalidSeekOrigin, "origin");
             Contract.EndContractBlock();
-            if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-            if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
+            if (_handle.IsClosed) throw Error.GetFileNotOpen();
+            if (!_parent.CanSeek) throw Error.GetSeekNotSupported();
 
             Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
@@ -924,12 +924,12 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
             Contract.EndContractBlock();
 
-            if (_handle.IsClosed) throw __Error.GetFileNotOpen();
+            if (_handle.IsClosed) throw Error.GetFileNotOpen();
 
             if (_writePos == 0)
             {
                 // Ensure we can write to the stream, and ready buffer for writing.
-                if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
+                if (!_parent.CanWrite) throw Error.GetWriteNotSupported();
                 if (_readPos < _readLen) FlushRead();
                 _readPos = 0;
                 _readLen = 0;
@@ -1036,7 +1036,7 @@ namespace System.IO
         {
             Debug.Assert(_isAsync);
 
-            if (!_parent.CanRead) throw __Error.GetReadNotSupported();
+            if (!_parent.CanRead) throw Error.GetReadNotSupported();
 
             Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
@@ -1224,7 +1224,7 @@ namespace System.IO
 
                     if (errorCode == ERROR_HANDLE_EOF)
                     {
-                        throw __Error.GetEndOfFile();
+                        throw Error.GetEndOfFile();
                     }
                     else
                     {
@@ -1257,8 +1257,8 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override int ReadByte()
         {
-            if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-            if (_readLen == 0 && !_parent.CanRead) throw __Error.GetReadNotSupported();
+            if (_handle.IsClosed) throw Error.GetFileNotOpen();
+            if (_readLen == 0 && !_parent.CanRead) throw Error.GetReadNotSupported();
             Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
             if (_readPos == _readLen)
             {
@@ -1281,7 +1281,7 @@ namespace System.IO
         {
             Debug.Assert(_isAsync);
 
-            if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
+            if (!_parent.CanWrite) throw Error.GetWriteNotSupported();
 
             Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
             Debug.Assert(!_isPipe || (_readPos == 0 && _readLen == 0), "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
@@ -1468,7 +1468,7 @@ namespace System.IO
 
                     if (errorCode == ERROR_HANDLE_EOF)
                     {
-                        throw __Error.GetEndOfFile();
+                        throw Error.GetEndOfFile();
                     }
                     else
                     {
@@ -1499,10 +1499,10 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override void WriteByte(byte value)
         {
-            if (_handle.IsClosed) throw __Error.GetFileNotOpen();
+            if (_handle.IsClosed) throw Error.GetFileNotOpen();
             if (_writePos == 0)
             {
-                if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
+                if (!_parent.CanWrite) throw Error.GetWriteNotSupported();
                 if (_readPos < _readLen) FlushRead();
                 _readPos = 0;
                 _readLen = 0;
@@ -1669,7 +1669,7 @@ namespace System.IO
                 return Task.FromCanceled<int>(cancellationToken);
 
             if (_handle.IsClosed)
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
 
             // If async IO is not supported on this platform or 
             // if this Win32FileStream was not opened with FileOptions.Asynchronous.
@@ -1690,7 +1690,7 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
 
             if (_handle.IsClosed)
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
 
             // If async IO is not supported on this platform or 
             // if this Win32FileStream was not opened with FileOptions.Asynchronous.
@@ -1715,7 +1715,7 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
 
             if (_handle.IsClosed)
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
 
             // The always synchronous data transfer between the OS and the internal buffer is intentional 
             // because this is needed to allow concurrent async IO requests. Concurrent data transfer

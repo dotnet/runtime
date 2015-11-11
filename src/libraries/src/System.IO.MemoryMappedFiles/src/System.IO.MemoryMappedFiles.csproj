@@ -21,8 +21,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <!-- Compiled Source Files -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\IO\__Error.cs">
-      <Link>Common\System\IO\__Error.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\Error.cs">
+      <Link>Common\System\IO\Error.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileOptions.cs" />

@@ -24,8 +24,8 @@
     <NetNative>$(DefineConstants.Contains('NET_NATIVE'))</NetNative>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\__HResults.cs">
-      <Link>Common\System\__HResults.cs</Link>
+    <Compile Include="$(CommonPath)\System\HResults.cs">
+      <Link>Common\System\HResults.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>

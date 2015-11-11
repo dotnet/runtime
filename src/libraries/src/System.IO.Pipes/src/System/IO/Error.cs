@@ -4,7 +4,7 @@
 namespace System.IO
 {
     // Only static data; no need to serialize
-    internal static class __Error
+    internal static class Error
     {
         internal static Exception GetEndOfFile()
         {

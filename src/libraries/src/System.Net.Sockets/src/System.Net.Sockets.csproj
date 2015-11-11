@@ -86,11 +86,11 @@
     </Compile>
 
     <!-- System.Net common -->
-    <Compile Include="$(CommonPath)\System\Net\_ContextAwareResult.cs">
-      <Link>Common\System\Net\_ContextAwareResult.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
+      <Link>Common\System\Net\ContextAwareResult.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\_LazyAsyncResult.cs">
-      <Link>Common\System\Net\_LazyAsyncResult.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
+      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Shims\ExecutionContext.cs">
       <Link>Common\System\Net\Shims\ExecutionContext.cs</Link>
