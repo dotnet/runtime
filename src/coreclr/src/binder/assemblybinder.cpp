@@ -563,6 +563,7 @@ namespace BINDER_SPACE
                                          /* in */  PEAssembly          *pParentAssembly,
                                          /* in */  BOOL                 fNgenExplicitBind,
                                          /* in */  BOOL                 fExplicitBindToNativeImage,
+                                         /* in */  bool                 excludeAppPaths,
                                          /* out */ Assembly           **ppAssembly)
     {
         HRESULT hr = S_OK;
@@ -591,6 +592,7 @@ namespace BINDER_SPACE
                 hr = BindByName(pApplicationContext,
                                       pAssemblyName,
                                       BIND_CACHE_FAILURES,
+                                      excludeAppPaths,
                                       &bindResult);
                 IF_FAIL_GO(hr);
             }
@@ -619,6 +621,7 @@ namespace BINDER_SPACE
                                         assemblyPath,
                                         fDoNgenExplicitBind,
                                         fExplicitBindToNativeImage,
+                                        excludeAppPaths,
                                         &bindResult));
             }
 
@@ -850,6 +853,7 @@ namespace BINDER_SPACE
                  ((hr = BindByName(pApplicationContext,
                                    pAssemblyName,
                                    BIND_CACHE_FAILURES | BIND_CACHE_RERUN_BIND,
+                                   false, // excludeAppPaths
                                    &bindResult)) == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
                 )
             {
@@ -911,6 +915,7 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinder::BindByName(ApplicationContext *pApplicationContext,
                                        AssemblyName       *pAssemblyName,
                                        DWORD               dwBindFlags,
+                                       bool                excludeAppPaths,
                                        BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
@@ -953,6 +958,7 @@ namespace BINDER_SPACE
        IF_FAIL_GO(BindLocked(pApplicationContext,
                               pRetargetedAssemblyName,
                               dwBindFlags,
+                              excludeAppPaths,
                               pBindResult));
 
         if (!pBindResult->HaveResult())
@@ -993,6 +999,7 @@ namespace BINDER_SPACE
                                          PathString         &assemblyPath,
                                          BOOL                fNgenExplicitBind,
                                          BOOL                fExplicitBindToNativeImage,
+                                         bool                excludeAppPaths,
                                          BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
@@ -1036,6 +1043,7 @@ namespace BINDER_SPACE
         {
             IF_FAIL_GO(BindLockedOrService(pApplicationContext,
                                            pRetargetedAssemblyName,
+                                           excludeAppPaths,
                                            &lockedBindResult));
             if (lockedBindResult.HaveResult())
             {
@@ -1081,6 +1089,7 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinder::BindLocked(ApplicationContext *pApplicationContext,
                                        AssemblyName       *pAssemblyName,
                                        DWORD               dwBindFlags,
+                                       bool                excludeAppPaths,
                                        BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
@@ -1119,6 +1128,7 @@ namespace BINDER_SPACE
             IF_FAIL_GO(BindByTpaList(pApplicationContext,
                                      pAssemblyName,
                                      FALSE /*fInspectionOnly*/,
+                                     excludeAppPaths,
                                      pBindResult));
             if (pBindResult->HaveResult())
             {
@@ -1137,6 +1147,7 @@ namespace BINDER_SPACE
     /* static */
     HRESULT AssemblyBinder::BindLockedOrService(ApplicationContext *pApplicationContext,
                                                 AssemblyName       *pAssemblyName,
+                                                bool                excludeAppPaths,
                                                 BindResult         *pBindResult)
     {
         HRESULT hr = S_OK;
@@ -1147,6 +1158,7 @@ namespace BINDER_SPACE
         IF_FAIL_GO(BindLocked(pApplicationContext,
                               pAssemblyName,
                               0 /*  Do not IgnoreDynamicBinds */,
+                              excludeAppPaths,
                               &lockedBindResult));
 
         if (lockedBindResult.HaveResult())
@@ -1327,6 +1339,7 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinder::BindByTpaList(ApplicationContext  *pApplicationContext,
                                           AssemblyName        *pRequestedAssemblyName,
                                           BOOL                 fInspectionOnly,
+                                          bool                 excludeAppPaths,
                                           BindResult          *pBindResult)
     {
         HRESULT hr = S_OK;
@@ -1421,11 +1434,11 @@ namespace BINDER_SPACE
                 // We either didn't find a candidate, or the ref-def failed.  Either way; fall back to app path probing.
             }
 
-            bool fUseAppPathsBasedResolver = true;
+            bool fUseAppPathsBasedResolver = !excludeAppPaths;
             
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE) && !defined(MDILNIGEN)           
             // If Host Assembly Resolver is specified, then we will use that as the override for the default resolution mechanism (that uses AppPath probing).
-            if (!RuntimeCanUseAppPathAssemblyResolver(pApplicationContext->GetAppDomainId()))
+            if (fUseAppPathsBasedResolver && !RuntimeCanUseAppPathAssemblyResolver(pApplicationContext->GetAppDomainId()))
             {
                 fUseAppPathsBasedResolver = false;
             }
@@ -1899,6 +1912,7 @@ Retry:
         hr = BindByName(pApplicationContext,
                                pAssemblyName,
                                BIND_CACHE_FAILURES|BIND_CACHE_RERUN_BIND|BIND_IGNORE_REFDEF_MATCH,
+                               false, // excludeAppPaths
                                &bindResult);
         
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
