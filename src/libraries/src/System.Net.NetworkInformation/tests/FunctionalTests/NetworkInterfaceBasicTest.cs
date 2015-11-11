@@ -37,7 +37,11 @@ namespace System.Net.NetworkInformation.Tests
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
                 _log.WriteLine("Status: " + nic.OperationalStatus);
                 _log.WriteLine("Speed: " + nic.Speed);
-                Assert.True(nic.Speed >= 0, "Overflow");
+
+                // Validate NIC speed overflow.
+                // We've found that certain WiFi adapters will return speed of -1 when not connected.
+                Assert.InRange(nic.Speed, nic.OperationalStatus != OperationalStatus.Down ? 0 : -1, long.MaxValue);
+
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
             }
@@ -56,14 +60,18 @@ namespace System.Net.NetworkInformation.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => nic.IsReceiveOnly);
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
                 _log.WriteLine("Status: " + nic.OperationalStatus);
+
                 try
                 {
                     _log.WriteLine("Speed: " + nic.Speed);
-                    Assert.True(nic.Speed >= 0, "Overflow");
+                    Assert.InRange(nic.Speed, 0, long.MaxValue);
                 }
                 // We cannot guarantee this works on all devices.
-                catch (PlatformNotSupportedException)
-                { }
+                catch (PlatformNotSupportedException pnse)
+                {
+                    _log.WriteLine(pnse.ToString());
+                }
+
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
             }
@@ -83,7 +91,7 @@ namespace System.Net.NetworkInformation.Tests
                 _log.WriteLine("Type: " + nic.NetworkInterfaceType);
                 _log.WriteLine("Status: " + nic.OperationalStatus);
                 _log.WriteLine("Speed: " + nic.Speed);
-                Assert.True(nic.Speed >= 0, "Overflow");
+                Assert.InRange(nic.Speed, 0, long.MaxValue);
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
             }
