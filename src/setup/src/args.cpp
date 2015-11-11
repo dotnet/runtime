@@ -16,7 +16,7 @@ void display_help()
         _X("Usage: " HOST_EXE_NAME " [ASSEMBLY] [ARGUMENTS]\n")
         _X("Execute the specified managed assembly with the passed in arguments\n\n")
         _X("The Host's behavior can be altered using the following environment variables:\n")
-        _X(" CLRHOST_CLR_PATH       Set the directory which contains the CoreCLR runtime. Overrides all other values for CLR search paths\n")
+        _X(" DOTNET_HOME            Set the dotnet home directory. The CLR is expected to be in the runtime subdirectory of this directory. Overrides all other values for CLR search paths\n")
         _X(" CLRHOST_TRACE          Set to affect trace levels (0 = Errors only (default), 1 = Warnings, 2 = Info, 3 = Verbose)\n");
 }
 
@@ -68,7 +68,14 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
     }
 
     // Read CLR path from environment variable
-    pal::getenv(_X("CLRHOST_CLR_PATH"), args.clr_path);
+    pal::string_t home_str;
+    pal::getenv(_X("DOTNET_HOME"), home_str);
+    if (!home_str.empty())
+    {
+        append_path(home_str, _X("runtime"));
+        append_path(home_str, _X("coreclr"));
+        args.clr_path.assign(home_str);
+    }
 
     return true;
 }
