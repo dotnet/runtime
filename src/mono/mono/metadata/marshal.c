@@ -3856,7 +3856,7 @@ emit_runtime_invoke_body (MonoMethodBuilder *mb, MonoClass *target_klass, MonoMe
 
 /*
  * generates IL code for the runtime invoke function 
- * MonoObject *runtime_invoke (MonoObject *this, void **params, MonoObject **exc, void* method)
+ * MonoObject *runtime_invoke (MonoObject *this_obj, void **params, MonoObject **exc, void* method)
  *
  * we also catch exceptions if exc != null
  * If VIRTUAL is TRUE, then METHOD is invoked virtually on THIS. This is useful since

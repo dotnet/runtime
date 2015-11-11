@@ -64,20 +64,20 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 static mono_mutex_t ldstr_section;
 
 void
-mono_runtime_object_init (MonoObject *this)
+mono_runtime_object_init (MonoObject *this_obj)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoMethod *method = NULL;
-	MonoClass *klass = this->vtable->klass;
+	MonoClass *klass = this_obj->vtable->klass;
 
 	method = mono_class_get_method_from_name (klass, ".ctor", 0);
 	if (!method)
 		g_error ("Could not lookup zero argument constructor for class %s", mono_type_get_full_name (klass));
 
 	if (method->klass->valuetype)
-		this = mono_object_unbox (this);
-	mono_runtime_invoke (method, this, NULL, NULL);
+		this_obj = mono_object_unbox (this_obj);
+	mono_runtime_invoke (method, this_obj, NULL, NULL);
 }
 
 /* The pseudo algorithm for type initialization from the spec

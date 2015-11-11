@@ -335,10 +335,10 @@ jit_info_table_check (MonoJitInfoTable *table)
 		g_assert (chunk->num_elements <= MONO_JIT_INFO_TABLE_CHUNK_SIZE);
 
 		for (j = 0; j < chunk->num_elements; ++j) {
-			MonoJitInfo *this = chunk->data [j];
+			MonoJitInfo *this_ji = chunk->data [j];
 			MonoJitInfo *next;
 
-			g_assert ((gint8*)this->code_start + this->code_size <= chunk->last_code_end);
+			g_assert ((gint8*)this_ji->code_start + this_ji->code_size <= chunk->last_code_end);
 
 			if (j < chunk->num_elements - 1)
 				next = chunk->data [j + 1];
@@ -357,7 +357,7 @@ jit_info_table_check (MonoJitInfoTable *table)
 			} else
 				return;
 
-			g_assert ((gint8*)this->code_start + this->code_size <= (gint8*)next->code_start + next->code_size);
+			g_assert ((gint8*)this_ji->code_start + this_ji->code_size <= (gint8*)next->code_start + next->code_size);
 		}
 	}
 }

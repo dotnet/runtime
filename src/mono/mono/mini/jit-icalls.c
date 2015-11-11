@@ -1329,7 +1329,7 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
  *   Return the executable code for the iface method IMT_METHOD called on THIS.
  */
 gpointer
-mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *imt_method, gpointer *out_rgctx_arg)
+mono_resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_rgctx_arg)
 {
 	MonoVTable *vt;
 	gpointer *imt, *vtable_slot;
@@ -1339,11 +1339,11 @@ mono_resolve_iface_call (MonoObject *this, int imt_slot, MonoMethod *imt_method,
 
 	// FIXME: Optimize this
 
-	if (!this)
+	if (!this_obj)
 		/* The caller will handle it */
 		return NULL;
 
-	vt = this->vtable;
+	vt = this_obj->vtable;
 	imt = (gpointer*)vt - MONO_IMT_SIZE;
 
 	vtable_slot = mini_resolve_imt_method (vt, imt + imt_slot, imt_method, &impl_method, &aot_addr, &need_rgctx_tramp, &variant_iface);
@@ -1415,10 +1415,10 @@ is_generic_method_definition (MonoMethod *m)
 /*
  * mono_resolve_vcall:
  *
- *   Return the executable code for calling this->vtable [slot].
+ *   Return the executable code for calling this_obj->vtable [slot].
  */
 gpointer
-mono_resolve_vcall (MonoObject *this, int slot, MonoMethod *imt_method)
+mono_resolve_vcall (MonoObject *this_obj, int slot, MonoMethod *imt_method)
 {
 	MonoVTable *vt;
 	MonoMethod *m, *generic_virtual = NULL;
@@ -1428,11 +1428,11 @@ mono_resolve_vcall (MonoObject *this, int slot, MonoMethod *imt_method)
 
 	// FIXME: Optimize this
 
-	if (!this)
+	if (!this_obj)
 		/* The caller will handle it */
 		return NULL;
 
-	vt = this->vtable;
+	vt = this_obj->vtable;
 
 	vtable_slot = &(vt->vtable [slot]);
 

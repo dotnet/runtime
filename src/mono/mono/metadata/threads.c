@@ -1304,7 +1304,7 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj
 }
 
 int
-ves_icall_System_Threading_Thread_GetPriority (MonoThread *this)
+ves_icall_System_Threading_Thread_GetPriority (MonoThread *this_obj)
 {
 	return ThreadPriority_Lowest;
 }
