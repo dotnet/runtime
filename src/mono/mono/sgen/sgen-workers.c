@@ -31,6 +31,7 @@
 #include "mono/sgen/sgen-client.h"
 
 static int workers_num;
+static volatile gboolean forced_stop;
 static WorkerData *workers_data;
 
 static SgenSectionGrayQueue workers_distribute_gray_queue;
@@ -220,7 +221,7 @@ marker_idle_func (void *data_untyped)
 		SGEN_ASSERT (0, workers_state != STATE_NOT_WORKING, "How did we get from WORK ENQUEUED to NOT WORKING?");
 	}
 
-	if (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data)) {
+	if (!forced_stop && (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data))) {
 		ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (idle_func_object_ops, &data->private_gray_queue);
 
 		SGEN_ASSERT (0, !sgen_gray_object_queue_is_empty (&data->private_gray_queue), "How is our gray queue empty if we just got work?");
@@ -282,8 +283,19 @@ sgen_workers_init (int num_workers)
 }
 
 void
+sgen_workers_stop_all_workers (void)
+{
+	forced_stop = TRUE;
+
+	sgen_thread_pool_wait_for_all_jobs ();
+	sgen_thread_pool_idle_wait ();
+	SGEN_ASSERT (0, workers_state == STATE_NOT_WORKING, "Can only signal enqueue work when in no work state");
+}
+
+void
 sgen_workers_start_all_workers (SgenObjectOperations *object_ops)
 {
+	forced_stop = FALSE;
 	idle_func_object_ops = object_ops;
 	mono_memory_write_barrier ();
 
@@ -306,6 +318,28 @@ sgen_workers_join (void)
 		SGEN_ASSERT (0, sgen_gray_object_queue_is_empty (&workers_data [i].private_gray_queue), "Why is there still work left to do?");
 }
 
+/*
+ * Can only be called if the workers are stopped.
+ * If we're stopped, there are also no pending jobs.
+ */
+gboolean
+sgen_workers_have_idle_work (void)
+{
+	int i;
+
+	SGEN_ASSERT (0, forced_stop && sgen_workers_all_done (), "Checking for idle work should only happen if the workers are stopped.");
+
+	if (!sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue))
+		return TRUE;
+
+	for (i = 0; i < workers_num; ++i) {
+		if (!sgen_gray_object_queue_is_empty (&workers_data [i].private_gray_queue))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
 gboolean
 sgen_workers_all_done (void)
 {
@@ -317,13 +351,6 @@ gboolean
 sgen_workers_are_working (void)
 {
 	return state_is_working_or_enqueued (workers_state);
-}
-
-void
-sgen_workers_wait (void)
-{
-	sgen_thread_pool_idle_wait ();
-	SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done after we wait for them?");
 }
 
 SgenSectionGrayQueue*

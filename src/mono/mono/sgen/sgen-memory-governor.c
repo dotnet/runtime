@@ -86,7 +86,7 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 	 * We allow the heap to grow by one third its current size before we start the next
 	 * major collection.
 	 */
-	allowance_target = new_heap_size / 3;
+	allowance_target = new_heap_size * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO;
 
 	allowance = MAX (allowance_target, MIN_MINOR_COLLECTION_ALLOWANCE);
 
@@ -112,13 +112,32 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 	}
 }
 
+static inline size_t
+get_heap_size (void)
+{
+	return major_collector.get_num_major_sections () * major_collector.section_size + los_memory_usage;
+}
+
 gboolean
 sgen_need_major_collection (mword space_needed)
 {
 	size_t heap_size;
 
-	if (sgen_concurrent_collection_in_progress ())
+	if (sgen_concurrent_collection_in_progress ()) {
+		heap_size = get_heap_size ();
+
+		if (heap_size <= major_collection_trigger_size)
+			return FALSE; 
+
+		/* We allow the heap to grow an additional third of the allowance during a concurrent collection */
+		if ((heap_size - major_collection_trigger_size) >
+				(major_collection_trigger_size
+				* (SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO / (SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO + 1))
+				* SGEN_DEFAULT_CONCURRENT_HEAP_ALLOWANCE_RATIO)) {
+			return TRUE;
+		}
 		return FALSE;
+	}
 
 	/* FIXME: This is a cop-out.  We should have some way of figuring this out. */
 	if (!major_collector.have_swept ())
@@ -129,7 +148,7 @@ sgen_need_major_collection (mword space_needed)
 
 	sgen_memgov_calculate_minor_collection_allowance ();
 
-	heap_size = major_collector.get_num_major_sections () * major_collector.section_size + los_memory_usage;
+	heap_size = get_heap_size ();
 
 	return heap_size > major_collection_trigger_size;
 }
@@ -150,7 +169,7 @@ sgen_memgov_major_collection_start (void)
 	need_calculate_minor_collection_allowance = TRUE;
 
 	if (debug_print_allowance) {
-		SGEN_LOG (0, "Starting collection with heap size %ld bytes", (long)(major_collector.get_num_major_sections () * major_collector.section_size + los_memory_usage));
+		SGEN_LOG (0, "Starting collection with heap size %ld bytes", (long)get_heap_size ());
 	}
 }
 

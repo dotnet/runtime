@@ -1411,9 +1411,9 @@ job_scan_los_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJob 
 }
 
 static void
-init_gray_queue (void)
+init_gray_queue (gboolean use_workers)
 {
-	if (sgen_collection_is_concurrent ())
+	if (use_workers)
 		sgen_workers_init_distribute_gray_queue ();
 	sgen_gray_object_queue_init (&gray_queue, NULL);
 }
@@ -1522,7 +1522,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	sgen_memgov_minor_collection_start ();
 
-	init_gray_queue ();
+	init_gray_queue (FALSE);
 
 	gc_stats.minor_gc_count ++;
 
@@ -1686,7 +1686,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 		sgen_nursery_alloc_prepare_for_major ();
 	}
 
-	init_gray_queue ();
+	init_gray_queue (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT);
 
 	TV_GETTIME (atv);
 
@@ -1788,6 +1788,11 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 		SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
 		sgen_workers_start_all_workers (object_ops);
 		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	} else if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
+		if (sgen_workers_have_idle_work ()) {
+			sgen_workers_start_all_workers (object_ops);
+			sgen_workers_join ();
+		}
 	}
 
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
@@ -1915,12 +1920,6 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 		object_ops = &major_collector.major_ops_serial;
 	}
 
-	/*
-	 * The workers have stopped so we need to finish gray queue
-	 * work that might result from finalization in the main GC
-	 * thread.  Redirection must therefore be turned off.
-	 */
-	sgen_gray_object_queue_disable_alloc_prepare (&gray_queue);
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
 	/* all the objects in the heap */
@@ -2130,12 +2129,11 @@ major_finish_concurrent_collection (gboolean forced)
 	binary_protocol_concurrent_finish ();
 
 	/*
-	 * The major collector can add global remsets which are processed in the finishing
-	 * nursery collection, below.  That implies that the workers must have finished
-	 * marking before the nursery collection is allowed to run, otherwise we might miss
-	 * some remsets.
+	 * We need to stop all workers since we're updating the cardtable below.
+	 * The workers will be resumed with a finishing pause context to avoid
+	 * additional cardtable and object scanning.
 	 */
-	sgen_workers_wait ();
+	sgen_workers_stop_all_workers ();
 
 	SGEN_TV_GETTIME (time_major_conc_collection_end);
 	gc_stats.major_gc_time_concurrent += SGEN_TV_ELAPSED (time_major_conc_collection_start, time_major_conc_collection_end);
@@ -2182,7 +2180,7 @@ sgen_ensure_free_space (size_t size)
 				generation_to_collect = GENERATION_OLD;
 			}
 		} else if (sgen_need_major_collection (size)) {
-			reason = "Minor allowance";
+			reason = concurrent_collection_in_progress ? "Forced finish concurrent collection" : "Minor allowance";
 			generation_to_collect = GENERATION_OLD;
 		} else {
 			generation_to_collect = GENERATION_NURSERY;
@@ -2229,18 +2227,18 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	if (concurrent_collection_in_progress) {
 		/*
-		 * We update the concurrent collection.  If it finished, we're done.  If
-		 * not, and we've been asked to do a nursery collection, we do that.
+		 * If the concurrent worker is finished or we are asked to do a major collection
+		 * then we finish the concurrent collection.
 		 */
-		gboolean finish = major_should_finish_concurrent_collection () || (wait_to_finish && generation_to_collect == GENERATION_OLD);
+		gboolean finish = major_should_finish_concurrent_collection () || generation_to_collect == GENERATION_OLD;
 
 		if (finish) {
 			major_finish_concurrent_collection (wait_to_finish);
 			oldest_generation_collected = GENERATION_OLD;
 		} else {
+			SGEN_ASSERT (0, generation_to_collect == GENERATION_NURSERY, "Why aren't we finishing the concurrent collection?");
 			major_update_concurrent_collection ();
-			if (generation_to_collect == GENERATION_NURSERY)
-				collect_nursery (NULL, FALSE);
+			collect_nursery (NULL, FALSE);
 		}
 
 		goto done;
