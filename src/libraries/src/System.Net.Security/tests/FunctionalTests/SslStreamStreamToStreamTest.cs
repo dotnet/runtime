@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Linq;
+using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -28,7 +29,7 @@ namespace System.Net.Security.Tests
             {
                 X509Certificate2 certificate = TestConfiguration.GetServerCertificate();
                 Task[] auth = new Task[2];
-                auth[0] = client.AuthenticateAsClientAsync(certificate.Subject);
+                auth[0] = client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
                 auth[1] = server.AuthenticateAsServerAsync(certificate);
 
                 bool finished = Task.WaitAll(auth, TestTimeoutSpan);
@@ -99,12 +100,23 @@ namespace System.Net.Security.Tests
             X509Chain chain,
             SslPolicyErrors sslPolicyErrors)
         {
-            if (sslPolicyErrors != SslPolicyErrors.RemoteCertificateNameMismatch)
+            SslPolicyErrors expectedSslPolicyErrors = SslPolicyErrors.None;
+
+            if (!Capability.IsTrustedRootCertificateInstalled())
+            {
+                expectedSslPolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
+            }
+
+            Assert.Equal(expectedSslPolicyErrors, sslPolicyErrors);
+
+            if (sslPolicyErrors == expectedSslPolicyErrors)
             {
                 return true;
             }
-
-            return false;
+            else
+            {
+                return false;
+            }
         }
 
         private bool DoHandshake(SslStream clientSslStream, SslStream serverSslStream)

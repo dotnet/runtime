@@ -994,7 +994,7 @@ namespace System.Net.Security
         // - Optionally verifies the Remote Certificate
         // - Sets HandshakeCompleted flag
         // - Sets the guarding event if other thread is waiting for
-        //   handshake completino
+        //   handshake completion
         //
         // - Returns false if failed to verify the Remote Cert
         //
