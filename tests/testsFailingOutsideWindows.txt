@@ -11,6 +11,7 @@ JIT/Directed/PREFIX/unaligned/1/arglist/arglist.sh
 JIT/Directed/PREFIX/unaligned/2/arglist/arglist.sh
 JIT/Directed/PREFIX/unaligned/4/arglist/arglist.sh
 JIT/Directed/PREFIX/volatile/1/arglist/arglist.sh
+JIT/Directed/StructABI/StructABI/StructABI.sh
 JIT/Directed/TypedReference/TypedReference/TypedReference.sh
 JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgi_ref/_il_dbgi_ref.sh
 JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgu_ref/_il_dbgu_ref.sh
@@ -75,6 +76,8 @@ JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b31746/b31746/b31746.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b37646/b37646/b37646.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b41852/b41852/b41852.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b51575/b51575/b51575.sh
+JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b68872/b68872/b68872.sh
 JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b88793/b88793/b88793.sh
 JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b91248/b91248/b91248.sh
 JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748/b409748.sh
+Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
