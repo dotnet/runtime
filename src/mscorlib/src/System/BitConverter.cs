@@ -357,7 +357,7 @@ namespace System {
         // Converts an array of bytes into a String.  
         public static String ToString (byte[] value, int startIndex, int length) {            
             if (value == null) {
-                throw new ArgumentNullException("byteArray");
+                throw new ArgumentNullException("value");
             }
 
             if (startIndex < 0 || startIndex >= value.Length && startIndex > 0) {  // Don't throw for a 0 length array.
