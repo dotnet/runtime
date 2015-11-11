@@ -1,15 +1,19 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class zlib
     {
+        /*
+            private const string ZLibVersion = "1.2.3";       
+        */
+        private static readonly byte[] ZLibVersion = new byte[] { (byte)'1', (byte)'.', (byte)'2', (byte)'.', (byte)'3', 0 };
+
         [DllImport(Libraries.Zlib)]
         private extern unsafe static int deflateInit2_(byte* stream, int level, int method, int windowBits, int memLevel, int strategy,
                                                 byte* version, int stream_size);
@@ -32,23 +36,36 @@ internal static partial class Interop
         [DllImport(Libraries.Zlib)]
         private extern unsafe static int inflateEnd(byte* stream);
 
-        [DllImport(Libraries.Zlib)]
-        internal extern static int zlibCompileFlags();
-
         internal static unsafe ZLibNative.ErrorCode DeflateInit2_(
                                             ref ZLibNative.ZStream stream,
                                             ZLibNative.CompressionLevel level,
                                             ZLibNative.CompressionMethod method,
                                             int windowBits,
                                             int memLevel,
-                                            ZLibNative.CompressionStrategy strategy,
-                                            byte[] version)
+                                            ZLibNative.CompressionStrategy strategy)
         {
-            fixed (byte* versionString = version)
+            fixed (byte* versionString = ZLibVersion)
             fixed (ZLibNative.ZStream* streamBytes = &stream)
             {
                 byte* pBytes = (byte*)streamBytes;
                 return (ZLibNative.ErrorCode)deflateInit2_(pBytes, (int)level, (int)method, (int)windowBits, (int)memLevel, (int)strategy, versionString, sizeof(ZLibNative.ZStream));
+            }
+        }
+
+        internal static unsafe bool IsCrc32Available()
+        {
+            try
+            {
+                // Make a P/Invoke into zlib crc32 to ensure we're able to find and use it.
+                // If we are, then use zlib.
+                crc32(0, null, 0);
+                return true;
+            }
+            catch
+            {
+                // Otherwise, fallback to managed implementation if zlib isn't available
+                Debug.Write("zlib unavailable");
+                return false;
             }
         }
 
@@ -78,10 +95,9 @@ internal static partial class Interop
 
         internal static unsafe ZLibNative.ErrorCode InflateInit2_(
                                             ref ZLibNative.ZStream stream,
-                                            int windowBits,
-                                            byte[] version)
+                                            int windowBits)
         {
-            fixed (byte* versionString = version)
+            fixed (byte* versionString = ZLibVersion)
             fixed (ZLibNative.ZStream* streamBytes = &stream)
             {
                 byte* pBytes = (byte*)streamBytes;

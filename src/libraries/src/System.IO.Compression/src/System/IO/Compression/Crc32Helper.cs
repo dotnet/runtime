@@ -459,22 +459,13 @@ namespace System.IO.Compression
             0x264B06E6u
         };
 
-        private static unsafe bool IsZlibCrcAvailable()
+        private static bool IsZlibCrcAvailable()
         {
 #if FEATURE_ZLIB_CRC32
-            try
-            {
-                // Make a P/Invoke into zlib crc32 to ensure we're able to find and use it.
-                // If we are, then use zlib.
-                Interop.zlib.crc32(0, null, 0);
-                return true;
-            }
-            catch
-            {
-                // Otherwise, fallback to managed implementation if zlib isn't available
-                Debug.Write("zlib unavailable");
-                return false;
-            }
+
+            // Make a check to ensure we're able to find and use crc32 in zlib.
+            // If we can, then use zlib.
+            return Interop.zlib.IsCrc32Available();
 #else
             return false;
 #endif
@@ -487,7 +478,7 @@ namespace System.IO.Compression
             Debug.Assert((buffer != null) && (offset >= 0) && (length >= 0)
                        && (offset <= buffer.Length - length), "check the caller");
 
-            return s_useZlib ? ZlibCrc32(crc32, buffer, offset, length) : ManagedCrc32(crc32, buffer, offset, length); 
+            return s_useZlib ? ZlibCrc32(crc32, buffer, offset, length) : ManagedCrc32(crc32, buffer, offset, length);
         }
 
         private static uint ManagedCrc32(uint crc32, byte[] buffer, int offset, int length)
@@ -539,6 +530,6 @@ namespace System.IO.Compression
             Debug.Fail("ZlibCrc32 should not be called when FEATURE_ZLIB_CRC32 is false!");
             throw new InvalidOperationException();
 #endif
-        } 
+        }
     }
 }
