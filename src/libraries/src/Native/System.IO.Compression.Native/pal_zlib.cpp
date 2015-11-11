@@ -8,16 +8,10 @@
 #include <zlib.h>
 
 static_assert(PAL_Z_NOFLUSH == Z_NO_FLUSH, "");
-static_assert(PAL_Z_PARTIALFLUSH == Z_PARTIAL_FLUSH, "");
-static_assert(PAL_Z_SYNCFLUSH == Z_SYNC_FLUSH, "");
-static_assert(PAL_Z_FULLFLUSH == Z_FULL_FLUSH, "");
 static_assert(PAL_Z_FINISH == Z_FINISH, "");
-static_assert(PAL_Z_BLOCK == Z_BLOCK, "");
 
 static_assert(PAL_Z_OK == Z_OK, "");
 static_assert(PAL_Z_STREAMEND == Z_STREAM_END, "");
-static_assert(PAL_Z_NEEDDICTIONARY == Z_NEED_DICT, "");
-static_assert(PAL_Z_ERRORNO == Z_ERRNO, "");
 static_assert(PAL_Z_STREAMERROR == Z_STREAM_ERROR, "");
 static_assert(PAL_Z_DATAERROR == Z_DATA_ERROR, "");
 static_assert(PAL_Z_MEMERROR == Z_MEM_ERROR, "");
@@ -29,10 +23,6 @@ static_assert(PAL_Z_BESTSPEED == Z_BEST_SPEED, "");
 static_assert(PAL_Z_BESTCOMPRESSION == Z_BEST_COMPRESSION, "");
 static_assert(PAL_Z_DEFAULTCOMPRESSION == Z_DEFAULT_COMPRESSION, "");
 
-static_assert(PAL_Z_FILTERED == Z_FILTERED, "");
-static_assert(PAL_Z_HUFFMANONLY == Z_HUFFMAN_ONLY, "");
-static_assert(PAL_Z_RLE == Z_RLE, "");
-static_assert(PAL_Z_FIXED == Z_FIXED, "");
 static_assert(PAL_Z_DEFAULTSTRATEGY == Z_DEFAULT_STRATEGY, "");
 
 static_assert(PAL_Z_DEFLATED == Z_DEFLATED, "");
@@ -56,6 +46,7 @@ Frees any memory on the PAL_ZStream that was created by Init.
 static void End(PAL_ZStream* stream)
 {
     z_stream* zStream = reinterpret_cast<z_stream*>(stream->internalState);
+    assert(zStream != nullptr);
 
     delete zStream;
     stream->internalState = nullptr;
@@ -96,21 +87,19 @@ since the current values are always needed.
 static z_stream* GetCurrentZStream(PAL_ZStream* stream)
 {
     z_stream* zStream = reinterpret_cast<z_stream*>(stream->internalState);
+    assert(zStream != nullptr);
+
     TransferState(stream, zStream);
     return zStream;
 }
 
-extern "C" int32_t IsZLibAvailable()
-{
-    return true;
-}
-
 extern "C" int32_t DeflateInit2_(PAL_ZStream* stream, int32_t level, int32_t method, int32_t windowBits, int32_t memLevel, int32_t strategy)
 {
+    assert(stream != nullptr);
+
     Init(stream);
 
     z_stream* zStream = GetCurrentZStream(stream);
-
     int32_t result = deflateInit2(zStream, level, method, windowBits, memLevel, strategy);
     TransferState(zStream, stream);
 
@@ -119,8 +108,9 @@ extern "C" int32_t DeflateInit2_(PAL_ZStream* stream, int32_t level, int32_t met
 
 extern "C" int32_t Deflate(PAL_ZStream* stream, int32_t flush)
 {
-    z_stream* zStream = GetCurrentZStream(stream);
+    assert(stream != nullptr);
 
+    z_stream* zStream = GetCurrentZStream(stream);
     int32_t result = deflate(zStream, flush);
     TransferState(zStream, stream);
 
@@ -129,10 +119,10 @@ extern "C" int32_t Deflate(PAL_ZStream* stream, int32_t flush)
 
 extern "C" int32_t DeflateEnd(PAL_ZStream* stream)
 {
-    z_stream* zStream = GetCurrentZStream(stream);
+    assert(stream != nullptr);
 
+    z_stream* zStream = GetCurrentZStream(stream);
     int32_t result = deflateEnd(zStream);
-    
     End(stream);
 
     return result;
@@ -140,10 +130,11 @@ extern "C" int32_t DeflateEnd(PAL_ZStream* stream)
 
 extern "C" int32_t InflateInit2_(PAL_ZStream* stream, int32_t windowBits)
 {
+    assert(stream != nullptr);
+
     Init(stream);
 
     z_stream* zStream = GetCurrentZStream(stream);
-
     int32_t result = inflateInit2(zStream, windowBits);
     TransferState(zStream, stream);
 
@@ -152,8 +143,9 @@ extern "C" int32_t InflateInit2_(PAL_ZStream* stream, int32_t windowBits)
 
 extern "C" int32_t Inflate(PAL_ZStream* stream, int32_t flush)
 {
-    z_stream* zStream = GetCurrentZStream(stream);
+    assert(stream != nullptr);
 
+    z_stream* zStream = GetCurrentZStream(stream);
     int32_t result = inflate(zStream, flush);
     TransferState(zStream, stream);
 
@@ -162,22 +154,19 @@ extern "C" int32_t Inflate(PAL_ZStream* stream, int32_t flush)
 
 extern "C" int32_t InflateEnd(PAL_ZStream* stream)
 {
-    z_stream* zStream = GetCurrentZStream(stream);
+    assert(stream != nullptr);
 
+    z_stream* zStream = GetCurrentZStream(stream);
     int32_t result = inflateEnd(zStream);
-    
     End(stream);
 
     return result;
 }
 
-extern "C" int32_t IsCrc32Available()
-{
-    return true;
-}
-
 extern "C" uint32_t Crc32(uint32_t crc, uint8_t* buffer, int32_t len)
 {
+    assert(buffer != nullptr);
+
     unsigned long result = crc32(crc, buffer, UnsignedCast(len));
     assert(result <= UINT32_MAX);
     return static_cast<uint32_t>(result);

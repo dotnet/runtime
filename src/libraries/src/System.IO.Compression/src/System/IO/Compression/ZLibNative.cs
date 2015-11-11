@@ -22,32 +22,22 @@ namespace System.IO.Compression
         // we prefer it to IntPtr.Zero to mimic the definition of Z_NULL in zlib.h:
         internal static readonly IntPtr ZNullPtr = (IntPtr)((Int32)0);
 
-
         public enum FlushCode : int
         {
             NoFlush = 0,
-            PartialFlush = 1,
-            SyncFlush = 2,
-            FullFlush = 3,
             Finish = 4,
-            Block = 5,
-            //Trees = 6 // Only in ZLib 1.2.4 and later
         }
-
 
         public enum ErrorCode : int
         {
             Ok = 0,
             StreamEnd = 1,
-            NeedDictionary = 2,
-            ErrorNo = -1,
             StreamError = -2,
             DataError = -3,
             MemError = -4,
             BufError = -5,
             VersionError = -6
         }
-
 
         /// <summary>
         /// <p>ZLib can accept any integer value between 0 and 9 (inclusive) as a valid compression level parameter:
@@ -101,7 +91,6 @@ namespace System.IO.Compression
             DefaultCompression = -1
         }
 
-
         /// <summary>
         /// <p><strong>From the ZLib manual:</strong></p>
         /// <p><code>CompressionStrategy</code> is used to tune the compression algorithm.<br />
@@ -121,13 +110,8 @@ namespace System.IO.Compression
         /// </summary>
         public enum CompressionStrategy : int
         {
-            Filtered = 1,
-            HuffmanOnly = 2,
-            Rle = 3,
-            Fixed = 4,
             DefaultStrategy = 0
         }
-
 
         /// <summary>
         /// In version 1.2.3, ZLib provides on the <code>Deflated</code>-<code>CompressionMethod</code>.

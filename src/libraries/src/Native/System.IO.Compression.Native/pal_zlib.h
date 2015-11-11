@@ -11,13 +11,13 @@ struct PAL_ZStream
     uint8_t* nextIn; // next input byte
     uint8_t* nextOut; // next output byte should be put there
 
-    uint32_t availIn; // number of bytes available at nextIn
-    uint32_t availOut; // remaining free space at nextOut
-
     char* msg; // last error message, NULL if no error
 
     // the underlying z_stream object is held in internalState, but it should not be used by external callers
     void* internalState; 
+
+    uint32_t availIn; // number of bytes available at nextIn
+    uint32_t availOut; // remaining free space at nextOut
 };
 
 /*
@@ -26,11 +26,7 @@ Allowed flush values for the Deflate and Inflate functions.
 enum PAL_FlushCode : int32_t
 {
     PAL_Z_NOFLUSH = 0,
-    PAL_Z_PARTIALFLUSH = 1,
-    PAL_Z_SYNCFLUSH = 2,
-    PAL_Z_FULLFLUSH = 3,
     PAL_Z_FINISH = 4,
-    PAL_Z_BLOCK = 5,
 };
 
 /*
@@ -40,8 +36,6 @@ enum PAL_ErrorCode : int32_t
 {
     PAL_Z_OK = 0,
     PAL_Z_STREAMEND = 1,
-    PAL_Z_NEEDDICTIONARY = 2,
-    PAL_Z_ERRORNO = -1,
     PAL_Z_STREAMERROR = -2,
     PAL_Z_DATAERROR = -3,
     PAL_Z_MEMERROR = -4,
@@ -65,10 +59,6 @@ Compression strategy
 */
 enum PAL_CompressionStrategy : int32_t
 {
-    PAL_Z_FILTERED = 1,
-    PAL_Z_HUFFMANONLY = 2,
-    PAL_Z_RLE = 3,
-    PAL_Z_FIXED = 4,
     PAL_Z_DEFAULTSTRATEGY = 0
 };
 
@@ -79,13 +69,6 @@ enum PAL_CompressionMethod : int32_t
 {
     PAL_Z_DEFLATED = 8
 };
-
-/*
-Gets a value indicating whether zlib is currently available.
-
-Returns 1 if zlib is available, otherwise 0.
-*/
-extern "C" int32_t IsZLibAvailable();
 
 /*
 Initializes the PAL_ZStream so the Deflate function can be invoked on it.
@@ -130,13 +113,6 @@ All dynamically allocated data structures for this stream are freed.
 Returns a PAL_ErrorCode indicating success or an error number on failure.
 */
 extern "C" int32_t InflateEnd(PAL_ZStream* stream);
-
-/*
-Gets a value indicating whether the Crc32 function is available.
-
-Returns 1 if the Crc32 function is available, otherwise 0.
-*/
-extern "C" int32_t IsCrc32Available();
 
 /*
 Update a running CRC-32 with the bytes buffer[0..len-1] and return the

@@ -23,12 +23,12 @@ namespace System.IO.Compression
             internal IntPtr nextIn;  //Bytef    *next_in;  /* next input byte */
             internal IntPtr nextOut; //Bytef    *next_out; /* next output byte should be put there */
 
-            internal uint availIn;   //uInt     avail_in;  /* number of bytes available at next_in */
-            internal uint availOut;  //uInt     avail_out; /* remaining free space at next_out */
-
             internal IntPtr msg;     //char     *msg;      /* last error message, NULL if no error */
 
             private IntPtr internalState;    //internal state that is not visible to managed code
+
+            internal uint availIn;   //uInt     avail_in;  /* number of bytes available at next_in */
+            internal uint availOut;  //uInt     avail_out; /* remaining free space at next_out */
         }
     }
 }
