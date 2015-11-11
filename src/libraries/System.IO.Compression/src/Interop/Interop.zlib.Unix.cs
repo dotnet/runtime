@@ -9,9 +9,6 @@ internal static partial class Interop
     internal static partial class zlib
     {
         [DllImport(Libraries.CompressionNative)]
-        internal static extern bool IsZLibAvailable();
-
-        [DllImport(Libraries.CompressionNative)]
         internal static extern ZLibNative.ErrorCode DeflateInit2_(
             ref ZLibNative.ZStream stream,
             ZLibNative.CompressionLevel level,
@@ -35,8 +32,10 @@ internal static partial class Interop
         [DllImport(Libraries.CompressionNative)]
         internal static extern ZLibNative.ErrorCode InflateEnd(ref ZLibNative.ZStream stream);
 
-        [DllImport(Libraries.CompressionNative)]
-        internal static extern bool IsCrc32Available();
+        internal static bool IsCrc32Available()
+        {
+            return true;
+        }
 
         internal static unsafe uint crc32(uint crc, byte[] buffer, int offset, int len)
         {
