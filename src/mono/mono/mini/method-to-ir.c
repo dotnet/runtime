@@ -5686,12 +5686,20 @@ static gboolean
 is_unsafe_mov_compatible (MonoCompile *cfg, MonoClass *param_klass, MonoClass *return_klass)
 {
 	uint32_t align;
+	int param_size, return_size;
 
 	param_klass = mono_class_from_mono_type (mini_get_underlying_type (&param_klass->byval_arg));
+	return_klass = mono_class_from_mono_type (mini_get_underlying_type (&return_klass->byval_arg));
+
+	if (cfg->verbose_level > 3)
+		printf ("[UNSAFE-MOV-INTRISIC] %s <- %s\n", return_klass->name, param_klass->name);
 
 	//Only allow for valuetypes
-	if (!param_klass->valuetype || !return_klass->valuetype)
+	if (!param_klass->valuetype || !return_klass->valuetype) {
+		if (cfg->verbose_level > 3)
+			printf ("[UNSAFE-MOV-INTRISIC]\tone of the args is not a valuetype\n");
 		return FALSE;
+	}
 
 	//That are blitable
 	if (param_klass->has_references || return_klass->has_references)
@@ -5699,17 +5707,51 @@ is_unsafe_mov_compatible (MonoCompile *cfg, MonoClass *param_klass, MonoClass *r
 
 	/* Avoid mixing structs and primitive types/enums, they need to be handled differently in the JIT */
 	if ((MONO_TYPE_ISSTRUCT (&param_klass->byval_arg) && !MONO_TYPE_ISSTRUCT (&return_klass->byval_arg)) ||
-		(!MONO_TYPE_ISSTRUCT (&param_klass->byval_arg) && MONO_TYPE_ISSTRUCT (&return_klass->byval_arg)))
+		(!MONO_TYPE_ISSTRUCT (&param_klass->byval_arg) && MONO_TYPE_ISSTRUCT (&return_klass->byval_arg))) {
+			if (cfg->verbose_level > 3)
+				printf ("[UNSAFE-MOV-INTRISIC]\tmixing structs and scalars\n");
 		return FALSE;
+	}
 
 	if (param_klass->byval_arg.type == MONO_TYPE_R4 || param_klass->byval_arg.type == MONO_TYPE_R8 ||
-		return_klass->byval_arg.type == MONO_TYPE_R4 || return_klass->byval_arg.type == MONO_TYPE_R8)
+		return_klass->byval_arg.type == MONO_TYPE_R4 || return_klass->byval_arg.type == MONO_TYPE_R8) {
+		if (cfg->verbose_level > 3)
+			printf ("[UNSAFE-MOV-INTRISIC]\tfloat or double are not supported\n");
 		return FALSE;
+	}
 
-	//And have the same size
-	if (mono_class_value_size (param_klass, &align) != mono_class_value_size (return_klass, &align))
+	param_size = mono_class_value_size (param_klass, &align);
+	return_size = mono_class_value_size (return_klass, &align);
+
+	//We can do it if sizes match
+	if (param_size == return_size) {
+		if (cfg->verbose_level > 3)
+			printf ("[UNSAFE-MOV-INTRISIC]\tsame size\n");
+		return TRUE;
+	}
+
+	//No simple way to handle struct if sizes don't match
+	if (MONO_TYPE_ISSTRUCT (&param_klass->byval_arg)) {
+		if (cfg->verbose_level > 3)
+			printf ("[UNSAFE-MOV-INTRISIC]\tsize mismatch and type is a struct\n");
 		return FALSE;
-	return TRUE;
+	}
+
+	/*
+	 * Same reg size category.
+	 * A quick note on why we don't require widening here.
+	 * The intrinsic is "R Array.UnsafeMov<S,R> (S s)".
+	 *
+	 * Since the source value comes from a function argument, the JIT will already have
+	 * the value in a VREG and performed any widening needed before (say, when loading from a field).
+	 */
+	if (param_size <= 4 && return_size <= 4) {
+		if (cfg->verbose_level > 3)
+			printf ("[UNSAFE-MOV-INTRISIC]\tsize mismatch but both are of the same reg class\n");
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 static MonoInst*
@@ -5718,7 +5760,7 @@ emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **a
 	MonoClass *param_klass = mono_class_from_mono_type (fsig->params [0]);
 	MonoClass *return_klass = mono_class_from_mono_type (fsig->ret);
 
-	//Valuetypes that are semantically equivalent
+	//Valuetypes that are semantically equivalent or numbers than can be widened to
 	if (is_unsafe_mov_compatible (cfg, param_klass, return_klass))
 		return args [0];
 
