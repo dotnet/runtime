@@ -34,6 +34,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByNameWorker(BINDER_SPACE:
                                       NULL,
                                       FALSE, //fNgenExplicitBind,
                                       FALSE, //fExplicitBindToNativeImage,
+                                      false, //excludeAppPaths,
                                       ppCoreCLRFoundAssembly);
     if (!FAILED(hr))
     {
@@ -53,10 +54,6 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *
     // DevDiv #933506: Exceptions thrown during AssemblyLoadContext.Load should propagate
     // EX_TRY
     {
-        // Check if the assembly is in the TPA list or not.
-        //
-        // HAR_TODO: For Bing scenarios, we should be able to tell the TPA Binder
-        // to not consult the AppPaths/App_ni_Paths.
         _ASSERTE(m_pTPABinder != NULL);
         
         ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
@@ -65,7 +62,9 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *
         SAFE_NEW(pAssemblyName, AssemblyName);
         IF_FAIL_GO(pAssemblyName->Init(pIAssemblyName));
         
-        hr = m_pTPABinder->BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly);
+        // Check if the assembly is in the TPA list or not. Don't search app paths when using the TPA binder because the actual
+        // binder is using a host assembly resolver.
+        hr = m_pTPABinder->BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, true /* excludeAppPaths */);
         if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
         {
             // If we could not find the assembly in the TPA list,
@@ -160,7 +159,8 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindUsingPEImage( /* in */ PEImage *pP
             {
                 // The simple name of the assembly being requested to be bound was found in the TPA list.
                 // Now, perform the actual bind to see if the assembly was really in the TPA assembly or not.
-                hr = m_pTPABinder->BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly);
+                // Don't search app paths when using the TPA binder because the actual binder is using a host assembly resolver.
+                hr = m_pTPABinder->BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, true /* excludeAppPaths */);
                 if (SUCCEEDED(hr))
                 {
                     if (pCoreCLRFoundAssembly->GetIsInGAC())
