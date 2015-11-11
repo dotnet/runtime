@@ -5694,11 +5694,17 @@ is_unsafe_mov_compatible (MonoCompile *cfg, MonoClass *param_klass, MonoClass *r
 	if (cfg->verbose_level > 3)
 		printf ("[UNSAFE-MOV-INTRISIC] %s <- %s\n", return_klass->name, param_klass->name);
 
-	//Only allow for valuetypes
-	if (!param_klass->valuetype || !return_klass->valuetype) {
+	//Don't allow mixing reference types with value types
+	if (param_klass->valuetype != return_klass->valuetype) {
 		if (cfg->verbose_level > 3)
-			printf ("[UNSAFE-MOV-INTRISIC]\tone of the args is not a valuetype\n");
+			printf ("[UNSAFE-MOV-INTRISIC]\tone of the args is a valuetype and the other is not\n");
 		return FALSE;
+	}
+
+	if (!param_klass->valuetype) {
+		if (cfg->verbose_level > 3)
+			printf ("[UNSAFE-MOV-INTRISIC]\targs are reference types\n");
+		return TRUE;
 	}
 
 	//That are blitable
