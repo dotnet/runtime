@@ -4435,8 +4435,9 @@ private:
     void                fgFixupIfCallArg(ArrayStack<GenTree *> *parentStack,
                                          GenTree *oldChild, 
                                          GenTree *newChild);
-    //                  Recognize a rotation pattern and convert into a GT_ROL or a GT_ROR node.
-    GenTreePtr          fgMorphRotation(GenTreePtr tree);
+    //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
+    GenTreePtr          fgRecognizeAndMorphBitwiseRotation(GenTreePtr tree);
+    bool                fgOperIsBitwiseRotationRoot(genTreeOps oper);
 
     //-------- Determine the order in which the trees will be evaluated -------
 
