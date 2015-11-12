@@ -1279,12 +1279,27 @@ public static partial class DataContractSerializerTests
         //Constructor# 5
         var value = new KnownTypesThroughConstructor() { EnumValue = MyEnum.One, SimpleTypeValue = new SimpleKnownTypeValue() { StrProperty = "PropertyValue" } };
         var actual = SerializeAndDeserialize<KnownTypesThroughConstructor>(value,
-        @"<KnownTypesThroughConstructor xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><EnumValue i:type=""MyEnum"">One</EnumValue><SimpleTypeValue i:type=""SimpleKnownTypeValue""><StrProperty>PropertyValue</StrProperty></SimpleTypeValue></KnownTypesThroughConstructor>",
-        null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
+            @"<KnownTypesThroughConstructor xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><EnumValue i:type=""MyEnum"">One</EnumValue><SimpleTypeValue i:type=""SimpleKnownTypeValue""><StrProperty>PropertyValue</StrProperty></SimpleTypeValue></KnownTypesThroughConstructor>",
+            null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
 
         Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
         Assert.StrictEqual(((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty, "PropertyValue");
+    }
+
+    [Fact]
+    public static void DCS_DuplicatedKnownTypesWithAdapterThroughConstructor()
+    {
+        //Constructor# 5  
+        DateTimeOffset dto = new DateTimeOffset(new DateTime(2015, 11, 11), new TimeSpan(0, 0, 0));
+        var value = new KnownTypesThroughConstructor() { EnumValue = dto, SimpleTypeValue = dto };
+        var actual = SerializeAndDeserialize<KnownTypesThroughConstructor>(value, 
+            @"<KnownTypesThroughConstructor xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><EnumValue i:type=""a:DateTimeOffset"" xmlns:a=""http://schemas.datacontract.org/2004/07/System""><a:DateTime>2015-11-11T00:00:00Z</a:DateTime><a:OffsetMinutes>0</a:OffsetMinutes></EnumValue><SimpleTypeValue i:type=""a:DateTimeOffset"" xmlns:a=""http://schemas.datacontract.org/2004/07/System""><a:DateTime>2015-11-11T00:00:00Z</a:DateTime><a:OffsetMinutes>0</a:OffsetMinutes></SimpleTypeValue></KnownTypesThroughConstructor>",
+            null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), new Type[] { typeof(DateTimeOffset), typeof(DateTimeOffset) }); });
+
+        Assert.StrictEqual((DateTimeOffset)value.EnumValue, (DateTimeOffset)actual.EnumValue);
+        Assert.True(actual.SimpleTypeValue is DateTimeOffset);
+        Assert.StrictEqual((DateTimeOffset)actual.SimpleTypeValue, (DateTimeOffset)actual.SimpleTypeValue);
     }
 
     [Fact]
@@ -1293,8 +1308,8 @@ public static partial class DataContractSerializerTests
         //Constructor# 2.1
         var value = new KnownTypesThroughConstructor() { EnumValue = MyEnum.One, SimpleTypeValue = new SimpleKnownTypeValue() { StrProperty = "PropertyValue" } };
         var actual = SerializeAndDeserialize<KnownTypesThroughConstructor>(value,
-        @"<KnownTypesThroughConstructor xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><EnumValue i:type=""MyEnum"">One</EnumValue><SimpleTypeValue i:type=""SimpleKnownTypeValue""><StrProperty>PropertyValue</StrProperty></SimpleTypeValue></KnownTypesThroughConstructor>",
-        new DataContractSerializerSettings() { KnownTypes = new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) } });
+            @"<KnownTypesThroughConstructor xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><EnumValue i:type=""MyEnum"">One</EnumValue><SimpleTypeValue i:type=""SimpleKnownTypeValue""><StrProperty>PropertyValue</StrProperty></SimpleTypeValue></KnownTypesThroughConstructor>",
+            new DataContractSerializerSettings() { KnownTypes = new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) } });
 
         Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
@@ -1307,8 +1322,8 @@ public static partial class DataContractSerializerTests
         //Constructor# 6
         var value = new KnownTypesThroughConstructor() { EnumValue = MyEnum.One, SimpleTypeValue = new SimpleKnownTypeValue() { StrProperty = "PropertyValue" } };
         var actual = SerializeAndDeserialize<KnownTypesThroughConstructor>(value,
-        @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:EnumValue i:type=""a:MyEnum"">One</a:EnumValue><a:SimpleTypeValue i:type=""a:SimpleKnownTypeValue""><a:StrProperty>PropertyValue</a:StrProperty></a:SimpleTypeValue></ChangedRoot>",
-        null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), "ChangedRoot", "http://changedNamespace", new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
+            @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:EnumValue i:type=""a:MyEnum"">One</a:EnumValue><a:SimpleTypeValue i:type=""a:SimpleKnownTypeValue""><a:StrProperty>PropertyValue</a:StrProperty></a:SimpleTypeValue></ChangedRoot>",
+            null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), "ChangedRoot", "http://changedNamespace", new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
 
         Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
@@ -1322,8 +1337,8 @@ public static partial class DataContractSerializerTests
         var xmlDictionary = new XmlDictionary();
         var value = new KnownTypesThroughConstructor() { EnumValue = MyEnum.One, SimpleTypeValue = new SimpleKnownTypeValue() { StrProperty = "PropertyValue" } };
         var actual = SerializeAndDeserialize<KnownTypesThroughConstructor>(value,
-        @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:EnumValue i:type=""a:MyEnum"">One</a:EnumValue><a:SimpleTypeValue i:type=""a:SimpleKnownTypeValue""><a:StrProperty>PropertyValue</a:StrProperty></a:SimpleTypeValue></ChangedRoot>",
-        null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), xmlDictionary.Add("ChangedRoot"), xmlDictionary.Add("http://changedNamespace"), new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
+            @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:EnumValue i:type=""a:MyEnum"">One</a:EnumValue><a:SimpleTypeValue i:type=""a:SimpleKnownTypeValue""><a:StrProperty>PropertyValue</a:StrProperty></a:SimpleTypeValue></ChangedRoot>",
+            null, () => { return new DataContractSerializer(typeof(KnownTypesThroughConstructor), xmlDictionary.Add("ChangedRoot"), xmlDictionary.Add("http://changedNamespace"), new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
 
         Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
         Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
