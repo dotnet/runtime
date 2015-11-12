@@ -145,16 +145,31 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
     </ItemGroup>
 
     <PropertyGroup> 
-      <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'true'">"$(_CLRTestToRunFileFullPath)"</_CLRTestRunFile>
-      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And $(_CLRTestNeedsProjectToRun) ">"%CORE_ROOT%\corerun.exe" $([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</_CLRTestRunFile>
-   
-      <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'false'">"$(MSBuildProjectName).exe"</_CLRTestRunFile>
-      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And !$(_CLRTestNeedsProjectToRun) ">"%CORE_ROOT%\corerun.exe" $(_CLRTestRunFile)</_CLRTestRunFile>
+      <_CLRTestExeFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'true'">$(_CLRTestToRunFileFullPath)</_CLRTestExeFile>
+      <_CLRTestExeFile Condition="'$(_CLRTestNeedsProjectToRun)' == 'false'">$(MSBuildProjectName).exe</_CLRTestExeFile>
+      <_CLRTestExeFile Condition="'$(CLRTestIsHosted)'=='true' And '$(_CLRTestNeedsProjectToRun)'=='true'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</_CLRTestExeFile>
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" "$(_CLRTestExeFile)"</_CLRTestRunFile>
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='false'">"$(_CLRTestExeFile)"</_CLRTestRunFile>
 
       <BatchCLRTestLaunchCmds Condition=" '$(BatchCLRTestLaunchCmds)'=='' "><![CDATA[
-ECHO $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
-%_DebuggerFullPath% $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
-set CLRTestExitCode=%ERRORLEVEL%
+IF NOT "%CLRCustomTestLauncher%"=="" (
+  goto :CustomLauncher
+) ELSE (
+  goto :DefaultLauncher
+)
+
+:CustomLauncher
+  call %CLRCustomTestLauncher% %~dp0 $(_CLRTestExeFile) %CLRTestExecutionArguments% %Host_Args%
+  set CLRTestExitCode=%ERRORLEVEL%
+  goto :EndLauncher
+
+:DefaultLauncher
+  ECHO $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
+  %_DebuggerFullPath% $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
+  set CLRTestExitCode=%ERRORLEVEL%
+
+:EndLauncher
+
       ]]></BatchCLRTestLaunchCmds>
     </PropertyGroup>   
     <PropertyGroup>
