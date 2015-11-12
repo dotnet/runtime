@@ -897,6 +897,7 @@ BOOL DomainFile::IsZapRequired()
         g_pConfig->RequireZaps() == EEConfig::REQUIRE_ZAPS_SUPPORTED)
         return FALSE;
 
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
     if (IsCompilationProcess())
     {
         // Ignore the assembly being ngened.
@@ -919,6 +920,7 @@ BOOL DomainFile::IsZapRequired()
         if (fileIsBeingNGened)
             return FALSE;
     }
+#endif
 
     return TRUE;
 }
@@ -997,6 +999,7 @@ void DomainFile::ClearNativeImageStress()
     // Different app-domains should make different decisions
     hash ^= HashString(this->GetAppDomain()->GetFriendlyName());
 
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
     // Since DbgRandomOnHashAndExe() is not so random under ngen.exe, also
     // factor in the module being compiled
     if (this->GetAppDomain()->IsCompilationDomain())
@@ -1006,6 +1009,7 @@ void DomainFile::ClearNativeImageStress()
         if (module)
             hash ^= HashStringA(module->GetSimpleName());
     }
+#endif
 
     if (DbgRandomOnHashAndExe(hash, float(stressPercentage)/100))
     {

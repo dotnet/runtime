@@ -3340,7 +3340,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 
     BOOL fInstrument = FALSE;
 
-#ifdef FEATURE_PREJIT
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
     // This will make sure that when IBC logging is turned on we will go through a version
     // of JIT_GenericHandle which logs the access. Note that we still want the dictionaries
     // to be populated to prepopulate the types at NGen time.
@@ -3349,7 +3349,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     {
         fInstrument = TRUE;
     }
-#endif // FEATURE_PREJIT
+#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
     // If we've got a  method type parameter of any kind then we must look in the method desc arg
     if (pContextMD->RequiresInstMethodDescArg())
@@ -5176,13 +5176,13 @@ void * CEEInfo::getArrayInitializationData(
     if (!pField                    ||
         !pField->IsRVA()           ||
         (pField->LoadSize() < size)
-#ifdef FEATURE_PREJIT
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
         // This will make sure that when IBC logging is on, the array initialization happens thru 
         // COMArrayInfo::InitializeArray. This gives a place to put the IBC probe that can help
         // separate hold and cold RVA blobs.
         || (IsCompilingForNGen() &&
             GetAppDomain()->ToCompilationDomain()->m_fForceInstrument)
-#endif // FEATURE_PREJIT
+#endif // FEATURE_NATIVE_IMAGE_GENERATION
         )
     {
         result = NULL;
@@ -6764,14 +6764,14 @@ CorInfoHelpFunc CEEInfo::getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn)
 
     JIT_TO_EE_TRANSITION();
 
-#ifdef FEATURE_PREJIT
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
     // This will make sure that when IBC logging is on, we call the slow helper with IBC probe
     if (IsCompilingForNGen() &&
         GetAppDomain()->ToCompilationDomain()->m_fForceInstrument)
     {
         result = CORINFO_HELP_SECURITY_PROLOG_FRAMED;
     }
-#endif // FEATURE_PREJIT
+#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
     if (result == CORINFO_HELP_UNDEF)
     {

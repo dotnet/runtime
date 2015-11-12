@@ -115,9 +115,7 @@ CEEPreloader::AddFixup, which forwards it to the zapper
 #ifndef COMPILE_H_
 #define COMPILE_H_
 
-#ifndef FEATURE_PREJIT
-#error FEATURE_PREJIT is required for this file
-#endif // FEATURE_PREJIT
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
 
 struct ZapperLoaderModuleTableKey {
     ZapperLoaderModuleTableKey(Module *pDefinitionModule, 
@@ -922,5 +920,7 @@ class CompilationDomain : public AppDomain,
 
     void SetDependencyEmitter(IMetaDataAssemblyEmit *pEmitter);
 };
+
+#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 #endif // COMPILE_H_
