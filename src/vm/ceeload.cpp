@@ -1167,10 +1167,12 @@ BOOL Module::CanCacheWinRTTypeByGuid(MethodTable *pMT)
     if (WinRTTypeNameConverter::IsRedirectedWinRTSourceType(pMT))
         return FALSE;
 
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
     // Don't cache in a module that's not the NGen target, since the result
     // won't be saved, and since the such a module might be read-only.
     if (GetAppDomain()->ToCompilationDomain()->GetTargetModule() != this)
         return FALSE;
+#endif
 
     return TRUE;
 }
