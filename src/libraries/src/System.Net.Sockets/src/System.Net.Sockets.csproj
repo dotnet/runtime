@@ -53,12 +53,12 @@
     <Compile Include="System\Net\Sockets\TransportType.cs" />
     <Compile Include="System\Net\Sockets\UDPClient.cs" />
     <Compile Include="System\Net\Sockets\UdpReceiveResult.cs" />
-    <Compile Include="System\Net\Sockets\_AcceptOverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\_BaseOverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\_ConnectOverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\_MultipleConnectAsync.cs" />
-    <Compile Include="System\Net\Sockets\_OverlappedAsyncResult.cs" />
-    <Compile Include="System\Net\Sockets\_ReceiveMessageOverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\MultipleConnectAsync.cs" />
+    <Compile Include="System\Net\Sockets\OverlappedAsyncResult.cs" />
+    <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.cs" />
         
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
@@ -166,12 +166,12 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="System\Net\Sockets\_AcceptOverlappedAsyncResult.Windows.cs" />
-    <Compile Include="System\Net\Sockets\_BaseOverlappedAsyncResult.Windows.cs" />
-    <Compile Include="System\Net\Sockets\_ConnectOverlappedAsyncResult.Windows.cs" />
-    <Compile Include="System\Net\Sockets\_OverlappedAsyncResult.Windows.cs" />
-    <Compile Include="System\Net\Sockets\_DynamicWinsockMethods.cs" />
-    <Compile Include="System\Net\Sockets\_ReceiveMessageOverlappedAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Sockets\OverlappedAsyncResult.Windows.cs" />
+    <Compile Include="System\Net\Sockets\DynamicWinsockMethods.cs" />
+    <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\SendPacketsElementFlags.Windows.cs" />
     <Compile Include="System\Net\Sockets\Socket.Windows.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Windows.cs" />
@@ -299,11 +299,11 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="System\Net\Sockets\_AcceptOverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\_BaseOverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\_ConnectOverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\_OverlappedAsyncResult.Unix.cs" />
-    <Compile Include="System\Net\Sockets\_ReceiveMessageOverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\OverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\SendPacketsElementFlags.Unix.cs" />
     <Compile Include="System\Net\Sockets\Socket.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncContext.Unix.cs" />
