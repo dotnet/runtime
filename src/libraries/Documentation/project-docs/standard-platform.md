@@ -1,4 +1,4 @@
-# .NET Platform Standard
+﻿# .NET Platform Standard
 
 ## Disclaimer
 We're sharing early plans for the future of building .NET class libraries. To track the progress of this work refer to https://github.com/dotnet/corefx/issues/4367
@@ -23,9 +23,9 @@ The .NET Platform Standard version represents binary portability across platform
 
 
 ## Terms
-- **.NET Platform Standard** - versioned sets of the reference assemblies that all .NET Platforms must support.
+- **.NET Platform Standard** - a specific versioned set of reference assemblies that all .NET Platforms must support as defined in the [CoreFX repo](https://github.com/dotnet/corefx).
 - **PCL** - Portable Class Library
-- **Platform** - e.g. .NET Framework 4.5, Windows Phone 8.1
+- **Platform** - e.g. .NET Framework 4.5, .NET Framework 4.6, Windows Phone 8.1, MonoTouch, UWP, etc.
 - **Reference Assembly** - An assembly that contains API surface only. There is no IL in the method bodies. It is used for compilation only, and cannot be used to run. Also commonly referred to as "Contracts".
 - **Implementation Assembly** - An assembly that contains an implementation of a reference assembly. These can be implemented as standalone assemblies but can sometimes be anchored by a platform and cannot be updated without updating the platform.
 - **Anchored Assembly** - An implementation assembly where at least one platform provides the implementation as part of the platform rather than on top of it. Such an "anchored assembly" may only be updated on that platform by updating the platform itself.
@@ -39,7 +39,7 @@ The .NET Platform Standard version represents binary portability across platform
 - Lower versions are always compatible with higher versions.
 
 ## Relationship to Platforms
-The .NET Platform Standard is not a platform in and of itself. It is a standard that platforms are implemented against. The .NET Platform Standard defines reference assemblies (contracts) that platforms implement. [These contracts are defined by CoreFX](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/standard-platform.md#list-of-net-corefx-apis-and-their-associated-net-standard-platform-version-tentative) and are either implemented in CoreFX as stand-alone managed code, or provided by a specific platform. For example, [System.Xml.XDocument](https://github.com/dotnet/corefx/tree/master/src/System.Xml.XDocument/src) is implemented as stand-alone managed code in CoreFx, but is an anchored assembly in .NET Framework.
+The .NET Platform Standard is not a platform in and of itself. It is a standard that platforms are implemented to. The .NET Platform Standard defines reference assemblies (contracts) that platforms must implement. These reference assemblies (ie. the standard) are defined in the [CoreFX repo](https://github.com/dotnet/corefx). This is the [proposed list of the contracts that are in the Platform Standard](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/standard-platform.md#list-of-proposed-standard-platform-contracts-from-corefx-tentative).
 
 ![Platform Standard and Library](https://cloud.githubusercontent.com/assets/8228359/11072769/52bc69d6-879c-11e5-8640-d92f9ee1e2d9.png)
 
@@ -255,6 +255,39 @@ Tooling support for the `netstandard` TFM is as follows. This list will be updat
 - **DNU**: `<TBD>`
 - **Xamarin Studio**: `<TBD>`
 
+## List of Proposed Standard Platform Contracts from CoreFX (tentative)
+
+|Contract/Reference Assembly|
+|---------------------------|
+|Microsoft.Win32.Primitives|
+|System.AppContext|
+|System.Console|
+|System.Diagnostics.Debug|
+|System.Diagnostics.Process|
+|System.Globalization|
+|System.Globalization.Calendars|
+|System.IO|
+|System.IO.FileSystem|
+|System.IO.FileSystem.Primitives|
+|System.Net.Primitives|
+|System.Net.Sockets|
+|System.Reflection|
+|System.Reflection.Primitives|
+|System.Runtime|
+|System.Runtime.Extensions|
+|System.Runtime.Handles|
+|System.Runtime.InteropServices|
+|System.Runtime.InteropServices.RuntimeInformation|
+|System.Runtime.Numerics|
+|System.Threading|
+|System.Threading.Tasks|
+|System.Threading.Timer|
+|System.Diagnostics.Tracing|
+|System.Text.Encoding|
+|System.Reflection.TypeExtensions|
+|System.Reflection.Extensions|
+|System.Resources.ResourceManager|
+
 ## List of .NET CoreFx APIs and their associated .NET Platform Standard version (tentative)
 
 ### Legend 
@@ -386,4 +419,5 @@ Tooling support for the `netstandard` TFM is as follows. This list will be updat
 | System.Xml.XPath |  |  |  | X | ⇠ |
 | System.Xml.XPath.XDocument |  |  |  | X | ⇠ |
 | System.Xml.XPath.XmlDocument |  |  |  | X | ⇠ |
+
 
