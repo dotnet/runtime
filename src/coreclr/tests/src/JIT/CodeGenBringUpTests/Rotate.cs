@@ -8,6 +8,12 @@ using System.Runtime.CompilerServices;
 
 public class Test
 {
+    static ulong s_field;
+
+    ulong field;
+
+    volatile uint volatile_field;
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static uint rol32(uint value, int amount)
     {
@@ -47,6 +53,12 @@ public class Test
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    static uint rol32xor(uint value, int amount)
+    {
+        return (value << amount) ^ (value >> (32 - amount));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static uint ror32(uint value, int amount)
     {
         return (value << ((32 - amount))) | (value >> amount);
@@ -64,6 +76,12 @@ public class Test
         uint value = flag() ? (uint)0x12345678 : (uint)0x12345678;
         int amount = flag() ? 12 : 12;
         return (value >> amount) | (value << ((32 - amount)));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    uint ror32vfield(int amount)
+    {
+        return (volatile_field << ((32 - amount))) | (volatile_field >> amount);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -87,6 +105,12 @@ public class Test
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    ulong rol64field(int amount)
+    {
+        return (field << amount) | (field >> (64 - amount));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static ulong ror64(ulong value, int amount)
     {
         return (value << (64 - amount)) | (value >> amount);
@@ -104,6 +128,12 @@ public class Test
         ulong value = flag() ? (ulong)0x123456789abcdef : (ulong)0x123456789abcdef;
         int amount = flag() ? 5 : 5;
         return (value << (64 - amount)) | (value >> amount);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static ulong ror64sfield(int amount)
+    {
+        return (s_field << (64 - amount)) | (s_field >> amount);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -136,10 +166,18 @@ public class Test
         return (value >> 10) | (value << 5);
     }
 
+    Test(ulong i, uint j)
+    {
+        field = i;
+        volatile_field = j;
+    }
+
     public static int Main()
     {
         const int Pass = 100;
         const int Fail = -1;
+
+        s_field = 0x123456789abcdef;
 
         if (rol32(0x12345678, 16) != 0x56781234)
         {
@@ -227,6 +265,28 @@ public class Test
         }
 
         if (not_rotation(0x87654321) != 0xeca9fd70)
+        {
+            return Fail;
+        }
+
+        if (rol32xor(0x12345678, 16) != 0x56781234)
+        {
+            return Fail;
+        }
+
+        if (ror64sfield(7) != 0xde02468acf13579b)
+        {
+            return Fail;
+        }
+
+        Test test = new Test(0x123456789abcdef, 0x12345678);
+
+        if (test.rol64field(11) != 0x1a2b3c4d5e6f7809)
+        {
+            return Fail;
+        }
+
+        if (test.ror32vfield(3) != 0x2468acf)
         {
             return Fail;
         }
