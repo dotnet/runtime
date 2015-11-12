@@ -57,7 +57,7 @@ namespace System.Diagnostics.Tests
         public void TestStartTimeProperty()
         {
             DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
-            Process p = CreateProcessInfinite();
+            Process p = CreateProcessLong();
             try
             {
                 p.Start();

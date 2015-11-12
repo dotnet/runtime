@@ -16,7 +16,7 @@ namespace System.Diagnostics.Tests
         {
             Action<int> run = expectedCodePage =>
             {
-                Process p = CreateProcessInfinite();
+                Process p = CreateProcessLong();
                 p.StartInfo.RedirectStandardInput = true;
                 p.StartInfo.RedirectStandardOutput = true;
                 p.StartInfo.RedirectStandardError = true;

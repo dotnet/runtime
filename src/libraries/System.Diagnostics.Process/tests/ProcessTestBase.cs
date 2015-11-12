@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tests
 
         public ProcessTestBase()
         {
-            _process = CreateProcessInfinite();
+            _process = CreateProcessLong();
             _process.Start();
         }
 
@@ -57,12 +57,21 @@ namespace System.Diagnostics.Tests
             return p;
         }
 
-        protected Process CreateProcessInfinite()
+        protected Process CreateProcessLong()
         {
             return CreateProcess(() =>
             {
                 Thread.Sleep(WaitInMS);
                 return SuccessExitCode;
+            });
+        }
+
+        protected Process CreateProcessInfinite()
+        {
+            return CreateProcess(() =>
+            {
+                while (true)
+                    Thread.Sleep(WaitInMS);
             });
         }
 
