@@ -13,7 +13,7 @@ __InitialDir=$PWD
 __BuildArch=arm
 __UbuntuArch=armhf
 __UbuntuRepo="http://ports.ubuntu.com/"
-__UbuntuPackages="build-essential lldb-3.6-dev libunwind8-dev gettext symlinks"
+__UbuntuPackages="build-essential lldb-3.6-dev libunwind8-dev gettext symlinks liblttng-ust-dev libicu-dev"
 __MachineTriple=arm-linux-gnueabihf
 __UnprocessedBuildArgs=
 for i in "$@"
@@ -28,14 +28,14 @@ for i in "$@"
         __BuildArch=arm
         __UbuntuArch=armhf
         __UbuntuRepo="http://ports.ubuntu.com/"
-        __UbuntuPackages="build-essential lldb-3.6-dev libunwind8-dev gettext symlinks"
+        __UbuntuPackages="build-essential lldb-3.6-dev libunwind8-dev gettext symlinks liblttng-ust-dev libicu-dev"
         __MachineTriple=arm-linux-gnueabihf
         ;;
         arm64)
         __BuildArch=arm64
         __UbuntuArch=arm64
         __UbuntuRepo="http://ports.ubuntu.com/"
-        __UbuntuPackages="build-essential libunwind8-dev gettext symlinks"
+        __UbuntuPackages="build-essential libunwind8-dev gettext symlinks liblttng-ust-dev libicu-dev"
         __MachineTriple=aarch64-linux-gnu
         ;;
         *)
