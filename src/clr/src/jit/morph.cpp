@@ -2693,9 +2693,16 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                    (call->gtCallObjp->gtType == TYP_I_IMPL));
 
             /* this is a register argument - put it in the table */
-            call->fgArgInfo->AddRegArg(argIndex, argx, NULL, genMapIntRegArgNumToRegNum(intArgRegNum), 1, 1
+            call->fgArgInfo->AddRegArg(argIndex,
+                                       argx, 
+                                       NULL, 
+                                       genMapIntRegArgNumToRegNum(intArgRegNum),
+                                       1, 
+                                       1
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                , false, REG_STK, nullptr
+                                       , false,
+                                       REG_STK,
+                                       nullptr
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
                 );
         }
@@ -2956,6 +2963,23 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
         if (lateArgsComputed)
         {
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+            // Get the struct description for the already completed struct argument.
+            fgArgTabEntryPtr fgEntryPtr = gtArgEntryByNode(call, argx);
+            assert(fgEntryPtr != nullptr);
+
+            // As described in few other places, this can happen when the argx was morphed 
+            // into an arg setup node - COPYBLK. The COPYBLK has always a type of void.
+            // In such case the fgArgTabEntry keeps track of whether the original node (before morphing)
+            // was a struct and the struct classification. 
+            isStructArg = fgEntryPtr->isStruct;
+
+            if (isStructArg)
+            {
+                structDesc.CopyFrom(fgEntryPtr->structDesc);
+            }
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
             assert(argEntry != NULL);
             if (argEntry->IsBackFilled())
             {
@@ -3095,7 +3119,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     unsigned originalSize = info.compCompHnd->getClassSize(ldObjClass);
                     originalSize = (originalSize == 0 ? TARGET_POINTER_SIZE : originalSize);
                     unsigned roundupSize  = (unsigned)roundUp(originalSize, TARGET_POINTER_SIZE);
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+                    // On System V OS-es a struct is never passed by reference.
+                    // It is either passed by value on the stack or in registers.
+                    bool     passStructInRegisters = false;
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
                     bool     passStructByRef = false;
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifndef _TARGET_X86_
 #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -3115,12 +3145,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #else // FEATURE_UNIX_AMD64_STRUCT_PASSING
                         if (!structDesc.passedInRegisters)
                         {
-                            passStructByRef = false;
+                            passStructInRegisters = false;
                             copyBlkClass = NULL;
                         }
                         else 
                         {
-                            passStructByRef = true;
+                            // The ldObjClass is used to materialize the struct on stack.
+                            passStructInRegisters = true;
                             copyBlkClass = ldObjClass;
                         }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -3280,7 +3311,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 
 #endif // not _TARGET_X86_
                     // We still have a TYP_STRUCT unless we converted the GT_LDOBJ into a GT_IND above...
-                    if ((structBaseType == TYP_STRUCT) && !passStructByRef)
+                    if ((structBaseType == TYP_STRUCT) &&
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                        !passStructInRegisters
+#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                        !passStructByRef
+#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                        )
                     {
                         // if the valuetype size is not a multiple of sizeof(void*),
                         // we must copyblk to a temp before doing the ldobj to avoid
@@ -3472,7 +3509,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             regNumber nextOtherRegNum = REG_STK;
 
-            if (isStructArg)
+            if (isStructArg && structDesc.passedInRegisters)
             {
                 // It is a struct passed in registers. Assign the next available register.
                 unsigned int curIntReg = intArgRegNum;
@@ -3485,10 +3522,22 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                         if (i == 0)
                         {
                             nextRegNum = genMapIntRegArgNumToRegNum(curIntReg);
+
+                            // For non-completed args the counters are incremented already
+                            // in the !lateArgsComputed above.
+                            if (lateArgsComputed)
+                            {
+                                structIntRegs++;
+                            }
                         }
                         else if (i == 1)
                         {
                             nextOtherRegNum = genMapIntRegArgNumToRegNum(curIntReg);
+
+                            if (lateArgsComputed)
+                            {
+                                structIntRegs++;
+                            }
                         }
                         else
                         {
@@ -3502,10 +3551,20 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                         if (i == 0)
                         {
                             nextRegNum = genMapFloatRegArgNumToRegNum(curFloatReg);
+
+                            if (lateArgsComputed)
+                            {
+                                structFloatRegs++;
+                            }
                         }
                         else if (i == 1)
                         {
                             nextOtherRegNum = genMapFloatRegArgNumToRegNum(curFloatReg);
+
+                            if (lateArgsComputed)
+                            {
+                                structFloatRegs++;
+                            }
                         }
                         else
                         {
@@ -3541,10 +3600,16 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                 hasNonStandardArg = true;
                 if (argx == nonStandardArgs.Index(i).node)
                 {
-                    fgArgTabEntry* argEntry = call->fgArgInfo->AddRegArg(argIndex, argx,
-                        args, nonStandardArgs.Index(i).reg, size, argAlign
+                    fgArgTabEntry* argEntry = call->fgArgInfo->AddRegArg(argIndex, 
+                                                                         argx,
+                                                                         args, 
+                                                                         nonStandardArgs.Index(i).reg, 
+                                                                         size, 
+                                                                         argAlign
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                        , isStructArg, nextOtherRegNum, &structDesc
+                                                                         , isStructArg, 
+                                                                         nextOtherRegNum, 
+                                                                         &structDesc
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                     );
                     argEntry->isNonStandard = true;
@@ -3560,10 +3625,16 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
             if (!lateArgsComputed)
             {
                 // This is a register argument - put it in the table
-                fgArgTabEntryPtr newArg = call->fgArgInfo->AddRegArg(
-                    argIndex, argx, args, nextRegNum, size, argAlign
+                fgArgTabEntryPtr newArg = call->fgArgInfo->AddRegArg(argIndex, 
+                                                                     argx, 
+                                                                     args, 
+                                                                     nextRegNum, 
+                                                                     size, 
+                                                                     argAlign
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                    , isStructArg, nextOtherRegNum, &structDesc
+                                                                     , isStructArg, 
+                                                                     nextOtherRegNum, 
+                                                                     &structDesc
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                     );
                 (void)newArg; //prevent "unused variable" error from GCC
@@ -3598,6 +3669,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     if (passUsingFloatRegs)
                     {
                         fltArgRegNum += size;
+
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
                         argSkippedRegMask |= genMapArgNumToRegMask(intArgRegNum, TYP_I_IMPL);
                         intArgRegNum = min(intArgRegNum + size, MAX_REG_ARG);
@@ -3617,6 +3689,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                     else
                     {
                         intArgRegNum += size;
+
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
                         fltArgSkippedRegMask |= genMapArgNumToRegMask(fltArgRegNum, TYP_DOUBLE);
                         fltArgRegNum = min(fltArgRegNum + size, MAX_FLOAT_REG_ARG);
