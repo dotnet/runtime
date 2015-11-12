@@ -1038,7 +1038,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	mono_process = (struct MonoProcess *) g_malloc0 (sizeof (struct MonoProcess));
 	mono_process->pid = pid;
 	mono_process->handle_count = 1;
-	if (MONO_SEM_INIT (&mono_process->exit_sem, 0) != 0) {
+	if (mono_sem_init (&mono_process->exit_sem, 0) != 0) {
 		/* If we can't create the exit semaphore, we just don't add anything
 		 * to our list of mono processes. Waiting on the process will return 
 		 * immediately. */
@@ -2633,7 +2633,7 @@ mono_processes_cleanup (void)
 		 * accessing them.
 		 */
 		mp = l->data;
-		MONO_SEM_DESTROY (&mp->exit_sem);
+		mono_sem_destroy (&mp->exit_sem);
 		g_free (mp);
 	}
 	g_slist_free (finished);
@@ -2690,7 +2690,7 @@ MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, sigi
 		if (p) {
 			p->pid = 0; /* this pid doesn't exist anymore, clear it */
 			p->status = status;
-			MONO_SEM_POST (&p->exit_sem);
+			mono_sem_post (&p->exit_sem);
 			mono_memory_barrier ();
 			/* Mark this as freeable, the pointer becomes invalid afterwards */
 			p->freeable = TRUE;
@@ -2761,11 +2761,11 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 			DEBUG ("%s (%p, %u): waiting on semaphore for %li ms...", 
 				   __func__, handle, timeout, (timeout - (now - start)));
 
-			ret = MONO_SEM_TIMEDWAIT_ALERTABLE (&mp->exit_sem, (timeout - (now - start)), alertable);
+			ret = mono_sem_timedwait (&mp->exit_sem, (timeout - (now - start)), alertable ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		} else {
 			DEBUG ("%s (%p, %u): waiting on semaphore forever...", 
 				   __func__, handle, timeout);
-			ret = MONO_SEM_WAIT_ALERTABLE (&mp->exit_sem, alertable);
+			ret = mono_sem_wait (&mp->exit_sem, alertable ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		}
 
 		if (ret == -1 && errno != EINTR && errno != ETIMEDOUT) {
@@ -2776,7 +2776,7 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 
 		if (ret == 0) {
 			/* Success, process has exited */
-			MONO_SEM_POST (&mp->exit_sem);
+			mono_sem_post (&mp->exit_sem);
 			break;
 		}
 

@@ -694,9 +694,9 @@ extern MonoNativeTlsKey thread_info_key;
 
 typedef MonoSemType SgenSemaphore;
 
-#define SGEN_SEMAPHORE_INIT(sem,initial)	MONO_SEM_INIT ((sem), (initial))
-#define SGEN_SEMAPHORE_POST(sem)		MONO_SEM_POST ((sem))
-#define SGEN_SEMAPHORE_WAIT(sem)		MONO_SEM_WAIT ((sem))
+#define SGEN_SEMAPHORE_INIT(sem,initial)	mono_sem_init ((sem), (initial))
+#define SGEN_SEMAPHORE_POST(sem)		mono_sem_post ((sem))
+#define SGEN_SEMAPHORE_WAIT(sem)		mono_sem_wait ((sem), MONO_SEM_FLAGS_NONE)
 
 gboolean sgen_has_critical_method (void);
 gboolean sgen_is_critical_method (MonoMethod *method);

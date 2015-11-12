@@ -636,7 +636,7 @@ mono_gc_finalize_notify (void)
 		return;
 
 #ifdef MONO_HAS_SEMAPHORES
-	MONO_SEM_POST (&finalizer_sem);
+	mono_sem_post (&finalizer_sem);
 #else
 	SetEvent (finalizer_event);
 #endif
@@ -729,7 +729,7 @@ finalizer_thread (gpointer unused)
 		if (wait) {
 		/* An alertable wait is required so this thread can be suspended on windows */
 #ifdef MONO_HAS_SEMAPHORES
-			MONO_SEM_WAIT_ALERTABLE (&finalizer_sem, TRUE);
+			mono_sem_wait (&finalizer_sem, MONO_SEM_FLAGS_ALERTABLE);
 #else
 			WaitForSingleObjectEx (finalizer_event, INFINITE, TRUE);
 #endif
@@ -768,7 +768,7 @@ finalizer_thread (gpointer unused)
 
 #ifdef MONO_HAS_SEMAPHORES
 		/* Avoid posting the pending done event until there are pending finalizers */
-		if (MONO_SEM_TIMEDWAIT (&finalizer_sem, 0) == 0)
+		if (mono_sem_timedwait (&finalizer_sem, 0, MONO_SEM_FLAGS_NONE) == 0)
 			/* Don't wait again at the start of the loop */
 			wait = FALSE;
 		else
@@ -823,7 +823,7 @@ mono_gc_init (void)
 	g_assert (pending_done_event);
 	mono_cond_init (&exited_cond);
 #ifdef MONO_HAS_SEMAPHORES
-	MONO_SEM_INIT (&finalizer_sem, 0);
+	mono_sem_init (&finalizer_sem, 0);
 #endif
 
 #ifndef LAZY_GC_THREAD_CREATION

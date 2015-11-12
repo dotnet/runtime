@@ -18,6 +18,8 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-api.h>
 
+#include <mono/io-layer/io-layer.h>
+
 #include <glib.h>
 #include <config.h>
 #ifdef HOST_WIN32

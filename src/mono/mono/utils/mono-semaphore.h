@@ -12,52 +12,266 @@
 
 #include <config.h>
 #include <glib.h>
-#include <time.h>
-#if defined(HAVE_SEMAPHORE_H) && !defined(HOST_WIN32)
+
+#include <errno.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#if defined(USE_MACH_SEMA)
+#include <mach/mach_init.h>
+#include <mach/task.h>
+#include <mach/semaphore.h>
+#elif !defined(HOST_WIN32) && defined(HAVE_SEMAPHORE_H)
 #include <semaphore.h>
-#endif
-#include <mono/io-layer/io-layer.h>
-#include <mono/utils/mono-publib.h>
-
-#if (defined (HAVE_SEMAPHORE_H) || defined (USE_MACH_SEMA)) && !defined(HOST_WIN32)
-#  define MONO_HAS_SEMAPHORES
-
-#  if defined (USE_MACH_SEMA)
-#    include <mach/mach_init.h>
-#    include <mach/task.h>
-#    include <mach/semaphore.h>
-typedef semaphore_t MonoSemType;
-#    define MONO_SEM_INIT(addr,value) semaphore_create (current_task (), (addr), SYNC_POLICY_FIFO, (value))
-#    define MONO_SEM_DESTROY(sem) semaphore_destroy (current_task (), *(sem))
-#  else
-typedef sem_t MonoSemType;
-#    define MONO_SEM_INIT(addr,value) sem_init ((addr), 0, (value))
-#    define MONO_SEM_DESTROY(sem) sem_destroy ((sem))
-#  endif
 #else
-#  define MONO_HAS_SEMAPHORES
-typedef HANDLE MonoSemType;
-#    define MONO_SEM_INIT(addr,initial) do {*(addr) = CreateSemaphore ( NULL,(initial),0x7FFFFFFF,NULL);} while(0)
-#    define MONO_SEM_DESTROY(sem) do { CloseHandle (*(sem)); (*(sem))=0; } while(0)
+#include <winsock2.h>
+#include <windows.h>
 #endif
 
-#define MONO_SEM_WAIT(sem) MONO_SEM_WAIT_ALERTABLE(sem, FALSE)
-#define MONO_SEM_WAIT_ALERTABLE(sem,alertable) mono_sem_wait ((sem), alertable)
-#define MONO_SEM_POST(sem) mono_sem_post ((sem))
-#define MONO_SEM_TIMEDWAIT(sem, timeout_ms) MONO_SEM_TIMEDWAIT_ALERTABLE(sem, timeout_ms, FALSE)
-#define MONO_SEM_TIMEDWAIT_ALERTABLE(sem, timeout_ms, alertable) mono_sem_timedwait ((sem), (timeout_ms), alertable) 
+#define MONO_HAS_SEMAPHORES 1
 
-#define MONO_SEM_WAIT_UNITERRUPTIBLE(sem) do { \
-	while (MONO_SEM_WAIT ((sem)) != 0) {	\
-		/*if (EINTR != errno) ABORT("sem_wait failed"); */	\
-	}	\
-} while (0)
+#ifndef NSEC_PER_SEC
+#define NSEC_PER_SEC (1000 * 1000 * 1000)
+#endif
 
 G_BEGIN_DECLS
 
-MONO_API int mono_sem_wait (MonoSemType *sem, gboolean alertable);
-MONO_API int mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable);
-MONO_API int mono_sem_post (MonoSemType *sem);
+typedef enum {
+	MONO_SEM_FLAGS_NONE      = 0,
+	MONO_SEM_FLAGS_ALERTABLE = 1 << 0,
+} MonoSemFlags;
+
+#if defined(USE_MACH_SEMA)
+
+typedef semaphore_t MonoSemType;
+
+static inline int
+mono_sem_init (MonoSemType *sem, int value)
+{
+	return semaphore_create (current_task (), sem, SYNC_POLICY_FIFO, value) != KERN_SUCCESS ? -1 : 0;
+}
+
+static inline int
+mono_sem_destroy (MonoSemType *sem)
+{
+	return semaphore_destroy (current_task (), *sem) != KERN_SUCCESS ? -1 : 0;
+}
+
+static inline int
+mono_sem_wait (MonoSemType *sem, MonoSemFlags flags)
+{
+	int res;
+
+retry:
+	res = semaphore_wait (*sem);
+	g_assert (res != KERN_INVALID_ARGUMENT);
+
+	if (res == KERN_ABORTED && !(flags & MONO_SEM_FLAGS_ALERTABLE))
+		goto retry;
+
+	return res != KERN_SUCCESS ? -1 : 0;
+}
+
+static inline int
+mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
+{
+	mach_timespec_t ts, copy;
+	struct timeval start, current;
+	int res = 0;
+
+	if (timeout_ms == (guint32) 0xFFFFFFFF)
+		return mono_sem_wait (sem, flags);
+
+	ts.tv_sec = timeout_ms / 1000;
+	ts.tv_nsec = (timeout_ms % 1000) * 1000000;
+	while (ts.tv_nsec >= NSEC_PER_SEC) {
+		ts.tv_nsec -= NSEC_PER_SEC;
+		ts.tv_sec++;
+	}
+
+	copy = ts;
+	gettimeofday (&start, NULL);
+
+retry:
+	res = semaphore_timedwait (*sem, ts);
+	g_assert (res != KERN_INVALID_ARGUMENT);
+
+	if (res == KERN_ABORTED && !(flags & MONO_SEM_FLAGS_ALERTABLE)) {
+		ts = copy;
+
+		gettimeofday (&current, NULL);
+		ts.tv_sec -= (current.tv_sec - start.tv_sec);
+		ts.tv_nsec -= (current.tv_usec - start.tv_usec) * 1000;
+		if (ts.tv_nsec < 0) {
+			if (ts.tv_sec <= 0) {
+				ts.tv_nsec = 0;
+			} else {
+				ts.tv_sec--;
+				ts.tv_nsec += NSEC_PER_SEC;
+			}
+		}
+		if (ts.tv_sec < 0) {
+			ts.tv_sec = 0;
+			ts.tv_nsec = 0;
+		}
+
+		goto retry;
+	}
+
+	return res != KERN_SUCCESS ? -1 : 0;
+}
+
+static inline int
+mono_sem_post (MonoSemType *sem)
+{
+	int res;
+
+	res = semaphore_signal (*sem);
+	g_assert (res != KERN_INVALID_ARGUMENT);
+
+	return res != KERN_SUCCESS ? -1 : 0;
+}
+
+#elif !defined(HOST_WIN32) && defined(HAVE_SEMAPHORE_H)
+
+typedef sem_t MonoSemType;
+
+static inline int
+mono_sem_init (MonoSemType *sem, int value)
+{
+	return sem_init (sem, 0, value);
+}
+
+static inline int
+mono_sem_destroy (MonoSemType *sem)
+{
+	return sem_destroy (sem);
+}
+
+static inline int
+mono_sem_wait (MonoSemType *sem, MonoSemFlags flags)
+{
+	int res;
+
+retry:
+	res = sem_wait (sem);
+	if (res == -1)
+		g_assert (errno != EINVAL);
+
+	if (res == -1 && errno == EINTR && !(flags & MONO_SEM_FLAGS_ALERTABLE))
+		goto retry;
+
+	return res != 0 ? -1 : 0;
+}
+
+static inline int
+mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
+{
+	struct timespec ts, copy;
+	struct timeval t;
+	int res = 0;
+
+	if (timeout_ms == 0) {
+		res = sem_trywait (sem) != 0 ? -1 : 0;
+		if (res == -1)
+			g_assert (errno != EINVAL);
+
+		return res != 0 ? -1 : 0;
+	}
+
+	if (timeout_ms == (guint32) 0xFFFFFFFF)
+		return mono_sem_wait (sem, flags);
+
+	gettimeofday (&t, NULL);
+	ts.tv_sec = timeout_ms / 1000 + t.tv_sec;
+	ts.tv_nsec = (timeout_ms % 1000) * 1000000 + t.tv_usec * 1000;
+	while (ts.tv_nsec >= NSEC_PER_SEC) {
+		ts.tv_nsec -= NSEC_PER_SEC;
+		ts.tv_sec++;
+	}
+
+	copy = ts;
+
+retry:
+#if defined(__native_client__) && defined(USE_NEWLIB)
+	res = sem_trywait (sem);
+#else
+	res = sem_timedwait (sem, &ts);
+#endif
+	if (res == -1)
+		g_assert (errno != EINVAL);
+
+	if (res == -1 && errno == EINTR && !(flags & MONO_SEM_FLAGS_ALERTABLE)) {
+		ts = copy;
+		goto retry;
+	}
+
+	return res != 0 ? -1 : 0;
+}
+
+static inline int
+mono_sem_post (MonoSemType *sem)
+{
+	int res;
+
+	res = sem_post (sem);
+	if (res == -1)
+		g_assert (errno != EINVAL);
+
+	return res;
+}
+
+#else
+
+typedef HANDLE MonoSemType;
+
+static inline int
+mono_sem_init (MonoSemType *sem, int value)
+{
+	*sem = CreateSemaphore (NULL, value, 0x7FFFFFFF, NULL);
+	return *sem == NULL ? -1 : 0;
+}
+
+static inline int
+mono_sem_destroy (MonoSemType *sem)
+{
+	return !CloseHandle (*sem) ? -1 : 0;
+}
+
+static inline int
+mono_sem_wait (MonoSemType *sem, MonoSemFlags flags)
+{
+	return mono_sem_timedwait (sem, INFINITE, flags);
+}
+
+static inline int
+mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
+{
+	gboolean res;
+
+retry:
+	res = WaitForSingleObjectEx (*sem, timeout_ms, flags & MONO_SEM_FLAGS_ALERTABLE);
+
+	if (res == WAIT_IO_COMPLETION && !(flags & MONO_SEM_FLAGS_ALERTABLE))
+		goto retry;
+
+	return res != WAIT_OBJECT_0 ? -1 : 0;
+}
+
+static inline int
+mono_sem_post (MonoSemType *sem)
+{
+	return !ReleaseSemaphore (*sem, 1, NULL) ? -1 : 0;
+}
+
+#endif
 
 G_END_DECLS
+
 #endif /* _MONO_SEMAPHORE_H_ */

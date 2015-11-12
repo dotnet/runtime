@@ -53,7 +53,6 @@ monoutils_sources = \
 	mono-uri.c		\
 	mono-poll.c		\
 	mono-path.c		\
-	mono-semaphore.c	\
 	mono-semaphore.h	\
 	mono-sigcontext.h	\
 	mono-stdlib.c 		\
