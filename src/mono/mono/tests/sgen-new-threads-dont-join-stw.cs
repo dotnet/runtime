@@ -44,8 +44,11 @@ class T {
     }
 
     static void Main (string[] args) {
-        
-        for (int j = 0; j < 2; j++)
+        var testTimeout = new TestTimeout ();
+        testTimeout.Start ();
+
+        const int TOTAL_ITERATIONS = 2;
+        for (int j = 0; j < TOTAL_ITERATIONS; j++)
         {
             count = 0;
 
@@ -82,6 +85,7 @@ class T {
             {
                 while (count < num_threads)
                 {
+                    Console.Write (".");
                     Monitor.Wait(count_lock);
                 }
             }
@@ -90,6 +94,15 @@ class T {
             {
                 t.Join();
             }
+
+            Console.WriteLine ();
+            if (!testTimeout.HaveTimeLeft ()) {
+                    var finishTime = DateTime.UtcNow;
+                    var ranFor = finishTime - testTimeout.StartTime;
+                    Console.WriteLine ("Will run out of time soon.  ran for {0}, finished {1}/{2} iterations", ranFor, j+1, TOTAL_ITERATIONS);
+            }
         }
+
+	Console.WriteLine ("done");
     }
 }

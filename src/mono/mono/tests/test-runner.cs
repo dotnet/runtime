@@ -41,6 +41,7 @@ using System.Text.RegularExpressions;
 public class TestRunner
 {
 	const string TEST_TIME_FORMAT = "mm\\:ss\\.fff";
+	const string ENV_TIMEOUT = "TEST_DRIVER_TIMEOUT_SEC";
 
 	class ProcessData {
 		public string test;
@@ -220,6 +221,7 @@ public class TestRunner
 					info.UseShellExecute = false;
 					info.RedirectStandardOutput = true;
 					info.RedirectStandardError = true;
+					info.EnvironmentVariables[ENV_TIMEOUT] = timeout.ToString();
 					Process p = new Process ();
 					p.StartInfo = info;
 

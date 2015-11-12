@@ -133,3 +133,65 @@ public class TestDriver {
 	}
 }
 
+/// Provide tests with the ability to find out how much time they have to run before being timed out.
+public class TestTimeout {
+	const string ENV_TIMEOUT = "TEST_DRIVER_TIMEOUT_SEC";
+	private readonly TimeSpan availableTime;
+	private TimeSpan slack;
+	private DateTime startTime;
+
+	/// <summary>
+	///   How much time the test runner provided for us or TimeSpan.Zero if there is no bound.
+	/// </summary>
+	public TimeSpan AvailableTime { get { return availableTime; } }
+
+	public DateTime StartTime { get { return startTime; } }
+
+	/// <summary> Extra time to add when deciding if there
+	///   is still time to run.  Bigger slack means less
+	///   time left.
+	/// </summary>
+	public TimeSpan Slack {
+		get { return slack; }
+		set { slack = value; }
+	}
+
+	public TestTimeout () {
+		availableTime = initializeAvailableTime ();
+		slack = defaultSlack ();
+	}
+
+	/// <summary>
+	///    Consider the test started.
+	/// </summary>
+	public void Start ()
+	{
+		startTime = DateTime.UtcNow;
+	}
+
+	public bool HaveTimeLeft ()
+	{
+		if (availableTime == TimeSpan.Zero)
+			return true;
+		var t = DateTime.UtcNow;
+		var finishTime = startTime + availableTime - slack;
+		return (t < finishTime);
+	}
+
+	private TimeSpan defaultSlack ()
+	{
+		return TimeSpan.FromSeconds (5);
+	}
+
+	private TimeSpan initializeAvailableTime ()
+	{
+		var e = System.Environment.GetEnvironmentVariable(ENV_TIMEOUT);
+		double d;
+		if (Double.TryParse(e, out d)) {
+			return TimeSpan.FromSeconds(d);
+		} else {
+			return TimeSpan.Zero;
+		}
+	}
+
+}
