@@ -294,14 +294,8 @@ namespace System.IO.Compression
                 EnsureNotDisposed();
                 EnsureState(State.NotInitialized);
 
-                ErrorCode errC;
-
-                try { }
-                finally
-                {
-                    errC = Interop.zlib.DeflateInit2_(ref _zStream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
-                    _initializationState = State.InitializedForDeflate;
-                }
+                ErrorCode errC = Interop.zlib.DeflateInit2_(ref _zStream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy);
+                _initializationState = State.InitializedForDeflate;
 
                 return errC;
             }
@@ -322,14 +316,9 @@ namespace System.IO.Compression
                 EnsureNotDisposed();
                 EnsureState(State.InitializedForDeflate);
 
-                ErrorCode errC;
+                ErrorCode errC = Interop.zlib.DeflateEnd(ref _zStream);
+                _initializationState = State.Disposed;
 
-                try { }
-                finally
-                {
-                    errC = Interop.zlib.DeflateEnd(ref _zStream);
-                    _initializationState = State.Disposed;
-                }
                 return errC;
             }
 
@@ -340,14 +329,8 @@ namespace System.IO.Compression
                 EnsureNotDisposed();
                 EnsureState(State.NotInitialized);
 
-                ErrorCode errC;
-
-                try { }
-                finally
-                {
-                    errC = Interop.zlib.InflateInit2_(ref _zStream, windowBits);
-                    _initializationState = State.InitializedForInflate;
-                }
+                ErrorCode errC = Interop.zlib.InflateInit2_(ref _zStream, windowBits);
+                _initializationState = State.InitializedForInflate;
 
                 return errC;
             }
@@ -368,14 +351,8 @@ namespace System.IO.Compression
                 EnsureNotDisposed();
                 EnsureState(State.InitializedForInflate);
 
-                ErrorCode errC;
-
-                try { }
-                finally
-                {
-                    errC = Interop.zlib.InflateEnd(ref _zStream);
-                    _initializationState = State.Disposed;
-                }
+                ErrorCode errC = Interop.zlib.InflateEnd(ref _zStream);
+                _initializationState = State.Disposed;
 
                 return errC;
             }
