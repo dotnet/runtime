@@ -32,8 +32,8 @@ namespace System.Numerics
 
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
-        internal int _sign;
-        internal uint[] _bits;
+        internal readonly int _sign;
+        internal readonly uint[] _bits;
 
         // We have to make a choice of how to represent int.MinValue. This is the one
         // value that fits in an int, but whose negation does not fit in an int.
@@ -552,17 +552,8 @@ namespace System.Numerics
         }
 
         public BigInteger(Single value)
+            : this((Double)value)
         {
-            if (Single.IsInfinity(value))
-                throw new OverflowException(SR.Overflow_BigIntInfinity);
-            if (Single.IsNaN(value))
-                throw new OverflowException(SR.Overflow_NotANumber);
-            Contract.EndContractBlock();
-
-            _sign = 0;
-            _bits = null;
-            SetBitsFromDouble(value);
-            AssertValid();
         }
 
         public BigInteger(Double value)
@@ -575,7 +566,61 @@ namespace System.Numerics
 
             _sign = 0;
             _bits = null;
-            SetBitsFromDouble(value);
+
+            int sign, exp;
+            ulong man;
+            bool fFinite;
+            NumericsHelpers.GetDoubleParts(value, out sign, out exp, out man, out fFinite);
+            Debug.Assert(sign == +1 || sign == -1);
+
+            if (man == 0)
+            {
+                this = BigInteger.Zero;
+                return;
+            }
+
+            Debug.Assert(man < (1UL << 53));
+            Debug.Assert(exp <= 0 || man >= (1UL << 52));
+
+            if (exp <= 0)
+            {
+                if (exp <= -kcbitUlong)
+                {
+                    this = BigInteger.Zero;
+                    return;
+                }
+                this = man >> -exp;
+                if (sign < 0)
+                    _sign = -_sign;
+            }
+            else if (exp <= 11)
+            {
+                this = man << exp;
+                if (sign < 0)
+                    _sign = -_sign;
+            }
+            else
+            {
+                // Overflow into at least 3 uints.
+                // Move the leading 1 to the high bit.
+                man <<= 11;
+                exp -= 11;
+
+                // Compute cu and cbit so that exp == 32 * cu - cbit and 0 <= cbit < 32.
+                int cu = (exp - 1) / kcbitUint + 1;
+                int cbit = cu * kcbitUint - exp;
+                Debug.Assert(0 <= cbit && cbit < kcbitUint);
+                Debug.Assert(cu >= 1);
+
+                // Populate the uints.
+                _bits = new uint[cu + 2];
+                _bits[cu + 1] = (uint)(man >> (cbit + kcbitUint));
+                _bits[cu] = (uint)(man >> cbit);
+                if (cbit > 0)
+                    _bits[cu - 1] = (uint)man << (kcbitUint - cbit);
+                _sign = sign;
+            }
+
             AssertValid();
         }
 
@@ -1611,9 +1656,7 @@ namespace System.Numerics
         public static BigInteger operator -(BigInteger value)
         {
             value.AssertValid();
-            value._sign = -value._sign;
-            value.AssertValid();
-            return value;
+            return new BigInteger(-value._sign, value._bits);
         }
 
         public static BigInteger operator +(BigInteger value)
@@ -1978,69 +2021,6 @@ namespace System.Numerics
 
         #endregion public static operators
 
-
-        // ----- SECTION: internal instance utility methods ----------------*
-        #region internal instance utility methods
-
-        private void SetBitsFromDouble(Double value)
-        {
-            int sign, exp;
-            ulong man;
-            bool fFinite;
-            NumericsHelpers.GetDoubleParts(value, out sign, out exp, out man, out fFinite);
-            Debug.Assert(sign == +1 || sign == -1);
-
-            if (man == 0)
-            {
-                this = BigInteger.Zero;
-                return;
-            }
-
-            Debug.Assert(man < (1UL << 53));
-            Debug.Assert(exp <= 0 || man >= (1UL << 52));
-
-            if (exp <= 0)
-            {
-                if (exp <= -kcbitUlong)
-                {
-                    this = BigInteger.Zero;
-                    return;
-                }
-                this = man >> -exp;
-                if (sign < 0)
-                    _sign = -_sign;
-            }
-            else if (exp <= 11)
-            {
-                this = man << exp;
-                if (sign < 0)
-                    _sign = -_sign;
-            }
-            else
-            {
-                // Overflow into at least 3 uints.
-                // Move the leading 1 to the high bit.
-                man <<= 11;
-                exp -= 11;
-
-                // Compute cu and cbit so that exp == 32 * cu - cbit and 0 <= cbit < 32.
-                int cu = (exp - 1) / kcbitUint + 1;
-                int cbit = cu * kcbitUint - exp;
-                Debug.Assert(0 <= cbit && cbit < kcbitUint);
-                Debug.Assert(cu >= 1);
-
-                // Populate the uints.
-                _bits = new uint[cu + 2];
-                _bits[cu + 1] = (uint)(man >> (cbit + kcbitUint));
-                _bits[cu] = (uint)(man >> cbit);
-                if (cbit > 0)
-                    _bits[cu - 1] = (uint)man << (kcbitUint - cbit);
-                _sign = sign;
-            }
-        }
-        #endregion internal instance utility methods
-
-
         // ----- SECTION: internal static utility methods ----------------*
         #region internal static utility methods
         [Pure]
@@ -2050,17 +2030,6 @@ namespace System.Numerics
 
             // no leading zeros
             return rgu.Length;
-        }
-
-        internal static int BitLengthOfUInt(uint x)
-        {
-            int numBits = 0;
-            while (x > 0)
-            {
-                x >>= 1;
-                numBits++;
-            }
-            return numBits;
         }
 
         //
