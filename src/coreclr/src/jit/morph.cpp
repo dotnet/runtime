@@ -10341,11 +10341,11 @@ CM_ADD_OP:
             }
 #endif // LEA_AVAILABLE
         }
-        else if(oper == GT_OR)
+        else if (fgOperIsBitwiseRotationRoot(oper))
         {
-            tree = fgMorphRotation(tree);
+            tree = fgRecognizeAndMorphBitwiseRotation(tree);
 
-            // fgMorphRotation may return a new tree
+            // fgRecognizeAndMorphBitwiseRotation may return a new tree
             oper = tree->OperGet();
             typ = tree->TypeGet();
             op1 = tree->gtOp.gtOp1;
@@ -11894,8 +11894,23 @@ GenTree* Compiler::fgMorphDivByConst(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------------
-// fgMorphRotation : Check if the tree represents a left or right rotation. If so, return
-//                   an equivalent GT_ROL or GT_ROR tree; otherwise, return the original tree.
+// fgOperIsBitwiseRotationRoot : Check if the operation can be a root of a bitwise rotation tree.
+//
+//
+// Arguments:
+//    oper  - Operation to check
+//
+// Return Value:
+//    True if the operation can be a root of a bitwise rotation tree; false otherwise.
+
+bool Compiler::fgOperIsBitwiseRotationRoot(genTreeOps oper)
+{
+    return (oper == GT_OR) || (oper == GT_XOR);
+}
+
+//------------------------------------------------------------------------------
+// fgRecognizeAndMorphBitwiseRotation : Check if the tree represents a left or right rotation. If so, return
+//                                      an equivalent GT_ROL or GT_ROR tree; otherwise, return the original tree.
 //
 // Arguments:
 //    tree  - tree to check for a rotation pattern
@@ -11904,9 +11919,9 @@ GenTree* Compiler::fgMorphDivByConst(GenTreeOp* tree)
 //    An equivalent GT_ROL or GT_ROR tree if a pattern is found; original tree otherwise.
 //
 // Assumption:
-//    The input is a GT_OR tree.
+//    The input is a GT_OR or a GT_XOR tree.
 
-GenTreePtr Compiler::fgMorphRotation(GenTreePtr tree)
+GenTreePtr Compiler::fgRecognizeAndMorphBitwiseRotation(GenTreePtr tree)
 {
 #ifndef LEGACY_BACKEND
     //
@@ -11914,23 +11929,50 @@ GenTreePtr Compiler::fgMorphRotation(GenTreePtr tree)
     //
     //                         OR                      ROL
     //                      /      \                   / \
-    //                    LSH      RSZ      ->        x   y
+        //                    LSH      RSZ      ->        x   y
     //                    / \      / \
-    //                   x  AND   x  AND
+        //                   x  AND   x  AND
     //                      / \      / \
-    //                     y  31   ADD  31
+        //                     y  31   ADD  31
     //                             / \
-    //                            NEG 32
+        //                            NEG 32
     //                             |
     //                             y
+    // The patterns recognized:
+    // (x << (y & M)) op (x >>> ((-y + N) & M))
+    // (x >>> ((-y + N) & M)) op (x << (y & M))
+    //
+    // (x << y) op (x >>> (-y + N))
+    // (x >> > (-y + N)) op (x << y)
+    //
+    // (x >>> (y & M)) op (x << ((-y + N) & M))
+    // (x << ((-y + N) & M)) op (x >>> (y & M))
+    //
+    // (x >>> y) op (x << (-y + N))
+    // (x << (-y + N)) op (x >>> y)
+    //
+    // (x << c1) op (x >>> c2)
+    // (x >>> c1) op (x << c2)
+    //
+    // where 
+    // c1 and c2 are const
+    // c1 + c2 == bitsize(x)
+    // N == bitsize(x)
+    // M is const
+    // M & (N - 1) == N - 1
+    // op is either | or ^
+
+    if (((tree->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) ||
+        ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0))
+    {
+        // We can't do anything if the tree has assignments, calls, or volatile
+        // reads. Note that we allow GTF_EXCEPT side effect since any exceptions
+        // thrown by the original tree will be thrown by the transformed tree as well.
+        return tree;
+    }
 
     genTreeOps      oper = tree->OperGet();
-    noway_assert(oper == GT_OR);
-
-    if ((tree->gtFlags & GTF_ALL_EFFECT) != 0)
-    {
-        return tree; // Can't do anything due to side effects.
-    }
+    assert(fgOperIsBitwiseRotationRoot(oper));
 
     // Check if we have an LSH on one side of the OR and an RSZ on the other side.
     GenTreePtr op1 = tree->gtGetOp1();
@@ -12077,6 +12119,8 @@ GenTreePtr Compiler::fgMorphRotation(GenTreePtr tree)
         {
             noway_assert((rotateOp == GT_ROL) || (rotateOp == GT_ROR));
 
+            unsigned inputTreeEffects = tree->gtFlags & GTF_ALL_EFFECT;
+
             // We can use the same tree only during global morph; reusing the tree in a later morph
             // may invalidate value numbers.
             if (fgGlobalMorph)
@@ -12084,11 +12128,14 @@ GenTreePtr Compiler::fgMorphRotation(GenTreePtr tree)
                 tree->gtOp.gtOp1 = rotatedValue;
                 tree->gtOp.gtOp2 = rotateIndex;
                 tree->ChangeOper(rotateOp);
+                noway_assert(inputTreeEffects == ((rotatedValue->gtFlags | rotateIndex->gtFlags) & GTF_ALL_EFFECT));
             }
             else
             {
                 tree = gtNewOperNode(rotateOp, genActualType(rotatedValue->gtType), rotatedValue, rotateIndex);
+                noway_assert(inputTreeEffects == (tree->gtFlags & GTF_ALL_EFFECT));
             }
+
             return tree;
         }
     }
