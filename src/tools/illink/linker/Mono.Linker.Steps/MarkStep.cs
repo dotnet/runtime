@@ -336,6 +336,9 @@ namespace Mono.Linker.Steps {
 					return;
 
 				MarkType (et);
+				if (argument.Value == null)
+					return;
+
 				foreach (var cac in (CustomAttributeArgument[]) argument.Value)
 					MarkWithResolvedScope ((TypeReference) cac.Value);
 			} else if (at.Namespace == "System" && at.Name == "Type") {
