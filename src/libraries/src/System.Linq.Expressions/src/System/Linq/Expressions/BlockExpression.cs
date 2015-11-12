@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Threading;
 
@@ -96,11 +97,13 @@ namespace System.Linq.Expressions
             return Expression.Block(Type, variables, expressions);
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         internal virtual Expression GetExpression(int index)
         {
             throw ContractUtils.Unreachable;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         internal virtual int ExpressionCount
         {
             get
@@ -109,11 +112,13 @@ namespace System.Linq.Expressions
             }
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         internal virtual ReadOnlyCollection<Expression> GetOrMakeExpressions()
         {
             throw ContractUtils.Unreachable;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         internal virtual ParameterExpression GetVariable(int index)
         {
             throw ContractUtils.Unreachable;
@@ -142,6 +147,7 @@ namespace System.Linq.Expressions
         /// This helper is provided to allow re-writing of nodes to not depend on the specific optimized
         /// subclass of BlockExpression which is being used. 
         /// </summary>
+        [ExcludeFromCodeCoverage] // Unreachable
         internal virtual BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
             throw ContractUtils.Unreachable;
@@ -601,11 +607,13 @@ namespace System.Linq.Expressions
             return -1;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public void Insert(int index, Expression item)
         {
             throw ContractUtils.Unreachable;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public void RemoveAt(int index)
         {
             throw ContractUtils.Unreachable;
@@ -622,6 +630,7 @@ namespace System.Linq.Expressions
 
                 return _block.GetExpression(index);
             }
+            [ExcludeFromCodeCoverage] // Unreachable
             set
             {
                 throw ContractUtils.Unreachable;
@@ -632,11 +641,13 @@ namespace System.Linq.Expressions
 
         #region ICollection<Expression> Members
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public void Add(Expression item)
         {
             throw ContractUtils.Unreachable;
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public void Clear()
         {
             throw ContractUtils.Unreachable;
@@ -661,11 +672,16 @@ namespace System.Linq.Expressions
             get { return _block.ExpressionCount; }
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public bool IsReadOnly
         {
-            get { return true; }
+            get
+            {
+                throw ContractUtils.Unreachable;
+            }
         }
 
+        [ExcludeFromCodeCoverage] // Unreachable
         public bool Remove(Expression item)
         {
             throw ContractUtils.Unreachable;

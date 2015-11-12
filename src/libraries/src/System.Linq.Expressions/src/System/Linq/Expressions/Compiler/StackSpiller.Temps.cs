@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions.Compiler
@@ -332,6 +333,8 @@ namespace System.Linq.Expressions.Compiler
             : base(expressions)
         {
         }
+
+        [ExcludeFromCodeCoverage] // Unreachable
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression> variables, Expression[] args)
         {
             throw ContractUtils.Unreachable;
