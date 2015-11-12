@@ -196,6 +196,7 @@ mono_gc_base_init (void)
 	GC_finalizer_notifier = mono_gc_finalize_notify;
 
 	GC_init_gcj_malloc (5, NULL);
+	GC_allow_register_threads ();
 
 	if ((env = g_getenv ("MONO_GC_PARAMS"))) {
 		char **ptr, **opts = g_strsplit (env, ",", -1);
@@ -370,8 +371,6 @@ mono_gc_is_gc_thread (void)
 	return GC_thread_is_registered ();
 }
 
-extern int GC_thread_register_foreign (void *base_addr);
-
 gboolean
 mono_gc_register_thread (void *baseptr)
 {
@@ -381,13 +380,15 @@ mono_gc_register_thread (void *baseptr)
 static void*
 boehm_thread_register (MonoThreadInfo* info, void *baseptr)
 {
-	if (mono_gc_is_gc_thread())
-		return info;
-#if !defined(HOST_WIN32)
-	return GC_thread_register_foreign (baseptr) ? info : NULL;
-#else
-	return NULL;
-#endif
+	struct GC_stack_base sb;
+	int res;
+
+	/* TODO: use GC_get_stack_base instead of baseptr. */
+	sb.mem_base = baseptr;
+	res = GC_register_my_thread (&sb);
+	if (res == GC_UNIMPLEMENTED)
+	    return NULL; /* Cannot happen with GC v7+. */
+	return info;
 }
 
 static void
@@ -416,7 +417,7 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 static gint64 gc_start_time;
 
 static void
-on_gc_notification (GCEventType event)
+on_gc_notification (GC_EventType event)
 {
 	MonoGCEvent e = (MonoGCEvent)event;
 
@@ -495,7 +496,7 @@ on_gc_heap_resize (size_t new_size)
 void
 mono_gc_enable_events (void)
 {
-	GC_notify_event = on_gc_notification;
+	GC_set_on_collection_event (on_gc_notification);
 	GC_on_heap_resize = on_gc_heap_resize;
 }
 
@@ -805,7 +806,7 @@ mono_gc_get_suspend_signal (void)
 int
 mono_gc_get_restart_signal (void)
 {
-	return GC_get_restart_signal ();
+	return GC_get_thr_restart_signal ();
 }
 
 #if defined(USE_COMPILER_TLS) && defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
@@ -1430,13 +1431,14 @@ mono_gc_set_allow_synchronous_major (gboolean flag)
 void
 mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 {
-	GC_toggleref_add ((GC_PTR)object, (int)strong_ref);
+	if (GC_toggleref_add ((GC_PTR)object, (int)strong_ref) != GC_SUCCESS)
+	    g_error ("GC_toggleref_add failed\n");
 }
 
 void
 mono_gc_toggleref_register_callback (MonoToggleRefStatus (*proccess_toggleref) (MonoObject *obj))
 {
-	GC_toggleref_register_callback ((int (*) (GC_PTR obj)) proccess_toggleref);
+	GC_set_toggleref_func ((GC_ToggleRefStatus (*) (GC_PTR obj)) proccess_toggleref);
 }
 
 /* Test support code */
@@ -1485,7 +1487,7 @@ mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks)
 
 	fin_callbacks = *callbacks;
 
-	GC_set_finalizer_notify_proc ((void (*) (GC_PTR))fin_notifier);
+	GC_set_await_finalize_proc ((void (*) (GC_PTR))fin_notifier);
 }
 
 #define BITMAP_SIZE (sizeof (*((HandleData *)NULL)->bitmap) * CHAR_BIT)
