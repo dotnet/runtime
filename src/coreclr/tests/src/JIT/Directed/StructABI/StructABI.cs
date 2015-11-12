@@ -214,6 +214,22 @@ unsafe struct PointerFloatAndByte
 	}
 }
 
+struct TwoLongs
+{
+	public ulong Long1;
+	public ulong Long2;
+
+	public static TwoLongs Get()
+	{
+		return new TwoLongs { Long1 = 0xb01dfaceddebac1e, Long2 = 0xfeedfaceabadf00d };
+	}
+
+	public bool Equals(TwoLongs other)
+	{
+		return Long1 == other.Long1 && Long2 == other.Long2;
+	}
+}
+
 struct TwoFloats
 {
 	public float Float1;
@@ -243,6 +259,42 @@ struct TwoDoubles
 	public bool Equals(TwoDoubles other)
 	{
 		return Double1 == other.Double1 && Double2 == other.Double2;
+	}
+}
+
+struct FourLongs
+{
+	public ulong Long1;
+	public ulong Long2;
+	public ulong Long3;
+	public ulong Long4;
+
+	public static FourLongs Get()
+	{
+		return new FourLongs { Long1 = 0xb01dfaceddebac1e, Long2 = 0xfeedfaceabadf00d, Long3 = 0xbeeff00fdeadcafe, Long4 = 0xabadf001ea75fee7 };
+	}
+
+	public bool Equals(FourLongs other)
+	{
+		return Long1 == other.Long1 && Long2 == other.Long2 && Long3 == other.Long3 && Long4 == other.Long4;
+	}
+}
+
+struct FourDoubles
+{
+	public double Double1;
+	public double Double2;
+	public double Double3;
+	public double Double4;
+
+	public static FourDoubles Get()
+	{
+		return new FourDoubles { Double1 = 3.14159d, Double2 = 2.71828d, Double3 = 1.61803d, Double4 = 0.69314d };
+	}
+
+	public bool Equals(FourDoubles other)
+	{
+		return Double1 == other.Double1 && Double2 == other.Double2 && Double3 == other.Double3 && Double4 == other.Double4;
 	}
 }
 
@@ -630,10 +682,19 @@ public static partial class StructABI
 	static extern PointerFloatAndByte EchoPointerFloatAndByte(PointerFloatAndByte value);
 
 	[DllImport(StructABILib)]
+	static extern TwoLongs EchoTwoLongs(TwoLongs value);
+
+	[DllImport(StructABILib)]
 	static extern TwoFloats EchoTwoFloats(TwoFloats value);
 
 	[DllImport(StructABILib)]
 	static extern TwoDoubles EchoTwoDoubles(TwoDoubles value);
+
+	[DllImport(StructABILib)]
+	static extern FourLongs EchoFourLongs(FourLongs value);
+
+	[DllImport(StructABILib)]
+	static extern FourDoubles EchoFourDoubles(FourDoubles value);
 
 	[DllImport(StructABILib)]
 	static extern InlineArray1 EchoInlineArray1(InlineArray1 value);
@@ -679,6 +740,36 @@ public static partial class StructABI
 
 	[DllImport(StructABILib)]
 	static extern Nested9 EchoNested9(Nested9 value);
+
+	[DllImport(StructABILib)]
+	static extern TwoLongs NotEnoughRegistersSysV1(ulong a, ulong b, ulong c, ulong d, ulong e, ulong f, TwoLongs value);
+
+	[DllImport(StructABILib)]
+	static extern TwoLongs NotEnoughRegistersSysV2(ulong a, ulong b, ulong c, ulong d, ulong e, TwoLongs value);
+
+	[DllImport(StructABILib)]
+	static extern DoubleAndByte NotEnoughRegistersSysV3(ulong a, ulong b, ulong c, ulong d, ulong e, ulong f, DoubleAndByte value);
+
+	[DllImport(StructABILib)]
+	static extern TwoDoubles NotEnoughRegistersSysV4(double a, double b, double c, double d, double e, double f, double g, double h, TwoDoubles value);
+
+	[DllImport(StructABILib)]
+	static extern TwoDoubles NotEnoughRegistersSysV5(double a, double b, double c, double d, double e, double f, double g, TwoDoubles value);
+
+	[DllImport(StructABILib)]
+	static extern DoubleAndByte NotEnoughRegistersSysV6(double a, double b, double c, double d, double e, double f, double g, double h, DoubleAndByte value);
+
+	[DllImport(StructABILib)]
+	static extern TwoDoubles EnoughRegistersSysV1(ulong a, ulong b, ulong c, ulong d, ulong e, ulong f, TwoDoubles value);
+
+	[DllImport(StructABILib)]
+	static extern DoubleAndByte EnoughRegistersSysV2(ulong a, ulong b, ulong c, ulong d, ulong e, DoubleAndByte value);
+
+	[DllImport(StructABILib)]
+	static extern TwoLongs EnoughRegistersSysV3(double a, double b, double c, double d, double e, double f, double g, double h, TwoLongs value);
+
+	[DllImport(StructABILib)]
+	static extern DoubleAndByte EnoughRegistersSysV4(double a, double b, double c, double d, double e, double f, double g, DoubleAndByte value);
 
 	static int Main()
 	{
@@ -779,6 +870,14 @@ public static partial class StructABI
 			ok = false;
 		}
 
+		TwoLongs expectedTwoLongs = TwoLongs.Get();
+		TwoLongs actualTwoLongs = EchoTwoLongs(expectedTwoLongs);
+		if (!expectedTwoLongs.Equals(actualTwoLongs))
+		{
+			Console.WriteLine("EchoTwoLongs failed");
+			ok = false;
+		}
+
 		TwoFloats expectedTwoFloats = TwoFloats.Get();
 		TwoFloats actualTwoFloats = EchoTwoFloats(expectedTwoFloats);
 		if (!expectedTwoFloats.Equals(actualTwoFloats))
@@ -792,6 +891,22 @@ public static partial class StructABI
 		if (!expectedTwoDoubles.Equals(actualTwoDoubles))
 		{
 			Console.WriteLine("EchoTwoDoubles failed");
+			ok = false;
+		}
+
+		FourLongs expectedFourLongs = FourLongs.Get();
+		FourLongs actualFourLongs = EchoFourLongs(expectedFourLongs);
+		if (!expectedFourLongs.Equals(actualFourLongs))
+		{
+			Console.WriteLine("EchoFourLongs failed");
+			ok = false;
+		}
+
+		FourDoubles expectedFourDoubles = FourDoubles.Get();
+		FourDoubles actualFourDoubles = EchoFourDoubles(expectedFourDoubles);
+		if (!expectedFourDoubles.Equals(actualFourDoubles))
+		{
+			Console.WriteLine("EchoFourDoubles failed");
 			ok = false;
 		}
 
@@ -912,6 +1027,86 @@ public static partial class StructABI
 		if (!expectedNested9.Equals(actualNested9))
 		{
 			Console.WriteLine("EchoNested9 failed");
+			ok = false;
+		}
+
+		TwoLongs expectedNotEnoughRegistersSysV1 = TwoLongs.Get();
+		TwoLongs actualNotEnoughRegistersSysV1 = NotEnoughRegistersSysV1(1, 2, 3, 4, 5, 6, expectedNotEnoughRegistersSysV1);
+		if (!expectedNotEnoughRegistersSysV1.Equals(actualNotEnoughRegistersSysV1))
+		{
+			Console.WriteLine("NotEnoughRegistersSysV1 failed");
+			ok = false;
+		}
+
+		TwoLongs expectedNotEnoughRegistersSysV2 = TwoLongs.Get();
+		TwoLongs actualNotEnoughRegistersSysV2 = NotEnoughRegistersSysV2(1, 2, 3, 4, 5, expectedNotEnoughRegistersSysV2);
+		if (!expectedNotEnoughRegistersSysV2.Equals(actualNotEnoughRegistersSysV2))
+		{
+			Console.WriteLine("NotEnoughRegistersSysV2 failed");
+			ok = false;
+		}
+
+		DoubleAndByte expectedNotEnoughRegistersSysV3 = DoubleAndByte.Get();
+		DoubleAndByte actualNotEnoughRegistersSysV3 = NotEnoughRegistersSysV3(1, 2, 3, 4, 5, 6, expectedNotEnoughRegistersSysV3);
+		if (!expectedNotEnoughRegistersSysV3.Equals(actualNotEnoughRegistersSysV3))
+		{
+			Console.WriteLine("NotEnoughRegistersSysV3 failed");
+			ok = false;
+		}
+
+		TwoDoubles expectedNotEnoughRegistersSysV4 = TwoDoubles.Get();
+		TwoDoubles actualNotEnoughRegistersSysV4 = NotEnoughRegistersSysV4(1.0d, 2.0d, 3.0d, 4.0d, 5.0d, 6.0d, 7.0d, 8.0d, expectedNotEnoughRegistersSysV4);
+		if (!expectedNotEnoughRegistersSysV4.Equals(actualNotEnoughRegistersSysV4))
+		{
+			Console.WriteLine("NotEnoughRegistersSysV4 failed");
+			ok = false;
+		}
+
+		TwoDoubles expectedNotEnoughRegistersSysV5 = TwoDoubles.Get();
+		TwoDoubles actualNotEnoughRegistersSysV5 = NotEnoughRegistersSysV5(1.0d, 2.0d, 3.0d, 4.0d, 5.0d, 6.0d, 7.0d, expectedNotEnoughRegistersSysV5);
+		if (!expectedNotEnoughRegistersSysV5.Equals(actualNotEnoughRegistersSysV5))
+		{
+			Console.WriteLine("NotEnoughRegistersSysV5 failed");
+			ok = false;
+		}
+
+		DoubleAndByte expectedNotEnoughRegistersSysV6 = DoubleAndByte.Get();
+		DoubleAndByte actualNotEnoughRegistersSysV6 = NotEnoughRegistersSysV6(1.0d, 2.0d, 3.0d, 4.0d, 5.0d, 6.0d, 7.0d, 8.0d, expectedNotEnoughRegistersSysV6);
+		if (!expectedNotEnoughRegistersSysV6.Equals(actualNotEnoughRegistersSysV6))
+		{
+			Console.WriteLine("NotEnoughRegistersSysV6 failed");
+			ok = false;
+		}
+
+		TwoDoubles expectedEnoughRegistersSysV1 = TwoDoubles.Get();
+		TwoDoubles actualEnoughRegistersSysV1 = EnoughRegistersSysV1(1, 2, 3, 4, 5, 6, expectedEnoughRegistersSysV1);
+		if (!expectedEnoughRegistersSysV1.Equals(actualEnoughRegistersSysV1))
+		{
+			Console.WriteLine("EnoughRegistersSysV1 failed");
+			ok = false;
+		}
+
+		DoubleAndByte expectedEnoughRegistersSysV2 = DoubleAndByte.Get();
+		DoubleAndByte actualEnoughRegistersSysV2 = EnoughRegistersSysV2(1, 2, 3, 4, 5, expectedEnoughRegistersSysV2);
+		if (!expectedEnoughRegistersSysV2.Equals(actualEnoughRegistersSysV2))
+		{
+			Console.WriteLine("EnoughRegistersSysV2 failed");
+			ok = false;
+		}
+
+		TwoLongs expectedEnoughRegistersSysV3 = TwoLongs.Get();
+		TwoLongs actualEnoughRegistersSysV3 = EnoughRegistersSysV3(1.0d, 2.0d, 3.0d, 4.0d, 5.0d, 6.0d, 7.0d, 8.0d, expectedEnoughRegistersSysV3);
+		if (!expectedEnoughRegistersSysV3.Equals(actualEnoughRegistersSysV3))
+		{
+			Console.WriteLine("EnoughRegistersSysV3 failed");
+			ok = false;
+		}
+
+		DoubleAndByte expectedEnoughRegistersSysV4 = DoubleAndByte.Get();
+		DoubleAndByte actualEnoughRegistersSysV4 = EnoughRegistersSysV4(1.0d, 2.0d, 3.0d, 4.0d, 5.0d, 6.0d, 7.0d, expectedEnoughRegistersSysV4);
+		if (!expectedEnoughRegistersSysV4.Equals(actualEnoughRegistersSysV4))
+		{
+			Console.WriteLine("EnoughRegistersSysV4 failed");
 			ok = false;
 		}
 
