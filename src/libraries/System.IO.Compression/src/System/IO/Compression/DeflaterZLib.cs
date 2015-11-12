@@ -51,7 +51,6 @@ namespace System.IO.Compression
                 // ZLibNative.Deflate_DefaultWindowBits = -15;
                 // ZLibNative.Deflate_DefaultMemLevel = 8;
 
-
                 case CompressionLevel.Optimal:
                     zlibCompressionLevel = (ZLibNative.CompressionLevel)6;
                     windowBits = -15;
@@ -60,14 +59,14 @@ namespace System.IO.Compression
                     break;
 
                 case CompressionLevel.Fastest:
-                    zlibCompressionLevel = (ZLibNative.CompressionLevel)1;
+                    zlibCompressionLevel = ZLibNative.CompressionLevel.BestSpeed;
                     windowBits = -15;
                     memLevel = 8;
                     strategy = ZLibNative.CompressionStrategy.DefaultStrategy;
                     break;
 
                 case CompressionLevel.NoCompression:
-                    zlibCompressionLevel = (ZLibNative.CompressionLevel)0;
+                    zlibCompressionLevel = ZLibNative.CompressionLevel.NoCompression;
                     windowBits = -15;
                     memLevel = 7;
                     strategy = ZLibNative.CompressionStrategy.DefaultStrategy;

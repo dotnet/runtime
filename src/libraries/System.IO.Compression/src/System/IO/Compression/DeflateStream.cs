@@ -26,7 +26,7 @@ namespace System.IO.Compression
         private bool _wroteBytes;
 
         private enum WorkerType : byte { Unknown = 0, Managed = 1, ZLib = 2 };
-        private static readonly WorkerType s_deflaterType = GetDeflaterType();
+        private static readonly WorkerType s_deflaterType = WorkerType.ZLib; // TODO (Issue #4451) WorkerType should be removed when the managed implementation is removed
 #if DEBUG
         // This field is used for testing purposes and is accessed via reflection.
         // NOTE: If the name of this field changes, the test must also be updated.

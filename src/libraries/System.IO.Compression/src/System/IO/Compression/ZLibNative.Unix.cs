@@ -16,35 +16,19 @@ namespace System.IO.Compression
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         internal struct ZStream
         {
-            internal IntPtr nextIn;     //Bytef    *next_in;  /* next input byte */
-            internal UIntPtr availIn;   //uInt     avail_in;  /* number of bytes available at next_in */
-            internal UIntPtr totalIn;   //uLong    total_in;  /* total nb of input bytes read so far */
+            internal void Init()
+            {
+            }
 
-            internal IntPtr nextOut;    //Bytef    *next_out; /* next output byte should be put there */
-            internal UIntPtr availOut;  //uInt     avail_out; /* remaining free space at next_out */
-            internal UIntPtr totalOut;  //uLong    total_out; /* total nb of bytes output so far */
+            internal IntPtr nextIn;  //Bytef    *next_in;  /* next input byte */
+            internal IntPtr nextOut; //Bytef    *next_out; /* next output byte should be put there */
 
-            internal IntPtr msg;        //char     *msg;      /* last error message, NULL if no error */
+            internal IntPtr msg;     //char     *msg;      /* last error message, NULL if no error */
 
-            internal IntPtr state;      //struct internal_state FAR *state; /* not visible by applications */
+            private IntPtr internalState;    //internal state that is not visible to managed code
 
-            internal IntPtr zalloc;     //alloc_func zalloc;  /* used to allocate the internal state */
-            internal IntPtr zfree;      //free_func  zfree;   /* used to free the internal state */
-            internal IntPtr opaque;     //voidpf   opaque;    /* private data object passed to zalloc and zfree */
-
-            internal int dataType;      //int      data_type; /* best guess about the data type: binary or text */
-            internal UIntPtr adler;     //uLong    adler;     /* adler32 value of the uncompressed data */
-            internal UIntPtr reserved;  //uLong    reserved;  /* reserved for future use */
-        }
-
-        /// <summary>Casts a uint to a native zlib uLong.</summary>
-        private static UIntPtr CastUInt32ToNativeuLong(uint value)
-        {
-            // Several members of ZStream are defined by zlib as uLong, which is 32-bits on
-            // Windows, but 32-bits on 32-bit Unix and 64-bits on 64-bit Unix.  The consuming code
-            // works in terms of a 32-bit value, so we need to cast back and forth in
-            // a platform-agnostic way, hence we have a PAL helper on Unix and one on Windows.
-            return (UIntPtr)value;
+            internal uint availIn;   //uInt     avail_in;  /* number of bytes available at next_in */
+            internal uint availOut;  //uInt     avail_out; /* remaining free space at next_out */
         }
     }
 }
