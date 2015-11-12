@@ -3,7 +3,7 @@ Getting Started Writing a .NET Core app and Class Library
 
 These instructions are basic and a work in progress. They will be improving a lot over time.
 
-Once you've followed the steps in this document, use the following sample to see the changes you need to make to your project: https://github.com/dotnet/corefxlab/tree/master/samples/ClassLib.
+Once you've followed the steps in this document, use the following sample to see the changes you need to make to your project: https://github.com/dotnet/corefxlab/tree/master/samples/NetCoreSample.
 
 Installing the tools
 ====================
