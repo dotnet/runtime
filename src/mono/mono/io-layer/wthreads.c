@@ -31,6 +31,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-mutex.h>
 #include <mono/utils/mono-time.h>
+#include <mono/utils/mono-once.h>
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>

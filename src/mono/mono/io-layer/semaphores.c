@@ -24,6 +24,7 @@
 #include <mono/io-layer/semaphore-private.h>
 
 #include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-once.h>
 
 #if 0
 #define DEBUG(...) g_message(__VA_ARGS__)

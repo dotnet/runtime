@@ -251,7 +251,7 @@ initialize (void)
 	mono_mutex_init_recursive (&threadpool->domains_lock);
 
 	threadpool->parked_threads_count = 0;
-	mono_cond_init (&threadpool->parked_threads_cond, NULL);
+	mono_cond_init (&threadpool->parked_threads_cond);
 	threadpool->working_threads = g_ptr_array_new ();
 	mono_mutex_init_recursive (&threadpool->active_threads_lock);
 

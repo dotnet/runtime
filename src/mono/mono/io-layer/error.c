@@ -14,6 +14,7 @@
 #include <errno.h>
 
 #include "mono/io-layer/wapi.h"
+#include "mono/utils/mono-once.h"
 
 static pthread_key_t error_key;
 static mono_once_t error_key_once=MONO_ONCE_INIT;

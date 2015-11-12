@@ -821,7 +821,7 @@ mono_gc_init (void)
 	g_assert (finalizer_event);
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	g_assert (pending_done_event);
-	mono_cond_init (&exited_cond, 0);
+	mono_cond_init (&exited_cond);
 #ifdef MONO_HAS_SEMAPHORES
 	MONO_SEM_INIT (&finalizer_sem, 0);
 #endif

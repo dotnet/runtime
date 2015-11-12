@@ -94,6 +94,7 @@
 #include <mono/utils/mono-mutex.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/mono-proclib.h>
+#include <mono/utils/mono-once.h>
 
 /* The process' environment strings */
 #if defined(__APPLE__)

@@ -42,6 +42,7 @@
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/socket-wrappers.h>
 #include <mono/utils/mono-poll.h>
+#include <mono/utils/mono-once.h>
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>

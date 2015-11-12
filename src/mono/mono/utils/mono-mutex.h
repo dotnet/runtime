@@ -11,21 +11,160 @@
 #define __MONO_MUTEX_H__
 
 #include <config.h>
-
 #include <glib.h>
-#ifdef HAVE_PTHREAD_H
-#include <pthread.h>
-#endif
+
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
-#ifdef HOST_WIN32
+#if !defined(HOST_WIN32)
+#include <pthread.h>
+#include <errno.h>
+#else
 #include <winsock2.h>
 #include <windows.h>
+#endif
 
-/* Vanilla MinGW is missing some defs, loan them from MinGW-w64. */
-#if defined __MINGW32__ && !defined __MINGW64_VERSION_MAJOR
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 
-#if (_WIN32_WINNT >= 0x0600)
+G_BEGIN_DECLS
+
+#if !defined(HOST_WIN32)
+
+typedef pthread_mutex_t mono_mutex_t;
+typedef pthread_cond_t mono_cond_t;
+
+static inline int
+mono_mutex_init (mono_mutex_t *mutex)
+{
+	return pthread_mutex_init (mutex, NULL);
+}
+
+static inline int
+mono_mutex_init_recursive (mono_mutex_t *mutex)
+{
+	int res;
+	pthread_mutexattr_t attr;
+
+	pthread_mutexattr_init (&attr);
+	pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
+	res = pthread_mutex_init (mutex, &attr);
+	pthread_mutexattr_destroy (&attr);
+
+	return res;
+}
+
+static inline int
+mono_mutex_destroy (mono_mutex_t *mutex)
+{
+	return pthread_mutex_destroy (mutex);
+}
+
+static inline int
+mono_mutex_lock (mono_mutex_t *mutex)
+{
+	int res;
+
+	res = pthread_mutex_lock (mutex);
+	g_assert (res != EINVAL);
+
+	return res;
+}
+
+static inline int
+mono_mutex_trylock (mono_mutex_t *mutex)
+{
+	return pthread_mutex_trylock (mutex);
+}
+
+static inline int
+mono_mutex_unlock (mono_mutex_t *mutex)
+{
+	return pthread_mutex_unlock (mutex);
+}
+
+static inline int
+mono_cond_init (mono_cond_t *cond)
+{
+	return pthread_cond_init (cond, NULL);
+}
+
+static inline int
+mono_cond_destroy (mono_cond_t *cond)
+{
+	return pthread_cond_destroy (cond);
+}
+
+static inline int
+mono_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
+{
+	int res;
+
+	res = pthread_cond_wait (cond, mutex);
+	g_assert (res != EINVAL);
+
+	return res;
+}
+
+static inline int
+mono_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
+{
+	int res;
+
+	res = pthread_cond_timedwait (cond, mutex, timeout);
+	g_assert (res != EINVAL);
+
+	return res;
+}
+
+static inline int
+mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
+{
+	struct timeval tv;
+	struct timespec ts;
+	gint64 usecs;
+	int res;
+
+	if (timeout_ms == (guint32) 0xFFFFFFFF)
+		return mono_cond_wait (cond, mutex);
+
+	/* ms = 10^-3, us = 10^-6, ns = 10^-9 */
+
+	gettimeofday (&tv, NULL);
+	tv.tv_sec += timeout_ms / 1000;
+	usecs = tv.tv_usec + ((timeout_ms % 1000) * 1000);
+	if (usecs >= 1000000) {
+		usecs -= 1000000;
+		tv.tv_sec ++;
+	}
+	ts.tv_sec = tv.tv_sec;
+	ts.tv_nsec = usecs * 1000;
+
+	res = pthread_cond_timedwait (cond, mutex, &ts);
+	g_assert (res != EINVAL);
+
+	return res;
+}
+
+static inline int
+mono_cond_signal (mono_cond_t *cond)
+{
+	return pthread_cond_signal (cond);
+}
+
+static inline int
+mono_cond_broadcast (mono_cond_t *cond)
+{
+	return pthread_cond_broadcast (cond);
+}
+
+#else
+
+/* Vanilla MinGW is missing some defs, load them from MinGW-w64. */
+#if defined __MINGW32__ && !defined __MINGW64_VERSION_MAJOR && (_WIN32_WINNT >= 0x0600)
+
 /* Fixme: Opaque structs */
 typedef PVOID RTL_CONDITION_VARIABLE;
 typedef PVOID RTL_SRWLOCK;
@@ -39,7 +178,7 @@ typedef DWORD (WINAPI *PRTL_RUN_ONCE_INIT_FN)(PRTL_RUN_ONCE, PVOID, PVOID *);
 #define RTL_RUN_ONCE_ASYNC 2UL
 #define RTL_RUN_ONCE_INIT_FAILED 4UL
 #define RTL_RUN_ONCE_CTX_RESERVED_BITS 2
-#endif
+#endif /* _RTL_RUN_ONCE_DEF */
 #define RTL_SRWLOCK_INIT 0
 #define RTL_CONDITION_VARIABLE_INIT 0
 #define RTL_CONDITION_VARIABLE_LOCKMODE_SHARED 1
@@ -47,9 +186,7 @@ typedef DWORD (WINAPI *PRTL_RUN_ONCE_INIT_FN)(PRTL_RUN_ONCE, PVOID, PVOID *);
 #define CONDITION_VARIABLE_INIT RTL_CONDITION_VARIABLE_INIT
 #define CONDITION_VARIABLE_LOCKMODE_SHARED RTL_CONDITION_VARIABLE_LOCKMODE_SHARED
 #define SRWLOCK_INIT RTL_SRWLOCK_INIT
-#endif
 
-#if (_WIN32_WINNT >= 0x0600)
 /*Condition Variables http://msdn.microsoft.com/en-us/library/ms682052%28VS.85%29.aspx*/
 typedef RTL_CONDITION_VARIABLE CONDITION_VARIABLE, *PCONDITION_VARIABLE;
 typedef RTL_SRWLOCK SRWLOCK, *PSRWLOCK;
@@ -81,87 +218,64 @@ typedef WINBOOL CALLBACK (*PINIT_ONCE_FN) (PINIT_ONCE InitOnce, PVOID Parameter,
 WINBASEAPI WINBOOL WINAPI InitOnceBeginInitialize(LPINIT_ONCE lpInitOnce, DWORD dwFlags, PBOOL fPending, LPVOID *lpContext);
 WINBASEAPI WINBOOL WINAPI InitOnceComplete(LPINIT_ONCE lpInitOnce, DWORD dwFlags, LPVOID lpContext);
 WINBASEAPI WINBOOL WINAPI InitOnceExecuteOnce(PINIT_ONCE InitOnce, PINIT_ONCE_FN InitFn, PVOID Parameter, LPVOID *Context);
-#endif
 
-#endif /* defined __MINGW32__ && !defined __MINGW64_VERSION_MAJOR */
-#endif /* HOST_WIN32 */
-
-G_BEGIN_DECLS
-
-#ifndef HOST_WIN32
-
-typedef struct {
-	pthread_mutex_t mutex;
-	gboolean complete;
-} mono_once_t;
-
-#define MONO_ONCE_INIT { PTHREAD_MUTEX_INITIALIZER, FALSE }
-
-int mono_once (mono_once_t *once, void (*once_init) (void));
-
-typedef pthread_mutex_t mono_mutex_t;
-typedef pthread_cond_t mono_cond_t;
-
-#define mono_mutex_init(mutex) pthread_mutex_init (mutex, NULL)
-#define mono_mutex_lock(mutex) pthread_mutex_lock (mutex)
-#define mono_mutex_trylock(mutex) pthread_mutex_trylock (mutex)
-#define mono_mutex_timedlock(mutex,timeout) pthread_mutex_timedlock (mutex, timeout)
-#define mono_mutex_unlock(mutex) pthread_mutex_unlock (mutex)
-#define mono_mutex_destroy(mutex) pthread_mutex_destroy (mutex)
-
-#define mono_cond_init(cond,attr) pthread_cond_init (cond,attr)
-#define mono_cond_wait(cond,mutex) pthread_cond_wait (cond, mutex)
-#define mono_cond_timedwait(cond,mutex,timeout) pthread_cond_timedwait (cond, mutex, timeout)
-#define mono_cond_signal(cond) pthread_cond_signal (cond)
-#define mono_cond_broadcast(cond) pthread_cond_broadcast (cond)
-#define mono_cond_destroy(cond) pthread_cond_destroy (cond)
-
-/*
- * This should be used instead of mono_cond_timedwait, since that function is not implemented on windows.
- */
-int mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, int timeout_ms);
-
-/* This is a function so it can be passed to pthread_cleanup_push -
- * that is a macro and giving it a macro as a parameter breaks.
- */
-G_GNUC_UNUSED
-static inline int mono_mutex_unlock_in_cleanup (mono_mutex_t *mutex)
-{
-	return(mono_mutex_unlock (mutex));
-}
-
-/* Returns zero on success. */
-static inline int
-mono_mutex_init_recursive (mono_mutex_t *mutex)
-{
-	int res;
-	pthread_mutexattr_t attr;
-
-	pthread_mutexattr_init (&attr);
-	pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
-	res = pthread_mutex_init (mutex, &attr);
-	pthread_mutexattr_destroy (&attr);
-
-	return res;
-}
-
-#else
+#endif /* defined __MINGW32__ && !defined __MINGW64_VERSION_MAJOR && (_WIN32_WINNT >= 0x0600) */
 
 typedef CRITICAL_SECTION mono_mutex_t;
 typedef CONDITION_VARIABLE mono_cond_t;
 
-#define mono_mutex_init(mutex) (InitializeCriticalSection((mutex)), 0)
-#define mono_mutex_init_recursive(mutex) (InitializeCriticalSection((mutex)), 0)
-#define mono_mutex_lock(mutex) EnterCriticalSection((mutex))
-#define mono_mutex_trylock(mutex) (!TryEnterCriticalSection((mutex)))
-#define mono_mutex_unlock(mutex)  LeaveCriticalSection((mutex))
-#define mono_mutex_destroy(mutex) DeleteCriticalSection((mutex))
+static inline int
+mono_mutex_init (mono_mutex_t *mutex)
+{
+	InitializeCriticalSection (mutex);
+	return 0;
+}
 
 static inline int
-mono_cond_init (mono_cond_t *cond, int attr)
+mono_mutex_init_recursive (mono_mutex_t *mutex)
+{
+	InitializeCriticalSection (mutex);
+	return 0;
+}
+
+static inline int
+mono_mutex_destroy (mono_mutex_t *mutex)
+{
+	DeleteCriticalSection (mutex);
+	return 0;
+}
+
+static inline int
+mono_mutex_lock (mono_mutex_t *mutex)
+{
+	EnterCriticalSection (mutex);
+	return 0;
+}
+
+static inline int
+mono_mutex_trylock (mono_mutex_t *mutex)
+{
+	return TryEnterCriticalSection (mutex) != 0 ? 0 : 1;
+}
+
+static inline int
+mono_mutex_unlock (mono_mutex_t *mutex)
+{
+	LeaveCriticalSection (mutex));
+	return 0;
+}
+
+static inline int
+mono_cond_init (mono_cond_t *cond)
 {
 	InitializeConditionVariable (cond);
 	return 0;
+}
+
+static inline int
+mono_cond_destroy (mono_cond_t *cond)
+{
+	/* Beauty of win32 API: do not destroy it */
 }
 
 static inline int
@@ -173,9 +287,13 @@ mono_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 static inline int
 mono_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
 {
-	// FIXME:
 	g_assert_not_reached ();
-	return 0;
+}
+
+static inline int
+mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
+{
+	return SleepConditionVariableCS (cond, mutex, timeout_ms) ? 0 : 1;
 }
 
 static inline int
@@ -192,21 +310,7 @@ mono_cond_broadcast (mono_cond_t *cond)
 	return 0;
 }
 
-static inline int
-mono_cond_destroy (mono_cond_t *cond)
-{
-	return 0;
-}
-
-static inline int
-mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, int timeout_ms)
-{
-	return SleepConditionVariableCS (cond, mutex, timeout_ms) ? 0 : 1;
-}
-
 #endif
-
-int mono_mutex_init_suspend_safe (mono_mutex_t *mutex);
 
 G_END_DECLS
 

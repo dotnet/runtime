@@ -43,6 +43,7 @@
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/io-portability.h>
 #include <mono/utils/strenc.h>
+#include <mono/utils/mono-once.h>
 
 #if 0
 #define DEBUG(...) g_message(__VA_ARGS__)

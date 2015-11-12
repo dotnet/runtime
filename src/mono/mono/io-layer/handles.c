@@ -46,6 +46,7 @@
 #include <mono/utils/mono-mutex.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-once.h>
 #undef DEBUG_REFS
 
 #if 0

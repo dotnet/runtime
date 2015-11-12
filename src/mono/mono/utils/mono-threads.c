@@ -1150,7 +1150,7 @@ static void
 sleep_initialize (void)
 {
 	mono_mutex_init (&sleep_mutex);
-	mono_cond_init (&sleep_cond, NULL);
+	mono_cond_init (&sleep_cond);
 }
 
 static void
