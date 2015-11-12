@@ -737,7 +737,7 @@ namespace System.Runtime.Serialization
                 return dataContract;
             }
 
-            private static Type GetDataContractAdapterType(Type type)
+            internal static Type GetDataContractAdapterType(Type type)
             {
                 // Replace the DataTimeOffset ISerializable type passed in with the internal DateTimeOffsetAdapter DataContract type.
                 // DateTimeOffsetAdapter is used for serialization/deserialization purposes to bypass the ISerializable implementation
@@ -2057,7 +2057,7 @@ namespace System.Runtime.Serialization
             else if (nameToDataContractTable.TryGetValue(dataContract.StableName, out alreadyExistingContract))
             {
                 //Dont throw duplicate if its a KeyValuePair<K,T> as it could have been added by Dictionary<K,T>
-                if (alreadyExistingContract.UnderlyingType != type &&
+                if (alreadyExistingContract.UnderlyingType != DataContractCriticalHelper.GetDataContractAdapterType(type) &&
                     !(alreadyExistingContract is ClassDataContract && ((ClassDataContract)alreadyExistingContract).IsKeyValuePairAdapter))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.DupContractInKnownTypes, type, alreadyExistingContract.UnderlyingType, dataContract.StableName.Namespace, dataContract.StableName.Name)));
                 return;
