@@ -14836,7 +14836,7 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_ICLRPrivAssembly pHostAssembly)
 
 #endif //FEATURE_HOSTED_BINDER
 
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_CORECLR)
+#if !defined(DACCESS_COMPILE) && defined(FEATURE_CORECLR) && defined(FEATURE_NATIVE_IMAGE_GENERATION)
 
 void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatformAssemblies, SString &platformResourceRoots, SString &appPaths, SString &appNiPaths)
 {
