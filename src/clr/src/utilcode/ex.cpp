@@ -1698,7 +1698,8 @@ void DECLSPEC_NORETURN ThrowOutOfMemory()
     
 #ifndef DACCESS_COMPILE
 
-    g_hrFatalError = COR_E_OUTOFMEMORY;
+    // Use volatile store to prevent compiler from optimizing the static variable away
+    VolatileStoreWithoutBarrier<HRESULT>(&g_hrFatalError, COR_E_OUTOFMEMORY);
 
     // Regular CLR builds - throw our pre-created OOM exception object
     PAL_CPP_THROW(Exception *, Exception::GetOOMException());
