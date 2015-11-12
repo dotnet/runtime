@@ -85,6 +85,12 @@ struct PointerFloatAndByte
 	uint8_t Byte;
 };
 
+struct TwoLongs
+{
+    uint64_t Long1;
+    uint64_t Long2;
+};
+
 struct TwoFloats
 {
 	float Float1;
@@ -95,6 +101,22 @@ struct TwoDoubles
 {
 	double Double1;
 	double Double2;
+};
+
+struct FourLongs
+{
+    uint64_t Long1;
+    uint64_t Long2;
+    uint64_t Long3;
+    uint64_t Long4;
+};
+
+struct FourDoubles
+{
+    double Double1;
+    double Double2;
+    double Double3;
+    double Double4;
 };
 
 struct InlineArray1
@@ -241,12 +263,27 @@ DLLEXPORT struct PointerFloatAndByte EchoPointerFloatAndByte(struct PointerFloat
 	return value;
 }
 
+DLLEXPORT struct TwoLongs EchoTwoLongs(struct TwoLongs value)
+{
+	return value;
+}
+
 DLLEXPORT struct TwoFloats EchoTwoFloats(struct TwoFloats value)
 {
 	return value;
 }
 
 DLLEXPORT struct TwoDoubles EchoTwoDoubles(struct TwoDoubles value)
+{
+	return value;
+}
+
+DLLEXPORT struct FourLongs EchoFourLongs(struct FourLongs value)
+{
+	return value;
+}
+
+DLLEXPORT struct FourDoubles EchoFourDoubles(struct FourDoubles value)
 {
 	return value;
 }
@@ -326,3 +363,52 @@ DLLEXPORT struct Nested9 EchoNested9(struct Nested9 value)
 	return value;
 }
 
+DLLEXPORT struct TwoLongs NotEnoughRegistersSysV1(uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint64_t e, uint64_t f, struct TwoLongs value)
+{
+    return value;
+}
+
+DLLEXPORT struct TwoLongs NotEnoughRegistersSysV2(uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint64_t e, struct TwoLongs value)
+{
+    return value;
+}
+
+DLLEXPORT struct DoubleAndByte NotEnoughRegistersSysV3(uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint64_t e, uint64_t f, struct DoubleAndByte value)
+{
+    return value;
+}
+
+DLLEXPORT struct TwoDoubles NotEnoughRegistersSysV4(double a, double b, double c, double d, double e, double f, double g, double h, struct TwoDoubles value)
+{
+    return value;
+}
+
+DLLEXPORT struct TwoDoubles NotEnoughRegistersSysV5(double a, double b, double c, double d, double e, double f, double g, struct TwoDoubles value)
+{
+    return value;
+}
+
+DLLEXPORT struct DoubleAndByte NotEnoughRegistersSysV6(double a, double b, double c, double d, double e, double f, double g, double h, struct DoubleAndByte value)
+{
+    return value;
+}
+
+DLLEXPORT struct TwoDoubles EnoughRegistersSysV1(uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint64_t e, uint64_t f, struct TwoDoubles value)
+{
+    return value;
+}
+
+DLLEXPORT struct DoubleAndByte EnoughRegistersSysV2(uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint64_t e, struct DoubleAndByte value)
+{
+    return value;
+}
+
+DLLEXPORT struct TwoLongs EnoughRegistersSysV3(double a, double b, double c, double d, double e, double f, double g, double h, struct TwoLongs value)
+{
+    return value;
+}
+
+DLLEXPORT struct DoubleAndByte EnoughRegistersSysV4(double a, double b, double c, double d, double e, double f, double g, struct DoubleAndByte value)
+{
+    return value;
+}
