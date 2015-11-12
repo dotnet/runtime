@@ -259,7 +259,7 @@ namespace System.Diagnostics.Tests
         [Theory, InlineData(true), InlineData(false)]
         public void TestCreateNoWindowProperty(bool value)
         {
-            Process testProcess = CreateProcessInfinite();
+            Process testProcess = CreateProcessLong();
             try
             {
                 testProcess.StartInfo.CreateNoWindow = value;
@@ -290,7 +290,7 @@ namespace System.Diagnostics.Tests
                 return; // test is irrelevant if we can't add a user
             }
 
-            Process p = CreateProcessInfinite();
+            Process p = CreateProcessLong();
 
             p.StartInfo.LoadUserProfile = true;
             p.StartInfo.UserName = username;
@@ -345,7 +345,7 @@ namespace System.Diagnostics.Tests
             // check defaults
             Assert.Equal(string.Empty, _process.StartInfo.WorkingDirectory);
 
-            Process p = CreateProcessInfinite();
+            Process p = CreateProcessLong();
             p.StartInfo.WorkingDirectory = Directory.GetCurrentDirectory();
 
             try

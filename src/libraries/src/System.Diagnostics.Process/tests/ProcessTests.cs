@@ -80,7 +80,7 @@ namespace System.Diagnostics.Tests
         {
             bool exitedInvoked = false;
 
-            Process p = CreateProcessInfinite();
+            Process p = CreateProcessLong();
             if (enable.HasValue)
             {
                 p.EnableRaisingEvents = enable.Value;
@@ -115,7 +115,7 @@ namespace System.Diagnostics.Tests
             }
 
             {
-                Process p = CreateProcessInfinite();
+                Process p = CreateProcessLong();
                 StartSleepKillWait(p);
                 Assert.NotEqual(0, p.ExitCode);
             }
@@ -125,7 +125,7 @@ namespace System.Diagnostics.Tests
         public void TestExitTime()
         {
             DateTime timeBeforeProcessStart = DateTime.UtcNow;
-            Process p = CreateProcessInfinite();
+            Process p = CreateProcessLong();
             p.Start();
             Assert.Throws<InvalidOperationException>(() => p.ExitTime);
             p.Kill();
@@ -158,7 +158,7 @@ namespace System.Diagnostics.Tests
             }
 
             {
-                Process p = CreateProcessInfinite();
+                Process p = CreateProcessLong();
                 p.Start();
                 try
                 {
@@ -361,7 +361,7 @@ namespace System.Diagnostics.Tests
         public void TestProcessStartTime()
         {
             DateTime timeBeforeCreatingProcess = DateTime.UtcNow;
-            Process p = CreateProcessInfinite();
+            Process p = CreateProcessLong();
 
             Assert.Throws<InvalidOperationException>(() => p.StartTime);
             try
@@ -586,7 +586,7 @@ namespace System.Diagnostics.Tests
         public void TestStartInfo()
         {
             {
-                Process process = CreateProcessInfinite();
+                Process process = CreateProcessLong();
                 process.Start();
 
                 Assert.Equal(HostRunner, process.StartInfo.FileName);
@@ -596,7 +596,7 @@ namespace System.Diagnostics.Tests
             }
 
             {
-                Process process = CreateProcessInfinite();
+                Process process = CreateProcessLong();
                 process.Start();
 
                 Assert.Throws<System.InvalidOperationException>(() => (process.StartInfo = new ProcessStartInfo()));
