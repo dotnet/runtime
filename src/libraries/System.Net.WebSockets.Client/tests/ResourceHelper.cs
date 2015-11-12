@@ -7,7 +7,7 @@ using System.Reflection;
 
 using Xunit;
 
-namespace System.Net.WebSockets.Client.Test
+namespace System.Net.WebSockets.Client.Tests
 {
     public class ResourceHelper
     {
