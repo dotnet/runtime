@@ -2944,6 +2944,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                             }
                             EX_CATCH
                             {
+                                // We had an exception in filter invocation that remained unhandled.
 #ifndef FEATURE_PAL 
                                 if (impersonating)
                                 {
@@ -2952,9 +2953,35 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                     COMPrincipal::CLR_ImpersonateLoggedOnUser(m_hImpersonationToken);
                                     impersonating = FALSE;
                                 }
+#else // !FEATURE_PAL
+                                {
+                                    // Since we have caught the exception from the filter here in the native code,
+                                    // the exception tracker is still in the cleaned up state that we've created
+                                    // before starting native frames unwind in the UnwindManagedExceptionPass2.
+                                    // We can remove the tracker since we don't need any of the information that
+                                    // it contains anymore.
+
+                                    // To be safe to pop the tracker, we need to be in cooperative mode to make sure
+                                    // the GC won't get triggered in the middle of the tracker removal.
+                                    GCX_COOP();
+                                    ExceptionTracker* pTrackerToFree = pThread->GetExceptionState()->m_pCurrentTracker;
+                                    CONSISTENCY_CHECK(pTrackerToFree->IsValid());
+                                    _ASSERTE(pTrackerToFree->m_ScannedStackRange.IsEmpty());
+
+                                    EH_LOG((LL_INFO100, "Unlinking ExceptionTracker object 0x%p, thread = 0x%p\n", pTrackerToFree, pTrackerToFree->m_pThread));
+
+                                    // free managed tracker resources causing notification -- do this before unlinking the tracker
+                                    // this is necessary so that we know an exception is still in flight while we give the notification
+                                    FreeTrackerMemory(pTrackerToFree, memManaged);
+
+                                    // unlink the tracker from the thread
+                                    pThread->GetExceptionState()->m_pCurrentTracker = pTrackerToFree->m_pPrevNestedInfo;
+
+                                    // free unmanaged tracker resources
+                                    FreeTrackerMemory(pTrackerToFree, memUnmanaged);
+                                }
 #endif // !FEATURE_PAL 
 
-                                // We had an exception in filter invocation that remained unhandled.
                                 // Sync managed exception state, for the managed thread, based upon the active exception tracker.
                                 pThread->SyncManagedExceptionState(false);
 
