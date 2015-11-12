@@ -140,8 +140,6 @@ def static getBuildJobName(def configuration, def architecture, def os) {
             def triggerByPhraseOnly = true;
             if (os == 'OpenSUSE13.2' && architecture == 'x64') {
                 triggerPhraseString = '(?i).*test\\W+suse.*'
-            } else if(architecture == 'x86' && osGroup == 'Windows_NT' && configuration == 'Release') {
-                triggerPhraseString = '(?i).*test\\W+x86\\W+windows\\W+release.*'
             } else if (architecture == 'x86' && osGroup == 'Linux') {
                 triggerPhraseString = '(?i).*test\\W+x86\\W+linux.*'
             } else if (architecture == 'x86' && osGroup == 'OSX') {
