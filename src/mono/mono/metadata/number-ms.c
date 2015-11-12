@@ -195,8 +195,6 @@ number_to_double (MonoNumber *number, gdouble *value)
 	guint16 *src;
 	gint exp, remaining, total, count, scale, absscale, index;
 
-	g_assert (number->digits);
-
 	total = 0;
 	src = number->digits;
 	while (*src++) total ++;
