@@ -111,28 +111,29 @@ namespace System
             return keyInfo;
         }
 
+        private const ConsoleColor UnknownColor = (ConsoleColor)(-1);
+        private static ConsoleColor s_trackedForegroundColor = UnknownColor;
+        private static ConsoleColor s_trackedBackgroundColor = UnknownColor;
+
         public static ConsoleColor ForegroundColor
         {
-            get { throw new PlatformNotSupportedException(SR.PlatformNotSupported_GettingColor); } // no general mechanism for getting the current color
-            set { ChangeColor(foreground: true, color:  value); }
+            get { return s_trackedForegroundColor; }
+            set { RefreshColors(ref s_trackedForegroundColor, value); }
         }
 
         public static ConsoleColor BackgroundColor
         {
-            get { throw new PlatformNotSupportedException(SR.PlatformNotSupported_GettingColor); } // no general mechanism for getting the current color
-            set { ChangeColor(foreground: false, color: value); }
+            get { return s_trackedBackgroundColor; }
+            set { RefreshColors(ref s_trackedBackgroundColor, value); }
         }
 
         public static void ResetColor()
         {
-            // We only want to reset colors if we're targeting a TTY device
-            if (Console.IsOutputRedirected)
-                return;
-
-            string resetFormat = TerminalColorInfo.Instance.ResetFormat;
-            if (resetFormat != null)
+            lock (Console.Out) // synchronize with other writers
             {
-                WriteStdoutAnsiString(resetFormat);
+                s_trackedForegroundColor = UnknownColor;
+                s_trackedBackgroundColor = UnknownColor;
+                WriteResetColorString();
             }
         }
 
@@ -263,18 +264,42 @@ namespace System
             return null;
         }
 
-        /// <summary>Outputs the format string evaluated and parameterized with the color.</summary>
-        /// <param name="foreground">true for foreground; false for background.</param>
-        /// <param name="color">The color to store into the field and to use as an argument to the format string.</param>
-        private static void ChangeColor(bool foreground, ConsoleColor color)
+        /// <summary>
+        /// Refreshes the foreground and background colors in use by the terminal by resetting
+        /// the colors and then reissuing commands for both foreground and background, if necessary.
+        /// Before doing so, the <paramref name="toChange"/> ref is changed to <paramref name="value"/>
+        /// if <paramref name="value"/> is valid.
+        /// </summary>
+        private static void RefreshColors(ref ConsoleColor toChange, ConsoleColor value)
         {
-            // Get the numerical value of the color
-            int ccValue = (int)color;
-            if ((ccValue & ~0xF) != 0)
+            if (((int)value & ~0xF) != 0 && value != UnknownColor)
             {
                 throw new ArgumentException(SR.Arg_InvalidConsoleColor);
             }
 
+            lock (Console.Out)
+            {
+                toChange = value; // toChange is either s_trackedForegroundColor or s_trackedBackgroundColor
+
+                WriteResetColorString();
+
+                if (s_trackedForegroundColor != UnknownColor)
+                {
+                    WriteSetColorString(foreground: true, color: s_trackedForegroundColor);
+                }
+
+                if (s_trackedBackgroundColor != UnknownColor)
+                {
+                    WriteSetColorString(foreground: false, color: s_trackedBackgroundColor);
+                }
+            }
+        }
+
+        /// <summary>Outputs the format string evaluated and parameterized with the color.</summary>
+        /// <param name="foreground">true for foreground; false for background.</param>
+        /// <param name="color">The color to store into the field and to use as an argument to the format string.</param>
+        private static void WriteSetColorString(bool foreground, ConsoleColor color)
+        {
             // Changing the color involves writing an ANSI character sequence out to the output stream.
             // We only want to do this if we know that sequence will be interpreted by the output.
             // rather than simply displayed visibly.
@@ -284,6 +309,7 @@ namespace System
             // See if we've already cached a format string for this foreground/background
             // and specific color choice.  If we have, just output that format string again.
             int fgbgIndex = foreground ? 0 : 1;
+            int ccValue = (int)color;
             string evaluatedString = s_fgbgAndColorStrings[fgbgIndex, ccValue]; // benign race
             if (evaluatedString != null)
             {
@@ -304,6 +330,20 @@ namespace System
                     WriteStdoutAnsiString(evaluatedString);
 
                     s_fgbgAndColorStrings[fgbgIndex, ccValue] = evaluatedString; // benign race
+                }
+            }
+        }
+
+        /// <summary>Writes out the ANSI string to reset colors.</summary>
+        private static void WriteResetColorString()
+        {
+            // We only want to send the reset string if we're targeting a TTY device
+            if (!Console.IsOutputRedirected)
+            {
+                string resetFormat = TerminalColorInfo.Instance.ResetFormat;
+                if (resetFormat != null)
+                {
+                    WriteStdoutAnsiString(resetFormat);
                 }
             }
         }
