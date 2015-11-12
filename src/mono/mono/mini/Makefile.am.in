@@ -448,7 +448,7 @@ test_sources = 			\
 	basic.cs		\
 	exceptions.cs		\
 	devirtualization.cs	\
-	iltests.il.in		\
+	iltests.il		\
 	test.cs			\
 	generics.cs		\
 	generics-variant-types.il\
@@ -587,10 +587,6 @@ generics.exe: generics.cs TestDriver.dll generics-variant-types.dll
 
 %.exe: %.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll
-
-iltests.il: iltests.il.in Makefile.am
-	echo '// DO NOT EDIT: This file has been generated from iltests.il.in' > iltests.il
-	cpp -Darch=$(arch_define) < $(srcdir)/iltests.il.in | sed 's/^#.*//' >> iltests.il
 
 %.exe: %.il
 	$(ILASM) -output=$@ $<
