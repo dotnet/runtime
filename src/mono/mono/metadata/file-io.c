@@ -1252,3 +1252,12 @@ mono_filesize_from_fd (int fd)
 }
 
 #endif
+
+void _wapi_handle_dump (void);
+
+void ves_icall_System_IO_MonoIO_DumpHandles (void)
+{
+#ifndef HOST_WIN32
+	_wapi_handle_dump ();
+#endif
+}
