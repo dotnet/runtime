@@ -1636,7 +1636,10 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 					ainfo->reg = fpr;
 					ainfo->nregs = nfields;
 					ainfo->esize = esize;
-					fpr += nfields;
+					if (esize == 4)
+						fpr += nfields;
+					else
+						fpr += nfields * 2;
 					break;
 				} else {
 					fpr = ARM_VFP_F16;
@@ -2641,7 +2644,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 
 				call->float_args = g_slist_append_mempool (cfg->mempool, call->float_args, fad);
 			} else {
-				add_outarg_reg (cfg, call, RegTypeFP, ainfo->reg + i, load);
+				add_outarg_reg (cfg, call, RegTypeFP, ainfo->reg + (i * 2), load);
 			}
 		}
 		break;
