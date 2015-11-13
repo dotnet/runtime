@@ -35,7 +35,18 @@ Function :
 
 (no parameters, no return value)
 --*/
-VOID DBG_DebugBreak();
+extern "C" VOID 
+DBG_DebugBreak();
+
+/*++
+Function:
+  IsInDebugBreak(addr)
+
+  Returns true if the address is in DBG_DebugBreak.
+
+--*/
+BOOL
+IsInDebugBreak(void *addr);
 
 /*++
 Function :
