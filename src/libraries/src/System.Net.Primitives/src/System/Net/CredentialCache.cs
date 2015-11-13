@@ -40,26 +40,26 @@ namespace System.Net
         ///    Adds a <see cref='System.Net.NetworkCredential'/> instance to the credential cache.
         ///  </para>
         /// </devdoc>
-        public void Add(Uri uriPrefix, string authType, NetworkCredential cred)
+        public void Add(Uri uriPrefix, string authenticationType, NetworkCredential credential)
         {
             // Parameter validation
             if (uriPrefix == null)
             {
                 throw new ArgumentNullException("uriPrefix");
             }
-            if (authType == null)
+            if (authenticationType == null)
             {
-                throw new ArgumentNullException("authType");
+                throw new ArgumentNullException("authenticationType");
             }
 
             ++_version;
 
-            CredentialKey key = new CredentialKey(uriPrefix, authType);
+            CredentialKey key = new CredentialKey(uriPrefix, authenticationType);
 
-            GlobalLog.Print("CredentialCache::Add() Adding key:[" + key.ToString() + "], cred:[" + cred.Domain + "],[" + cred.UserName + "]");
+            GlobalLog.Print("CredentialCache::Add() Adding key:[" + key.ToString() + "], cred:[" + credential.Domain + "],[" + credential.UserName + "]");
 
-            _cache.Add(key, cred);
-            if (cred is SystemNetworkCredential)
+            _cache.Add(key, credential);
+            if (credential is SystemNetworkCredential)
             {
                 ++_numbDefaultCredInCache;
             }
@@ -108,9 +108,9 @@ namespace System.Net
         ///    Removes a <see cref='System.Net.NetworkCredential'/> instance from the credential cache.
         ///  </para>
         /// </devdoc>
-        public void Remove(Uri uriPrefix, string authType)
+        public void Remove(Uri uriPrefix, string authenticationType)
         {
-            if (uriPrefix == null || authType == null)
+            if (uriPrefix == null || authenticationType == null)
             {
                 // These couldn't possibly have been inserted into
                 // the cache because of the test in Add().
@@ -119,7 +119,7 @@ namespace System.Net
 
             ++_version;
 
-            CredentialKey key = new CredentialKey(uriPrefix, authType);
+            CredentialKey key = new CredentialKey(uriPrefix, authenticationType);
 
             GlobalLog.Print("CredentialCache::Remove() Removing key:[" + key.ToString() + "]");
 
@@ -165,18 +165,18 @@ namespace System.Net
         ///    authentication type.
         ///  </para>
         /// </devdoc>
-        public NetworkCredential GetCredential(Uri uriPrefix, string authType)
+        public NetworkCredential GetCredential(Uri uriPrefix, string authenticationType)
         {
             if (uriPrefix == null)
             {
                 throw new ArgumentNullException("uriPrefix");
             }
-            if (authType == null)
+            if (authenticationType == null)
             {
-                throw new ArgumentNullException("authType");
+                throw new ArgumentNullException("authenticationType");
             }
 
-            GlobalLog.Print("CredentialCache::GetCredential(uriPrefix=\"" + uriPrefix + "\", authType=\"" + authType + "\")");
+            GlobalLog.Print("CredentialCache::GetCredential(uriPrefix=\"" + uriPrefix + "\", authType=\"" + authenticationType + "\")");
 
             int longestMatchPrefix = -1;
             NetworkCredential mostSpecificMatch = null;
@@ -188,7 +188,7 @@ namespace System.Net
                 CredentialKey key = (CredentialKey)credEnum.Key;
 
                 // Determine if this credential is applicable to the current Uri/AuthType
-                if (key.Match(uriPrefix, authType))
+                if (key.Match(uriPrefix, authenticationType))
                 {
                     int prefixLen = key.UriPrefixLength;
 
