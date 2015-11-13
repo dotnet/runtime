@@ -28,7 +28,6 @@ namespace System.Net.Security.Tests
             _clientCertificate = TestConfiguration.GetClientCertificate();
         }
 
-        [ActiveIssue(4467)]
         [Fact]
         public async Task CertificateValidationClientServer_EndToEnd_Ok()
         {
@@ -46,7 +45,7 @@ namespace System.Net.Security.Tests
                 Assert.True(
                     Task.WaitAll(
                         new Task[] { clientConnect, serverAccept }, 
-                        TestConfiguration.TestTimeoutSeconds * 1000),
+                        TestConfiguration.PassingTestTimeoutMilliseconds),
                     "Client/Server TCP Connect timed out.");
 
                 using (TcpClient serverConnection = await serverAccept)
@@ -69,19 +68,19 @@ namespace System.Net.Security.Tests
                     Task clientAuthentication = sslClientStream.AuthenticateAsClientAsync(
                         serverName,
                         clientCerts,
-                        TestConfiguration.DefaultSslProtocols,
+                        SslProtocolSupport.DefaultSslProtocols,
                         false);
 
                     Task serverAuthentication = sslServerStream.AuthenticateAsServerAsync(
                         _serverCertificate,
                         true,
-                        TestConfiguration.DefaultSslProtocols,
+                        SslProtocolSupport.DefaultSslProtocols,
                         false);
 
                     Assert.True(
                         Task.WaitAll(
                             new Task[] { clientAuthentication, serverAuthentication }, 
-                            TestConfiguration.TestTimeoutSeconds * 1000),
+                            TestConfiguration.PassingTestTimeoutMilliseconds),
                         "Client/Server Authentication timed out.");
                 }
             }
