@@ -199,6 +199,7 @@
     <Compile Include="Unary\UnaryOnesComplementTests.cs" />
     <Compile Include="Unary\UnaryUnaryPlusTests.cs" />
     <Compile Include="Visitor\ExpressionVisitorTests.cs" />
+    <Compile Include="Unary\UnboxTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Expressions.csproj">
