@@ -1,39 +1,45 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text;
 
 using Xunit;
+using Xunit.Abstractions;
 
-namespace System.Net.WebSockets.Client.Test
+namespace System.Net.WebSockets.Client.Tests
 {
     /// <summary>
     /// ClientWebSocket unit tests that do not require a remote server.
     /// </summary>
-    public class ClientWebSocketTest
+    public class ClientWebSocketUnitTest
     {
-        internal static class AssertExtensions
+        private readonly ITestOutputHelper _output;
+
+        public ClientWebSocketUnitTest(ITestOutputHelper output)
         {
-            public static void Throws<T>(Action action, string message)
-                where T : Exception
-            {
-                Assert.Equal(Assert.Throws<T>(action).Message, message);
-            }
+            _output = output;
         }
 
         [Fact]
-        public void ClientWebSocket_Ctor()
+        public void Ctor_Success()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
         }
 
         [Fact]
-        public void ClientWebSocket_NoConnect_AbortCalled_Ok()
+        public void Abort_CreateAndAbort_StateIsClosed()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
             cws.Abort();
 
@@ -41,19 +47,28 @@ namespace System.Net.WebSockets.Client.Test
         }
 
         [Fact]
-        public void ClientWebSocket_NoConnect_CloseAsync_Throws()
+        public void CloseAsync_CreateAndClose_ThrowsInvalidOperationException()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
-            Assert.Throws<InvalidOperationException>(
-                () =>
-                cws.CloseAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()).GetAwaiter().GetResult());
+            Assert.Throws<InvalidOperationException>(() =>
+                { Task t = cws.CloseAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()); });
 
             Assert.Equal(WebSocketState.None, cws.State);
         }
 
         [Fact]
-        public void ClientWebSocket_NoConnect_CloseOutputAsync_Ok()
+        public void CloseAsync_CreateAndCloseOutput_ThrowsInvalidOperationExceptionWithCorrectMessage()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
             AssertExtensions.Throws<InvalidOperationException>(
                 () =>
@@ -64,8 +79,33 @@ namespace System.Net.WebSockets.Client.Test
         }
 
         [Fact]
-        public void ClientWebSocket_NoConnect_ReceiveAsync_Throws()
+        public void CloseAsync_CreateAndReceive_ThrowsInvalidOperationException()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
+            var cws = new ClientWebSocket();
+
+            var buffer = new byte[100];
+            var segment = new ArraySegment<byte>(buffer);
+            var ct = new CancellationToken();
+
+            Assert.Throws<InvalidOperationException>(() =>
+                { Task t = cws.ReceiveAsync(segment, ct); });
+
+            Assert.Equal(WebSocketState.None, cws.State);
+        }
+
+        [Fact]
+        public void CloseAsync_CreateAndReceive_ThrowsInvalidOperationExceptionWithCorrectMessage()
+        {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
 
             var buffer = new byte[100];
@@ -80,8 +120,33 @@ namespace System.Net.WebSockets.Client.Test
         }
 
         [Fact]
-        public void ClientWebSocket_NoConnect_SendAsync_Throws()
+        public void CloseAsync_CreateAndSend_ThrowsInvalidOperationException()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
+            var cws = new ClientWebSocket();
+
+            var buffer = new byte[100];
+            var segment = new ArraySegment<byte>(buffer);
+            var ct = new CancellationToken();
+
+            Assert.Throws<InvalidOperationException>(() =>
+                { Task t = cws.SendAsync(segment, WebSocketMessageType.Text, false, ct); });
+
+            Assert.Equal(WebSocketState.None, cws.State);
+        }
+
+        [Fact]
+        public void CloseAsync_CreateAndSend_ThrowsInvalidOperationExceptionWithCorrectMessage()
+        {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
 
             var buffer = new byte[100];
@@ -96,8 +161,13 @@ namespace System.Net.WebSockets.Client.Test
         }
 
         [Fact]
-        public void ClientWebSocket_NoConnect_Properties_Ok()
+        public void Ctor_ExpectedPropertyValues()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
             Assert.Equal(null, cws.CloseStatus);
             Assert.Equal(null, cws.CloseStatusDescription);
@@ -108,8 +178,13 @@ namespace System.Net.WebSockets.Client.Test
         }
 
         [Fact]
-        public void ClientWebSocket_Dispose_AbortCalled_Ok()
+        public void Abort_CreateAndDisposeAndAbort_StateIsClosedSuccess()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
             cws.Dispose();
 
@@ -118,21 +193,30 @@ namespace System.Net.WebSockets.Client.Test
         }
 
         [Fact]
-        public void ClientWebSocket_Dispose_CloseAsync_Throws()
+        public void CloseAsync_DisposeAndClose_ThrowsObjectDisposedException()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
             cws.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(
-                () =>
-                cws.CloseAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()).GetAwaiter().GetResult());
+            Assert.Throws<ObjectDisposedException>(() =>
+                { Task t = cws.CloseAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()); });
 
             Assert.Equal(WebSocketState.Closed, cws.State);
         }
 
         [Fact]
-        public void ClientWebSocket_Dispose_CloseOutputAsync_Ok()
+        public void CloseAsync_DisposeAndClose_ThrowsObjectDisposedExceptionWithCorrectMessage()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
             cws.Dispose();
 
@@ -147,8 +231,13 @@ namespace System.Net.WebSockets.Client.Test
         }
 
         [Fact]
-        public void ClientWebSocket_Dispose_ReceiveAsync_Throws()
+        public void ReceiveAsync_CreateAndDisposeAndReceive_ThrowsObjectDisposedExceptionWithCorrectMessage()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
             cws.Dispose();
 
@@ -166,8 +255,13 @@ namespace System.Net.WebSockets.Client.Test
         }
 
         [Fact]
-        public void ClientWebSocket_Dispose_SendAsync_Throws()
+        public void SendAsync_CreateAndDisposeAndSend_ThrowsObjectDisposedExceptionWithCorrectMessage()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
             cws.Dispose();
 
@@ -185,8 +279,13 @@ namespace System.Net.WebSockets.Client.Test
         }
 
         [Fact]
-        public void ClientWebSocket_Dispose_Properties_Ok()
+        public void Dispose_CreateAndDispose_ExpectedPropertyValues()
         {
+            if (WebSocketHelper.ShouldSkipTestOSNotSupported(_output))
+            {
+                return;
+            }
+
             var cws = new ClientWebSocket();
             cws.Dispose();
 
