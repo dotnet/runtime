@@ -1267,10 +1267,12 @@ HRESULT SetInternalSystemDirectory()
 void SetMscorlibPath(LPCWSTR wzSystemDirectory)
 {
     DWORD len = (DWORD)wcslen(wzSystemDirectory);
-    if (g_dwSystemDirectory < len+1)
+    bool appendSeparator = wzSystemDirectory[len-1] != DIRECTORY_SEPARATOR_CHAR_W;
+    DWORD lenAlloc = appendSeparator ? len+2 : len+1;
+    if (g_dwSystemDirectory < lenAlloc)
     {
         delete [] g_pSystemDirectory;
-        g_pSystemDirectory = new (nothrow) WCHAR[len+1];
+        g_pSystemDirectory = new (nothrow) WCHAR[lenAlloc];
         
         if (g_pSystemDirectory == NULL)
         {
@@ -1281,9 +1283,9 @@ void SetMscorlibPath(LPCWSTR wzSystemDirectory)
     
     wcscpy_s(g_pSystemDirectory, len+1, wzSystemDirectory);
     
-    if(g_pSystemDirectory[len-1] != '\\')
+    if(appendSeparator)
     {
-        g_pSystemDirectory[len] = W('\\');
+        g_pSystemDirectory[len] = DIRECTORY_SEPARATOR_CHAR_W;
         g_pSystemDirectory[len+1] = W('\0');
         g_dwSystemDirectory = len + 1;
     }
