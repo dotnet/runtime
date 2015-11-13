@@ -29,7 +29,6 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-mutex.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-once.h>
 

@@ -115,7 +115,7 @@ retry:
 		if (InterlockedCompareExchange (&mmap_init_state, 1, 0) != 0)
 			goto retry;
 		named_regions = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
-		mono_mutex_init (&named_regions_mutex);
+		mono_os_mutex_init (&named_regions_mutex);
 
 		mono_atomic_store_release (&mmap_init_state, 2);
 		break;
@@ -136,13 +136,13 @@ static void
 named_regions_lock (void)
 {
 	file_mmap_init ();
-	mono_mutex_lock (&named_regions_mutex);
+	mono_os_mutex_lock (&named_regions_mutex);
 }
 
 static void
 named_regions_unlock (void)
 {
-	mono_mutex_unlock (&named_regions_mutex);	
+	mono_os_mutex_unlock (&named_regions_mutex);
 }
 
 

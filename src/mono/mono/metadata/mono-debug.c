@@ -137,7 +137,7 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debug_initialized = TRUE;
 	mono_debug_format = format;
 
-	mono_mutex_init_recursive (&debugger_lock_mutex);
+	mono_os_mutex_init_recursive (&debugger_lock_mutex);
 
 	mono_debugger_lock ();
 
@@ -947,14 +947,14 @@ void
 mono_debugger_lock (void)
 {
 	g_assert (mono_debug_initialized);
-	mono_mutex_lock (&debugger_lock_mutex);
+	mono_os_mutex_lock (&debugger_lock_mutex);
 }
 
 void
 mono_debugger_unlock (void)
 {
 	g_assert (mono_debug_initialized);
-	mono_mutex_unlock (&debugger_lock_mutex);
+	mono_os_mutex_unlock (&debugger_lock_mutex);
 }
 
 /**

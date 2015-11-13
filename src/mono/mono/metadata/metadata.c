@@ -1557,7 +1557,7 @@ mono_metadata_init (void)
 	for (i = 0; i < NBUILTIN_TYPES (); ++i)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 
-	mono_mutex_init_recursive (&image_sets_mutex);
+	mono_os_mutex_init_recursive (&image_sets_mutex);
 }
 
 /**
@@ -1573,7 +1573,7 @@ mono_metadata_cleanup (void)
 	type_cache = NULL;
 	g_ptr_array_free (image_sets, TRUE);
 	image_sets = NULL;
-	mono_mutex_destroy (&image_sets_mutex);
+	mono_os_mutex_destroy (&image_sets_mutex);
 }
 
 /**
@@ -2334,13 +2334,13 @@ retry:
 static inline void
 image_sets_lock (void)
 {
-	mono_mutex_lock (&image_sets_mutex);
+	mono_os_mutex_lock (&image_sets_mutex);
 }
 
 static inline void
 image_sets_unlock (void)
 {
-	mono_mutex_unlock (&image_sets_mutex);
+	mono_os_mutex_unlock (&image_sets_mutex);
 }
 
 /*
@@ -2397,7 +2397,7 @@ get_image_set (MonoImage **images, int nimages)
 		set = g_new0 (MonoImageSet, 1);
 		set->nimages = nimages;
 		set->images = g_new0 (MonoImage*, nimages);
-		mono_mutex_init_recursive (&set->lock);
+		mono_os_mutex_init_recursive (&set->lock);
 		for (i = 0; i < nimages; ++i)
 			set->images [i] = images [i];
 		set->gclass_cache = g_hash_table_new_full (mono_generic_class_hash, mono_generic_class_equal, NULL, (GDestroyNotify)free_generic_class);
@@ -2445,20 +2445,20 @@ delete_image_set (MonoImageSet *set)
 	if (set->mempool)
 		mono_mempool_destroy (set->mempool);
 	g_free (set->images);
-	mono_mutex_destroy (&set->lock);
+	mono_os_mutex_destroy (&set->lock);
 	g_free (set);
 }
 
 void
 mono_image_set_lock (MonoImageSet *set)
 {
-	mono_mutex_lock (&set->lock);
+	mono_os_mutex_lock (&set->lock);
 }
 
 void
 mono_image_set_unlock (MonoImageSet *set)
 {
-	mono_mutex_unlock (&set->lock);
+	mono_os_mutex_unlock (&set->lock);
 }
 
 gpointer

@@ -6637,11 +6637,11 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		 * from mono_class_from_mono_type (), mono_array_new (), 
 		 * Array:CreateInstance (), etc, so use a separate cache + a separate lock.
 		 */
-		mono_mutex_lock (&image->szarray_cache_lock);
+		mono_os_mutex_lock (&image->szarray_cache_lock);
 		if (!image->szarray_cache)
 			image->szarray_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		klass = g_hash_table_lookup (image->szarray_cache, eclass);
-		mono_mutex_unlock (&image->szarray_cache_lock);
+		mono_os_mutex_unlock (&image->szarray_cache_lock);
 		if (klass)
 			return klass;
 
@@ -6780,14 +6780,14 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	if (rank == 1 && !bounded) {
 		MonoClass *prev_class;
 
-		mono_mutex_lock (&image->szarray_cache_lock);
+		mono_os_mutex_lock (&image->szarray_cache_lock);
 		prev_class = g_hash_table_lookup (image->szarray_cache, eclass);
 		if (prev_class)
 			/* Someone got in before us */
 			klass = prev_class;
 		else
 			g_hash_table_insert (image->szarray_cache, eclass, klass);
-		mono_mutex_unlock (&image->szarray_cache_lock);
+		mono_os_mutex_unlock (&image->szarray_cache_lock);
 	} else {
 		list = g_slist_append (rootlist, klass);
 		g_hash_table_insert (image->array_cache, eclass, list);
@@ -9800,7 +9800,7 @@ mono_class_get_exception_data (MonoClass *klass)
 void
 mono_classes_init (void)
 {
-	mono_mutex_init (&classes_mutex);
+	mono_os_mutex_init (&classes_mutex);
 
 	mono_counters_register ("Inflated methods size",
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_methods_size);
@@ -9825,7 +9825,7 @@ mono_classes_cleanup (void)
 	if (global_interface_bitset)
 		mono_bitset_free (global_interface_bitset);
 	global_interface_bitset = NULL;
-	mono_mutex_destroy (&classes_mutex);
+	mono_os_mutex_destroy (&classes_mutex);
 }
 
 /**

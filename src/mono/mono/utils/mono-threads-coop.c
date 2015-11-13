@@ -15,7 +15,6 @@
 #endif
 
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/hazard-pointer.h>

@@ -1,5 +1,5 @@
 /*
- * mono-semaphore.h:  Definitions for generic semaphore usage
+ * mono-os-semaphore.h:  Definitions for generic semaphore usage
  *
  * Author:
  *	Geoff Norton  <gnorton@novell.com>
@@ -52,19 +52,19 @@ typedef enum {
 typedef semaphore_t MonoSemType;
 
 static inline int
-mono_sem_init (MonoSemType *sem, int value)
+mono_os_sem_init (MonoSemType *sem, int value)
 {
 	return semaphore_create (current_task (), sem, SYNC_POLICY_FIFO, value) != KERN_SUCCESS ? -1 : 0;
 }
 
 static inline int
-mono_sem_destroy (MonoSemType *sem)
+mono_os_sem_destroy (MonoSemType *sem)
 {
 	return semaphore_destroy (current_task (), *sem) != KERN_SUCCESS ? -1 : 0;
 }
 
 static inline int
-mono_sem_wait (MonoSemType *sem, MonoSemFlags flags)
+mono_os_sem_wait (MonoSemType *sem, MonoSemFlags flags)
 {
 	int res;
 
@@ -79,14 +79,14 @@ retry:
 }
 
 static inline int
-mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
+mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 {
 	mach_timespec_t ts, copy;
 	struct timeval start, current;
 	int res = 0;
 
 	if (timeout_ms == (guint32) 0xFFFFFFFF)
-		return mono_sem_wait (sem, flags);
+		return mono_os_sem_wait (sem, flags);
 
 	ts.tv_sec = timeout_ms / 1000;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000000;
@@ -128,7 +128,7 @@ retry:
 }
 
 static inline int
-mono_sem_post (MonoSemType *sem)
+mono_os_sem_post (MonoSemType *sem)
 {
 	int res;
 
@@ -143,19 +143,19 @@ mono_sem_post (MonoSemType *sem)
 typedef sem_t MonoSemType;
 
 static inline int
-mono_sem_init (MonoSemType *sem, int value)
+mono_os_sem_init (MonoSemType *sem, int value)
 {
 	return sem_init (sem, 0, value);
 }
 
 static inline int
-mono_sem_destroy (MonoSemType *sem)
+mono_os_sem_destroy (MonoSemType *sem)
 {
 	return sem_destroy (sem);
 }
 
 static inline int
-mono_sem_wait (MonoSemType *sem, MonoSemFlags flags)
+mono_os_sem_wait (MonoSemType *sem, MonoSemFlags flags)
 {
 	int res;
 
@@ -171,7 +171,7 @@ retry:
 }
 
 static inline int
-mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
+mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 {
 	struct timespec ts, copy;
 	struct timeval t;
@@ -186,7 +186,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 	}
 
 	if (timeout_ms == (guint32) 0xFFFFFFFF)
-		return mono_sem_wait (sem, flags);
+		return mono_os_sem_wait (sem, flags);
 
 	gettimeofday (&t, NULL);
 	ts.tv_sec = timeout_ms / 1000 + t.tv_sec;
@@ -216,7 +216,7 @@ retry:
 }
 
 static inline int
-mono_sem_post (MonoSemType *sem)
+mono_os_sem_post (MonoSemType *sem)
 {
 	int res;
 
@@ -232,26 +232,26 @@ mono_sem_post (MonoSemType *sem)
 typedef HANDLE MonoSemType;
 
 static inline int
-mono_sem_init (MonoSemType *sem, int value)
+mono_os_sem_init (MonoSemType *sem, int value)
 {
 	*sem = CreateSemaphore (NULL, value, 0x7FFFFFFF, NULL);
 	return *sem == NULL ? -1 : 0;
 }
 
 static inline int
-mono_sem_destroy (MonoSemType *sem)
+mono_os_sem_destroy (MonoSemType *sem)
 {
 	return !CloseHandle (*sem) ? -1 : 0;
 }
 
 static inline int
-mono_sem_wait (MonoSemType *sem, MonoSemFlags flags)
+mono_os_sem_wait (MonoSemType *sem, MonoSemFlags flags)
 {
-	return mono_sem_timedwait (sem, INFINITE, flags);
+	return mono_os_sem_timedwait (sem, INFINITE, flags);
 }
 
 static inline int
-mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
+mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 {
 	gboolean res;
 
@@ -265,7 +265,7 @@ retry:
 }
 
 static inline int
-mono_sem_post (MonoSemType *sem)
+mono_os_sem_post (MonoSemType *sem)
 {
 	return !ReleaseSemaphore (*sem, 1, NULL) ? -1 : 0;
 }

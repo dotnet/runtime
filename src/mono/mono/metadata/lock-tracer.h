@@ -4,7 +4,7 @@
 /*This is a private header*/
 #include <glib.h>
 
-#include "mono/utils/mono-compiler.h"
+#include "mono/utils/mono-os-mutex.h"
 
 G_BEGIN_DECLS
 
@@ -40,23 +40,23 @@ void mono_locks_lock_released (RuntimeLocks kind, gpointer lock);
 #endif
 
 #define mono_locks_acquire(LOCK, NAME) do { \
-	mono_mutex_lock (LOCK); \
+	mono_os_mutex_lock (LOCK); \
 	mono_locks_lock_acquired (NAME, LOCK); \
 } while (0)
 
 #define mono_locks_release(LOCK, NAME) do { \
 	mono_locks_lock_released (NAME, LOCK); \
-	mono_mutex_unlock (LOCK); \
+	mono_os_mutex_unlock (LOCK); \
 } while (0)
 
 #define mono_locks_mutex_acquire(LOCK, NAME) do { \
-	mono_mutex_lock (LOCK); \
+	mono_os_mutex_lock (LOCK); \
 	mono_locks_lock_acquired (NAME, LOCK); \
 } while (0)
 
 #define mono_locks_mutex_release(LOCK, NAME) do { \
 	mono_locks_lock_released (NAME, LOCK); \
-	mono_mutex_unlock (LOCK); \
+	mono_os_mutex_unlock (LOCK); \
 } while (0)
 G_END_DECLS
 

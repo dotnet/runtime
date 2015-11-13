@@ -202,11 +202,11 @@ mono_backtrace (int size)
         static gboolean inited;
 
         if (!inited) {
-            mono_mutex_init_recursive (&mempool_tracing_lock);
+            mono_os_mutex_init_recursive (&mempool_tracing_lock);
             inited = TRUE;
         }
 
-        mono_mutex_lock (&mempool_tracing_lock);
+        mono_os_mutex_lock (&mempool_tracing_lock);
         g_print ("Allocating %d bytes\n", size);
         symbols = backtrace (array, BACKTRACE_DEPTH);
         names = backtrace_symbols (array, symbols);
@@ -214,7 +214,7 @@ mono_backtrace (int size)
                 g_print ("\t%s\n", names [i]);
         }
         free (names);
-        mono_mutex_unlock (&mempool_tracing_lock);
+        mono_os_mutex_unlock (&mempool_tracing_lock);
 }
 
 #endif

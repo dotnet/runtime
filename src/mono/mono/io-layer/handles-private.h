@@ -141,9 +141,9 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 		/* The condition the global signal cond is waiting on is the signalling of
 		 * _any_ handle. So lock it before setting the signalled state.
 		 */
-		thr_ret = mono_mutex_lock (_wapi_global_signal_mutex);
+		thr_ret = mono_os_mutex_lock (_wapi_global_signal_mutex);
 		if (thr_ret != 0)
-			g_warning ("Bad call to mono_mutex_lock result %d for global signal mutex", thr_ret);
+			g_warning ("Bad call to mono_os_mutex_lock result %d for global signal mutex", thr_ret);
 		g_assert (thr_ret == 0);
 
 		/* This function _must_ be called with
@@ -171,9 +171,9 @@ static inline void _wapi_handle_set_signal_state (gpointer handle,
 			g_warning ("Bad call to pthread_cond_broadcast result %d for handle %p", thr_ret, handle);
 		g_assert (thr_ret == 0);
 			
-		thr_ret = mono_mutex_unlock (_wapi_global_signal_mutex);
+		thr_ret = mono_os_mutex_unlock (_wapi_global_signal_mutex);
 		if (thr_ret != 0)
-			g_warning ("Bad call to mono_mutex_unlock result %d for global signal mutex", thr_ret);
+			g_warning ("Bad call to mono_os_mutex_unlock result %d for global signal mutex", thr_ret);
 		g_assert (thr_ret == 0);
 	} else {
 		handle_data->signalled=state;
@@ -227,7 +227,7 @@ static inline int _wapi_handle_lock_signal_mutex (void)
 	g_message ("%s: lock global signal mutex", __func__);
 #endif
 
-	return(mono_mutex_lock (_wapi_global_signal_mutex));
+	return(mono_os_mutex_lock (_wapi_global_signal_mutex));
 }
 
 /* the parameter makes it easier to call from a pthread cleanup handler */
@@ -237,7 +237,7 @@ static inline int _wapi_handle_unlock_signal_mutex (void *unused)
 	g_message ("%s: unlock global signal mutex", __func__);
 #endif
 
-	return(mono_mutex_unlock (_wapi_global_signal_mutex));
+	return(mono_os_mutex_unlock (_wapi_global_signal_mutex));
 }
 
 static inline int _wapi_handle_lock_handle (gpointer handle)
@@ -258,7 +258,7 @@ static inline int _wapi_handle_lock_handle (gpointer handle)
 		return(0);
 	}
 	
-	return(mono_mutex_lock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex));
+	return(mono_os_mutex_lock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex));
 }
 
 static inline int _wapi_handle_trylock_handle (gpointer handle)
@@ -280,7 +280,7 @@ static inline int _wapi_handle_trylock_handle (gpointer handle)
 		return(0);
 	}
 
-	ret = mono_mutex_trylock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
+	ret = mono_os_mutex_trylock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
 	if (ret != 0) {
 		_wapi_handle_unref (handle);
 	}
@@ -306,7 +306,7 @@ static inline int _wapi_handle_unlock_handle (gpointer handle)
 		return(0);
 	}
 	
-	ret = mono_mutex_unlock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
+	ret = mono_os_mutex_unlock (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
 
 	_wapi_handle_unref (handle);
 	

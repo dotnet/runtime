@@ -1,14 +1,14 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
 /*
- * mono-mutex.h: Portability wrappers around POSIX Mutexes
+ * mono-os-mutex.h: Portability wrappers around POSIX Mutexes
  *
  * Authors: Jeffrey Stedfast <fejj@ximian.com>
  *
  * Copyright 2002 Ximian, Inc. (www.ximian.com)
  */
 
-#ifndef __MONO_MUTEX_H__
-#define __MONO_MUTEX_H__
+#ifndef __MONO_OS_MUTEX_H__
+#define __MONO_OS_MUTEX_H__
 
 #include <config.h>
 #include <glib.h>
@@ -37,13 +37,13 @@ typedef pthread_mutex_t mono_mutex_t;
 typedef pthread_cond_t mono_cond_t;
 
 static inline int
-mono_mutex_init (mono_mutex_t *mutex)
+mono_os_mutex_init (mono_mutex_t *mutex)
 {
 	return pthread_mutex_init (mutex, NULL);
 }
 
 static inline int
-mono_mutex_init_recursive (mono_mutex_t *mutex)
+mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 {
 	int res;
 	pthread_mutexattr_t attr;
@@ -57,13 +57,13 @@ mono_mutex_init_recursive (mono_mutex_t *mutex)
 }
 
 static inline int
-mono_mutex_destroy (mono_mutex_t *mutex)
+mono_os_mutex_destroy (mono_mutex_t *mutex)
 {
 	return pthread_mutex_destroy (mutex);
 }
 
 static inline int
-mono_mutex_lock (mono_mutex_t *mutex)
+mono_os_mutex_lock (mono_mutex_t *mutex)
 {
 	int res;
 
@@ -74,31 +74,31 @@ mono_mutex_lock (mono_mutex_t *mutex)
 }
 
 static inline int
-mono_mutex_trylock (mono_mutex_t *mutex)
+mono_os_mutex_trylock (mono_mutex_t *mutex)
 {
 	return pthread_mutex_trylock (mutex);
 }
 
 static inline int
-mono_mutex_unlock (mono_mutex_t *mutex)
+mono_os_mutex_unlock (mono_mutex_t *mutex)
 {
 	return pthread_mutex_unlock (mutex);
 }
 
 static inline int
-mono_cond_init (mono_cond_t *cond)
+mono_os_cond_init (mono_cond_t *cond)
 {
 	return pthread_cond_init (cond, NULL);
 }
 
 static inline int
-mono_cond_destroy (mono_cond_t *cond)
+mono_os_cond_destroy (mono_cond_t *cond)
 {
 	return pthread_cond_destroy (cond);
 }
 
 static inline int
-mono_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
+mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 {
 	int res;
 
@@ -109,7 +109,7 @@ mono_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 }
 
 static inline int
-mono_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
+mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
 {
 	int res;
 
@@ -120,7 +120,7 @@ mono_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, struct timespec *ti
 }
 
 static inline int
-mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
+mono_os_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
 {
 	struct timeval tv;
 	struct timespec ts;
@@ -128,7 +128,7 @@ mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 	int res;
 
 	if (timeout_ms == (guint32) 0xFFFFFFFF)
-		return mono_cond_wait (cond, mutex);
+		return mono_os_cond_wait (cond, mutex);
 
 	/* ms = 10^-3, us = 10^-6, ns = 10^-9 */
 
@@ -149,13 +149,13 @@ mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 }
 
 static inline int
-mono_cond_signal (mono_cond_t *cond)
+mono_os_cond_signal (mono_cond_t *cond)
 {
 	return pthread_cond_signal (cond);
 }
 
 static inline int
-mono_cond_broadcast (mono_cond_t *cond)
+mono_os_cond_broadcast (mono_cond_t *cond)
 {
 	return pthread_cond_broadcast (cond);
 }
@@ -225,86 +225,86 @@ typedef CRITICAL_SECTION mono_mutex_t;
 typedef CONDITION_VARIABLE mono_cond_t;
 
 static inline int
-mono_mutex_init (mono_mutex_t *mutex)
+mono_os_mutex_init (mono_mutex_t *mutex)
 {
 	InitializeCriticalSection (mutex);
 	return 0;
 }
 
 static inline int
-mono_mutex_init_recursive (mono_mutex_t *mutex)
+mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 {
 	InitializeCriticalSection (mutex);
 	return 0;
 }
 
 static inline int
-mono_mutex_destroy (mono_mutex_t *mutex)
+mono_os_mutex_destroy (mono_mutex_t *mutex)
 {
 	DeleteCriticalSection (mutex);
 	return 0;
 }
 
 static inline int
-mono_mutex_lock (mono_mutex_t *mutex)
+mono_os_mutex_lock (mono_mutex_t *mutex)
 {
 	EnterCriticalSection (mutex);
 	return 0;
 }
 
 static inline int
-mono_mutex_trylock (mono_mutex_t *mutex)
+mono_os_mutex_trylock (mono_mutex_t *mutex)
 {
 	return TryEnterCriticalSection (mutex) != 0 ? 0 : 1;
 }
 
 static inline int
-mono_mutex_unlock (mono_mutex_t *mutex)
+mono_os_mutex_unlock (mono_mutex_t *mutex)
 {
 	LeaveCriticalSection (mutex));
 	return 0;
 }
 
 static inline int
-mono_cond_init (mono_cond_t *cond)
+mono_os_cond_init (mono_cond_t *cond)
 {
 	InitializeConditionVariable (cond);
 	return 0;
 }
 
 static inline int
-mono_cond_destroy (mono_cond_t *cond)
+mono_os_cond_destroy (mono_cond_t *cond)
 {
 	/* Beauty of win32 API: do not destroy it */
 }
 
 static inline int
-mono_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
+mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 {
 	return SleepConditionVariableCS (cond, mutex, INFINITE) ? 0 : 1;
 }
 
 static inline int
-mono_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
+mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
 {
 	g_assert_not_reached ();
 }
 
 static inline int
-mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
+mono_os_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
 {
 	return SleepConditionVariableCS (cond, mutex, timeout_ms) ? 0 : 1;
 }
 
 static inline int
-mono_cond_signal (mono_cond_t *cond)
+mono_os_cond_signal (mono_cond_t *cond)
 {
 	WakeConditionVariable (cond);
 	return 0;
 }
 
 static inline int
-mono_cond_broadcast (mono_cond_t *cond)
+mono_os_cond_broadcast (mono_cond_t *cond)
 {
 	WakeAllConditionVariable (cond);
 	return 0;
@@ -314,4 +314,4 @@ mono_cond_broadcast (mono_cond_t *cond)
 
 G_END_DECLS
 
-#endif /* __MONO_MUTEX_H__ */
+#endif /* __MONO_OS_MUTEX_H__ */

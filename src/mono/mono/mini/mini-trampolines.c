@@ -27,8 +27,8 @@ static GHashTable *rgctx_lazy_fetch_trampoline_hash;
 static GHashTable *rgctx_lazy_fetch_trampoline_hash_addr;
 static guint32 trampoline_calls, jit_trampolines, unbox_trampolines, static_rgctx_trampolines;
 
-#define mono_trampolines_lock() mono_mutex_lock (&trampolines_mutex)
-#define mono_trampolines_unlock() mono_mutex_unlock (&trampolines_mutex)
+#define mono_trampolines_lock() mono_os_mutex_lock (&trampolines_mutex)
+#define mono_trampolines_unlock() mono_os_mutex_unlock (&trampolines_mutex)
 static mono_mutex_t trampolines_mutex;
 
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
@@ -1220,7 +1220,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 void
 mono_trampolines_init (void)
 {
-	mono_mutex_init_recursive (&trampolines_mutex);
+	mono_os_mutex_init_recursive (&trampolines_mutex);
 
 	if (mono_aot_only)
 		return;
@@ -1257,7 +1257,7 @@ mono_trampolines_cleanup (void)
 	if (rgctx_lazy_fetch_trampoline_hash_addr)
 		g_hash_table_destroy (rgctx_lazy_fetch_trampoline_hash_addr);
 
-	mono_mutex_destroy (&trampolines_mutex);
+	mono_os_mutex_destroy (&trampolines_mutex);
 }
 
 guint8 *

@@ -250,8 +250,8 @@ typedef struct {
 	gboolean jit_used, llvm_used;
 } MonoPltEntry;
 
-#define mono_acfg_lock(acfg) mono_mutex_lock (&((acfg)->mutex))
-#define mono_acfg_unlock(acfg) mono_mutex_unlock (&((acfg)->mutex))
+#define mono_acfg_lock(acfg) mono_os_mutex_lock (&((acfg)->mutex))
+#define mono_acfg_unlock(acfg) mono_os_mutex_unlock (&((acfg)->mutex))
 
 /* This points to the current acfg in LLVM mode */
 static MonoAotCompile *llvm_acfg;
@@ -9258,7 +9258,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->klass_blob_hash = g_hash_table_new (NULL, NULL);
 	acfg->method_blob_hash = g_hash_table_new (NULL, NULL);
 	acfg->plt_entry_debug_sym_cache = g_hash_table_new (g_str_hash, g_str_equal);
-	mono_mutex_init_recursive (&acfg->mutex);
+	mono_os_mutex_init_recursive (&acfg->mutex);
 
 	init_got_info (&acfg->got_info);
 	init_got_info (&acfg->llvm_got_info);

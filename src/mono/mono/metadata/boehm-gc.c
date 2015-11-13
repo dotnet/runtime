@@ -29,7 +29,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/dtrace.h>
 #include <mono/utils/gc_wrapper.h>
-#include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-counters.h>
 
 #if HAVE_BOEHM_GC
@@ -64,8 +64,8 @@ static MonoGCFinalizerCallbacks fin_callbacks;
 /* GC Handles */
 
 static mono_mutex_t handle_section;
-#define lock_handles(handles) mono_mutex_lock (&handle_section)
-#define unlock_handles(handles) mono_mutex_unlock (&handle_section)
+#define lock_handles(handles) mono_os_mutex_lock (&handle_section)
+#define unlock_handles(handles) mono_os_mutex_unlock (&handle_section)
 
 typedef struct {
 	guint32  *bitmap;
@@ -237,8 +237,8 @@ mono_gc_base_init (void)
 	cb.mono_method_is_critical = (gpointer)mono_runtime_is_critical_method;
 
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
-	mono_mutex_init (&mono_gc_lock);
-	mono_mutex_init_recursive (&handle_section);
+	mono_os_mutex_init (&mono_gc_lock);
+	mono_os_mutex_init_recursive (&handle_section);
 
 	mono_thread_info_attach (&dummy);
 
@@ -1141,7 +1141,7 @@ mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath)
 		return res;
 
 	res = create_allocator (atype, TLS_KEY_BOEHM_GC_THREAD, slowpath);
-	mono_mutex_lock (&mono_gc_lock);
+	mono_os_mutex_lock (&mono_gc_lock);
 	if (cache [atype]) {
 		mono_free_method (res);
 		res = cache [atype];
@@ -1149,7 +1149,7 @@ mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath)
 		mono_memory_barrier ();
 		cache [atype] = res;
 	}
-	mono_mutex_unlock (&mono_gc_lock);
+	mono_os_mutex_unlock (&mono_gc_lock);
 	return res;
 }
 

@@ -153,8 +153,8 @@ enum {
 };
 
 static mono_mutex_t perfctr_mutex;
-#define perfctr_lock() mono_mutex_lock (&perfctr_mutex)
-#define perfctr_unlock() mono_mutex_unlock (&perfctr_mutex)
+#define perfctr_lock() mono_os_mutex_lock (&perfctr_mutex)
+#define perfctr_unlock() mono_os_mutex_unlock (&perfctr_mutex)
 
 typedef struct {
 	char reserved [16];
@@ -537,7 +537,7 @@ mono_perfcounters_init (void)
 	d_offset += 7;
 	d_offset &= ~7;
 
-	mono_mutex_init_recursive (&perfctr_mutex);
+	mono_os_mutex_init_recursive (&perfctr_mutex);
 
 	shared_area = mono_shared_area ();
 	shared_area->counters_start = G_STRUCT_OFFSET (MonoSharedArea, counters);

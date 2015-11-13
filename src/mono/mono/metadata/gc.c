@@ -31,7 +31,7 @@
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
 #include <mono/metadata/attach.h>
 #include <mono/metadata/console-io.h>
-#include <mono/utils/mono-semaphore.h>
+#include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-time.h>
@@ -56,8 +56,8 @@ gboolean log_finalizers = FALSE;
 gboolean mono_do_not_finalize = FALSE;
 gchar **mono_do_not_finalize_class_names = NULL;
 
-#define mono_finalizer_lock() mono_mutex_lock (&finalizer_mutex)
-#define mono_finalizer_unlock() mono_mutex_unlock (&finalizer_mutex)
+#define mono_finalizer_lock() mono_os_mutex_lock (&finalizer_mutex)
+#define mono_finalizer_unlock() mono_os_mutex_unlock (&finalizer_mutex)
 static mono_mutex_t finalizer_mutex;
 static mono_mutex_t reference_queue_mutex;
 
@@ -540,8 +540,8 @@ ves_icall_System_GC_get_ephemeron_tombstone (void)
 	return mono_domain_get ()->ephemeron_tombstone;
 }
 
-#define mono_allocator_lock() mono_mutex_lock (&allocator_section)
-#define mono_allocator_unlock() mono_mutex_unlock (&allocator_section)
+#define mono_allocator_lock() mono_os_mutex_lock (&allocator_section)
+#define mono_allocator_unlock() mono_os_mutex_unlock (&allocator_section)
 static mono_mutex_t allocator_section;
 
 MonoObject *
@@ -636,7 +636,7 @@ mono_gc_finalize_notify (void)
 		return;
 
 #ifdef MONO_HAS_SEMAPHORES
-	mono_sem_post (&finalizer_sem);
+	mono_os_sem_post (&finalizer_sem);
 #else
 	SetEvent (finalizer_event);
 #endif
@@ -729,7 +729,7 @@ finalizer_thread (gpointer unused)
 		if (wait) {
 		/* An alertable wait is required so this thread can be suspended on windows */
 #ifdef MONO_HAS_SEMAPHORES
-			mono_sem_wait (&finalizer_sem, MONO_SEM_FLAGS_ALERTABLE);
+			mono_os_sem_wait (&finalizer_sem, MONO_SEM_FLAGS_ALERTABLE);
 #else
 			WaitForSingleObjectEx (finalizer_event, INFINITE, TRUE);
 #endif
@@ -768,7 +768,7 @@ finalizer_thread (gpointer unused)
 
 #ifdef MONO_HAS_SEMAPHORES
 		/* Avoid posting the pending done event until there are pending finalizers */
-		if (mono_sem_timedwait (&finalizer_sem, 0, MONO_SEM_FLAGS_NONE) == 0)
+		if (mono_os_sem_timedwait (&finalizer_sem, 0, MONO_SEM_FLAGS_NONE) == 0)
 			/* Don't wait again at the start of the loop */
 			wait = FALSE;
 		else
@@ -780,7 +780,7 @@ finalizer_thread (gpointer unused)
 
 	mono_finalizer_lock ();
 	finalizer_thread_exited = TRUE;
-	mono_cond_signal (&exited_cond);
+	mono_os_cond_signal (&exited_cond);
 	mono_finalizer_unlock ();
 
 	return 0;
@@ -799,10 +799,10 @@ mono_gc_init_finalizer_thread (void)
 void
 mono_gc_init (void)
 {
-	mono_mutex_init_recursive (&allocator_section);
+	mono_os_mutex_init_recursive (&allocator_section);
 
-	mono_mutex_init_recursive (&finalizer_mutex);
-	mono_mutex_init_recursive (&reference_queue_mutex);
+	mono_os_mutex_init_recursive (&finalizer_mutex);
+	mono_os_mutex_init_recursive (&reference_queue_mutex);
 
 	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_UINT, &gc_stats.minor_gc_count);
 	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_UINT, &gc_stats.major_gc_count);
@@ -821,9 +821,9 @@ mono_gc_init (void)
 	g_assert (finalizer_event);
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	g_assert (pending_done_event);
-	mono_cond_init (&exited_cond);
+	mono_os_cond_init (&exited_cond);
 #ifdef MONO_HAS_SEMAPHORES
-	mono_sem_init (&finalizer_sem, 0);
+	mono_os_sem_init (&finalizer_sem, 0);
 #endif
 
 #ifndef LAZY_GC_THREAD_CREATION
@@ -862,7 +862,7 @@ mono_gc_cleanup (void)
 				MONO_PREPARE_BLOCKING;
 				mono_finalizer_lock ();
 				if (!finalizer_thread_exited)
-					mono_cond_timedwait_ms (&exited_cond, &finalizer_mutex, timeout);
+					mono_os_cond_timedwait_ms (&exited_cond, &finalizer_mutex, timeout);
 				mono_finalizer_unlock ();
 				MONO_FINISH_BLOCKING;
 			}
@@ -906,9 +906,9 @@ mono_gc_cleanup (void)
 
 	mono_reference_queue_cleanup ();
 
-	mono_mutex_destroy (&allocator_section);
-	mono_mutex_destroy (&finalizer_mutex);
-	mono_mutex_destroy (&reference_queue_mutex);
+	mono_os_mutex_destroy (&allocator_section);
+	mono_os_mutex_destroy (&finalizer_mutex);
+	mono_os_mutex_destroy (&reference_queue_mutex);
 }
 
 gboolean
@@ -1007,7 +1007,7 @@ reference_queue_proccess_all (void)
 		reference_queue_proccess (queue);
 
 restart:
-	mono_mutex_lock (&reference_queue_mutex);
+	mono_os_mutex_lock (&reference_queue_mutex);
 	for (iter = &ref_queues; *iter;) {
 		queue = *iter;
 		if (!queue->should_be_deleted) {
@@ -1015,14 +1015,14 @@ restart:
 			continue;
 		}
 		if (queue->queue) {
-			mono_mutex_unlock (&reference_queue_mutex);
+			mono_os_mutex_unlock (&reference_queue_mutex);
 			reference_queue_proccess (queue);
 			goto restart;
 		}
 		*iter = queue->next;
 		g_free (queue);
 	}
-	mono_mutex_unlock (&reference_queue_mutex);
+	mono_os_mutex_unlock (&reference_queue_mutex);
 }
 
 static void
@@ -1076,10 +1076,10 @@ mono_gc_reference_queue_new (mono_reference_queue_callback callback)
 	MonoReferenceQueue *res = g_new0 (MonoReferenceQueue, 1);
 	res->callback = callback;
 
-	mono_mutex_lock (&reference_queue_mutex);
+	mono_os_mutex_lock (&reference_queue_mutex);
 	res->next = ref_queues;
 	ref_queues = res;
-	mono_mutex_unlock (&reference_queue_mutex);
+	mono_os_mutex_unlock (&reference_queue_mutex);
 
 	return res;
 }

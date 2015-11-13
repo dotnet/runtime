@@ -90,7 +90,7 @@ struct _SgenClientThreadInfo {
 #include "utils/mono-counters.h"
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-time.h"
-#include "utils/mono-semaphore.h"
+#include "utils/mono-os-semaphore.h"
 #include "metadata/sgen-bridge-internals.h"
 
 extern void mono_sgen_register_moved_object (void *obj, void *destination);
@@ -694,9 +694,9 @@ extern MonoNativeTlsKey thread_info_key;
 
 typedef MonoSemType SgenSemaphore;
 
-#define SGEN_SEMAPHORE_INIT(sem,initial)	mono_sem_init ((sem), (initial))
-#define SGEN_SEMAPHORE_POST(sem)		mono_sem_post ((sem))
-#define SGEN_SEMAPHORE_WAIT(sem)		mono_sem_wait ((sem), MONO_SEM_FLAGS_NONE)
+#define SGEN_SEMAPHORE_INIT(sem,initial)	mono_os_sem_init ((sem), (initial))
+#define SGEN_SEMAPHORE_POST(sem)		mono_os_sem_post ((sem))
+#define SGEN_SEMAPHORE_WAIT(sem)		mono_os_sem_wait ((sem), MONO_SEM_FLAGS_NONE)
 
 gboolean sgen_has_critical_method (void);
 gboolean sgen_is_critical_method (MonoMethod *method);

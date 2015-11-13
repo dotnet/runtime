@@ -13,7 +13,6 @@
 #include <config.h>
 #include <glib.h>
 #include <pthread.h>
-#include <mono/utils/mono-semaphore.h>
 
 /* There doesn't seem to be a defined symbol for this */
 #define _WAPI_THREAD_CURRENT (gpointer)0xFFFFFFFE

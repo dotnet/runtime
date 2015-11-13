@@ -79,8 +79,8 @@ static GHashTable *get_loaded_images_by_name_hash (gboolean refonly)
 
 static gboolean debug_assembly_unload = FALSE;
 
-#define mono_images_lock() if (mutex_inited) mono_mutex_lock (&images_mutex)
-#define mono_images_unlock() if (mutex_inited) mono_mutex_unlock (&images_mutex)
+#define mono_images_lock() if (mutex_inited) mono_os_mutex_lock (&images_mutex)
+#define mono_images_unlock() if (mutex_inited) mono_os_mutex_unlock (&images_mutex)
 static gboolean mutex_inited;
 static mono_mutex_t images_mutex;
 
@@ -222,7 +222,7 @@ mono_image_rva_map (MonoImage *image, guint32 addr)
 void
 mono_images_init (void)
 {
-	mono_mutex_init_recursive (&images_mutex);
+	mono_os_mutex_init_recursive (&images_mutex);
 
 	int hash_idx;
 	for(hash_idx = 0; hash_idx < IMAGES_HASH_COUNT; hash_idx++)
@@ -246,7 +246,7 @@ mono_images_cleanup (void)
 	GHashTableIter iter;
 	MonoImage *image;
 
-	mono_mutex_destroy (&images_mutex);
+	mono_os_mutex_destroy (&images_mutex);
 
 	// If an assembly image is still loaded at shutdown, this could indicate managed code is still running.
 	// Reflection-only images being still loaded doesn't indicate anything as harmful, so we don't check for it.
@@ -713,8 +713,8 @@ class_next_value (gpointer value)
 void
 mono_image_init (MonoImage *image)
 {
-	mono_mutex_init_recursive (&image->lock);
-	mono_mutex_init_recursive (&image->szarray_cache_lock);
+	mono_os_mutex_init_recursive (&image->lock);
+	mono_os_mutex_init_recursive (&image->szarray_cache_lock);
 
 	image->mempool = mono_mempool_new_size (INITIAL_IMAGE_SIZE);
 	mono_internal_hash_table_init (&image->class_cache,
@@ -1845,8 +1845,8 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->modules_loaded)
 		g_free (image->modules_loaded);
 
-	mono_mutex_destroy (&image->szarray_cache_lock);
-	mono_mutex_destroy (&image->lock);
+	mono_os_mutex_destroy (&image->szarray_cache_lock);
+	mono_os_mutex_destroy (&image->lock);
 
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
 	if (image_is_dynamic (image)) {

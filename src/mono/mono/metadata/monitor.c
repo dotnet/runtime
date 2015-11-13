@@ -76,8 +76,8 @@ struct _MonitorArray {
 	MonoThreadsSync monitors [MONO_ZERO_LEN_ARRAY];
 };
 
-#define mono_monitor_allocator_lock() mono_mutex_lock (&monitor_mutex)
-#define mono_monitor_allocator_unlock() mono_mutex_unlock (&monitor_mutex)
+#define mono_monitor_allocator_lock() mono_os_mutex_lock (&monitor_mutex)
+#define mono_monitor_allocator_unlock() mono_os_mutex_unlock (&monitor_mutex)
 static mono_mutex_t monitor_mutex;
 static MonoThreadsSync *monitor_freelist;
 static MonitorArray *monitor_allocated;
@@ -248,7 +248,7 @@ lock_word_new_flat (gint32 owner)
 void
 mono_monitor_init (void)
 {
-	mono_mutex_init_recursive (&monitor_mutex);
+	mono_os_mutex_init_recursive (&monitor_mutex);
 }
  
 void
@@ -257,7 +257,7 @@ mono_monitor_cleanup (void)
 	MonoThreadsSync *mon;
 	/* MonitorArray *marray, *next = NULL; */
 
-	/*mono_mutex_destroy (&monitor_mutex);*/
+	/*mono_os_mutex_destroy (&monitor_mutex);*/
 
 	/* The monitors on the freelist don't have weak links - mark them */
 	for (mon = monitor_freelist; mon; mon = mon->data)

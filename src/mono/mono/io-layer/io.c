@@ -2179,7 +2179,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 
 	handle = GINT_TO_POINTER (fd);
 
-	thr_ret = mono_mutex_lock (&stdhandle_mutex);
+	thr_ret = mono_os_mutex_lock (&stdhandle_mutex);
 	g_assert (thr_ret == 0);
 
 	ok = _wapi_lookup_handle (handle, WAPI_HANDLE_CONSOLE,
@@ -2198,7 +2198,7 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 	}
 	
   done:
-	thr_ret = mono_mutex_unlock (&stdhandle_mutex);
+	thr_ret = mono_os_mutex_unlock (&stdhandle_mutex);
 	g_assert (thr_ret == 0);
 	
 	return(handle);
@@ -4283,5 +4283,5 @@ GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesi
 void
 _wapi_io_init (void)
 {
-	mono_mutex_init (&stdhandle_mutex);
+	mono_os_mutex_init (&stdhandle_mutex);
 }

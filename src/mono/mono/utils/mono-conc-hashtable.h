@@ -12,7 +12,7 @@
 
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-os-mutex.h>
 #include <glib.h>
 
 typedef struct _MonoConcurrentHashTable MonoConcurrentHashTable;

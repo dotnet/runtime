@@ -3191,7 +3191,9 @@ sgen_get_nursery_clear_policy (void)
 void
 sgen_gc_lock (void)
 {
-	LOCK_GC;
+	MONO_TRY_BLOCKING;
+	mono_os_mutex_lock (&gc_mutex);
+	MONO_FINISH_TRY_BLOCKING;
 }
 
 void
@@ -3199,7 +3201,7 @@ sgen_gc_unlock (void)
 {
 	gboolean try_free = sgen_try_free_some_memory;
 	sgen_try_free_some_memory = FALSE;
-	mono_mutex_unlock (&gc_mutex);
+	mono_os_mutex_unlock (&gc_mutex);
 	if (try_free)
 		mono_thread_hazardous_try_free_some ();
 }

@@ -97,8 +97,8 @@ mono_loader_init ()
 	static gboolean inited;
 
 	if (!inited) {
-		mono_mutex_init_recursive (&loader_mutex);
-		mono_mutex_init_recursive (&global_loader_data_mutex);
+		mono_os_mutex_init_recursive (&loader_mutex);
+		mono_os_mutex_init_recursive (&global_loader_data_mutex);
 		loader_lock_inited = TRUE;
 
 		mono_native_tls_alloc (&loader_error_thread_id, NULL);
@@ -126,8 +126,8 @@ mono_loader_cleanup (void)
 	mono_native_tls_free (loader_error_thread_id);
 	mono_native_tls_free (loader_lock_nest_id);
 
-	mono_mutex_destroy (&loader_mutex);
-	mono_mutex_destroy (&global_loader_data_mutex);
+	mono_os_mutex_destroy (&loader_mutex);
+	mono_os_mutex_destroy (&global_loader_data_mutex);
 	loader_lock_inited = FALSE;	
 }
 

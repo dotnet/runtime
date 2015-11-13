@@ -248,15 +248,15 @@ initialize (void)
 	g_assert (threadpool);
 
 	threadpool->domains = g_ptr_array_new ();
-	mono_mutex_init_recursive (&threadpool->domains_lock);
+	mono_os_mutex_init_recursive (&threadpool->domains_lock);
 
 	threadpool->parked_threads_count = 0;
-	mono_cond_init (&threadpool->parked_threads_cond);
+	mono_os_cond_init (&threadpool->parked_threads_cond);
 	threadpool->working_threads = g_ptr_array_new ();
-	mono_mutex_init_recursive (&threadpool->active_threads_lock);
+	mono_os_mutex_init_recursive (&threadpool->active_threads_lock);
 
 	threadpool->heuristic_adjustment_interval = 10;
-	mono_mutex_init (&threadpool->heuristic_lock);
+	mono_os_mutex_init (&threadpool->heuristic_lock);
 
 	mono_rand_open ();
 
@@ -321,7 +321,7 @@ cleanup (void)
 	MONO_FINISH_BLOCKING;
 
 	MONO_PREPARE_BLOCKING;
-	mono_mutex_lock (&threadpool->active_threads_lock);
+	mono_os_mutex_lock (&threadpool->active_threads_lock);
 	MONO_FINISH_BLOCKING;
 
 	/* stop all threadpool->working_threads */
@@ -329,9 +329,9 @@ cleanup (void)
 		worker_kill ((ThreadPoolWorkingThread*) g_ptr_array_index (threadpool->working_threads, i));
 
 	/* unpark all threadpool->parked_threads */
-	mono_cond_broadcast (&threadpool->parked_threads_cond);
+	mono_os_cond_broadcast (&threadpool->parked_threads_cond);
 
-	mono_mutex_unlock (&threadpool->active_threads_lock);
+	mono_os_mutex_unlock (&threadpool->active_threads_lock);
 }
 
 void
@@ -378,7 +378,7 @@ domain_add (ThreadPoolDomain *tpdomain)
 
 	g_assert (tpdomain);
 
-	mono_mutex_lock (&threadpool->domains_lock);
+	mono_os_mutex_lock (&threadpool->domains_lock);
 	len = threadpool->domains->len;
 	for (i = 0; i < len; ++i) {
 		if (g_ptr_array_index (threadpool->domains, i) == tpdomain)
@@ -386,7 +386,7 @@ domain_add (ThreadPoolDomain *tpdomain)
 	}
 	if (i == len)
 		g_ptr_array_add (threadpool->domains, tpdomain);
-	mono_mutex_unlock (&threadpool->domains_lock);
+	mono_os_mutex_unlock (&threadpool->domains_lock);
 }
 
 static gboolean
@@ -396,9 +396,9 @@ domain_remove (ThreadPoolDomain *tpdomain)
 
 	g_assert (tpdomain);
 
-	mono_mutex_lock (&threadpool->domains_lock);
+	mono_os_mutex_lock (&threadpool->domains_lock);
 	res = g_ptr_array_remove (threadpool->domains, tpdomain);
-	mono_mutex_unlock (&threadpool->domains_lock);
+	mono_os_mutex_unlock (&threadpool->domains_lock);
 
 	return res;
 }
@@ -411,7 +411,7 @@ domain_get (MonoDomain *domain, gboolean create)
 
 	g_assert (domain);
 
-	mono_mutex_lock (&threadpool->domains_lock);
+	mono_os_mutex_lock (&threadpool->domains_lock);
 	for (i = 0; i < threadpool->domains->len; ++i) {
 		ThreadPoolDomain *tmp = g_ptr_array_index (threadpool->domains, i);
 		if (tmp->domain == domain) {
@@ -424,7 +424,7 @@ domain_get (MonoDomain *domain, gboolean create)
 		tpdomain->domain = domain;
 		domain_add (tpdomain);
 	}
-	mono_mutex_unlock (&threadpool->domains_lock);
+	mono_os_mutex_unlock (&threadpool->domains_lock);
 	return tpdomain;
 }
 
@@ -440,7 +440,7 @@ domain_any_has_request (void)
 	gboolean res = FALSE;
 	guint i;
 
-	mono_mutex_lock (&threadpool->domains_lock);
+	mono_os_mutex_lock (&threadpool->domains_lock);
 	for (i = 0; i < threadpool->domains->len; ++i) {
 		ThreadPoolDomain *tmp = g_ptr_array_index (threadpool->domains, i);
 		if (tmp->outstanding_request > 0) {
@@ -448,7 +448,7 @@ domain_any_has_request (void)
 			break;
 		}
 	}
-	mono_mutex_unlock (&threadpool->domains_lock);
+	mono_os_mutex_unlock (&threadpool->domains_lock);
 	return res;
 }
 
@@ -458,7 +458,7 @@ domain_get_next (ThreadPoolDomain *current)
 	ThreadPoolDomain *tpdomain = NULL;
 	guint len;
 
-	mono_mutex_lock (&threadpool->domains_lock);
+	mono_os_mutex_lock (&threadpool->domains_lock);
 	len = threadpool->domains->len;
 	if (len > 0) {
 		guint i, current_idx = -1;
@@ -479,16 +479,16 @@ domain_get_next (ThreadPoolDomain *current)
 			}
 		}
 	}
-	mono_mutex_unlock (&threadpool->domains_lock);
+	mono_os_mutex_unlock (&threadpool->domains_lock);
 	return tpdomain;
 }
 
 static void
 worker_wait_interrupt (gpointer data)
 {
-	mono_mutex_lock (&threadpool->active_threads_lock);
-	mono_cond_signal (&threadpool->parked_threads_cond);
-	mono_mutex_unlock (&threadpool->active_threads_lock);
+	mono_os_mutex_lock (&threadpool->active_threads_lock);
+	mono_os_cond_signal (&threadpool->parked_threads_cond);
+	mono_os_mutex_unlock (&threadpool->active_threads_lock);
 }
 
 /* return TRUE if timeout, FALSE otherwise (worker unpark or interrupt) */
@@ -503,7 +503,7 @@ worker_park (void)
 
 	MONO_PREPARE_BLOCKING;
 
-	mono_mutex_lock (&threadpool->active_threads_lock);
+	mono_os_mutex_lock (&threadpool->active_threads_lock);
 
 	if (!mono_runtime_is_shutting_down ()) {
 		static gpointer rand_handle = NULL;
@@ -524,7 +524,7 @@ worker_park (void)
 		if (interrupted)
 			goto done;
 
-		if (mono_cond_timedwait_ms (&threadpool->parked_threads_cond, &threadpool->active_threads_lock, rand_next (rand_handle, 5 * 1000, 60 * 1000)) != 0)
+		if (mono_os_cond_timedwait_ms (&threadpool->parked_threads_cond, &threadpool->active_threads_lock, rand_next (rand_handle, 5 * 1000, 60 * 1000)) != 0)
 			timeout = TRUE;
 
 		mono_thread_info_uninstall_interrupt (&interrupted);
@@ -534,7 +534,7 @@ done:
 		threadpool->parked_threads_count -= 1;
 	}
 
-	mono_mutex_unlock (&threadpool->active_threads_lock);
+	mono_os_mutex_unlock (&threadpool->active_threads_lock);
 
 	MONO_FINISH_BLOCKING;
 
@@ -554,12 +554,12 @@ worker_try_unpark (void)
 
 	MONO_PREPARE_BLOCKING;
 
-	mono_mutex_lock (&threadpool->active_threads_lock);
+	mono_os_mutex_lock (&threadpool->active_threads_lock);
 	if (threadpool->parked_threads_count > 0) {
-		mono_cond_signal (&threadpool->parked_threads_cond);
+		mono_os_cond_signal (&threadpool->parked_threads_cond);
 		res = TRUE;
 	}
-	mono_mutex_unlock (&threadpool->active_threads_lock);
+	mono_os_mutex_unlock (&threadpool->active_threads_lock);
 
 	MONO_FINISH_BLOCKING;
 
@@ -595,22 +595,22 @@ worker_thread (gpointer data)
 	mono_thread_set_name_internal (thread, mono_string_new (mono_domain_get (), "Threadpool worker"), FALSE);
 
 	MONO_PREPARE_BLOCKING;
-	mono_mutex_lock (&threadpool->active_threads_lock);
+	mono_os_mutex_lock (&threadpool->active_threads_lock);
 	g_ptr_array_add (threadpool->working_threads, thread);
-	mono_mutex_unlock (&threadpool->active_threads_lock);
+	mono_os_mutex_unlock (&threadpool->active_threads_lock);
 	MONO_FINISH_BLOCKING;
 
 	previous_tpdomain = NULL;
 
-	mono_mutex_lock (&threadpool->domains_lock);
+	mono_os_mutex_lock (&threadpool->domains_lock);
 
 	while (!mono_runtime_is_shutting_down ()) {
 		tpdomain = NULL;
 
 		if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0) {
-			mono_mutex_unlock (&threadpool->domains_lock);
+			mono_os_mutex_unlock (&threadpool->domains_lock);
 			mono_thread_interruption_checkpoint ();
-			mono_mutex_lock (&threadpool->domains_lock);
+			mono_os_mutex_lock (&threadpool->domains_lock);
 		}
 
 		if (retire || !(tpdomain = domain_get_next (previous_tpdomain))) {
@@ -621,9 +621,9 @@ worker_thread (gpointer data)
 				counter._.parked ++;
 			});
 
-			mono_mutex_unlock (&threadpool->domains_lock);
+			mono_os_mutex_unlock (&threadpool->domains_lock);
 			timeout = worker_park ();
-			mono_mutex_lock (&threadpool->domains_lock);
+			mono_os_mutex_lock (&threadpool->domains_lock);
 
 			COUNTER_ATOMIC (counter, {
 				counter._.working ++;
@@ -649,7 +649,7 @@ worker_thread (gpointer data)
 		g_assert (tpdomain->domain->threadpool_jobs >= 0);
 		tpdomain->domain->threadpool_jobs ++;
 
-		mono_mutex_unlock (&threadpool->domains_lock);
+		mono_os_mutex_unlock (&threadpool->domains_lock);
 
 		mono_thread_push_appdomain_ref (tpdomain->domain);
 		if (mono_domain_set (tpdomain->domain, FALSE)) {
@@ -668,7 +668,7 @@ worker_thread (gpointer data)
 		}
 		mono_thread_pop_appdomain_ref ();
 
-		mono_mutex_lock (&threadpool->domains_lock);
+		mono_os_mutex_lock (&threadpool->domains_lock);
 
 		tpdomain->domain->threadpool_jobs --;
 		g_assert (tpdomain->domain->threadpool_jobs >= 0);
@@ -685,12 +685,12 @@ worker_thread (gpointer data)
 		previous_tpdomain = tpdomain;
 	}
 
-	mono_mutex_unlock (&threadpool->domains_lock);
+	mono_os_mutex_unlock (&threadpool->domains_lock);
 
 	MONO_PREPARE_BLOCKING;
-	mono_mutex_lock (&threadpool->active_threads_lock);
+	mono_os_mutex_lock (&threadpool->active_threads_lock);
 	g_ptr_array_remove_fast (threadpool->working_threads, thread);
-	mono_mutex_unlock (&threadpool->active_threads_lock);
+	mono_os_mutex_unlock (&threadpool->active_threads_lock);
 	MONO_FINISH_BLOCKING;
 
 	COUNTER_ATOMIC (counter, {
@@ -745,11 +745,11 @@ worker_request (MonoDomain *domain)
 	if (mono_runtime_is_shutting_down ())
 		return FALSE;
 
-	mono_mutex_lock (&threadpool->domains_lock);
+	mono_os_mutex_lock (&threadpool->domains_lock);
 
 	/* synchronize check with worker_thread */
 	if (mono_domain_is_unloading (domain)) {
-		mono_mutex_unlock (&threadpool->domains_lock);
+		mono_os_mutex_unlock (&threadpool->domains_lock);
 		return FALSE;
 	}
 
@@ -760,7 +760,7 @@ worker_request (MonoDomain *domain)
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] request worker, domain = %p, outstanding_request = %d",
 		mono_native_thread_id_get (), tpdomain->domain, tpdomain->outstanding_request);
 
-	mono_mutex_unlock (&threadpool->domains_lock);
+	mono_os_mutex_unlock (&threadpool->domains_lock);
 
 	if (threadpool->suspended)
 		return FALSE;
@@ -886,7 +886,7 @@ monitor_thread (void)
 			continue;
 
 		MONO_PREPARE_BLOCKING;
-		mono_mutex_lock (&threadpool->active_threads_lock);
+		mono_os_mutex_lock (&threadpool->active_threads_lock);
 		for (i = 0; i < threadpool->working_threads->len; ++i) {
 			thread = g_ptr_array_index (threadpool->working_threads, i);
 			if ((thread->state & ThreadState_WaitSleepJoin) == 0) {
@@ -894,7 +894,7 @@ monitor_thread (void)
 				break;
 			}
 		}
-		mono_mutex_unlock (&threadpool->active_threads_lock);
+		mono_os_mutex_unlock (&threadpool->active_threads_lock);
 		MONO_FINISH_BLOCKING;
 
 		if (all_waitsleepjoin) {
@@ -1249,7 +1249,7 @@ heuristic_adjust (void)
 {
 	g_assert (threadpool);
 
-	if (mono_mutex_trylock (&threadpool->heuristic_lock) == 0) {
+	if (mono_os_mutex_trylock (&threadpool->heuristic_lock) == 0) {
 		gint32 completions = InterlockedExchange (&threadpool->heuristic_completions, 0);
 		guint32 sample_end = mono_msec_ticks ();
 		guint32 sample_duration = sample_end - threadpool->heuristic_sample_start;
@@ -1270,7 +1270,7 @@ heuristic_adjust (void)
 			threadpool->heuristic_last_adjustment = mono_msec_ticks ();
 		}
 
-		mono_mutex_unlock (&threadpool->heuristic_lock);
+		mono_os_mutex_unlock (&threadpool->heuristic_lock);
 	}
 }
 

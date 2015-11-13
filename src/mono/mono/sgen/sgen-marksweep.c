@@ -271,9 +271,9 @@ add_scanned_object (void *ptr)
 	if (!binary_protocol_is_enabled ())
 		return;
 
-	mono_mutex_lock (&scanned_objects_list_lock);
+	mono_os_mutex_lock (&scanned_objects_list_lock);
 	sgen_pointer_queue_add (&scanned_objects_list, ptr);
-	mono_mutex_unlock (&scanned_objects_list_lock);
+	mono_os_mutex_unlock (&scanned_objects_list_lock);
 }
 #endif
 
@@ -2504,7 +2504,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 #endif
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
-	mono_mutex_init (&scanned_objects_list_lock);
+	mono_os_mutex_init (&scanned_objects_list_lock);
 #endif
 
 	SGEN_ASSERT (0, SGEN_MAX_SMALL_OBJ_SIZE <= MS_BLOCK_FREE / 2, "MAX_SMALL_OBJ_SIZE must be at most MS_BLOCK_FREE / 2");

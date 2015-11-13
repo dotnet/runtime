@@ -41,8 +41,8 @@ static GSList *cached_info_list;
 /* Statistics */
 static int unwind_info_size;
 
-#define unwind_lock() mono_mutex_lock (&unwind_mutex)
-#define unwind_unlock() mono_mutex_unlock (&unwind_mutex)
+#define unwind_lock() mono_os_mutex_lock (&unwind_mutex)
+#define unwind_unlock() mono_os_mutex_unlock (&unwind_mutex)
 
 #ifdef TARGET_AMD64
 static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
@@ -632,7 +632,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 void
 mono_unwind_init (void)
 {
-	mono_mutex_init_recursive (&unwind_mutex);
+	mono_os_mutex_init_recursive (&unwind_mutex);
 
 	mono_counters_register ("Unwind info size", MONO_COUNTER_JIT | MONO_COUNTER_INT, &unwind_info_size);
 }
@@ -642,7 +642,7 @@ mono_unwind_cleanup (void)
 {
 	int i;
 
-	mono_mutex_destroy (&unwind_mutex);
+	mono_os_mutex_destroy (&unwind_mutex);
 
 	if (!cached_info)
 		return;

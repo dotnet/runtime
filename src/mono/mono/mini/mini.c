@@ -82,8 +82,8 @@ int mono_break_at_bb_bb_num;
 gboolean mono_do_x86_stack_align = TRUE;
 gboolean mono_using_xdebug;
 
-#define mono_jit_lock() mono_mutex_lock (&jit_mutex)
-#define mono_jit_unlock() mono_mutex_unlock (&jit_mutex)
+#define mono_jit_lock() mono_os_mutex_lock (&jit_mutex)
+#define mono_jit_unlock() mono_os_mutex_unlock (&jit_mutex)
 static mono_mutex_t jit_mutex;
 
 MonoBackend *current_backend;
@@ -213,8 +213,8 @@ typedef struct MonoJumpTableChunk {
 } MonoJumpTableChunk;
 
 static MonoJumpTableChunk* g_jumptable;
-#define mono_jumptable_lock() mono_mutex_lock (&jumptable_mutex)
-#define mono_jumptable_unlock() mono_mutex_unlock (&jumptable_mutex)
+#define mono_jumptable_lock() mono_os_mutex_lock (&jumptable_mutex)
+#define mono_jumptable_unlock() mono_os_mutex_unlock (&jumptable_mutex)
 static mono_mutex_t jumptable_mutex;
 
 static  MonoJumpTableChunk*
@@ -230,7 +230,7 @@ void
 mono_jumptable_init (void)
 {
 	if (g_jumptable == NULL) {
-		mono_mutex_init_recursive (&jumptable_mutex);
+		mono_os_mutex_init_recursive (&jumptable_mutex);
 		g_jumptable = mono_create_jumptable_chunk (DEFAULT_JUMPTABLE_CHUNK_ELEMENTS);
 	}
 }
@@ -286,7 +286,7 @@ mono_jumptable_cleanup (void)
 			current = prev;
 		}
 		g_jumptable = NULL;
-		mono_mutex_destroy (&jumptable_mutex);
+		mono_os_mutex_destroy (&jumptable_mutex);
 	}
 }
 
@@ -4465,7 +4465,7 @@ mini_get_underlying_type (MonoType *type)
 void
 mini_jit_init (void)
 {
-	mono_mutex_init_recursive (&jit_mutex);
+	mono_os_mutex_init_recursive (&jit_mutex);
 #ifndef DISABLE_JIT
 	current_backend = g_new0 (MonoBackend, 1);
 	init_backend (current_backend);

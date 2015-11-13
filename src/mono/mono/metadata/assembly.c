@@ -37,7 +37,7 @@
 #include <mono/metadata/cil-coff.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-os-mutex.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -182,8 +182,8 @@ mono_set_corlib_data (void *data, size_t size)
 static char* unquote (const char *str);
 
 /* This protects loaded_assemblies and image->references */
-#define mono_assemblies_lock() mono_mutex_lock (&assemblies_mutex)
-#define mono_assemblies_unlock() mono_mutex_unlock (&assemblies_mutex)
+#define mono_assemblies_lock() mono_os_mutex_lock (&assemblies_mutex)
+#define mono_assemblies_unlock() mono_os_mutex_unlock (&assemblies_mutex)
 static mono_mutex_t assemblies_mutex;
 
 /* If defined, points to the bundled assembly information */
@@ -752,8 +752,8 @@ mono_assemblies_init (void)
 	check_path_env ();
 	check_extra_gac_path_env ();
 
-	mono_mutex_init_recursive (&assemblies_mutex);
-	mono_mutex_init (&assembly_binding_mutex);
+	mono_os_mutex_init_recursive (&assemblies_mutex);
+	mono_os_mutex_init (&assembly_binding_mutex);
 }
 
 static void
@@ -3248,8 +3248,8 @@ mono_assemblies_cleanup (void)
 {
 	GSList *l;
 
-	mono_mutex_destroy (&assemblies_mutex);
-	mono_mutex_destroy (&assembly_binding_mutex);
+	mono_os_mutex_destroy (&assemblies_mutex);
+	mono_os_mutex_destroy (&assembly_binding_mutex);
 
 	for (l = loaded_assembly_bindings; l; l = l->next) {
 		MonoAssemblyBindingInfo *info = l->data;

@@ -39,7 +39,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <stdint.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/atomic.h"
-#include "mono/utils/mono-mutex.h"
+#include "mono/utils/mono-os-mutex.h"
 #include "mono/sgen/sgen-conf.h"
 #include "mono/sgen/sgen-hash-table.h"
 #include "mono/sgen/sgen-protocol.h"
@@ -89,23 +89,19 @@ struct _GCMemSection {
 #define LOCK_DECLARE(name) mono_mutex_t name
 /* if changing LOCK_INIT to something that isn't idempotent, look at
    its use in mono_gc_base_init in sgen-gc.c */
-#define LOCK_INIT(name)	mono_mutex_init (&(name))
-#define LOCK_GC do {						\
-		MONO_TRY_BLOCKING	\
-		mono_mutex_lock (&gc_mutex);			\
-		MONO_FINISH_TRY_BLOCKING	\
-	} while (0)
+#define LOCK_INIT(name)	mono_os_mutex_init (&(name))
+#define LOCK_GC do { sgen_gc_lock (); } while (0)
 #define UNLOCK_GC do { sgen_gc_unlock (); } while (0)
 
 extern LOCK_DECLARE (sgen_interruption_mutex);
 
 #define LOCK_INTERRUPTION do {	\
 	MONO_TRY_BLOCKING	\
-	mono_mutex_lock (&sgen_interruption_mutex);	\
+	mono_os_mutex_lock (&sgen_interruption_mutex);	\
 	MONO_FINISH_TRY_BLOCKING	\
 } while (0)
 
-#define UNLOCK_INTERRUPTION mono_mutex_unlock (&sgen_interruption_mutex)
+#define UNLOCK_INTERRUPTION mono_os_mutex_unlock (&sgen_interruption_mutex)
 
 /* FIXME: Use InterlockedAdd & InterlockedAdd64 to reduce the CAS cost. */
 #define SGEN_CAS	InterlockedCompareExchange

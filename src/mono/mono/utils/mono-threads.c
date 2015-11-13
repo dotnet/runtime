@@ -16,7 +16,7 @@
 #endif
 
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-semaphore.h>
+#include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/hazard-pointer.h>
@@ -25,7 +25,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-lazy-init.h>
-
+#include <mono/utils/mono-os-mutex.h>
 
 #include <errno.h>
 
@@ -77,7 +77,7 @@ mono_threads_notify_initiator_of_abort (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-ABORT] %p\n", mono_thread_info_get_tid (info));
 	InterlockedIncrement (&abort_posts);
-	mono_sem_post (&suspend_semaphore);
+	mono_os_sem_post (&suspend_semaphore);
 }
 
 void
@@ -85,7 +85,7 @@ mono_threads_notify_initiator_of_suspend (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-SUSPEND] %p\n", mono_thread_info_get_tid (info));
 	InterlockedIncrement (&suspend_posts);
-	mono_sem_post (&suspend_semaphore);
+	mono_os_sem_post (&suspend_semaphore);
 }
 
 void
@@ -93,7 +93,7 @@ mono_threads_notify_initiator_of_resume (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-RESUME] %p\n", mono_thread_info_get_tid (info));
 	InterlockedIncrement (&resume_posts);
-	mono_sem_post (&suspend_semaphore);
+	mono_os_sem_post (&suspend_semaphore);
 }
 
 static gboolean
@@ -132,7 +132,7 @@ static void
 resume_self_suspended (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("**BEGIN self-resume %p\n", mono_thread_info_get_tid (info));
-	mono_sem_post (&info->resume_semaphore);
+	mono_os_sem_post (&info->resume_semaphore);
 }
 
 void
@@ -140,7 +140,7 @@ mono_thread_info_wait_for_resume (MonoThreadInfo* info)
 {
 	int res;
 	THREADS_SUSPEND_DEBUG ("**WAIT self-resume %p\n", mono_thread_info_get_tid (info));
-	res = mono_sem_wait (&info->resume_semaphore, MONO_SEM_FLAGS_NONE);
+	res = mono_os_sem_wait (&info->resume_semaphore, MONO_SEM_FLAGS_NONE);
 	g_assert (res != -1);
 }
 
@@ -148,7 +148,7 @@ static void
 resume_blocking_suspended (MonoThreadInfo* info)
 {
 	THREADS_SUSPEND_DEBUG ("**BEGIN blocking-resume %p\n", mono_thread_info_get_tid (info));
-	mono_sem_post (&info->resume_semaphore);
+	mono_os_sem_post (&info->resume_semaphore);
 }
 
 void
@@ -227,7 +227,7 @@ mono_threads_wait_pending_operations (void)
 		for (i = 0; i < pending_suspends; ++i) {
 			THREADS_SUSPEND_DEBUG ("[INITIATOR-WAIT-WAITING]\n");
 			InterlockedIncrement (&waits_done);
-			if (!mono_sem_timedwait (&suspend_semaphore, SLEEP_DURATION_BEFORE_ABORT, MONO_SEM_FLAGS_NONE))
+			if (!mono_os_sem_timedwait (&suspend_semaphore, SLEEP_DURATION_BEFORE_ABORT, MONO_SEM_FLAGS_NONE))
 				continue;
 			mono_stopwatch_stop (&suspension_time);
 
@@ -310,7 +310,7 @@ free_thread_info (gpointer mem)
 {
 	MonoThreadInfo *info = (MonoThreadInfo *) mem;
 
-	mono_sem_destroy (&info->resume_semaphore);
+	mono_os_sem_destroy (&info->resume_semaphore);
 	mono_threads_platform_free (info);
 
 	g_free (info);
@@ -338,7 +338,7 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	mono_thread_info_set_tid (info, mono_native_thread_id_get ());
 	info->small_id = small_id;
 
-	mono_sem_init (&info->resume_semaphore, 0);
+	mono_os_sem_init (&info->resume_semaphore, 0);
 
 	/*set TLS early so SMR works */
 	mono_native_tls_set_value (thread_info_key, info);
@@ -633,8 +633,8 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 
 	unified_suspend_enabled = g_getenv ("MONO_ENABLE_UNIFIED_SUSPEND") != NULL || mono_threads_is_coop_enabled ();
 
-	mono_sem_init (&global_suspend_semaphore, 1);
-	mono_sem_init (&suspend_semaphore, 0);
+	mono_os_sem_init (&global_suspend_semaphore, 1);
+	mono_os_sem_init (&suspend_semaphore, 0);
 
 	mono_lls_init (&thread_list, NULL);
 	mono_thread_smr_init ();
@@ -1024,7 +1024,7 @@ mono_thread_info_suspend_lock (void)
 {
 	int res;
 	MONO_TRY_BLOCKING;
-	res = mono_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
+	res = mono_os_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
 	g_assert (res != -1);
 	MONO_FINISH_TRY_BLOCKING;
 }
@@ -1032,7 +1032,7 @@ mono_thread_info_suspend_lock (void)
 void
 mono_thread_info_suspend_unlock (void)
 {
-	mono_sem_post (&global_suspend_semaphore);
+	mono_os_sem_post (&global_suspend_semaphore);
 }
 
 /*
@@ -1153,16 +1153,16 @@ static mono_cond_t sleep_cond;
 static void
 sleep_initialize (void)
 {
-	mono_mutex_init (&sleep_mutex);
-	mono_cond_init (&sleep_cond);
+	mono_os_mutex_init (&sleep_mutex);
+	mono_os_cond_init (&sleep_cond);
 }
 
 static void
 sleep_interrupt (gpointer data)
 {
-	mono_mutex_lock (&sleep_mutex);
-	mono_cond_broadcast (&sleep_cond);
-	mono_mutex_unlock (&sleep_mutex);
+	mono_os_mutex_lock (&sleep_mutex);
+	mono_os_cond_broadcast (&sleep_cond);
+	mono_os_mutex_unlock (&sleep_mutex);
 }
 
 static inline guint32
@@ -1186,28 +1186,28 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 
 	mono_lazy_initialize (&sleep_init, sleep_initialize);
 
-	mono_mutex_lock (&sleep_mutex);
+	mono_os_mutex_lock (&sleep_mutex);
 
 	for (now = mono_msec_ticks (); ms == INFINITE || now - start < ms; now = mono_msec_ticks ()) {
 		mono_thread_info_install_interrupt (sleep_interrupt, NULL, alerted);
 		if (*alerted) {
-			mono_mutex_unlock (&sleep_mutex);
+			mono_os_mutex_unlock (&sleep_mutex);
 			return WAIT_IO_COMPLETION;
 		}
 
 		if (ms < INFINITE)
-			mono_cond_timedwait_ms (&sleep_cond, &sleep_mutex, end - now);
+			mono_os_cond_timedwait_ms (&sleep_cond, &sleep_mutex, end - now);
 		else
-			mono_cond_wait (&sleep_cond, &sleep_mutex);
+			mono_os_cond_wait (&sleep_cond, &sleep_mutex);
 
 		mono_thread_info_uninstall_interrupt (alerted);
 		if (*alerted) {
-			mono_mutex_unlock (&sleep_mutex);
+			mono_os_mutex_unlock (&sleep_mutex);
 			return WAIT_IO_COMPLETION;
 		}
 	}
 
-	mono_mutex_unlock (&sleep_mutex);
+	mono_os_mutex_unlock (&sleep_mutex);
 
 	return 0;
 }

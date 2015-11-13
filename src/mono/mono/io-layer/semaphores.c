@@ -22,8 +22,6 @@
 #include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/semaphore-private.h>
-
-#include <mono/utils/mono-mutex.h>
 #include <mono/utils/mono-once.h>
 
 #if 0

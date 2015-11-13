@@ -316,7 +316,7 @@ selector_thread (gpointer data)
 		gint i, j;
 		gint res;
 
-		mono_mutex_lock (&threadpool_io->updates_lock);
+		mono_os_mutex_lock (&threadpool_io->updates_lock);
 
 		for (i = 0; i < threadpool_io->updates_size; ++i) {
 			ThreadPoolIOUpdate *update = &threadpool_io->updates [i];
@@ -399,14 +399,14 @@ selector_thread (gpointer data)
 			}
 		}
 
-		mono_cond_broadcast (&threadpool_io->updates_cond);
+		mono_os_cond_broadcast (&threadpool_io->updates_cond);
 
 		if (threadpool_io->updates_size > 0) {
 			threadpool_io->updates_size = 0;
 			memset (&threadpool_io->updates, 0, UPDATES_CAPACITY * sizeof (ThreadPoolIOUpdate));
 		}
 
-		mono_mutex_unlock (&threadpool_io->updates_lock);
+		mono_os_mutex_unlock (&threadpool_io->updates_lock);
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: wai");
 
@@ -432,7 +432,7 @@ update_get_new (void)
 		/* we wait for updates to be applied in the selector_thread and we loop
 		 * as long as none are available. if it happends too much, then we need
 		 * to increase UPDATES_CAPACITY */
-		mono_cond_wait (&threadpool_io->updates_cond, &threadpool_io->updates_lock);
+		mono_os_cond_wait (&threadpool_io->updates_cond, &threadpool_io->updates_lock);
 	}
 
 	g_assert (threadpool_io->updates_size < UPDATES_CAPACITY);
@@ -506,8 +506,8 @@ initialize (void)
 	threadpool_io = g_new0 (ThreadPoolIO, 1);
 	g_assert (threadpool_io);
 
-	mono_mutex_init_recursive (&threadpool_io->updates_lock);
-	mono_cond_init (&threadpool_io->updates_cond);
+	mono_os_mutex_init_recursive (&threadpool_io->updates_lock);
+	mono_os_cond_init (&threadpool_io->updates_cond);
 	mono_gc_register_root ((void*)&threadpool_io->updates [0], sizeof (threadpool_io->updates), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_THREAD_POOL, "i/o thread pool updates list");
 
 	threadpool_io->updates_size = 0;
@@ -541,8 +541,8 @@ cleanup (void)
 	while (io_selector_running)
 		g_usleep (1000);
 
-	mono_mutex_destroy (&threadpool_io->updates_lock);
-	mono_cond_destroy (&threadpool_io->updates_cond);
+	mono_os_mutex_destroy (&threadpool_io->updates_lock);
+	mono_os_cond_destroy (&threadpool_io->updates_cond);
 
 	threadpool_io->backend.cleanup ();
 
@@ -583,7 +583,7 @@ ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJob *job)
 
 	mono_lazy_initialize (&io_status, initialize);
 
-	mono_mutex_lock (&threadpool_io->updates_lock);
+	mono_os_mutex_lock (&threadpool_io->updates_lock);
 
 	update = update_get_new ();
 	update->type = UPDATE_ADD;
@@ -593,7 +593,7 @@ ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJob *job)
 
 	selector_thread_wakeup ();
 
-	mono_mutex_unlock (&threadpool_io->updates_lock);
+	mono_os_mutex_unlock (&threadpool_io->updates_lock);
 }
 
 void
@@ -610,7 +610,7 @@ mono_threadpool_ms_io_remove_socket (int fd)
 	if (!mono_lazy_is_initialized (&io_status))
 		return;
 
-	mono_mutex_lock (&threadpool_io->updates_lock);
+	mono_os_mutex_lock (&threadpool_io->updates_lock);
 
 	update = update_get_new ();
 	update->type = UPDATE_REMOVE_SOCKET;
@@ -619,9 +619,9 @@ mono_threadpool_ms_io_remove_socket (int fd)
 
 	selector_thread_wakeup ();
 
-	mono_cond_wait (&threadpool_io->updates_cond, &threadpool_io->updates_lock);
+	mono_os_cond_wait (&threadpool_io->updates_cond, &threadpool_io->updates_lock);
 
-	mono_mutex_unlock (&threadpool_io->updates_lock);
+	mono_os_mutex_unlock (&threadpool_io->updates_lock);
 }
 
 void
@@ -632,7 +632,7 @@ mono_threadpool_ms_io_remove_domain_jobs (MonoDomain *domain)
 	if (!mono_lazy_is_initialized (&io_status))
 		return;
 
-	mono_mutex_lock (&threadpool_io->updates_lock);
+	mono_os_mutex_lock (&threadpool_io->updates_lock);
 
 	update = update_get_new ();
 	update->type = UPDATE_REMOVE_DOMAIN;
@@ -641,9 +641,9 @@ mono_threadpool_ms_io_remove_domain_jobs (MonoDomain *domain)
 
 	selector_thread_wakeup ();
 
-	mono_cond_wait (&threadpool_io->updates_cond, &threadpool_io->updates_lock);
+	mono_os_cond_wait (&threadpool_io->updates_cond, &threadpool_io->updates_lock);
 
-	mono_mutex_unlock (&threadpool_io->updates_lock);
+	mono_os_mutex_unlock (&threadpool_io->updates_lock);
 }
 
 #else
