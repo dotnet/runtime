@@ -696,8 +696,8 @@ static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, 
     // If the candidate is *.example.org then the smallest we would match is a.example.org, which is the same
     // length. So anything longer than what we're matching against isn't valid.
 
-    // This assumption might not hold under IDNA, it might need to be more sophisticated
-    // "UTF character string length"
+    // Since the IDNA punycode conversion was applied already this holds even
+    // in Unicode requests.
     if (candidate->length > cchHostname)
     {
         return 0;
@@ -819,10 +819,8 @@ int32_t CheckX509Hostname(X509* x509, const char* hostname, int32_t cchHostname)
     char readSubject = 1;
     int success = 0;
 
-    // RFC2818 says that if ANY dNSName alternative name field is matched then we
-    // should ignore the subject common name.
-
-    // TODO (3446): Match using IDNA rules.
+    // RFC2818 says that if ANY dNSName alternative name field is present then
+    // we should ignore the subject common name.
 
     if (san)
     {
