@@ -1755,7 +1755,7 @@
           "lib/dotnet/xunit.assert.dll": {}
         }
       },
-      "xunit.console.netcore/1.0.2-prerelease-00101": {
+      "xunit.console.netcore/1.0.2-prerelease-00120": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -2796,8 +2796,8 @@
         "native": {
           "runtimes/win7-x64/native/API-MS-Win-Base-Util-L1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-com-l1-1-0.dll": {},
-          "runtimes/win7-x64/native/api-ms-win-core-com-private-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-comm-l1-1-0.dll": {},
+          "runtimes/win7-x64/native/api-ms-win-core-com-private-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-console-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-console-l2-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-datetime-l1-1-0.dll": {},
@@ -2860,13 +2860,13 @@
           "runtimes/win7-x64/native/api-ms-win-core-shlwapi-obsolete-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-shutdown-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-shutdown-l1-1-1.dll": {},
+          "runtimes/win7-x64/native/API-MS-Win-Core-StringAnsi-L1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-string-l1-1-0.dll": {},
           "runtimes/win7-x64/native/API-MS-Win-Core-String-L2-1-0.dll": {},
-          "runtimes/win7-x64/native/api-ms-win-core-string-obsolete-l1-1-0.dll": {},
-          "runtimes/win7-x64/native/api-ms-win-core-string-obsolete-l1-1-1.dll": {},
-          "runtimes/win7-x64/native/API-MS-Win-Core-StringAnsi-L1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-stringloader-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-stringloader-l1-1-1.dll": {},
+          "runtimes/win7-x64/native/api-ms-win-core-string-obsolete-l1-1-0.dll": {},
+          "runtimes/win7-x64/native/api-ms-win-core-string-obsolete-l1-1-1.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-synch-l1-1-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-synch-l1-2-0.dll": {},
           "runtimes/win7-x64/native/api-ms-win-core-sysinfo-l1-1-0.dll": {},
@@ -4526,7 +4526,7 @@
           "lib/dotnet/xunit.assert.dll": {}
         }
       },
-      "xunit.console.netcore/1.0.2-prerelease-00101": {
+      "xunit.console.netcore/1.0.2-prerelease-00120": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -5570,8 +5570,8 @@
         "native": {
           "runtimes/win7-x86/native/API-MS-Win-Base-Util-L1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-com-l1-1-0.dll": {},
-          "runtimes/win7-x86/native/api-ms-win-core-com-private-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-comm-l1-1-0.dll": {},
+          "runtimes/win7-x86/native/api-ms-win-core-com-private-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-console-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-console-l2-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-datetime-l1-1-0.dll": {},
@@ -5634,13 +5634,13 @@
           "runtimes/win7-x86/native/api-ms-win-core-shlwapi-obsolete-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-shutdown-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-shutdown-l1-1-1.dll": {},
+          "runtimes/win7-x86/native/API-MS-Win-Core-StringAnsi-L1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-string-l1-1-0.dll": {},
           "runtimes/win7-x86/native/API-MS-Win-Core-String-L2-1-0.dll": {},
-          "runtimes/win7-x86/native/api-ms-win-core-string-obsolete-l1-1-0.dll": {},
-          "runtimes/win7-x86/native/api-ms-win-core-string-obsolete-l1-1-1.dll": {},
-          "runtimes/win7-x86/native/API-MS-Win-Core-StringAnsi-L1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-stringloader-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-stringloader-l1-1-1.dll": {},
+          "runtimes/win7-x86/native/api-ms-win-core-string-obsolete-l1-1-0.dll": {},
+          "runtimes/win7-x86/native/api-ms-win-core-string-obsolete-l1-1-1.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-synch-l1-1-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-synch-l1-2-0.dll": {},
           "runtimes/win7-x86/native/api-ms-win-core-sysinfo-l1-1-0.dll": {},
@@ -7300,7 +7300,7 @@
           "lib/dotnet/xunit.assert.dll": {}
         }
       },
-      "xunit.console.netcore/1.0.2-prerelease-00101": {
+      "xunit.console.netcore/1.0.2-prerelease-00120": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -9969,7 +9969,7 @@
           "lib/dotnet/xunit.assert.dll": {}
         }
       },
-      "xunit.console.netcore/1.0.2-prerelease-00101": {
+      "xunit.console.netcore/1.0.2-prerelease-00120": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -12636,7 +12636,7 @@
           "lib/dotnet/xunit.assert.dll": {}
         }
       },
-      "xunit.console.netcore/1.0.2-prerelease-00101": {
+      "xunit.console.netcore/1.0.2-prerelease-00120": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -19058,16 +19058,16 @@
         "xunit.assert.nuspec"
       ]
     },
-    "xunit.console.netcore/1.0.2-prerelease-00101": {
+    "xunit.console.netcore/1.0.2-prerelease-00120": {
       "type": "package",
-      "sha512": "RZn6xkGDXPsXjzhpna8LDdbFBeqB0WDmHZmmyoqHmrrtiIYBSAoaXzdvqjKu4Ic+MrRNfaXwYZIun/+yn4pxEQ==",
+      "sha512": "gi/pAamjwZGT2CCcMAQ5m5Oct2YP38xY6VyMs2MCDLMc0GeXmRY64/Oke5oDIYu+3IN+wiovjkDq89jZZ4kTmA==",
       "files": [
         "lib/aspnetcore50/xunit.console.netcore.exe",
         "lib/dnxcore50/_._",
         "lib/dotnet/_._",
         "runtimes/any/native/xunit.console.netcore.exe",
-        "xunit.console.netcore.1.0.2-prerelease-00101.nupkg",
-        "xunit.console.netcore.1.0.2-prerelease-00101.nupkg.sha512",
+        "xunit.console.netcore.1.0.2-prerelease-00120.nupkg",
+        "xunit.console.netcore.1.0.2-prerelease-00120.nupkg.sha512",
         "xunit.console.netcore.nuspec"
       ]
     },
@@ -19204,7 +19204,7 @@
       "Microsoft.DotNet.xunit.performance.analysis >= 1.0.0-alpha-build0025",
       "Microsoft.DotNet.xunit.performance.runner.Windows >= 1.0.0-alpha-build0025",
       "xunit >= 2.1.0",
-      "xunit.console.netcore >= 1.0.2-prerelease-00101",
+      "xunit.console.netcore >= 1.0.2-prerelease-00120",
       "xunit.runner.utility >= 2.1.0"
     ],
     "DNXCore,Version=v5.0": []
