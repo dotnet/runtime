@@ -224,7 +224,7 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_R13(ctx) (((ucontext_t*)(ctx))->sc_r13)
 	#define UCONTEXT_REG_R14(ctx) (((ucontext_t*)(ctx))->sc_r14)
 	#define UCONTEXT_REG_R15(ctx) (((ucontext_t*)(ctx))->sc_r15)
-#else
+#elif !defined(HOST_WIN32)
 #define UCONTEXT_GREGS(ctx)	((guint64*)&(((ucontext_t*)(ctx))->uc_mcontext.gregs))
 #endif
 
