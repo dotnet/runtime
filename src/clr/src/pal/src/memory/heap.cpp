@@ -309,8 +309,6 @@ HeapFree(
         goto done;
     }
 
-    *((DWORD *) lpMem) = 0;
-
     bRetVal = TRUE;
 #ifdef __APPLE__
     // This is patterned off of InternalFree in malloc.cpp.
