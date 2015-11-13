@@ -447,24 +447,28 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	case OP_IREM:
 	case OP_IDIV_UN:
 	case OP_IREM_UN:
-		if (cfg->backend->emulate_div && !mono_arch_opcode_needs_emulation (cfg, ins->opcode)) {
-			if (cfg->backend->need_div_check) {
-				int reg1 = alloc_ireg (cfg);
-				int reg2 = alloc_ireg (cfg);
-				/* b == 0 */
-				MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->sreg2, 0);
-				MONO_EMIT_NEW_COND_EXC (cfg, IEQ, "DivideByZeroException");
-				if (ins->opcode == OP_IDIV || ins->opcode == OP_IREM) {
-					/* b == -1 && a == 0x80000000 */
-					MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->sreg2, -1);
-					MONO_EMIT_NEW_UNALU (cfg, OP_ICEQ, reg1, -1);
-					MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->sreg1, 0x80000000);
-					MONO_EMIT_NEW_UNALU (cfg, OP_ICEQ, reg2, -1);
-					MONO_EMIT_NEW_BIALU (cfg, OP_IAND, reg1, reg1, reg2);
-					MONO_EMIT_NEW_ICOMPARE_IMM (cfg, reg1, 1);
-					MONO_EMIT_NEW_COND_EXC (cfg, IEQ, "OverflowException");
-				}
+		if (cfg->backend->need_div_check) {
+			int reg1 = alloc_ireg (cfg);
+			int reg2 = alloc_ireg (cfg);
+			/* b == 0 */
+			MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->sreg2, 0);
+			MONO_EMIT_NEW_COND_EXC (cfg, IEQ, "DivideByZeroException");
+			if (ins->opcode == OP_IDIV || ins->opcode == OP_IREM) {
+				/* b == -1 && a == 0x80000000 */
+				MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->sreg2, -1);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICEQ, reg1, -1);
+				MONO_EMIT_NEW_ICOMPARE_IMM (cfg, ins->sreg1, 0x80000000);
+				MONO_EMIT_NEW_UNALU (cfg, OP_ICEQ, reg2, -1);
+				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, reg1, reg1, reg2);
+				MONO_EMIT_NEW_ICOMPARE_IMM (cfg, reg1, 1);
+				MONO_EMIT_NEW_COND_EXC (cfg, IEQ, "OverflowException");
 			}
+			MONO_EMIT_NEW_BIALU (cfg, ins->opcode, ins->dreg, ins->sreg1, ins->sreg2);
+			NULLIFY_INS (ins);
+			break;
+		}
+
+		if (cfg->backend->emulate_div && !mono_arch_opcode_needs_emulation (cfg, ins->opcode)) {
 			MONO_EMIT_NEW_BIALU (cfg, ins->opcode, ins->dreg, ins->sreg1, ins->sreg2);
 			NULLIFY_INS (ins);
 		} else {
