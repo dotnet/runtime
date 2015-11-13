@@ -6676,12 +6676,14 @@ namespace System.Threading.Tasks
             m_completingTask = completingTask;
         }
 
-        public void ExecuteWorkItem()
+        [SecurityCritical]
+        void IThreadPoolWorkItem.ExecuteWorkItem()
         {
             m_action.Invoke(m_completingTask);
         }
 
-        public void MarkAborted(ThreadAbortException tae)
+        [SecurityCritical]
+        void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae)
         {
             /* NOP */
         }
