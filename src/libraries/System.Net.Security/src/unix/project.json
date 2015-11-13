@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "System.Diagnostics.Contracts": "4.0.0-*",
+    "System.Globalization.Extensions": "4.0.0",
+    "System.Threading": "4.0.0-*",
+    "System.Net.Primitives": "4.0.10-beta-*",
+    "System.Security.Cryptography.OpenSsl": "4.0.0-beta-*",
+    "System.Security.Cryptography.X509Certificates": "4.0.0-beta-*"
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}
