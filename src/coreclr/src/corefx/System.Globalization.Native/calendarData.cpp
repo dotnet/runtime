@@ -556,11 +556,10 @@ extern "C" int32_t EnumCalendarInfo(EnumCalendarInfoCallback callback,
     {
         case ShortDates:
             // ShortDates to map kShort and kMedium in ICU, but also adding the "yMd"
-            // skeleton as well, as this
-            // closely matches what is used on Windows
-            return InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_NUM_MONTH_DAY_UCHAR, callback, context) &&
-                   InvokeCallbackForDatePattern(locale, UDAT_SHORT, callback, context) &&
-                   InvokeCallbackForDatePattern(locale, UDAT_MEDIUM, callback, context);
+            // skeleton as well, as this closely matches what is used on Windows
+            return InvokeCallbackForDatePattern(locale, UDAT_SHORT, callback, context) &&
+                   InvokeCallbackForDatePattern(locale, UDAT_MEDIUM, callback, context) &&
+                   InvokeCallbackForDateTimePattern(locale, UDAT_YEAR_NUM_MONTH_DAY_UCHAR, callback, context);
         case LongDates:
             // LongDates map to kFull and kLong in ICU.
             return InvokeCallbackForDatePattern(locale, UDAT_FULL, callback, context) &&
