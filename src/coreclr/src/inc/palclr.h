@@ -299,6 +299,8 @@
 
 #include "staticcontract.h"
 
+#define HardwareExceptionHolder
+
 // Note: PAL_SEH_RESTORE_GUARD_PAGE is only ever defined in clrex.h, so we only restore guard pages automatically
 // when these macros are used from within the VM.
 #define PAL_SEH_RESTORE_GUARD_PAGE
