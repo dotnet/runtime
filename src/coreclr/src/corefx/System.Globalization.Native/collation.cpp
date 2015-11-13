@@ -72,7 +72,7 @@ Function:
 IndexOf
 */
 extern "C" int32_t
-IndexOf(const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+IndexOf(const char* lpLocaleName, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
@@ -82,7 +82,7 @@ IndexOf(const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, 
 
     if (U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, -1, lpSource, cwSourceLength, pColl, nullptr, &err);
+        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, nullptr, &err);
 
         if (U_SUCCESS(err))
         {
@@ -101,7 +101,7 @@ Function:
 LastIndexOf
 */
 extern "C" int32_t LastIndexOf(
-    const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+    const char* lpLocaleName, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
@@ -111,7 +111,7 @@ extern "C" int32_t LastIndexOf(
 
     if (U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, -1, lpSource, cwSourceLength, pColl, nullptr, &err);
+        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, nullptr, &err);
 
         if (U_SUCCESS(err))
         {
@@ -202,7 +202,7 @@ IndexOfOrdinalIgnoreCase(
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 extern "C" int32_t StartsWith(
-    const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+    const char* lpLocaleName, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     int32_t result = FALSE;
     UErrorCode err = U_ZERO_ERROR;
@@ -210,7 +210,7 @@ extern "C" int32_t StartsWith(
 
     if (U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, -1, lpSource, cwSourceLength, pColl, nullptr, &err);
+        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, nullptr, &err);
         int32_t idx = USEARCH_DONE;
 
         if (U_SUCCESS(err))
@@ -264,7 +264,7 @@ extern "C" int32_t StartsWith(
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 extern "C" int32_t EndsWith(
-    const char* lpLocaleName, const UChar* lpTarget, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+    const char* lpLocaleName, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     int32_t result = FALSE;
     UErrorCode err = U_ZERO_ERROR;
@@ -272,7 +272,7 @@ extern "C" int32_t EndsWith(
 
     if (U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, -1, lpSource, cwSourceLength, pColl, nullptr, &err);
+        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, nullptr, &err);
         int32_t idx = USEARCH_DONE;
 
         if (U_SUCCESS(err))
