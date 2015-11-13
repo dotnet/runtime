@@ -455,6 +455,21 @@ public static unsafe class StringTests
         Assert.Equal(expected, text.EndsWith(value, comparisonType));
     }
 
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/1716", PlatformID.AnyUnix)]
+    [Theory]
+    [InlineData(StringComparison.CurrentCulture)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase)]
+    [InlineData(StringComparison.Ordinal)]
+    [InlineData(StringComparison.OrdinalIgnoreCase)]
+    public static void TestEndsWith_NullInStrings(StringComparison comparison)
+    {
+        Assert.True("\0test".EndsWith("test", comparison));
+        Assert.True("te\0st".EndsWith("e\0st", comparison));
+        Assert.False("te\0st".EndsWith("test", comparison));
+        Assert.False("test\0".EndsWith("test", comparison));
+        Assert.False("test".EndsWith("\0st", comparison));
+    }
+
     [Fact]
     public static void TestEndsWithInvalid()
     {
@@ -653,6 +668,20 @@ public static unsafe class StringTests
         Assert.Equal(expectedResult, source.IndexOf(target.ToString(), startIndex, count, StringComparison.CurrentCulture));
         Assert.Equal(expectedResult, source.IndexOf(target.ToString(), startIndex, count, StringComparison.Ordinal));
         Assert.Equal(expectedResult, source.IndexOf(target.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/1716", PlatformID.AnyUnix)]
+    [InlineData("He\0lo", "He\0lo", 0)]
+    [InlineData("He\0lo", "He\0", 0)]
+    [InlineData("He\0lo", "\0", 2)]
+    [InlineData("He\0lo", "\0lo", 2)]
+    [InlineData("He\0lo", "lo", 3)]
+    [InlineData("Hello", "lo\0", -1)]
+    [InlineData("Hello", "\0lo", -1)]
+    [InlineData("Hello", "l\0o", -1)]
+    public static void TestIndexOf_NullInStrings(string source, char target, int expectedResult)
+    {
+        Assert.Equal(expectedResult, source.IndexOf(target));
     }
 
     [Theory]
@@ -1106,6 +1135,20 @@ public static unsafe class StringTests
         Assert.Equal(expectedResult, source.LastIndexOf(target.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase));
     }
 
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/1716", PlatformID.AnyUnix)]
+    [InlineData("He\0lo", "He\0lo", 0)]
+    [InlineData("He\0lo", "He\0", 0)]
+    [InlineData("He\0lo", "\0", 2)]
+    [InlineData("He\0lo", "\0lo", 2)]
+    [InlineData("He\0lo", "lo", 3)]
+    [InlineData("Hello", "lo\0", -1)]
+    [InlineData("Hello", "\0lo", -1)]
+    [InlineData("Hello", "l\0o", -1)]
+    public static void TestLastIndexOf_NullInStrings(string source, char target, int expectedResult)
+    {
+        Assert.Equal(expectedResult, source.LastIndexOf(target));
+    }
+
     [Theory]
     [MemberData("AllSubstringsAndComparisons", new object[] { "abcde" })]
     public static void TestLastIndexOf_AllSubstrings(string source, string substring, int i, StringComparison comparison)
@@ -1376,6 +1419,21 @@ public static unsafe class StringTests
         Assert.Throws<ArgumentNullException>(() => s.StartsWith(null, StringComparison.CurrentCultureIgnoreCase));
         Assert.Throws<ArgumentNullException>(() => s.StartsWith(null, StringComparison.Ordinal));
         Assert.Throws<ArgumentNullException>(() => s.StartsWith(null, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/1716", PlatformID.AnyUnix)]
+    [Theory]
+    [InlineData(StringComparison.CurrentCulture)]
+    [InlineData(StringComparison.CurrentCultureIgnoreCase)]
+    [InlineData(StringComparison.Ordinal)]
+    [InlineData(StringComparison.OrdinalIgnoreCase)]
+    public static void TestStartsWith_NullInStrings(StringComparison comparison)
+    {
+        Assert.False("\0test".StartsWith("test", comparison));
+        Assert.False("te\0st".StartsWith("test", comparison));
+        Assert.True("te\0st".StartsWith("te\0s", comparison));
+        Assert.True("test\0".StartsWith("test", comparison));
+        Assert.False("test".StartsWith("te\0", comparison));
     }
 
     [Fact]
