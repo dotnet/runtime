@@ -38,6 +38,7 @@ monoutils_sources = \
 	mono-mmap.h  		\
 	mono-mmap-internals.h	\
 	mono-os-mutex.h		\
+	mono-coop-mutex.h		\
 	mono-once.h		\
 	mono-lazy-init.h		\
 	mono-networkinterfaces.c		\
@@ -54,6 +55,7 @@ monoutils_sources = \
 	mono-poll.c		\
 	mono-path.c		\
 	mono-os-semaphore.h	\
+	mono-coop-semaphore.h		\
 	mono-sigcontext.h	\
 	mono-stdlib.c 		\
 	mono-property-hash.h 	\
