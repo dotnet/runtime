@@ -15,8 +15,17 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
 
   <ItemGroup>
-    <Compile Include="ClientWebSocketTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\WebSocketTestServers.cs">
+      <Link>Common\System\Net\WebSocketTestServers.cs</Link>
+    </Compile>
+    <Compile Include="ClientWebSocketTest.cs" />
+    <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="ResourceHelper.cs" />
+    <Compile Include="WebSocketData.cs" />
+    <Compile Include="WebSocketHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>
