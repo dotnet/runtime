@@ -476,6 +476,7 @@ static void thread_cleanup (MonoInternalThread *thread)
 		MONO_GC_UNREGISTER_ROOT (thread->thread_pinning_ref);
 		thread->thread_pinning_ref = NULL;
 	}
+
 }
 
 /*
