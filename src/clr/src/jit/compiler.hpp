@@ -105,7 +105,7 @@ template<typename T>
 inline
 T    genFindLowestBit(T value)
 {
-    return (value & -value);
+    return (value & (0 - value));
 }
 
 /*****************************************************************************/
