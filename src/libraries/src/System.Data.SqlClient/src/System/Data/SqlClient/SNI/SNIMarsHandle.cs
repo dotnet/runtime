@@ -61,7 +61,7 @@ namespace System.Data.SqlClient.SNI
         {
             try
             {
-                SendControlPacket(SNISMUXFlags.SMUX_FIN, false);
+                SendControlPacket(SNISMUXFlags.SMUX_FIN);
             }
             catch (Exception e)
             {
@@ -81,7 +81,7 @@ namespace System.Data.SqlClient.SNI
             _sessionId = sessionId;
             _connection = connection;
             _callbackObject = callbackObject;
-            SendControlPacket(SNISMUXFlags.SMUX_SYN, async);
+            SendControlPacket(SNISMUXFlags.SMUX_SYN);
             _status = TdsEnums.SNI_SUCCESS;
         }
 
@@ -89,8 +89,7 @@ namespace System.Data.SqlClient.SNI
         /// Send control packet
         /// </summary>
         /// <param name="flags">SMUX header flags</param>
-        /// <param name="async">true if packet should be sent asynchronously</param>
-        private void SendControlPacket(SNISMUXFlags flags, bool async)
+        private void SendControlPacket(SNISMUXFlags flags)
         {
             byte[] headerBytes = null;
 
@@ -101,15 +100,8 @@ namespace System.Data.SqlClient.SNI
 
             SNIPacket packet = new SNIPacket(null);
             packet.SetData(headerBytes, SNISMUXHeader.HEADER_LENGTH);
-
-            if (async)
-            {
-                _connection.SendAsync(packet, (sentPacket, error) => { });
-            }
-            else
-            {
-                _connection.Send(packet);
-            }
+            
+            _connection.Send(packet);
         }
 
         /// <summary>
@@ -419,7 +411,7 @@ namespace System.Data.SqlClient.SNI
 
             if (receiveHighwater - receiveHighwaterLastAck > ACK_THRESHOLD)
             {
-                SendControlPacket(SNISMUXFlags.SMUX_ACK, true);
+                SendControlPacket(SNISMUXFlags.SMUX_ACK);
             }
         }
 
