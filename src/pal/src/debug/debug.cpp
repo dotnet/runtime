@@ -69,6 +69,8 @@ using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(DEBUG);
 
+extern "C" void DBG_DebugBreak_End();
+
 #if HAVE_PROCFS_CTL
 #define CTL_ATTACH      "attach"
 #define CTL_DETACH      "detach"
@@ -408,6 +410,19 @@ DebugBreak(
     
     LOGEXIT("DebugBreak returns\n");
     PERF_EXIT(DebugBreak);
+}
+
+/*++
+Function:
+  IsInDebugBreak(addr)
+
+  Returns true if the address is in DBG_DebugBreak.
+
+--*/
+BOOL
+IsInDebugBreak(void *addr)
+{
+    return (addr >= (void *)DBG_DebugBreak) && (addr <= (void *)DBG_DebugBreak_End);
 }
 
 /*++
