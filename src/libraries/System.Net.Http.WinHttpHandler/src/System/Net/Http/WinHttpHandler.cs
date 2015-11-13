@@ -1,16 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -60,7 +57,7 @@ namespace System.Net.Http
         private CookieUsePolicy _cookieUsePolicy = CookieUsePolicy.UseInternalCookieStoreOnly;
         private CookieContainer _cookieContainer = null;
 
-        private SslProtocols _sslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+        private SslProtocols _sslProtocols = SecurityProtocol.DefaultSecurityProtocols;
         private Func<
             HttpRequestMessage,
             X509Certificate2,
@@ -186,14 +183,9 @@ namespace System.Net.Http
 
             set
             {
+                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: false);
+
                 CheckDisposedOrStarted();
-
-                SslProtocols allowedSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
-                if (value == SslProtocols.None || (value & ~allowedSslProtocols) != 0)
-                {
-                    throw new ArgumentOutOfRangeException("value");
-                }
-
                 _sslProtocols = value;
             }
         }

@@ -123,6 +123,9 @@
   <data name="net_securitypackagesupport" xml:space="preserve">
     <value>The requested security package is not supported.</value>
   </data>
+  <data name="net_securityprotocolnotsupported" xml:space="preserve">
+    <value>The requested security protocol is not supported.</value>
+  </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
   </data>
