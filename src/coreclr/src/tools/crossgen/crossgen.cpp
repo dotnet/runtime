@@ -194,7 +194,12 @@ void PrintUsageHelper()
        W("    /CreatePDB <Dir to store PDB> [/lines [<search path for managed PDB>] ]\n")
        W("        When specifying /CreatePDB, the native image should be created\n")
        W("        first, and <assembly name> should be the path to the NI.")
-#endif // NO_NGENPDB
+#elif defined(FEATURE_PERFMAP)
+       W(" Debugging Parameters\n")
+       W("    /CreatePerfMap <Dir to store perf map>\n")
+       W("        When specifying /CreatePerfMap, the native image should be created\n")
+       W("        first, and <assembly name> should be the path to the NI.\n")
+#endif
        );
 }
 
@@ -741,7 +746,58 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argv--;
             argc++;
         }
-#endif // !NO_NGENPDB
+#endif // NO_NGENPDB
+#ifdef FEATURE_PERFMAP
+        else if (MatchParameter(*argv, W("CreatePerfMap")) && (argc > 1))
+        {
+            // syntax: /CreatePerfMap <directory to store perfmap>
+
+            // Parse: /CreatePerfMap
+            // NOTE: We use the same underlying PDB logic.
+            fCreatePDB = true;
+            argv++;
+            argc--;
+
+            // Clear the /fulltrust flag - /CreatePDB does not work with any other flags.
+            dwFlags = dwFlags & ~NGENWORKER_FLAGS_FULLTRUSTDOMAIN;
+
+            // Parse: <directory to store PDB>
+            if (wcscpy_s(
+                wzDirectoryToStorePDB,
+                _countof(wzDirectoryToStorePDB),
+                argv[0]) != 0)
+            {
+                Output(W("Unable to parse output directory to store perfmap"));
+                exit(FAILURE_RESULT);
+            }
+            argv++;
+            argc--;
+
+            // Ensure output dir ends in a backslash
+            if (wzDirectoryToStorePDB[wcslen(wzDirectoryToStorePDB)-1] != DIRECTORY_SEPARATOR_CHAR_W)
+            {
+                if (wcscat_s(
+                        wzDirectoryToStorePDB,
+                        _countof(wzDirectoryToStorePDB),
+                        DIRECTORY_SEPARATOR_STR_W) != 0)
+                {
+                    Output(W("Unable to parse output directory to store perfmap"));
+                    exit(FAILURE_RESULT);
+                }
+            }
+
+            if (argc == 0)
+            {
+                Output(W("The /CreatePerfMap switch requires <directory to store perfmap> and <assembly name>.\n"));
+                exit(FAILURE_RESULT);
+            }
+
+            // Undo last arg iteration, since we do it for all cases at the bottom of
+            // the loop
+            argv--;
+            argc++;
+        }
+#endif // FEATURE_PERFMAP
         else
         {
             if (argc == 1)

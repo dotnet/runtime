@@ -147,4 +147,10 @@ if (WIN32)
   set_source_files_properties(../mscorlib.cpp PROPERTIES COMPILE_FLAGS "/Y-")
 endif (WIN32)
 
+if (CLR_CMAKE_PLATFORM_LINUX)
+  list(APPEND VM_CROSSGEN_SOURCES
+    ../perfmap.cpp
+  )
+endif (CLR_CMAKE_PLATFORM_LINUX)
+
 add_library(cee_crossgen ${VM_CROSSGEN_SOURCES})
