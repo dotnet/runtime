@@ -138,7 +138,8 @@ namespace System.Net.WebHeaderCollectionTests
 
         public static object[][] InvalidNames = {
             new object[] { "(" },
-            new object[] { "\u1234" }
+            new object[] { "\u1234" },
+            new object[] { "\u0019" }
         };
 
         [Theory, MemberData("InvalidNames")]
@@ -148,21 +149,12 @@ namespace System.Net.WebHeaderCollectionTests
             Assert.Throws<ArgumentException>(() => w[name] = "test");
         }
 
-        // #2370: this test should be combined with CheckBadChars_InvalidName once xUnit
-        //        has been updated to avoid failures associated with logging text that
-        //        contains low code points.
-        [Fact]
-        public void CheckBadChars_InvalidName_LowCodePoint()
-        {
-            WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>(() => w["\u0019"] = "test");
-        }
-
         public static object[][] InvalidValues = {
             new object[] { "value1\rvalue2\r" },
             new object[] { "value1\nvalue2\r" },
             new object[] { "value1\u007fvalue2" },
-            new object[] { "value1\r\nvalue2" }
+            new object[] { "value1\r\nvalue2" },
+            new object[] { "value1\u0019value2" }
         };
 
         [Theory, MemberData("InvalidValues")]
@@ -170,16 +162,6 @@ namespace System.Net.WebHeaderCollectionTests
         {
             WebHeaderCollection w = new WebHeaderCollection();
             Assert.Throws<ArgumentException>(() => w["custom"] = value);
-        }
-
-        // #2370: this test should be combined with CheckBadChars_InvalidValue once xUnit
-        //        has been updated to avoid failures associated with logging text that
-        //        contains low code points.
-        [Fact]
-        public void CheckBadChars_InvalidValue_LowCodePoint()
-        {
-            WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>(() => w["custom"] = "value1\u0019value2");
         }
 
         public static object[][] ValidValues = {
