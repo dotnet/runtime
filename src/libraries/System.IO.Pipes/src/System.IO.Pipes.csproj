@@ -23,7 +23,7 @@
   <!-- Compiled Source Files -->
   <ItemGroup>
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.cs" />
-    <Compile Include="System\IO\__Error.cs" />
+    <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeClientStream.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.cs" />
     <Compile Include="System\IO\Pipes\PipeDirection.cs" />

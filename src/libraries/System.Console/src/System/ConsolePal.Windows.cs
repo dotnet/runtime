@@ -630,7 +630,7 @@ namespace System
 
             public override void Flush()
             {
-                if (_handle == IntPtr.Zero) throw __Error.GetFileNotOpen();
+                if (_handle == IntPtr.Zero) throw Error.GetFileNotOpen();
                 base.Flush();
             }
 

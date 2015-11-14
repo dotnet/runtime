@@ -73,7 +73,7 @@ namespace System.IO
                     bool r = Interop.mincore.GetVolumeInformation(Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileSystemNameLen);
                     if (!r)
                     {
-                        throw __Error.GetExceptionForLastWin32DriveError(Name);
+                        throw Error.GetExceptionForLastWin32DriveError(Name);
                     }
                 }
                 finally
@@ -95,7 +95,7 @@ namespace System.IO
                 {
                     bool r = Interop.mincore.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
                     if (!r)
-                        throw __Error.GetExceptionForLastWin32DriveError(Name);
+                        throw Error.GetExceptionForLastWin32DriveError(Name);
                 }
                 finally
                 {
@@ -116,7 +116,7 @@ namespace System.IO
                 {
                     bool r = Interop.mincore.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
                     if (!r)
-                        throw __Error.GetExceptionForLastWin32DriveError(Name);
+                        throw Error.GetExceptionForLastWin32DriveError(Name);
                 }
                 finally
                 {
@@ -139,7 +139,7 @@ namespace System.IO
                 {
                     bool r = Interop.mincore.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
                     if (!r)
-                        throw __Error.GetExceptionForLastWin32DriveError(Name);
+                        throw Error.GetExceptionForLastWin32DriveError(Name);
                 }
                 finally
                 {
@@ -209,7 +209,7 @@ namespace System.IO
                         // drive doesn't exist.
                         if (errorCode == Interop.mincore.Errors.ERROR_INVALID_DATA)
                             errorCode = Interop.mincore.Errors.ERROR_INVALID_DRIVE;
-                        throw __Error.GetExceptionForWin32DriveError(errorCode, Name);
+                        throw Error.GetExceptionForWin32DriveError(errorCode, Name);
                     }
                 }
                 finally
@@ -231,7 +231,7 @@ namespace System.IO
                         // Provide better message
                         if (errorCode == Interop.mincore.Errors.ERROR_ACCESS_DENIED)
                             throw new UnauthorizedAccessException(SR.InvalidOperation_SetVolumeLabelFailed);
-                        throw __Error.GetExceptionForWin32DriveError(errorCode, Name);
+                        throw Error.GetExceptionForWin32DriveError(errorCode, Name);
                     }
                 }
                 finally

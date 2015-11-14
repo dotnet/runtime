@@ -236,7 +236,7 @@ namespace System.IO.Pipes
             }
             if (State == PipeState.Closed)
             {
-                throw __Error.GetPipeNotOpen();
+                throw Error.GetPipeNotOpen();
             }
         }
     }

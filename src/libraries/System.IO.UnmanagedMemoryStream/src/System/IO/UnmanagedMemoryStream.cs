@@ -312,7 +312,7 @@ namespace System.IO
         /// </summary>
         public override void Flush()
         {
-            if (!_isOpen) throw __Error.GetStreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
         }
 
         /// <summary>
@@ -343,7 +343,7 @@ namespace System.IO
         {
             get
             {
-                if (!_isOpen) throw __Error.GetStreamIsClosed();
+                if (!_isOpen) throw Error.GetStreamIsClosed();
                 return Interlocked.Read(ref _length);
             }
         }
@@ -355,7 +355,7 @@ namespace System.IO
         {
             get
             {
-                if (!_isOpen) throw __Error.GetStreamIsClosed();
+                if (!_isOpen) throw Error.GetStreamIsClosed();
                 return _capacity;
             }
         }
@@ -367,7 +367,7 @@ namespace System.IO
         {
             get
             {
-                if (!CanSeek) throw __Error.GetStreamIsClosed();
+                if (!CanSeek) throw Error.GetStreamIsClosed();
                 Contract.EndContractBlock();
                 return Interlocked.Read(ref _position);
             }
@@ -375,7 +375,7 @@ namespace System.IO
             set
             {
                 if (value < 0) throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
-                if (!CanSeek) throw __Error.GetStreamIsClosed();
+                if (!CanSeek) throw Error.GetStreamIsClosed();
                 Contract.EndContractBlock();
 
                 if (IntPtr.Size == 4)
@@ -401,7 +401,7 @@ namespace System.IO
             get
             {
                 if (_buffer != null) throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-                if (!_isOpen) throw __Error.GetStreamIsClosed();
+                if (!_isOpen) throw Error.GetStreamIsClosed();
 
                 // Use a temp to avoid a race
                 long pos = Interlocked.Read(ref _position);
@@ -414,7 +414,7 @@ namespace System.IO
             set
             {
                 if (_buffer != null) throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-                if (!_isOpen) throw __Error.GetStreamIsClosed();
+                if (!_isOpen) throw Error.GetStreamIsClosed();
                 if (value < _mem) throw new IOException(SR.IO_SeekBeforeBegin);
 
                 Interlocked.Exchange(ref _position, value - _mem);
@@ -441,8 +441,8 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();  // Keep this in sync with contract validation in ReadAsync
 
-            if (!_isOpen) throw __Error.GetStreamIsClosed();
-            if (!CanRead) throw __Error.GetReadNotSupported();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
+            if (!CanRead) throw Error.GetReadNotSupported();
 
             // Use a local variable to avoid a race where another thread 
             // changes our position after we decide we can read some bytes.
@@ -533,8 +533,8 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override int ReadByte()
         {
-            if (!_isOpen) throw __Error.GetStreamIsClosed();
-            if (!CanRead) throw __Error.GetReadNotSupported();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
+            if (!CanRead) throw Error.GetReadNotSupported();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);
@@ -580,7 +580,7 @@ namespace System.IO
         /// <returns></returns>
         public override long Seek(long offset, SeekOrigin loc)
         {
-            if (!_isOpen) throw __Error.GetStreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
             switch (loc)
             {
                 case SeekOrigin.Begin:
@@ -624,8 +624,8 @@ namespace System.IO
             Contract.EndContractBlock();
             if (_buffer != null)
                 throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-            if (!_isOpen) throw __Error.GetStreamIsClosed();
-            if (!CanWrite) throw __Error.GetWriteNotSupported();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
+            if (!CanWrite) throw Error.GetWriteNotSupported();
 
             if (value > _capacity)
                 throw new IOException(SR.IO_FixedCapacity);
@@ -665,8 +665,8 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();  // Keep contract validation in sync with WriteAsync(..)
 
-            if (!_isOpen) throw __Error.GetStreamIsClosed();
-            if (!CanWrite) throw __Error.GetWriteNotSupported();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
+            if (!CanWrite) throw Error.GetWriteNotSupported();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);
@@ -777,8 +777,8 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public override void WriteByte(byte value)
         {
-            if (!_isOpen) throw __Error.GetStreamIsClosed();
-            if (!CanWrite) throw __Error.GetWriteNotSupported();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
+            if (!CanWrite) throw Error.GetWriteNotSupported();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);

@@ -162,7 +162,7 @@ namespace System.IO.Pipes
                     if (_cancellationToken.CanBeCanceled && !_cancellationToken.IsCancellationRequested)
                     {
                         // If this is unexpected abortion
-                        TrySetException(__Error.GetOperationAborted());
+                        TrySetException(Error.GetOperationAborted());
                     }
                     else
                     {

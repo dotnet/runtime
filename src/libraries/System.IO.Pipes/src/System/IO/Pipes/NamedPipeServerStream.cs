@@ -159,11 +159,11 @@ namespace System.IO.Pipes
 
             if (State == PipeState.Closed)
             {
-                throw __Error.GetPipeNotOpen();
+                throw Error.GetPipeNotOpen();
             }
             if (InternalHandle != null && InternalHandle.IsClosed) // only check IsClosed if we have a handle
             {
-                throw __Error.GetPipeNotOpen();
+                throw Error.GetPipeNotOpen();
             }
             if (State == PipeState.Broken)
             {
@@ -189,7 +189,7 @@ namespace System.IO.Pipes
             }
             if ((State == PipeState.Closed) || (InternalHandle != null && InternalHandle.IsClosed))
             {
-                throw __Error.GetPipeNotOpen();
+                throw Error.GetPipeNotOpen();
             }
         }
     }
