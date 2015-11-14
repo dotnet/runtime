@@ -13,7 +13,7 @@ namespace System.IO
     ///     Provides centralized methods for creating exceptions for System.IO.FileSystem.
     /// </summary>
     [Pure]
-    internal static class __Error
+    internal static class Error
     {
         internal static Exception GetEndOfFile()
         {

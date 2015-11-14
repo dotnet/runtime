@@ -94,10 +94,10 @@ namespace System.Threading
                 // We do not let either of these leak and convert them to ArgumentException to 
                 // indicate that the specified handles are invalid.
 
-                if (ex.HResult == System.__HResults.E_HANDLE)         // Bad handle
+                if (ex.HResult == System.HResults.E_HANDLE)         // Bad handle
                     throw new ArgumentException(SR.Argument_InvalidHandle, "handle");
 
-                if (ex.HResult == System.__HResults.E_INVALIDARG)     // Handle already bound or sync handle
+                if (ex.HResult == System.HResults.E_INVALIDARG)     // Handle already bound or sync handle
                     throw new ArgumentException(SR.Argument_AlreadyBoundOrSyncHandle, "handle");
 
                 throw;

@@ -28,7 +28,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <ItemGroup>
-    <Compile Include="System\IO\__Error.cs" />
+    <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Directory.cs" />
     <Compile Include="System\IO\DirectoryInfo.cs" />
     <Compile Include="System\IO\File.cs" />
@@ -83,8 +83,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\__HResults.cs">
-      <Link>Common\System\__HResults.cs</Link>
+    <Compile Include="$(CommonPath)\System\HResults.cs">
+      <Link>Common\System\HResults.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>

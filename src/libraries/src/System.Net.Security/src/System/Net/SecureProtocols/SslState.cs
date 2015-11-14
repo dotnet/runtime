@@ -27,7 +27,7 @@ namespace System.Net.Security
         // TODO (Issue #3114): Implement using TPL instead of APM.
         private StreamAsyncHelper _innerStreamAPM;
 
-        private _SslStream _secureStream;
+        private SslStreamInternal _secureStream;
 
         private FixedSizeReader _reader;
 
@@ -396,14 +396,14 @@ namespace System.Net.Security
             }
         }
 
-        internal _SslStream SecureStream
+        internal SslStreamInternal SecureStream
         {
             get
             {
                 CheckThrow(true);
                 if (_secureStream == null)
                 {
-                    Interlocked.CompareExchange<_SslStream>(ref _secureStream, new _SslStream(this), null);
+                    Interlocked.CompareExchange<SslStreamInternal>(ref _secureStream, new SslStreamInternal(this), null);
                 }
 
                 return _secureStream;

@@ -313,11 +313,11 @@ namespace System.IO
             {
                 if (_fileHandle.IsClosed)
                 {
-                    throw __Error.GetFileNotOpen();
+                    throw Error.GetFileNotOpen();
                 }
                 if (!_parent.CanSeek)
                 {
-                    throw __Error.GetSeekNotSupported();
+                    throw Error.GetSeekNotSupported();
                 }
 
                 // Get the length of the file as reported by the OS
@@ -360,11 +360,11 @@ namespace System.IO
             {
                 if (_fileHandle.IsClosed)
                 {
-                    throw __Error.GetFileNotOpen();
+                    throw Error.GetFileNotOpen();
                 }
                 if (!_parent.CanSeek)
                 {
-                    throw __Error.GetSeekNotSupported();
+                    throw Error.GetSeekNotSupported();
                 }
 
                 VerifyBufferInvariants();
@@ -486,7 +486,7 @@ namespace System.IO
         {
             if (_fileHandle.IsClosed)
             {
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
             }
 
             FlushInternalBuffer();
@@ -555,7 +555,7 @@ namespace System.IO
             }
             if (_fileHandle.IsClosed)
             {
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
             }
 
             // As with Win32FileStream, flush the buffers synchronously to avoid race conditions.
@@ -595,15 +595,15 @@ namespace System.IO
             }
             if (_fileHandle.IsClosed)
             {
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
             }
             if (!_parent.CanSeek)
             {
-                throw __Error.GetSeekNotSupported();
+                throw Error.GetSeekNotSupported();
             }
             if (!_parent.CanWrite)
             {
-                throw __Error.GetWriteNotSupported();
+                throw Error.GetWriteNotSupported();
             }
 
             FlushInternalBuffer();
@@ -786,13 +786,13 @@ namespace System.IO
                 return Task.FromCanceled<int>(cancellationToken);
 
             if (_fileHandle.IsClosed)
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
 
             if (_useAsyncIO)
             {
                 if (!_parent.CanRead) // match Windows behavior; this gets thrown synchronously
                 {
-                    throw __Error.GetReadNotSupported();
+                    throw Error.GetReadNotSupported();
                 }
 
                 // Serialize operations using the semaphore.
@@ -903,11 +903,11 @@ namespace System.IO
         {
             if (_fileHandle.IsClosed)
             {
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
             }
             if (_readLength == 0 && !_parent.CanRead)
             {
-                throw __Error.GetReadNotSupported();
+                throw Error.GetReadNotSupported();
             }
             VerifyBufferInvariants();
         }
@@ -1030,13 +1030,13 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
 
             if (_fileHandle.IsClosed)
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
 
             if (_useAsyncIO)
             {
                 if (!_parent.CanWrite) // match Windows behavior; this gets thrown synchronously
                 {
-                    throw __Error.GetWriteNotSupported();
+                    throw Error.GetWriteNotSupported();
                 }
 
                 // Serialize operations using the semaphore.
@@ -1140,7 +1140,7 @@ namespace System.IO
         {
             if (_fileHandle.IsClosed)
             {
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
             }
 
             // Make sure we're good to write.  We only need to do this if there's nothing already
@@ -1148,7 +1148,7 @@ namespace System.IO
             // this checking and flushing.
             if (_writePos == 0)
             {
-                if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
+                if (!_parent.CanWrite) throw Error.GetWriteNotSupported();
                 FlushReadBuffer();
             }
         }
@@ -1177,7 +1177,7 @@ namespace System.IO
             }
             if (_fileHandle.IsClosed)
             {
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
             }
         }
 
@@ -1196,11 +1196,11 @@ namespace System.IO
             }
             if (_fileHandle.IsClosed)
             {
-                throw __Error.GetFileNotOpen();
+                throw Error.GetFileNotOpen();
             }
             if (!_parent.CanSeek)
             {
-                throw __Error.GetSeekNotSupported();
+                throw Error.GetSeekNotSupported();
             }
 
             VerifyOSHandlePosition();

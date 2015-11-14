@@ -1,26 +1,21 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.Contracts;
+using System.Security;
 
 namespace System.IO
 {
-    [Pure]
-    internal static class __Error
+    // Only static data; no need to serialize
+    internal static class Error
     {
-        internal static Exception GetFileNotOpen()
+        internal static Exception GetStreamIsClosed()
         {
-            return new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
+            return new ObjectDisposedException(null, SR.ObjectDisposed_StreamIsClosed);
         }
 
         internal static Exception GetReadNotSupported()
         {
             return new NotSupportedException(SR.NotSupported_UnreadableStream);
-        }
-
-        internal static Exception GetSeekNotSupported()
-        {
-            return new NotSupportedException(SR.NotSupported_UnseekableStream);
         }
 
         internal static Exception GetWriteNotSupported()

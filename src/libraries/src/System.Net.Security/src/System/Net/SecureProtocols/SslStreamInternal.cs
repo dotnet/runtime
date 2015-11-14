@@ -9,7 +9,7 @@ namespace System.Net.Security
     //
     // This is a wrapping stream that does data encryption/decryption based on a successfully authenticated SSPI context.
     //
-    internal class _SslStream
+    internal class SslStreamInternal
     {
         private const int PinnableReadBufferSize = 4096 * 4 + 32;         // We read in 16K chunks + headers.
         private static PinnableBufferCache s_PinnableReadBufferCache = new PinnableBufferCache("System.Net.SslStream", PinnableReadBufferSize);
@@ -32,7 +32,7 @@ namespace System.Net.Security
 
         private FixedSizeReader _Reader;
 
-        internal _SslStream(SslState sslState)
+        internal SslStreamInternal(SslState sslState)
         {
             if (PinnableBufferCacheEventSource.Log.IsEnabled())
             {
@@ -55,7 +55,7 @@ namespace System.Net.Security
             _InternalBuffer = null;
         }
 
-        ~_SslStream()
+        ~SslStreamInternal()
         {
             if (_InternalBufferFromPinnableCache)
             {

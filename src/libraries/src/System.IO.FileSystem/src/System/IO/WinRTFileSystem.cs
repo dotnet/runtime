@@ -168,7 +168,7 @@ namespace System.IO
             catch (Exception exception)
             {
                 // For consistency with Win32 we ignore missing files
-                if (exception.HResult != __HResults.ERROR_FILE_NOT_FOUND)
+                if (exception.HResult != HResults.ERROR_FILE_NOT_FOUND)
                     throw exception.TranslateWinRTException(fullPath);
             }
         }
@@ -603,7 +603,7 @@ namespace System.IO
             }
             catch (Exception exception)
             {
-                if (exception.HResult != __HResults.ERROR_INVALID_PARAMETER)
+                if (exception.HResult != HResults.ERROR_INVALID_PARAMETER)
                     throw new ArgumentException(SR.Arg_InvalidFileAttrs);
 
                 throw exception.TranslateWinRTException(item.Path);

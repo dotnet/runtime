@@ -743,7 +743,7 @@ namespace System
             {
                 if (_handle.IsClosed)
                 {
-                    throw __Error.GetFileNotOpen();
+                    throw Error.GetFileNotOpen();
                 }
                 base.Flush();
             }

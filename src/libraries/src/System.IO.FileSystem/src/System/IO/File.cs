@@ -450,7 +450,7 @@ namespace System.IO
                 {
                     int n = fs.Read(bytes, index, count);
                     if (n == 0)
-                        throw __Error.GetEndOfFile();
+                        throw Error.GetEndOfFile();
                     index += n;
                     count -= n;
                 }
