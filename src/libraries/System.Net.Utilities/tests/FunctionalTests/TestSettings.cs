@@ -17,30 +17,34 @@ namespace System.Net.Utilities.Tests
 
         public static Task<IPAddress> GetLocalIPAddress()
         {
-            return ResolveHost(LocalHost, AddressFamily);
+            return ResolveHost(LocalHost);
         }
 
-        public static AddressFamily AddressFamily
-        {
-            get
-            {
-                return AddressFamily.InterNetworkV6;
-            }
-        }
-
-        private static async Task<IPAddress> ResolveHost(string host, AddressFamily family)
+        private static async Task<IPAddress> ResolveHost(string host)
         {
             IPHostEntry hostEntry = await Dns.GetHostEntryAsync(host);
+            IPAddress ret = null;
 
             foreach (IPAddress address in hostEntry.AddressList)
             {
-                if (address.AddressFamily == family)
+                if (address.AddressFamily == AddressFamily.InterNetworkV6)
                 {
-                    return address;
+                    ret = address;
                 }
             }
 
-            throw new InvalidOperationException("Unable to discover any addresses for host " + host + " of family " + family);
+            // If there's no IPv6 addresses, just take the first (IPv4) address.
+            if (ret == null)
+            {
+                ret = hostEntry.AddressList[0];
+            }
+
+            if (ret != null)
+            {
+                return ret;
+            }
+
+            throw new InvalidOperationException("Unable to discover any addresses for host " + host);
         }
     }
 }
