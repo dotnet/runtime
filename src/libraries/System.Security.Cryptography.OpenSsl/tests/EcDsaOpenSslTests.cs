@@ -10,6 +10,24 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
 {
     public static class EcDsaOpenSslTests
     {
+        // TODO: Issue #4337.  Temporary workaround for tests to pass on CentOS 
+        // where secp224r1 appears to be disabled. 
+        private static bool ECDsa224Available
+        {
+            get
+            {
+                try
+                {
+                    using (ECDsaOpenSsl e = new ECDsaOpenSsl(224)) e.Exercise();
+                    return true;
+                }
+                catch (Exception exc)
+                {
+                    return !exc.Message.Contains("unknown group");
+                }
+            }
+        }
+
         [Fact]
         public static void DefaultCtor()
         {
@@ -21,7 +39,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact("ECDsa224Available")] // Issue #4337
         public static void Ctor224()
         {
             int expectedKeySize = 224;
@@ -57,7 +75,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact("ECDsa224Available")] // Issue #4337
         public static void CtorHandle224()
         {
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByCurveName(NID_secp224r1);
@@ -130,7 +148,7 @@ namespace System.Security.Cryptography.EcDsaOpenSsl.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact("ECDsa224Available")] // Issue #4337
         public static void KeySizeProp()
         {
             using (ECDsaOpenSsl e = new ECDsaOpenSsl())
