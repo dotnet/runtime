@@ -159,7 +159,7 @@ namespace System.IO
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (!_disposed && !CanRead)
-                throw __Error.GetReadNotSupported();
+                throw Error.GetReadNotSupported();
 
             return _innerStream.Read(buffer, offset, count);
         }
@@ -167,7 +167,7 @@ namespace System.IO
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (!_disposed && !CanRead)
-                throw __Error.GetReadNotSupported();
+                throw Error.GetReadNotSupported();
 
             return _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
@@ -175,7 +175,7 @@ namespace System.IO
         public override int ReadByte()
         {
             if (!_disposed && !CanRead)
-                throw __Error.GetReadNotSupported();
+                throw Error.GetReadNotSupported();
 
             return _innerStream.ReadByte();
         }
