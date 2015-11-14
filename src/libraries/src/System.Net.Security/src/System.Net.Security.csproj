@@ -20,28 +20,31 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+  
   <ItemGroup>
-    <Compile Include="System\Net\SecureChannel.cs" />
-    <Compile Include="System\Net\SecureProtocols\FixedSizeReader.cs" />
-    <Compile Include="System\Net\SecureProtocols\HelperAsyncResults.cs" />
-    <Compile Include="System\Net\SecureProtocols\SslState.cs" />
-    <Compile Include="System\Net\SecureProtocols\SslStreamInternal.cs" />
+    <Compile Include="System\PinnableBufferCache.cs" />
     <Compile Include="System\Net\SecurityBuffer.cs" />
     <Compile Include="System\Net\SecurityBufferType.cs" />
-    <Compile Include="System\Net\SslSessionsCache.cs" />
-    <Compile Include="System\PinnableBufferCache.cs" />
+    <Compile Include="System\Net\SecureChannel.cs" />
     <Compile Include="System\Net\SecurityStatusPal.cs" />
+    <Compile Include="System\Net\SslSessionsCache.cs" />
     <Compile Include="System\Net\SecureProtocols\SslStream.cs" />
     <Compile Include="System\Net\SecureProtocols\AuthenticatedStream.cs" />
+    <Compile Include="System\Net\SecureProtocols\SslState.cs" />
+    <Compile Include="System\Net\SecureProtocols\SslStreamInternal.cs" />
+    <Compile Include="System\Net\SecureProtocols\HelperAsyncResults.cs" />
     <Compile Include="System\Net\SecureProtocols\SslStreamContext.cs" />
     <Compile Include="System\Net\SecureProtocols\AuthenticationException.cs" />
+    <Compile Include="System\Net\SecureProtocols\FixedSizeReader.cs" />
     <Compile Include="System\Net\SecureProtocols\ProtectionLevel.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicy.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\PolicyEnforcement.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ProtectionScenario.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ServiceNameCollection.cs" />
+	
     <!-- TODO: Shims -->
     <Compile Include="Shims\NegotiateStream.cs" />
+	
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
       <Link>Common\System\Net\Shims\TraceSource.cs</Link>
@@ -58,6 +61,7 @@
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
+	
     <!-- Debug only -->
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
@@ -68,6 +72,7 @@
     <Compile Include="$(CommonPath)\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs">
       <Link>Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
+	
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
       <Link>Common\System\Net\ContextAwareResult.cs</Link>
@@ -78,6 +83,7 @@
     <Compile Include="$(CommonPath)\System\Net\IntPtrHelper.cs">
       <Link>Common\System\Net\IntPtrHelper.cs</Link>
     </Compile>
+	
     <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
       <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>
@@ -87,9 +93,11 @@
     <Compile Include="$(CommonPath)\System\Net\Shims\DBNull.cs">
       <Link>Common\System\Net\Shims\DBNull.cs</Link>
     </Compile>
+	
     <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
       <Link>Common\System\Net\UriScheme.cs</Link>
     </Compile>
+	
     <!-- Common -->
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs</Link>
@@ -109,11 +117,14 @@
     <Compile Include="$(CommonPath)\System\IO\Error.cs">
       <Link>Common\System\IO\Error.cs</Link>
     </Compile>
+	
+	
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Net\SslStreamPal.Windows.cs" />
     <Compile Include="System\Net\SecurityContextTokenHandle.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
+	
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
