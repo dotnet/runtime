@@ -411,6 +411,7 @@ namespace System.Linq.Tests
                     throw new ArgumentNullException("source");
                 return RunningTotalsIterator(source);
             }
+
             public static IEnumerable<int> RunningTotalsIterator(IEnumerable<int> source)
             {
                 using (var en = source.GetEnumerator())
@@ -431,6 +432,24 @@ namespace System.Linq.Tests
                 // was a reason for doing so, but this suffices to test.
                 return RunningTotals(source.AsEnumerable()).AsQueryable();
             }
+
+            public static IQueryable<int> RunningTotalsNoMatch(IQueryable<int> source)
+            {
+                return RunningTotals(source);
+            }
+
+            public static IQueryable<int> RunningTotals(IQueryable<int> source, int initialTally)
+            {
+                return RunningTotals(Enumerable.Repeat(initialTally, 1).AsQueryable().Concat(source));
+            }
+        }
+
+        private class TestLinqInstanceNoMatch
+        {
+            public IQueryable<int> RunningTotals(IQueryable<int> source)
+            {
+                return TestLinqExtensions.RunningTotals(source);
+            }
         }
 
         [Fact]
@@ -439,11 +458,52 @@ namespace System.Linq.Tests
             Expression call = Expression.Call(
                 typeof(TestLinqExtensions)
                     .GetMethods()
-                    .First(mi => mi.Name == "RunningTotals" && mi.GetParameters()[0].ParameterType == typeof(IQueryable<int>)),
+                    .First(mi => mi.Name == "RunningTotals" && mi.GetParameters().Length == 1 && mi.GetParameters()[0].ParameterType == typeof(IQueryable<int>)),
                 Expression.Constant(Enumerable.Range(1, 3).AsQueryable())
                 );
             IQueryable<int> q = _prov.CreateQuery<int>(call);
             Assert.Equal(new[] { 1, 3, 6 }, q);
+        }
+
+        [Fact]
+        public void EnumerableQueryableAsInternalArgumentToMethodNoMatch()
+        {
+            Expression call = Expression.Call(
+                typeof(TestLinqExtensions)
+                    .GetMethods()
+                    .First(mi => mi.Name == "RunningTotalsNoMatch" && mi.GetParameters()[0].ParameterType == typeof(IQueryable<int>)),
+                Expression.Constant(Enumerable.Range(1, 3).AsQueryable())
+                );
+            IQueryable<int> q = _prov.CreateQuery<int>(call);
+            Assert.Throws<InvalidOperationException>(() => q.GetEnumerator());
+        }
+
+        [Fact]
+        public void EnumerableQueryableAsInternalArgumentToMethodNoArgumentMatch()
+        {
+            Expression call = Expression.Call(
+                typeof(TestLinqExtensions)
+                    .GetMethods()
+                    .First(mi => mi.Name == "RunningTotals" && mi.GetParameters().Length == 2),
+                Expression.Constant(Enumerable.Range(1, 3).AsQueryable()),
+                Expression.Constant(3)
+                );
+            IQueryable<int> q = _prov.CreateQuery<int>(call);
+            Assert.Throws<InvalidOperationException>(() => q.GetEnumerator());
+        }
+
+        [Fact]
+        public void EnumerableQueryableAsInternalArgumentToInstanceMethodNoMatch()
+        {
+            Expression call = Expression.Call(
+                Expression.Constant(new TestLinqInstanceNoMatch()),
+                typeof(TestLinqInstanceNoMatch)
+                    .GetMethods()
+                    .First(mi => mi.Name == "RunningTotals"),
+                Expression.Constant(Enumerable.Range(1, 3).AsQueryable())
+                );
+            IQueryable<int> q = _prov.CreateQuery<int>(call);
+            Assert.Throws<InvalidOperationException>(() => q.GetEnumerator());
         }
 
         [Fact]
@@ -463,7 +523,6 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        [ActiveIssue(3607)]
         public void ExplicitlyTypedConditional()
         {
             Expression call = Expression.Call(
@@ -482,7 +541,6 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        [ActiveIssue(3607)]
         public void Block()
         {
             Expression block = Expression.Block(
@@ -494,7 +552,6 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        [ActiveIssue(3607)]
         public void ExplicitlyTypedBlock()
         {
             Expression block = Expression.Block(
@@ -504,6 +561,54 @@ namespace System.Linq.Tests
                 );
             IQueryable<int> q = _prov.CreateQuery<int>(block);
             Assert.Equal(Enumerable.Range(0, 2), q);
+        }
+
+        [Fact]
+        public void Return()
+        {
+            LabelTarget target = Expression.Label(typeof(IQueryable<int>));
+            Expression block = Expression.Block(
+                    Expression.Return(target, Expression.Constant(Enumerable.Range(0, 2).AsQueryable())),
+                    Expression.Label(target, Expression.Default(typeof(IQueryable<int>)))
+                );
+            IQueryable<int> q = _prov.CreateQuery<int>(block);
+            Assert.Equal(Enumerable.Range(0, 2), q);
+        }
+
+        [Fact]
+        public void ReturnArray()
+        {
+            LabelTarget target = Expression.Label(typeof(IQueryable<int>));
+            Expression block = Expression.Block(
+                    Expression.Return(target, Expression.Constant(new[] { 1, 1, 2, 3, 5, 8 }.AsQueryable())),
+                    Expression.Label(target, Expression.Default(typeof(IQueryable<int>)))
+                );
+            IQueryable<int> q = _prov.CreateQuery<int>(block);
+            Assert.Equal(new[] { 1, 1, 2, 3, 5, 8 }, q);
+        }
+
+        [Fact]
+        public void ReturnOrdered()
+        {
+            LabelTarget target = Expression.Label(typeof(IQueryable<int>));
+            Expression block = Expression.Block(
+                    Expression.Return(target, Expression.Constant(Enumerable.Range(0, 3).OrderByDescending(i => i).AsQueryable())),
+                    Expression.Label(target, Expression.Default(typeof(IOrderedQueryable<int>)))
+                );
+            IQueryable<int> q = _prov.CreateQuery<int>(block);
+            Assert.Equal(new[] { 2, 1, 0 }, q);
+        }
+
+        [Fact]
+        public void ReturnOrderedAfterAsQueryable()
+        {
+            LabelTarget target = Expression.Label(typeof(IQueryable<int>));
+            Expression block = Expression.Block(
+                    Expression.Return(target, Expression.Constant(Enumerable.Range(0, 3).AsQueryable().OrderByDescending(i => i))),
+                    Expression.Label(target, Expression.Default(typeof(IOrderedQueryable<int>)))
+                );
+            IQueryable<int> q = _prov.CreateQuery<int>(block);
+            Assert.Equal(new[] { 2, 1, 0 }, q);
         }
     }
 }

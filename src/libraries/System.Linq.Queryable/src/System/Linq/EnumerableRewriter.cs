@@ -4,21 +4,24 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace System.Linq
 {
-    internal class EnumerableRewriter : OldExpressionVisitor
+    internal class EnumerableRewriter : ExpressionVisitor
     {
-        internal EnumerableRewriter()
-        {
-        }
+        // We must ensure that if a LabelTarget is rewritten that it is always rewritten to the same new target
+        // or otherwise expressions using it won't match correctly.
+        private Dictionary<LabelTarget, LabelTarget> _targetCache;
+        // Finding equivalent types can be relatively expensive, and hitting with the same types repeatedly is quite likely.
+        private Dictionary<Type, Type> _equivalentTypeCache;
 
-        internal override Expression VisitMethodCall(MethodCallExpression m)
+        protected override Expression VisitMethodCall(MethodCallExpression m)
         {
             Expression obj = this.Visit(m.Object);
-            ReadOnlyCollection<Expression> args = this.VisitExpressionList(m.Arguments);
+            ReadOnlyCollection<Expression> args = Visit(m.Arguments);
 
             // check for args changed
             if (obj != m.Object || args != m.Arguments)
@@ -109,9 +112,9 @@ namespace System.Linq
             return expression;
         }
 
-        internal override Expression VisitLambda(LambdaExpression lambda)
+        protected override Expression VisitLambda<T>(Expression<T> node)
         {
-            return lambda;
+            return node;
         }
 
         private static Type GetPublicType(Type t)
@@ -126,7 +129,7 @@ namespace System.Linq
                 return typeof(IGrouping<,>).MakeGenericType(t.GetGenericArguments());
             if (!typeInfo.IsNestedPrivate)
                 return t;
-            foreach (Type iType in t.GetTypeInfo().ImplementedInterfaces)
+            foreach (Type iType in typeInfo.ImplementedInterfaces)
             {
                 TypeInfo iTypeInfo = iType.GetTypeInfo();
                 if (iTypeInfo.IsGenericType && iTypeInfo.GetGenericTypeDefinition() == typeof(IEnumerable<>))
@@ -137,7 +140,57 @@ namespace System.Linq
             return t;
         }
 
-        internal override Expression VisitConstant(ConstantExpression c)
+        private Type GetEquivalentType(Type type)
+        {
+            Type equiv;
+            if (_equivalentTypeCache == null)
+            {
+                // Pre-loading with the non-generic IQueryable and IEnumerable not only covers this case
+                // without any reflection-based interspection, but also means the slightly different
+                // code needed to catch this case can be omitted safely.
+                _equivalentTypeCache = new Dictionary<Type, Type>
+                    {
+                        { typeof(IQueryable), typeof(IEnumerable) },
+                        { typeof(IEnumerable), typeof(IEnumerable) }
+                    };
+            }
+            if (!_equivalentTypeCache.TryGetValue(type, out equiv))
+            {
+                Type pubType = GetPublicType(type);
+                TypeInfo info = pubType.GetTypeInfo();
+                if (info.IsInterface && info.IsGenericType)
+                {
+                    Type genericType = info.GetGenericTypeDefinition();
+                    if (genericType == typeof(IOrderedEnumerable<>))
+                        equiv = pubType;
+                    else if (genericType == typeof(IOrderedQueryable<>))
+                        equiv = typeof(IOrderedEnumerable<>).MakeGenericType(info.GenericTypeArguments[0]);
+                    else if (genericType == typeof(IEnumerable<>))
+                        equiv = pubType;
+                    else if (genericType == typeof(IQueryable<>))
+                        equiv = typeof(IEnumerable<>).MakeGenericType(info.GenericTypeArguments[0]);
+                }
+                if (equiv == null)
+                {
+                    var interfacesWithInfo = info.ImplementedInterfaces.Select(i => new { Type = i, Info = i.GetTypeInfo() }).ToArray();
+                    var singleTypeGenInterfacesWithGetType = interfacesWithInfo
+                        .Where(i => i.Info.IsGenericType && i.Info.GenericTypeArguments.Length == 1)
+                        .Select(i => new { Type = i.Type, Info = i.Info, GenType = i.Info.GetGenericTypeDefinition() });
+                    Type typeArg = singleTypeGenInterfacesWithGetType.Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>)).Select(i => i.Info.GenericTypeArguments[0]).Distinct().SingleOrDefault();
+                    if (typeArg != null)
+                        equiv = typeof(IOrderedEnumerable<>).MakeGenericType(typeArg);
+                    else
+                    {
+                        typeArg = singleTypeGenInterfacesWithGetType.Where(i => i.GenType == typeof(IQueryable<>) || i.GenType == typeof(IEnumerable<>)).Select(i => i.Info.GenericTypeArguments[0]).Distinct().Single();
+                        equiv = typeof(IEnumerable<>).MakeGenericType(typeArg);
+                    }
+                }
+                _equivalentTypeCache.Add(type, equiv);
+            }
+            return equiv;
+        }
+
+        protected override Expression VisitConstant(ConstantExpression c)
         {
             EnumerableQuery sq = c.Value as EnumerableQuery;
             if (sq != null)
@@ -154,10 +207,7 @@ namespace System.Linq
             return c;
         }
 
-        internal override Expression VisitParameter(ParameterExpression p)
-        {
-            return p;
-        }
+
 
         private static volatile ILookup<string, MethodInfo> s_seqMethods;
         private static MethodInfo FindEnumerableMethod(string name, ReadOnlyCollection<Expression> args, params Type[] typeArgs)
@@ -167,14 +217,13 @@ namespace System.Linq
                 s_seqMethods = typeof(Enumerable).GetStaticMethods().ToLookup(m => m.Name);
             }
             MethodInfo mi = s_seqMethods[name].FirstOrDefault(m => ArgsMatch(m, args, typeArgs));
-            if (mi == null)
-                throw Error.NoMethodOnTypeMatchingArguments(name, typeof(Enumerable));
+            Debug.Assert(mi != null, "All static methods with arguments on Queryable have equivalents on Enumerable.");
             if (typeArgs != null)
                 return mi.MakeGenericMethod(typeArgs);
             return mi;
         }
 
-        internal static MethodInfo FindMethod(Type type, string name, ReadOnlyCollection<Expression> args, Type[] typeArgs)
+        private static MethodInfo FindMethod(Type type, string name, ReadOnlyCollection<Expression> args, Type[] typeArgs)
         {
             using (IEnumerator<MethodInfo> en = type.GetStaticMethods().Where(m => m.Name == name).GetEnumerator())
             {
@@ -249,6 +298,62 @@ namespace System.Linq
                 return (rank == 1) ? tmp.MakeArrayType() : tmp.MakeArrayType(rank);
             }
             return type;
+        }
+
+        protected override Expression VisitConditional(ConditionalExpression c)
+        {
+            Type type = c.Type;
+            if (!typeof(IQueryable).IsAssignableFrom(type))
+                return base.Visit(c);
+            Expression test = Visit(c.Test);
+            Expression ifTrue = Visit(c.IfTrue);
+            Expression ifFalse = Visit(c.IfFalse);
+            Type trueType = ifTrue.Type;
+            Type falseType = ifFalse.Type;
+            if (trueType.IsAssignableFrom(falseType))
+                return Expression.Condition(test, ifTrue, ifFalse, trueType);
+            if (falseType.IsAssignableFrom(trueType))
+                return Expression.Condition(test, ifTrue, ifFalse, falseType);
+            TypeInfo info = type.GetTypeInfo();
+            return Expression.Condition(test, ifTrue, ifFalse, GetEquivalentType(type));
+        }
+
+        protected override Expression VisitBlock(BlockExpression node)
+        {
+            Type type = node.Type;
+            if (!typeof(IQueryable).IsAssignableFrom(type))
+                return base.Visit(node);
+            ReadOnlyCollection<Expression> nodes = Visit(node.Expressions);
+            ReadOnlyCollection<ParameterExpression> variables = VisitAndConvert(node.Variables, "EnumerableRewriter.VisitBlock");
+            if (type == node.Expressions.Last().Type)
+                return Expression.Block(variables, nodes);
+            return Expression.Block(GetEquivalentType(type), variables, nodes);
+        }
+
+        protected override Expression VisitGoto(GotoExpression node)
+        {
+            Type type = node.Value.Type;
+            if (!typeof(IQueryable).IsAssignableFrom(type))
+                return base.VisitGoto(node);
+            LabelTarget target = VisitLabelTarget(node.Target);
+            Expression value = Visit(node.Value);
+            return Expression.MakeGoto(node.Kind, target, value, GetEquivalentType(typeof(EnumerableQuery).IsAssignableFrom(type) ? value.Type : type));
+        }
+
+        protected override LabelTarget VisitLabelTarget(LabelTarget node)
+        {
+            LabelTarget newTarget;
+            if (_targetCache == null)
+                _targetCache = new Dictionary<LabelTarget, LabelTarget>();
+            else if (_targetCache.TryGetValue(node, out newTarget))
+                return newTarget;
+            Type type = node.Type;
+            if (!typeof(IQueryable).IsAssignableFrom(type))
+                newTarget = base.VisitLabelTarget(node);
+            else
+                newTarget = Expression.Label(GetEquivalentType(type), node.Name);
+            _targetCache.Add(node, newTarget);
+            return newTarget;
         }
     }
 }
