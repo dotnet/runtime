@@ -5,13 +5,12 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
     public class WebSocketHelper
     {
-        private static Lazy<bool> s_WebSocketSupported = new Lazy<bool>(InitWebSocketSupported);
+        private static readonly Lazy<bool> s_WebSocketSupported = new Lazy<bool>(InitWebSocketSupported);
         private static int s_TimeOutMilliseconds;
         private Uri _echoService;
 
@@ -21,15 +20,7 @@ namespace System.Net.WebSockets.Client.Tests
             s_TimeOutMilliseconds = timeOut;
         }
 
-        public static bool ShouldSkipTestOSNotSupported(ITestOutputHelper output)
-        {
-            if (!s_WebSocketSupported.Value)
-            {
-                output.WriteLine("WinHttp/WebSockets are not supported on this platform.");
-            }
-
-            return !s_WebSocketSupported.Value;
-        }
+        public static bool WebSocketsSupported { get { return s_WebSocketSupported.Value; } }
 
         public async Task TestEcho(WebSocketMessageType type)
         {
