@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Net.Sockets;
 
 using Xunit;
@@ -9,6 +10,12 @@ namespace System.Net.Primitives.Functional.Tests
 {
     public static class IPAddressTest
     {
+        private const long MinAddress = 0;
+        private const long MaxAddress = 0xFFFFFFFF;
+
+        private const long MinScopeId = 0;
+        private const long MaxScopeId = 0xFFFFFFFF;
+
         private static byte[] ipV6AddressBytes1 = new byte[] { 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
         private static byte[] ipV6AddressBytes2 = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
 
@@ -27,51 +34,82 @@ namespace System.Net.Primitives.Functional.Tests
             return new IPAddress(ipV6AddressBytes2);
         }
 
-        [Fact]
-        public static void Ctor_Long_Success()
+        [Theory]
+        [InlineData(MinAddress, new byte[] { 0, 0, 0, 0 })]
+        [InlineData(MaxAddress, new byte[] { 0xFF, 0xFF, 0xFF, 0xFF })]
+        [InlineData(0x2414188f, new byte[] { 0x8f, 0x18, 0x14, 0x24 })]
+        [InlineData(0xFF, new byte[] { 0xFF, 0, 0, 0 })]
+        [InlineData(0xFF00FF, new byte[] { 0xFF, 0, 0xFF, 0 })]
+        [InlineData(0xFF00FF00, new byte[] { 0, 0xFF, 0, 0xFF })]
+        public static void Ctor_Long_Success(long address, byte[] expectedBytes)
         {
-            IPAddress ip = new IPAddress(0x2414188f);
-            Assert.Equal(BitConverter.GetBytes(0x2414188f), ip.GetAddressBytes());
+            IPAddress ip = new IPAddress(address);
+            Assert.Equal(expectedBytes, ip.GetAddressBytes());
+            Assert.Equal(AddressFamily.InterNetwork, ip.AddressFamily);
         }
 
-        [Fact]
-        public static void Ctor_Long_Invalid()
+        [Theory]
+        [InlineData(MinAddress - 1)]
+        [InlineData(MaxAddress + 1)]
+        public static void Ctor_Long_Invalid(long address)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new IPAddress((long)0x0 - 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new IPAddress((long)0x00000000FFFFFFFF + 1));
+            Assert.Throws<ArgumentOutOfRangeException>("newAddress", () => new IPAddress(address));
         }
 
-        [Fact]
-        public static void Ctor_Bytes_Success()
+        [Theory]
+        [MemberData("AddressBytesAndFamilies")]
+        public static void Ctor_Bytes_Success(byte[] address, AddressFamily expectedFamily)
         {
-            IPAddress ip = new IPAddress(ipV6AddressBytes1);
-            Assert.Equal(ipV6AddressBytes1, ip.GetAddressBytes());
+            IPAddress ip = new IPAddress(address);
+            Assert.Equal(address, ip.GetAddressBytes());
+            Assert.Equal(expectedFamily, ip.AddressFamily);
         }
-        
+
+        public static object[][] AddressBytesAndFamilies =
+        {
+            new object[] { new byte[] { 0x8f, 0x18, 0x14, 0x24 }, AddressFamily.InterNetwork },
+            new object[] { ipV6AddressBytes1, AddressFamily.InterNetworkV6 },
+            new object[] { ipV6AddressBytes2, AddressFamily.InterNetworkV6 }
+        };
+
         [Fact]
         public static void Ctor_Bytes_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new IPAddress(null));
-            Assert.Throws<ArgumentException>(() => new IPAddress(new byte[] { 0x01, 0x01, 0x02 }));
+            Assert.Throws<ArgumentNullException>("address", () => new IPAddress(null));
+            Assert.Throws<ArgumentException>("address", () => new IPAddress(new byte[] { 0x01, 0x01, 0x02 }));
         }
 
-        [Fact]
-        public static void Ctor_BytesScopeId_Success()
+        [Theory]
+        [MemberData("IPv6AddressBytesAndScopeIds")]
+        public static void Ctor_BytesScopeId_Success(byte[] address, long scopeId)
         {
-            IPAddress ip = new IPAddress(ipV6AddressBytes1, 500);
-            Assert.Equal(ipV6AddressBytes1, ip.GetAddressBytes());
-            Assert.Equal(500, ip.ScopeId);
+            IPAddress ip = new IPAddress(address, scopeId);
+            Assert.Equal(address, ip.GetAddressBytes());
+            Assert.Equal(scopeId, ip.ScopeId);
+            Assert.Equal(AddressFamily.InterNetworkV6, ip.AddressFamily);
+        }
+
+        public static IEnumerable<object[]> IPv6AddressBytesAndScopeIds
+        {
+            get
+            {
+                foreach (long scopeId in new long[] { MinScopeId, MaxScopeId, 500 })
+                {
+                    yield return new object[] { ipV6AddressBytes1, scopeId };
+                    yield return new object[] { ipV6AddressBytes2, scopeId };
+                }
+            }
         }
 
         [Fact]
         public static void Ctor_BytesScopeId_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => new IPAddress(null, 500));
+            Assert.Throws<ArgumentNullException>("address", () => new IPAddress(null, 500));
 
-            Assert.Throws<ArgumentException>(() => new IPAddress(new byte[] { 0x01, 0x01, 0x02 }, 500));
-            
-            Assert.Throws<ArgumentOutOfRangeException>(() => new IPAddress(ipV6AddressBytes1, (long)0x0 - 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new IPAddress(ipV6AddressBytes1, (long)0x00000000FFFFFFFF + 1));
+            Assert.Throws<ArgumentException>("address", () => new IPAddress(new byte[] { 0x01, 0x01, 0x02 }, 500));
+
+            Assert.Throws<ArgumentOutOfRangeException>("scopeid", () => new IPAddress(ipV6AddressBytes1, MinScopeId - 1));
+            Assert.Throws<ArgumentOutOfRangeException>("scopeid", () => new IPAddress(ipV6AddressBytes1, MaxScopeId + 1));
         }
 
         [Theory]
@@ -107,11 +145,11 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void Parse_String_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => { IPAddress.Parse(null); });
+            Assert.Throws<ArgumentNullException>("ipString", () => { IPAddress.Parse(null); });
             IPAddress ip;
             Assert.False(IPAddress.TryParse(null, out ip));
         }
-        
+
         [Fact]
         public static void ScopeId_GetSet_Success()
         {
@@ -132,8 +170,8 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.ThrowsAny<Exception>(() => ip.ScopeId);
 
             ip = IPV6Address1(); //IpV6
-            Assert.Throws<ArgumentOutOfRangeException>(() => ip.ScopeId = (long)0x0 - 1);
-            Assert.Throws<ArgumentOutOfRangeException>(() => ip.ScopeId = (long)0x00000000FFFFFFFF + 1);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => ip.ScopeId = MinScopeId - 1);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => ip.ScopeId = MaxScopeId + 1);
         }
 
         [Fact]
@@ -176,7 +214,7 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void IsLooback_Get_Invalid()
         {
-            Assert.Throws<ArgumentNullException>(() => IPAddress.IsLoopback(null));
+            Assert.Throws<ArgumentNullException>("address", () => IPAddress.IsLoopback(null));
         }
 
         [Fact]
@@ -210,7 +248,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.False(IPAddress.Parse("Fe08::1").IsIPv6Teredo);
             Assert.False(IPV4Address().IsIPv6Teredo);
         }
-        
+
         [Fact]
         public static void Equals_Compare_Success()
         {
