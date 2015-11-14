@@ -447,7 +447,9 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	case OP_IREM:
 	case OP_IDIV_UN:
 	case OP_IREM_UN:
-		if (cfg->backend->emulate_div && !mono_arch_opcode_needs_emulation (cfg, ins->opcode)) {
+		if (!(cfg->backend->emulate_div && !mono_arch_opcode_needs_emulation (cfg, ins->opcode)))
+			emulate = TRUE;
+		if (!emulate) {
 			if (cfg->backend->need_div_check) {
 				int reg1 = alloc_ireg (cfg);
 				int reg2 = alloc_ireg (cfg);
@@ -467,8 +469,6 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 			}
 			MONO_EMIT_NEW_BIALU (cfg, ins->opcode, ins->dreg, ins->sreg1, ins->sreg2);
 			NULLIFY_INS (ins);
-		} else {
-			emulate = TRUE;
 		}
 		break;
 
