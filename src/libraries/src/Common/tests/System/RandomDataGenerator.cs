@@ -400,5 +400,41 @@ namespace System
             return retStrings;
         }
 
+        public static void VerifyRandomDistribution(byte[] random)
+        {
+            // Better tests for randomness are available.  For now just use a simple
+            // check that compares the number of 0s and 1s in the bits.
+            VerifyNeutralParity(random);
+        }
+
+        private static void VerifyNeutralParity(byte[] random)
+        {
+            int zeroCount = 0, oneCount = 0;
+
+            for (int i = 0; i < random.Length; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    if (((random[i] >> j) & 1) == 1)
+                    {
+                        oneCount++;
+                    }
+                    else
+                    {
+                        zeroCount++;
+                    }
+                }
+            }
+
+            // Over the long run there should be about as many 1s as 0s.
+            // This isn't a guarantee, just a statistical observation.
+            // Allow a 7% tolerance band before considering it to have gotten out of hand.
+            double bitDifference = Math.Abs(zeroCount - oneCount) / (double)(zeroCount + oneCount);
+            const double AllowedTolerance = 0.07;
+            if (bitDifference > AllowedTolerance)
+            {
+                throw new InvalidOperationException("Expected bitDifference < " + AllowedTolerance + ", got " + bitDifference + ".");
+            }
+        }
     }
 }

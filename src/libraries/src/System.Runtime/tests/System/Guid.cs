@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 using System.Globalization;
 using Xunit;
 
@@ -175,5 +176,35 @@ public static class GuidTests
         Assert.Equal(_testGuid.ToString("B"), "{a8a110d5-fc49-43c5-bf46-802db8f843ff}");
         Assert.Equal(_testGuid.ToString("P"), "(a8a110d5-fc49-43c5-bf46-802db8f843ff)");
         Assert.Equal(_testGuid.ToString("X"), "{0xa8a110d5,0xfc49,0x43c5,{0xbf,0x46,0x80,0x2d,0xb8,0xf8,0x43,0xff}}");
+    }
+
+    [Fact]
+    public static void TestRandomness()
+    {
+        const int Iterations = 100;
+        const int GuidSize = 16;
+        byte[] random = new byte[GuidSize * Iterations];
+
+        for (int i = 0; i < Iterations; i++)
+        {
+            // Get a new Guid
+            Guid g = Guid.NewGuid();
+            byte[] bytes = g.ToByteArray();
+
+            // Make sure it's different from all of the previously created ones
+            for (int j = 0; j < i; j++)
+            {
+                Assert.False(bytes.SequenceEqual(new ArraySegment<byte>(random, j * GuidSize, GuidSize)));
+            }
+
+            // Copy it to our randomness array
+            Array.Copy(bytes, 0, random, i * GuidSize, GuidSize);
+        }
+
+        // Verify the randomness of the data in the array. Guid has some small bias in it 
+        // due to several bits fixed based on the format, but that bias is small enough and
+        // the variability allowed by VerifyRandomDistribution large enough that we don't do 
+        // anything special for it.
+        RandomDataGenerator.VerifyRandomDistribution(random);
     }
 }
