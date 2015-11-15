@@ -419,7 +419,7 @@ mono_arch_nacl_skip_nops (guint8* code)
 
 #endif /*__native_client_codegen__*/
 
-static inline void 
+static void
 amd64_patch (unsigned char* code, gpointer target)
 {
 	guint8 rex = 0;
