@@ -160,7 +160,7 @@ namespace System.Globalization
 
             fixed (char* pSource = source)
             {
-                int index = Interop.GlobalizationInterop.IndexOf(m_sortNameAsUtf8, target, pSource + startIndex, count, options);
+                int index = Interop.GlobalizationInterop.IndexOf(m_sortNameAsUtf8, target, target.Length, pSource + startIndex, count, options);
 
                 return index != -1 ? index + startIndex : -1;
             }
@@ -188,7 +188,7 @@ namespace System.Globalization
 
             fixed (char* pSource = source)
             {
-                int lastIndex = Interop.GlobalizationInterop.LastIndexOf(m_sortNameAsUtf8, target, pSource + (startIndex - count + 1), count, options);
+                int lastIndex = Interop.GlobalizationInterop.LastIndexOf(m_sortNameAsUtf8, target, target.Length, pSource + (startIndex - count + 1), count, options);
 
                 return lastIndex != -1 ? lastIndex + leftStartIndex : -1;
             }
@@ -200,7 +200,7 @@ namespace System.Globalization
             Contract.Assert(!string.IsNullOrEmpty(prefix));
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            return Interop.GlobalizationInterop.StartsWith(m_sortNameAsUtf8, prefix, source, source.Length, options);
+            return Interop.GlobalizationInterop.StartsWith(m_sortNameAsUtf8, prefix, prefix.Length, source, source.Length, options);
         }
 
         private bool EndsWith(string source, string suffix, CompareOptions options)
@@ -209,7 +209,7 @@ namespace System.Globalization
             Contract.Assert(!string.IsNullOrEmpty(suffix));
             Contract.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            return Interop.GlobalizationInterop.EndsWith(m_sortNameAsUtf8, suffix, source, source.Length, options);
+            return Interop.GlobalizationInterop.EndsWith(m_sortNameAsUtf8, suffix, suffix.Length, source, source.Length, options);
         }
 
         // -----------------------------
