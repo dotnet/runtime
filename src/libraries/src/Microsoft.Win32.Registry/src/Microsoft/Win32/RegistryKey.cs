@@ -358,16 +358,12 @@ namespace Microsoft.Win32
             RegistryKey key = InternalOpenSubKey(subkey, false);
             if (key != null)
             {
-                try
+                using (key)
                 {
                     if (key.InternalSubKeyCount() > 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException(SR.InvalidOperation_RegRemoveSubKey);
                     }
-                }
-                finally
-                {
-                    key.Close();
                 }
 
                 int ret = Interop.mincore.RegDeleteKeyEx(hkey, subkey, (int)regView, 0);
@@ -419,7 +415,7 @@ namespace Microsoft.Win32
             RegistryKey key = InternalOpenSubKey(subkey, true);
             if (key != null)
             {
-                try
+                using (key)
                 {
                     if (key.InternalSubKeyCount() > 0)
                     {
@@ -430,10 +426,6 @@ namespace Microsoft.Win32
                             key.DeleteSubKeyTreeInternal(keys[i]);
                         }
                     }
-                }
-                finally
-                {
-                    key.Close();
                 }
 
                 int ret = Interop.mincore.RegDeleteKeyEx(hkey, subkey, (int)regView, 0);
@@ -454,7 +446,7 @@ namespace Microsoft.Win32
             RegistryKey key = InternalOpenSubKey(subkey, true);
             if (key != null)
             {
-                try
+                using (key)
                 {
                     if (key.InternalSubKeyCount() > 0)
                     {
@@ -465,10 +457,6 @@ namespace Microsoft.Win32
                             key.DeleteSubKeyTreeInternal(keys[i]);
                         }
                     }
-                }
-                finally
-                {
-                    key.Close();
                 }
 
                 int ret = Interop.mincore.RegDeleteKeyEx(hkey, subkey, (int)regView, 0);
