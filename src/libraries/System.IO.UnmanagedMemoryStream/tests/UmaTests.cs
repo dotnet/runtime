@@ -40,6 +40,23 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public static void UmaInvalidReadDecimal()
+        {
+            const int capacity = 16; // sizeof(decimal)
+
+            using (var buffer = new TestSafeBuffer(capacity))
+            using (var uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
+            {
+                // UMA should throw when reading bad decimal values (some bits of flags are reserved and must be 0)
+                uma.Write(0, 0); // lo
+                uma.Write(4, 0); // mid
+                uma.Write(8, 0); // hi
+                uma.Write(12, -1); // flags (all bits are set, so this should raise an exception)
+                Assert.Throws<ArgumentException>(() => uma.ReadDecimal(0)); // Should throw same exception as decimal(int[]) ctor for compat
+            }
+        }
+
+        [Fact]
         public static void UmaReadWrite()
         {
             const int capacity = 199;
