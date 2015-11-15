@@ -183,7 +183,12 @@ namespace System.Net.NetworkInformation
             Task finished = await Task.WhenAny(processCompletion.Task, timeoutTask).ConfigureAwait(false);
             if (finished == timeoutTask)
             {
-                p.Kill();
+                // Try to kill the ping process if it didn't return. If it is already in the process of exiting, a Win32Exception will be thrown.
+                try
+                {
+                    p.Kill();
+                }
+                catch (Win32Exception) { }
                 throw new PingException(SR.net_ping_reply_timeout);
             }
             else
