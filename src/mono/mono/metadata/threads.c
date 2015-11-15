@@ -675,6 +675,8 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	 */
 	mono_thread_new_init (tid, &tid, start_func);
 	internal->stack_ptr = &tid;
+	if (domain != mono_get_root_domain ())
+		set_current_thread_for_domain (domain, internal, start_info->obj);
 
 	LIBGC_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT",%d) Setting thread stack to %p", __func__, mono_native_thread_id_get (), getpid (), thread->stack_ptr));
 
