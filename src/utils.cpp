@@ -1,3 +1,6 @@
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 #include "utils.h"
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix)
