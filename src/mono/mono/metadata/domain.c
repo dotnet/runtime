@@ -93,14 +93,9 @@ static gboolean debug_domain_unload;
 
 gboolean mono_dont_free_domains;
 
-#define mono_appdomains_lock() do {	\
-	MONO_TRY_BLOCKING;	\
-	mono_os_mutex_lock (&appdomains_mutex); \
-	MONO_FINISH_TRY_BLOCKING;	\
-} while (0);
-
-#define mono_appdomains_unlock() mono_os_mutex_unlock (&appdomains_mutex)
-static mono_mutex_t appdomains_mutex;
+#define mono_appdomains_lock() mono_coop_mutex_lock (&appdomains_mutex)
+#define mono_appdomains_unlock() mono_coop_mutex_unlock (&appdomains_mutex)
+static MonoCoopMutex appdomains_mutex;
 
 static MonoDomain *mono_root_domain = NULL;
 
@@ -522,7 +517,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	MONO_FAST_TLS_INIT (tls_appdomain);
 	mono_native_tls_alloc (&appdomain_thread_id, NULL);
 
-	mono_os_mutex_init_recursive (&appdomains_mutex);
+	mono_coop_mutex_init_recursive (&appdomains_mutex);
 
 	mono_metadata_init ();
 	mono_images_init ();
@@ -944,7 +939,7 @@ mono_cleanup (void)
 	mono_metadata_cleanup ();
 
 	mono_native_tls_free (appdomain_thread_id);
-	mono_os_mutex_destroy (&appdomains_mutex);
+	mono_coop_mutex_destroy (&appdomains_mutex);
 
 #ifndef HOST_WIN32
 	wapi_cleanup ();
