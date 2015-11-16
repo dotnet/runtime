@@ -154,7 +154,7 @@
     <ClInclude Include="..\mono\metadata\exception.h" />
     <ClInclude Include="..\mono\metadata\file-io.h" />
     <ClInclude Include="..\mono\metadata\filewatcher.h" />
-    <ClInclude Include="..\mono\metadata\gc-internal.h" />
+    <ClInclude Include="..\mono\metadata\gc-internals.h" />
     <ClInclude Include="..\mono\metadata\number-ms.h" />
     <ClInclude Include="..\mono\metadata\seq-points-data.h" />
     <ClInclude Include="..\mono\metadata\threadpool-ms-io.h" />

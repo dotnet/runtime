@@ -112,7 +112,7 @@
     <ClInclude Include="..\mono\utils\mono-internal-hash.h" />
     <ClInclude Include="..\mono\utils\mono-io-portability.h" />
     <ClInclude Include="..\mono\utils\mono-linked-list-set.h" />
-    <ClInclude Include="..\mono\utils\mono-logger-internal.h" />
+    <ClInclude Include="..\mono\utils\mono-logger-internals.h" />
     <ClInclude Include="..\mono\utils\mono-logger.h" />
     <ClInclude Include="..\mono\utils\mono-machine.h" />
     <ClInclude Include="..\mono\utils\mono-math.h" />
