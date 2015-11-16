@@ -11,8 +11,9 @@ namespace System.Net.Security.Tests
 {
     internal static class TestConfiguration
     {
-        public const int TestTimeoutSeconds = 10;
-        public const SslProtocols DefaultSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
+        public const int PassingTestTimeoutMilliseconds = 15 * 1000;
+        public const int FailingTestTimeoutMiliseconds = 250;
+
         public const string HttpsTestServer = "corefx-networking.azurewebsites.net";
 
         private const string CertificatePassword = "testcertificate";
