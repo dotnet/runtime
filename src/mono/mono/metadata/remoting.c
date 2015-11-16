@@ -66,6 +66,11 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst);
 static MonoReflectionType *
 type_from_handle (MonoType *handle);
 
+/* Class lazy loading functions */
+static GENERATE_GET_CLASS_WITH_CACHE (remoting_services, System.Runtime.Remoting, RemotingServices)
+static GENERATE_GET_CLASS_WITH_CACHE (call_context, System.Runtime.Remoting.Messaging, CallContext)
+static GENERATE_GET_CLASS_WITH_CACHE (context, System.Runtime.Remoting.Contexts, Context)
+
 static mono_mutex_t remoting_mutex;
 static gboolean remoting_mutex_inited;
 
@@ -153,7 +158,7 @@ mono_remoting_marshal_init (void)
 	byte_array_class = mono_array_class_get (mono_defaults.byte_class, 1);
 
 #ifndef DISABLE_JIT
-	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingServices");
+	klass = mono_class_get_remoting_services_class ();
 	method_rs_serialize = mono_class_get_method_from_name (klass, "SerializeCallData", -1);
 	g_assert (method_rs_serialize);
 	method_rs_deserialize = mono_class_get_method_from_name (klass, "DeserializeCallData", -1);
@@ -169,11 +174,11 @@ mono_remoting_marshal_init (void)
 	method_exc_fixexc = mono_class_get_method_from_name (klass, "FixRemotingException", -1);
 	g_assert (method_exc_fixexc);
 
-	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Messaging", "CallContext");
+	klass = mono_class_get_call_context_class ();
 	method_set_call_context = mono_class_get_method_from_name (klass, "SetCurrentCallContext", -1);
 	g_assert (method_set_call_context);
 
-	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
+	klass = mono_class_get_context_class ();
 	method_needs_context_sink = mono_class_get_method_from_name (klass, "get_NeedsContextSink", -1);
 	g_assert (method_needs_context_sink);
 #endif	

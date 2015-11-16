@@ -2078,49 +2078,35 @@ init_stack_with_value_at_exception_boundary (VerifyContext *ctx, ILCodeDesc *cod
 	if (mono_type_is_generic_argument (type))
 		code->stack->stype |= BOXED_MASK;
 }
+/* Class lazy loading functions */
+static GENERATE_GET_CLASS_WITH_CACHE (ienumerable, System.Collections.Generic, IEnumerable`1)
+static GENERATE_GET_CLASS_WITH_CACHE (icollection, System.Collections.Generic, ICollection`1)
+static GENERATE_GET_CLASS_WITH_CACHE (ireadonly_list, System.Collections.Generic, IReadOnlyList`1)
+static GENERATE_GET_CLASS_WITH_CACHE (ireadonly_collection, System.Collections.Generic, IReadOnlyCollection`1)
+
 
 static MonoClass*
 get_ienumerable_class (void)
 {
-	static MonoClass* generic_ienumerable_class = NULL;
-
-	if (generic_ienumerable_class == NULL)
-		generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Collections.Generic", "IEnumerable`1");
-		return generic_ienumerable_class;
+	return mono_class_get_ienumerable_class ();
 }
 
 static MonoClass*
 get_icollection_class (void)
 {
-	static MonoClass* generic_icollection_class = NULL;
-
-	if (generic_icollection_class == NULL)
-		generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Collections.Generic", "ICollection`1");
-		return generic_icollection_class;
+	return mono_class_get_icollection_class ();
 }
 
 static MonoClass*
 get_ireadonlylist_class (void)
 {
-	static MonoClass* generic_ireadonlylist_class = NULL;
-
-	if (generic_ireadonlylist_class == NULL)
-		generic_ireadonlylist_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Collections.Generic", "IReadOnlyList`1");
-	return generic_ireadonlylist_class;
+	return mono_class_get_ireadonly_list_class ();
 }
 
 static MonoClass*
 get_ireadonlycollection_class (void)
 {
-	static MonoClass* generic_ireadonlycollection_class = NULL;
-
-	if (generic_ireadonlycollection_class == NULL)
-		generic_ireadonlycollection_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Collections.Generic", "IReadOnlyCollection`1");
-	return generic_ireadonlycollection_class;
+	return mono_class_get_ireadonly_collection_class ();
 }
 
 static MonoClass*
