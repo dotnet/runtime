@@ -66,8 +66,7 @@ namespace System.Data.SqlClient.SNI
             }
             catch
             {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SSL_PROV, 0, 31, SR.SNI_ERROR_31);
-                return TdsEnums.SNI_ERROR;
+                return SNICommon.ReportSNIError(SNIProviders.SSL_PROV, 0, 31, SR.SNI_ERROR_31);
             }
         }
 
@@ -116,11 +115,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error code</returns>
         public uint SetConnectionBufferSize(SNIHandle handle, uint bufferSize)
         {
-            if (handle is SNITCPHandle)
-            {
-                (handle as SNITCPHandle).SetBufferSize((int)bufferSize);
-            }
-
+            handle.SetBufferSize((int)bufferSize);
             return TdsEnums.SNI_SUCCESS;
         }
 
@@ -217,7 +212,7 @@ namespace System.Data.SqlClient.SNI
 
             if (serverNameParts.Length > 2)
             {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.INVALID_PROV, 0, 0, "Connection string is not formatted correctly");
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.INVALID_PROV, 0, 25, SR.SNI_ERROR_25);
                 return null;
             }
 
@@ -268,13 +263,13 @@ namespace System.Data.SqlClient.SNI
                 }
                 catch (Exception)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, "Port number is malformed");
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 25, SR.SNI_ERROR_25);
                     return null;
                 }
             }
             else if (serverAndPortParts.Length > 2)
             {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, "Connection string is not formatted correctly");
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 25, SR.SNI_ERROR_25);
                 return null;
             }
 

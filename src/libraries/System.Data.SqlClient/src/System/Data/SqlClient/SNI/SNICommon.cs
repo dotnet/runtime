@@ -54,6 +54,8 @@ namespace System.Data.SqlClient.SNI
 
     internal class SNICommon
     {
+        internal const int SNIInternalExceptionErrorId = 35; // As seen in SNI_ERROR_35
+
         /// <summary>
         /// Validate server certificate callback for SSL
         /// </summary>
@@ -122,7 +124,20 @@ namespace System.Data.SqlClient.SNI
         /// <returns></returns>
         internal static uint ReportSNIError(SNIProviders provider, uint nativeError, uint sniError, string errorMessage)
         {
-            SNILoadHandle.SingletonInstance.LastError = new SNIError(provider, nativeError, sniError, errorMessage);
+            return ReportSNIError(new SNIError(provider, nativeError, sniError, errorMessage));
+        }
+
+        /// <summary>
+        /// Sets last error encountered for SNI
+        /// </summary>
+        /// <param name="provider">SNI provider</param>
+        /// <param name="nativeError">Native error code</param>
+        /// <param name="sniError">SNI error code</param>
+        /// <param name="errorMessage">Error message</param>
+        /// <returns></returns>
+        internal static uint ReportSNIError(SNIError error)
+        {
+            SNILoadHandle.SingletonInstance.LastError = error;
             return TdsEnums.SNI_ERROR;
         }
     }
