@@ -57,17 +57,17 @@ gboolean log_finalizers = FALSE;
 gboolean mono_do_not_finalize = FALSE;
 gchar **mono_do_not_finalize_class_names = NULL;
 
-#define mono_finalizer_lock() mono_os_mutex_lock (&finalizer_mutex)
-#define mono_finalizer_unlock() mono_os_mutex_unlock (&finalizer_mutex)
-static mono_mutex_t finalizer_mutex;
-static mono_mutex_t reference_queue_mutex;
+#define mono_finalizer_lock() mono_coop_mutex_lock (&finalizer_mutex)
+#define mono_finalizer_unlock() mono_coop_mutex_unlock (&finalizer_mutex)
+static MonoCoopMutex finalizer_mutex;
+static MonoCoopMutex reference_queue_mutex;
 
 static GSList *domains_to_finalize= NULL;
 static MonoMList *threads_to_finalize = NULL;
 
 static gboolean finalizer_thread_exited;
 /* Uses finalizer_mutex */
-static mono_cond_t exited_cond;
+static MonoCoopCond exited_cond;
 
 static MonoInternalThread *gc_thread;
 
@@ -763,7 +763,7 @@ finalizer_thread (gpointer unused)
 
 	mono_finalizer_lock ();
 	finalizer_thread_exited = TRUE;
-	mono_os_cond_signal (&exited_cond);
+	mono_coop_cond_signal (&exited_cond);
 	mono_finalizer_unlock ();
 
 	return 0;
@@ -784,8 +784,8 @@ mono_gc_init (void)
 {
 	mono_os_mutex_init_recursive (&allocator_section);
 
-	mono_os_mutex_init_recursive (&finalizer_mutex);
-	mono_os_mutex_init_recursive (&reference_queue_mutex);
+	mono_coop_mutex_init_recursive (&finalizer_mutex);
+	mono_coop_mutex_init_recursive (&reference_queue_mutex);
 
 	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_UINT, &gc_stats.minor_gc_count);
 	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_UINT, &gc_stats.major_gc_count);
@@ -802,7 +802,7 @@ mono_gc_init (void)
 
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	g_assert (pending_done_event);
-	mono_os_cond_init (&exited_cond);
+	mono_coop_cond_init (&exited_cond);
 	mono_coop_sem_init (&finalizer_sem, 0);
 
 #ifndef LAZY_GC_THREAD_CREATION
@@ -838,12 +838,10 @@ mono_gc_cleanup (void)
 					break;
 				else
 					timeout = end_ticks - current_ticks;
-				MONO_PREPARE_BLOCKING;
 				mono_finalizer_lock ();
 				if (!finalizer_thread_exited)
-					mono_os_cond_timedwait_ms (&exited_cond, &finalizer_mutex, timeout);
+					mono_coop_cond_timedwait (&exited_cond, &finalizer_mutex, timeout);
 				mono_finalizer_unlock ();
-				MONO_FINISH_BLOCKING;
 			}
 
 			if (!finalizer_thread_exited) {
@@ -886,8 +884,8 @@ mono_gc_cleanup (void)
 	mono_reference_queue_cleanup ();
 
 	mono_os_mutex_destroy (&allocator_section);
-	mono_os_mutex_destroy (&finalizer_mutex);
-	mono_os_mutex_destroy (&reference_queue_mutex);
+	mono_coop_mutex_destroy (&finalizer_mutex);
+	mono_coop_mutex_destroy (&reference_queue_mutex);
 }
 
 gboolean
@@ -986,7 +984,7 @@ reference_queue_proccess_all (void)
 		reference_queue_proccess (queue);
 
 restart:
-	mono_os_mutex_lock (&reference_queue_mutex);
+	mono_coop_mutex_lock (&reference_queue_mutex);
 	for (iter = &ref_queues; *iter;) {
 		queue = *iter;
 		if (!queue->should_be_deleted) {
@@ -994,14 +992,14 @@ restart:
 			continue;
 		}
 		if (queue->queue) {
-			mono_os_mutex_unlock (&reference_queue_mutex);
+			mono_coop_mutex_unlock (&reference_queue_mutex);
 			reference_queue_proccess (queue);
 			goto restart;
 		}
 		*iter = queue->next;
 		g_free (queue);
 	}
-	mono_os_mutex_unlock (&reference_queue_mutex);
+	mono_coop_mutex_unlock (&reference_queue_mutex);
 }
 
 static void
@@ -1055,10 +1053,10 @@ mono_gc_reference_queue_new (mono_reference_queue_callback callback)
 	MonoReferenceQueue *res = g_new0 (MonoReferenceQueue, 1);
 	res->callback = callback;
 
-	mono_os_mutex_lock (&reference_queue_mutex);
+	mono_coop_mutex_lock (&reference_queue_mutex);
 	res->next = ref_queues;
 	ref_queues = res;
-	mono_os_mutex_unlock (&reference_queue_mutex);
+	mono_coop_mutex_unlock (&reference_queue_mutex);
 
 	return res;
 }

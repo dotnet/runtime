@@ -846,9 +846,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	if (!handle_store (thread, FALSE))
 		return FALSE;
 
-	MONO_PREPARE_BLOCKING;
 	mono_thread_info_resume (tid);
-	MONO_FINISH_BLOCKING;
 
 	if (internal->start_notify) {
 		/*
