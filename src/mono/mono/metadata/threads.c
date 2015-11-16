@@ -813,10 +813,8 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, StartInfo *star
 	 */
 	create_flags = CREATE_SUSPENDED;
 
-	MONO_PREPARE_BLOCKING;
 	thread_handle = mono_threads_create_thread ((LPTHREAD_START_ROUTINE)start_wrapper, start_info,
 												stack_size, create_flags, &tid);
-	MONO_FINISH_BLOCKING;
 
 	if (thread_handle == NULL) {
 		/* The thread couldn't be created, so throw an exception */

@@ -16,6 +16,7 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-posix-signals.h>
+#include <mono/utils/mono-coop-semaphore.h>
 #include <mono/metadata/gc-internals.h>
 
 #include <errno.h>
@@ -40,7 +41,7 @@ typedef struct {
 	void *(*start_routine)(void*);
 	void *arg;
 	int flags;
-	MonoSemType registered;
+	MonoCoopSem registered;
 	HANDLE handle;
 } StartInfo;
 
@@ -59,36 +60,34 @@ inner_start_thread (void *arg)
 	/* Register the thread with the io-layer */
 	handle = wapi_create_thread_handle ();
 	if (!handle) {
-		res = mono_os_sem_post (&(start_info->registered));
+		res = mono_coop_sem_post (&(start_info->registered));
 		g_assert (!res);
 		return NULL;
 	}
 	start_info->handle = handle;
 
 	info = mono_thread_info_attach (&result);
-	MONO_PREPARE_BLOCKING;
 
 	info->runtime_thread = TRUE;
 	info->handle = handle;
 
 	if (flags & CREATE_SUSPENDED) {
 		info->create_suspended = TRUE;
-		mono_os_sem_init (&info->create_suspended_sem, 0);
+		mono_coop_sem_init (&info->create_suspended_sem, 0);
 	}
 
 	/* start_info is not valid after this */
-	res = mono_os_sem_post (&(start_info->registered));
+	res = mono_coop_sem_post (&(start_info->registered));
 	g_assert (!res);
 	start_info = NULL;
 
 	if (flags & CREATE_SUSPENDED) {
-		res = mono_os_sem_wait (&info->create_suspended_sem, MONO_SEM_FLAGS_NONE);
+		res = mono_coop_sem_wait (&info->create_suspended_sem, MONO_SEM_FLAGS_NONE);
 		g_assert (res != -1);
 
-		mono_os_sem_destroy (&info->create_suspended_sem);
+		mono_coop_sem_destroy (&info->create_suspended_sem);
 	}
 
-	MONO_FINISH_BLOCKING;
 	/* Run the actual main function of the thread */
 	result = start_func (t_arg);
 
@@ -132,22 +131,20 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 	start_info.start_routine = (void *(*)(void *)) start_routine;
 	start_info.arg = arg;
 	start_info.flags = creation_flags;
-	mono_os_sem_init (&(start_info.registered), 0);
+	mono_coop_sem_init (&(start_info.registered), 0);
 
 	/* Actually start the thread */
 	res = mono_gc_pthread_create (&thread, &attr, inner_start_thread, &start_info);
 	if (res) {
-		mono_os_sem_destroy (&(start_info.registered));
+		mono_coop_sem_destroy (&(start_info.registered));
 		return NULL;
 	}
 
-	MONO_TRY_BLOCKING;
 	/* Wait until the thread register itself in various places */
-	res = mono_os_sem_wait (&start_info.registered, MONO_SEM_FLAGS_NONE);
+	res = mono_coop_sem_wait (&start_info.registered, MONO_SEM_FLAGS_NONE);
 	g_assert (res != -1);
-	MONO_FINISH_TRY_BLOCKING;
 
-	mono_os_sem_destroy (&(start_info.registered));
+	mono_coop_sem_destroy (&(start_info.registered));
 
 	if (out_tid)
 		*out_tid = thread;
@@ -163,7 +160,7 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 void
 mono_threads_core_resume_created (MonoThreadInfo *info, MonoNativeThreadId tid)
 {
-	mono_os_sem_post (&info->create_suspended_sem);
+	mono_coop_sem_post (&info->create_suspended_sem);
 }
 
 gboolean

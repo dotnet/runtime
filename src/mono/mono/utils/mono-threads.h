@@ -16,6 +16,7 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-api.h>
+#include <mono/utils/mono-coop-semaphore.h>
 
 #include <mono/io-layer/io-layer.h>
 
@@ -227,7 +228,7 @@ typedef struct {
 	gboolean create_suspended;
 
 	/* Semaphore used to implement CREATE_SUSPENDED */
-	MonoSemType create_suspended_sem;
+	MonoCoopSem create_suspended_sem;
 
 	/*
 	 * Values of TLS variables for this thread.
