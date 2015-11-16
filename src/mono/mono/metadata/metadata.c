@@ -3636,7 +3636,8 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
 		return FALSE;
 
 	ptr = mono_image_rva_map (img, rva);
-	g_assert (ptr);
+	if (!ptr)
+		return FALSE;
 
 	flags = *(const unsigned char *)ptr;
 	format = flags & METHOD_HEADER_FORMAT_MASK;
