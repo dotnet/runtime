@@ -409,7 +409,6 @@ struct _MonoInternalThread {
 	gpointer *static_data;
 	void *thread_info; /*This is MonoThreadInfo*, but to simplify dependencies, let's make it a void* here. */
 	MonoAppContext *current_appcontext;
-	MonoException *pending_exception;
 	MonoThread *root_domain_thread;
 	MonoObject *_serialized_principal;
 	int _serialized_principal_version;
@@ -442,6 +441,7 @@ struct _MonoThread {
 	MonoObject obj;
 	struct _MonoInternalThread *internal_thread;
 	MonoObject *start_obj;
+	MonoException *pending_exception;
 };
 
 typedef struct {
