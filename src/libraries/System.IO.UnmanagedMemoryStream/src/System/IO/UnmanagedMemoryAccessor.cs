@@ -401,10 +401,12 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         public Decimal ReadDecimal(Int64 position)
         {
+            const int ScaleMask = 0x00FF0000;
+            const int SignMask = unchecked((int)0x80000000);
+
             int sizeOfType = sizeof(Decimal);
             EnsureSafeToRead(position, sizeOfType);
 
-            Decimal d;
             unsafe
             {
                 byte* pointer = null;
@@ -418,11 +420,16 @@ namespace System.IO
                     int hi = UnsafeReadInt32(pointer + 8);
                     int flags = UnsafeReadInt32(pointer + 12);
 
-                    int* ptr = (int*)(&d);
-                    *ptr++ = flags;
-                    *ptr++ = hi;
-                    *ptr++ = lo;
-                    *ptr = mid;
+                    // Check for invalid Decimal values
+                    if (!((flags & ~(SignMask | ScaleMask)) == 0 && (flags & ScaleMask) <= (28 << 16)))
+                    {
+                        throw new ArgumentException(SR.Arg_BadDecimal); // Throw same Exception type as Decimal(int[]) ctor for compat
+                    }
+
+                    bool isNegative = (flags & SignMask) != 0;
+                    byte scale = (byte)(flags >> 16);
+
+                    return new decimal(lo, mid, hi, isNegative, scale);
                 }
                 finally
                 {
@@ -432,8 +439,6 @@ namespace System.IO
                     }
                 }
             }
-
-            return d;
         }
 
         /// <summary>
