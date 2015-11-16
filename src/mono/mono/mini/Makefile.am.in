@@ -310,7 +310,10 @@ amd64_sources = \
 	mini-amd64.c		\
 	mini-amd64.h		\
 	exceptions-amd64.c	\
-	tramp-amd64.c
+	tramp-amd64.c	\
+	mini-amd64-gsharedvt.c	\
+	mini-amd64-gsharedvt.h	\
+	tramp-amd64-gsharedvt.c
 
 ppc_sources = \
 	mini-ppc.c		\
@@ -429,6 +432,7 @@ common_sources = \
 	mini-trampolines.c  	\
 	branch-opts.c		\
 	mini-generic-sharing.c	\
+	mini-generic-sharing-gsharedvt.c	\
 	simd-methods.h		\
 	tasklets.c		\
 	tasklets.h		\

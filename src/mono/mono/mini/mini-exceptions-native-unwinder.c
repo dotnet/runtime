@@ -13,6 +13,13 @@
  * Attempt to handle native SIGSEGVs with libunwind or libcorkscrew.
  */
 
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
+#include <mono/utils/mono-signal-handler.h>
+#include "mini.h"
+
 #if defined (PLATFORM_ANDROID)
 
 #include <signal.h>

@@ -10098,7 +10098,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	//acfg->aot_opts.print_skipped_methods = TRUE;
 
-#if !defined(ENABLE_GSHAREDVT)
+#if !defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
 	if (opts & MONO_OPT_GSHAREDVT) {
 		aot_printerrf (acfg, "-O=gsharedvt not supported on this platform.\n");
 		return 1;
@@ -10113,13 +10113,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #endif
 
 	if (acfg->aot_opts.llvm_only) {
-#ifndef ENABLE_GSHAREDVT
-		aot_printerrf (acfg, "--aot=llvmonly requires a runtime compiled with --enable-gsharedvt.\n");
+#ifndef MONO_ARCH_GSHAREDVT_SUPPORTED
+		aot_printerrf (acfg, "--aot=llvmonly requires a runtime that supports gsharedvt.\n");
 		return 1;
 #endif
 	}
 
-#if defined(ENABLE_GSHAREDVT) && defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
+#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
 	acfg->opts |= MONO_OPT_GSHAREDVT;
 	opts |= MONO_OPT_GSHAREDVT;
 #endif

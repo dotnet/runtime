@@ -2485,11 +2485,6 @@ mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst
 	return mrgctx;
 }
 
-
-static gboolean
-generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
-						  gboolean allow_partial);
-
 static gboolean
 type_is_sharable (MonoType *type, gboolean allow_type_vars, gboolean allow_partial)
 {
@@ -2510,9 +2505,9 @@ type_is_sharable (MonoType *type, gboolean allow_type_vars, gboolean allow_parti
 	if (allow_partial && !type->byref && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
 		MonoGenericClass *gclass = type->data.generic_class;
 
-		if (gclass->context.class_inst && !generic_inst_is_sharable (gclass->context.class_inst, allow_type_vars, allow_partial))
+		if (gclass->context.class_inst && !mini_generic_inst_is_sharable (gclass->context.class_inst, allow_type_vars, allow_partial))
 			return FALSE;
-		if (gclass->context.method_inst && !generic_inst_is_sharable (gclass->context.method_inst, allow_type_vars, allow_partial))
+		if (gclass->context.method_inst && !mini_generic_inst_is_sharable (gclass->context.method_inst, allow_type_vars, allow_partial))
 			return FALSE;
 		if (mono_class_is_nullable (mono_class_from_mono_type (type)))
 			return FALSE;
@@ -2522,8 +2517,8 @@ type_is_sharable (MonoType *type, gboolean allow_type_vars, gboolean allow_parti
 	return FALSE;
 }
 
-static gboolean
-generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
+gboolean
+mini_generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
 						  gboolean allow_partial)
 {
 	int i;
@@ -2572,10 +2567,10 @@ mono_generic_context_is_sharable_full (MonoGenericContext *context,
 {
 	g_assert (context->class_inst || context->method_inst);
 
-	if (context->class_inst && !generic_inst_is_sharable (context->class_inst, allow_type_vars, allow_partial))
+	if (context->class_inst && !mini_generic_inst_is_sharable (context->class_inst, allow_type_vars, allow_partial))
 		return FALSE;
 
-	if (context->method_inst && !generic_inst_is_sharable (context->method_inst, allow_type_vars, allow_partial))
+	if (context->method_inst && !mini_generic_inst_is_sharable (context->method_inst, allow_type_vars, allow_partial))
 		return FALSE;
 
 	return TRUE;
@@ -2863,7 +2858,6 @@ mono_method_construct_object_context (MonoMethod *method)
 }
 
 static gboolean gshared_supported;
-static gboolean gsharedvt_supported;
 
 void
 mono_set_generic_sharing_supported (gboolean supported)
@@ -2871,11 +2865,6 @@ mono_set_generic_sharing_supported (gboolean supported)
 	gshared_supported = supported;
 }
 
-void
-mono_set_generic_sharing_vt_supported (gboolean supported)
-{
-	gsharedvt_supported = supported;
-}
 
 void
 mono_set_partial_sharing_supported (gboolean supported)
@@ -3385,7 +3374,7 @@ get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGeneri
 		if (all_vt || gsharedvt) {
 			type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
 		} else {
-			/* These types match the ones in generic_inst_is_sharable () */
+			/* These types match the ones in mini_generic_inst_is_sharable () */
 			type_argv [i] = get_shared_type (shared_inst->type_argv [i], inst->type_argv [i]);
 		}
 	}
@@ -3528,47 +3517,3 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 
 	return slot;
 }
-
-#if defined(ENABLE_GSHAREDVT)
-
-#include "../../../mono-extensions/mono/mini/mini-generic-sharing-gsharedvt.c"
-
-#else
-
-gboolean
-mini_is_gsharedvt_type (MonoType *t)
-{
-	return FALSE;
-}
-
-gboolean
-mini_is_gsharedvt_klass (MonoClass *klass)
-{
-	return FALSE;
-}
-
-gboolean
-mini_is_gsharedvt_signature (MonoMethodSignature *sig)
-{
-	return FALSE;
-}
-
-gboolean
-mini_is_gsharedvt_variable_type (MonoType *t)
-{
-	return FALSE;
-}
-
-gboolean
-mini_is_gsharedvt_sharable_method (MonoMethod *method)
-{
-	return FALSE;
-}
-
-gboolean
-mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig)
-{
-	return FALSE;
-}
-
-#endif /* !MONOTOUCH */

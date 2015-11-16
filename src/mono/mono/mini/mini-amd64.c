@@ -479,48 +479,6 @@ mono_amd64_patch (unsigned char* code, gpointer target)
 	amd64_patch (code, target);
 }
 
-typedef enum {
-	ArgInIReg,
-	ArgInFloatSSEReg,
-	ArgInDoubleSSEReg,
-	ArgOnStack,
-	ArgValuetypeInReg,
-	ArgValuetypeAddrInIReg,
-	/* gsharedvt argument passed by addr */
-	ArgGSharedVtInReg,
-	ArgGSharedVtOnStack,
-	ArgNone /* only in pair_storage */
-} ArgStorage;
-
-typedef struct {
-	gint16 offset;
-	gint8  reg;
-	ArgStorage storage : 8;
-	gboolean is_gsharedvt_return_value : 1;
-
-	/* Only if storage == ArgValuetypeInReg */
-	ArgStorage pair_storage [2];
-	gint8 pair_regs [2];
-	/* The size of each pair (bytes) */
-	int pair_size [2];
-	int nregs;
-	/* Only if storage == ArgOnStack */
-	int arg_size; // Bytes, will always be rounded up/aligned to 8 byte boundary
-} ArgInfo;
-
-typedef struct {
-	int nargs;
-	guint32 stack_usage;
-	guint32 reg_usage;
-	guint32 freg_usage;
-	gboolean need_stack_align;
-	/* The index of the vret arg in the argument list */
-	int vret_arg_index;
-	ArgInfo ret;
-	ArgInfo sig_cookie;
-	ArgInfo args [1];
-} CallInfo;
-
 #define DEBUG(a) if (cfg->verbose_level > 1) a
 
 static void inline
@@ -1465,7 +1423,7 @@ mono_arch_init (void)
 	mono_aot_register_jit_icall ("mono_amd64_throw_corlib_exception", mono_amd64_throw_corlib_exception);
 	mono_aot_register_jit_icall ("mono_amd64_resume_unwind", mono_amd64_resume_unwind);
 	mono_aot_register_jit_icall ("mono_amd64_get_original_ip", mono_amd64_get_original_ip);
-#if defined(ENABLE_GSHAREDVT)
+#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
 	mono_aot_register_jit_icall ("mono_amd64_start_gsharedvt_call", mono_amd64_start_gsharedvt_call);
 #endif
 
@@ -8845,8 +8803,8 @@ mono_arch_opcode_supported (int opcode)
 	}
 }
 
-#if defined(ENABLE_GSHAREDVT) && defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
-
-#include "../../../mono-extensions/mono/mini/mini-amd64-gsharedvt.c"
-
-#endif /* !ENABLE_GSHAREDVT */
+CallInfo*
+mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
+{
+	return get_call_info (mp, sig);
+}

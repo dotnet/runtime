@@ -2390,7 +2390,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 
 	if (!info->dyn_call_info) {
 		if (mono_llvm_only) {
-#ifndef ENABLE_GSHAREDVT
+#ifndef MONO_ARCH_GSHAREDVT_SUPPORTED
 			g_assert_not_reached ();
 #endif
 			info->gsharedvt_invoke = TRUE;

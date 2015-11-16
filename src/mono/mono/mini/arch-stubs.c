@@ -33,23 +33,6 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 #endif
 
-#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED) && !defined(ENABLE_GSHAREDVT)
-
-gboolean
-mono_arch_gsharedvt_sig_supported (MonoMethodSignature *sig)
-{
-	return FALSE;
-}
-
-gpointer
-mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gboolean gsharedvt_in, gint32 vcall_offset, gboolean calli)
-{
-	NOT_IMPLEMENTED;
-	return NULL;
-}
-
-#endif
-
 #ifndef MONO_ARCH_HAVE_DECOMPOSE_OPTS
 void
 mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
