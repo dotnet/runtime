@@ -38,6 +38,7 @@
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-coop-semaphore.h>
 
 #ifndef HOST_WIN32
 #include <pthread.h>
@@ -619,7 +620,7 @@ mono_gc_GCHandle_CheckCurrentDomain (guint32 gchandle)
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
 }
 
-static MonoSemType finalizer_sem;
+static MonoCoopSem finalizer_sem;
 static volatile gboolean finished=FALSE;
 
 void
@@ -632,7 +633,7 @@ mono_gc_finalize_notify (void)
 	if (mono_gc_is_null ())
 		return;
 
-	mono_os_sem_post (&finalizer_sem);
+	mono_coop_sem_post (&finalizer_sem);
 }
 
 #ifdef HAVE_BOEHM_GC
@@ -717,14 +718,13 @@ finalizer_thread (gpointer unused)
 
 		g_assert (mono_domain_get () == mono_get_root_domain ());
 		mono_gc_set_skip_thread (TRUE);
-		MONO_PREPARE_BLOCKING;
 
 		if (wait) {
 			/* An alertable wait is required so this thread can be suspended on windows */
-			mono_os_sem_wait (&finalizer_sem, MONO_SEM_FLAGS_ALERTABLE);
+			mono_coop_sem_wait (&finalizer_sem, MONO_SEM_FLAGS_ALERTABLE);
 		}
 		wait = TRUE;
-		MONO_FINISH_BLOCKING;
+
 		mono_gc_set_skip_thread (FALSE);
 
 		mono_threads_perform_thread_dump ();
@@ -756,7 +756,7 @@ finalizer_thread (gpointer unused)
 		reference_queue_proccess_all ();
 
 		/* Avoid posting the pending done event until there are pending finalizers */
-		if (mono_os_sem_timedwait (&finalizer_sem, 0, MONO_SEM_FLAGS_NONE) == 0) {
+		if (mono_coop_sem_timedwait (&finalizer_sem, 0, MONO_SEM_FLAGS_NONE) == 0) {
 			/* Don't wait again at the start of the loop */
 			wait = FALSE;
 		} else {
@@ -806,7 +806,7 @@ mono_gc_init (void)
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	g_assert (pending_done_event);
 	mono_os_cond_init (&exited_cond);
-	mono_os_sem_init (&finalizer_sem, 0);
+	mono_coop_sem_init (&finalizer_sem, 0);
 
 #ifndef LAZY_GC_THREAD_CREATION
 	mono_gc_init_finalizer_thread ();
