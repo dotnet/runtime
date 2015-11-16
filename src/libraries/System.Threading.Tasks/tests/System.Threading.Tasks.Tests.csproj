@@ -35,6 +35,7 @@
     <Compile Include="MethodCoverage.cs" />
     <Compile Include="CESchedulerPairTests.cs" />
     <!-- Task -->
+    <Compile Include="Task\RunContinuationsAsynchronouslyTests.cs" />
     <Compile Include="Task\TPLTestException.cs" />
     <Compile Include="Task\TaskRunSyncTests.cs" />
     <Compile Include="Task\TaskStatusTest.cs" />

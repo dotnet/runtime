@@ -1,0 +1,64 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using Xunit;
+
+namespace System.Threading.Tasks.Tests
+{
+    public class RunContinuationsAsynchronouslyTests
+    {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Direct(bool useRunContinuationsAsynchronously)
+        {
+            Run(useRunContinuationsAsynchronously, t => t);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ViaUnwrap(bool useRunContinuationsAsynchronously)
+        {
+            Run(useRunContinuationsAsynchronously, t => ((Task<Task>)t).Unwrap());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ViaWhenAll(bool useRunContinuationsAsynchronously)
+        {
+            Run(useRunContinuationsAsynchronously, t => Task.WhenAll(t));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ViaWhenAny(bool useRunContinuationsAsynchronously)
+        {
+            Run(useRunContinuationsAsynchronously, t => Task.WhenAny(t));
+        }
+
+        private static void Run(bool useRunContinuationsAsynchronously, Func<Task,Task> getIntermediateContinuation)
+        {
+            Task.Run(() => // run test off of xunit's thread so as not to be confused by its TaskScheduler or SynchronizationContext
+            {
+                int callingThreadId = Environment.CurrentManagedThreadId;
+
+                var tcs = new TaskCompletionSource<Task>(useRunContinuationsAsynchronously ?
+                    TaskCreationOptions.RunContinuationsAsynchronously :
+                    TaskCreationOptions.None);
+
+                Task cont = getIntermediateContinuation(tcs.Task).ContinueWith(
+                    _ => Assert.NotEqual(useRunContinuationsAsynchronously, callingThreadId == Environment.CurrentManagedThreadId),
+                    TaskContinuationOptions.ExecuteSynchronously);
+
+                tcs.SetResult(Task.CompletedTask);
+
+                ((IAsyncResult)cont).AsyncWaitHandle.WaitOne(); // ensure we don't inline as part of waiting
+                cont.GetAwaiter().GetResult(); // propagate any errors
+            }).GetAwaiter().GetResult(); // propagate any errors
+        }
+
+    }
+}
