@@ -17,6 +17,7 @@ namespace System.Net.Security.Tests
         private readonly byte[] sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
         private readonly TimeSpan TestTimeoutSpan = TimeSpan.FromSeconds(TestConfiguration.TestTimeoutSeconds);
 
+        [ActiveIssue(4467)]
         [Fact]
         public void SslStream_StreamToStream_Authentication_Success()
         {

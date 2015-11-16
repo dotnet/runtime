@@ -100,6 +100,7 @@ namespace System.Net.Security.Tests
             await Assert.ThrowsAsync<IOException>(() => ClientAsyncSslHelper(EncryptionPolicy.NoEncryption));
         }
 
+        [ActiveIssue(4467)]
         [Fact]
         public async Task ClientAsyncAuthenticate_EachProtocol_Success()
         {
