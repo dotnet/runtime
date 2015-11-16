@@ -359,7 +359,7 @@ GCMemSection *nursery_section = NULL;
 static volatile mword lowest_heap_address = ~(mword)0;
 static volatile mword highest_heap_address = 0;
 
-LOCK_DECLARE (sgen_interruption_mutex);
+MonoCoopMutex sgen_interruption_mutex;
 
 int current_collection_generation = -1;
 static volatile gboolean concurrent_collection_in_progress = FALSE;
@@ -2811,7 +2811,7 @@ sgen_gc_init (void)
 
 	gc_debug_file = stderr;
 
-	LOCK_INIT (sgen_interruption_mutex);
+	mono_coop_mutex_init (&sgen_interruption_mutex);
 
 	if ((env = g_getenv (MONO_GC_PARAMS_NAME))) {
 		opts = g_strsplit (env, ",", -1);
