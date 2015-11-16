@@ -15,9 +15,7 @@ namespace System.Net.Security.Tests
     public class SslStreamStreamToStreamTest
     {
         private readonly byte[] sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
-        private readonly TimeSpan TestTimeoutSpan = TimeSpan.FromSeconds(TestConfiguration.TestTimeoutSeconds);
 
-        [ActiveIssue(4467)]
         [Fact]
         public void SslStream_StreamToStream_Authentication_Success()
         {
@@ -33,7 +31,7 @@ namespace System.Net.Security.Tests
                 auth[0] = client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
                 auth[1] = server.AuthenticateAsServerAsync(certificate);
 
-                bool finished = Task.WaitAll(auth, TestTimeoutSpan);
+                bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
                 Assert.True(finished, "Handshake completed in the allotted time");
             }
         }
@@ -128,7 +126,7 @@ namespace System.Net.Security.Tests
             auth[0] = clientSslStream.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
             auth[1] = serverSslStream.AuthenticateAsServerAsync(certificate);
 
-            bool finished = Task.WaitAll(auth, TestTimeoutSpan);
+            bool finished = Task.WaitAll(auth, TestConfiguration.PassingTestTimeoutMilliseconds);
             return finished;
         }
     }

@@ -33,8 +33,6 @@ namespace System.Net.Security
 
     public class SslStream : AuthenticatedStream
     {
-        private const SslProtocols DefaultProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
-
         private SslState _sslState;
         private RemoteCertificateValidationCallback _userCertificateValidationCallback;
         private LocalCertificateSelectionCallback _userCertificateSelectionCallback;
@@ -105,18 +103,20 @@ namespace System.Net.Security
         //
         public virtual void AuthenticateAsClient(string targetHost)
         {
-            AuthenticateAsClient(targetHost, new X509CertificateCollection(), DefaultProtocols, false);
+            AuthenticateAsClient(targetHost, new X509CertificateCollection(), SecurityProtocol.DefaultSecurityProtocols, false);
         }
 
         public virtual void AuthenticateAsClient(string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
         {
+            SecurityProtocol.ThrowOnNotAllowed(enabledSslProtocols);
+
             _sslState.ValidateCreateContext(false, targetHost, enabledSslProtocols, null, clientCertificates, true, checkCertificateRevocation);
             _sslState.ProcessAuthentication(null);
         }
 
         internal virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, AsyncCallback asyncCallback, object asyncState)
         {
-            return BeginAuthenticateAsClient(targetHost, new X509CertificateCollection(), DefaultProtocols, false,
+            return BeginAuthenticateAsClient(targetHost, new X509CertificateCollection(), SecurityProtocol.DefaultSecurityProtocols, false,
                                            asyncCallback, asyncState);
         }
 
@@ -141,12 +141,14 @@ namespace System.Net.Security
         //
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate)
         {
-            AuthenticateAsServer(serverCertificate, false, DefaultProtocols, false);
+            AuthenticateAsServer(serverCertificate, false, SecurityProtocol.DefaultSecurityProtocols, false);
         }
 
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired,
                                                SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
         {
+            SecurityProtocol.ThrowOnNotAllowed(enabledSslProtocols);
+
             _sslState.ValidateCreateContext(true, string.Empty, enabledSslProtocols, serverCertificate, null, clientCertificateRequired, checkCertificateRevocation);
             _sslState.ProcessAuthentication(null);
         }
@@ -154,7 +156,7 @@ namespace System.Net.Security
         internal virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, AsyncCallback asyncCallback, object asyncState)
 
         {
-            return BeginAuthenticateAsServer(serverCertificate, false, DefaultProtocols, false,
+            return BeginAuthenticateAsServer(serverCertificate, false, SecurityProtocol.DefaultSecurityProtocols, false,
                                                           asyncCallback,
                                                             asyncState);
         }
@@ -196,6 +198,8 @@ namespace System.Net.Security
 
         public virtual Task AuthenticateAsClientAsync(string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
         {
+            SecurityProtocol.ThrowOnNotAllowed(enabledSslProtocols);
+
             return Task.Factory.FromAsync((callback, state) => BeginAuthenticateAsClient(targetHost, clientCertificates, enabledSslProtocols, checkCertificateRevocation, callback, state), EndAuthenticateAsClient, null);
         }
 
@@ -206,6 +210,8 @@ namespace System.Net.Security
 
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
         {
+            SecurityProtocol.ThrowOnNotAllowed(enabledSslProtocols);
+
             return Task.Factory.FromAsync((callback, state) => BeginAuthenticateAsServer(serverCertificate, clientCertificateRequired, enabledSslProtocols, checkCertificateRevocation, callback, state), EndAuthenticateAsServer, null);
         }
         #endregion

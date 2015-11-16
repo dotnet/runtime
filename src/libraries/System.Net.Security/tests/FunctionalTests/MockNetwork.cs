@@ -30,7 +30,7 @@ namespace System.Net.Security.Tests
                 packetQueue = _serverWriteQueue;
             }
 
-            semaphore.Wait(TestConfiguration.TestTimeoutSeconds * 1000);
+            semaphore.Wait(TestConfiguration.PassingTestTimeoutMilliseconds);
             buffer = packetQueue.Dequeue();
         }
 
