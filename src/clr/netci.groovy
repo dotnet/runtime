@@ -210,7 +210,7 @@ def static getBuildJobName(def configuration, def architecture, def os) {
                 steps {
                     shell("""
     echo \"Using rootfs in /opt/arm-liux-genueabihf-root\"
-    ROOTFS_DIR=/opt/arm-liux-genueabihf-root ./build.sh skipmscorlib arm cross verbose ${lowerConfiguration}""")
+    ROOTFS_DIR=/opt/arm-linux-genueabihf-root ./build.sh skipmscorlib arm cross verbose ${lowerConfiguration}""")
                 }
             }
             
