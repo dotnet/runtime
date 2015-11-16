@@ -245,36 +245,36 @@ amodule_unlock (MonoAotModule *amodule)
  * load_image:
  *
  *   Load one of the images referenced by AMODULE. Returns NULL if the image is not
- * found, and sets the loader error if SET_ERROR is TRUE.
+ * found, and sets @error for what happened
  */
 static MonoImage *
-load_image (MonoAotModule *amodule, int index, gboolean set_error)
+load_image (MonoAotModule *amodule, int index, MonoError *error)
 {
 	MonoAssembly *assembly;
 	MonoImageOpenStatus status;
 
 	g_assert (index < amodule->image_table_len);
 
+	mono_error_init (error);
+
 	if (amodule->image_table [index])
 		return amodule->image_table [index];
-	if (amodule->out_of_date)
+	if (amodule->out_of_date) {
+		mono_error_set_bad_image_name (error, amodule->aot_name, "Image out of date");
 		return NULL;
+	}
 
 	assembly = mono_assembly_load (&amodule->image_names [index], amodule->assembly->basedir, &status);
 	if (!assembly) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable because dependency %s is not found.\n", amodule->aot_name, amodule->image_names [index].name);
+		mono_error_set_bad_image_name (error, amodule->aot_name, "module is unusable because dependency %s is not found (error %d).\n", amodule->image_names [index].name, status);
 		amodule->out_of_date = TRUE;
-
-		if (set_error) {
-			char *full_name = mono_stringify_assembly_name (&amodule->image_names [index]);
-			mono_loader_set_error_assembly_load (full_name, FALSE);
-			g_free (full_name);
-		}
 		return NULL;
 	}
 
 	if (strcmp (assembly->image->guid, amodule->image_guids [index])) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_AOT, "AOT: module %s is unusable (GUID of dependent assembly %s doesn't match (expected '%s', got '%s').\n", amodule->aot_name, amodule->image_names [index].name, amodule->image_guids [index], assembly->image->guid);
+		mono_error_set_bad_image_name (error, amodule->aot_name, "module is unusable (GUID of dependent assembly %s doesn't match (expected '%s', got '%s').\n", amodule->image_names [index].name, amodule->image_guids [index], assembly->image->guid);
 		amodule->out_of_date = TRUE;
 		return NULL;
 	}
@@ -444,20 +444,16 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 	switch (reftype) {
 	case MONO_AOT_TYPEREF_TYPEDEF_INDEX:
 		idx = decode_value (p, &p);
-		image = load_image (module, 0, TRUE);
-		if (!image) {
-			mono_error_set_from_loader_error (error);
+		image = load_image (module, 0, error);
+		if (!image)
 			return NULL;
-		}
 		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF + idx, error);
 		break;
 	case MONO_AOT_TYPEREF_TYPEDEF_INDEX_IMAGE:
 		idx = decode_value (p, &p);
-		image = load_image (module, decode_value (p, &p), TRUE);
-		if (!image) {
-			mono_error_set_from_loader_error (error);
+		image = load_image (module, decode_value (p, &p), error);
+		if (!image)
 			return NULL;
-		}
 		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF + idx, error);
 		break;
 	case MONO_AOT_TYPEREF_TYPESPEC_TOKEN:
@@ -1235,7 +1231,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		image_index = decode_value (p, &p);
 		ref->token = decode_value (p, &p);
 
-		image = load_image (module, image_index, TRUE);
+		image = load_image (module, image_index, &error);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		if (!image)
 			return FALSE;
 	} else if (image_index == MONO_AOT_METHODREF_GINST) {
@@ -1258,7 +1255,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		image_index = decode_value (p, &p);
 		ref->token = decode_value (p, &p);
 
-		image = load_image (module, image_index, TRUE);
+		image = load_image (module, image_index, &error);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		if (!image)
 			return FALSE;
 
@@ -1324,7 +1322,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 
 		ref->token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
 
-		image = load_image (module, image_index, TRUE);
+		image = load_image (module, image_index, &error);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		if (!image)
 			return FALSE;
 	}
@@ -2284,8 +2283,11 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	}
 #endif
 	if (do_load_image) {
-		for (i = 0; i < amodule->image_table_len; ++i)
-			load_image (amodule, i, FALSE);
+		for (i = 0; i < amodule->image_table_len; ++i) {
+			MonoError error;
+			load_image (amodule, i, &error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		}
 	}
 
 	if (amodule->out_of_date) {
@@ -3509,7 +3511,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.del_tramp->is_virtual = decode_value (p, &p) ? TRUE : FALSE;
 		break;
 	case MONO_PATCH_INFO_IMAGE:
-		ji->data.image = load_image (aot_module, decode_value (p, &p), TRUE);
+		ji->data.image = load_image (aot_module, decode_value (p, &p), &error);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		if (!ji->data.image)
 			goto cleanup;
 		break;
@@ -3549,7 +3552,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		break;
 	}
 	case MONO_PATCH_INFO_LDSTR:
-		image = load_image (aot_module, decode_value (p, &p), TRUE);
+		image = load_image (aot_module, decode_value (p, &p), &error);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		if (!image)
 			goto cleanup;
 		ji->data.token = mono_jump_info_token_new (mp, image, MONO_TOKEN_STRING + decode_value (p, &p));
@@ -3559,7 +3563,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 		/* Shared */
-		image = load_image (aot_module, decode_value (p, &p), TRUE);
+		image = load_image (aot_module, decode_value (p, &p), &error);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		if (!image)
 			goto cleanup;
 		ji->data.token = mono_jump_info_token_new (mp, image, decode_value (p, &p));
