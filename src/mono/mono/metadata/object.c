@@ -59,6 +59,13 @@ free_main_args (void);
 static char *
 mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error);
 
+/* Class lazy loading functions */
+static GENERATE_GET_CLASS_WITH_CACHE (pointer, System.Reflection, Pointer)
+static GENERATE_GET_CLASS_WITH_CACHE (remoting_services, System.Runtime.Remoting, RemotingServices)
+static GENERATE_GET_CLASS_WITH_CACHE (unhandled_exception_event_args, System, UnhandledExceptionEventArgs)
+static GENERATE_GET_CLASS_WITH_CACHE (sta_thread_attribute, System, STAThreadAttribute)
+static GENERATE_GET_CLASS_WITH_CACHE (activation_services, System.Runtime.Remoting.Activation, ActivationServices)
+
 
 #define ldstr_lock() mono_os_mutex_lock (&ldstr_section)
 #define ldstr_unlock() mono_os_mutex_unlock (&ldstr_section)
@@ -3419,7 +3426,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 		gpointer v;
 
 		if (!m) {
-			MonoClass *ptr_klass = mono_class_from_name_cached (mono_defaults.corlib, "System.Reflection", "Pointer");
+			MonoClass *ptr_klass = mono_class_get_pointer_class ();
 			m = mono_class_get_method_from_name_flags (ptr_klass, "Box", 2, METHOD_ATTRIBUTE_STATIC);
 			g_assert (m);
 		}
@@ -4002,7 +4009,7 @@ serialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
 	MonoObject *array;
 
 	if (!serialize_method) {
-		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingServices");
+		MonoClass *klass = mono_class_get_remoting_services_class ();
 		serialize_method = mono_class_get_method_from_name (klass, "SerializeCallData", -1);
 	}
 
@@ -4040,7 +4047,7 @@ deserialize_object (MonoObject *obj, gboolean *failure, MonoObject **exc)
 	MonoObject *result;
 
 	if (!deserialize_method) {
-		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingServices");
+		MonoClass *klass = mono_class_get_remoting_services_class ();
 		deserialize_method = mono_class_get_method_from_name (klass, "DeserializeCallData", -1);
 	}
 	if (!deserialize_method) {
@@ -4164,9 +4171,7 @@ create_unhandled_exception_eventargs (MonoObject *exc)
 	MonoBoolean is_terminating = TRUE;
 	MonoObject *obj;
 
-	klass = mono_class_from_name (mono_defaults.corlib, "System", "UnhandledExceptionEventArgs");
-	g_assert (klass);
-
+	klass = mono_class_get_unhandled_exception_event_args_class ();
 	mono_class_init (klass);
 
 	/* UnhandledExceptionEventArgs only has 1 public ctor with 2 args */
@@ -4384,10 +4389,7 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 
 	cinfo = mono_custom_attrs_from_method (method);
 	if (cinfo) {
-		static MonoClass *stathread_attribute = NULL;
-		if (!stathread_attribute)
-			stathread_attribute = mono_class_from_name (mono_defaults.corlib, "System", "STAThreadAttribute");
-		has_stathread_attribute = mono_custom_attrs_has_attr (cinfo, stathread_attribute);
+		has_stathread_attribute = mono_custom_attrs_has_attr (cinfo, mono_class_get_sta_thread_attribute_class ());
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {
@@ -4660,7 +4662,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			 * The runtime-invoke wrapper returns a boxed IntPtr, need to 
 			 * convert it to a Pointer object.
 			 */
-			pointer_class = mono_class_from_name_cached (mono_defaults.corlib, "System.Reflection", "Pointer");
+			pointer_class = mono_class_get_pointer_class ();
 			if (!box_method)
 				box_method = mono_class_get_method_from_name (pointer_class, "Box", -1);
 
@@ -4816,7 +4818,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 		MonoMethod *im = vtable->domain->create_proxy_for_type_method;
 
 		if (im == NULL) {
-			MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Activation", "ActivationServices");
+			MonoClass *klass = mono_class_get_activation_services_class ();
 
 			if (!klass->inited)
 				mono_class_init (klass);
