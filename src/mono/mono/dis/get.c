@@ -1283,12 +1283,14 @@ get_type (MonoImage *m, const char *ptr, char **result, gboolean is_def, MonoGen
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
 		guint32 token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
-		MonoClass *klass = mono_class_get (m, token);
+		MonoClass *klass = mono_class_get_checked (m, token, &error);
 		char *temp;
-		if (klass)
+		if (klass) {
 			temp = dis_stringify_object_with_class (m, klass, TRUE, FALSE);
- 		else
-			temp = g_strdup_printf ("<BROKEN CLASS token_%8x>", token);
+		} else  {
+			temp = g_strdup_printf ("<BROKEN CLASS token_%8x due to %s>", token, mono_error_get_message (&error));
+			mono_error_cleanup (&error);
+		}
 
 		if (show_tokens) {
 			*result = g_strdup_printf ("%s/*%08x*/", temp, token);
@@ -3180,7 +3182,7 @@ cant_print_generic_param_name (MonoGenericParam *gparam)
 	container = mono_generic_param_owner (gparam);
 	check_ambiguous_genparams (container);
 	return (!container || (mono_generic_params_with_ambiguous_names &&
-			g_hash_table_lookup (mono_generic_params_with_ambiguous_names, gparam)));
+			g_hash_table_lookup (mono_generic_params_with_ambiguous_names, gparam)) || !mono_generic_param_info (gparam));
 }
 
 
