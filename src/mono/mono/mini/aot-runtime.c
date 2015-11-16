@@ -2420,11 +2420,11 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 
 	for (i = 0; i < slot; ++i) {
 		decode_method_ref (amodule, &ref, p, &p, &error);
-		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 	}
 
 	res = decode_method_ref (amodule, &ref, p, &p, &error);
-	mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+	mono_error_cleanup (&error); /* FIXME don't swallow the error */
 	if (!res)
 		return NULL;
 	if (ref.no_aot_trampoline)
