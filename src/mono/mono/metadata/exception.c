@@ -583,8 +583,7 @@ mono_get_exception_type_initialization (const gchar *type_name, MonoException *i
 	MonoMethod *method;
 	gpointer iter;
 
-	klass = mono_class_from_name (mono_get_corlib (), "System", "TypeInitializationException");
-	g_assert (klass);
+	klass = mono_class_load_from_name (mono_get_corlib (), "System", "TypeInitializationException");
 
 	mono_class_init (klass);
 
@@ -759,8 +758,8 @@ mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions
 	MonoMethod *method;
 	gpointer iter;
 
-	klass = mono_class_from_name (mono_get_corlib (), "System.Reflection", "ReflectionTypeLoadException");
-	g_assert (klass);
+	klass = mono_class_load_from_name (mono_get_corlib (), "System.Reflection", "ReflectionTypeLoadException");
+
 	mono_class_init (klass);
 
 	/* Find the Type[], Exception[] ctor */
@@ -798,8 +797,7 @@ mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception)
 	MonoDomain *domain = mono_domain_get ();
 	gpointer params [16];
 
-	klass = mono_class_from_name (mono_get_corlib (), "System.Runtime.CompilerServices", "RuntimeWrappedException");
-	g_assert (klass);
+	klass = mono_class_load_from_name (mono_get_corlib (), "System.Runtime.CompilerServices", "RuntimeWrappedException");
 
 	o = mono_object_new_checked (domain, klass, &error);
 	g_assert (o != NULL && mono_error_ok (&error)); /* FIXME don't swallow the error */

@@ -181,7 +181,7 @@ mono_class_try_get_com_object_class (void)
 	static gboolean inited;
 	MonoClass *klass;
 	if (!inited) {
-		klass = mono_class_from_name (mono_defaults.corlib, "System", "__ComObject");
+		klass = mono_class_load_from_name (mono_defaults.corlib, "System", "__ComObject");
 		mono_memory_barrier ();
 		tmp_class = klass;
 		mono_memory_barrier ();
@@ -1910,7 +1910,7 @@ cominterop_get_ccw (MonoObject* object, MonoClass* itf)
 	if (cinfo) {
 		static MonoClass* coclass_attribute = NULL;
 		if (!coclass_attribute)
-			coclass_attribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "CoClassAttribute");
+			coclass_attribute = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "CoClassAttribute");
 		if (mono_custom_attrs_has_attr (cinfo, coclass_attribute)) {
 			g_assert(itf->interface_count && itf->interfaces[0]);
 			itf = itf->interfaces[0];
@@ -2454,7 +2454,7 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 
 	/* Handle DispIdAttribute */
 	if (!ComDispIdAttribute)
-		ComDispIdAttribute = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "DispIdAttribute");
+		ComDispIdAttribute = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "DispIdAttribute");
 
 	g_assert (object);
 	klass = mono_object_class (object);

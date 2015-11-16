@@ -3102,15 +3102,15 @@ get_implicit_generic_array_interfaces (MonoClass *klass, int *num, int *is_enume
 	all_interfaces = eclass->rank && eclass->element_class->rank? FALSE: TRUE;
 
 	if (!generic_icollection_class) {
-		generic_icollection_class = mono_class_from_name (mono_defaults.corlib,
+		generic_icollection_class = mono_class_load_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "ICollection`1");
-		generic_ienumerable_class = mono_class_from_name (mono_defaults.corlib,
+		generic_ienumerable_class = mono_class_load_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "IEnumerable`1");
-		generic_ienumerator_class = mono_class_from_name (mono_defaults.corlib,
+		generic_ienumerator_class = mono_class_load_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "IEnumerator`1");
-		generic_ireadonlylist_class = mono_class_from_name (mono_defaults.corlib,
+		generic_ireadonlylist_class = mono_class_load_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "IReadOnlyList`1");
-		generic_ireadonlycollection_class = mono_class_from_name (mono_defaults.corlib,
+		generic_ireadonlycollection_class = mono_class_load_from_name (mono_defaults.corlib,
 			"System.Collections.Generic", "IReadOnlyCollection`1");
 	}
 
@@ -6217,7 +6217,7 @@ make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 		CHECKED_METADATA_WRITE_PTR ( klass->parent , pinfo->constraints [0] );
 		pos++;
 	} else if (pinfo && pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) {
-		CHECKED_METADATA_WRITE_PTR ( klass->parent , mono_class_from_name (mono_defaults.corlib, "System", "ValueType") );
+		CHECKED_METADATA_WRITE_PTR ( klass->parent , mono_class_load_from_name (mono_defaults.corlib, "System", "ValueType") );
 	} else {
 		CHECKED_METADATA_WRITE_PTR ( klass->parent , mono_defaults.object_class );
 	}
@@ -6743,7 +6743,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	/* for the building corlib use System.Array from it */
 	if (image->assembly && assembly_is_dynamic (image->assembly) && image->assembly_name && strcmp (image->assembly_name, "mscorlib") == 0) {
-		parent = mono_class_from_name (image, "System", "Array");
+		parent = mono_class_load_from_name (image, "System", "Array");
 		corlib_type = TRUE;
 	} else {
 		parent = mono_defaults.array_class;

@@ -195,7 +195,7 @@ static inline void print_report (const gchar *format, ...)
 	vfprintf (stdout, format, ap);
 	fprintf (stdout, "\n");
 	va_end (ap);
-	klass = mono_class_from_name (mono_get_corlib (), "System", "Environment");
+	klass = mono_class_load_from_name (mono_get_corlib (), "System", "Environment");
 	mono_class_init (klass);
 	prop = mono_class_get_property_from_name (klass, "StackTrace");
 	str = (MonoString*)mono_property_get_value (prop, NULL, NULL, NULL);

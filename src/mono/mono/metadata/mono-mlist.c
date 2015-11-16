@@ -41,7 +41,7 @@ mono_mlist_alloc (MonoObject *data)
 	MonoError error;
 	MonoMList* res;
 	if (!monolist_item_vtable) {
-		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System", "MonoListItem");
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System", "MonoListItem");
 		monolist_item_vtable = mono_class_vtable (mono_get_root_domain (), klass);
 		g_assert (monolist_item_vtable);
 	}

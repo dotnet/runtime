@@ -602,8 +602,7 @@ get_family_hint (void)
 		socket_assembly = get_socket_assembly ();
 		g_assert (socket_assembly);
 
-		socket_class = mono_class_from_name (socket_assembly, "System.Net.Sockets", "Socket");
-		g_assert (socket_class);
+		socket_class = mono_class_load_from_name (socket_assembly, "System.Net.Sockets", "Socket");
 
 		ipv4_field = mono_class_get_field_from_name (socket_class, "ipv4_supported");
 		g_assert (ipv4_field);
@@ -832,8 +831,7 @@ create_object_from_sockaddr(struct sockaddr *saddr, int sa_size, gint32 *error)
 
 	/* Build a System.Net.SocketAddress object instance */
 	if (!domain->sockaddr_class) {
-		domain->sockaddr_class=mono_class_from_name (get_socket_assembly (), "System.Net", "SocketAddress");
-		g_assert (domain->sockaddr_class);
+		domain->sockaddr_class = mono_class_load_from_name (get_socket_assembly (), "System.Net", "SocketAddress");
 	}
 	sockaddr_obj=mono_object_new_checked(domain, domain->sockaddr_class, &merror);
 	mono_error_raise_exception (&merror); /* FIXME don't raise here */
@@ -1978,7 +1976,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 	switch(name) {
 	case SocketOptionName_Linger:
 		/* build a System.Net.Sockets.LingerOption */
-		obj_class=mono_class_from_name(get_socket_assembly (),
+		obj_class = mono_class_load_from_name (get_socket_assembly (),
 					       "System.Net.Sockets",
 					       "LingerOption");
 		obj=mono_object_new_checked(domain, obj_class, &merror);
@@ -2027,7 +2025,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (SOCKET sock, g
 			}
 		}
 		
-		obj_class = mono_class_from_name(mono_posix_image,
+		obj_class = mono_class_load_from_name (mono_posix_image,
 						 "Mono.Posix",
 						 "PeerCredData");
 		obj = mono_object_new_checked(domain, obj_class, &merror);

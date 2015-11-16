@@ -956,7 +956,7 @@ void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolea
 		}
 	}
 
-	klass = mono_class_from_name (system_security_assembly,
+	klass = mono_class_load_from_name (system_security_assembly,
 								  "System.Security.Cryptography", "ProtectedMemory");
 	method = mono_class_get_method_from_name (klass, encrypt ? "Protect" : "Unprotect", 2);
 	params [0] = data;

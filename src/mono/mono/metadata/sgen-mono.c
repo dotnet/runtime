@@ -1198,14 +1198,12 @@ create_allocator (int atype, gboolean slowpath)
 		/* catch */
 		clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
 		clause->try_len = mono_mb_get_pos (mb) - clause->try_offset;
-		clause->data.catch_class = mono_class_from_name (mono_defaults.corlib,
+		clause->data.catch_class = mono_class_load_from_name (mono_defaults.corlib,
 				"System", "OverflowException");
-		g_assert (clause->data.catch_class);
 		clause->handler_offset = mono_mb_get_label (mb);
 
-		oom_exc_class = mono_class_from_name (mono_defaults.corlib,
+		oom_exc_class = mono_class_load_from_name (mono_defaults.corlib,
 				"System", "OutOfMemoryException");
-		g_assert (oom_exc_class);
 		ctor = mono_class_get_method_from_name (oom_exc_class, ".ctor", 0);
 		g_assert (ctor);
 
