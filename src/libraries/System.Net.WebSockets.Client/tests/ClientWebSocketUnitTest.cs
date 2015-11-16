@@ -27,111 +27,124 @@ namespace System.Net.WebSockets.Client.Tests
         public void Ctor_Success()
         {
             var cws = new ClientWebSocket();
+            cws.Dispose();
         }
 
         [ConditionalFact("WebSocketsSupported")]
         public void Abort_CreateAndAbort_StateIsClosed()
         {
-            var cws = new ClientWebSocket();
-            cws.Abort();
+            using (var cws = new ClientWebSocket())
+            {
+                cws.Abort();
 
-            Assert.Equal(WebSocketState.Closed, cws.State);
+                Assert.Equal(WebSocketState.Closed, cws.State);
+            }
         }
 
         [ConditionalFact("WebSocketsSupported")]
         public void CloseAsync_CreateAndClose_ThrowsInvalidOperationException()
         {
-            var cws = new ClientWebSocket();
-            Assert.Throws<InvalidOperationException>(() =>
-                { Task t = cws.CloseAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()); });
+            using (var cws = new ClientWebSocket())
+            {
+                Assert.Throws<InvalidOperationException>(() =>
+                    { Task t = cws.CloseAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()); });
 
-            Assert.Equal(WebSocketState.None, cws.State);
+                Assert.Equal(WebSocketState.None, cws.State);
+            }
         }
 
         [ConditionalFact("WebSocketsSupported")]
-        public void CloseAsync_CreateAndCloseOutput_ThrowsInvalidOperationExceptionWithCorrectMessage()
+        public void CloseAsync_CreateAndCloseOutput_ThrowsInvalidOperationExceptionWithMessage()
         {
-            var cws = new ClientWebSocket();
-            AssertExtensions.Throws<InvalidOperationException>(
-                () =>
-                cws.CloseOutputAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()).GetAwaiter().GetResult(),
-                ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected"));
+            using (var cws = new ClientWebSocket())
+            {
+                AssertExtensions.Throws<InvalidOperationException>(
+                    () =>
+                    cws.CloseOutputAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()).GetAwaiter().GetResult(),
+                    ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected"));
 
-            Assert.Equal(WebSocketState.None, cws.State);
+                Assert.Equal(WebSocketState.None, cws.State);
+            }
         }
 
         [ConditionalFact("WebSocketsSupported")]
         public void CloseAsync_CreateAndReceive_ThrowsInvalidOperationException()
         {
-            var cws = new ClientWebSocket();
+            using (var cws = new ClientWebSocket())
+            {
+                var buffer = new byte[100];
+                var segment = new ArraySegment<byte>(buffer);
+                var ct = new CancellationToken();
 
-            var buffer = new byte[100];
-            var segment = new ArraySegment<byte>(buffer);
-            var ct = new CancellationToken();
+                Assert.Throws<InvalidOperationException>(() =>
+                    { Task t = cws.ReceiveAsync(segment, ct); });
 
-            Assert.Throws<InvalidOperationException>(() =>
-                { Task t = cws.ReceiveAsync(segment, ct); });
-
-            Assert.Equal(WebSocketState.None, cws.State);
+                Assert.Equal(WebSocketState.None, cws.State);
+            }
         }
 
         [ConditionalFact("WebSocketsSupported")]
-        public void CloseAsync_CreateAndReceive_ThrowsInvalidOperationExceptionWithCorrectMessage()
+        public void CloseAsync_CreateAndReceive_ThrowsInvalidOperationExceptionWithMessage()
         {
-            var cws = new ClientWebSocket();
+            using (var cws = new ClientWebSocket())
+            {
+                var buffer = new byte[100];
+                var segment = new ArraySegment<byte>(buffer);
+                var ct = new CancellationToken();
 
-            var buffer = new byte[100];
-            var segment = new ArraySegment<byte>(buffer);
-            var ct = new CancellationToken();
+                AssertExtensions.Throws<InvalidOperationException>(
+                    () => cws.ReceiveAsync(segment, ct).GetAwaiter().GetResult(),
+                    ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected"));
 
-            AssertExtensions.Throws<InvalidOperationException>(
-                () => cws.ReceiveAsync(segment, ct).GetAwaiter().GetResult(),
-                ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected"));
-
-            Assert.Equal(WebSocketState.None, cws.State);
+                Assert.Equal(WebSocketState.None, cws.State);
+            }
         }
 
         [ConditionalFact("WebSocketsSupported")]
         public void CloseAsync_CreateAndSend_ThrowsInvalidOperationException()
         {
-            var cws = new ClientWebSocket();
+            using (var cws = new ClientWebSocket())
+            {
+                var buffer = new byte[100];
+                var segment = new ArraySegment<byte>(buffer);
+                var ct = new CancellationToken();
 
-            var buffer = new byte[100];
-            var segment = new ArraySegment<byte>(buffer);
-            var ct = new CancellationToken();
+                Assert.Throws<InvalidOperationException>(() =>
+                    { Task t = cws.SendAsync(segment, WebSocketMessageType.Text, false, ct); });
 
-            Assert.Throws<InvalidOperationException>(() =>
-                { Task t = cws.SendAsync(segment, WebSocketMessageType.Text, false, ct); });
-
-            Assert.Equal(WebSocketState.None, cws.State);
+                Assert.Equal(WebSocketState.None, cws.State);
+            }
         }
 
         [ConditionalFact("WebSocketsSupported")]
-        public void CloseAsync_CreateAndSend_ThrowsInvalidOperationExceptionWithCorrectMessage()
+        public void CloseAsync_CreateAndSend_ThrowsInvalidOperationExceptionWithMessage()
         {
-            var cws = new ClientWebSocket();
+            using (var cws = new ClientWebSocket())
+            {
+                var buffer = new byte[100];
+                var segment = new ArraySegment<byte>(buffer);
+                var ct = new CancellationToken();
 
-            var buffer = new byte[100];
-            var segment = new ArraySegment<byte>(buffer);
-            var ct = new CancellationToken();
+                AssertExtensions.Throws<InvalidOperationException>(
+                    () => cws.SendAsync(segment, WebSocketMessageType.Text, false, ct).GetAwaiter().GetResult(),
+                    ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected"));
 
-            AssertExtensions.Throws<InvalidOperationException>(
-                () => cws.SendAsync(segment, WebSocketMessageType.Text, false, ct).GetAwaiter().GetResult(),
-                ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected"));
-
-            Assert.Equal(WebSocketState.None, cws.State);
+                Assert.Equal(WebSocketState.None, cws.State);
+            }
         }
 
         [ConditionalFact("WebSocketsSupported")]
         public void Ctor_ExpectedPropertyValues()
         {
-            var cws = new ClientWebSocket();
-            Assert.Equal(null, cws.CloseStatus);
-            Assert.Equal(null, cws.CloseStatusDescription);
-            Assert.NotEqual(null, cws.Options);
-            Assert.Equal(WebSocketState.None, cws.State);
-            Assert.Equal(null, cws.SubProtocol);
-            Assert.Equal("System.Net.WebSockets.ClientWebSocket", cws.ToString());
+            using (var cws = new ClientWebSocket())
+            {
+                Assert.Equal(null, cws.CloseStatus);
+                Assert.Equal(null, cws.CloseStatusDescription);
+                Assert.NotEqual(null, cws.Options);
+                Assert.Equal(WebSocketState.None, cws.State);
+                Assert.Equal(null, cws.SubProtocol);
+                Assert.Equal("System.Net.WebSockets.ClientWebSocket", cws.ToString());
+            }
         }
 
         [ConditionalFact("WebSocketsSupported")]
@@ -157,7 +170,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact("WebSocketsSupported")]
-        public void CloseAsync_DisposeAndClose_ThrowsObjectDisposedExceptionWithCorrectMessage()
+        public void CloseAsync_DisposeAndCloseOutput_ThrowsObjectDisposedExceptionWithMessage()
         {
             var cws = new ClientWebSocket();
             cws.Dispose();
@@ -173,7 +186,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact("WebSocketsSupported")]
-        public void ReceiveAsync_CreateAndDisposeAndReceive_ThrowsObjectDisposedExceptionWithCorrectMessage()
+        public void ReceiveAsync_CreateAndDisposeAndReceive_ThrowsObjectDisposedExceptionWithMessage()
         {
             var cws = new ClientWebSocket();
             cws.Dispose();
@@ -192,7 +205,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact("WebSocketsSupported")]
-        public void SendAsync_CreateAndDisposeAndSend_ThrowsObjectDisposedExceptionWithCorrectMessage()
+        public void SendAsync_CreateAndDisposeAndSend_ThrowsObjectDisposedExceptionWithMessage()
         {
             var cws = new ClientWebSocket();
             cws.Dispose();
