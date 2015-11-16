@@ -204,7 +204,6 @@ static gboolean mono_thread_resume (MonoInternalThread* thread);
 static void abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception, gboolean install_async_abort);
 static void suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt);
 static void self_suspend_internal (MonoInternalThread *thread);
-static gboolean resume_thread_internal (MonoInternalThread *thread);
 
 static MonoException* mono_thread_execute_interruption ();
 static void ref_stack_destroy (gpointer rs);
@@ -349,19 +348,19 @@ static gboolean handle_remove(MonoInternalThread *thread)
 
 static void ensure_synch_cs_set (MonoInternalThread *thread)
 {
-	mono_mutex_t *synch_cs;
+	MonoCoopMutex *synch_cs;
 
 	if (thread->synch_cs != NULL) {
 		return;
 	}
 
-	synch_cs = g_new0 (mono_mutex_t, 1);
-	mono_os_mutex_init_recursive (synch_cs);
+	synch_cs = g_new0 (MonoCoopMutex, 1);
+	mono_coop_mutex_init_recursive (synch_cs);
 
 	if (InterlockedCompareExchangePointer ((gpointer *)&thread->synch_cs,
 					       synch_cs, NULL) != NULL) {
 		/* Another thread must have installed this CS */
-		mono_os_mutex_destroy (synch_cs);
+		mono_coop_mutex_destroy (synch_cs);
 		g_free (synch_cs);
 	}
 }
@@ -374,15 +373,13 @@ lock_thread (MonoInternalThread *thread)
 
 	g_assert (thread->synch_cs);
 
-	MONO_TRY_BLOCKING;
-	mono_os_mutex_lock (thread->synch_cs);
-	MONO_FINISH_TRY_BLOCKING;
+	mono_coop_mutex_lock (thread->synch_cs);
 }
 
 static inline void
 unlock_thread (MonoInternalThread *thread)
 {
-	mono_os_mutex_unlock (thread->synch_cs);
+	mono_coop_mutex_unlock (thread->synch_cs);
 }
 
 /*
@@ -592,8 +589,8 @@ create_internal_thread (void)
 	vt = mono_class_vtable (mono_get_root_domain (), mono_defaults.internal_thread_class);
 	thread = (MonoInternalThread*)mono_gc_alloc_mature (vt);
 
-	thread->synch_cs = g_new0 (mono_mutex_t, 1);
-	mono_os_mutex_init_recursive (thread->synch_cs);
+	thread->synch_cs = g_new0 (MonoCoopMutex, 1);
+	mono_coop_mutex_init_recursive (thread->synch_cs);
 
 	thread->apartment_state = ThreadApartmentState_Unknown;
 	thread->managed_id = get_next_managed_thread_id ();
@@ -1155,9 +1152,9 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 		CloseHandle (thread);
 
 	if (this_obj->synch_cs) {
-		mono_mutex_t *synch_cs = this_obj->synch_cs;
+		MonoCoopMutex *synch_cs = this_obj->synch_cs;
 		this_obj->synch_cs = NULL;
-		mono_os_mutex_destroy (synch_cs);
+		mono_coop_mutex_destroy (synch_cs);
 		g_free (synch_cs);
 	}
 
@@ -2097,15 +2094,15 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 	}
 	thread->abort_exc = NULL;
 
-	UNLOCK_THREAD (thread);
-
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Abort requested for %p (%"G_GSIZE_FORMAT")", __func__, mono_native_thread_id_get (), thread, (gsize)thread->tid));
 
 	/* During shutdown, we can't wait for other threads */
 	if (!shutting_down)
 		/* Make sure the thread is awake */
 		mono_thread_resume (thread);
-	
+
+	UNLOCK_THREAD (thread);
+
 	abort_thread_internal (thread, TRUE, TRUE);
 }
 
@@ -2222,14 +2219,12 @@ ves_icall_System_Threading_Thread_Suspend (MonoThread *this_obj)
 	}
 }
 
+/* LOCKING: LOCK_THREAD(thread) must be held */
 static gboolean
 mono_thread_resume (MonoInternalThread *thread)
 {
-	LOCK_THREAD (thread);
-
 	if ((thread->state & ThreadState_SuspendRequested) != 0) {
 		thread->state &= ~ThreadState_SuspendRequested;
-		UNLOCK_THREAD (thread);
 		return TRUE;
 	}
 
@@ -2238,19 +2233,32 @@ mono_thread_resume (MonoInternalThread *thread)
 		(thread->state & ThreadState_Aborted) != 0 || 
 		(thread->state & ThreadState_Stopped) != 0)
 	{
-		UNLOCK_THREAD (thread);
 		return FALSE;
 	}
 
-	return resume_thread_internal (thread);
+	UNLOCK_THREAD (thread);
+
+	/* Awake the thread */
+	if (!mono_thread_info_resume (thread_get_tid (thread)))
+		return FALSE;
+
+	LOCK_THREAD (thread);
+
+	thread->state &= ~ThreadState_Suspended;
+
+	return TRUE;
 }
 
 void
 ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
 {
-	if (!thread->internal_thread || !mono_thread_resume (thread->internal_thread)) {
+	if (!thread->internal_thread) {
 		mono_set_pending_exception (mono_get_exception_thread_state ("Thread has not been started, or is dead."));
-		return;
+	} else {
+		LOCK_THREAD (thread->internal_thread);
+		if (!mono_thread_resume (thread->internal_thread))
+			mono_set_pending_exception (mono_get_exception_thread_state ("Thread has not been started, or is dead."));
+		UNLOCK_THREAD (thread->internal_thread);
 	}
 }
 
@@ -4685,20 +4693,6 @@ self_suspend_internal (MonoInternalThread *thread)
 	thread->state |= ThreadState_Suspended;
 	UNLOCK_THREAD (thread);
 	mono_thread_info_end_self_suspend ();
-}
-
-/*This is called with @thread synch_cs held and it must release it*/
-static gboolean
-resume_thread_internal (MonoInternalThread *thread)
-{
-	UNLOCK_THREAD (thread);
-	/* Awake the thread */
-	if (!mono_thread_info_resume (thread_get_tid (thread)))
-		return FALSE;
-	LOCK_THREAD (thread);
-	thread->state &= ~ThreadState_Suspended;
-	UNLOCK_THREAD (thread);
-	return TRUE;
 }
 
 

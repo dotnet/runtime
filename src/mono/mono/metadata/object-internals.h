@@ -12,6 +12,7 @@
 #include "mono/utils/mono-error.h"
 #include "mono/utils/mono-stack-unwinding.h"
 #include "mono/utils/mono-tls.h"
+#include "mono/utils/mono-coop-mutex.h"
 
 #if 1
 #ifdef __GNUC__
@@ -406,7 +407,7 @@ struct _MonoInternalThread {
 	gpointer appdomain_refs;
 	/* This is modified using atomic ops, so keep it a gint32 */
 	gint32 interruption_requested;
-	mono_mutex_t *synch_cs;
+	MonoCoopMutex *synch_cs;
 	MonoBoolean threadpool_thread;
 	MonoBoolean thread_interrupt_requested;
 	int stack_size;
