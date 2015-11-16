@@ -44,10 +44,10 @@
 #include <stdlib.h>
 
 #include "sgen/sgen-gc.h"
-#include "sgen-bridge-internal.h"
+#include "sgen-bridge-internals.h"
 #include "sgen/sgen-hash-table.h"
 #include "sgen/sgen-qsort.h"
-#include "utils/mono-logger-internal.h"
+#include "utils/mono-logger-internals.h"
 
 MonoGCBridgeCallbacks bridge_callbacks;
 static SgenBridgeProcessor bridge_processor;

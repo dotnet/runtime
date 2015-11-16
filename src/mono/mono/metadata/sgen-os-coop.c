@@ -28,7 +28,7 @@
 #include "sgen/sgen-archdep.h"
 #include "sgen/sgen-protocol.h"
 #include "metadata/object-internals.h"
-#include "metadata/gc-internal.h"
+#include "metadata/gc-internals.h"
 
 
 #if defined(USE_COOP_GC)

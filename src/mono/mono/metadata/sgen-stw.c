@@ -33,8 +33,8 @@
 #include "sgen/sgen-thread-pool.h"
 #include "metadata/profiler-private.h"
 #include "sgen/sgen-client.h"
-#include "metadata/sgen-bridge-internal.h"
-#include "metadata/gc-internal.h"
+#include "metadata/sgen-bridge-internals.h"
+#include "metadata/gc-internals.h"
 
 #define TV_DECLARE SGEN_TV_DECLARE
 #define TV_GETTIME SGEN_TV_GETTIME

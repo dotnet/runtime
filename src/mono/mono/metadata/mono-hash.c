@@ -30,7 +30,7 @@
 #include <math.h>
 #include <glib.h>
 #include "mono-hash.h"
-#include "metadata/gc-internal.h"
+#include "metadata/gc-internals.h"
 #include <mono/utils/checked-build.h>
 
 #ifdef HAVE_BOEHM_GC

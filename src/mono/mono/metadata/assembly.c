@@ -30,7 +30,7 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-config-dirs.h>
 #include <mono/utils/mono-digest.h>
-#include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/coree.h>

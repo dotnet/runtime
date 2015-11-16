@@ -20,7 +20,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/method-builder.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/tabledefs.h>

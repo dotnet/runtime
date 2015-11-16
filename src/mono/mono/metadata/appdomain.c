@@ -32,7 +32,7 @@
 #endif
 #endif
 
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/domain-internals.h>
 #include "mono/metadata/metadata-internals.h"
@@ -42,7 +42,7 @@
 #include <mono/metadata/threadpool-ms.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/tabledefs.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/monitor.h>
@@ -56,7 +56,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-uri.h>
-#include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-stdlib.h>
 #include <mono/utils/mono-io-portability.h>

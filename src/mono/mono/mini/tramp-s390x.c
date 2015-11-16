@@ -39,7 +39,7 @@
 
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/tabledefs.h>

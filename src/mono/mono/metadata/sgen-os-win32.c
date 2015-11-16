@@ -5,7 +5,7 @@
 #include "io-layer/io-layer.h"
 
 #include "sgen/sgen-gc.h"
-#include "metadata/gc-internal.h"
+#include "metadata/gc-internals.h"
 
 gboolean
 sgen_resume_thread (SgenThreadInfo *info)

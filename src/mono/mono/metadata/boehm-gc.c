@@ -11,7 +11,7 @@
 #include <string.h>
 
 #define GC_I_HIDE_POINTERS
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/class-internals.h>
@@ -23,7 +23,7 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/sgen-toggleref.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>

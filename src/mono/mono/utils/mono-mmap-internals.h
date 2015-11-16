@@ -1,5 +1,5 @@
 /*
- * mono-mmap-internal.h: Internal virtual memory stuff.
+ * mono-mmap-internals.h: Internal virtual memory stuff.
  *
  * Copyright (C) 2014 Xamarin Inc
  *

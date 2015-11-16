@@ -17,7 +17,7 @@
 #include "mono/metadata/metadata-internals.h"
 #include <mono/metadata/profiler-private.h>
 #include "mono/metadata/class-internals.h"
-#include "mono/metadata/gc-internal.h"
+#include "mono/metadata/gc-internals.h"
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/opcodes.h"
@@ -35,7 +35,7 @@
 #include "image.h"
 #include "cil-coff.h"
 #include "mono-endian.h"
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/debug-helpers.h>

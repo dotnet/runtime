@@ -13,7 +13,7 @@
 
 #include <glib.h>
 
-#include "mono/metadata/gc-internal.h"
+#include "mono/metadata/gc-internals.h"
 
 /* This is an implementation of a growable pointer array that avoids doing memory allocations for small sizes.
  * It works by allocating an initial small array on stack and only going to gc tracked memory if needed.

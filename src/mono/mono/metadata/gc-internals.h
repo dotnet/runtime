@@ -1,5 +1,5 @@
 /*
- * metadata/gc-internal.h: Internal GC interface
+ * metadata/gc-internals.h: Internal GC interface
  *
  * Author: Paolo Molaro <lupus@ximian.com>
  *

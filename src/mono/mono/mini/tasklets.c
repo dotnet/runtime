@@ -2,7 +2,7 @@
 #include "config.h"
 #include "tasklets.h"
 #include "mono/metadata/exception.h"
-#include "mono/metadata/gc-internal.h"
+#include "mono/metadata/gc-internals.h"
 #include "mini.h"
 
 #if defined(MONO_SUPPORT_TASKLETS)

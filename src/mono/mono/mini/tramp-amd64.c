@@ -19,7 +19,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/arch/amd64/amd64-codegen.h>
 
 #include <mono/utils/memcheck.h>

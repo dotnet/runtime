@@ -19,7 +19,7 @@
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/domain-internals.h"
-#include "mono/metadata/gc-internal.h"
+#include "mono/metadata/gc-internals.h"
 #include "mono/metadata/mono-config-dirs.h"
 #include "mono/io-layer/io-layer.h"
 #include "mono/utils/mono-dl.h"

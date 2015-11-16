@@ -33,7 +33,7 @@
 #include "sgen/sgen-protocol.h"
 #include "sgen/sgen-thread-pool.h"
 #include "metadata/object-internals.h"
-#include "metadata/gc-internal.h"
+#include "metadata/gc-internals.h"
 
 #if defined(__MACH__)
 #include "utils/mach-support.h"

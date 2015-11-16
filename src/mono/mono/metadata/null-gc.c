@@ -9,7 +9,7 @@
 #include "config.h"
 #include <glib.h>
 #include <mono/metadata/mono-gc.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/runtime.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-threads.h>

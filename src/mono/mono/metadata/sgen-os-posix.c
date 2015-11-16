@@ -31,7 +31,7 @@
 #include <errno.h>
 #include <glib.h>
 #include "sgen/sgen-gc.h"
-#include "metadata/gc-internal.h"
+#include "metadata/gc-internals.h"
 #include "sgen/sgen-archdep.h"
 #include "metadata/object-internals.h"
 #include "utils/mono-signal-handler.h"

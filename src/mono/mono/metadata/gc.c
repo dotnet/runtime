@@ -12,7 +12,7 @@
 #include <glib.h>
 #include <string.h>
 
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/tabledefs.h>
@@ -26,8 +26,8 @@
 #include <mono/metadata/threadpool-ms.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-gc.h>
-#include <mono/utils/mono-logger-internal.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/utils/mono-logger-internals.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
 #include <mono/metadata/attach.h>
 #include <mono/metadata/console-io.h>

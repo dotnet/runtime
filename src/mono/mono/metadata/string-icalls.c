@@ -23,7 +23,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 
 /* This function is redirected to String.CreateString ()
    by mono_marshal_get_native_wrapper () */
