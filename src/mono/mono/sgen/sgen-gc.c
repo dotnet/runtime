@@ -346,7 +346,7 @@ nursery_canaries_enabled (void)
  * ########  Global data.
  * ######################################################################
  */
-LOCK_DECLARE (gc_mutex);
+MonoCoopMutex gc_mutex;
 gboolean sgen_try_free_some_memory;
 
 #define SCAN_START_SIZE	SGEN_SCAN_START_SIZE
@@ -2807,7 +2807,7 @@ sgen_gc_init (void)
 	mono_thread_smr_init ();
 #endif
 
-	LOCK_INIT (gc_mutex);
+	mono_coop_mutex_init (&gc_mutex);
 
 	gc_debug_file = stderr;
 
@@ -3191,9 +3191,7 @@ sgen_get_nursery_clear_policy (void)
 void
 sgen_gc_lock (void)
 {
-	MONO_TRY_BLOCKING;
-	mono_os_mutex_lock (&gc_mutex);
-	MONO_FINISH_TRY_BLOCKING;
+	mono_coop_mutex_lock (&gc_mutex);
 }
 
 void
@@ -3201,7 +3199,7 @@ sgen_gc_unlock (void)
 {
 	gboolean try_free = sgen_try_free_some_memory;
 	sgen_try_free_some_memory = FALSE;
-	mono_os_mutex_unlock (&gc_mutex);
+	mono_coop_mutex_unlock (&gc_mutex);
 	if (try_free)
 		mono_thread_hazardous_try_free_some ();
 }

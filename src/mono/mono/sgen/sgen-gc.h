@@ -962,7 +962,7 @@ extern guint32 tlab_size;
 extern NurseryClearPolicy nursery_clear_policy;
 extern gboolean sgen_try_free_some_memory;
 
-extern LOCK_DECLARE (gc_mutex);
+extern MonoCoopMutex gc_mutex;
 
 /* Nursery helpers. */
 

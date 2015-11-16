@@ -335,11 +335,8 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 	 * end up running them while or after the domain is being cleared, so
 	 * the objects will not be valid anymore.
 	 */
-	if (!mono_domain_is_unloading (domain)) {
-		MONO_TRY_BLOCKING;
+	if (!mono_domain_is_unloading (domain))
 		mono_gc_register_for_finalization (obj, callback);
-		MONO_FINISH_TRY_BLOCKING;
-	}
 #endif
 }
 
