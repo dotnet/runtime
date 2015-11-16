@@ -23,7 +23,6 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
-#include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/thread-private.h>
 #include <mono/io-layer/mutex-private.h>
 

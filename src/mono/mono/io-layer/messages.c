@@ -15,7 +15,6 @@
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/messages.h>
 #include <mono/utils/bsearch.h>
 

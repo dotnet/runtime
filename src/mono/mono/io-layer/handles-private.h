@@ -17,7 +17,6 @@
 #include <sys/types.h>
 
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/collection.h>
 #include <mono/io-layer/shared.h>
 #include <mono/utils/atomic.h>
@@ -79,8 +78,8 @@ extern gboolean _wapi_handle_count_signalled_handles (guint32 numhandles,
 						      guint32 *lowest);
 extern void _wapi_handle_unlock_handles (guint32 numhandles,
 					 gpointer *handles);
-extern int _wapi_handle_timedwait_signal (struct timespec *timeout, gboolean poll, gboolean *alerted);
-extern int _wapi_handle_timedwait_signal_handle (gpointer handle, struct timespec *timeout, gboolean alertable, gboolean poll, gboolean *alerted);
+extern int _wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted);
+extern int _wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean alertable, gboolean poll, gboolean *alerted);
 extern gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 					       guint32 new_sharemode,
 					       guint32 new_access,

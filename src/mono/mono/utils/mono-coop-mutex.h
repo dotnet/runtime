@@ -104,7 +104,7 @@ mono_coop_cond_timedwait (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 time
 
 	MONO_PREPARE_BLOCKING;
 
-	res = mono_os_cond_timedwait_ms (&cond->c, &mutex->m, timeout_ms);
+	res = mono_os_cond_timedwait (&cond->c, &mutex->m, timeout_ms);
 
 	MONO_FINISH_BLOCKING;
 

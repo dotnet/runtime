@@ -38,7 +38,6 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
-#include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/shared.h>
 #include <mono/io-layer/collection.h>
 #include <mono/io-layer/process-private.h>
@@ -1499,48 +1498,8 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 	}
 }
 
-static int timedwait_signal_poll_cond (pthread_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout, gboolean alertable)
-{
-	struct timespec fake_timeout;
-	int ret;
-
-	if (!alertable) {
-		/*
-		 * pthread_cond_(timed)wait() can return 0 even if the condition was not
-		 * signalled.  This happens at least on Darwin.  We surface this, i.e., we
-		 * get spurious wake-ups.
-		 *
-		 * http://pubs.opengroup.org/onlinepubs/007908775/xsh/pthread_cond_wait.html
-		 */
-		if (timeout)
-			ret=mono_os_cond_timedwait (cond, mutex, timeout);
-		else
-			ret=mono_os_cond_wait (cond, mutex);
-	} else {
-		_wapi_calc_timeout (&fake_timeout, 100);
-	
-		if (timeout != NULL && ((fake_timeout.tv_sec > timeout->tv_sec) ||
-								(fake_timeout.tv_sec == timeout->tv_sec &&
-								 fake_timeout.tv_nsec > timeout->tv_nsec))) {
-			/* Real timeout is less than 100ms time */
-			ret=mono_os_cond_timedwait (cond, mutex, timeout);
-		} else {
-			ret=mono_os_cond_timedwait (cond, mutex, &fake_timeout);
-
-			/* Mask the fake timeout, this will cause
-			 * another poll if the cond was not really signaled
-			 */
-			if (ret==ETIMEDOUT) {
-				ret=0;
-			}
-		}
-	}
-	
-	return(ret);
-}
-
 int
-_wapi_handle_timedwait_signal (struct timespec *timeout, gboolean poll, gboolean *alerted)
+_wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted)
 {
 	return _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, timeout, TRUE, poll, alerted);
 }
@@ -1571,8 +1530,7 @@ signal_handle_and_unref (gpointer handle)
 }
 
 int
-_wapi_handle_timedwait_signal_handle (gpointer handle, struct timespec *timeout,
-		gboolean alertable, gboolean poll, gboolean *alerted)
+_wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean alertable, gboolean poll, gboolean *alerted)
 {
 	DEBUG ("%s: waiting for %p (type %s)", __func__, handle,
 		   _wapi_handle_typename[_wapi_handle_type (handle)]);
@@ -1587,13 +1545,8 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, struct timespec *timeout,
 		if (WAPI_SHARED_HANDLE_DATA(handle).signalled == TRUE) {
 			return (0);
 		}
-		if (timeout != NULL) {
-			struct timespec fake_timeout;
-			_wapi_calc_timeout (&fake_timeout, 100);
-		
-			if ((fake_timeout.tv_sec > timeout->tv_sec) ||
-				(fake_timeout.tv_sec == timeout->tv_sec &&
-				 fake_timeout.tv_nsec > timeout->tv_nsec)) {
+		if (timeout != INFINITE) {
+			if (timeout < 100) {
 				/* FIXME: Real timeout is less than
 				 * 100ms time, but is it really worth
 				 * calculating to the exact ms?
@@ -1626,14 +1579,33 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, struct timespec *timeout,
 		cond = &_WAPI_PRIVATE_HANDLES (idx).signal_cond;
 		mutex = &_WAPI_PRIVATE_HANDLES (idx).signal_mutex;
 
-		if (poll) {
-			/* This is needed when waiting for process handles */
-			res = timedwait_signal_poll_cond (cond, mutex, timeout, alertable);
+		if (!poll) {
+			res = mono_os_cond_timedwait (cond, mutex, timeout);
 		} else {
-			if (timeout)
+			/* This is needed when waiting for process handles */
+			if (!alertable) {
+				/*
+				 * pthread_cond_(timed)wait() can return 0 even if the condition was not
+				 * signalled.  This happens at least on Darwin.  We surface this, i.e., we
+				 * get spurious wake-ups.
+				 *
+				 * http://pubs.opengroup.org/onlinepubs/007908775/xsh/pthread_cond_wait.html
+				 */
 				res = mono_os_cond_timedwait (cond, mutex, timeout);
-			else
-				res = mono_os_cond_wait (cond, mutex);
+			} else {
+				if (timeout < 100) {
+					/* Real timeout is less than 100ms time */
+					res = mono_os_cond_timedwait (cond, mutex, timeout);
+				} else {
+					res = mono_os_cond_timedwait (cond, mutex, 100);
+
+					/* Mask the fake timeout, this will cause
+					 * another poll if the cond was not really signaled
+					 */
+					if (res == ETIMEDOUT)
+						res = 0;
+				}
+			}
 		}
 
 		if (alertable) {

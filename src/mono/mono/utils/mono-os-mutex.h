@@ -109,18 +109,7 @@ mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 }
 
 static inline int
-mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
-{
-	int res;
-
-	res = pthread_cond_timedwait (cond, mutex, timeout);
-	g_assert (res != EINVAL);
-
-	return res;
-}
-
-static inline int
-mono_os_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
+mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
 {
 	struct timeval tv;
 	struct timespec ts;
@@ -285,13 +274,7 @@ mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 }
 
 static inline int
-mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
-{
-	g_assert_not_reached ();
-}
-
-static inline int
-mono_os_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
+mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
 {
 	return SleepConditionVariableCS (cond, mutex, timeout_ms) ? 0 : 1;
 }
