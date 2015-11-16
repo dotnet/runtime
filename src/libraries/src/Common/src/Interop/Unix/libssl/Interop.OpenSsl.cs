@@ -132,7 +132,12 @@ internal static partial class Interop
                 }
             }
 
-            return Ssl.IsSslStateOK(context);
+            bool stateOk = Ssl.IsSslStateOK(context);
+            if (stateOk)
+            {
+                context.MarkHandshakeCompleted();
+            }
+            return stateOk;
         }
 
         internal static int Encrypt(SafeSslHandle context, byte[] buffer, int offset, int count, out Ssl.SslErrorCode errorCode)
@@ -232,13 +237,6 @@ internal static partial class Interop
         internal static SafeSharedX509StackHandle GetPeerCertificateChain(SafeSslHandle context)
         {
             return Ssl.SslGetPeerCertChain(context);
-        }
-
-        internal static void FreeSslContext(SafeSslHandle context)
-        {
-            Debug.Assert((context != null) && !context.IsInvalid, "Expected a valid context in FreeSslContext");
-            Disconnect(context);
-            context.Dispose();
         }
 
         #endregion
@@ -453,16 +451,6 @@ internal static partial class Interop
                         }
                     }
                 }
-            }
-        }
-
-        private static void Disconnect(SafeSslHandle context)
-        {
-            int retVal = Ssl.SslShutdown(context);
-            if (retVal < 0)
-            {
-                //TODO (Issue #4031) check this error
-                Ssl.SslGetError(context, retVal);
             }
         }
 
