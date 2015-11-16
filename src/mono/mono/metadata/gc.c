@@ -538,10 +538,6 @@ ves_icall_System_GC_get_ephemeron_tombstone (void)
 	return mono_domain_get ()->ephemeron_tombstone;
 }
 
-#define mono_allocator_lock() mono_os_mutex_lock (&allocator_section)
-#define mono_allocator_unlock() mono_os_mutex_unlock (&allocator_section)
-static mono_mutex_t allocator_section;
-
 MonoObject *
 ves_icall_System_GCHandle_GetTarget (guint32 handle)
 {
@@ -782,8 +778,6 @@ mono_gc_init_finalizer_thread (void)
 void
 mono_gc_init (void)
 {
-	mono_os_mutex_init_recursive (&allocator_section);
-
 	mono_coop_mutex_init_recursive (&finalizer_mutex);
 	mono_coop_mutex_init_recursive (&reference_queue_mutex);
 
@@ -883,7 +877,6 @@ mono_gc_cleanup (void)
 
 	mono_reference_queue_cleanup ();
 
-	mono_os_mutex_destroy (&allocator_section);
 	mono_coop_mutex_destroy (&finalizer_mutex);
 	mono_coop_mutex_destroy (&reference_queue_mutex);
 }
