@@ -70,16 +70,9 @@ namespace System.Net
             if (exception is HttpRequestException)
             {
                 Exception inner = exception.InnerException;
-                string message;
-
-                if (inner != null)
-                {
-                    message = string.Format("{0} {1}", exception.Message, inner.Message);
-                }
-                else
-                {
-                    message = string.Format("{0}", exception.Message);
-                }
+                string message = inner != null ?
+                    string.Format("{0} {1}", exception.Message, inner.Message) :
+                    exception.Message;
 
                 return new WebException(
                     message,

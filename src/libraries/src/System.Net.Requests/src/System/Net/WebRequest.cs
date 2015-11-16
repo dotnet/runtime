@@ -285,7 +285,7 @@ namespace System.Net
                     if (prefix.Length == Current.Prefix.Length)
                     {
                         // They're the same length.
-                        if (String.Compare(Current.Prefix, prefix, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Equals(Current.Prefix, prefix, StringComparison.OrdinalIgnoreCase))
                         {
                             // ...and the strings are identical. This is an error.
                             Error = true;
@@ -431,18 +431,29 @@ namespace System.Net
 
         public abstract Stream EndGetRequestStream(IAsyncResult asyncResult);
 
-        // Offload to a different thread to avoid blocking the caller durring request submission.
         public virtual Task<Stream> GetRequestStreamAsync()
         {
-            return Task.Run(() => Task<Stream>.Factory.FromAsync(this.BeginGetRequestStream,
-                this.EndGetRequestStream, null));
+            // Offload to a different thread to avoid blocking the caller during request submission.
+            // We use Task.Run rather than Task.Factory.StartNew even though StartNew would let us pass 'this'
+            // as a state argument to avoid the closure to capture 'this' and the associated delegate.
+            // This is because the task needs to call FromAsync and marshal the inner Task out, and
+            // Task.Run's implementation of this is sufficiently more efficient than what we can do with 
+            // Unwrap() that it's worth it to just rely on Task.Run and accept the closure/delegate.
+            return Task.Run(() =>
+                Task<Stream>.Factory.FromAsync(
+                    (callback, state) => ((WebRequest)state).BeginGetRequestStream(callback, state),
+                    iar => ((WebRequest)iar.AsyncState).EndGetRequestStream(iar),
+                    this));
         }
 
-        // Offload to a different thread to avoid blocking the caller durring request submission.
         public virtual Task<WebResponse> GetResponseAsync()
         {
-            return Task.Run(() => Task<WebResponse>.Factory.FromAsync(this.BeginGetResponse,
-                this.EndGetResponse, null));
+            // See comment in GetRequestStreamAsync().  Same logic applies here.
+            return Task.Run(() =>
+                Task<WebResponse>.Factory.FromAsync(
+                    (callback, state) => ((WebRequest)state).BeginGetResponse(callback, state),
+                    iar => ((WebRequest)iar.AsyncState).EndGetResponse(iar),
+                    this));
         }
 
         public abstract void Abort();

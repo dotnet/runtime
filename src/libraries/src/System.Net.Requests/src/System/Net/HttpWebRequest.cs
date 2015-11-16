@@ -297,9 +297,9 @@ namespace System.Net
             // Match Desktop behavior: prevent someone from getting a request stream
             // if the protocol verb/method doesn't support it. Note that this is not
             // entirely compliant RFC2616 for the aforementioned compatbility reasons.
-            if ((string.Compare(HttpMethod.Get.Method, _originVerb, StringComparison.OrdinalIgnoreCase) == 0) ||
-                (string.Compare(HttpMethod.Head.Method, _originVerb, StringComparison.OrdinalIgnoreCase) == 0) ||
-                (string.Compare("CONNECT", _originVerb, StringComparison.OrdinalIgnoreCase) == 0))
+            if (string.Equals(HttpMethod.Get.Method, _originVerb, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(HttpMethod.Head.Method, _originVerb, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals("CONNECT", _originVerb, StringComparison.OrdinalIgnoreCase))
             {
                 throw new ProtocolViolationException(SR.net_nouploadonget);
             }
@@ -512,7 +512,7 @@ namespace System.Net
         {
             foreach (string contentHeaderName in s_wellKnownContentHeaders)
             {
-                if (string.Compare(header, contentHeaderName, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(header, contentHeaderName, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
