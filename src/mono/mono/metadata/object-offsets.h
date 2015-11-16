@@ -230,6 +230,11 @@ DECL_OFFSET(DynCallArgs, res2)
 
 #if defined(TARGET_ARM)
 DECL_OFFSET(MonoLMF, method)
+DECL_OFFSET(GSharedVtCallInfo, stack_usage)
+DECL_OFFSET(GSharedVtCallInfo, vret_arg_reg)
+DECL_OFFSET(GSharedVtCallInfo, ret_marshal)
+DECL_OFFSET(GSharedVtCallInfo, vret_slot)
+DECL_OFFSET(GSharedVtCallInfo, gsharedvt_in)
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)

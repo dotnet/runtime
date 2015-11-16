@@ -327,7 +327,9 @@ arm_sources = \
 	mini-arm.h		\
 	mini-arm-tls.h		\
 	exceptions-arm.c	\
-	tramp-arm.c
+	tramp-arm.c	\
+	mini-arm-gsharedvt.c	\
+	tramp-arm-gsharedvt.c
 
 arm64_sources = \
 	mini-arm64.c		\

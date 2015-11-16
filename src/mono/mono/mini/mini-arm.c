@@ -903,7 +903,7 @@ mono_arch_init (void)
 	mono_aot_register_jit_icall ("mono_arm_throw_exception", mono_arm_throw_exception);
 	mono_aot_register_jit_icall ("mono_arm_throw_exception_by_token", mono_arm_throw_exception_by_token);
 	mono_aot_register_jit_icall ("mono_arm_resume_unwind", mono_arm_resume_unwind);
-#if defined(ENABLE_GSHAREDVT)
+#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
 	mono_aot_register_jit_icall ("mono_arm_start_gsharedvt_call", mono_arm_start_gsharedvt_call);
 #endif
 	mono_aot_register_jit_icall ("mono_arm_unaligned_stack", mono_arm_unaligned_stack);
@@ -1158,50 +1158,6 @@ mono_arch_flush_icache (guint8 *code, gint size)
     __builtin___clear_cache (code, code + size);
 #endif
 }
-
-typedef enum {
-	RegTypeNone,
-	/* Passed/returned in an ireg */
-	RegTypeGeneral,
-	/* Passed/returned in a pair of iregs */
-	RegTypeIRegPair,
-	/* Passed on the stack */
-	RegTypeBase,
-	/* First word in r3, second word on the stack */
-	RegTypeBaseGen,
-	/* FP value passed in either an ireg or a vfp reg */
-	RegTypeFP,
-	RegTypeStructByVal,
-	RegTypeStructByAddr,
-	/* gsharedvt argument passed by addr in greg */
-	RegTypeGSharedVtInReg,
-	/* gsharedvt argument passed by addr on stack */
-	RegTypeGSharedVtOnStack,
-	RegTypeHFA
-} ArgStorage;
-
-typedef struct {
-	gint32  offset;
-	guint16 vtsize; /* in param area */
-	/* RegTypeHFA */
-	int esize;
-	/* RegTypeHFA */
-	int nregs;
-	guint8  reg;
-	ArgStorage  storage;
-	gint32  struct_size;
-	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal */
-} ArgInfo;
-
-typedef struct {
-	int nargs;
-	guint32 stack_usage;
-	/* The index of the vret arg in the argument list for RegTypeStructByAddr */
-	int vret_arg_index;
-	ArgInfo ret;
-	ArgInfo sig_cookie;
-	ArgInfo args [1];
-} CallInfo;
 
 #define DEBUG(a)
 
@@ -7664,8 +7620,8 @@ mono_arch_opcode_supported (int opcode)
 	}
 }
 
-#if defined(ENABLE_GSHAREDVT)
-
-#include "../../../mono-extensions/mono/mini/mini-arm-gsharedvt.c"
-
-#endif /* !MONOTOUCH */
+CallInfo*
+mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
+{
+	return get_call_info (mp, sig);
+}

@@ -174,6 +174,51 @@ typedef struct {
 	int map [MONO_ZERO_LEN_ARRAY];
 } GSharedVtCallInfo;
 
+
+typedef enum {
+	RegTypeNone,
+	/* Passed/returned in an ireg */
+	RegTypeGeneral,
+	/* Passed/returned in a pair of iregs */
+	RegTypeIRegPair,
+	/* Passed on the stack */
+	RegTypeBase,
+	/* First word in r3, second word on the stack */
+	RegTypeBaseGen,
+	/* FP value passed in either an ireg or a vfp reg */
+	RegTypeFP,
+	RegTypeStructByVal,
+	RegTypeStructByAddr,
+	/* gsharedvt argument passed by addr in greg */
+	RegTypeGSharedVtInReg,
+	/* gsharedvt argument passed by addr on stack */
+	RegTypeGSharedVtOnStack,
+	RegTypeHFA
+} ArgStorage;
+
+typedef struct {
+	gint32  offset;
+	guint16 vtsize; /* in param area */
+	/* RegTypeHFA */
+	int esize;
+	/* RegTypeHFA */
+	int nregs;
+	guint8  reg;
+	ArgStorage  storage;
+	gint32  struct_size;
+	guint8  size    : 4; /* 1, 2, 4, 8, or regs used by RegTypeStructByVal */
+} ArgInfo;
+
+typedef struct {
+	int nargs;
+	guint32 stack_usage;
+	/* The index of the vret arg in the argument list for RegTypeStructByAddr */
+	int vret_arg_index;
+	ArgInfo ret;
+	ArgInfo sig_cookie;
+	ArgInfo args [1];
+} CallInfo;
+
 /* Structure used by the sequence points in AOTed code */
 typedef struct {
 	gpointer ss_trigger_page;
@@ -365,5 +410,8 @@ mono_arm_have_tls_get (void);
 
 void
 mono_arm_unaligned_stack (MonoMethod *method);
+
+CallInfo*
+mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig);
 
 #endif /* __MONO_MINI_ARM_H__ */
