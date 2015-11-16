@@ -312,6 +312,7 @@
 		<type fullname="System.Threading.ExecutionContext" />
 		<type fullname="System.Threading.Interlocked">
 			<method name="CompareExchange" />
+			<method name="Exchange" />
 		</type>
 		<type fullname="System.Threading.Monitor">
 			<method name="Enter" />
