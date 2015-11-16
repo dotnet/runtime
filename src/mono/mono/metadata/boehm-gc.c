@@ -925,11 +925,17 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	mono_mb_emit_byte (mb, 0x0D); /* CEE_MONO_TLS */
 	mono_mb_emit_i4 (mb, tls_key);
 	if (atype == ATYPE_FREEPTR || atype == ATYPE_FREEPTR_FOR_BOX || atype == ATYPE_STRING)
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (struct GC_Thread_Rep, ptrfree_freelists));
+		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (struct GC_Thread_Rep, tlfs)
+					+ G_STRUCT_OFFSET (struct thread_local_freelists,
+							   ptrfree_freelists));
 	else if (atype == ATYPE_NORMAL)
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (struct GC_Thread_Rep, normal_freelists));
+		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (struct GC_Thread_Rep, tlfs)
+					+ G_STRUCT_OFFSET (struct thread_local_freelists,
+							   normal_freelists));
 	else if (atype == ATYPE_GCJ)
-		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (struct GC_Thread_Rep, gcj_freelists));
+		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (struct GC_Thread_Rep, tlfs)
+					+ G_STRUCT_OFFSET (struct thread_local_freelists,
+							   gcj_freelists));
 	else
 		g_assert_not_reached ();
 	mono_mb_emit_byte (mb, MONO_CEE_ADD);
