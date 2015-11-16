@@ -9,6 +9,9 @@
 
 #include "security-manager.h"
 
+/* Class lazy loading functions */
+static GENERATE_GET_CLASS_WITH_CACHE (security_manager, System.Security, SecurityManager)
+
 static MonoSecurityMode mono_security_mode = MONO_SECURITY_MODE_NONE;
 
 void
@@ -35,9 +38,7 @@ mono_security_manager_get_methods (void)
 		return &secman;
 
 	/* Initialize */
-	secman.securitymanager = mono_class_from_name (mono_defaults.corlib, 
-		"System.Security", "SecurityManager");
-	g_assert (secman.securitymanager);
+	secman.securitymanager = mono_class_get_security_manager_class ();
 	if (!secman.securitymanager->inited)
 		mono_class_init (secman.securitymanager);
 
