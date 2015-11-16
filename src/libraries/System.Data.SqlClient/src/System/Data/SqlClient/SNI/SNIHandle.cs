@@ -22,6 +22,12 @@ namespace System.Data.SqlClient.SNI
         public abstract void SetAsyncCallbacks(SNIAsyncCallback receiveCallback, SNIAsyncCallback sendCallback);
 
         /// <summary>
+        /// Set buffer size
+        /// </summary>
+        /// <param name="bufferSize">Buffer size</param>
+        public abstract void SetBufferSize(int bufferSize);
+
+        /// <summary>
         /// Send a packet synchronously
         /// </summary>
         /// <param name="packet">SNI packet</param>

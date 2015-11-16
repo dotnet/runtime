@@ -244,7 +244,7 @@ namespace System.Data.SqlClient.SNI
                 Exception e = t.Exception != null ? t.Exception.InnerException : null;
                 if (e != null)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, e.Message);
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, SNICommon.SNIInternalExceptionErrorId, e.Message);
                     error = true;
                 }
                 else
@@ -253,7 +253,7 @@ namespace System.Data.SqlClient.SNI
 
                     if (_length == 0)
                     {
-                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 0, "Connection was terminated");
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 2, SR.SNI_ERROR_2);
                         error = true;
                     }
                 }
