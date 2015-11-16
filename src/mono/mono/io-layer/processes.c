@@ -1149,6 +1149,8 @@ wapi_processes_init (void)
 	current_process = _wapi_handle_new (WAPI_HANDLE_PROCESS,
 					    &process_handle);
 	g_assert (current_process);
+
+	mono_os_mutex_init (&mono_processes_mutex);
 }
 
 gpointer
