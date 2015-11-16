@@ -179,49 +179,6 @@ mono_x86_patch (unsigned char* code, gpointer target)
 	x86_patch (code, (unsigned char*)target);
 }
 
-typedef enum {
-	ArgInIReg,
-	ArgInFloatSSEReg,
-	ArgInDoubleSSEReg,
-	ArgOnStack,
-	ArgValuetypeInReg,
-	ArgOnFloatFpStack,
-	ArgOnDoubleFpStack,
-	/* gsharedvt argument passed by addr */
-	ArgGSharedVt,
-	ArgNone
-} ArgStorage;
-
-typedef struct {
-	gint16 offset;
-	gint8  reg;
-	ArgStorage storage;
-	int nslots;
-	gboolean is_pair;
-
-	/* Only if storage == ArgValuetypeInReg */
-	ArgStorage pair_storage [2];
-	gint8 pair_regs [2];
-} ArgInfo;
-
-typedef struct {
-	int nargs;
-	guint32 stack_usage;
-	guint32 reg_usage;
-	guint32 freg_usage;
-	gboolean need_stack_align;
-	guint32 stack_align_amount;
-	gboolean vtype_retaddr;
-	/* The index of the vret arg in the argument list */
-	int vret_arg_index;
-	int vret_arg_offset;
-	/* Argument space popped by the callee */
-	int callee_stack_pop;
-	ArgInfo ret;
-	ArgInfo sig_cookie;
-	ArgInfo args [1];
-} CallInfo;
-
 #define FLOAT_PARAM_REGS 0
 
 static const guint32 thiscall_param_regs [] = { X86_ECX, X86_NREG };
@@ -761,7 +718,7 @@ mono_arch_init (void)
 
 	mono_aot_register_jit_icall ("mono_x86_throw_exception", mono_x86_throw_exception);
 	mono_aot_register_jit_icall ("mono_x86_throw_corlib_exception", mono_x86_throw_corlib_exception);
-#if defined(ENABLE_GSHAREDVT)
+#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
 	mono_aot_register_jit_icall ("mono_x86_start_gsharedvt_call", mono_x86_start_gsharedvt_call);
 #endif
 }
@@ -6806,8 +6763,8 @@ mono_arch_opcode_supported (int opcode)
 	}
 }
 
-#if defined(ENABLE_GSHAREDVT)
-
-#include "../../../mono-extensions/mono/mini/mini-x86-gsharedvt.c"
-
-#endif /* !MONOTOUCH */
+CallInfo*
+mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
+{
+	return get_call_info (mp, sig);
+}
