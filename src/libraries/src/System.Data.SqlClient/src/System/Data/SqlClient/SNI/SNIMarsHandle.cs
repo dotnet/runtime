@@ -65,7 +65,7 @@ namespace System.Data.SqlClient.SNI
             }
             catch (Exception e)
             {
-                SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, 0, 0, e.Message);
+                SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, 0, SNICommon.SNIInternalExceptionErrorId, e.Message);
             }
         }
 
@@ -279,8 +279,7 @@ namespace System.Data.SqlClient.SNI
 
                 if (_connectionError != null)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = _connectionError;
-                    return TdsEnums.SNI_ERROR;
+                    return SNICommon.ReportSNIError(_connectionError);
                 }
 
                 if (queueCount == 0)
@@ -433,8 +432,7 @@ namespace System.Data.SqlClient.SNI
                 {
                     if (_connectionError != null)
                     {
-                        SNILoadHandle.SingletonInstance.LastError = _connectionError;
-                        return TdsEnums.SNI_ERROR;
+                        return SNICommon.ReportSNIError(_connectionError);
                     }
 
                     queueCount = _receivedPacketQueue.Count;
@@ -465,7 +463,7 @@ namespace System.Data.SqlClient.SNI
 
                 if (!_packetEvent.Wait(timeoutInMilliseconds))
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SMUX_PROV, 0, 0, "Timeout error");
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SMUX_PROV, 0, 11, SR.SNI_ERROR_11);
                     return TdsEnums.SNI_WAIT_TIMEOUT;
                 }
             }
@@ -487,6 +485,14 @@ namespace System.Data.SqlClient.SNI
         /// <param name="receiveCallback">Receive callback</param>
         /// <param name="sendCallback">Send callback</param>
         public override void SetAsyncCallbacks(SNIAsyncCallback receiveCallback, SNIAsyncCallback sendCallback)
+        {
+        }
+
+        /// <summary>
+        /// Set buffer size
+        /// </summary>
+        /// <param name="bufferSize">Buffer size</param>
+        public override void SetBufferSize(int bufferSize)
         {
         }
 
