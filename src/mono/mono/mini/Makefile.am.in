@@ -337,7 +337,9 @@ arm64_sources = \
 	mini-arm64.c		\
 	mini-arm64.h		\
 	exceptions-arm64.c	\
-	tramp-arm64.c
+	tramp-arm64.c	\
+	mini-arm64-gsharedvt.c	\
+	tramp-arm64-gsharedvt.c
 
 mips_sources = \
 	mini-mips.c		\
