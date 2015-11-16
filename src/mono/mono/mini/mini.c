@@ -3569,10 +3569,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		return cfg;
 	}
 
-	header = cfg->header = mono_method_get_header_checked (cfg->method, &err);
+	header = cfg->header = mono_method_get_header_checked (cfg->method, &cfg->error);
 	if (!header) {
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-		cfg->error = err;
 		if (MONO_METHOD_COMPILE_END_ENABLED ())
 			MONO_PROBE_METHOD_COMPILE_END (method, FALSE);
 		return cfg;

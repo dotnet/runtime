@@ -7100,7 +7100,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	if (!cheader) {
 		if (inline_always) {
 			mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
-			cfg->error = error; //XXX is this a good or bad idea?
+			mono_error_move (&cfg->error, &error);
 		} else {
 			mono_error_cleanup (&error);
 		}
