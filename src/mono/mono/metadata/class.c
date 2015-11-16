@@ -7983,6 +7983,18 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 	return klass;
 }
 
+/**
+ * mono_class_from_name_checked:
+ * @image: The MonoImage where the type is looked up in
+ * @name_space: the type namespace
+ * @name: the type short name.
+ *
+ * Obtains a MonoClass with a given namespace and a given name which
+ * is located in the given MonoImage.
+ *
+ * Works like mono_class_from_name, but error handling is tricky. It can return NULL and have no error
+ * set if the class was not found or it will return NULL and set the error if there was a loading error.
+ */
 MonoClass *
 mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error)
 {
@@ -8024,6 +8036,56 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	}
 	return klass;
 }
+
+/**
+ * mono_class_load_from_name:
+ * @image: The MonoImage where the type is looked up in
+ * @name_space: the type namespace
+ * @name: the type short name.
+ *
+ * This function works exactly like mono_class_from_name but it will abort if the class is not found.
+ * This function should be used by the runtime for critical types to which there's no way to recover but crash
+ * If they are missing. Thing of System.Object or System.String.
+ */
+MonoClass *
+mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name)
+{
+	MonoError error;
+	MonoClass *klass;
+
+	klass = mono_class_from_name_checked (image, name_space, name, &error);
+	if (!klass)
+		g_error ("Runtime critical type %s.%s not found", name_space, name);
+	if (!mono_error_ok (&error))
+		g_error ("Could not load runtime critical type %s.%s due to %s", name_space, name, mono_error_get_message (&error));
+	return klass;
+}
+
+/**
+ * mono_class_try_load_from_name:
+ * @image: The MonoImage where the type is looked up in
+ * @name_space: the type namespace
+ * @name: the type short name.
+ *
+ * This function tries to load a type, returning the class was found or NULL otherwise.
+ * This function should be used by the runtime when probing for optional types, those that could have being linked out.
+ *
+ * Big design consideration. This function aborts if there was an error loading the type. This prevents us from missing
+ * a type that we would otherwise assume to be available but was not due some error.
+ *
+ */
+MonoClass*
+mono_class_try_load_from_name (MonoImage *image, const char* name_space, const char *name)
+{
+	MonoError error;
+	MonoClass *klass;
+
+	klass = mono_class_from_name_checked (image, name_space, name, &error);
+	if (!mono_error_ok (&error))
+		g_error ("Could not load runtime critical type %s.%s due to %s", name_space, name, mono_error_get_message (&error));
+	return klass;
+}
+
 
 /**
  * mono_class_is_subclass_of:
