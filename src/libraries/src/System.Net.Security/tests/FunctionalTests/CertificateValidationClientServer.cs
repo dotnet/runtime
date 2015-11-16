@@ -28,6 +28,7 @@ namespace System.Net.Security.Tests
             _clientCertificate = TestConfiguration.GetClientCertificate();
         }
 
+        [ActiveIssue(4467)]
         [Fact]
         public async Task CertificateValidationClientServer_EndToEnd_Ok()
         {
