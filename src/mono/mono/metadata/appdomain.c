@@ -118,6 +118,9 @@ get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error);
 
 static MonoLoadFunc load_function = NULL;
 
+/* Lazy class loading functions */
+static GENERATE_GET_CLASS_WITH_CACHE (assembly, System.Reflection, Assembly)
+
 void
 mono_install_runtime_load (MonoLoadFunc func)
 {
@@ -957,17 +960,12 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 	MonoError error;
 	MonoDomain *domain = ad->data; 
 	MonoAssembly* ass;
-	static MonoClass *System_Reflection_Assembly;
 	MonoArray *res;
 	GSList *tmp;
 	int i;
 	GPtrArray *assemblies;
 
 	mono_error_init (&error);
-	
-	if (!System_Reflection_Assembly)
-		System_Reflection_Assembly = mono_class_from_name (
-			mono_defaults.corlib, "System.Reflection", "Assembly");
 
 	/* 
 	 * Make a copy of the list of assemblies because we can't hold the assemblies
@@ -986,7 +984,7 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 	}
 	mono_domain_assemblies_unlock (domain);
 
-	res = mono_array_new (domain, System_Reflection_Assembly, assemblies->len);
+	res = mono_array_new (domain, mono_class_get_assembly_class (), assemblies->len);
 	for (i = 0; i < assemblies->len; ++i) {
 		ass = (MonoAssembly *)g_ptr_array_index (assemblies, i);
 		MonoReflectionAssembly *ass_obj = mono_assembly_get_object_checked (domain, ass, &error);
