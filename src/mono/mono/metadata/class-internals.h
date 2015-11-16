@@ -1182,6 +1182,9 @@ mono_install_remoting_trampoline (MonoRemotingTrampoline func);
 #define GENERATE_GET_CLASS_WITH_CACHE_DECL(shortname) \
 MonoClass* mono_class_get_##shortname##_class (void);
 
+#define GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(shortname) \
+MonoClass* mono_class_try_get_##shortname##_class (void);
+
 #define GENERATE_GET_CLASS_WITH_CACHE(shortname,namespace,name) \
 MonoClass*	\
 mono_class_get_##shortname##_class (void)	\
@@ -1197,9 +1200,24 @@ mono_class_get_##shortname##_class (void)	\
 	return klass;	\
 }
 
-#define GENERATE_STATIC_GET_CLASS_WITH_CACHE(shortname,namespace,name) \
-static GENERATE_GET_CLASS_WITH_CACHE (shortname,namespace,name)
+#define GENERATE_TRY_GET_CLASS_WITH_CACHE(shortname,namespace,name) \
+MonoClass*	\
+mono_class_try_get_##shortname##_class (void)	\
+{	\
+	static volatile MonoClass *tmp_class;	\
+	static volatile gboolean inited;	\
+	MonoClass *klass = (MonoClass *)tmp_class;	\
+	mono_memory_barrier ();	\
+	if (!inited) {	\
+		klass = mono_class_try_load_from_name (mono_defaults.corlib, #namespace, #name);	\
+		tmp_class = klass;	\
+		mono_memory_barrier ();	\
+		inited = TRUE;	\
+	}	\
+	return klass;	\
+}
 
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (safehandle)
 
 #ifndef DISABLE_COM
 

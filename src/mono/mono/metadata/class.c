@@ -10875,3 +10875,5 @@ mono_class_full_name (MonoClass *klass)
 	return mono_type_full_name (&klass->byval_arg);
 }
 
+/* Declare all shared lazy type lookup functions */
+GENERATE_TRY_GET_CLASS_WITH_CACHE (safehandle, System.Runtime.InteropServices, SafeHandle)

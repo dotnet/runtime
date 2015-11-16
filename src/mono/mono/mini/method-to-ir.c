@@ -160,6 +160,7 @@ static MonoMethodSignature *helper_sig_llvmonly_imt_thunk;
 
 /* type loading helpers */
 static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, System.Runtime.CompilerServices, RuntimeHelpers)
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, System.Diagnostics, DebuggableAttribute)
 
 /*
  * Instruction metadata
@@ -7895,7 +7896,7 @@ is_jit_optimizer_disabled (MonoMethod *m)
 {
 	MonoAssembly *ass = m->klass->image->assembly;
 	MonoCustomAttrInfo* attrs;
-	static MonoClass *klass;
+	MonoClass *klass;
 	int i;
 	gboolean val = FALSE;
 
@@ -7903,8 +7904,8 @@ is_jit_optimizer_disabled (MonoMethod *m)
 	if (ass->jit_optimizer_disabled_inited)
 		return ass->jit_optimizer_disabled;
 
-	if (!klass)
-		klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggableAttribute");
+	klass = mono_class_try_get_debuggable_attribute_class ();
+
 	if (!klass) {
 		/* Linked away */
 		ass->jit_optimizer_disabled = FALSE;
