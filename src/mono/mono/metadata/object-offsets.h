@@ -17,16 +17,21 @@ Output defines:
 
 HAS_CROSS_COMPILER_OFFSETS - if set, it means we found some cross offsets, it doesnt mean we'll use it.
 USED_CROSS_COMPILER_OFFSETS - if set, it means we used the cross offsets
+
+Environment defines (from config.h and CFLAGS):
+
+MONO_GENERATING_OFFSETS - Set by an offsets generating tool to disable the usage of any (possibly non-existing) generated header.
+MONO_OFFSETS_FILE - Name of the header file containing the offsets to be used.
+
 */
 
 
 #undef HAS_CROSS_COMPILER_OFFSETS
 #undef USED_CROSS_COMPILER_OFFSETS
 
-#ifdef ENABLE_EXTENSION_MODULE
-#include "../../../mono-extensions/mono/metadata/object-offsets.h"
+#if !defined (MONO_GENERATING_OFFSETS) && defined (MONO_OFFSETS_FILE)
+#include MONO_OFFSETS_FILE
 #endif
-
 
 #ifndef USED_CROSS_COMPILER_OFFSETS
 
