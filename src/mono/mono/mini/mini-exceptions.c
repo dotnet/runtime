@@ -1189,6 +1189,9 @@ mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domai
 	return mini_jit_info_table_find_ext (domain, addr, FALSE, out_domain);
 }
 
+/* Class lazy loading functions */
+static GENERATE_GET_CLASS_WITH_CACHE (runtime_compat_attr, System.Runtime.CompilerServices, RuntimeCompatibilityAttribute)
+
 /*
  * wrap_non_exception_throws:
  *
@@ -1200,7 +1203,7 @@ wrap_non_exception_throws (MonoMethod *m)
 {
 	MonoAssembly *ass = m->klass->image->assembly;
 	MonoCustomAttrInfo* attrs;
-	static MonoClass *klass;
+	MonoClass *klass;
 	int i;
 	gboolean val = FALSE;
 
@@ -1208,7 +1211,7 @@ wrap_non_exception_throws (MonoMethod *m)
 	if (ass->wrap_non_exception_throws_inited)
 		return ass->wrap_non_exception_throws;
 
-	klass = mono_class_from_name_cached (mono_defaults.corlib, "System.Runtime.CompilerServices", "RuntimeCompatibilityAttribute");
+	klass = mono_class_get_runtime_compat_attr_class ();
 
 	attrs = mono_custom_attrs_from_assembly (ass);
 	if (attrs) {

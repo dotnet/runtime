@@ -157,6 +157,10 @@ static MonoMethodSignature *helper_sig_domain_get;
 static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
 static MonoMethodSignature *helper_sig_llvmonly_imt_thunk;
 
+
+/* type loading helpers */
+static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, System.Runtime.CompilerServices, RuntimeHelpers)
+
 /*
  * Instruction metadata
  */
@@ -5932,10 +5936,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 {
 	MonoInst *ins = NULL;
 
-	static MonoClass *runtime_helpers_class = NULL;
-	if (! runtime_helpers_class)
-		runtime_helpers_class = mono_class_from_name (mono_defaults.corlib,
-			"System.Runtime.CompilerServices", "RuntimeHelpers");
+	 MonoClass *runtime_helpers_class = mono_class_get_runtime_helpers_class ();
 
 	if (cmethod->klass == mono_defaults.string_class) {
 		if (strcmp (cmethod->name, "get_Chars") == 0 && fsig->param_count + fsig->hasthis == 2) {
