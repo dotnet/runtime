@@ -3189,4 +3189,9 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 #define ARCH_VARARG_ICALLS 0
 #endif
 
+/*
+ * Native unwinder integration
+ */
+void mono_exception_native_unwind (void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info);
+
 #endif /* __MONO_MINI_H__ */
