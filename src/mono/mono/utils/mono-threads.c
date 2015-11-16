@@ -26,6 +26,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-coop-mutex.h>
+#include <mono/utils/mono-coop-semaphore.h>
 
 #include <errno.h>
 
@@ -45,7 +46,7 @@ The GC has to acquire this lock before starting a STW to make sure
 a runtime suspend won't make it wronly see a thread in a safepoint
 when it is in fact not.
 */
-static MonoSemType global_suspend_semaphore;
+static MonoCoopSem global_suspend_semaphore;
 
 static size_t thread_info_size;
 static MonoThreadInfoCallbacks threads_callbacks;
@@ -633,7 +634,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 
 	unified_suspend_enabled = g_getenv ("MONO_ENABLE_UNIFIED_SUSPEND") != NULL || mono_threads_is_coop_enabled ();
 
-	mono_os_sem_init (&global_suspend_semaphore, 1);
+	mono_coop_sem_init (&global_suspend_semaphore, 1);
 	mono_os_sem_init (&suspend_semaphore, 0);
 
 	mono_lls_init (&thread_list, NULL);
@@ -1022,17 +1023,14 @@ STW to make sure no unsafe pending suspend is in progress.
 void
 mono_thread_info_suspend_lock (void)
 {
-	int res;
-	MONO_TRY_BLOCKING;
-	res = mono_os_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
+	int res = mono_coop_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
 	g_assert (res != -1);
-	MONO_FINISH_TRY_BLOCKING;
 }
 
 void
 mono_thread_info_suspend_unlock (void)
 {
-	mono_os_sem_post (&global_suspend_semaphore);
+	mono_coop_sem_post (&global_suspend_semaphore);
 }
 
 /*
