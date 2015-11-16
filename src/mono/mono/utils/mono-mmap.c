@@ -31,7 +31,7 @@
 #endif
 
 #include "mono-mmap.h"
-#include "mono-mmap-internal.h"
+#include "mono-mmap-internals.h"
 #include "mono-proclib.h"
 #include <mono/utils/mono-threads.h>
 

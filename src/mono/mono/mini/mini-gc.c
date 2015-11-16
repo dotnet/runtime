@@ -10,7 +10,7 @@
 
 #include "config.h"
 #include "mini-gc.h"
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 
 static gboolean
 get_provenance (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
@@ -38,7 +38,7 @@ get_provenance_func (void)
 //#if defined(MONO_ARCH_GC_MAPS_SUPPORTED)
 
 #include <mono/metadata/sgen-conf.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/utils/mono-counters.h>
 
 #define SIZEOF_SLOT ((int)sizeof (mgreg_t))

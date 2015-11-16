@@ -12,7 +12,7 @@
 #include "ir-emit.h"
 #include "jit-icalls.h"
 
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/abi-details.h>
 
 #ifndef DISABLE_JIT

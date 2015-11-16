@@ -4,7 +4,7 @@
 #include <glib.h>
 
 #include "mono-compiler.h"
-#include "mono-logger-internal.h"
+#include "mono-logger-internals.h"
 
 typedef struct {
 	GLogLevelFlags	level;

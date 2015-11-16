@@ -45,12 +45,12 @@
 #include <errno.h>
 
 #include "sgen/sgen-gc.h"
-#include "sgen-bridge-internal.h"
+#include "sgen-bridge-internals.h"
 #include "sgen/sgen-hash-table.h"
 #include "sgen/sgen-qsort.h"
 #include "sgen/sgen-client.h"
 #include "tabledefs.h"
-#include "utils/mono-logger-internal.h"
+#include "utils/mono-logger-internals.h"
 
 //#define NEW_XREFS
 #ifdef NEW_XREFS

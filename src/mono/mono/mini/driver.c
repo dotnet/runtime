@@ -45,7 +45,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/coree.h>
 #include <mono/metadata/attach.h>
 #include "mono/utils/mono-counters.h"

@@ -18,7 +18,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/mono-endian.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mempool.h>
 #include <mono/metadata/debug-mono-ppdb.h>
 #include <string.h>

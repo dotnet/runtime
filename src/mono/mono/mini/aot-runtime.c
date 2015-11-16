@@ -47,10 +47,10 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/mono-endian.h>
-#include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>

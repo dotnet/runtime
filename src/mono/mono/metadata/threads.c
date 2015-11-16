@@ -24,7 +24,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/monitor.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/runtime.h>
 #include <mono/io-layer/io-layer.h>
@@ -41,7 +41,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
 
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>

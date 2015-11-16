@@ -27,7 +27,7 @@
 
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/exception.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threadpool-ms.h>
@@ -37,7 +37,7 @@
 #include <mono/utils/mono-complex.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-logger.h>
-#include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-time.h>

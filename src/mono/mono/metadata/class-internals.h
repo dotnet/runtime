@@ -1,8 +1,8 @@
 /* 
  * Copyright 2012 Xamarin Inc
  */
-#ifndef __MONO_METADATA_CLASS_INTERBALS_H__
-#define __MONO_METADATA_CLASS_INTERBALS_H__
+#ifndef __MONO_METADATA_CLASS_INTERNALS_H__
+#define __MONO_METADATA_CLASS_INTERNALS_H__
 
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
@@ -1416,4 +1416,4 @@ mono_field_from_token_checked (MonoImage *image, uint32_t token, MonoClass **ret
 gpointer
 mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 
-#endif /* __MONO_METADATA_CLASS_INTERBALS_H__ */
+#endif /* __MONO_METADATA_CLASS_INTERNALS_H__ */

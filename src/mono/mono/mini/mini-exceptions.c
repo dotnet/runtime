@@ -53,14 +53,14 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/object-internals.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-mlist.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-logger-internals.h>
 
 #include "mini.h"
 #include "trace.h"

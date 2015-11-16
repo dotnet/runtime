@@ -21,7 +21,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/domain-internals.h>
 #include "mono/metadata/metadata-internals.h"
@@ -36,7 +36,7 @@
 #include "mono/metadata/profiler-private.h"
 #include "mono/metadata/security-manager.h"
 #include "mono/metadata/mono-debug-debugger.h"
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>

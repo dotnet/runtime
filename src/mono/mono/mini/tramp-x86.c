@@ -18,7 +18,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/arch/x86/x86-codegen.h>
 
 #include <mono/utils/memcheck.h>

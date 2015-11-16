@@ -24,7 +24,7 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
-#include <mono/metadata/gc-internal.h>
+#include <mono/metadata/gc-internals.h>
 #include <mono/metadata/metadata.h>
 
 #include <mono/metadata/console-io.h>
