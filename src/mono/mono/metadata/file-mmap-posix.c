@@ -36,6 +36,8 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-coop-mutex.h>
+#include <mono/utils/mono-threads.h>
 
 typedef struct {
 	int kind;
@@ -88,7 +90,7 @@ enum {
 #endif
 
 static int mmap_init_state;
-static mono_mutex_t named_regions_mutex;
+static MonoCoopMutex named_regions_mutex;
 static GHashTable *named_regions;
 
 
@@ -115,14 +117,14 @@ retry:
 		if (InterlockedCompareExchange (&mmap_init_state, 1, 0) != 0)
 			goto retry;
 		named_regions = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
-		mono_os_mutex_init (&named_regions_mutex);
+		mono_coop_mutex_init (&named_regions_mutex);
 
 		mono_atomic_store_release (&mmap_init_state, 2);
 		break;
 
 	case 1:
 		do {
-			g_usleep (1000); /* Been init'd by other threads, this is very rare. */
+			mono_thread_info_sleep (1, NULL); /* Been init'd by other threads, this is very rare. */
 		} while (mmap_init_state != 2);
 		break;
 	case 2:
@@ -136,13 +138,13 @@ static void
 named_regions_lock (void)
 {
 	file_mmap_init ();
-	mono_os_mutex_lock (&named_regions_mutex);
+	mono_coop_mutex_lock (&named_regions_mutex);
 }
 
 static void
 named_regions_unlock (void)
 {
-	mono_os_mutex_unlock (&named_regions_mutex);
+	mono_coop_mutex_unlock (&named_regions_mutex);
 }
 
 
