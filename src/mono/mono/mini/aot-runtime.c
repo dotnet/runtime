@@ -356,7 +356,7 @@ mono_aot_get_offset (guint32 *table, int index)
 }
 
 static MonoMethod*
-decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf);
+decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *error);
 
 static MonoClass*
 decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *error);
@@ -514,11 +514,9 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 				if (is_method) {
 					MonoMethod *method_def;
 					g_assert (type == MONO_TYPE_MVAR);
-					method_def = decode_resolve_method_ref (module, p, &p);
-					if (!method_def) {
-						mono_error_set_bad_image_name (error, module->aot_name, "Could not decode methodref when computing owned method typeref var");
+					method_def = decode_resolve_method_ref (module, p, &p, error);
+					if (!method_def)
 						return NULL;
-					}
 
 					container = mono_method_get_generic_container (method_def);
 				} else {
@@ -881,7 +879,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		switch (wrapper_type) {
 #ifndef DISABLE_REMOTING
 		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
-			MonoMethod *m = decode_resolve_method_ref (module, p, &p);
+			MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
 
 			if (!m)
 				return FALSE;
@@ -969,7 +967,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			break;
 		}
 		case MONO_WRAPPER_SYNCHRONIZED: {
-			MonoMethod *m = decode_resolve_method_ref (module, p, &p);
+			MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 
 			if (!m)
 				return FALSE;
@@ -1001,13 +1000,15 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					ref->method = mono_marshal_get_struct_to_ptr (klass);
 				}
 			} else if (subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
-				MonoMethod *m = decode_resolve_method_ref (module, p, &p);
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
 
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_synchronized_inner_wrapper (m);
 			} else if (subtype == WRAPPER_SUBTYPE_ARRAY_ACCESSOR) {
-				MonoMethod *m = decode_resolve_method_ref (module, p, &p);
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
 
 				if (!m)
 					return FALSE;
@@ -1042,7 +1043,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			} else if (subtype == WRAPPER_SUBTYPE_STRING_CTOR) {
 				MonoMethod *m;
 
-				m = decode_resolve_method_ref (module, p, &p);
+				m = decode_resolve_method_ref (module, p, &p, &error);
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
 				if (!m)
 					return FALSE;
 
@@ -1072,7 +1074,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 				ref->method = target;
 			} else {
-				m = decode_resolve_method_ref (module, p, &p);
+				m = decode_resolve_method_ref (module, p, &p, &error);
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
 
 				if (!m)
 					return FALSE;
@@ -1110,14 +1113,16 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				ref->method = target;
 			} else if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT) {
 				/* Direct wrapper */
-				MonoMethod *m = decode_resolve_method_ref (module, p, &p);
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
 
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_runtime_invoke (m, FALSE);
 			} else if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL) {
 				/* Virtual direct wrapper */
-				MonoMethod *m = decode_resolve_method_ref (module, p, &p);
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
 
 				if (!m)
 					return FALSE;
@@ -1212,7 +1217,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			MonoMethod *m;
 			MonoClass *klass;
 
-			m = decode_resolve_method_ref (module, p, &p);
+			m = decode_resolve_method_ref (module, p, &p, &error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			if (!m)
 				return FALSE;
 			klass = decode_klass_ref (module, p, &p, &error);
@@ -1347,30 +1353,29 @@ decode_method_ref (MonoAotModule *module, MethodRef *ref, guint8 *buf, guint8 **
  *   Similar to decode_method_ref, but resolve and return the method itself.
  */
 static MonoMethod*
-decode_resolve_method_ref_with_target (MonoAotModule *module, MonoMethod *target, guint8 *buf, guint8 **endbuf)
+decode_resolve_method_ref_with_target (MonoAotModule *module, MonoMethod *target, guint8 *buf, guint8 **endbuf, MonoError *error)
 {
-	MonoError error;
 	MethodRef ref;
-	gboolean res;
-	MonoMethod *result;
 
-	res = decode_method_ref_with_target (module, &ref, target, buf, endbuf);
-	if (!res)
+	mono_error_init (error);
+
+	if (!decode_method_ref_with_target (module, &ref, target, buf, endbuf)) {
+		mono_error_set_bad_image_name (error, module->aot_name, "Could not decode methodref with target");
 		return NULL;
+	}
 	if (ref.method)
 		return ref.method;
-	if (!ref.image)
+	if (!ref.image) {
+		mono_error_set_bad_image_name (error, module->aot_name, "No image found for methodref with target");
 		return NULL;
-	result = mono_get_method_checked (ref.image, ref.token, NULL, NULL, &error);
-	if (!result)
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
-	return result;
+	}
+	return mono_get_method_checked (ref.image, ref.token, NULL, NULL, error);
 }
 
 static MonoMethod*
-decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
+decode_resolve_method_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *error)
 {
-	return decode_resolve_method_ref_with_target (module, NULL, buf, endbuf);
+	return decode_resolve_method_ref_with_target (module, NULL, buf, endbuf, error);
 }
 
 #ifdef ENABLE_AOT_CACHE
@@ -3057,10 +3062,12 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		}
 
 		len = decode_value (p, &p);
-		if (async)
+		if (async) {
 			p += len;
-		else
-			jinfo->d.method = decode_resolve_method_ref (amodule, p, &p);
+		} else {
+			jinfo->d.method = decode_resolve_method_ref (amodule, p, &p, &error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		}
 
 		gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
 		if (decode_value (p, &p)) {
@@ -3219,6 +3226,7 @@ msort_method_addresses (gpointer *array, int *indexes, int len)
 MonoJitInfo *
 mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 {
+	MonoError error;
 	int pos, left, right, code_len;
 	int method_index, table_len;
 	guint32 token;
@@ -3372,7 +3380,8 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 				}
 
 				p = amodule->blob + table [(pos * 2) + 1];
-				method = decode_resolve_method_ref (amodule, p, &p);
+				method = decode_resolve_method_ref (amodule, p, &p, &error);
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
 				if (!method)
 					/* Happens when a random address is passed in which matches a not-yey called wrapper encoded using its name */
 					return NULL;
@@ -3483,7 +3492,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	}
 	case MONO_PATCH_INFO_METHODCONST:
 		/* Shared */
-		ji->data.method = decode_resolve_method_ref (aot_module, p, &p);
+		ji->data.method = decode_resolve_method_ref (aot_module, p, &p, &error);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		if (!ji->data.method)
 			goto cleanup;
 		break;
@@ -3504,7 +3514,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		if (!ji->data.del_tramp->klass)
 			goto cleanup;
 		if (decode_value (p, &p)) {
-			ji->data.del_tramp->method = decode_resolve_method_ref (aot_module, p, &p);
+			ji->data.del_tramp->method = decode_resolve_method_ref (aot_module, p, &p, &error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			if (!ji->data.del_tramp->method)
 				goto cleanup;
 		}
@@ -3608,11 +3619,12 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 
 		entry = (MonoJumpInfoRgctxEntry *)mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoRgctxEntry));
 		p2 = aot_module->blob + offset;
-		entry->method = decode_resolve_method_ref (aot_module, p2, &p2);
+		entry->method = decode_resolve_method_ref (aot_module, p2, &p2, &error);
 		entry->in_mrgctx = ((val & 1) > 0) ? TRUE : FALSE;
 		entry->info_type = (MonoRgctxInfoType)((val >> 1) & 0xff);
 		entry->data = (MonoJumpInfo *)mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo));
 		entry->data->type = (MonoJumpInfoType)((val >> 9) & 0xff);
+		mono_error_cleanup (&error); /* FIXME don't swallow the error */
 		
 		res = decode_patch (aot_module, mp, entry->data, p, &p);
 		if (!res)
@@ -3635,8 +3647,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		MonoJumpInfoGSharedVtCall *info = (MonoJumpInfoGSharedVtCall *)mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoGSharedVtCall));
 		info->sig = decode_signature (aot_module, p, &p);
 		g_assert (info->sig);
-		info->method = decode_resolve_method_ref (aot_module, p, &p);
-		g_assert (info->method);
+		info->method = decode_resolve_method_ref (aot_module, p, &p, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 
 		ji->data.target = info;
 		break;
@@ -3645,8 +3657,9 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		MonoGSharedVtMethodInfo *info = (MonoGSharedVtMethodInfo *)mono_mempool_alloc0 (mp, sizeof (MonoGSharedVtMethodInfo));
 		int i;
 		
-		info->method = decode_resolve_method_ref (aot_module, p, &p);
-		g_assert (info->method);
+		info->method = decode_resolve_method_ref (aot_module, p, &p, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
 		info->num_entries = decode_value (p, &p);
 		info->count_entries = info->num_entries;
 		info->entries = (MonoRuntimeGenericContextInfoTemplate *)mono_mempool_alloc0 (mp, sizeof (MonoRuntimeGenericContextInfoTemplate) * info->num_entries);
@@ -3691,10 +3704,10 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		MonoJumpInfoVirtMethod *info = (MonoJumpInfoVirtMethod *)mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoVirtMethod));
 
 		info->klass = decode_klass_ref (aot_module, p, &p, &error);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
-		g_assert (info->klass);
-		info->method = decode_resolve_method_ref (aot_module, p, &p);
-		g_assert (info->method);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+
+		info->method = decode_resolve_method_ref (aot_module, p, &p, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 
 		ji->data.target = info;
 		break;
@@ -3973,6 +3986,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 static guint32
 find_aot_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, guint32 hash_full)
 {
+	MonoError error;
 	guint32 table_size, entry_size, hash;
 	guint32 *table, *entry;
 	guint32 index;
@@ -4008,7 +4022,8 @@ find_aot_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, guint32 
 		m = (MonoMethod *)g_hash_table_lookup (amodule->method_ref_to_method, p);
 		amodule_unlock (amodule);
 		if (!m) {
-			m = decode_resolve_method_ref_with_target (amodule, method, p, &p);
+			m = decode_resolve_method_ref_with_target (amodule, method, p, &p, &error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			/*
 			 * Can't catche runtime invoke wrappers since it would break
 			 * the check in decode_method_ref_with_target ().
