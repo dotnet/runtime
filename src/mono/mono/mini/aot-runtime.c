@@ -1324,15 +1324,9 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 }
 
 static gboolean
-decode_method_ref (MonoAotModule *module, MethodRef *ref, guint8 *buf, guint8 **endbuf)
+decode_method_ref (MonoAotModule *module, MethodRef *ref, guint8 *buf, guint8 **endbuf, MonoError *error)
 {
-	MonoError error;
-	gboolean res = decode_method_ref_with_target (module, ref, NULL, buf, endbuf, &error);
-	if (!is_ok (&error)) {
-		g_warning ("Could not decode methodref due to %s", mono_error_get_message (&error));
-		mono_error_cleanup (&error);
-	}
-	return res;
+	return decode_method_ref_with_target (module, ref, NULL, buf, endbuf, error);
 }
 
 /*
@@ -2355,6 +2349,7 @@ mono_aot_cleanup (void)
 static gboolean
 decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guint8 *buf, guint8 **endbuf)
 {
+	MonoError error;
 	guint32 flags;
 	MethodRef ref;
 	gboolean res;
@@ -2375,13 +2370,15 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 	info->is_generic_container = (flags >> 8) & 0x1;
 
 	if (info->has_cctor) {
-		res = decode_method_ref (module, &ref, buf, &buf);
+		res = decode_method_ref (module, &ref, buf, &buf, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 		if (!res)
 			return FALSE;
 		info->cctor_token = ref.token;
 	}
 	if (info->has_finalize) {
-		res = decode_method_ref (module, &ref, buf, &buf);
+		res = decode_method_ref (module, &ref, buf, &buf, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 		if (!res)
 			return FALSE;
 		info->finalize_image = ref.image;
@@ -2401,6 +2398,7 @@ decode_cached_class_info (MonoAotModule *module, MonoCachedClassInfo *info, guin
 gpointer
 mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int slot)
 {
+	MonoError error;
 	int i;
 	MonoClass *klass = vtable->klass;
 	MonoAotModule *amodule = (MonoAotModule *)klass->image->aot_module;
@@ -2420,10 +2418,13 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 	if (!err)
 		return NULL;
 
-	for (i = 0; i < slot; ++i)
-		decode_method_ref (amodule, &ref, p, &p);
+	for (i = 0; i < slot; ++i) {
+		decode_method_ref (amodule, &ref, p, &p, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
+	}
 
-	res = decode_method_ref (amodule, &ref, p, &p);
+	res = decode_method_ref (amodule, &ref, p, &p, &error);
+	mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 	if (!res)
 		return NULL;
 	if (ref.no_aot_trampoline)
@@ -3446,7 +3447,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		MethodRef ref;
 		gboolean res;
 
-		res = decode_method_ref (aot_module, &ref, p, &p);
+		res = decode_method_ref (aot_module, &ref, p, &p, &error);
+		mono_error_assert_ok (&error); /* FIXME don't swallow the error */
 		if (!res)
 			goto cleanup;
 
