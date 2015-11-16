@@ -57,6 +57,9 @@ static const CultureInfoEntry* culture_info_entry_from_lcid (int lcid);
 
 static const RegionInfoEntry* region_info_entry_from_lcid (int lcid);
 
+/* Lazy class loading functions */
+static GENERATE_GET_CLASS_WITH_CACHE (culture_info, System.Globalization, CultureInfo)
+
 static int
 culture_lcid_locator (const void *a, const void *b)
 {
@@ -593,8 +596,7 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 			len++;
 	}
 
-	klass = mono_class_from_name (mono_get_corlib (),
-			"System.Globalization", "CultureInfo");
+	klass = mono_class_get_culture_info_class ();
 
 	/* The InvariantCulture is not in culture_entries */
 	/* We reserve the first slot in the array for it */
