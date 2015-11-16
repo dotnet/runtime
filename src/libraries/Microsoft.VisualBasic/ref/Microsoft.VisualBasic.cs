@@ -23,6 +23,7 @@ namespace Microsoft.VisualBasic
         public const string vbCrLf = "\r\n";
         public const string vbFormFeed = "\f";
         public const string vbLf = "\n";
+        [System.Obsolete("For a carriage return and line feed, use vbCrLf.  For the current platform's newline, use System.Environment.NewLine.")]
         public const string vbNewLine = "\r\n";
         public const string vbNullChar = "\0";
         public const string vbNullString = null;
