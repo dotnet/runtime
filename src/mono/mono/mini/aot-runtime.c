@@ -394,19 +394,18 @@ decode_generic_inst (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoEr
 }
 
 static gboolean
-decode_generic_context (MonoAotModule *module, MonoGenericContext *ctx, guint8 *buf, guint8 **endbuf)
+decode_generic_context (MonoAotModule *module, MonoGenericContext *ctx, guint8 *buf, guint8 **endbuf, MonoError *error)
 {
-	MonoError error;
 	guint8 *p = buf;
 	guint8 *p2;
 	int argc;
+	mono_error_init (error);
 
 	p2 = p;
 	argc = decode_value (p, &p);
 	if (argc) {
 		p = p2;
-		ctx->class_inst = decode_generic_inst (module, p, &p, &error);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		ctx->class_inst = decode_generic_inst (module, p, &p, error);
 		if (!ctx->class_inst)
 			return FALSE;
 	}
@@ -414,8 +413,7 @@ decode_generic_context (MonoAotModule *module, MonoGenericContext *ctx, guint8 *
 	argc = decode_value (p, &p);
 	if (argc) {
 		p = p2;
-		ctx->method_inst = decode_generic_inst (module, p, &p, &error);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		ctx->method_inst = decode_generic_inst (module, p, &p, error);
 		if (!ctx->method_inst)
 			return FALSE;
 	}
@@ -1279,8 +1277,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 
 		memset (&ctx, 0, sizeof (ctx));
 
-		if (!decode_generic_context (module, &ctx, p, &p))
+		if (!decode_generic_context (module, &ctx, p, &p, &error)) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			return FALSE;
+		}
 
 		ref->method = mono_class_inflate_generic_method_full_checked (ref->method, klass, &ctx, &error);
 		if (!ref->method)
@@ -3571,7 +3571,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 
 		ji->data.token->has_context = decode_value (p, &p);
 		if (ji->data.token->has_context) {
-			gboolean res = decode_generic_context (aot_module, &ji->data.token->context, p, &p);
+			gboolean res = decode_generic_context (aot_module, &ji->data.token->context, p, &p, &error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			if (!res)
 				goto cleanup;
 		}
