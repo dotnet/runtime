@@ -350,7 +350,7 @@ public class Tests : LoadMissing {
 		return 2;
 	}
 
-	public static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 }
