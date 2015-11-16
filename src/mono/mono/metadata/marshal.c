@@ -143,6 +143,10 @@ static void init_safe_handle (void);
 static void*
 ves_icall_marshal_alloc (gulong size);
 
+/* Lazy class loading functions */
+static GENERATE_GET_CLASS_WITH_CACHE (string_builder, System.Text, StringBuilder)
+static GENERATE_GET_CLASS_WITH_CACHE (date_time, System, DateTime)
+
 /* MonoMethod pointers to SafeHandle::DangerousAddRef and ::DangerousRelease */
 static MonoMethod *sh_dangerous_add_ref;
 static MonoMethod *sh_dangerous_release;
@@ -724,7 +728,7 @@ mono_string_builder_new (int starting_string_length)
 		MonoMethodDesc *desc;
 		MonoMethod *m;
 
-		string_builder_class = mono_class_from_name (mono_defaults.corlib, "System.Text", "StringBuilder");
+		string_builder_class = mono_class_get_string_builder_class ();
 		g_assert (string_builder_class);
 		desc = mono_method_desc_new (":.ctor(int)", FALSE);
 		m = mono_method_desc_search_in_class (desc, string_builder_class);
@@ -4684,7 +4688,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	klass = mono_class_from_mono_type (t);
 
-	date_time_class = mono_class_from_name_cached (mono_defaults.corlib, "System", "DateTime");
+	date_time_class = mono_class_get_date_time_class ();
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
