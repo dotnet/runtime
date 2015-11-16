@@ -128,7 +128,7 @@ typedef struct {
 /* Controls access to the 'threads' hash table */
 static void mono_threads_lock (void);
 static void mono_threads_unlock (void);
-static mono_mutex_t threads_mutex;
+static MonoCoopMutex threads_mutex;
 
 /* Controls access to the 'joinable_threads' hash table */
 #define joinable_threads_lock() mono_os_mutex_lock (&joinable_threads_mutex)
@@ -226,15 +226,13 @@ static gint32 managed_thread_id_counter = 0;
 static void
 mono_threads_lock (void)
 {
-	MONO_TRY_BLOCKING;
-	mono_locks_os_acquire (&threads_mutex, ThreadsLock);
-	MONO_FINISH_TRY_BLOCKING;
+	mono_locks_coop_acquire (&threads_mutex, ThreadsLock);
 }
 
 static void
 mono_threads_unlock (void)
 {
-	mono_locks_os_release (&threads_mutex, ThreadsLock);
+	mono_locks_coop_release (&threads_mutex, ThreadsLock);
 }
 
 
@@ -2622,7 +2620,8 @@ mono_thread_init_tls (void)
 void mono_thread_init (MonoThreadStartCB start_cb,
 		       MonoThreadAttachCB attach_cb)
 {
-	mono_os_mutex_init_recursive(&threads_mutex);
+	mono_coop_mutex_init_recursive (&threads_mutex);
+
 	mono_os_mutex_init_recursive(&interlocked_mutex);
 	mono_os_mutex_init_recursive(&joinable_threads_mutex);
 	
@@ -2665,7 +2664,7 @@ void mono_thread_cleanup (void)
 	 * critical sections can be locked when mono_thread_cleanup is
 	 * called.
 	 */
-	mono_os_mutex_destroy (&threads_mutex);
+	mono_coop_mutex_destroy (&threads_mutex);
 	mono_os_mutex_destroy (&interlocked_mutex);
 	mono_os_mutex_destroy (&delayed_free_table_mutex);
 	mono_os_mutex_destroy (&small_id_mutex);
