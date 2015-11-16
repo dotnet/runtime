@@ -4557,10 +4557,10 @@ add_generic_instances (MonoAotCompile *acfg)
 		insts [ninsts ++] = &mono_defaults.boolean_class->byval_arg;
 
 		/* Add GenericComparer<T> instances for primitive types for Enum.ToString () */
-		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericComparer`1");
+		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "GenericComparer`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
-		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "GenericEqualityComparer`1");
+		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "GenericEqualityComparer`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
@@ -4597,13 +4597,15 @@ add_generic_instances (MonoAotCompile *acfg)
 
 		/* Add instances of the array generic interfaces for primitive types */
 		/* This will add instances of the InternalArray_ helper methods in Array too */
-		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "ICollection`1");
+		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "ICollection`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
-		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "IList`1");
+
+		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "IList`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
-		klass = mono_class_from_name (acfg->image, "System.Collections.Generic", "IEnumerable`1");
+
+		klass = mono_class_try_load_from_name (acfg->image, "System.Collections.Generic", "IEnumerable`1");
 		if (klass)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
@@ -4654,7 +4656,7 @@ add_generic_instances (MonoAotCompile *acfg)
 			MonoGenericContext ctx;
 			MonoType *args [16];
 			MonoMethod *m;
-			MonoClass *volatile_klass = mono_class_from_name (mono_defaults.corlib, "System.Threading", "Volatile");
+			MonoClass *volatile_klass = mono_class_try_load_from_name (mono_defaults.corlib, "System.Threading", "Volatile");
 			gpointer iter = NULL;
 
 			if (volatile_klass) {

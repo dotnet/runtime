@@ -231,7 +231,7 @@ do_console_cancel_event (void)
 	if (!domain->domain)
 		return;
 
-	klass = mono_class_from_name (mono_defaults.corlib, "System", "Console");
+	klass = mono_class_try_load_from_name (mono_defaults.corlib, "System", "Console");
 	if (klass == NULL)
 		return;
 
