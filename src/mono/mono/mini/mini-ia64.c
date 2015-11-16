@@ -4188,8 +4188,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			guint8* buf;
 			guint64 exc_token_index;
 
-			exc_class = mono_class_from_name (mono_defaults.corlib, "System", patch_info->data.name);
-			g_assert (exc_class);
+			exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", patch_info->data.name);
 			exc_token_index = mono_metadata_token_index (exc_class->type_token);
 			throw_ip = cfg->native_code + patch_info->ip.i;
 

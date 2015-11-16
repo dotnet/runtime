@@ -6077,10 +6077,9 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			/*-----------------------------------------------------*/
 			s390_patch_rel (ip + 2, (guint64) S390_RELATIVE(code,ip));
 
-			exc_class = mono_class_from_name (mono_defaults.corlib, 
+			exc_class = mono_class_load_from_name (mono_defaults.corlib,
 							  "System", 
 							  patch_info->data.name);
-			g_assert (exc_class);
 			throw_ip = patch_info->ip.i;
 
 			for (iExc = 0; iExc < nThrows; ++iExc)

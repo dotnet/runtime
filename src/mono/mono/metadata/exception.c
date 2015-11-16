@@ -64,7 +64,7 @@ mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image,
 	MonoObject *o;
 	MonoDomain *caller_domain = mono_domain_get ();
 
-	klass = mono_class_from_name (image, name_space, name);
+	klass = mono_class_load_from_name (image, name_space, name);
 
 	o = mono_object_new_checked (domain, klass, &error);
 	g_assert (o != NULL && mono_error_ok (&error)); /* FIXME don't swallow the error */
@@ -168,7 +168,7 @@ MonoException *
 mono_exception_from_name_two_strings (MonoImage *image, const char *name_space,
 				      const char *name, MonoString *a1, MonoString *a2)
 {
-	MonoClass *klass = mono_class_from_name (image, name_space, name);
+	MonoClass *klass = mono_class_load_from_name (image, name_space, name);
 
 	return create_exception_two_strings (klass, a1, a2);
 }
