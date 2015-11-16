@@ -216,38 +216,40 @@ extern "C" int32_t StartsWith(
         if (U_SUCCESS(err))
         {
             idx = usearch_first(pSearch, &err);
-
-            if (idx == 0)
+            if (idx != USEARCH_DONE)
             {
-                result = TRUE;
-            }
-            else
-            {
-                UCollationElements* pCollElem = ucol_openElements(pColl, lpSource, idx, &err);
-
-                if (U_SUCCESS(err))
+                if (idx == 0)
                 {
-                    int32_t curCollElem = UCOL_NULLORDER;
-
                     result = TRUE;
+                }
+                else
+                {
+                    UCollationElements* pCollElem = ucol_openElements(pColl, lpSource, idx, &err);
 
-                    while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
+                    if (U_SUCCESS(err))
                     {
-                        if (curCollElem != 0)
+                        int32_t curCollElem = UCOL_NULLORDER;
+
+                        result = TRUE;
+
+                        while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
                         {
-                            // Non ignorable collation element found between start of the
-                            // string and the first match for lpTarget.
-                            result = FALSE;
-                            break;
+                            if (curCollElem != 0)
+                            {
+                                // Non ignorable collation element found between start of the
+                                // string and the first match for lpTarget.
+                                result = FALSE;
+                                break;
+                            }
                         }
-                    }
 
-                    if (U_FAILURE(err))
-                    {
-                        result = FALSE;
-                    }
+                        if (U_FAILURE(err))
+                        {
+                            result = FALSE;
+                        }
 
-                    ucol_closeElements(pCollElem);
+                        ucol_closeElements(pCollElem);
+                    }
                 }
             }
 
