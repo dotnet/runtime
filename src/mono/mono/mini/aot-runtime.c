@@ -839,16 +839,18 @@ typedef struct {
  * that the method reference matches a given method. This is normally not a problem
  * as these wrappers only occur in the extra_methods table, where we already have
  * a method we want to lookup.
+ *
+ * If there was a decoding error, we return FALSE and set @error
  */
 static gboolean
-decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod *target, guint8 *buf, guint8 **endbuf)
+decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod *target, guint8 *buf, guint8 **endbuf, MonoError *error)
 {
-	MonoError error;
 	guint32 image_index, value;
 	MonoImage *image = NULL;
 	guint8 *p = buf;
 
 	memset (ref, 0, sizeof (MethodRef));
+	mono_error_init (error);
 
 	value = decode_value (p, &p);
 	image_index = value >> 24;
@@ -860,8 +862,9 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 	}
 
 	if (image_index < MONO_AOT_METHODREF_MIN || image_index == MONO_AOT_METHODREF_METHODSPEC || image_index == MONO_AOT_METHODREF_GINST) {
-		if (target && target->wrapper_type)
+		if (target && target->wrapper_type) {
 			return FALSE;
+		}
 	}
 
 	if (image_index == MONO_AOT_METHODREF_WRAPPER) {
@@ -879,8 +882,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		switch (wrapper_type) {
 #ifndef DISABLE_REMOTING
 		case MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK: {
-			MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
-
+			MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
 			if (!m)
 				return FALSE;
 			mono_class_init (m->klass);
@@ -891,8 +893,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			break;
 		}
 		case MONO_WRAPPER_PROXY_ISINST: {
-			MonoClass *klass = decode_klass_ref (module, p, &p, &error);
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			MonoClass *klass = decode_klass_ref (module, p, &p, error);
 			if (!klass)
 				return FALSE;
 			ref->method = mono_marshal_get_proxy_cancast (klass);
@@ -902,8 +903,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		case MONO_WRAPPER_LDFLDA:
 		case MONO_WRAPPER_STFLD:
 		case MONO_WRAPPER_ISINST: {
-			MonoClass *klass = decode_klass_ref (module, p, &p, &error);
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			MonoClass *klass = decode_klass_ref (module, p, &p, error);
 			if (!klass)
 				return FALSE;
 			if (wrapper_type == MONO_WRAPPER_LDFLD)
@@ -914,8 +914,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				ref->method = mono_marshal_get_stfld_wrapper (&klass->byval_arg);
 			else if (wrapper_type == MONO_WRAPPER_ISINST)
 				ref->method = mono_marshal_get_isinst (klass);
-			else
-				g_assert_not_reached ();
+			else {
+				mono_error_set_bad_image_name (error, module->aot_name, "Unknown AOT wrapper type %d", wrapper_type);
+				return FALSE;
+			}
 			break;
 		}
 		case MONO_WRAPPER_LDFLD_REMOTE:
@@ -929,8 +931,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			int atype = decode_value (p, &p);
 
 			ref->method = mono_gc_get_managed_allocator_by_type (atype, !!(mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS));
-			if (!ref->method)
-				g_error ("Error: No managed allocator, but we need one for AOT.\nAre you using non-standard GC options?\n");
+			if (!ref->method) {
+				mono_error_set_bad_image_name (error, module->aot_name, "Error: No managed allocator, but we need one for AOT.\nAre you using non-standard GC options?\n");
+				return FALSE;
+			}
 			break;
 		}
 		case MONO_WRAPPER_WRITE_BARRIER: {
@@ -962,14 +966,13 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 				}
 			} else {
-				g_assert_not_reached ();
+				mono_error_set_bad_image_name (error, module->aot_name, "Invalid STELEMREF subtype %d", subtype);
+				return FALSE;
 			}
 			break;
 		}
 		case MONO_WRAPPER_SYNCHRONIZED: {
-			MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
-
+			MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
 			if (!m)
 				return FALSE;
 			ref->method = mono_marshal_get_synchronized_wrapper (m);
@@ -979,9 +982,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			int subtype = decode_value (p, &p);
 
 			if (subtype == WRAPPER_SUBTYPE_PTR_TO_STRUCTURE || subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR) {
-				MonoClass *klass = decode_klass_ref (module, p, &p, &error);
-				mono_error_cleanup (&error); /* FIXME don't swallow the error */
-				
+				MonoClass *klass = decode_klass_ref (module, p, &p, error);
 				if (!klass)
 					return FALSE;
 
@@ -1000,16 +1001,12 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					ref->method = mono_marshal_get_struct_to_ptr (klass);
 				}
 			} else if (subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
-				MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
-				mono_error_cleanup (&error); /* FIXME don't swallow the error */
-
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_synchronized_inner_wrapper (m);
 			} else if (subtype == WRAPPER_SUBTYPE_ARRAY_ACCESSOR) {
-				MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
-				mono_error_cleanup (&error); /* FIXME don't swallow the error */
-
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_array_accessor_wrapper (m);
@@ -1028,7 +1025,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 				ref->method = mini_get_gsharedvt_out_sig_wrapper (sig);
 			} else {
-				g_assert_not_reached ();
+				mono_error_set_bad_image_name (error, module->aot_name, "Invalid UNKNOWN wrapper subtype %d", subtype);
+				return FALSE;
 			}
 			break;
 		}
@@ -1043,8 +1041,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			} else if (subtype == WRAPPER_SUBTYPE_STRING_CTOR) {
 				MonoMethod *m;
 
-				m = decode_resolve_method_ref (module, p, &p, &error);
-				mono_error_cleanup (&error); /* FIXME don't swallow the error */
+				m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
 					return FALSE;
 
@@ -1074,9 +1071,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 				ref->method = target;
 			} else {
-				m = decode_resolve_method_ref (module, p, &p, &error);
-				mono_error_cleanup (&error); /* FIXME don't swallow the error */
-
+				m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
 					return FALSE;
 
@@ -1097,8 +1092,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				ref->method = mono_marshal_get_castclass_with_cache ();
 			else if (subtype == WRAPPER_SUBTYPE_ISINST_WITH_CACHE)
 				ref->method = mono_marshal_get_isinst_with_cache ();
-			else
-				g_assert_not_reached ();
+			else {
+				mono_error_set_bad_image_name (error, module->aot_name, "Invalid CASTCLASS wrapper subtype %d", subtype);
+				return FALSE;
+			}
 			break;
 		}
 		case MONO_WRAPPER_RUNTIME_INVOKE: {
@@ -1113,17 +1110,13 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				ref->method = target;
 			} else if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT) {
 				/* Direct wrapper */
-				MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
-				mono_error_cleanup (&error); /* FIXME don't swallow the error */
-
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_runtime_invoke (m, FALSE);
 			} else if (subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL) {
 				/* Virtual direct wrapper */
-				MonoMethod *m = decode_resolve_method_ref (module, p, &p, &error);
-				mono_error_cleanup (&error); /* FIXME don't swallow the error */
-
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_runtime_invoke (m, TRUE);
@@ -1154,8 +1147,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				MonoClass *klass;
 				MonoMethod *invoke, *wrapper;
 
-				klass = decode_klass_ref (module, p, &p, &error);
-				mono_error_cleanup (&error); /* FIXME don't swallow the error */
+				klass = decode_klass_ref (module, p, &p, error);
 				if (!klass)
 					return FALSE;
 
@@ -1217,12 +1209,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			MonoMethod *m;
 			MonoClass *klass;
 
-			m = decode_resolve_method_ref (module, p, &p, &error);
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			m = decode_resolve_method_ref (module, p, &p, error);
 			if (!m)
 				return FALSE;
-			klass = decode_klass_ref (module, p, &p, &error);
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			klass = decode_klass_ref (module, p, &p, error);
 			if (!klass)
 				return FALSE;
 			ref->method = mono_marshal_get_managed_wrapper (m, klass, 0);
@@ -1235,12 +1225,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		image_index = decode_value (p, &p);
 		ref->token = decode_value (p, &p);
 
-		image = load_image (module, image_index, &error);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		image = load_image (module, image_index, error);
 		if (!image)
 			return FALSE;
 	} else if (image_index == MONO_AOT_METHODREF_GINST) {
-		MonoError error;
 		MonoClass *klass;
 		MonoGenericContext ctx;
 
@@ -1248,8 +1236,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		 * These methods do not have a token which resolves them, so we 
 		 * resolve them immediately.
 		 */
-		klass = decode_klass_ref (module, p, &p, &error);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		klass = decode_klass_ref (module, p, &p, error);
 		if (!klass)
 			return FALSE;
 
@@ -1259,16 +1246,14 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		image_index = decode_value (p, &p);
 		ref->token = decode_value (p, &p);
 
-		image = load_image (module, image_index, &error);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		image = load_image (module, image_index, error);
 		if (!image)
 			return FALSE;
 
-		ref->method = mono_get_method_checked (image, ref->token, NULL, NULL, &error);
-		if (!ref->method) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		ref->method = mono_get_method_checked (image, ref->token, NULL, NULL, error);
+		if (!ref->method)
 			return FALSE;
-		}
+
 
 		memset (&ctx, 0, sizeof (ctx));
 
@@ -1276,28 +1261,25 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			ctx.class_inst = klass->generic_class->context.class_inst;
 			ctx.method_inst = NULL;
  
-			ref->method = mono_class_inflate_generic_method_full_checked (ref->method, klass, &ctx, &error);
+			ref->method = mono_class_inflate_generic_method_full_checked (ref->method, klass, &ctx, error);
 			if (!ref->method)
-				g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
+				return FALSE;
 		}			
 
 		memset (&ctx, 0, sizeof (ctx));
 
-		if (!decode_generic_context (module, &ctx, p, &p, &error)) {
-			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		if (!decode_generic_context (module, &ctx, p, &p, error))
 			return FALSE;
-		}
 
-		ref->method = mono_class_inflate_generic_method_full_checked (ref->method, klass, &ctx, &error);
+		ref->method = mono_class_inflate_generic_method_full_checked (ref->method, klass, &ctx, error);
 		if (!ref->method)
-			g_error ("AOT runtime could not load method due to %s", mono_error_get_message (&error)); /* FIXME don't swallow the error */
+			return FALSE;
 
 	} else if (image_index == MONO_AOT_METHODREF_ARRAY) {
 		MonoClass *klass;
 		int method_type;
 
-		klass = decode_klass_ref (module, p, &p, &error);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		klass = decode_klass_ref (module, p, &p, error);
 		if (!klass)
 			return FALSE;
 		method_type = decode_value (p, &p);
@@ -1318,7 +1300,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			ref->method = mono_class_get_method_from_name (klass, "Set", -1);
 			break;
 		default:
-			g_assert_not_reached ();
+			mono_error_set_bad_image_name (error, module->aot_name, "Invalid METHODREF_ARRAY method type %d", method_type);
+			return FALSE;
 		}
 	} else {
 		if (image_index == MONO_AOT_METHODREF_LARGE_IMAGE_INDEX) {
@@ -1328,8 +1311,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 
 		ref->token = MONO_TOKEN_METHOD_DEF | (value & 0xffffff);
 
-		image = load_image (module, image_index, &error);
-		mono_error_cleanup (&error); /* FIXME don't swallow the error */
+		image = load_image (module, image_index, error);
 		if (!image)
 			return FALSE;
 	}
@@ -1344,7 +1326,13 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 static gboolean
 decode_method_ref (MonoAotModule *module, MethodRef *ref, guint8 *buf, guint8 **endbuf)
 {
-	return decode_method_ref_with_target (module, ref, NULL, buf, endbuf);
+	MonoError error;
+	gboolean res = decode_method_ref_with_target (module, ref, NULL, buf, endbuf, &error);
+	if (!is_ok (&error)) {
+		g_warning ("Could not decode methodref due to %s", mono_error_get_message (&error));
+		mono_error_cleanup (&error);
+	}
+	return res;
 }
 
 /*
@@ -1359,10 +1347,8 @@ decode_resolve_method_ref_with_target (MonoAotModule *module, MonoMethod *target
 
 	mono_error_init (error);
 
-	if (!decode_method_ref_with_target (module, &ref, target, buf, endbuf)) {
-		mono_error_set_bad_image_name (error, module->aot_name, "Could not decode methodref with target");
+	if (!decode_method_ref_with_target (module, &ref, target, buf, endbuf, error))
 		return NULL;
-	}
 	if (ref.method)
 		return ref.method;
 	if (!ref.image) {
