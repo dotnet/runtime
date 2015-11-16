@@ -1180,9 +1180,7 @@ ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 
 		mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 
-		MONO_PREPARE_BLOCKING
 		res = mono_thread_info_sleep (ms, &alerted);
-		MONO_FINISH_BLOCKING
 
 		mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 

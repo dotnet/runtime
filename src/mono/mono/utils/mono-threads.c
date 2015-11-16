@@ -25,7 +25,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-lazy-init.h>
-#include <mono/utils/mono-os-mutex.h>
+#include <mono/utils/mono-coop-mutex.h>
 
 #include <errno.h>
 
@@ -1147,22 +1147,22 @@ mono_thread_info_yield (void)
 	return mono_threads_core_yield ();
 }
 static mono_lazy_init_t sleep_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-static mono_mutex_t sleep_mutex;
-static mono_cond_t sleep_cond;
+static MonoCoopMutex sleep_mutex;
+static MonoCoopCond sleep_cond;
 
 static void
 sleep_initialize (void)
 {
-	mono_os_mutex_init (&sleep_mutex);
-	mono_os_cond_init (&sleep_cond);
+	mono_coop_mutex_init (&sleep_mutex);
+	mono_coop_cond_init (&sleep_cond);
 }
 
 static void
 sleep_interrupt (gpointer data)
 {
-	mono_os_mutex_lock (&sleep_mutex);
-	mono_os_cond_broadcast (&sleep_cond);
-	mono_os_mutex_unlock (&sleep_mutex);
+	mono_coop_mutex_lock (&sleep_mutex);
+	mono_coop_cond_broadcast (&sleep_cond);
+	mono_coop_mutex_unlock (&sleep_mutex);
 }
 
 static inline guint32
@@ -1186,28 +1186,28 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 
 	mono_lazy_initialize (&sleep_init, sleep_initialize);
 
-	mono_os_mutex_lock (&sleep_mutex);
+	mono_coop_mutex_lock (&sleep_mutex);
 
 	for (now = mono_msec_ticks (); ms == INFINITE || now - start < ms; now = mono_msec_ticks ()) {
 		mono_thread_info_install_interrupt (sleep_interrupt, NULL, alerted);
 		if (*alerted) {
-			mono_os_mutex_unlock (&sleep_mutex);
+			mono_coop_mutex_unlock (&sleep_mutex);
 			return WAIT_IO_COMPLETION;
 		}
 
 		if (ms < INFINITE)
-			mono_os_cond_timedwait_ms (&sleep_cond, &sleep_mutex, end - now);
+			mono_coop_cond_timedwait (&sleep_cond, &sleep_mutex, end - now);
 		else
-			mono_os_cond_wait (&sleep_cond, &sleep_mutex);
+			mono_coop_cond_wait (&sleep_cond, &sleep_mutex);
 
 		mono_thread_info_uninstall_interrupt (alerted);
 		if (*alerted) {
-			mono_os_mutex_unlock (&sleep_mutex);
+			mono_coop_mutex_unlock (&sleep_mutex);
 			return WAIT_IO_COMPLETION;
 		}
 	}
 
-	mono_os_mutex_unlock (&sleep_mutex);
+	mono_coop_mutex_unlock (&sleep_mutex);
 
 	return 0;
 }
@@ -1229,6 +1229,8 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 
 	if (alerted)
 		return sleep_interruptable (ms, alerted);
+
+	MONO_PREPARE_BLOCKING;
 
 	if (ms == INFINITE) {
 		do {
@@ -1272,6 +1274,8 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 		} while (ret != 0);
 #endif /* __linux__ */
 	}
+
+	MONO_FINISH_BLOCKING;
 
 	return 0;
 }
