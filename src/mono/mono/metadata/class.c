@@ -103,13 +103,13 @@ typedef gboolean (*gclass_record_func) (MonoClass*, void*);
 static inline void
 classes_lock (void)
 {
-	mono_locks_acquire (&classes_mutex, ClassesLock);
+	mono_locks_os_acquire (&classes_mutex, ClassesLock);
 }
 
 static inline void
 classes_unlock (void)
 {
-	mono_locks_release (&classes_mutex, ClassesLock);
+	mono_locks_os_release (&classes_mutex, ClassesLock);
 }
 
 /* 

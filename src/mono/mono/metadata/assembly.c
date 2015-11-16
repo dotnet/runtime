@@ -759,13 +759,13 @@ mono_assemblies_init (void)
 static void
 mono_assembly_binding_lock (void)
 {
-	mono_locks_mutex_acquire (&assembly_binding_mutex, AssemblyBindingLock);
+	mono_locks_os_acquire (&assembly_binding_mutex, AssemblyBindingLock);
 }
 
 static void
 mono_assembly_binding_unlock (void)
 {
-	mono_locks_mutex_release (&assembly_binding_mutex, AssemblyBindingLock);
+	mono_locks_os_release (&assembly_binding_mutex, AssemblyBindingLock);
 }
 
 gboolean

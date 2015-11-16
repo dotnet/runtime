@@ -66,8 +66,8 @@ enum {
  * The marshal lock is a non-recursive complex lock that sits below the domain lock in the
  * runtime locking latice. Which means it can take simple locks suck as the image lock.
  */
-#define mono_marshal_lock() mono_locks_acquire (&marshal_mutex, MarshalLock)
-#define mono_marshal_unlock() mono_locks_release (&marshal_mutex, MarshalLock)
+#define mono_marshal_lock() mono_locks_os_acquire (&marshal_mutex, MarshalLock)
+#define mono_marshal_unlock() mono_locks_os_release (&marshal_mutex, MarshalLock)
 static mono_mutex_t marshal_mutex;
 static gboolean marshal_mutex_initialized;
 

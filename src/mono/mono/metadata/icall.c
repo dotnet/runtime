@@ -7272,13 +7272,13 @@ mono_icall_init (void)
 static void
 mono_icall_lock (void)
 {
-	mono_locks_mutex_acquire (&icall_mutex, IcallLock);
+	mono_locks_os_acquire (&icall_mutex, IcallLock);
 }
 
 static void
 mono_icall_unlock (void)
 {
-	mono_locks_mutex_release (&icall_mutex, IcallLock);
+	mono_locks_os_release (&icall_mutex, IcallLock);
 }
 
 void

@@ -227,14 +227,14 @@ static void
 mono_threads_lock (void)
 {
 	MONO_TRY_BLOCKING;
-	mono_locks_acquire (&threads_mutex, ThreadsLock);
+	mono_locks_os_acquire (&threads_mutex, ThreadsLock);
 	MONO_FINISH_TRY_BLOCKING;
 }
 
 static void
 mono_threads_unlock (void)
 {
-	mono_locks_release (&threads_mutex, ThreadsLock);
+	mono_locks_os_release (&threads_mutex, ThreadsLock);
 }
 
 

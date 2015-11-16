@@ -2467,13 +2467,13 @@ g_slist_append_image (MonoImage *image, GSList *list, gpointer data)
 void
 mono_image_lock (MonoImage *image)
 {
-	mono_locks_acquire (&image->lock, ImageDataLock);
+	mono_locks_os_acquire (&image->lock, ImageDataLock);
 }
 
 void
 mono_image_unlock (MonoImage *image)
 {
-	mono_locks_release (&image->lock, ImageDataLock);
+	mono_locks_os_release (&image->lock, ImageDataLock);
 }
 
 

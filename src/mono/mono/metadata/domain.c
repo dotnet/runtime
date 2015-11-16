@@ -1963,12 +1963,12 @@ void
 mono_domain_lock (MonoDomain *domain)
 {
 	MONO_TRY_BLOCKING;
-	mono_locks_acquire (&(domain)->lock, DomainLock);
+	mono_locks_os_acquire (&(domain)->lock, DomainLock);
 	MONO_FINISH_TRY_BLOCKING;
 }
 
 void
 mono_domain_unlock (MonoDomain *domain)
 {
-	mono_locks_release (&(domain)->lock, DomainLock);
+	mono_locks_os_release (&(domain)->lock, DomainLock);
 }

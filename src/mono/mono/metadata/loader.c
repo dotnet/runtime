@@ -82,13 +82,13 @@ static void dllmap_cleanup (void);
 static void
 global_loader_data_lock (void)
 {
-	mono_locks_acquire (&global_loader_data_mutex, LoaderGlobalDataLock);
+	mono_locks_os_acquire (&global_loader_data_mutex, LoaderGlobalDataLock);
 }
 
 static void
 global_loader_data_unlock (void)
 {
-	mono_locks_release (&global_loader_data_mutex, LoaderGlobalDataLock);
+	mono_locks_os_release (&global_loader_data_mutex, LoaderGlobalDataLock);
 }
 
 void
@@ -2541,7 +2541,7 @@ void
 mono_loader_lock (void)
 {
 	MONO_TRY_BLOCKING;
-	mono_locks_acquire (&loader_mutex, LoaderLock);
+	mono_locks_os_acquire (&loader_mutex, LoaderLock);
 	MONO_FINISH_TRY_BLOCKING;
 		
 	if (G_UNLIKELY (loader_lock_track_ownership)) {
@@ -2552,7 +2552,7 @@ mono_loader_lock (void)
 void
 mono_loader_unlock (void)
 {
-	mono_locks_release (&loader_mutex, LoaderLock);
+	mono_locks_os_release (&loader_mutex, LoaderLock);
 	if (G_UNLIKELY (loader_lock_track_ownership)) {
 		mono_native_tls_set_value (loader_lock_nest_id, GUINT_TO_POINTER (GPOINTER_TO_UINT (mono_native_tls_get_value (loader_lock_nest_id)) - 1));
 	}
