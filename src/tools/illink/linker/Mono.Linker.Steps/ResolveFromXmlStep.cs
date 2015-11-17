@@ -38,6 +38,13 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps {
 
+	public class XmlResolutionException : Exception {
+		public XmlResolutionException (string message, Exception innerException)
+			: base (message, innerException)
+		{
+		}
+	}
+
 	public class ResolveFromXmlStep : ResolveStep {
 
 		static readonly string _signature = "signature";
@@ -47,10 +54,12 @@ namespace Mono.Linker.Steps {
 		static readonly string _ns = string.Empty;
 
 		XPathDocument _document;
+		string _xmlDocumentLocation;
 
-		public ResolveFromXmlStep (XPathDocument document)
+		public ResolveFromXmlStep (XPathDocument document, string xmlDocumentLocation = "<unspecified>")
 		{
 			_document = document;
+			_xmlDocumentLocation = xmlDocumentLocation;
 		}
 
 		protected override void Process ()
@@ -63,7 +72,11 @@ namespace Mono.Linker.Steps {
 			if (nav.LocalName != "linker")
 				return;
 
-			ProcessAssemblies (Context, nav.SelectChildren ("assembly", _ns));
+			try {
+				ProcessAssemblies (Context, nav.SelectChildren ("assembly", _ns));
+			} catch (Exception ex) {
+				throw new XmlResolutionException (string.Format ("Failed to process XML description: {0}", _xmlDocumentLocation), ex);
+			}
 		}
 
 		void ProcessAssemblies (LinkContext context, XPathNodeIterator iterator)
