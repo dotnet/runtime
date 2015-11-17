@@ -447,7 +447,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	case OP_IREM:
 	case OP_IDIV_UN:
 	case OP_IREM_UN:
-		if (!(cfg->backend->emulate_div && !mono_arch_opcode_needs_emulation (cfg, ins->opcode)))
+		if (cfg->backend->emulate_div && mono_arch_opcode_needs_emulation (cfg, ins->opcode))
 			emulate = TRUE;
 		if (!emulate) {
 			if (cfg->backend->need_div_check) {

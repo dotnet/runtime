@@ -61,7 +61,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 gboolean
 mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 {
-	return FALSE;
+	return TRUE;
 }
 #endif
 
