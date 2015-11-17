@@ -1278,6 +1278,15 @@ namespace System.Text.Unicode
         private static UnicodeRange _latinExtendedE;
 
         /// <summary>
+        /// A <see cref="UnicodeRange"/> corresponding to the 'Cherokee Supplement' Unicode block (U+AB70..U+ABBF).
+        /// </summary>
+        /// <remarks>
+        /// See http://www.unicode.org/charts/PDF/UAB70.pdf for the full set of characters in this block.
+        /// </remarks>
+        public static UnicodeRange CherokeeSupplement { get { return _cherokeeSupplement ?? CreateRange(ref _cherokeeSupplement, first: '\uAB70', last: '\uABBF'); } }
+        private static UnicodeRange _cherokeeSupplement;
+
+        /// <summary>
         /// A <see cref="UnicodeRange"/> corresponding to the 'Meetei Mayek' Unicode block (U+ABC0..U+ABFF).
         /// </summary>
         /// <remarks>
