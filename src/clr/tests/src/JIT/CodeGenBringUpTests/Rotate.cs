@@ -288,7 +288,7 @@ public class Test
             return Fail;
         }
 
-        Test test = new Test(0x123456789abcdef, 0x12345678);
+        Test test = new Test(0x123456789abcdef, 0x12345678, 0x1234);
 
         if (test.rol64field(11) != 0x1a2b3c4d5e6f7809)
         {
