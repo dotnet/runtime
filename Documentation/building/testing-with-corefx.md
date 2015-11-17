@@ -5,25 +5,9 @@ It may be valuable to use CoreFX tests to validate your changes to CoreCLR or ms
 
 **Windows**
 
-In order to do this you need to create a file called `localpublish.props` under the `<repo root>\packages` folder.
-The contents of the file should look like this (make sure to update the version to the current version of the CoreCLR package used by CoreFx):
+As part of building tests, CoreFX restores a copy of the runtime from myget, in order to update the runtime that is deployed, a special build property `BUILDTOOLS_OVERRIDE_RUNTIME` can be used. If this is set, the CoreFX testing targets will copy all the files in the folder it points to into the test folder, overwriting any files that exist.
 
-```xml
-<Project ToolsVersion="12.0" DefaultTargets="Build" 
-     xmlns="http://schemas.microsoft.com/developer/msbuilding/2003">
-  <ItemGroup>
-  <LocalPackages Include="$(PackagesBinDir)">
-      <PackageName>Microsoft.DotNet.CoreCLR</PackageName>
-      <PackageVersion>1.0.2-prerelease</PackageVersion>
-      <InstallLocation><corefx repo root>\packages</InstallLocation>
-    </LocalPackages>
-  </ItemGroup>
-</Project>
-```
-
-Once this file is there, subsequent builds of the CoreCLR repo will install the CoreCLR package into the location specified by `InstallLocation`.
-
-To run tests, follow the procedure for [running tests in CoreFX](https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md).
+To run tests, follow the procedure for [running tests in CoreFX](https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md). You can pass `/p:BUILDTOOLS_OVERRIDE_RUNTIME=<path-to-coreclr>\bin\Product\Windows_NT.x64.Release` to build.cmd to set this property.
 
 **Linux, OS X, FreeBSD**
 
