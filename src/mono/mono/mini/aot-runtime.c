@@ -2145,18 +2145,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 }
 
 /*
- * mono_aot_register_globals:
- *
- *   This is called by the ctor function in AOT images compiled with the
- * 'no-dlsym' option.
- */
-void
-mono_aot_register_globals (gpointer *globals)
-{
-	g_assert_not_reached ();
-}
-
-/*
  * mono_aot_register_module:
  *
  *   This should be called by embedding code to register AOT modules statically linked

@@ -2387,8 +2387,6 @@ void     mono_aot_init_gshared_method_this  (gpointer aot_module, guint32 method
 void     mono_aot_init_gshared_method_rgctx  (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx);
 
 /* This is an exported function */
-MONO_API void     mono_aot_register_globals          (gpointer *globals);
-/* This too */
 MONO_API void     mono_aot_register_module           (gpointer *aot_info);
 
 void     mono_xdebug_init                   (const char *xdebug_opts);
