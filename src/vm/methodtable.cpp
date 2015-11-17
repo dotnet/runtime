@@ -2300,6 +2300,19 @@ const char* GetSystemVClassificationTypeName(SystemVClassificationType t)
 };
 #endif // _DEBUG && LOGGING
 
+// Returns 'true' if the struct is passed in registers, 'false' otherwise.
+bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool useNativeLayout)
+{
+    if (useNativeLayout)
+    {
+        return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
+    }
+    else
+    {
+        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
+    }
+}
+
 // If we have a field classification already, but there is a union, we must merge the classification type of the field. Returns the
 // new, merged classification type.
 /* static */
@@ -2344,7 +2357,10 @@ SystemVClassificationType MethodTable::ReClassifyField(SystemVClassificationType
 }
 
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
-bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct)
+bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr,
+                                                     unsigned int nestingLevel, 
+                                                     unsigned int startOffsetOfStruct,
+                                                     bool useNativeLayout)
 {
     CONTRACTL
     {
@@ -2369,7 +2385,7 @@ bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helpe
     // unconditionally disable register struct passing for explicit layout.
     if (GetClass()->HasExplicitFieldOffsetLayout())
     {
-        LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytes: struct %s has explicit layout; will not be enregistered\n",
+        LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s has explicit layout; will not be enregistered\n",
                nestingLevel * 5, "", this->GetDebugClassName()));
         return false;
     }
@@ -2418,7 +2434,19 @@ bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helpe
 
             bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
             helperPtr->inEmbeddedStruct = true;
-            bool structRet = pFieldMT->ClassifyEightBytes(helperPtr, nestingLevel + 1, normalizedFieldOffset);
+
+            bool structRet = false;
+            // If classifying for marshaling/PInvoke and the aggregated struct has a native layout
+            // use the native classification. If not, continue using the managed layout.
+            if (useNativeLayout && pFieldMT->HasLayout())
+            {
+                structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
+            }
+            else
+            {
+                structRet = pFieldMT->ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
+            }
+            
             helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
 
             if (!structRet)
@@ -2515,7 +2543,10 @@ bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helpe
 }
 
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
-bool MethodTable::ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct)
+bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr,
+                                                    unsigned int nestingLevel, 
+                                                    unsigned int startOffsetOfStruct, 
+                                                    bool useNativeLayout)
 {
     CONTRACTL
     {
@@ -2526,6 +2557,9 @@ bool MethodTable::ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassing
     }
     CONTRACTL_END;
 
+    // Should be in this method only doing a native layout classification.
+    _ASSERTE(useNativeLayout);
+
 #ifdef DACCESS_COMPILE
     // No register classification for this case.
     return false;
@@ -2533,7 +2567,8 @@ bool MethodTable::ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassing
 
     if (!HasLayout())
     {
-        return false;
+        // If there is no native layout for this struct use the managed layout instead.
+        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
     }
 
     const FieldMarshaler *pFieldMarshaler = GetLayoutInfo()->GetFieldMarshalers();
@@ -2550,7 +2585,7 @@ bool MethodTable::ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassing
     // unconditionally disable register struct passing for explicit layout.
     if (GetClass()->HasExplicitFieldOffsetLayout())
     {
-        LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesForNativeStruct: struct %s has explicit layout; will not be enregistered\n",
+        LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithNativeLayout: struct %s has explicit layout; will not be enregistered\n",
             nestingLevel * 5, "", this->GetDebugClassName()));
         return false;
     }
@@ -2681,7 +2716,7 @@ bool MethodTable::ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassing
 
             bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
             helperPtr->inEmbeddedStruct = true;
-            bool structRet = pFieldMT->ClassifyEightBytesForNativeStruct(helperPtr, nestingLevel + 1, normalizedFieldOffset);
+            bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
             helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
 
             if (!structRet)
@@ -2698,7 +2733,7 @@ bool MethodTable::ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassing
 
             bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
             helperPtr->inEmbeddedStruct = true;
-            bool structRet = pFieldMT->ClassifyEightBytesForNativeStruct(helperPtr, nestingLevel + 1, normalizedFieldOffset);
+            bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
             helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
 
             if (!structRet)
