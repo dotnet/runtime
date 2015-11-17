@@ -896,7 +896,9 @@ namespace System.Linq
                 count = 0;
             }
 
-            while (count < source.Count)
+            int sourceCount = source.Count;
+
+            while (count < sourceCount)
             {
                 yield return source[count++];
             }
