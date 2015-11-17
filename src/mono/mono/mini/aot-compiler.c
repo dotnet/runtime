@@ -2819,7 +2819,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		}
 		case MONO_WRAPPER_WRITE_BARRIER: {
 			g_assert (info);
-			encode_value (info->d.wbarrier.nursery_bits, p, &p);
 			break;
 		}
 		case MONO_WRAPPER_STELEMREF: {

@@ -171,7 +171,6 @@ typedef struct {
 } ProxyWrapperInfo;
 
 typedef struct {
-	int nursery_bits;
 } WriteBarrierWrapperInfo;
 
 typedef struct {

@@ -896,15 +896,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			break;
 		}
 		case MONO_WRAPPER_WRITE_BARRIER: {
-			int nursery_bits = decode_value (p, &p);
-
 			ref->method = mono_gc_get_write_barrier ();
-			if (ref->method) {
-				/* Sanity check */
-				info = mono_marshal_get_wrapper_info (ref->method);
-				g_assert (info);
-				g_assert (info->d.wbarrier.nursery_bits == nursery_bits);
-			}
 			break;
 		}
 		case MONO_WRAPPER_STELEMREF: {
