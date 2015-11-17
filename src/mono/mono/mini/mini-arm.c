@@ -4622,7 +4622,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert (arm_is_imm12 (info_var->inst_offset));
 			}
 
-			if (!cfg->soft_breakpoints) {
+			if (!cfg->soft_breakpoints && !cfg->compile_aot) {
 				/*
 				 * Read from the single stepping trigger page. This will cause a
 				 * SIGSEGV when single stepping is enabled.
