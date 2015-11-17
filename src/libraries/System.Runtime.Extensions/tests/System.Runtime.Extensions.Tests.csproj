@@ -111,10 +111,6 @@
       <Project>{63634289-90D7-4947-8BF3-DBBE98D76C85}</Project>
       <Name>System.Diagnostics.Process</Name>
     </ProjectReference>
-    <ProjectReference Include="EnvironmentExitConsoleApp\EnvironmentExitConsoleApp.csproj">
-      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>RemoteExecutorConsoleApp</Name>
-    </ProjectReference>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
