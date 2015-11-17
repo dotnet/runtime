@@ -836,6 +836,15 @@ namespace System.Diagnostics.Tracing
         {
             collector.AddBinary(value);
         }
+        
+        public override object GetData(object value)
+        {
+            object val = base.GetData(value);
+            if (null == val)
+                val = "";
+
+            return val;
+        }
     }
 
     /// <summary>
