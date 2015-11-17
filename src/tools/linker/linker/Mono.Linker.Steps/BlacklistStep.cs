@@ -61,22 +61,23 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			foreach (var rsc in Context.GetAssemblies ()
-								.SelectMany (asm => asm.Modules)
-								.SelectMany (mod => mod.Resources)
-								.Where (res => res.ResourceType == ResourceType.Embedded)
-								.Where (res => Path.GetExtension (res.Name) == ".xml")
-								.Where (res => IsReferenced (GetAssemblyName (res.Name)))
-								.Cast<EmbeddedResource> ()) {
-				try {
-					if (Context.LogInternalExceptions)
-						Console.WriteLine ("Processing embedded resource linker descriptor: {0}", rsc.Name);
+			foreach (var asm in Context.GetAssemblies ()) {
+				foreach (var rsc in asm.Modules
+									.SelectMany (mod => mod.Resources)
+									.Where (res => res.ResourceType == ResourceType.Embedded)
+									.Where (res => Path.GetExtension (res.Name) == ".xml")
+									.Where (res => IsReferenced (GetAssemblyName (res.Name)))
+									.Cast<EmbeddedResource> ()) {
+					try {
+						if (Context.LogInternalExceptions)
+							Console.WriteLine ("Processing embedded resource linker descriptor: {0}", rsc.Name);
 
-					Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetExternalResolveStep (rsc));
-				} catch (XmlException ex) {
-					/* This could happen if some broken XML file is embedded. */
-					if (Context.LogInternalExceptions)
-						Console.WriteLine ("Error processing {0}: {1}", rsc.Name, ex);
+						Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetExternalResolveStep (rsc, asm));
+					} catch (XmlException ex) {
+						/* This could happen if some broken XML file is embedded. */
+						if (Context.LogInternalExceptions)
+							Console.WriteLine ("Error processing {0}: {1}", rsc.Name, ex);
+					}
 				}
 			}
 		}
@@ -99,14 +100,14 @@ namespace Mono.Linker.Steps {
 			return false;
 		}
 
-		static ResolveFromXmlStep GetExternalResolveStep (EmbeddedResource resource)
+		static ResolveFromXmlStep GetExternalResolveStep (EmbeddedResource resource, AssemblyDefinition assembly)
 		{
-			return new ResolveFromXmlStep (GetExternalDescriptor (resource));
+			return new ResolveFromXmlStep (GetExternalDescriptor (resource), "resource " + resource.Name + " in " + assembly.FullName);
 		}
 
 		static ResolveFromXmlStep GetResolveStep (string descriptor)
 		{
-			return new ResolveFromXmlStep (GetDescriptor (descriptor));
+			return new ResolveFromXmlStep (GetDescriptor (descriptor), "descriptor " + descriptor + " from " + Assembly.GetExecutingAssembly ().FullName);
 		}
 
 		static XPathDocument GetExternalDescriptor (EmbeddedResource resource)
