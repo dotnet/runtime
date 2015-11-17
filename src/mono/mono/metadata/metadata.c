@@ -4550,7 +4550,7 @@ mono_type_size (MonoType *t, int *align)
 	}
 	if (t->byref) {
 		*align = MONO_ABI_ALIGNOF (gpointer);
-		return sizeof (gpointer);
+		return MONO_ABI_SIZEOF (gpointer);
 	}
 
 	simple_type = t->type;
@@ -4588,26 +4588,22 @@ mono_type_size (MonoType *t, int *align)
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 		*align = MONO_ABI_ALIGNOF (gpointer);
-		return sizeof (gpointer);
-	case MONO_TYPE_STRING:
-		*align = MONO_ABI_ALIGNOF (gpointer);
-		return sizeof (gpointer);
-	case MONO_TYPE_OBJECT:
-		*align = MONO_ABI_ALIGNOF (gpointer);
-		return sizeof (gpointer);
+		return MONO_ABI_SIZEOF (gpointer);
 	case MONO_TYPE_VALUETYPE: {
 		if (t->data.klass->enumtype)
 			return mono_type_size (mono_class_enum_basetype (t->data.klass), align);
 		else
 			return mono_class_value_size (t->data.klass, (guint32*)align);
 	}
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
 		*align = MONO_ABI_ALIGNOF (gpointer);
-		return sizeof (gpointer);
+		return MONO_ABI_SIZEOF (gpointer);
 	case MONO_TYPE_TYPEDBYREF:
 		return mono_class_value_size (mono_defaults.typed_reference_class, (guint32*)align);
 	case MONO_TYPE_GENERICINST: {
@@ -4623,14 +4619,14 @@ mono_type_size (MonoType *t, int *align)
 				return mono_class_value_size (mono_class_from_mono_type (t), (guint32*)align);
 		} else {
 			*align = MONO_ABI_ALIGNOF (gpointer);
-			return sizeof (gpointer);
+			return MONO_ABI_SIZEOF (gpointer);
 		}
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		if (!t->data.generic_param->gshared_constraint || t->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE) {
 			*align = MONO_ABI_ALIGNOF (gpointer);
-			return sizeof (gpointer);
+			return MONO_ABI_SIZEOF (gpointer);
 		} else {
 			/* The gparam can only match types given by gshared_constraint */
 			return mono_type_size (t->data.generic_param->gshared_constraint, align);
@@ -4661,7 +4657,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	int tmp;
 	MonoTypeEnum simple_type;
 #if SIZEOF_VOID_P == SIZEOF_REGISTER
-	int stack_slot_size = sizeof (gpointer);
+	int stack_slot_size = MONO_ABI_SIZEOF (gpointer);
 	int stack_slot_align = MONO_ABI_ALIGNOF (gpointer);
 #elif SIZEOF_VOID_P < SIZEOF_REGISTER
 	int stack_slot_size = SIZEOF_REGISTER;

@@ -9,7 +9,8 @@
 
 #define MONO_ABI_ALIGNOF(type) MONO_ALIGN_ ## type
 #define MONO_CURRENT_ABI_ALIGNOF(type) ((int)G_STRUCT_OFFSET(struct { char c; type x; }, x))
-
+#define MONO_ABI_SIZEOF(type) MONO_SIZEOF_ ## type
+#define MONO_CURRENT_ABI_SIZEOF(type) ((int)sizeof(type))
 
 #undef DECL_OFFSET
 #undef DECL_OFFSET2
@@ -17,6 +18,7 @@
 #define DECL_OFFSET2(struct,field,offset) MONO_OFFSET_ ## struct ## _ ## field = offset,
 #define DECL_ALIGN(type) MONO_ALIGN_ ##type = MONO_CURRENT_ABI_ALIGNOF (type),
 #define DECL_ALIGN2(type,size) MONO_ALIGN_ ##type = size,
+#define DECL_SIZE(type) MONO_SIZEOF_ ##type = MONO_CURRENT_ABI_SIZEOF (type),
 
 enum {
 #include "object-offsets.h"
