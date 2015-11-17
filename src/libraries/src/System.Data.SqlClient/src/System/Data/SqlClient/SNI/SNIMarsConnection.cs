@@ -209,11 +209,6 @@ namespace System.Data.SqlClient.SNI
                         _dataBytesLeft = (int)_currentHeader.length;
                         _currentPacket = new SNIPacket(null);
                         _currentPacket.Allocate((int)_currentHeader.length);
-
-                        if (_currentHeader.flags == (byte)SNISMUXFlags.SMUX_FIN)
-                        {
-                            _sessions.Remove(_currentHeader.sessionId);
-                        }
                     }
 
                     currentHeader = _currentHeader;
@@ -252,7 +247,14 @@ namespace System.Data.SqlClient.SNI
                         return;
                     }
 
-                    currentSession = _sessions[_currentHeader.sessionId];
+                    if (_currentHeader.flags == (byte)SNISMUXFlags.SMUX_FIN)
+                    {
+                        _sessions.Remove(_currentHeader.sessionId);
+                    }
+                    else
+                    {
+                        currentSession = _sessions[_currentHeader.sessionId];
+                    }
                 }
 
                 if (currentHeader.flags == (byte)SNISMUXFlags.SMUX_DATA)
