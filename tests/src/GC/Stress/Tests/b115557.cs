@@ -28,7 +28,7 @@ internal class MyThread
         for (int i = 0; i < _allocPerThreadMB / 2; i++)
         {
             largeArray[i] = new byte[2 * 1024 * 1024];  // 2 MB
-            largeArray[i][i + 100] = Convert.ToByte(i);
+            largeArray[i][i + 100] = Convert.ToByte(Math.Min(i, byte.MaxValue));
         }
         int sum = 0;
         for (int i = 0; i < _allocPerThreadMB / 2; i++)
