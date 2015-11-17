@@ -110,6 +110,11 @@
     <NuGetIngoreLockFile>true</NuGetIngoreLockFile>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">  
+    <!-- When we do a traversal build we get all packages up front, don't restore them again -->  
+    <RestorePackages>false</RestorePackages>  
+  </PropertyGroup>
+
   <!--
     On Unix we always use a version of Roslyn we restore from NuGet and we have to work around some known issues.
   -->
