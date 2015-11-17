@@ -12072,7 +12072,8 @@ GenTreePtr Compiler::fgRecognizeAndMorphBitwiseRotation(GenTreePtr tree)
     if (GenTree::Compare(leftShiftTree->gtGetOp1(), rightShiftTree->gtGetOp1()))
     {
         GenTreePtr rotatedValue = leftShiftTree->gtGetOp1();
-        ssize_t rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
+        var_types rotatedValueActualType = genActualType(rotatedValue->gtType);
+        ssize_t rotatedValueBitSize = genTypeSize(rotatedValueActualType) * 8;
         noway_assert((rotatedValueBitSize == 32) || (rotatedValueBitSize == 64));
         GenTreePtr leftShiftIndex = leftShiftTree->gtGetOp2();
         GenTreePtr rightShiftIndex = rightShiftTree->gtGetOp2();
@@ -12205,7 +12206,7 @@ GenTreePtr Compiler::fgRecognizeAndMorphBitwiseRotation(GenTreePtr tree)
             }
             else
             {
-                tree = gtNewOperNode(rotateOp, genActualType(rotatedValue->gtType), rotatedValue, rotateIndex);
+                tree = gtNewOperNode(rotateOp, rotatedValueActualType, rotatedValue, rotateIndex);
                 noway_assert(inputTreeEffects == (tree->gtFlags & GTF_ALL_EFFECT));
             }
 
