@@ -1823,7 +1823,7 @@ void CodeFragmentHeap::RealBackoutMem(void *pMem
 
     AddBlock(pMem, dwSize);
 }
-#endif // CROSSGEN_COMPILE
+#endif // !CROSSGEN_COMPILE
 
 //**************************************************************************
 
@@ -4012,7 +4012,17 @@ void EEJitManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 #endif // #ifdef DACCESS_COMPILE
 
-#endif // CROSSGEN_COMPILE
+#else // CROSSGEN_COMPILE
+// stub for compilation
+BOOL EEJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
+    PCODE currentPC,
+    MethodDesc ** ppMethodDesc,
+    EECodeInfo * pCodeInfo)
+{
+    _ASSERTE(FALSE);
+    return FALSE;
+}
+#endif // !CROSSGEN_COMPILE
 
 
 #ifndef DACCESS_COMPILE

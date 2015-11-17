@@ -16,6 +16,8 @@
 #ifndef _VIRTUAL_CALL_STUB_H 
 #define _VIRTUAL_CALL_STUB_H
 
+#ifndef CROSSGEN_COMPILE
+
 #define CHAIN_LOOKUP
 
 #if defined(_TARGET_X86_)
@@ -1619,5 +1621,6 @@ private:
     static FastTable* dead;             //linked list head of to be deleted (abandoned) buckets
 };
 
-#endif // !_VIRTUAL_CALL_STUB_H
+#endif // !CROSSGEN_COMPILE
 
+#endif // !_VIRTUAL_CALL_STUB_H

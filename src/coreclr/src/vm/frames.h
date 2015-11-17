@@ -3311,6 +3311,7 @@ class TailCallFrame : public Frame
 #endif
 
 public:
+#ifndef	CROSSGEN_COMPILE
 #if !defined(_TARGET_X86_)
 
 #ifndef DACCESS_COMPILE
@@ -3360,7 +3361,7 @@ public:
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
-
+#endif // !CROSSGEN_COMPILE
 #ifdef _TARGET_AMD64_
     void SetGCLayout(TADDR pGCLayout)
     {
