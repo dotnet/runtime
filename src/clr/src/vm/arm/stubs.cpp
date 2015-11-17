@@ -2270,6 +2270,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
+#endif // !CROSSGEN_COMPILE
 
 void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
 { 
@@ -2311,7 +2312,6 @@ void TailCallFrame::InitFromContext(T_CONTEXT * pContext)
 }
 
 #endif // !DACCESS_COMPILE
-#endif // !CROSSGEN_COMPILE
 
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
 { 
