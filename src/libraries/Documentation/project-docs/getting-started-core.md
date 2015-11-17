@@ -38,10 +38,10 @@ Create a New Class Library
 
 3. At this point the project should compile
 
-Add support for generations
+Add support for the Platform Standard
 ---------------------------
 
-Currently to enable generations you need do to some manual steps
+Currently to enable leveraging packages that target the Platform Standard you need do to some manual steps
 
 1. Manually edit your csproj file by right clicking on the project and select unload and then right click and select edit.  Add this to the bottom of your project file:
 
