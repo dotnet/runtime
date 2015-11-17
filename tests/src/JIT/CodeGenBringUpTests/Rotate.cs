@@ -14,6 +14,8 @@ public class Test
 
     volatile uint volatile_field;
 
+    ushort usfield;
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static uint rol32(uint value, int amount)
     {
@@ -166,10 +168,17 @@ public class Test
         return (value >> 10) | (value << 5);
     }
 
-    Test(ulong i, uint j)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    uint rol32ushort(int amount)
+    {
+        return ((uint)usfield << amount) | ((uint)usfield >> (32 - amount));
+    }
+
+    Test(ulong i, uint j, ushort k)
     {
         field = i;
         volatile_field = j;
+        usfield = k;
     }
 
     public static int Main()
@@ -287,6 +296,11 @@ public class Test
         }
 
         if (test.ror32vfield(3) != 0x2468acf)
+        {
+            return Fail;
+        }
+
+        if (test.rol32ushort(25) != 0x68000024)
         {
             return Fail;
         }
