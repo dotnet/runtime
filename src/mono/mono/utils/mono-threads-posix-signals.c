@@ -217,8 +217,6 @@ mono_threads_posix_init_signals (MonoThreadPosixInitSignals signals)
 
 		sigfillset (&suspend_signal_mask);
 		sigdelset (&suspend_signal_mask, restart_signal_num);
-		if (!mono_thread_info_unified_management_enabled ())
-			sigdelset (&suspend_signal_mask, mono_gc_get_suspend_signal ());
 
 		sigemptyset (&suspend_ack_signal_mask);
 		sigaddset (&suspend_ack_signal_mask, restart_signal_num);
