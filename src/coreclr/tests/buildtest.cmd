@@ -173,6 +173,7 @@ set _buildprefix=
 set _buildpostfix=
 set _buildappend=
 call :build %1
+if ERRORLEVEL 1 exit /b 1
 
 set CORE_ROOT=%__TestBinDir%\Tests\Core_Root
 echo.
