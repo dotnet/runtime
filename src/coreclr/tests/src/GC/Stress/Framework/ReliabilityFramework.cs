@@ -500,7 +500,7 @@ public class ReliabilityFramework
                 _logger.CloseLog();
             }
 
-            if ((testSet.PercentPassIsPass != -1 && ((_failCount * 100) / _testsRanCount) < (100 - testSet.PercentPassIsPass)))
+            if ((testSet.PercentPassIsPass != -1 && _failCount > 0 && ((_failCount * 100) / _testsRanCount) < (100 - testSet.PercentPassIsPass)))
             {
                 Console.WriteLine("Some tests failed, but below the fail percent ({0} ran, {1} failed, perecent={2})", _testsRanCount, _failCount, testSet.PercentPassIsPass);
                 _totalSuccess = true;
