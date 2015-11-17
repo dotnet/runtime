@@ -53,6 +53,8 @@
 
 #include "mini.h"
 #include "jit.h"
+#include "aot-compiler.h"
+
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>

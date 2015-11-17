@@ -29,6 +29,7 @@
 #include "llvm-c/Analysis.h"
 
 #include "mini-llvm-cpp.h"
+#include "aot-compiler.h"
 
 #ifdef __MINGW32__
 

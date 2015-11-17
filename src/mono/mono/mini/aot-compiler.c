@@ -51,7 +51,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/json.h>
 
-#include "mini.h"
+#include "aot-compiler.h"
 #include "seq-points.h"
 #include "image-writer.h"
 #include "dwarfwriter.h"

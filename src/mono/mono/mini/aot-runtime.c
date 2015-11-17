@@ -60,6 +60,7 @@
 #include "seq-points.h"
 #include "version.h"
 #include "debugger-agent.h"
+#include "aot-compiler.h"
 
 #ifndef DISABLE_AOT
 
