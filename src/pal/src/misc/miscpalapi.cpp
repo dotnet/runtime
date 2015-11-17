@@ -353,10 +353,10 @@ PALAPI
 CoCreateGuid(OUT GUID * pguid)
 {
 #if HAVE_LIBUUID_H
-    uuid_generate(*(uuid_t*)pguid);
+    uuid_generate_random(*(uuid_t*)pguid);
 
-    // Change the byte order of the Data1, 2 and 3, since the uuid_generate generates them
-    // with big endian while GUIDS need to have them in little endian.
+    // Change the byte order of the Data1, 2 and 3, since the uuid_generate_random
+    // generates them with big endian while GUIDS need to have them in little endian.
     pguid->Data1 = SWAP32(pguid->Data1);
     pguid->Data2 = SWAP16(pguid->Data2);
     pguid->Data3 = SWAP16(pguid->Data3);
