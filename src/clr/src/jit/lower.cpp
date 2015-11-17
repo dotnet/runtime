@@ -3417,7 +3417,9 @@ void Lowering::DoPhase()
             }
 #endif
             comp->compCurStmt = stmt;
+#if !defined(_TARGET_64BIT_)
             comp->fgWalkTreePost(&stmt->gtStmt.gtStmtExpr, &Lowering::DecompNodeHelper, this, true);
+#endif
             comp->fgWalkTreePost(&stmt->gtStmt.gtStmtExpr, &Lowering::LowerNodeHelper, this, true);
             // We may have removed "stmt" in LowerNode().
             stmt = comp->compCurStmt;
