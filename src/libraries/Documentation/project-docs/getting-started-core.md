@@ -38,7 +38,7 @@ Create a New Class Library
 
 3. At this point the project should compile
 
-Add support for generations
+Add support for the Platform Standard
 ---------------------------
 
 Currently to enable generations you need do to some manual steps
