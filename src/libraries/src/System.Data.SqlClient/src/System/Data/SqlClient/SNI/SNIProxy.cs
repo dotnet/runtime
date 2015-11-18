@@ -12,30 +12,11 @@ namespace System.Data.SqlClient.SNI
     {
         public static readonly SNIProxy Singleton = new SNIProxy();
 
-        private readonly GCHandle _gcHandle;
-
         /// <summary>
         /// Terminate SNI
         /// </summary>
         public void Terminate()
         {
-        }
-
-        /// <summary>
-        /// Check if GC handle is allocated
-        /// </summary>
-        /// <returns></returns>
-        public bool IsGcHandleAllocated()
-        {
-            return _gcHandle.IsAllocated;
-        }
-
-        /// <summary>
-        /// Free GC handle
-        /// </summary>
-        public void FreeGcHandle()
-        {
-            _gcHandle.Free();
         }
 
         /// <summary>
