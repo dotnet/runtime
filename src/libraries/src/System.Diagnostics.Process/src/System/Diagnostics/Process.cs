@@ -1138,16 +1138,31 @@ namespace System.Diagnostics
         {
             if (_watchingForExit)
             {
+                RegisteredWaitHandle rwh = null;
+                WaitHandle wh = null;
+
                 lock (this)
                 {
                     if (_watchingForExit)
                     {
                         _watchingForExit = false;
-                        _registeredWaitHandle.Unregister(null);
-                        _waitHandle.Dispose();
+
+                        wh = _waitHandle;
                         _waitHandle = null;
+
+                        rwh = _registeredWaitHandle;
                         _registeredWaitHandle = null;
                     }
+                }
+
+                if (rwh != null)
+                {
+                    rwh.Unregister(null);
+                }
+
+                if (wh != null)
+                {
+                    wh.Dispose();
                 }
             }
         }
