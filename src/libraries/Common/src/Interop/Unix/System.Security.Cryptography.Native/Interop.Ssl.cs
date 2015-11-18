@@ -36,9 +36,6 @@ internal static partial class Interop
         internal static extern IntPtr TlsV1_2Method();
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern void SetProtocolOptions(SafeSslContextHandle ctx, SslProtocols protocols);
-
-        [DllImport(Libraries.CryptoNative)]
         internal static extern SafeSslHandle SslCreate(SafeSslContextHandle ctx);
 
         [DllImport(Libraries.CryptoNative)]
@@ -104,16 +101,19 @@ internal static partial class Interop
         internal static extern SafeSharedX509StackHandle SslGetPeerCertChain(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern int SslCtxUseCertificate(SafeSslContextHandle ctx, SafeX509Handle certPtr);
+        internal static extern void GetStreamSizes(out int header, out int trailer, out int maximumMessage);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern int SslCtxUsePrivateKey(SafeSslContextHandle ctx, SafeEvpPKeyHandle keyPtr);
+        internal static extern int SslGetPeerFinished(SafeSslHandle ssl, IntPtr buf, int count);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern int SslCtxCheckPrivateKey(SafeSslContextHandle ctx);
+        internal static extern int SslGetFinished(SafeSslHandle ssl, IntPtr buf, int count);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern void SslCtxSetQuietShutdown(SafeSslContextHandle ctx);
+        internal static extern bool SslSessionReused(SafeSslHandle ssl);
+
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern bool SslAddExtraChainCert(SafeSslHandle ssl, SafeX509Handle x509);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "SslGetClientCAList")]
         private static extern SafeSharedX509NameStackHandle SslGetClientCAList_private(SafeSslHandle ssl);
@@ -131,27 +131,6 @@ internal static partial class Interop
 
             return handle;
         }
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern void SslCtxSetVerify(SafeSslContextHandle ctx, SslCtxSetVerifyCallback callback);
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern void SetEncryptionPolicy(SafeSslContextHandle ctx, EncryptionPolicy policy);
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern void SslCtxSetClientCAList(SafeSslContextHandle ctx, SafeX509NameStackHandle x509NameStackPtr);
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern void GetStreamSizes(out int header, out int trailer, out int maximumMessage);
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern int SslGetPeerFinished(SafeSslHandle ssl, IntPtr buf, int count);
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern int SslGetFinished(SafeSslHandle ssl, IntPtr buf, int count);
-
-        [DllImport(Libraries.CryptoNative)]
-        internal static extern bool SslSessionReused(SafeSslHandle ssl);
 
         internal static class SslMethods
         {
@@ -288,6 +267,11 @@ namespace Microsoft.Win32.SafeHandles
 
         private SafeSslHandle() : base(IntPtr.Zero, true)
         {
+        }
+
+        internal SafeSslHandle(IntPtr validSslPointer, bool ownsHandle) : base(IntPtr.Zero, ownsHandle)
+        {
+            handle = validSslPointer;
         }
     }
 

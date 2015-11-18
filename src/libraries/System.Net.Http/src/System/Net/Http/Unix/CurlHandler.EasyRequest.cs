@@ -414,7 +414,7 @@ namespace System.Net.Http
                 // While this does slow down the theoretical best path of the request the code
                 // to decide that we need to register the callback is more complicated than, and
                 // potentially more expensive than, just always setting the callback.
-                SslProvider.SetSslOptions(this);
+                SslProvider.SetSslOptions(this, _handler.ClientCertificateOptions);
             }
 
             internal void SetCurlCallbacks(
@@ -466,15 +466,14 @@ namespace System.Net.Http
                 }
             }
 
-            internal CURLcode SetSslCtxCallback(SslCtxCallback callback)
+            internal CURLcode SetSslCtxCallback(SslCtxCallback callback, IntPtr userPointer)
             {
                 if (_callbackHandle == null)
                 {
                     _callbackHandle = new SafeCallbackHandle();
                 }
 
-                CURLcode result = Interop.Http.RegisterSslCtxCallback(_easyHandle, callback, ref _callbackHandle);
-
+                CURLcode result = Interop.Http.RegisterSslCtxCallback(_easyHandle, callback, userPointer, ref _callbackHandle);
                 return result;
             }
 

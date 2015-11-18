@@ -13,5 +13,6 @@ namespace System.Net.Http
         public const bool DefaultAutomaticRedirection = true;
         public const bool DefaultUseCookies = true;
         public const bool DefaultPreAuthenticate = false;
+        public const ClientCertificateOption DefaultClientCertificateOption = ClientCertificateOption.Manual;
     }
 }
