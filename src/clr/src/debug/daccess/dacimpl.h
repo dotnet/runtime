@@ -1918,10 +1918,10 @@ public:
                                    
 private:
     static StackWalkAction Callback(CrawlFrame *pCF, VOID *pData);
-    static void GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pObject, DWORD flags, DacSlotLocation loc);
-    static void GCReportCallbackSOS(PTR_PTR_Object ppObj, ScanContext *sc, DWORD flags);
-    static void GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pObject, DWORD flags, DacSlotLocation loc);
-    static void GCReportCallbackDac(PTR_PTR_Object ppObj, ScanContext *sc, DWORD flags);
+    static void GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
+    static void GCReportCallbackSOS(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
+    static void GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc);
+    static void GCReportCallbackDac(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags);
 
     CLRDATA_ADDRESS ReadPointer(TADDR addr);
 

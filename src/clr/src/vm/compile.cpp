@@ -1428,7 +1428,7 @@ void CEECompileInfo::GetAssemblyCodeBase(CORINFO_ASSEMBLY_HANDLE hAssembly, SStr
 
 //=================================================================================
 
-void FakePromote(PTR_PTR_Object ppObj, ScanContext *pSC, DWORD dwFlags)
+void FakePromote(PTR_PTR_Object ppObj, ScanContext *pSC, uint32_t dwFlags)
 {
     CONTRACTL {
         NOTHROW;
@@ -1442,7 +1442,7 @@ void FakePromote(PTR_PTR_Object ppObj, ScanContext *pSC, DWORD dwFlags)
 
 //=================================================================================
 
-void FakePromoteCarefully(promote_func *fn, Object **ppObj, ScanContext *pSC, DWORD dwFlags)
+void FakePromoteCarefully(promote_func *fn, Object **ppObj, ScanContext *pSC, uint32_t dwFlags)
 {
     (*fn)(ppObj, pSC, dwFlags);
 }

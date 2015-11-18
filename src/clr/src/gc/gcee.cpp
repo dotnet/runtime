@@ -326,8 +326,8 @@ void GCHeap::UpdatePostGCCounters()
     }
 
     // Update Total Time    
-    GetPerfCounters().m_GC.timeInGC = (DWORD)g_TotalTimeInGC;
-    GetPerfCounters().m_GC.timeInGCBase = (DWORD)_timeInGCBase;
+    GetPerfCounters().m_GC.timeInGC = (uint32_t)g_TotalTimeInGC;
+    GetPerfCounters().m_GC.timeInGCBase = (uint32_t)_timeInGCBase;
 
     if (!GetPerfCounters().m_GC.cProcessID)
         GetPerfCounters().m_GC.cProcessID = (size_t)GetCurrentProcessId();
@@ -391,14 +391,14 @@ size_t GCHeap::GetNow()
 }
 
 #if defined(GC_PROFILING) //UNIXTODO: Enable this for FEATURE_EVENT_TRACE
-void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, DWORD dwFlags)
+void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
 {
 #if  defined(FEATURE_EVENT_TRACE)
     Object *pObj = *ppObject;
 #ifdef INTERIOR_POINTERS
     if (dwFlags & GC_CALL_INTERIOR)
     {
-        BYTE *o = (BYTE*)pObj;
+        uint8_t *o = (uint8_t*)pObj;
         gc_heap* hp = gc_heap::heap_of (o);
 
         if ((o < hp->gc_low) || (o >= hp->gc_high))
@@ -556,7 +556,7 @@ BOOL GCHeap::IsGCInProgressHelper (BOOL bConsiderGCStart)
     return GcInProgress || (bConsiderGCStart? VolatileLoad(&gc_heap::gc_started) : FALSE);
 }
 
-DWORD GCHeap::WaitUntilGCComplete(BOOL bConsiderGCStart)
+uint32_t GCHeap::WaitUntilGCComplete(BOOL bConsiderGCStart)
 {
     if (bConsiderGCStart)
     {
@@ -566,7 +566,7 @@ DWORD GCHeap::WaitUntilGCComplete(BOOL bConsiderGCStart)
         }
     }
 
-    DWORD dwWaitResult = NOERROR;
+    uint32_t dwWaitResult = NOERROR;
 
     if (GcInProgress) 
     {
@@ -625,7 +625,7 @@ BOOL GCHeap::IsConcurrentGCInProgress()
 }
 
 #ifdef FEATURE_EVENT_TRACE
-void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_number, BYTE* object_address)
+void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_number, uint8_t* object_address)
 {
     TypeHandle th = GetThread()->GetTHAllocContextObj();
 
@@ -645,7 +645,7 @@ void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_numbe
                                    );
     }
 }
-void gc_heap::fire_etw_pin_object_event (BYTE* object, BYTE** ppObject)
+void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)
 {
     Object* obj = (Object*)object;
 
@@ -672,11 +672,11 @@ void gc_heap::fire_etw_pin_object_event (BYTE* object, BYTE** ppObject)
 }
 #endif // FEATURE_EVENT_TRACE
 
-DWORD gc_heap::user_thread_wait (CLREvent *event, BOOL no_mode_change, int time_out_ms)
+uint32_t gc_heap::user_thread_wait (CLREvent *event, BOOL no_mode_change, int time_out_ms)
 {
     Thread* pCurThread = NULL;
     bool mode = false;
-    DWORD dwWaitResult = NOERROR;
+    uint32_t dwWaitResult = NOERROR;
     
     if (!no_mode_change)
     {
@@ -700,12 +700,12 @@ DWORD gc_heap::user_thread_wait (CLREvent *event, BOOL no_mode_change, int time_
 
 #ifdef BACKGROUND_GC
 // Wait for background gc to finish
-DWORD gc_heap::background_gc_wait (alloc_wait_reason awr, int time_out_ms)
+uint32_t gc_heap::background_gc_wait (alloc_wait_reason awr, int time_out_ms)
 {
     dprintf(2, ("Waiting end of background gc"));
     assert (background_gc_done_event.IsValid());
     fire_alloc_wait_event_begin (awr);
-    DWORD dwRet = user_thread_wait (&background_gc_done_event, FALSE, time_out_ms);
+    uint32_t dwRet = user_thread_wait (&background_gc_done_event, FALSE, time_out_ms);
     fire_alloc_wait_event_end (awr);
     dprintf(2, ("Waiting end of background gc is done"));
 
@@ -779,7 +779,7 @@ void GCHeap::DescrGenerationsToProfiler (gen_walk_fn fn, void *context)
 
 // Helper used to wrap the start routine of background GC threads so we can do things like initialize the
 // Redhawk thread state which requires running in the new thread's context.
-DWORD WINAPI gc_heap::rh_bgc_thread_stub(void * pContext)
+uint32_t WINAPI gc_heap::rh_bgc_thread_stub(void * pContext)
 {
     rh_bgc_thread_ctx * pStartContext = (rh_bgc_thread_ctx*)pContext;
 
@@ -807,7 +807,7 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
         return NULL;
     }
 
-    BYTE* base_mem = (BYTE*)pseginfo->pvMem;
+    uint8_t* base_mem = (uint8_t*)pseginfo->pvMem;
     heap_segment_mem(seg) = base_mem + pseginfo->ibFirstObject;
     heap_segment_allocated(seg) = base_mem + pseginfo->ibAllocated;
     heap_segment_committed(seg) = base_mem + pseginfo->ibCommit;
