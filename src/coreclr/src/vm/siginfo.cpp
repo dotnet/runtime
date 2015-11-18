@@ -4922,7 +4922,7 @@ BOOL MetaSig::CompareMethodConstraints(const Substitution *pSubst1,
 void PromoteCarefully(promote_func   fn, 
                       PTR_PTR_Object ppObj, 
                       ScanContext*   sc, 
-                      DWORD          flags /* = GC_CALL_INTERIOR*/ )
+                      uint32_t       flags /* = GC_CALL_INTERIOR*/ )
 {
     LIMITED_METHOD_CONTRACT;
 

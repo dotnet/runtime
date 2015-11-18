@@ -43,19 +43,19 @@ void SpinUntil(void *pCond, BOOL fNonZero)
     */
     
     // if we have to sleep then we will keep track of a sleep period
-    DWORD dwThisSleepPeriod = 1;    // first just give up our timeslice
-    DWORD dwNextSleepPeriod = 10;   // next try a real delay
+    uint32_t dwThisSleepPeriod = 1;    // first just give up our timeslice
+    uint32_t dwNextSleepPeriod = 10;   // next try a real delay
 
 #ifdef _DEBUG
-    DWORD dwTotalSlept = 0;
-    DWORD dwNextComplain = 1000;
+    uint32_t dwTotalSlept = 0;
+    uint32_t dwNextComplain = 1000;
 #endif //_DEBUG
 
     // on MP machines, allow ourselves some spin time before sleeping
-    UINT uNonSleepSpins = 8 * (g_SystemInfo.dwNumberOfProcessors - 1);
+    uint32_t uNonSleepSpins = 8 * (g_SystemInfo.dwNumberOfProcessors - 1);
 
     // spin until the specificed condition is met
-    while ((*(UINT_PTR *)pCond != 0) != (fNonZero != 0))
+    while ((*(uintptr_t *)pCond != 0) != (fNonZero != 0))
     {
         // have we exhausted the non-sleep spin count?
         if (!uNonSleepSpins)
@@ -113,7 +113,7 @@ void SpinUntil(void *pCond, BOOL fNonZero)
  * This routine will assert if a requested handle is missing.
  *
  */
-OBJECTHANDLE *ReadAndZeroCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, UINT uCount)
+OBJECTHANDLE *ReadAndZeroCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, uint32_t uCount)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -148,7 +148,7 @@ OBJECTHANDLE *ReadAndZeroCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, UI
  * This routine will spin until all requested handles are obtained.
  *
  */
-OBJECTHANDLE *SyncReadAndZeroCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, UINT uCount)
+OBJECTHANDLE *SyncReadAndZeroCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, uint32_t uCount)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -197,7 +197,7 @@ OBJECTHANDLE *SyncReadAndZeroCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc
  * This routine will assert if it is about to clobber an existing handle.
  *
  */
-void WriteCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, UINT uCount)
+void WriteCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, uint32_t uCount)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -228,7 +228,7 @@ void WriteCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, UINT uCount)
  * This routine will spin until lingering handles in the cache bank are gone.
  *
  */
-void SyncWriteCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, UINT uCount)
+void SyncWriteCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, uint32_t uCount)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -273,7 +273,7 @@ void SyncWriteCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, UINT uCount)
  * This routine is equivalent to SyncReadAndZeroCacheHandles + SyncWriteCacheHandles
  *
  */
-void SyncTransferCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, UINT uCount)
+void SyncTransferCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, uint32_t uCount)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -339,7 +339,7 @@ void SyncTransferCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, UINT uCoun
  */
 void TableFullRebalanceCache(HandleTable *pTable,
                              HandleTypeCache *pCache,
-                             UINT uType,
+                             uint32_t uType,
                              LONG lMinReserveIndex,
                              LONG lMinFreeIndex,
                              OBJECTHANDLE *pExtraOutHandle,
@@ -371,7 +371,7 @@ void TableFullRebalanceCache(HandleTable *pTable,
     // (we don't need to wait on these since they are only put there by this
     //  function inside our own lock)
     if (lMinReserveIndex > 0)
-        pHandleBase = ReadAndZeroCacheHandles(pHandleBase, pCache->rgReserveBank, (UINT)lMinReserveIndex);
+        pHandleBase = ReadAndZeroCacheHandles(pHandleBase, pCache->rgReserveBank, (uint32_t)lMinReserveIndex);
     else
         lMinReserveIndex = 0;
 
@@ -385,17 +385,17 @@ void TableFullRebalanceCache(HandleTable *pTable,
         // here we need to wait for all pending freed handles to be written by other threads
         pHandleBase = SyncReadAndZeroCacheHandles(pHandleBase,
                                                   pCache->rgFreeBank + lMinFreeIndex,
-                                                  HANDLES_PER_CACHE_BANK - (UINT)lMinFreeIndex);
+                                                  HANDLES_PER_CACHE_BANK - (uint32_t)lMinFreeIndex);
     }
 
     // compute the number of handles we have
-    UINT uHandleCount = (UINT) (pHandleBase - rgHandles);
+    uint32_t uHandleCount = (uint32_t) (pHandleBase - rgHandles);
 
     // do we have enough handles for a balanced cache?
     if (uHandleCount < REBALANCE_LOWATER_MARK)
     {
         // nope - allocate some more
-        UINT uAlloc = HANDLES_PER_CACHE_BANK - uHandleCount;
+        uint32_t uAlloc = HANDLES_PER_CACHE_BANK - uHandleCount;
 
         // if we have an extra outgoing handle then plan for that too
         if (pExtraOutHandle)
@@ -426,10 +426,10 @@ void TableFullRebalanceCache(HandleTable *pTable,
             //  (1) combats handle fragmentation by preferring low-address handles to high ones
             //  (2) allows the free routine to run much more efficiently over the ones we free
             //
-            QuickSort((UINT_PTR *)pHandleBase, 0, uHandleCount - 1, CompareHandlesByFreeOrder);
+            QuickSort((uintptr_t *)pHandleBase, 0, uHandleCount - 1, CompareHandlesByFreeOrder);
 
             // yup, we need to free some - calculate how many
-            UINT uFree = uHandleCount - HANDLES_PER_CACHE_BANK;
+            uint32_t uFree = uHandleCount - HANDLES_PER_CACHE_BANK;
 
             // free the handles - they are already 'prepared' (eg zeroed and sorted)
             TableFreeBulkPreparedHandles(pTable, uType, pHandleBase, uFree);
@@ -453,7 +453,7 @@ void TableFullRebalanceCache(HandleTable *pTable,
         if (uHandleCount > HANDLES_PER_CACHE_BANK)
         {
             // compute the number of extra handles we need to save away
-            UINT uStore = uHandleCount - HANDLES_PER_CACHE_BANK;
+            uint32_t uStore = uHandleCount - HANDLES_PER_CACHE_BANK;
 
             // compute the index to start writing the handles to
             lMinFreeIndex = HANDLES_PER_CACHE_BANK - uStore;
@@ -503,7 +503,7 @@ void TableFullRebalanceCache(HandleTable *pTable,
  */
 void TableQuickRebalanceCache(HandleTable *pTable,
                               HandleTypeCache *pCache,
-                              UINT uType,
+                              uint32_t uType,
                               LONG lMinReserveIndex,
                               LONG lMinFreeIndex,
                               OBJECTHANDLE *pExtraOutHandle,
@@ -526,10 +526,10 @@ void TableQuickRebalanceCache(HandleTable *pTable,
         lMinReserveIndex = 0;
 
     // compute the number of slots in the free bank taken by handles
-    UINT uFreeAvail = HANDLES_PER_CACHE_BANK - (UINT)lMinFreeIndex;
+    uint32_t uFreeAvail = HANDLES_PER_CACHE_BANK - (uint32_t)lMinFreeIndex;
 
     // compute the number of handles we have to fiddle with
-    UINT uHandleCount = (UINT)lMinReserveIndex + uFreeAvail + (extraInHandle != 0);
+    uint32_t uHandleCount = (uint32_t)lMinReserveIndex + uFreeAvail + (extraInHandle != 0);
 
     // can we rebalance these handles in place?
     if ((uHandleCount < REBALANCE_LOWATER_MARK) ||
@@ -544,10 +544,10 @@ void TableQuickRebalanceCache(HandleTable *pTable,
     }
 
     // compute the number of empty slots in the reserve bank
-    UINT uEmptyReserve = HANDLES_PER_CACHE_BANK - lMinReserveIndex;
+    uint32_t uEmptyReserve = HANDLES_PER_CACHE_BANK - lMinReserveIndex;
 
     // we want to transfer as many handles as we can from the free bank
-    UINT uTransfer = uFreeAvail;
+    uint32_t uTransfer = uFreeAvail;
 
     // but only as many as we have room to store in the reserve bank
     if (uTransfer > uEmptyReserve)
@@ -619,7 +619,7 @@ void TableQuickRebalanceCache(HandleTable *pTable,
  * rebalance.
  *
  */
-OBJECTHANDLE TableCacheMissOnAlloc(HandleTable *pTable, HandleTypeCache *pCache, UINT uType)
+OBJECTHANDLE TableCacheMissOnAlloc(HandleTable *pTable, HandleTypeCache *pCache, uint32_t uType)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -666,7 +666,7 @@ OBJECTHANDLE TableCacheMissOnAlloc(HandleTable *pTable, HandleTypeCache *pCache,
  * rebalance.
  *
  */
-void TableCacheMissOnFree(HandleTable *pTable, HandleTypeCache *pCache, UINT uType, OBJECTHANDLE handle)
+void TableCacheMissOnFree(HandleTable *pTable, HandleTypeCache *pCache, uint32_t uType, OBJECTHANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -707,7 +707,7 @@ void TableCacheMissOnFree(HandleTable *pTable, HandleTypeCache *pCache, UINT uTy
  * reserve cache is empty, this routine calls TableCacheMissOnAlloc.
  *
  */
-OBJECTHANDLE TableAllocSingleHandleFromCache(HandleTable *pTable, UINT uType)
+OBJECTHANDLE TableAllocSingleHandleFromCache(HandleTable *pTable, uint32_t uType)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -760,7 +760,7 @@ OBJECTHANDLE TableAllocSingleHandleFromCache(HandleTable *pTable, UINT uType)
  * free cache is full, this routine calls TableCacheMissOnFree.
  *
  */
-void TableFreeSingleHandleToCache(HandleTable *pTable, UINT uType, OBJECTHANDLE handle)
+void TableFreeSingleHandleToCache(HandleTable *pTable, uint32_t uType, OBJECTHANDLE handle)
 {
     CONTRACTL
     {
@@ -820,12 +820,12 @@ void TableFreeSingleHandleToCache(HandleTable *pTable, UINT uType, OBJECTHANDLE 
  * calling TableAllocSingleHandleFromCache.
  *
  */
-UINT TableAllocHandlesFromCache(HandleTable *pTable, UINT uType, OBJECTHANDLE *pHandleBase, UINT uCount)
+uint32_t TableAllocHandlesFromCache(HandleTable *pTable, uint32_t uType, OBJECTHANDLE *pHandleBase, uint32_t uCount)
 {
     WRAPPER_NO_CONTRACT;
 
     // loop until we have satisfied all the handles we need to allocate
-    UINT uSatisfied = 0;
+    uint32_t uSatisfied = 0;
     while (uSatisfied < uCount)
     {
         // get a handle from the cache
@@ -855,7 +855,7 @@ UINT TableAllocHandlesFromCache(HandleTable *pTable, UINT uType, OBJECTHANDLE *p
  * calling TableFreeSingleHandleToCache.
  *
  */
-void TableFreeHandlesToCache(HandleTable *pTable, UINT uType, const OBJECTHANDLE *pHandleBase, UINT uCount)
+void TableFreeHandlesToCache(HandleTable *pTable, uint32_t uType, const OBJECTHANDLE *pHandleBase, uint32_t uCount)
 {
     WRAPPER_NO_CONTRACT;
 

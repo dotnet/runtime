@@ -1454,7 +1454,7 @@ struct IsObjRefProtectedScanContext : public ScanContext
     }
 };
 
-void IsObjRefProtected (Object** ppObj, ScanContext* sc, DWORD)
+void IsObjRefProtected (Object** ppObj, ScanContext* sc, uint32_t)
 {
     LIMITED_METHOD_CONTRACT;
     IsObjRefProtectedScanContext * orefProtectedSc = (IsObjRefProtectedScanContext *)sc;
