@@ -12,33 +12,6 @@ public static unsafe class StringTests
     private const string c_SoftHyphen = "\u00AD";
 
     [Fact]
-    public static void TestWithEmptyString()
-    {
-        Assert.True("".EndsWith(""));
-        Assert.False("".EndsWith("Foo"));
-    }
-
-    [Fact]
-    public static void TestLastIndexOfWithEmptyString()
-    {
-        string s = "Dill Guv Dill Guv Dill";
-        int lastIndex = s.LastIndexOf("", StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(s.Length - 1, lastIndex);
-    }
-
-    [Fact]
-    public static void TestCtor()
-    {
-        string s = null;
-
-        Assert.Null(s);
-
-        s = "abc";
-
-        Assert.NotNull(s);
-    }
-
-    [Fact]
     public static void TestCtorCharPtr()
     {
         char[] c = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0' };
@@ -85,96 +58,76 @@ public static unsafe class StringTests
         {
         }
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => new String((char*)null, 5, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("ptr", () => new String((char*)null, 5, 1));
+    }
+
+    [Theory]
+    [InlineData('a', 0, "")]
+    [InlineData('a', 1, "a")]
+    [InlineData('a', 2, "aa")]
+    [InlineData('a', 3, "aaa")]
+    [InlineData('a', 4, "aaaa")]
+    [InlineData('a', 5, "aaaaa")]
+    [InlineData('a', 6, "aaaaaa")]
+    [InlineData('a', 7, "aaaaaaa")]
+    [InlineData('a', 8, "aaaaaaaa")]
+    [InlineData('a', 9, "aaaaaaaaa")]
+    public static void TestCtorCharInt(char c, int count, string expected)
+    {
+        String s = new String(c, count);
+        Assert.Equal(expected, s);
     }
 
     [Fact]
-    public static void TestCtorCharInt()
+    public static void TestCtorCharIntInvalid()
     {
-        String s;
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => new String('a', -1));
+    }
 
-        // Implementation unrolls copy 4 times.
+    [Theory]
+    [InlineData(new char[] { }, 0, 0, "")]
+    [InlineData((char[])null, 0, 0, "")]
 
-        s = new String('a', 0);
-        Assert.Equal(String.Empty, s);
-
-        s = new String('a', 1);
-        Assert.Equal("a", s);
-
-        s = new String('a', 2);
-        Assert.Equal("aa", s);
-
-        s = new String('a', 3);
-        Assert.Equal("aaa", s);
-
-        s = new String('a', 4);
-        Assert.Equal("aaaa", s);
-
-        s = new String('a', 5);
-        Assert.Equal("aaaaa", s);
-
-        s = new String('a', 6);
-        Assert.Equal("aaaaaa", s);
-
-        s = new String('a', 7);
-        Assert.Equal("aaaaaaa", s);
-
-        s = new String('a', 8);
-        Assert.Equal("aaaaaaaa", s);
-
-        s = new String('a', 9);
-        Assert.Equal("aaaaaaaaa", s);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = new String('a', -1));
+    [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' }, 0, 0, "")]
+    [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' }, 0, 3, "abc")]
+    [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' }, 2, 3, "cde")]
+    [InlineData(new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' }, 0, 8, "abcdefgh")]
+    [InlineData(new char[] { 'a', 'b', 'c', 'd', '\0', 'e', 'f', 'g', 'h' }, 0, 9, "abcd\0efgh")]
+    [InlineData(new char[] { 'П', 'Р', 'И', 'В', 'Е', 'Т' }, 0, 6, "ПРИВЕТ")]
+    public static void TestCtorCharArrar(char[] c, int startIndex, int length, string expected)
+    {
+        if (c == null)
+        {
+            Assert.Equal(expected, new String(c));
+            return;
+        }
+        if (startIndex + length == c.Length && length != 0)
+        {
+            Assert.Equal(expected, new String(c));
+        }
+        Assert.Equal(expected, new String(c, startIndex, length));
     }
 
     [Fact]
-    public static void TestCtorCharArray()
+    public static void TestCtorCharArrayIntIntInvalid()
     {
-        String s;
+        char[] c = new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
 
-        char[] c = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
-        s = new String(c);
-        Assert.Equal("abcdefgh", s);
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => new String(c, 0, 9)); //Length > array length
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => new String(c, 5, -1)); //Length < 0
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => new String(c, -1, 1)); //Start Index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => new String(c, 6, 5)); //Walks off array
 
-        s = new String((char[])null);
-        Assert.Equal(String.Empty, s);
+        Assert.Throws<ArgumentNullException>("value", () => new String((char[])null, 0, 0));
     }
 
-    [Fact]
-    public static void TestCtorCharArrayIntInt()
+    [Theory]
+    [InlineData("", 0)]
+    [InlineData("abc", 3)]
+    [InlineData("hello", 5)]
+    public static void TestLength(string text, int expected)
     {
-        String s;
-
-        char[] c = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
-        s = new String(c, 2, 3);
-        Assert.Equal("cde", s);
-
-        s = new String(c, 0, 8);
-        Assert.Equal("abcdefgh", s);
-
-        s = new String(c, 0, 0);
-        Assert.Equal("", s);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = new String(c, 0, 9));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = new String(c, -1, 1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = new String(c, 5, -1));
-
-        Assert.Throws<ArgumentNullException>(() => s = new String((char[])null, 0, 0));
-
-        Assert.Throws<ArgumentNullException>(() => s = new String((char[])null, 3, 9));
-    }
-
-    [Fact]
-    public static void TestLength()
-    {
-        string s = "abc";
-
-        int len = s.Length;
-
-        Assert.Equal(3, len);
+        Assert.Equal(expected, text.Length);
     }
 
     [Fact]
@@ -259,77 +212,66 @@ public static unsafe class StringTests
         Assert.Equal('l', dst[7]);
         Assert.Equal(0, dst[8]);
         Assert.Equal(0, dst[9]);
-
-        Assert.Throws<ArgumentNullException>(() => s.CopyTo(0, null, 0, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s.CopyTo(-1, dst, 0, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s.CopyTo(0, dst, -1, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s.CopyTo(0, dst, 0, 6));
     }
 
     [Fact]
-    public static void TestCompare()
+    public static void TestCopyToInvalid()
     {
-        String.Compare("A", "B");
+        String s = "Hello";
+        char[] dst = new char[10];
 
-        Assert.Equal<int>(0, String.Compare("Hello", "Hello", StringComparison.Ordinal));
-        Assert.Equal<int>(0, String.Compare("HELLO", "hello", StringComparison.OrdinalIgnoreCase));
+        Assert.Throws<ArgumentNullException>("destination", () => s.CopyTo(0, null, 0, 0));
 
-        Assert.Equal<int>(0, String.Compare("Hello", 2, "Hello", 2, 3));
-
-        Assert.Equal<int>(0, String.Compare("HELLO", 2, "hello", 2, 3, StringComparison.OrdinalIgnoreCase));
-
-        Assert.Equal<int>(0, String.Compare("Hello", 2, "Hello", 2, 3, StringComparison.CurrentCulture));
-        Assert.Equal<int>(0, String.Compare("HELLO", 2, "hello", 2, 3, StringComparison.CurrentCultureIgnoreCase));
-
-        Assert.Equal<int>(0, String.Compare("Hello", 2, "Hello", 2, 3, StringComparison.CurrentCulture));
-        Assert.Equal<int>(0, String.Compare("HELLO", 2, "hello", 2, 3, StringComparison.CurrentCultureIgnoreCase));
-
-        int i;
-
-        i = String.Compare("Hello", 2, "HELLO", 2, 3, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(0, i);
-
-        i = String.Compare("Hello", 2, "Goodbye", 2, 3, StringComparison.OrdinalIgnoreCase);
-        Assert.True(i < 0);
-
-        i = String.Compare("HELLO", 2, "Hello", 2, 3, StringComparison.CurrentCulture);
-        Assert.True(i > 0);
-
-        i = String.Compare("Hello", 2, "HELLO", 2, 3, StringComparison.CurrentCulture);
-        Assert.True(i <= 0);
-
-        i = String.Compare("Hello", 2, "HELLO", 2, 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(0, i);
-
-        i = String.Compare("Hello", 2, "Goodbye", 2, 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i < 0);
-
-        i = String.Compare("HELLO", 2, "Hello", 2, 3, StringComparison.CurrentCulture);
-        Assert.True(i > 0);
-
-        i = String.Compare("Hello", 2, "HELLO", 2, 3, StringComparison.CurrentCulture);
-        Assert.True(i < 0);
-
-        i = String.Compare("Hello", 2, "HELLO", 2, 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.Equal(0, i);
-
-        i = String.Compare("Hello", 2, "Goodbye", 2, 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i < 0);
+        Assert.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(-1, dst, 0, 0)); //Source index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("destinationIndex", () => s.CopyTo(0, dst, -1, 0)); //Destination index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(0, dst, 0, 6));
     }
 
-    [Fact]
-    public static void TestCompareOrdinal()
-    {
-        char[] c = { 'H', 'e', 'l', 'l', 'o' };
-        int i;
-        i = String.CompareOrdinal(new String(c), new String(c));
-        Assert.Equal(0, i);
+    [Theory]
+    [InlineData("Hello", "Hello", StringComparison.CurrentCulture, 0)]
+    [InlineData("HELLO", "hello", StringComparison.CurrentCultureIgnoreCase, 0)]
+    [InlineData("Hello", "Hello", StringComparison.Ordinal, 0)]
+    [InlineData("HELLO", "hello", StringComparison.OrdinalIgnoreCase, 0)]
 
-        i = String.CompareOrdinal("Hello", "Goodbye");
-        Assert.True(i > 0);
+    [InlineData("A", "B", StringComparison.CurrentCulture, -1)]
+    public static void TestCompare(string strA, string strB, StringComparison comparisonType, int expected)
+    {
+        if (comparisonType == StringComparison.CurrentCulture)
+        {
+            Assert.Equal(expected, NormalizeCompare(String.Compare(strA, strB)));
+        }
+        else if (comparisonType == StringComparison.Ordinal)
+        {
+            Assert.Equal(expected, NormalizeCompare(String.CompareOrdinal(strA, strB)));
+        }
+        Assert.Equal(expected, NormalizeCompare(String.Compare(strA, strB, comparisonType)));
+    }
+
+    [Theory]
+    [InlineData("Hello", 2, "Hello", 2, 3, StringComparison.CurrentCulture, 0)]
+    [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.CurrentCultureIgnoreCase, 0)]
+    [InlineData("Hello", 2, "Hello", 2, 3, StringComparison.Ordinal, 0)]
+    [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.OrdinalIgnoreCase, 0)]
+
+    [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.CurrentCulture, 1)]
+    [InlineData("hello", 2, "HELLO", 2, 3, StringComparison.CurrentCulture, -1)]
+    [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.Ordinal, -1)]
+
+    [InlineData("Hello", 2, "Goodbye", 2, 3, StringComparison.CurrentCulture, -1)]
+    [InlineData("Hello", 2, "Goodbye", 2, 3, StringComparison.CurrentCultureIgnoreCase, -1)]
+    [InlineData("Hello", 2, "Goodbye", 2, 3, StringComparison.OrdinalIgnoreCase, -1)]
+    [InlineData("Hello", 2, "Goodbye", 2, 3, StringComparison.Ordinal, -1)]
+    public static void TestCompareIndexed(string strA, int indexA, string strB, int indexB, int length, StringComparison comparisonType, int expected)
+    {
+        if (comparisonType == StringComparison.CurrentCulture)
+        {
+            Assert.Equal(expected, NormalizeCompare(String.Compare(strA, indexA, strB, indexB, length)));
+        }
+        else if (comparisonType == StringComparison.Ordinal)
+        {
+            Assert.Equal(expected, NormalizeCompare(String.CompareOrdinal(strA, indexA, strB, indexB, length)));
+        }
+        Assert.Equal(expected, NormalizeCompare(String.Compare(strA, indexA, strB, indexB, length, comparisonType)));
     }
 
     [Theory]
@@ -374,20 +316,16 @@ public static unsafe class StringTests
         Assert.Equal(expectedResult, result);
     }
 
-    [Fact]
-    public static void TestCompareOrdinalIndexedInvalid()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => String.CompareOrdinal("Hello", -1, "Hello", 0, 1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => String.CompareOrdinal("Hello", 0, "Hello", -1, 1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => String.CompareOrdinal("Hello", 0, "Hello", 0, -1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => String.CompareOrdinal("Hello", 6, "Hello", 0, 1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => String.CompareOrdinal("Hello", 0, "Hello", 6, 1));
+    [Theory]
+    [InlineData(-1, 0, 1, "indexA")] //IndexA < 0
+    [InlineData(0, -1, 1, "indexB")] //IndexB < 0
+    [InlineData(0, 0, -1, "count")] //Length < 0
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => String.Compare("Hello", -1, "Hello", 0, 1, StringComparison.Ordinal));
-        Assert.Throws<ArgumentOutOfRangeException>(() => String.Compare("Hello", 0, "Hello", -1, 1, StringComparison.Ordinal));
-        Assert.Throws<ArgumentOutOfRangeException>(() => String.Compare("Hello", 0, "Hello", 0, -1, StringComparison.Ordinal));
-        Assert.Throws<ArgumentOutOfRangeException>(() => String.Compare("Hello", 6, "Hello", 0, 1, StringComparison.Ordinal));
-        Assert.Throws<ArgumentOutOfRangeException>(() => String.Compare("Hello", 0, "Hello", 6, 1, StringComparison.Ordinal));
+    [InlineData(Int32.MaxValue, 0, 0, "indexA")] //IndexA > string length
+    [InlineData(0, Int32.MaxValue, 0, "indexB")] //IndexB > string length
+    public static void TestCompareOrdinalIndexedInvalid(int indexA, int indexB, int length, string paramName)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(paramName, () => String.CompareOrdinal("Hello", indexA, "Hello", indexB, length));
     }
 
     [Fact]
@@ -401,24 +339,29 @@ public static unsafe class StringTests
         Assert.True(i > 0);
     }
 
-    [Fact]
-    public static void TestContains()
-    {
-        String s = "Hello";
-        bool b;
-        b = s.Contains("ell");
-        Assert.True(b);
-        b = s.Contains("ELL");
-        Assert.False(b);
+    [Theory]
+    [InlineData("Hello", "ello", true)]
+    [InlineData("Hello", "ELL", false)]
+    [InlineData("Hello", "Larger Hello", false)]
+    [InlineData("Hello", "Goodbye", false)]
 
-        Assert.Throws<ArgumentNullException>(
-            delegate ()
-            {
-                s.Contains(null);
-            });
+    [InlineData("", "", true)]
+    [InlineData("", "hello", false)]
+    [InlineData("Hello", "", true)]
+    public static void TestContains(string text, string value, bool expected)
+    {
+        Assert.Equal(expected, text.Contains(value));
+    }
+
+    [Fact]
+    public static void TestContainsInvalid()
+    {
+        Assert.Throws<ArgumentNullException>("value", () => "foo".Contains(null));
     }
 
     [Theory]
+    [InlineData(StringComparison.CurrentCulture, "", "", true)]
+    [InlineData(StringComparison.CurrentCulture, "", "Foo", false)]
     [InlineData(StringComparison.CurrentCulture, "Hello", "llo", true)]
     [InlineData(StringComparison.CurrentCulture, "Hello", "Hello", true)]
     [InlineData(StringComparison.CurrentCulture, "Hello", "", true)]
@@ -475,12 +418,13 @@ public static unsafe class StringTests
     {
         string s = "Hello";
 
-        Assert.Throws<ArgumentException>(() => s.EndsWith("o", (StringComparison.CurrentCulture - 1)));
-        Assert.Throws<ArgumentException>(() => s.EndsWith("o", (StringComparison.OrdinalIgnoreCase + 1)));
-        Assert.Throws<ArgumentNullException>(() => s.EndsWith(null));
-        Assert.Throws<ArgumentNullException>(() => s.EndsWith(null, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Throws<ArgumentNullException>(() => s.EndsWith(null, StringComparison.Ordinal));
-        Assert.Throws<ArgumentNullException>(() => s.EndsWith(null, StringComparison.OrdinalIgnoreCase));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.EndsWith("o", (StringComparison.CurrentCulture - 1)));
+        Assert.Throws<ArgumentException>("comparisonType", () => s.EndsWith("o", (StringComparison.OrdinalIgnoreCase + 1)));
+
+        Assert.Throws<ArgumentNullException>("value", () => s.EndsWith(null));
+        Assert.Throws<ArgumentNullException>("value", () => s.EndsWith(null, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Throws<ArgumentNullException>("value", () => s.EndsWith(null, StringComparison.Ordinal));
+        Assert.Throws<ArgumentNullException>("value", () => s.EndsWith(null, StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -601,18 +545,16 @@ public static unsafe class StringTests
         TestFormatter testFormatter = new TestFormatter();
         s = String.Format(testFormatter, "0 = {0} 1 = {1} 2 = {2} 3 = {3} 4 = {4}", "zero", "one", "two", "three", "four");
         Assert.Equal("0 = Test: : zero 1 = Test: : one 2 = Test: : two 3 = Test: : three 4 = Test: : four", s);
+    }
 
-        Assert.Throws<ArgumentNullException>(
-            delegate ()
-            {
-                s = String.Format(testFormatter, null, 0, 1, 2, 3, 4);
-            });
+    [Fact]
+    public static void TestFormatInvalid()
+    {
+        TestFormatter testFormatter = new TestFormatter();
 
-        Assert.Throws<FormatException>(
-            delegate ()
-            {
-                s = String.Format(testFormatter, "Missing={5}", 0, 1, 2, 3, 4);
-            });
+        Assert.Throws<ArgumentNullException>("format", () => String.Format(testFormatter, null, 0, 1, 2, 3, 4));
+
+        Assert.Throws<FormatException>(() => String.Format(testFormatter, "Missing={5}", 0, 1, 2, 3, 4));
     }
 
     private class TestFormatter : IFormatProvider, ICustomFormatter
@@ -845,7 +787,7 @@ public static unsafe class StringTests
             Assert.Equal(10, source.IndexOf(target, StringComparison.CurrentCulture));
             Assert.Equal(8, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
         });
-        
+
         target = "\u0300";
         WithCulture(new CultureInfo("en-US"), () =>
         {
@@ -914,191 +856,119 @@ public static unsafe class StringTests
         Assert.Equal(-1, i);
     }
 
-    [Fact]
-    public static void TestInsert()
+    [Theory]
+    [InlineData("Hello", 0, "!$%", "!$%Hello")]
+    [InlineData("Hello", 1, "!$%", "H!$%ello")]
+    [InlineData("Hello", 2, "!$%", "He!$%llo")]
+    [InlineData("Hello", 3, "!$%", "Hel!$%lo")]
+    [InlineData("Hello", 4, "!$%", "Hell!$%o")]
+    [InlineData("Hello", 5, "!$%", "Hello!$%")]
+    [InlineData("Hello", 3, "", "Hello")]
+    public static void TestInsert(string text, int startIndex, string value, string expected)
     {
-        String s;
+        String s = text.Insert(startIndex, value);
+        Assert.Equal(expected, s);
+    }
 
-        s = "Hello".Insert(0, "!$%");
-        Assert.Equal("!$%Hello", s);
+    [InlineData]
+    public static void TestInsertInvalid()
+    {
+        Assert.Throws<ArgumentNullException>("value", () => "Hello".Insert(Int32.MaxValue, null));
 
-        s = "Hello".Insert(1, "!$%");
-        Assert.Equal("H!$%ello", s);
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".Insert(-1, "!")); //Start index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => "Hello".Insert(6, "!")); //Start index > string.length
+    }
 
-        s = "Hello".Insert(3, "!$%");
-        Assert.Equal("Hel!$%lo", s);
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("", true)]
+    [InlineData("foo", false)]
+    public static void TestIsNullOrEmpty(string value, bool expected)
+    {
+        bool b = String.IsNullOrEmpty(value);
+        Assert.Equal(expected, b);
+    }
 
-        s = "Hello".Insert(5, "!$%");
-        Assert.Equal("Hello!$%", s);
+    public static IEnumerable<object[]> StringsWithWhitespace()
+    {
+        for (int i = 0; i < char.MaxValue; i++)
+        {
+            if (char.IsWhiteSpace((char)i))
+            {
+                yield return new object[] { new string((char)i, 3), true };
+                yield return new object[] { new string((char)i, 3) + "x", false };
+            }
+        }
+    }
 
-        s = "Hello".Insert(3, "");
-        Assert.Equal("Hello", s);
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("", true)]
+    [MemberData("StringsWithWhitespace")]
+    public static void TestIsNullOrWhitespace(string value, bool expected)
+    {
+        bool b = String.IsNullOrWhiteSpace(value);
+        Assert.Equal(expected, b);
+    }
 
-        Assert.Throws<ArgumentNullException>(() => s = "Hello".Insert(Int32.MaxValue, null));
+    [Theory]
+    [InlineData("$$", new string[] { }, 0, 0, "")]
+    [InlineData("$$", new string[] { null }, 0, 1, "")]
+    [InlineData("$$", new string[] { null, "Bar", null }, 0, 3, "$$Bar$$")]
+    [InlineData(null, new string[] { "Foo", "Bar", "Baz" }, 0, 3, "FooBarBaz")]
+    [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 0, 3, "Foo$$Bar$$Baz")]
+    [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 3, 0, "")]
+    [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 1, 1, "Bar")]
+    public static void TestJoinStringArray(string seperator, string[] values, int startIndex, int count, string expected)
+    {
+        if (startIndex + count == values.Length && count != 0)
+        {
+            Assert.Equal(expected, String.Join(seperator, values));
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = "Hello".Insert(6, "!"));
+            List<string> iEnumerableStringOptimized = new List<string>(values);
+            Assert.Equal(expected, String.Join(seperator, iEnumerableStringOptimized));
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = "Hello".Insert(-1, "!"));
+            Queue<string> iEnumerableStringNotOptimized = new Queue<string>(values);
+            Assert.Equal(expected, String.Join(seperator, iEnumerableStringNotOptimized));
 
-        return;
+            List<object> iEnumerableObject = new List<object>(values);
+            Assert.Equal(expected, String.Join(seperator, iEnumerableObject));
+        }
+        Assert.Equal(expected, String.Join(seperator, values, startIndex, count));
     }
 
     [Fact]
-    public static void TestIsNullOr()
+    public static void TestJoinStringArrayInvalid()
     {
-        bool b;
+        Assert.Throws<ArgumentNullException>("value", () => String.Join("$$", (string[])null));
+        Assert.Throws<ArgumentNullException>("value", () => String.Join("$$", (string[])null, 0, 0));
 
-        b = String.IsNullOrEmpty(null);
-        Assert.True(b);
+        Assert.Throws<ArgumentNullException>("values", () => String.Join("|", (IEnumerable<String>)null));
+        Assert.Throws<ArgumentNullException>("values", () => String.Join("--", (IEnumerable<Object>)null));
 
-        b = String.IsNullOrEmpty("");
-        Assert.True(b);
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => String.Join("$$", new string[] { "Foo" }, -1, 0)); //Start index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => String.Join("$$", new string[] { "Foo" }, 0, -1)); //Count < 0
 
-        b = String.IsNullOrEmpty("Foo");
-        Assert.False(b);
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => String.Join("$$", new string[] { "Foo" }, 2, 1)); //Start index > seperators.Length
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => String.Join("$$", new string[] { "Foo" }, 0, 2)); //Start index + count > seperators.Length
+    }
 
-        b = String.IsNullOrWhiteSpace(null);
-        Assert.True(b);
-
-        b = String.IsNullOrWhiteSpace("");
-        Assert.True(b);
-
-        b = String.IsNullOrWhiteSpace(" \t");
-        Assert.True(b);
-
-        b = String.IsNullOrWhiteSpace(" \tX");
-        Assert.False(b);
+    [Theory]
+    [InlineData("$$", new object[] { }, "")]
+    [InlineData("$$", new object[] { "Foo" }, "Foo")]
+    [InlineData("$$", new object[] { "Foo", "Bar", "Baz" }, "Foo$$Bar$$Baz")]
+    [InlineData(null, new object[] { "Foo", "Bar", "Baz" }, "FooBarBaz")]
+    [InlineData("$$", new object[] { null, "Bar", "Baz" }, "")] //Feature: overload exits if [0] is null
+    [InlineData("$$", new object[] { "Foo", null, "Baz" }, "Foo$$$$Baz")]
+    public static void TestJoinObjectArray(string seperator, object[] values, string expected)
+    {
+        Assert.Equal(expected, String.Join(seperator, values));
     }
 
     [Fact]
-    public static void TestJoin()
+    public static void TestJoinObjectArrayInvalid()
     {
-        String s;
-
-        // String Array
-        s = String.Join("$$", new String[] { }, 0, 0);
-        Assert.Equal("", s);
-
-        s = String.Join("$$", new String[] { null }, 0, 1);
-        Assert.Equal("", s);
-
-        s = String.Join("$$", new String[] { null, "Bar", null }, 0, 3);
-        Assert.Equal("$$Bar$$", s);
-
-        s = String.Join(null, new String[] { "Foo", "Bar", "Baz" }, 0, 3);
-        Assert.Equal("FooBarBaz", s);
-
-        s = String.Join("$$", new String[] { "Foo", "Bar", "Baz" }, 0, 3);
-        Assert.Equal("Foo$$Bar$$Baz", s);
-
-        s = String.Join("$$", new String[] { "Foo", "Bar", "Baz" }, 3, 0);
-        Assert.Equal("", s);
-
-        s = String.Join("$$", new String[] { "Foo", "Bar", "Baz" }, 1, 1);
-        Assert.Equal("Bar", s);
-
-        s = String.Join("$$", new String[] { "Red", "Green", "Blue" });
-        Assert.Equal("Red$$Green$$Blue", s);
-
-        Assert.Throws<ArgumentNullException>(() => s = String.Join("$$", (String[])null));
-        Assert.Throws<ArgumentNullException>(() => s = String.Join("$$", (String[])null, 0, 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, -1, 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, 0, -1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, 0, 2));
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = String.Join("$$", new String[] { "Foo" }, 2, 1));
-
-        // Object Array
-        s = String.Join("@@", new object[] { });
-        Assert.Equal("", s);
-
-        s = String.Join("@@", new object[] { "Red" });
-        Assert.Equal("Red", s);
-
-        s = String.Join("@@", new object[] { "Red", "Green", "Blue" });
-        Assert.Equal("Red@@Green@@Blue", s);
-
-        s = String.Join(null, new object[] { "Red", "Green", "Blue" });
-        Assert.Equal("RedGreenBlue", s);
-
-        s = String.Join("@@", new object[] { null, "Green", "Blue" }); // Feature of object[] overload to exit if [0] is null
-        Assert.Equal("", s);
-
-        s = String.Join("@@", new object[] { "Red", null, "Blue" });
-        Assert.Equal("Red@@@@Blue", s);
-
-        Assert.Throws<ArgumentNullException>(() => s = String.Join("@@", (Object[])null));
-
-        // IEnumerable<String> with IList optimization
-        s = String.Join("|", new List<string>() { });
-        Assert.Equal("", s);
-
-        s = String.Join("|", new List<string>() { null });
-        Assert.Equal("", s);
-
-        s = String.Join("|", new List<string>() { "Red" });
-        Assert.Equal("Red", s);
-
-        s = String.Join(null, new List<string>() { "Red", "Green", "Blue" });
-        Assert.Equal("RedGreenBlue", s);
-
-        s = String.Join("|", new List<string>() { "Red", "Green", "Blue" });
-        Assert.Equal("Red|Green|Blue", s);
-
-        s = String.Join("|", new List<string>() { null, "Green", null });
-        Assert.Equal("|Green|", s);
-
-        // IEnumerable<String> *without* IList optimization
-        Queue<string> values = new Queue<string>();
-        s = String.Join("|", values);
-        Assert.Equal("", s);
-
-        values.Enqueue(null);
-        s = String.Join("|", values);
-        Assert.Equal("", s);
-
-        values.Clear();
-        values.Enqueue("Red");
-        s = String.Join("|", values);
-        Assert.Equal("Red", s);
-
-        values.Clear();
-        values.Enqueue("Red");
-        values.Enqueue("Green");
-        values.Enqueue("Blue");
-        s = String.Join(null, values);
-        Assert.Equal("RedGreenBlue", s);
-        s = String.Join("|", values);
-        Assert.Equal("Red|Green|Blue", s);
-
-        values.Clear();
-        values.Enqueue(null);
-        values.Enqueue("Green");
-        values.Enqueue(null);
-        s = String.Join("|", new List<string>() { null, "Green", null });
-        Assert.Equal("|Green|", s);
-
-        Assert.Throws<ArgumentNullException>(() => s = String.Join("|", (IEnumerable<String>)null));
-
-        // IEnumerable<Object>
-        s = String.Join("--", new List<Object>() { });
-        Assert.Equal("", s);
-
-        s = String.Join("--", new List<Object>() { null });
-        Assert.Equal("", s);
-
-        s = String.Join("--", new List<Object>() { "Red" });
-        Assert.Equal("Red", s);
-
-        s = String.Join(null, new List<Object>() { "Red", "Green", "Blue" });
-        Assert.Equal("RedGreenBlue", s);
-
-        s = String.Join("--", new List<Object>() { "Red", "Green", "Blue" });
-        Assert.Equal("Red--Green--Blue", s);
-
-        s = String.Join("--", new List<Object>() { null, "Green", null });
-        Assert.Equal("--Green--", s);
-
-        Assert.Throws<ArgumentNullException>(() => s = String.Join("--", (IEnumerable<Object>)null));
+        Assert.Throws<ArgumentNullException>("values", () => String.Join("$$", (object[])null));
     }
 
     [Theory]
@@ -1185,16 +1055,22 @@ public static unsafe class StringTests
             source.LastIndexOf(substring, comparison));
     }
 
-    [Fact]
-    public static void TestLastIndexOfAny()
+    [Theory]
+    [InlineData("foo", 2)]
+    [InlineData("hello", 4)]
+    [InlineData("", 0)]
+    public static void TestLastIndexOfEmptyString(string s, int expected)
     {
-        int i;
+        Assert.Equal(expected, s.LastIndexOf("", StringComparison.OrdinalIgnoreCase));
+    }
 
-        i = "Hello".LastIndexOfAny(new char[] { 'd', 'e', 'f' }, 2, 3);
-        Assert.Equal(1, i);
-
-        i = "Hello".LastIndexOfAny(new char[] { 'a', 'b', 'c' }, 2, 3);
-        Assert.Equal(-1, i);
+    [Theory]
+    [InlineData("Hello", new char[] { 'd', 'e', 'f' }, 2, 3, 1)]
+    [InlineData("Hello", new char[] { 'a', 'b', 'c' }, 2, 3, -1)]
+    public static void TestLastIndexOfAny(string text, char[] c, int startIndex, int count, int expected)
+    {
+        int i = text.LastIndexOfAny(c, startIndex, count);
+        Assert.Equal(expected, i);
     }
 
     [Fact]
@@ -1219,160 +1095,136 @@ public static unsafe class StringTests
         Assert.True(b);
     }
 
-    [Fact]
-    public static void TestPad()
+    [Theory]
+    [InlineData("Hello", 5, ' ', "Hello")]
+    [InlineData("Hello", 7, ' ', "  Hello")]
+    [InlineData("Hello", 7, '.', "..Hello")]
+    [InlineData("", 0, '.', "")]
+    public static void TestPadLeft(string text, int totalWidth, char paddingChar, string expected)
     {
         String s;
-
-        s = "Hello".PadLeft(5);
-        Assert.Equal("Hello", s);
-
-        s = "Hello".PadLeft(7);
-        Assert.Equal("  Hello", s);
-
-        s = "Hello".PadLeft(7, '.');
-        Assert.Equal("..Hello", s);
-
-        s = "".PadLeft(0, 'X');
-        Assert.Equal("", s);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = "".PadLeft(-1, '.'));
-
-        s = "Hello".PadRight(5);
-        Assert.Equal("Hello", s);
-
-        s = "Hello".PadRight(7);
-        Assert.Equal("Hello  ", s);
-
-        s = "Hello".PadRight(7, '.');
-        Assert.Equal("Hello..", s);
-
-        s = "".PadRight(0, 'X');
-        Assert.Equal("", s);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = "".PadRight(-1, '.'));
-
-        return;
+        if (paddingChar == ' ')
+        {
+            s = text.PadLeft(totalWidth);
+            Assert.Equal(expected, s);
+        }
+        s = text.PadLeft(totalWidth, paddingChar);
+        Assert.Equal(expected, s);
     }
 
     [Fact]
-    public static void TestRemove()
+    public static void TestPadLeftInvalid()
     {
-        String s;
-
-        s = "Hello".Remove(2);
-        Assert.Equal("He", s);
-
-        s = "Hello".Remove(1, 2);
-        Assert.Equal("Hlo", s);
-
-        s = "Hello".Remove(0, 5);
-        Assert.Equal("", s);
-
-        s = "Hello".Remove(5, 0);
-        Assert.Equal("Hello", s);
-
-        s = "".Remove(0, 0);
-        Assert.Equal("", s);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = "Hello".Remove(0, Int32.MaxValue));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = "Hello".Remove(Int32.MaxValue, 0));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = "Hello".Remove(0, 6));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = "Hello".Remove(5, 1));
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => s = "".Remove(Int32.MaxValue, Int32.MaxValue));
-    }
-
-    [Fact]
-    public static void TestReplaceChar()
-    {
-        String s = "Hello";
-        String s1 = s.Replace('l', '!');
-        Assert.Equal(5, s1.Length);
-        Assert.Equal("He!!o", s1);
-    }
-
-    [Fact]
-    public static void TestReplaceString()
-    {
-        String s = "Hello";
-        String s1 = s.Replace("ll", "!!!!");
-        Assert.Equal(7, s1.Length);
-        Assert.Equal("He!!!!o", s1);
-
-        s = "11111";
-        s1 = s.Replace("1", "23");
-        Assert.Equal("2323232323", s1);
-
-        s = "111111";
-        s1 = s.Replace("111", "23");
-        Assert.Equal("2323", s1);
-
-        s = "1111111";
-        s1 = s.Replace("111", "23");
-        Assert.Equal("23231", s1);
-
-        s = "11111111";
-        s1 = s.Replace("111", "23");
-        Assert.Equal("232311", s1);
-
-        s = "111111111";
-        s1 = s.Replace("111", "23");
-        Assert.Equal("232323", s1);
-
-        s = "A1B1C1D1E1F";
-        s1 = s.Replace("1", "23");
-        Assert.Equal("A23B23C23D23E23F", s1);
-
-        s = "Aa1Bbb1Cccc1Ddddd1Eeeeee1Fffffff";
-        s1 = s.Replace("1", "23");
-        Assert.Equal("Aa23Bbb23Cccc23Ddddd23Eeeeee23Fffffff", s1);
-
-        // (Perf test: If nothing is replaced, don't waste an allocation on a new string.)
-        s = "XYZ";
-        s1 = s.Replace("1", "2");
-        Assert.True(Object.ReferenceEquals(s, s1));
-
-        // (Perf test: If nothing is replaced, don't waste an allocation on a new string.)
-        s = "";
-        s1 = s.Replace("1", "2");
-        Assert.True(Object.ReferenceEquals(s, s1));
-
-        // Make sure it can handle the maximum possible # of matches.
-        s = "11111111111111111111111";
-        s1 = s.Replace("1", "11");
-        Assert.Equal("1111111111111111111111111111111111111111111111", s1);
-
-        // Make sure it can handle the maximum possible # of matches.
-        s = "11111111111111111111111";
-        s1 = s.Replace("1", "");
-        Assert.Equal("", s1);
-
-        s = "abcdefghijkl";
-        s1 = s.Replace("cdef", "12345");
-        Assert.Equal("ab12345ghijkl", s1);
-
-        // Cannot pass null for "oldValue"
-        s = "Hello";
-        Assert.Throws<ArgumentNullException>(() => s.Replace(null, "l"));
-
-        // Cannot pass empty string for "oldValue"
-        s = "Hello";
-        Assert.Throws<ArgumentException>(() => s.Replace("", "l"));
-
-        // null is a "valid" input for newValue (equivalent to "")
-        s = "Hello";
-        s1 = s.Replace("l", null);
-        Assert.Equal("Heo", s1);
-
-        return;
+        Assert.Throws<ArgumentOutOfRangeException>("totalWidth", () => "".PadLeft(-1, '.')); //Total width < 0
     }
 
     [Theory]
-    [InlineData(StringComparison.CurrentCulture, "Hello", "Hel",  true)]
+    [InlineData("Hello", 5, ' ', "Hello")]
+    [InlineData("Hello", 7, ' ', "Hello  ")]
+    [InlineData("Hello", 7, '.', "Hello..")]
+    [InlineData("", 0, '.', "")]
+    public static void TestPadRight(string text, int totalWidth, char paddingChar, string expected)
+    {
+        String s;
+        if (paddingChar == ' ')
+        {
+            s = text.PadRight(totalWidth);
+            Assert.Equal(expected, s);
+        }
+        s = text.PadRight(totalWidth, paddingChar);
+        Assert.Equal(expected, s);
+    }
+
+    [Fact]
+    public static void TestPadRightInvalid()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("totalWidth", () => "".PadRight(-1, '.')); //Total width < 0
+    }
+
+    [Theory]
+    [InlineData("Hello", 2, null, "He")]
+    [InlineData("Hello", 1, 2, "Hlo")]
+    [InlineData("Hello", 0, 5, "")]
+    [InlineData("Hello", 5, 0, "Hello")]
+    [InlineData("Hello", 0, 0, "Hello")]
+    [InlineData("", 0, 0, "")]
+    public static void TestRemove(string text, int startIndex, int? length, string expected)
+    {
+        String s;
+        if (length == null)
+        {
+            length = text.Length - startIndex;
+            s = text.Remove(startIndex);
+            Assert.Equal(expected, s);
+        }
+        s = text.Remove(startIndex, length.Value);
+        Assert.Equal(expected, s);
+    }
+
+    [Fact]
+    public static void TestRemoveInvalid()
+    {
+        string s = "Hello";
+
+        Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(-1, 0)); //Start index < 0
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.Remove(0, -1)); //Count < 0
+
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.Remove(s.Length + 1, 0)); //Start index + count >= string.length
+
+        Assert.Throws<ArgumentOutOfRangeException>("count", () => s.Remove(s.Length, 1)); //Start index + count >= string.length
+    }
+
+    [Theory]
+    [InlineData("Hello", 'l', '!', "He!!o")]
+    [InlineData("Hello", 'a', 'b', "Hello")]
+    public static void TestReplaceChar(string text, char oldChar, char newChar, string expected)
+    {
+        String s = text.Replace(oldChar, newChar);
+        Assert.Equal(expected.Length, s.Length);
+        Assert.Equal(expected, s);
+    }
+
+    [Theory]
+    [InlineData("", "1", "2", "")]
+    [InlineData("Hello", "ll", "!!!!", "He!!!!o")]
+    [InlineData("Hello", "l", "", "Heo")]
+    [InlineData("Hello", "l", null, "Heo")]
+    [InlineData("11111", "1", "23", "2323232323")]
+    [InlineData("111111", "111", "23", "2323")]
+    [InlineData("1111111", "111", "23", "23231")]
+    [InlineData("11111111", "111", "23", "232311")]
+    [InlineData("111111111", "111", "23", "232323")]
+    [InlineData("A1B1C1D1E1F", "1", "23", "A23B23C23D23E23F")]
+    [InlineData("Aa1Bbb1Cccc1Ddddd1Eeeeee1Fffffff", "1", "23", "Aa23Bbb23Cccc23Ddddd23Eeeeee23Fffffff")]
+    [InlineData("11111111111111111111111", "1", "11", "1111111111111111111111111111111111111111111111")] //Checks if we handle the max # of matches
+    [InlineData("11111111111111111111111", "1", "", "")] //Checks if we handle the max # of matches
+    [InlineData("abcdefghijkl", "cdef", "12345", "ab12345ghijkl")]
+    public static void TestReplaceString(string text, string oldValue, string newValue, string expected)
+    {
+        String s = text.Replace(oldValue, newValue);
+        Assert.Equal(expected, s);
+    }
+
+    [Fact]
+    public static void TestReplaceStringInvalid()
+    {
+        Assert.Throws<ArgumentNullException>("oldValue", () => "Hello".Replace(null, ""));
+
+        Assert.Throws<ArgumentException>("oldValue", () => "Hello".Replace("", "l"));
+    }
+
+    [Theory]
+    [InlineData("XYZ", "1", "2")]
+    [InlineData("", "1", "2")]
+    public static void TestReplaceStringPerf(string text, string oldValue, string newValue)
+    {
+        // Perf test: If nothing is replaced, don't waste an allocation on a new string.
+        String s = text.Replace(oldValue, newValue);
+        Assert.Same(text, s);
+    }
+
+    [Theory]
+    [InlineData(StringComparison.CurrentCulture, "Hello", "Hel", true)]
     [InlineData(StringComparison.CurrentCulture, "Hello", "Hello", true)]
     [InlineData(StringComparison.CurrentCulture, "Hello", "", true)]
     [InlineData(StringComparison.CurrentCulture, "Hello", "HELLO", false)]
@@ -1413,12 +1265,13 @@ public static unsafe class StringTests
     {
         string s = "Hello";
 
-        Assert.Throws<ArgumentException>(() => s.StartsWith("H", (StringComparison.CurrentCulture - 1)));
-        Assert.Throws<ArgumentException>(() => s.StartsWith("H", (StringComparison.OrdinalIgnoreCase + 1)));
-        Assert.Throws<ArgumentNullException>(() => s.StartsWith(null));
-        Assert.Throws<ArgumentNullException>(() => s.StartsWith(null, StringComparison.CurrentCultureIgnoreCase));
-        Assert.Throws<ArgumentNullException>(() => s.StartsWith(null, StringComparison.Ordinal));
-        Assert.Throws<ArgumentNullException>(() => s.StartsWith(null, StringComparison.OrdinalIgnoreCase));
+        Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null));
+        Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.Ordinal));
+        Assert.Throws<ArgumentNullException>("value", () => s.StartsWith(null, StringComparison.OrdinalIgnoreCase));
+
+        Assert.Throws<ArgumentException>("comparisonType", () => s.StartsWith("H", (StringComparison.CurrentCulture - 1))); //Invalid comparison type
+        Assert.Throws<ArgumentException>("comparisonType", () => s.StartsWith("H", (StringComparison.OrdinalIgnoreCase + 1))); //Invalid comparison type
     }
 
     [ActiveIssue("https://github.com/dotnet/coreclr/issues/1716", PlatformID.AnyUnix)]
@@ -1436,31 +1289,19 @@ public static unsafe class StringTests
         Assert.False("test".StartsWith("te\0", comparison));
     }
 
-    [Fact]
-    public static void TestSubstring()
+    [Theory]
+    [InlineData("Hello", 0, 5, "Hello")]
+    [InlineData("Hello", 0, 3, "Hel")]
+    [InlineData("Hello", 2, 3, "llo")]
+    [InlineData("Hello", 5, 0, "")]
+    public static void TestSubstring(string text, int startIndex, int length, string expected)
     {
-        String s;
+        if (startIndex + length == text.Length)
+        {
+            Assert.Equal(expected, text.Substring(startIndex));
+        }
 
-        s = "Hello".Substring(2);
-        Assert.Equal("llo", s);
-
-        s = "Hello".Substring(0);
-        Assert.Equal("Hello", s);
-
-        s = "Hello".Substring(5);
-        Assert.Equal("", s);
-
-        s = "Hello".Substring(2, 3);
-        Assert.Equal("llo", s);
-
-        s = "Hello".Substring(0, 3);
-        Assert.Equal("Hel", s);
-
-        s = "Hello".Substring(0, 5);
-        Assert.Equal("Hello", s);
-
-        s = "Hello".Substring(5, 0);
-        Assert.Equal("", s);
+        Assert.Equal(expected, text.Substring(startIndex, length));
     }
 
     [Fact]
@@ -1561,10 +1402,10 @@ public static unsafe class StringTests
         char[] asciiCharsUpper = new char[128];
         char[] asciiCharsLower = new char[128];
 
-        for (int i = 0; i < asciiChars.Length; i++)  
+        for (int i = 0; i < asciiChars.Length; i++)
         {
             char c = (char)i;
-            asciiChars[i] = c;  
+            asciiChars[i] = c;
 
             // Purposefully avoiding char.ToUpper/ToLower here so as not  
             // to use the same thing we're testing.  
@@ -1580,28 +1421,55 @@ public static unsafe class StringTests
         Assert.Equal(asciiUpper, ascii.ToUpperInvariant());
     }
 
-    [Fact]
-    public static void TestTrim()
+    [Theory]
+    [InlineData("  Hello  ", new char[] { ' ' }, "Hello")]
+    [InlineData(".  Hello  ..", new char[] { '.' }, "  Hello  ")]
+    [InlineData(".  Hello  ..", new char[] { '.', ' ' }, "Hello")]
+    [InlineData("123abcHello123abc", new char[] { '1', '2', '3', 'a', 'b', 'c' }, "Hello")]
+
+    [InlineData("  Hello  ", null, "Hello")]
+    [InlineData("  Hello  ", new char[] { }, "Hello")]
+    public static void TestTrim(string text, char[] trimChars, string expected)
     {
-        String s;
+        if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
+        {
+            Assert.Equal(expected, text.Trim());
+        }
+        Assert.Equal(expected, text.Trim(trimChars));
+    }
 
-        s = "  Foo  ".Trim();
-        Assert.Equal("Foo", s);
+    [Theory]
+    [InlineData("  Hello  ", new char[] { ' ' }, "Hello  ")]
+    [InlineData(".  Hello  ..", new char[] { '.' }, "  Hello  ..")]
+    [InlineData(".  Hello  ..", new char[] { '.', ' ' }, "Hello  ..")]
+    [InlineData("123abcHello123abc", new char[] { '1', '2', '3', 'a', 'b', 'c' }, "Hello123abc")]
 
-        s = ". Foo .".Trim('.');
-        Assert.Equal(" Foo ", s);
+    [InlineData("  Hello  ", null, "Hello  ")]
+    [InlineData("  Hello  ", new char[] { }, "Hello  ")]
+    public static void TestTrimStart(string text, char[] trimChars, string expected)
+    {
+        if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
+        {
+            Assert.Equal(expected, text.TrimStart());
+        }
+        Assert.Equal(expected, text.TrimStart(trimChars));
+    }
 
-        s = "  Foo  ".TrimStart();
-        Assert.Equal("Foo  ", s);
+    [Theory]
+    [InlineData("  Hello  ", new char[] { ' ' }, "  Hello")]
+    [InlineData(".  Hello  ..", new char[] { '.' }, ".  Hello  ")]
+    [InlineData(".  Hello  ..", new char[] { '.', ' ' }, ".  Hello")]
+    [InlineData("123abcHello123abc", new char[] { '1', '2', '3', 'a', 'b', 'c' }, "123abcHello")]
 
-        s = ". Foo .".TrimStart('.');
-        Assert.Equal(" Foo .", s);
-
-        s = "  Foo  ".TrimEnd();
-        Assert.Equal("  Foo", s);
-
-        s = ". Foo .".TrimEnd('.');
-        Assert.Equal(". Foo ", s);
+    [InlineData("  Hello  ", null, "  Hello")]
+    [InlineData("  Hello  ", new char[] { }, "  Hello")]
+    public static void TestTrimEnd(string text, char[] trimChars, string expected)
+    {
+        if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
+        {
+            Assert.Equal(expected, text.TrimEnd());
+        }
+        Assert.Equal(expected, text.TrimEnd(trimChars));
     }
 
     [Fact]
@@ -1619,9 +1487,15 @@ public static unsafe class StringTests
         };
 
         foreach (StringComparison comparison in comparisons)
+        {
             for (int i = 0; i <= source.Length; i++)
+            {
                 for (int subLen = source.Length - i; subLen > 0; subLen--)
+                {
                     yield return new object[] { source, source.Substring(i, subLen), i, comparison };
+                }
+            }
+        }
     }
 
     private static void WithCulture(CultureInfo culture, Action test)
@@ -1637,5 +1511,12 @@ public static unsafe class StringTests
             CultureInfo.CurrentCulture = originalCulture;
         }
     }
-}
 
+    private static int NormalizeCompare(int i)
+    {
+        return
+            i == 0 ? 0 :
+            i > 0 ? 1 :
+            -1;
+    }
+}
