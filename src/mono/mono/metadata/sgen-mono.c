@@ -36,7 +36,6 @@
 #include "metadata/gc-internals.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internals.h"
-#include "utils/mono-threads.h"
 
 #ifdef HEAVY_STATISTICS
 static guint64 stat_wbarrier_set_arrayref = 0;
@@ -189,18 +188,6 @@ void
 mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
 {
 	sgen_wbarrier_value_copy_bitmap (_dest, _src, size, bitmap);
-}
-
-int
-mono_gc_get_suspend_signal (void)
-{
-	return mono_threads_posix_get_suspend_signal ();
-}
-
-int
-mono_gc_get_restart_signal (void)
-{
-	return mono_threads_posix_get_restart_signal ();
 }
 
 static MonoMethod *write_barrier_conc_method;
@@ -2882,6 +2869,13 @@ sgen_client_init (void)
 		mono_tls_key_set_offset (TLS_KEY_SGEN_THREAD_INFO, tls_offset);
 	}
 #endif
+
+	/*
+	 * This needs to happen before any internal allocations because
+	 * it inits the small id which is required for hazard pointer
+	 * operations.
+	 */
+	sgen_os_init ();
 
 	mono_gc_register_thread (&dummy);
 }

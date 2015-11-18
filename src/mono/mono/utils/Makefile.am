@@ -102,6 +102,7 @@ monoutils_sources = \
 	mono-threads-state-machine.c	\
 	mono-threads-posix.c	\
 	mono-threads-posix-signals.c	\
+	mono-threads-posix-signals.h	\
 	mono-threads-mach.c	\
 	mono-threads-mach-helper.c	\
 	mono-threads-windows.c	\
