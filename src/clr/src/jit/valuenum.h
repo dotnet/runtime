@@ -110,7 +110,7 @@ public:
         bool Lookup(fromType k, ValueNum* pVal = NULL) const
         {
             bool result = SimplerHashTable<fromType, keyfuncs, ValueNum, DefaultSimplerHashBehavior>::Lookup(k, pVal);
-            assert(*pVal != RecursiveVN || !result);
+            assert(!result || *pVal != RecursiveVN);
             return result;
         }
     };
