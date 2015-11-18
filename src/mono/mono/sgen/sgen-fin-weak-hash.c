@@ -121,7 +121,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 	if (no_finalize)
 		return;
 
-	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
+	SGEN_HASH_TABLE_FOREACH (hash_table, GCObject *, object, gpointer, dummy) {
 		int tag = tagged_object_get_tag (object);
 		object = tagged_object_get_object (object);
 
@@ -191,7 +191,7 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 
 	if (no_finalize)
 		return;
-	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
+	SGEN_HASH_TABLE_FOREACH (hash_table, GCObject *, object, gpointer, dummy) {
 		int tag = tagged_object_get_tag (object);
 		object = tagged_object_get_object (object);
 		if (!major_collector.is_object_live (object)) {
@@ -578,7 +578,7 @@ finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, G
 	if (no_finalize || !out_size || !out_array)
 		return 0;
 	count = 0;
-	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
+	SGEN_HASH_TABLE_FOREACH (hash_table, GCObject *, object, gpointer, dummy) {
 		object = tagged_object_get_object (object);
 
 		if (predicate (object, user_data)) {
@@ -634,7 +634,7 @@ sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, i
 	GCObject *object;
 	gpointer dummy G_GNUC_UNUSED;
 
-	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
+	SGEN_HASH_TABLE_FOREACH (hash_table, GCObject *, object, gpointer, dummy) {
 		object = tagged_object_get_object (object);
 
 		if (predicate (object, user_data)) {

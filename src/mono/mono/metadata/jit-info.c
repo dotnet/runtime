@@ -90,7 +90,7 @@ jit_info_table_new_chunk (void)
 MonoJitInfoTable *
 mono_jit_info_table_new (MonoDomain *domain)
 {
-	MonoJitInfoTable *table = g_malloc0 (MONO_SIZEOF_JIT_INFO_TABLE + sizeof (MonoJitInfoTableChunk*));
+	MonoJitInfoTable *table = (MonoJitInfoTable *)g_malloc0 (MONO_SIZEOF_JIT_INFO_TABLE + sizeof (MonoJitInfoTableChunk*));
 
 	table->domain = domain;
 	table->num_chunks = 1;
@@ -197,7 +197,7 @@ jit_info_table_chunk_index (MonoJitInfoTableChunk *chunk, MonoThreadHazardPointe
 
 	while (left < right) {
 		int pos = (left + right) / 2;
-		MonoJitInfo *ji = get_hazardous_pointer((gpointer volatile*)&chunk->data [pos], hp, JIT_INFO_HAZARD_INDEX);
+		MonoJitInfo *ji = (MonoJitInfo *)get_hazardous_pointer((gpointer volatile*)&chunk->data [pos], hp, JIT_INFO_HAZARD_INDEX);
 		gint8 *code_end = (gint8*)ji->code_start + ji->code_size;
 
 		if (addr < code_end)
@@ -230,7 +230,7 @@ jit_info_table_find (MonoJitInfoTable *table, MonoThreadHazardPointers *hp, gint
 		MonoJitInfoTableChunk *chunk = table->chunks [chunk_pos];
 
 		while (pos < chunk->num_elements) {
-			ji = get_hazardous_pointer ((gpointer volatile*)&chunk->data [pos], hp, JIT_INFO_HAZARD_INDEX);
+			ji = (MonoJitInfo *)get_hazardous_pointer ((gpointer volatile*)&chunk->data [pos], hp, JIT_INFO_HAZARD_INDEX);
 
 			++pos;
 
@@ -288,7 +288,7 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 	   table by a hazard pointer and make sure that the pointer is
 	   still there after we've made it hazardous, we don't have to
 	   worry about the writer freeing the table. */
-	table = get_hazardous_pointer ((gpointer volatile*)&domain->jit_info_table, hp, JIT_INFO_TABLE_HAZARD_INDEX);
+	table = (MonoJitInfoTable *)get_hazardous_pointer ((gpointer volatile*)&domain->jit_info_table, hp, JIT_INFO_TABLE_HAZARD_INDEX);
 
 	ji = jit_info_table_find (table, hp, (gint8*)addr);
 	if (hp)
@@ -300,7 +300,7 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 
 	/* Maybe its an AOT module */
 	if (try_aot && mono_get_root_domain () && mono_get_root_domain ()->aot_modules) {
-		table = get_hazardous_pointer ((gpointer volatile*)&mono_get_root_domain ()->aot_modules, hp, JIT_INFO_TABLE_HAZARD_INDEX);
+		table = (MonoJitInfoTable *)get_hazardous_pointer ((gpointer volatile*)&mono_get_root_domain ()->aot_modules, hp, JIT_INFO_TABLE_HAZARD_INDEX);
 		module_ji = jit_info_table_find (table, hp, (gint8*)addr);
 		if (module_ji)
 			ji = jit_info_find_in_aot_func (domain, module_ji->d.image, addr);
@@ -370,7 +370,7 @@ jit_info_table_realloc (MonoJitInfoTable *old)
 	int required_size;
 	int num_chunks;
 	int new_chunk, new_element;
-	MonoJitInfoTable *new;
+	MonoJitInfoTable *result;
 
 	/* number of needed places for elements needed */
 	required_size = (int)((long)num_elements * JIT_INFO_TABLE_FILL_RATIO_DENOM / JIT_INFO_TABLE_FILL_RATIO_NOM);
@@ -381,12 +381,12 @@ jit_info_table_realloc (MonoJitInfoTable *old)
 	}
 	g_assert (num_chunks > 0);
 
-	new = g_malloc (MONO_SIZEOF_JIT_INFO_TABLE + sizeof (MonoJitInfoTableChunk*) * num_chunks);
-	new->domain = old->domain;
-	new->num_chunks = num_chunks;
+	result = (MonoJitInfoTable *)g_malloc (MONO_SIZEOF_JIT_INFO_TABLE + sizeof (MonoJitInfoTableChunk*) * num_chunks);
+	result->domain = old->domain;
+	result->num_chunks = num_chunks;
 
 	for (i = 0; i < num_chunks; ++i)
-		new->chunks [i] = jit_info_table_new_chunk ();
+		result->chunks [i] = jit_info_table_new_chunk ();
 
 	new_chunk = 0;
 	new_element = 0;
@@ -398,9 +398,9 @@ jit_info_table_realloc (MonoJitInfoTable *old)
 		for (j = 0; j < chunk_num_elements; ++j) {
 			if (!IS_JIT_INFO_TOMBSTONE (chunk->data [j])) {
 				g_assert (new_chunk < num_chunks);
-				new->chunks [new_chunk]->data [new_element] = chunk->data [j];
+				result->chunks [new_chunk]->data [new_element] = chunk->data [j];
 				if (++new_element >= JIT_INFO_TABLE_FILLED_NUM_ELEMENTS) {
-					new->chunks [new_chunk]->num_elements = new_element;
+					result->chunks [new_chunk]->num_elements = new_element;
 					++new_chunk;
 					new_element = 0;
 				}
@@ -410,18 +410,18 @@ jit_info_table_realloc (MonoJitInfoTable *old)
 
 	if (new_chunk < num_chunks) {
 		g_assert (new_chunk == num_chunks - 1);
-		new->chunks [new_chunk]->num_elements = new_element;
-		g_assert (new->chunks [new_chunk]->num_elements > 0);
+		result->chunks [new_chunk]->num_elements = new_element;
+		g_assert (result->chunks [new_chunk]->num_elements > 0);
 	}
 
 	for (i = 0; i < num_chunks; ++i) {
-		MonoJitInfoTableChunk *chunk = new->chunks [i];
+		MonoJitInfoTableChunk *chunk = result->chunks [i];
 		MonoJitInfo *ji = chunk->data [chunk->num_elements - 1];
 
-		new->chunks [i]->last_code_end = (gint8*)ji->code_start + ji->code_size;
+		result->chunks [i]->last_code_end = (gint8*)ji->code_start + ji->code_size;
 	}
 
-	return new;
+	return result;
 }
 
 static void
@@ -450,7 +450,7 @@ jit_info_table_split_chunk (MonoJitInfoTableChunk *chunk, MonoJitInfoTableChunk 
 static MonoJitInfoTable*
 jit_info_table_copy_and_split_chunk (MonoJitInfoTable *table, MonoJitInfoTableChunk *chunk)
 {
-	MonoJitInfoTable *new_table = g_malloc (MONO_SIZEOF_JIT_INFO_TABLE
+	MonoJitInfoTable *new_table = (MonoJitInfoTable *)g_malloc (MONO_SIZEOF_JIT_INFO_TABLE
 		+ sizeof (MonoJitInfoTableChunk*) * (table->num_chunks + 1));
 	int i, j;
 
@@ -477,28 +477,28 @@ jit_info_table_copy_and_split_chunk (MonoJitInfoTable *table, MonoJitInfoTableCh
 static MonoJitInfoTableChunk*
 jit_info_table_purify_chunk (MonoJitInfoTableChunk *old)
 {
-	MonoJitInfoTableChunk *new = jit_info_table_new_chunk ();
+	MonoJitInfoTableChunk *result = jit_info_table_new_chunk ();
 	int i, j;
 
 	j = 0;
 	for (i = 0; i < old->num_elements; ++i) {
 		if (!IS_JIT_INFO_TOMBSTONE (old->data [i]))
-			new->data [j++] = old->data [i];
+			result->data [j++] = old->data [i];
 	}
 
-	new->num_elements = j;
-	if (new->num_elements > 0)
-		new->last_code_end = (gint8*)new->data [j - 1]->code_start + new->data [j - 1]->code_size;
+	result->num_elements = j;
+	if (result->num_elements > 0)
+		result->last_code_end = (gint8*)result->data [j - 1]->code_start + result->data [j - 1]->code_size;
 	else
-		new->last_code_end = old->last_code_end;
+		result->last_code_end = old->last_code_end;
 
-	return new;
+	return result;
 }
 
 static MonoJitInfoTable*
 jit_info_table_copy_and_purify_chunk (MonoJitInfoTable *table, MonoJitInfoTableChunk *chunk)
 {
-	MonoJitInfoTable *new_table = g_malloc (MONO_SIZEOF_JIT_INFO_TABLE
+	MonoJitInfoTable *new_table = (MonoJitInfoTable *)g_malloc (MONO_SIZEOF_JIT_INFO_TABLE
 		+ sizeof (MonoJitInfoTableChunk*) * table->num_chunks);
 	int i, j;
 
@@ -690,10 +690,10 @@ jit_info_table_remove (MonoJitInfoTable *table, MonoJitInfo *ji)
 	gpointer start = ji->code_start;
 	int chunk_pos, pos;
 
-	chunk_pos = jit_info_table_index (table, start);
+	chunk_pos = jit_info_table_index (table, (gint8 *)start);
 	g_assert (chunk_pos < table->num_chunks);
 
-	pos = jit_info_table_chunk_index (table->chunks [chunk_pos], NULL, start);
+	pos = jit_info_table_chunk_index (table->chunks [chunk_pos], NULL, (gint8 *)start);
 
 	do {
 		chunk = table->chunks [chunk_pos];

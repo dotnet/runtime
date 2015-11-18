@@ -1380,7 +1380,7 @@ mono_thread_info_install_interrupt (void (*callback) (gpointer data), gpointer d
 	token->callback = callback;
 	token->data = data;
 
-	previous_token = InterlockedCompareExchangePointer ((gpointer*) &info->interrupt_token, token, NULL);
+	previous_token = (MonoThreadInfoInterruptToken *)InterlockedCompareExchangePointer ((gpointer*) &info->interrupt_token, token, NULL);
 
 	if (previous_token) {
 		if (previous_token != INTERRUPT_STATE)
@@ -1407,7 +1407,7 @@ mono_thread_info_uninstall_interrupt (gboolean *interrupted)
 	info = mono_thread_info_current ();
 	g_assert (info);
 
-	previous_token = InterlockedExchangePointer ((gpointer*) &info->interrupt_token, NULL);
+	previous_token = (MonoThreadInfoInterruptToken *)InterlockedExchangePointer ((gpointer*) &info->interrupt_token, NULL);
 
 	/* only the installer can uninstall the token */
 	g_assert (previous_token);
@@ -1516,7 +1516,7 @@ mono_thread_info_clear_self_interrupt ()
 	info = mono_thread_info_current ();
 	g_assert (info);
 
-	previous_token = InterlockedCompareExchangePointer ((gpointer*) &info->interrupt_token, NULL, INTERRUPT_STATE);
+	previous_token = (MonoThreadInfoInterruptToken *)InterlockedCompareExchangePointer ((gpointer*) &info->interrupt_token, NULL, INTERRUPT_STATE);
 	g_assert (previous_token == NULL || previous_token == INTERRUPT_STATE);
 
 	THREADS_INTERRUPT_DEBUG ("interrupt clear self tid %p previous_token %p\n", mono_thread_info_get_tid (info), previous_token);

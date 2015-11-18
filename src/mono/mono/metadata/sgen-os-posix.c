@@ -246,7 +246,7 @@ sgen_os_init (void)
 		g_error ("failed sigaction");
 	}
 
-	sinfo.sa_handler = (void*) restart_handler;
+	sinfo.sa_handler = (void (*)(int))restart_handler;
 	if (sigaction (restart_signal_num, &sinfo, NULL) != 0) {
 		g_error ("failed sigaction");
 	}

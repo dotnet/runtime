@@ -50,15 +50,15 @@ par_copy_object_no_checks (char *destination, GCVTable vt, void *obj, mword objs
 	obj = destination;
 	if (queue) {
 		SGEN_LOG (9, "Enqueuing gray object %p (%s)", obj, sgen_client_vtable_get_name (vt));
-		GRAY_OBJECT_ENQUEUE (queue, obj, sgen_vtable_get_descriptor (vt));
+		GRAY_OBJECT_ENQUEUE (queue, (GCObject *)obj, sgen_vtable_get_descriptor (vt));
 	}
 }
 
 /*
  * This can return OBJ itself on OOM.
  */
-static MONO_NEVER_INLINE void*
-copy_object_no_checks (void *obj, SgenGrayQueue *queue)
+static MONO_NEVER_INLINE GCObject *
+copy_object_no_checks (GCObject *obj, SgenGrayQueue *queue)
 {
 	GCVTable vt = SGEN_LOAD_VTABLE_UNCHECKED (obj);
 	gboolean has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
@@ -76,11 +76,11 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 	if (!has_references)
 		queue = NULL;
 
-	par_copy_object_no_checks (destination, vt, obj, objsize, queue);
+	par_copy_object_no_checks ((char *)destination, vt, obj, objsize, queue);
 	/* FIXME: mark mod union cards if necessary */
 
 	/* set the forwarding pointer */
 	SGEN_FORWARD_OBJECT (obj, destination);
 
-	return destination;
+	return (GCObject *)destination;
 }

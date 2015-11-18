@@ -161,7 +161,7 @@ mono_process_list (int *size)
 				count = 16;
 			else
 				count *= 2;
-			buf = g_realloc (buf, count * sizeof (void*));
+			buf = (void **)g_realloc (buf, count * sizeof (void*));
 		}
 		buf [i++] = GINT_TO_POINTER (pid);
 	}

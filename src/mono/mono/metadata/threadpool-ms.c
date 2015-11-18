@@ -403,7 +403,7 @@ domain_get (MonoDomain *domain, gboolean create)
 	g_assert (domain);
 
 	for (i = 0; i < threadpool->domains->len; ++i) {
-		tpdomain = g_ptr_array_index (threadpool->domains, i);
+		tpdomain = (ThreadPoolDomain *)g_ptr_array_index (threadpool->domains, i);
 		if (tpdomain->domain == domain)
 			return tpdomain;
 	}
@@ -430,7 +430,7 @@ domain_any_has_request (void)
 	guint i;
 
 	for (i = 0; i < threadpool->domains->len; ++i) {
-		ThreadPoolDomain *tmp = g_ptr_array_index (threadpool->domains, i);
+		ThreadPoolDomain *tmp = (ThreadPoolDomain *)g_ptr_array_index (threadpool->domains, i);
 		if (tmp->outstanding_request > 0)
 			return TRUE;
 	}
@@ -458,7 +458,7 @@ domain_get_next (ThreadPoolDomain *current)
 			g_assert (current_idx >= 0);
 		}
 		for (i = current_idx + 1; i < len + current_idx + 1; ++i) {
-			ThreadPoolDomain *tmp = g_ptr_array_index (threadpool->domains, i % len);
+			ThreadPoolDomain *tmp = (ThreadPoolDomain *)g_ptr_array_index (threadpool->domains, i % len);
 			if (tmp->outstanding_request > 0) {
 				tpdomain = tmp;
 				break;
@@ -508,7 +508,7 @@ worker_park (void)
 		if (interrupted)
 			goto done;
 
-		if (mono_coop_cond_timedwait (&threadpool->parked_threads_cond, &threadpool->active_threads_lock, rand_next (rand_handle, 5 * 1000, 60 * 1000)) != 0)
+		if (mono_coop_cond_timedwait (&threadpool->parked_threads_cond, &threadpool->active_threads_lock, rand_next ((void **)rand_handle, 5 * 1000, 60 * 1000)) != 0)
 			timeout = TRUE;
 
 		mono_thread_info_uninstall_interrupt (&interrupted);
@@ -636,7 +636,7 @@ worker_thread (gpointer data)
 			else if (res && *(MonoBoolean*) mono_object_unbox (res) == FALSE)
 				retire = TRUE;
 
-			mono_thread_clr_state (thread , ~ThreadState_Background);
+			mono_thread_clr_state (thread, (MonoThreadState)~ThreadState_Background);
 			if (!mono_thread_test_state (thread , ThreadState_Background))
 				ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 
@@ -871,7 +871,7 @@ monitor_thread (void)
 
 		mono_coop_mutex_lock (&threadpool->active_threads_lock);
 		for (i = 0; i < threadpool->working_threads->len; ++i) {
-			thread = g_ptr_array_index (threadpool->working_threads, i);
+			thread = (MonoInternalThread *)g_ptr_array_index (threadpool->working_threads, i);
 			if ((thread->state & ThreadState_WaitSleepJoin) == 0) {
 				all_waitsleepjoin = FALSE;
 				break;

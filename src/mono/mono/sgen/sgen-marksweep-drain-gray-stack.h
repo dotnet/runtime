@@ -74,7 +74,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 			HEAVY_STAT (++stat_optimized_copy_nursery_pinned);
 			return TRUE;
 		}
-		if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
+		if ((forwarded = (GCObject *)SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
 			HEAVY_STAT (++stat_optimized_copy_nursery_forwarded);
 			SGEN_UPDATE_REFERENCE (ptr, forwarded);
 			return sgen_ptr_in_nursery (forwarded);
@@ -142,7 +142,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 #ifdef COPY_OR_MARK_WITH_EVACUATION
 		{
 			GCObject *forwarded;
-			if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
+			if ((forwarded = (GCObject *)SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
 				HEAVY_STAT (++stat_optimized_copy_major_forwarded);
 				SGEN_UPDATE_REFERENCE (ptr, forwarded);
 				SGEN_ASSERT (9, !sgen_ptr_in_nursery (forwarded), "Cannot be forwarded to nursery.");
@@ -241,12 +241,12 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 		} while (0)
 #else
 #define HANDLE_PTR(ptr,obj)	do {					\
-		void *__old = *(ptr);					\
+		GCObject *__old = *(ptr);					\
 		binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
 		if (__old) {						\
 			gboolean __still_in_nursery = COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
 			if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \
-				void *__copy = *(ptr);			\
+				GCObject *__copy = *(ptr);			\
 				sgen_add_to_global_remset ((ptr), __copy); \
 			}						\
 		}							\

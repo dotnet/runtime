@@ -1494,7 +1494,7 @@ static gboolean share_check (struct stat *statbuf, guint32 sharemode,
 gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 		    guint32 sharemode, WapiSecurityAttributes *security,
 		    guint32 createmode, guint32 attrs,
-		    gpointer template G_GNUC_UNUSED)
+		    gpointer template_ G_GNUC_UNUSED)
 {
 	struct _WapiHandle_file file_handle = {0};
 	gpointer handle;
@@ -1508,7 +1508,7 @@ gpointer CreateFile(const gunichar2 *name, guint32 fileaccess,
 	mode_t perms=0666;
 	gchar *filename;
 	int fd, ret;
-	int handle_type;
+	WapiHandleType handle_type;
 	struct stat statbuf;
 	
 	mono_once (&io_ops_once, io_ops_init);
@@ -3706,7 +3706,7 @@ append_to_mountpoint (LinuxMountInfoParseState *state)
 	if (state->mountpoint_allocated) {
 		if (state->mountpoint_index >= state->allocated_size) {
 			guint32 newsize = (state->allocated_size << 1) + 1;
-			gchar *newbuf = g_malloc0 (newsize * sizeof (gchar));
+			gchar *newbuf = (gchar *)g_malloc0 (newsize * sizeof (gchar));
 
 			memcpy (newbuf, state->mountpoint_allocated, state->mountpoint_index);
 			g_free (state->mountpoint_allocated);
@@ -3717,7 +3717,7 @@ append_to_mountpoint (LinuxMountInfoParseState *state)
 	} else {
 		if (state->mountpoint_index >= GET_LOGICAL_DRIVE_STRINGS_MOUNTPOINT_BUFFER) {
 			state->allocated_size = (state->mountpoint_index << 1) + 1;
-			state->mountpoint_allocated = g_malloc0 (state->allocated_size * sizeof (gchar));
+			state->mountpoint_allocated = (gchar *)g_malloc0 (state->allocated_size * sizeof (gchar));
 			memcpy (state->mountpoint_allocated, state->mountpoint, state->mountpoint_index);
 			state->mountpoint_allocated [state->mountpoint_index++] = ch;
 		} else

@@ -152,7 +152,7 @@ decode_string_value (guint8 *buf, guint8 **endbuf, guint8 *limit)
 
 	g_assert (length < (1 << 16));
 
-	s = g_malloc (length + 1);
+	s = (char *)g_malloc (length + 1);
 
 	g_assert (p + length <= limit);
 	memcpy (s, p, length);
@@ -524,7 +524,7 @@ receiver_thread (void *arg)
 			content_len = decode_int (p, &p, p_end);
 
 			/* Read message body */
-			body = g_malloc (content_len);
+			body = (guint8 *)g_malloc (content_len);
 			res = read (conn_fd, body, content_len);
 			
 			p = body;

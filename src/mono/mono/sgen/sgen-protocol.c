@@ -69,7 +69,7 @@ filename_for_index (int index)
 
 	SGEN_ASSERT (0, file_size_limit > 0, "Indexed binary protocol filename must only be used with file size limit");
 
-	filename = sgen_alloc_internal_dynamic (strlen (filename_or_prefix) + 32, INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
+	filename = (char *)sgen_alloc_internal_dynamic (strlen (filename_or_prefix) + 32, INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
 	sprintf (filename, "%s.%d", filename_or_prefix, index);
 
 	return filename;
@@ -108,7 +108,7 @@ void
 binary_protocol_init (const char *filename, long long limit)
 {
 #ifdef HAVE_UNISTD_H
-	filename_or_prefix = sgen_alloc_internal_dynamic (strlen (filename) + 1, INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
+	filename_or_prefix = (char *)sgen_alloc_internal_dynamic (strlen (filename) + 1, INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
 	strcpy (filename_or_prefix, filename);
 
 	file_size_limit = limit;
@@ -251,7 +251,7 @@ binary_protocol_flush_buffers (gboolean force)
 
 	for (buf = binary_protocol_buffers; buf != NULL; buf = buf->next)
 		++num_buffers;
-	bufs = sgen_alloc_internal_dynamic (num_buffers * sizeof (BinaryProtocolBuffer*), INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
+	bufs = (BinaryProtocolBuffer **)sgen_alloc_internal_dynamic (num_buffers * sizeof (BinaryProtocolBuffer*), INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
 	for (buf = binary_protocol_buffers, i = 0; buf != NULL; buf = buf->next, i++)
 		bufs [i] = buf;
 	SGEN_ASSERT (0, i == num_buffers, "Binary protocol buffer count error");
@@ -280,7 +280,7 @@ binary_protocol_get_buffer (int length)
 	if (buffer && buffer->index + length <= BINARY_PROTOCOL_BUFFER_SIZE)
 		return buffer;
 
-	new_buffer = sgen_alloc_os_memory (sizeof (BinaryProtocolBuffer), SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, "debugging memory");
+	new_buffer = (BinaryProtocolBuffer *)sgen_alloc_os_memory (sizeof (BinaryProtocolBuffer), (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), "debugging memory");
 	new_buffer->next = buffer;
 	new_buffer->index = 0;
 

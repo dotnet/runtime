@@ -179,8 +179,8 @@ mark_bit (char *space_bitmap, char *pos)
 static void
 mark_bits_in_range (char *space_bitmap, char *start, char *end)
 {
-	start = align_down (start, SGEN_TO_SPACE_GRANULE_BITS);
-	end = align_up (end, SGEN_TO_SPACE_GRANULE_BITS);
+	start = (char *)align_down (start, SGEN_TO_SPACE_GRANULE_BITS);
+	end = (char *)align_up (end, SGEN_TO_SPACE_GRANULE_BITS);
 
 	for (;start < end; start += SGEN_TO_SPACE_GRANULE_IN_BYTES)
 		mark_bit (space_bitmap, start);
@@ -244,7 +244,7 @@ alloc_for_promotion_slow_path (int age, size_t objsize)
 	size_t allocated_size;
 	size_t aligned_objsize = (size_t)align_up (objsize, SGEN_TO_SPACE_GRANULE_BITS);
 
-	p = sgen_fragment_allocator_serial_range_alloc (
+	p = (char *)sgen_fragment_allocator_serial_range_alloc (
 		&collector_allocator,
 		MAX (aligned_objsize, AGE_ALLOC_BUFFER_DESIRED_SIZE),
 		MAX (aligned_objsize, AGE_ALLOC_BUFFER_MIN_SIZE),
@@ -336,8 +336,8 @@ prepare_to_space (char *to_space_bitmap, size_t space_bitmap_size)
 	previous = &collector_allocator.alloc_head;
 
 	for (frag = *previous; frag; frag = *previous) {
-		char *start = align_up (frag->fragment_next, SGEN_TO_SPACE_GRANULE_BITS);
-		char *end = align_down (frag->fragment_end, SGEN_TO_SPACE_GRANULE_BITS);
+		char *start = (char *)align_up (frag->fragment_next, SGEN_TO_SPACE_GRANULE_BITS);
+		char *end = (char *)align_down (frag->fragment_end, SGEN_TO_SPACE_GRANULE_BITS);
 
 		/* Fragment is too small to be usable. */
 		if ((end - start) < SGEN_MAX_NURSERY_WASTE) {
@@ -378,12 +378,12 @@ static void
 init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 {
 	int alloc_quote = (int)((end - start) * alloc_ratio);
-	promotion_barrier = align_down (start + alloc_quote, 3);
+	promotion_barrier = (char *)align_down (start + alloc_quote, 3);
 	sgen_fragment_allocator_add (allocator, start, promotion_barrier);
 	sgen_fragment_allocator_add (&collector_allocator, promotion_barrier, end);
 
 	region_age_size = (end - start) >> SGEN_TO_SPACE_GRANULE_BITS;
-	region_age = g_malloc0 (region_age_size);
+	region_age = (char *)g_malloc0 (region_age_size);
 }
 
 static gboolean

@@ -28,7 +28,7 @@ typedef struct {
 } SeqPoint;
 
 typedef struct MonoSeqPointInfo {
-	int dummy[0];
+	int dummy [1];
 } MonoSeqPointInfo;
 
 typedef struct {

@@ -85,7 +85,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 						MONO_INST_NEW (cfg, jump, OP_BR);
 
 						/* Allocate memory for our branch target */
-						jump->inst_i1 = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
+						jump->inst_i1 = (MonoInst *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
 						jump->inst_true_bb = targetbb;
 
 						if (cfg->verbose_level > 2) 
@@ -851,7 +851,7 @@ replace_out_block_in_code (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBl
 					ins->inst_false_bb = repl;
 			} else if (MONO_IS_JUMP_TABLE (ins)) {
 				int i;
-				MonoJumpInfoBBTable *table = MONO_JUMP_TABLE_FROM_INS (ins);
+				MonoJumpInfoBBTable *table = (MonoJumpInfoBBTable *)MONO_JUMP_TABLE_FROM_INS (ins);
 				for (i = 0; i < table->table_size; i++ ) {
 					if (table->table [i] == orig)
 						table->table [i] = repl;
@@ -995,7 +995,7 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 		for (inst = bb->code; inst != NULL; inst = inst->next) {
 			if (MONO_IS_JUMP_TABLE (inst)) {
 				int i;
-				MonoJumpInfoBBTable *table = MONO_JUMP_TABLE_FROM_INS (inst);
+				MonoJumpInfoBBTable *table = (MonoJumpInfoBBTable *)MONO_JUMP_TABLE_FROM_INS (inst);
 				for (i = 0; i < table->table_size; i++ ) {
 					/* Might be already NULL from a previous merge */
 					if (table->table [i])
@@ -1137,7 +1137,7 @@ mono_remove_critical_edges (MonoCompile *cfg)
 				 * overwrite the sreg1 of the ins.
 				 */
 				if ((in_bb->out_count > 1) || (in_bb->out_count == 1 && in_bb->last_ins && in_bb->last_ins->opcode == OP_BR_REG)) {
-					MonoBasicBlock *new_bb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
+					MonoBasicBlock *new_bb = (MonoBasicBlock *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 					new_bb->block_num = cfg->num_bblocks++;
 //					new_bb->real_offset = bb->real_offset;
 					new_bb->region = bb->region;
@@ -1161,7 +1161,7 @@ mono_remove_critical_edges (MonoCompile *cfg)
 							/* We cannot add any inst to the entry BB, so we must */
 							/* put a new BB in the middle to hold the OP_BR */
 							MonoInst *jump;
-							MonoBasicBlock *new_bb_after_entry = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
+							MonoBasicBlock *new_bb_after_entry = (MonoBasicBlock *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 							new_bb_after_entry->block_num = cfg->num_bblocks++;
 //							new_bb_after_entry->real_offset = bb->real_offset;
 							new_bb_after_entry->region = bb->region;
@@ -1190,10 +1190,10 @@ mono_remove_critical_edges (MonoCompile *cfg)
 					previous_bb = new_bb;
 					
 					/* Setup in_bb and out_bb */
-					new_bb->in_bb = mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
+					new_bb->in_bb = (MonoBasicBlock **)mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
 					new_bb->in_bb [0] = in_bb;
 					new_bb->in_count = 1;
-					new_bb->out_bb = mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
+					new_bb->out_bb = (MonoBasicBlock **)mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
 					new_bb->out_bb [0] = bb;
 					new_bb->out_count = 1;
 					

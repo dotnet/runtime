@@ -333,7 +333,7 @@ dump_methoddef (MonoImage *metadata, guint32 token)
 static void
 dump_dotnet_iinfo (MonoImage *image)
 {
-	MonoCLIImageInfo *iinfo = image->image_info;
+	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
 
 	dump_dotnet_header (&iinfo->cli_header);
 	dump_sections (iinfo);
@@ -385,7 +385,7 @@ dump_verify_info (MonoImage *image, int flags)
 			}
 
 			for (tmp = errors; tmp; tmp = tmp->next) {
-				MonoVerifyInfo *info = tmp->data;
+				MonoVerifyInfo *info = (MonoVerifyInfo *)tmp->data;
 				g_print ("%s: %s\n", desc [info->status], info->message);
 				if (info->status == MONO_VERIFY_ERROR) {
 					count++;
@@ -504,7 +504,7 @@ verify_image_file (const char *fname)
 
 invalid_image:
 	for (tmp = errors; tmp; tmp = tmp->next) {
-		MonoVerifyInfo *info = tmp->data;
+		MonoVerifyInfo *info = (MonoVerifyInfo *)tmp->data;
 		g_print ("%s: %s\n", desc [info->status], info->message);
 		if (info->status == MONO_VERIFY_ERROR)
 			count++;
@@ -610,7 +610,7 @@ pedump_assembly_search_hook (MonoAssemblyName *aname, gpointer user_data)
         GList *tmp;
 
        for (tmp = loaded_assemblies; tmp; tmp = tmp->next) {
-               MonoAssembly *ass = tmp->data;
+               MonoAssembly *ass = (MonoAssembly *)tmp->data;
                if (mono_assembly_names_equal (aname, &ass->aname))
 		       return ass;
        }

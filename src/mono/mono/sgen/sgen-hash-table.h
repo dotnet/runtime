@@ -42,9 +42,9 @@ void sgen_init_hash_table (void);
 
 #define sgen_hash_table_num_entries(h)	((h)->num_entries)
 
-#define sgen_hash_table_key_for_value_pointer(v)	(((SgenHashTableEntry*)((char*)(v) - G_STRUCT_OFFSET (SgenHashTableEntry, data)))->key)
+#define sgen_hash_table_key_for_value_pointer(v)	((GCObject *)(((SgenHashTableEntry*)((char*)(v) - G_STRUCT_OFFSET (SgenHashTableEntry, data)))->key))
 
-#define SGEN_HASH_TABLE_FOREACH(h,k,v) do {				\
+#define SGEN_HASH_TABLE_FOREACH(h,tk,k,tv,v) do {				\
 		SgenHashTable *__hash_table = (h);			\
 		SgenHashTableEntry **__table = __hash_table->table;	\
 		guint __i;						\
@@ -53,8 +53,8 @@ void sgen_init_hash_table (void);
 			for (__iter = &__table [__i]; *__iter; __iter = __next) {	\
 				SgenHashTableEntry *__entry = *__iter;	\
 				__next = &__entry->next;	\
-				(k) = __entry->key;			\
-				(v) = (gpointer)__entry->data;
+				(k) = (tk)__entry->key;			\
+				(v) = (tv)__entry->data;
 
 /* The loop must be continue'd after using this! */
 #define SGEN_HASH_TABLE_FOREACH_REMOVE(free)	do {			\

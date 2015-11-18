@@ -44,14 +44,14 @@ optimize_initlocals (MonoCompile *cfg);
 static inline MonoBitSet* 
 mono_bitset_mp_new (MonoMemPool *mp, guint32 size, guint32 max_size)
 {
-	guint8 *mem = mono_mempool_alloc0 (mp, size);
+	guint8 *mem = (guint8 *)mono_mempool_alloc0 (mp, size);
 	return mono_bitset_mem_new (mem, max_size, MONO_BITSET_DONT_FREE);
 }
 
 static inline MonoBitSet* 
 mono_bitset_mp_new_noinit (MonoMemPool *mp, guint32 size, guint32 max_size)
 {
-	guint8 *mem = mono_mempool_alloc (mp, size);
+	guint8 *mem = (guint8 *)mono_mempool_alloc (mp, size);
 	return mono_bitset_mem_new (mem, max_size, MONO_BITSET_DONT_FREE);
 }
 
@@ -154,7 +154,7 @@ mono_liveness_handle_exception_clauses (MonoCompile *cfg)
 	 * Determine which clauses are outer try clauses, i.e. they are not contained in any
 	 * other non-try clause.
 	 */
-	outer_try = mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * header->num_clauses);
+	outer_try = (gboolean *)mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * header->num_clauses);
 	for (i = 0; i < header->num_clauses; ++i)
 		outer_try [i] = TRUE;
 	/* Iterate over the clauses backward, so outer clauses come first */
@@ -238,7 +238,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 			continue;
 
 		if (ins->opcode == OP_LDADDR) {
-			MonoInst *var = ins->inst_p0;
+			MonoInst *var = (MonoInst *)ins->inst_p0;
 			int idx = var->inst_c0;
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
@@ -660,7 +660,7 @@ mono_linterval_add_range (MonoCompile *cfg, MonoLiveInterval *interval, int from
 		next_range->from = from;
 	} else {
 		/* Insert it */
-		new_range = mono_mempool_alloc (cfg->mempool, sizeof (MonoLiveRange2));
+		new_range = (MonoLiveRange2 *)mono_mempool_alloc (cfg->mempool, sizeof (MonoLiveRange2));
 		new_range->from = from;
 		new_range->to = to;
 		new_range->next = NULL;
@@ -753,8 +753,8 @@ mono_linterval_split (MonoCompile *cfg, MonoLiveInterval *interval, MonoLiveInte
 
 	g_assert (pos > interval->range->from && pos <= interval->last_range->to);
 
-	*i1 = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
-	*i2 = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+	*i1 = (MonoLiveInterval *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+	*i2 = (MonoLiveInterval *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
 
 	for (r = interval->range; r; r = r->next) {
 		if (pos > r->to) {
@@ -889,12 +889,12 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 	last_use = g_new0 (gint32, max_vars);
 
 	reverse_len = 1024;
-	reverse = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * reverse_len);
+	reverse = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * reverse_len);
 
 	for (idx = 0; idx < max_vars; ++idx) {
 		MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
-		vi->interval = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
+		vi->interval = (MonoLiveInterval *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLiveInterval));
 	}
 
 	/*
@@ -941,7 +941,7 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 		for (nins = 0, pos = block_from, ins = bb->code; ins; ins = ins->next, ++nins, ++pos) {
 			if (nins >= reverse_len) {
 				int new_reverse_len = reverse_len * 2;
-				MonoInst **new_reverse = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * new_reverse_len);
+				MonoInst **new_reverse = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * new_reverse_len);
 				memcpy (new_reverse, reverse, sizeof (MonoInst*) * reverse_len);
 				reverse = new_reverse;
 				reverse_len = new_reverse_len;
@@ -1025,17 +1025,17 @@ update_liveness_gc (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 
 
 		/* Add it to the last callsite */
 		g_assert (*callsites);
-		last = (*callsites)->data;
+		last = (GCCallSite *)(*callsites)->data;
 		last->param_slots = g_slist_prepend_mempool (cfg->mempool, last->param_slots, ins);
 	} else if (ins->flags & MONO_INST_GC_CALLSITE) {
-		GCCallSite *callsite = mono_mempool_alloc0 (cfg->mempool, sizeof (GCCallSite));
+		GCCallSite *callsite = (GCCallSite *)mono_mempool_alloc0 (cfg->mempool, sizeof (GCCallSite));
 		int i;
 
 		LIVENESS_DEBUG (printf ("\t%x: ", ins->backend.pc_offset); mono_print_ins (ins));
 		LIVENESS_DEBUG (printf ("\t\tlive: "));
 
 		callsite->bb = bb;
-		callsite->liveness = mono_mempool_alloc0 (cfg->mempool, ALIGN_TO (cfg->num_varinfo, 8) / 8);
+		callsite->liveness = (guint8 *)mono_mempool_alloc0 (cfg->mempool, ALIGN_TO (cfg->num_varinfo, 8) / 8);
 		callsite->pc_offset = ins->backend.pc_offset;
 		for (i = 0; i < cfg->num_varinfo; ++i) {
 			if (last_use [i] != 0) {
@@ -1091,7 +1091,7 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 	}
 
 	reverse_len = 1024;
-	reverse = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * reverse_len);
+	reverse = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * reverse_len);
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins;
@@ -1133,7 +1133,7 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 		for (nins = 0, pos = block_from, ins = bb->code; ins; ins = ins->next, ++nins, ++pos) {
 			if (nins >= reverse_len) {
 				int new_reverse_len = reverse_len * 2;
-				MonoInst **new_reverse = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * new_reverse_len);
+				MonoInst **new_reverse = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * new_reverse_len);
 				memcpy (new_reverse, reverse, sizeof (MonoInst*) * reverse_len);
 				reverse = new_reverse;
 				reverse_len = new_reverse_len;

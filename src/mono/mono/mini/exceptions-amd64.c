@@ -167,7 +167,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	/* restore_contect (MonoContext *ctx) */
 
-	start = code = mono_global_codeman_reserve (256);
+	start = code = (guint8 *)mono_global_codeman_reserve (256);
 
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG1, 8);
 
@@ -226,7 +226,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	GSList *unwind_ops = NULL;
 	const guint kMaxCodeSize = NACL_SIZE (128, 256);
 
-	start = code = mono_global_codeman_reserve (kMaxCodeSize);
+	start = code = (guint8 *)mono_global_codeman_reserve (kMaxCodeSize);
 
 	/* call_filter (MonoContext *ctx, unsigned long eip) */
 	code = start;
@@ -381,7 +381,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	dummy_stack_space = 0;
 #endif
 
-	start = code = mono_global_codeman_reserve (kMaxCodeSize);
+	start = code = (guint8 *)mono_global_codeman_reserve (kMaxCodeSize);
 
 	/* The stack is unaligned on entry */
 	stack_size = ALIGN_TO (sizeof (MonoContext) + 64 + dummy_stack_space, MONO_ARCH_FRAME_ALIGNMENT) + 8;
@@ -561,9 +561,9 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		for (i = 0; i < AMD64_NREG; ++i)
 			regs [i] = new_ctx->gregs [i];
 
-		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
+		mono_unwind_frame (unwind_info, unwind_info_len, (guint8 *)ji->code_start,
 						   (guint8*)ji->code_start + ji->code_size,
-						   ip, epilog ? &epilog : NULL, regs, MONO_MAX_IREGS + 1,
+						   (guint8 *)ip, epilog ? &epilog : NULL, regs, MONO_MAX_IREGS + 1,
 						   save_locations, MONO_MAX_IREGS, &cfa);
 
 		for (i = 0; i < AMD64_NREG; ++i)
@@ -590,7 +590,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 			memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
 
-			*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~7);
+			*lmf = (MonoLMF *)(((guint64)(*lmf)->previous_lmf) & ~7);
 
 			frame->type = FRAME_TYPE_DEBUGGER_INVOKE;
 
@@ -615,7 +615,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			rip = *(guint64*)((*lmf)->rsp - sizeof(mgreg_t));
 		}
 
-		ji = mini_jit_info_table_find (domain, (gpointer)rip, NULL);
+		ji = mini_jit_info_table_find (domain, (char *)rip, NULL);
 		/*
 		 * FIXME: ji == NULL can happen when a managed-to-native wrapper is interrupted
 		 * in the soft debugger suspend code, since (*lmf)->rsp no longer points to the
@@ -652,7 +652,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			}
 		}
 
-		*lmf = (gpointer)(((guint64)(*lmf)->previous_lmf) & ~7);
+		*lmf = (MonoLMF *)(((guint64)(*lmf)->previous_lmf) & ~7);
 
 		return TRUE;
 	}
@@ -668,12 +668,12 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 static void
 handle_signal_exception (gpointer obj)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
 	MonoContext ctx;
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
-	mono_handle_exception (&ctx, obj);
+	mono_handle_exception (&ctx, (MonoObject *)obj);
 
 	mono_restore_context (&ctx);
 }
@@ -715,7 +715,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj)
 	 * signal is disabled, and we could run arbitrary code though the debugger. So
 	 * resume into the normal stack and do most work there if possible.
 	 */
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
 
 	/* Pass the ctx parameter in TLS */
 	mono_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
@@ -756,7 +756,7 @@ mono_arch_ip_from_context (void *sigctx)
 static void
 restore_soft_guard_pages (void)
 {
-	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_native_tls_get_value (mono_jit_tls_id);
 	if (jit_tls->stack_ovf_guard_base)
 		mono_mprotect (jit_tls->stack_ovf_guard_base, jit_tls->stack_ovf_guard_size, MONO_MMAP_NONE);
 }
@@ -771,7 +771,7 @@ static void
 prepare_for_guard_pages (MonoContext *mctx)
 {
 	gpointer *sp;
-	sp = (gpointer)(mctx->gregs [AMD64_RSP]);
+	sp = (gpointer *)(mctx->gregs [AMD64_RSP]);
 	sp -= 1;
 	/* the return addr */
 	sp [0] = (gpointer)(mctx->gregs [AMD64_RIP]);
@@ -780,7 +780,7 @@ prepare_for_guard_pages (MonoContext *mctx)
 }
 
 static void
-altstack_handle_and_restore (MonoContext *ctx, gpointer obj, gboolean stack_ovf)
+altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, gboolean stack_ovf)
 {
 	MonoContext mctx;
 
@@ -797,7 +797,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 {
 #if defined(MONO_ARCH_USE_SIGACTION)
 	MonoException *exc = NULL;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)UCONTEXT_REG_RIP (sigctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (char *)UCONTEXT_REG_RIP (sigctx), NULL);
 	gpointer *sp;
 	int frame_size;
 	MonoContext *copied_ctx;
@@ -818,8 +818,8 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 4 + 128;
 	frame_size += 15;
 	frame_size &= ~15;
-	sp = (gpointer)(UCONTEXT_REG_RSP (sigctx) & ~15);
-	sp = (gpointer)((char*)sp - frame_size);
+	sp = (gpointer *)(UCONTEXT_REG_RSP (sigctx) & ~15);
+	sp = (gpointer *)((char*)sp - frame_size);
 	copied_ctx = (MonoContext*)(sp + 4);
 	/* the arguments must be aligned */
 	sp [-1] = (gpointer)UCONTEXT_REG_RIP (sigctx);
@@ -882,7 +882,7 @@ mono_arch_exceptions_init (void)
 		/* Call this to avoid initialization races */
 		tramps = mono_amd64_get_exception_trampolines (FALSE);
 		for (l = tramps; l; l = l->next) {
-			MonoTrampInfo *info = l->data;
+			MonoTrampInfo *info = (MonoTrampInfo *)l->data;
 
 			mono_register_jit_icall (info->code, g_strdup (info->name), NULL, TRUE);
 			mono_tramp_info_register (info, NULL);
@@ -1145,7 +1145,7 @@ mono_tasklets_arch_restore (void)
 
 	if (saved)
 		return (MonoContinuationRestore)saved;
-	code = start = mono_global_codeman_reserve (kMaxCodeSize);
+	code = start = (guint8 *)mono_global_codeman_reserve (kMaxCodeSize);
 	/* the signature is: restore (MonoContinuation *cont, int state, MonoLMF **lmf_addr) */
 	/* cont is in AMD64_ARG_REG1 ($rcx or $rdi)
 	 * state is in AMD64_ARG_REG2 ($rdx or $rsi)

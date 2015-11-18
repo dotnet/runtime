@@ -58,8 +58,8 @@ mono_local_cprop (MonoCompile *cfg)
 restart:
 
 	max = cfg->next_vreg;
-	defs = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * (cfg->next_vreg + 1));
-	def_index = mono_mempool_alloc (cfg->mempool, sizeof (guint32) * (cfg->next_vreg + 1));
+	defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * (cfg->next_vreg + 1));
+	def_index = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (guint32) * (cfg->next_vreg + 1));
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins;
@@ -107,7 +107,7 @@ restart:
 
 			/* FIXME: Optimize this */
 			if (ins->opcode == OP_LDADDR) {
-				MonoInst *var = ins->inst_p0;
+				MonoInst *var = (MonoInst *)ins->inst_p0;
 
 				defs [var->dreg] = NULL;
 				/*

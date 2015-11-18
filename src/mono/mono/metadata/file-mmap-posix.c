@@ -342,7 +342,7 @@ open_memory_map (MonoString *mapName, int mode, gint64 *capacity, int access, in
 			*error = COULD_NOT_MAP_MEMORY;
 			goto done;
 		}
-		file_name = alloca (alloc_size);
+		file_name = (char *)alloca (alloc_size);
 		strcpy (file_name, tmp_dir);
 		strcat (file_name, MONO_ANON_FILE_TEMPLATE);
 
@@ -391,7 +391,7 @@ mono_mmap_open_file (MonoString *path, int mode, MonoString *mapName, gint64 *ca
 			*error = FILE_ALREADY_EXISTS;
 			handle = NULL;
 		} else {
-			handle = open_file_map (path, -1, mode, capacity, access, options, error);
+			handle = (MmapHandle *)open_file_map (path, -1, mode, capacity, access, options, error);
 			if (handle) {
 				handle->name = g_strdup (c_mapName);
 				g_hash_table_insert (named_regions, handle->name, handle);
@@ -411,7 +411,7 @@ mono_mmap_open_handle (void *input_fd, MonoString *mapName, gint64 *capacity, in
 {
 	MmapHandle *handle;
 	if (!mapName) {
-		handle = open_file_map (NULL, GPOINTER_TO_INT (input_fd), FILE_MODE_OPEN, capacity, access, options, error);
+		handle = (MmapHandle *)open_file_map (NULL, GPOINTER_TO_INT (input_fd), FILE_MODE_OPEN, capacity, access, options, error);
 	} else {
 		char *c_mapName = mono_string_to_utf8 (mapName);
 
@@ -422,7 +422,7 @@ mono_mmap_open_handle (void *input_fd, MonoString *mapName, gint64 *capacity, in
 			handle = NULL;
 		} else {
 			//XXX we're exploiting wapi HANDLE == FD equivalence. THIS IS FRAGILE, create a _wapi_handle_to_fd call
-			handle = open_file_map (NULL, GPOINTER_TO_INT (input_fd), FILE_MODE_OPEN, capacity, access, options, error);
+			handle = (MmapHandle *)open_file_map (NULL, GPOINTER_TO_INT (input_fd), FILE_MODE_OPEN, capacity, access, options, error);
 			handle->name = g_strdup (c_mapName);
 			g_hash_table_insert (named_regions, handle->name, handle);
 		}
@@ -436,7 +436,7 @@ mono_mmap_open_handle (void *input_fd, MonoString *mapName, gint64 *capacity, in
 void
 mono_mmap_close (void *mmap_handle)
 {
-	MmapHandle *handle = mmap_handle;
+	MmapHandle *handle = (MmapHandle *)mmap_handle;
 
 	named_regions_lock ();
 	--handle->ref_count;
@@ -454,7 +454,7 @@ mono_mmap_close (void *mmap_handle)
 void
 mono_mmap_configure_inheritability (void *mmap_handle, gboolean inheritability)
 {
-	MmapHandle *h = mmap_handle;
+	MmapHandle *h = (MmapHandle *)mmap_handle;
 	int fd, flags;
 
 	fd = h->fd;
@@ -469,7 +469,7 @@ mono_mmap_configure_inheritability (void *mmap_handle, gboolean inheritability)
 void
 mono_mmap_flush (void *mmap_handle)
 {
-	MmapInstance *h = mmap_handle;
+	MmapInstance *h = (MmapInstance *)mmap_handle;
 
 	if (h)
 		msync (h->address, h->length, MS_SYNC);
@@ -479,7 +479,7 @@ int
 mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mmap_handle, void **base_address)
 {
 	gint64 mmap_offset = 0;
-	MmapHandle *fh = handle;
+	MmapHandle *fh = (MmapHandle *)handle;
 	MmapInstance res = { 0 };
 	size_t eff_size = *size;
 	struct stat buf = { 0 };
@@ -518,7 +518,7 @@ gboolean
 mono_mmap_unmap (void *mmap_handle)
 {
 	int res = 0;
-	MmapInstance *h = mmap_handle;
+	MmapInstance *h = (MmapInstance *)mmap_handle;
 
 	res = mono_file_unmap (h->address, h->free_handle);
 

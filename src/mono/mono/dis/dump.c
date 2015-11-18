@@ -661,14 +661,14 @@ dump_table_methodimpl (MonoImage *m)
 
 	for (i = 1; i <= t->rows; i++){
 		guint32 cols [MONO_METHODIMPL_SIZE];
-		char *class, *impl, *decl;
+		char *klass, *impl, *decl;
 
 		mono_metadata_decode_row (t, i - 1, cols, MONO_METHODIMPL_SIZE);
-		class = get_typedef (m, cols [MONO_METHODIMPL_CLASS]);
+		klass = get_typedef (m, cols [MONO_METHODIMPL_CLASS]);
 		impl = get_method (m, method_dor_to_token (cols [MONO_METHODIMPL_BODY]), NULL);
 		decl = get_method (m, method_dor_to_token (cols [MONO_METHODIMPL_DECLARATION]), NULL);
-		fprintf (output, "%d: %s\n\tdecl: %s\n\timpl: %s\n", i, class, decl, impl);
-		g_free (class);
+		fprintf (output, "%d: %s\n\tdecl: %s\n\timpl: %s\n", i, klass, decl, impl);
+		g_free (klass);
 		g_free (impl);
 		g_free (decl);
 	}

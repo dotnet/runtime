@@ -107,7 +107,7 @@ sgen_pin_stats_register_address (char *addr, int pin_type)
 			node_ptr = &node->right;
 	}
 
-	node = sgen_alloc_internal_dynamic (sizeof (PinStatAddress), INTERNAL_MEM_STATISTICS, TRUE);
+	node = (PinStatAddress *)sgen_alloc_internal_dynamic (sizeof (PinStatAddress), INTERNAL_MEM_STATISTICS, TRUE);
 	node->addr = addr;
 	node->pin_types = pin_type_bit;
 	node->left = node->right = NULL;
@@ -161,7 +161,7 @@ register_vtable (GCVTable vtable, int pin_types)
 	int i;
 
 	memset (&empty_entry, 0, sizeof (PinnedClassEntry));
-	entry = lookup_vtable_entry (&pinned_class_hash_table, vtable, &empty_entry);
+	entry = (PinnedClassEntry *)lookup_vtable_entry (&pinned_class_hash_table, vtable, &empty_entry);
 
 	for (i = 0; i < PIN_TYPE_MAX; ++i) {
 		if (pin_types & (1 << i))
@@ -194,7 +194,7 @@ sgen_pin_stats_register_global_remset (GCObject *obj)
 		return;
 
 	memset (&empty_entry, 0, sizeof (GlobalRemsetClassEntry));
-	entry = lookup_vtable_entry (&global_remset_class_hash_table, SGEN_LOAD_VTABLE (obj), &empty_entry);
+	entry = (GlobalRemsetClassEntry *)lookup_vtable_entry (&global_remset_class_hash_table, SGEN_LOAD_VTABLE (obj), &empty_entry);
 
 	++entry->num_remsets;
 }
@@ -210,7 +210,7 @@ sgen_pin_stats_print_class_stats (void)
 		return;
 
 	mono_gc_printf (gc_debug_file, "\n%-50s  %10s  %10s  %10s\n", "Class", "Stack", "Static", "Other");
-	SGEN_HASH_TABLE_FOREACH (&pinned_class_hash_table, name, pinned_entry) {
+	SGEN_HASH_TABLE_FOREACH (&pinned_class_hash_table, char *, name, PinnedClassEntry *, pinned_entry) {
 		int i;
 		mono_gc_printf (gc_debug_file, "%-50s", name);
 		for (i = 0; i < PIN_TYPE_MAX; ++i)
@@ -219,7 +219,7 @@ sgen_pin_stats_print_class_stats (void)
 	} SGEN_HASH_TABLE_FOREACH_END;
 
 	mono_gc_printf (gc_debug_file, "\n%-50s  %10s\n", "Class", "#Remsets");
-	SGEN_HASH_TABLE_FOREACH (&global_remset_class_hash_table, name, remset_entry) {
+	SGEN_HASH_TABLE_FOREACH (&global_remset_class_hash_table, char *, name, GlobalRemsetClassEntry *, remset_entry) {
 		mono_gc_printf (gc_debug_file, "%-50s  %10ld\n", name, remset_entry->num_remsets);
 	} SGEN_HASH_TABLE_FOREACH_END;
 

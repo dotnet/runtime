@@ -203,12 +203,12 @@ static void
 filter_jobs_for_domain (gpointer key, gpointer value, gpointer user_data)
 {
 	FilterSockaresForDomainData *data;
-	MonoMList *list = value, *element;
+	MonoMList *list = (MonoMList *)value, *element;
 	MonoDomain *domain;
 	MonoGHashTable *states;
 
 	g_assert (user_data);
-	data = user_data;
+	data = (FilterSockaresForDomainData *)user_data;
 	domain = data->domain;
 	states = data->states;
 
@@ -259,7 +259,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		gint operations;
 
 		g_assert (user_data);
-		states = user_data;
+		states = (MonoGHashTable *)user_data;
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_THREADPOOL, "io threadpool: cal fd %3d, events = %2s | %2s | %3s",
 			fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..", (events & EVENT_ERR) ? "ERR" : "...");
@@ -508,7 +508,7 @@ initialize (void)
 
 	mono_coop_mutex_init (&threadpool_io->updates_lock);
 	mono_coop_cond_init (&threadpool_io->updates_cond);
-	mono_gc_register_root ((void*)&threadpool_io->updates [0], sizeof (threadpool_io->updates), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_THREAD_POOL, "i/o thread pool updates list");
+	mono_gc_register_root ((char *)&threadpool_io->updates [0], sizeof (threadpool_io->updates), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_THREAD_POOL, "i/o thread pool updates list");
 
 	threadpool_io->updates_size = 0;
 

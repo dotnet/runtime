@@ -62,8 +62,8 @@ static int verbose_level;
 		(r)->next = NULL;\
 	} while (0)
 
-#define MONO_NEGATED_RELATION(r) ((~(r))&MONO_ANY_RELATION)
-#define MONO_SYMMETRIC_RELATION(r) (((r)&MONO_EQ_RELATION)|(((r)&MONO_LT_RELATION)<<1)|((r&MONO_GT_RELATION)>>1))
+#define MONO_NEGATED_RELATION(r) ((MonoValueRelation)((~(r))&MONO_ANY_RELATION))
+#define MONO_SYMMETRIC_RELATION(r) ((MonoValueRelation)(((r)&MONO_EQ_RELATION)|(((r)&MONO_LT_RELATION)<<1)|((r&MONO_GT_RELATION)>>1)))
 
 
 
@@ -905,7 +905,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 			
 			current_context = father_context;
 			while (current_context != last_context) {
-				current_context->status |= recursive_status;
+				current_context->status = (MonoRelationsEvaluationStatus)(current_context->status | recursive_status);
 				current_context = current_context->father;
 			}
 		} else {
@@ -1029,7 +1029,7 @@ add_non_null (MonoVariableRelationsEvaluationArea *area, MonoCompile *cfg, int r
 {
 	MonoAdditionalVariableRelation *rel;
 
-	rel = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
+	rel = (MonoAdditionalVariableRelation *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
 	rel->variable = reg;
 	rel->relation.relation = MONO_GT_RELATION;
 	rel->relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
@@ -1106,7 +1106,7 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 
 			/* We can derive additional relations from the bounds check */
 			if (ins->opcode != OP_NOP) {
-				rel = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
+				rel = (MonoAdditionalVariableRelation *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
 				rel->variable = index_var;
 				rel->relation.relation = MONO_LT_RELATION;
 				rel->relation.related_value.type = MONO_VARIABLE_SUMMARIZED_VALUE;
@@ -1117,7 +1117,7 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 
 				check_relations = g_slist_append_mempool (cfg->mempool, check_relations, rel);
 
-				rel = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
+				rel = (MonoAdditionalVariableRelation *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoAdditionalVariableRelation));
 				rel->variable = index_var;
 				rel->relation.relation = MONO_GE_RELATION;
 				rel->relation.related_value.type = MONO_CONSTANT_SUMMARIZED_VALUE;
@@ -1193,7 +1193,7 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 	}
 
 	for (l = check_relations; l; l = l->next)
-		remove_change_from_evaluation_area (l->data);
+		remove_change_from_evaluation_area ((MonoAdditionalVariableRelation *)l->data);
 	
 	remove_change_from_evaluation_area (&(additional_relations.relation1));
 	remove_change_from_evaluation_area (&(additional_relations.relation2));
@@ -1224,10 +1224,10 @@ type_to_value_kind (MonoType *type)
 		return MONO_UNSIGNED_INTEGER_VALUE_SIZE_4;
 		break;
 	case MONO_TYPE_I:
-		return SIZEOF_VOID_P;
+		return (MonoIntegerValueKind)SIZEOF_VOID_P;
 		break;
 	case MONO_TYPE_U:
-		return (MONO_UNSIGNED_VALUE_FLAG|SIZEOF_VOID_P);
+		return (MonoIntegerValueKind)(MONO_UNSIGNED_VALUE_FLAG | SIZEOF_VOID_P);
 		break;
 	case MONO_TYPE_I8:
 		return MONO_INTEGER_VALUE_SIZE_8;
@@ -1275,7 +1275,7 @@ mono_perform_abc_removal (MonoCompile *cfg)
 		mono_mempool_alloc (cfg->mempool, sizeof (MonoRelationsEvaluationContext) * (cfg->next_vreg));
 	area.variable_value_kind = (MonoIntegerValueKind *)
 		mono_mempool_alloc (cfg->mempool, sizeof (MonoIntegerValueKind) * (cfg->next_vreg));
-	area.defs = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);
+	area.defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * cfg->next_vreg);
 	for (i = 0; i < cfg->next_vreg; i++) {
 		area.variable_value_kind [i] = MONO_UNKNOWN_INTEGER_VALUE;
 		area.relations [i].relation = MONO_EQ_RELATION;

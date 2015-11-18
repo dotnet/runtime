@@ -522,7 +522,7 @@ static char*
 pstrdup (const char *s)
 {
 	int len = strlen (s) + 1;
-	char *p = malloc (len);
+	char *p = (char *)malloc (len);
 	memcpy (p, s, len);
 	return p;
 }
@@ -530,7 +530,7 @@ pstrdup (const char *s)
 static StatBuffer*
 create_stat_buffer (void)
 {
-	StatBuffer* buf = alloc_buffer (BUFFER_SIZE);
+	StatBuffer* buf = (StatBuffer *)alloc_buffer (BUFFER_SIZE);
 	buf->size = BUFFER_SIZE;
 	buf->data_end = (uintptr_t*)((unsigned char*)buf + buf->size);
 	buf->data = buf->buf;
@@ -540,7 +540,7 @@ create_stat_buffer (void)
 static LogBuffer*
 create_buffer (void)
 {
-	LogBuffer* buf = alloc_buffer (BUFFER_SIZE);
+	LogBuffer* buf = (LogBuffer *)alloc_buffer (BUFFER_SIZE);
 	buf->size = BUFFER_SIZE;
 	buf->time_base = current_time ();
 	buf->last_time = buf->time_base;
@@ -571,29 +571,29 @@ ensure_logbuf_inner (LogBuffer *old, int bytes)
 	if (old && old->data + bytes + 100 < old->data_end)
 		return old;
 
-	LogBuffer *new = create_buffer ();
-	new->thread_id = thread_id ();
-	new->next = old;
+	LogBuffer *new_ = (LogBuffer *)create_buffer ();
+	new_->thread_id = thread_id ();
+	new_->next = old;
 
 	if (old)
-		new->call_depth = old->call_depth;
+		new_->call_depth = old->call_depth;
 
-	return new;
+	return new_;
 }
 
 static LogBuffer*
 ensure_logbuf (int bytes)
 {
 	LogBuffer *old = TLS_GET (LogBuffer, tlsbuffer);
-	LogBuffer *new = ensure_logbuf_inner (old, bytes);
+	LogBuffer *new_ = ensure_logbuf_inner (old, bytes);
 
-	if (new == old)
+	if (new_ == old)
 		return old; // Still enough space.
 
-	TLS_SET (tlsbuffer, new);
+	TLS_SET (tlsbuffer, new_);
 	init_thread ();
 
-	return new;
+	return new_;
 }
 
 static void
@@ -720,7 +720,7 @@ register_method_local (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji)
 		 */
 		//g_assert (ji);
 
-		MethodInfo *info = malloc (sizeof (MethodInfo));
+		MethodInfo *info = (MethodInfo *)malloc (sizeof (MethodInfo));
 
 		info->method = method;
 		info->ji = ji;
@@ -845,7 +845,7 @@ dump_header (MonoProfiler *profiler)
 static void
 send_buffer (MonoProfiler *prof, GPtrArray *methods, LogBuffer *buffer)
 {
-	WriterQueueEntry *entry = calloc (1, sizeof (WriterQueueEntry));
+	WriterQueueEntry *entry = (WriterQueueEntry *)calloc (1, sizeof (WriterQueueEntry));
 	mono_lock_free_queue_node_init (&entry->node, FALSE);
 	entry->methods = methods;
 	entry->buffer = buffer;
@@ -1056,7 +1056,7 @@ static int num_frames = MAX_FRAMES;
 static mono_bool
 walk_stack (MonoMethod *method, int32_t native_offset, int32_t il_offset, mono_bool managed, void* data)
 {
-	FrameData *frame = data;
+	FrameData *frame = (FrameData *)data;
 	if (method && frame->count < num_frames) {
 		frame->il_offsets [frame->count] = il_offset;
 		frame->native_offsets [frame->count] = native_offset;
@@ -1271,7 +1271,7 @@ type_name (MonoClass *klass)
 	char buf [1024];
 	char *p;
 	push_nesting (buf, klass);
-	p = malloc (strlen (buf) + 1);
+	p = (char *)malloc (strlen (buf) + 1);
 	strcpy (p, buf);
 	return p;
 }
@@ -1595,7 +1595,7 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 	char *name;
 	LogBuffer *logbuffer;
 	if (type == MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE) {
-		name = data;
+		name = (char *)data;
 		nlen = strlen (name) + 1;
 	} else {
 		name = NULL;
@@ -1959,7 +1959,7 @@ typedef struct {
 static mono_bool
 async_walk_stack (MonoMethod *method, MonoDomain *domain, void *base_address, int offset, void *data)
 {
-	AsyncFrameData *frame = data;
+	AsyncFrameData *frame = (AsyncFrameData *)data;
 	if (frame->count < num_frames) {
 		frame->data [frame->count].method = method;
 		frame->data [frame->count].domain = domain;
@@ -2017,7 +2017,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 		do {
 			oldsb = profiler->stat_buffers;
 			sbuf->next = oldsb;
-			foundsb = InterlockedCompareExchangePointer ((void * volatile*)&profiler->stat_buffers, sbuf, oldsb);
+			foundsb = (StatBuffer *)InterlockedCompareExchangePointer ((void * volatile*)&profiler->stat_buffers, sbuf, oldsb);
 		} while (foundsb != oldsb);
 		if (do_debug)
 			ign_res (write (2, "overflow\n", 9));
@@ -2032,7 +2032,7 @@ mono_sample_hit (MonoProfiler *profiler, unsigned char *ip, void *context)
 	do {
 		old_data = sbuf->data;
 		new_data = old_data + SAMPLE_EVENT_SIZE_IN_SLOTS (bt_data.count);
-		data = InterlockedCompareExchangePointer ((void * volatile*)&sbuf->data, new_data, old_data);
+		data = (uintptr_t *)InterlockedCompareExchangePointer ((void * volatile*)&sbuf->data, new_data, old_data);
 	} while (data != old_data);
 	if (old_data >= sbuf->data_end)
 		return; /* lost event */
@@ -2089,7 +2089,7 @@ add_code_pointer (uintptr_t ip)
 		size_code_pages *= 2;
 		if (size_code_pages == 0)
 			size_code_pages = 16;
-		n = calloc (sizeof (uintptr_t) * size_code_pages, 1);
+		n = (uintptr_t *)calloc (sizeof (uintptr_t) * size_code_pages, 1);
 		for (i = 0; i < old_size; ++i) {
 			if (code_pages [i])
 				add_code_page (n, size_code_pages, code_pages [i]);
@@ -2425,7 +2425,7 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 	g_ptr_array_sort (prof->sorted_sample_events, compare_sample_events);
 
 	for (guint sidx = 0; sidx < prof->sorted_sample_events->len; sidx++) {
-		uintptr_t *sample = g_ptr_array_index (prof->sorted_sample_events, sidx);
+		uintptr_t *sample = (uintptr_t *)g_ptr_array_index (prof->sorted_sample_events, sidx);
 		int count = sample [0] & 0xff;
 		int mbt_count = (sample [0] & 0xff00) >> 8;
 		int type = sample [0] >> 16;
@@ -2438,7 +2438,7 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 			void *address = (void*)managed_sample_base [i * 4 + 2];
 
 			if (!method) {
-				MonoJitInfo *ji = mono_jit_info_table_find (domain, address);
+				MonoJitInfo *ji = mono_jit_info_table_find (domain, (char *)address);
 
 				if (ji)
 					managed_sample_base [i * 4 + 0] = (uintptr_t)mono_jit_info_get_method (ji);
@@ -2795,7 +2795,7 @@ counters_add_agent (MonoCounter *counter)
 		}
 	}
 
-	agent = malloc (sizeof (MonoCounterAgent));
+	agent = (MonoCounterAgent *)malloc (sizeof (MonoCounterAgent));
 	agent->counter = counter;
 	agent->value = NULL;
 	agent->value_size = 0;
@@ -3275,7 +3275,7 @@ parse_generic_type_names(char *name)
 	if (name == NULL || *name == '\0')
 		return g_strdup ("");
 
-	if (!(ret = new_name = calloc (strlen (name) * 4 + 1, sizeof (char))))
+	if (!(ret = new_name = (char *)calloc (strlen (name) * 4 + 1, sizeof (char))))
 		return NULL;
 
 	do {
@@ -3340,7 +3340,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	method_name = mono_method_get_name (method);
 
 	if (coverage_data->len != 0) {
-		CoverageEntry *entry = coverage_data->pdata[0];
+		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[0];
 		first_filename = entry->filename ? entry->filename : "";
 	} else
 		first_filename = "";
@@ -3377,7 +3377,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	safe_send (prof, logbuffer);
 
 	for (i = 0; i < coverage_data->len; i++) {
-		CoverageEntry *entry = coverage_data->pdata[i];
+		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[i];
 
 		logbuffer = ensure_logbuf (
 			EVENT_SIZE /* event */ +
@@ -3473,7 +3473,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 static void
 get_coverage_for_image (MonoImage *image, int *number_of_methods, guint *fully_covered, int *partially_covered)
 {
-	MonoLockFreeQueue *image_methods = mono_conc_hashtable_lookup (image_to_methods, image);
+	MonoLockFreeQueue *image_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (image_to_methods, image);
 
 	*number_of_methods = mono_image_get_table_rows (image, MONO_TABLE_METHOD);
 	if (image_methods)
@@ -3570,7 +3570,7 @@ process_method_enter_coverage (MonoProfiler *prof, MonoMethod *method)
 static MonoLockFreeQueueNode *
 create_method_node (MonoMethod *method)
 {
-	MethodNode *node = g_malloc (sizeof (MethodNode));
+	MethodNode *node = (MethodNode *)g_malloc (sizeof (MethodNode));
 	mono_lock_free_queue_node_init ((MonoLockFreeQueueNode *) node, FALSE);
 	node->method = method;
 
@@ -3631,7 +3631,7 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 		has_positive = FALSE;
 		found = FALSE;
 		for (guint i = 0; i < prof->coverage_filters->len; ++i) {
-			char *filter = g_ptr_array_index (prof->coverage_filters, i);
+			char *filter = (char *)g_ptr_array_index (prof->coverage_filters, i);
 
 			if (filter [0] == '+') {
 				filter = &filter [1];
@@ -3662,7 +3662,7 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 
 		for (guint i = 0; i < prof->coverage_filters->len; ++i) {
 			// FIXME: Is substring search sufficient?
-			char *filter = g_ptr_array_index (prof->coverage_filters, i);
+			char *filter = (char *)g_ptr_array_index (prof->coverage_filters, i);
 			if (filter [0] == '+')
 				continue;
 
@@ -3701,10 +3701,10 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	mono_conc_hashtable_insert (coverage_assemblies, assembly, assembly);
 	mono_os_mutex_unlock (&coverage_mutex);
 
-	image_methods = mono_conc_hashtable_lookup (image_to_methods, image);
+	image_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (image_to_methods, image);
 
 	if (image_methods == NULL) {
-		image_methods = g_malloc (sizeof (MonoLockFreeQueue));
+		image_methods = (MonoLockFreeQueue *)g_malloc (sizeof (MonoLockFreeQueue));
 		mono_lock_free_queue_init (image_methods);
 		mono_os_mutex_lock (&coverage_mutex);
 		mono_conc_hashtable_insert (image_to_methods, image, image_methods);
@@ -3714,10 +3714,10 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	node = create_method_node (method);
 	mono_lock_free_queue_enqueue (image_methods, node);
 
-	class_methods = mono_conc_hashtable_lookup (coverage_classes, klass);
+	class_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (coverage_classes, klass);
 
 	if (class_methods == NULL) {
-		class_methods = g_malloc (sizeof (MonoLockFreeQueue));
+		class_methods = (MonoLockFreeQueue *)g_malloc (sizeof (MonoLockFreeQueue));
 		mono_lock_free_queue_init (class_methods);
 		mono_os_mutex_lock (&coverage_mutex);
 		mono_conc_hashtable_insert (coverage_classes, klass, class_methods);
@@ -3756,7 +3756,7 @@ get_file_content (FILE *stream)
 	if (filesize > MAX_FILE_SIZE)
 	  return NULL;
 
-	buffer = g_malloc ((filesize + 1) * sizeof (char));
+	buffer = (char *)g_malloc ((filesize + 1) * sizeof (char));
 	while ((bytes_read = fread (buffer + offset, 1, LINE_BUFFER_SIZE, stream)) > 0)
 		offset += bytes_read;
 
@@ -3932,7 +3932,7 @@ new_filename (const char* filename)
 		1900 + ts->tm_year, 1 + ts->tm_mon, ts->tm_mday, ts->tm_hour, ts->tm_min, ts->tm_sec);
 	s_date = strlen (time_buf);
 	s_pid = strlen (pid_buf);
-	d = res = malloc (strlen (filename) + s_date * count_dates + s_pid * count_pids);
+	d = res = (char *)malloc (strlen (filename) + s_date * count_dates + s_pid * count_pids);
 	for (p = filename; *p; p++) {
 		if (*p != '%') {
 			*d++ = *p;
@@ -3967,7 +3967,7 @@ extern void mono_threads_attach_tools_thread (void);
 static void*
 helper_thread (void* arg)
 {
-	MonoProfiler* prof = arg;
+	MonoProfiler* prof = (MonoProfiler *)arg;
 	int command_socket;
 	int len;
 	char buf [64];
@@ -4153,7 +4153,7 @@ start_helper_thread (MonoProfiler* prof)
 static void *
 writer_thread (void *arg)
 {
-	MonoProfiler *prof = arg;
+	MonoProfiler *prof = (MonoProfiler *)arg;
 
 	mono_threads_attach_tools_thread ();
 
@@ -4175,7 +4175,7 @@ writer_thread (void *arg)
 			 * methods have metadata emitted before they're referenced.
 			 */
 			for (guint i = 0; i < entry->methods->len; i++) {
-				MethodInfo *info = g_ptr_array_index (entry->methods, i);
+				MethodInfo *info = (MethodInfo *)g_ptr_array_index (entry->methods, i);
 
 				if (mono_conc_hashtable_lookup (prof->method_table, info->method))
 					continue;
@@ -4274,7 +4274,7 @@ create_profiler (const char *filename, GPtrArray *filters)
 	MonoProfiler *prof;
 	char *nf;
 	int force_delete = 0;
-	prof = calloc (1, sizeof (MonoProfiler));
+	prof = (MonoProfiler *)calloc (1, sizeof (MonoProfiler));
 
 	prof->command_port = command_port;
 	if (filename && *filename == '-') {
@@ -4291,7 +4291,7 @@ create_profiler (const char *filename, GPtrArray *filters)
 		nf = new_filename (filename);
 		if (do_report) {
 			int s = strlen (nf) + 32;
-			char *p = malloc (s);
+			char *p = (char *)malloc (s);
 			snprintf (p, s, "|mprof-report '--out=%s' -", nf);
 			free (nf);
 			nf = p;
@@ -4404,7 +4404,7 @@ match_option (const char* p, const char *opt, char **rval)
 				} else {
 					l = end - opt;
 				}
-				val = malloc (l + 1);
+				val = (char *)malloc (l + 1);
 				memcpy (val, opt, l);
 				val [l] = 0;
 				*rval = val;
@@ -4756,7 +4756,7 @@ mono_profiler_startup (const char *desc)
 		mono_profiler_install_statistical (mono_sample_hit);
 	}
 
-	mono_profiler_set_events (events);
+	mono_profiler_set_events ((MonoProfileFlags)events);
 
 	TLS_INIT (tlsbuffer);
 	TLS_INIT (tlsmethodlist);

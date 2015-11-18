@@ -88,11 +88,9 @@ static mono_once_t event_ops_once=MONO_ONCE_INIT;
 static void event_ops_init (void)
 {
 	_wapi_handle_register_capabilities (WAPI_HANDLE_EVENT,
-					    WAPI_HANDLE_CAP_WAIT |
-					    WAPI_HANDLE_CAP_SIGNAL);
+		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL));
 	_wapi_handle_register_capabilities (WAPI_HANDLE_NAMEDEVENT,
-					    WAPI_HANDLE_CAP_WAIT |
-					    WAPI_HANDLE_CAP_SIGNAL);
+		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SIGNAL));
 }
 
 static void event_signal(gpointer handle)

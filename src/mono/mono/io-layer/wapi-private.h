@@ -173,6 +173,8 @@ struct _WapiHandleSharedLayout
 	struct _WapiHandleShared handles[_WAPI_HANDLE_INITIAL_COUNT];
 };
 
+typedef struct _WapiHandleSharedLayout _WapiHandleSharedLayout;
+
 #define _WAPI_FILESHARE_SIZE 102400
 
 struct _WapiFileShare
@@ -197,6 +199,8 @@ struct _WapiFileShareLayout
 	
 	struct _WapiFileShare share_info[_WAPI_FILESHARE_SIZE];
 };
+
+typedef struct _WapiFileShareLayout _WapiFileShareLayout;
 
 
 

@@ -159,11 +159,11 @@ void
 mono_profiler_set_events (MonoProfileFlags events)
 {
 	ProfilerDesc *prof;
-	MonoProfileFlags value = 0;
+	MonoProfileFlags value = (MonoProfileFlags)0;
 	if (prof_list)
 		prof_list->events = events;
 	for (prof = prof_list; prof; prof = prof->next)
-		value |= prof->events;
+		value = (MonoProfileFlags)(value | prof->events);
 	mono_profiler_events = value;
 }
 
@@ -813,7 +813,7 @@ mono_profiler_shutdown (void)
 			prof->shutdown_callback (prof->profiler);
 	}
 
-	mono_profiler_set_events (0);
+	mono_profiler_set_events ((MonoProfileFlags)0);
 }
 
 void
@@ -1018,7 +1018,7 @@ mono_profiler_coverage_alloc (MonoMethod *method, int entries)
 	if (!coverage_hash)
 		coverage_hash = g_hash_table_new (NULL, NULL);
 
-	res = g_malloc0 (sizeof (MonoProfileCoverageInfo) + sizeof (void*) * 2 * entries);
+	res = (MonoProfileCoverageInfo *)g_malloc0 (sizeof (MonoProfileCoverageInfo) + sizeof (void*) * 2 * entries);
 
 	res->entries = entries;
 
@@ -1040,7 +1040,7 @@ mono_profiler_coverage_free (MonoMethod *method)
 		return;
 	}
 
-	info = g_hash_table_lookup (coverage_hash, method);
+	info = (MonoProfileCoverageInfo *)g_hash_table_lookup (coverage_hash, method);
 	if (info) {
 		g_free (info);
 		g_hash_table_remove (coverage_hash, method);
@@ -1073,7 +1073,7 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 
 	mono_profiler_coverage_lock ();
 	if (coverage_hash)
-		info = g_hash_table_lookup (coverage_hash, method);
+		info = (MonoProfileCoverageInfo *)g_hash_table_lookup (coverage_hash, method);
 	mono_profiler_coverage_unlock ();
 
 	if (!info)
@@ -1240,7 +1240,7 @@ mono_profiler_load (const char *desc)
 		gboolean res = FALSE;
 
 		if (col != NULL) {
-			mname = g_memdup (desc, col - desc + 1);
+			mname = (char *)g_memdup (desc, col - desc + 1);
 			mname [col - desc] = 0;
 		} else {
 			mname = g_strdup (desc);

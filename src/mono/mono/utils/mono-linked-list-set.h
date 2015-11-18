@@ -71,7 +71,7 @@ Requires the world to be stoped
 
 #define MONO_LLS_FOREACH_FILTERED(list, element, filter_func, type) {\
 	MonoLinkedListSetNode *__cur;	\
-	for (__cur = (list)->head; __cur; __cur = mono_lls_pointer_unmask (__cur->next)) \
+	for (__cur = (list)->head; __cur; __cur = (MonoLinkedListSetNode *)mono_lls_pointer_unmask (__cur->next)) \
 		if (!mono_lls_pointer_get_mark (__cur->next)) {	\
 			(element) = (type)__cur;			\
 			if (!filter_func (element)) continue;

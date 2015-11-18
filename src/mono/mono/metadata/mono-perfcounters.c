@@ -359,9 +359,9 @@ load_sarea_for_pid (int pid)
 	perfctr_lock ();
 	if (pid_to_shared_area == NULL)
 		pid_to_shared_area = g_hash_table_new (NULL, NULL);
-	data = g_hash_table_lookup (pid_to_shared_area, GINT_TO_POINTER (pid));
+	data = (ExternalSArea *)g_hash_table_lookup (pid_to_shared_area, GINT_TO_POINTER (pid));
 	if (!data) {
-		area = mono_shared_area_for_pid (GINT_TO_POINTER (pid));
+		area = (MonoSharedArea *)mono_shared_area_for_pid (GINT_TO_POINTER (pid));
 		if (area) {
 			data = g_new (ExternalSArea, 1);
 			data->sarea = area;
@@ -369,7 +369,7 @@ load_sarea_for_pid (int pid)
 			g_hash_table_insert (pid_to_shared_area, GINT_TO_POINTER (pid), data);
 		}
 	} else {
-		area = data->sarea;
+		area = (MonoSharedArea *)data->sarea;
 		data->refcount ++;
 	}
 	perfctr_unlock ();
@@ -380,7 +380,7 @@ static void
 unref_pid_unlocked (int pid)
 {
 	ExternalSArea *data;
-	data = g_hash_table_lookup (pid_to_shared_area, GINT_TO_POINTER (pid));
+	data = (ExternalSArea *)g_hash_table_lookup (pid_to_shared_area, GINT_TO_POINTER (pid));
 	if (data) {
 		data->refcount--;
 		if (!data->refcount) {
@@ -539,7 +539,7 @@ mono_perfcounters_init (void)
 
 	mono_os_mutex_init_recursive (&perfctr_mutex);
 
-	shared_area = mono_shared_area ();
+	shared_area = (MonoSharedArea *)mono_shared_area ();
 	shared_area->counters_start = G_STRUCT_OFFSET (MonoSharedArea, counters);
 	shared_area->counters_size = sizeof (MonoPerfCounters);
 	shared_area->data_start = d_offset;
@@ -645,7 +645,7 @@ typedef struct {
 static gboolean
 category_search (SharedHeader *header, void *data)
 {
-	CatSearch *search = data;
+	CatSearch *search = (CatSearch *)data;
 	if (header->ftype == FTYPE_CATEGORY) {
 		SharedCategory *cat = (SharedCategory*)header;
 		if (mono_string_compare_ascii (search->name, cat->name) == 0) {
@@ -669,7 +669,7 @@ find_custom_category (MonoString *name)
 static gboolean
 category_collect (SharedHeader *header, void *data)
 {
-	GSList **list = data;
+	GSList **list = (GSList **)data;
 	if (header->ftype == FTYPE_CATEGORY) {
 		*list = g_slist_prepend (*list, header);
 	}
@@ -718,7 +718,7 @@ typedef struct {
 static gboolean
 instance_search (SharedHeader *header, void *data)
 {
-	InstanceSearch *search = data;
+	InstanceSearch *search = (InstanceSearch *)data;
 	if (header->ftype == FTYPE_INSTANCE) {
 		SharedInstance *ins = (SharedInstance*)header;
 		if (search->cat_offset == ins->category_offset) {
@@ -890,7 +890,7 @@ network_cleanup (ImplVtable *vtable)
 	if (vtable == NULL)
 		return;
 
-	narg = vtable->arg;
+	narg = (NetworkVtableArg *)vtable->arg;
 	if (narg == NULL)
 		return;
 
@@ -1219,7 +1219,7 @@ static gint64
 custom_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 {
 	/* FIXME: check writability */
-	guint64 *ptr = vtable->arg;
+	guint64 *ptr = (guint64 *)vtable->arg;
 	if (ptr) {
 		if (do_incr) {
 			/* FIXME: we need to do this atomically */
@@ -1304,7 +1304,7 @@ custom_get_impl (SharedCategory *cat, MonoString* counter, MonoString* instance,
 	g_free (name);
 	if (!inst)
 		return NULL;
-	return custom_vtable (scounter, inst, custom_get_value_address (scounter, inst));
+	return custom_vtable (scounter, inst, (char *)custom_get_value_address (scounter, inst));
 }
 
 static const CategoryDesc*
@@ -1361,7 +1361,7 @@ mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString
 MonoBoolean
 mono_perfcounter_get_sample (void *impl, MonoBoolean only_value, MonoCounterSample *sample)
 {
-	ImplVtable *vtable = impl;
+	ImplVtable *vtable = (ImplVtable *)impl;
 	if (vtable && vtable->sample)
 		return vtable->sample (vtable, only_value, sample);
 	return FALSE;
@@ -1370,7 +1370,7 @@ mono_perfcounter_get_sample (void *impl, MonoBoolean only_value, MonoCounterSamp
 gint64
 mono_perfcounter_update_value (void *impl, MonoBoolean do_incr, gint64 value)
 {
-	ImplVtable *vtable = impl;
+	ImplVtable *vtable = (ImplVtable *)impl;
 	if (vtable && vtable->update)
 		return vtable->update (vtable, do_incr, value);
 	return 0;
@@ -1379,7 +1379,7 @@ mono_perfcounter_update_value (void *impl, MonoBoolean do_incr, gint64 value)
 void
 mono_perfcounter_free_data (void *impl)
 {
-	ImplVtable *vtable = impl;
+	ImplVtable *vtable = (ImplVtable *)impl;
 	if (vtable && vtable->cleanup)
 		vtable->cleanup (vtable);
 	g_free (impl);
@@ -1596,7 +1596,7 @@ mono_perfcounter_category_names (MonoString *machine)
 		mono_array_setref (res, i, mono_string_new (domain, cdesc->name));
 	}
 	for (tmp = custom_categories; tmp; tmp = tmp->next) {
-		SharedCategory *scat = tmp->data;
+		SharedCategory *scat = (SharedCategory *)tmp->data;
 		mono_array_setref (res, i, mono_string_new (domain, scat->name));
 		i++;
 	}
@@ -1674,7 +1674,7 @@ get_string_array_of_strings (void **array, int count)
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray * res = mono_array_new (mono_domain_get (), mono_get_string_class (), count);
 	for (i = 0; i < count; ++i) {
-		char* p = array[i];
+		char* p = (char *)array[i];
 		mono_array_setref (res, i, mono_string_new (domain, p));
 	}
 
@@ -1753,7 +1753,7 @@ get_custom_instances (MonoString *category)
 		int i = 0;
 		MonoArray *array = mono_array_new (mono_domain_get (), mono_get_string_class (), g_slist_length (list));
 		for (tmp = list; tmp; tmp = tmp->next) {
-			SharedInstance *inst = tmp->data;
+			SharedInstance *inst = (SharedInstance *)tmp->data;
 			mono_array_setref (array, i, mono_string_new (mono_domain_get (), inst->instance_name));
 			i++;
 		}
@@ -1802,7 +1802,7 @@ mono_perfcounter_foreach_shared_item (SharedHeader *header, gpointer data)
 	SharedCategory *cat;
 	SharedCounter *counter;
 	SharedInstance *inst;
-	PerfCounterForeachData *foreach_data = data;
+	PerfCounterForeachData *foreach_data = (PerfCounterForeachData *)data;
 
 	if (header->ftype == FTYPE_CATEGORY) {
 		cat = (SharedCategory*)header;

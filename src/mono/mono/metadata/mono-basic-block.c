@@ -295,11 +295,11 @@ bb_liveness (MonoSimpleBasicBlock *bb)
 	}
 
 	while (mark_stack->len > 0) {
-		MonoSimpleBasicBlock *block = g_ptr_array_remove_index_fast (mark_stack, mark_stack->len - 1);
+		MonoSimpleBasicBlock *block = (MonoSimpleBasicBlock *)g_ptr_array_remove_index_fast (mark_stack, mark_stack->len - 1);
 		block->dead = FALSE;
 
 		for (tmp = block->out_bb; tmp; tmp = tmp->next) {
-			MonoSimpleBasicBlock *to = tmp->data;
+			MonoSimpleBasicBlock *to = (MonoSimpleBasicBlock *)tmp->data;
 			if (to->dead)
 				g_ptr_array_add (mark_stack, to);
 		}

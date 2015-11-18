@@ -464,7 +464,7 @@ static GPtrArray* get_domain_assemblies (MonoDomain *domain)
 	assemblies = g_ptr_array_new ();
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		MonoAssembly *ass = tmp->data;
+		MonoAssembly *ass = (MonoAssembly *)tmp->data;
 		if (ass->image->fileio_used)
 			continue;
 		g_ptr_array_add (assemblies, ass);
@@ -522,7 +522,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 
 	if (assemblies) {
 		for (i = 0; i < assembly_count; i++) {
-			MonoAssembly *ass = g_ptr_array_index (assemblies, i);
+			MonoAssembly *ass = (MonoAssembly *)g_ptr_array_index (assemblies, i);
 			MonoObject *module = get_process_module (ass, proc_class);
 			mono_array_setref (temp_arr, num_added++, module);
 		}
@@ -623,9 +623,9 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 	gboolean ret;
 
 	shellex.cbSize = sizeof(SHELLEXECUTEINFO);
-	shellex.fMask = SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE;
-	shellex.nShow = proc_start_info->window_style;
-	shellex.nShow = (shellex.nShow == 0) ? 1 : (shellex.nShow == 1 ? 0 : shellex.nShow);
+	shellex.fMask = (WapiShellExecuteInfoFlags)(SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE);
+	shellex.nShow = (WapiShellExecuteShowFlags)proc_start_info->window_style;
+	shellex.nShow = (WapiShellExecuteShowFlags)((shellex.nShow == 0) ? 1 : (shellex.nShow == 1 ? 0 : shellex.nShow));
 	
 	
 	if (proc_start_info->filename != NULL) {
@@ -649,7 +649,7 @@ MonoBoolean ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoPr
 	if (proc_start_info->error_dialog) {	
 		shellex.hwnd = proc_start_info->error_dialog_parent_handle;
 	} else {
-		shellex.fMask |= SEE_MASK_FLAG_NO_UI;
+		shellex.fMask = (WapiShellExecuteInfoFlags)(shellex.fMask | SEE_MASK_FLAG_NO_UI);
 	}
 
 	ret = ShellExecuteEx (&shellex);
@@ -771,7 +771,12 @@ MonoBoolean ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoPro
 
 	if (process_info->username) {
 		logon_flags = process_info->load_user_profile ? LOGON_WITH_PROFILE : 0;
-		ret=CreateProcessWithLogonW (mono_string_chars (process_info->username), process_info->domain ? mono_string_chars (process_info->domain) : NULL, process_info->password, logon_flags, shell_path, cmd? mono_string_chars (cmd): NULL, creation_flags, env_vars, dir, &startinfo, &procinfo);
+		ret = CreateProcessWithLogonW (
+			mono_string_chars (process_info->username),
+			process_info->domain ? mono_string_chars (process_info->domain) : NULL,
+			(const gunichar2 *)process_info->password, logon_flags, shell_path,
+			cmd ? mono_string_chars (cmd) : NULL,
+			creation_flags, env_vars, dir, &startinfo, &procinfo);
 	} else {
 		ret=CreateProcess (shell_path, cmd? mono_string_chars (cmd): NULL, NULL, NULL, TRUE, creation_flags, env_vars, dir, &startinfo, &procinfo);
 	}
@@ -1063,7 +1068,7 @@ ves_icall_System_Diagnostics_Process_GetProcessData (int pid, gint32 data_type, 
 	MonoProcessError perror;
 	guint64 res;
 
-	res = mono_process_get_data_with_error (GINT_TO_POINTER (pid), data_type, &perror);
+	res = mono_process_get_data_with_error (GINT_TO_POINTER (pid), (MonoProcessData)data_type, &perror);
 	if (error)
 		*error = perror;
 	return res;

@@ -124,7 +124,7 @@ prof_jit_leave (MonoProfiler *prof, MonoMethod *method, int result)
 	MonoImage *image = mono_class_get_image (mono_method_get_class (method));
 	PerImageData *data;
 
-	data = g_hash_table_lookup (prof->images, image);
+	data = (PerImageData *)g_hash_table_lookup (prof->images, image);
 	if (!data) {
 		data = g_new0 (PerImageData, 1);
 		g_hash_table_insert (prof->images, image, data);

@@ -74,7 +74,7 @@ poll_register_fd (gint fd, gint events, gboolean is_new)
 		poll_fds_capacity *= 2;
 		g_assert (poll_fds_size <= poll_fds_capacity);
 
-		poll_fds = g_renew (mono_pollfd, poll_fds, poll_fds_capacity);
+		poll_fds = (mono_pollfd *)g_renew (mono_pollfd, poll_fds, poll_fds_capacity);
 	}
 
 	POLL_INIT_FD (&poll_fds [poll_fds_size - 1], fd, poll_event);

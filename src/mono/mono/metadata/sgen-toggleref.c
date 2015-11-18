@@ -142,7 +142,7 @@ ensure_toggleref_capacity (int capacity)
 {
 	if (!toggleref_array) {
 		toggleref_array_capacity = 32;
-		toggleref_array = sgen_alloc_internal_dynamic (
+		toggleref_array = (MonoGCToggleRef *)sgen_alloc_internal_dynamic (
 			toggleref_array_capacity * sizeof (MonoGCToggleRef),
 			INTERNAL_MEM_TOGGLEREF_DATA,
 			TRUE);
@@ -153,7 +153,7 @@ ensure_toggleref_capacity (int capacity)
 		while (toggleref_array_capacity < toggleref_array_size + capacity)
 			toggleref_array_capacity *= 2;
 
-		tmp = sgen_alloc_internal_dynamic (
+		tmp = (MonoGCToggleRef *)sgen_alloc_internal_dynamic (
 			toggleref_array_capacity * sizeof (MonoGCToggleRef),
 			INTERNAL_MEM_TOGGLEREF_DATA,
 			TRUE);
@@ -210,7 +210,7 @@ static MonoToggleRefStatus
 test_toggleref_callback (MonoObject *obj)
 {
 	static MonoClassField *mono_toggleref_test_field;
-	int status = MONO_TOGGLE_REF_DROP;
+	MonoToggleRefStatus status = MONO_TOGGLE_REF_DROP;
 
 	if (!mono_toggleref_test_field) {
 		mono_toggleref_test_field = mono_class_get_field_from_name (mono_object_get_class (obj), "__test");

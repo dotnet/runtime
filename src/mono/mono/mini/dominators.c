@@ -117,7 +117,7 @@ compute_dominators (MonoCompile *cfg)
 		MonoBitSet *dominators;
 		char *mem;
 
-		mem = mono_mempool_alloc0 (cfg->mempool, bitsize);
+		mem = (char *)mono_mempool_alloc0 (cfg->mempool, bitsize);
 
 		bb->dominators = dominators = mono_bitset_mem_new (mem, cfg->num_bblocks, 0);
 		mem += bitsize;
@@ -199,7 +199,7 @@ compute_dominance_frontier (MonoCompile *cfg)
 		cfg->bblocks [i]->flags &= ~BB_VISITED;
 
 	bitsize = mono_bitset_alloc_size (cfg->num_bblocks, 0);
-	mem = mono_mempool_alloc0 (cfg->mempool, bitsize * cfg->num_bblocks);
+	mem = (char *)mono_mempool_alloc0 (cfg->mempool, bitsize * cfg->num_bblocks);
  
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
@@ -332,7 +332,7 @@ mono_compute_natural_loops (MonoCompile *cfg)
 					GList *l;
 
 					for (l = h->loop_blocks; l; l = l->next) {
-						MonoBasicBlock *b = l->data;
+						MonoBasicBlock *b = (MonoBasicBlock *)l->data;
 						if (b->dfn)
 							mono_bitset_set_fast (in_loop_blocks, b->dfn);
 					}

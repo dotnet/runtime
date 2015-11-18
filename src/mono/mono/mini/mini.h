@@ -389,7 +389,7 @@ enum {
 	} while (0)
 
 #define MONO_INST_NEW(cfg,dest,op) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
+		(dest) = (MonoInst *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));	\
 		(dest)->opcode = (op);	\
 		(dest)->dreg = -1;			    \
 		MONO_INST_NULLIFY_SREGS ((dest));	    \
@@ -397,7 +397,7 @@ enum {
 	} while (0)
 
 #define MONO_INST_NEW_CALL(cfg,dest,op) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoCallInst));	\
+		(dest) = (MonoCallInst *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoCallInst));	\
 		(dest)->inst.opcode = (op);	\
 		(dest)->inst.dreg = -1;					\
 		MONO_INST_NULLIFY_SREGS (&(dest)->inst);		\
@@ -2576,7 +2576,7 @@ void      mono_arch_decompose_long_opts         (MonoCompile *cfg, MonoInst *ins
 GSList*   mono_arch_get_delegate_invoke_impls   (void);
 LLVMCallInfo* mono_arch_get_llvm_call_info      (MonoCompile *cfg, MonoMethodSignature *sig) MONO_LLVM_INTERNAL;
 guint8*   mono_arch_emit_load_got_addr          (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo **ji);
-guint8*   mono_arch_emit_load_aotconst          (guint8 *start, guint8 *code, MonoJumpInfo **ji, int tramp_type, gconstpointer target);
+guint8*   mono_arch_emit_load_aotconst          (guint8 *start, guint8 *code, MonoJumpInfo **ji, MonoJumpInfoType tramp_type, gconstpointer target);
 GSList*   mono_arch_get_cie_program             (void);
 void      mono_arch_set_target                  (char *mtriple);
 gboolean  mono_arch_gsharedvt_sig_supported     (MonoMethodSignature *sig);
@@ -2697,7 +2697,7 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 typedef gboolean (*MonoJitStackWalk)            (StackFrameInfo *frame, MonoContext *ctx, gpointer data);
 
 void     mono_exceptions_init                   (void);
-gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj);
+gboolean mono_handle_exception                  (MonoContext *ctx, MonoObject *obj);
 void     mono_handle_native_sigsegv             (int signal, void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo);
 MONO_API void     mono_print_thread_dump                 (void *sigctx);
 MONO_API void     mono_print_thread_dump_from_ctx        (MonoContext *ctx);

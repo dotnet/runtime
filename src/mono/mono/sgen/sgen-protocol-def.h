@@ -112,7 +112,7 @@ MATCH_INDEX (matches_interval (ptr, entry->addr, entry->size) ? 0 : BINARY_PROTO
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY_HEAVY
 
-BEGIN_PROTOCOL_ENTRY_HEAVY4 (binary_protocol_block_set_state, TYPE_POINTER, addr, TYPE_SIZE, size, TYPE_INT, old, TYPE_INT, new)
+BEGIN_PROTOCOL_ENTRY_HEAVY4 (binary_protocol_block_set_state, TYPE_POINTER, addr, TYPE_SIZE, size, TYPE_INT, old, TYPE_INT, new_)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (FALSE)
 MATCH_INDEX (matches_interval (ptr, entry->addr, entry->size) ? 0 : BINARY_PROTOCOL_NO_MATCH)

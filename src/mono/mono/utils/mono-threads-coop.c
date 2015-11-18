@@ -157,7 +157,7 @@ mono_threads_finish_blocking (void *cookie, void* stackdata)
 	if (!mono_threads_is_coop_enabled ())
 		return;
 
-	info = cookie;
+	info = (MonoThreadInfo *)cookie;
 	if (!info)
 		return;
 
@@ -227,7 +227,7 @@ mono_threads_reset_blocking_end (void *cookie, void* stackdata)
 	if (!mono_threads_is_coop_enabled ())
 		return;
 
-	info = cookie;
+	info = (MonoThreadInfo *)cookie;
 	if (!info)
 		return;
 

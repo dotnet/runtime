@@ -67,7 +67,7 @@ typedef enum {
 
 #define MONO_GC_HANDLE_TYPE_SHIFT (3)
 #define MONO_GC_HANDLE_TYPE_MASK ((1 << MONO_GC_HANDLE_TYPE_SHIFT) - 1)
-#define MONO_GC_HANDLE_TYPE(x) (((x) & MONO_GC_HANDLE_TYPE_MASK) - 1)
+#define MONO_GC_HANDLE_TYPE(x) ((GCHandleType)(((x) & MONO_GC_HANDLE_TYPE_MASK) - 1))
 #define MONO_GC_HANDLE_SLOT(x) ((x) >> MONO_GC_HANDLE_TYPE_SHIFT)
 #define MONO_GC_HANDLE_TYPE_IS_WEAK(x) ((x) <= HANDLE_WEAK_TRACK)
 #define MONO_GC_HANDLE(slot, type) (((slot) << MONO_GC_HANDLE_TYPE_SHIFT) | (((type) & MONO_GC_HANDLE_TYPE_MASK) + 1))

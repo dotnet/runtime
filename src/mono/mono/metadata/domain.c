@@ -177,7 +177,7 @@ lock_free_mempool_free (LockFreeMempool *mp)
 
 	chunk = mp->chunks;
 	while (chunk) {
-		next = chunk->prev;
+		next = (LockFreeMempoolChunk *)chunk->prev;
 		mono_vfree (chunk, mono_pagesize ());
 		chunk = next;
 	}
@@ -196,9 +196,9 @@ lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
 	size = mono_pagesize ();
 	while (size - sizeof (LockFreeMempoolChunk) < len)
 		size += mono_pagesize ();
-	chunk = mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE);
+	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE);
 	g_assert (chunk);
-	chunk->mem = ALIGN_PTR_TO ((char*)chunk + sizeof (LockFreeMempoolChunk), 16);
+	chunk->mem = (guint8 *)ALIGN_PTR_TO ((char*)chunk + sizeof (LockFreeMempoolChunk), 16);
 	chunk->size = ((char*)chunk + size) - (char*)chunk->mem;
 	chunk->pos = 0;
 
@@ -341,7 +341,7 @@ domain_id_alloc (MonoDomain *domain)
 	int id = -1, i;
 	if (!appdomains_list) {
 		appdomain_list_size = 2;
-		appdomains_list = mono_gc_alloc_fixed (appdomain_list_size * sizeof (void*), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_DOMAIN, "domains list");
+		appdomains_list = (MonoDomain **)mono_gc_alloc_fixed (appdomain_list_size * sizeof (void*), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_DOMAIN, "domains list");
 	}
 	for (i = appdomain_next; i < appdomain_list_size; ++i) {
 		if (!appdomains_list [i]) {
@@ -363,7 +363,7 @@ domain_id_alloc (MonoDomain *domain)
 		if (new_size >= (1 << 16))
 			g_assert_not_reached ();
 		id = appdomain_list_size;
-		new_list = mono_gc_alloc_fixed (new_size * sizeof (void*), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_DOMAIN, "domains list");
+		new_list = (MonoDomain **)mono_gc_alloc_fixed (new_size * sizeof (void*), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_DOMAIN, "domains list");
 		memcpy (new_list, appdomains_list, appdomain_list_size * sizeof (void*));
 		mono_gc_free_fixed (appdomains_list);
 		appdomains_list = new_list;
@@ -407,9 +407,9 @@ mono_domain_create (void)
 	 * running the corlib test suite.
 	 * To solve this, we pass a NULL descriptor, and don't register roots.
 	 */
-	domain = mono_gc_alloc_fixed (sizeof (MonoDomain), NULL, MONO_ROOT_SOURCE_DOMAIN, "domain object");
+	domain = (MonoDomain *)mono_gc_alloc_fixed (sizeof (MonoDomain), NULL, MONO_ROOT_SOURCE_DOMAIN, "domain object");
 #else
-	domain = mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc, MONO_ROOT_SOURCE_DOMAIN, "domain object");
+	domain = (MonoDomain *)mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc, MONO_ROOT_SOURCE_DOMAIN, "domain object");
 	mono_gc_register_root ((char*)&(domain->MONO_DOMAIN_FIRST_GC_TRACKED), G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_LAST_GC_TRACKED) - G_STRUCT_OFFSET (MonoDomain, MONO_DOMAIN_FIRST_GC_TRACKED), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_DOMAIN, "misc domain fields");
 #endif
 	domain->shadow_serial = shadow_serial;
@@ -1035,7 +1035,7 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 	 */
 	mono_appdomains_lock ();
 	size = appdomain_list_size;
-	copy = mono_gc_alloc_fixed (appdomain_list_size * sizeof (void*), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_DOMAIN, "temporary domains list");
+	copy = (MonoDomain **)mono_gc_alloc_fixed (appdomain_list_size * sizeof (void*), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_DOMAIN, "temporary domains list");
 	memcpy (copy, appdomains_list, appdomain_list_size * sizeof (void*));
 	mono_appdomains_unlock ();
 
@@ -1063,7 +1063,7 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		ass = tmp->data;
+		ass = (MonoAssembly *)tmp->data;
 		if (strcmp (name, ass->aname.name) == 0) {
 			mono_domain_assemblies_unlock (domain);
 			return ass;
@@ -1087,7 +1087,7 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 static void
 unregister_vtable_reflection_type (MonoVTable *vtable)
 {
-	MonoObject *type = vtable->type;
+	MonoObject *type = (MonoObject *)vtable->type;
 
 	if (type->vtable->klass != mono_defaults.monotype_class)
 		MONO_GC_UNREGISTER_ROOT_IF_MOVING (vtable->type);
@@ -1142,7 +1142,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	if (domain->class_vtable_array) {
 		int i;
 		for (i = 0; i < domain->class_vtable_array->len; ++i)
-			unregister_vtable_reflection_type (g_ptr_array_index (domain->class_vtable_array, i));
+			unregister_vtable_reflection_type ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
 	}
 
 	if (domain->type_hash) {
@@ -1155,7 +1155,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	}
 
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		MonoAssembly *ass = tmp->data;
+		MonoAssembly *ass = (MonoAssembly *)tmp->data;
 		mono_assembly_release_gc_roots (ass);
 	}
 
@@ -1168,7 +1168,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	/* Close dynamic assemblies first, since they have no ref count */
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		MonoAssembly *ass = tmp->data;
+		MonoAssembly *ass = (MonoAssembly *)tmp->data;
 		if (!ass->image || !image_is_dynamic (ass->image))
 			continue;
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading domain %s[%p], assembly %s[%p], ref_count=%d", domain->friendly_name, domain, ass->aname.name, ass, ass->ref_count);
@@ -1177,7 +1177,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	}
 
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		MonoAssembly *ass = tmp->data;
+		MonoAssembly *ass = (MonoAssembly *)tmp->data;
 		if (!ass)
 			continue;
 		if (!ass->image || image_is_dynamic (ass->image))
@@ -1188,7 +1188,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	}
 
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		MonoAssembly *ass = tmp->data;
+		MonoAssembly *ass = (MonoAssembly *)tmp->data;
 		if (ass)
 			mono_assembly_close_finish (ass);
 	}
@@ -1572,7 +1572,7 @@ mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointe
 		next = GPOINTER_TO_INT (domain->static_data_array [0]);
 		if (next >= size) {
 			/* 'data' is allocated by alloc_fixed */
-			gpointer *new_array = mono_gc_alloc_fixed (sizeof (gpointer) * (size * 2), MONO_GC_ROOT_DESCR_FOR_FIXED (size * 2), MONO_ROOT_SOURCE_DOMAIN, "static field list");
+			gpointer *new_array = (gpointer *)mono_gc_alloc_fixed (sizeof (gpointer) * (size * 2), MONO_GC_ROOT_DESCR_FOR_FIXED (size * 2), MONO_ROOT_SOURCE_DOMAIN, "static field list");
 			mono_gc_memmove_aligned (new_array, domain->static_data_array, sizeof (gpointer) * size);
 			size *= 2;
 			new_array [1] = GINT_TO_POINTER (size);
@@ -1581,7 +1581,7 @@ mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointe
 		}
 	} else {
 		int size = 32;
-		gpointer *new_array = mono_gc_alloc_fixed (sizeof (gpointer) * size, MONO_GC_ROOT_DESCR_FOR_FIXED (size), MONO_ROOT_SOURCE_DOMAIN, "static field list");
+		gpointer *new_array = (gpointer *)mono_gc_alloc_fixed (sizeof (gpointer) * size, MONO_GC_ROOT_DESCR_FOR_FIXED (size), MONO_ROOT_SOURCE_DOMAIN, "static field list");
 		next = 2;
 		new_array [0] = GINT_TO_POINTER (next);
 		new_array [1] = GINT_TO_POINTER (size);
@@ -1815,7 +1815,7 @@ app_config_parse (const char *exe_filename)
 
 	app_config = g_new0 (AppConfigInfo, 1);
 
-	context = g_markup_parse_context_new (&mono_parser, 0, app_config, NULL);
+	context = g_markup_parse_context_new (&mono_parser, (GMarkupParseFlags)0, app_config, NULL);
 	if (g_markup_parse_context_parse (context, text, len, NULL)) {
 		g_markup_parse_context_end_parse (context, NULL);
 	}

@@ -1137,8 +1137,7 @@ wapi_processes_init (void)
 	WapiHandle_process process_handle = {0};
 
 	_wapi_handle_register_capabilities (WAPI_HANDLE_PROCESS,
-					    WAPI_HANDLE_CAP_WAIT |
-					    WAPI_HANDLE_CAP_SPECIAL_WAIT);
+		(WapiHandleCapability)(WAPI_HANDLE_CAP_WAIT | WAPI_HANDLE_CAP_SPECIAL_WAIT));
 	
 	process_handle.id = pid;
 
@@ -1831,7 +1830,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 	}
 		
 	for (i = 0; i < count; i++) {
-		free_procmodule (g_slist_nth_data (mods, i));
+		free_procmodule ((WapiProcModule *)g_slist_nth_data (mods, i));
 	}
 	g_slist_free (mods);
 	g_free (proc_name);
@@ -2633,7 +2632,7 @@ mono_processes_cleanup (void)
 		 * they have the 'finished' flag set, which means the sigchld handler is done
 		 * accessing them.
 		 */
-		mp = l->data;
+		mp = (MonoProcess *)l->data;
 		mono_os_sem_destroy (&mp->exit_sem);
 		g_free (mp);
 	}

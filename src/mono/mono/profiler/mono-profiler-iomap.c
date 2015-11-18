@@ -112,7 +112,7 @@ static void mismatched_stats_foreach_func (gpointer key, gpointer value, gpointe
 		return;
 	}
 
-	location = g_hash_table_lookup (prof->string_locations_hash, &hash);
+	location = (StringLocation *)g_hash_table_lookup (prof->string_locations_hash, &hash);
 	while (location) {
 		if (location->hint && strlen (location->hint) > 0) {
 			if (!bannerShown) {
@@ -243,7 +243,7 @@ static gboolean saved_strings_find_func (gpointer key, gpointer value, gpointer 
 
 static inline void store_string_location (MonoProfiler *prof, const gchar *string, guint32 hash, size_t len)
 {
-	StringLocation *location = g_hash_table_lookup (prof->string_locations_hash, &hash);
+	StringLocation *location = (StringLocation *)g_hash_table_lookup (prof->string_locations_hash, &hash);
 	SavedString *saved;
 	SavedStringFindInfo info;
 	guint32 *hashptr;
@@ -542,5 +542,5 @@ void mono_profiler_startup (const char *desc)
 	mono_profiler_install_iomap (mono_portability_iomap_event);
 	mono_profiler_install_allocation (mono_portability_remember_alloc);
 
-	mono_profiler_set_events (MONO_PROFILE_ALLOCATIONS | MONO_PROFILE_IOMAP_EVENTS);
+	mono_profiler_set_events ((MonoProfileFlags)(MONO_PROFILE_ALLOCATIONS | MONO_PROFILE_IOMAP_EVENTS));
 }

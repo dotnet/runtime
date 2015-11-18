@@ -86,8 +86,8 @@ sgen_card_table_wbarrier_set_field (GCObject *obj, gpointer field_ptr, GCObject*
 static void
 sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
-	gpointer *dest = dest_ptr;
-	gpointer *src = src_ptr;
+	gpointer *dest = (gpointer *)dest_ptr;
+	gpointer *src = (gpointer *)src_ptr;
 
 	/*overlapping that required backward copying*/
 	if (src < dest && (src + count) > dest) {
@@ -284,7 +284,7 @@ sgen_card_table_find_address (char *addr)
 static gboolean
 sgen_card_table_find_address_with_cards (char *cards_start, guint8 *cards, char *addr)
 {
-	cards_start = sgen_card_table_align_pointer (cards_start);
+	cards_start = (char *)sgen_card_table_align_pointer (cards_start);
 	return cards [(addr - cards_start) >> CARD_BITS];
 }
 
@@ -303,7 +303,7 @@ guint8*
 sgen_card_table_alloc_mod_union (char *obj, mword obj_size)
 {
 	size_t num_cards = sgen_card_table_number_of_cards_in_range ((mword) obj, obj_size);
-	guint8 *mod_union = sgen_alloc_internal_dynamic (num_cards, INTERNAL_MEM_CARDTABLE_MOD_UNION, TRUE);
+	guint8 *mod_union = (guint8 *)sgen_alloc_internal_dynamic (num_cards, INTERNAL_MEM_CARDTABLE_MOD_UNION, TRUE);
 	memset (mod_union, 0, num_cards);
 	return mod_union;
 }
@@ -573,10 +573,10 @@ sgen_card_tables_collect_stats (gboolean begin)
 void
 sgen_card_table_init (SgenRememberedSet *remset)
 {
-	sgen_cardtable = sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, "card table");
+	sgen_cardtable = (guint8 *)sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), "card table");
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-	sgen_shadow_cardtable = sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, "shadow card table");
+	sgen_shadow_cardtable = (guint8 *)sgen_alloc_os_memory (CARD_COUNT_IN_BYTES, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), "shadow card table");
 #endif
 
 #ifdef HEAVY_STATISTICS

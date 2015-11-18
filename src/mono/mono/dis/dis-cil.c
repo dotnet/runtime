@@ -56,7 +56,7 @@ disassemble_cil (MonoImage *m, MonoMethodHeader *mh, MonoGenericContainer *conta
 #endif
 
        if (mh->num_clauses) {
-	       trys = g_malloc0 (sizeof (gboolean) * mh->num_clauses);
+	       trys = (gboolean *)g_malloc0 (sizeof (gboolean) * mh->num_clauses);
 	       trys [0] = 1;
 	       for (i=1; i < mh->num_clauses; ++i) {
 #define jcl mh->clauses [j]	

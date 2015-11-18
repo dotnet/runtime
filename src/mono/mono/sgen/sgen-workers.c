@@ -191,7 +191,7 @@ init_private_gray_queue (WorkerData *data)
 static void
 thread_pool_init_func (void *data_untyped)
 {
-	WorkerData *data = data_untyped;
+	WorkerData *data = (WorkerData *)data_untyped;
 	SgenMajorCollector *major = sgen_get_major_collector ();
 
 	sgen_client_thread_register_worker ();
@@ -211,7 +211,7 @@ continue_idle_func (void)
 static void
 marker_idle_func (void *data_untyped)
 {
-	WorkerData *data = data_untyped;
+	WorkerData *data = (WorkerData *)data_untyped;
 
 	SGEN_ASSERT (0, continue_idle_func (), "Why are we called when we're not supposed to work?");
 	SGEN_ASSERT (0, sgen_concurrent_collection_in_progress (), "The worker should only mark in concurrent collections.");
@@ -258,7 +258,7 @@ void
 sgen_workers_init (int num_workers)
 {
 	int i;
-	void **workers_data_ptrs = alloca(num_workers * sizeof(void *));
+	void **workers_data_ptrs = (void **)alloca(num_workers * sizeof(void *));
 
 	if (!sgen_get_major_collector ()->is_concurrent) {
 		sgen_thread_pool_init (num_workers, thread_pool_init_func, NULL, NULL, NULL);
@@ -269,7 +269,7 @@ sgen_workers_init (int num_workers)
 
 	workers_num = num_workers;
 
-	workers_data = sgen_alloc_internal_dynamic (sizeof (WorkerData) * num_workers, INTERNAL_MEM_WORKER_DATA, TRUE);
+	workers_data = (WorkerData *)sgen_alloc_internal_dynamic (sizeof (WorkerData) * num_workers, INTERNAL_MEM_WORKER_DATA, TRUE);
 	memset (workers_data, 0, sizeof (WorkerData) * num_workers);
 
 	init_distribute_gray_queue ();

@@ -711,7 +711,7 @@ mono_dwarf_escape_path (const char *name)
 		int len, i, j;
 
 		len = strlen (name);
-		s = g_malloc0 ((len + 1) * 2);
+		s = (char *)g_malloc0 ((len + 1) * 2);
 		j = 0;
 		for (i = 0; i < len; ++i) {
 			if (name [i] == '\\') {
@@ -741,7 +741,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 	/* Collect files */
 	info_list = g_slist_reverse (w->line_info);
 	for (l = info_list; l; l = l->next) {
-		MethodLineNumberInfo *info = l->data;
+		MethodLineNumberInfo *info = (MethodLineNumberInfo *)l->data;
 		MonoDebugMethodInfo *minfo;
 		GPtrArray *source_file_list;
 
@@ -752,7 +752,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 
 		mono_debug_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
 		for (i = 0; i < source_file_list->len; ++i) {
-			MonoDebugSourceInfo *sinfo = g_ptr_array_index (source_file_list, i);
+			MonoDebugSourceInfo *sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, i);
 			add_line_number_file_name (w, sinfo->source_file, 0, 0);
 		}
 	}		
@@ -761,7 +761,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 	dir_to_index = g_hash_table_new (g_str_hash, g_str_equal);
 	index_to_dir = g_hash_table_new (NULL, NULL);
 	for (i = 0; i < w->line_number_file_index; ++i) {
-		char *name = g_hash_table_lookup (w->index_to_file, GUINT_TO_POINTER (i + 1));
+		char *name = (char *)g_hash_table_lookup (w->index_to_file, GUINT_TO_POINTER (i + 1));
 		char *copy;
 		int dir_index = 0;
 
@@ -811,7 +811,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 	/* Includes */
 	emit_section_change (w, ".debug_line", 0);
 	for (i = 0; i < w->line_number_dir_index; ++i) {
-		char *dir = g_hash_table_lookup (index_to_dir, GUINT_TO_POINTER (i + 1));
+		char *dir = (char *)g_hash_table_lookup (index_to_dir, GUINT_TO_POINTER (i + 1));
 
 		emit_string (w, mono_dwarf_escape_path (dir));
 	}
@@ -820,7 +820,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 
 	/* Files */
 	for (i = 0; i < w->line_number_file_index; ++i) {
-		char *name = g_hash_table_lookup (w->index_to_file, GUINT_TO_POINTER (i + 1));
+		char *name = (char *)g_hash_table_lookup (w->index_to_file, GUINT_TO_POINTER (i + 1));
 		char *basename = NULL, *dir;
 		int dir_index = 0;
 
@@ -847,7 +847,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 
 	/* Emit line number table */
 	for (l = info_list; l; l = l->next) {
-		MethodLineNumberInfo *info = l->data;
+		MethodLineNumberInfo *info = (MethodLineNumberInfo *)l->data;
 		MonoDebugMethodJitInfo *dmji;
 
 		dmji = mono_debug_find_method (info->method, mono_domain_get ());
@@ -1011,7 +1011,7 @@ get_class_die (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	else
 		cache = w->class_to_die;
 
-	return g_hash_table_lookup (cache, klass);
+	return (const char *)g_hash_table_lookup (cache, klass);
 }
 
 /* Returns the local symbol pointing to the emitted debug info */
@@ -1032,7 +1032,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	else
 		cache = w->class_to_die;
 
-	die = g_hash_table_lookup (cache, klass);
+	die = (char *)g_hash_table_lookup (cache, klass);
 	if (die)
 		return die;
 
@@ -1239,7 +1239,7 @@ get_type_die (MonoDwarfWriter *w, MonoType *t)
 
 	if (t->byref) {
 		if (t->type == MONO_TYPE_VALUETYPE) {
-			tdie = g_hash_table_lookup (w->class_to_pointer_die, klass);
+			tdie = (const char *)g_hash_table_lookup (w->class_to_pointer_die, klass);
 		}
 		else {
 			tdie = get_class_die (w, klass, FALSE);
@@ -1256,7 +1256,7 @@ get_type_die (MonoDwarfWriter *w, MonoType *t)
 	} else {
 		switch (t->type) {
 		case MONO_TYPE_CLASS:
-			tdie = g_hash_table_lookup (w->class_to_reference_die, klass);
+			tdie = (const char *)g_hash_table_lookup (w->class_to_reference_die, klass);
 			//tdie = ".LDIE_OBJECT";
 			break;
 		case MONO_TYPE_ARRAY:
@@ -1270,7 +1270,7 @@ get_type_die (MonoDwarfWriter *w, MonoType *t)
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!MONO_TYPE_ISSTRUCT (t)) {
-				tdie = g_hash_table_lookup (w->class_to_reference_die, klass);
+				tdie = (const char *)g_hash_table_lookup (w->class_to_reference_die, klass);
 			} else {
 				tdie = ".LDIE_I4";
 			}
@@ -1419,7 +1419,7 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 	case CEE_CASTCLASS:
 	case CEE_LDELEMA:
 		if (method->wrapper_type) {
-			klass = data;
+			klass = (MonoClass *)data;
 		} else {
 			klass = mono_class_get_checked (method->klass->image, token, &error);
 			g_assert (mono_error_ok (&error)); /* FIXME error handling */
@@ -1430,7 +1430,7 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 	case CEE_CALL:
 	case CEE_CALLVIRT:
 		if (method->wrapper_type)
-			cmethod = data;
+			cmethod = (MonoMethod *)data;
 		else
 			cmethod = mono_get_method_full (method->klass->image, token, NULL, NULL);
 		desc = mono_method_full_name (cmethod, TRUE);
@@ -1439,7 +1439,7 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 		break;
 	case CEE_CALLI:
 		if (method->wrapper_type) {
-			desc = mono_signature_get_desc (data, FALSE);
+			desc = mono_signature_get_desc ((MonoMethodSignature *)data, FALSE);
 			res = g_strdup_printf ("<%s>", desc);
 			g_free (desc);
 		} else {
@@ -1451,7 +1451,7 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 	case CEE_STFLD:
 	case CEE_STSFLD:
 		if (method->wrapper_type) {
-			field = data;
+			field = (MonoClassField *)data;
 		} else {
 			field = mono_field_from_token_checked (method->klass->image, token, &klass, NULL,  &error);
 			g_assert (mono_error_ok (&error)); /* FIXME error handling */
@@ -1620,7 +1620,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 	ln_array = g_new0 (MonoDebugLineNumberEntry, debug_info->num_line_numbers);
 	memcpy (ln_array, debug_info->line_numbers, debug_info->num_line_numbers * sizeof (MonoDebugLineNumberEntry));
 
-	qsort (ln_array, debug_info->num_line_numbers, sizeof (MonoDebugLineNumberEntry), (gpointer)compare_lne);
+	qsort (ln_array, debug_info->num_line_numbers, sizeof (MonoDebugLineNumberEntry), (int (*)(const void *, const void *))compare_lne);
 
 	native_to_il_offset = g_new0 (int, code_size + 1);
 

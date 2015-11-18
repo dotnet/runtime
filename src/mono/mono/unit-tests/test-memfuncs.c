@@ -40,9 +40,9 @@
 int
 main (void)
 {
-	unsigned char *random_mem = malloc (POOL_SIZE);
-	unsigned char *reference = malloc (POOL_SIZE);
-	unsigned char *playground = malloc (POOL_SIZE);
+	unsigned char *random_mem = (unsigned char *)malloc (POOL_SIZE);
+	unsigned char *reference = (unsigned char *)malloc (POOL_SIZE);
+	unsigned char *playground = (unsigned char *)malloc (POOL_SIZE);
 	long *long_random_mem;
 	int i, offset, size, src_offset, dest_offset;
 
