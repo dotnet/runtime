@@ -1036,15 +1036,17 @@ public:
     void        AddToCleanupList(HostCodeHeap *pCodeHeap);
     void        DeleteCodeHeap(HeapList *pHeapList);
     void        RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAllocator *pAllocator);
+#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 private :
+#ifndef CROSSGEN_COMPILE
     struct DomainCodeHeapList {
         LoaderAllocator *m_pAllocator;
         CDynArray<HeapList *> m_CodeHeapList;
         DomainCodeHeapList();
         ~DomainCodeHeapList();
     };
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif
 
 #ifndef DACCESS_COMPILE
 #ifndef CROSSGEN_COMPILE
@@ -1126,7 +1128,7 @@ private :
     //When EH Clauses are resolved we need to atomically update the TypeHandle
     Crst                m_EHClauseCritSec;
 
-#if !defined CROSSGEN_COMPILE && !defined DACCESS_COMPILE
+#if !defined CROSSGEN_COMPILE
     // must hold critical section to access this structure.
     CUnorderedArray<DomainCodeHeapList *, 5> m_DomainCodeHeaps;
     CUnorderedArray<DomainCodeHeapList *, 5> m_DynamicDomainCodeHeaps;
