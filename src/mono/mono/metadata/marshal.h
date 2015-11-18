@@ -171,9 +171,6 @@ typedef struct {
 } ProxyWrapperInfo;
 
 typedef struct {
-} WriteBarrierWrapperInfo;
-
-typedef struct {
 	const char *gc_name;
 	int alloc_type;
 } AllocatorWrapperInfo;
@@ -218,8 +215,6 @@ typedef struct {
 		ArrayAccessorWrapperInfo array_accessor;
 		/* PROXY_ISINST etc. */
 		ProxyWrapperInfo proxy;
-		/* WRITE_BARRIER */
-		WriteBarrierWrapperInfo wbarrier;
 		/* ALLOC */
 		AllocatorWrapperInfo alloc;
 		/* UNBOX */
