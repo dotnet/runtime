@@ -66,6 +66,7 @@
     <ClCompile Include="..\mono\utils\mono-threads-posix-signals.c" />
     <ClCompile Include="..\mono\utils\mono-threads-windows.c" />
     <ClCompile Include="..\mono\utils\mono-threads.c" />
+    <ClCompile Include="..\mono\utils\mono-threads-coop.c" />
     <ClCompile Include="..\mono\utils\mono-threads-posix-abort-syscall.c" />
     <ClCompile Include="..\mono\utils\mono-threads-mach-abort-syscall.c" />
     <ClCompile Include="..\mono\utils\mono-threads-windows-abort-syscall.c" />
@@ -133,7 +134,9 @@
     <ClInclude Include="..\mono\utils\mono-stdlib.h" />
     <ClInclude Include="..\mono\utils\mono-string.h" />
     <ClInclude Include="..\mono\utils\mono-threads.h" />
-    <ClCompile Include="..\mono\utils\mono-threads-posix-signals.h" />
+    <ClInclude Include="..\mono\utils\mono-threads-api.h" />
+    <ClInclude Include="..\mono\utils\mono-threads-coop.h" />
+    <ClInclude Include="..\mono\utils\mono-threads-posix-signals.h" />
     <ClInclude Include="..\mono\utils\mono-time.h" />
     <ClInclude Include="..\mono\utils\mono-tls.h" />
     <ClInclude Include="..\mono\utils\mono-uri.h" />
