@@ -13,9 +13,9 @@
 #define _GCDESC_H_
 
 #ifdef _WIN64
-typedef UINT32 HALF_SIZE_T;
+typedef uint32_t HALF_SIZE_T;
 #else   // _WIN64
-typedef UINT16 HALF_SIZE_T;
+typedef uint16_t HALF_SIZE_T;
 #endif
 
 
@@ -86,12 +86,12 @@ public:
         return seriessize/sizeof(JSlot); 
     }
 
-    VOID SetSeriesCount (size_t newcount)
+    void SetSeriesCount (size_t newcount)
     {
         seriessize = newcount * sizeof(JSlot);
     }
 
-    VOID IncSeriesCount (size_t increment = 1)
+    void IncSeriesCount (size_t increment = 1)
     {
         seriessize += increment * sizeof(JSlot);
     }
@@ -101,17 +101,17 @@ public:
         return seriessize;
     }
 
-    VOID SetSeriesSize (size_t newsize)
+    void SetSeriesSize (size_t newsize)
     {
         seriessize = newsize;
     }
 
-    VOID SetSeriesValItem (val_serie_item item, int index)
+    void SetSeriesValItem (val_serie_item item, int index)
     {
         val_serie [index] = item;
     }
 
-    VOID SetSeriesOffset (size_t newoffset)
+    void SetSeriesOffset (size_t newoffset)
     {
         startoffset = newoffset;
     }
@@ -154,12 +154,12 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    static VOID Init (PVOID mem, size_t NumSeries)
+    static void Init (void* mem, size_t NumSeries)
     {
         *((size_t*)mem-1) = NumSeries;
     }
 
-    static VOID InitValueClassSeries (PVOID mem, size_t NumSeries)
+    static void InitValueClassSeries (void* mem, size_t NumSeries)
     {
         *((SSIZE_T*)mem-1) = -((SSIZE_T)NumSeries);
     }
@@ -185,7 +185,7 @@ public:
     PTR_CGCDescSeries GetLowestSeries ()
     {
         _ASSERTE (SSIZE_T(GetNumSeries()) > 0);
-        return PTR_CGCDescSeries(PTR_BYTE(PTR_CGCDesc(this))
+        return PTR_CGCDescSeries(PTR_uint8_t(PTR_CGCDesc(this))
                                  - ComputeSize(GetNumSeries()));
     }
 
@@ -243,9 +243,9 @@ public:
         }
     }
 
-    BYTE *GetStartOfGCData()
+    uint8_t *GetStartOfGCData()
     {
-        return ((BYTE *)this) - GetSize();
+        return ((uint8_t *)this) - GetSize();
     }
 
 private:

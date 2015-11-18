@@ -64,7 +64,7 @@ typedef struct _DAC_SLOT_LOCATION
 typedef void (*GCEnumCallback)(
     LPVOID          hCallback,      // callback data
     OBJECTREF*      pObject,        // address of obect-reference we are reporting
-    DWORD           flags           // is this a pinned and/or interior pointer
+    uint32_t        flags           // is this a pinned and/or interior pointer
     DAC_ARG(DacSlotLocation loc)    // where the reference came from
 );
 

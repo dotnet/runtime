@@ -100,7 +100,7 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     // Unix, so we use a constant value representing 128TB, which is 
     // the approximate size of total user virtual address space on
     // the currently supported Unix systems.
-    static const UINT64 _128TB = (1ull << 47);
+    static const uint64_t _128TB = (1ull << 47);
     pMSEX->ullTotalVirtual = _128TB;
     pMSEX->ullAvailVirtual = _128TB;
 
@@ -465,7 +465,7 @@ QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)
         return FALSE;
     }
     lpPerformanceCount->QuadPart =
-        (LONGLONG) tv.tv_sec * (LONGLONG) tccSecondsToMicroSeconds + (LONGLONG) tv.tv_usec;
+        (int64_t) tv.tv_sec * (int64_t) tccSecondsToMicroSeconds + (int64_t) tv.tv_usec;
     return TRUE;
 }
 
@@ -474,7 +474,7 @@ BOOL
 WINAPI
 QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency)
 {
-    lpFrequency->QuadPart = (LONGLONG) tccSecondsToMicroSeconds;
+    lpFrequency->QuadPart = (int64_t) tccSecondsToMicroSeconds;
     return TRUE;
 }
 

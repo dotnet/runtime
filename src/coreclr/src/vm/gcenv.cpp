@@ -50,7 +50,7 @@ void GCToEEInterface::RestartEE(BOOL bFinishedGC)
  * GC enumeration callback
  */
 
-void GcEnumObject(LPVOID pData, OBJECTREF *pObj, DWORD flags)
+void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
 {
     Object ** ppObj = (Object **)pObj;
     GCCONTEXT   * pCtx  = (GCCONTEXT *) pData;
