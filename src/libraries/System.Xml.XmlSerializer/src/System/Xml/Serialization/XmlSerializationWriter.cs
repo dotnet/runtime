@@ -230,7 +230,12 @@ namespace System.Xml.Serialization
                         typeName = "guid";
                         typeNs = UrtTypes.Namespace;
                     }
-                    else if (type == typeof(XmlNode[]))
+                    else if (type == typeof (TimeSpan))
+                    {
+                        typeName = "TimeSpan";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (type == typeof (XmlNode[]))
                     {
                         typeName = Soap.UrType;
                     }
@@ -340,6 +345,12 @@ namespace System.Xml.Serialization
                     {
                         value = XmlConvert.ToString((Guid)o);
                         type = "guid";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (t == typeof(TimeSpan))
+                    {
+                        value = XmlConvert.ToString((TimeSpan)o);
+                        type = "TimeSpan";
                         typeNs = UrtTypes.Namespace;
                     }
                     else if (typeof(XmlNode[]).IsAssignableFrom(t))

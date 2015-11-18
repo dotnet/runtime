@@ -193,6 +193,18 @@ namespace System.Xml.Serialization
             WriteElementStringRaw(@"guid", @"", System.Xml.XmlConvert.ToString(guid));
         }
 
+        internal void Write_TimeSpan(object o)
+        {
+            WriteStartDocument();
+            if (o == null)
+            {
+                WriteEmptyTag(@"TimeSpan", @"");
+                return;
+            }
+            TimeSpan timeSpan = (TimeSpan)o;
+            WriteElementStringRaw(@"TimeSpan", @"", System.Xml.XmlConvert.ToString(timeSpan));
+        }
+
         internal void Write_char(object o)
         {
             WriteStartDocument();
@@ -617,6 +629,30 @@ namespace System.Xml.Serialization
             return (object)o;
         }
 
+        internal object Read_TimeSpan()
+        {
+            object o = null;
+            Reader.MoveToContent();
+            if (Reader.NodeType == System.Xml.XmlNodeType.Element)
+            {
+                if (((object)Reader.LocalName == (object)_id19_TimeSpan && (object)Reader.NamespaceURI == (object)_id2_Item))
+                {
+                    {
+                        o = System.Xml.XmlConvert.ToTimeSpan(Reader.ReadElementString());
+                    }
+                }
+                else
+                {
+                    throw CreateUnknownNodeException();
+                }
+            }
+            else
+            {
+                UnknownNode(null);
+            }
+            return (object)o;
+        }
+
         internal object Read_char()
         {
             object o = null;
@@ -683,6 +719,7 @@ namespace System.Xml.Serialization
         private System.String _id9_decimal;
         private System.String _id8_double;
         private System.String _id17_guid;
+        private System.String _id19_TimeSpan;
         private System.String _id2_Item;
         private System.String _id13_unsignedShort;
         private System.String _id18_char;
@@ -705,6 +742,7 @@ namespace System.Xml.Serialization
             _id9_decimal = Reader.NameTable.Add(@"decimal");
             _id8_double = Reader.NameTable.Add(@"double");
             _id17_guid = Reader.NameTable.Add(@"guid");
+            _id19_TimeSpan = Reader.NameTable.Add(@"TimeSpan");
             _id2_Item = Reader.NameTable.Add(@"");
             _id13_unsignedShort = Reader.NameTable.Add(@"unsignedShort");
             _id18_char = Reader.NameTable.Add(@"char");

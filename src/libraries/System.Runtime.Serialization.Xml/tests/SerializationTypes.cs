@@ -2702,3 +2702,8 @@ public class TypeWithBinaryProperty
     [XmlElement(DataType = "base64Binary")]
     public byte[] Base64Content { get; set; }
 }
+
+public class TypeWithTimeSpanProperty
+{
+    public TimeSpan TimeSpanProperty;
+}
