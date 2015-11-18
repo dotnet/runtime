@@ -34,7 +34,7 @@
     <Compile Include="Properties\GlobalSuppressions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\unicode-7.0.0-defined-characters.bin" />
+    <EmbeddedResource Include="Resources\unicode-8.0.0-defined-characters.bin" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
