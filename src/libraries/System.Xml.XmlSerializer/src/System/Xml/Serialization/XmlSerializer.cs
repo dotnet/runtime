@@ -760,6 +760,10 @@ namespace System.Xml.Serialization
                     {
                         writer.Write_guid(o);
                     }
+                    else if (_primitiveType == typeof(TimeSpan))
+                    {
+                        writer.Write_TimeSpan(o);
+                    }
                     else
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlUnxpectedType, _primitiveType.FullName));
@@ -833,6 +837,10 @@ namespace System.Xml.Serialization
                     else if (_primitiveType == typeof(Guid))
                     {
                         o = reader.Read_guid();
+                    }
+                    else if (_primitiveType == typeof(TimeSpan))
+                    {
+                        o = reader.Read_TimeSpan();
                     }
                     else
                     {

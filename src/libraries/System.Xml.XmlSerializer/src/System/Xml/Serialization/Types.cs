@@ -483,7 +483,7 @@ namespace System.Xml.Serialization
 
             AddNonXsdPrimitive(typeof(Guid), "guid", UrtTypes.Namespace, "Guid", new XmlQualifiedName("string", XmlSchema.Namespace), null, TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired | TypeFlags.IgnoreDefault);
             AddNonXsdPrimitive(typeof(char), "char", UrtTypes.Namespace, "Char", new XmlQualifiedName("unsignedShort", XmlSchema.Namespace), null, TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.IgnoreDefault);
-
+            AddNonXsdPrimitive(typeof(TimeSpan), "TimeSpan", UrtTypes.Namespace, "TimeSpan", new XmlQualifiedName("string", XmlSchema.Namespace), null, TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired | TypeFlags.IgnoreDefault);
 
             // Unsuppoted types that we map to string, if in the future we decide 
             // to add support for them we would need to create custom formatters for them
@@ -524,6 +524,8 @@ namespace System.Xml.Serialization
                     else if (type == typeof(byte[]))
                         return true;
                     else if (type == typeof(Guid))
+                        return true;
+                    else if (type == typeof (TimeSpan))
                         return true;
                     else if (type == typeof(XmlNode[]))
                         return true;
