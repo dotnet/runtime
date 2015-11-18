@@ -438,7 +438,8 @@ mono_domain_create (void)
 	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->ftnptrs_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
-	mono_os_mutex_init_recursive (&domain->lock);
+	mono_coop_mutex_init_recursive (&domain->lock);
+
 	mono_os_mutex_init_recursive (&domain->assemblies_lock);
 	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
 	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
@@ -1289,7 +1290,9 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_os_mutex_destroy (&domain->finalizable_objects_hash_lock);
 	mono_os_mutex_destroy (&domain->assemblies_lock);
 	mono_os_mutex_destroy (&domain->jit_code_hash_lock);
-	mono_os_mutex_destroy (&domain->lock);
+
+	mono_coop_mutex_destroy (&domain->lock);
+
 	domain->setup = NULL;
 
 	mono_gc_deregister_root ((char*)&(domain->MONO_DOMAIN_FIRST_GC_TRACKED));
@@ -1962,13 +1965,11 @@ mono_get_aot_cache_config (void)
 void
 mono_domain_lock (MonoDomain *domain)
 {
-	MONO_TRY_BLOCKING;
-	mono_locks_os_acquire (&(domain)->lock, DomainLock);
-	MONO_FINISH_TRY_BLOCKING;
+	mono_locks_coop_acquire (&domain->lock, DomainLock);
 }
 
 void
 mono_domain_unlock (MonoDomain *domain)
 {
-	mono_locks_os_release (&(domain)->lock, DomainLock);
+	mono_locks_coop_release (&domain->lock, DomainLock);
 }

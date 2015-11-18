@@ -284,7 +284,7 @@ struct _MonoDomain {
 	 * i.e. if both are taken by the same thread, the loader lock
 	 * must taken first.
 	 */
-	mono_mutex_t    lock;
+	MonoCoopMutex    lock;
 	MonoMemPool        *mp;
 	MonoCodeManager    *code_mp;
 	/*
