@@ -7547,7 +7547,7 @@ void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, L
 }
 
 
-void DacStackReferenceWalker::GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pObject, DWORD flags, DacSlotLocation loc)
+void DacStackReferenceWalker::GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
 {
     GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;
@@ -7587,7 +7587,7 @@ void DacStackReferenceWalker::GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pOb
 }
 
 
-void DacStackReferenceWalker::GCReportCallbackDac(PTR_PTR_Object ppObj, ScanContext *sc, DWORD flags)
+void DacStackReferenceWalker::GCReportCallbackDac(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
 {
     DacScanContext *dsc = (DacScanContext*)sc;
     

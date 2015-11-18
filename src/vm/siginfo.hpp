@@ -70,13 +70,13 @@ enum VarKind
 //---------------------------------------------------------------------------------------
 
 struct ScanContext;
-typedef void promote_func(PTR_PTR_Object, ScanContext*, DWORD);
-typedef void promote_carefully_func(promote_func*, PTR_PTR_Object, ScanContext*, DWORD);
+typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
+typedef void promote_carefully_func(promote_func*, PTR_PTR_Object, ScanContext*, uint32_t);
 
 void PromoteCarefully(promote_func   fn,
                       PTR_PTR_Object obj, 
                       ScanContext*   sc, 
-                      DWORD          flags = GC_CALL_INTERIOR);
+                      uint32_t       flags = GC_CALL_INTERIOR);
 
 class LoaderAllocator;
 void GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator *pLoaderAllocator);

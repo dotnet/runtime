@@ -8333,7 +8333,7 @@ CLRDATA_ADDRESS DacStackReferenceWalker::ReadPointer(TADDR addr)
 }
    
 
-void DacStackReferenceWalker::GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pObject, DWORD flags, DacSlotLocation loc)
+void DacStackReferenceWalker::GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
 {
     GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;
@@ -8392,7 +8392,7 @@ void DacStackReferenceWalker::GCEnumCallbackSOS(LPVOID hCallback, OBJECTREF *pOb
 }
 
 
-void DacStackReferenceWalker::GCReportCallbackSOS(PTR_PTR_Object ppObj, ScanContext *sc, DWORD flags)
+void DacStackReferenceWalker::GCReportCallbackSOS(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
 {
     DacScanContext *dsc = (DacScanContext*)sc;
     CLRDATA_ADDRESS obj = dsc->pWalker->ReadPointer(ppObj.GetAddr());

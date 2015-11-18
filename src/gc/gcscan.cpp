@@ -110,7 +110,7 @@ bool CNameSpace::GcDhReScan(ScanContext* sc)
  * Scan for dead weak pointers
  */
 
-VOID CNameSpace::GcWeakPtrScan( promote_func* fn, int condemned, int max_gen, ScanContext* sc )
+void CNameSpace::GcWeakPtrScan( promote_func* fn, int condemned, int max_gen, ScanContext* sc )
 {
     // Clear out weak pointers that are no longer live.
     Ref_CheckReachable(condemned, max_gen, (LPARAM)sc);
@@ -138,17 +138,17 @@ static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtra
     }
 }
 
-VOID CNameSpace::GcWeakPtrScanBySingleThread( int condemned, int max_gen, ScanContext* sc )
+void CNameSpace::GcWeakPtrScanBySingleThread( int condemned, int max_gen, ScanContext* sc )
 {
     GCToEEInterface::SyncBlockCacheWeakPtrScan(&CheckPromoted, (LPARAM)sc, 0);
 }
 
-VOID CNameSpace::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
+void CNameSpace::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
 {
     Ref_ScanSizedRefHandles(condemned, max_gen, sc, fn);
 }
 
-VOID CNameSpace::GcShortWeakPtrScan(promote_func* fn,  int condemned, int max_gen, 
+void CNameSpace::GcShortWeakPtrScan(promote_func* fn,  int condemned, int max_gen, 
                                      ScanContext* sc)
 {
     Ref_CheckAlive(condemned, max_gen, (LPARAM)sc);
@@ -158,7 +158,7 @@ VOID CNameSpace::GcShortWeakPtrScan(promote_func* fn,  int condemned, int max_ge
  * Scan all stack roots in this 'namespace'
  */
  
-VOID CNameSpace::GcScanRoots(promote_func* fn,  int condemned, int max_gen, 
+void CNameSpace::GcScanRoots(promote_func* fn,  int condemned, int max_gen, 
                              ScanContext* sc)
 {
 #if defined ( _DEBUG) && defined (CATCH_GC)
@@ -212,7 +212,7 @@ VOID CNameSpace::GcScanRoots(promote_func* fn,  int condemned, int max_gen,
  */
 
 
-VOID CNameSpace::GcScanHandles (promote_func* fn,  int condemned, int max_gen, 
+void CNameSpace::GcScanHandles (promote_func* fn,  int condemned, int max_gen, 
                                 ScanContext* sc)
 {
 
@@ -251,7 +251,7 @@ VOID CNameSpace::GcScanHandles (promote_func* fn,  int condemned, int max_gen,
  * Scan all handle roots in this 'namespace' for profiling
  */
 
-VOID CNameSpace::GcScanHandlesForProfilerAndETW (int max_gen, ScanContext* sc)
+void CNameSpace::GcScanHandlesForProfilerAndETW (int max_gen, ScanContext* sc)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -360,7 +360,7 @@ size_t CNameSpace::AskForMoreReservedMemory (size_t old_size, size_t need_size)
     {
         size_t new_max_limit_size = need_size;
         pGCHostControl->RequestVirtualMemLimit (old_size, 
-                                                (SIZE_T*)&new_max_limit_size);
+                                                (size_t*)&new_max_limit_size);
         return new_max_limit_size;
     }
 #endif
