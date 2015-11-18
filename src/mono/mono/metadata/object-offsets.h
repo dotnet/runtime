@@ -243,4 +243,6 @@ DECL_OFFSET(SeqPointInfo, bp_addrs)
 #undef DECL_OFFSET2
 #undef DECL_ALIGN
 #undef DECL_ALIGN2
+#undef DECL_SIZE
+#undef DECL_SIZE2
 #undef USE_CROSS_COMPILE_OFFSETS
