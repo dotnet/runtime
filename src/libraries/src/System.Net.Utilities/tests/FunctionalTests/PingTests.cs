@@ -17,7 +17,7 @@ namespace System.Net.Utilities.Tests
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress),
                 (pingReply) =>
                 {
@@ -31,7 +31,7 @@ namespace System.Net.Utilities.Tests
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout),
                 (pingReply) =>
                 {
@@ -47,7 +47,7 @@ namespace System.Net.Utilities.Tests
             byte[] buffer = TestSettings.PayloadAsBytes;
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
                 {
@@ -65,7 +65,7 @@ namespace System.Net.Utilities.Tests
             byte[] buffer = TestSettings.PayloadAsBytes;
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
                 {
@@ -91,7 +91,7 @@ namespace System.Net.Utilities.Tests
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
             byte[] buffer = TestSettings.PayloadAsBytes;
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
                 {
@@ -109,7 +109,7 @@ namespace System.Net.Utilities.Tests
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
             byte[] buffer = TestSettings.PayloadAsBytes;
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
                 {
@@ -133,7 +133,7 @@ namespace System.Net.Utilities.Tests
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost),
                 (pingReply) =>
                 {
@@ -147,7 +147,7 @@ namespace System.Net.Utilities.Tests
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout),
                 (pingReply) =>
                 {
@@ -163,7 +163,7 @@ namespace System.Net.Utilities.Tests
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
             byte[] buffer = TestSettings.PayloadAsBytes;
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
                 {
@@ -181,7 +181,7 @@ namespace System.Net.Utilities.Tests
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
             byte[] buffer = TestSettings.PayloadAsBytes;
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer),
                 (pingReply) =>
                 {
@@ -207,7 +207,7 @@ namespace System.Net.Utilities.Tests
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
             byte[] buffer = TestSettings.PayloadAsBytes;
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
                 {
@@ -225,7 +225,7 @@ namespace System.Net.Utilities.Tests
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
             byte[] buffer = TestSettings.PayloadAsBytes;
-            SendBatchPingAsync(
+            await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(TestSettings.LocalHost, TestSettings.PingTimeout, buffer, new PingOptions()),
                 (pingReply) =>
                 {
@@ -244,17 +244,27 @@ namespace System.Net.Utilities.Tests
                 });
         }
 
-        private const int PingCount = 4;
+        [Fact]
+        public static async void SinglePingCallback_Hostname()
+        {
+            bool callbackInvoked = false;
+            Ping p = new Ping();
+            p.PingCompleted += (s, e) => callbackInvoked = true;
+            await p.SendPingAsync(TestSettings.LocalHost);
+            Assert.True(callbackInvoked, "Callback was not invoked.");
+        }
 
-        private static void SendBatchPingAsync(Func<Ping, Task<PingReply>> sendPing, Action<PingReply> pingResultValidator)
+        private static readonly int s_pingcount = 4;
+
+        private static Task SendBatchPingAsync(Func<Ping, Task<PingReply>> sendPing, Action<PingReply> pingResultValidator)
         {
             // create several concurrent pings
-            Task[] pingTasks = new Task[PingCount];
-            for (int i = 0; i < PingCount; i++)
+            Task[] pingTasks = new Task[s_pingcount];
+            for (int i = 0; i < s_pingcount; i++)
             {
                 pingTasks[i] = SendPingAsync(sendPing, pingResultValidator);
             }
-            Task.WaitAll(pingTasks);
+            return Task.WhenAll(pingTasks);
         }
 
         private static async Task SendPingAsync(Func<Ping, Task<PingReply>> sendPing, Action<PingReply> pingResultValidator)
