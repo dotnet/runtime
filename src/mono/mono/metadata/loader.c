@@ -56,7 +56,8 @@ MonoDefaults mono_defaults;
  * See domain-internals.h for locking policy in combination with the
  * domain lock.
  */
-static mono_mutex_t loader_mutex, global_loader_data_mutex;
+static MonoCoopMutex loader_mutex;
+static mono_mutex_t global_loader_data_mutex;
 static gboolean loader_lock_inited;
 
 /* Statistics */
@@ -97,7 +98,7 @@ mono_loader_init ()
 	static gboolean inited;
 
 	if (!inited) {
-		mono_os_mutex_init_recursive (&loader_mutex);
+		mono_coop_mutex_init_recursive (&loader_mutex);
 		mono_os_mutex_init_recursive (&global_loader_data_mutex);
 		loader_lock_inited = TRUE;
 
@@ -126,7 +127,7 @@ mono_loader_cleanup (void)
 	mono_native_tls_free (loader_error_thread_id);
 	mono_native_tls_free (loader_lock_nest_id);
 
-	mono_os_mutex_destroy (&loader_mutex);
+	mono_coop_mutex_destroy (&loader_mutex);
 	mono_os_mutex_destroy (&global_loader_data_mutex);
 	loader_lock_inited = FALSE;	
 }
@@ -2540,10 +2541,7 @@ static gboolean loader_lock_track_ownership = FALSE;
 void
 mono_loader_lock (void)
 {
-	MONO_TRY_BLOCKING;
-	mono_locks_os_acquire (&loader_mutex, LoaderLock);
-	MONO_FINISH_TRY_BLOCKING;
-		
+	mono_locks_coop_acquire (&loader_mutex, LoaderLock);
 	if (G_UNLIKELY (loader_lock_track_ownership)) {
 		mono_native_tls_set_value (loader_lock_nest_id, GUINT_TO_POINTER (GPOINTER_TO_UINT (mono_native_tls_get_value (loader_lock_nest_id)) + 1));
 	}
@@ -2552,7 +2550,7 @@ mono_loader_lock (void)
 void
 mono_loader_unlock (void)
 {
-	mono_locks_os_release (&loader_mutex, LoaderLock);
+	mono_locks_coop_release (&loader_mutex, LoaderLock);
 	if (G_UNLIKELY (loader_lock_track_ownership)) {
 		mono_native_tls_set_value (loader_lock_nest_id, GUINT_TO_POINTER (GPOINTER_TO_UINT (mono_native_tls_get_value (loader_lock_nest_id)) - 1));
 	}
