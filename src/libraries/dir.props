@@ -50,7 +50,7 @@
   </PropertyGroup>
 
   <!-- list of nuget package sources passed to nuget.exe -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
     <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
     <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
   </ItemGroup>
@@ -71,7 +71,7 @@
   </PropertyGroup>
 
   <!-- list of nuget package sources passed to dnu -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
 
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-core/" />
@@ -81,7 +81,7 @@
     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
   </ItemGroup>
 
-    <!-- list of directories to perform batch restore -->
+  <!-- list of directories to perform batch restore -->
   <ItemGroup>
     <DnuRestoreDir Include="$(MSBuildProjectDirectory)\src" />
     <DnuRestoreDir Include="$(ToolsDir)" />
@@ -106,9 +106,9 @@
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
-    <!-- When we do a traversal build we get all packages up front, don't restore them again -->
-    <RestorePackages>false</RestorePackages>
+  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">  
+    <!-- When we do a traversal build we get all packages up front, don't restore them again -->  
+    <RestorePackages>false</RestorePackages>  
   </PropertyGroup>
 
   <!--
