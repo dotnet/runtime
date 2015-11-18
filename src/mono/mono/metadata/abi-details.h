@@ -19,6 +19,7 @@
 #define DECL_ALIGN(type) MONO_ALIGN_ ##type = MONO_CURRENT_ABI_ALIGNOF (type),
 #define DECL_ALIGN2(type,size) MONO_ALIGN_ ##type = size,
 #define DECL_SIZE(type) MONO_SIZEOF_ ##type = MONO_CURRENT_ABI_SIZEOF (type),
+#define DECL_SIZE2(type,size) MONO_SIZEOF_ ##type = size,
 
 enum {
 #include "object-offsets.h"
