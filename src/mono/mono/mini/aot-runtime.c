@@ -3599,8 +3599,6 @@ load_patch_info (MonoAotModule *amodule, MonoMemPool *mp, int n_patches,
 
 	p = buf;
 
-	patches = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfo) * n_patches);
-
 	*got_slots = g_malloc (sizeof (guint32) * n_patches);
 	for (pindex = 0; pindex < n_patches; ++pindex) {
 		(*got_slots)[pindex] = decode_value (p, &p);
@@ -3971,8 +3969,10 @@ init_llvm_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *meth
 		}
 
 		patches = load_patch_info (amodule, mp, n_patches, llvm, &got_slots, p, &p);
-		if (patches == NULL)
+		if (patches == NULL) {
+			mono_mempool_destroy (mp);
 			goto cleanup;
+		}
 
 		for (pindex = 0; pindex < n_patches; ++pindex) {
 			MonoJumpInfo *ji = &patches [pindex];
