@@ -295,7 +295,7 @@
     <value>CookieContainer property must not be null.</value>
   </data>
   <data name="net_http_unix_invalid_client_cert_option" xml:space="preserve">
-    <value>libcurl supports only manual client certificate selection</value>
+    <value>ClientCertificateOption.Automatic is supported only with libcurl with libssl compatible backend.</value>
   </data>
   <data name="net_http_unix_invalid_credential" xml:space="preserve">
     <value>libcurl does not support different credentials for different authentication schemes</value>

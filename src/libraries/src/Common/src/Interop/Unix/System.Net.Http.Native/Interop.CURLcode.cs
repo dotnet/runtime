@@ -12,6 +12,7 @@ internal static partial class Interop
             CURLE_UNSUPPORTED_PROTOCOL  =  1,
             CURLE_NOT_BUILT_IN = 4,
             CURLE_COULDNT_RESOLVE_HOST  =  6,
+            CURLE_ABORTED_BY_CALLBACK = 42,
             CURLE_UNKNOWN_OPTION = 48,
         }
     }

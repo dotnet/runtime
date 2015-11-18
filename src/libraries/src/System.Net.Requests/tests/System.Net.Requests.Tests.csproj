@@ -35,6 +35,17 @@
       <Name>System.Net.Requests</Name>
       <Project>{5EE76DCC-9FD5-47FD-AB45-BD0F0857740F}</Project>
     </ProjectReference>
+    <!--
+        TODO: Temporary fix.
+        Current PR introduces a backward-incompatible change in System.Net.Http.Native. Owing to the way tests are run on CI, this change will result in
+        crash when System.Net.Requests.Tests are run. The following is a temporary work around and will be removed as soon as the dlls and native libraries
+        get in sync
+    -->
+    <ProjectReference Include="..\..\System.Net.Http\src\System.Net.Http.csproj">
+      <Name>System.Net.Http</Name>
+      <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>
+    </ProjectReference>
+
   </ItemGroup>
 
   <ItemGroup>

@@ -45,7 +45,7 @@ internal static partial class Interop
 
         public delegate ulong ReadWriteCallback(IntPtr buffer, ulong bufferSize, ulong nitems, IntPtr userPointer);
 
-        public delegate CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx);
+        public delegate CURLcode SslCtxCallback(IntPtr curl, IntPtr sslCtx, IntPtr userPointer);
 
         [DllImport(Libraries.HttpNative)]
         public static extern void RegisterSeekCallback(
@@ -66,6 +66,7 @@ internal static partial class Interop
         public static extern CURLcode RegisterSslCtxCallback(
             SafeCurlHandle curl,
             SslCtxCallback callback,
+            IntPtr userPointer,
             ref SafeCallbackHandle callbackHandle);
 
         [DllImport(Libraries.HttpNative)]

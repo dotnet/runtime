@@ -36,6 +36,8 @@ static_assert(PAL_CURLE_OK == CURLE_OK, "");
 static_assert(PAL_CURLE_UNSUPPORTED_PROTOCOL == CURLE_UNSUPPORTED_PROTOCOL, "");
 static_assert(PAL_CURLE_NOT_BUILT_IN == CURLE_NOT_BUILT_IN, "");
 static_assert(PAL_CURLE_COULDNT_RESOLVE_HOST == CURLE_COULDNT_RESOLVE_HOST, "");
+static_assert(PAL_CURLE_ABORTED_BY_CALLBACK == CURLE_ABORTED_BY_CALLBACK, "");
+static_assert(PAL_CURLE_UNKNOWN_OPTION == CURLE_UNKNOWN_OPTION, "");
 
 static_assert(PAL_CURLINFO_PRIVATE == CURLINFO_PRIVATE, "");
 static_assert(PAL_CURLINFO_HTTPAUTH_AVAIL == CURLINFO_HTTPAUTH_AVAIL, "");
@@ -133,6 +135,7 @@ struct CallbackHandle
     void* headerUserPointer;
     
     SslCtxCallback sslCtxCallback;
+    void* sslUserPointer;
 };
 
 static inline void EnsureCallbackHandle(CallbackHandle** callbackHandle)
@@ -216,16 +219,17 @@ static CURLcode ssl_ctx_callback(CURL* curl, void* sslCtx, void* userPointer)
 {
     CallbackHandle* handle = static_cast<CallbackHandle*>(userPointer);
 
-    int32_t result = handle->sslCtxCallback(curl, sslCtx);
+    int32_t result = handle->sslCtxCallback(curl, sslCtx, handle->sslUserPointer);
     return static_cast<CURLcode>(result);
 }
 
-extern "C" int32_t RegisterSslCtxCallback(CURL* curl, SslCtxCallback callback, CallbackHandle** callbackHandle)
+extern "C" int32_t RegisterSslCtxCallback(CURL* curl, SslCtxCallback callback, void* userPointer, CallbackHandle** callbackHandle)
 {
     EnsureCallbackHandle(callbackHandle);
 
     CallbackHandle* handle = *callbackHandle;
     handle->sslCtxCallback = callback;
+    handle->sslUserPointer = userPointer;
 
     curl_easy_setopt(curl, CURLOPT_SSL_CTX_DATA, handle);
     return curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, &ssl_ctx_callback);

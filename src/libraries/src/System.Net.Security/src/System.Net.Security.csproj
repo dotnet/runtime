@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -226,6 +226,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.OpenSsl.cs">
       <Link>Common\Interop\Unix\libssl\Interop.OpenSsl.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libssl\Interop.X509ChannelBindingHash.cs">
+      <Link>Common\Interop\Unix\libssl\Interop.X509ChannelBindingHash.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
@@ -246,6 +249,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs</Link>
