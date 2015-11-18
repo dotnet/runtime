@@ -2913,6 +2913,9 @@ uint64_t c, struct _Unwind_Exception *d, struct _Unwind_Context *e)
 }
 #else
 void
+mono_debug_personality (void);
+
+void
 mono_debug_personality (void)
 {
 	g_assert_not_reached ();
