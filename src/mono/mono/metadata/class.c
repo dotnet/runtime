@@ -7540,6 +7540,12 @@ mono_image_init_name_cache (MonoImage *image)
 
 		for (i = 0; i < t->rows; ++i) {
 			mono_metadata_decode_row (t, i, cols, MONO_EXP_TYPE_SIZE);
+
+			guint32 impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
+			if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_EXP_TYPE)
+				/* Nested type */
+				continue;
+
 			name = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
 			nspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
 
@@ -7831,7 +7837,7 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 				return NULL;
 			klass = mono_class_from_name_checked_aux (loaded_image, name_space, name, error, visited_images);
 			if (nested)
-				return return_nested_in (klass, nested);
+				return klass ? return_nested_in (klass, nested) : NULL;
 			return klass;
 		} else if ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_ASSEMBLYREF) {
 			guint32 assembly_idx;
@@ -7842,10 +7848,12 @@ mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, cons
 			g_assert (image->references [assembly_idx - 1]);
 			if (image->references [assembly_idx - 1] == (gpointer)-1)
 				return NULL;			
-			else
-				return mono_class_from_name_checked_aux (image->references [assembly_idx - 1]->image, name_space, name, error, visited_images);
+			klass = mono_class_from_name_checked_aux (image->references [assembly_idx - 1]->image, name_space, name, error, visited_images);
+			if (nested)
+				return return_nested_in (klass, nested);
+			return klass;
 		} else {
-			g_error ("not yet implemented");
+			g_assert_not_reached ();
 		}
 	}
 
