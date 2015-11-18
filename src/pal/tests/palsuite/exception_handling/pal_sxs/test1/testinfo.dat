@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = exception_handling
+Function = test1
+Name = pal_sxs test #1
+TYPE = DEFAULT
+EXE1 = test1
+LANG = cpp
+Description
+=Tests that exceptions across multiples pals work correctly
