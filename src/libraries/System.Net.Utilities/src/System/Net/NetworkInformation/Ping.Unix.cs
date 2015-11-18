@@ -131,9 +131,10 @@ namespace System.Net.NetworkInformation
 
                     sw.Stop();
                     long roundTripTime = sw.ElapsedMilliseconds;
+                    int dataOffset = ipHeaderLength + IcmpHeaderLengthInBytes;
                     // We want to return a buffer with the actual data we sent out, not including the header data.
-                    byte[] dataBuffer = new byte[bytesReceived - IcmpHeaderLengthInBytes];
-                    Array.Copy(receiveBuffer, IcmpHeaderLengthInBytes, dataBuffer, 0, dataBuffer.Length);
+                    byte[] dataBuffer = new byte[bytesReceived - dataOffset];
+                    Array.Copy(receiveBuffer, dataOffset, dataBuffer, 0, dataBuffer.Length);
 
                     IPStatus status = isIpv4
                                         ? Icmpv4MessageConstants.MapV4TypeToIPStatus(type, code)
@@ -173,7 +174,7 @@ namespace System.Net.NetworkInformation
             psi.RedirectStandardError = true;
             Process p = new Process() { StartInfo = psi };
 
-            var processCompletion = new TaskCompletionSource<bool>();
+            var processCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             p.EnableRaisingEvents = true;
             p.Exited += (s, e) => processCompletion.SetResult(true);
             p.Start();
@@ -181,7 +182,7 @@ namespace System.Net.NetworkInformation
             Task timeoutTask = Task.Delay(timeout, cts.Token);
 
             Task finished = await Task.WhenAny(processCompletion.Task, timeoutTask).ConfigureAwait(false);
-            if (finished == timeoutTask)
+            if (finished == timeoutTask && !p.HasExited)
             {
                 // Try to kill the ping process if it didn't return. If it is already in the process of exiting, a Win32Exception will be thrown.
                 try
@@ -202,7 +203,7 @@ namespace System.Net.NetworkInformation
 
                 try
                 {
-                    string output = await p.StandardOutput.ReadToEndAsync();
+                    string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
                     int timeIndex = output.IndexOf("time=", StringComparison.Ordinal);
                     int afterTime = timeIndex + "time=".Length;
                     double parsedRtt;
