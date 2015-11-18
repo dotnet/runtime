@@ -41,7 +41,7 @@ namespace System.Threading.Tasks.Tests
 
         private static void Run(bool useRunContinuationsAsynchronously, Func<Task,Task> getIntermediateContinuation)
         {
-            Task.Run(() => // run test off of xunit's thread so as not to be confused by its TaskScheduler or SynchronizationContext
+            Task t = Task.Run(() => // run test off of xunit's thread so as not to be confused by its TaskScheduler or SynchronizationContext
             {
                 int callingThreadId = Environment.CurrentManagedThreadId;
 
@@ -57,7 +57,9 @@ namespace System.Threading.Tasks.Tests
 
                 ((IAsyncResult)cont).AsyncWaitHandle.WaitOne(); // ensure we don't inline as part of waiting
                 cont.GetAwaiter().GetResult(); // propagate any errors
-            }).GetAwaiter().GetResult(); // propagate any errors
+            });
+            ((IAsyncResult)t).AsyncWaitHandle.WaitOne(); // ensure we don't inline as part of waiting
+            t.GetAwaiter().GetResult(); // propagate any errors
         }
 
     }
