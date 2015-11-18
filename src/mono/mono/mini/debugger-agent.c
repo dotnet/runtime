@@ -1531,18 +1531,18 @@ transport_handshake (void)
 	/* Write handshake message */
 	sprintf (handshake_msg, "DWP-Handshake");
 	/* Must use try blocking as this can nest into code that runs blocking */
-	MONO_TRY_BLOCKING;
+	MONO_PREPARE_BLOCKING;
 	do {
 		res = transport_send (handshake_msg, strlen (handshake_msg));
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
-	MONO_FINISH_TRY_BLOCKING;
+	MONO_FINISH_BLOCKING;
 
 	g_assert (res != -1);
 
 	/* Read answer */
-	MONO_TRY_BLOCKING;
+	MONO_PREPARE_BLOCKING;
 	res = transport_recv (buf, strlen (handshake_msg));
-	MONO_FINISH_TRY_BLOCKING;
+	MONO_FINISH_BLOCKING;
 	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg)) != 0)) {
 		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
 		return FALSE;

@@ -2950,10 +2950,10 @@ mono_method_get_unmanaged_thunk (MonoMethod *method)
 
 	gpointer res;
 
-	MONO_PREPARE_RESET_BLOCKING
+	MONO_PREPARE_RESET_BLOCKING;
 	method = mono_marshal_get_thunk_invoke_wrapper (method);
 	res = mono_compile_method (method);
-	MONO_FINISH_RESET_BLOCKING
+	MONO_FINISH_RESET_BLOCKING;
 
 	return res;
 }
