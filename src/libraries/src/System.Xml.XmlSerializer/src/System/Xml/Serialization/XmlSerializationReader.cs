@@ -110,6 +110,7 @@ namespace System.Xml.Serialization
 
         private string _charID;
         private string _guidID;
+        private string _timeSpanID;
 
 
 
@@ -226,6 +227,7 @@ namespace System.Xml.Serialization
             _oldTimeInstantID = _r.NameTable.Add("timeInstant");
             _charID = _r.NameTable.Add("char");
             _guidID = _r.NameTable.Add("guid");
+            _timeSpanID = _r.NameTable.Add("TimeSpan");
             _base64ID = _r.NameTable.Add("base64");
 
             _anyURIID = _r.NameTable.Add("anyURI");
@@ -531,6 +533,8 @@ namespace System.Xml.Serialization
                     value = ToChar(ReadStringValue());
                 else if ((object)type.Name == (object)_guidID)
                     value = new Guid(CollapseWhitespace(ReadStringValue()));
+                else if ((object)type.Name == (object)_timeSpanID)
+                    value = XmlConvert.ToTimeSpan(ReadStringValue());
                 else
                     value = ReadXmlNodes(elementCanBeType);
             }
@@ -627,6 +631,8 @@ namespace System.Xml.Serialization
                     value = default(Nullable<char>);
                 else if ((object)type.Name == (object)_guidID)
                     value = default(Nullable<Guid>);
+                else if ((object) type.Name == (object) _timeSpanID)
+                    value = default(Nullable<TimeSpan>);
                 else
                     value = null;
             }
