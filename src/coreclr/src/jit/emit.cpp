@@ -1498,6 +1498,7 @@ void                emitter::emitBegProlog()
 #endif
 
     emitNoGCIG = true;
+    emitForceNewIG = false;
 
     /* Switch to the pre-allocated prolog IG */
 
@@ -1909,6 +1910,7 @@ void                emitter::emitBegPrologEpilog(insGroup* igPh)
 
     igPh->igFlags &= ~IGF_PLACEHOLDER;
     emitNoGCIG = true;
+    emitForceNewIG = false;
 
     /* Set up the GC info that we stored in the placeholder */
 
@@ -3216,7 +3218,7 @@ void                emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool ver
             printf("IG%02u ", igPh->igPhData->igPhNext->igNum);
         else
             printf("<END>");
-        printf(", BB=%08XH", dspPtr(igPh->igPhData->igPhBB));
+        printf(", BB=%08XH (BB%02u)", dspPtr(igPh->igPhData->igPhBB), (igPh->igPhData->igPhBB != nullptr) ? igPh->igPhData->igPhBB->bbNum : 0 );
 
         emitDispIGflags(igPh->igFlags);
 
