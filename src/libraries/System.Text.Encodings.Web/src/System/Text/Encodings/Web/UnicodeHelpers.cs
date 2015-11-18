@@ -34,7 +34,7 @@ namespace System.Text.Unicode
         private static uint[] CreateDefinedCharacterBitmap()
         {
             // The stream should be exactly 8KB in size.
-            var stream = typeof(UnicodeHelpers).GetTypeInfo().Assembly.GetManifestResourceStream("System.Text.Encodings.Web.Resources.unicode-7.0.0-defined-characters.bin");
+            var stream = typeof(UnicodeHelpers).GetTypeInfo().Assembly.GetManifestResourceStream("System.Text.Encodings.Web.Resources.unicode-8.0.0-defined-characters.bin");
             if (stream.Length != 8 * 1024)
             {
                 Environment.FailFast("Corrupt data detected.");

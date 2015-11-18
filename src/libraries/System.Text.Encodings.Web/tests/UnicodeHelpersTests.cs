@@ -162,6 +162,7 @@ namespace Microsoft.Framework.WebEncoders
             bool[] retVal = new bool[0x10000];
             string[] allLines = new StreamReader(typeof(UnicodeHelpersTests).GetTypeInfo().Assembly.GetManifestResourceStream("System.Text.Encodings.Web.Tests.UnicodeData.txt")).ReadAllLines();
 
+            uint startSpanCodepoint = 0;
             foreach (string line in allLines)
             {
                 string[] splitLine = line.Split(';');
@@ -178,10 +179,24 @@ namespace Microsoft.Framework.WebEncoders
                 else
                 {
                     string category = splitLine[2];
+
                     if (allowedCategories.Contains(category))
                     {
                         retVal[codePoint] = true; // chars in this category are allowable
                         seenCategories.Add(category);
+                        
+                        if (splitLine[1].EndsWith("First>"))
+                        {
+                            startSpanCodepoint = codePoint;
+                        } 
+                        else if (splitLine[1].EndsWith("Last>"))
+                        {
+                            for (uint spanCounter = startSpanCodepoint; spanCounter < codePoint; spanCounter++)
+                            {
+                                retVal[spanCounter] = true; // chars in this category are allowable
+                            }
+                        }
+                        
                     }
                 }
             }
