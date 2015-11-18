@@ -8476,6 +8476,10 @@ public:
     // a field sequence as a member; otherwise, it may be the addition of an a byref and a constant, where the const
     // has a field sequence -- in this case "fieldSeq" is appended to that of the constant; otherwise, we
     // record the the field sequence using the ZeroOffsetFieldMap described above.
+    //
+    // One exception above is that "op1" is a node of type "TYP_REF" where "op1" is a GT_LCL_VAR.
+    // This happens when System.Object vtable pointer is a regular field at offset 0 in System.Private.CoreLib in CoreRT.
+    // Such case is handled same as the default case.
     void fgAddFieldSeqForZeroOffset(GenTreePtr op1, FieldSeqNode* fieldSeq);
 
 
