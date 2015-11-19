@@ -3,21 +3,21 @@
 
 #include "trace.h"
 
-static trace::level_t g_level = trace::level_t::Error;
+static bool g_enabled = false;
 
-void trace::set_level(trace::level_t new_level)
+void trace::enable()
 {
-    g_level = new_level;
+    g_enabled = true;
 }
 
-bool trace::is_enabled(trace::level_t level)
+bool trace::is_enabled()
 {
-    return level <= g_level;
+    return g_enabled;
 }
 
 void trace::verbose(const pal::char_t* format, ...)
 {
-    if (trace::is_enabled(trace::level_t::Verbose))
+    if (g_enabled)
     {
         va_list args;
         va_start(args, format);
@@ -28,7 +28,7 @@ void trace::verbose(const pal::char_t* format, ...)
 
 void trace::info(const pal::char_t* format, ...)
 {
-    if (trace::is_enabled(trace::level_t::Info))
+    if (g_enabled)
     {
         va_list args;
         va_start(args, format);
@@ -39,18 +39,16 @@ void trace::info(const pal::char_t* format, ...)
 
 void trace::error(const pal::char_t* format, ...)
 {
-    if (trace::is_enabled(trace::level_t::Error))
-    {
-        va_list args;
-        va_start(args, format);
-        pal::err_vprintf(format, args);
-        va_end(args);
-    }
+    // Always print errors
+    va_list args;
+    va_start(args, format);
+    pal::err_vprintf(format, args);
+    va_end(args);
 }
 
 void trace::warning(const pal::char_t* format, ...)
 {
-    if (trace::is_enabled(trace::level_t::Warning))
+    if (g_enabled)
     {
         va_list args;
         va_start(args, format);
