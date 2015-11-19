@@ -15,36 +15,26 @@ namespace System.Net.Utilities.Tests
         public const string PayloadAsString = "'Post hoc ergo propter hoc'. 'After it, therefore because of it'. It means one thing follows the other, therefore it was caused by the other. But it's not always true. In fact it's hardly ever true.";
         public static readonly byte[] PayloadAsBytes = Encoding.UTF8.GetBytes(TestSettings.PayloadAsString);
 
-        public static Task<IPAddress> GetLocalIPAddress()
+        public static async Task<IPAddress> GetLocalIPAddress()
         {
-            return ResolveHost(LocalHost);
-        }
-
-        private static async Task<IPAddress> ResolveHost(string host)
-        {
-            IPHostEntry hostEntry = await Dns.GetHostEntryAsync(host);
+            IPHostEntry hostEntry = await Dns.GetHostEntryAsync(LocalHost);
             IPAddress ret = null;
 
             foreach (IPAddress address in hostEntry.AddressList)
             {
                 if (address.AddressFamily == AddressFamily.InterNetworkV6)
                 {
-                    ret = address;
+                    return address;
                 }
             }
 
             // If there's no IPv6 addresses, just take the first (IPv4) address.
-            if (ret == null)
+            if (ret == null && hostEntry.AddressList.Length > 0)
             {
-                ret = hostEntry.AddressList[0];
+                return hostEntry.AddressList[0];
             }
 
-            if (ret != null)
-            {
-                return ret;
-            }
-
-            throw new InvalidOperationException("Unable to discover any addresses for host " + host);
+            throw new InvalidOperationException("Unable to discover any addresses for the local host.");
         }
     }
 }

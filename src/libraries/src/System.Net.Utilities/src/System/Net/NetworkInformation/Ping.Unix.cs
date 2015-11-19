@@ -17,8 +17,29 @@ namespace System.Net.NetworkInformation
         private const int IcmpHeaderLengthInBytes = 8;
         private const int IpHeaderLengthInBytes = 20;
 
+        // Ubuntu has ping under /bin, OSX under /sbin.
+        private static readonly string[] s_binFolders = { "/bin", "/sbin" };
+
         private static readonly string s_ipv4PingFile = "ping";
         private static readonly string s_ipv6PingFile = "ping6";
+
+        private static readonly string s_discoveredPing4UtilityPath = GetPingUtilityPath(ipv4: true);
+        private static readonly string s_discoveredPing6UtilityPath = GetPingUtilityPath(ipv4: false);
+
+        private static string GetPingUtilityPath(bool ipv4)
+        {
+            string fileName = ipv4 ? s_ipv4PingFile : s_ipv6PingFile;
+            foreach (string folder in s_binFolders)
+            {
+                string path = Path.Combine(folder, fileName);
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+
+            return null;
+        }
 
         private async void InternalSendAsync(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
@@ -65,12 +86,13 @@ namespace System.Net.NetworkInformation
             ushort identifier = (ushort)Environment.CurrentManagedThreadId;
             IcmpHeader header = new IcmpHeader()
             {
-                Type = isIpv4 ? (byte)Icmpv4MessageConstants.EchoRequest : (byte)Icmpv6MessageConstants.EchoRequest,
+                Type = isIpv4 ? (byte)IcmpV4MessageType.EchoRequest : (byte)IcmpV6MessageType.EchoRequest,
                 Code = 0,
                 HeaderChecksum = 0,
                 Identifier = identifier,
                 SequenceNumber = 0,
             };
+
             byte[] sendBuffer = CreateSendMessageBuffer(header, buffer);
 
             using (Socket socket = new Socket(address.AddressFamily, SocketType.Raw, protocolType))
@@ -100,7 +122,7 @@ namespace System.Net.NetworkInformation
                     if (finished != receiveTask)
                     {
                         sw.Stop();
-                        throw new PingException(SR.net_ping_reply_timeout);
+                        return CreateTimedOutPingReply();
                     }
 
                     SocketReceiveFromResult receiveResult = receiveTask.GetAwaiter().GetResult();
@@ -121,8 +143,8 @@ namespace System.Net.NetworkInformation
                             code = receivedHeader.Code;
 
                             if (identifier != receivedHeader.Identifier
-                                || type == Icmpv4MessageConstants.EchoRequest
-                                || type == Icmpv6MessageConstants.EchoRequest) // Echo Request, ignore
+                                || type == (byte)IcmpV4MessageType.EchoRequest
+                                || type == (byte)IcmpV6MessageType.EchoRequest) // Echo Request, ignore
                             {
                                 continue;
                             }
@@ -137,22 +159,26 @@ namespace System.Net.NetworkInformation
                     Array.Copy(receiveBuffer, dataOffset, dataBuffer, 0, dataBuffer.Length);
 
                     IPStatus status = isIpv4
-                                        ? Icmpv4MessageConstants.MapV4TypeToIPStatus(type, code)
-                                        : Icmpv6MessageConstants.MapV6TypeToIPStatus(type, code);
+                                        ? IcmpV4MessageConstants.MapV4TypeToIPStatus(type, code)
+                                        : IcmpV6MessageConstants.MapV6TypeToIPStatus(type, code);
 
                     return new PingReply(address, options, status, roundTripTime, dataBuffer);
                 }
 
                 // We have exceeded our timeout duration, and no reply has been received.
                 sw.Stop();
-                throw new PingException(SR.net_ping_reply_timeout);
+                return CreateTimedOutPingReply();
             }
         }
 
         private async Task<PingReply> SendWithPingUtility(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
             bool isIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
-            string pingExecutable = isIpv4 ? s_ipv4PingFile : s_ipv6PingFile;
+            string pingExecutable = isIpv4 ? s_discoveredPing4UtilityPath : s_discoveredPing6UtilityPath;
+            if (pingExecutable == null)
+            {
+                throw new PlatformNotSupportedException(SR.net_ping_utility_not_found);
+            }
 
             StringBuilder sb = new StringBuilder();
             sb.Append("-c 1"); // Just send a single ping ("count = 1")
@@ -190,7 +216,7 @@ namespace System.Net.NetworkInformation
                     p.Kill();
                 }
                 catch (Win32Exception) { }
-                throw new PingException(SR.net_ping_reply_timeout);
+                return CreateTimedOutPingReply();
             }
             else
             {
@@ -198,7 +224,7 @@ namespace System.Net.NetworkInformation
                 if (p.ExitCode != 0)
                 {
                     // This means no reply was received, although transmission may have been successful.
-                    throw new PingException(SR.net_ping_reply_timeout);
+                    return CreateTimedOutPingReply();
                 }
 
                 try
@@ -227,6 +253,13 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        private PingReply CreateTimedOutPingReply()
+        {
+            // Documentation indicates that you should only pay attention to the IPStatus value when
+            // its value is not "Success", but the rest of these values match that of the Windows implementation.
+            return new PingReply(new IPAddress(0), null, IPStatus.TimedOut, 0, Array.Empty<byte>());
+        }
+
         private void InternalDisposeCore()
         {
         }
@@ -251,7 +284,7 @@ namespace System.Net.NetworkInformation
 
         private static unsafe byte[] CreateSendMessageBuffer(IcmpHeader header, byte[] payload)
         {
-            var headerSize = Marshal.SizeOf<IcmpHeader>();
+            int headerSize = sizeof(IcmpHeader);
             byte[] result = new byte[headerSize + payload.Length];
             Marshal.Copy(new IntPtr(&header), result, 0, headerSize);
             payload.CopyTo(result, headerSize);

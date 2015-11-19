@@ -135,9 +135,6 @@
   <data name="net_ping" xml:space="preserve">
     <value>An exception occurred during a Ping request.</value>
   </data>
-  <data name="net_ping_reply_timeout" xml:space="preserve">
-    <value>No ping reply was received within the timeout duration.</value>
-  </data>
   <data name="net_ping_utility_not_found" xml:space="preserve">
     <value>The system's ping utility could not be found.</value>
   </data>
