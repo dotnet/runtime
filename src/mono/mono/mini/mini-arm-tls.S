@@ -57,24 +57,23 @@ DECLARE_GLOBAL_SYMBOL mono_fast_get_tls_key_end
 
 	.align 4
 DECLARE_GLOBAL_SYMBOL mono_fallback_get_tls_key
-#if defined(__linux__)
+#if defined(__linux__) && defined(HAVE_KW_THREAD)
 	mov	r1, r0
 	mvn	r0, #0xf000
 	sub	r0, r0, #31
 	push	{lr}
 	blx	r0
-#if defined(HAVE_KW_THREAD)
 	ldr	r0, [r0, r1]
-#elif defined(TARGET_ANDROID)
-	ldr	r0, [r0, r1, lsl #2]
-#endif
 	pop	{pc}
-#elif defined(TARGET_IOS)
+#else
 	push	{lr}
+#if defined(TARGET_IOS)
 	bl	_pthread_getspecific
+#elif defined(TARGET_ANDROID)
+	bl	pthread_getspecific
+#endif
 	pop	{pc}
 #endif
-
 	/*
 	 * The following thunks set the value corresponding to the key/offset
 	 * passed in R0. These thunks don't do jumps to external code so execution
@@ -107,21 +106,21 @@ DECLARE_GLOBAL_SYMBOL mono_fast_set_tls_key_end
 
 	.align 4
 DECLARE_GLOBAL_SYMBOL mono_fallback_set_tls_key
-#if defined(__linux__)
+#if defined(__linux__) && defined(HAVE_KW_THREAD)
 	mov	r2, r0
 	mvn	r0, #0xf000
 	sub	r0, r0, #31
 	push	{lr}
 	blx	r0
-#if defined(HAVE_KW_THREAD)
 	str	r1, [r0, r2]
-#elif defined(TARGET_ANDROID)
-	str	r1, [r0, r2, lsl #2]
-#endif
 	pop	{pc}
-#elif defined(TARGET_IOS)
+#else
 	push	{lr}
+#if defined(TARGET_IOS)
 	bl	_pthread_setspecific
+#elif defined(TARGET_ANDROID)
+	bl	pthread_setspecific
+#endif
 	pop	{pc}
 #endif
 
