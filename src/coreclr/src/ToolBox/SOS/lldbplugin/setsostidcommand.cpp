@@ -7,6 +7,8 @@
 #include <dlfcn.h>
 #include <string.h>
 #include <string>
+#include <stdlib.h>
+#include <limits.h>
 
 class setsostidCommand : public lldb::SBCommandPluginInterface
 {

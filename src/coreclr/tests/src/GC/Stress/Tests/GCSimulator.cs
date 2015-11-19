@@ -825,7 +825,7 @@ namespace GCSimulator
                     else if (currentArg.StartsWith("datapinned") || currentArg.StartsWith("dp")) // percentage data pinned
                     {
                         currentArgValue = args[++i];
-                        s_percentPinned = float.Parse(currentArgValue);
+                        s_percentPinned = float.Parse(currentArgValue, System.Globalization.CultureInfo.InvariantCulture);
                         if (s_percentPinned < 0 || s_percentPinned > 1)
                         {
                             Console.WriteLine("Error! datapinned should be a number from 0 to 1");
@@ -848,7 +848,7 @@ namespace GCSimulator
                     else if (currentArg.StartsWith("dataweak") || currentArg.StartsWith("dw"))
                     {
                         currentArgValue = args[++i];
-                        s_percentWeak = float.Parse(currentArgValue);
+                        s_percentWeak = float.Parse(currentArgValue, System.Globalization.CultureInfo.InvariantCulture);
                         if (s_percentWeak < 0 || s_percentWeak > 1)
                         {
                             Console.WriteLine("Error! dataweak should be a number from 0 to 1");
