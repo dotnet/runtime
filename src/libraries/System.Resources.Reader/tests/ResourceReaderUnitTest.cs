@@ -356,7 +356,6 @@ namespace System.Resources.ResourceWriterTests
             {
                 using (var reader = new ResourceReader(ms2))
                 {
-
                     var s_found_list = new List<DictionaryEntry>();
                     Assert.Throws<BadImageFormatException>(() =>
                     {

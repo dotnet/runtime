@@ -1,25 +1,20 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+using System.Collections;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
 
 namespace System.Resources
 {
-    using System;
-    using System.IO;
-    using System.Globalization;
-    using System.Collections;
-    using System.Text;
-    using System.Threading;
-    using System.Collections.Generic;
-    using System.Diagnostics;
     public sealed class ResourceReader : IDisposable
     {
-
         private const int ResSetVersion = 2;
         private const int ResourceTypeCodeString = 1;
         private const int ResourceManagerMagicNumber = unchecked((int)0xBEEFCACE);
         private const int ResourceManagerHeaderVersionNumber = 1;
 
-        private BinaryReader _store;    // backing store we're reading from.
+        private Stream _stream;    // backing store we're reading from.
         private long _nameSectionOffset;  // Offset to name section of file.
         private long _dataSectionOffset;  // Offset to Data section of file.
 
@@ -29,7 +24,6 @@ namespace System.Resources
         private int _numResources;    // Num of resources files, in case arrays aren't allocated.      
         private int _version;
 
-
         public ResourceReader(Stream stream)
         {
             if (stream == null)
@@ -37,7 +31,7 @@ namespace System.Resources
             if (!stream.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
 
-            _store = new BinaryReader(stream, Encoding.UTF8);
+            _stream = stream;
 
             ReadResources();
         }
@@ -50,31 +44,26 @@ namespace System.Resources
         [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe void Dispose(bool disposing)
         {
-            if (_store != null)
-            {
-
-                if (disposing)
-                {
-                    // Close the stream in a thread-safe way.  This fix means 
-                    // that we may call Close n times, but that's safe.
-                    BinaryReader copyOfStore = _store;
-                    _store = null;
-                    if (copyOfStore != null)
-                        copyOfStore.Dispose();
+            if (_stream != null) {
+                if (disposing) {
+                    Stream stream = _stream;
+                    _stream = null;
+                    if (stream != null) {
+                        stream.Dispose();
+                    }
+                    _namePositions = null;
                 }
-                _store = null;
-                _namePositions = null;
-
             }
         }
+
         private void SkipString()
         {
-            int stringLength = Read7BitEncodedInt();
-            if (stringLength < 0)
+            int stringLength;
+            if (!_stream.TryReadInt327BitEncoded(out stringLength) || stringLength < 0)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_NegativeStringLength);
             }
-            _store.BaseStream.Seek(stringLength, SeekOrigin.Current);
+            _stream.Seek(stringLength, SeekOrigin.Current);
         }
 
         private unsafe int GetNamePosition(int index)
@@ -92,29 +81,32 @@ namespace System.Resources
         }
         public IDictionaryEnumerator GetEnumerator()
         {
-            if (_store == null)
+            if (_stream == null)
                 throw new InvalidOperationException(SR.ResourceReaderIsClosed);
             return new ResourceEnumerator(this);
         }
 
+        private void SuccessElseEosException(bool condition)
+        {
+            if (!condition) {
+                throw new EndOfStreamException();
+            }
+        }
 
         private unsafe String AllocateStringForNameIndex(int index, out int dataOffset)
         {
-            Debug.Assert(_store != null, "ResourceReader is closed!");
+            Debug.Assert(_stream != null, "ResourceReader is closed!");
             byte[] bytes;
             int byteLen;
             long nameVA = GetNamePosition(index);
             lock (this)
             {
-                _store.BaseStream.Seek(nameVA + _nameSectionOffset, SeekOrigin.Begin);
+                _stream.Seek(nameVA + _nameSectionOffset, SeekOrigin.Begin);
                 // Can't use _store.ReadString, since it's using UTF-8!
-                byteLen = Read7BitEncodedInt();
-                if (byteLen < 0)
+                if (!_stream.TryReadInt327BitEncoded(out byteLen) || byteLen < 0)
                 {
                     throw new BadImageFormatException(SR.BadImageFormat_NegativeStringLength);
                 }
-
-
 
                 bytes = new byte[byteLen];
                 // We must read byteLen bytes, or we have a corrupted file.
@@ -123,13 +115,14 @@ namespace System.Resources
                 int count = byteLen;
                 while (count > 0)
                 {
-                    int n = _store.Read(bytes, byteLen - count, count);
+                    int n = _stream.Read(bytes, byteLen - count, count);
                     if (n == 0)
                         throw new EndOfStreamException(SR.BadImageFormat_ResourceNameCorrupted_NameIndex + index);
                     count -= n;
                 }
-                dataOffset = _store.ReadInt32();
-                if (dataOffset < 0 || dataOffset >= _store.BaseStream.Length - _dataSectionOffset)
+
+                SuccessElseEosException(_stream.TryReadInt32(out dataOffset));
+                if (dataOffset < 0 || dataOffset >= _stream.Length - _dataSectionOffset)
                 {
                     throw new FormatException(SR.BadImageFormat_ResourcesDataInvalidOffset + " offset :" + dataOffset);
                 }
@@ -139,22 +132,22 @@ namespace System.Resources
 
         private string GetValueForNameIndex(int index)
         {
-            Debug.Assert(_store != null, "ResourceReader is closed!");
+            Debug.Assert(_stream != null, "ResourceReader is closed!");
             long nameVA = GetNamePosition(index);
             lock (this)
             {
-                _store.BaseStream.Seek(nameVA + _nameSectionOffset, SeekOrigin.Begin);
+                _stream.Seek(nameVA + _nameSectionOffset, SeekOrigin.Begin);
                 SkipString();
 
-                int dataPos = _store.ReadInt32();
-                if (dataPos < 0 || dataPos >= _store.BaseStream.Length - _dataSectionOffset)
+                int dataPos;
+                SuccessElseEosException(_stream.TryReadInt32(out dataPos));
+                if (dataPos < 0 || dataPos >= _stream.Length - _dataSectionOffset)
                 {
                     throw new FormatException(SR.BadImageFormat_ResourcesDataInvalidOffset + dataPos);
                 }
 
                 try
                 {
-
                     return LoadString(dataPos);
                 }
                 catch (EndOfStreamException eof)
@@ -174,8 +167,13 @@ namespace System.Resources
         private string LoadString(int pos)
         {
 
-            _store.BaseStream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
-            int typeIndex = Read7BitEncodedInt();
+            _stream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
+            int typeIndex;
+            
+            if(!_stream.TryReadInt327BitEncoded(out typeIndex))
+            {
+                throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch);
+            }
 
             if (_version == 1)
             {
@@ -192,13 +190,13 @@ namespace System.Resources
                 }
             }
 
-            return _store.ReadString();
+            return _stream.ReadString();
 
         }
 
         private void ReadResources()
         {
-            Debug.Assert(_store != null, "ResourceReader is closed!");
+            Debug.Assert(_stream != null, "ResourceReader is closed!");
 
             try
             {
@@ -221,7 +219,9 @@ namespace System.Resources
         {
             // Read out the ResourceManager header
             // Read out magic number
-            int magicNum = _store.ReadInt32();
+            int magicNum;
+            SuccessElseEosException(_stream.TryReadInt32(out magicNum));
+
             if (magicNum != ResourceManagerMagicNumber)
                 throw new ArgumentException(SR.Resources_StreamNotValid);
 
@@ -230,22 +230,21 @@ namespace System.Resources
             // to bypass the rest of the ResMgr header. For V2 or greater, we
             // use this to skip to the end of the header
 
-            int resMgrHeaderVersion = _store.ReadInt32();
+            int resMgrHeaderVersion;
+            SuccessElseEosException(_stream.TryReadInt32(out resMgrHeaderVersion));
+
             //number of bytes to skip over to get past ResMgr header
-            int numBytesToSkip = _store.ReadInt32();
-            if (numBytesToSkip < 0 || resMgrHeaderVersion < 0)
-            {
+            int numBytesToSkip;
+            SuccessElseEosException(_stream.TryReadInt32(out numBytesToSkip));
+
+            if (numBytesToSkip < 0 || resMgrHeaderVersion < 0) {
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
 
-            if (resMgrHeaderVersion > 1)
-            {
-
-                _store.BaseStream.Seek(numBytesToSkip, SeekOrigin.Current);
+            if (resMgrHeaderVersion > 1) {
+                _stream.Seek(numBytesToSkip, SeekOrigin.Current);
             }
-            else
-            {
-
+            else {
                 // We don't care about numBytesToSkip; read the rest of the header
                 //Due to legacy : this field is always a variant of  System.Resources.ResourceReader, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
                 //So we Skip the type name for resourcereader unlike Desktop
@@ -257,31 +256,31 @@ namespace System.Resources
 
             // Read RuntimeResourceSet header
             // Do file version check
-            int version = _store.ReadInt32();
-            if (version != ResSetVersion && version != 1)
-                throw new ArgumentException(SR.Arg_ResourceFileUnsupportedVersion + "Expected:" + ResSetVersion + "but got:" + version);
-            _version = version;
-            // number of resources
-            _numResources = _store.ReadInt32();
-            if (_numResources < 0)
-            {
-                throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
+            SuccessElseEosException(_stream.TryReadInt32(out _version));
+            if (_version != ResSetVersion && _version != 1) {
+                throw new ArgumentException(SR.Arg_ResourceFileUnsupportedVersion + "Expected:" + ResSetVersion + "but got:" + _version);
             }
 
+            // number of resources
+            SuccessElseEosException(_stream.TryReadInt32(out _numResources));
+            if (_numResources < 0) {
+                throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
+            }
 
             // Read type positions into type positions array.
             // But delay initialize the type table.
-            int numTypes = _store.ReadInt32();
-            if (numTypes < 0)
-            {
+            int numTypes;
+            SuccessElseEosException(_stream.TryReadInt32(out numTypes));
+            if (numTypes < 0) {
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
+
             _typeTable = new Type[numTypes];
             _typeNamePositions = new int[numTypes];
 
             for (int i = 0; i < numTypes; i++)
             {
-                _typeNamePositions[i] = (int)_store.BaseStream.Position;
+                _typeNamePositions[i] = (int)_stream.Position;
 
                 // Skip over the Strings in the file.  Don't create types.
                 SkipString();
@@ -293,13 +292,13 @@ namespace System.Resources
             //  may be sufficient, but let's plan for the future)
             //  Skip over alignment stuff.  All public .resources files
             //  should be aligned   No need to verify the byte values.
-            long pos = _store.BaseStream.Position;
+            long pos = _stream.Position;
             int alignBytes = ((int)pos) & 7;
             if (alignBytes != 0)
             {
                 for (int i = 0; i < 8 - alignBytes; i++)
                 {
-                    _store.ReadByte();
+                    _stream.ReadByte();
                 }
             }
 
@@ -307,14 +306,16 @@ namespace System.Resources
 
             for (int i = 0; i < _numResources; i++)
             {
-                _store.ReadInt32();
+                int hash;
+                SuccessElseEosException(_stream.TryReadInt32(out hash));
             }
 
             // Read in the array of relative positions for all the names.
             _namePositions = new int[_numResources];
             for (int i = 0; i < _numResources; i++)
             {
-                int namePosition = _store.ReadInt32();
+                int namePosition;
+                SuccessElseEosException(_stream.TryReadInt32(out namePosition));
                 if (namePosition < 0)
                 {
                     throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
@@ -324,14 +325,16 @@ namespace System.Resources
             }
 
             // Read location of data section.
-            _dataSectionOffset = _store.ReadInt32();
-            if (_dataSectionOffset < 0)
+            int dataSectionOffset;
+            SuccessElseEosException(_stream.TryReadInt32(out dataSectionOffset));
+            if (dataSectionOffset < 0)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
+            _dataSectionOffset = dataSectionOffset;
 
             // Store current location as start of name section
-            _nameSectionOffset = _store.BaseStream.Position;
+            _nameSectionOffset = _stream.Position;
 
             // _nameSectionOffset should be <= _dataSectionOffset; if not, it's corrupt
             if (_dataSectionOffset < _nameSectionOffset)
@@ -350,44 +353,21 @@ namespace System.Resources
             }
             if (_typeTable[typeIndex] == null)
             {
-                long oldPos = _store.BaseStream.Position;
+                long oldPos = _stream.Position;
                 try
                 {
-                    _store.BaseStream.Position = _typeNamePositions[typeIndex];
-                    String typeName = _store.ReadString();
+                    _stream.Position = _typeNamePositions[typeIndex];
+                    string typeName = _stream.ReadString();
                     _typeTable[typeIndex] = Type.GetType(typeName, true);
                 }
 
                 finally
                 {
-                    _store.BaseStream.Position = oldPos;
+                    _stream.Position = oldPos;
                 }
             }
             Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
             return _typeTable[typeIndex];
-        }
-
-        //blatantly copied over from BinaryReader
-        private int Read7BitEncodedInt()
-        {
-            // Read out an Int32 7 bits at a time.  The high bit
-            // of the byte when on means to continue reading more bytes.
-            int count = 0;
-            int shift = 0;
-            byte b;
-            do
-            {
-                // Check for a corrupted stream.  Read a max of 5 bytes.
-                // In a future version, add a DataFormatException.
-                if (shift == 5 * 7)  // 5 bytes max per Int32, shift += 7
-                    throw new FormatException(SR.Format_Bad7BitInt32);
-
-                // ReadByte handles end of stream cases for us.
-                b = _store.ReadByte();
-                count |= (b & 0x7F) << shift;
-                shift += 7;
-            } while ((b & 0x80) != 0);
-            return count;
         }
 
         internal sealed class ResourceEnumerator : IDictionaryEnumerator
@@ -399,7 +379,6 @@ namespace System.Resources
             private bool _currentIsValid;
             private int _currentName;
             
-
             internal ResourceEnumerator(ResourceReader reader)
             {
                 _currentName = ENUM_NOT_STARTED;
@@ -478,7 +457,7 @@ namespace System.Resources
             public void Reset()
             {
 
-                if (_reader._store == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
+                if (_reader._stream == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
                 _currentIsValid = false;
                 _currentName = ENUM_NOT_STARTED;
             }
