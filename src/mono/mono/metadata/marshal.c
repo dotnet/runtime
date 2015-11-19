@@ -2453,7 +2453,15 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 		}
 		return m;
 	case MONO_WRAPPER_SYNCHRONIZED:
-		return info->d.synchronized.method;
+		m = info->d.synchronized.method;
+		if (wrapper->is_inflated) {
+			MonoError error;
+			MonoMethod *result;
+			result = mono_class_inflate_generic_method_checked (m, mono_method_get_context (wrapper), &error);
+			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+			return result;
+		}
+		return m;
 	case MONO_WRAPPER_UNBOX:
 		return info->d.unbox.method;
 	case MONO_WRAPPER_MANAGED_TO_NATIVE:

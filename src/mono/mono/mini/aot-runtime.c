@@ -3840,7 +3840,7 @@ find_aot_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, guint32 
 			MonoMethod *w1 = mono_marshal_method_from_wrapper (method);
 			MonoMethod *w2 = mono_marshal_method_from_wrapper (m);
 
-			if (w1->is_inflated && ((MonoMethodInflated *)w1)->declaring == w2) {
+			if ((w1 == w2) || (w1->is_inflated && ((MonoMethodInflated *)w1)->declaring == w2)) {
 				index = value;
 				break;
 			}
