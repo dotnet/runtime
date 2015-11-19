@@ -19,6 +19,32 @@
 #define symlinkEntrypointExecutable "/proc/curproc/exe"
 #endif
 
+bool coreclr_exists_in_dir(const pal::string_t& candidate)
+{
+    pal::string_t test(candidate);
+    append_path(test, _X("runtime"));
+    append_path(test, LIBCORECLR_NAME);
+    return pal::file_exists(test);
+}
+
+bool pal::find_coreclr(pal::string_t& recv)
+{
+    pal::string_t candidate;
+    pal::string_t test;
+
+    // Try %LocalAppData%\dotnet
+    if (pal::getenv(_X("LocalAppData"), candidate)) {
+        append_path(candidate, _X("dotnet"));
+        if (coreclr_exists_in_dir(candidate)) {
+            recv.assign(candidate);
+            return true;
+        }
+    }
+
+    // TODO: Try somewhere in Program Files, see https://github.com/dotnet/cli/issues/249
+    return false;
+}
+
 bool pal::load_library(const char_t* path, dll_t& dll)
 {
     dll = dlopen(path, RTLD_LAZY);
