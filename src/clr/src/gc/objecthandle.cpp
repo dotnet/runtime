@@ -1540,7 +1540,7 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, LPARAM lp1)
     TraceVariableHandles(CheckPromoted, lp1, 0, VHT_WEAK_SHORT, condemned, maxgen, flags);
 }
 
-static VOLATILE(LONG) uCount = 0;
+static VOLATILE(int32_t) uCount = 0;
 
 // NOTE: Please: if you update this function, update the very similar profiling function immediately below!!!
 void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)

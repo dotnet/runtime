@@ -22,17 +22,17 @@
 
 //#define CATCH_GC  //catches exception during GC
 #ifdef DACCESS_COMPILE
-SVAL_IMPL_INIT(LONG, CNameSpace, m_GcStructuresInvalidCnt, 1);
+SVAL_IMPL_INIT(int32_t, CNameSpace, m_GcStructuresInvalidCnt, 1);
 #else //DACCESS_COMPILE
-VOLATILE(LONG) CNameSpace::m_GcStructuresInvalidCnt = 1;
+VOLATILE(int32_t) CNameSpace::m_GcStructuresInvalidCnt = 1;
 #endif //DACCESS_COMPILE
 
 BOOL CNameSpace::GetGcRuntimeStructuresValid ()
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
-    _ASSERTE ((LONG)m_GcStructuresInvalidCnt >= 0);
-    return (LONG)m_GcStructuresInvalidCnt == 0;
+    _ASSERTE ((int32_t)m_GcStructuresInvalidCnt >= 0);
+    return (int32_t)m_GcStructuresInvalidCnt == 0;
 }
 
 #ifdef DACCESS_COMPILE
@@ -291,13 +291,13 @@ void CNameSpace::GcRuntimeStructuresValid (BOOL bValid)
     WRAPPER_NO_CONTRACT;
     if (!bValid)
     {
-        LONG result;
+        int32_t result;
         result = FastInterlockIncrement (&m_GcStructuresInvalidCnt);
         _ASSERTE (result > 0);
     }
     else
     {
-        LONG result;
+        int32_t result;
         result = FastInterlockDecrement (&m_GcStructuresInvalidCnt);
         _ASSERTE (result >= 0);
     }

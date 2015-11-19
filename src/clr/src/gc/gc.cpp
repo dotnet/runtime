@@ -293,7 +293,7 @@ uint32_t bgc_alloc_spin = 2;
 inline
 void c_write (uint32_t& place, uint32_t value)
 {
-    FastInterlockExchange (&(LONG&)place, value);
+    FastInterlockExchange (&(int32_t&)place, value);
     //place = value;
 }
 
@@ -301,7 +301,7 @@ void c_write (uint32_t& place, uint32_t value)
 inline
 void c_write_volatile (BOOL* place, uint32_t value)
 {
-    FastInterlockExchange ((LONG*)place, value);
+    FastInterlockExchange ((int32_t*)place, value);
     //place = value;
 }
 
@@ -607,10 +607,10 @@ enum gc_join_flavor
 struct join_structure
 {
     CLREvent joined_event[3]; // the last event in the array is only used for first_thread_arrived.
-    VOLATILE(LONG) join_lock;
-    VOLATILE(LONG) r_join_lock;
-    VOLATILE(LONG) join_restart;
-    VOLATILE(LONG) r_join_restart; // only used by get_here_first and friends.
+    VOLATILE(int32_t) join_lock;
+    VOLATILE(int32_t) r_join_lock;
+    VOLATILE(int32_t) join_restart;
+    VOLATILE(int32_t) r_join_restart; // only used by get_here_first and friends.
     int n_threads;
     VOLATILE(BOOL) joined_p;
     // avoid lock_color and join_lock being on same cache line
@@ -643,7 +643,7 @@ enum join_heap_index
 
 struct join_event
 {
-    ULONG heap;
+    uint32_t heap;
     join_time time;
     join_type type;
 };
@@ -731,7 +731,7 @@ public:
         if (FastInterlockDecrement(&join_struct.join_lock) != 0)
         {
             dprintf (JOIN_LOG, ("join%d(%d): Join() Waiting...join_lock is now %d", 
-                flavor, join_id, (LONG)(join_struct.join_lock)));
+                flavor, join_id, (int32_t)(join_struct.join_lock)));
 
             fire_event (gch->heap_number, time_start, type_join, join_id);
 
@@ -753,7 +753,7 @@ respin:
                 if (color == join_struct.lock_color)
                 {
                     dprintf (JOIN_LOG, ("join%d(%d): Join() hard wait on reset event %d, join_lock is now %d", 
-                        flavor, join_id, color, (LONG)(join_struct.join_lock)));
+                        flavor, join_id, color, (int32_t)(join_struct.join_lock)));
 
                     //Thread* current_thread = GetThread();
                     //BOOL cooperative_mode = gc_heap::enable_preemptive (current_thread);
@@ -774,7 +774,7 @@ respin:
                 }
 
                 dprintf (JOIN_LOG, ("join%d(%d): Join() done, join_lock is %d", 
-                    flavor, join_id, (LONG)(join_struct.join_lock)));
+                    flavor, join_id, (int32_t)(join_struct.join_lock)));
             }
 
             fire_event (gch->heap_number, time_end, type_join, join_id);
@@ -931,7 +931,7 @@ respin:
         assert (join_struct.joined_p);
         join_struct.joined_p = FALSE;
         join_struct.join_lock = join_struct.n_threads;
-        dprintf (JOIN_LOG, ("join%d(%d): Restarting from join: join_lock is %d", flavor, id, (LONG)(join_struct.join_lock)));
+        dprintf (JOIN_LOG, ("join%d(%d): Restarting from join: join_lock is %d", flavor, id, (int32_t)(join_struct.join_lock)));
 //        printf("restart from join #%d at cycle %u from start of gc\n", join_id, GetCycleCount32() - gc_start);
         int color = join_struct.lock_color;
         join_struct.lock_color = !color;
@@ -948,7 +948,7 @@ respin:
     
     BOOL joined()
     {
-        dprintf (JOIN_LOG, ("join%d(%d): joined, join_lock is %d", flavor, id, (LONG)(join_struct.join_lock)));
+        dprintf (JOIN_LOG, ("join%d(%d): joined, join_lock is %d", flavor, id, (int32_t)(join_struct.join_lock)));
         return join_struct.joined_p;
     }
 
@@ -1008,11 +1008,11 @@ class exclusive_sync
 {
     // TODO - verify that this is the right syntax for Volatile.
     VOLATILE(uint8_t*) rwp_object;
-    VOLATILE(LONG) needs_checking;
+    VOLATILE(int32_t) needs_checking;
     
     int spin_count;
 
-    uint8_t cache_separator[HS_CACHE_LINE_SIZE - sizeof (int) - sizeof (LONG)];
+    uint8_t cache_separator[HS_CACHE_LINE_SIZE - sizeof (int) - sizeof (int32_t)];
 
     // TODO - perhaps each object should be on its own cache line...
     VOLATILE(uint8_t*) alloc_objects[max_pending_allocs];
@@ -1183,9 +1183,9 @@ retry:
 // class to do synchronization between FGCs and BGC.
 class recursive_gc_sync
 {
-    static VOLATILE(LONG) foreground_request_count;//initial state 0
+    static VOLATILE(int32_t) foreground_request_count;//initial state 0
     static VOLATILE(BOOL) gc_background_running; //initial state FALSE
-    static VOLATILE(LONG) foreground_count; // initial state 0;
+    static VOLATILE(int32_t) foreground_count; // initial state 0;
     static VOLATILE(uint32_t) foreground_gate; // initial state FALSE;
     static CLREvent foreground_complete;//Auto Reset
     static CLREvent foreground_allowed;//Auto Reset
@@ -1200,8 +1200,8 @@ public:
     static BOOL background_running_p() {return gc_background_running;}
 };
 
-VOLATILE(LONG) recursive_gc_sync::foreground_request_count = 0;//initial state 0
-VOLATILE(LONG) recursive_gc_sync::foreground_count = 0; // initial state 0;
+VOLATILE(int32_t) recursive_gc_sync::foreground_request_count = 0;//initial state 0
+VOLATILE(int32_t) recursive_gc_sync::foreground_count = 0; // initial state 0;
 VOLATILE(BOOL) recursive_gc_sync::gc_background_running = FALSE; //initial state FALSE
 VOLATILE(uint32_t) recursive_gc_sync::foreground_gate = 0;
 CLREvent recursive_gc_sync::foreground_complete;//Auto Reset
@@ -1289,7 +1289,7 @@ try_again_no_inc:
         if (foreground_gate)
         {
             FastInterlockIncrement (&foreground_count);
-            dprintf (2, ("foreground_count: %d", (LONG)foreground_count));
+            dprintf (2, ("foreground_count: %d", (int32_t)foreground_count));
             if (foreground_gate)
             {
                 gc_heap::settings.concurrent = FALSE;
@@ -1314,7 +1314,7 @@ void recursive_gc_sync::end_foreground()
     if (gc_background_running)
     {
         FastInterlockDecrement (&foreground_request_count);
-        dprintf (2, ("foreground_count before decrement: %d", (LONG)foreground_count));
+        dprintf (2, ("foreground_count before decrement: %d", (int32_t)foreground_count));
         if (FastInterlockDecrement (&foreground_count) == 0)
         {
             //c_write_volatile ((BOOL*)&foreground_gate, 0);
@@ -1335,7 +1335,7 @@ BOOL recursive_gc_sync::allow_foreground()
 {
     assert (gc_heap::settings.concurrent);
     dprintf (100, ("enter allow_foreground, f_req_count: %d, f_count: %d",
-                   (LONG)foreground_request_count, (LONG)foreground_count));
+                   (int32_t)foreground_request_count, (int32_t)foreground_count));
 
     BOOL did_fgc = FALSE;
 
@@ -1551,7 +1551,7 @@ static void safe_switch_to_thread()
 // raw pointers in addition to the results of the & operator on Volatile<T>.
 //
 inline
-static void enter_spin_lock_noinstru (RAW_KEYWORD(volatile) LONG* lock)
+static void enter_spin_lock_noinstru (RAW_KEYWORD(volatile) int32_t* lock)
 {
 retry:
 
@@ -1595,15 +1595,15 @@ retry:
 }
 
 inline
-static BOOL try_enter_spin_lock_noinstru(RAW_KEYWORD(volatile) LONG* lock)
+static BOOL try_enter_spin_lock_noinstru(RAW_KEYWORD(volatile) int32_t* lock)
 {
     return (FastInterlockExchange (&*lock, 0) < 0);
 }
 
 inline
-static void leave_spin_lock_noinstru (RAW_KEYWORD(volatile) LONG* lock)
+static void leave_spin_lock_noinstru (RAW_KEYWORD(volatile) int32_t* lock)
 {
-    VolatileStore<LONG>((LONG*)lock, -1);
+    VolatileStore<int32_t>((int32_t*)lock, -1);
 }
 
 #ifdef _DEBUG
@@ -4896,7 +4896,7 @@ public:
         if (GCGetCurrentProcessorNumber)
             return proc_no_to_heap_no[GCGetCurrentProcessorNumber() % gc_heap::n_heaps];
 
-        unsigned sniff_index = FastInterlockIncrement((LONG *)&cur_sniff_index);
+        unsigned sniff_index = FastInterlockIncrement((int32_t *)&cur_sniff_index);
         sniff_index %= n_sniff_buffers;
 
         int best_heap = 0;
@@ -6643,7 +6643,7 @@ void gc_heap::mark_array_set_marked (uint8_t* add)
     size_t index = mark_word_of (add);
     uint32_t val = (1 << mark_bit_bit_of (add));
 #ifdef MULTIPLE_HEAPS
-    InterlockedOr ((LONG*)&(mark_array [index]), val);
+    InterlockedOr ((int32_t*)&(mark_array [index]), val);
 #else
     mark_array [index] |= val;
 #endif 
@@ -9151,7 +9151,7 @@ void gc_heap::update_card_table_bundle()
         uint8_t* base_address = (uint8_t*)(&card_table[card_word (card_of (lowest_address))]);
         uint8_t* saved_base_address = base_address;
         ULONG_PTR bcount = array_size;
-        ULONG granularity = 0;
+        uint32_t granularity = 0;
         uint8_t* high_address = (uint8_t*)(&card_table[card_word (card_of (highest_address))]);
         size_t saved_region_size = align_on_page (high_address) - saved_base_address;
 
@@ -10000,7 +10000,7 @@ int gc_heap::loh_state_index = 0;
 gc_heap::loh_state_info gc_heap::last_loh_states[max_saved_loh_states];
 #endif //RECORD_LOH_STATE
 
-VOLATILE(LONG) gc_heap::gc_done_event_lock;
+VOLATILE(int32_t) gc_heap::gc_done_event_lock;
 VOLATILE(bool) gc_heap::gc_done_event_set;
 CLREvent gc_heap::gc_done_event;
 #endif //!MULTIPLE_HEAPS
@@ -12888,7 +12888,7 @@ int gc_heap::try_allocate_more_space (alloc_context* acontext, size_t size,
         if (etw_allocation_running_amount[etw_allocation_index] > etw_allocation_tick)
         {
 #ifdef FEATURE_REDHAWK
-            FireEtwGCAllocationTick_V1((ULONG)etw_allocation_running_amount[etw_allocation_index], 
+            FireEtwGCAllocationTick_V1((uint32_t)etw_allocation_running_amount[etw_allocation_index], 
                                     ((gen_number == 0) ? ETW::GCLog::ETW_GC_INFO::AllocationSmall : ETW::GCLog::ETW_GC_INFO::AllocationLarge), 
                                     GetClrInstanceId());
 #else
@@ -24541,11 +24541,11 @@ void gc_heap::compact_phase (int condemned_gen_number,
 //
 // Also, any exceptions that escape out of the GC thread are fatal. Thus, once
 // we do our unhandled exception processing, we shall failfast.
-inline LONG GCUnhandledExceptionFilter(EXCEPTION_POINTERS* pExceptionPointers, void* pv)
+inline int32_t GCUnhandledExceptionFilter(EXCEPTION_POINTERS* pExceptionPointers, void* pv)
 {
     WRAPPER_NO_CONTRACT;
 
-    LONG result = CLRVectoredExceptionHandler(pExceptionPointers);
+    int32_t result = CLRVectoredExceptionHandler(pExceptionPointers);
     if (result == EXCEPTION_CONTINUE_EXECUTION)
     {
         // Since VEH has asked to continue execution, lets do that...
@@ -32062,7 +32062,7 @@ size_t              GCHeap::totalSurvivedSize       = 0;
 #ifdef FEATURE_PREMORTEM_FINALIZATION
 CFinalize*          GCHeap::m_Finalize              = 0;
 BOOL                GCHeap::GcCollectClasses        = FALSE;
-VOLATILE(LONG)      GCHeap::m_GCFLock               = 0;
+VOLATILE(int32_t)      GCHeap::m_GCFLock               = 0;
 
 #ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
 #ifdef STRESS_HEAP
@@ -33709,13 +33709,13 @@ void GCHeap::Relocate (Object** ppObject, ScanContext* sc,
 
 void StressHeapDummy ();
 
-static LONG GCStressStartCount = -1;
-static LONG GCStressCurCount = 0;
-static LONG GCStressStartAtJit = -1;
+static int32_t GCStressStartCount = -1;
+static int32_t GCStressCurCount = 0;
+static int32_t GCStressStartAtJit = -1;
 
 // the maximum number of foreground GCs we'll induce during one BGC
 // (this number does not include "naturally" occuring GCs).
-static LONG GCStressMaxFGCsPerBGC = -1;
+static int32_t GCStressMaxFGCsPerBGC = -1;
 
 // CLRRandom implementation can produce FPU exceptions if 
 // the test/application run by CLR is enabling any FPU exceptions. 
@@ -33823,7 +33823,7 @@ BOOL GCHeap::StressHeap(alloc_context * acontext)
     {
 
 #ifndef MULTIPLE_HEAPS
-        static LONG OneAtATime = -1;
+        static int32_t OneAtATime = -1;
 
         if (acontext == 0)
             acontext = generation_alloc_context (pGenGCHeap->generation_of(0));
@@ -33837,7 +33837,7 @@ BOOL GCHeap::StressHeap(alloc_context * acontext)
         // at a time.  A secondary advantage is that we release part of our StressObjs
         // buffer sparingly but just as effectively.
 
-        if (FastInterlockIncrement((LONG *) &OneAtATime) == 0 &&
+        if (FastInterlockIncrement((int32_t *) &OneAtATime) == 0 &&
             !TrackAllocations()) // Messing with object sizes can confuse the profiler (see ICorProfilerInfo::GetObjectSize)
         {
             StringObject* str;
@@ -33899,7 +33899,7 @@ BOOL GCHeap::StressHeap(alloc_context * acontext)
                 }
             }
         }
-        FastInterlockDecrement((LONG *) &OneAtATime);
+        FastInterlockDecrement((int32_t *) &OneAtATime);
 #endif // !MULTIPLE_HEAPS
         if (IsConcurrentGCEnabled())
         {
@@ -34668,8 +34668,8 @@ void gc_heap::do_pre_gc()
 
 #ifdef STRESS_LOG
     STRESS_LOG_GC_START(VolatileLoad(&settings.gc_index),
-                        (ULONG)settings.condemned_generation,
-                        (ULONG)settings.reason);
+                        (uint32_t)settings.condemned_generation,
+                        (uint32_t)settings.reason);
 #endif // STRESS_LOG
 
 #ifdef MULTIPLE_HEAPS
@@ -34887,8 +34887,8 @@ void gc_heap::do_post_gc()
 
 #ifdef STRESS_LOG
     STRESS_LOG_GC_END(VolatileLoad(&settings.gc_index),
-                      (ULONG)settings.condemned_generation,
-                      (ULONG)settings.reason);
+                      (uint32_t)settings.condemned_generation,
+                      (uint32_t)settings.reason);
 #endif // STRESS_LOG
 
 #ifdef GC_CONFIG_DRIVEN
@@ -36504,7 +36504,7 @@ void TouchPages(LPVOID pStart, uint32_t cb)
         {
             char a;
             a = VolatileLoad(p);
-            //printf("Touching page %lxh\n", (ULONG)p);
+            //printf("Touching page %lxh\n", (uint32_t)p);
             p += pagesize;
         }
     }

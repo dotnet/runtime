@@ -400,7 +400,7 @@ void GCLog (const char *fmt, ... );
 #ifdef _DEBUG
 
 struct GCDebugSpinLock {
-    VOLATILE(LONG) lock;                   // -1 if free, 0 if held
+    VOLATILE(int32_t) lock;                   // -1 if free, 0 if held
     VOLATILE(Thread *) holding_thread;     // -1 if no thread holds the lock.
     VOLATILE(BOOL) released_by_gc_p;       // a GC thread released the lock.
 
@@ -414,7 +414,7 @@ typedef GCDebugSpinLock GCSpinLock;
 #elif defined (SYNCHRONIZATION_STATS)
 
 struct GCSpinLockInstru {
-    VOLATILE(LONG) lock;
+    VOLATILE(int32_t) lock;
     // number of times we went into SwitchToThread in enter_spin_lock.
     unsigned int num_switch_thread;
     // number of times we went into WaitLonger.
@@ -443,7 +443,7 @@ typedef GCSpinLockInstru GCSpinLock;
 #else
 
 struct GCDebugSpinLock {
-    VOLATILE(LONG) lock;                   // -1 if free, 0 if held
+    VOLATILE(int32_t) lock;                   // -1 if free, 0 if held
 
     GCDebugSpinLock()
         : lock(-1)
@@ -2830,7 +2830,7 @@ public:
 #endif // MULTIPLE_HEAPS
 
     PER_HEAP
-    VOLATILE(LONG) gc_done_event_lock;
+    VOLATILE(int32_t) gc_done_event_lock;
 
     PER_HEAP
     VOLATILE(bool) gc_done_event_set;
@@ -3767,7 +3767,7 @@ private:
     PTR_PTR_Object m_EndArray;
     size_t   m_PromotedCount;
     
-    VOLATILE(LONG) lock;
+    VOLATILE(int32_t) lock;
 #ifdef _DEBUG
     uint32_t lockowner_threadid;
 #endif // _DEBUG

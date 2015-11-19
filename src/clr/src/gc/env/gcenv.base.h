@@ -29,15 +29,15 @@ typedef uint32_t DWORD;
 typedef uintptr_t DWORD_PTR;
 typedef void* LPVOID;
 typedef uint32_t UINT;
-typedef int32_t LONG;
-typedef uint32_t ULONG;
+//typedef int32_t LONG;
+//typedef uint32_t ULONG;
 typedef uintptr_t ULONG_PTR;
 typedef void VOID;
 typedef void* PVOID;
 typedef uintptr_t LPARAM;
 typedef void * LPSECURITY_ATTRIBUTES;
 typedef void const * LPCVOID;
-typedef uint32_t * PULONG;
+//typedef uint32_t * PULONG;
 typedef wchar_t * PWSTR, *LPWSTR;
 typedef const wchar_t *LPCWSTR, *PCWSTR;
 typedef size_t SIZE_T;
@@ -130,8 +130,8 @@ typedef struct _RTL_CRITICAL_SECTION {
     //  section for the resource
     //
 
-    LONG LockCount;
-    LONG RecursionCount;
+    int32_t LockCount;
+    int32_t RecursionCount;
     HANDLE OwningThread;        // from the thread's ClientId->UniqueThread
     HANDLE LockSemaphore;
     ULONG_PTR SpinCount;        // force size on 64-bit systems when packed
@@ -191,7 +191,7 @@ GetWriteWatch(
   SIZE_T dwRegionSize,
   PVOID *lpAddresses,
   ULONG_PTR * lpdwCount,
-  ULONG * lpdwGranularity
+  uint32_t * lpdwGranularity
 );
 
 WINBASEAPI
@@ -260,8 +260,8 @@ DWORD
 WINAPI
 SetFilePointer(
            HANDLE hFile,
-           LONG lDistanceToMove,
-           LONG * lpDistanceToMoveHigh,
+           int32_t lDistanceToMove,
+           int32_t * lpDistanceToMoveHigh,
            DWORD dwMoveMethod);
 
 WINBASEAPI
@@ -430,7 +430,7 @@ struct _DacGlobals;
 
 int32_t FastInterlockIncrement(int32_t volatile *lpAddend);
 int32_t FastInterlockDecrement(int32_t volatile *lpAddend);
-int32_t FastInterlockExchange(int32_t volatile *Target, LONG Value);
+int32_t FastInterlockExchange(int32_t volatile *Target, int32_t Value);
 int32_t FastInterlockCompareExchange(int32_t volatile *Destination, int32_t Exchange, int32_t Comperand);
 int32_t FastInterlockExchangeAdd(int32_t volatile *Addend, int32_t Value);
 
