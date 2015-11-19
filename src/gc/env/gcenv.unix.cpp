@@ -389,7 +389,7 @@ GetWriteWatch(
     SIZE_T dwRegionSize,
     PVOID *lpAddresses,
     ULONG_PTR * lpdwCount,
-    ULONG * lpdwGranularity
+    uint32_t * lpdwGranularity
     )
 {
     // TODO: Implement for background GC
@@ -519,8 +519,8 @@ DWORD
 WINAPI
 SetFilePointer(
     HANDLE hFile,
-    LONG lDistanceToMove,
-    LONG * lpDistanceToMoveHigh,
+    int32_t lDistanceToMove,
+    int32_t * lpDistanceToMoveHigh,
     DWORD dwMoveMethod)
 {
     // TODO: Reimplement callers using CRT
