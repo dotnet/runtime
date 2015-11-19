@@ -231,7 +231,7 @@ ves_icall_System_Globalization_CultureData_fill_number_data (MonoNumberFormatInf
 	MonoDomain *domain;
 	const NumberFormatEntry *nfe;
 
-	g_assert (number_index != 0);
+	g_assert (number_index >= 0);
 
 	nfe = &number_format_entries [number_index];
 
