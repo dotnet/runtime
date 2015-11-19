@@ -84,8 +84,8 @@ void GCHeap::UpdatePreGCCounters()
 #ifdef FEATURE_EVENT_TRACE
     ETW::GCLog::ETW_GC_INFO Info;
 
-    Info.GCStart.Count = (ULONG)pSettings->gc_index;
-    Info.GCStart.Depth = (ULONG)pSettings->condemned_generation;
+    Info.GCStart.Count = (uint32_t)pSettings->gc_index;
+    Info.GCStart.Depth = (uint32_t)pSettings->condemned_generation;
     Info.GCStart.Reason = (ETW::GCLog::ETW_GC_INFO::GC_REASON)((int)(pSettings->reason));
 
     Info.GCStart.Type = ETW::GCLog::ETW_GC_INFO::GC_NGC;
@@ -119,7 +119,7 @@ void GCHeap::UpdatePostGCCounters()
 
     int condemned_gen = pSettings->condemned_generation;
     Info.GCEnd.Depth = condemned_gen;
-    Info.GCEnd.Count = (ULONG)pSettings->gc_index;
+    Info.GCEnd.Count = (uint32_t)pSettings->gc_index;
     ETW::GCLog::FireGcEndAndGenerationRanges(Info.GCEnd.Count, Info.GCEnd.Depth);
 
     int xGen;
@@ -334,9 +334,9 @@ void GCHeap::UpdatePostGCCounters()
     
     g_TotalTimeSinceLastGCEnd = _currentPerfCounterTimer;
 
-    HeapInfo.HeapStats.PinnedObjectCount = (ULONG)(GetPerfCounters().m_GC.cPinnedObj);
-    HeapInfo.HeapStats.SinkBlockCount =  (ULONG)(GetPerfCounters().m_GC.cSinkBlocks);
-    HeapInfo.HeapStats.GCHandleCount =  (ULONG)(GetPerfCounters().m_GC.cHandles);
+    HeapInfo.HeapStats.PinnedObjectCount = (uint32_t)(GetPerfCounters().m_GC.cPinnedObj);
+    HeapInfo.HeapStats.SinkBlockCount =  (uint32_t)(GetPerfCounters().m_GC.cSinkBlocks);
+    HeapInfo.HeapStats.GCHandleCount =  (uint32_t)(GetPerfCounters().m_GC.cHandles);
 #endif //ENABLE_PERF_COUNTERS
 
     FireEtwGCHeapStats_V1(HeapInfo.HeapStats.GenInfo[0].GenerationSize, HeapInfo.HeapStats.GenInfo[0].TotalPromotedSize,
@@ -634,7 +634,7 @@ void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_numbe
         InlineSString<MAX_CLASSNAME_LENGTH> strTypeName; 
         th.GetName(strTypeName);
 
-        FireEtwGCAllocationTick_V3((ULONG)allocation_amount,
+        FireEtwGCAllocationTick_V3((uint32_t)allocation_amount,
                                    ((gen_number == 0) ? ETW::GCLog::ETW_GC_INFO::AllocationSmall : ETW::GCLog::ETW_GC_INFO::AllocationLarge), 
                                    GetClrInstanceId(),
                                    allocation_amount,

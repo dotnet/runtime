@@ -340,8 +340,8 @@ void SyncTransferCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, uint32_t u
 void TableFullRebalanceCache(HandleTable *pTable,
                              HandleTypeCache *pCache,
                              uint32_t uType,
-                             LONG lMinReserveIndex,
-                             LONG lMinFreeIndex,
+                             int32_t lMinReserveIndex,
+                             int32_t lMinFreeIndex,
                              OBJECTHANDLE *pExtraOutHandle,
                              OBJECTHANDLE extraInHandle)
 {
@@ -483,7 +483,7 @@ void TableFullRebalanceCache(HandleTable *pTable,
     }
 
     // compute the index to start serving handles from
-    lMinReserveIndex = (LONG)uHandleCount;
+    lMinReserveIndex = (int32_t)uHandleCount;
 
     // update the read index for the reserve bank
     // NOTE: we use an interlocked exchange here to guarantee relative store order on MP
@@ -504,8 +504,8 @@ void TableFullRebalanceCache(HandleTable *pTable,
 void TableQuickRebalanceCache(HandleTable *pTable,
                               HandleTypeCache *pCache,
                               uint32_t uType,
-                              LONG lMinReserveIndex,
-                              LONG lMinFreeIndex,
+                              int32_t lMinReserveIndex,
+                              int32_t lMinFreeIndex,
                               OBJECTHANDLE *pExtraOutHandle,
                               OBJECTHANDLE extraInHandle)
 {
@@ -630,13 +630,13 @@ OBJECTHANDLE TableCacheMissOnAlloc(HandleTable *pTable, HandleTypeCache *pCache,
     CrstHolder ch(&pTable->Lock);
 
     // try again to take a handle (somebody else may have rebalanced)
-    LONG lReserveIndex = FastInterlockDecrement(&pCache->lReserveIndex);
+    int32_t lReserveIndex = FastInterlockDecrement(&pCache->lReserveIndex);
 
     // are we still waiting for handles?
     if (lReserveIndex < 0)
     {
         // yup, suspend free list usage...
-        LONG lFreeIndex = FastInterlockExchange(&pCache->lFreeIndex, 0L);
+        int32_t lFreeIndex = FastInterlockExchange(&pCache->lFreeIndex, 0L);
 
         // ...and rebalance the cache...
         TableQuickRebalanceCache(pTable, pCache, uType, lReserveIndex, lFreeIndex, &handle, NULL);
@@ -680,13 +680,13 @@ void TableCacheMissOnFree(HandleTable *pTable, HandleTypeCache *pCache, uint32_t
     CrstHolder ch(&pTable->Lock);
 
     // try again to take a slot (somebody else may have rebalanced)
-    LONG lFreeIndex = FastInterlockDecrement(&pCache->lFreeIndex);
+    int32_t lFreeIndex = FastInterlockDecrement(&pCache->lFreeIndex);
 
     // are we still waiting for free slots?
     if (lFreeIndex < 0)
     {
         // yup, suspend reserve list usage...
-        LONG lReserveIndex = FastInterlockExchange(&pCache->lReserveIndex, 0L);
+        int32_t lReserveIndex = FastInterlockExchange(&pCache->lReserveIndex, 0L);
 
         // ...and rebalance the cache...
         TableQuickRebalanceCache(pTable, pCache, uType, lReserveIndex, lFreeIndex, NULL, handle);
@@ -729,7 +729,7 @@ OBJECTHANDLE TableAllocSingleHandleFromCache(HandleTable *pTable, uint32_t uType
     HandleTypeCache *pCache = pTable->rgMainCache + uType;
 
     // try to take a handle from the main cache
-    LONG lReserveIndex = FastInterlockDecrement(&pCache->lReserveIndex);
+    int32_t lReserveIndex = FastInterlockDecrement(&pCache->lReserveIndex);
 
     // did we underflow?
     if (lReserveIndex < 0)
@@ -798,7 +798,7 @@ void TableFreeSingleHandleToCache(HandleTable *pTable, uint32_t uType, OBJECTHAN
     HandleTypeCache *pCache = pTable->rgMainCache + uType;
 
     // try to take a free slot from the main cache
-    LONG lFreeIndex = FastInterlockDecrement(&pCache->lFreeIndex);
+    int32_t lFreeIndex = FastInterlockDecrement(&pCache->lFreeIndex);
 
     // did we underflow?
     if (lFreeIndex < 0)

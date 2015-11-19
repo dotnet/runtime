@@ -323,7 +323,7 @@ struct HandleTypeCache
     /*
      * index of next available handle slot in the reserve bank
      */
-    LONG lReserveIndex;
+    int32_t lReserveIndex;
     
 
     /*---------------------------------------------------------------------------------
@@ -339,7 +339,7 @@ struct HandleTypeCache
     /*
      * index of next empty slot in the free bank
      */
-    LONG lFreeIndex;
+    int32_t lFreeIndex;
 };
 
 

@@ -110,9 +110,9 @@ class CNameSpace
     
 private:
 #ifdef DACCESS_COMPILE    
-    SVAL_DECL(LONG, m_GcStructuresInvalidCnt);
+    SVAL_DECL(int32_t, m_GcStructuresInvalidCnt);
 #else
-    static VOLATILE(LONG) m_GcStructuresInvalidCnt;
+    static VOLATILE(int32_t) m_GcStructuresInvalidCnt;
 #endif //DACCESS_COMPILE
 };
 

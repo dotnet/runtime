@@ -16,12 +16,12 @@
 
 int32_t FastInterlockIncrement(int32_t volatile *lpAddend)
 {
-    return InterlockedIncrement((LONG *)lpAddend);
+    return InterlockedIncrement((int32_t *)lpAddend);
 }
 
 int32_t FastInterlockDecrement(int32_t volatile *lpAddend)
 {
-    return InterlockedDecrement((LONG *)lpAddend);
+    return InterlockedDecrement((int32_t *)lpAddend);
 }
 
 int32_t FastInterlockExchange(int32_t volatile *Target, int32_t Value)
@@ -31,12 +31,12 @@ int32_t FastInterlockExchange(int32_t volatile *Target, int32_t Value)
 
 int32_t FastInterlockCompareExchange(int32_t volatile *Destination, int32_t Exchange, int32_t Comperand)
 {
-    return InterlockedCompareExchange((LONG *)Destination, Exchange, Comperand);
+    return InterlockedCompareExchange((int32_t *)Destination, Exchange, Comperand);
 }
 
 int32_t FastInterlockExchangeAdd(int32_t volatile *Addend, int32_t Value)
 {
-    return InterlockedExchangeAdd((LONG *)Addend, Value);
+    return InterlockedExchangeAdd((int32_t *)Addend, Value);
 }
 
 void * _FastInterlockExchangePointer(void * volatile *Target, void * Value)
@@ -51,12 +51,12 @@ void * _FastInterlockCompareExchangePointer(void * volatile *Destination, void *
 
 void FastInterlockOr(uint32_t volatile *p, uint32_t msk)
 {
-    InterlockedOr((LONG *)p, msk);
+    InterlockedOr((int32_t *)p, msk);
 }
 
 void FastInterlockAnd(uint32_t volatile *p, uint32_t msk)
 {
-    InterlockedAnd((LONG *)p, msk);
+    InterlockedAnd((int32_t *)p, msk);
 }
 
 
