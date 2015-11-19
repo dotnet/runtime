@@ -113,13 +113,13 @@ bool CNameSpace::GcDhReScan(ScanContext* sc)
 void CNameSpace::GcWeakPtrScan( promote_func* fn, int condemned, int max_gen, ScanContext* sc )
 {
     // Clear out weak pointers that are no longer live.
-    Ref_CheckReachable(condemned, max_gen, (LPARAM)sc);
+    Ref_CheckReachable(condemned, max_gen, (uintptr_t)sc);
 
     // Clear any secondary objects whose primary object is now definitely dead.
     Ref_ScanDependentHandlesForClearing(condemned, max_gen, sc, fn);
 }
 
-static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtraInfo, LPARAM lp1, LPARAM lp2)
+static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -140,7 +140,7 @@ static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtra
 
 void CNameSpace::GcWeakPtrScanBySingleThread( int condemned, int max_gen, ScanContext* sc )
 {
-    GCToEEInterface::SyncBlockCacheWeakPtrScan(&CheckPromoted, (LPARAM)sc, 0);
+    GCToEEInterface::SyncBlockCacheWeakPtrScan(&CheckPromoted, (uintptr_t)sc, 0);
 }
 
 void CNameSpace::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
@@ -151,7 +151,7 @@ void CNameSpace::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, S
 void CNameSpace::GcShortWeakPtrScan(promote_func* fn,  int condemned, int max_gen, 
                                      ScanContext* sc)
 {
-    Ref_CheckAlive(condemned, max_gen, (LPARAM)sc);
+    Ref_CheckAlive(condemned, max_gen, (uintptr_t)sc);
 }
 
 /*
@@ -261,7 +261,7 @@ void CNameSpace::GcScanHandlesForProfilerAndETW (int max_gen, ScanContext* sc)
 #endif // _DEBUG && CATCH_GC
     {
         LOG((LF_GC|LF_GCROOTS, LL_INFO10, "Profiler Root Scan Phase, Handles\n"));
-        Ref_ScanPointersForProfilerAndETW(max_gen, (LPARAM)sc);
+        Ref_ScanPointersForProfilerAndETW(max_gen, (uintptr_t)sc);
     }
     
 #if defined ( _DEBUG) && defined (CATCH_GC)
@@ -305,14 +305,14 @@ void CNameSpace::GcRuntimeStructuresValid (BOOL bValid)
 
 void CNameSpace::GcDemote (int condemned, int max_gen, ScanContext* sc)
 {
-    Ref_RejuvenateHandles (condemned, max_gen, (LPARAM)sc);
+    Ref_RejuvenateHandles (condemned, max_gen, (uintptr_t)sc);
     if (!GCHeap::IsServerHeap() || sc->thread_number == 0)
         GCToEEInterface::SyncBlockCacheDemote(max_gen);
 }
 
 void CNameSpace::GcPromotionsGranted (int condemned, int max_gen, ScanContext* sc)
 {
-    Ref_AgeHandles(condemned, max_gen, (LPARAM)sc);
+    Ref_AgeHandles(condemned, max_gen, (uintptr_t)sc);
     if (!GCHeap::IsServerHeap() || sc->thread_number == 0)
         GCToEEInterface::SyncBlockCachePromotionsGranted(max_gen);
 }

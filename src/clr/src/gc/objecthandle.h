@@ -385,7 +385,7 @@ inline OBJECTHANDLE CreateSizedRefHandle(HHANDLETABLE table, OBJECTREF object)
 { 
     WRAPPER_NO_CONTRACT;
 
-    return HndCreateHandle(table, HNDTYPE_SIZEDREF, object, (LPARAM)0);
+    return HndCreateHandle(table, HNDTYPE_SIZEDREF, object, (uintptr_t)0);
 }
 
 void DestroySizedRefHandle(OBJECTHANDLE handle);
@@ -413,7 +413,7 @@ inline OBJECTHANDLE CreateWinRTWeakHandle(HHANDLETABLE table, OBJECTREF object, 
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pWinRTWeakReference != NULL);
-    return HndCreateHandle(table, HNDTYPE_WEAK_WINRT, object, reinterpret_cast<LPARAM>(pWinRTWeakReference));
+    return HndCreateHandle(table, HNDTYPE_WEAK_WINRT, object, reinterpret_cast<uintptr_t>(pWinRTWeakReference));
 }
 
 void DestroyWinRTWeakHandle(OBJECTHANDLE handle);
@@ -659,7 +659,7 @@ void Ref_EndSynchronousGC     (uint32_t uCondemnedGeneration, uint32_t uMaxGener
 
 typedef void Ref_promote_func(class Object**, ScanContext*, uint32_t);
 
-void Ref_TraceRefCountHandles(HANDLESCANPROC callback, LPARAM lParam1, LPARAM lParam2);
+void Ref_TraceRefCountHandles(HANDLESCANPROC callback, uintptr_t lParam1, uintptr_t lParam2);
 void Ref_TracePinningRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
@@ -670,12 +670,12 @@ void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, Sc
 void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 
-void Ref_CheckReachable       (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, LPARAM lp1);
-void Ref_CheckAlive           (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, LPARAM lp1);
-void Ref_ScanPointersForProfilerAndETW(uint32_t uMaxGeneration, LPARAM lp1);
+void Ref_CheckReachable       (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, uintptr_t lp1);
+void Ref_CheckAlive           (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, uintptr_t lp1);
+void Ref_ScanPointersForProfilerAndETW(uint32_t uMaxGeneration, uintptr_t lp1);
 void Ref_ScanDependentHandlesForProfilerAndETW(uint32_t uMaxGeneration, ProfilingScanContext * SC);
-void Ref_AgeHandles           (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, LPARAM lp1);
-void Ref_RejuvenateHandles(uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, LPARAM lp1);
+void Ref_AgeHandles           (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, uintptr_t lp1);
+void Ref_RejuvenateHandles(uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, uintptr_t lp1);
 
 void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc);
 
