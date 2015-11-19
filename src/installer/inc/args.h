@@ -9,7 +9,6 @@
 
 struct arguments_t
 {
-    trace::level_t trace_level;
     pal::string_t own_path;
     pal::string_t managed_application;
     pal::string_t clr_path;

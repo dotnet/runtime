@@ -161,10 +161,6 @@ int main(const int argc, const pal::char_t* argv[])
         return 1;
     }
 
-    // Configure tracing
-    trace::set_level(args.trace_level);
-    trace::info(_X("tracing enabled"));
-
     // Resolve paths
     if (!pal::realpath(args.managed_application))
     {
