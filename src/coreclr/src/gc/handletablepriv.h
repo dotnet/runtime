@@ -365,8 +365,8 @@ struct ScanCallbackInfo
     uint32_t         uFlags;            // HNDGCF_* flags
     BOOL             fEnumUserData;     // whether user data is being enumerated as well
     HANDLESCANPROC   pfnScan;           // per-handle scan callback
-    uintptr_t           param1;            // callback param 1
-    uintptr_t           param2;            // callback param 2
+    uintptr_t        param1;            // callback param 1
+    uintptr_t        param2;            // callback param 2
     uint32_t         dwAgeMask;         // generation mask for ephemeral GCs
 
 #ifdef _DEBUG
