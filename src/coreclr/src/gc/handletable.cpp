@@ -1184,8 +1184,8 @@ uint32_t HndCountHandles(HHANDLETABLE hTable)
     for (; pCache != pCacheEnd; ++pCache)
     {
         // get relevant indexes for the reserve bank and the free bank
-        LONG lFreeIndex = pCache->lFreeIndex;
-        LONG lReserveIndex = pCache->lReserveIndex;
+        int32_t lFreeIndex = pCache->lFreeIndex;
+        int32_t lReserveIndex = pCache->lReserveIndex;
 
         // clamp the min free index and min reserve index to be non-negative;
         // this is necessary since interlocked operations can set these variables

@@ -233,7 +233,7 @@ public:	// FIX
 
     // Lock for finalization
     PER_HEAP_ISOLATED   
-        VOLATILE(LONG)          m_GCFLock;
+        VOLATILE(int32_t)          m_GCFLock;
 
     PER_HEAP_ISOLATED   BOOL    GcCollectClasses;
     PER_HEAP_ISOLATED

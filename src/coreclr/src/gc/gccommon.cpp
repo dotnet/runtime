@@ -43,7 +43,7 @@ uint8_t* g_GCShadowEnd;
 uint8_t* g_shadow_lowest_address = NULL;
 #endif
 
-VOLATILE(LONG) m_GCLock = -1;
+VOLATILE(int32_t) m_GCLock = -1;
 
 #ifdef GC_CONFIG_DRIVEN
 void record_global_mechanism (int mech_index)
@@ -52,7 +52,7 @@ void record_global_mechanism (int mech_index)
 }
 #endif //GC_CONFIG_DRIVEN
 
-LONG g_bLowMemoryFromHost = 0;
+int32_t g_bLowMemoryFromHost = 0;
 
 #ifdef WRITE_BARRIER_CHECK
 

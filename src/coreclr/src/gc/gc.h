@@ -660,13 +660,13 @@ public:
 #endif //VERIFY_HEAP    
 };
 
-extern VOLATILE(LONG) m_GCLock;
+extern VOLATILE(int32_t) m_GCLock;
 
 // Go through and touch (read) each page straddled by a memory block.
 void TouchPages(LPVOID pStart, uint32_t cb);
 
 // For low memory notification from host
-extern LONG g_bLowMemoryFromHost;
+extern int32_t g_bLowMemoryFromHost;
 
 #ifdef WRITE_BARRIER_CHECK
 void updateGCShadow(Object** ptr, Object* val);
