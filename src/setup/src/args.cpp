@@ -5,7 +5,6 @@
 #include "utils.h"
 
 arguments_t::arguments_t() :
-    trace_level(trace::level_t::Error),
     managed_application(_X("")),
     clr_path(_X("")),
     app_argc(0),
@@ -20,7 +19,7 @@ void display_help()
         _X("Execute the specified managed assembly with the passed in arguments\n\n")
         _X("The Host's behavior can be altered using the following environment variables:\n")
         _X(" DOTNET_HOME            Set the dotnet home directory. The CLR is expected to be in the runtime subdirectory of this directory. Overrides all other values for CLR search paths\n")
-        _X(" CLRHOST_TRACE          Set to affect trace levels (0 = Errors only (default), 1 = Warnings, 2 = Info, 3 = Verbose)\n");
+        _X(" COREHOST_TRACE          Set to affect trace levels (0 = Errors only (default), 1 = Warnings, 2 = Info, 3 = Verbose)\n");
 }
 
 bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& args)
@@ -61,12 +60,13 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
 
     // Read trace environment variable
     pal::string_t trace_str;
-    if (pal::getenv(_X("CLRHOST_TRACE"), trace_str))
+    if (pal::getenv(_X("COREHOST_TRACE"), trace_str))
     {
         auto trace_val = pal::xtoi(trace_str.c_str());
-        if (trace_val >= (int)trace::level_t::Error && trace_val <= (int)trace::level_t::Verbose)
+        if (trace_val > 0)
         {
-            args.trace_level = (trace::level_t)trace_val;
+            trace::enable();
+            trace::info(_X("tracing enabled"));
         }
     }
 

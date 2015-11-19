@@ -45,7 +45,7 @@ bool pal::load_library(const char_t* path, dll_t& dll)
         return false;
     }
 
-    if (trace::is_enabled(trace::level_t::Info))
+    if (trace::is_enabled())
     {
         pal::char_t buf[PATH_MAX];
         ::GetModuleFileNameW(dll, buf, PATH_MAX);

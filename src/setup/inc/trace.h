@@ -8,16 +8,8 @@
 
 namespace trace
 {
-    enum class level_t
-    {
-        Error = 0,
-        Warning = 1,
-        Info = 2,
-        Verbose = 3
-    };
-
-    void set_level(level_t level);
-    bool is_enabled(level_t level);
+    void enable();
+    bool is_enabled();
     void verbose(const pal::char_t* format, ...);
     void info(const pal::char_t* format, ...);
     void warning(const pal::char_t* format, ...);
