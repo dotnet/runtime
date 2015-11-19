@@ -1,4 +1,4 @@
-Microsoft Patent Promise for .NET Libraries and Runtime Components 
+﻿Microsoft Patent Promise for .NET Libraries and Runtime Components 
 
 Microsoft Corporation and its affiliates ("Microsoft") promise not to assert 
 any .NET Patents against you for making, using, selling, offering for sale, 
@@ -23,8 +23,8 @@ this promise.
 Definitions: 
 
 "Covered Code" means those Microsoft .NET libraries and runtime components as 
-made available by Microsoft at https://github.com/dotnet/coreclr and
-https://github.com/dotnet/corefx.
+made available by Microsoft at https://github.com/dotnet/coreclr, 
+https://github.com/dotnet/corefx and https://github.com/dotnet/corert.
 
 ".NET Patents" are those patent claims, both currently owned by Microsoft and 
 acquired in the future, that are necessarily infringed by Covered Code. .NET 

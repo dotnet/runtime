@@ -1191,10 +1191,10 @@ public:
                                        ULONG count)
     {
         LIMITED_METHOD_CONTRACT;
-        memcpy(&threadCB->waitHandle[DestIndex],
+        memmove(&threadCB->waitHandle[DestIndex],
                &threadCB->waitHandle[SrcIndex],
                count * sizeof(HANDLE));
-        memcpy(&threadCB->waitPointer[DestIndex],
+        memmove(&threadCB->waitPointer[DestIndex],
                &threadCB->waitPointer[SrcIndex],
                count * sizeof(LIST_ENTRY));
     }

@@ -703,7 +703,6 @@ struct SystemVStructRegisterPassingHelper
         {
             fieldClassifications[i] = SystemVClassificationTypeNoClass;
             fieldSizes[i] = 0;
-            fieldLayoutSizes[i] = 0;
             fieldOffsets[i] = 0;
         }
     }
@@ -723,7 +722,6 @@ struct SystemVStructRegisterPassingHelper
     int                             largestFieldOffset;
     SystemVClassificationType       fieldClassifications[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
     unsigned int                    fieldSizes[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
-    unsigned int                    fieldLayoutSizes[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
     unsigned int                    fieldOffsets[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
 };
 
