@@ -54,7 +54,16 @@ namespace System.Data.SqlClient.SNI
 
     internal class SNICommon
     {
-        internal const int SNIInternalExceptionErrorId = 35; // As seen in SNI_ERROR_35
+        // Each error number maps to SNI_ERROR_* in String.resx
+        internal const int ConnTerminatedError = 2;
+        internal const int InvalidParameterError = 5;
+        internal const int ProtocolNotSupportedError = 8;
+        internal const int ConnTimeoutError = 11;
+        internal const int ConnNotUsableError = 19;
+        internal const int InvalidConnStringError = 25;
+        internal const int HandshakeFailureError = 31;
+        internal const int InternalExceptionError = 35;
+        internal const int ConnOpenFailedError = 40;
 
         /// <summary>
         /// Validate server certificate callback for SSL
