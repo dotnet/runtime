@@ -69,8 +69,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="System\Net\NetworkInformation\Icmpv4MessageConstants.cs" />
-    <Compile Include="System\Net\NetworkInformation\Icmpv6MessageConstants.cs" />
+    <Compile Include="System\Net\NetworkInformation\IcmpV4MessageConstants.cs" />
+    <Compile Include="System\Net\NetworkInformation\IcmpV6MessageConstants.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.Unix.cs" />
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)\System\Net\RawSocketPermissions.cs">
