@@ -882,11 +882,11 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 			return GUINT_TO_POINTER (mono_class_value_size (klass, NULL));
 	case MONO_RGCTX_INFO_CLASS_BOX_TYPE:
 		if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg))
-			return GUINT_TO_POINTER (1);
+			return GUINT_TO_POINTER (MONO_GSHAREDVT_BOX_TYPE_REF);
 		else if (mono_class_is_nullable (klass))
-			return GUINT_TO_POINTER (2);
+			return GUINT_TO_POINTER (MONO_GSHAREDVT_BOX_TYPE_NULLABLE);
 		else
-			return GUINT_TO_POINTER (0);
+			return GUINT_TO_POINTER (MONO_GSHAREDVT_BOX_TYPE_VTYPE);
 	case MONO_RGCTX_INFO_MEMCPY:
 	case MONO_RGCTX_INFO_BZERO: {
 		static MonoMethod *memcpy_method [17];
@@ -1231,11 +1231,11 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		impl_class = method->klass;
 		if (MONO_TYPE_IS_REFERENCE (&impl_class->byval_arg))
-			return GUINT_TO_POINTER (1);
+			return GUINT_TO_POINTER (MONO_GSHAREDVT_BOX_TYPE_REF);
 		else if (mono_class_is_nullable (impl_class))
-			return GUINT_TO_POINTER (2);
+			return GUINT_TO_POINTER (MONO_GSHAREDVT_BOX_TYPE_NULLABLE);
 		else
-			return GUINT_TO_POINTER (0);
+			return GUINT_TO_POINTER (MONO_GSHAREDVT_BOX_TYPE_VTYPE);
 	}
 #ifndef DISABLE_REMOTING
 	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
@@ -1248,10 +1248,11 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	case MONO_RGCTX_INFO_FIELD_OFFSET: {
 		MonoClassField *field = data;
 
+		/* The value is offset by 1 */
 		if (field->parent->valuetype && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
-			return GUINT_TO_POINTER (field->offset - sizeof (MonoObject));
+			return GUINT_TO_POINTER (field->offset - sizeof (MonoObject) + 1);
 		else
-			return GUINT_TO_POINTER (field->offset);
+			return GUINT_TO_POINTER (field->offset + 1);
 	}
 	case MONO_RGCTX_INFO_METHOD_RGCTX: {
 		MonoMethodInflated *method = data;
@@ -1846,6 +1847,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 										method_inst ? method_inst->type_argc : 0, slot, TRUE, TRUE, &do_free);
 	/* This might take the loader lock */
 	info = instantiate_info (domain, &oti, &context, klass);
+	g_assert (info);
 
 	/*
 	if (method_inst)

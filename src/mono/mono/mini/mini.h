@@ -1148,6 +1148,13 @@ enum {
 	MONO_GENERIC_CONTEXT_USED_METHOD = 2
 };
 
+enum {
+	/* Cannot be 0 since this is stored in rgctx slots, and 0 means an unitialized rgctx slot */
+	MONO_GSHAREDVT_BOX_TYPE_VTYPE = 1,
+	MONO_GSHAREDVT_BOX_TYPE_REF = 2,
+	MONO_GSHAREDVT_BOX_TYPE_NULLABLE = 3
+};
+
 typedef enum {
 	MONO_RGCTX_INFO_STATIC_DATA,
 	MONO_RGCTX_INFO_KLASS,
@@ -1165,6 +1172,7 @@ typedef enum {
 	MONO_RGCTX_INFO_CAST_CACHE,
 	MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE,
 	MONO_RGCTX_INFO_VALUE_SIZE,
+	/* +1 to avoid zero values in rgctx slots */
 	MONO_RGCTX_INFO_FIELD_OFFSET,
 	/* Either the code for a gsharedvt method, or the address for a gsharedvt-out trampoline for the method */
 	MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE,
@@ -1172,11 +1180,7 @@ typedef enum {
 	MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT,
 	/* Same for calli, associated with a signature */
 	MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI,
-	/*
-	 * 0 - vtype
-	 * 1 - ref
-	 * 2 - gsharedvt type
-	 */
+	/* One of MONO_GSHAREDVT_BOX_TYPE */
 	MONO_RGCTX_INFO_CLASS_BOX_TYPE,
 	/* Resolves to a MonoGSharedVtMethodRuntimeInfo */
 	MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO,
@@ -1853,6 +1857,7 @@ enum {
 #define OP_DUMMY_PCONST OP_DUMMY_I8CONST
 #define OP_PADD OP_LADD
 #define OP_PADD_IMM OP_LADD_IMM
+#define OP_PSUB_IMM OP_LSUB_IMM
 #define OP_PAND_IMM OP_LAND_IMM
 #define OP_PSUB OP_LSUB
 #define OP_PMUL OP_LMUL
@@ -1877,6 +1882,7 @@ enum {
 #define OP_DUMMY_PCONST OP_DUMMY_ICONST
 #define OP_PADD OP_IADD
 #define OP_PADD_IMM OP_IADD_IMM
+#define OP_PSUB_IMM OP_ISUB_IMM
 #define OP_PAND_IMM OP_IAND_IMM
 #define OP_PSUB OP_ISUB
 #define OP_PMUL OP_IMUL
