@@ -19,31 +19,89 @@ const int32_t CompareOptionsIgnoreCase = 1;
 // const int32_t CompareOptionsStringSort = 0x20000000;
 
 /*
+ * For increased performance, we cache the UCollator objects for a locale and
+ * share them across threads. This is safe (and supported in ICU) if we ensure
+ * multiple threads are only ever dealing with const UCollators.
+ */
+typedef struct _sort_handle
+{
+    UCollator* regular;
+    UCollator* ignoreCase;
+
+    _sort_handle() : regular(nullptr), ignoreCase(nullptr)
+    {
+    }
+
+} SortHandle;
+
+/*
  * To collator returned by this function is owned by the callee and must be
- *closed when this method returns
- * with a U_SUCCESS UErrorCode.
+ * closed when this method returns with a U_SUCCESS UErrorCode.
  *
  * On error, the return value is undefined.
  */
-UCollator* GetCollatorForLocaleAndOptions(const char* lpLocaleName, int32_t options, UErrorCode* pErr)
+UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options, UErrorCode* pErr)
 {
-    UCollator* pColl = nullptr;
-
-    pColl = ucol_open(lpLocaleName, pErr);
+    UCollator* pClonedCollator = ucol_safeClone(pCollator, nullptr, nullptr, pErr);
 
     if ((options & CompareOptionsIgnoreCase) == CompareOptionsIgnoreCase)
     {
-        ucol_setAttribute(pColl, UCOL_STRENGTH, UCOL_SECONDARY, pErr);
+        ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, UCOL_SECONDARY, pErr);
     }
 
-    return pColl;
+    return pClonedCollator;
+}
+
+extern "C" SortHandle* GetSortHandle(const char* lpLocaleName)
+{
+    SortHandle* pSortHandle = new SortHandle();
+
+    UErrorCode err = U_ZERO_ERROR;
+
+    pSortHandle->regular = ucol_open(lpLocaleName, &err);
+    pSortHandle->ignoreCase = CloneCollatorWithOptions(pSortHandle->regular, CompareOptionsIgnoreCase, &err);
+
+    if (U_FAILURE(err))
+    {
+        if (pSortHandle->regular != nullptr)
+              ucol_close(pSortHandle->regular);
+
+        if (pSortHandle->ignoreCase != nullptr)
+            ucol_close(pSortHandle->ignoreCase);
+
+        delete pSortHandle;
+        pSortHandle = nullptr;
+    }
+
+    return pSortHandle;
+}
+
+extern "C" void CloseSortHandle(SortHandle* pSortHandle)
+{
+    ucol_close(pSortHandle->regular);
+    ucol_close(pSortHandle->ignoreCase);
+
+    pSortHandle->regular = nullptr;
+    pSortHandle->ignoreCase = nullptr;
+
+    delete pSortHandle;
+}
+
+const UCollator* GetCollatorFromSortHandle(const SortHandle* pSortHandle, int32_t options, UErrorCode* pErr)
+{
+    if ((options & CompareOptionsIgnoreCase) == CompareOptionsIgnoreCase)
+    {
+        return pSortHandle->ignoreCase;
+    }
+
+    return pSortHandle->regular;
 }
 
 /*
 Function:
 CompareString
 */
-extern "C" int32_t CompareString(const char* lpLocaleName,
+extern "C" int32_t CompareString(const SortHandle* pSortHandle,
                                  const UChar* lpStr1,
                                  int32_t cwStr1Length,
                                  const UChar* lpStr2,
@@ -56,12 +114,11 @@ extern "C" int32_t CompareString(const char* lpLocaleName,
 
     UCollationResult result = UCOL_EQUAL;
     UErrorCode err = U_ZERO_ERROR;
-    UCollator* pColl = GetCollatorForLocaleAndOptions(lpLocaleName, options, &err);
+    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
     if (U_SUCCESS(err))
     {
         result = ucol_strcoll(pColl, lpStr1, cwStr1Length, lpStr2, cwStr2Length);
-        ucol_close(pColl);
     }
 
     return result;
@@ -72,13 +129,13 @@ Function:
 IndexOf
 */
 extern "C" int32_t
-IndexOf(const char* lpLocaleName, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+IndexOf(const SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
     int32_t result = USEARCH_DONE;
     UErrorCode err = U_ZERO_ERROR;
-    UCollator* pColl = GetCollatorForLocaleAndOptions(lpLocaleName, options, &err);
+    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
     if (U_SUCCESS(err))
     {
@@ -89,8 +146,6 @@ IndexOf(const char* lpLocaleName, const UChar* lpTarget, int32_t cwTargetLength,
             result = usearch_first(pSearch, &err);
             usearch_close(pSearch);
         }
-
-        ucol_close(pColl);
     }
 
     return result;
@@ -101,13 +156,13 @@ Function:
 LastIndexOf
 */
 extern "C" int32_t LastIndexOf(
-    const char* lpLocaleName, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+    const SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
     int32_t result = USEARCH_DONE;
     UErrorCode err = U_ZERO_ERROR;
-    UCollator* pColl = GetCollatorForLocaleAndOptions(lpLocaleName, options, &err);
+    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
     if (U_SUCCESS(err))
     {
@@ -118,8 +173,6 @@ extern "C" int32_t LastIndexOf(
             result = usearch_last(pSearch, &err);
             usearch_close(pSearch);
         }
-
-        ucol_close(pColl);
     }
 
     return result;
@@ -202,11 +255,11 @@ IndexOfOrdinalIgnoreCase(
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 extern "C" int32_t StartsWith(
-    const char* lpLocaleName, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+    const SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     int32_t result = FALSE;
     UErrorCode err = U_ZERO_ERROR;
-    UCollator* pColl = GetCollatorForLocaleAndOptions(lpLocaleName, options, &err);
+    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
     if (U_SUCCESS(err))
     {
@@ -255,8 +308,6 @@ extern "C" int32_t StartsWith(
 
             usearch_close(pSearch);
         }
-
-        ucol_close(pColl);
     }
 
     return result;
@@ -266,11 +317,11 @@ extern "C" int32_t StartsWith(
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 extern "C" int32_t EndsWith(
-    const char* lpLocaleName, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+    const SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     int32_t result = FALSE;
     UErrorCode err = U_ZERO_ERROR;
-    UCollator* pColl = GetCollatorForLocaleAndOptions(lpLocaleName, options, &err);
+    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
 
     if (U_SUCCESS(err))
     {
@@ -290,19 +341,17 @@ extern "C" int32_t EndsWith(
 
                 // TODO (dotnet/corefx#3467): We should do something similar to what
                 // StartsWith does where we can ignore
-                // some collation elements at the end of te string if they are zero.
+                // some collation elements at the end of the string if they are zero.
             }
 
             usearch_close(pSearch);
         }
-
-        ucol_close(pColl);
     }
 
     return result;
 }
 
-extern "C" int32_t GetSortKey(const char* lpLocaleName,
+extern "C" int32_t GetSortKey(const SortHandle* pSortHandle,
                               const UChar* lpStr,
                               int32_t cwStrLength,
                               uint8_t* sortKey,
@@ -310,14 +359,12 @@ extern "C" int32_t GetSortKey(const char* lpLocaleName,
                               int32_t options)
 {
     UErrorCode err = U_ZERO_ERROR;
-    UCollator* pColl = GetCollatorForLocaleAndOptions(lpLocaleName, options, &err);
+    const UCollator* pColl = GetCollatorFromSortHandle(pSortHandle, options, &err);
     int32_t result = 0;
 
     if (U_SUCCESS(err))
     {
         result = ucol_getSortKey(pColl, lpStr, cwStrLength, sortKey, cbSortKeyLength);
-
-        ucol_close(pColl);
     }
 
     return result;
