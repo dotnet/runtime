@@ -3163,7 +3163,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					saved_eax = TRUE;
 					x86_push_reg (code, X86_EAX);
 				}
-			} else if (ins->dreg != X86_EAX) {
+			} else {
 				saved_edx = TRUE;
 				x86_push_reg (code, X86_EDX);
 			}
