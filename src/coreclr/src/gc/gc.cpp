@@ -293,7 +293,7 @@ uint32_t bgc_alloc_spin = 2;
 inline
 void c_write (uint32_t& place, uint32_t value)
 {
-    FastInterlockExchange (&(int32_t&)place, value);
+    FastInterlockExchange (&(LONG&)place, value);
     //place = value;
 }
 
@@ -301,7 +301,7 @@ void c_write (uint32_t& place, uint32_t value)
 inline
 void c_write_volatile (BOOL* place, uint32_t value)
 {
-    FastInterlockExchange ((int32_t*)place, value);
+    FastInterlockExchange ((LONG*)place, value);
     //place = value;
 }
 
@@ -419,7 +419,7 @@ void log_va_msg(const char *fmt, va_list args)
             gc_buffer_index = 0;
         }
         uint32_t written_to_log = 0;
-        WriteFile (gc_log, gc_log_buffer, (uint32_t)gc_log_buffer_size, &written_to_log, NULL);
+        WriteFile (gc_log, gc_log_buffer, (uint32_t)gc_log_buffer_size, (DWORD*)&written_to_log, NULL);
         FlushFileBuffers (gc_log);
         memset (gc_log_buffer, '*', gc_log_buffer_size);
         gc_log_buffer_offset = 0;
@@ -471,7 +471,7 @@ void log_va_msg_config(const char *fmt, va_list args)
     if ((gc_config_log_buffer_offset + msg_len) > gc_config_log_buffer_size)
     {
         uint32_t written_to_log = 0;
-        WriteFile (gc_config_log, gc_config_log_buffer, (uint32_t)gc_config_log_buffer_offset, &written_to_log, NULL);
+        WriteFile (gc_config_log, gc_config_log_buffer, (uint32_t)gc_config_log_buffer_offset, (DWORD*)&written_to_log, NULL);
         FlushFileBuffers (gc_config_log);
         gc_config_log_buffer_offset = 0;
     }
@@ -728,7 +728,7 @@ public:
         assert (!join_struct.joined_p);
         int color = join_struct.lock_color;
 
-        if (FastInterlockDecrement(&join_struct.join_lock) != 0)
+        if (FastInterlockDecrement((LONG*)&join_struct.join_lock) != 0)
         {
             dprintf (JOIN_LOG, ("join%d(%d): Join() Waiting...join_lock is now %d", 
                 flavor, join_id, (int32_t)(join_struct.join_lock)));
@@ -780,7 +780,7 @@ respin:
             fire_event (gch->heap_number, time_end, type_join, join_id);
 
             // last thread out should reset event
-            if (FastInterlockDecrement(&join_struct.join_restart) == 0)
+            if (FastInterlockDecrement((LONG*)&join_struct.join_restart) == 0)
             {
                 // the joined event must be set at this point, because the restarting must have done this
                 join_struct.join_restart = join_struct.n_threads - 1;
@@ -828,7 +828,7 @@ respin:
             return TRUE;
         }
 
-        if (FastInterlockDecrement(&join_struct.r_join_lock) != (join_struct.n_threads - 1))
+        if (FastInterlockDecrement((LONG*)&join_struct.r_join_lock) != (join_struct.n_threads - 1))
         {
             if (!join_struct.wait_done)
             {
@@ -1057,7 +1057,7 @@ public:
     {
         dprintf (3, ("cm: probing %Ix", obj));
 retry:
-        if (FastInterlockExchange (&needs_checking, 1) == 0)
+        if (FastInterlockExchange ((LONG*)&needs_checking, 1) == 0)
         {
             // If we spend too much time spending all the allocs,
             // consider adding a high water mark and scan up
@@ -1096,7 +1096,7 @@ retry:
 retry:
         dprintf (3, ("loh alloc: probing %Ix", obj));
 
-        if (FastInterlockExchange (&needs_checking, 1) == 0)
+        if (FastInterlockExchange ((LONG*)&needs_checking, 1) == 0)
         {
             if (obj == rwp_object)
             {
@@ -1270,7 +1270,7 @@ void recursive_gc_sync::begin_foreground()
 
 try_again_top:
 
-        FastInterlockIncrement (&foreground_request_count);
+        FastInterlockIncrement ((LONG*)&foreground_request_count);
 
 try_again_no_inc:
         dprintf(2, ("Waiting sync gc point"));
@@ -1288,7 +1288,7 @@ try_again_no_inc:
 
         if (foreground_gate)
         {
-            FastInterlockIncrement (&foreground_count);
+            FastInterlockIncrement ((LONG*)&foreground_count);
             dprintf (2, ("foreground_count: %d", (int32_t)foreground_count));
             if (foreground_gate)
             {
@@ -1313,9 +1313,9 @@ void recursive_gc_sync::end_foreground()
     dprintf (2, ("end_foreground"));
     if (gc_background_running)
     {
-        FastInterlockDecrement (&foreground_request_count);
+        FastInterlockDecrement ((LONG*)&foreground_request_count);
         dprintf (2, ("foreground_count before decrement: %d", (int32_t)foreground_count));
-        if (FastInterlockDecrement (&foreground_count) == 0)
+        if (FastInterlockDecrement ((LONG*)&foreground_count) == 0)
         {
             //c_write_volatile ((BOOL*)&foreground_gate, 0);
             // TODO - couldn't make the syntax work with Volatile<T>
@@ -1555,7 +1555,7 @@ static void enter_spin_lock_noinstru (RAW_KEYWORD(volatile) int32_t* lock)
 {
 retry:
 
-    if (FastInterlockExchange (lock, 0) >= 0)
+    if (FastInterlockExchange ((LONG*)lock, 0) >= 0)
     {
         unsigned int i = 0;
         while (VolatileLoad(lock) >= 0)
@@ -1597,7 +1597,7 @@ retry:
 inline
 static BOOL try_enter_spin_lock_noinstru(RAW_KEYWORD(volatile) int32_t* lock)
 {
-    return (FastInterlockExchange (&*lock, 0) < 0);
+    return (FastInterlockExchange ((LONG*)&*lock, 0) < 0);
 }
 
 inline
@@ -4719,7 +4719,7 @@ BOOL gc_heap::unprotect_segment (heap_segment* seg)
         dprintf (3, ("unprotecting segment %Ix:", (size_t)seg));
 
         BOOL status = VirtualProtect (start, region_size,
-                                      PAGE_READWRITE, &old_protection);
+                                      PAGE_READWRITE, (DWORD*)&old_protection);
         assert (status);
         return status;
     }
@@ -4896,7 +4896,7 @@ public:
         if (GCGetCurrentProcessorNumber)
             return proc_no_to_heap_no[GCGetCurrentProcessorNumber() % gc_heap::n_heaps];
 
-        unsigned sniff_index = FastInterlockIncrement((int32_t *)&cur_sniff_index);
+        unsigned sniff_index = FastInterlockIncrement((LONG *)&cur_sniff_index);
         sniff_index %= n_sniff_buffers;
 
         int best_heap = 0;
@@ -5160,7 +5160,7 @@ HANDLE gc_heap::create_gc_thread ()
 #ifdef FEATURE_REDHAWK
     HANDLE gc_thread = CreateThread(0, 4096, gc_thread_stub,this, CREATE_SUSPENDED, &thread_id);
 #else //FEATURE_REDHAWK
-    HANDLE gc_thread = Thread::CreateUtilityThread(Thread::StackSize_Medium, gc_thread_stub, this, CREATE_SUSPENDED, &thread_id);
+    HANDLE gc_thread = Thread::CreateUtilityThread(Thread::StackSize_Medium, (DWORD (*)(void*))gc_thread_stub, this, CREATE_SUSPENDED, (DWORD*)&thread_id);
 #endif //FEATURE_REDHAWK
 
     if (!gc_thread)
@@ -6643,7 +6643,7 @@ void gc_heap::mark_array_set_marked (uint8_t* add)
     size_t index = mark_word_of (add);
     uint32_t val = (1 << mark_bit_bit_of (add));
 #ifdef MULTIPLE_HEAPS
-    InterlockedOr ((int32_t*)&(mark_array [index]), val);
+    InterlockedOr ((LONG*)&(mark_array [index]), val);
 #else
     mark_array [index] |= val;
 #endif 
@@ -9161,7 +9161,7 @@ void gc_heap::update_card_table_bundle()
             dprintf (3,("Probing card table pages [%Ix, %Ix[", (size_t)base_address, (size_t)base_address+region_size));
             uint32_t status = GetWriteWatch (0, base_address, region_size,
                                          (void**)g_addresses,
-                                         &bcount, &granularity);
+                                         &bcount, (DWORD*)&granularity);
             assert (status == 0);
             assert (granularity == OS_PAGE_SIZE);
             dprintf (3,("Found %d pages written", bcount));
@@ -9964,7 +9964,7 @@ gc_heap::enter_gc_done_event_lock()
     uint32_t dwSwitchCount = 0;
 retry:
 
-    if (FastInterlockExchange (&gc_done_event_lock, 0) >= 0)
+    if (FastInterlockExchange ((LONG*)&gc_done_event_lock, 0) >= 0)
     {
         while (gc_done_event_lock >= 0)
         {
@@ -18424,7 +18424,7 @@ void gc_heap::fix_card_table ()
 #endif //TIME_WRITE_WATCH
             uint32_t status = GetWriteWatch (mode, base_address, region_size,
                                           (void**)g_addresses,
-                                          &bcount, &granularity);
+                                          &bcount, (DWORD*)&granularity);
             assert (status == 0);
 
 #ifdef TIME_WRITE_WATCH
@@ -26157,7 +26157,7 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
 
                     uint32_t status = GetWriteWatch (mode, base_address, region_size,
                                                 (void**)background_written_addresses,
-                                                &bcount, &granularity);
+                                                &bcount, (DWORD*)&granularity);
 
     //#ifdef _DEBUG
                     if (status != 0)
@@ -26407,7 +26407,7 @@ BOOL gc_heap::create_bgc_thread(gc_heap* gh)
     }
     
     current_bgc_thread = gh->bgc_thread;
-    if (!current_bgc_thread->CreateNewThread (0, &(gh->bgc_thread_stub), gh))
+    if (!current_bgc_thread->CreateNewThread (0, (DWORD (*)(void*))&(gh->bgc_thread_stub), gh))
     {
         goto cleanup;
     }
@@ -33791,7 +33791,7 @@ BOOL GCHeap::StressHeap(alloc_context * acontext)
 
         // Allow programmer to skip the first N Stress GCs so that you can
         // get to the interesting ones faster.
-        FastInterlockIncrement(&GCStressCurCount);
+        FastInterlockIncrement((LONG*)&GCStressCurCount);
         if (GCStressCurCount < GCStressStartCount)
             return FALSE;
 
@@ -33837,7 +33837,7 @@ BOOL GCHeap::StressHeap(alloc_context * acontext)
         // at a time.  A secondary advantage is that we release part of our StressObjs
         // buffer sparingly but just as effectively.
 
-        if (FastInterlockIncrement((int32_t *) &OneAtATime) == 0 &&
+        if (FastInterlockIncrement((LONG *) &OneAtATime) == 0 &&
             !TrackAllocations()) // Messing with object sizes can confuse the profiler (see ICorProfilerInfo::GetObjectSize)
         {
             StringObject* str;
@@ -33899,7 +33899,7 @@ BOOL GCHeap::StressHeap(alloc_context * acontext)
                 }
             }
         }
-        FastInterlockDecrement((int32_t *) &OneAtATime);
+        FastInterlockDecrement((LONG *) &OneAtATime);
 #endif // !MULTIPLE_HEAPS
         if (IsConcurrentGCEnabled())
         {
@@ -35715,7 +35715,7 @@ GCHeap::SetCardsAfterBulkCopy( Object **StartPoint, size_t len )
             // Set Bit For Card and advance to next card
             size_t card = gcard_of ((uint8_t*)rover);
 
-            FastInterlockOr ((uint32_t RAW_KEYWORD(volatile) *)&g_card_table[card/card_word_width],
+            FastInterlockOr ((DWORD RAW_KEYWORD(volatile) *)&g_card_table[card/card_word_width],
                              (1 << (uint32_t)(card % card_word_width)));
             // Skip to next card for the object
             rover = (Object**)align_on_card ((uint8_t*)(rover+1));
@@ -35799,7 +35799,7 @@ void CFinalize::EnterFinalizeLock()
              GCToEEInterface::IsPreemptiveGCDisabled(GetThread()));
 
 retry:
-    if (FastInterlockExchange (&lock, 0) >= 0)
+    if (FastInterlockExchange ((LONG*)&lock, 0) >= 0)
     {
         unsigned int i = 0;
         while (lock >= 0)

@@ -1555,8 +1555,8 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
 
     if (GCHeap::IsServerHeap()) 
     {
-        bDo = (FastInterlockIncrement(&uCount) == 1);
-        FastInterlockCompareExchange (&uCount, 0, GCHeap::GetGCHeap()->GetNumberOfHeaps());        
+        bDo = (FastInterlockIncrement((LONG*)&uCount) == 1);
+        FastInterlockCompareExchange ((LONG*)&uCount, 0, GCHeap::GetGCHeap()->GetNumberOfHeaps());
         _ASSERTE (uCount <= GCHeap::GetGCHeap()->GetNumberOfHeaps());
     }
 
