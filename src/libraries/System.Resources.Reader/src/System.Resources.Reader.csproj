@@ -9,6 +9,7 @@
     <OutputType>Library</OutputType>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <RootNamespace>System.Resources</RootNamespace>
+    <ProjectGuid>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -17,6 +18,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Resources\ResourceReader.cs" />
+    <Compile Include="System\Resources\StreamExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
