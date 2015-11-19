@@ -80,8 +80,8 @@ void updateGCShadow(Object** ptr, Object* val)
 
 struct changed_seg
 {
-    uint8_t             * start;
-    uint8_t             * end;
+    uint8_t           * start;
+    uint8_t           * end;
     size_t              gc_index;
     bgc_state           bgc;
     changed_seg_state   changed;

@@ -20,7 +20,7 @@
 
 extern uint8_t* g_ephemeral_low;
 extern uint8_t* g_ephemeral_high;
-extern uint32_t*  g_card_table;
+extern uint32_t* g_card_table;
 
 // Patch Labels for the various write barriers
 EXTERN_C void JIT_WriteBarrier_End();
