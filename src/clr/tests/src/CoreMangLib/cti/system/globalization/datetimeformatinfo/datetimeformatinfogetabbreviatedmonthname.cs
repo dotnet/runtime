@@ -117,17 +117,17 @@ public class DateTimeFormatInfoGetAbbreviatedMonthName
             string[] expected = new string[] {
                 "",
                 "janv.",
-                "févr.", 
+                "f\u00e9vr.", 
                 "mars",
                 "avr.",
                 "mai",
                 "juin",
                 "juil.",
-                "août",
+                "ao\u00fbt",
                 "sept.",
                 "oct.",
                 "nov.",
-                "déc.",
+                "d\u00e9c.",
                 "",
             };
 

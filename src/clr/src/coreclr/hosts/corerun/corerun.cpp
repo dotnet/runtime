@@ -456,7 +456,8 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     // Default startup flags
     hr = host->SetStartupFlags((STARTUP_FLAGS)
         (STARTUP_FLAGS::STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN | 
-        STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN)); 
+        STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN |
+        STARTUP_FLAGS::STARTUP_CONCURRENT_GC));
     if (FAILED(hr)) {
         log << W("Failed to set startup flags. ERRORCODE: ") << Logger::hresult << hr << Logger::endl;
         return false;

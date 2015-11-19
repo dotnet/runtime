@@ -690,19 +690,21 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 #endif
 
-void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
+#ifndef	CROSSGEN_COMPILE
+
+void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 { 
     _ASSERTE(!"ARM64:NYI");
 }
 
 #ifndef DACCESS_COMPILE
-
 void TailCallFrame::InitFromContext(T_CONTEXT * pContext)
 {
     _ASSERTE(!"ARM64:NYI");
 }
-
 #endif // !DACCESS_COMPILE
+
+#endif // CROSSGEN_COMPILE
 
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
 { 
