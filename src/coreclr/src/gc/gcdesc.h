@@ -139,7 +139,7 @@ class CGCDesc
 public:
     static size_t ComputeSize (size_t NumSeries)
     {
-        _ASSERTE (SSIZE_T(NumSeries) > 0);
+        _ASSERTE (ptrdiff_t(NumSeries) > 0);
         
         return sizeof(size_t) + NumSeries*sizeof(CGCDescSeries);
     }
@@ -147,7 +147,7 @@ public:
     // For value type array
     static size_t ComputeSizeRepeating (size_t NumSeries)
     {
-        _ASSERTE (SSIZE_T(NumSeries) > 0);
+        _ASSERTE (ptrdiff_t(NumSeries) > 0);
         
         return sizeof(size_t) + sizeof(CGCDescSeries) +
                (NumSeries-1)*sizeof(val_serie_item);
@@ -161,7 +161,7 @@ public:
 
     static void InitValueClassSeries (void* mem, size_t NumSeries)
     {
-        *((SSIZE_T*)mem-1) = -((SSIZE_T)NumSeries);
+        *((ptrdiff_t*)mem-1) = -((ptrdiff_t)NumSeries);
     }
 #endif
 
@@ -184,7 +184,7 @@ public:
     // Cannot be used for valuetype arrays
     PTR_CGCDescSeries GetLowestSeries ()
     {
-        _ASSERTE (SSIZE_T(GetNumSeries()) > 0);
+        _ASSERTE (ptrdiff_t(GetNumSeries()) > 0);
         return PTR_CGCDescSeries(PTR_uint8_t(PTR_CGCDesc(this))
                                  - ComputeSize(GetNumSeries()));
     }
@@ -203,7 +203,7 @@ public:
         size_t NumOfPointers = 0;
         CGCDesc* map = GetCGCDescFromMT(pMT);
         CGCDescSeries* cur = map->GetHighestSeries();
-        SSIZE_T cnt = (SSIZE_T) map->GetNumSeries();
+        ptrdiff_t cnt = (ptrdiff_t) map->GetNumSeries();
 
         if (cnt > 0)
         {
@@ -217,7 +217,7 @@ public:
         else
         {
             /* Handle the repeating case - array of valuetypes */
-            for (SSIZE_T __i = 0; __i > cnt; __i--)
+            for (ptrdiff_t __i = 0; __i > cnt; __i--)
             {
                 NumOfPointers += cur->val_serie[__i].nptrs;
             }
@@ -232,7 +232,7 @@ public:
     // Size of the entire slot map.
     size_t GetSize ()
     {
-        SSIZE_T numSeries = (SSIZE_T) GetNumSeries();
+        ptrdiff_t numSeries = (ptrdiff_t) GetNumSeries();
         if (numSeries < 0)
         {
             return ComputeSizeRepeating(-numSeries);
@@ -252,7 +252,7 @@ private:
     
     BOOL IsValueClassSeries()
     {
-        return ((SSIZE_T) GetNumSeries()) < 0;
+        return ((ptrdiff_t) GetNumSeries()) < 0;
     }
 
 };

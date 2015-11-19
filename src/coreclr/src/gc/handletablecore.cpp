@@ -266,12 +266,12 @@ BOOL TableCanFreeSegmentNow(HandleTable *pTable, TableSegment *pSegment)
  * Gets the user data pointer for the first handle in a block.
  *
  */
-PTR_LPARAM BlockFetchUserDataPointer(PTR__TableSegmentHeader pSegment, uint32_t uBlock, BOOL fAssertOnError)
+PTR_uintptr_t BlockFetchUserDataPointer(PTR__TableSegmentHeader pSegment, uint32_t uBlock, BOOL fAssertOnError)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     // assume NULL until we actually find the data
-    PTR_LPARAM pUserData = NULL;
+    PTR_uintptr_t pUserData = NULL;
     // get the user data index for this block
     uint32_t blockIndex = pSegment->rgUserData[uBlock];
 
@@ -280,7 +280,7 @@ PTR_LPARAM BlockFetchUserDataPointer(PTR__TableSegmentHeader pSegment, uint32_t 
     {
         // In DAC builds, we may not have the entire segment table mapped and in any case it will be quite
         // large. Since we only need one element, we'll retrieve just that one element.  
-        pUserData = PTR_LPARAM(PTR_TO_TADDR(pSegment) + offsetof(TableSegment, rgValue) + 
+        pUserData = PTR_uintptr_t(PTR_TO_TADDR(pSegment) + offsetof(TableSegment, rgValue) + 
                                (blockIndex * HANDLE_BYTES_PER_BLOCK));
     }
     else if (fAssertOnError)
@@ -328,7 +328,7 @@ __inline PTR__TableSegmentHeader HandleFetchSegmentPointer(OBJECTHANDLE handle)
  * ASSERTs and returns NULL if handle is not of the expected type.
  *
  */
-LPARAM *HandleValidateAndFetchUserDataPointer(OBJECTHANDLE handle, uint32_t uTypeExpected)
+uintptr_t *HandleValidateAndFetchUserDataPointer(OBJECTHANDLE handle, uint32_t uTypeExpected)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -348,7 +348,7 @@ LPARAM *HandleValidateAndFetchUserDataPointer(OBJECTHANDLE handle, uint32_t uTyp
     uint32_t uBlock = uHandle / HANDLE_HANDLES_PER_BLOCK;
 
     // fetch the user data for this block
-    PTR_LPARAM pUserData = BlockFetchUserDataPointer(pSegment, uBlock, TRUE);
+    PTR_uintptr_t pUserData = BlockFetchUserDataPointer(pSegment, uBlock, TRUE);
 
     // did we get the user data block?
     if (pUserData)
@@ -378,7 +378,7 @@ LPARAM *HandleValidateAndFetchUserDataPointer(OBJECTHANDLE handle, uint32_t uTyp
  * Less validation is performed.
  *
  */
-PTR_LPARAM HandleQuickFetchUserDataPointer(OBJECTHANDLE handle)
+PTR_uintptr_t HandleQuickFetchUserDataPointer(OBJECTHANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -405,7 +405,7 @@ PTR_LPARAM HandleQuickFetchUserDataPointer(OBJECTHANDLE handle)
     uint32_t uBlock = uHandle / HANDLE_HANDLES_PER_BLOCK;
 
     // fetch the user data for this block
-    PTR_LPARAM pUserData = BlockFetchUserDataPointer(pSegment, uBlock, TRUE);
+    PTR_uintptr_t pUserData = BlockFetchUserDataPointer(pSegment, uBlock, TRUE);
 
     // if we got the user data block then adjust the pointer to be handle-specific
     if (pUserData)
@@ -422,7 +422,7 @@ PTR_LPARAM HandleQuickFetchUserDataPointer(OBJECTHANDLE handle)
  * Stores user data with a handle.
  *
  */
-void HandleQuickSetUserData(OBJECTHANDLE handle, LPARAM lUserData)
+void HandleQuickSetUserData(OBJECTHANDLE handle, uintptr_t lUserData)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -433,7 +433,7 @@ void HandleQuickSetUserData(OBJECTHANDLE handle, LPARAM lUserData)
     */
     
     // fetch the user data slot for this handle
-    LPARAM *pUserData = HandleQuickFetchUserDataPointer(handle);
+    uintptr_t *pUserData = HandleQuickFetchUserDataPointer(handle);
 
     // is there a slot?
     if (pUserData)
@@ -2333,7 +2333,7 @@ uint32_t TableAllocBulkHandles(HandleTable *pTable, uint32_t uType, OBJECTHANDLE
 
             // link the new segment into the list by the order of segment address
             TableSegment* pWalk = pTable->pSegmentList;
-            if ((ULONG_PTR)pNextSegment < (ULONG_PTR)pWalk)
+            if ((uintptr_t)pNextSegment < (uintptr_t)pWalk)
             {
                 pNextSegment->pNextSegment = pWalk;
                 pTable->pSegmentList = pNextSegment;
@@ -2347,7 +2347,7 @@ uint32_t TableAllocBulkHandles(HandleTable *pTable, uint32_t uType, OBJECTHANDLE
                         pWalk->pNextSegment = pNextSegment;
                         break;
                     }
-                    else if ((ULONG_PTR)pWalk->pNextSegment > (ULONG_PTR)pNextSegment)
+                    else if ((uintptr_t)pWalk->pNextSegment > (uintptr_t)pNextSegment)
                     {
                         pNextSegment->pNextSegment = pWalk->pNextSegment;
                         pWalk->pNextSegment = pNextSegment;
@@ -2384,7 +2384,7 @@ uint32_t TableAllocBulkHandles(HandleTable *pTable, uint32_t uType, OBJECTHANDLE
  *
  */
 uint32_t BlockFreeHandlesInMask(TableSegment *pSegment, uint32_t uBlock, uint32_t uMask, OBJECTHANDLE *pHandleBase, uint32_t uCount,
-                            LPARAM *pUserData, uint32_t *puActualFreed, BOOL *pfAllMasksFree)
+                            uintptr_t *pUserData, uint32_t *puActualFreed, BOOL *pfAllMasksFree)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2500,7 +2500,7 @@ uint32_t BlockFreeHandles(TableSegment *pSegment, uint32_t uBlock, OBJECTHANDLE 
     uint32_t uRemain = uCount;
 
     // fetch the user data for this block, if any
-    LPARAM *pBlockUserData = BlockFetchUserDataPointer(pSegment, uBlock, FALSE);
+    uintptr_t *pBlockUserData = BlockFetchUserDataPointer(pSegment, uBlock, FALSE);
 
     // compute the handle bounds for our block
     OBJECTHANDLE firstHandle = (OBJECTHANDLE)(pSegment->rgValue + (uBlock * HANDLE_HANDLES_PER_BLOCK));
