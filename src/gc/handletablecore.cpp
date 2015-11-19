@@ -1679,7 +1679,7 @@ void SegmentResortChains(TableSegment *pSegment)
     BOOL fContiguousWithFreeList = TRUE;
 
     // preinit the chain data to no blocks
-	uint32_t uType;
+    uint32_t uType;
     for (uType = 0; uType < HANDLE_MAX_INTERNAL_TYPES; uType++)
         rgChainHigh[uType] = rgChainCurr[uType] = BLOCK_INVALID;
 
@@ -1950,7 +1950,7 @@ uint32_t BlockAllocHandlesInMask(TableSegment *pSegment, uint32_t uBlock,
  *
  */
 uint32_t BlockAllocHandlesInitial(TableSegment *pSegment, uint32_t uType, uint32_t uBlock,
-                              OBJECTHANDLE *pHandleBase, uint32_t uCount)
+                                  OBJECTHANDLE *pHandleBase, uint32_t uCount)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2384,7 +2384,7 @@ uint32_t TableAllocBulkHandles(HandleTable *pTable, uint32_t uType, OBJECTHANDLE
  *
  */
 uint32_t BlockFreeHandlesInMask(TableSegment *pSegment, uint32_t uBlock, uint32_t uMask, OBJECTHANDLE *pHandleBase, uint32_t uCount,
-                            uintptr_t *pUserData, uint32_t *puActualFreed, BOOL *pfAllMasksFree)
+                                uintptr_t *pUserData, uint32_t *puActualFreed, BOOL *pfAllMasksFree)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2486,7 +2486,7 @@ uint32_t BlockFreeHandlesInMask(TableSegment *pSegment, uint32_t uBlock, uint32_
  *
  */
 uint32_t BlockFreeHandles(TableSegment *pSegment, uint32_t uBlock, OBJECTHANDLE *pHandleBase, uint32_t uCount,
-                      uint32_t *puActualFreed, BOOL *pfScanForFreeBlocks)
+                          uint32_t *puActualFreed, BOOL *pfScanForFreeBlocks)
 {
     WRAPPER_NO_CONTRACT;
 
