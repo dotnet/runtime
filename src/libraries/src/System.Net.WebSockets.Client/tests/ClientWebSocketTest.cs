@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
 using System.Net.Tests;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,9 +28,46 @@ namespace System.Net.WebSockets.Client.Tests
             _output = output;
         }
 
+        public static IEnumerable<object[]> NotWebSocketServers
+        {
+            get
+            {
+                Uri server;
+                
+                // Unknown server.
+                {
+                    server = new Uri(string.Format("ws://{0}", Guid.NewGuid().ToString()));
+                    yield return new object[] { server };
+                }
+
+                // Known server but not a real websocket endpoint.
+                {
+                    server = HttpTestServers.RemoteEchoServer;
+                    var ub = new UriBuilder("ws", server.Host, server.Port, server.PathAndQuery);
+
+                    yield return new object[] { ub.Uri };
+                }
+            }
+        }
+
         private static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
 
 #region Connect
+        [ConditionalTheory("WebSocketsSupported"), MemberData("NotWebSocketServers")]
+        public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server)
+        {
+            using (var cws = new ClientWebSocket())
+            {
+                var cts = new CancellationTokenSource(TimeOutMilliseconds);
+                WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
+                    cws.ConnectAsync(server, cts.Token));
+                    
+                Assert.Equal(WebSocketError.Success, ex.WebSocketErrorCode);
+                Assert.Equal(WebSocketState.Closed, cws.State);
+                Assert.Equal(ResourceHelper.GetExceptionMessage("net_webstatus_ConnectFailure"), ex.Message);
+            }
+        }
+
         [ConditionalTheory("WebSocketsSupported"), MemberData("EchoServers")]
         public async Task EchoBinaryMessage_Success(Uri server)
         {
@@ -78,6 +116,48 @@ namespace System.Net.WebSockets.Client.Tests
                 await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
             }
         }
+
+        [ConditionalTheory("WebSocketsSupported"), MemberData("EchoServers")]
+        public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketExceptionWithMessage(Uri server)
+        {
+            const string AcceptedProtocol = "CustomProtocol";
+
+            using (var cws = new ClientWebSocket())
+            {
+                var cts = new CancellationTokenSource(TimeOutMilliseconds);
+
+                var ub = new UriBuilder(server);
+                ub.Query = "subprotocol=" + AcceptedProtocol;
+
+                WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
+                    cws.ConnectAsync(ub.Uri, cts.Token));
+
+                Assert.Equal(WebSocketError.Success, ex.WebSocketErrorCode);
+                Assert.Equal(WebSocketState.Closed, cws.State);
+                Assert.Equal(ResourceHelper.GetExceptionMessage("net_webstatus_ConnectFailure"), ex.Message);
+            }
+        }
+
+        [ConditionalTheory("WebSocketsSupported"), MemberData("EchoServers")]
+        public async Task ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol(Uri server)
+        {
+            const string AcceptedProtocol = "AcceptedProtocol";
+            const string OtherProtocol = "OtherProtocol";
+            
+            using (var cws = new ClientWebSocket())
+            {
+                cws.Options.AddSubProtocol(AcceptedProtocol);
+                cws.Options.AddSubProtocol(OtherProtocol);
+                var cts = new CancellationTokenSource(TimeOutMilliseconds);
+
+                var ub = new UriBuilder(server);
+                ub.Query = "subprotocol=" + AcceptedProtocol;
+
+                await cws.ConnectAsync(ub.Uri, cts.Token);
+                Assert.Equal(WebSocketState.Open, cws.State);
+                Assert.Equal(AcceptedProtocol, cws.SubProtocol);
+            }
+        }        
 #endregion
 
 #region SendReceive
