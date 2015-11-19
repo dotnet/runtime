@@ -292,13 +292,13 @@ void CNameSpace::GcRuntimeStructuresValid (BOOL bValid)
     if (!bValid)
     {
         int32_t result;
-        result = FastInterlockIncrement (&m_GcStructuresInvalidCnt);
+        result = FastInterlockIncrement ((LONG*)&m_GcStructuresInvalidCnt);
         _ASSERTE (result > 0);
     }
     else
     {
         int32_t result;
-        result = FastInterlockDecrement (&m_GcStructuresInvalidCnt);
+        result = FastInterlockDecrement ((LONG*)&m_GcStructuresInvalidCnt);
         _ASSERTE (result >= 0);
     }
 }

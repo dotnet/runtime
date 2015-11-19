@@ -4708,7 +4708,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
         // Note that I really want to say hCallBack is a GCCONTEXT, but this is pretty close
-        extern void GcEnumObject(LPVOID pData, OBJECTREF *pObj, DWORD flags);
+        extern void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags);
         _ASSERTE((void*) GcEnumObject == pCallBack);
 #endif
         GCCONTEXT   *pCtx = (GCCONTEXT *) hCallBack;
@@ -4961,7 +4961,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
         // Note that I really want to say hCallBack is a GCCONTEXT, but this is pretty close
-        extern void GcEnumObject(LPVOID pData, OBJECTREF *pObj, DWORD flags);
+        extern void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags);
         _ASSERTE((void*) GcEnumObject == pCallBack);
 #endif
         GCCONTEXT   *pCtx = (GCCONTEXT *) hCallBack;
