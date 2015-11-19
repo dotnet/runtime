@@ -282,7 +282,7 @@ ADIndex HndGetHandleADIndex(OBJECTHANDLE handle)
  * Entrypoint for allocating an individual handle.
  *
  */
-OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF object, LPARAM lExtraInfo)
+OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF object, uintptr_t lExtraInfo)
 {
     CONTRACTL
     {
@@ -655,12 +655,12 @@ void HndDestroyHandles(HHANDLETABLE hTable, uint32_t uType, const OBJECTHANDLE *
  * Stores owner data with handle.
  *
  */
-void HndSetHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, LPARAM lExtraInfo)
+void HndSetHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, uintptr_t lExtraInfo)
 {
     WRAPPER_NO_CONTRACT;
 
     // fetch the user data slot for this handle if we have the right type
-    LPARAM *pUserData = HandleValidateAndFetchUserDataPointer(handle, uType);
+    uintptr_t *pUserData = HandleValidateAndFetchUserDataPointer(handle, uType);
 
     // is there a slot?
     if (pUserData)
@@ -676,18 +676,18 @@ void HndSetHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, LPARAM lExtraInf
 * Stores owner data with handle.
 *
 */
-LPARAM HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, LPARAM lOldExtraInfo, LPARAM lNewExtraInfo)
+uintptr_t HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, uintptr_t lOldExtraInfo, uintptr_t lNewExtraInfo)
 {
     WRAPPER_NO_CONTRACT;
 
     // fetch the user data slot for this handle if we have the right type
-    LPARAM *pUserData = HandleValidateAndFetchUserDataPointer(handle, uType);
+    uintptr_t *pUserData = HandleValidateAndFetchUserDataPointer(handle, uType);
 
     // is there a slot?
     if (pUserData)
     {
         // yes - attempt to store the info
-        return (LPARAM)FastInterlockCompareExchangePointer((void**)pUserData, (void*)lNewExtraInfo, (void*)lOldExtraInfo);
+        return (uintptr_t)FastInterlockCompareExchangePointer((void**)pUserData, (void*)lNewExtraInfo, (void*)lOldExtraInfo);
     }
 
     _ASSERTE(!"Shouldn't be trying to call HndCompareExchangeHandleExtraInfo on handle types without extra info");
@@ -701,15 +701,15 @@ LPARAM HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, LP
  * Retrieves owner data from handle.
  *
  */
-LPARAM HndGetHandleExtraInfo(OBJECTHANDLE handle)
+uintptr_t HndGetHandleExtraInfo(OBJECTHANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
 
     // assume zero until we actually get it
-    LPARAM lExtraInfo = 0L;
+    uintptr_t lExtraInfo = 0L;
 
     // fetch the user data slot for this handle
-    PTR_LPARAM pUserData = HandleQuickFetchUserDataPointer(handle);
+    PTR_uintptr_t pUserData = HandleQuickFetchUserDataPointer(handle);
 
     // if we did then copy the value
     if (pUserData)
@@ -870,7 +870,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
  *
  */
 void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeCount,
-                    HANDLESCANPROC pfnEnum, LPARAM lParam1, LPARAM lParam2, BOOL fAsync)
+                    HANDLESCANPROC pfnEnum, uintptr_t lParam1, uintptr_t lParam2, BOOL fAsync)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -929,7 +929,7 @@ void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeC
  * as it scans.
  *
  */
-void HndScanHandlesForGC(HHANDLETABLE hTable, HANDLESCANPROC scanProc, LPARAM param1, LPARAM param2,
+void HndScanHandlesForGC(HHANDLETABLE hTable, HANDLESCANPROC scanProc, uintptr_t param1, uintptr_t param2,
                          const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, uint32_t flags)
 {
     WRAPPER_NO_CONTRACT;

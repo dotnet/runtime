@@ -26,22 +26,15 @@
 
 typedef uint32_t BOOL;
 typedef uint32_t DWORD;
-typedef uintptr_t DWORD_PTR;
 typedef void* LPVOID;
 typedef uint32_t UINT;
-//typedef int32_t LONG;
-//typedef uint32_t ULONG;
-typedef uintptr_t ULONG_PTR;
 typedef void VOID;
 typedef void* PVOID;
-typedef uintptr_t LPARAM;
 typedef void * LPSECURITY_ATTRIBUTES;
 typedef void const * LPCVOID;
-//typedef uint32_t * PULONG;
 typedef wchar_t * PWSTR, *LPWSTR;
 typedef const wchar_t *LPCWSTR, *PCWSTR;
 typedef size_t SIZE_T;
-typedef ptrdiff_t SSIZE_T;
 
 typedef void * HANDLE;
 
@@ -59,7 +52,7 @@ typedef union _LARGE_INTEGER {
 } LARGE_INTEGER, *PLARGE_INTEGER;
 
 #define SIZE_T_MAX ((size_t)-1)
-#define SSIZE_T_MAX ((SSIZE_T)(SIZE_T_MAX / 2))
+#define SSIZE_T_MAX ((ptrdiff_t)(SIZE_T_MAX / 2))
 
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
@@ -134,7 +127,7 @@ typedef struct _RTL_CRITICAL_SECTION {
     int32_t RecursionCount;
     HANDLE OwningThread;        // from the thread's ClientId->UniqueThread
     HANDLE LockSemaphore;
-    ULONG_PTR SpinCount;        // force size on 64-bit systems when packed
+    uintptr_t SpinCount;        // force size on 64-bit systems when packed
 } CRITICAL_SECTION, RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION;
 
 #pragma pack(pop)
@@ -190,7 +183,7 @@ GetWriteWatch(
   PVOID lpBaseAddress,
   SIZE_T dwRegionSize,
   PVOID *lpAddresses,
-  ULONG_PTR * lpdwCount,
+  uintptr_t * lpdwCount,
   uint32_t * lpdwGranularity
 );
 
@@ -613,7 +606,7 @@ Thread * GetThread();
 struct ScanContext;
 typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
 
-typedef void (CALLBACK *HANDLESCANPROC)(PTR_UNCHECKED_OBJECTREF pref, LPARAM *pExtraInfo, LPARAM param1, LPARAM param2);
+typedef void (CALLBACK *HANDLESCANPROC)(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2);
 
 class GCToEEInterface
 {
@@ -659,7 +652,7 @@ public:
     static bool RefCountedHandleCallbacks(Object * pObject);
 
     // Sync block cache management
-    static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2) { }
+    static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2) { }
     static void SyncBlockCacheDemote(int max_gen) { }
     static void SyncBlockCachePromotionsGranted(int max_gen) { }
 

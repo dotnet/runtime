@@ -2152,8 +2152,8 @@ private:
     static UINT32 BuildTypemask(UINT types[], UINT typeCount);
 
 private:
-    static void CALLBACK EnumCallbackSOS(PTR_UNCHECKED_OBJECTREF pref, LPARAM *pExtraInfo, LPARAM userParam, LPARAM type);
-    static void CALLBACK EnumCallbackDac(PTR_UNCHECKED_OBJECTREF pref, LPARAM *pExtraInfo, LPARAM userParam, LPARAM type);
+    static void CALLBACK EnumCallbackSOS(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t userParam, uintptr_t type);
+    static void CALLBACK EnumCallbackDac(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t userParam, uintptr_t type);
     
     bool FetchMoreHandles(HANDLESCANPROC proc);
     static inline bool IsAlwaysStrongReference(unsigned int type)

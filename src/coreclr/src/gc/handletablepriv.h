@@ -273,7 +273,7 @@ struct _TableSegmentHeader
 };
 
 typedef DPTR(struct _TableSegmentHeader) PTR__TableSegmentHeader;
-typedef DPTR(LPARAM) PTR_LPARAM;
+typedef DPTR(uintptr_t) PTR_uintptr_t;
 
 // The handle table is large and may not be entirely mapped. That's one reason for splitting out the table
 // segment and the header as two separate classes. In DAC builds, we generally need only a single element from
@@ -365,8 +365,8 @@ struct ScanCallbackInfo
     uint32_t         uFlags;            // HNDGCF_* flags
     BOOL             fEnumUserData;     // whether user data is being enumerated as well
     HANDLESCANPROC   pfnScan;           // per-handle scan callback
-    LPARAM           param1;            // callback param 1
-    LPARAM           param2;            // callback param 2
+    uintptr_t           param1;            // callback param 1
+    uintptr_t           param2;            // callback param 2
     uint32_t         dwAgeMask;         // generation mask for ephemeral GCs
 
 #ifdef _DEBUG
@@ -686,7 +686,7 @@ __inline void BlockUnlock(TableSegment *pSegment, uint32_t uBlock)
  * Gets the user data pointer for the first handle in a block.
  *
  */
-PTR_LPARAM BlockFetchUserDataPointer(PTR__TableSegmentHeader pSegment, uint32_t uBlock, BOOL fAssertOnError);
+PTR_uintptr_t BlockFetchUserDataPointer(PTR__TableSegmentHeader pSegment, uint32_t uBlock, BOOL fAssertOnError);
 
 
 /*
@@ -696,7 +696,7 @@ PTR_LPARAM BlockFetchUserDataPointer(PTR__TableSegmentHeader pSegment, uint32_t 
  * ASSERTs and returns NULL if handle is not of the expected type.
  *
  */
-LPARAM *HandleValidateAndFetchUserDataPointer(OBJECTHANDLE handle, uint32_t uTypeExpected);
+uintptr_t *HandleValidateAndFetchUserDataPointer(OBJECTHANDLE handle, uint32_t uTypeExpected);
 
 
 /*
@@ -706,7 +706,7 @@ LPARAM *HandleValidateAndFetchUserDataPointer(OBJECTHANDLE handle, uint32_t uTyp
  * Less validation is performed.
  *
  */
-PTR_LPARAM HandleQuickFetchUserDataPointer(OBJECTHANDLE handle);
+PTR_uintptr_t HandleQuickFetchUserDataPointer(OBJECTHANDLE handle);
 
 
 /*
@@ -716,7 +716,7 @@ PTR_LPARAM HandleQuickFetchUserDataPointer(OBJECTHANDLE handle);
  * Less validation is performed.
  *
  */
-void HandleQuickSetUserData(OBJECTHANDLE handle, LPARAM lUserData);
+void HandleQuickSetUserData(OBJECTHANDLE handle, uintptr_t lUserData);
 
 
 /*

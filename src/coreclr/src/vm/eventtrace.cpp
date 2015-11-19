@@ -1340,8 +1340,8 @@ void BulkComLogger::LogAllComObjects()
     // We need to do work in HandleWalkCallback which may trigger a GC.  We cannot do this while
     // enumerating the handle table.  Instead, we will build a list of RefCount handles we found
     // during the handle table enumeration first (m_enumResult) during this enumeration:
-    Ref_TraceRefCountHandles(BulkComLogger::HandleWalkCallback, LPARAM(this), 0);
-
+    Ref_TraceRefCountHandles(BulkComLogger::HandleWalkCallback, uintptr_t(this), 0);
+    
     // Now that we have all of the object handles, we will walk all of the handles and write the
     // etw events.
     for (CCWEnumerationEntry *curr = m_enumResult; curr; curr = curr->Next)
@@ -1381,7 +1381,7 @@ void BulkComLogger::LogAllComObjects()
 
 }
 
-void BulkComLogger::HandleWalkCallback(Object **handle, LPARAM *pExtraInfo, LPARAM param1, LPARAM param2)
+void BulkComLogger::HandleWalkCallback(Object **handle, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2)
 {
     CONTRACTL 
     {
