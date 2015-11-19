@@ -44,9 +44,9 @@ DhContext *g_pDependentHandleContexts;
  */
 struct VARSCANINFO
 {
-    uintptr_t         lEnableMask; // mask of types to trace
+    uintptr_t      lEnableMask; // mask of types to trace
     HANDLESCANPROC pfnTrace;    // tracing function to use
-    uintptr_t         lp2;         // second parameter
+    uintptr_t      lp2;         // second parameter
 };
 
 

@@ -431,8 +431,8 @@ void CALLBACK ScanConsecutiveHandlesWithoutUserData(PTR_UNCHECKED_OBJECTREF pVal
 
     // get frequently used params into locals
     HANDLESCANPROC pfnScan = pInfo->pfnScan;
-    uintptr_t         param1  = pInfo->param1;
-    uintptr_t         param2  = pInfo->param2;
+    uintptr_t      param1  = pInfo->param1;
+    uintptr_t      param2  = pInfo->param2;
 
     // scan for non-zero handles
     do
@@ -481,8 +481,8 @@ void CALLBACK ScanConsecutiveHandlesWithUserData(PTR_UNCHECKED_OBJECTREF pValue,
 
     // get frequently used params into locals
     HANDLESCANPROC pfnScan = pInfo->pfnScan;
-    uintptr_t         param1  = pInfo->param1;
-    uintptr_t         param2  = pInfo->param2;
+    uintptr_t      param1  = pInfo->param1;
+    uintptr_t      param2  = pInfo->param2;
 
     // scan for non-zero handles
     do
@@ -710,7 +710,7 @@ void CALLBACK BlockScanBlocksEphemeral(PTR_TableSegment pSegment, uint32_t uBloc
 
     // set up to update the specified blocks
     uint32_t *pdwGen     = (uint32_t *)pSegment->rgGeneration + uBlock;
-    uint32_t *pdwGenLast =            pdwGen                 + uCount;
+    uint32_t *pdwGenLast =             pdwGen                 + uCount;
 
     // loop over all the blocks, checking for elligible clumps as we go
     do
@@ -881,7 +881,7 @@ void CALLBACK BlockResetAgeMapForBlocks(TableSegment *pSegment, uint32_t uBlock,
 
     // set up to update the specified blocks
     uint32_t *pdwGen     = (uint32_t *)pSegment->rgGeneration + uBlock;
-    uint32_t *pdwGenLast =            pdwGen                 + uCount;
+    uint32_t *pdwGenLast =             pdwGen                 + uCount;
 
     // loop over all the blocks, checking for eligible clumps as we go
     do
@@ -1049,7 +1049,7 @@ void CALLBACK BlockVerifyAgeMapForBlocks(TableSegment *pSegment, uint32_t uBlock
     {
         uint32_t uCur = (u + uBlock);
 
-        uint32_t *pdwGen     = (uint32_t *)pSegment->rgGeneration + uCur;
+        uint32_t *pdwGen = (uint32_t *)pSegment->rgGeneration + uCur;
 
         uint32_t uType = pSegment->rgBlockType[uCur];
 
