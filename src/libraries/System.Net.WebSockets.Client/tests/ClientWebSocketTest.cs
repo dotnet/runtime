@@ -28,7 +28,7 @@ namespace System.Net.WebSockets.Client.Tests
             _output = output;
         }
 
-        public static IEnumerable<object[]> NotWebSocketServers
+        public static IEnumerable<object[]> UnavailableWebSocketServers
         {
             get
             {
@@ -53,7 +53,7 @@ namespace System.Net.WebSockets.Client.Tests
         private static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
 
 #region Connect
-        [ConditionalTheory("WebSocketsSupported"), MemberData("NotWebSocketServers")]
+        [ConditionalTheory("WebSocketsSupported"), MemberData("UnavailableWebSocketServers")]
         public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server)
         {
             using (var cws = new ClientWebSocket())
