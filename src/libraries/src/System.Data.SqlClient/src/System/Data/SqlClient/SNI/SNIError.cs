@@ -19,13 +19,11 @@ namespace System.Data.SqlClient.SNI
         public SNIError(SNIProviders provider, uint nativeError, uint sniErrorCode, string errorMessage)
         {
             this.lineNumber = 0;
-            this.function = "";
+            this.function = string.Empty;
             this.provider = provider;
             this.nativeError = nativeError;
             this.sniError = sniErrorCode;
-
-            // Hardcode "TCP Provider" to keep TDS parser happy
-            this.errorMessage = "TCP Provider: " + errorMessage + Environment.NewLine;
+            this.errorMessage = errorMessage;
         }
     }
 }

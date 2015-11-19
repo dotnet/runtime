@@ -1251,7 +1251,7 @@ namespace System.Data.SqlClient
             // !=null       | == 0     | replace text left of errorMessage
             //
 
-            Debug.Assert(!ADP.IsEmpty(errorMessage), "Empty error message received from SNI");
+            Debug.Assert(!ADP.IsEmpty(errorMessage) || sniError.sniError != 0, "Empty error message received from SNI");
 
             string sqlContextInfo = SR.GetResourceString(Enum.GetName(typeof(SniContext), stateObj.SniContext), Enum.GetName(typeof(SniContext), stateObj.SniContext));
             string providerRid = String.Format((IFormatProvider)null, "SNI_PN{0}", (int)sniError.provider);
@@ -1289,12 +1289,14 @@ namespace System.Data.SqlClient
             }
             else
             {
-                // SNI error. Replace the entire message
+                // SNI error. Append additional error message info if available.
                 //
-                errorMessage = SQL.GetSNIErrorMessage((int)sniError.sniError);
+                string sniLookupMessage = SQL.GetSNIErrorMessage((int)sniError.sniError);
+                errorMessage =  (sniError.errorMessage != string.Empty) ?
+                                (sniLookupMessage + ": " + sniError.errorMessage) :
+                                sniLookupMessage;
 
-#if MANAGED_SNI
-#else
+#if !MANAGED_SNI
                 // If its a LocalDB error, then nativeError actually contains a LocalDB-specific error code, not a win32 error code
                 if (sniError.sniError == (int)SNINativeMethodWrapper.SniSpecialErrors.LocalDBErrorCode)
                 {
