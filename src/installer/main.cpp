@@ -214,14 +214,14 @@ int main(const int argc, const pal::char_t* argv[])
     trace::info(_X("preparing to launch: %s"), app_name.c_str());
     trace::info(_X("using app base: %s"), app_base.c_str());
 
-    // Check for and load tpa file
+    // Check for and load deps file
     pal::string_t tpafile_path;
     get_tpafile_path(app_base, app_name, tpafile_path);
-    trace::info(_X("checking for TPA File at: %s"), tpafile_path.c_str());
+    trace::info(_X("checking for .deps File at: %s"), tpafile_path.c_str());
     tpafile tpa;
     if (!tpa.load(tpafile_path))
     {
-        trace::error(_X("invalid TPA file"));
+        trace::error(_X("invalid .deps file"));
         return 1;
     }
     return run(args, app_base, tpa);

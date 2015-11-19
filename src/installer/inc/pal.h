@@ -108,6 +108,8 @@ namespace pal
     bool load_library(const char_t* path, dll_t& dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
+
+    bool find_coreclr(pal::string_t& recv);
 }
 
 #endif // PAL_H

@@ -79,6 +79,14 @@ bool parse_arguments(const int argc, const pal::char_t* argv[], arguments_t& arg
         append_path(home_str, _X("coreclr"));
         args.clr_path.assign(home_str);
     }
+    else
+    {
+        // Use platform-specific search algorithm
+        if (pal::find_coreclr(home_str))
+        {
+            args.clr_path.assign(home_str);
+        }
+    }
 
     return true;
 }
