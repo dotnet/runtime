@@ -171,7 +171,7 @@ namespace TCulture
 			cultures[121] = new Culture("mn",0x0050,"Mongolian",true);
 			cultures[122] = new Culture("mn-MN",0x0450,"Mongolian - Mongolia",true);
 			cultures[123] = new Culture("no",0x0014,"Norwegian",true);
-			cultures[124] = new Culture("nb-NO",0x0414,"Norwegian (Bokmål) - Norway",true);
+			cultures[124] = new Culture("nb-NO",0x0414,"Norwegian (Bokm\u00e5l) - Norway",true);
 			cultures[125] = new Culture("nn-NO",0x0814,"Norwegian (Nynorsk) - Norway",true);
 			cultures[126] = new Culture("pl",0x0015,"Polish",true);
 			cultures[127] = new Culture("pl-PL",0x0415,"Polish - Poland",true);

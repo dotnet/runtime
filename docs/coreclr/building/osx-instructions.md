@@ -49,6 +49,10 @@ Mono
 
 [Mono](http://www.mono-project.com/) is needed in order to run NuGet.exe and to build CoreFX. NuGet will add .NET Core support at some point soon. You can download it from the [Mono downloads](http://www.mono-project.com/docs/getting-started/install/mac/) page.
 
+In order to build mscorlib (directions follow) you will need to raise the limit on the number of open files allowed otherwise you may see an error. To do this execute the following command from the shell:
+
+    ulimit -n 2048
+
 ICU
 ---
 ICU (International Components for Unicode) is also required to build and run. It can be obtained via [Homebrew](http://brew.sh/) with `brew install icu4c`.
