@@ -61,7 +61,7 @@ namespace System.Text.Encodings.Web
                     if (bufferSize < 1024)
                     {
                         char* wholebuffer = stackalloc char[bufferSize];
-                        int totalWritten = EncodeIntoBuffer(valuePointer, value.Length, firstCharacterToEncode, wholebuffer, bufferSize);
+                        int totalWritten = EncodeIntoBuffer(wholebuffer, bufferSize, valuePointer, value.Length, firstCharacterToEncode);
                         result = new string(wholebuffer, 0, totalWritten);
                     }
                     else
@@ -69,7 +69,7 @@ namespace System.Text.Encodings.Web
                         char[] wholebuffer = new char[bufferSize];
                         fixed(char* buffer = wholebuffer)
                         {
-                            int totalWritten = EncodeIntoBuffer(valuePointer, value.Length, firstCharacterToEncode, buffer, bufferSize);
+                            int totalWritten = EncodeIntoBuffer(buffer, bufferSize, valuePointer, value.Length, firstCharacterToEncode);
                             result = new string(wholebuffer, 0, totalWritten);                            
                         }
                     }
@@ -79,7 +79,10 @@ namespace System.Text.Encodings.Web
             }
         }
 
-        private unsafe int EncodeIntoBuffer(char* value, int valueLength, int firstCharacterToEncode, char* buffer, int bufferLength)
+        // NOTE: The order of the parameters to this method is a work around for https://github.com/dotnet/corefx/issues/4455
+        // and the underlying Mono bug: https://bugzilla.xamarin.com/show_bug.cgi?id=36052.
+        // If changing the signature of this method, ensure this issue isn't regressing on Mono.
+        private unsafe int EncodeIntoBuffer(char* buffer, int bufferLength, char* value, int valueLength, int firstCharacterToEncode)
         {
             int totalWritten = 0;
 
