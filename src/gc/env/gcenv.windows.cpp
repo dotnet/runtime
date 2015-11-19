@@ -26,7 +26,7 @@ int32_t FastInterlockDecrement(int32_t volatile *lpAddend)
 
 int32_t FastInterlockExchange(int32_t volatile *Target, int32_t Value)
 {
-    return InterlockedExchange((LONG *)Target, Value);
+    return InterlockedExchange((int32_t *)Target, Value);
 }
 
 int32_t FastInterlockCompareExchange(int32_t volatile *Destination, int32_t Exchange, int32_t Comperand)

@@ -406,7 +406,7 @@ uint32_t BuildAgeMask(uint32_t uGen, uint32_t uMaxGen)
  *
  */
 typedef void (CALLBACK *ARRAYSCANPROC)(PTR_UNCHECKED_OBJECTREF pValue, PTR_UNCHECKED_OBJECTREF pLast,
-                                       ScanCallbackInfo *pInfo, LPARAM *pUserData);
+                                       ScanCallbackInfo *pInfo, uintptr_t *pUserData);
 
 
 /*
@@ -420,7 +420,7 @@ typedef void (CALLBACK *ARRAYSCANPROC)(PTR_UNCHECKED_OBJECTREF pValue, PTR_UNCHE
 void CALLBACK ScanConsecutiveHandlesWithoutUserData(PTR_UNCHECKED_OBJECTREF pValue,
                                                     PTR_UNCHECKED_OBJECTREF pLast,
                                                     ScanCallbackInfo *pInfo,
-                                                    LPARAM *)
+                                                    uintptr_t *)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -431,8 +431,8 @@ void CALLBACK ScanConsecutiveHandlesWithoutUserData(PTR_UNCHECKED_OBJECTREF pVal
 
     // get frequently used params into locals
     HANDLESCANPROC pfnScan = pInfo->pfnScan;
-    LPARAM         param1  = pInfo->param1;
-    LPARAM         param2  = pInfo->param2;
+    uintptr_t         param1  = pInfo->param1;
+    uintptr_t         param2  = pInfo->param2;
 
     // scan for non-zero handles
     do
@@ -467,7 +467,7 @@ void CALLBACK ScanConsecutiveHandlesWithoutUserData(PTR_UNCHECKED_OBJECTREF pVal
 void CALLBACK ScanConsecutiveHandlesWithUserData(PTR_UNCHECKED_OBJECTREF pValue,
                                                  PTR_UNCHECKED_OBJECTREF pLast,
                                                  ScanCallbackInfo *pInfo,
-                                                 LPARAM *pUserData)
+                                                 uintptr_t *pUserData)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -481,8 +481,8 @@ void CALLBACK ScanConsecutiveHandlesWithUserData(PTR_UNCHECKED_OBJECTREF pValue,
 
     // get frequently used params into locals
     HANDLESCANPROC pfnScan = pInfo->pfnScan;
-    LPARAM         param1  = pInfo->param1;
-    LPARAM         param2  = pInfo->param2;
+    uintptr_t         param1  = pInfo->param1;
+    uintptr_t         param2  = pInfo->param2;
 
     // scan for non-zero handles
     do
@@ -585,7 +585,7 @@ void CALLBACK BlockScanBlocksWithUserData(PTR_TableSegment pSegment, uint32_t uB
         uint32_t uCur = (u + uBlock);
 
         // fetch the user data for this block
-        LPARAM *pUserData = BlockFetchUserDataPointer(PTR__TableSegmentHeader(pSegment), uCur, TRUE);
+        uintptr_t *pUserData = BlockFetchUserDataPointer(PTR__TableSegmentHeader(pSegment), uCur, TRUE);
 
 #ifndef DACCESS_COMPILE
         // get the first and limit handles for these blocks
@@ -658,7 +658,7 @@ void BlockScanBlocksEphemeralWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Scan
 
     // some scans require us to report per-handle extra info - assume this one doesn't
     ARRAYSCANPROC pfnScanHandles = ScanConsecutiveHandlesWithoutUserData;
-    LPARAM       *pUserData = NULL;
+    uintptr_t       *pUserData = NULL;
 
     // do we need to pass user data to the callback?
     if (pInfo->fEnumUserData)
@@ -1009,7 +1009,7 @@ void BlockVerifyAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sc
 
                     if (uType == HNDTYPE_DEPENDENT)
                     {
-                        PTR_LPARAM pUserData = HandleQuickFetchUserDataPointer((OBJECTHANDLE)pValue);
+                        PTR_uintptr_t pUserData = HandleQuickFetchUserDataPointer((OBJECTHANDLE)pValue);
 
                         // if we did then copy the value
                         if (pUserData)
@@ -1207,7 +1207,7 @@ void CALLBACK BlockQueueBlocksForAsyncScan(PTR_TableSegment pSegment, uint32_t u
  * Prototype for callbacks that implement per ScanQNode scanning logic.
  *
  */
-typedef void (CALLBACK *QNODESCANPROC)(AsyncScanInfo *pAsyncInfo, ScanQNode *pQNode, LPARAM lParam);
+typedef void (CALLBACK *QNODESCANPROC)(AsyncScanInfo *pAsyncInfo, ScanQNode *pQNode, uintptr_t lParam);
 
 
 /*
@@ -1216,7 +1216,7 @@ typedef void (CALLBACK *QNODESCANPROC)(AsyncScanInfo *pAsyncInfo, ScanQNode *pQN
  * Calls the specified handler once for each node in a scan queue.
  *
  */
-void ProcessScanQueue(AsyncScanInfo *pAsyncInfo, QNODESCANPROC pfnNodeHandler, LPARAM lParam, BOOL fCountEmptyQNodes)
+void ProcessScanQueue(AsyncScanInfo *pAsyncInfo, QNODESCANPROC pfnNodeHandler, uintptr_t lParam, BOOL fCountEmptyQNodes)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1243,7 +1243,7 @@ void ProcessScanQueue(AsyncScanInfo *pAsyncInfo, QNODESCANPROC pfnNodeHandler, L
  * Calls the specified block handler once for each range of blocks in a ScanQNode.
  *
  */
-void CALLBACK ProcessScanQNode(AsyncScanInfo *pAsyncInfo, ScanQNode *pQNode, LPARAM lParam)
+void CALLBACK ProcessScanQNode(AsyncScanInfo *pAsyncInfo, ScanQNode *pQNode, uintptr_t lParam)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1276,12 +1276,12 @@ void CALLBACK ProcessScanQNode(AsyncScanInfo *pAsyncInfo, ScanQNode *pQNode, LPA
  * Unlocks all blocks referenced in the specified node and marks the node as empty.
  *
  */
-void CALLBACK UnlockAndForgetQueuedBlocks(AsyncScanInfo *pAsyncInfo, ScanQNode *pQNode, LPARAM)
+void CALLBACK UnlockAndForgetQueuedBlocks(AsyncScanInfo *pAsyncInfo, ScanQNode *pQNode, uintptr_t)
 {
     WRAPPER_NO_CONTRACT;
 
     // unlock the blocks named in this node
-    ProcessScanQNode(pAsyncInfo, pQNode, (LPARAM)BlockUnlockBlocks);
+    ProcessScanQNode(pAsyncInfo, pQNode, (uintptr_t)BlockUnlockBlocks);
 
     // reset the node so it looks empty
     pQNode->uEntries = 0;
@@ -1294,7 +1294,7 @@ void CALLBACK UnlockAndForgetQueuedBlocks(AsyncScanInfo *pAsyncInfo, ScanQNode *
  * Frees the specified ScanQNode
  *
  */
-void CALLBACK FreeScanQNode(AsyncScanInfo *pAsyncInfo, ScanQNode *pQNode, LPARAM)
+void CALLBACK FreeScanQNode(AsyncScanInfo *pAsyncInfo, ScanQNode *pQNode, uintptr_t)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1327,7 +1327,7 @@ void xxxTableScanQueuedBlocksAsync(PTR_HandleTable pTable, PTR_TableSegment pSeg
 
 #ifndef DACCESS_COMPILE
     // loop through and lock down all the blocks referenced by the queue
-    ProcessScanQueue(pAsyncInfo, ProcessScanQNode, (LPARAM)BlockLockBlocks, FALSE);
+    ProcessScanQueue(pAsyncInfo, ProcessScanQNode, (uintptr_t)BlockLockBlocks, FALSE);
 #endif
 
     //-------------------------------------------------------------------------------
@@ -1342,7 +1342,7 @@ void xxxTableScanQueuedBlocksAsync(PTR_HandleTable pTable, PTR_TableSegment pSeg
     _ASSERTE(!pTable->Lock.OwnedByCurrentThread());
 
     // perform the actual scanning of the specified blocks
-    ProcessScanQueue(pAsyncInfo, ProcessScanQNode, (LPARAM)pAsyncInfo->pfnBlockHandler, FALSE);
+    ProcessScanQueue(pAsyncInfo, ProcessScanQNode, (uintptr_t)pAsyncInfo->pfnBlockHandler, FALSE);
 
     // re-enter the table lock
     pCrstHolder->Acquire();

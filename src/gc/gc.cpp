@@ -46,7 +46,7 @@ inline BOOL ShouldTrackMovementForProfilerOrEtw()
 #define MAYBE_UNUSED_VAR(v)
 #endif // FEATURE_REDHAWK
 
-#define MAX_PTR ((uint8_t*)(~(SSIZE_T)0))
+#define MAX_PTR ((uint8_t*)(~(ptrdiff_t)0))
 
 #ifdef SERVER_GC
 #define partial_size_th 100
@@ -4730,16 +4730,16 @@ BOOL gc_heap::unprotect_segment (heap_segment* seg)
 #ifdef _X86_
 #ifdef _MSC_VER
 #pragma warning(disable:4035)
-    static SSIZE_T  get_cycle_count()
+    static ptrdiff_t  get_cycle_count()
     {
         __asm   rdtsc
     }
 #pragma warning(default:4035)
 #elif defined(__GNUC__)
-    static SSIZE_T  get_cycle_count()
+    static ptrdiff_t  get_cycle_count()
     {
-        SSIZE_T cycles;
-        SSIZE_T cyclesHi;
+        ptrdiff_t cycles;
+        ptrdiff_t cyclesHi;
         __asm__ __volatile__
         ("rdtsc":"=a" (cycles), "=d" (cyclesHi));
         return cycles;
@@ -4751,24 +4751,24 @@ BOOL gc_heap::unprotect_segment (heap_segment* seg)
 #ifdef _MSC_VER
 extern "C" uint64_t __rdtsc();
 #pragma intrinsic(__rdtsc)
-    static SSIZE_T get_cycle_count()
+    static ptrdiff_t get_cycle_count()
     {
-        return (SSIZE_T)__rdtsc();
+        return (ptrdiff_t)__rdtsc();
     }
 #elif defined(__clang__)    
-    static SSIZE_T get_cycle_count()
+    static ptrdiff_t get_cycle_count()
     {
-        SSIZE_T cycles;
-        SSIZE_T cyclesHi;
+        ptrdiff_t cycles;
+        ptrdiff_t cyclesHi;
         __asm__ __volatile__
         ("rdtsc":"=a" (cycles), "=d" (cyclesHi));
         return (cyclesHi << 32) | cycles;
     }
 #else // _MSC_VER
-    extern "C" SSIZE_T get_cycle_count(void);
+    extern "C" ptrdiff_t get_cycle_count(void);
 #endif // _MSC_VER
 #elif defined(_TARGET_ARM_)
-    static SSIZE_T get_cycle_count()
+    static ptrdiff_t get_cycle_count()
     {
         // @ARMTODO: cycle counter is not exposed to user mode by CoreARM. For now (until we can show this
         // makes a difference on the ARM configurations on which we'll run) just return 0. This will result in
@@ -4776,7 +4776,7 @@ extern "C" uint64_t __rdtsc();
         return 0;
     }
 #elif defined(_TARGET_ARM64_)
-    static SSIZE_T get_cycle_count()
+    static ptrdiff_t get_cycle_count()
     {
         // @ARM64TODO: cycle counter is not exposed to user mode by CoreARM. For now (until we can show this
         // makes a difference on the ARM configurations on which we'll run) just return 0. This will result in
@@ -4807,10 +4807,10 @@ class heap_select
 
     static int access_time(uint8_t *sniff_buffer, int heap_number, unsigned sniff_index, unsigned n_sniff_buffers)
     {
-        SSIZE_T start_cycles = get_cycle_count();
+        ptrdiff_t start_cycles = get_cycle_count();
         uint8_t sniff = sniff_buffer[(1 + heap_number*n_sniff_buffers + sniff_index)*HS_CACHE_LINE_SIZE];
         assert (sniff == 0);
-        SSIZE_T elapsed_cycles = get_cycle_count() - start_cycles;
+        ptrdiff_t elapsed_cycles = get_cycle_count() - start_cycles;
         // add sniff here just to defeat the optimizer
         elapsed_cycles += sniff;
         return (int) elapsed_cycles;
@@ -5071,7 +5071,7 @@ void set_thread_group_affinity_for_heap(HANDLE gc_thread, int heap_number)
     ga.Reserved[2] = 0;
 
     int bit_number = 0;
-    for (DWORD_PTR mask = 1; mask !=0; mask <<=1) 
+    for (uintptr_t mask = 1; mask !=0; mask <<=1) 
     {
         if (bit_number == gpn)
         {
@@ -5105,14 +5105,14 @@ void set_thread_group_affinity_for_heap(HANDLE gc_thread, int heap_number)
 void set_thread_affinity_mask_for_heap(HANDLE gc_thread, int heap_number)
 {
 #if !defined(FEATURE_REDHAWK) && !defined(FEATURE_CORECLR)
-    DWORD_PTR pmask, smask;
+    uintptr_t pmask, smask;
 
     if (GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
     {
         pmask &= smask;
         int bit_number = 0; 
         uint8_t proc_number = 0;
-        for (DWORD_PTR mask = 1; mask != 0; mask <<= 1)
+        for (uintptr_t mask = 1; mask != 0; mask <<= 1)
         {
             if ((mask & pmask) != 0)
             {
@@ -5885,7 +5885,7 @@ bool gc_heap::new_allocation_allowed (int gen_number)
             {
                 dynamic_data* dd2 = dynamic_data_of (max_generation + 1 );
 
-                if (dd_new_allocation (dd2) <= (SSIZE_T)(-2 * dd_desired_allocation (dd2)))
+                if (dd_new_allocation (dd2) <= (ptrdiff_t)(-2 * dd_desired_allocation (dd2)))
                 {
                     return TRUE;
                 }
@@ -8196,8 +8196,8 @@ class seg_free_spaces
     struct free_space_bucket
     {
         seg_free_space* free_space;
-        SSIZE_T count_add; // Assigned when we first contruct the array.
-        SSIZE_T count_fit; // How many items left when we are fitting plugs.
+        ptrdiff_t count_add; // Assigned when we first contruct the array.
+        ptrdiff_t count_fit; // How many items left when we are fitting plugs.
     };
 
     void move_bucket (int old_power2, int new_power2)
@@ -8289,8 +8289,8 @@ class seg_free_spaces
 
     free_space_bucket* free_space_buckets;
     seg_free_space* seg_free_space_array;
-    SSIZE_T free_space_bucket_count;
-    SSIZE_T free_space_item_count;
+    ptrdiff_t free_space_bucket_count;
+    ptrdiff_t free_space_item_count;
     int base_power2;
     int heap_num;
 #ifdef _DEBUG
@@ -8330,12 +8330,12 @@ public:
         has_end_of_seg = FALSE;
 #endif //_DEBUG
 
-        SSIZE_T total_item_count = 0;
-        SSIZE_T i = 0;
+        ptrdiff_t total_item_count = 0;
+        ptrdiff_t i = 0;
 
         seg_free_space_array = (seg_free_space*)(free_space_buckets + free_space_bucket_count);
 
-        for (i = 0; i < (SSIZE_T)item_count; i++)
+        for (i = 0; i < (ptrdiff_t)item_count; i++)
         {
             seg_free_space_array[i].start = 0;
             seg_free_space_array[i].is_plug = FALSE;
@@ -8349,7 +8349,7 @@ public:
             total_item_count += free_space_buckets[i].count_add;
         }
 
-        assert (total_item_count == (SSIZE_T)item_count);
+        assert (total_item_count == (ptrdiff_t)item_count);
     }
 
     // If we are adding a free space before a plug we pass the
@@ -8409,7 +8409,7 @@ public:
             return;
         }
 
-        SSIZE_T index = bucket->count_add - 1;
+        ptrdiff_t index = bucket->count_add - 1;
 
         dprintf (SEG_REUSE_LOG_1, ("[%d]Building free spaces: adding %Ix; len: %Id (2^%d)", 
                     heap_num, 
@@ -8433,7 +8433,7 @@ public:
     // Do a consistency check after all free spaces are added.
     void check()
     {
-        SSIZE_T i = 0;
+        ptrdiff_t i = 0;
         int end_of_seg_count = 0;
 
         for (i = 0; i < free_space_item_count; i++)
@@ -8496,7 +8496,7 @@ public:
 #endif //SHORT_PLUGS
 
         int plug_power2 = index_of_set_bit (round_up_power2 (plug_size_to_fit + Align(min_obj_size)));
-        SSIZE_T i;
+        ptrdiff_t i;
         uint8_t* new_address = 0;
 
         if (plug_power2 < base_power2)
@@ -8524,7 +8524,7 @@ retry:
         assert (i < free_space_bucket_count);
         
         seg_free_space* bucket_free_space = free_space_buckets[chosen_power2].free_space;
-        SSIZE_T free_space_count = free_space_buckets[chosen_power2].count_fit;
+        ptrdiff_t free_space_count = free_space_buckets[chosen_power2].count_fit;
         size_t new_free_space_size = 0;
         BOOL can_fit = FALSE;
         size_t pad = 0;
@@ -9150,7 +9150,7 @@ void gc_heap::update_card_table_bundle()
     {
         uint8_t* base_address = (uint8_t*)(&card_table[card_word (card_of (lowest_address))]);
         uint8_t* saved_base_address = base_address;
-        ULONG_PTR bcount = array_size;
+        uintptr_t bcount = array_size;
         uint32_t granularity = 0;
         uint8_t* high_address = (uint8_t*)(&card_table[card_word (card_of (highest_address))]);
         size_t saved_region_size = align_on_page (high_address) - saved_base_address;
@@ -11262,7 +11262,7 @@ void gc_heap::check_for_full_gc (int gen_num, size_t size)
     }
 
     dynamic_data* dd_full = dynamic_data_of (gen_num);
-    SSIZE_T new_alloc_remain = 0;
+    ptrdiff_t new_alloc_remain = 0;
     uint32_t pct = ((gen_num == (max_generation + 1)) ? fgn_loh_percent : fgn_maxgen_percent);
 
     for (int gen_index = 0; gen_index <= (max_generation + 1); gen_index++)
@@ -14013,7 +14013,7 @@ retry:
             (((generation_allocation_pointer (gen) - generation_allocation_context_start_region (gen))==0) ||
              ((generation_allocation_pointer (gen) - generation_allocation_context_start_region (gen))>=DESIRED_PLUG_LENGTH)))
         {
-            SSIZE_T dist = old_loc - result;
+            ptrdiff_t dist = old_loc - result;
             if (dist == 0)
             {
                 dprintf (3, ("old alloc: %Ix, same as new alloc, not padding", old_loc));
@@ -14021,7 +14021,7 @@ retry:
             }
             else
             {
-                if ((dist > 0) && (dist < (SSIZE_T)Align (min_obj_size)))
+                if ((dist > 0) && (dist < (ptrdiff_t)Align (min_obj_size)))
                 {
                     dprintf (3, ("old alloc: %Ix, only %d bytes > new alloc! Shouldn't happen", old_loc, dist));
                     FATAL_GC_ERROR();
@@ -17044,7 +17044,7 @@ uint8_t* gc_heap::next_end (heap_segment* seg, uint8_t* f)
 {                                                                           \
     CGCDesc* map = CGCDesc::GetCGCDescFromMT((MethodTable*)(mt));           \
     CGCDescSeries* cur = map->GetHighestSeries();                           \
-    SSIZE_T cnt = (SSIZE_T) map->GetNumSeries();                            \
+    ptrdiff_t cnt = (ptrdiff_t) map->GetNumSeries();                        \
                                                                             \
     if (cnt >= 0)                                                           \
     {                                                                       \
@@ -17075,12 +17075,12 @@ uint8_t* gc_heap::next_end (heap_segment* seg, uint8_t* f)
         uint8_t** parm = (uint8_t**)((o) + cur->startoffset);               \
         if (start_useful && start > (uint8_t*)parm)                         \
         {                                                                   \
-            SSIZE_T cs = mt->RawGetComponentSize();                         \
+            ptrdiff_t cs = mt->RawGetComponentSize();                         \
             parm = (uint8_t**)((uint8_t*)parm + (((start) - (uint8_t*)parm)/cs)*cs); \
         }                                                                   \
         while ((uint8_t*)parm < ((o)+(size)-plug_skew))                     \
         {                                                                   \
-            for (SSIZE_T __i = 0; __i > cnt; __i--)                         \
+            for (ptrdiff_t __i = 0; __i > cnt; __i--)                         \
             {                                                               \
                 HALF_SIZE_T skip =  cur->val_serie[__i].skip;               \
                 HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;              \
@@ -18409,7 +18409,7 @@ void gc_heap::fix_card_table ()
             heap_segment_allocated (seg) :
             generation_allocation_start (generation_of (0))
             );
-        ULONG_PTR bcount = array_size;
+        uintptr_t bcount = array_size;
         do
         {
             if(high_address <= base_address)
@@ -21996,7 +21996,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 heap_number, 
                 settings.gc_index,
                 (j + 10), r_older_gen_free_space[j], older_gen->gen_free_spaces[j], 
-                (SSIZE_T)(r_older_gen_free_space[j] - older_gen->gen_free_spaces[j]),
+                (ptrdiff_t)(r_older_gen_free_space[j] - older_gen->gen_free_spaces[j]),
                 (generation_of(max_generation - 1))->gen_plugs[j]));
         }
 #endif //FREE_USAGE_STATS
@@ -26105,7 +26105,7 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
         //some newly allocated could exist beyond heap_segment_allocated
         //and if we reset the last page write watch status,
         // they wouldn't be guaranteed to be visited -> gc hole.
-        ULONG_PTR bcount = array_size;
+        uintptr_t bcount = array_size;
         uint8_t* last_page = 0;
         uint8_t* last_object = heap_segment_mem (seg);
         uint8_t* high_address = 0;
@@ -27898,7 +27898,7 @@ void gc_heap::trim_free_spaces_indices ()
         }
     }
 
-    SSIZE_T extra_free_space_items = count - max_count;
+    ptrdiff_t extra_free_space_items = count - max_count;
 
     if (extra_free_space_items > 0)
     {
@@ -27956,7 +27956,7 @@ BOOL gc_heap::can_fit_in_spaces_p (size_t* ordered_blocks, int small_index, size
 
     size_t big_to_small = big_spaces << (big_index - small_index);
 
-    SSIZE_T extra_small_spaces = big_to_small - small_blocks;
+    ptrdiff_t extra_small_spaces = big_to_small - small_blocks;
     dprintf (SEG_REUSE_LOG_1, ("[%d]%d 2^%d spaces can fit %d 2^%d blocks", 
         heap_number,
         big_spaces, (big_index + MIN_INDEX_POWER2), big_to_small, (small_index + MIN_INDEX_POWER2)));
@@ -29885,7 +29885,7 @@ size_t gc_heap::new_allocation_limit (size_t size, size_t free_size, int gen_num
     ptrdiff_t           new_alloc = dd_new_allocation (dd);
     assert (new_alloc == (ptrdiff_t)Align (new_alloc,
                                            get_alignment_constant (!(gen_number == (max_generation+1)))));
-    size_t        limit     = min (max (new_alloc, (SSIZE_T)size), (SSIZE_T)free_size);
+    size_t        limit     = min (max (new_alloc, (ptrdiff_t)size), (ptrdiff_t)free_size);
     assert (limit == Align (limit, get_alignment_constant (!(gen_number == (max_generation+1)))));
     dd_new_allocation (dd) = (new_alloc - limit );
     return limit;
@@ -30085,7 +30085,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
             num_heaps = gc_heap::n_heaps;
 #endif // MULTIPLE_HEAPS
             
-            SSIZE_T reclaim_space = generation_size(max_generation) - generation_plan_size(max_generation);
+            ptrdiff_t reclaim_space = generation_size(max_generation) - generation_plan_size(max_generation);
             if((settings.entry_memory_load >= 90) && (settings.entry_memory_load < 97))
             {
                 if(reclaim_space > (int64_t)(min_high_fragmentation_threshold(available_physical_mem, num_heaps)))
@@ -30098,7 +30098,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
             }
             else if(settings.entry_memory_load >= 97)
             {
-                if(reclaim_space > (SSIZE_T)(min_reclaim_fragmentation_threshold(total_physical_mem, num_heaps)))
+                if(reclaim_space > (ptrdiff_t)(min_reclaim_fragmentation_threshold(total_physical_mem, num_heaps)))
                 {
                     dprintf(GTC_LOG,("compacting due to fragmentation in very high memory"));
                     should_compact = TRUE;

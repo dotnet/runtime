@@ -69,7 +69,7 @@ ADIndex         HndGetHandleADIndex(OBJECTHANDLE handle);
 /*
  * individual handle allocation and deallocation
  */
-OBJECTHANDLE    HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF object, LPARAM lExtraInfo = 0);
+OBJECTHANDLE    HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF object, uintptr_t lExtraInfo = 0);
 void            HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle);
 
 void            HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle);
@@ -83,11 +83,11 @@ void            HndDestroyHandles(HHANDLETABLE hTable, uint32_t uType, const OBJ
 /*
  * owner data associated with handles
  */
-void            HndSetHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, LPARAM lExtraInfo);
-LPARAM          HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, LPARAM lOldExtraInfo, LPARAM lNewExtraInfo);
+void            HndSetHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, uintptr_t lExtraInfo);
+uintptr_t          HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, uintptr_t lOldExtraInfo, uintptr_t lNewExtraInfo);
 #endif // !DACCESS_COMPILE
 
-LPARAM          HndGetHandleExtraInfo(OBJECTHANDLE handle);
+uintptr_t          HndGetHandleExtraInfo(OBJECTHANDLE handle);
 
 /*
  * get parent table of handle
@@ -107,13 +107,13 @@ void            HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);
  /*
   * Scanning callback.
   */
-typedef void (CALLBACK *HANDLESCANPROC)(PTR_UNCHECKED_OBJECTREF pref, LPARAM *pExtraInfo, LPARAM param1, LPARAM param2);
+typedef void (CALLBACK *HANDLESCANPROC)(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2);
 
 /*
  * NON-GC handle enumeration
  */
 void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeCount,
-                    HANDLESCANPROC pfnEnum, LPARAM lParam1, LPARAM lParam2, BOOL fAsync);
+                    HANDLESCANPROC pfnEnum, uintptr_t lParam1, uintptr_t lParam2, BOOL fAsync);
 
 /*
  * GC-time handle scanning
@@ -126,8 +126,8 @@ void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeC
 
 void            HndScanHandlesForGC(HHANDLETABLE hTable,
                                     HANDLESCANPROC scanProc,
-                                    LPARAM param1,
-                                    LPARAM param2,
+                                    uintptr_t param1,
+                                    uintptr_t param2,
                                     const uint32_t *types,
                                     uint32_t typeCount,
                                     uint32_t condemned,

@@ -388,7 +388,7 @@ GetWriteWatch(
     PVOID lpBaseAddress,
     SIZE_T dwRegionSize,
     PVOID *lpAddresses,
-    ULONG_PTR * lpdwCount,
+    uintptr_t * lpdwCount,
     uint32_t * lpdwGranularity
     )
 {
