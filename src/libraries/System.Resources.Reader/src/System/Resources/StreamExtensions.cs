@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 
@@ -60,8 +61,10 @@ namespace System.Resources
             return true;
         }
 
-        public static string ReadString(this Stream stream)
+        // reads length (7-bit encoded Int32) + UTF8 buffer
+        internal static string ReadString(this Stream stream, bool utf16 = false)
         {
+            var position = stream.Position;
             int stringLength;
             if (!stream.TryReadInt327BitEncoded(out stringLength))
             {
@@ -78,13 +81,37 @@ namespace System.Resources
                 int justRead = stream.Read(buffer, totalRead, stringLength - totalRead);
                 if(justRead == 0)
                 {
-                    throw new BadImageFormatException(SR.Resources_StreamNotValid);
+                    throw new EndOfStreamException(SR.BadImageFormat_ResourceNameCorrupted_NameIndex + position);
                 }
                 totalRead += justRead;
             }
             while (totalRead != stringLength);
 
-            return Encoding.UTF8.GetString(buffer);
+            if (utf16) {
+                return Encoding.Unicode.GetString(buffer);
+            }
+            else {
+                return Encoding.UTF8.GetString(buffer);
+            }
+        }
+
+        internal static bool StartsWith(this Stream stream, byte[] value, bool advance = false)
+        {
+            long originalPosition = stream.Position;
+            foreach(var b in value)
+            {
+                int read = stream.ReadByte();
+                if(b != read) {
+                    if (!advance) {
+                        stream.Position = originalPosition;
+                    }
+                    return false;
+                }
+            }
+            if (!advance) {
+                stream.Position = originalPosition;
+            }
+            return true;
         }
     }
 }
