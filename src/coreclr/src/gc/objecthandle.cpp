@@ -83,6 +83,7 @@ void CALLBACK VariableTraceDispatcher(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *
 void CALLBACK PromoteRefCounted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
     WRAPPER_NO_CONTRACT;
+    UNREFERENCED_PARAMETER(pExtraInfo);
 
     // there are too many races when asychnronously scanning ref-counted handles so we no longer support it
     _ASSERTE(!((ScanContext*)lp1)->concurrent);
@@ -210,7 +211,7 @@ void CALLBACK PromoteDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *p
     }
 }
     
-void CALLBACK ClearDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
+void CALLBACK ClearDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t /*lp1*/, uintptr_t /*lp2*/)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pExtraInfo);
@@ -248,6 +249,7 @@ void CALLBACK PinObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, ui
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
+    UNREFERENCED_PARAMETER(pExtraInfo);
 
     // PINNING IS BAD - DON'T DO IT IF YOU CAN AVOID IT
     LOG((LF_GC, LL_WARNING, LOG_HANDLE_OBJECT_CLASS("WARNING: ", pObjRef, "causes pinning of ", *pObjRef)));
@@ -302,13 +304,14 @@ void CALLBACK PinObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, ui
 void CALLBACK PromoteObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
     WRAPPER_NO_CONTRACT;
+    UNREFERENCED_PARAMETER(pExtraInfo);
 
     LOG((LF_GC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("", pObjRef, "causes promotion of ", *pObjRef)));
 
     Object **ppRef = (Object **)pObjRef;
-	_ASSERTE(lp2);
-	promote_func* callback = (promote_func*) lp2;
-	callback(ppRef, (ScanContext *)lp1, 0);
+    _ASSERTE(lp2);
+    promote_func* callback = (promote_func*) lp2;
+    callback(ppRef, (ScanContext *)lp1, 0);
 }
 
 
@@ -321,6 +324,9 @@ void CALLBACK PromoteObject(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo
 void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
     WRAPPER_NO_CONTRACT;
+    UNREFERENCED_PARAMETER(pExtraInfo);
+    UNREFERENCED_PARAMETER(lp1);
+    UNREFERENCED_PARAMETER(lp2);
 
     LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Checking referent of Weak-", pObjRef, "to ", *pObjRef)));
 
@@ -365,6 +371,7 @@ void CALLBACK CalculateSizedRefSize(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pE
 void CALLBACK UpdatePointer(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(pExtraInfo);
 
     LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT("Querying for new location of ", pObjRef, "to ", *pObjRef)));
 
@@ -374,9 +381,9 @@ void CALLBACK UpdatePointer(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo
     Object *pOldLocation = *ppRef;
 #endif
 
-	_ASSERTE(lp2);
-	promote_func* callback = (promote_func*) lp2;
-	callback(ppRef, (ScanContext *)lp1, 0);
+    _ASSERTE(lp2);
+    promote_func* callback = (promote_func*) lp2;
+    callback(ppRef, (ScanContext *)lp1, 0);
 
 #ifdef _DEBUG
     if (pOldLocation != *pObjRef)
@@ -398,6 +405,7 @@ void CALLBACK UpdatePointer(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo
  */
 void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
+#ifndef FEATURE_REDHAWK
     CONTRACTL
     {
         NOTHROW;
@@ -405,6 +413,9 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
         if (GetThreadNULLOk()) { MODE_COOPERATIVE; } 
     }
     CONTRACTL_END;
+#endif // FEATURE_REDHAWK
+    UNREFERENCED_PARAMETER(pExtraInfo);
+    UNREFERENCED_PARAMETER(lp2);
 
     LOG((LF_GC | LF_CORPROF, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Notifying profiler of ", pObjRef, "to ", *pObjRef)));
 
@@ -538,6 +549,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
 void CALLBACK UpdatePointerPinned(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(pExtraInfo);
 
     Object **ppRef = (Object **)pObjRef;
 
@@ -639,7 +651,7 @@ bool Ref_Initialize()
     _ASSERTE(g_HandleTableMap.pBuckets == NULL);
 
     // Create an array of INITIAL_HANDLE_TABLE_ARRAY_SIZE HandleTableBuckets to hold the handle table sets
-    NewHolder<HandleTableBucket*> pBuckets(new (nothrow) HandleTableBucket * [ INITIAL_HANDLE_TABLE_ARRAY_SIZE ]);
+    HandleTableBucket** pBuckets = new (nothrow) HandleTableBucket * [ INITIAL_HANDLE_TABLE_ARRAY_SIZE ];
     if (pBuckets == NULL)
         return false;
 
@@ -648,45 +660,50 @@ bool Ref_Initialize()
 
     // Crate the first bucket
     HandleTableBucket * pBucket = new (nothrow) HandleTableBucket;
-    if (pBucket == NULL)
-        return false;
-    pBucket->HandleTableIndex = 0;
-
-    int n_slots = getNumberOfSlots();
-
-    HandleTableBucketHolder bucketHolder(pBucket, n_slots);
-
-    // create the handle table set for the first bucket
-    pBucket->pTable = new (nothrow) HHANDLETABLE [ n_slots ];
-    if (pBucket->pTable == NULL)
-        return false;
-
-    ZeroMemory(pBucket->pTable,
-         n_slots * sizeof (HHANDLETABLE));
-    for (int uCPUindex=0; uCPUindex < n_slots; uCPUindex++)
+    if (pBucket != NULL)
     {
-        pBucket->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, _countof(s_rgTypeFlags), ADIndex(1));
-        if (pBucket->pTable[uCPUindex] == NULL)
-            return false;
-    
-        HndSetHandleTableIndex(pBucket->pTable[uCPUindex], 0);
+        pBucket->HandleTableIndex = 0;
+
+        int n_slots = getNumberOfSlots();
+
+        HandleTableBucketHolder bucketHolder(pBucket, n_slots);
+
+        // create the handle table set for the first bucket
+        pBucket->pTable = new (nothrow) HHANDLETABLE[n_slots];
+        if (pBucket->pTable == NULL)
+            goto CleanupAndFail;
+
+        ZeroMemory(pBucket->pTable,
+            n_slots * sizeof(HHANDLETABLE));
+        for (int uCPUindex = 0; uCPUindex < n_slots; uCPUindex++)
+        {
+            pBucket->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, _countof(s_rgTypeFlags), ADIndex(1));
+            if (pBucket->pTable[uCPUindex] == NULL)
+                goto CleanupAndFail;
+
+            HndSetHandleTableIndex(pBucket->pTable[uCPUindex], 0);
+        }
+
+        pBuckets[0] = pBucket;
+        bucketHolder.SuppressRelease();
+
+        g_HandleTableMap.pBuckets = pBuckets;
+        g_HandleTableMap.dwMaxIndex = INITIAL_HANDLE_TABLE_ARRAY_SIZE;
+        g_HandleTableMap.pNext = NULL;
+
+        // Allocate contexts used during dependent handle promotion scanning. There's one of these for every GC
+        // heap since they're scanned in parallel.
+        g_pDependentHandleContexts = new (nothrow) DhContext[n_slots];
+        if (g_pDependentHandleContexts == NULL)
+            goto CleanupAndFail;
+
+        return true;
     }
 
-    pBuckets[0] = pBucket;
-    bucketHolder.SuppressRelease();
-
-    g_HandleTableMap.pBuckets = pBuckets;
-    g_HandleTableMap.dwMaxIndex = INITIAL_HANDLE_TABLE_ARRAY_SIZE;
-    g_HandleTableMap.pNext = NULL;
-    pBuckets.SuppressRelease();
-
-    // Allocate contexts used during dependent handle promotion scanning. There's one of these for every GC
-    // heap since they're scanned in parallel.
-    g_pDependentHandleContexts = new (nothrow) DhContext[n_slots];
-    if (g_pDependentHandleContexts == NULL)
-        return false;
-
-    return true;
+CleanupAndFail:
+    if (pBuckets != NULL)
+        delete[] pBuckets;
+    return false;
 }
 
 void Ref_Shutdown()
@@ -863,6 +880,8 @@ int getSlotNumber(ScanContext* sc)
 void Ref_EndSynchronousGC(uint32_t condemned, uint32_t maxgen)
 {
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(condemned);
+    UNREFERENCED_PARAMETER(maxgen);
 
 // NOT used, must be modified for MTHTS (scalable HandleTable scan) if planned to use:
 // need to pass ScanContext info to split HT bucket by threads, or to be performed under t_join::join
@@ -1499,6 +1518,7 @@ void ScanSizedRefByCPU(uint32_t maxgen, HANDLESCANPROC scanProc, ScanContext* sc
 void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)
 {
     LOG((LF_GC, LL_INFO10000, "Scanning SizedRef handles to in generation %u\n", condemned));
+    UNREFERENCED_PARAMETER(condemned);
     _ASSERTE (condemned == maxgen);
     uint32_t flags = (sc->concurrent ? HNDGCF_ASYNC : HNDGCF_NORMAL) | HNDGCF_EXTRAINFO;
 
@@ -1668,6 +1688,62 @@ void Ref_ScanDependentHandlesForProfilerAndETW(uint32_t maxgen, ProfilingScanCon
 }
 
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+
+// Callback to enumerate all object references held in handles.
+void CALLBACK ScanPointer(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
+{
+    WRAPPER_NO_CONTRACT;
+    UNREFERENCED_PARAMETER(pExtraInfo);
+
+    Object **pRef = (Object **)pObjRef;
+    _ASSERTE(lp2);
+    promote_func* callback = (promote_func*)lp2;
+    callback(pRef, (ScanContext *)lp1, 0);
+}
+
+// Enumerate all object references held by any of the handle tables in the system.
+void Ref_ScanPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)
+{
+    WRAPPER_NO_CONTRACT;
+
+    uint32_t types[] =
+    {
+        HNDTYPE_WEAK_SHORT,
+        HNDTYPE_WEAK_LONG,
+        HNDTYPE_STRONG,
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
+        HNDTYPE_REFCOUNTED,
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+        HNDTYPE_PINNED,
+        HNDTYPE_ASYNCPINNED,
+        HNDTYPE_SIZEDREF,
+    };
+
+    uint32_t flags = HNDGCF_NORMAL;
+
+    // perform a multi-type scan that enumerates pointers
+    for (HandleTableMap * walk = &g_HandleTableMap; 
+         walk != nullptr; 
+         walk = walk->pNext)
+    {
+        for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i++)
+        {
+            if (walk->pBuckets[i] != NULL)
+            {
+                // this is the one of Ref_* function performed by single thread in MULTI_HEAPS case, so we need to loop through all HT of the bucket
+                for (int uCPUindex = 0; uCPUindex < getNumberOfSlots(); uCPUindex++)
+                {
+                    HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
+                    if (hTable)
+                        HndScanHandlesForGC(hTable, &ScanPointer, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags);
+                }
+            }
+        }
+    }
+
+    // enumerate pointers in variable handles whose dynamic type is VHT_WEAK_SHORT, VHT_WEAK_LONG or VHT_STRONG
+    TraceVariableHandlesBySingleThread(&ScanPointer, uintptr_t(sc), uintptr_t(fn), VHT_WEAK_SHORT | VHT_WEAK_LONG | VHT_STRONG, condemned, maxgen, flags);
+}
 
 void Ref_UpdatePinnedPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)
 {

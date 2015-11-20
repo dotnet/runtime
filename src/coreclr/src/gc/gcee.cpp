@@ -74,6 +74,7 @@ void GCHeap::UpdatePreGCCounters()
 
 #endif //ENABLE_PERF_COUNTERS
 
+#ifdef FEATURE_EVENT_TRACE
 #ifdef MULTIPLE_HEAPS
         //take the first heap....
     gc_mechanisms *pSettings = &gc_heap::g_heaps[0]->settings;
@@ -81,7 +82,6 @@ void GCHeap::UpdatePreGCCounters()
     gc_mechanisms *pSettings = &gc_heap::settings;
 #endif //MULTIPLE_HEAPS
 
-#ifdef FEATURE_EVENT_TRACE
     ETW::GCLog::ETW_GC_INFO Info;
 
     Info.GCStart.Count = (uint32_t)pSettings->gc_index;
@@ -627,19 +627,29 @@ BOOL GCHeap::IsConcurrentGCInProgress()
 #ifdef FEATURE_EVENT_TRACE
 void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_number, uint8_t* object_address)
 {
+    void * typeId = nullptr;
+    const WCHAR * name = nullptr;
+#ifdef FEATURE_REDHAWK
+    typeId = RedhawkGCInterface::GetLastAllocEEType();
+#else
     TypeHandle th = GetThread()->GetTHAllocContextObj();
-
     if (th != 0)
     {
-        InlineSString<MAX_CLASSNAME_LENGTH> strTypeName; 
+        InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
         th.GetName(strTypeName);
+        typeId = th.GetMethodTable();
+        name = strTypeName.GetUnicode();
+    }
+#endif
 
+    if (typeId != nullptr)
+    {
         FireEtwGCAllocationTick_V3((uint32_t)allocation_amount,
                                    ((gen_number == 0) ? ETW::GCLog::ETW_GC_INFO::AllocationSmall : ETW::GCLog::ETW_GC_INFO::AllocationLarge), 
                                    GetClrInstanceId(),
                                    allocation_amount,
-                                   th.GetMethodTable(), 
-                                   strTypeName.GetUnicode(),
+                                   typeId, 
+                                   name,
                                    heap_number,
                                    object_address
                                    );
@@ -647,6 +657,10 @@ void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_numbe
 }
 void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)
 {
+#ifdef FEATURE_REDHAWK
+    UNREFERENCED_PARAMETER(object);
+    UNREFERENCED_PARAMETER(ppObject);
+#else
     Object* obj = (Object*)object;
 
     InlineSString<MAX_CLASSNAME_LENGTH> strTypeName; 
@@ -669,6 +683,7 @@ void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)
     }
     EX_CATCH {}
     EX_END_CATCH(SwallowAllExceptions)
+#endif // FEATURE_REDHAWK
 }
 #endif // FEATURE_EVENT_TRACE
 
