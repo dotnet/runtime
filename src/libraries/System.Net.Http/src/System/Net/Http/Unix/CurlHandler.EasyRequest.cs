@@ -481,8 +481,11 @@ namespace System.Net.Http
             {
                 foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
                 {
-                    string headerStr = header.Key + ": " + headers.GetHeaderString(header.Key);
-                    if (!Interop.Http.SListAppend(handle, headerStr))
+                    string headerValue = headers.GetHeaderString(header.Key);
+                    string headerKeyAndValue = string.IsNullOrEmpty(headerValue) ?
+                        header.Key + ";" : // semicolon used by libcurl to denote empty value that should be sent
+                        header.Key + ": " + headerValue;
+                    if (!Interop.Http.SListAppend(handle, headerKeyAndValue))
                     {
                         throw CreateHttpRequestException();
                     }

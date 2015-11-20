@@ -366,7 +366,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData("X-Cust-Header","x-value")]
+        [InlineData("X-Cust-Header", "x-value")]
+        [InlineData("X-Cust-Header-NoValue", "")]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(string name, string value)
         {
             using (var client = new HttpClient())
