@@ -5,6 +5,8 @@
 
 int mono_fast_get_tls_key (int);
 void mono_fast_set_tls_key (int, int);
+int mono_fast_get_tls_key2 (int);
+void mono_fast_set_tls_key2 (int, int);
 
 /* Fallback tls getters/setters */
 
@@ -15,6 +17,8 @@ void mono_fallback_set_tls_key (int, int);
 
 void mono_fast_get_tls_key_end (void);
 void mono_fast_set_tls_key_end (void);
+void mono_fast_get_tls_key2_end (void);
+void mono_fast_set_tls_key2_end (void);
 
 
 /* Structure that maps a possible  tls implementation to the corresponding thunks */
@@ -38,7 +42,8 @@ static MonoTlsImplementation known_tls_implementations [] = {
 	{ (guint32[]) {0xe2403003, 0xe353003c, 0xe92d4010, 0xe1a04000, 0x9a000001, 0xe3a00000, 0xe8bd8010, 0xe3e00a0f, 0xe240101f, 0xe12fff31, 0xe7900104, 0xe8bd8010}, 48, TRUE, mono_fast_get_tls_key, mono_fast_get_tls_key_end, mono_fast_set_tls_key, mono_fast_set_tls_key_end}, /* 1.5 */
 	{ (guint32[]) {0xe2402003, 0xe1a03000, 0xe352003c, 0x8a000002, 0xee1d0f70, 0xe7900103, 0xe12fff1e}, 28, FALSE, mono_fast_get_tls_key, mono_fast_get_tls_key_end, mono_fast_set_tls_key, mono_fast_set_tls_key_end}, /* 4.2 */
 	{ (guint32[]) {0xe2403007, 0xe3530084, 0x8a000002, 0xee1d1f70, 0xe7910100, 0xe12fff1e, 0xe3a00000, 0xe12fff1e}, 32, FALSE, mono_fast_get_tls_key, mono_fast_get_tls_key_end, mono_fast_set_tls_key, mono_fast_set_tls_key_end}, /* 4.4 */
-	{ (guint32[]) {0x2b8c1fc3, 0xee1dd804, 0xf8511f70, 0x47700020, 0x47702000}, 20, FALSE, mono_fast_get_tls_key, mono_fast_get_tls_key_end, mono_fast_set_tls_key, mono_fast_set_tls_key_end} /* 5.0 */
+	{ (guint32[]) {0x2b8c1fc3, 0xee1dd804, 0xf8511f70, 0x47700020, 0x47702000}, 20, FALSE, mono_fast_get_tls_key, mono_fast_get_tls_key_end, mono_fast_set_tls_key, mono_fast_set_tls_key_end}, /* 5.0 */
+	{ (guint32[]) {0xb5104b0f, 0xda114298, 0xf020490e, 0xee1d4000, 0x00c24f70, 0xf8514479, 0x68631030, 0xd50707cc, 0x6e54441a, 0xd103428c, 0xbd106e90}, 44, FALSE, mono_fast_get_tls_key2, mono_fast_get_tls_key2_end, mono_fast_set_tls_key2, mono_fast_set_tls_key2_end} /* 6.0 */
 #endif
 };
 
