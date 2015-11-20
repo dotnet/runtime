@@ -29,6 +29,7 @@
 #include <tchar.h>
 #include "debugmacros.h"
 #include <stdlib.h>
+#include <stdint.h>
 #include <malloc.h>
 #include <wchar.h>
 #include <stdio.h>

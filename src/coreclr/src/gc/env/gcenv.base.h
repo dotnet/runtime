@@ -25,64 +25,35 @@
 //
 
 typedef uint32_t BOOL;
-typedef uint16_t WORD;
-typedef uint16_t USHORT;
 typedef uint32_t DWORD;
-typedef uintptr_t DWORD_PTR;
-typedef uint8_t BYTE;
-typedef int8_t SBYTE;
-typedef BYTE* PBYTE;
 typedef void* LPVOID;
-typedef int8_t INT8;
 typedef uint32_t UINT;
-typedef uint32_t UINT32;
-typedef uint16_t UINT16;
-typedef uint8_t UINT8;
-typedef int16_t INT16;
-typedef int32_t INT32;
-typedef int32_t LONG;
-typedef int64_t LONGLONG;
-typedef uint32_t ULONG;
-typedef uint32_t ULONG32;
-typedef intptr_t INT_PTR;
-typedef uintptr_t UINT_PTR;
 typedef uintptr_t ULONG_PTR;
-typedef uint64_t UINT64;
-typedef uint64_t ULONG64;
-typedef uint64_t ULONGLONG;
-typedef uint64_t DWORDLONG;
-typedef int64_t INT64;
 typedef void VOID;
 typedef void* PVOID;
-typedef uintptr_t LPARAM;
-typedef void* LPCGUID;
 typedef void * LPSECURITY_ATTRIBUTES;
 typedef void const * LPCVOID;
-typedef uint32_t * PULONG;
-typedef char * PSTR;
 typedef wchar_t * PWSTR, *LPWSTR;
 typedef const wchar_t *LPCWSTR, *PCWSTR;
 typedef size_t SIZE_T;
-typedef ptrdiff_t ssize_t;
-typedef ptrdiff_t SSIZE_T;
 
 typedef void * HANDLE;
 
 typedef union _LARGE_INTEGER {
     struct {
 #if BIGENDIAN
-        LONG HighPart;
-        DWORD LowPart;
+        int32_t HighPart;
+        uint32_t LowPart;
 #else
-        DWORD LowPart;
-        LONG HighPart;
+        uint32_t LowPart;
+        int32_t HighPart;
 #endif
     } u;
-    LONGLONG QuadPart;
+    int64_t QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER;
 
 #define SIZE_T_MAX ((size_t)-1)
-#define SSIZE_T_MAX ((ssize_t)(SIZE_T_MAX / 2))
+#define SSIZE_T_MAX ((ptrdiff_t)(SIZE_T_MAX / 2))
 
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
@@ -146,18 +117,18 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #pragma pack(push, 8)
 
 typedef struct _RTL_CRITICAL_SECTION {
-    PVOID DebugInfo;
+    void* DebugInfo;
 
     //
     //  The following three fields control entering and exiting the critical
     //  section for the resource
     //
 
-    LONG LockCount;
-    LONG RecursionCount;
+    int32_t LockCount;
+    int32_t RecursionCount;
     HANDLE OwningThread;        // from the thread's ClientId->UniqueThread
     HANDLE LockSemaphore;
-    ULONG_PTR SpinCount;        // force size on 64-bit systems when packed
+    uintptr_t SpinCount;        // force size on 64-bit systems when packed
 } CRITICAL_SECTION, RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION;
 
 #pragma pack(pop)
@@ -171,24 +142,24 @@ typedef struct _RTL_CRITICAL_SECTION {
 #endif
 
 typedef struct _MEMORYSTATUSEX {
-  DWORD     dwLength;
-  DWORD     dwMemoryLoad;
-  DWORDLONG ullTotalPhys;
-  DWORDLONG ullAvailPhys;
-  DWORDLONG ullTotalPageFile;
-  DWORDLONG ullAvailPageFile;
-  DWORDLONG ullTotalVirtual;
-  DWORDLONG ullAvailVirtual;
-  DWORDLONG ullAvailExtendedVirtual;
+  uint32_t dwLength;
+  uint32_t dwMemoryLoad;
+  uint64_t ullTotalPhys;
+  uint64_t ullAvailPhys;
+  uint64_t ullTotalPageFile;
+  uint64_t ullAvailPageFile;
+  uint64_t ullTotalVirtual;
+  uint64_t ullAvailVirtual;
+  uint64_t ullAvailExtendedVirtual;
 } MEMORYSTATUSEX, *LPMEMORYSTATUSEX;
 
 #define WINBASEAPI extern "C"
 #define WINAPI __stdcall
 
-typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(PVOID lpThreadParameter);
+typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
 WINBASEAPI
-void 
+void
 WINAPI
 DebugBreak();
 
@@ -214,7 +185,7 @@ GetWriteWatch(
   SIZE_T dwRegionSize,
   PVOID *lpAddresses,
   ULONG_PTR * lpdwCount,
-  ULONG * lpdwGranularity
+  DWORD * lpdwGranularity
 );
 
 WINBASEAPI
@@ -283,8 +254,8 @@ DWORD
 WINAPI
 SetFilePointer(
            HANDLE hFile,
-           LONG lDistanceToMove,
-           LONG * lpDistanceToMoveHigh,
+           int32_t lDistanceToMove,
+           int32_t * lpDistanceToMoveHigh,
            DWORD dwMoveMethod);
 
 WINBASEAPI
@@ -425,7 +396,7 @@ typedef uintptr_t TADDR;
     type var[size]
 
 typedef DPTR(size_t)    PTR_size_t;
-typedef DPTR(BYTE)      PTR_BYTE;
+typedef DPTR(uint8_t)   PTR_uint8_t;
 
 struct _DacGlobals;
 
@@ -453,7 +424,7 @@ struct _DacGlobals;
 
 int32_t FastInterlockIncrement(int32_t volatile *lpAddend);
 int32_t FastInterlockDecrement(int32_t volatile *lpAddend);
-int32_t FastInterlockExchange(int32_t volatile *Target, LONG Value);
+int32_t FastInterlockExchange(int32_t volatile *Target, int32_t Value);
 int32_t FastInterlockCompareExchange(int32_t volatile *Destination, int32_t Exchange, int32_t Comperand);
 int32_t FastInterlockExchangeAdd(int32_t volatile *Addend, int32_t Value);
 
@@ -634,9 +605,9 @@ class Thread;
 Thread * GetThread();
 
 struct ScanContext;
-typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
+typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
 
-typedef void (CALLBACK *HANDLESCANPROC)(PTR_UNCHECKED_OBJECTREF pref, LPARAM *pExtraInfo, LPARAM param1, LPARAM param2);
+typedef void (CALLBACK *HANDLESCANPROC)(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2);
 
 class GCToEEInterface
 {
@@ -682,7 +653,7 @@ public:
     static bool RefCountedHandleCallbacks(Object * pObject);
 
     // Sync block cache management
-    static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2) { }
+    static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2) { }
     static void SyncBlockCacheDemote(int max_gen) { }
     static void SyncBlockCachePromotionsGranted(int max_gen) { }
 
