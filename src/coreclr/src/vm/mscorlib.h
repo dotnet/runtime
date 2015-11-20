@@ -676,7 +676,9 @@ DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
 DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING_LOCAL, GetResourceStringLocal,     SM_Str_RetStr)
+#ifdef FEATURE_CORECLR
 DEFINE_METHOD(ENVIRONMENT,       SET_COMMAND_LINE_ARGS,     SetCommandLineArgs,         SM_ArrStr_RetVoid)
+#endif
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(ERROR_WRAPPER,         Interop,                ErrorWrapper)
