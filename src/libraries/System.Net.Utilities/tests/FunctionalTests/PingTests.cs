@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.NetworkInformation;
-using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
 
@@ -245,13 +244,19 @@ namespace System.Net.Utilities.Tests
         }
 
         [Fact]
-        public static async void SinglePingCallback_Hostname()
+        public static async Task SendPings_ReuseInstance_Hostname()
         {
-            bool callbackInvoked = false;
-            Ping p = new Ping();
-            p.PingCompleted += (s, e) => callbackInvoked = true;
-            await p.SendPingAsync(TestSettings.LocalHost);
-            Assert.True(callbackInvoked, "Callback was not invoked.");
+            IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
+
+            using (Ping p = new Ping())
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    PingReply pingReply = await p.SendPingAsync(TestSettings.LocalHost);
+                    Assert.Equal(IPStatus.Success, pingReply.Status);
+                    Assert.True(pingReply.Address.Equals(localIpAddress));
+                }
+            }
         }
 
         private static readonly int s_pingcount = 4;
