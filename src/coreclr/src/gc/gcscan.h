@@ -60,7 +60,7 @@ class CNameSpace
 
     static void GcRuntimeStructuresValid (BOOL bValid);
 
-    static BOOL GetGcRuntimeStructuresValid ();
+    static bool GetGcRuntimeStructuresValid ();
 #ifdef DACCESS_COMPILE    
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif // DACCESS_COMPILE

@@ -2,9 +2,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information. 
 //
-
+#ifndef __GCENV_BASE_INCLUDED__
+#define __GCENV_BASE_INCLUDED__
 //
-// Setups standalone environment for CLR GC
+// Sets up basic environment for CLR GC
 //
 
 #define FEATURE_REDHAWK 1
@@ -12,13 +13,16 @@
 
 #define GCENV_INCLUDED
 
+#define REDHAWK_PALIMPORT extern "C"
+#define REDHAWK_PALAPI __stdcall
+
+
 #ifndef _MSC_VER
 #define __stdcall
 #define __forceinline inline
 #endif
 
 #ifndef _INC_WINDOWS
-
 // -----------------------------------------------------------------------------------------------------------
 //
 // Aliases for Win32 types
@@ -58,7 +62,12 @@ typedef union _LARGE_INTEGER {
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
 
+#ifdef WIN32
+// this must exactly match the typedef used by windows.h
+typedef long HRESULT;
+#else
 typedef int32_t HRESULT;
+#endif
 
 #define SUCCEEDED(_hr)          ((HRESULT)(_hr) >= 0)
 #define FAILED(_hr)             ((HRESULT)(_hr) < 0)
@@ -140,18 +149,6 @@ typedef struct _RTL_CRITICAL_SECTION {
 } CRITICAL_SECTION, RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION;
 
 #endif
-
-typedef struct _MEMORYSTATUSEX {
-  uint32_t dwLength;
-  uint32_t dwMemoryLoad;
-  uint64_t ullTotalPhys;
-  uint64_t ullAvailPhys;
-  uint64_t ullTotalPageFile;
-  uint64_t ullAvailPageFile;
-  uint64_t ullTotalVirtual;
-  uint64_t ullAvailVirtual;
-  uint64_t ullAvailExtendedVirtual;
-} MEMORYSTATUSEX, *LPMEMORYSTATUSEX;
 
 #define WINBASEAPI extern "C"
 #define WINAPI __stdcall
@@ -264,24 +261,47 @@ WINAPI
 FlushFileBuffers(
          HANDLE hFile);
 
-#ifdef _MSC_VER
-
-extern "C" VOID
-_mm_pause (
-    VOID
-    );
-
-extern "C" VOID
-_mm_mfence (
-    VOID
-    );
-
-#pragma intrinsic(_mm_pause)
-#pragma intrinsic(_mm_mfence)
-
-#define YieldProcessor _mm_pause
-#define MemoryBarrier _mm_mfence
-
+#if defined(_MSC_VER) 
+ #if defined(_ARM_)
+  
+  __forceinline void YieldProcessor() { }
+  extern "C" void __emit(const unsigned __int32 opcode);
+  #pragma intrinsic(__emit)
+  #define MemoryBarrier() { __emit(0xF3BF); __emit(0x8F5F); }
+  
+ #elif defined(_AMD64_)
+  
+  extern "C" VOID
+  _mm_pause (
+      VOID
+      );
+  
+  extern "C" VOID
+  _mm_mfence (
+      VOID
+      );
+  
+  #pragma intrinsic(_mm_pause)
+  #pragma intrinsic(_mm_mfence)
+  
+  #define YieldProcessor _mm_pause
+  #define MemoryBarrier _mm_mfence
+  
+ #elif defined(_X86_)
+  
+  #define YieldProcessor() __asm { rep nop }
+  
+  __forceinline void MemoryBarrier()
+  {
+      int32_t Barrier;
+      __asm {
+          xchg Barrier, eax
+      }
+  }
+  
+ #else // !_ARM_ && !_AMD64_ && !_X86_
+  #error Unsupported architecture
+ #endif
 #else // _MSC_VER
 
 WINBASEAPI 
@@ -296,6 +316,12 @@ MemoryBarrier();
 
 #endif // _MSC_VER
 
+typedef struct _GUID {
+    unsigned long  Data1;
+    unsigned short Data2;
+    unsigned short Data3;
+    unsigned char  Data4[8];
+} GUID;
 #endif // _INC_WINDOWS
 
 // -----------------------------------------------------------------------------------------------------------
@@ -354,7 +380,9 @@ MemoryBarrier();
 //
 // Data access macros
 //
-
+#ifdef DACCESS_COMPILE
+#include "daccess.h"
+#else // DACCESS_COMPILE
 typedef uintptr_t TADDR;
 
 #define PTR_TO_TADDR(ptr) ((TADDR)(ptr))
@@ -395,10 +423,11 @@ typedef uintptr_t TADDR;
 #define GARY_IMPL(type, var, size) \
     type var[size]
 
+struct _DacGlobals;
+#endif // DACCESS_COMPILE
+
 typedef DPTR(size_t)    PTR_size_t;
 typedef DPTR(uint8_t)   PTR_uint8_t;
-
-struct _DacGlobals;
 
 // -----------------------------------------------------------------------------------------------------------
 
@@ -436,7 +465,7 @@ inline T FastInterlockExchangePointer(
     T volatile * target,
     T            value)
 {
-    return (T)_FastInterlockExchangePointer((void **)target, value);
+    return (T)((TADDR)_FastInterlockExchangePointer((void **)target, value));
 }
 
 template <typename T>
@@ -444,7 +473,7 @@ inline T FastInterlockExchangePointer(
     T volatile * target,
     nullptr_t    value)
 {
-    return (T)_FastInterlockExchangePointer((void **)target, value);
+    return (T)((TADDR)_FastInterlockExchangePointer((void **)target, value));
 }
 
 template <typename T>
@@ -453,7 +482,7 @@ inline T FastInterlockCompareExchangePointer(
     T            exchange,
     T            comparand)
 {
-    return (T)_FastInterlockCompareExchangePointer((void **)destination, exchange, comparand);
+    return (T)((TADDR)_FastInterlockCompareExchangePointer((void **)destination, exchange, comparand));
 }
 
 template <typename T>
@@ -462,7 +491,7 @@ inline T FastInterlockCompareExchangePointer(
     T            exchange,
     nullptr_t    comparand)
 {
-    return (T)_FastInterlockCompareExchangePointer((void **)destination, exchange, comparand);
+    return (T)((TADDR)_FastInterlockCompareExchangePointer((void **)destination, exchange, comparand));
 }
 
 
@@ -501,7 +530,7 @@ typedef TADDR OBJECTHANDLE;
 #define ObjectToOBJECTREF(_obj) (OBJECTREF)(_obj)
 #define OBJECTREFToObject(_obj) (Object*)(_obj)
 
-#define VALIDATEOBJECTREF(_objref)
+#define VALIDATEOBJECTREF(_objref) _objref;
 
 #define VOLATILE(T) T volatile
 
@@ -548,9 +577,23 @@ struct GCSystemInfo
 extern GCSystemInfo g_SystemInfo;
 void InitializeSystemInfo();
 
+// An 'abstract' definition of Windows MEMORYSTATUSEX.  In practice, the only difference is the missing struct size 
+// field and one field that Windows documents to always be 0.  If additional information is available on other OSes, 
+// this information should be surfaced through this structure as additional fields that the GC may optionally depend on.
+struct GCMemoryStatus
+{
+    uint32_t dwMemoryLoad;
+    uint64_t ullTotalPhys;
+    uint64_t ullAvailPhys; 
+    uint64_t ullTotalPageFile;
+    uint64_t ullAvailPageFile;
+    uint64_t ullTotalVirtual;
+    uint64_t ullAvailVirtual;
+};
+
 void
 GetProcessMemoryLoad(
-            LPMEMORYSTATUSEX lpBuffer);
+    GCMemoryStatus* lpBuffer);
 
 extern MethodTable * g_pFreeObjectMethodTable;
 
@@ -653,9 +696,9 @@ public:
     static bool RefCountedHandleCallbacks(Object * pObject);
 
     // Sync block cache management
-    static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2) { }
-    static void SyncBlockCacheDemote(int max_gen) { }
-    static void SyncBlockCachePromotionsGranted(int max_gen) { }
+    static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
+    static void SyncBlockCacheDemote(int max_gen);
+    static void SyncBlockCachePromotionsGranted(int max_gen);
 
     // Thread functions
     static bool IsPreemptiveGCDisabled(Thread * pThread);
@@ -683,10 +726,11 @@ public:
     static bool WatchDog();
     static void SignalFinalizationDone(bool fFinalizer);
     static void SetFinalizerThread(Thread * pThread);
+    static HANDLE GetFinalizerEvent();
 };
 
 typedef uint32_t (__stdcall *BackgroundCallback)(void* pCallbackContext);
-bool PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext);
 
 void DestroyThread(Thread * pThread);
 
@@ -711,91 +755,74 @@ void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection);
 
 #define COUNTER_ONLY(x)
 
-#include "etmdummy.h"
-
-#define ETW_EVENT_ENABLED(e,f) false
+//#include "etmdummy.h"
+//#define ETW_EVENT_ENABLED(e,f) false
 
 namespace ETW
 {
-    class GCLog
-    {
-    public:
-        struct ETW_GC_INFO
-        {
-            typedef  enum _GC_ROOT_KIND {
-                GC_ROOT_STACK = 0,
-                GC_ROOT_FQ = 1,
-                GC_ROOT_HANDLES = 2,
-                GC_ROOT_OLDER = 3,
-                GC_ROOT_SIZEDREF = 4,
-                GC_ROOT_OVERFLOW = 5
-            } GC_ROOT_KIND;
-        };
-    };
+    typedef  enum _GC_ROOT_KIND {
+        GC_ROOT_STACK = 0,
+        GC_ROOT_FQ = 1,
+        GC_ROOT_HANDLES = 2,
+        GC_ROOT_OLDER = 3,
+        GC_ROOT_SIZEDREF = 4,
+        GC_ROOT_OVERFLOW = 5
+    } GC_ROOT_KIND;
 };
 
 //
 // Logging
 //
 
+#ifdef _MSC_VER
+#define SUPPRESS_WARNING_4127   \
+    __pragma(warning(push))     \
+    __pragma(warning(disable:4127)) /* conditional expression is constant*/
+#define POP_WARNING_STATE       \
+    __pragma(warning(pop))
+#else // _MSC_VER
+#define SUPPRESS_WARNING_4127
+#define POP_WARNING_STATE
+#endif // _MSC_VER
+
+#define WHILE_0             \
+    SUPPRESS_WARNING_4127   \
+    while(0)                \
+    POP_WARNING_STATE       \
+
 #define LOG(x)
 
-inline VOID LogSpewAlways(const char *fmt, ...)
-{
-}
+VOID LogSpewAlways(const char *fmt, ...);
 
-#define LL_INFO10 0
+#define LL_INFO10 4
 
-#define STRESS_LOG_VA(msg)                                              do { } while(0)
-#define STRESS_LOG0(facility, level, msg)                               do { } while(0)
-#define STRESS_LOG1(facility, level, msg, data1)                        do { } while(0)
-#define STRESS_LOG2(facility, level, msg, data1, data2)                 do { } while(0)
-#define STRESS_LOG3(facility, level, msg, data1, data2, data3)          do { } while(0)
-#define STRESS_LOG4(facility, level, msg, data1, data2, data3, data4)   do { } while(0)
-#define STRESS_LOG5(facility, level, msg, data1, data2, data3, data4, data5)   do { } while(0)
-#define STRESS_LOG6(facility, level, msg, data1, data2, data3, data4, data5, data6)   do { } while(0)
-#define STRESS_LOG7(facility, level, msg, data1, data2, data3, data4, data5, data6, data7)   do { } while(0)
-#define STRESS_LOG_PLUG_MOVE(plug_start, plug_end, plug_delta)          do { } while(0)
-#define STRESS_LOG_ROOT_PROMOTE(root_addr, objPtr, methodTable)         do { } while(0)
-#define STRESS_LOG_ROOT_RELOCATE(root_addr, old_value, new_value, methodTable) do { } while(0)
-#define STRESS_LOG_GC_START(gcCount, Gen, collectClasses)               do { } while(0)
-#define STRESS_LOG_GC_END(gcCount, Gen, collectClasses)                 do { } while(0)
+#define STRESS_LOG_VA(msg)                                              do { } WHILE_0
+#define STRESS_LOG0(facility, level, msg)                               do { } WHILE_0
+#define STRESS_LOG1(facility, level, msg, data1)                        do { } WHILE_0
+#define STRESS_LOG2(facility, level, msg, data1, data2)                 do { } WHILE_0
+#define STRESS_LOG3(facility, level, msg, data1, data2, data3)          do { } WHILE_0
+#define STRESS_LOG4(facility, level, msg, data1, data2, data3, data4)   do { } WHILE_0
+#define STRESS_LOG5(facility, level, msg, data1, data2, data3, data4, data5)   do { } WHILE_0
+#define STRESS_LOG6(facility, level, msg, data1, data2, data3, data4, data5, data6)   do { } WHILE_0
+#define STRESS_LOG7(facility, level, msg, data1, data2, data3, data4, data5, data6, data7)   do { } WHILE_0
+#define STRESS_LOG_PLUG_MOVE(plug_start, plug_end, plug_delta)          do { } WHILE_0
+#define STRESS_LOG_ROOT_PROMOTE(root_addr, objPtr, methodTable)         do { } WHILE_0
+#define STRESS_LOG_ROOT_RELOCATE(root_addr, old_value, new_value, methodTable) do { } WHILE_0
+#define STRESS_LOG_GC_START(gcCount, Gen, collectClasses)               do { } WHILE_0
+#define STRESS_LOG_GC_END(gcCount, Gen, collectClasses)                 do { } WHILE_0
 #define STRESS_LOG_OOM_STACK(size)   do { } while(0)
 #define STRESS_LOG_RESERVE_MEM(numChunks) do {} while (0)
 #define STRESS_LOG_GC_STACK
 
-typedef void* MUTEX_COOKIE;
+typedef void* CLR_MUTEX_ATTRIBUTES;
+typedef void* CLR_MUTEX_COOKIE;
 
-inline MUTEX_COOKIE ClrCreateMutex(LPSECURITY_ATTRIBUTES lpMutexAttributes, BOOL bInitialOwner, LPCWSTR lpName)
-{
-    _ASSERTE(!"ClrCreateMutex");
-    return NULL;
-}
+CLR_MUTEX_COOKIE ClrCreateMutex(CLR_MUTEX_ATTRIBUTES lpMutexAttributes, bool bInitialOwner, LPCWSTR lpName);
+void ClrCloseMutex(CLR_MUTEX_COOKIE mutex);
+bool ClrReleaseMutex(CLR_MUTEX_COOKIE mutex);
+uint32_t ClrWaitForMutex(CLR_MUTEX_COOKIE mutex, uint32_t dwMilliseconds, bool bAlertable);
 
-inline void ClrCloseMutex(MUTEX_COOKIE mutex)
-{
-    _ASSERTE(!"ClrCloseMutex");
-}
-
-inline BOOL ClrReleaseMutex(MUTEX_COOKIE mutex)
-{
-    _ASSERTE(!"ClrReleaseMutex");
-    return true;
-}
-
-inline DWORD ClrWaitForMutex(MUTEX_COOKIE mutex, DWORD dwMilliseconds, BOOL bAlertable)
-{
-    _ASSERTE(!"ClrWaitForMutex");
-    return WAIT_OBJECT_0;
-}
-
-inline
-HANDLE 
-PalCreateFileW(LPCWSTR pFileName, DWORD desiredAccess, DWORD shareMode, void* pSecurityAttributes, DWORD creationDisposition, DWORD flagsAndAttributes, HANDLE hTemplateFile)
-{
-    return INVALID_HANDLE_VALUE;
-}
-
+REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateFileW(_In_z_ LPCWSTR pFileName, uint32_t desiredAccess, uint32_t shareMode, _In_opt_ void* pSecurityAttributes, uint32_t creationDisposition, uint32_t flagsAndAttributes, HANDLE hTemplateFile);
 
 #define DEFAULT_GC_PRN_LVL 3
 
@@ -808,15 +835,10 @@ enum PalCapability
     GetCurrentProcessorNumberCapability = 0x00000004,   // GetCurrentProcessorNumber()
 };
 
-bool PalHasCapability(PalCapability capability);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability);
 
-inline void StompWriteBarrierEphemeral()
-{
-}
-
-inline void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
-{
-}
+void StompWriteBarrierEphemeral();
+void StompWriteBarrierResize(bool bReqUpperBoundsCheck);
 
 class CLRConfig
 {
@@ -839,72 +861,8 @@ public:
     typedef CLRConfigTypes ConfigDWORDInfo;
     typedef CLRConfigTypes ConfigStringInfo;
 
-    static DWORD GetConfigValue(ConfigDWORDInfo eType)
-    {
-        switch (eType)
-        {
-        case UNSUPPORTED_BGCSpinCount:
-            return 140;
-
-        case UNSUPPORTED_BGCSpin:
-            return 2;
-
-        case UNSUPPORTED_GCLogEnabled:
-        case UNSUPPORTED_GCLogFile:
-        case UNSUPPORTED_GCLogFileSize:
-        case EXTERNAL_GCStressStart:
-        case INTERNAL_GCStressStartAtJit:
-        case INTERNAL_DbgDACSkipVerifyDlls:
-            return 0;
-
-        case Config_COUNT:
-        default:
-#ifdef _MSC_VER
-#pragma warning(suppress:4127) // Constant conditional expression in ASSERT below
-#endif
-            ASSERT(!"Unknown config value type");
-            return 0;
-        }
-    }
-
-    static HRESULT GetConfigValue(ConfigStringInfo eType, PWSTR * outVal)
-    { 
-        *outVal = NULL; 
-        return 0; 
-    }
-};
-
-template <typename TYPE>
-class NewHolder
-{
-    TYPE * m_value;
-    bool m_fSuppressRelease;
-
-public:
-    NewHolder(TYPE * value)
-        : m_value(value), m_fSuppressRelease(false)
-    {
-    }
-
-    FORCEINLINE operator TYPE *() const
-    {
-        return this->m_value;
-    }
-    FORCEINLINE const TYPE * &operator->() const
-    {
-        return this->m_value;
-    }
-
-    void SuppressRelease()
-    {
-        m_fSuppressRelease = true;
-    }
-
-    ~NewHolder()
-    {
-        if (!m_fSuppressRelease)
-            delete m_value;
-    }
+    static uint32_t GetConfigValue(ConfigDWORDInfo eType);
+    static HRESULT GetConfigValue(ConfigStringInfo /*eType*/, wchar_t * * outVal);
 };
 
 inline bool FitsInU1(uint64_t val)
@@ -943,7 +901,7 @@ class SystemDomain
 {
 public:
     static SystemDomain *System() { return NULL; }
-    static AppDomain *GetAppDomainAtIndex(ADIndex index) { return (AppDomain *)-1; }
+    static AppDomain *GetAppDomainAtIndex(ADIndex /*index*/) { return (AppDomain *)-1; }
     static AppDomain *AppDomainBeingUnloaded() { return NULL; }
     AppDomain *DefaultDomain() { return NULL; }
     DWORD GetTotalNumSizedRefHandles() { return 0; }
@@ -975,3 +933,4 @@ public:
 };
 #endif // STRESS_HEAP
 
+#endif // __GCENV_BASE_INCLUDED__
