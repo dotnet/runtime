@@ -28,6 +28,7 @@ typedef uint32_t BOOL;
 typedef uint32_t DWORD;
 typedef void* LPVOID;
 typedef uint32_t UINT;
+typedef uintptr_t ULONG_PTR;
 typedef void VOID;
 typedef void* PVOID;
 typedef void * LPSECURITY_ATTRIBUTES;
@@ -183,8 +184,8 @@ GetWriteWatch(
   PVOID lpBaseAddress,
   SIZE_T dwRegionSize,
   PVOID *lpAddresses,
-  uintptr_t * lpdwCount,
-  uint32_t * lpdwGranularity
+  ULONG_PTR * lpdwCount,
+  DWORD * lpdwGranularity
 );
 
 WINBASEAPI
