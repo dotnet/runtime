@@ -154,7 +154,7 @@ extern "C" int32_t SslGetPeerFinished(SSL* ssl, void* buf, int32_t count)
 	return static_cast<int32_t>(result);
 }
 
-extern "C" bool SslSessionReused(SSL* ssl)
+extern "C" int32_t SslSessionReused(SSL* ssl)
 {
 	return SSL_session_reused(ssl) == 1;
 }
@@ -599,6 +599,11 @@ extern "C" void SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list)
     SSL_CTX_set_client_CA_list(ctx, list);
 }
 
+extern "C" void SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback)
+{
+    SSL_CTX_set_client_cert_cb(ctx, callback);
+}
+
 extern "C" void GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage)
 {
     if (header)
@@ -620,4 +625,21 @@ extern "C" void GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maxim
     {
         *maximumMessage = SSL3_RT_MAX_PLAIN_LENGTH;
     }
+}
+
+
+extern "C" int32_t SslAddExtraChainCert(SSL* ssl, X509* x509)
+{
+    if (!x509 || !ssl)
+    {
+        return 0;
+    }
+
+    SSL_CTX *ssl_ctx = SSL_get_SSL_CTX(ssl);
+    if (SSL_CTX_add_extra_chain_cert(ssl_ctx, x509) == 1)
+    {
+        return 1;
+    }
+
+    return 0;
 }

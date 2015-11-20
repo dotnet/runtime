@@ -58,6 +58,7 @@ namespace System.Net.Http
         private bool _useCookie = HttpHandlerDefaults.DefaultUseCookies;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
+        private ClientCertificateOption _clientCertificateOption = HttpHandlerDefaults.DefaultClientCertificateOption;
 
         private object LockObject { get { return _agent; } }
 
@@ -159,15 +160,13 @@ namespace System.Net.Http
         {
             get
             {
-                return ClientCertificateOption.Manual;
+                return _clientCertificateOption;
             }
 
             set
             {
-                if (ClientCertificateOption.Manual != value)
-                {
-                    throw new PlatformNotSupportedException(SR.net_http_unix_invalid_client_cert_option);
-                }
+                CheckDisposedOrStarted();
+                _clientCertificateOption = value;
             }
         }
 
