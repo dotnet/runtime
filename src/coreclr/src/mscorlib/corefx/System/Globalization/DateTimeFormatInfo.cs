@@ -2326,7 +2326,7 @@ namespace System.Globalization
                                 InsertHash(temp, symbol, TokenType.IgnorableSymbol, 0);
                                 if (this.DateSeparator.Trim(null).Equals(symbol))
                                 {
-                                    // The date separator is the same as the ingorable symbol.
+                                    // The date separator is the same as the ignorable symbol.
                                     useDateSepAsIgnorableSymbol = true;
                                 }
                                 break;
@@ -2635,42 +2635,34 @@ namespace System.Globalization
                 // Check this value has the right category (regular token or separator token) that we are looking for.
                 if (((int)value.tokenType & (int)TokenMask) > 0 && value.tokenString.Length <= remaining)
                 {
-                    if (this.Culture.CompareInfo.Compare(str.Value, str.Index, value.tokenString.Length, value.tokenString, 0, value.tokenString.Length, CompareOptions.IgnoreCase) == 0)
+                    bool compareStrings = true;
+                    if (isLetter)
                     {
-                        if (isLetter)
+                        // If this token starts with a letter, make sure that we won't allow partial match.  So you can't tokenize "MarchWed" separately.
+                        // Also an optimization to avoid string comparison
+                        int nextCharIndex = str.Index + value.tokenString.Length;
+                        if (nextCharIndex > str.len)
                         {
-                            // If this token starts with a letter, make sure that we won't allow partial match.  So you can't tokenize "MarchWed" separately.
-                            int nextCharIndex;
-                            if ((nextCharIndex = str.Index + value.tokenString.Length) < str.len)
-                            {
-                                // Check word boundary.  The next character should NOT be a letter.
-                                char nextCh = str.Value[nextCharIndex];
-                                if (Char.IsLetter(nextCh))
-                                {
-                                    return (false);
-                                }
-                            }
+                            compareStrings = false;
                         }
+                        else if (nextCharIndex < str.len)
+                        {
+                            // Check word boundary.  The next character should NOT be a letter.
+                            char nextCh = str.Value[nextCharIndex];
+                            compareStrings = !(Char.IsLetter(nextCh));
+                        }
+                    }
+                    if (compareStrings && CompareStringIgnoreCaseOptimized(str.Value, str.Index, value.tokenString.Length, value.tokenString, 0, value.tokenString.Length))
+                    {
                         tokenType = value.tokenType & TokenMask;
                         tokenValue = value.tokenValue;
                         str.Advance(value.tokenString.Length);
                         return (true);
                     }
-                    else if (value.tokenType == TokenType.MonthToken && HasSpacesInMonthNames)
+                    else if ((value.tokenType == TokenType.MonthToken && HasSpacesInMonthNames) ||
+                             (value.tokenType == TokenType.DayOfWeekToken && HasSpacesInDayNames))
                     {
-                        // For month token, we will match the month names which have spaces.
-                        int matchStrLen = 0;
-                        if (str.MatchSpecifiedWords(value.tokenString, true, ref matchStrLen))
-                        {
-                            tokenType = value.tokenType & TokenMask;
-                            tokenValue = value.tokenValue;
-                            str.Advance(matchStrLen);
-                            return (true);
-                        }
-                    }
-                    else if (value.tokenType == TokenType.DayOfWeekToken && HasSpacesInDayNames)
-                    {
-                        // For month token, we will match the month names which have spaces.
+                        // For month or day token, we will match the names which have spaces.
                         int matchStrLen = 0;
                         if (str.MatchSpecifiedWords(value.tokenString, true, ref matchStrLen))
                         {
@@ -2759,7 +2751,7 @@ namespace System.Globalization
                     {
                         // If there are two tokens with the same prefix, we have to make sure that the longer token should be at the front of
                         // the shorter ones.
-                        if (this.Culture.CompareInfo.Compare(str, 0, value.tokenString.Length, value.tokenString, 0, value.tokenString.Length, CompareOptions.IgnoreCase) == 0)
+                        if (this.CompareStringIgnoreCaseOptimized(str, 0, value.tokenString.Length, value.tokenString, 0, value.tokenString.Length))
                         {
                             if (str.Length > value.tokenString.Length)
                             {
@@ -2797,6 +2789,7 @@ namespace System.Globalization
                                     }
                                 }
                                 // The token to be inserted is already in the table.  Skip it.
+                                return;
                             }
                         }
                     }
@@ -2808,6 +2801,18 @@ namespace System.Globalization
             } while (i < TOKEN_HASH_SIZE);
             Contract.Assert(true, "The hashtable is full.  This should not happen.");
         }
+
+        private bool CompareStringIgnoreCaseOptimized(string string1, int offset1, int length1, string string2, int offset2, int length2)
+        {
+            // Optimize for one character cases which are common due to date and time separators (/ and :)
+            if (length1 == 1 && length2 == 1 && string1[offset1] == string2[offset2])
+            {
+                return true;
+            }
+
+            return (this.Culture.CompareInfo.Compare(string1, offset1, length1, string2, offset2, length2, CompareOptions.IgnoreCase) == 0);
+        }
+
         // class DateTimeFormatInfo
 
         internal class TokenHashValue
