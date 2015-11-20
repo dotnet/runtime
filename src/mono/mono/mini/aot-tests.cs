@@ -10,13 +10,13 @@ using System.Collections.Generic;
  * Regression tests for the AOT/FULL-AOT code.
  */
 
-#if MOBILE
+#if __MOBILE__
 class AotTests
 #else
 class Tests
 #endif
 {
-#if !MOBILE
+#if !__MOBILE__
 	static int Main (String[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}

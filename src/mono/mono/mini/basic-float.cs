@@ -26,14 +26,14 @@ using System.Reflection;
 /* A comparison made to same variable. */
 #pragma warning disable 1718
 
-#if MOBILE
+#if __MOBILE__
 class FloatTests
 #else
 class Tests
 #endif
 {
 
-#if !MOBILE
+#if !__MOBILE__
 	public static int Main (string[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}

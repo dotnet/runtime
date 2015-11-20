@@ -26,7 +26,7 @@ using System.Runtime.CompilerServices;
  * the IL code looks.
  */
 
-#if MOBILE
+#if __MOBILE__
 namespace ObjectTests
 {
 #endif
@@ -119,7 +119,7 @@ struct Gamma {
 
 class Tests {
 
-#if !MOBILE
+#if !__MOBILE__
 	public static int Main (string[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}
@@ -1688,6 +1688,6 @@ ncells ) {
 	}
 }
 
-#if MOBILE
+#if __MOBILE__
 }
 #endif

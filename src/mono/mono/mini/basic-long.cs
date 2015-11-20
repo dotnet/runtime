@@ -23,14 +23,14 @@ using System.Reflection;
  * the IL code looks.
  */
 
-#if MOBILE
+#if __MOBILE__
 class LongTests
 #else
 class Tests
 #endif
 {
 
-#if !MOBILE
+#if !__MOBILE__
 	public static int Main (string[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}

@@ -48,13 +48,13 @@ class GFoo3<T> {
 
 // FIXME: Add mixed ref/noref tests, i.e. Dictionary<string, int>
 
-#if MOBILE
+#if __MOBILE__
 public class GSharedTests
 #else
 public class Tests
 #endif
 {
-#if !MOBILE
+#if !__MOBILE__
 	public static int Main (String[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}
@@ -1735,7 +1735,7 @@ public class MobileServiceCollection<TTable, TCol>
 	}
 }
 
-#if !MOBILE
+#if !__MOBILE__
 public class GSharedTests : Tests {
 }
 #endif

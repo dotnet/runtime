@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if MOBILE
+#if __MOBILE__
 class GenericsTests
 #else
 class Tests
@@ -21,7 +21,7 @@ class Tests
 		}
 	}
 
-#if !MOBILE
+#if !__MOBILE__
 	class Enumerator <T> : MyIEnumerator <T> {
 		T MyIEnumerator<T>.Current {
 			get {
@@ -41,7 +41,7 @@ class Tests
 	}
 #endif
 
-#if !MOBILE
+#if !__MOBILE__
 	static int Main (string[] args)
 	{
 		return TestDriver.RunTests (typeof (Tests), args);
@@ -191,7 +191,7 @@ class Tests
 	public static int test_0_constrained_vtype_box () {
 		GenericClass<TestStruct> t = new GenericClass<TestStruct> ();
 
-#if MOBILE
+#if __MOBILE__
 		return t.toString (new TestStruct ()) == "GenericsTests+TestStruct" ? 0 : 1;
 #else
 		return t.toString (new TestStruct ()) == "Tests+TestStruct" ? 0 : 1;
@@ -401,7 +401,7 @@ class Tests
 		return 0;
 	}
 
-#if !MOBILE
+#if !__MOBILE__
 	public static int test_0_variance_reflection () {
 		// covariance on IEnumerator
 		if (!typeof (MyIEnumerator<object>).IsAssignableFrom (typeof (MyIEnumerator<string>)))
@@ -1233,7 +1233,7 @@ class Tests
 	}
 }
 
-#if !MOBILE
+#if !__MOBILE__
 class GenericsTests : Tests
 {
 }
