@@ -19,14 +19,15 @@ namespace System.Data.SqlClient
         private string _procedure;
         private int _lineNumber;
         private int _win32ErrorCode;
+        private Exception _exception;
 
-        internal SqlError(int infoNumber, byte errorState, byte errorClass, string server, string errorMessage, string procedure, int lineNumber, uint win32ErrorCode)
-            : this(infoNumber, errorState, errorClass, server, errorMessage, procedure, lineNumber)
+        internal SqlError(int infoNumber, byte errorState, byte errorClass, string server, string errorMessage, string procedure, int lineNumber, uint win32ErrorCode, Exception exception = null)
+            : this(infoNumber, errorState, errorClass, server, errorMessage, procedure, lineNumber, exception)
         {
             _win32ErrorCode = (int)win32ErrorCode;
         }
 
-        internal SqlError(int infoNumber, byte errorState, byte errorClass, string server, string errorMessage, string procedure, int lineNumber)
+        internal SqlError(int infoNumber, byte errorState, byte errorClass, string server, string errorMessage, string procedure, int lineNumber, Exception exception = null)
         {
             _number = infoNumber;
             _state = errorState;
@@ -36,6 +37,7 @@ namespace System.Data.SqlClient
             _procedure = procedure;
             _lineNumber = lineNumber;
             _win32ErrorCode = 0;
+            _exception = exception;
         }
 
         // There is no exception stack included because the correct exception stack is only available 
@@ -89,6 +91,11 @@ namespace System.Data.SqlClient
         internal int Win32ErrorCode
         {
             get { return _win32ErrorCode; }
+        }
+
+        internal Exception Exception
+        {
+            get { return _exception; }
         }
     }
 }

@@ -68,7 +68,7 @@ namespace System.Data.SqlClient.SNI
                 return TdsEnums.SNI_SUCCESS_IO_PENDING;
             }
 
-            return SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, 0, 19, SR.SNI_ERROR_19);
+            return SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, 0, SNICommon.ConnNotUsableError, string.Empty);
         }
 
         /// <summary>
@@ -157,7 +157,6 @@ namespace System.Data.SqlClient.SNI
             SNIPacket currentPacket = null;
             SNIMarsHandle currentSession = null;
 
-
             if (sniErrorCode != TdsEnums.SNI_SUCCESS)
             {
                 lock (this)
@@ -240,7 +239,7 @@ namespace System.Data.SqlClient.SNI
 
                     if (!_sessions.ContainsKey(_currentHeader.sessionId))
                     {
-                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SMUX_PROV, 0, 5, SR.SNI_ERROR_5);
+                        SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SMUX_PROV, 0, SNICommon.InvalidParameterError, string.Empty);
                         HandleReceiveError();
                         _lowerHandle.Dispose();
                         _lowerHandle = null;
@@ -270,7 +269,7 @@ namespace System.Data.SqlClient.SNI
                     }
                     catch (Exception e)
                     {
-                        SNICommon.ReportSNIError(SNIProviders.TCP_PROV, 0, SNICommon.SNIInternalExceptionErrorId, e.Message);
+                        SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, SNICommon.InternalExceptionError, e);
                     }
                 }
 

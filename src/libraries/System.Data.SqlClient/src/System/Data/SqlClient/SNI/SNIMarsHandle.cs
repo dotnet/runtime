@@ -65,7 +65,8 @@ namespace System.Data.SqlClient.SNI
             }
             catch (Exception e)
             {
-                SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, 0, SNICommon.SNIInternalExceptionErrorId, e.Message);
+                SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, SNICommon.InternalExceptionError, e);
+                throw;
             }
         }
 
@@ -463,7 +464,7 @@ namespace System.Data.SqlClient.SNI
 
                 if (!_packetEvent.Wait(timeoutInMilliseconds))
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SMUX_PROV, 0, 11, SR.SNI_ERROR_11);
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.SMUX_PROV, 0, SNICommon.ConnTimeoutError, string.Empty);
                     return TdsEnums.SNI_WAIT_TIMEOUT;
                 }
             }
