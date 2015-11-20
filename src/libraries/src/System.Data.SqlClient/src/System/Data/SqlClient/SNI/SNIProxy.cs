@@ -47,7 +47,7 @@ namespace System.Data.SqlClient.SNI
             }
             catch (Exception e)
             {
-                return SNICommon.ReportSNIError(SNIProviders.SSL_PROV, 0, SNICommon.HandshakeFailureError, e.ToString());
+                return SNICommon.ReportSNIError(SNIProviders.SSL_PROV, SNICommon.HandshakeFailureError, e);
             }
         }
 
@@ -244,7 +244,7 @@ namespace System.Data.SqlClient.SNI
                 }
                 catch (Exception e)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, SNICommon.InvalidConnStringError, e.ToString());
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InvalidConnStringError, e);
                     return null;
                 }
             }

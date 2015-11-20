@@ -140,9 +140,18 @@ namespace System.Data.SqlClient.SNI
         /// Sets last error encountered for SNI
         /// </summary>
         /// <param name="provider">SNI provider</param>
-        /// <param name="nativeError">Native error code</param>
         /// <param name="sniError">SNI error code</param>
-        /// <param name="errorMessage">Error message</param>
+        /// <param name="sniException">SNI Exception</param>
+        /// <returns></returns>
+        internal static uint ReportSNIError(SNIProviders provider, uint sniError, Exception sniException)
+        {
+            return ReportSNIError(new SNIError(provider, sniError, sniException));
+        }
+
+        /// <summary>
+        /// Sets last error encountered for SNI
+        /// </summary>
+        /// <param name="error">SNI error</param>
         /// <returns></returns>
         internal static uint ReportSNIError(SNIError error)
         {

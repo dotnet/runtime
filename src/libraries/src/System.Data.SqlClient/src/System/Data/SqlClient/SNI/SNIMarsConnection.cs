@@ -269,7 +269,7 @@ namespace System.Data.SqlClient.SNI
                     }
                     catch (Exception e)
                     {
-                        SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, 0, SNICommon.InternalExceptionError, e.ToString());
+                        SNICommon.ReportSNIError(SNIProviders.SMUX_PROV, SNICommon.InternalExceptionError, e);
                     }
                 }
 
