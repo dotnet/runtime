@@ -13,11 +13,11 @@
 #include <mono/metadata/mono-gc.h>
 
 MONO_BEGIN_DECLS
-
+/* do not change the values of this enum */
 typedef enum {
-	MONO_HASH_KEY_GC,
-	MONO_HASH_VALUE_GC,
-	MONO_HASH_KEY_VALUE_GC
+	MONO_HASH_KEY_GC = 1,
+	MONO_HASH_VALUE_GC = 2,
+	MONO_HASH_KEY_VALUE_GC = MONO_HASH_KEY_GC | MONO_HASH_VALUE_GC,
 } MonoGHashGCType;
 
 typedef struct _MonoGHashTable MonoGHashTable;
