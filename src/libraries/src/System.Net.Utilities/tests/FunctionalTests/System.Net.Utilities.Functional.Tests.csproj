@@ -11,7 +11,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
-    <Compile Include="PingTests.cs" />
+    <Compile Include="PingExceptionTest.cs" />
+    <Compile Include="PingOptionsTest.cs" />
+    <Compile Include="PingTest.cs" />
     <Compile Include="TestSettings.cs" />
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)\System\Net\RawSocketPermissions.cs">
