@@ -62,6 +62,7 @@ SOS commands supported by the lldb plugin:
     FindAppDomain
     GCRoot
     GCInfo
+    Help
     IP2MD
     Name2EE
     PrintException
@@ -76,12 +77,30 @@ There are some aliases for the most common commands:
     clrstack        -> sos ClrStack
     clrthreads      -> sos Threads
     dumpheap        -> sos DumpHeap
+    dumplog         -> sos DumpLog
+    dumpmd          -> sos DumpMD
+    dumpmt          -> sos DumpMT
     dumpobj         -> sos DumpObj
     dso             -> sos DumpStackObjects
     eeheap          -> sos EEHeap
     gcroot          -> sos GCRoot
     ip2md           -> sos IP2MD
-    printexception  -> sos PrintException
+    name2ee         -> sos Name2EE
+    pe              -> sos PrintException
+    soshelp         -> sos Help
+
+Problems and limitations of lldb and sos:
+
+Many of the sos commands like clrstack or dso don't work on core dumps because lldb doesn't 
+return the actual OS thread id for a native thread. The "setsostid" command can be used to work
+around this lldb bug. Use the "clrthreads" to find the os tid and the lldb command "thread list"
+to find the thread index (#1 for example) for the current thread (* in first column). The first
+setsostid argument is the os tid and the second is the thread index: "setsosid ecd5 1".
+
+The "gcroot" command either crashes lldb 3.6 or returns invalid results. Works fine with lldb 3.7.
+
+Loading Linux core dumps with lldb 3.7 doesn't work. lldb 3.7 loads OSX and FreeBSD core dumps 
+just fine.
 
 For more information on SOS commands see: https://msdn.microsoft.com/en-us/library/bb190764(v=vs.110).aspx
 

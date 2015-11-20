@@ -447,6 +447,9 @@ typedef class IDebugRegister* PDEBUG_REGISTERS;
 // IDebugClient
 //----------------------------------------------------------------------------
 
+class IDebugClient;
+typedef HRESULT (*PFN_EXCEPTION_CALLBACK)(IDebugClient* client);
+
 class IDebugClient : IDebugControl2, IDebugDataSpaces, IDebugSymbols, IDebugSystemObjects, IDebugRegister
 {
 public:
@@ -458,10 +461,18 @@ public:
     virtual DWORD_PTR GetExpression(
         /* [in] */ PCSTR exp) = 0;
 
+    // Unwind one native stack frame given a thread and register context
     virtual HRESULT VirtualUnwind(
         /* [in] */ DWORD threadID,
         /* [in] */ ULONG32 contextSize,
         /* [in, out, size_is(contextSize)] */ PBYTE context) = 0;
+
+    // Set an exception throw callback
+    virtual HRESULT SetExceptionCallback(
+        /* [in] */ PFN_EXCEPTION_CALLBACK callback) = 0;
+
+    // Clear the exception throw callback
+    virtual HRESULT ClearExceptionCallback() = 0;
 };
 
 typedef class IDebugClient* PDEBUG_CLIENT;
