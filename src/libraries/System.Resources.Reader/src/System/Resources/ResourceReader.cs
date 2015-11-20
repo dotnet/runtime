@@ -19,10 +19,13 @@ namespace System.Resources
         private long _dataSectionOffset;  // Offset to Data section of file.
 
         private int[] _namePositions; // relative locations of names
-        private Type[] _typeTable;    // Lazy array of Types for resource values.
-        private int[] _typeNamePositions;  // To delay initialize type table
+        private int _stringTypeIndex;
+        private int _numOfTypes;
         private int _numResources;    // Num of resources files, in case arrays aren't allocated.      
         private int _version;
+
+        // "System.String, mscorlib" representation in resources stream
+        private readonly static byte[] s_SystemStringName = EncodeStringName();
 
         public ResourceReader(Stream stream)
         {
@@ -30,6 +33,8 @@ namespace System.Resources
                 throw new ArgumentNullException("stream");
             if (!stream.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
+            if (!stream.CanSeek)
+                throw new ArgumentException(SR.Argument_StreamNotSeekable);
 
             _stream = stream;
 
@@ -93,41 +98,23 @@ namespace System.Resources
             }
         }
 
-        private unsafe String AllocateStringForNameIndex(int index, out int dataOffset)
+        private string GetKeyForNameIndex(int index)
         {
             Debug.Assert(_stream != null, "ResourceReader is closed!");
-            byte[] bytes;
-            int byteLen;
             long nameVA = GetNamePosition(index);
             lock (this)
             {
                 _stream.Seek(nameVA + _nameSectionOffset, SeekOrigin.Begin);
-                // Can't use _store.ReadString, since it's using UTF-8!
-                if (!_stream.TryReadInt327BitEncoded(out byteLen) || byteLen < 0)
-                {
-                    throw new BadImageFormatException(SR.BadImageFormat_NegativeStringLength);
-                }
+                var result = _stream.ReadString(utf16: true);
 
-                bytes = new byte[byteLen];
-                // We must read byteLen bytes, or we have a corrupted file.
-                // Use a blocking read in case the stream doesn't give us back
-                // everything immediately.
-                int count = byteLen;
-                while (count > 0)
-                {
-                    int n = _stream.Read(bytes, byteLen - count, count);
-                    if (n == 0)
-                        throw new EndOfStreamException(SR.BadImageFormat_ResourceNameCorrupted_NameIndex + index);
-                    count -= n;
-                }
-
+                int dataOffset;
                 SuccessElseEosException(_stream.TryReadInt32(out dataOffset));
                 if (dataOffset < 0 || dataOffset >= _stream.Length - _dataSectionOffset)
                 {
                     throw new FormatException(SR.BadImageFormat_ResourcesDataInvalidOffset + " offset :" + dataOffset);
                 }
+                return result;
             }
-            return Encoding.Unicode.GetString(bytes, 0, byteLen);
         }
 
         private string GetValueForNameIndex(int index)
@@ -148,7 +135,7 @@ namespace System.Resources
 
                 try
                 {
-                    return LoadString(dataPos);
+                    return ReadStringElseNull(dataPos);
                 }
                 catch (EndOfStreamException eof)
                 {
@@ -158,40 +145,32 @@ namespace System.Resources
                 {
                     throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch, e);
                 }
-
-
             }
         }
         
         //returns null if the resource is not a string
-        private string LoadString(int pos)
+        private string ReadStringElseNull(int pos)
         {
-
             _stream.Seek(_dataSectionOffset + pos, SeekOrigin.Begin);
-            int typeIndex;
-            
-            if(!_stream.TryReadInt327BitEncoded(out typeIndex))
-            {
+
+            int typeIndex;       
+            if(!_stream.TryReadInt327BitEncoded(out typeIndex)) {
                 throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch);
             }
 
-            if (_version == 1)
-            {
-                Type typeinStream = FindType(typeIndex);
-
-                if (typeIndex == -1 || !typeinStream.Equals(typeof(String)))
+            if (_version == 1) {
+                if (typeIndex == -1 || !IsString(typeIndex)) {
                     return null;
+                }
             }
             else
             {
-                if (ResourceTypeCodeString != typeIndex)
-                {
+                if (ResourceTypeCodeString != typeIndex) {
                     return null;
                 }
             }
 
-            return _stream.ReadString();
-
+            return _stream.ReadString(utf16 : false);
         }
 
         private void ReadResources()
@@ -213,7 +192,6 @@ namespace System.Resources
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted, e);
             }
         }
-
 
         private void _ReadResources()
         {
@@ -267,23 +245,17 @@ namespace System.Resources
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
 
-            // Read type positions into type positions array.
-            // But delay initialize the type table.
-            int numTypes;
-            SuccessElseEosException(_stream.TryReadInt32(out numTypes));
-            if (numTypes < 0) {
+            SuccessElseEosException(_stream.TryReadInt32(out _numOfTypes));
+            if (_numOfTypes < 0) {
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
 
-            _typeTable = new Type[numTypes];
-            _typeNamePositions = new int[numTypes];
-
-            for (int i = 0; i < numTypes; i++)
+            // find index of System.String
+            for (int i = 0; i < _numOfTypes; i++)
             {
-                _typeNamePositions[i] = (int)_stream.Position;
-
-                // Skip over the Strings in the file.  Don't create types.
-                SkipString();
+                if(_stream.StartsWith(s_SystemStringName, advance : true)){
+                    _stringTypeIndex = i;
+                }
             }
 
             // Prepare to read in the array of name hashes
@@ -341,33 +313,36 @@ namespace System.Resources
             {
                 throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
-
-
         }
        
-        private Type FindType(int typeIndex)
+        private bool IsString(int typeIndex)
         {
-            if (typeIndex < 0 || typeIndex >= _typeTable.Length)
+            if (typeIndex < 0 || typeIndex >= _numOfTypes)
             {
                 throw new BadImageFormatException(SR.BadImageFormat_InvalidType);
             }
-            if (_typeTable[typeIndex] == null)
-            {
-                long oldPos = _stream.Position;
-                try
-                {
-                    _stream.Position = _typeNamePositions[typeIndex];
-                    string typeName = _stream.ReadString();
-                    _typeTable[typeIndex] = Type.GetType(typeName, true);
-                }
 
-                finally
-                {
-                    _stream.Position = oldPos;
-                }
+            return typeIndex == _stringTypeIndex;
+        }
+
+        private static byte[] EncodeStringName()
+        {
+            var type = typeof(string);
+            var name = type.AssemblyQualifiedName;
+            int length = name.IndexOf(", Version=");
+
+            var buffer = new byte[length + 1];
+            var encoded = Encoding.UTF8.GetBytes(name, 0, length, buffer, 1);
+
+            // all characters should be single byte encoded and the type name shorter than 128 bytes
+            // this restriction is needed to encode without multiple allocations of the buffer
+            if (encoded > 127 || encoded != length)
+            {
+                throw new NotSupportedException();
             }
-            Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
-            return _typeTable[typeIndex];
+
+            checked { buffer[0] = (byte)encoded; }
+            return buffer;
         }
 
         internal sealed class ResourceEnumerator : IDictionaryEnumerator
@@ -406,9 +381,7 @@ namespace System.Resources
                 {
                     if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
                     if (!_currentIsValid) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-
-                    int _dataPosition;
-                    return _reader.AllocateStringForNameIndex(_currentName, out _dataPosition);
+                    return _reader.GetKeyForNameIndex(_currentName);
                 }
             }
 
@@ -420,7 +393,6 @@ namespace System.Resources
                 }
             }
 
-
             public DictionaryEntry Entry
             {
                 [System.Security.SecuritySafeCritical]  // auto-generated
@@ -429,14 +401,8 @@ namespace System.Resources
                     if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
                     if (!_currentIsValid) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
 
-
-                    String key;
-                    Object value = null;
-                    int _dataPosition;
-                    key = _reader.AllocateStringForNameIndex(_currentName, out _dataPosition);
-
-
-                    value = _reader.GetValueForNameIndex(_currentName);
+                    string key = _reader.GetKeyForNameIndex(_currentName);
+                    string value = _reader.GetValueForNameIndex(_currentName);
 
                     return new DictionaryEntry(key, value);
                 }
@@ -449,14 +415,12 @@ namespace System.Resources
                     if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
                     if (!_currentIsValid) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
 
-
                     return _reader.GetValueForNameIndex(_currentName);
                 }
-
             }
+
             public void Reset()
             {
-
                 if (_reader._stream == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
                 _currentIsValid = false;
                 _currentName = ENUM_NOT_STARTED;
