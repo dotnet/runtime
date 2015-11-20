@@ -213,7 +213,7 @@ namespace System
             {
                 // Try to use an encoding that matches the current charset
                 try { return new ConsoleEncoding(Encoding.GetEncoding(charset)); }
-                catch (NotSupportedException) { }
+                catch { } // unknown charset, or arbitrary exceptions thrown from providers
             }
             return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         }
