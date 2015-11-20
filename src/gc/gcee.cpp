@@ -628,7 +628,7 @@ BOOL GCHeap::IsConcurrentGCInProgress()
 void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_number, uint8_t* object_address)
 {
     void * typeId = nullptr;
-    wchar_t * name = nullptr;
+    const WCHAR * name = nullptr;
 #ifdef FEATURE_REDHAWK
     typeId = RedhawkGCInterface::GetLastAllocEEType();
 #else
