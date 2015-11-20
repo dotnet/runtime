@@ -48,37 +48,21 @@ namespace System.IO.Compression
         /// <p><strong>How to choose a compression level:</strong></p>
         /// 
         /// <p>The names <code>NoCompression</code>, <code>BestSpeed</code>, <code>BestCompression</code> are taken over from the corresponding
-        /// ZLib definitions. However, extensive compression performance tests on real data show that they do not describe the reality well.
-        /// We have run a large number of tests on different data sets including binary data, English language text, JPEG images and source code.
-        /// The results show:</p>
-        /// <ul>
-        ///   <li><code>CompressionStrategy.DefaultStrategy</code> is the best strategy in most scenarios.</li>
-        ///   <li><code>CompressionLevel</code> values over 6 do not significantly improve the compression rate,
-        ///       however such values require additional compression time.</li>
-        ///   <li>Thus it is not recommended to use a compression level higher than 6, including the
-        ///       value <code>CompressionLevel.BestCompression</code>.</li>
-        ///   <li>The optimal compression performance (time/rate ratio) tends to occur at compression level 6
-        ///       (<code>CompressionLevel.DefaultCompression</code>).</li>
-        ///   <li>In scenarios where runtime performance takes precedence over compression rate, smaller compression level values
-        ///       can be considered.</li>
-        /// </ul>
-        /// <p>We recommend using one of the three following combinations:<br />
-        /// (See also the constants <code>Deflate_DefaultWindowBits</code> and <code>Deflate_DefaultMemLevel</code> below.)</p>
-        /// 
+        /// ZLib definitions, which map to our public NoCompression, Fastest, and Optimal respectively.
         /// <p><em>Optimal Compression:</em></p>
-        /// <p><code>ZLibNative.CompressionLevel compressionLevel = (ZLibNative.CompressionLevel) 6;</code> <br />
+        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.BestCompression;</code> <br />
         ///    <code>Int32 windowBits = 15;  // or -15 if no headers required</code> <br />
         ///    <code>Int32 memLevel = 8;</code> <br />
         ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
         /// 
         ///<p><em>Fastest compression:</em></p>
-        ///<p><code>ZLibNative.CompressionLevel compressionLevel = (ZLibNative.CompressionLevel) 1;</code> <br />
+        ///<p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.BestSpeed;</code> <br />
         ///   <code>Int32 windowBits = 15;  // or -15 if no headers required</code> <br />
         ///   <code>Int32 memLevel = 8; </code> <br />
         ///   <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
         ///
         /// <p><em>No compression (even faster, useful for data that cannot be compressed such some image formats):</em></p>
-        /// <p><code>ZLibNative.CompressionLevel compressionLevel = (ZLibNative.CompressionLevel) 0;</code> <br />
+        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.NoCompression;</code> <br />
         ///    <code>Int32 windowBits = 15;  // or -15 if no headers required</code> <br />
         ///    <code>Int32 memLevel = 7;</code> <br />
         ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
@@ -88,7 +72,6 @@ namespace System.IO.Compression
             NoCompression = 0,
             BestSpeed = 1,
             BestCompression = 9,    // Refer to "How to choose a compression level" above.
-            DefaultCompression = -1
         }
 
         /// <summary>
@@ -152,6 +135,7 @@ namespace System.IO.Compression
         /// </summary>
         public const int Deflate_DefaultMemLevel = 8;     // Memory usage by deflate. Legal range: [1..9]. 8 is ZLib default.
                                                           // More is faster and better compression with more memory usage.
+        public const int Deflate_NoCompressionMemLevel = 7;
         #endregion  // Defaults for ZLib parameters
 
         /**
