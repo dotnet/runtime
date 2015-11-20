@@ -203,6 +203,8 @@ void ZeroHandles(OBJECTHANDLE *pHandleBase, uint32_t uCount)
 void CALLBACK DbgCountEnumeratedBlocks(TableSegment *pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo)
 {
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(pSegment);
+    UNREFERENCED_PARAMETER(uBlock);
 
     // accumulate the block count in pInfo->param1
     pInfo->param1 += uCount;
@@ -1878,6 +1880,7 @@ uint32_t BlockAllocHandlesInMask(TableSegment *pSegment, uint32_t uBlock,
                              OBJECTHANDLE *pHandleBase, uint32_t uCount)
 {
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(uBlock);
 
     // keep track of how many handles we have left to allocate
     uint32_t uRemain = uCount;
@@ -1953,6 +1956,7 @@ uint32_t BlockAllocHandlesInitial(TableSegment *pSegment, uint32_t uType, uint32
                                   OBJECTHANDLE *pHandleBase, uint32_t uCount)
 {
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(uType);
 
     // sanity check
     _ASSERTE(uCount);
