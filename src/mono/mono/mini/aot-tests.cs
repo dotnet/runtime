@@ -291,4 +291,14 @@ class Tests
 			return 1;
 		return 0;
 	}
+
+	enum LongEnum : ulong {
+		A = 1
+			}
+
+	public static int test_0_long_enum_eq_comparer () {
+		var c = EqualityComparer<LongEnum>.Default;
+		c.GetHashCode (LongEnum.A);
+		return 0;
+	}
 }
