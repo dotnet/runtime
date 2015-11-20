@@ -330,6 +330,7 @@ public static unsafe class DateTimeTests
     [InlineData("fi-FI")]
     [InlineData("nb-NO")]
     [InlineData("nb-SJ")]
+    [ActiveIssue(4599, PlatformID.AnyUnix)]
     public static void TestSpecialCulturesParsing(string cultureName)
     {
         TestDateTimeParsingWithSpecialCultures(cultureName);
