@@ -2577,13 +2577,13 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 
     _ASSERTE(structPassInRegDescPtr != nullptr);
     TypeHandle th(structHnd);
+
+    structPassInRegDescPtr->passedInRegisters = false;
     
     // Make sure this is a value type.
     if (th.IsValueType())
     {
         _ASSERTE(CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct);
-
-        MethodTable* methodTablePtr = nullptr;
 
         // The useNativeLayout in this case tracks whether the classification
         // is for a native layout of the struct or not.
@@ -2592,43 +2592,23 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
         // For structs with no native layout, the managed layout should be used
         // even if classified for the purposes of marshaling/PInvoke passing.
         bool useNativeLayout = false;
+        MethodTable* methodTablePtr = nullptr;
         if (!th.IsTypeDesc())
         {
             methodTablePtr = th.AsMethodTable();
-            _ASSERTE(methodTablePtr != nullptr);
         }
-        else if (th.IsTypeDesc())
-        {
-            if (th.IsNativeValueType())
-            {
-                methodTablePtr = th.AsNativeValueType();
-                useNativeLayout = true;
-                _ASSERTE(methodTablePtr != nullptr);
-            }
-            else
-            {
-                _ASSERTE(false && "Unhandled TypeHandle for struct!");
-            }
-        }
-
-        bool isPassableInRegs = false;
-
-        if (useNativeLayout)
+        else
         {
             _ASSERTE(th.IsNativeValueType());
-            isPassableInRegs = methodTablePtr->GetLayoutInfo()->IsNativeStructPassedInRegisters();
-        }
-        else
-        {
-            _ASSERTE(!th.IsNativeValueType());
-            isPassableInRegs = methodTablePtr->IsRegPassedStruct();
-        }
 
-        if (!isPassableInRegs)
-        {
-            structPassInRegDescPtr->passedInRegisters = false;
+            useNativeLayout = true;
+            methodTablePtr = th.AsNativeValueType();
         }
-        else
+        _ASSERTE(methodTablePtr != nullptr);
+
+        bool canPassInRegisters = useNativeLayout ? methodTablePtr->GetLayoutInfo()->IsNativeStructPassedInRegisters()
+                                                : methodTablePtr->IsRegPassedStruct();
+        if (canPassInRegisters)
         {
             SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
             bool result = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
@@ -2647,10 +2627,8 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
                 structPassInRegDescPtr->eightByteOffsets[i] = helper.eightByteOffsets[i];
             }
         }
-    }
-    else
-    {
-        structPassInRegDescPtr->passedInRegisters = false;
+
+        _ASSERTE(structPassInRegDescPtr->passedInRegisters == canPassInRegisters);
     }
 
     EE_TO_JIT_TRANSITION();
