@@ -45,9 +45,9 @@ namespace System.Data.SqlClient.SNI
             {
                 return handle.EnableSsl(options);
             }
-            catch
+            catch (Exception e)
             {
-                return SNICommon.ReportSNIError(SNIProviders.SSL_PROV, 0, 31, SR.SNI_ERROR_31);
+                return SNICommon.ReportSNIError(SNIProviders.SSL_PROV, SNICommon.HandshakeFailureError, e);
             }
         }
 
@@ -193,7 +193,7 @@ namespace System.Data.SqlClient.SNI
 
             if (serverNameParts.Length > 2)
             {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.INVALID_PROV, 0, 25, SR.SNI_ERROR_25);
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.INVALID_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                 return null;
             }
 
@@ -211,11 +211,11 @@ namespace System.Data.SqlClient.SNI
                 default:
                     if (parallel)
                     {
-                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, (int)SNINativeMethodWrapper.SniSpecialErrors.MultiSubnetFailoverWithNonTcpProtocol, SR.SNI_ERROR_49);
+                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, (int)SNINativeMethodWrapper.SniSpecialErrors.MultiSubnetFailoverWithNonTcpProtocol, string.Empty);
                     }
                     else
                     {
-                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, 8, SR.SNI_ERROR_8);
+                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, SNICommon.ProtocolNotSupportedError, string.Empty);
                     }
                     return null;
             }
@@ -242,15 +242,15 @@ namespace System.Data.SqlClient.SNI
                 {
                     portNumber = ushort.Parse(serverAndPortParts[1]);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 25, SR.SNI_ERROR_25);
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InvalidConnStringError, e);
                     return null;
                 }
             }
             else if (serverAndPortParts.Length > 2)
             {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, 25, SR.SNI_ERROR_25);
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
                 return null;
             }
 

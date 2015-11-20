@@ -54,7 +54,16 @@ namespace System.Data.SqlClient.SNI
 
     internal class SNICommon
     {
-        internal const int SNIInternalExceptionErrorId = 35; // As seen in SNI_ERROR_35
+        // Each error number maps to SNI_ERROR_* in String.resx
+        internal const int ConnTerminatedError = 2;
+        internal const int InvalidParameterError = 5;
+        internal const int ProtocolNotSupportedError = 8;
+        internal const int ConnTimeoutError = 11;
+        internal const int ConnNotUsableError = 19;
+        internal const int InvalidConnStringError = 25;
+        internal const int HandshakeFailureError = 31;
+        internal const int InternalExceptionError = 35;
+        internal const int ConnOpenFailedError = 40;
 
         /// <summary>
         /// Validate server certificate callback for SSL
@@ -131,9 +140,18 @@ namespace System.Data.SqlClient.SNI
         /// Sets last error encountered for SNI
         /// </summary>
         /// <param name="provider">SNI provider</param>
-        /// <param name="nativeError">Native error code</param>
         /// <param name="sniError">SNI error code</param>
-        /// <param name="errorMessage">Error message</param>
+        /// <param name="sniException">SNI Exception</param>
+        /// <returns></returns>
+        internal static uint ReportSNIError(SNIProviders provider, uint sniError, Exception sniException)
+        {
+            return ReportSNIError(new SNIError(provider, sniError, sniException));
+        }
+
+        /// <summary>
+        /// Sets last error encountered for SNI
+        /// </summary>
+        /// <param name="error">SNI error</param>
         /// <returns></returns>
         internal static uint ReportSNIError(SNIError error)
         {
