@@ -1046,9 +1046,6 @@ public:
     void CheckRunClassInitAsIfConstructingThrowing();
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
-    // Helper function for ClassifyEightBytesWithManagedLayout and ClassifyEightBytesWithNativeLayout
-    static SystemVClassificationType ReClassifyField(SystemVClassificationType originalClassification, SystemVClassificationType newFieldClassification);
-
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)

@@ -2316,7 +2316,7 @@ bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helpe
 // If we have a field classification already, but there is a union, we must merge the classification type of the field. Returns the
 // new, merged classification type.
 /* static */
-SystemVClassificationType MethodTable::ReClassifyField(SystemVClassificationType originalClassification, SystemVClassificationType newFieldClassification)
+static SystemVClassificationType ReClassifyField(SystemVClassificationType originalClassification, SystemVClassificationType newFieldClassification)
 {
     _ASSERTE((newFieldClassification == SystemVClassificationTypeInteger) ||
              (newFieldClassification == SystemVClassificationTypeIntegerReference) ||
