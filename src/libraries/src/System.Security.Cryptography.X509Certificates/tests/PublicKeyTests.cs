@@ -183,6 +183,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void TestECDsaPublicKey_NonSignatureCert()
+        {
+            using (var cert = new X509Certificate2(TestData.EccCert_KeyAgreement))
+            using (ECDsa publicKey = cert.GetECDsaPublicKey())
+            {
+                // It is an Elliptic Curve Cryptography public key.
+                Assert.Equal("1.2.840.10045.2.1", cert.PublicKey.Oid.Value);
+
+                // But, due to KeyUsage, it shouldn't be used for ECDSA.
+                Assert.Null(publicKey);
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(PlatformID.Windows)]
         public static void TestKey_ECDsaCng256()
         {
