@@ -360,7 +360,7 @@ size_t CNameSpace::AskForMoreReservedMemory (size_t old_size, size_t need_size)
     {
         size_t new_max_limit_size = need_size;
         pGCHostControl->RequestVirtualMemLimit (old_size, 
-                                                (size_t*)&new_max_limit_size);
+                                                (SIZE_T*)&new_max_limit_size);
         return new_max_limit_size;
     }
 #endif
