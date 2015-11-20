@@ -2,10 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
+
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
 {
@@ -23,10 +26,16 @@ namespace System.Net.NetworkInformation
         private SafeLocalAllocHandle _replyBuffer;
         private Interop.IpHlpApi.SafeCloseIcmpHandle _handlePingV4;
         private Interop.IpHlpApi.SafeCloseIcmpHandle _handlePingV6;
-
-        private void InternalSendAsync(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private TaskCompletionSource<PingReply> _taskCompletionSource;
+        
+        // Any exceptions that escape synchronously will be caught by the caller and wrapped in a PingException.
+        // We do not need to or want to capture such exceptions into the returned task.
+        private Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
-            _ipv6 = (address.AddressFamily == AddressFamily.InterNetworkV6) ? true : false;
+            var tcs = new TaskCompletionSource<PingReply>();
+            _taskCompletionSource = tcs;
+
+            _ipv6 = (address.AddressFamily == AddressFamily.InterNetworkV6);
             _sendSize = buffer.Length;
 
             // Get and cache correct handle.
@@ -69,7 +78,7 @@ namespace System.Net.NetworkInformation
                     _pingEvent.Reset();
                 }
 
-                _registeredWait = ThreadPool.RegisterWaitForSingleObject(_pingEvent, new WaitOrTimerCallback(PingCallback), this, -1, true);
+                _registeredWait = ThreadPool.RegisterWaitForSingleObject(_pingEvent, (state, _) => ((Ping)state).PingCallback(), this, -1, true);
 
                 SetUnmanagedStructures(buffer);
 
@@ -131,9 +140,11 @@ namespace System.Net.NetworkInformation
                     throw new Win32Exception(error);
                 }
             }
+
+            return tcs.Task;
         }
 
-        private void InternalDisposeCore()
+        /*private*/ partial void InternalDisposeCore()
         {
             if (_handlePingV4 != null)
             {
@@ -177,54 +188,56 @@ namespace System.Net.NetworkInformation
         }
 
         // Private callback invoked when icmpsendecho APIs succeed.
-        private static void PingCallback(object state, bool signaled)
+        private void PingCallback()
         {
-            Ping ping = (Ping)state;
-            PingCompletedEventArgs eventArgs = null;
-            AsyncOperation asyncOp = null;
-            SendOrPostCallback onPingCompletedDelegate = null;
+            TaskCompletionSource<PingReply> tcs = _taskCompletionSource;
+            _taskCompletionSource = null;
+
+            PingReply reply = null;
+            Exception error = null;
 
             try
             {
-                lock (ping._lockObject)
+                lock (_lockObject)
                 {
-                    asyncOp = ping._asyncOp;
-                    onPingCompletedDelegate = ping._onPingCompletedDelegate;
-
                     // Parse reply buffer.
-                    SafeLocalAllocHandle buffer = ping._replyBuffer;
+                    SafeLocalAllocHandle buffer = _replyBuffer;
 
                     // Marshals and constructs new reply.
-                    PingReply reply;
-
-                    if (ping._ipv6)
+                    if (_ipv6)
                     {
                         Interop.IpHlpApi.Icmp6EchoReply icmp6Reply = Marshal.PtrToStructure<Interop.IpHlpApi.Icmp6EchoReply>(buffer.DangerousGetHandle());
-                        reply = CreatePingReplyFromIcmp6EchoReply(icmp6Reply, buffer.DangerousGetHandle(), ping._sendSize);
+                        reply = CreatePingReplyFromIcmp6EchoReply(icmp6Reply, buffer.DangerousGetHandle(), _sendSize);
                     }
                     else
                     {
                         Interop.IpHlpApi.IcmpEchoReply icmpReply = Marshal.PtrToStructure<Interop.IpHlpApi.IcmpEchoReply>(buffer.DangerousGetHandle());
                         reply = CreatePingReplyFromIcmpEchoReply(icmpReply);
                     }
-
-                    eventArgs = new PingCompletedEventArgs(reply, null, false, asyncOp.UserSuppliedState);
                 }
             }
             catch (Exception e)
             {
                 // In case of failure, create a failed event arg.
-                PingException pe = new PingException(SR.net_ping, e);
-                eventArgs = new PingCompletedEventArgs(null, pe, false, asyncOp.UserSuppliedState);
+                error = new PingException(SR.net_ping, e);
             }
             finally
             {
-                ping.FreeUnmanagedStructures();
-                ping.UnregisterWaitHandle();
-                ping.Finish();
+                FreeUnmanagedStructures();
+                UnregisterWaitHandle();
+                Finish();
             }
 
-            asyncOp.PostOperationCompleted(onPingCompletedDelegate, eventArgs);
+            // Once we've called Finish, complete the task
+            if (reply != null)
+            {
+                tcs.SetResult(reply);
+            }
+            else
+            {
+                Debug.Assert(error != null);
+                tcs.SetException(error);
+            }
         }
 
         // Copies _requestBuffer into unmanaged memory for async icmpsendecho APIs.
