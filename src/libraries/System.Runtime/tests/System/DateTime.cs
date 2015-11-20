@@ -296,7 +296,7 @@ public static unsafe class DateTimeTests
 
     [Fact]
     public static void TestGetDateTimeFormats()
-    {        
+    {
         char[] allStandardFormats =
         {
             'd', 'D', 'f', 'F', 'g', 'G',
@@ -330,24 +330,11 @@ public static unsafe class DateTimeTests
     [InlineData("fi-FI")]
     [InlineData("nb-NO")]
     [InlineData("nb-SJ")]
-    [ActiveIssue(4599, PlatformID.AnyUnix)]
-    public static void TestSpecialCulturesParsing(string cultureName)
-    {
-        TestDateTimeParsingWithSpecialCultures(cultureName);
-    }
-
-    [Theory]
     [InlineData("sr-Cyrl-XK")]
     [InlineData("sr-Latn-ME")]
     [InlineData("sr-Latn-RS")]
     [InlineData("sr-Latn-XK")]
-    [ActiveIssue(3616, PlatformID.AnyUnix)] 
-    public static void TestSerbianCulturesParsing(string cultureName)
-    {
-        TestDateTimeParsingWithSpecialCultures(cultureName);
-    }
-
-    internal static void TestDateTimeParsingWithSpecialCultures(string cultureName)
+    public static void TestSpecialCulturesParsing(string cultureName)
     {
         // Test DateTime parsing with cultures which has the date separator and time separator are same
 
@@ -362,15 +349,24 @@ public static unsafe class DateTimeTests
             return;
         }
 
-        DateTime date = DateTime.Now;
-
-        // truncate the milliseconds as it is not showing in time formatting patterns
-        date = new DateTime(date.Year, date.Month, date.Day, date.Hour, date.Minute, date.Second);
+        DateTime date = new DateTime(2015, 11, 20, 11, 49, 50);
         string dateString = date.ToString(ci.DateTimeFormat.ShortDatePattern, ci);
 
         DateTime parsedDate;
         Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
-        Assert.Equal(date.Date, parsedDate);
+        if (ci.DateTimeFormat.ShortDatePattern.Contains("yyyy"))
+        {
+            Assert.Equal(date.Date, parsedDate);
+        }
+        else
+        {
+            // When the date separator and time separator are the same, DateTime.TryParse cannot 
+            // tell the difference between a short date like dd.MM.yy and a short time
+            // like HH.mm.ss. So it assumes that if it gets 03.04.11, that must be a time
+            // and uses the current date to construct the date time.
+            DateTime now = DateTime.Now;
+            Assert.Equal(new DateTime(now.Year, now.Month, now.Day, date.Day, date.Month, date.Year % 100), parsedDate);
+        }
 
         dateString = date.ToString(ci.DateTimeFormat.LongDatePattern, ci);
         Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
