@@ -56,6 +56,8 @@ enum PAL_CURLcode : int32_t
     PAL_CURLE_UNSUPPORTED_PROTOCOL = 1,
     PAL_CURLE_NOT_BUILT_IN = 4,
     PAL_CURLE_COULDNT_RESOLVE_HOST = 6,
+    PAL_CURLE_ABORTED_BY_CALLBACK = 42,
+    PAL_CURLE_UNKNOWN_OPTION = 48,
 };
 
 enum
@@ -157,7 +159,7 @@ typedef int32_t(*SeekCallback)(void* userPointer, int64_t offset, int32_t origin
 typedef uint64_t(*ReadWriteCallback)(uint8_t* buffer, uint64_t bufferSize, uint64_t nitems, void* userPointer);
 
 // the function pointer definition for the callback used in RegisterSslCtxCallback
-typedef int32_t(*SslCtxCallback)(CURL* curl, void* sslCtx);
+typedef int32_t(*SslCtxCallback)(CURL* curl, void* sslCtx, void* userPointer);
 
 /*
 The object that is returned from RegisterXXXCallback functions.
@@ -187,7 +189,7 @@ to modify the behaviour of the SSL initialization.
 
 Returns a CURLcode that describes whether registering the callback was successful or not.
 */
-extern "C" int32_t RegisterSslCtxCallback(CURL* curl, SslCtxCallback callback, CallbackHandle** callbackHandle);
+extern "C" int32_t RegisterSslCtxCallback(CURL* curl, SslCtxCallback callback, void *userPointer, CallbackHandle** callbackHandle);
 
 /*
 Frees the CallbackHandle created by a RegisterXXXCallback function.

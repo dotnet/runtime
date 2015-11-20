@@ -116,6 +116,8 @@ typedef int32_t (*SslCtxSetVerifyCallback)(int32_t, X509_STORE_CTX*);
 // the function pointer definition for the callback used in SslCtxSetCertVerifyCallback
 typedef int32_t (*SslCtxSetCertVerifyCallbackCallback)(X509_STORE_CTX*, void* arg);
 
+// the function pointer definition for the callback used in SslCtxSetClientCertCallback
+typedef int32_t (*SslClientCertCallback)(SSL *ssl, X509 **x509, EVP_PKEY **pkey);
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
@@ -358,6 +360,11 @@ Shims the SSL_CTX_set_client_CA_list method.
 extern "C" void SslCtxSetClientCAList(SSL_CTX* ctx, X509NameStack* list);
 
 /*
+Shims the SSL_CTX_set_client_cert_cb method
+*/
+extern "C" void SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback);
+
+/*
 Gets the SSL stream sizes to use.
 */
 extern "C" void GetStreamSizes(int32_t* header, int32_t* trailer, int32_t* maximumMessage);
@@ -376,4 +383,12 @@ extern "C" int32_t SslGetPeerFinished(SSL* ssl, void* buf, int32_t count);
 Returns true/false based on if existing ssl session was re-used or not.
 Shims the SSL_session_reused macro.
 */
-extern "C" bool SslSessionReused(SSL* ssl);
+extern "C" int32_t SslSessionReused(SSL* ssl);
+
+/*
+adds the given certificate to the extra chain certificates associated with ctx that is associated with the ssl.
+
+libssl frees the x509 object.
+Returns 1 if success and 0 in case of failure
+*/
+extern "C" int32_t SslAddExtraChainCert(SSL* ssl, X509* x509);

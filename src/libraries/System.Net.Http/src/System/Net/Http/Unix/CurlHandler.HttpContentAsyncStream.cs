@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Http
 {
@@ -37,6 +38,8 @@ namespace System.Net.Http
             private readonly object _syncObj = new object();
             /// <summary>The HttpContent to read from, potentially repeatedly until a response is received.</summary>
             private readonly HttpContent _content;
+            /// <summary>The transportContext of CurlHandler </summary>
+            private readonly CurlTransportContext _transportContext = new CurlTransportContext();
 
             /// <summary>true if the stream has been disposed; otherwise, false.</summary>
             private bool _disposed;
@@ -312,11 +315,17 @@ namespace System.Net.Http
                 // the latter would need to use a separate call to Unwrap, which is more expensive than the 
                 // single extra delegate allocation (no closure allocation) we'll get here along with 
                 // Task.Run's very efficient unwrapping implementation.
-                _copyTask = Task.Run(() => _content.CopyToAsync(this));
+                _copyTask = Task.Run(() => _content.CopyToAsync(this, _transportContext));
 
                 // Fix up the instance when it's done
                 _copyTask.ContinueWith((t, s) => ((HttpContentAsyncStream)s).EndCopyToAsync(t), this,
                     CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
+
+            /// <summary>  passes the channel binding token to the transport context </summary>
+            internal void SetChannelBindingToken(X509Certificate2 certificate)
+            {
+                _transportContext.CurlChannelBinding.SetToken(certificate);
             }
 
             /// <summary>Completes a CopyToAsync initiated in Run.</summary>
