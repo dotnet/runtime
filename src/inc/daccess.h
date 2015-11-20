@@ -527,6 +527,8 @@
 #ifndef __daccess_h__
 #define __daccess_h__
 
+#include <stdint.h>
+
 #include "switches.h"
 #include "safemath.h"
 #include "corerror.h"
