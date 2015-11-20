@@ -18,6 +18,8 @@ bool pal::find_coreclr(pal::string_t& recv)
     // Try %LocalAppData%\dotnet
     if (pal::getenv(_X("LocalAppData"), candidate)) {
         append_path(candidate, _X("dotnet"));
+        append_path(candidate, _X("runtime"));
+        append_path(candidate, _X("coreclr"));
         if (coreclr_exists_in_dir(candidate)) {
             recv.assign(candidate);
             return true;
