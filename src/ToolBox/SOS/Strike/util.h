@@ -2400,12 +2400,14 @@ public:
     HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 lineNumber, mdMethodDef* pToken, ULONG32* pIlOffset);
 };
 
+#ifndef FEATURE_PAL
 HRESULT
 GetLineByOffset(
         ___in ULONG64 IP,
         ___out ULONG *pLinenum,
         __out_ecount(cbFileName) LPSTR lpszFileName,
         ___in ULONG cbFileName);
+#endif // FEATURE_PAL
 
 /// X86 Context
 #define X86_SIZE_OF_80387_REGISTERS      80
