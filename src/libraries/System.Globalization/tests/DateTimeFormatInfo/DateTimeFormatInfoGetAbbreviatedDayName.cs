@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -26,40 +24,17 @@ namespace System.Globalization.Tests
             VerificationHelper(info, expected);
         }
 
-        // PosTest2: Call GetAbbreviatedDayName on en-us culture DateTimeFormatInfo instance
-        [Fact]
-        public void PosTest2()
+        // Call GetAbbreviatedDayName on en-us culture DateTimeFormatInfo instance
+        // Call GetAbbreviatedDayName on fr-FR culture DateTimeFormatInfo instance
+        [Theory]
+        [InlineData("en-us")]
+        [InlineData("fr-FR")]
+        public void PosTest2(string localeName)
         {
-            DateTimeFormatInfo info = new CultureInfo("en-us").DateTimeFormat;
-            string[] expected = new string[] {
-                "Sun",
-                "Mon",
-                "Tue",
-                "Wed",
-                "Thu",
-                "Fri",
-                "Sat"
-            };
+            CultureInfo culture = new CultureInfo(localeName);
+            string[] expected = DateTimeFormatInfoData.GetAbbreviatedDayNames(culture);
 
-            VerificationHelper(info, expected);
-        }
-
-        // PosTest3: Call GetAbbreviatedDayName on fr-FR culture DateTimeFormatInfo instance
-        [Fact]
-        [ActiveIssue(3243, PlatformID.OSX)]
-        public void PosTest3()
-        {
-            DateTimeFormatInfo info = new CultureInfo("fr-FR").DateTimeFormat;
-            string[] expected = new string[] {
-                "dim.",
-                "lun.",
-                "mar.",
-                "mer.",
-                "jeu.",
-                "ven.",
-                "sam."
-            };
-
+            DateTimeFormatInfo info = culture.DateTimeFormat;
             VerificationHelper(info, expected);
         }
 

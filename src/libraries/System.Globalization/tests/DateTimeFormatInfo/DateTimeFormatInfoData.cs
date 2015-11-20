@@ -8,6 +8,7 @@ namespace System.Globalization.Tests
     internal static class DateTimeFormatInfoData
     {
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        private static bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
         public static string GetEraName(CultureInfo cultureInfo)
         {
@@ -41,10 +42,94 @@ namespace System.Globalization.Tests
             throw GetCultureNotSupportedException(cultureInfo);
         }
 
+        internal static string[] GetDayNames(CultureInfo cultureInfo)
+        {
+            if (string.Equals(cultureInfo.Name, "en-US", StringComparison.OrdinalIgnoreCase))
+            {
+                return new string[]
+                {
+                    "Sunday",
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday"
+                };
+            }
+            if (string.Equals(cultureInfo.Name, "fr-FR", StringComparison.OrdinalIgnoreCase))
+            {
+                string[] dayNames = new string[]
+                {
+                    "dimanche",
+                    "lundi",
+                    "mardi",
+                    "mercredi",
+                    "jeudi",
+                    "vendredi",
+                    "samedi"
+                };
+
+                if (s_isOSX)
+                {
+                    CapitalizeStrings(dayNames);
+                }
+                return dayNames;
+            }
+
+            throw GetCultureNotSupportedException(cultureInfo);
+        }
+
+        internal static string[] GetAbbreviatedDayNames(CultureInfo cultureInfo)
+        {
+            if (string.Equals(cultureInfo.Name, "en-US", StringComparison.OrdinalIgnoreCase))
+            {
+                return new string[]
+                {
+                    "Sun",
+                    "Mon",
+                    "Tue",
+                    "Wed",
+                    "Thu",
+                    "Fri",
+                    "Sat"
+                };
+            }
+            if (string.Equals(cultureInfo.Name, "fr-FR", StringComparison.OrdinalIgnoreCase))
+            {
+                string[] dayNames = new string[]
+                {
+                    "dim.",
+                    "lun.",
+                    "mar.",
+                    "mer.",
+                    "jeu.",
+                    "ven.",
+                    "sam."
+                };
+
+                if (s_isOSX)
+                {
+                    CapitalizeStrings(dayNames);
+                }
+                return dayNames;
+            }
+
+            throw GetCultureNotSupportedException(cultureInfo);
+        }
+
+        private static void CapitalizeStrings(string[] strings)
+        {
+            for (int i = 0; i < strings.Length; i++)
+            {
+                strings[i] = strings[i].Substring(0, 1).ToUpper() + strings[i].Substring(1);
+            }
+        }
+
         private static Exception GetCultureNotSupportedException(CultureInfo cultureInfo)
         {
-            return new NotSupportedException(string.Format("The culture '{0}' with calendar '{1}' is not supported.", 
-                cultureInfo.Name, 
+            return new NotSupportedException(string.Format("The culture '{0}' with calendar '{1}' is not supported.",
+                cultureInfo.Name,
                 cultureInfo.Calendar.GetType().Name));
         }
     }

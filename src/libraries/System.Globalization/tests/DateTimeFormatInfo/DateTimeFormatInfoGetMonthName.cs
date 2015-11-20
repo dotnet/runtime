@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Globalization;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -12,7 +10,7 @@ namespace System.Globalization.Tests
         private const int c_MIN_MONTH_VALUE = 1;
         private const int c_MAX_MONTH_VALUE = 13;
 
-        // PosTest1: Call GetAbbreviatedDayName on default invariant DateTimeFormatInfo instance
+        // PosTest1: Call GetMonthName on default invariant DateTimeFormatInfo instance
         [Fact]
         public void PosTest1()
         {
@@ -37,7 +35,7 @@ namespace System.Globalization.Tests
             VerificationHelper(info, expected);
         }
 
-        // PosTest2: Call GetAbbreviatedDayName on en-us culture DateTimeFormatInfo instance
+        // PosTest2: Call GetMonthName on en-us culture DateTimeFormatInfo instance
         [Fact]
         public void PosTest2()
         {
@@ -62,9 +60,8 @@ namespace System.Globalization.Tests
             VerificationHelper(info, expected);
         }
 
-        // PosTest3: Call GetAbbreviatedDayName on fr-FR culture DateTimeFormatInfo instance
+        // PosTest3: Call GetMonthName on fr-FR culture DateTimeFormatInfo instance
         [Fact]
-        [ActiveIssue(3243, PlatformID.OSX)]
         public void PosTest3()
         {
             DateTimeFormatInfo info = new CultureInfo("fr-FR").DateTimeFormat;
@@ -88,7 +85,7 @@ namespace System.Globalization.Tests
             VerificationHelper(info, expected);
         }
 
-        // PosTest4: Call GetAbbreviatedDayName on DateTimeFormatInfo instance created from ctor
+        // PosTest4: Call GetMonthName on DateTimeFormatInfo instance created from ctor
         [Fact]
         public void PosTest4()
         {
