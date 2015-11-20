@@ -49,7 +49,7 @@
 struct ScanContext;
 class CrawlFrame;
 
-typedef void promote_func(PTR_PTR_Object, ScanContext*, DWORD);
+typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
 
 typedef struct
 {

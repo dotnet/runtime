@@ -1250,7 +1250,7 @@ BOOL AllocByClassHelper(Object * pBO, void * pv)
 //                to COR_PRF_GC_ROOT_FLAGS.
 //
 
-void ScanRootsHelper(Object** ppObject, ScanContext *pSC, DWORD dwFlags)
+void ScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
 {
     CONTRACTL
     {

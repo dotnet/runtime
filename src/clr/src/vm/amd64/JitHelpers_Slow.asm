@@ -454,7 +454,7 @@ NESTED_END JIT_NewArr1OBJ_MP, _TEXT
 ;        Unfortunately, the compiler intrinsic for InterlockedExchangePointer seems to be broken and we
 ;        get bad code gen in gc.cpp on IA64. </TODO>
 
-M_GCLOCK equ ?m_GCLock@@3JC
+M_GCLOCK equ ?m_GCLock@@3HC
 extern M_GCLOCK:dword
 extern generation_table:qword
 
