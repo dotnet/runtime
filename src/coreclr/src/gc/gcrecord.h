@@ -16,7 +16,7 @@ Module Name:
 
 #define max_generation 2
 
-// We pack the dynamic tuning for deciding which gen to condemn in a DWORD.
+// We pack the dynamic tuning for deciding which gen to condemn in a uint32_t.
 // We assume that 2 bits are enough to represent the generation. 
 #define bits_generation 2
 #define generation_mask (~(~0u << bits_generation))
@@ -27,7 +27,7 @@ Module Name:
 
 // These are condemned reasons related to generations.
 // Each reason takes up 2 bits as we have 3 generations.
-// So we can store up to 16 reasons in this DWORD.
+// So we can store up to 16 reasons in this uint32_t.
 // They need processing before being used.
 // See the set and the get method for details.
 enum gc_condemn_reason_gen
@@ -73,8 +73,8 @@ static char char_gen_number[4] = {'0', '1', '2', '3'};
 
 class gen_to_condemn_tuning
 {
-    DWORD condemn_reasons_gen;
-    DWORD condemn_reasons_condition;
+    uint32_t condemn_reasons_gen;
+    uint32_t condemn_reasons_condition;
 
 #ifdef DT_LOG
     char str_reasons_gen[64];
@@ -106,7 +106,7 @@ public:
         init_str();
     }
 
-    void set_gen (gc_condemn_reason_gen condemn_gen_reason, DWORD value)
+    void set_gen (gc_condemn_reason_gen condemn_gen_reason, uint32_t value)
     {
         assert ((value & (~generation_mask)) == 0);
         condemn_reasons_gen |= (value << (condemn_gen_reason * 2));
@@ -120,38 +120,38 @@ public:
     // This checks if condition_to_check is the only condition set.
     BOOL is_only_condition (gc_condemn_reason_condition condition_to_check)
     {
-        DWORD temp_conditions = 1 << condition_to_check;
+        uint32_t temp_conditions = 1 << condition_to_check;
         return !(condemn_reasons_condition ^ temp_conditions);
     }
 
-    DWORD get_gen (gc_condemn_reason_gen condemn_gen_reason)
+    uint32_t get_gen (gc_condemn_reason_gen condemn_gen_reason)
     {
-        DWORD value = ((condemn_reasons_gen >> (condemn_gen_reason * 2)) & generation_mask);
+        uint32_t value = ((condemn_reasons_gen >> (condemn_gen_reason * 2)) & generation_mask);
         return value;
     }
 
-    DWORD get_condition (gc_condemn_reason_condition condemn_gen_reason)
+    uint32_t get_condition (gc_condemn_reason_condition condemn_gen_reason)
     {
-        DWORD value = (condemn_reasons_condition & (1 << condemn_gen_reason));
+        uint32_t value = (condemn_reasons_condition & (1 << condemn_gen_reason));
         return value;
     }
 
-    DWORD get_reasons0()
+    uint32_t get_reasons0()
     {
         return condemn_reasons_gen;
     }
 
-    DWORD get_reasons1()
+    uint32_t get_reasons1()
     {
         return condemn_reasons_condition;
     }
 
 #ifdef DT_LOG
-    char get_gen_char (DWORD value)
+    char get_gen_char (uint32_t value)
     {
         return char_gen_number[value];
     }
-    char get_condition_char (DWORD value)
+    char get_condition_char (uint32_t value)
     {
         return (value ? 'Y' : 'N');
     }
@@ -190,7 +190,7 @@ struct maxgen_size_increase
     size_t condemned_allocated;
     size_t pinned_allocated;
     size_t pinned_allocated_advance;
-    DWORD running_free_list_efficiency;
+    uint32_t running_free_list_efficiency;
 };
 
 // The following indicates various mechanisms and one value
@@ -314,7 +314,7 @@ static gc_mechanism_descr gc_mechanisms_descr[max_mechanism_per_heap] =
 
 int index_of_set_bit (size_t power2);
 
-#define mechanism_mask (1 << (sizeof (DWORD) * 8 - 1))
+#define mechanism_mask (1 << (sizeof (uint32_t) * 8 - 1))
 // interesting per heap data we want to record for each GC.
 class gc_history_per_heap
 {
@@ -335,16 +335,16 @@ public:
     // because we might want to know all reasons (at least all mandatory ones) for 
     // compact.
     // TODO: no need to the MSB for this
-    DWORD mechanisms[max_mechanism_per_heap];
+    uint32_t mechanisms[max_mechanism_per_heap];
 
-    // Each bit in this DWORD represent if a mechanism was used or not.
-    DWORD machanism_bits;
+    // Each bit in this uint32_t represent if a mechanism was used or not.
+    uint32_t machanism_bits;
 
-    DWORD heap_index; 
+    uint32_t heap_index; 
 
     size_t extra_gen0_committed;
 
-    void set_mechanism (gc_mechanism_per_heap mechanism_per_heap, DWORD value);
+    void set_mechanism (gc_mechanism_per_heap mechanism_per_heap, uint32_t value);
 
     void set_mechanism_bit (gc_mechanism_bit_per_heap mech_bit)
     {
@@ -363,13 +363,13 @@ public:
     
     void clear_mechanism(gc_mechanism_per_heap mechanism_per_heap)
     {
-        DWORD* mechanism = &mechanisms[mechanism_per_heap];
+        uint32_t* mechanism = &mechanisms[mechanism_per_heap];
         *mechanism = 0;
     }
 
     int get_mechanism (gc_mechanism_per_heap mechanism_per_heap)
     {
-        DWORD mechanism = mechanisms[mechanism_per_heap];
+        uint32_t mechanism = mechanisms[mechanism_per_heap];
 
         if (mechanism & mechanism_mask)
         {
@@ -402,13 +402,13 @@ struct gc_history_global
     // desired_new_allocation such as equalization or smoothing so
     // record the final budget here. 
     size_t final_youngest_desired;
-    DWORD num_heaps;
+    uint32_t num_heaps;
     int condemned_generation;
     int gen0_reduction_count;
     gc_reason reason;
     int pause_mode;
-    DWORD mem_pressure;
-    DWORD global_mechanims_p;
+    uint32_t mem_pressure;
+    uint32_t global_mechanims_p;
 
     void set_mechanism_p (gc_global_mechanism_p mechanism)
     {

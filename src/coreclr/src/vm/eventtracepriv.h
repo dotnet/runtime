@@ -342,7 +342,7 @@ private:
     void FlushCcw();
 
     // Callback used during handle table enumeration.
-    static void HandleWalkCallback(PTR_UNCHECKED_OBJECTREF pref, LPARAM *pExtraInfo, LPARAM param1, LPARAM param2);
+    static void HandleWalkCallback(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2);
 
     // Used during CCW enumeration to keep track of all object handles which point to a CCW.
     void AddCcwHandle(Object **handle);

@@ -130,19 +130,19 @@ public:
         m_pMethTab = pMT;
     }
 };
-#define MIN_OBJECT_SIZE     (2*sizeof(BYTE*) + sizeof(ObjHeader))
+#define MIN_OBJECT_SIZE     (2*sizeof(uint8_t*) + sizeof(ObjHeader))
 
 class ArrayBase : public Object
 {
-    DWORD m_dwLength;
+    uint32_t m_dwLength;
 
 public:
-    DWORD GetNumComponents()
+    uint32_t GetNumComponents()
     {
         return m_dwLength;
     }
 
-    static SIZE_T GetOffsetOfNumComponents()
+    static size_t GetOffsetOfNumComponents()
     {
         return offsetof(ArrayBase, m_dwLength);
     }

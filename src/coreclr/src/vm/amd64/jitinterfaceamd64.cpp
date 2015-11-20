@@ -18,9 +18,9 @@
 #include "excep.h"
 #include "threadsuspend.h"
 
-extern BYTE* g_ephemeral_low; 
-extern BYTE* g_ephemeral_high;
-extern DWORD*  g_card_table;
+extern uint8_t* g_ephemeral_low;
+extern uint8_t* g_ephemeral_high;
+extern uint32_t* g_card_table;
 
 // Patch Labels for the various write barriers
 EXTERN_C void JIT_WriteBarrier_End();
