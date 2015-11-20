@@ -210,9 +210,11 @@ struct ScanContext
     AppDomain *pCurrentDomain;
 #endif //CHECK_APP_DOMAIN_LEAKS || FEATURE_APPDOMAIN_RESOURCE_MONITORING || DACCESS_COMPILE
 
+#ifndef FEATURE_REDHAWK
 #if defined(GC_PROFILING) || defined (DACCESS_COMPILE)
     MethodDesc *pMD;
 #endif //GC_PROFILING || DACCESS_COMPILE
+#endif // FEATURE_REDHAWK
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     EtwGCRootKind dwEtwRootKind;
 #endif // GC_PROFILING || FEATURE_EVENT_TRACE
@@ -363,6 +365,7 @@ void record_global_mechanism (int mech_index);
 #define GC_ALLOC_FINALIZE 0x1
 #define GC_ALLOC_CONTAINS_REF 0x2
 #define GC_ALLOC_ALIGN8_BIAS 0x4
+#define GC_ALLOC_ALIGN8 0x8
 
 class GCHeap {
     friend struct ::_DacGlobals;
@@ -433,6 +436,7 @@ public:
         }
 #endif
 #else // FEATURE_SVR_GC
+        UNREFERENCED_PARAMETER(bServerHeap);
         CONSISTENCY_CHECK(bServerHeap == false);
 #endif // FEATURE_SVR_GC
     }

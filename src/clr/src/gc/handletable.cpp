@@ -441,8 +441,9 @@ void ValidateAppDomainForHandle(OBJECTHANDLE handle)
     // Verify that we are not trying to access freed handle.
     _ASSERTE("Attempt to access destroyed handle." && *(_UNCHECKED_OBJECTREF *)handle != DEBUG_DestroyedHandleValue);
 #endif
-#ifndef DACCESS_COMPILE
-
+#ifdef DACCESS_COMPILE
+    UNREFERENCED_PARAMETER(handle);
+#else
     BEGIN_DEBUG_ONLY_CODE;
     ADIndex id = HndGetHandleADIndex(handle);
     AppDomain *pUnloadingDomain = SystemDomain::AppDomainBeingUnloaded();
@@ -755,6 +756,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
         FireEtwSetGCHandle((void*) handle, value, hndType, generation, (int64_t) pAppDomain, GetClrInstanceId());
         FireEtwPrvSetGCHandle((void*) handle, value, hndType, generation, (int64_t) pAppDomain, GetClrInstanceId());
 
+#ifndef FEATURE_REDHAWK
         // Also fire the things pinned by Async pinned handles
         if (hndType == HNDTYPE_ASYNCPINNED)
         {
@@ -781,7 +783,11 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
                 }
             }
         }
+#endif // FEATURE_REDHAWK
     }
+#else
+    UNREFERENCED_PARAMETER(handle);
+    UNREFERENCED_PARAMETER(value);
 #endif
 }
 
@@ -1149,6 +1155,9 @@ void HndNotifyGcCycleComplete(HHANDLETABLE hTable, uint32_t condemned, uint32_t 
     }
 #else
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(hTable);
+    UNREFERENCED_PARAMETER(condemned);
+    UNREFERENCED_PARAMETER(maxgen);
 #endif
 }
 
@@ -1354,6 +1363,7 @@ BOOL Ref_ContainHandle(HandleTableBucket *pBucket, OBJECTHANDLE handle)
 void DEBUG_PostGCScanHandler(HandleTable *pTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, ScanCallbackInfo *info)
 {
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(types);
 
     // looks like the GC supports more generations than we expected
     _ASSERTE(condemned < MAXSTATGEN);
@@ -1408,6 +1418,7 @@ void DEBUG_PostGCScanHandler(HandleTable *pTable, const uint32_t *types, uint32_
 void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level)
 {
     WRAPPER_NO_CONTRACT;
+    UNREFERENCED_PARAMETER(level);
 
     // have we done any GC's yet?
     if (pTable->_DEBUG_iMaxGen >= 0)
