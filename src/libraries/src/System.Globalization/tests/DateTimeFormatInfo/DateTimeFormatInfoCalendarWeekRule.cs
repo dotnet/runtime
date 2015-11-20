@@ -45,33 +45,18 @@ namespace System.Globalization.Tests
             });
         }
 
-        // TestLocaleFirstDay: Verify value of property CalendarWeekRule for specific locale
-        [Fact]
-        public void TestLocaleFirstDay()
+        // Verify value of property CalendarWeekRule for specific locales
+        [Theory]
+        [InlineData("en-US")]
+        [InlineData("br-FR")]
+        public void TestLocale(string localeName)
         {
-            CultureInfo myTestCulture = new CultureInfo("en-US");
-            DateTimeFormatInfo dti = myTestCulture.DateTimeFormat;
-            CalendarWeekRule actual = dti.CalendarWeekRule;
-            Assert.Equal(CalendarWeekRule.FirstDay, actual);
-        }
-
-        // TestLocaleFirstFourDayWeek: Verify value of property CalendarWeekRule for specific locale
-        [Fact]
-        public void TestLocaleFirstFourDayWeek()
-        {
-            CultureInfo myTestCulture = new CultureInfo("br-FR");
+            CultureInfo myTestCulture = new CultureInfo(localeName);
             DateTimeFormatInfo dti = myTestCulture.DateTimeFormat;
             CalendarWeekRule actual = dti.CalendarWeekRule;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // note for Win10 this returns FirstFourDayWeek, not FirstFullWeek, this should be cleaned up as part of #3243
-                Assert.True(actual == CalendarWeekRule.FirstFullWeek || actual == CalendarWeekRule.FirstFourDayWeek);
-            }
-            else
-            {
-                Assert.Equal(CalendarWeekRule.FirstFourDayWeek, actual);
-            }
+            CalendarWeekRule expected = DateTimeFormatInfoData.GetCalendarWeekRule(myTestCulture);
+            Assert.Equal(expected, actual);
         }
 
         private void VerificationHelper(DateTimeFormatInfo info, CalendarWeekRule expected, bool setter)
