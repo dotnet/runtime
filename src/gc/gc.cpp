@@ -1716,7 +1716,7 @@ static void enter_spin_lock (GCSpinLock* spin_lock)
 {
 retry:
 
-    if (FastInterlockExchange (&spin_lock->lock, 0) >= 0)
+    if (FastInterlockExchange ((LONG*)&spin_lock->lock, 0) >= 0)
     {
         unsigned int i = 0;
         while (spin_lock->lock >= 0)
@@ -1767,7 +1767,7 @@ retry:
 
 inline BOOL try_enter_spin_lock(GCSpinLock* spin_lock)
 {
-    return (FastInterlockExchange (&spin_lock->lock, 0) < 0);
+    return (FastInterlockExchange ((LONG*)&spin_lock->lock, 0) < 0);
 }
 
 inline
@@ -9161,7 +9161,7 @@ void gc_heap::update_card_table_bundle()
             dprintf (3,("Probing card table pages [%Ix, %Ix[", (size_t)base_address, (size_t)base_address+region_size));
             uint32_t status = GetWriteWatch (0, base_address, region_size,
                                          (void**)g_addresses,
-                                         &bcount, (DWORD*)&granularity);
+                                         (ULONG_PTR*)&bcount, (DWORD*)&granularity);
             assert (status == 0);
             assert (granularity == OS_PAGE_SIZE);
             dprintf (3,("Found %d pages written", bcount));
@@ -18424,7 +18424,7 @@ void gc_heap::fix_card_table ()
 #endif //TIME_WRITE_WATCH
             uint32_t status = GetWriteWatch (mode, base_address, region_size,
                                           (void**)g_addresses,
-                                          &bcount, (DWORD*)&granularity);
+                                          (ULONG_PTR*)&bcount, (DWORD*)&granularity);
             assert (status == 0);
 
 #ifdef TIME_WRITE_WATCH
@@ -26157,7 +26157,7 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
 
                     uint32_t status = GetWriteWatch (mode, base_address, region_size,
                                                 (void**)background_written_addresses,
-                                                &bcount, (DWORD*)&granularity);
+                                                (ULONG_PTR*)&bcount, (DWORD*)&granularity);
 
     //#ifdef _DEBUG
                     if (status != 0)
