@@ -1137,7 +1137,15 @@ namespace System.Data.SqlClient
                 {
                     serverVersion = _connHandler.ServerVersion;
                 }
-                exception = SqlException.CreateException(temp, serverVersion, _connHandler);
+
+                if(temp.Count == 1 && temp[0].Exception != null)
+                {
+                    exception = SqlException.CreateException(temp, serverVersion, _connHandler, temp[0].Exception);
+                }
+                else
+                {
+                    exception = SqlException.CreateException(temp, serverVersion, _connHandler);
+                }
             }
 
             // call OnError outside of _ErrorCollectionLock to avoid deadlock
@@ -1251,7 +1259,11 @@ namespace System.Data.SqlClient
             // !=null       | == 0     | replace text left of errorMessage
             //
 
+#if MANAGED_SNI
             Debug.Assert(!ADP.IsEmpty(errorMessage) || sniError.sniError != 0, "Empty error message received from SNI");
+#else
+            Debug.Assert(!ADP.IsEmpty(errorMessage), "Empty error message received from SNI");
+#endif
 
             string sqlContextInfo = SR.GetResourceString(Enum.GetName(typeof(SniContext), stateObj.SniContext), Enum.GetName(typeof(SniContext), stateObj.SniContext));
             string providerRid = String.Format((IFormatProvider)null, "SNI_PN{0}", (int)sniError.provider);
@@ -1289,14 +1301,18 @@ namespace System.Data.SqlClient
             }
             else
             {
+#if MANAGED_SNI
                 // SNI error. Append additional error message info if available.
                 //
                 string sniLookupMessage = SQL.GetSNIErrorMessage((int)sniError.sniError);
                 errorMessage =  (sniError.errorMessage != string.Empty) ?
                                 (sniLookupMessage + ": " + sniError.errorMessage) :
                                 sniLookupMessage;
+#else
+                // SNI error. Replace the entire message.
+                //
+                errorMessage = SQL.GetSNIErrorMessage((int)sniError.sniError);
 
-#if !MANAGED_SNI
                 // If its a LocalDB error, then nativeError actually contains a LocalDB-specific error code, not a win32 error code
                 if (sniError.sniError == (int)SNINativeMethodWrapper.SniSpecialErrors.LocalDBErrorCode)
                 {
@@ -1308,8 +1324,13 @@ namespace System.Data.SqlClient
             errorMessage = String.Format((IFormatProvider)null, "{0} (provider: {1}, error: {2} - {3})",
                 sqlContextInfo, providerName, (int)sniError.sniError, errorMessage);
 
+#if MANAGED_SNI
             return new SqlError((int)sniError.nativeError, 0x00, TdsEnums.FATAL_ERROR_CLASS,
-                                _server, errorMessage, sniError.function, (int)sniError.lineNumber, win32ErrorCode);
+                                _server, errorMessage, sniError.function, (int)sniError.lineNumber, win32ErrorCode, sniError.exception);
+#else
+            return new SqlError((int)sniError.nativeError, 0x00, TdsEnums.FATAL_ERROR_CLASS,
+                    _server, errorMessage, sniError.function, (int)sniError.lineNumber, win32ErrorCode);
+#endif
         }
 
         internal void CheckResetConnection(TdsParserStateObject stateObj)

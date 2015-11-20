@@ -151,12 +151,12 @@ namespace System.Data.SqlClient.SNI
             }
             catch (SocketException se)
             {
-                ReportTcpSNIError(se.ToString());
+                ReportTcpSNIError(se);
                 return;
             }
             catch (Exception e)
             {
-                ReportTcpSNIError(e.ToString());
+                ReportTcpSNIError(e);
                 return;
             }
 
@@ -178,11 +178,11 @@ namespace System.Data.SqlClient.SNI
             }
             catch (AuthenticationException aue)
             {
-                return ReportTcpSNIError(aue.ToString());
+                return ReportTcpSNIError(aue);
             }
             catch (InvalidOperationException ioe)
             {
-                return ReportTcpSNIError(ioe.ToString());
+                return ReportTcpSNIError(ioe);
             }
 
             _stream = _sslStream;
@@ -247,15 +247,15 @@ namespace System.Data.SqlClient.SNI
                 }
                 catch (ObjectDisposedException ode)
                 {
-                    return ReportTcpSNIError(ode.ToString());
+                    return ReportTcpSNIError(ode);
                 }
                 catch (SocketException se)
                 {
-                    return ReportTcpSNIError(se.ToString());
+                    return ReportTcpSNIError(se);
                 }
                 catch (IOException ioe)
                 {
-                    return ReportTcpSNIError(ioe.ToString());
+                    return ReportTcpSNIError(ioe);
                 }
             }
         }
@@ -301,15 +301,15 @@ namespace System.Data.SqlClient.SNI
                 }
                 catch (ObjectDisposedException ode)
                 {
-                    return ReportErrorAndReleasePacket(packet, ode.Message);
+                    return ReportErrorAndReleasePacket(packet, ode);
                 }
                 catch (SocketException se)
                 {
-                    return ReportErrorAndReleasePacket(packet, se.Message);
+                    return ReportErrorAndReleasePacket(packet, se);
                 }
                 catch (IOException ioe)
                 {
-                    uint errorCode = ReportErrorAndReleasePacket(packet, ioe.Message);
+                    uint errorCode = ReportErrorAndReleasePacket(packet, ioe);
                     if (ioe.InnerException is SocketException && ((SocketException)(ioe.InnerException)).SocketErrorCode == SocketError.TimedOut)
                     {
                         errorCode = TdsEnums.SNI_WAIT_TIMEOUT;
@@ -357,7 +357,7 @@ namespace System.Data.SqlClient.SNI
                 }
                 catch (Exception e)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, SNICommon.InternalExceptionError, e.ToString());
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InternalExceptionError, e);
 
                     if (callback != null)
                     {
@@ -403,15 +403,15 @@ namespace System.Data.SqlClient.SNI
                 }
                 catch (ObjectDisposedException ode)
                 {
-                    return ReportErrorAndReleasePacket(packet, ode.Message);
+                    return ReportErrorAndReleasePacket(packet, ode);
                 }
                 catch (SocketException se)
                 {
-                    return ReportErrorAndReleasePacket(packet, se.Message);
+                    return ReportErrorAndReleasePacket(packet, se);
                 }
                 catch (IOException ioe)
                 {
-                    return ReportErrorAndReleasePacket(packet, ioe.Message);
+                    return ReportErrorAndReleasePacket(packet, ioe);
                 }
             }
         }
@@ -432,19 +432,20 @@ namespace System.Data.SqlClient.SNI
             }
             catch (SocketException se)
             {
-                return ReportTcpSNIError(se.ToString());
+                return ReportTcpSNIError(se);
             }
             catch (ObjectDisposedException ode)
             {
-                return ReportTcpSNIError(ode.ToString());
+                return ReportTcpSNIError(ode);
             }
 
             return TdsEnums.SNI_SUCCESS;
         }
 
-        private uint ReportTcpSNIError(string errorMessage)
+        private uint ReportTcpSNIError(Exception sniException)
         {
-            return ReportTcpSNIError(0, SNICommon.InternalExceptionError, errorMessage);
+            _status = TdsEnums.SNI_ERROR;
+            return SNICommon.ReportSNIError(SNIProviders.TCP_PROV, SNICommon.InternalExceptionError, sniException);
         }
 
         private uint ReportTcpSNIError(uint nativeError, uint sniError, string errorMessage)
@@ -453,9 +454,13 @@ namespace System.Data.SqlClient.SNI
             return SNICommon.ReportSNIError(SNIProviders.TCP_PROV, nativeError, sniError, errorMessage);
         }
 
-        private uint ReportErrorAndReleasePacket(SNIPacket packet, string errorMessage)
+        private uint ReportErrorAndReleasePacket(SNIPacket packet, Exception sniException)
         {
-            return ReportErrorAndReleasePacket(packet, 0, SNICommon.InternalExceptionError, errorMessage);
+            if (packet != null)
+            {
+                packet.Release();
+            }
+            return ReportTcpSNIError(sniException);
         }
 
         private uint ReportErrorAndReleasePacket(SNIPacket packet, uint nativeError, uint sniError, string errorMessage)
