@@ -81,6 +81,9 @@
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Unix.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\UnixCommandLinePing.cs">
+      <Link>Common\System\Net\NetworkInformation\UnixCommandLinePing.cs</Link>
+    </Compile>
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
