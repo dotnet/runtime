@@ -191,15 +191,16 @@ public:
 
 inline void EENotLoadedMessage(HRESULT Status)
 {
-    ExtOut("Failed to find runtime DLL (clr.dll), 0x%08x\n",Status);
-    ExtOut("Extension commands need clr.dll in order to have something to do.\n");
+    ExtOut("Failed to find runtime DLL (%s), 0x%08x\n", MAKEDLLNAME_A("coreclr"), Status);
+    ExtOut("Extension commands need it in order to have something to do.\n");
 }
 
 inline void DACMessage(HRESULT Status)
 {
-    ExtOut("Failed to load data access DLL, 0x%08x\n",Status);
+    ExtOut("Failed to load data access DLL, 0x%08x\n", Status);
+#ifndef FEATURE_PAL
     ExtOut("Verify that 1) you have a recent build of the debugger (6.2.14 or newer)\n");
-    ExtOut("            2) the file mscordacwks.dll that matches your version of clr.dll is \n");
+    ExtOut("            2) the file mscordacwks.dll that matches your version of coreclr.dll is \n");
     ExtOut("                in the version directory or on the symbol path\n");
     ExtOut("            3) or, if you are debugging a dump file, verify that the file \n");
     ExtOut("                mscordacwks_<arch>_<arch>_<version>.dll is on your symbol path.\n");
@@ -213,7 +214,11 @@ inline void DACMessage(HRESULT Status)
     ExtOut("If that succeeds, the SOS command should work on retry.\n");
     ExtOut("\n");
     ExtOut("If you are debugging a minidump, you need to make sure that your executable\n");
-    ExtOut("path is pointing to clr.dll as well.\n");
+    ExtOut("path is pointing to coreclr.dll as well.\n");
+#else
+    ExtOut("You can run the debugger command 'setclrpath' to control the load of %s.\n", MAKEDLLNAME_A("mscordaccore"));
+    ExtOut("If that succeeds, the SOS command should work on retry.\n");
+#endif // FEATURE_PAL
 }
 
 HRESULT CheckEEDll();
@@ -259,12 +264,12 @@ HRESULT CheckEEDll();
     g_clrData = NULL;                                           \
     if ((Status = CheckEEDll()) != S_OK)                        \
     {                                                           \
-        ExtOut("Failed to find runtime DLL (clr.dll), 0x%08x\n", Status); \
+        ExtOut("Failed to find runtime DLL (%s), 0x%08x\n", MAKEDLLNAME_A("coreclr"), Status); \
         ExtOut("Some functionality may be impaired\n");         \
     }                                                           \
     else if ((Status = LoadClrDebugDll()) != S_OK)              \
     {                                                           \
-        ExtOut("Failed to load data access DLL, 0x%08x\n", Status);       \
+        ExtOut("Failed to load data access DLL (%s), 0x%08x\n", MAKEDLLNAME_A("mscordaccore"), Status); \
         ExtOut("Some functionality may be impaired\n");         \
     }                                                           \
     else                                                        \
