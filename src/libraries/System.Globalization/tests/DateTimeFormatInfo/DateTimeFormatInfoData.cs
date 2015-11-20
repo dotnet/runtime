@@ -2,12 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace System.Globalization.Tests
 {
     internal static class DateTimeFormatInfoData
     {
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        private static int s_WindowsVersion = GetWindowsVersion();
         private static bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
         public static string GetEraName(CultureInfo cultureInfo)
@@ -126,11 +128,60 @@ namespace System.Globalization.Tests
             }
         }
 
+        internal static CalendarWeekRule GetCalendarWeekRule(CultureInfo cultureInfo)
+        {
+            if (string.Equals(cultureInfo.Name, "en-US", StringComparison.OrdinalIgnoreCase))
+            {
+                return CalendarWeekRule.FirstDay;
+            }
+            if (string.Equals(cultureInfo.Name, "br-FR", StringComparison.OrdinalIgnoreCase))
+            {
+                if (s_isWindows && s_WindowsVersion < 10)
+                {
+                    return CalendarWeekRule.FirstFullWeek;
+                }
+                else
+                {
+                    return CalendarWeekRule.FirstFourDayWeek;
+                }
+            }
+
+            throw GetCultureNotSupportedException(cultureInfo);
+        }
+
         public static Exception GetCultureNotSupportedException(CultureInfo cultureInfo)
         {
             return new NotSupportedException(string.Format("The culture '{0}' with calendar '{1}' is not supported.",
                 cultureInfo.Name,
                 cultureInfo.Calendar.GetType().Name));
+        }
+
+        public static int GetWindowsVersion()
+        {
+            if (s_isWindows)
+            {
+                RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
+                osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
+                Assert.Equal(0, RtlGetVersion(out osvi));
+                return (int)osvi.dwMajorVersion;
+            }
+
+            return -1;
+        }
+
+        [DllImport("ntdll.dll")]
+        private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct RTL_OSVERSIONINFOEX
+        {
+            internal uint dwOSVersionInfoSize;
+            internal uint dwMajorVersion;
+            internal uint dwMinorVersion;
+            internal uint dwBuildNumber;
+            internal uint dwPlatformId;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            internal string szCSDVersion;
         }
     }
 }
