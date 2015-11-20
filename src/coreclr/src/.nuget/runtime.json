@@ -9,6 +9,11 @@
       "Microsoft.DotNet.RyuJit": {
         "toolchain.ubuntu.14.04-x64.Microsoft.DotNet.RyuJit": "1.0.0-prerelease"
       }
+    },
+    "osx.10.10-x64": {
+      "Microsoft.DotNet.RyuJit": {
+        "toolchain.osx.10.10-x64.Microsoft.DotNet.RyuJit": "1.0.0-prerelease"
+      }
     }
   }
 }
