@@ -1735,14 +1735,14 @@ void Ref_ScanPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_
                 {
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
-                        HndScanHandlesForGC(hTable, &ScanPointer, LPARAM(sc), LPARAM(fn), types, _countof(types), condemned, maxgen, flags);
+                        HndScanHandlesForGC(hTable, &ScanPointer, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags);
                 }
             }
         }
     }
 
     // enumerate pointers in variable handles whose dynamic type is VHT_WEAK_SHORT, VHT_WEAK_LONG or VHT_STRONG
-    TraceVariableHandlesBySingleThread(&ScanPointer, LPARAM(sc), LPARAM(fn), VHT_WEAK_SHORT | VHT_WEAK_LONG | VHT_STRONG, condemned, maxgen, flags);
+    TraceVariableHandlesBySingleThread(&ScanPointer, uintptr_t(sc), uintptr_t(fn), VHT_WEAK_SHORT | VHT_WEAK_LONG | VHT_STRONG, condemned, maxgen, flags);
 }
 
 void Ref_UpdatePinnedPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)
