@@ -18,7 +18,7 @@ namespace System.Net.NetworkInformation
         private const int IpHeaderLengthInBytes = 20;
 
         // Ubuntu has ping under /bin, OSX under /sbin.
-        private static readonly string[] s_binFolders = { "/bin", "/sbin" };
+        private static readonly string[] s_binFolders = { "/bin/", "/sbin/" };
 
         private static readonly string s_ipv4PingFile = "ping";
         private static readonly string s_ipv6PingFile = "ping6";
@@ -41,39 +41,19 @@ namespace System.Net.NetworkInformation
             return null;
         }
 
-        private async void InternalSendAsync(IPAddress address, byte[] buffer, int timeout, PingOptions options)
+        private async Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
-            AsyncOperation asyncOp = _asyncOp;
-            SendOrPostCallback callback = _onPingCompletedDelegate;
-
-            PingReply pr = null;
-            Exception pingException = null;
-
             try
             {
-                if (RawSocketPermissions.CanUseRawSockets())
-                {
-                    pr = await SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options).ConfigureAwait(false);
-                }
-                else
-                {
-                    pr = await SendWithPingUtility(address, buffer, timeout, options).ConfigureAwait(false);
-                }
+                Task<PingReply> t = RawSocketPermissions.CanUseRawSockets() ?
+                    SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options) :
+                    SendWithPingUtility(address, buffer, timeout, options);
+                return await t.ConfigureAwait(false);
             }
-            catch (Exception e)
+            finally
             {
-                pingException = e;
+                Finish();
             }
-
-            // At this point, either PR has a real PingReply in it, or pingException has an Exception in it.
-            var ea = new PingCompletedEventArgs(
-                pr,
-                pingException,
-                false,
-                asyncOp.UserSuppliedState);
-
-            Finish();
-            asyncOp.PostOperationCompleted(callback, ea);
         }
 
         private async Task<PingReply> SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions options)
@@ -258,10 +238,6 @@ namespace System.Net.NetworkInformation
             // Documentation indicates that you should only pay attention to the IPStatus value when
             // its value is not "Success", but the rest of these values match that of the Windows implementation.
             return new PingReply(new IPAddress(0), null, IPStatus.TimedOut, 0, Array.Empty<byte>());
-        }
-
-        private void InternalDisposeCore()
-        {
         }
 
 #if DEBUG

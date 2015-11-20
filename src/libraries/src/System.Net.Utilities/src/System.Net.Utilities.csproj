@@ -21,7 +21,6 @@
   <ItemGroup>
     <Compile Include="System\Net\NetworkInformation\IPStatus.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.cs" />
-    <Compile Include="System\Net\NetworkInformation\PingCompletedEventHandler.cs" />
     <Compile Include="System\Net\NetworkInformation\PingException.cs" />
     <Compile Include="System\Net\NetworkInformation\PingOptions.cs" />
     <Compile Include="System\Net\NetworkInformation\PingReply.cs" />
