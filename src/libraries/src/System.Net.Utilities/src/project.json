@@ -1,7 +1,9 @@
 {
   "dependencies": {
+    "System.Diagnostics.Process": "4.1.0-beta-*",
     "System.Net.Primitives": "4.0.10-beta-*",
-    "System.Net.NameResolution": "4.0.0-beta-*"
+    "System.Net.NameResolution": "4.0.0-beta-*",
+    "System.Net.Sockets": "4.1.0-beta-*"
   },
   "frameworks": {
     "dnxcore50": {}
