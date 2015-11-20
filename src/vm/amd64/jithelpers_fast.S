@@ -122,11 +122,18 @@ LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 // Entry:
 //   RDI - address of ref-field (assigned to)
 //   RSI - address of the data  (source)
-//   RCX can be trashed
+//
+//   Note: RyuJIT assumes that all volatile registers can be trashed by
+//   the CORINFO_HELP_ASSIGN_BYREF helper (i.e. JIT_ByRefWriteBarrier).
+//   The precise set is defined by RBM_CALLEE_TRASH.
+//
+//   RCX is trashed
+//   RAX is trashed
+//   R10 is trashed on Debug build
+//   R11 is trashed on Debug build
 // Exit:
 //   RDI, RSI are incremented by SIZEOF(LPVOID)
 LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
-        push    rax
         mov     rcx, [rsi]
 
 // If !WRITE_BARRIER_CHECK do the write first, otherwise we might have to do some ShadowGC stuff
@@ -147,11 +154,6 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         jnb     NotInHeap_ByRefWriteBarrier
 
 #ifdef WRITE_BARRIER_CHECK
-        // we can only trash rcx in this function so in _DEBUG we need to save
-        // some scratch registers.
-        push    r10
-        push    r11
-
         // **ALSO update the shadow GC heap if that is enabled**
         // Do not perform the work if g_GCShadow is 0
         PREPARE_EXTERNAL_VAR g_GCShadow, rax
@@ -199,8 +201,6 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
     // Additionally we know for sure that we are inside the heap and therefore don't
     // need to replicate the above checks.
     DoneShadow_ByRefWriteBarrier:
-        pop     r11
-        pop     r10
 #endif
 
         // See if we can just quick out
@@ -222,8 +222,6 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         PREPARE_EXTERNAL_VAR g_card_table, rax
         add     rcx, [rax]
 
-        pop     rax
-        
         // Check if this card is dirty
         cmp     byte ptr [rcx], 0FFh
         jne     UpdateCardTable_ByRefWriteBarrier
@@ -246,6 +244,5 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         // Increment the pointers before leaving
         add     rdi, 8h
         add     rsi, 8h
-        pop     rax
         ret
 LEAF_END JIT_ByRefWriteBarrier, _TEXT
