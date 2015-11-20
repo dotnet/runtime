@@ -515,8 +515,13 @@ void CALLBACK ScanConsecutiveHandlesWithUserData(PTR_UNCHECKED_OBJECTREF pValue,
 void CALLBACK BlockAgeBlocks(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo)
 {
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(pInfo);
 
-#ifndef DACCESS_COMPILE
+#ifdef DACCESS_COMPILE
+    UNREFERENCED_PARAMETER(pSegment);
+    UNREFERENCED_PARAMETER(uBlock);
+    UNREFERENCED_PARAMETER(uCount);
+#else
     // set up to update the specified blocks
     uint32_t *pdwGen     = (uint32_t *)pSegment->rgGeneration + uBlock;
     uint32_t *pdwGenLast =             pdwGen                 + uCount;
@@ -908,6 +913,7 @@ void CALLBACK BlockResetAgeMapForBlocks(TableSegment *pSegment, uint32_t uBlock,
 static void VerifyObject(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj)
 {
 #ifdef FEATURE_REDHAWK
+    UNREFERENCED_PARAMETER(from);
     MethodTable* pMT = (MethodTable*)(obj->GetGCSafeMethodTable());
     pMT->SanityCheck();
 #else
@@ -917,6 +923,7 @@ static void VerifyObject(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj)
 
 static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF *pValue, _UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj, uint8_t minAge)
 {
+    UNREFERENCED_PARAMETER(pValue);
     VerifyObject(from, obj);
 
     int thisAge = GCHeap::GetGCHeap()->WhichGeneration(obj);
@@ -1294,7 +1301,7 @@ void CALLBACK UnlockAndForgetQueuedBlocks(AsyncScanInfo *pAsyncInfo, ScanQNode *
  * Frees the specified ScanQNode
  *
  */
-void CALLBACK FreeScanQNode(AsyncScanInfo *pAsyncInfo, ScanQNode *pQNode, uintptr_t)
+void CALLBACK FreeScanQNode(AsyncScanInfo *, ScanQNode *pQNode, uintptr_t)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1380,7 +1387,7 @@ void xxxTableScanQueuedBlocksAsync(PTR_HandleTable pTable, PTR_TableSegment pSeg
  * Returns the next segment to be scanned in a scanning loop.
  *
  */
-PTR_TableSegment CALLBACK QuickSegmentIterator(PTR_HandleTable pTable, PTR_TableSegment pPrevSegment, CrstHolderWithState *pCrstHolder)
+PTR_TableSegment CALLBACK QuickSegmentIterator(PTR_HandleTable pTable, PTR_TableSegment pPrevSegment, CrstHolderWithState *)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1413,7 +1420,7 @@ PTR_TableSegment CALLBACK QuickSegmentIterator(PTR_HandleTable pTable, PTR_Table
  * g0 scans are more likely to operate on contiguous blocks.
  *
  */
-PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_TableSegment pPrevSegment, CrstHolderWithState *pCrstHolder)
+PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_TableSegment pPrevSegment, CrstHolderWithState *)
 {
     CONTRACTL
     {
@@ -1447,7 +1454,7 @@ PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_Ta
  * including freeing those it notices are empty along the way.
  *
  */
-PTR_TableSegment CALLBACK FullSegmentIterator(PTR_HandleTable pTable, PTR_TableSegment pPrevSegment, CrstHolderWithState *pCrstHolder)
+PTR_TableSegment CALLBACK FullSegmentIterator(PTR_HandleTable pTable, PTR_TableSegment pPrevSegment, CrstHolderWithState *)
 {
     CONTRACTL
     {
