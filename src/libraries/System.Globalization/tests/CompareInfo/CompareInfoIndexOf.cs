@@ -59,14 +59,12 @@ namespace System.Globalization.Tests
         public void Test15() { Test(CultureInfo.InvariantCulture, "foobardzsdzs", "rddzs", -1, CompareOptions.Ordinal); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test16() { Test(s_turkish, "Hi", "I", -1, CompareOptions.IgnoreCase); }
 
         [Fact]
         public void Test17() { Test(CultureInfo.InvariantCulture, "Hi", "I", 1, CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test18() { Test(s_turkish, "Hi", "\u0130", 1, CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -85,14 +83,12 @@ namespace System.Globalization.Tests
         public void Test23() { Test(CultureInfo.InvariantCulture, "Hi", "\u0130", -1, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test24() { Test(CultureInfo.InvariantCulture, "Exhibit \u00C0", "A\u0300", 8, CompareOptions.None); }
 
         [Fact]
         public void Test25() { Test(CultureInfo.InvariantCulture, "Exhibit \u00C0", "A\u0300", -1, CompareOptions.Ordinal); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test26() { Test(CultureInfo.InvariantCulture, "Exhibit \u00C0", "a\u0300", 8, CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -124,16 +120,13 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test33()
         {
-            char unassignedUnicode = GetNextUnassignedUnicode();
-            Test(CultureInfo.InvariantCulture, "TestFooBA\u0300R", "Foo" + unassignedUnicode + "B\u00C0R", 4, CompareOptions.IgnoreNonSpace);
+            Test(CultureInfo.InvariantCulture, "TestFooBA\u0300R", "FooB\u00C0R", 4, CompareOptions.IgnoreNonSpace);
         }
 
         //   Now IgnoreSymbols will not consider the ' ' as a Symbol
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test34() { Test(CultureInfo.InvariantCulture, "More Test's", "Tests", 5, CompareOptions.IgnoreSymbols); }
 
         [Fact]

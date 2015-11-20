@@ -11,7 +11,6 @@ public partial class CompareInfoTests
     [InlineData("")]
     [InlineData("en")]
     [InlineData("en-US")]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void GetCompareInfo(string localeName)
     {
         CompareInfo ci = CompareInfo.GetCompareInfo(localeName);
@@ -361,7 +360,6 @@ public partial class CompareInfoTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void EqualsAndHashCode()
     {
         CompareInfo ciInvariantFromCultureInfo = CultureInfo.InvariantCulture.CompareInfo;

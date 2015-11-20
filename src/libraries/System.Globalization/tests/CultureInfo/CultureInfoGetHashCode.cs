@@ -10,7 +10,6 @@ namespace System.Globalization.Tests
     public class CultureInfoGetHashCode
     {
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest1()
         {
             CultureInfo myCultureInfo = new CultureInfo("en-US");
@@ -22,7 +21,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest2()
         {
             CultureInfo myCultureInfo = new CultureInfo("en");
@@ -34,7 +32,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest3()
         {
             CultureInfo myCultureInfo = CultureInfo.InvariantCulture;

@@ -16,19 +16,15 @@ namespace System.Globalization.Tests
         public void Test1() { TestOrd(CultureInfo.InvariantCulture, "\u3042", "\u30A1", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test2() { TestOrd(CultureInfo.InvariantCulture, "\u3042", "\u30A2", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test3() { TestOrd(CultureInfo.InvariantCulture, "\u3042", "\uFF71", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test4() { TestOrd(CultureInfo.InvariantCulture, "\u304D\u3083", "\u30AD\u30E3", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test5() { TestOrd(CultureInfo.InvariantCulture, "\u304D\u3083", "\u30AD\u3083", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -41,42 +37,33 @@ namespace System.Globalization.Tests
         public void Test8() { TestOrd(CultureInfo.InvariantCulture, "a", "A", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test9() { TestOrd(CultureInfo.InvariantCulture, "a", "\uFF41", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test10() { TestOrd(CultureInfo.InvariantCulture, "ABCDE", "\uFF21\uFF22\uFF23\uFF24\uFF25", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test11() { TestOrd(CultureInfo.InvariantCulture, "ABCDE", "\uFF21\uFF22\uFF23D\uFF25", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test12() { TestOrd(CultureInfo.InvariantCulture, "ABCDE", "a\uFF22\uFF23D\uFF25", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test13() { TestOrd(CultureInfo.InvariantCulture, "ABCDE", "\uFF41\uFF42\uFF23D\uFF25", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
         public void Test14() { TestOrd(CultureInfo.InvariantCulture, "\u6FA4", "\u6CA2", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test15() { TestOrd(CultureInfo.InvariantCulture, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u30D6\u30D9\u30DC", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test16() { TestOrd(CultureInfo.InvariantCulture, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\u30DC", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test17() { TestOrd(CultureInfo.InvariantCulture, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test18() { TestOrd(CultureInfo.InvariantCulture, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -95,7 +82,6 @@ namespace System.Globalization.Tests
         public void Test23() { TestOrd(CultureInfo.InvariantCulture, "\u3071\u3074\u30D7\u307A", "\uFF8B\uFF9F\uFF8C\uFF9F", -1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test24() { TestOrd(CultureInfo.InvariantCulture, "\u3070\u30DC\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u3070\uFF8E\uFF9E\u30D6", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -120,35 +106,27 @@ namespace System.Globalization.Tests
         public void Test31() { TestOrd(CultureInfo.InvariantCulture, "\u3060", "\u305F", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test32() { TestOrd(CultureInfo.InvariantCulture, "\u3060", "\uFF80\uFF9E", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test33() { TestOrd(CultureInfo.InvariantCulture, "\u3060", "\u30C0", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test34() { TestOrd(CultureInfo.InvariantCulture, "\u30C7\u30BF\u30D9\u30B9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E\uFF7D", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test35() { TestOrd(CultureInfo.InvariantCulture, "\u30C7", "\uFF83\uFF9E", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test36() { TestOrd(CultureInfo.InvariantCulture, "\u30C7\u30BF", "\uFF83\uFF9E\uFF80", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test37() { TestOrd(CultureInfo.InvariantCulture, "\u30C7\u30BF\u30D9", "\uFF83\uFF9E\uFF80\uFF8D\uFF9E", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test38() { TestOrd(CultureInfo.InvariantCulture, "\u30BF", "\uFF80", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test39() { TestOrd(CultureInfo.InvariantCulture, "\uFF83\uFF9E\uFF70\uFF80\uFF8D\uFF9E\uFF70\uFF7D", "\u3067\u30FC\u305F\u3079\u30FC\u3059", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -167,19 +145,15 @@ namespace System.Globalization.Tests
         public void Test44() { TestOrd(CultureInfo.InvariantCulture, "", "'", -1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test45() { TestOrd(CultureInfo.InvariantCulture, "\u4E00", "\uFF11", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test46() { TestOrd(CultureInfo.InvariantCulture, "\u2160", "\uFF11", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test47() { TestOrd(CultureInfo.InvariantCulture, "0", "\uFF10", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test48() { TestOrd(CultureInfo.InvariantCulture, "10", "1\uFF10", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -192,7 +166,6 @@ namespace System.Globalization.Tests
         public void Test51() { TestOrd(CultureInfo.InvariantCulture, "9999\uFF191010", "1\uFF10", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test52() { TestOrd(CultureInfo.InvariantCulture, "'\u3000'", "' '", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -200,19 +173,15 @@ namespace System.Globalization.Tests
         public void Test53() { TestOrd(CultureInfo.InvariantCulture, "'\u3000'", "''", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test54() { TestOrd(CultureInfo.InvariantCulture, "\uFF1B", ";", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test55() { TestOrd(CultureInfo.InvariantCulture, "\uFF08", "(", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test56() { TestOrd(CultureInfo.InvariantCulture, "\u30FC", "\uFF70", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test57() { TestOrd(CultureInfo.InvariantCulture, "\u30FC", "\uFF0D", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -225,15 +194,12 @@ namespace System.Globalization.Tests
         public void Test60() { TestOrd(CultureInfo.InvariantCulture, "\u30FC", "\u2010", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test61() { TestOrd(CultureInfo.InvariantCulture, "/", "\uFF0F", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test62() { TestOrd(CultureInfo.InvariantCulture, "'", "\uFF07", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test63() { TestOrd(CultureInfo.InvariantCulture, "\"", "\uFF02", 0, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -263,7 +229,6 @@ namespace System.Globalization.Tests
         public void Test70() { Test(CultureInfo.InvariantCulture, "\u3044", "I", 1, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test71() { Test(CultureInfo.InvariantCulture, "a", "A", -1, CompareOptions.None); }
 
         [Fact]
@@ -279,7 +244,6 @@ namespace System.Globalization.Tests
         public void Test75() { Test(CultureInfo.InvariantCulture, new string('a', 5555), new string('a', 5554) + "b", -1, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test76() { Test(CultureInfo.InvariantCulture, "ABCDE", "\uFF41\uFF42\uFF23D\uFF25", 1, CompareOptions.None); }
 
         [Fact]
@@ -317,7 +281,6 @@ namespace System.Globalization.Tests
         public void Test86() { Test(CultureInfo.InvariantCulture, "\u3071\u3074\u30D7\u307A", "\uFF8B\uFF9F\uFF8C\uFF9F", -1, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test87() { Test(CultureInfo.InvariantCulture, "\u3070\u30DC\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u3070\uFF8E\uFF9E\u30D6", 1, CompareOptions.None); }
 
         [Fact]
@@ -389,11 +352,9 @@ namespace System.Globalization.Tests
         public void Test107() { Test(CultureInfo.InvariantCulture, "", "'", -1, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test108() { Test(CultureInfo.InvariantCulture, "\u4E00", "\uFF11", 1, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test109() { Test(CultureInfo.InvariantCulture, "\u2160", "\uFF11", 1, CompareOptions.None); }
 
         [Fact]
@@ -429,7 +390,6 @@ namespace System.Globalization.Tests
         public void Test119() { Test(CultureInfo.InvariantCulture, "\u30FC", "\uFF70", 0, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test120() { Test(CultureInfo.InvariantCulture, "\u30FC", "\uFF0D", 1, CompareOptions.None); }
 
         [Fact]
@@ -464,14 +424,12 @@ namespace System.Globalization.Tests
         public void Test130() { TestOrd(CultureInfo.InvariantCulture, "dzsdzs", "ddzs", 1, CompareOptions.Ordinal); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test131() { Test(new CultureInfo("tr-TR"), "i", "I", 1, CompareOptions.IgnoreCase); }
 
         [Fact]
         public void Test132() { Test(CultureInfo.InvariantCulture, "i", "I", 0, CompareOptions.IgnoreCase); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test133() { Test(new CultureInfo("tr-TR"), "i", "\u0130", 0, CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -481,7 +439,6 @@ namespace System.Globalization.Tests
         public void Test135() { Test(new CultureInfo("tr-TR"), "i", "I", 1, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test136() { Test(CultureInfo.InvariantCulture, "i", "I", -1, CompareOptions.None); }
 
         [Fact]
@@ -491,14 +448,12 @@ namespace System.Globalization.Tests
         public void Test138() { Test(CultureInfo.InvariantCulture, "i", "\u0130", -1, CompareOptions.None); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test139() { Test(CultureInfo.InvariantCulture, "\u00C0", "A\u0300", 0, CompareOptions.None); }
 
         [Fact]
         public void Test140() { TestOrd(CultureInfo.InvariantCulture, "\u00C0", "A\u0300", 1, CompareOptions.Ordinal); }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test141() { Test(CultureInfo.InvariantCulture, "\u00C0", "a\u0300", 0, CompareOptions.IgnoreCase); }
 
         [Fact]
@@ -526,19 +481,16 @@ namespace System.Globalization.Tests
         public void Test147()
         {
             char unassignedUnicode = GetNextUnassignedUnicode();
-            Test(CultureInfo.InvariantCulture, "FooBar", "Foo" +unassignedUnicode +"Bar", 0, CompareOptions.IgnoreNonSpace);
+            Test(CultureInfo.InvariantCulture, "FooBar", "Foo" + unassignedUnicode + "Bar", 0, CompareOptions.IgnoreNonSpace);
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test148()
         {
-            char unassignedUnicode = GetNextUnassignedUnicode();
-            Test(CultureInfo.InvariantCulture, "FooBA\u0300R", "Foo" +unassignedUnicode +"B\u00C0R", 0, CompareOptions.IgnoreNonSpace);
+            Test(CultureInfo.InvariantCulture, "FooBA\u0300R", "FooB\u00C0R", 0, CompareOptions.IgnoreNonSpace);
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test149() { Test(CultureInfo.InvariantCulture, "Test's", "Tests", 0, CompareOptions.IgnoreSymbols); }
 
         [Fact]
@@ -562,6 +514,18 @@ namespace System.Globalization.Tests
 
         [Fact]
         public void Test156() { Test(CultureInfo.InvariantCulture, new string('a', 5555), new string('a', 5555), 0, CompareOptions.None); }
+
+        [Fact]
+        public void Test157() { Test(CultureInfo.InvariantCulture, "foobar", "FooB\u00C0R", 0, CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase); }
+
+        [Fact]
+        public void Test158() { Test(CultureInfo.InvariantCulture, "foobar", "FooB\u00C0R", -1, CompareOptions.IgnoreNonSpace); }
+
+        [Fact]
+        public void Test159() { Test(CultureInfo.InvariantCulture, "\uFF66", "\u30F2", 0, CompareOptions.IgnoreWidth); }
+
+        [Fact]
+        public void Test160() { Test(CultureInfo.InvariantCulture, "\uFF66", "\u30F2", 1, CompareOptions.IgnoreCase); }
 
         [Theory]
         [InlineData(null, 0, 0, null, 0, 0, 0)]
@@ -624,11 +588,11 @@ namespace System.Globalization.Tests
             CompareInfo ci = culture.CompareInfo;
             int i = ci.Compare(str1, str2, options);
             i = Math.Sign(i);
-            Assert.Equal(i, expected);
+            Assert.Equal(expected, i);
 
             i = ci.Compare(str2, str1, options);
             i = Math.Sign(i);
-            Assert.Equal(i, (0 - expected));
+            Assert.Equal((0 - expected), i);
         }
         
         private char GetNextUnassignedUnicode()

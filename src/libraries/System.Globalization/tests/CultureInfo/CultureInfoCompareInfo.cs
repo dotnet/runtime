@@ -29,7 +29,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestCompareInfoName()
         {
             string expectedName = "en-US";
@@ -39,7 +38,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void TestCompareInfoNameWithInvariant()
         {
             string expectedName = "";
