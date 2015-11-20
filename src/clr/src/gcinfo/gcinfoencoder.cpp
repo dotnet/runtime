@@ -9,6 +9,8 @@
  *
  */
 
+#include <stdint.h>
+
 #include "gcinfoencoder.h"
 
 #ifdef VERIFY_GCINFO
