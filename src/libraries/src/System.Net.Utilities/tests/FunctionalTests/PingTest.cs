@@ -1,16 +1,42 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Net.NetworkInformation;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
 
 using Xunit;
 
-namespace System.Net.Utilities.Tests
+namespace System.Net.NetworkInformation.Tests
 {
-    public class PingTests
+    public class PingTest
     {
+        [Fact]
+        public async Task SendPingAsync_InvalidArgs()
+        {
+            IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
+            Ping p = new Ping();
+
+            // Null address
+            Assert.Throws<ArgumentNullException>("address", () => { p.SendPingAsync((IPAddress)null); });
+            Assert.Throws<ArgumentNullException>("hostNameOrAddress", () => { p.SendPingAsync((string)null); });
+
+            // Invalid address
+            Assert.Throws<ArgumentException>("address", () => { p.SendPingAsync(IPAddress.Any); });
+            Assert.Throws<ArgumentException>("address", () => { p.SendPingAsync(IPAddress.IPv6Any); });
+
+            // Negative timeout
+            Assert.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendPingAsync(localIpAddress, -1); });
+            Assert.Throws<ArgumentOutOfRangeException>("timeout", () => { p.SendPingAsync(TestSettings.LocalHost, -1); });
+
+            // Null byte[]
+            Assert.Throws<ArgumentNullException>("buffer", () => { p.SendPingAsync(localIpAddress, 0, null); });
+            Assert.Throws<ArgumentNullException>("buffer", () => { p.SendPingAsync(TestSettings.LocalHost, 0, null); });
+
+            // Too large byte[]
+            Assert.Throws<ArgumentException>("buffer", () => { p.SendPingAsync(localIpAddress, 1, new byte[65501]); });
+            Assert.Throws<ArgumentException>("buffer", () => { p.SendPingAsync(TestSettings.LocalHost, 1, new byte[65501]); });
+        }
+
         [Fact]
         public async Task SendPingAsyncWithIPAddress()
         {
@@ -18,6 +44,20 @@ namespace System.Net.Utilities.Tests
 
             await SendBatchPingAsync(
                 (ping) => ping.SendPingAsync(localIpAddress),
+                (pingReply) =>
+                {
+                    Assert.Equal(IPStatus.Success, pingReply.Status);
+                    Assert.True(pingReply.Address.Equals(localIpAddress));
+                });
+        }
+
+        [Fact]
+        public async Task SendPingAsyncWithIPAddress_AddressAsString()
+        {
+            IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
+
+            await SendBatchPingAsync(
+                (ping) => ping.SendPingAsync(localIpAddress.ToString()),
                 (pingReply) =>
                 {
                     Assert.Equal(IPStatus.Success, pingReply.Status);
@@ -89,15 +129,16 @@ namespace System.Net.Utilities.Tests
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
 
+            var options = new PingOptions();
             byte[] buffer = TestSettings.PayloadAsBytes;
             await SendBatchPingAsync(
-                (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer, new PingOptions()),
+                (ping) => ping.SendPingAsync(localIpAddress, TestSettings.PingTimeout, buffer, options),
                 (pingReply) =>
                 {
                     Assert.Equal(IPStatus.Success, pingReply.Status);
                     Assert.True(pingReply.Address.Equals(localIpAddress));
-
                     Assert.Equal(buffer, pingReply.Buffer);
+                    Assert.InRange(pingReply.RoundtripTime, 0, long.MaxValue);
                 });
         }
 
@@ -257,6 +298,30 @@ namespace System.Net.Utilities.Tests
                     Assert.True(pingReply.Address.Equals(localIpAddress));
                 }
             }
+        }
+
+        [Fact]
+        public static async Task Ping_DisposeAfterSend_Success()
+        {
+            Ping p = new Ping();
+            await p.SendPingAsync(TestSettings.LocalHost);
+            p.Dispose();
+        }
+
+        [Fact]
+        public static void Ping_DisposeMultipletimes_Success()
+        {
+            Ping p = new Ping();
+            p.Dispose();
+            p.Dispose();
+        }
+
+        [Fact]
+        public static void Ping_SendAfterDispose_ThrowsSynchronously()
+        {
+            Ping p = new Ping();
+            p.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => { p.SendPingAsync(TestSettings.LocalHost); });
         }
 
         private static readonly int s_pingcount = 4;

@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace System.Net.Utilities.Tests
+namespace System.Net.NetworkInformation.Tests
 {
     internal static class TestSettings
     {

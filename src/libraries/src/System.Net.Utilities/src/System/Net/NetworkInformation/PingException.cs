@@ -5,8 +5,6 @@ namespace System.Net.NetworkInformation
 {
     public class PingException : InvalidOperationException
     {
-        internal PingException() { }
-
         public PingException(string message) :
             base(message)
         {
