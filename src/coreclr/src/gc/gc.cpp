@@ -5122,7 +5122,7 @@ void set_thread_group_affinity_for_heap(HANDLE gc_thread, int heap_number)
 void set_thread_affinity_mask_for_heap(HANDLE gc_thread, int heap_number)
 {
 #if !defined(FEATURE_REDHAWK) && !defined(FEATURE_CORECLR)
-    uintptr_t pmask, smask;
+    DWORD_PTR pmask, smask;
 
     if (GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
     {
