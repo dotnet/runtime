@@ -5247,7 +5247,7 @@ OutputVaList(
     va_list args)
 {
 #ifdef FEATURE_PAL
-    char str[1024];
+    char str[4096];
 
     // Try and format our string into a fixed buffer first and see if it fits
     int length = _vsnprintf(str, sizeof(str), format, args);
@@ -5548,9 +5548,15 @@ NoOutputHolder::~NoOutputHolder()
 // Code to support mapping RVAs to managed code line numbers.
 //
 
+#ifndef FEATURE_PAL
+
 // 
 // This function retrieves ImageInfo related to the module
 // containing the addressed passed in "Base".
+//
+// NOTE: This doesn't work on xplat/PAL because the managed
+// assembly PE isn't in the native debugger's module list.
+//
 HRESULT
 GetImageFromBase(
     ___in ULONG64 Base,
@@ -5815,7 +5821,6 @@ ConvertNativeToIlOffset(
     return Status;
 }
 
-
 // Based on a native offset, passed in the first argument this function
 // identifies the corresponding source file name and line number.
 HRESULT
@@ -5825,11 +5830,6 @@ GetLineByOffset(
     __out_ecount(cbFileName) LPSTR lpszFileName,
     ___in ULONG cbFileName)
 {
-
-#ifdef FEATURE_PAL
-    return E_FAIL;
-#else
-
     HRESULT hr = S_OK;
     ULONG64 displacement = 0;
 
@@ -5910,10 +5910,9 @@ fallback:
                     cbFileName,
                     NULL,
                     &displacement);
-
-#endif // FEATURE_PAL
 }
 
+#endif // FEATURE_PAL
 
 void TableOutput::ReInit(int numColumns, int defaultColumnWidth, Alignment alignmentDefault, int indent, int padding)
 {
@@ -6521,7 +6520,8 @@ WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
         {
             methodOutput = W("<unknown>");
         }
-            
+
+#ifndef FEATURE_PAL
         if (!bSuppressLines &&
             SUCCEEDED(GetLineByOffset(TO_CDADDR(ip), &linenum, filename, MAX_LONGPATH+1)))
         {
@@ -6531,6 +6531,7 @@ WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
             
             methodOutput += WString(W(" [")) + wfilename + W(" @ ") + Decimal(linenum) + W("]");
         }
+#endif // FEATURE_PAL
     }
     
     return methodOutput;
