@@ -19,7 +19,7 @@ Runtime-specific library code - namely [mscorlib][mscorlib] - lives in the CoreC
 
 ## How to Engage, Contribute and Provide Feedback
 
-Some of the best ways to contribute are to try things out, file bugs, and join in design conversations.
+Some of the best ways to contribute are to try things out, file bugs, and join in design conversations. If you are having issues with the Full .NET Framework or .NET Runtime and need to file issues, the best ways to file a bug are at [Connect](http://connect.microsoft.com/VisualStudio) or through [Product Support](https://support.microsoft.com/en-us/contactus?ws=support) if you have a contract.
 
 Want to get more familiar with what's going on in the code?
 * [Pull requests](https://github.com/dotnet/corefx/pulls): [Open](https://github.com/dotnet/corefx/pulls?q=is%3Aopen+is%3Apr)/[Closed](https://github.com/dotnet/corefx/pulls?q=is%3Apr+is%3Aclosed)
