@@ -42,6 +42,9 @@ internal static partial class Interop
         internal static extern SslErrorCode SslGetError(SafeSslHandle ssl, int ret);
 
         [DllImport(Libraries.CryptoNative)]
+        internal static extern SslErrorCode SslGetError(IntPtr ssl, int ret);
+
+        [DllImport(Libraries.CryptoNative)]
         internal static extern void SslDestroy(IntPtr ssl);
 
         [DllImport(Libraries.CryptoNative)]
@@ -78,7 +81,7 @@ internal static partial class Interop
         internal static extern bool IsSslRenegotiatePending(SafeSslHandle ssl);
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern int SslShutdown(SafeSslHandle ssl);
+        internal static extern int SslShutdown(IntPtr ssl);
 
         [DllImport(Libraries.CryptoNative)]
         internal static extern void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
@@ -166,6 +169,7 @@ namespace Microsoft.Win32.SafeHandles
         private SafeBioHandle _readBio;
         private SafeBioHandle _writeBio;
         private bool _isServer;
+        private bool _handshakeCompleted = false;
 
         public bool IsServer
         {
@@ -186,6 +190,11 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return _writeBio;
             }
+        }
+
+        internal void MarkHandshakeCompleted()
+        {
+            _handshakeCompleted = true;
         }
 
         public static SafeSslHandle Create(SafeSslContextHandle context, bool isServer)
@@ -253,6 +262,11 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
+            if (_handshakeCompleted)
+            {
+                Disconnect();
+            }
+
             Interop.Ssl.SslDestroy(handle);
             if (_readBio != null)
             {
@@ -263,6 +277,17 @@ namespace Microsoft.Win32.SafeHandles
                 _writeBio.SetHandleAsInvalid(); // BIO got freed in SslDestroy
             }
             return true;
+        }
+
+        private void Disconnect()
+        {
+            Debug.Assert(!IsInvalid, "Expected a valid context in Disconnect");
+            int retVal = Interop.Ssl.SslShutdown(handle);
+            if (retVal < 0)
+            {
+                //TODO (Issue #4031) check this error
+                Interop.Ssl.SslGetError(handle, retVal);
+            }
         }
 
         private SafeSslHandle() : base(IntPtr.Zero, true)
