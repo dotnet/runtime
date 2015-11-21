@@ -24,14 +24,15 @@ bool pal::find_coreclr(pal::string_t& recv)
     pal::string_t candidate;
     pal::string_t test;
 
-    // Try /usr/share/dotnet and /usr/local/share/dotnet
+    // Try /usr/share/dotnet and /usr/local/share/dotnet/cli
+    // TODO: These paths should be consistent
     candidate.assign("/usr/share/dotnet/runtime/coreclr");
     if (coreclr_exists_in_dir(candidate)) {
         recv.assign(candidate);
         return true;
     }
-
-    candidate.assign("/usr/local/share/dotnet/runtime/coreclr");
+     
+    candidate.assign("/usr/local/share/dotnet/cli/runtime/coreclr");
     if (coreclr_exists_in_dir(candidate)) {
         recv.assign(candidate);
         return true;
