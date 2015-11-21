@@ -59,10 +59,13 @@ namespace System.Numerics
 
             while (power != 0)
             {
-                if ((power & 1) == 1)
-                    resultLength += valueLength;
-                if (power != 1)
-                    valueLength += valueLength;
+                checked
+                {
+                    if ((power & 1) == 1)
+                        resultLength += valueLength;
+                    if (power != 1)
+                        valueLength += valueLength;
+                }
                 power = power >> 1;
             }
 
