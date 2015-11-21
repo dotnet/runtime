@@ -1403,7 +1403,7 @@ AGAIN:
 #endif // FEATURE_SIMD
         return Compare(op1->gtBoundsChk.gtArrLen, op2->gtBoundsChk.gtArrLen)
             && Compare(op1->gtBoundsChk.gtIndex, op2->gtBoundsChk.gtIndex)
-            && (op1->gtBoundsChk.gtThrowKind == op1->gtBoundsChk.gtThrowKind);
+            && (op1->gtBoundsChk.gtThrowKind == op2->gtBoundsChk.gtThrowKind);
 
     default:
         assert(!"unexpected operator");
