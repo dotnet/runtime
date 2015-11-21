@@ -132,7 +132,7 @@ fi
         <ParamText>=*</ParamText> <!-- Bash specific -->
         <ParamName>debuggerFullPath</ParamName>
         <Command><![CDATA[        _DebuggerFullPath="${i#*=}"
-        if [ ! -f DebuggerFullPath ]
+        if [ ! -f "$_DebuggerFullPath" ]
         then
             echo The Debugger FullPath \"$_DebuggerFullPath\" doesn\'t exist
             usage
@@ -196,10 +196,10 @@ usage()
     echo "Usage: $0  $(_CLRTestParamList)"
     echo 
     echo "Arguments:"
-@(BatchCLRTestExecutionScriptArgument -> '    echo "-%(Identity) %(ParamName)"
+@(BatchCLRTestExecutionScriptArgument -> '    echo "-%(Identity)=%(ParamName)"
     echo      "%(Description)"', '
 ')
-    echo "    -?,-h,--help    show this message"
+    echo "-?,-h,--help    show this message"
     exit 1
 }
 
