@@ -1037,30 +1037,32 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	iinfo = image->image_info;
 	header = &iinfo->cli_header;
 
-	for (l = image_loaders; l; l = l->next) {
-		MonoImageLoader *loader = l->data;
-		if (loader->match (image)) {
-			image->loader = loader;
-			break;
-		}
-	}
-	if (!image->loader) {
-		*status = MONO_IMAGE_IMAGE_INVALID;
-		goto invalid_image;
-	}
-
-	if (status)
-		*status = MONO_IMAGE_IMAGE_INVALID;
-
-	if (care_about_pecoff == FALSE)
-		goto done;
-
 	if (!image->metadata_only) {
+		for (l = image_loaders; l; l = l->next) {
+			MonoImageLoader *loader = l->data;
+			if (loader->match (image)) {
+				image->loader = loader;
+				break;
+			}
+		}
+		if (!image->loader) {
+			*status = MONO_IMAGE_IMAGE_INVALID;
+			goto invalid_image;
+		}
+
+		if (status)
+			*status = MONO_IMAGE_IMAGE_INVALID;
+
+		if (care_about_pecoff == FALSE)
+			goto done;
+
 		if (image->loader == &pe_loader && !mono_verifier_verify_pe_data (image, &errors))
 			goto invalid_image;
 
 		if (!mono_image_load_pe_data (image))
 			goto invalid_image;
+	} else {
+		image->loader = &pe_loader;
 	}
 
 	if (care_about_cli == FALSE) {
