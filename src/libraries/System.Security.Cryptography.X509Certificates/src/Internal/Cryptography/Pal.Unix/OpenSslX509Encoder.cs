@@ -38,7 +38,11 @@ namespace Internal.Cryptography.Pal
 
         public string X500DistinguishedNameFormat(byte[] encodedDistinguishedName, bool multiLine)
         {
-            throw new NotImplementedException();
+            return X500NameEncoder.X500DistinguishedNameDecode(
+                encodedDistinguishedName,
+                true,
+                multiLine ? X500DistinguishedNameFlags.UseNewLines : X500DistinguishedNameFlags.None,
+                multiLine);
         }
 
         public X509ContentType GetCertContentType(byte[] rawData)
