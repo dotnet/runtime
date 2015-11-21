@@ -4577,6 +4577,30 @@ add_generic_instances (MonoAotCompile *acfg)
 				}
 			}
 		}
+
+		/* object[] accessor wrappers. */
+		{
+			MonoClass *obj_array_class = mono_array_class_get (mono_defaults.object_class, 1);
+			MonoMethod *m;
+
+			m = mono_class_get_method_from_name (obj_array_class, "Get", 1);
+			g_assert (m);
+
+			m = mono_marshal_get_array_accessor_wrapper (m);
+			add_extra_method (acfg, m);
+
+			m = mono_class_get_method_from_name (obj_array_class, "Address", 1);
+			g_assert (m);
+
+			m = mono_marshal_get_array_accessor_wrapper (m);
+			add_extra_method (acfg, m);
+
+			m = mono_class_get_method_from_name (obj_array_class, "Set", 2);
+			g_assert (m);
+
+			m = mono_marshal_get_array_accessor_wrapper (m);
+			add_extra_method (acfg, m);
+		}
 	}
 }
 

@@ -4243,6 +4243,27 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 				return code;
 		}
 
+		/* For ARRAY_ACCESSOR wrappers with reference types, use the <object> instantiation saved in corlib */
+		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+			if (info->subtype == WRAPPER_SUBTYPE_ARRAY_ACCESSOR) {
+				MonoMethod *array_method = info->d.array_accessor.method;
+				if (MONO_TYPE_IS_REFERENCE (&array_method->klass->element_class->byval_arg)) {
+					MonoClass *obj_array_class = mono_array_class_get (mono_defaults.object_class, 1);
+					MonoMethod *m = mono_class_get_method_from_name (obj_array_class, array_method->name, mono_method_signature (array_method)->param_count);
+					g_assert (m);
+
+					m = mono_marshal_get_array_accessor_wrapper (m);
+					if (m != method) {
+						code = mono_aot_get_method (domain, m);
+						if (code)
+							return code;
+					}
+				}
+			}
+		}
+
 		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE)) {
 			/* Partial sharing */
 			MonoMethod *shared;

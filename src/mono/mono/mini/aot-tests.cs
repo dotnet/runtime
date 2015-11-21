@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 /*
  * Regression tests for the AOT/FULL-AOT code.
@@ -299,6 +300,16 @@ class Tests
 	public static int test_0_long_enum_eq_comparer () {
 		var c = EqualityComparer<LongEnum>.Default;
 		c.GetHashCode (LongEnum.A);
+		return 0;
+	}
+
+	public static int test_0_array_accessor_runtime_invoke_ref () {
+		var t = typeof (string[]);
+		var arr = Array.CreateInstance (typeof (string), 1);
+		arr.GetType ().GetMethod ("Set").Invoke (arr, new object [] { 0, "A" });
+		var res = (string)arr.GetType ().GetMethod ("Get").Invoke (arr, new object [] { 0 });
+		if (res != "A")
+			return 1;
 		return 0;
 	}
 }
