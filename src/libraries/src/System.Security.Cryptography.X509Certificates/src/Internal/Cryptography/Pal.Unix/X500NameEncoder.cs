@@ -29,7 +29,8 @@ namespace Internal.Cryptography.Pal
         internal static string X500DistinguishedNameDecode(
             byte[] encodedName,
             bool printOid,
-            X500DistinguishedNameFlags flags)
+            X500DistinguishedNameFlags flags,
+            bool addTrailingDelimieter=false)
         {
             bool reverse = (flags & X500DistinguishedNameFlags.Reversed) == X500DistinguishedNameFlags.Reversed;
             bool quoteIfNeeded = (flags & X500DistinguishedNameFlags.DoNotUseQuotes) != X500DistinguishedNameFlags.DoNotUseQuotes;
@@ -139,6 +140,11 @@ namespace Internal.Cryptography.Pal
                             decodedName.Append('"');
                         }
                     }
+                }
+
+                if (addTrailingDelimieter)
+                {
+                    decodedName.Append(dnSeparator);
                 }
 
                 return decodedName.ToString();
