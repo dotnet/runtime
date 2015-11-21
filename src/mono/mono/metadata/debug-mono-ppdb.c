@@ -30,7 +30,8 @@
 
 struct _MonoPPDBFile {
 	MonoImage *image;
-	GHashTable *doc_cache;
+	GHashTable *doc_hash;
+	GHashTable *method_hash;
 };
 
 /* IMAGE_DEBUG_DIRECTORY structure */
@@ -84,6 +85,15 @@ get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 	return FALSE;
 }
 
+static void
+doc_free (gpointer key)
+{
+	MonoDebugSourceInfo *info = key;
+
+	g_free (info->source_file);
+	g_free (info);
+}
+
 MonoPPDBFile*
 mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 {
@@ -111,6 +121,8 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		}
 
 		ppdb_image = mono_image_open_metadata_only (ppdb_filename, &status);
+		if (!ppdb_image)
+			g_free (ppdb_filename);
 	}
 	if (!ppdb_image)
 		return NULL;
@@ -136,6 +148,8 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 
 	ppdb = g_new0 (MonoPPDBFile, 1);
 	ppdb->image = ppdb_image;
+	ppdb->doc_hash = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) doc_free);
+	ppdb->method_hash = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify) g_free);
 
 	return ppdb;
 }
@@ -146,8 +160,8 @@ mono_ppdb_close (MonoDebugHandle *handle)
 	MonoPPDBFile *ppdb = handle->ppdb;
 
 	mono_image_close (ppdb->image);
-	if (ppdb->doc_cache)
-		g_hash_table_destroy (ppdb->doc_cache);
+	g_hash_table_destroy (ppdb->doc_hash);
+	g_hash_table_destroy (ppdb->method_hash);
 	g_free (ppdb);
 }
 
@@ -155,18 +169,27 @@ MonoDebugMethodInfo *
 mono_ppdb_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 {
 	MonoDebugMethodInfo *minfo;
+	MonoPPDBFile *ppdb = handle->ppdb;
 
 	if (handle->image != mono_class_get_image (mono_method_get_class (method)))
 		return NULL;
 
-	// FIXME: Cache
+	mono_debugger_lock ();
 
-	// FIXME: Methods without tokens
+	minfo = g_hash_table_lookup (ppdb->method_hash, method);
+	if (minfo) {
+		mono_debugger_unlock ();
+		return minfo;
+	}
 
 	minfo = g_new0 (MonoDebugMethodInfo, 1);
 	minfo->index = 0;
 	minfo->method = method;
 	minfo->handle = handle;
+
+	g_hash_table_insert (ppdb->method_hash, method, minfo);
+
+	mono_debugger_unlock ();
 
 	return minfo;
 }
@@ -182,9 +205,13 @@ get_docinfo (MonoPPDBFile *ppdb, MonoImage *image, int docidx)
 	int size, part_size, partidx, nparts;
 	char sep;
 	GString *s;
-	MonoDebugSourceInfo *res;
+	MonoDebugSourceInfo *res, *cached;
 
-	// FIXME: Cache
+	mono_debugger_lock ();
+	cached = g_hash_table_lookup (ppdb->doc_hash, GUINT_TO_POINTER (docidx));
+	mono_debugger_unlock ();
+	if (cached)
+		return cached;
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_DOCUMENT], docidx-1, cols, MONO_DOCUMENT_SIZE);
 
@@ -218,6 +245,15 @@ get_docinfo (MonoPPDBFile *ppdb, MonoImage *image, int docidx)
 	res->guid = NULL;
 	res->hash = (guint8*)mono_metadata_blob_heap (image, cols [MONO_DOCUMENT_HASH]);
 
+	mono_debugger_lock ();
+	cached = g_hash_table_lookup (ppdb->doc_hash, GUINT_TO_POINTER (docidx));
+	if (!cached) {
+		g_hash_table_insert (ppdb->doc_hash, GUINT_TO_POINTER (docidx), res);
+	} else {
+		doc_free (res);
+		res = cached;
+	}
+	mono_debugger_unlock ();
 	return res;
 }
 
@@ -263,8 +299,8 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 
 	docidx = cols [MONO_METHODBODY_DOCUMENT];
 
-	// FIXME:
-	g_assert (cols [MONO_METHODBODY_SEQ_POINTS]);
+	if (!cols [MONO_METHODBODY_SEQ_POINTS])
+		return NULL;
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODBODY_SEQ_POINTS]);
 	size = mono_metadata_decode_blob_size (ptr, &ptr);
 	end = ptr + size;
@@ -282,9 +318,10 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 	while (ptr < end) {
 		delta_il = mono_metadata_decode_value (ptr, &ptr);
 		if (!first && delta_il == 0) {
-			/* Document record */
-			// FIXME:
-			g_assert_not_reached ();
+			/* document-record */
+			docidx = mono_metadata_decode_value (ptr, &ptr);
+			docname = get_docname (ppdb, image, docidx);
+			continue;
 		}
 		if (!first && iloffset + delta_il > offset)
 			break;
@@ -297,8 +334,8 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 		else
 			delta_cols = mono_metadata_decode_signed_value (ptr, &ptr);
 		if (delta_lines == 0 && delta_cols == 0)
-			// FIXME:
-			g_assert_not_reached ();
+			/* hidden-sequence-point-record */
+			continue;
 		if (first_non_hidden) {
 			start_line = mono_metadata_decode_value (ptr, &ptr);
 			start_col = mono_metadata_decode_value (ptr, &ptr);
