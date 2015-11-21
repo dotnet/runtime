@@ -167,6 +167,16 @@ namespace System.Numerics.Tests
             }
         }
 
+        [Fact]
+        public static void RunOverflow()
+        {
+            var bytes = new byte[1000];
+            bytes[bytes.Length - 1] = 1;
+
+            Assert.Throws<OverflowException>(() =>
+                BigInteger.Pow(new BigInteger(bytes), int.MaxValue));
+        }
+
         private static void VerifyPowString(string opstring)
         {
             StackCalc sc = new StackCalc(opstring);
