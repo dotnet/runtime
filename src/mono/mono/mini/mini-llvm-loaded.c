@@ -4,6 +4,7 @@
  */
 
 #include "mini.h"
+#include "mini-llvm.h"
 
 #ifdef MONO_LLVM_LOADED
 

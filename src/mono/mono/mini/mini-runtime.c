@@ -73,6 +73,7 @@
 #include "jit-icalls.h"
 
 #include "mini-gc.h"
+#include "mini-llvm.h"
 #include "debugger-agent.h"
 
 #ifdef MONO_ARCH_LLVM_SUPPORTED

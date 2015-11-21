@@ -73,6 +73,7 @@
 #include "mini-gc.h"
 #include "debugger-agent.h"
 #include "llvm-runtime.h"
+#include "mini-llvm.h"
 
 MonoTraceSpec *mono_jit_trace_calls;
 MonoMethodDesc *mono_inject_async_exc_method;

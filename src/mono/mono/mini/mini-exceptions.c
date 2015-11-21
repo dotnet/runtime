@@ -67,6 +67,7 @@
 #include "debugger-agent.h"
 #include "seq-points.h"
 #include "llvm-runtime.h"
+#include "mini-llvm.h"
 
 #ifdef ENABLE_LLVM
 #include "mini-llvm-cpp.h"

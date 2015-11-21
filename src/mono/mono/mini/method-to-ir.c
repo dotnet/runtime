@@ -70,6 +70,7 @@
 #include "debugger-agent.h"
 #include "seq-points.h"
 #include "aot-compiler.h"
+#include "mini-llvm.h"
 
 #define BRANCH_COST 10
 #define INLINE_LENGTH_LIMIT 20

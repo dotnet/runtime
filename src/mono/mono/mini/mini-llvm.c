@@ -30,6 +30,7 @@
 
 #include "mini-llvm-cpp.h"
 #include "aot-compiler.h"
+#include "mini-llvm.h"
 
 #ifdef __MINGW32__
 
