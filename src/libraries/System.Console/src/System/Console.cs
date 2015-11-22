@@ -44,6 +44,19 @@ namespace System
             }
         }
 
+        public static bool KeyAvailable
+        {
+            get
+            {
+                if (IsInputRedirected)
+                {
+                    throw new InvalidOperationException(SR.InvalidOperation_ConsoleKeyAvailableOnFile);
+                }
+
+                return ConsolePal.KeyAvailable;
+            }
+        }
+
         public static ConsoleKeyInfo ReadKey()
         {
             return ConsolePal.ReadKey(false);

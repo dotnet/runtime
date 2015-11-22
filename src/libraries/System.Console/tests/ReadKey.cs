@@ -3,14 +3,25 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using Xunit;
 
 public class ReadKey : RemoteExecutorTestBase
 {
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)] // TODO: Remove when implemented on Windows
+    public static void KeyAvailable()
+    {
+        if (Console.IsInputRedirected)
+        {
+            Assert.Throws<InvalidOperationException>(() => Console.KeyAvailable);
+        }
+        else
+        {
+            // Nothing to assert; just validate we can call it.
+            bool available = Console.KeyAvailable;
+        }
+    }
+
     [Fact]
     public static void RedirectedConsole_ReadKey()
     {

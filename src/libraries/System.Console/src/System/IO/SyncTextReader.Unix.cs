@@ -22,5 +22,18 @@ namespace System.IO
                 return ((StdInStreamReader)_in).ReadKey();
             }
         }
+
+        public bool KeyAvailable
+        {
+            get
+            {
+                lock (this)
+                {
+                    Debug.Assert(_in is StdInStreamReader);
+                    var r = (StdInStreamReader)_in;
+                    return !r.IsExtraBufferEmpty() || r.StdinReady;
+                }
+            }
+        }
     }
 }

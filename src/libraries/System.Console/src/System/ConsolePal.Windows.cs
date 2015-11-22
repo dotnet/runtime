@@ -214,6 +214,11 @@ namespace System
                               & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0;
         }
 
+        public static bool KeyAvailable
+        {
+            // TODO: Implement this
+            get { throw new NotImplementedException(); }
+        }
 
         private const short AltVKCode = 0x12;
 
