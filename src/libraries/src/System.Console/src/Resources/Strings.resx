@@ -213,4 +213,7 @@
   <data name="ArgumentOutOfRange_ConsoleKey" xml:space="preserve">
     <value>Console key values must be between 0 and 255 inclusive.</value>
   </data>
+  <data name="ArgumentOutOfRange_ConsoleTitleTooLong" xml:space="preserve">
+    <value>The console title is too long.</value>
+  </data>
 </root>

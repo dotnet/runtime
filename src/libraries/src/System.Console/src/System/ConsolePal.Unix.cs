@@ -137,6 +137,23 @@ namespace System
             }
         }
 
+        public static string Title
+        {
+            get { throw new PlatformNotSupportedException(); }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                    return;
+
+                string titleFormat = TerminalBasicInfo.Instance.TitleFormat;
+                if (!string.IsNullOrEmpty(titleFormat))
+                {
+                    string ansiStr = TermInfo.ParameterizedStrings.Evaluate(titleFormat, value);
+                    WriteStdoutAnsiString(ansiStr);
+                }
+            }
+        }
+
         public static int WindowWidth
         {
             get
@@ -490,6 +507,8 @@ namespace System
             public string CursorVisibleFormat;
             /// <summary>The format string to use to make cursor invisible</summary>
             public string CursorInvisibleFormat;
+            /// <summary>The format string to use to set the window title.</summary>
+            public string TitleFormat;
 
             /// <summary>The cached instance.</summary>
             public static TerminalBasicInfo Instance { get { return _instance.Value; } }
@@ -499,6 +518,38 @@ namespace System
                 ColumnFormat = db != null ? db.GetNumber(TermInfo.Database.ColumnIndex) : 0;
                 CursorVisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorVisibleIndex) : string.Empty;
                 CursorInvisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorInvisibleIndex) : string.Empty;
+                TitleFormat = GetTitleFormat(db.Term);
+            }
+
+            private static string GetTitleFormat(string term)
+            {
+                // Technically the terminfo tsl/fsl strings are supposed to be used for setting window title,
+                // but they're not set in any terminfo files we use. As such, we hardcode known values here.
+                if (term != null)
+                {
+                    if (term.StartsWith("xterm")) // normalize all xterms to enable easier matching
+                    {
+                        term = "xterm";
+                    }
+
+                    switch (term)
+                    {
+                        case "aixterm":
+                        case "dtterm":
+                        case "linux":
+                        case "rxvt":
+                        case "xterm":
+                            return "\x1B]0;%p1%s\u0007";
+                        case "cygwin":
+                            return "\x1B];%p1%s\u0007";
+                        case "konsole":
+                            return "\x1B]30;%p1%s\u0007";
+                        case "screen":
+                            return "\x1Bk%p1%s\x1B";
+                    }
+                }
+
+                return string.Empty;
             }
 
             /// <summary>Lazy initialization of the terminal basic information.</summary>
@@ -757,6 +808,8 @@ namespace System
             {
                 /// <summary>Lazily-initialized instance of the database.</summary>
                 private static readonly Lazy<Database> _instance = new Lazy<Database>(() => ReadDatabase(), isThreadSafe: true);
+                /// <summary>The name of the terminfo file.</summary>
+                private readonly string _term;
                 /// <summary>Raw data of the database instance.</summary>
                 private readonly byte[] _data;
                 /// <summary>The number of bytes in the names section of the database.</summary>
@@ -770,9 +823,11 @@ namespace System
                 //private readonly int _stringTableNumBytes; // number of bytes in the strings table; this is in the header, but we don't actually use it
 
                 /// <summary>Initializes the database instance.</summary>
+                /// <param name="term">The name of the terminal.</param>
                 /// <param name="data">The data from the terminfo file.</param>
-                private Database(byte[] data)
+                private Database(string term, byte[] data)
                 {
+                    _term = term;
                     _data = data;
 
                     // See "man term" for the file format.
@@ -790,6 +845,9 @@ namespace System
 
                 /// <summary>Gets the cached instance of the database.</summary>
                 public static Database Instance { get { return _instance.Value; } }
+
+                /// <summary>The name of the associated terminfo, if any.</summary>
+                public string Term { get { return _term; } }
 
                 /// <summary>Read the database for the current terminal as specified by the "TERM" environment variable.</summary>
                 /// <returns>The database, or null if it could not be found.</returns>
@@ -904,7 +962,7 @@ namespace System
                         }
 
                         // Create the database from the data
-                        return new Database(data);
+                        return new Database(term, data);
                     }
                     finally
                     {

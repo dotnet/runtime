@@ -40,4 +40,12 @@ public class WindowAndCursorProps
         Helpers.RunInRedirectedOutput((data) => { Console.CursorVisible = false; Assert.Equal(0, data.ToArray().Length); });
         Helpers.RunInRedirectedOutput((data) => { Console.CursorVisible = true; Assert.Equal(0, data.ToArray().Length); });
     }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public static void Title_GetSet_Unix()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.Title);
+        Console.Title = "Title set by unit test";
+    }
 }
