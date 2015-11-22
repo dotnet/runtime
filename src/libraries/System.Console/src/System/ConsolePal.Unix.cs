@@ -375,7 +375,7 @@ namespace System
 
             // We haven't yet computed a format string.  Compute it, use it, then cache it.
             string formatString = foreground ? TerminalColorInfo.Instance.ForegroundFormat : TerminalColorInfo.Instance.BackgroundFormat;
-            if (formatString != null)
+            if (!string.IsNullOrEmpty(formatString))
             {
                 int maxColors = TerminalColorInfo.Instance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
@@ -397,7 +397,7 @@ namespace System
             if (!Console.IsOutputRedirected)
             {
                 string resetFormat = TerminalColorInfo.Instance.ResetFormat;
-                if (resetFormat != null)
+                if (!string.IsNullOrEmpty(resetFormat))
                 {
                     WriteStdoutAnsiString(resetFormat);
                 }
@@ -490,7 +490,7 @@ namespace System
             {
                 if (!s_enteredApplicationMode)
                 {
-                    if (keypadXmit != null)
+                    if (!string.IsNullOrEmpty(keypadXmit))
                     {
                         WriteStdoutAnsiString(keypadXmit);
                     }
