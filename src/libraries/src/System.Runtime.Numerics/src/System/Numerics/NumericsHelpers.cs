@@ -111,49 +111,26 @@ namespace System.Numerics
             return du.dbl;
         }
 
-
-
-        // Do an in-place twos complement of d and also return the result.
-        // "Dangerous" because it causes a mutation and needs to be used
-        // with care for immutable types
-        public static uint[] DangerousMakeTwosComplement(uint[] d)
+        // Do an in-place two's complement. "Dangerous" because it causes
+        // a mutation and needs to be used with care for immutable types.
+        public static void DangerousMakeTwosComplement(uint[] d)
         {
-            // first do complement and +1 as long as carry is needed
-            int i = 0;
-            uint v = 0;
-            for (; i < d.Length; i++)
+            if (d != null && d.Length > 0)
             {
-                v = ~d[i] + 1;
-                d[i] = v;
-                if (v != 0) { i++; break; }
-            }
-            if (v != 0)
-            {
+                d[0] = ~d[0] + 1;
+
+                int i = 1;
+                // first do complement and +1 as long as carry is needed
+                for (; d[i - 1] == 0 && i < d.Length; i++)
+                {
+                    d[i] = ~d[i] + 1;
+                }
                 // now ones complement is sufficient
                 for (; i < d.Length; i++)
                 {
                     d[i] = ~d[i];
                 }
             }
-            else
-            {
-                //??? this is weird
-                d = resize(d, d.Length + 1);
-                d[d.Length - 1] = 1;
-            }
-            return d;
-        }
-
-        public static uint[] resize(uint[] v, int len)
-        {
-            if (v.Length == len) return v;
-            uint[] ret = new uint[len];
-            int n = System.Math.Min(v.Length, len);
-            for (int i = 0; i < n; i++)
-            {
-                ret[i] = v[i];
-            }
-            return ret;
         }
 
         public static ulong MakeUlong(uint uHi, uint uLo)
