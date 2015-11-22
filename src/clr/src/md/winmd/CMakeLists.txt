@@ -1,5 +1,3 @@
-add_definitions(-DNO_CRT)
-
 set(MDWINMD_SOURCES
   adapter.cpp
   winmdimport.cpp

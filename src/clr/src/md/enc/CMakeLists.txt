@@ -1,5 +1,3 @@
-add_definitions(-DNO_CRT)
-
 set(MDRUNTIMERW_SOURCES
   liteweightstgdbrw.cpp
   metamodelenc.cpp
