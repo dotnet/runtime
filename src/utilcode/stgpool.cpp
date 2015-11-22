@@ -361,32 +361,6 @@ bool StgPool::Grow(         // true if successful.
         return true;
     }
 
-#ifndef NO_CRT
-    // Give back any memory that we won't use.
-    if (m_pNextSeg == 0)
-    {   // First segment allocated as [header]->[data].
-        // Be sure that we are contracting the allocation.
-        if (m_pCurSeg->m_cbSegNext < (_msize(m_pCurSeg->m_pSegData) - 4))
-        {
-            // Contract the allocation.
-            void *pRealloc = _expand(m_pCurSeg->m_pSegData, m_pCurSeg->m_cbSegNext+4);
-            // Shouldn't have moved.
-            _ASSERTE(pRealloc == m_pCurSeg->m_pSegData);
-        }
-    }
-    else
-    {   // Chained segments are allocated together, [header][data].
-        // Be sure that we are contracting the allocation.
-        if (m_pCurSeg->m_cbSegNext+sizeof(StgPoolSeg) < (_msize(m_pCurSeg) - 4))
-        {
-            // Contract the allocation.
-            void *pRealloc = _expand(m_pCurSeg, m_pCurSeg->m_cbSegNext + sizeof(StgPoolSeg) + 4);
-            // Shouldn't have moved.
-            _ASSERTE(pRealloc == m_pCurSeg);
-        }
-    }
-#endif
-
     // Fix the size of the old segment.
     m_pCurSeg->m_cbSegSize = m_pCurSeg->m_cbSegNext;
 

@@ -21,7 +21,7 @@
             $(UserIncludes);
             $(ClrSrcDirectory)\MD\inc;
         </UserIncludes>
-        <ClAdditionalOptions>$(ClAdditionalOptions) -DUNICODE -D_UNICODE -DNO_CRT</ClAdditionalOptions>
+        <ClAdditionalOptions>$(ClAdditionalOptions) -DUNICODE -D_UNICODE</ClAdditionalOptions>
         <!--OK to delete NO_NTDLL for devdiv builds.-->
         <OutputPath>$(ClrLibDest)</OutputPath>
         <TargetType>LIBRARY</TargetType>

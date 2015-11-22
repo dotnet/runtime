@@ -1,5 +1,3 @@
-add_definitions(-DNO_CRT)
-
 set(MDCOMPILER_SOURCES
   assemblymd.cpp
   assemblymd_emit.cpp
