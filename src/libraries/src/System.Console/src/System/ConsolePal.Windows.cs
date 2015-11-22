@@ -436,6 +436,11 @@ namespace System
             // TODO: Implement this
         }
 
+        public static void SetCursorPosition(int left, int top)
+        {
+            // TODO: Implement this
+        }
+
         public static int WindowWidth
         {
             get

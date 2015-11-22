@@ -69,4 +69,14 @@ public class WindowAndCursorProps
         // Nothing to verify; just run the code.
         Console.Clear();
     }
+
+    [Fact]
+    public static void SetCursorPosition()
+    {
+        // Nothing to verify; just run the code.
+        Console.SetCursorPosition(0, 0);
+        Console.SetCursorPosition(1, 2);
+        Assert.Throws<ArgumentOutOfRangeException>("left", () => Console.SetCursorPosition(-1, 100));
+        Assert.Throws<ArgumentOutOfRangeException>("top", () => Console.SetCursorPosition(100, -1));
+    }
 }

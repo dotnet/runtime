@@ -198,6 +198,17 @@ namespace System
             ConsolePal.Clear();
         }
 
+        public static void SetCursorPosition(int left, int top)
+        {
+            // Basic argument validation.  The PAL implementation may provide further validation.
+            if (left < 0 || left >= short.MaxValue)
+                throw new ArgumentOutOfRangeException("left", left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            if (top < 0 || top >= short.MaxValue)
+                throw new ArgumentOutOfRangeException("top", top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+
+            ConsolePal.SetCursorPosition(left, top);
+        }
+
         public static event ConsoleCancelEventHandler CancelKeyPress
         {
             add
