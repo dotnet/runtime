@@ -197,14 +197,32 @@ namespace System
         {
             get
             {
-                int cols = Interop.Sys.GetWindowWidth();
-                return (cols != -1) ? cols : TerminalBasicInfo.Instance.ColumnFormat;
+                Interop.Sys.WinSize winsize;
+                return Interop.Sys.GetWindowSize(out winsize) == 0 ?
+                    winsize.Col :
+                    TerminalBasicInfo.Instance.ColumnFormat;
             }
             set
             {
                 throw new PlatformNotSupportedException();
             }
         }
+
+        public static int WindowHeight
+        {
+            get
+            {
+                Interop.Sys.WinSize winsize;
+                return Interop.Sys.GetWindowSize(out winsize) == 0 ?
+                    winsize.Row :
+                    TerminalBasicInfo.Instance.LinesFormat;
+            }
+            set
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
         public static bool CursorVisible
         {
             get
@@ -540,8 +558,10 @@ namespace System
 
         private struct TerminalBasicInfo
         {
-            /// <summary>The no. of columns in a format</summary>
+            /// <summary>The no. of columns in a format.</summary>
             public int ColumnFormat;
+            /// <summary>The no. of lines in a format.</summary>
+            public int LinesFormat;
             /// <summary>The format string to use to make cursor visible.</summary>
             public string CursorVisibleFormat;
             /// <summary>The format string to use to make cursor invisible</summary>
@@ -563,6 +583,7 @@ namespace System
                 BellFormat = db != null ? db.GetString(TermInfo.Database.BellIndex) : string.Empty;
                 ClearFormat = db != null ? db.GetString(TermInfo.Database.ClearIndex) : string.Empty;
                 ColumnFormat = db != null ? db.GetNumber(TermInfo.Database.ColumnIndex) : 0;
+                LinesFormat = db != null ? db.GetNumber(TermInfo.Database.LinesIndex) : 0;
                 CursorVisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorVisibleIndex) : string.Empty;
                 CursorInvisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorInvisibleIndex) : string.Empty;
                 CursorAddressFormat = db != null ? db.GetString(TermInfo.Database.CursorAddressIndex) : string.Empty;
@@ -1132,6 +1153,8 @@ namespace System
 
                 /// <summary>The well-known index of the columns numeric entry.</summary>
                 public const int ColumnIndex = 0;
+                /// <summary>The well-known index of the lines numeric entry.</summary>
+                public const int LinesIndex = 2;
                 /// <summary>The well-known index of the cursor_invisible string entry.</summary>
                 public const int CursorInvisibleIndex = 13;
                 /// <summary>The well-known index of the cursor_normal string entry.</summary>
