@@ -216,4 +216,7 @@
   <data name="ArgumentOutOfRange_ConsoleTitleTooLong" xml:space="preserve">
     <value>The console title is too long.</value>
   </data>
+  <data name="ArgumentOutOfRange_BeepFrequency" xml:space="preserve">
+    <value>Console.Beep's frequency must be between {0} and {1}, inclusive.</value>
+  </data>
 </root>

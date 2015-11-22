@@ -48,4 +48,18 @@ public class WindowAndCursorProps
         Assert.Throws<PlatformNotSupportedException>(() => Console.Title);
         Console.Title = "Title set by unit test";
     }
+
+    [Fact]
+    public static void Beep()
+    {
+        // Nothing to verify; just run the code.
+        Console.Beep();
+        Console.Beep(100, 100);
+
+        Assert.Throws<ArgumentOutOfRangeException>("frequency", () => Console.Beep(36, 100));
+        Assert.Throws<ArgumentOutOfRangeException>("frequency", () => Console.Beep((int)short.MaxValue + 1, 100));
+
+        Assert.Throws<ArgumentOutOfRangeException>("duration", () => Console.Beep(100, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("duration", () => Console.Beep(100, -1));
+    }
 }

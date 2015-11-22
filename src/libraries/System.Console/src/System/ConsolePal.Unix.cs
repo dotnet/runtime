@@ -154,6 +154,20 @@ namespace System
             }
         }
 
+        public static void Beep(int frequency, int duration)
+        {
+            if (Console.IsOutputRedirected)
+                return;
+
+            // frequency and duration currently ignored
+
+            string bellFormat = TerminalBasicInfo.Instance.BellFormat;
+            if (!string.IsNullOrEmpty(bellFormat))
+            {
+                WriteStdoutAnsiString(bellFormat);
+            }
+        }
+
         public static int WindowWidth
         {
             get
@@ -509,12 +523,15 @@ namespace System
             public string CursorInvisibleFormat;
             /// <summary>The format string to use to set the window title.</summary>
             public string TitleFormat;
+            /// <summary>The format string to use for an audible bell.</summary>
+            public string BellFormat;
 
             /// <summary>The cached instance.</summary>
             public static TerminalBasicInfo Instance { get { return _instance.Value; } }
 
             private TerminalBasicInfo(TermInfo.Database db)
             {
+                BellFormat = db != null ? db.GetString(TermInfo.Database.BellIndex) : string.Empty;
                 ColumnFormat = db != null ? db.GetNumber(TermInfo.Database.ColumnIndex) : 0;
                 CursorVisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorVisibleIndex) : string.Empty;
                 CursorInvisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorInvisibleIndex) : string.Empty;
@@ -1036,6 +1053,9 @@ namespace System
 
                     return ReadInt16(_data, NumbersOffset + (numberIndex * 2));
                 }
+
+                /// <summary>The well-known index of the audible bell entry.</summary>
+                public const int BellIndex = 1;
 
                 /// <summary>The well-known index of the max_colors numbers entry.</summary>
                 public const int MaxColorsIndex = 13;

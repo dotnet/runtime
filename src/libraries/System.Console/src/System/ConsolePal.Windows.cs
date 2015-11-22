@@ -426,6 +426,11 @@ namespace System
             set { throw new NotImplementedException(); }
         }
 
+        public static void Beep(int frequency, int duration)
+        {
+            // TODO: Implement this
+        }
+
         public static int WindowWidth
         {
             get
