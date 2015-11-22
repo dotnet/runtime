@@ -93,7 +93,7 @@ We use and recommend the following workflow:
   - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue. 
   - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
 4. Make and commit your changes.
-  - Please following our commit messages guidance, below.
+  - Please follow our [Commit Messages](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing-workflow.md#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
 6. Build the repository with your changes.
   - Make sure that the builds are clean.
