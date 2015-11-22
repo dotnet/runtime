@@ -32,13 +32,13 @@ namespace System.IO
         }
 
         /// <summary> Checks whether the unprocessed buffer is empty. </summary>
-        bool IsExtraBufferEmpty()
+        internal bool IsExtraBufferEmpty()
         {
             return _startIndex > _endIndex; // Everything has been processed;
         }
 
         /// <summary> Reads the buffer in the raw mode. </summary>
-        unsafe void ReadExtraBuffer()
+        private unsafe void ReadExtraBuffer()
         {
             Debug.Assert(IsExtraBufferEmpty());
 
@@ -56,12 +56,13 @@ namespace System.IO
             }
         }
 
+        private static string s_moveLeftString;
+
         public override string ReadLine()
         {
             string readLineStr;
 
-            //Check if there is anything left in the _unprocessedBufferToBeRead.
-            while (!IsExtraBufferEmpty())
+            while (true)
             {
                 ConsoleKeyInfo keyInfo = ReadKey();
 
@@ -69,34 +70,52 @@ namespace System.IO
                 {
                     readLineStr = _readLineSB.ToString();
                     _readLineSB.Clear();
+                    Console.WriteLine();
                     return readLineStr;
                 }
-
                 else if (keyInfo.Key == ConsoleKey.Backspace)
                 {
                     int len = _readLineSB.Length;
                     if (len > 0)
                     {
                         _readLineSB.Length = len - 1;
+
+                        if (s_moveLeftString == null)
+                        {
+                            string moveLeft = ConsolePal.TerminalBasicInfo.Instance.CursorLeftFormat;
+                            s_moveLeftString = moveLeft != null ? moveLeft + " " + moveLeft : string.Empty;
+                        }
+                        Console.Write(s_moveLeftString);
                     }
+                }
+                else if (keyInfo.Key == ConsoleKey.Tab)
+                {
+                    _readLineSB.Append(keyInfo.KeyChar);
+                    Console.Write(' ');
+                }
+                else if (keyInfo.Key == ConsoleKey.Clear)
+                {
+                    _readLineSB.Clear();
+                    Console.Clear();
                 }
                 else
                 {
                     _readLineSB.Append(keyInfo.KeyChar);
+                    Console.Write(keyInfo.KeyChar);
                 }
             }
-
-            readLineStr = _readLineSB.Append(base.ReadLine()).ToString();
-            _readLineSB.Clear();
-
-            return readLineStr;
         }
 
 
         public override int Read()
         {
-            // Convert byte to char.
-            return IsExtraBufferEmpty() ? base.Read() : (int)_unprocessedBufferToBeRead[_startIndex++];
+            if (IsExtraBufferEmpty())
+            {
+                ReadExtraBuffer();
+            }
+
+            Debug.Assert(!IsExtraBufferEmpty());
+            return _unprocessedBufferToBeRead[_startIndex++];
         }
 
         internal ConsoleKey GetKeyFromCharValue(char x, out bool isShift, out bool isCtrl)
@@ -239,5 +258,8 @@ namespace System.IO
             MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl);
             return new ConsoleKeyInfo(ch, key, isShift, isAlt, isCtrl);
         }
+
+        /// <summary>Gets whether there's input waiting on stdin.</summary>
+        internal bool StdinReady { get { return Interop.Sys.StdinReady(); } }
     }
 }

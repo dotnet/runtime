@@ -32,6 +32,16 @@ extern "C" int32_t GetWindowSize(WinSize* windowsSize);
 extern "C" int32_t IsATty(int filedes);
 
 /**
+ * Initializes the console for use by System.Console.
+ */
+extern "C" void InitializeConsole();
+
+/**
+ * Returns 1 if any input is waiting on stdin; otherwise, 0.
+ */
+extern "C" int32_t StdinReady();
+
+/**
  * Reads the number of bytes specified into the provided buffer from stdin.
  * in a non-echo and non-canonical mode.
  * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.

@@ -60,7 +60,7 @@ namespace System
         {
             get
             {
-                EnsureApplicationMode();
+                EnsureInitialized();
 
                 return Volatile.Read(ref s_stdInReader) ??
                     Console.EnsureInitialized(
@@ -95,6 +95,8 @@ namespace System
                 return StdInReader;
             }
         }
+
+        public static bool KeyAvailable { get { return StdInReader.KeyAvailable; } }
 
         public static ConsoleKeyInfo ReadKey(bool intercept)
         {
@@ -481,38 +483,38 @@ namespace System
         }
 
         /// <summary>Whether keypad_xmit has already been written out to the terminal.</summary>
-        private static volatile bool s_enteredApplicationMode;
+        private static volatile bool s_initialized;
 
-        /// <summary>
-        /// Ensures that keypad_xmit has been written out to the terminal.  This needs to be done
-        /// before interpreting any terminfo strings, as the mode can impact what strings are sent
-        /// by the terminal for keyboard input.
-        /// </summary>
-        private static void EnsureApplicationMode()
+        /// <summary>Ensures that the console has been initialized for reading.</summary>
+        private static void EnsureInitialized()
         {
-            if (!s_enteredApplicationMode)
+            if (!s_initialized)
             {
-                EnsureApplicationModeCore(); // factored out for inlinability
+                EnsureInitializedCore(); // factored out for inlinability
             }
         }
 
-        /// <summary>
-        /// Ensures that keypad_xmit has been written out to the terminal.  This needs to be done
-        /// before interpreting any terminfo strings, as the mode can impact what strings are sent
-        /// by the terminal for keyboard input.
-        /// </summary>
-        private static void EnsureApplicationModeCore()
+        /// <summary>Ensures that the console has been initialized for reading.</summary>
+        private static void EnsureInitializedCore()
         {
-            string keypadXmit = TerminalKeyInfo.Instance.KeypadXmit;
             lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
             {
-                if (!s_enteredApplicationMode)
+                if (!s_initialized)
                 {
-                    if (!string.IsNullOrEmpty(keypadXmit))
+                    // Ensure the console is configured appropriately
+                    Interop.Sys.InitializeConsole();
+
+                    // Make sure it's in application mode
+                    if (!Console.IsOutputRedirected)
                     {
-                        WriteStdoutAnsiString(keypadXmit);
+                        string keypadXmit = TerminalKeyInfo.Instance.KeypadXmit;
+                        if (!string.IsNullOrEmpty(keypadXmit))
+                        {
+                            WriteStdoutAnsiString(keypadXmit);
+                        }
                     }
-                    s_enteredApplicationMode = true;
+
+                    s_initialized = true;
                 }
             }
         }
@@ -556,7 +558,7 @@ namespace System
             }, isThreadSafe: true);
         }
 
-        private struct TerminalBasicInfo
+        internal struct TerminalBasicInfo
         {
             /// <summary>The no. of columns in a format.</summary>
             public int ColumnFormat;
@@ -574,6 +576,8 @@ namespace System
             public string ClearFormat;
             /// <summary>The format string to use to set the position of the cursor.</summary>
             public string CursorAddressFormat;
+            /// <summary>The format string to use to move the cursor to the left.</summary>
+            public string CursorLeftFormat;
 
             /// <summary>The cached instance.</summary>
             public static TerminalBasicInfo Instance { get { return _instance.Value; } }
@@ -587,7 +591,8 @@ namespace System
                 CursorVisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorVisibleIndex) : string.Empty;
                 CursorInvisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorInvisibleIndex) : string.Empty;
                 CursorAddressFormat = db != null ? db.GetString(TermInfo.Database.CursorAddressIndex) : string.Empty;
-                TitleFormat = GetTitleFormat(db.Term);
+                CursorLeftFormat = db != null ? db.GetString(TermInfo.Database.CursorLeftIndex) : string.Empty;
+                TitleFormat = GetTitleFormat(db != null ? db.Term : null);
             }
 
             private static string GetTitleFormat(string term)
@@ -655,9 +660,12 @@ namespace System
             {
                 KeyFormatToConsoleKey = new Dictionary<string, ConsoleKey>();
                 MaxKeyLength = MinKeyLength = 0;
-                KeypadXmit = db.GetString(TermInfo.Database.KeypadXmit);
+                KeypadXmit = string.Empty;
+
                 if (db != null)
                 {
+                    KeypadXmit = db.GetString(TermInfo.Database.KeypadXmit);
+
                     AddKey(db, TermInfo.Database.KeyF1, ConsoleKey.F1);
                     AddKey(db, TermInfo.Database.KeyF2, ConsoleKey.F2);
                     AddKey(db, TermInfo.Database.KeyF3, ConsoleKey.F3);
@@ -1139,6 +1147,8 @@ namespace System
                 public const int ClearIndex = 5;
                 /// <summary>The well-known index of the cursor address entry.</summary>
                 public const int CursorAddressIndex = 10;
+                /// <summary>The well-known index of the cursor left entry.</summary>
+                public const int CursorLeftIndex = 14;
 
                 /// <summary>The well-known index of the max_colors numbers entry.</summary>
                 public const int MaxColorsIndex = 13;
