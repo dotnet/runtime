@@ -2,14 +2,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using Xunit;
 
 public class WindowAndCursorProps
 {
+    [Fact]
+    public static void WindowWidth_WindowHeight_InvalidSize()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => Console.WindowWidth = 0);
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => Console.WindowHeight = 0);
+    }
+
     [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
     public static void WindowWidth()
@@ -19,6 +22,17 @@ public class WindowAndCursorProps
         // Validate that Console.WindowWidth returns some value in a non-redirected o/p.
         Helpers.RunInNonRedirectedOutput((data) => Console.WriteLine(Console.WindowWidth));
         Helpers.RunInRedirectedOutput((data) => Console.WriteLine(Console.WindowWidth));
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public static void WindowHeight()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowHeight = 100);
+
+        // Validate that Console.WindowHeight returns some value in a non-redirected o/p.
+        Helpers.RunInNonRedirectedOutput((data) => Console.WriteLine(Console.WindowHeight));
+        Helpers.RunInRedirectedOutput((data) => Console.WriteLine(Console.WindowHeight));
     }
 
     //[Fact] //CI system makes it difficult to run things in a non-redirected environments.

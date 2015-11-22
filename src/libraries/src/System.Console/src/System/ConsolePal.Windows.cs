@@ -454,7 +454,7 @@ namespace System
             }
         }
 
-        private static int WindowHeight
+        public static int WindowHeight
         {
             get
             {

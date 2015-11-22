@@ -134,7 +134,27 @@ namespace System
             }
             set
             {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_NeedPosNum);
+                }
                 ConsolePal.WindowWidth = value;
+            }
+        }
+
+        public static int WindowHeight
+        {
+            get
+            {
+                return ConsolePal.WindowHeight;
+            }
+            set
+            {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_NeedPosNum);
+                }
+                ConsolePal.WindowHeight = value;
             }
         }
 
