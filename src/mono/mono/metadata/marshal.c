@@ -6123,17 +6123,19 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 				break;
 			}
 
-			mono_mb_emit_ldarg (mb, argnum);
+			if (t->byref ) {
+				mono_mb_emit_ldarg (mb, argnum);
 
-			/* Create the managed array */
-			mono_mb_emit_ldarg (mb, param_num);
-			if (m->sig->params [param_num]->byref)
-				// FIXME: Support other types
-				mono_mb_emit_byte (mb, CEE_LDIND_I4);
-			mono_mb_emit_byte (mb, CEE_CONV_OVF_I);
-			mono_mb_emit_op (mb, CEE_NEWARR, klass->element_class);
-			/* Store into argument */
-			mono_mb_emit_byte (mb, CEE_STIND_I);
+				/* Create the managed array */
+				mono_mb_emit_ldarg (mb, param_num);
+				if (m->sig->params [param_num]->byref)
+					// FIXME: Support other types
+					mono_mb_emit_byte (mb, CEE_LDIND_I4);
+				mono_mb_emit_byte (mb, CEE_CONV_OVF_I);
+				mono_mb_emit_op (mb, CEE_NEWARR, klass->element_class);
+				/* Store into argument */
+				mono_mb_emit_byte (mb, CEE_STIND_I);
+			}
 		}
 
 		if (need_convert || need_free) {

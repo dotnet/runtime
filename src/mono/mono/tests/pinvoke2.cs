@@ -234,6 +234,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_byref_array_out_size_param")]
 	public static extern int mono_test_marshal_out_byref_array_out_size_param ([Out] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out int [] a1, out int n);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_lparray_out_size_param")]
+	public static extern int mono_test_marshal_out_lparray_out_size_param ([Out] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] int [] a1, out int n);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_nonblittable_array", CharSet = CharSet.Unicode)]
 	public static extern int mono_test_marshal_inout_nonblittable_array ([In, Out] char [] a1);
 	
@@ -426,6 +429,22 @@ public class Tests {
 		int len;
 
 		int res = mono_test_marshal_out_byref_array_out_size_param (out a1, out len);
+		if (len != 4)
+			return 1;
+		for (int i = 0; i < len; i++)
+			if (a1 [i] != i)
+				return 2;
+		return 0;
+	}
+
+	public static int test_0_marshal_out_lparray_out_size_param () {
+		int [] a1 = null;
+		int len;
+
+		a1 = new int [10];
+		int res = mono_test_marshal_out_lparray_out_size_param (a1, out len);
+		// Check that a1 was not overwritten
+		a1.GetHashCode ();
 		if (len != 4)
 			return 1;
 		for (int i = 0; i < len; i++)

@@ -524,6 +524,19 @@ mono_test_marshal_out_byref_array_out_size_param (int **out_arr, int *out_len)
 	return 0;
 }
 
+LIBTEST_API int STDCALL
+mono_test_marshal_out_lparray_out_size_param (int *arr, int *out_len)
+{
+	int i, len;
+
+	len = 4;
+	for (i = 0; i < len; ++i)
+		arr [i] = i;
+	*out_len = len;
+
+	return 0;
+}
+
 LIBTEST_API int STDCALL  
 mono_test_marshal_inout_nonblittable_array (gunichar2 *a1)
 {
