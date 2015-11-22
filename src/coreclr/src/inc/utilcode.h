@@ -3370,15 +3370,6 @@ inline ULONG HashiStringNKnownLower80(LPCWSTR szStr, DWORD count) {
     return hash;
 }
 
-// // //
-// // //  See $\src\utilcode\Debug.cpp for "Binomial (K, M, N)", which
-// // //  computes the binomial distribution, with which to compare your
-// // //  hash-table statistics.
-// // //
-
-
-
-
 //*****************************************************************************
 // IMPORTANT: This data structure is deprecated, please do not add any new uses.
 // The hashtable implementation that should be used instead is code:SHash.
