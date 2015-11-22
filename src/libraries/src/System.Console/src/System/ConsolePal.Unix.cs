@@ -703,7 +703,7 @@ namespace System
                 int result;
                 while (Interop.CheckIo(result = Interop.Sys.Read(fd, (byte*)bufPtr + offset, count))) ;
                 Debug.Assert(result <= count);
-                return (int)result;
+                return result;
             }
         }
 
@@ -716,33 +716,38 @@ namespace System
         {
             fixed (byte* bufPtr = buffer)
             {
-                while (count > 0)
-                {
-                    int bytesWritten = Interop.Sys.Write(fd, bufPtr + offset, count);
-                    if (bytesWritten < 0)
-                    {
-                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                        if (errorInfo.Error == Interop.Error.EINTR)
-                        {
-                            // Interrupted... try again.
-                            continue;
-                        }
-                        else if (errorInfo.Error == Interop.Error.EPIPE)
-                        {
-                            // Broken pipe... likely due to being redirected to a program
-                            // that ended, so simply pretend we were successful.
-                            return;
-                        }
-                        else
-                        {
-                            // Something else... fail.
-                            throw Interop.GetExceptionForIoErrno(errorInfo);
-                        }
-                    }
+                Write(fd, bufPtr + offset, count);
+            }
+        }
 
-                    count -= bytesWritten;
-                    offset += bytesWritten;
+        private static unsafe void Write(int fd, byte* bufPtr, int count)
+        {
+            while (count > 0)
+            {
+                int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
+                if (bytesWritten < 0)
+                {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    if (errorInfo.Error == Interop.Error.EINTR)
+                    {
+                        // Interrupted... try again.
+                        continue;
+                    }
+                    else if (errorInfo.Error == Interop.Error.EPIPE)
+                    {
+                        // Broken pipe... likely due to being redirected to a program
+                        // that ended, so simply pretend we were successful.
+                        return;
+                    }
+                    else
+                    {
+                        // Something else... fail.
+                        throw Interop.GetExceptionForIoErrno(errorInfo);
+                    }
                 }
+
+                count -= bytesWritten;
+                bufPtr += bytesWritten;
             }
         }
 
@@ -750,10 +755,32 @@ namespace System
         /// <param name="value">The string to write.</param>
         private static unsafe void WriteStdoutAnsiString(string value)
         {
-            byte[] data = Encoding.UTF8.GetBytes(value);
-            lock (Console.Out) // synchronize with other writers
+            Debug.Assert(value != null);
+
+            // Except for extremely rare cases, ANSI escape strings should be very short.
+            const int StackAllocThreshold = 256;
+            if (value.Length <= StackAllocThreshold)
             {
-                Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, 0, data.Length);
+                int dataLen = Encoding.UTF8.GetMaxByteCount(value.Length);
+                byte* data = stackalloc byte[dataLen];
+                fixed (char* chars = value)
+                {
+                    int bytesToWrite = Encoding.UTF8.GetBytes(chars, value.Length, data, dataLen);
+                    Debug.Assert(bytesToWrite <= dataLen);
+
+                    lock (Console.Out) // synchronize with other writers
+                    {
+                        Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, bytesToWrite);
+                    }
+                }
+            }
+            else
+            {
+                byte[] data = Encoding.UTF8.GetBytes(value);
+                lock (Console.Out) // synchronize with other writers
+                {
+                    Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, 0, data.Length);
+                }
             }
         }
 
@@ -1229,7 +1256,51 @@ namespace System
             {
                 /// <summary>A cached stack to use to avoid allocating a new stack object for every evaluation.</summary>
                 [ThreadStatic]
-                private static LowLevelStack<FormatParam> _cachedStack;
+                private static LowLevelStack<FormatParam> t_cachedStack;
+
+                /// <summary>A cached array of arguments to use to avoid allocating a new array object for every evaluation.</summary>
+                [ThreadStatic]
+                private static FormatParam[] t_cachedOneElementArgsArray;
+
+                /// <summary>A cached array of arguments to use to avoid allocating a new array object for every evaluation.</summary>
+                [ThreadStatic]
+                private static FormatParam[] t_cachedTwoElementArgsArray;
+
+                /// <summary>Evaluates a terminfo formatting string, using the supplied argument.</summary>
+                /// <param name="format">The format string.</param>
+                /// <param name="arg">The argument to the format string.</param>
+                /// <returns>The formatted string.</returns>
+                public static string Evaluate(string format, FormatParam arg)
+                {
+                    FormatParam[] args = t_cachedOneElementArgsArray;
+                    if (args == null)
+                    {
+                        t_cachedOneElementArgsArray = args = new FormatParam[1]; 
+                    }
+
+                    args[0] = arg;
+
+                    return Evaluate(format, args);
+                }
+
+                /// <summary>Evaluates a terminfo formatting string, using the supplied arguments.</summary>
+                /// <param name="format">The format string.</param>
+                /// <param name="arg1">The first argument to the format string.</param>
+                /// <param name="arg2">The second argument to the format string.</param>
+                /// <returns>The formatted string.</returns>
+                public static string Evaluate(string format, FormatParam arg1, FormatParam arg2)
+                {
+                    FormatParam[] args = t_cachedTwoElementArgsArray;
+                    if (args == null)
+                    {
+                        t_cachedTwoElementArgsArray = args = new FormatParam[2];
+                    }
+
+                    args[0] = arg1;
+                    args[1] = arg2;
+
+                    return Evaluate(format, args);
+                }
 
                 /// <summary>Evaluates a terminfo formatting string, using the supplied arguments.</summary>
                 /// <param name="format">The format string.</param>
@@ -1247,10 +1318,10 @@ namespace System
                     }
 
                     // Initialize the stack to use for processing.
-                    LowLevelStack<FormatParam> stack = _cachedStack;
+                    LowLevelStack<FormatParam> stack = t_cachedStack;
                     if (stack == null)
                     {
-                        _cachedStack = stack = new LowLevelStack<FormatParam>();
+                        t_cachedStack = stack = new LowLevelStack<FormatParam>();
                     }
                     else
                     {

@@ -2,11 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text;
 using Xunit;
 
 public class TermInfo
@@ -241,7 +240,8 @@ public class TermInfo
     private string EvaluateParameterizedStrings(string format, params object[] parameters)
     {
         Type formatArrayType = typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TermInfo+ParameterizedStrings+FormatParam").MakeArrayType();
-        MethodInfo mi = typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TermInfo+ParameterizedStrings").GetTypeInfo().GetDeclaredMethod("Evaluate");
+        MethodInfo mi = typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TermInfo+ParameterizedStrings").GetTypeInfo()
+            .GetDeclaredMethods("Evaluate").First(m => m.GetParameters()[1].ParameterType.IsArray);
 
         // Create individual FormatParams
         object[] stringParams = new object[parameters.Length];
