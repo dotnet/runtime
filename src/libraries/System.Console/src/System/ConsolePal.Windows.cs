@@ -431,6 +431,11 @@ namespace System
             // TODO: Implement this
         }
 
+        public static void Clear()
+        {
+            // TODO: Implement this
+        }
+
         public static int WindowWidth
         {
             get

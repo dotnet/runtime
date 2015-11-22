@@ -62,4 +62,11 @@ public class WindowAndCursorProps
         Assert.Throws<ArgumentOutOfRangeException>("duration", () => Console.Beep(100, 0));
         Assert.Throws<ArgumentOutOfRangeException>("duration", () => Console.Beep(100, -1));
     }
+
+    [Fact]
+    public static void Clear()
+    {
+        // Nothing to verify; just run the code.
+        Console.Clear();
+    }
 }
