@@ -180,6 +180,19 @@ namespace System
             }
         }
 
+        public static void SetCursorPosition(int left, int top)
+        {
+            if (Console.IsOutputRedirected)
+                return;
+
+            string cursorAddressFormat = TerminalBasicInfo.Instance.CursorAddressFormat;
+            if (!string.IsNullOrEmpty(cursorAddressFormat))
+            {
+                string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
+                WriteStdoutAnsiString(ansiStr);
+            }
+        }
+
         public static int WindowWidth
         {
             get
@@ -539,6 +552,8 @@ namespace System
             public string BellFormat;
             /// <summary>The format string to use to clear the terminal.</summary>
             public string ClearFormat;
+            /// <summary>The format string to use to set the position of the cursor.</summary>
+            public string CursorAddressFormat;
 
             /// <summary>The cached instance.</summary>
             public static TerminalBasicInfo Instance { get { return _instance.Value; } }
@@ -550,6 +565,7 @@ namespace System
                 ColumnFormat = db != null ? db.GetNumber(TermInfo.Database.ColumnIndex) : 0;
                 CursorVisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorVisibleIndex) : string.Empty;
                 CursorInvisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorInvisibleIndex) : string.Empty;
+                CursorAddressFormat = db != null ? db.GetString(TermInfo.Database.CursorAddressIndex) : string.Empty;
                 TitleFormat = GetTitleFormat(db.Term);
             }
 
@@ -1073,6 +1089,8 @@ namespace System
                 public const int BellIndex = 1;
                 /// <summary>The well-known index of the clear screen entry.</summary>
                 public const int ClearIndex = 5;
+                /// <summary>The well-known index of the cursor address entry.</summary>
+                public const int CursorAddressIndex = 10;
 
                 /// <summary>The well-known index of the max_colors numbers entry.</summary>
                 public const int MaxColorsIndex = 13;

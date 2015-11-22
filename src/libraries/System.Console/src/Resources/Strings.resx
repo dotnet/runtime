@@ -219,4 +219,7 @@
   <data name="ArgumentOutOfRange_BeepFrequency" xml:space="preserve">
     <value>Console.Beep's frequency must be between {0} and {1}, inclusive.</value>
   </data>
+  <data name="ArgumentOutOfRange_ConsoleBufferBoundaries" xml:space="preserve">
+    <value>The value must be greater than or equal to zero and less than the console's buffer size in that dimension.</value>
+  </data>
 </root>
