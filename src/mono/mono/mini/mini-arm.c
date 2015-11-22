@@ -29,7 +29,7 @@
 #include "mini-gc.h"
 #include "mono/arch/arm/arm-vfp-codegen.h"
 
-#if defined(HAVE_KW_THREAD) && defined(__linux__) \
+#if (defined(HAVE_KW_THREAD) && defined(__linux__) && defined(__ARM_EABI__)) \
 	|| defined(TARGET_ANDROID) \
 	|| (defined(TARGET_IOS) && !defined(TARGET_WATCHOS))
 #define HAVE_FAST_TLS

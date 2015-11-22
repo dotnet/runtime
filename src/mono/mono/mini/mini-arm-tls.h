@@ -20,6 +20,9 @@ void mono_fast_set_tls_key_end (void);
 void mono_fast_get_tls_key2_end (void);
 void mono_fast_set_tls_key2_end (void);
 
+#if defined(__linux__) && defined(HAVE_KW_THREAD) && defined(__ARM_EABI__)
+void* __aeabi_read_tp (void);
+#endif
 
 /* Structure that maps a possible  tls implementation to the corresponding thunks */
 typedef struct {
@@ -34,8 +37,9 @@ typedef struct {
 
 
 static MonoTlsImplementation known_tls_implementations [] = {
-#if defined(HAVE_KW_THREAD) && defined(__linux__)
-	{ NULL, 0, TRUE, mono_fast_get_tls_key, mono_fast_get_tls_key_end, mono_fast_set_tls_key, mono_fast_set_tls_key_end }
+#if defined(HAVE_KW_THREAD) && defined(__linux__) && defined(__ARM_EABI__)
+	{ (guint32[]) {0x0f70ee1d, 0xbf004770}, 8, FALSE, mono_fast_get_tls_key, mono_fast_get_tls_key_end, mono_fast_set_tls_key, mono_fast_set_tls_key_end },
+	{ (guint32[]) {0xe3e00a0f, 0xe240f01f}, 8, TRUE, mono_fast_get_tls_key, mono_fast_get_tls_key_end, mono_fast_set_tls_key, mono_fast_set_tls_key_end }
 #elif defined(TARGET_IOS)
 	{ (guint32[]) {0x1f70ee1d, 0x0103f021, 0x0020f851, 0xbf004770}, 16, FALSE, mono_fast_get_tls_key, mono_fast_get_tls_key_end, mono_fast_set_tls_key, mono_fast_set_tls_key_end }
 #elif defined(TARGET_ANDROID)
@@ -86,12 +90,16 @@ static MonoTlsImplementation
 mono_arm_get_tls_implementation (void)
 {
 	/* Discard thumb bit */
-	guint32* pthread_getspecific_addr = (guint32*) ((guint32)pthread_getspecific & 0xfffffffe);
+#if defined(__linux__) && defined(HAVE_KW_THREAD) && defined(__ARM_EABI__)
+	guint32* check_addr = (guint32*) ((guint32)__aeabi_read_tp & 0xfffffffe);
+#else
+	guint32* check_addr = (guint32*) ((guint32)pthread_getspecific & 0xfffffffe);
+#endif
 	int i;
 
 	if (!mini_get_debug_options ()->arm_use_fallback_tls) {
 		for (i = 0; i < sizeof (known_tls_implementations) / sizeof (MonoTlsImplementation); i++) {
-			if (memcmp (pthread_getspecific_addr, known_tls_implementations [i].expected_code, known_tls_implementations [i].expected_code_length) == 0) {
+			if (memcmp (check_addr, known_tls_implementations [i].expected_code, known_tls_implementations [i].expected_code_length) == 0) {
 				if ((known_tls_implementations [i].check_kernel_helper && known_kernel_helper ()) ||
 						!known_tls_implementations [i].check_kernel_helper)
 					return known_tls_implementations [i];
@@ -100,7 +108,7 @@ mono_arm_get_tls_implementation (void)
 	}
 
 	g_warning ("No fast tls on device. Using fallbacks. Current implementation : ");
-	dump_code (pthread_getspecific_addr);
+	dump_code (check_addr);
 
 	return (MonoTlsImplementation) { NULL, 0, FALSE, mono_fallback_get_tls_key, NULL, mono_fallback_set_tls_key, NULL };
 }
