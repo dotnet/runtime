@@ -419,6 +419,13 @@ namespace System
             }
         }
 
+        public static string Title
+        {
+            // TODO: Implement this
+            get { throw new NotImplementedException(); }
+            set { throw new NotImplementedException(); }
+        }
+
         public static int WindowWidth
         {
             get

@@ -150,6 +150,27 @@ namespace System
             }
         }
 
+        private const int MaxConsoleTitleLength = 24500; // same value as in .NET Framework
+
+        public static string Title
+        {
+            get { return ConsolePal.Title; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException("value");
+                }
+
+                if (value.Length > MaxConsoleTitleLength)
+                {
+                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_ConsoleTitleTooLong);
+                }
+
+                ConsolePal.Title = value;
+            }
+        }
+
         public static event ConsoleCancelEventHandler CancelKeyPress
         {
             add
