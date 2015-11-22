@@ -193,6 +193,11 @@ namespace System
             ConsolePal.Beep(frequency, duration);
         }
 
+        public static void Clear()
+        {
+            ConsolePal.Clear();
+        }
+
         public static event ConsoleCancelEventHandler CancelKeyPress
         {
             add

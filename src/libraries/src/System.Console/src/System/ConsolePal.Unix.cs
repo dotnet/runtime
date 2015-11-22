@@ -168,6 +168,18 @@ namespace System
             }
         }
 
+        public static void Clear()
+        {
+            if (Console.IsOutputRedirected)
+                return;
+
+            string clearFormat = TerminalBasicInfo.Instance.ClearFormat;
+            if (!string.IsNullOrEmpty(clearFormat))
+            {
+                WriteStdoutAnsiString(clearFormat);
+            }
+        }
+
         public static int WindowWidth
         {
             get
@@ -525,6 +537,8 @@ namespace System
             public string TitleFormat;
             /// <summary>The format string to use for an audible bell.</summary>
             public string BellFormat;
+            /// <summary>The format string to use to clear the terminal.</summary>
+            public string ClearFormat;
 
             /// <summary>The cached instance.</summary>
             public static TerminalBasicInfo Instance { get { return _instance.Value; } }
@@ -532,6 +546,7 @@ namespace System
             private TerminalBasicInfo(TermInfo.Database db)
             {
                 BellFormat = db != null ? db.GetString(TermInfo.Database.BellIndex) : string.Empty;
+                ClearFormat = db != null ? db.GetString(TermInfo.Database.ClearIndex) : string.Empty;
                 ColumnFormat = db != null ? db.GetNumber(TermInfo.Database.ColumnIndex) : 0;
                 CursorVisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorVisibleIndex) : string.Empty;
                 CursorInvisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorInvisibleIndex) : string.Empty;
@@ -1056,6 +1071,8 @@ namespace System
 
                 /// <summary>The well-known index of the audible bell entry.</summary>
                 public const int BellIndex = 1;
+                /// <summary>The well-known index of the clear screen entry.</summary>
+                public const int ClearIndex = 5;
 
                 /// <summary>The well-known index of the max_colors numbers entry.</summary>
                 public const int MaxColorsIndex = 13;
