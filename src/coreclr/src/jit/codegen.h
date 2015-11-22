@@ -750,7 +750,12 @@ protected :
             struct
             {
                 regNumberSmall  scRegNum;
-                regNumberSmall  scOtherReg; // used for "other half" of long var
+                
+                // Used for:
+                //  - "other half" of long var on architectures with 32 bit size registers - x86.
+                //  - for System V structs it stores the second register 
+                //    used to pass a register passed struct.
+                regNumberSmall  scOtherReg;
             } u1;
 
             struct
@@ -776,6 +781,7 @@ protected :
 
     void                psiEndPrologScope(psiScope *        scope);
 
+    void                psSetScopeOffset(psiScope* newScope, LclVarDsc * lclVarDsc1);
 
 /*****************************************************************************
  *                        TrnslLocalVarInfo
