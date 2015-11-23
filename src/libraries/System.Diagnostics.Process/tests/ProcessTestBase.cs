@@ -8,13 +8,13 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessTestBase : RemoteExecutorTestBase
     {
-        protected const int WaitInMS = 100 * 1000;
+        protected const int WaitInMS = 600 * 1000;
         protected readonly Process _process;
         protected readonly List<Process> _processes = new List<Process>();
 
         public ProcessTestBase()
         {
-            _process = CreateProcessInfinite();
+            _process = CreateProcessLong();
             _process.Start();
         }
 
@@ -57,7 +57,7 @@ namespace System.Diagnostics.Tests
             return p;
         }
 
-        protected Process CreateProcessInfinite()
+        protected Process CreateProcessLong()
         {
             return CreateProcess(() =>
             {
