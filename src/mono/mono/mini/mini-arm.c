@@ -654,7 +654,6 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 gboolean
 mono_arm_have_tls_get (void)
 {
-	return FALSE;
 #ifdef HAVE_FAST_TLS
 	return TRUE;
 #else
