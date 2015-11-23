@@ -54,6 +54,16 @@ public class WindowAndCursorProps
         Helpers.RunInRedirectedOutput((data) => Console.WriteLine(Console.WindowHeight));
     }
 
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public static void WindowLeftTop()
+    {
+        Assert.Equal(0, Console.WindowLeft);
+        Assert.Equal(0, Console.WindowTop);
+        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowLeft = 0);
+        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowTop = 0);
+    }
+
     //[Fact] //CI system makes it difficult to run things in a non-redirected environments.
     [PlatformSpecific(PlatformID.AnyUnix)]
     public static void NonRedirectedCursorVisible()

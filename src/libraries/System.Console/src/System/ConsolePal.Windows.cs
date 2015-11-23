@@ -468,6 +468,20 @@ namespace System
             set { ConsolePal.BufferHeight = value; }
         }
 
+        public static int WindowLeft
+        {
+            // TODO: Implement this
+            get { return ConsolePal.WindowLeft; }
+            set { ConsolePal.WindowLeft = value; }
+        }
+
+        public static int WindowTop
+        {
+            // TODO: Implement this
+            get { return ConsolePal.WindowTop; }
+            set { ConsolePal.WindowTop = value; }
+        }
+
         public static int WindowWidth
         {
             get
