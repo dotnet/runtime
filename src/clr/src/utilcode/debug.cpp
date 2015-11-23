@@ -583,7 +583,7 @@ bool _DbgBreakCheckNoThrow(
     }
     return result;
 }
-    
+
 #ifndef FEATURE_PAL
 // Get the timestamp from the PE file header.  This is useful
 unsigned DbgGetEXETimeStamp()
@@ -610,58 +610,6 @@ unsigned DbgGetEXETimeStamp()
     return cache;
 }
 #endif // FEATURE_PAL
-// // //
-// // //  The following function
-// // //  computes the binomial distribution, with which to compare
-// // //  hash-table statistics.  If a hash function perfectly randomizes
-// // //  its input, one would expect to see F chains of length K, in a
-// // //  table with N buckets and M elements, where F is
-// // //
-// // //    F(K,M,N) = N * (M choose K) * (1 - 1/N)^(M-K) * (1/N)^K.
-// // //
-// // //  Don't call this with a K larger than 159.
-// // //
-
-#if !defined(NO_CRT)
-
-#include <math.h>
-
-#define MAX_BUCKETS_MATH 160
-
-double Binomial (DWORD K, DWORD M, DWORD N)
-{
-    STATIC_CONTRACT_LEAF;
-    
-    if (K >= MAX_BUCKETS_MATH)
-        return -1 ;
-
-    static double rgKFact [MAX_BUCKETS_MATH] ;
-    DWORD i ;
-
-    if (rgKFact[0] == 0)
-    {
-        rgKFact[0] = 1 ;
-        for (i=1; i<MAX_BUCKETS_MATH; i++)
-            rgKFact[i] = rgKFact[i-1] * i ;
-    }
-
-    double MchooseK = 1 ;
-
-    for (i = 0; i < K; i++)
-        MchooseK *= (M - i) ;
-
-    MchooseK /= rgKFact[K] ;
-
-    double OneOverNToTheK = pow (1./N, K) ;
-
-    double QToTheMMinusK = pow (1.-1./N, M-K) ;
-
-    double P = MchooseK * OneOverNToTheK * QToTheMMinusK ;
-
-    return N * P ;
-}
-
-#endif // !NO_CRT
 
 // Called from within the IfFail...() macros.  Set a breakpoint here to break on
 // errors.
@@ -671,7 +619,6 @@ VOID DebBreak()
   static int i = 0;  // add some code here so that we'll be able to set a BP
   i++;
 }
-
 
 VOID DebBreakHr(HRESULT hr)
 {
