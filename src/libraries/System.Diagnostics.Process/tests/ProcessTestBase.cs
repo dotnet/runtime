@@ -8,7 +8,7 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessTestBase : RemoteExecutorTestBase
     {
-        protected const int WaitInMS = 100 * 1000;
+        protected const int WaitInMS = 600 * 1000;
         protected readonly Process _process;
         protected readonly List<Process> _processes = new List<Process>();
 
@@ -63,15 +63,6 @@ namespace System.Diagnostics.Tests
             {
                 Thread.Sleep(WaitInMS);
                 return SuccessExitCode;
-            });
-        }
-
-        protected Process CreateProcessInfinite()
-        {
-            return CreateProcess(() =>
-            {
-                while (true)
-                    Thread.Sleep(WaitInMS);
             });
         }
 
