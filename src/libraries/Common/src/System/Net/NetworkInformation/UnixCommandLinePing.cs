@@ -82,11 +82,10 @@ namespace System.Net.NetworkInformation
         {
             int timeIndex = pingOutput.IndexOf("time=", StringComparison.Ordinal);
             int afterTime = timeIndex + "time=".Length;
-            double parsedRtt;
             int msIndex = pingOutput.IndexOf("ms", afterTime);
             int numLength = msIndex - afterTime - 1;
             string timeSubstring = pingOutput.Substring(afterTime, numLength);
-            parsedRtt = double.Parse(timeSubstring);
+            double parsedRtt = double.Parse(timeSubstring);
             return (long)Math.Round(parsedRtt);
         }
     }

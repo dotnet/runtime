@@ -12,10 +12,6 @@ namespace System.Net.NetworkInformation.Tests
     {
         private const int IcmpHeaderLengthInBytes = 8;
 
-        [System.Runtime.InteropServices.DllImport("libc")]
-        private static extern void printf(string msg);
-        private static void Print(string msg) { printf(Environment.NewLine + msg); }
-
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -31,22 +27,17 @@ namespace System.Net.NetworkInformation.Tests
                 ? UnixCommandLinePing.Ping4UtilityPath
                 : UnixCommandLinePing.Ping6UtilityPath;
 
-
             ProcessStartInfo psi = new ProcessStartInfo(utilityPath, arguments);
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
             Process p = Process.Start(psi);
-            p.WaitForExit(TestSettings.PingTimeout);
+            Assert.True(p.WaitForExit(TestSettings.PingTimeout), "Ping process did not exit in " + TestSettings.PingTimeout + " ms.");
+
             string pingOutput = p.StandardOutput.ReadToEnd();
             // Validate that the returned data size is correct.
             // It should be equal to the bytes we sent plus the size of the ICMP header.
             int receivedBytes = ParseReturnedPacketSize(pingOutput);
-            int expected = payloadSize + IcmpHeaderLengthInBytes;
-            if (payloadSize < 16)
-            {
-                expected += 16 - payloadSize;
-            }
-
+            int expected = Math.Max(16, payloadSize) + IcmpHeaderLengthInBytes;
             Assert.Equal(expected, receivedBytes);
 
             // Validate that we only sent one ping with the "-c 1" argument.
@@ -62,13 +53,7 @@ namespace System.Net.NetworkInformation.Tests
             int indexOfBytesFrom = pingOutput.IndexOf("bytes from");
             int previousNewLine = pingOutput.LastIndexOf(Environment.NewLine, indexOfBytesFrom);
             string number = pingOutput.Substring(previousNewLine + 1, indexOfBytesFrom - previousNewLine - 1);
-            int parsedReceivedBytes;
-            if (!int.TryParse(number, out parsedReceivedBytes))
-            {
-                throw new InvalidOperationException("Couldn't parse the ping utility's output.");
-            }
-
-            return parsedReceivedBytes;
+            return int.Parse(number);
         }
 
         private static int ParseNumPingsSent(string pingOutput)
@@ -76,14 +61,7 @@ namespace System.Net.NetworkInformation.Tests
             int indexOfPacketsTransmitted = pingOutput.IndexOf("packets transmitted");
             int previousNewLine = pingOutput.LastIndexOf(Environment.NewLine, indexOfPacketsTransmitted);
             string number = pingOutput.Substring(previousNewLine + 1, indexOfPacketsTransmitted - previousNewLine - 1);
-
-            int parsedNumPings;
-            if (!int.TryParse(number, out parsedNumPings))
-            {
-                throw new InvalidOperationException("Couldn't parse the ping utility's output.");
-            }
-
-            return parsedNumPings;
+            return int.Parse(number);
         }
     }
 }
