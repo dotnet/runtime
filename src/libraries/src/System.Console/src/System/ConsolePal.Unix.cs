@@ -195,6 +195,18 @@ namespace System
             }
         }
 
+        public static int BufferWidth
+        {
+            get { return WindowWidth; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
+        public static int BufferHeight
+        {
+            get { return WindowHeight; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
         public static int WindowWidth
         {
             get
@@ -204,10 +216,7 @@ namespace System
                     winsize.Col :
                     TerminalBasicInfo.Instance.ColumnFormat;
             }
-            set
-            {
-                throw new PlatformNotSupportedException();
-            }
+            set { throw new PlatformNotSupportedException(); }
         }
 
         public static int WindowHeight
@@ -219,18 +228,12 @@ namespace System
                     winsize.Row :
                     TerminalBasicInfo.Instance.LinesFormat;
             }
-            set
-            {
-                throw new PlatformNotSupportedException();
-            }
+            set { throw new PlatformNotSupportedException(); }
         }
 
         public static bool CursorVisible
         {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
+            get { throw new PlatformNotSupportedException(); }
             set
             {
                 if (Console.IsOutputRedirected)

@@ -458,6 +458,20 @@ namespace System
             // TODO: Implement this
         }
 
+        public static int BufferWidth
+        {
+            // TODO: Implement this
+            get { return ConsolePal.BufferWidth; }
+            set { ConsolePal.BufferWidth = value; }
+        }
+
+        public static int BufferHeight
+        {
+            // TODO: Implement this
+            get { return ConsolePal.BufferHeight; }
+            set { ConsolePal.BufferHeight = value; }
+        }
+
         public static int WindowWidth
         {
             get
