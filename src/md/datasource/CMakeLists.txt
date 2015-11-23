@@ -2,11 +2,6 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-if(WIN32)
-    add_definitions(-DNO_CRT)
-endif(WIN32)
-
-
 set(MDDATASOURCE_SOURCES
   api.cpp
   datatargetreader.cpp
