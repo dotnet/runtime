@@ -7,8 +7,8 @@ using Xunit;
 
 public class ReadKey : RemoteExecutorTestBase
 {
+    [ActiveIssue(4636, PlatformID.Windows)]
     [Fact]
-    [PlatformSpecific(PlatformID.AnyUnix)] // TODO: Remove when implemented on Windows
     public static void KeyAvailable()
     {
         if (Console.IsInputRedirected)
