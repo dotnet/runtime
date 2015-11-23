@@ -93,26 +93,22 @@ public class WindowAndCursorProps
 
     [ActiveIssue(4636, PlatformID.Windows)]
     [Fact]
+    [OuterLoop] // changes the title and we can't change it back automatically in the test
     public static void Title_Set()
     {
         Console.Title = "Title set by unit test";
     }
 
     [Fact]
+    [OuterLoop] // makes noise, not very inner-loop friendly
     public static void Beep()
     {
         // Nothing to verify; just run the code.
         Console.Beep();
-        Console.Beep(100, 100);
-
-        Assert.Throws<ArgumentOutOfRangeException>("frequency", () => Console.Beep(36, 100));
-        Assert.Throws<ArgumentOutOfRangeException>("frequency", () => Console.Beep((int)short.MaxValue + 1, 100));
-
-        Assert.Throws<ArgumentOutOfRangeException>("duration", () => Console.Beep(100, 0));
-        Assert.Throws<ArgumentOutOfRangeException>("duration", () => Console.Beep(100, -1));
     }
 
     [Fact]
+    [OuterLoop] // clears the screen, not very inner-loop friendly
     public static void Clear()
     {
         // Nothing to verify; just run the code.

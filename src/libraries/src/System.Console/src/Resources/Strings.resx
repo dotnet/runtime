@@ -151,7 +151,7 @@
     <value>Stream does not support reading.</value>
   </data>
   <data name="IO_AlreadyExists_Name" xml:space="preserve">
-    <value>Cannot create '{0}'because a file or directory with the same name already exists.</value>
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
   </data>
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>
@@ -215,9 +215,6 @@
   </data>
   <data name="ArgumentOutOfRange_ConsoleTitleTooLong" xml:space="preserve">
     <value>The console title is too long.</value>
-  </data>
-  <data name="ArgumentOutOfRange_BeepFrequency" xml:space="preserve">
-    <value>Console.Beep's frequency must be between {0} and {1}, inclusive.</value>
   </data>
   <data name="ArgumentOutOfRange_ConsoleBufferBoundaries" xml:space="preserve">
     <value>The value must be greater than or equal to zero and less than the console's buffer size in that dimension.</value>
