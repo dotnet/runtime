@@ -139,6 +139,18 @@ namespace System
             ConsolePal.ResetColor();
         }
 
+        public static int BufferWidth
+        {
+            get { return ConsolePal.BufferWidth; }
+            set { ConsolePal.BufferWidth = value; }
+        }
+
+        public static int BufferHeight
+        {
+            get { return ConsolePal.BufferHeight; }
+            set { ConsolePal.BufferHeight = value; }
+        }
+
         public static int WindowWidth
         {
             get
