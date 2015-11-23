@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.DotNet.CoreCLR": "1.0.5-prerelease"
+    "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23520"
   },
   "frameworks": {
     "dnxcore50": {}
