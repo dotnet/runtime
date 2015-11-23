@@ -13,7 +13,7 @@
         <UtilCodeSrcDir>$(_NTDRIVE)$(_NTROOT)\ndp\clr\src\Utilcode</UtilCodeSrcDir>
         <!--PCHCompile>$(_NTDRIVE)$(_NTROOT)\ndp\clr\src\Utilcode\stdafx.cpp</PCHCompile>
         <PCHObject>stdafx_utilcode.obj</PCHObject-->
-        <ClAdditionalOptions>$(ClAdditionalOptions) -DUNICODE -D_UNICODE $(_CRTIMPFLAGS) -DNO_CRT</ClAdditionalOptions>
+        <ClAdditionalOptions>$(ClAdditionalOptions) -DUNICODE -D_UNICODE $(_CRTIMPFLAGS)</ClAdditionalOptions>
         <ClAdditionalOptions Condition="'FeatureUtilcodeNoDependencies' != 'true'">$(ClAdditionalOptions) -DENABLE_PERF_COUNTERS</ClAdditionalOptions>
         <UserIncludes>
             $(UserIncludes);

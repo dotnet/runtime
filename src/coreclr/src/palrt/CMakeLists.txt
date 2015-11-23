@@ -1,8 +1,6 @@
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_definitions(-DNO_CRT)
-
 set(PALRT_SOURCES
     bstr.cpp
     coguid.cpp
