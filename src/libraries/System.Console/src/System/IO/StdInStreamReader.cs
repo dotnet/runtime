@@ -216,23 +216,26 @@ namespace System.IO
         {
             Debug.Assert(!IsExtraBufferEmpty());
 
-            isAlt = isCtrl = isShift = false;
-            int keyLength;
-
             // Try to get the special key match from the TermInfo static information.
-            if (ConsolePal.TryGetSpecialConsoleKey(_unprocessedBufferToBeRead, _startIndex, _endIndex, out key, out keyLength))
+            ConsoleKeyInfo keyInfo;
+            int keyLength;
+            if (ConsolePal.TryGetSpecialConsoleKey(_unprocessedBufferToBeRead, _startIndex, _endIndex, out keyInfo, out keyLength))
             {
-                ch = ((keyLength == 1) ? _unprocessedBufferToBeRead[_startIndex] : '\0');
+                key = keyInfo.Key;
+                isShift = (keyInfo.Modifiers & ConsoleModifiers.Shift) != 0;
+                isAlt = (keyInfo.Modifiers & ConsoleModifiers.Alt) != 0;
+                isCtrl = (keyInfo.Modifiers & ConsoleModifiers.Control) != 0;
+
+                ch = ((keyLength == 1) ? _unprocessedBufferToBeRead[_startIndex] : '\0'); // ignore keyInfo.KeyChar
                 _startIndex += keyLength;
                 return true;
             }
 
             // Check if we can match Esc + combination and guess if alt was pressed.
-            if (isAlt == false &&
-                _unprocessedBufferToBeRead[_startIndex] == (char)0x1B && // Alt is send as an escape character
+            isAlt = isCtrl = isShift = false;
+            if (_unprocessedBufferToBeRead[_startIndex] == (char)0x1B && // Alt is send as an escape character
                 _endIndex - _startIndex >= 2) // We have at least two characters to read
             {
-                isAlt = true; // Since the alt is pressed.
                 _startIndex++;
                 if (MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl))
                 {
@@ -245,7 +248,7 @@ namespace System.IO
                     // The current key needs to be marked as Esc key.
                     // Also, we do not increment _startIndex as we already did it.
                     key = ConsoleKey.Escape;
-                    ch = (char)(int)(0x1B);
+                    ch = (char)0x1B;
                     isAlt = false;
                     return true;
                 }
