@@ -11,10 +11,6 @@ using System.Threading;
 namespace System
 {
     // Provides Windows-based support for System.Console.
-    // Required exposed methods:
-    // - OpenStandardInput, OpenStandardOutput, OpenStandardError
-    // - InputEncoding, OutputEncoding
-    // - ForegroundColor, BackgroundColor, ResetColor
     internal static class ConsolePal
     {
         private const int DefaultConsoleBufferSize = 256; // default size of buffer used in stream readers/writers
