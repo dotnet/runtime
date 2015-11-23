@@ -7,6 +7,25 @@ using Xunit;
 public class WindowAndCursorProps
 {
     [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public static void BufferSize_SettingNotSupported()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.BufferWidth = 1);
+        Assert.Throws<PlatformNotSupportedException>(() => Console.BufferHeight = 1);
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    public static void BufferSize_GettingSameAsWindowSize()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.BufferWidth = 1);
+        Assert.Throws<PlatformNotSupportedException>(() => Console.BufferHeight = 1);
+
+        Assert.Equal(Console.WindowWidth, Console.BufferWidth);
+        Assert.Equal(Console.WindowHeight, Console.BufferHeight);
+    }
+
+    [Fact]
     public static void WindowWidth_WindowHeight_InvalidSize()
     {
         Assert.Throws<ArgumentOutOfRangeException>("value", () => Console.WindowWidth = 0);
@@ -57,9 +76,15 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
-    public static void Title_GetSet_Unix()
+    public static void Title_Get_Unix()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.Title);
+    }
+
+    [ActiveIssue(4636, PlatformID.Windows)]
+    [Fact]
+    public static void Title_Set()
+    {
         Console.Title = "Title set by unit test";
     }
 
@@ -92,5 +117,28 @@ public class WindowAndCursorProps
         Console.SetCursorPosition(1, 2);
         Assert.Throws<ArgumentOutOfRangeException>("left", () => Console.SetCursorPosition(-1, 100));
         Assert.Throws<ArgumentOutOfRangeException>("top", () => Console.SetCursorPosition(100, -1));
+    }
+
+    [ActiveIssue(4636, PlatformID.Windows)]
+    [Fact]
+    public static void GetCursorPosition()
+    {
+        if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
+        {
+            int origLeft = Console.CursorLeft, origTop = Console.CursorTop;
+
+            Console.SetCursorPosition(10, 12);
+            Assert.Equal(10, Console.CursorLeft);
+            Assert.Equal(12, Console.CursorTop);
+
+            Console.SetCursorPosition(origLeft, origTop);
+            Assert.Equal(origLeft, Console.CursorLeft);
+            Assert.Equal(origTop, Console.CursorTop);
+        }
+        else
+        {
+            Assert.Equal(0, Console.CursorLeft);
+            Assert.Equal(0, Console.CursorTop);
+        }
     }
 }
