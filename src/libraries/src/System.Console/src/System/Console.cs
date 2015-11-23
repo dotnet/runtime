@@ -151,6 +151,18 @@ namespace System
             set { ConsolePal.BufferHeight = value; }
         }
 
+        public static int WindowLeft
+        {
+            get { return ConsolePal.WindowLeft; }
+            set { ConsolePal.WindowLeft = value; }
+        }
+
+        public static int WindowTop
+        {
+            get { return ConsolePal.WindowTop; }
+            set { ConsolePal.WindowTop = value; }
+        }
+
         public static int WindowWidth
         {
             get

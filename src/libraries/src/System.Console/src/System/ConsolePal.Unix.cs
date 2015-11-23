@@ -199,6 +199,18 @@ namespace System
             set { throw new PlatformNotSupportedException(); }
         }
 
+        public static int WindowLeft
+        {
+            get { return 0; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
+        public static int WindowTop
+        {
+            get { return 0; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
         public static int WindowWidth
         {
             get
