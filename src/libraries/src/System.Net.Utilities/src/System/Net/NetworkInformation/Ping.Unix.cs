@@ -17,30 +17,6 @@ namespace System.Net.NetworkInformation
         private const int IcmpHeaderLengthInBytes = 8;
         private const int IpHeaderLengthInBytes = 20;
 
-        // Ubuntu has ping under /bin, OSX under /sbin.
-        private static readonly string[] s_binFolders = { "/bin/", "/sbin/" };
-
-        private static readonly string s_ipv4PingFile = "ping";
-        private static readonly string s_ipv6PingFile = "ping6";
-
-        private static readonly string s_discoveredPing4UtilityPath = GetPingUtilityPath(ipv4: true);
-        private static readonly string s_discoveredPing6UtilityPath = GetPingUtilityPath(ipv4: false);
-
-        private static string GetPingUtilityPath(bool ipv4)
-        {
-            string fileName = ipv4 ? s_ipv4PingFile : s_ipv6PingFile;
-            foreach (string folder in s_binFolders)
-            {
-                string path = Path.Combine(folder, fileName);
-                if (File.Exists(path))
-                {
-                    return path;
-                }
-            }
-
-            return null;
-        }
-
         private async Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
             try
@@ -154,27 +130,13 @@ namespace System.Net.NetworkInformation
         private async Task<PingReply> SendWithPingUtility(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
             bool isIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
-            string pingExecutable = isIpv4 ? s_discoveredPing4UtilityPath : s_discoveredPing6UtilityPath;
+            string pingExecutable = isIpv4 ? UnixCommandLinePing.Ping4UtilityPath : UnixCommandLinePing.Ping6UtilityPath;
             if (pingExecutable == null)
             {
                 throw new PlatformNotSupportedException(SR.net_ping_utility_not_found);
             }
 
-            StringBuilder sb = new StringBuilder();
-            sb.Append("-c 1"); // Just send a single ping ("count = 1")
-
-            // The command-line flags for "Do-not-fragment" and "TTL" are not standard.
-            // In fact, they are different even between ping and ping6 on the same machine.
-
-            // The ping utility is not flexible enough to specify an exact payload.
-            // But we can at least send the right number of bytes.
-            sb.Append(" -s ");
-            sb.Append(buffer.Length);
-
-            sb.Append(' ');
-            sb.Append(address.ToString());
-
-            string processArgs = sb.ToString();
+            string processArgs = UnixCommandLinePing.ConstructCommandLine(buffer.Length, address.ToString(), isIpv4);
             ProcessStartInfo psi = new ProcessStartInfo(pingExecutable, processArgs);
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
@@ -210,14 +172,7 @@ namespace System.Net.NetworkInformation
                 try
                 {
                     string output = await p.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
-                    int timeIndex = output.IndexOf("time=", StringComparison.Ordinal);
-                    int afterTime = timeIndex + "time=".Length;
-                    double parsedRtt;
-                    int msIndex = output.IndexOf("ms", afterTime);
-                    int numLength = msIndex - afterTime - 1;
-                    string timeSubstring = output.Substring(afterTime, numLength);
-                    parsedRtt = double.Parse(timeSubstring);
-                    long rtt = (long)Math.Round(parsedRtt);
+                    long rtt = UnixCommandLinePing.ParseRoundTripTime(output);
                     return new PingReply(
                             address,
                             null, // Ping utility cannot accomodate these, return null to indicate they were ignored.
