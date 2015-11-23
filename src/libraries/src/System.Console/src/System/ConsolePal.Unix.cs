@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -581,30 +580,30 @@ namespace System
         /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
         private static readonly string[,] s_fgbgAndColorStrings = new string[2, 16]; // 2 == fg vs bg, 16 == ConsoleColor values
 
-        public static bool TryGetSpecialConsoleKey(char[] givenChars, int startIndex, int endIndex, out ConsoleKey key, out int keyLength)
+        public static bool TryGetSpecialConsoleKey(char[] givenChars, int startIndex, int endIndex, out ConsoleKeyInfo key, out int keyLength)
         {
-            key = (ConsoleKey)0;
-            keyLength = 0;
             int unprocessedCharCount = endIndex - startIndex;
 
-            if (unprocessedCharCount < TerminalKeyInfo.Instance.MinKeyLength)
-                return false;
-
-            int minRange = TerminalKeyInfo.Instance.MinKeyLength;
-            int maxRange = Math.Min(unprocessedCharCount, TerminalKeyInfo.Instance.MaxKeyLength);
-
-            for (int i = maxRange; i >= minRange; i--)
+            if (unprocessedCharCount >= TerminalKeyInfo.Instance.MinKeyLength)
             {
-                string currentString = new string(givenChars, startIndex, i);
+                int minRange = TerminalKeyInfo.Instance.MinKeyLength;
+                int maxRange = Math.Min(unprocessedCharCount, TerminalKeyInfo.Instance.MaxKeyLength);
 
-                // Check if the string prefix matches.
-                if (TerminalKeyInfo.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
+                for (int i = maxRange; i >= minRange; i--)
                 {
-                    keyLength = currentString.Length;
-                    return true;
+                    string currentString = new string(givenChars, startIndex, i);
+
+                    // Check if the string prefix matches.
+                    if (TerminalKeyInfo.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
+                    {
+                        keyLength = currentString.Length;
+                        return true;
+                    }
                 }
             }
 
+            key = default(ConsoleKeyInfo);
+            keyLength = 0;
             return false;
         }
 
@@ -658,7 +657,7 @@ namespace System
             public int MaxColors;
 
             /// <summary>The cached instance.</summary>
-            public static TerminalColorInfo Instance { get { return _instance.Value; } }
+            public static TerminalColorInfo Instance { get { return s_instance.Value; } }
 
             private TerminalColorInfo(TermInfo.Database db)
             {
@@ -677,7 +676,7 @@ namespace System
             }
 
             /// <summary>Lazy initialization of the terminal color information.</summary>
-            private static Lazy<TerminalColorInfo> _instance = new Lazy<TerminalColorInfo>(() =>
+            private static Lazy<TerminalColorInfo> s_instance = new Lazy<TerminalColorInfo>(() =>
             {
                 TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
                 return new TerminalColorInfo(db);
@@ -712,7 +711,7 @@ namespace System
             public string CursorPositionRequestFormat;
 
             /// <summary>The cached instance.</summary>
-            public static TerminalBasicInfo Instance { get { return _instance.Value; } }
+            public static TerminalBasicInfo Instance { get { return s_instance.Value; } }
 
             private TerminalBasicInfo(TermInfo.Database db)
             {
@@ -760,7 +759,7 @@ namespace System
             }
 
             /// <summary>Lazy initialization of the terminal basic information.</summary>
-            private static Lazy<TerminalBasicInfo> _instance = new Lazy<TerminalBasicInfo>(() =>
+            private static Lazy<TerminalBasicInfo> s_instance = new Lazy<TerminalBasicInfo>(() =>
             {
                 TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
                 return new TerminalBasicInfo(db);
@@ -770,8 +769,11 @@ namespace System
         /// <summary>Provides a cache of color information sourced from terminfo.</summary>
         private struct TerminalKeyInfo
         {
-            /// <summary> The dictionary of keystring to ConsoleKeyInfo. </summary>
-            public Dictionary<string, ConsoleKey> KeyFormatToConsoleKey;
+            /// <summary>
+            /// The dictionary of keystring to ConsoleKeyInfo.
+            /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
+            /// </summary>
+            public Dictionary<string, ConsoleKeyInfo> KeyFormatToConsoleKey;
             /// <summary> Max key length </summary>
             public int MaxKeyLength;
             /// <summary> Min key length </summary>
@@ -780,18 +782,23 @@ namespace System
             public string KeypadXmit;
 
             /// <summary>The cached instance.</summary>
-            public static TerminalKeyInfo Instance { get { return _instance.Value; } }
+            public static TerminalKeyInfo Instance { get { return s_instance.Value; } }
 
             private void AddKey(TermInfo.Database db, int keyId, ConsoleKey key)
             {
+                AddKey(db, keyId, key, false, false, false);
+            }
+
+            private void AddKey(TermInfo.Database db, int keyId, ConsoleKey key, bool shift, bool alt, bool control)
+            {
                 string keyFormat = db.GetString(keyId);
                 if (!string.IsNullOrEmpty(keyFormat))
-                    KeyFormatToConsoleKey[keyFormat] = key;
+                    KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
 
             private TerminalKeyInfo(TermInfo.Database db)
             {
-                KeyFormatToConsoleKey = new Dictionary<string, ConsoleKey>();
+                KeyFormatToConsoleKey = new Dictionary<string, ConsoleKeyInfo>();
                 MaxKeyLength = MinKeyLength = 0;
                 KeypadXmit = string.Empty;
 
@@ -824,6 +831,8 @@ namespace System
                     AddKey(db, TermInfo.Database.KeyF23, ConsoleKey.F23);
                     AddKey(db, TermInfo.Database.KeyF24, ConsoleKey.F24);
                     AddKey(db, TermInfo.Database.KeyBackspace, ConsoleKey.Backspace);
+                    AddKey(db, TermInfo.Database.KeyBackTab, ConsoleKey.Tab, true, false, false);
+                    AddKey(db, TermInfo.Database.KeyBegin, ConsoleKey.Home);
                     AddKey(db, TermInfo.Database.KeyClear, ConsoleKey.Clear);
                     AddKey(db, TermInfo.Database.KeyDelete, ConsoleKey.Delete);
                     AddKey(db, TermInfo.Database.KeyDown, ConsoleKey.DownArrow);
@@ -837,6 +846,15 @@ namespace System
                     AddKey(db, TermInfo.Database.KeyPageUp, ConsoleKey.PageUp);
                     AddKey(db, TermInfo.Database.KeyPrint, ConsoleKey.Print);
                     AddKey(db, TermInfo.Database.KeyRight, ConsoleKey.RightArrow);
+                    AddKey(db, TermInfo.Database.KeyScrollForward, ConsoleKey.PageDown, true, false, false);
+                    AddKey(db, TermInfo.Database.KeyScrollReverse, ConsoleKey.PageUp, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySBegin, ConsoleKey.Home, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySDelete, ConsoleKey.Delete, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySHome, ConsoleKey.Home, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySelect, ConsoleKey.Select);
+                    AddKey(db, TermInfo.Database.KeySLeft, ConsoleKey.LeftArrow, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySPrint, ConsoleKey.Print, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySRight, ConsoleKey.RightArrow, true, false, false);
                     AddKey(db, TermInfo.Database.KeyUp, ConsoleKey.UpArrow);
 
                     MaxKeyLength = KeyFormatToConsoleKey.Keys.Max(key => key.Length);
@@ -845,7 +863,7 @@ namespace System
             }
 
             /// <summary>Lazy initialization of the terminal key information.</summary>
-            private static Lazy<TerminalKeyInfo> _instance = new Lazy<TerminalKeyInfo>(() =>
+            private static Lazy<TerminalKeyInfo> s_instance = new Lazy<TerminalKeyInfo>(() =>
             {
                 TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
                 return new TerminalKeyInfo(db);
@@ -1345,14 +1363,18 @@ namespace System
                 public const int KeyPageUp = 82;
                 /// <summary>The well-known index of key_right</summary>
                 public const int KeyRight = 83;
+                /// <summary>The well-known index of key_sf</summary>
+                public const int KeyScrollForward = 84;
+                /// <summary>The well-known index of key_sr</summary>
+                public const int KeyScrollReverse = 85;
                 /// <summary>The well-known index of key_up</summary>
                 public const int KeyUp = 87;
-                /// <summary>The well-known index of keypad_xmit.</summary>
+                /// <summary>The well-known index of keypad_xmit</summary>
                 public const int KeypadXmit = 89;
-                /// <summary>The well-known index of key_cancel</summary>
-                public const int KeyCancel = 159;
-                /// <summary>The well-known index of key_close</summary>
-                public const int KeyClose = 160;
+                /// <summary>The well-known index of key_btab</summary>
+                public const int KeyBackTab = 148;
+                /// <summary>The well-known index of key_beg</summary>
+                public const int KeyBegin = 158;
                 /// <summary>The well-known index of key_end</summary>
                 public const int KeyEnd = 164;
                 /// <summary>The well-known index of key_enter</summary>
@@ -1361,8 +1383,22 @@ namespace System
                 public const int KeyHelp = 168;
                 /// <summary>The well-known index of key_print</summary>
                 public const int KeyPrint = 176;
+                /// <summary>The well-known index of key_sbeg</summary>
+                public const int KeySBegin = 186;
+                /// <summary>The well-known index of key_sdc</summary>
+                public const int KeySDelete = 191;
                 /// <summary>The well-known index of key_select</summary>
                 public const int KeySelect = 193;
+                /// <summary>The well-known index of key_shelp</summary>
+                public const int KeySHelp = 198;
+                /// <summary>The well-known index of key_shome</summary>
+                public const int KeySHome = 199;
+                /// <summary>The well-known index of key_sleft</summary>
+                public const int KeySLeft = 201;
+                /// <summary>The well-known index of key_sprint</summary>
+                public const int KeySPrint = 207;
+                /// <summary>The well-known index of key_sright</summary>
+                public const int KeySRight = 210;
                 /// <summary>The well-known index of key_f11</summary>
                 public const int KeyF11 = 216;
                 /// <summary>The well-known index of key_f12</summary>
