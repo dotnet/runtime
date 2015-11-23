@@ -1,12 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32.SafeHandles;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Text;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.IO
 {
@@ -17,43 +14,70 @@ namespace System.IO
      */
     internal class StdInStreamReader : StreamReader
     {
-        private readonly char[] _unprocessedBufferToBeRead; // Buffer that might have already been read from stdin but not yet processed.
+        private char[] _unprocessedBufferToBeRead; // Buffer that might have already been read from stdin but not yet processed.
         private const int BytesToBeRead = 1024; // No. of bytes to be read from the stream at a time.
         private int _startIndex; // First unprocessed index in the buffer;
-        private int _endIndex; // Last unprocessed index in the buffer;
+        private int _endIndex; // Index after last unprocessed index in the buffer;
         private readonly StringBuilder _readLineSB; // SB that holds readLine output
 
         internal StdInStreamReader(Stream stream, Encoding encoding, int bufferSize) : base(stream: stream, encoding: encoding, detectEncodingFromByteOrderMarks: false, bufferSize: bufferSize, leaveOpen: true)
         {
             _unprocessedBufferToBeRead = new char[encoding.GetMaxCharCount(BytesToBeRead)];
             _startIndex = 0;
-            _endIndex = -1; // There is no unprocessed index yet.
+            _endIndex = 0;
             _readLineSB = new StringBuilder();
         }
 
         /// <summary> Checks whether the unprocessed buffer is empty. </summary>
         internal bool IsExtraBufferEmpty()
         {
-            return _startIndex > _endIndex; // Everything has been processed;
+            return _startIndex >= _endIndex; // Everything has been processed;
         }
 
         /// <summary> Reads the buffer in the raw mode. </summary>
         private unsafe void ReadExtraBuffer()
         {
-            Debug.Assert(IsExtraBufferEmpty());
-
+            // Read in bytes
             byte* bufPtr = stackalloc byte[BytesToBeRead];
-            int result;
-            Interop.CheckIo(result = Interop.Sys.ReadStdinUnbuffered(bufPtr, BytesToBeRead));
+            int result = ReadStdinUnbuffered(bufPtr, BytesToBeRead);
 
-            Debug.Assert(result > 0 && result <= BytesToBeRead);
+            // Append them
+            AppendExtraBuffer(bufPtr, result);
+        }
 
-            // Now we need to convert the byte buffer to char buffer.
-            fixed (char* unprocessedBufPtr = _unprocessedBufferToBeRead)
+        internal unsafe void AppendExtraBuffer(byte* buffer, int bufferLength)
+        {
+            // Then convert the bytes to chars
+            int charLen = CurrentEncoding.GetMaxCharCount(bufferLength);
+            char* charPtr = stackalloc char[charLen];
+            charLen = CurrentEncoding.GetChars(buffer, bufferLength, charPtr, charLen);
+
+            // Ensure our buffer is large enough to hold all of the data
+            if (IsExtraBufferEmpty())
             {
-                _startIndex = 0;
-                _endIndex = CurrentEncoding.GetChars(bufPtr, result, unprocessedBufPtr, _unprocessedBufferToBeRead.Length) - 1;
+                _startIndex = _endIndex = 0;
             }
+            else
+            {
+                Debug.Assert(_endIndex > 0);
+                int spaceRemaining = _unprocessedBufferToBeRead.Length - _endIndex;
+                if (spaceRemaining < charLen)
+                {
+                    Array.Resize(ref _unprocessedBufferToBeRead, _unprocessedBufferToBeRead.Length * 2);
+                }
+            }
+
+            // Copy the data into our buffer
+            Marshal.Copy((IntPtr)charPtr, _unprocessedBufferToBeRead, _endIndex, charLen);
+            _endIndex += charLen;
+        }
+
+        internal unsafe int ReadStdinUnbuffered(byte* buffer, int bufferSize)
+        {
+            int result;
+            Interop.CheckIo(result = Interop.Sys.ReadStdinUnbuffered(buffer, bufferSize));
+            Debug.Assert(result > 0 && result <= bufferSize);
+            return result;
         }
 
         private static string s_moveLeftString;
@@ -205,8 +229,8 @@ namespace System.IO
 
             // Check if we can match Esc + combination and guess if alt was pressed.
             if (isAlt == false &&
-                _unprocessedBufferToBeRead[_startIndex] == (char)(int)(0x1B) /*Alt is send as an escape character*/ &&
-                _endIndex - _startIndex + 1 >= 2 /*We have at least two characters to read.*/)
+                _unprocessedBufferToBeRead[_startIndex] == (char)0x1B && // Alt is send as an escape character
+                _endIndex - _startIndex >= 2) // We have at least two characters to read
             {
                 isAlt = true; // Since the alt is pressed.
                 _startIndex++;

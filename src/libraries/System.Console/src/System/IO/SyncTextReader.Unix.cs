@@ -2,9 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace System.IO
 {
@@ -13,13 +10,21 @@ namespace System.IO
      */
     internal sealed partial class SyncTextReader : TextReader
     {
+        internal StdInStreamReader Inner
+        {
+            get
+            {
+                var inner = _in as StdInStreamReader;
+                Debug.Assert(inner != null);
+                return inner;
+            }
+        }
+
         public ConsoleKeyInfo ReadKey()
         {
             lock (this)
             {
-                Debug.Assert(_in is StdInStreamReader);
-
-                return ((StdInStreamReader)_in).ReadKey();
+                return Inner.ReadKey();
             }
         }
 
@@ -29,8 +34,7 @@ namespace System.IO
             {
                 lock (this)
                 {
-                    Debug.Assert(_in is StdInStreamReader);
-                    var r = (StdInStreamReader)_in;
+                    StdInStreamReader r = Inner;
                     return !r.IsExtraBufferEmpty() || r.StdinReady;
                 }
             }

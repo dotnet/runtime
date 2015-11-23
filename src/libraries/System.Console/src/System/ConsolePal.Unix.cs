@@ -246,6 +246,129 @@ namespace System
             }
         }
 
+        // TODO: It's quite expensive to use the request/response protocol each time CursorLeft/Top is accessed.
+        // We should be able to (mostly) track the position of the cursor in locals, doing the request/response infrequently.
+
+        public static int CursorLeft
+        {
+            get
+            {
+                int left, top;
+                GetCursorPosition(out left, out top);
+                return left;
+            }
+        }
+
+        public static int CursorTop
+        {
+            get
+            {
+                int left, top;
+                GetCursorPosition(out left, out top);
+                return top;
+            }
+        }
+
+        /// <summary>Gets the current cursor position.  This involves both writing to stdout and reading stdin.</summary>
+        private static unsafe void GetCursorPosition(out int left, out int top)
+        {
+            left = top = 0;
+
+            // Getting the cursor position involves both writing out a request string and
+            // parsing a response string from the terminal.  So if anything is redirected, bail.
+            if (Console.IsInputRedirected || Console.IsOutputRedirected)
+                return;
+
+            // Get the cursor position request format string.
+            string cpr = TerminalBasicInfo.Instance.CursorPositionRequestFormat;
+            if (string.IsNullOrEmpty(cpr))
+                return;
+
+            // Synchronize with all other stdin readers.  We need to do this in case multiple threads are
+            // trying to read/write concurrently, and to minimize the chances of resulting conflicts.
+            // This does mean that Console.get_CursorLeft/Top can't be used concurrently Console.Read*, etc.;
+            // attempting to do so will block one of them until the other completes, but in doing so we prevent
+            // one thread's get_CursorLeft/Top from providing input to the other's Console.Read*.
+            lock (StdInReader) 
+            {
+                // Write out the cursor position request.
+                WriteStdoutAnsiString(cpr);
+
+                // Read the response.  There's a race condition here if the user is typing,
+                // or if other threads are accessing the console; there's relatively little
+                // we can do about that, but we try not to lose any data.
+                StdInStreamReader r = StdInReader.Inner;
+                const int BufferSize = 1024;
+                byte* bytes = stackalloc byte[BufferSize];
+
+                int bytesRead = 0, i = 0;
+
+                // Response expected in the form "\ESC[row;colR".  However, user typing concurrently
+                // with the request/response sequence can result in other characters, and potentially
+                // other escape sequences (e.g. for an arrow key) being entered concurrently with
+                // the response.  To avoid garbage showing up in the user's input, we are very liberal
+                // with regards to eating all input from this point until all aspects of the sequence
+                // have been consumed.  
+
+                // Find the ESC as the start of the sequence.
+                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 0x1B);
+                i++; // move past the ESC
+
+                // Find the '['
+                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == '[');
+
+                // Find the first Int32 and parse it.
+                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => IsDigit((char)b));
+                int row = ParseInt32(bytes, bytesRead, ref i);
+                if (row >= 1) top = row - 1;
+
+                // Find the second Int32 and parse it.
+                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => IsDigit((char)b));
+                int col = ParseInt32(bytes, bytesRead, ref i);
+                if (col >= 1) left = col - 1;
+
+                // Find the ending 'R'
+                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 'R');
+            }
+        }
+
+        /// <summary>Reads from the stdin reader, unbuffered, until the specified condition is met.</summary>
+        private static unsafe void ReadStdinUnbufferedUntil(
+            StdInStreamReader reader, 
+            byte* buffer, int bufferSize, 
+            ref int bytesRead, ref int pos, 
+            Func<byte, bool> condition)
+        {
+            while (true)
+            {
+                for (; pos < bytesRead && !condition(buffer[pos]); pos++) ;
+                if (pos < bytesRead) return;
+
+                bytesRead = reader.ReadStdinUnbuffered(buffer, bufferSize);
+                pos = 0;
+            }
+        }
+
+        /// <summary>Parses the Int32 at the specified position in the buffer.</summary>
+        /// <param name="buffer">The buffer.</param>
+        /// <param name="bufferSize">The length of the buffer.</param>
+        /// <param name="pos">The current position in the buffer.</param>
+        /// <returns>The parsed result, or 0 if nothing could be parsed.</returns>
+        private static unsafe int ParseInt32(byte* buffer, int bufferSize, ref int pos)
+        {
+            int result = 0;
+            for (; pos < bufferSize; pos++)
+            {
+                char c = (char)buffer[pos];
+                if (!IsDigit(c)) break;
+                result = (result * 10) + (c - '0');
+            }
+            return result;
+        }
+
+        /// <summary>Gets whether the specified character is a digit 0-9.</summary>
+        private static bool IsDigit(char c) { return c >= '0' && c <= '9'; }
+
         /// <summary>
         /// Gets whether the specified file descriptor was redirected.
         /// It's considered redirected if it doesn't refer to a terminal.
@@ -459,7 +582,7 @@ namespace System
         {
             key = (ConsoleKey)0;
             keyLength = 0;
-            int unprocessedCharCount = endIndex - startIndex + 1;
+            int unprocessedCharCount = endIndex - startIndex;
 
             if (unprocessedCharCount < TerminalKeyInfo.Instance.MinKeyLength)
                 return false;
@@ -578,6 +701,12 @@ namespace System
             public string CursorAddressFormat;
             /// <summary>The format string to use to move the cursor to the left.</summary>
             public string CursorLeftFormat;
+            /// <summary>The format string for "user string 7", interpreted to be a cursor position request.</summary>
+            /// <remarks>
+            /// This should be "\x1B[6n", but we use the format string as a way to guess whether the terminal
+            /// will actually support the request/response protocol.
+            /// </remarks>
+            public string CursorPositionRequestFormat;
 
             /// <summary>The cached instance.</summary>
             public static TerminalBasicInfo Instance { get { return _instance.Value; } }
@@ -593,6 +722,7 @@ namespace System
                 CursorAddressFormat = db != null ? db.GetString(TermInfo.Database.CursorAddressIndex) : string.Empty;
                 CursorLeftFormat = db != null ? db.GetString(TermInfo.Database.CursorLeftIndex) : string.Empty;
                 TitleFormat = GetTitleFormat(db != null ? db.Term : null);
+                CursorPositionRequestFormat = db != null ? db.GetString(TermInfo.Database.CursorPositionRequest) : string.Empty;
             }
 
             private static string GetTitleFormat(string term)
@@ -1149,6 +1279,8 @@ namespace System
                 public const int CursorAddressIndex = 10;
                 /// <summary>The well-known index of the cursor left entry.</summary>
                 public const int CursorLeftIndex = 14;
+                /// <summary>The well-known index of "user string 7", which is used for cursor position requests.</summary>
+                public const int CursorPositionRequest = 294;
 
                 /// <summary>The well-known index of the max_colors numbers entry.</summary>
                 public const int MaxColorsIndex = 13;
