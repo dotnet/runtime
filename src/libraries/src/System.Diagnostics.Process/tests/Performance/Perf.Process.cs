@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
                 Process[] processes = new Process[inneriterations];
                 for (int i = 0; i < inneriterations; i++)
                 {
-                    processes[i] = CreateProcessInfinite();
+                    processes[i] = CreateProcessLong();
                     processes[i].Start();
                 }
 
