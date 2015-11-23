@@ -424,6 +424,18 @@ namespace System
             }
         }
 
+        public static int CursorLeft
+        {
+            // TODO: Implement this
+            get { throw new NotImplementedException(); }
+        }
+
+        public static int CursorTop
+        {
+            // TODO: Implement this
+            get { throw new NotImplementedException(); }
+        }
+
         public static string Title
         {
             // TODO: Implement this

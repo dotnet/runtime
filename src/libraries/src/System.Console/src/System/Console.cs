@@ -173,14 +173,20 @@ namespace System
 
         public static bool CursorVisible
         {
-            get
-            {
-                return ConsolePal.CursorVisible;
-            }
-            set
-            {
-                ConsolePal.CursorVisible = value;
-            }
+            get { return ConsolePal.CursorVisible; }
+            set { ConsolePal.CursorVisible = value; }
+        }
+
+        public static int CursorLeft
+        {
+            get { return ConsolePal.CursorLeft; }
+            set { SetCursorPosition(value, CursorTop); }
+        }
+
+        public static int CursorTop
+        {
+            get { return ConsolePal.CursorTop; }
+            set { SetCursorPosition(CursorLeft, value); }
         }
 
         private const int MaxConsoleTitleLength = 24500; // same value as in .NET Framework
