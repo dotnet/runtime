@@ -3,27 +3,10 @@
   "version": 2,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.DotNet.CoreCLR/1.0.5-prerelease": {
+      "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23520": {
         "type": "package",
         "compile": {
-          "lib/dnxcore50/clretwrc.dll": {},
-          "lib/dnxcore50/coreclr.dll": {},
-          "lib/dnxcore50/CoreRun.exe": {},
-          "lib/dnxcore50/mscordaccore.dll": {},
-          "lib/dnxcore50/mscordbi.dll": {},
-          "lib/dnxcore50/mscorlib.dll": {},
-          "lib/dnxcore50/mscorrc.debug.dll": {},
-          "lib/dnxcore50/mscorrc.dll": {}
-        },
-        "runtime": {
-          "lib/dnxcore50/clretwrc.dll": {},
-          "lib/dnxcore50/coreclr.dll": {},
-          "lib/dnxcore50/CoreRun.exe": {},
-          "lib/dnxcore50/mscordaccore.dll": {},
-          "lib/dnxcore50/mscordbi.dll": {},
-          "lib/dnxcore50/mscorlib.dll": {},
-          "lib/dnxcore50/mscorrc.debug.dll": {},
-          "lib/dnxcore50/mscorrc.dll": {}
+          "ref/dnxcore50/mscorlib.dll": {}
         }
       },
       "System.Collections/4.0.10": {
@@ -375,7 +358,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00121": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -402,27 +385,10 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x86": {
-      "Microsoft.DotNet.CoreCLR/1.0.5-prerelease": {
+      "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23520": {
         "type": "package",
         "compile": {
-          "lib/dnxcore50/clretwrc.dll": {},
-          "lib/dnxcore50/coreclr.dll": {},
-          "lib/dnxcore50/CoreRun.exe": {},
-          "lib/dnxcore50/mscordaccore.dll": {},
-          "lib/dnxcore50/mscordbi.dll": {},
-          "lib/dnxcore50/mscorlib.dll": {},
-          "lib/dnxcore50/mscorrc.debug.dll": {},
-          "lib/dnxcore50/mscorrc.dll": {}
-        },
-        "runtime": {
-          "lib/dnxcore50/clretwrc.dll": {},
-          "lib/dnxcore50/coreclr.dll": {},
-          "lib/dnxcore50/CoreRun.exe": {},
-          "lib/dnxcore50/mscordaccore.dll": {},
-          "lib/dnxcore50/mscordbi.dll": {},
-          "lib/dnxcore50/mscorlib.dll": {},
-          "lib/dnxcore50/mscorrc.debug.dll": {},
-          "lib/dnxcore50/mscorrc.dll": {}
+          "ref/dnxcore50/mscorlib.dll": {}
         }
       },
       "System.Collections/4.0.10": {
@@ -774,7 +740,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00121": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -801,27 +767,10 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x64": {
-      "Microsoft.DotNet.CoreCLR/1.0.5-prerelease": {
+      "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23520": {
         "type": "package",
         "compile": {
-          "lib/dnxcore50/clretwrc.dll": {},
-          "lib/dnxcore50/coreclr.dll": {},
-          "lib/dnxcore50/CoreRun.exe": {},
-          "lib/dnxcore50/mscordaccore.dll": {},
-          "lib/dnxcore50/mscordbi.dll": {},
-          "lib/dnxcore50/mscorlib.dll": {},
-          "lib/dnxcore50/mscorrc.debug.dll": {},
-          "lib/dnxcore50/mscorrc.dll": {}
-        },
-        "runtime": {
-          "lib/dnxcore50/clretwrc.dll": {},
-          "lib/dnxcore50/coreclr.dll": {},
-          "lib/dnxcore50/CoreRun.exe": {},
-          "lib/dnxcore50/mscordaccore.dll": {},
-          "lib/dnxcore50/mscordbi.dll": {},
-          "lib/dnxcore50/mscorlib.dll": {},
-          "lib/dnxcore50/mscorrc.debug.dll": {},
-          "lib/dnxcore50/mscorrc.dll": {}
+          "ref/dnxcore50/mscorlib.dll": {}
         }
       },
       "System.Collections/4.0.10": {
@@ -1173,7 +1122,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00121": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1201,21 +1150,14 @@
     }
   },
   "libraries": {
-    "Microsoft.DotNet.CoreCLR/1.0.5-prerelease": {
+    "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23520": {
       "type": "package",
-      "sha512": "KXTA4cUjhywQwoXpOw1mAc/flHx82TjdfgAKCakR3E4G9tzuBhPIolY/F6938d4a154uCMTVagPFFznNmDfsew==",
+      "sha512": "pcuP9SFtnrAWEoVJ+yTBUha8RC8dxao/QJa0SyNSBt5rL2Er7rLd7aum7xwD6kAuDnbHFMTyEHT0PVx2D2XD6w==",
       "files": [
-        "lib/dnxcore50/clretwrc.dll",
-        "lib/dnxcore50/coreclr.dll",
-        "lib/dnxcore50/CoreRun.exe",
-        "lib/dnxcore50/mscordaccore.dll",
-        "lib/dnxcore50/mscordbi.dll",
-        "lib/dnxcore50/mscorlib.dll",
-        "lib/dnxcore50/mscorrc.debug.dll",
-        "lib/dnxcore50/mscorrc.dll",
-        "Microsoft.DotNet.CoreCLR.1.0.5-prerelease.nupkg",
-        "Microsoft.DotNet.CoreCLR.1.0.5-prerelease.nupkg.sha512",
-        "Microsoft.DotNet.CoreCLR.nuspec"
+        "Microsoft.TargetingPack.Private.CoreCLR.1.0.0-rc2-23520.nupkg",
+        "Microsoft.TargetingPack.Private.CoreCLR.1.0.0-rc2-23520.nupkg.sha512",
+        "Microsoft.TargetingPack.Private.CoreCLR.nuspec",
+        "ref/dnxcore50/mscorlib.dll"
       ]
     },
     "System.Collections/4.0.10": {
@@ -2069,21 +2011,21 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00121": {
       "type": "package",
       "serviceable": true,
-      "sha512": "oCniHZ9M9IVdGV3iInQDEja2mK+i+r9MyJzH1/gLD8drExfVuvYc1QuzOer9eu0GPZxPRsP/K9MiGR1vC555HQ==",
+      "sha512": "mNlM09rW84INiukmuUCukBf+MW/VZWsy6Nhnc7l7WqAwzkvdIS3BEzA7tQvfaL6XN2bFEULqsDaW5kapvmAzOg==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00119.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00119.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00121.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00121.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }
   },
   "projectFileDependencyGroups": {
     "": [
-      "Microsoft.DotNet.CoreCLR >= 1.0.5-prerelease",
+      "Microsoft.TargetingPack.Private.CoreCLR >= 1.0.0-rc2-23520",
       "xunit >= 2.1.0",
       "xunit.netcore.extensions >= 1.0.0-prerelease-*"
     ],
