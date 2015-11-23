@@ -12,14 +12,7 @@ using System.Threading;
 namespace System
 {
     // Provides Unix-based support for System.Console.
-    // - OpenStandardInput, OpenStandardOutput, OpenStandardError
-    // - InputEncoding, OutputEncoding
-    // - ForegroundColor, BackgroundColor, ResetColor
     //
-    // This implementation relies only on POSIX-compliant/POSIX-standard APIs,
-    // e.g. for reading/writing /dev/stdin, /dev/stdout, and /dev/stderr,
-    // for getting environment variables for accessing charset information for encodings, 
-    // and terminfo databases / strings for manipulating the terminal.
     // NOTE: The test class reflects over this class to run the tests due to limitations in
     //       the test infrastructure that prevent OS-specific builds of test binaries. If you
     //       change any of the class / struct / function names, parameters, etc then you need
