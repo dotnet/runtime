@@ -148,29 +148,19 @@ namespace System
             }
         }
 
-        public static void Beep(int frequency, int duration)
+        public static void Beep()
         {
-            if (Console.IsOutputRedirected)
-                return;
-
-            // frequency and duration currently ignored
-
-            string bellFormat = TerminalBasicInfo.Instance.BellFormat;
-            if (!string.IsNullOrEmpty(bellFormat))
+            if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(bellFormat);
+                WriteStdoutAnsiString(TerminalBasicInfo.Instance.BellFormat);
             }
         }
 
         public static void Clear()
         {
-            if (Console.IsOutputRedirected)
-                return;
-
-            string clearFormat = TerminalBasicInfo.Instance.ClearFormat;
-            if (!string.IsNullOrEmpty(clearFormat))
+            if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(clearFormat);
+                WriteStdoutAnsiString(TerminalBasicInfo.Instance.ClearFormat);
             }
         }
 
@@ -240,15 +230,11 @@ namespace System
             get { throw new PlatformNotSupportedException(); }
             set
             {
-                if (Console.IsOutputRedirected)
-                    return;
-
-                string formatString = value ?
-                    TerminalBasicInfo.Instance.CursorVisibleFormat :
-                    TerminalBasicInfo.Instance.CursorInvisibleFormat;
-                if (!string.IsNullOrEmpty(formatString))
+                if (!Console.IsOutputRedirected)
                 {
-                    WriteStdoutAnsiString(formatString);
+                    WriteStdoutAnsiString(value ?
+                        TerminalBasicInfo.Instance.CursorVisibleFormat :
+                        TerminalBasicInfo.Instance.CursorInvisibleFormat);
                 }
             }
         }
@@ -546,11 +532,7 @@ namespace System
             // We only want to send the reset string if we're targeting a TTY device
             if (!Console.IsOutputRedirected)
             {
-                string resetFormat = TerminalColorInfo.Instance.ResetFormat;
-                if (!string.IsNullOrEmpty(resetFormat))
-                {
-                    WriteStdoutAnsiString(resetFormat);
-                }
+                WriteStdoutAnsiString(TerminalColorInfo.Instance.ResetFormat);
             }
         }
 
@@ -637,11 +619,7 @@ namespace System
                     // Make sure it's in application mode
                     if (!Console.IsOutputRedirected)
                     {
-                        string keypadXmit = TerminalKeyInfo.Instance.KeypadXmit;
-                        if (!string.IsNullOrEmpty(keypadXmit))
-                        {
-                            WriteStdoutAnsiString(keypadXmit);
-                        }
+                        WriteStdoutAnsiString(TerminalKeyInfo.Instance.KeypadXmit);
                     }
 
                     s_initialized = true;
@@ -710,10 +688,12 @@ namespace System
             public string CursorLeftFormat;
             /// <summary>The format string for "user string 7", interpreted to be a cursor position request.</summary>
             /// <remarks>
-            /// This should be "\x1B[6n", but we use the format string as a way to guess whether the terminal
-            /// will actually support the request/response protocol.
+            /// This should be <see cref="KnownCursorPositionRequestFormat"/>, but we use the format string as a way to 
+            /// guess whether the terminal will actually support the request/response protocol.
             /// </remarks>
             public string CursorPositionRequestFormat;
+            /// <summary>Well-known CPR format.</summary>
+            private const string KnownCursorPositionRequestFormat = "\x1B[6n";
 
             /// <summary>The cached instance.</summary>
             public static TerminalBasicInfo Instance { get { return s_instance.Value; } }
@@ -728,39 +708,56 @@ namespace System
                 CursorInvisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorInvisibleIndex) : string.Empty;
                 CursorAddressFormat = db != null ? db.GetString(TermInfo.Database.CursorAddressIndex) : string.Empty;
                 CursorLeftFormat = db != null ? db.GetString(TermInfo.Database.CursorLeftIndex) : string.Empty;
-                TitleFormat = GetTitleFormat(db != null ? db.Term : null);
-                CursorPositionRequestFormat = db != null ? db.GetString(TermInfo.Database.CursorPositionRequest) : string.Empty;
+                TitleFormat = GetTitleFormat(db);
+                CursorPositionRequestFormat = db != null && db.GetString(TermInfo.Database.CursorPositionRequest) == KnownCursorPositionRequestFormat ?
+                    KnownCursorPositionRequestFormat : 
+                    string.Empty;
             }
 
-            private static string GetTitleFormat(string term)
+            private static string GetTitleFormat(TermInfo.Database db)
             {
-                // Technically the terminfo tsl/fsl strings are supposed to be used for setting window title,
-                // but they're not set in any terminfo files we use. As such, we hardcode known values here.
-                if (term != null)
+                if (db == null)
                 {
-                    if (term.StartsWith("xterm")) // normalize all xterms to enable easier matching
-                    {
-                        term = "xterm";
-                    }
-
-                    switch (term)
-                    {
-                        case "aixterm":
-                        case "dtterm":
-                        case "linux":
-                        case "rxvt":
-                        case "xterm":
-                            return "\x1B]0;%p1%s\u0007";
-                        case "cygwin":
-                            return "\x1B];%p1%s\u0007";
-                        case "konsole":
-                            return "\x1B]30;%p1%s\u0007";
-                        case "screen":
-                            return "\x1Bk%p1%s\x1B";
-                    }
+                    return string.Empty;
                 }
 
-                return string.Empty;
+                // Try to get the format string from tsl/fsl and use it if they're available
+                string tsl = db.GetString(TermInfo.Database.ToStatusLineIndex);
+                string fsl = db.GetString(TermInfo.Database.FromStatusLineIndex);
+                if (tsl != null && fsl != null)
+                {
+                    return tsl + "%p1%s" + fsl;
+                }
+
+                string term = db.Term;
+                if (term == null)
+                {
+                    return string.Empty;
+                }
+
+                if (term.StartsWith("xterm", StringComparison.Ordinal)) // normalize all xterms to enable easier matching
+                {
+                    term = "xterm";
+                }
+
+                switch (term)
+                {
+                    case "aixterm":
+                    case "dtterm":
+                    case "linux":
+                    case "rxvt":
+                    case "xterm":
+                        return "\x1B]0;%p1%s\x07";
+                    case "cygwin":
+                        return "\x1B];%p1%s\x07";
+                    case "konsole":
+                        return "\x1B]30;%p1%s\x07";
+                    case "screen":
+                        return "\x1Bk%p1%s\x1B";
+                    default:
+                        return string.Empty;
+                }
+
             }
 
             /// <summary>Lazy initialization of the terminal basic information.</summary>
@@ -940,7 +937,8 @@ namespace System
         /// <param name="value">The string to write.</param>
         private static unsafe void WriteStdoutAnsiString(string value)
         {
-            Debug.Assert(value != null);
+            if (string.IsNullOrEmpty(value))
+                return;
 
             // Except for extremely rare cases, ANSI escape strings should be very short.
             const int StackAllocThreshold = 256;
@@ -1327,6 +1325,10 @@ namespace System
                 public const int CursorInvisibleIndex = 13;
                 /// <summary>The well-known index of the cursor_normal string entry.</summary>
                 public const int CursorVisibleIndex = 16;
+                /// <summary>The well-known index of the from_status_line string entry.</summary>
+                public const int FromStatusLineIndex = 47;
+                /// <summary>The well-known index of the from_status_line string entry.</summary>
+                public const int ToStatusLineIndex = 135;
 
                 /// <summary>The well-known index of key_backspace</summary>
                 public const int KeyBackspace = 55;

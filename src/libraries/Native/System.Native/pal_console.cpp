@@ -62,7 +62,7 @@ extern "C" void InitializeConsole()
     if (tcgetattr(STDIN_FILENO, &newtermios) >= 0)
     {
         g_originalTermios = newtermios;
-		newtermios.c_lflag &= static_cast<uint32_t>(~(ECHO | ICANON));
+        newtermios.c_lflag &= static_cast<uint32_t>(~(ECHO | ICANON));
         newtermios.c_cc[VMIN] = 1;
         newtermios.c_cc[VTIME] = 0;
         if (tcsetattr(STDIN_FILENO, TCSANOW, &newtermios) >= 0)

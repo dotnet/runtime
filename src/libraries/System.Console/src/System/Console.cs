@@ -234,26 +234,9 @@ namespace System
             }
         }
 
-        private const int MinBeepFrequency = 37;
-        private const int MaxBeepFrequency = 32767;
-
         public static void Beep()
         {
-            Beep(800, 200);
-        }
-
-        public static void Beep(int frequency, int duration)
-        {
-            if (frequency < MinBeepFrequency || frequency > MaxBeepFrequency)
-            {
-                throw new ArgumentOutOfRangeException("frequency", frequency, SR.Format(SR.ArgumentOutOfRange_BeepFrequency, MinBeepFrequency, MaxBeepFrequency));
-            }
-            if (duration <= 0)
-            {
-                throw new ArgumentOutOfRangeException("duration", duration, SR.ArgumentOutOfRange_NeedPosNum);
-            }
-
-            ConsolePal.Beep(frequency, duration);
+            ConsolePal.Beep();
         }
 
         public static void Clear()

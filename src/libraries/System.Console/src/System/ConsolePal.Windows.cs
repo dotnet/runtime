@@ -439,7 +439,7 @@ namespace System
             set { throw new NotImplementedException(); }
         }
 
-        public static void Beep(int frequency, int duration)
+        public static void Beep()
         {
             // TODO #4636: Implement this
         }
