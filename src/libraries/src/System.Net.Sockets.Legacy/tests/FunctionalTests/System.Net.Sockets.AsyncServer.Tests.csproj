@@ -24,6 +24,7 @@
     <Compile Include="LingerStateTest.cs" />
     <Compile Include="ReceiveMessageFrom.cs" />
     <Compile Include="ReceiveMessageFromAsync.cs" />
+    <Compile Include="SelectAndPollTests.cs" />
     <Compile Include="SendPacketsAsync.cs" />
     <Compile Include="SendPacketsElementTest.cs" />
     <Compile Include="TimeoutTest.cs" />
