@@ -8,99 +8,58 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+
 namespace CoreclrTestLib
 {
     public class CoreclrTestWrapperLib
     {
         public const int EXIT_SUCCESS_CODE = 0;
 
-        public int RunTest(string cmdLine, string outputfile, string errorfile)
+        public int RunTest(string executable, string outputFile, string errorFile)
         {
-            System.IO.TextWriter output_file = new System.IO.StreamWriter(new FileStream(outputfile, FileMode.Create));
-            System.IO.TextWriter err_file = new System.IO.StreamWriter(new FileStream(errorfile, FileMode.Create));
+            Debug.Assert(outputFile != errorFile);
 
             int exitCode = -100;
             int timeout = 1000 * 60*10;
+
+            var outputStream = new FileStream(outputFile, FileMode.Create);
+            var errorStream = new FileStream(errorFile, FileMode.Create);
+
+            using (var outputWriter = new StreamWriter(outputStream))
+            using (var errorWriter = new StreamWriter(errorStream))
             using (Process process = new Process())
             {
-                process.StartInfo.FileName = cmdLine;
+                process.StartInfo.FileName = executable;
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
-                                
 
-                StringBuilder output = new StringBuilder();
-                StringBuilder error = new StringBuilder();
+                process.Start();
 
-                using (AutoResetEvent outputWaitHandle = new AutoResetEvent(false))
-                using (AutoResetEvent errorWaitHandle = new AutoResetEvent(false))
+                Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream);
+                Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream);
+
+                bool completed = process.WaitForExit(timeout) &&
+                    copyOutput.Wait(timeout) &&
+                    copyError.Wait(timeout);
+
+                if (completed)
                 {
-                    process.OutputDataReceived += (sender, e) =>
-                    {
-                        if (e.Data == null)
-                        {
-                            try
-                            {
-                                outputWaitHandle.Set();
-                            }
-                            catch (ObjectDisposedException)
-                            {
-                                // Noop for access after timeout.
-                            }
-                        }
-                        else
-                        {
-                            output.AppendLine(e.Data);
-                        }
-                    };
-                    process.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (e.Data == null)
-                        {
-                            try
-                            {
-                                errorWaitHandle.Set();
-                            }
-                            catch (ObjectDisposedException)
-                            {
-                                // Noop for access after timeout.
-                            }
-                        }
-                        else
-                        {
-                            error.AppendLine(e.Data);
-                        }
-                    };
-
-                    process.Start();
-
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
-
-                    if (process.WaitForExit(timeout) &&
-                        outputWaitHandle.WaitOne(timeout) &&
-                        errorWaitHandle.WaitOne(timeout))
-                    {
-                        // Process completed. Check process.ExitCode here.
-                        exitCode = process.ExitCode;
-                    }
-                    else
-                    {
-                        // Timed out.
-                        output.AppendLine("cmdLine:" + cmdLine + " Timed Out");
-                        error.AppendLine("cmdLine:" + cmdLine + " Timed Out");
-                    }
-
-                   output_file.WriteLine(output.ToString());
-                   output_file.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
-                   output_file.Flush();
-
-                   err_file.WriteLine(error.ToString());
-                   err_file.Flush();
-
-                   output_file.Dispose();
-                   err_file.Dispose();
+                    // Process completed. Check process.ExitCode here.
+                    exitCode = process.ExitCode;
                 }
+                else
+                {
+                    // Timed out.
+                    outputWriter.WriteLine("cmdLine:" + executable + " Timed Out");
+                    errorWriter.WriteLine("cmdLine:" + executable + " Timed Out");
+                }
+
+               outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
+               outputWriter.Flush();
+
+               errorWriter.Flush();
             }
 
             return exitCode;
