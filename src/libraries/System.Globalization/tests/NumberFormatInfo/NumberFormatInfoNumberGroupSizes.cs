@@ -67,21 +67,15 @@ namespace System.Globalization.Tests
 
         // TestNumberGroupSizesLocale: Verify value of property NumberGroupSizes for specific locales
         [Theory]
-        [InlineData("en-US", 3, 0)]
-        [InlineData("ur-IN", 3, 2)]
-        [ActiveIssue(3243)]
-        public void TestNumberGroupSizesLocale(string locale, int primaryGroupSize, int secondaryGroupSize)
+        [InlineData("en-US")]
+        [InlineData("ur-IN")]
+        public void TestNumberGroupSizesLocale(string locale)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
-            int count = (secondaryGroupSize == 0) ? 1 : 2;
 
-            Assert.Equal(primaryGroupSize, nfi.NumberGroupSizes[0]);
-            Assert.Equal(count, nfi.NumberGroupSizes.Length);
-            if (count == 2)
-            {
-                Assert.Equal(secondaryGroupSize, nfi.NumberGroupSizes[1]);
-            }
+            int[] expected = NumberFormatInfoData.GetNumberGroupSizes(myTestCulture);
+            Assert.Equal(expected, nfi.NumberGroupSizes);
         }
 
         private void VerificationHelper<T>(int[] intArray) where T : Exception

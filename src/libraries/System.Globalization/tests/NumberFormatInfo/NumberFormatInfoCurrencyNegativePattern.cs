@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Globalization;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -54,30 +53,22 @@ namespace System.Globalization.Tests
 
         // TestCurrencyNegativePatternLocale: Verify value of property CurrencyNegativePattern for specific locales
         [Theory]
-        [InlineData("en-US", 0, 1, 0)]
-        [InlineData("en-CA", 1, 0, 1)]
-        [InlineData("fa-IR", 3, 1, 0)]
-        [InlineData("fr-CD", 4, 8, 15)]
-        [InlineData("as", 12, 9, 9)]
-        [InlineData("es-BO", 14, 1, 1)]
-        [InlineData("fr-CA", 15, 8, 15)]
-        public void TestCurrencyNegativePatternLocale(string locale, int expectedWindows, int expectedIcu, int alternateExpectedIcu)
+        [InlineData("en-US")]
+        [InlineData("en-CA")]
+        [InlineData("fa-IR")]
+        [InlineData("fr-CD")]
+        [InlineData("as")]
+        [InlineData("es-BO")]
+        [InlineData("fr-CA")]
+        public void TestCurrencyNegativePatternLocale(string locale)
         {
             CultureInfo myTestCulture = new CultureInfo(locale);
             NumberFormatInfo nfi = myTestCulture.NumberFormat;
             int actual = nfi.CurrencyNegativePattern;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // todo: determine if Windows version needs to support "accounting" currency explictly which contains parenthesis
-                // Windows 10 uses ICU data here, this should be cleaned up as part of #3243
-                Assert.True(actual == expectedWindows || actual == expectedIcu);
-            }
-            else
-            {
-                // alternateExpectedIcu contain values for CentOS7 which is using an older version of ICU (50) with different data
-                Assert.True(actual == expectedIcu || actual == alternateExpectedIcu);
-            }
+            int[] acceptablePatterns = NumberFormatInfoData.GetCurrencyNegativePatterns(myTestCulture);
+            Assert.True(acceptablePatterns.Contains(actual),
+                string.Format("'{0}' was not found in '[{1}]'", actual, string.Join(",", acceptablePatterns)));
         }
 
         // TestCurrencyNegativePatternLocale2: Verify value of property CurrencyNegativePattern for specific locales
