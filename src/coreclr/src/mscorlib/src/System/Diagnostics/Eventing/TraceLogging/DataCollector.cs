@@ -221,6 +221,14 @@ namespace System.Diagnostics.Tracing
 
             if (this.bufferNesting == 0)
             {
+                /*
+                TODO (perf): consider coalescing adjacent buffered regions into a
+                single buffer, similar to what we're already doing for adjacent
+                scalars. In addition, if a type contains a buffered region adjacent
+                to a blittable array, and the blittable array is small, it would be
+                more efficient to buffer the array instead of pinning it.
+                */
+
                 this.EnsureBuffer();
                 this.PinArray(this.buffer, this.bufferPos);
                 this.buffer = null;
