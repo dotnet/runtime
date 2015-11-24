@@ -5,6 +5,7 @@
 
 #include "ildasmpch.h"
 
+#ifndef FEATURE_CORECLR
 #include "debugmacros.h"
 #include "corpriv.h"
 #include "ceeload.h"
@@ -41,7 +42,7 @@ ULONG InGlobalBuffer;
 // Global HINSTANCE
 //
 extern HINSTANCE   g_hInstance;
-HINSTANCE   g_hResources;
+extern HINSTANCE   g_hResources;
 
 //
 // Main window
@@ -4010,4 +4011,4 @@ void DumpTreeItem(HTREEITEM hSelf, FILE* pFile, __inout __nullterminated WCHAR* 
         printLineW(pFile,szIndent);
     }
 }
-
+#endif
