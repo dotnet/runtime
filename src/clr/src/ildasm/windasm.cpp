@@ -49,7 +49,6 @@ extern BOOL                    g_fInsertSourceLines;
 extern BOOL                    g_fTryInCode;
 extern BOOL                    g_fQuoteAllNames;
 extern BOOL                    g_fShowProgressBar;
-extern HINSTANCE               g_hResources;
 extern BOOL                    g_fTDC;
 extern BOOL                    g_fShowCA;
 extern BOOL                    g_fCAVerbal;
@@ -90,6 +89,7 @@ extern BOOL                 g_fUseProperName;
 extern BOOL                 g_fDumpMetaInfo;
 extern ULONG                g_ulMetaInfoFilter;
 HINSTANCE                   g_hInstance;
+HINSTANCE                   g_hResources;
 HANDLE                      hConsoleOut=NULL;
 HANDLE                      hConsoleErr=NULL;
 // These are implemented in DASM.CPP:
@@ -109,8 +109,9 @@ BOOL IsGuiILOnly()
 void PrintLogo()
 {
     printf("Microsoft (R) .NET Framework IL Disassembler.  Version " VER_FILEVERSION_STR);
-    printf("\n%S\n\n", RstrW(IDS_LEGALCOPYRIGHT_LOGO));
+    printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
 }
+
 void SyntaxCon()
 {
     DWORD l;
@@ -160,7 +161,7 @@ void GetInputFileFullPath()
     WszMultiByteToWideChar(g_uConsoleCP, 0, g_szInputFile, -1, wzArg, len);
             
     // Get the full path
-    len = GetFullPathName(wzArg, MAX_PATH, g_wszFullInputFile, NULL);
+    len = WszGetFullPathName(wzArg, MAX_PATH, g_wszFullInputFile, NULL);
     VDELETE(wzArg);
 }
 
@@ -216,7 +217,11 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
         }
         else if (_stricmp(szOpt, "sou") == 0)
         {
+#ifdef FEATURE_CORECLR
+            printf("Warning: 'SOURCE' option is ignored for ildasm on CoreCLR.\n");
+#else
             g_fShowSource = TRUE;
+#endif
         }
         else if (_stricmp(szOpt, "lin") == 0)
         {
@@ -530,10 +535,14 @@ int ParseCmdLineA(__in __nullterminated char* szCmdLine, __out char** ppszObjFil
     return ret;
 }
 
+#ifdef FEATURE_CORECLR
+int __cdecl main(int nCmdShow, char* lpCmdLine[])
+#else
 int APIENTRY WinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      __in LPSTR     lpCmdLine,
                      int       nCmdShow)
+#endif
 {
     // ildasm does not need to be SO-robust.
     SO_NOT_MAINLINE_FUNCTION;
@@ -551,8 +560,10 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
     g_fUseProperName = TRUE;
 
+#ifndef FEATURE_CORECLR
     g_hInstance = hInstance;
     g_Mode = MODE_GUI;
+#endif
     g_pszClassToDump[0]=0;
     g_pszMethodToDump[0]=0;
     g_pszSigToDump[0]=0;
@@ -632,6 +643,9 @@ int APIENTRY WinMain(HINSTANCE hInstance,
         }
         else // if GUI ordered, restart as WinApp
         {
+#ifdef FEATURE_CORECLR
+            _ASSERTE(!"GUI is not supported for ildasm on CoreCLR.");
+#else
             PROCESS_INFORMATION pi;
             STARTUPINFO         si;
             memset(&pi, 0, sizeof(PROCESS_INFORMATION) );
@@ -658,8 +672,10 @@ int APIENTRY WinMain(HINSTANCE hInstance,
                 exit(1);
             }
             exit(0);
+#endif
         }
     }
+#ifndef FEATURE_CORECLR
     else //Second pass: WinApp
     {
         g_uCodePage = CP_UTF8;
@@ -693,6 +709,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
         Uninit();
         return 0 ;
     }
+#endif
     return 0;
 }
 

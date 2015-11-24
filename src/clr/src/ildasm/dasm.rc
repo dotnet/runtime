@@ -11,7 +11,9 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
+#ifndef FEATURE_CORECLR
 #include "afxres.h"
+#endif
 #include <winresrc.h>
 
 /////////////////////////////////////////////////////////////////////////////
@@ -22,8 +24,6 @@
 
 #include <fxver.h>
 #include <fxver.rc>
-
-#include <copyrightstring.rc>
 
 /////////////////////////////////////////////////////////////////////////////
 // English (U.S.) resources
@@ -59,7 +59,7 @@ END
 #endif    // APSTUDIO_INVOKED
 
 
-#ifndef FEATURE_PAL
+#if !defined(FEATURE_PAL) && !defined(FEATURE_CORECLR)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -281,7 +281,7 @@ BEGIN
 END
 
 #endif // FX_VFT == VFT_DLL
-#endif // !FEATURE_PAL
+#endif // !defined(FEATURE_PAL) && !defined(FEATURE_CORECLR)
 
 #if FX_VFT == VFT_DLL
 STRINGTABLE DISCARDABLE 
