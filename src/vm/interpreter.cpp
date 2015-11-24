@@ -11817,7 +11817,7 @@ void Interpreter::PrintValue(InterpreterType it, BYTE* valAddr)
                 {
                     fprintf(GetLogFile(), " ");
                 }
-                fprintf(GetLogFile(), "0x%p", valAddr[i]);
+                fprintf(GetLogFile(), "0x%02x", valAddr[i]);
             }
             fprintf(GetLogFile(), "]");
         }

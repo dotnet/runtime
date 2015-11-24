@@ -82,17 +82,25 @@ if(WIN32)
       lazycow.cpp
     )
   endif()
+  
+  if(NOT DEFINED FEATURE_IMPLICIT_TLS)
+    list(APPEND UTILCODE_SOURCES 
+      tls.cpp
+    )
+  endif(NOT DEFINED FEATURE_IMPLICIT_TLS)
 endif(WIN32)
-
+  
 set(UTILCODE_SOURCES 
   ${UTILCODE_COMMON_SOURCES}
   perflog.cpp
 )
 
 if(WIN32)
-  list(APPEND UTILCODE_SOURCES 
-    tls.cpp
-  )   
+  if(NOT DEFINED FEATURE_IMPLICIT_TLS)
+    list(APPEND UTILCODE_SOURCES 
+      tls.cpp
+    )
+  endif(NOT DEFINED FEATURE_IMPLICIT_TLS)
 endif()
 
 set(UTILCODE_DAC_SOURCES 
