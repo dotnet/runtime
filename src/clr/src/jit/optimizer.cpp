@@ -5878,7 +5878,6 @@ bool Compiler::optHoistLoopExprsForTree(GenTreePtr tree,
     }
 
     bool treeIsInvariant = true;
-    bool curIsAddr = tree->OperGet() == GT_ADDR;
     for (unsigned childNum = 0; childNum < nChildren; childNum++)
     {
         if (!optHoistLoopExprsForTree(tree->GetChild(childNum), lnum, hoistCtxt, pFirstBlockAndBeforeSideEffect, &childrenHoistable[childNum]))
