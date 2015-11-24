@@ -82,7 +82,7 @@ void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection)
 }
 
 
-void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
+void GetProcessMemoryLoad(GCMemoryStatus* pGCMemStatus)
 {
     CONTRACTL
     {
@@ -91,28 +91,27 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     }
     CONTRACTL_END;
 
-    pMSEX->dwMemoryLoad = 0;
-    pMSEX->ullTotalPageFile = 0;
-    pMSEX->ullAvailPageFile = 0;
-    pMSEX->ullAvailExtendedVirtual = 0;
+    pGCMemStatus->dwMemoryLoad = 0;
+    pGCMemStatus->ullTotalPageFile = 0;
+    pGCMemStatus->ullAvailPageFile = 0;
 
     // There is no API to get the total virtual address space size on 
     // Unix, so we use a constant value representing 128TB, which is 
     // the approximate size of total user virtual address space on
     // the currently supported Unix systems.
-    static const UINT64 _128TB = (1ull << 47);
-    pMSEX->ullTotalVirtual = _128TB;
-    pMSEX->ullAvailVirtual = _128TB;
+    static const uint64_t _128TB = (1ull << 47);
+    pGCMemStatus->ullTotalVirtual = _128TB;
+    pGCMemStatus->ullAvailVirtual = _128TB;
 
     // TODO: Implement
-    pMSEX->ullTotalPhys = _128TB;
-    pMSEX->ullAvailPhys = _128TB;
+    pGCMemStatus->ullTotalPhys = _128TB;
+    pGCMemStatus->ullAvailPhys = _128TB;
 
     // If the machine has more RAM than virtual address limit, let us cap it.
     // Our GC can never use more than virtual address limit.
-    if (pMSEX->ullAvailPhys > pMSEX->ullTotalVirtual)
+    if (pGCMemStatus->ullAvailPhys > pGCMemStatus->ullTotalVirtual)
     {
-        pMSEX->ullAvailPhys = pMSEX->ullAvailVirtual;
+        pGCMemStatus->ullAvailPhys = pGCMemStatus->ullAvailVirtual;
     }
 }
 
@@ -388,8 +387,8 @@ GetWriteWatch(
     PVOID lpBaseAddress,
     SIZE_T dwRegionSize,
     PVOID *lpAddresses,
-    ULONG_PTR * lpdwCount,
-    ULONG * lpdwGranularity
+    uintptr_t * lpdwCount,
+    uint32_t * lpdwGranularity
     )
 {
     // TODO: Implement for background GC
@@ -465,7 +464,7 @@ QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)
         return FALSE;
     }
     lpPerformanceCount->QuadPart =
-        (LONGLONG) tv.tv_sec * (LONGLONG) tccSecondsToMicroSeconds + (LONGLONG) tv.tv_usec;
+        (int64_t) tv.tv_sec * (int64_t) tccSecondsToMicroSeconds + (int64_t) tv.tv_usec;
     return TRUE;
 }
 
@@ -474,7 +473,7 @@ BOOL
 WINAPI
 QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency)
 {
-    lpFrequency->QuadPart = (LONGLONG) tccSecondsToMicroSeconds;
+    lpFrequency->QuadPart = (int64_t) tccSecondsToMicroSeconds;
     return TRUE;
 }
 
@@ -519,8 +518,8 @@ DWORD
 WINAPI
 SetFilePointer(
     HANDLE hFile,
-    LONG lDistanceToMove,
-    LONG * lpDistanceToMoveHigh,
+    int32_t lDistanceToMove,
+    int32_t * lpDistanceToMoveHigh,
     DWORD dwMoveMethod)
 {
     // TODO: Reimplement callers using CRT

@@ -138,12 +138,12 @@ if ERRORLEVEL 1 (
 exit /b 0
 
 :runtests
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoBuild=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diagnostic;LogFile="%__TestRunBuildLog%";Append %1 %_buildpostfix% /clp:showcommandline
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoBuild=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:LogFile="%__TestRunBuildLog%";Append %1 %_buildpostfix% /clp:showcommandline
 exit /b %ERRORLEVEL%
 
 :PerformXunitWrapperBuild
 
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoRun=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diagnostic;LogFile="%__XunitWrapperBuildLog%";Append %1  %_buildappend%%_buildpostfix%
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoRun=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:LogFile="%__XunitWrapperBuildLog%";Append %1  %_buildappend%%_buildpostfix%
 exit /b %ERRORLEVEL%
 
 :Usage

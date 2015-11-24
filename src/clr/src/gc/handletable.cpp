@@ -32,8 +32,8 @@
  ****************************************************************************/
 
 #ifdef _DEBUG
-void DEBUG_PostGCScanHandler(HandleTable *pTable, const UINT *types, UINT typeCount, UINT condemned, UINT maxgen, ScanCallbackInfo *info);
-void DEBUG_LogScanningStatistics(HandleTable *pTable, DWORD level);
+void DEBUG_PostGCScanHandler(HandleTable *pTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, ScanCallbackInfo *info);
+void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level);
 #endif
 
 /*--------------------------------------------------------------------------*/
@@ -83,7 +83,7 @@ __inline PTR_HandleTable Table(HHANDLETABLE hTable)
  * Alocates and initializes a handle table.
  *
  */
-HHANDLETABLE HndCreateHandleTable(const UINT *pTypeFlags, UINT uTypeCount, ADIndex uADIndex)
+HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCount, ADIndex uADIndex)
 {
     CONTRACTL
     {
@@ -105,10 +105,10 @@ HHANDLETABLE HndCreateHandleTable(const UINT *pTypeFlags, UINT uTypeCount, ADInd
     // if you hit this then TABLE LAYOUT IS BROKEN
 
     // compute the size of the handle table allocation
-    ULONG32 dwSize = sizeof(HandleTable) + (uTypeCount * sizeof(HandleTypeCache));
+    uint32_t dwSize = sizeof(HandleTable) + (uTypeCount * sizeof(HandleTypeCache));
 
     // allocate the table
-    HandleTable *pTable = (HandleTable *) new (nothrow) BYTE[dwSize];
+    HandleTable *pTable = (HandleTable *) new (nothrow) uint8_t[dwSize];
     if (pTable == NULL)
         return NULL;
 
@@ -121,7 +121,7 @@ HHANDLETABLE HndCreateHandleTable(const UINT *pTypeFlags, UINT uTypeCount, ADInd
     if (!pTable->pSegmentList)
     {
         // free the table's memory and get out
-        delete [] (BYTE*)pTable;
+        delete [] (uint8_t*)pTable;
         return NULL;
     }
 
@@ -132,7 +132,7 @@ HHANDLETABLE HndCreateHandleTable(const UINT *pTypeFlags, UINT uTypeCount, ADInd
     if (!pTable->Lock.InitNoThrow(CrstHandleTable, CrstFlags(CRST_REENTRANCY | CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_UNSAFE_SAMELEVEL)))
     {
         SegmentFree(pTable->pSegmentList);
-        delete [] (BYTE*)pTable;
+        delete [] (uint8_t*)pTable;
         return NULL;
     }
 
@@ -140,11 +140,11 @@ HHANDLETABLE HndCreateHandleTable(const UINT *pTypeFlags, UINT uTypeCount, ADInd
     pTable->uTypeCount = uTypeCount;
 
     // Store user data
-    pTable->uTableIndex = (UINT) -1;
+    pTable->uTableIndex = (uint32_t) -1;
     pTable->uADIndex = uADIndex;
 
     // loop over various arrays an initialize them
-    UINT u;
+    uint32_t u;
 
     // initialize the type flags for the types we were passed
     for (u = 0; u < uTypeCount; u++)
@@ -210,14 +210,14 @@ void HndDestroyHandleTable(HHANDLETABLE hTable)
     }
 
     // free the table's memory
-    delete [] (BYTE*) pTable;
+    delete [] (uint8_t*) pTable;
 }
 /*
  * HndSetHandleTableIndex
  *
  * Sets the index associated with a handle table at creation
  */
-void HndSetHandleTableIndex(HHANDLETABLE hTable, UINT uTableIndex)
+void HndSetHandleTableIndex(HHANDLETABLE hTable, uint32_t uTableIndex)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -233,14 +233,14 @@ void HndSetHandleTableIndex(HHANDLETABLE hTable, UINT uTableIndex)
  *
  * Retrieves the index associated with a handle table at creation
  */
-UINT HndGetHandleTableIndex(HHANDLETABLE hTable)
+uint32_t HndGetHandleTableIndex(HHANDLETABLE hTable)
 {
     WRAPPER_NO_CONTRACT;
 
     // fetch the handle table pointer
     HandleTable *pTable = Table(hTable);
 
-    _ASSERTE (pTable->uTableIndex != (UINT) -1);  // We have not set uTableIndex yet.
+    _ASSERTE (pTable->uTableIndex != (uint32_t) -1);  // We have not set uTableIndex yet.
     return pTable->uTableIndex;
 }
 
@@ -282,7 +282,7 @@ ADIndex HndGetHandleADIndex(OBJECTHANDLE handle)
  * Entrypoint for allocating an individual handle.
  *
  */
-OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, UINT uType, OBJECTREF object, LPARAM lExtraInfo)
+OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF object, uintptr_t lExtraInfo)
 {
     CONTRACTL
     {
@@ -360,7 +360,7 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, UINT uType, OBJECTREF object, 
 #ifdef GC_PROFILING
     {
         BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        g_profControlBlock.pProfInterface->HandleCreated((UINT_PTR)handle, (ObjectID)OBJECTREF_TO_UNCHECKED_OBJECTREF(object));
+        g_profControlBlock.pProfInterface->HandleCreated((uintptr_t)handle, (ObjectID)OBJECTREF_TO_UNCHECKED_OBJECTREF(object));
         END_PIN_PROFILER();
     }
 #endif //GC_PROFILING
@@ -441,8 +441,9 @@ void ValidateAppDomainForHandle(OBJECTHANDLE handle)
     // Verify that we are not trying to access freed handle.
     _ASSERTE("Attempt to access destroyed handle." && *(_UNCHECKED_OBJECTREF *)handle != DEBUG_DestroyedHandleValue);
 #endif
-#ifndef DACCESS_COMPILE
-
+#ifdef DACCESS_COMPILE
+    UNREFERENCED_PARAMETER(handle);
+#else
     BEGIN_DEBUG_ONLY_CODE;
     ADIndex id = HndGetHandleADIndex(handle);
     AppDomain *pUnloadingDomain = SystemDomain::AppDomainBeingUnloaded();
@@ -468,7 +469,7 @@ void ValidateAppDomainForHandle(OBJECTHANDLE handle)
  * Entrypoint for freeing an individual handle.
  *
  */
-void HndDestroyHandle(HHANDLETABLE hTable, UINT uType, OBJECTHANDLE handle)
+void HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle)
 {
     CONTRACTL
     {
@@ -498,7 +499,7 @@ void HndDestroyHandle(HHANDLETABLE hTable, UINT uType, OBJECTHANDLE handle)
 #ifdef GC_PROFILING
     {
         BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        g_profControlBlock.pProfInterface->HandleDestroyed((UINT_PTR)handle);
+        g_profControlBlock.pProfInterface->HandleDestroyed((uintptr_t)handle);
         END_PIN_PROFILER();
     }        
 #endif //GC_PROFILING
@@ -554,7 +555,7 @@ void HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle)
  * Entrypoint for allocating handles in bulk.
  *
  */
-UINT HndCreateHandles(HHANDLETABLE hTable, UINT uType, OBJECTHANDLE *pHandles, UINT uCount)
+uint32_t HndCreateHandles(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE *pHandles, uint32_t uCount)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -565,7 +566,7 @@ UINT HndCreateHandles(HHANDLETABLE hTable, UINT uType, OBJECTHANDLE *pHandles, U
     _ASSERTE(uType < pTable->uTypeCount);
 
     // keep track of the number of handles we've allocated
-    UINT uSatisfied = 0;
+    uint32_t uSatisfied = 0;
 
     // if this is a large number of handles then bypass the cache
     if (uCount > SMALL_ALLOC_COUNT)
@@ -589,8 +590,8 @@ UINT HndCreateHandles(HHANDLETABLE hTable, UINT uType, OBJECTHANDLE *pHandles, U
 #ifdef GC_PROFILING
     {
         BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        for (UINT i = 0; i < uSatisfied; i++)
-            g_profControlBlock.pProfInterface->HandleCreated((UINT_PTR)pHandles[i], 0);
+        for (uint32_t i = 0; i < uSatisfied; i++)
+            g_profControlBlock.pProfInterface->HandleCreated((uintptr_t)pHandles[i], 0);
         END_PIN_PROFILER();
     }
 #endif //GC_PROFILING
@@ -606,7 +607,7 @@ UINT HndCreateHandles(HHANDLETABLE hTable, UINT uType, OBJECTHANDLE *pHandles, U
  * Entrypoint for freeing handles in bulk.
  *
  */
-void HndDestroyHandles(HHANDLETABLE hTable, UINT uType, const OBJECTHANDLE *pHandles, UINT uCount)
+void HndDestroyHandles(HHANDLETABLE hTable, uint32_t uType, const OBJECTHANDLE *pHandles, uint32_t uCount)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -623,8 +624,8 @@ void HndDestroyHandles(HHANDLETABLE hTable, UINT uType, const OBJECTHANDLE *pHan
 #ifdef GC_PROFILING
     {
         BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        for (UINT i = 0; i < uCount; i++)
-            g_profControlBlock.pProfInterface->HandleDestroyed((UINT_PTR)pHandles[i]);
+        for (uint32_t i = 0; i < uCount; i++)
+            g_profControlBlock.pProfInterface->HandleDestroyed((uintptr_t)pHandles[i]);
         END_PIN_PROFILER();
     }
 #endif
@@ -655,12 +656,12 @@ void HndDestroyHandles(HHANDLETABLE hTable, UINT uType, const OBJECTHANDLE *pHan
  * Stores owner data with handle.
  *
  */
-void HndSetHandleExtraInfo(OBJECTHANDLE handle, UINT uType, LPARAM lExtraInfo)
+void HndSetHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, uintptr_t lExtraInfo)
 {
     WRAPPER_NO_CONTRACT;
 
     // fetch the user data slot for this handle if we have the right type
-    LPARAM *pUserData = HandleValidateAndFetchUserDataPointer(handle, uType);
+    uintptr_t *pUserData = HandleValidateAndFetchUserDataPointer(handle, uType);
 
     // is there a slot?
     if (pUserData)
@@ -676,18 +677,18 @@ void HndSetHandleExtraInfo(OBJECTHANDLE handle, UINT uType, LPARAM lExtraInfo)
 * Stores owner data with handle.
 *
 */
-LPARAM HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, UINT uType, LPARAM lOldExtraInfo, LPARAM lNewExtraInfo)
+uintptr_t HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, uintptr_t lOldExtraInfo, uintptr_t lNewExtraInfo)
 {
     WRAPPER_NO_CONTRACT;
 
     // fetch the user data slot for this handle if we have the right type
-    LPARAM *pUserData = HandleValidateAndFetchUserDataPointer(handle, uType);
+    uintptr_t *pUserData = HandleValidateAndFetchUserDataPointer(handle, uType);
 
     // is there a slot?
     if (pUserData)
     {
         // yes - attempt to store the info
-        return (LPARAM)FastInterlockCompareExchangePointer((PVOID*)pUserData, (PVOID)lNewExtraInfo, (PVOID)lOldExtraInfo);
+        return (uintptr_t)FastInterlockCompareExchangePointer((void**)pUserData, (void*)lNewExtraInfo, (void*)lOldExtraInfo);
     }
 
     _ASSERTE(!"Shouldn't be trying to call HndCompareExchangeHandleExtraInfo on handle types without extra info");
@@ -701,15 +702,15 @@ LPARAM HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, UINT uType, LPARAM
  * Retrieves owner data from handle.
  *
  */
-LPARAM HndGetHandleExtraInfo(OBJECTHANDLE handle)
+uintptr_t HndGetHandleExtraInfo(OBJECTHANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
 
     // assume zero until we actually get it
-    LPARAM lExtraInfo = 0L;
+    uintptr_t lExtraInfo = 0L;
 
     // fetch the user data slot for this handle
-    PTR_LPARAM pUserData = HandleQuickFetchUserDataPointer(handle);
+    PTR_uintptr_t pUserData = HandleQuickFetchUserDataPointer(handle);
 
     // if we did then copy the value
     if (pUserData)
@@ -748,13 +749,14 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, SetGCHandle) ||
         ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, SetGCHandle))
     {
-        UINT hndType = HandleFetchType(handle);
+        uint32_t hndType = HandleFetchType(handle);
         ADIndex appDomainIndex = HndGetHandleADIndex(handle);   
         AppDomain* pAppDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
-        UINT generation = value != 0 ? GCHeap::GetGCHeap()->WhichGeneration(value) : 0;
-        FireEtwSetGCHandle((void*) handle, value, hndType, generation, (LONGLONG) pAppDomain, GetClrInstanceId());
-        FireEtwPrvSetGCHandle((void*) handle, value, hndType, generation, (LONGLONG) pAppDomain, GetClrInstanceId());
+        uint32_t generation = value != 0 ? GCHeap::GetGCHeap()->WhichGeneration(value) : 0;
+        FireEtwSetGCHandle((void*) handle, value, hndType, generation, (int64_t) pAppDomain, GetClrInstanceId());
+        FireEtwPrvSetGCHandle((void*) handle, value, hndType, generation, (int64_t) pAppDomain, GetClrInstanceId());
 
+#ifndef FEATURE_REDHAWK
         // Also fire the things pinned by Async pinned handles
         if (hndType == HNDTYPE_ASYNCPINNED)
         {
@@ -765,23 +767,27 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
                 {
                     ArrayBase* pUserObject = (ArrayBase*)OBJECTREFToObject(overlapped->m_userObject);
                     Object **ppObj = (Object**)pUserObject->GetDataPtr(TRUE);
-                    SIZE_T num = pUserObject->GetNumComponents();
-                    for (SIZE_T i = 0; i < num; i ++)
+                    size_t num = pUserObject->GetNumComponents();
+                    for (size_t i = 0; i < num; i ++)
                     {
                         value = ppObj[i];
-                        UINT generation = value != 0 ? GCHeap::GetGCHeap()->WhichGeneration(value) : 0;
-                        FireEtwSetGCHandle(overlapped, value, HNDTYPE_PINNED, generation, (LONGLONG) pAppDomain, GetClrInstanceId());
+                        uint32_t generation = value != 0 ? GCHeap::GetGCHeap()->WhichGeneration(value) : 0;
+                        FireEtwSetGCHandle(overlapped, value, HNDTYPE_PINNED, generation, (int64_t) pAppDomain, GetClrInstanceId());
                     }
                 }
                 else
                 {
                     value = OBJECTREF_TO_UNCHECKED_OBJECTREF(overlapped->m_userObject);
-                    UINT generation = value != 0 ? GCHeap::GetGCHeap()->WhichGeneration(value) : 0;
-                    FireEtwSetGCHandle(overlapped, value, HNDTYPE_PINNED, generation, (LONGLONG) pAppDomain, GetClrInstanceId());
+                    uint32_t generation = value != 0 ? GCHeap::GetGCHeap()->WhichGeneration(value) : 0;
+                    FireEtwSetGCHandle(overlapped, value, HNDTYPE_PINNED, generation, (int64_t) pAppDomain, GetClrInstanceId());
                 }
             }
         }
+#endif // FEATURE_REDHAWK
     }
+#else
+    UNREFERENCED_PARAMETER(handle);
+    UNREFERENCED_PARAMETER(value);
 #endif
 }
 
@@ -804,13 +810,13 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
     _ASSERTE (objref != NULL);
 
     // find the write barrier for this handle
-    BYTE *barrier = (BYTE *)((UINT_PTR)handle & HANDLE_SEGMENT_ALIGN_MASK);
+    uint8_t *barrier = (uint8_t *)((uintptr_t)handle & HANDLE_SEGMENT_ALIGN_MASK);
     
     // sanity
     _ASSERTE(barrier);
     
     // find the offset of this handle into the segment
-    UINT_PTR offset = (UINT_PTR)handle & HANDLE_SEGMENT_CONTENT_MASK;
+    uintptr_t offset = (uintptr_t)handle & HANDLE_SEGMENT_CONTENT_MASK;
     
     // make sure it is in the handle area and not the header
     _ASSERTE(offset >= HANDLE_HEADER_SIZE);
@@ -823,14 +829,14 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
     // (utilizing a conditional register move to determine whether the write is an update or simply writes
     // back what was read). This is a legal transformation for non-volatile accesses but obviously leads to a
     // race condition where we can lose an update (see the comment below for the race condition).
-    volatile BYTE * pClumpAge = barrier + offset;
+    volatile uint8_t * pClumpAge = barrier + offset;
 
     // if this age is smaller than age of the clump, update the clump age
     if (*pClumpAge != 0) // Perf optimization: if clumpAge is 0, nothing more to do
     {
         // find out generation
         int generation = GCHeap::GetGCHeap()->WhichGeneration(value);
-        UINT uType = HandleFetchType(handle);
+        uint32_t uType = HandleFetchType(handle);
 
 #ifndef FEATURE_REDHAWK
         //OverlappedData need special treatment: because all user data pointed by it needs to be reported by this handle,
@@ -846,7 +852,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
             generation = 0;
         }
 
-        if (*pClumpAge > (BYTE) generation)
+        if (*pClumpAge > (uint8_t) generation)
         {
             // We have to be careful here. HndWriteBarrier is not under any synchronization
             // Consider the scenario where 2 threads are hitting the line below at the same
@@ -855,7 +861,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
             // youngest handle in the clump, thus GC may skip the clump). To fix this
             // we just set the clump age to 0, which means that whoever wins the race
             // results are the same, as GC will always look at the clump
-            *pClumpAge = (BYTE)0;
+            *pClumpAge = (uint8_t)0;
         }
     }
 }
@@ -869,8 +875,8 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
  * needs to enumerate all roots in the handle table.
  *
  */
-void HndEnumHandles(HHANDLETABLE hTable, const UINT *puType, UINT uTypeCount,
-                    HANDLESCANPROC pfnEnum, LPARAM lParam1, LPARAM lParam2, BOOL fAsync)
+void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeCount,
+                    HANDLESCANPROC pfnEnum, uintptr_t lParam1, uintptr_t lParam2, BOOL fAsync)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -929,8 +935,8 @@ void HndEnumHandles(HHANDLETABLE hTable, const UINT *puType, UINT uTypeCount,
  * as it scans.
  *
  */
-void HndScanHandlesForGC(HHANDLETABLE hTable, HANDLESCANPROC scanProc, LPARAM param1, LPARAM param2,
-                         const UINT *types, UINT typeCount, UINT condemned, UINT maxgen, UINT flags)
+void HndScanHandlesForGC(HHANDLETABLE hTable, HANDLESCANPROC scanProc, uintptr_t param1, uintptr_t param2,
+                         const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, uint32_t flags)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1057,7 +1063,7 @@ void HndScanHandlesForGC(HHANDLETABLE hTable, HANDLESCANPROC scanProc, LPARAM pa
  * generation to a lower one.
  *
  */
-void HndResetAgeMap(HHANDLETABLE hTable, const UINT *types, UINT typeCount, UINT condemned, UINT maxgen, UINT flags)
+void HndResetAgeMap(HHANDLETABLE hTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, uint32_t flags)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1097,7 +1103,7 @@ void HndResetAgeMap(HHANDLETABLE hTable, const UINT *types, UINT typeCount, UINT
  * 16 handles.
  *
  */
-void HndVerifyTable(HHANDLETABLE hTable, const UINT *types, UINT typeCount, UINT condemned, UINT maxgen, UINT flags)
+void HndVerifyTable(HHANDLETABLE hTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, uint32_t flags)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1131,7 +1137,7 @@ void HndVerifyTable(HHANDLETABLE hTable, const UINT *types, UINT typeCount, UINT
  * Informs the handle table that a GC has completed.
  *
  */
-void HndNotifyGcCycleComplete(HHANDLETABLE hTable, UINT condemned, UINT maxgen)
+void HndNotifyGcCycleComplete(HHANDLETABLE hTable, uint32_t condemned, uint32_t maxgen)
 {
 #ifdef _DEBUG
     WRAPPER_NO_CONTRACT;
@@ -1149,6 +1155,9 @@ void HndNotifyGcCycleComplete(HHANDLETABLE hTable, UINT condemned, UINT maxgen)
     }
 #else
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(hTable);
+    UNREFERENCED_PARAMETER(condemned);
+    UNREFERENCED_PARAMETER(maxgen);
 #endif
 }
 
@@ -1166,17 +1175,17 @@ extern int getNumberOfSlots();
  * it is necessary.
  *
  */
-UINT HndCountHandles(HHANDLETABLE hTable)
+uint32_t HndCountHandles(HHANDLETABLE hTable)
 {
     WRAPPER_NO_CONTRACT;
     // fetch the handle table pointer
     HandleTable *pTable = Table(hTable);
     
     // initialize the count of handles in the cache to 0
-    UINT uCacheCount = 0;
+    uint32_t uCacheCount = 0;
 
     // fetch the count of handles marked as "used"
-    UINT uCount = pTable->dwCount;
+    uint32_t uCount = pTable->dwCount;
 
     // loop through the main cache for each handle type
     HandleTypeCache *pCache = pTable->rgMainCache;
@@ -1184,8 +1193,8 @@ UINT HndCountHandles(HHANDLETABLE hTable)
     for (; pCache != pCacheEnd; ++pCache)
     {
         // get relevant indexes for the reserve bank and the free bank
-        LONG lFreeIndex = pCache->lFreeIndex;
-        LONG lReserveIndex = pCache->lReserveIndex;
+        int32_t lFreeIndex = pCache->lFreeIndex;
+        int32_t lReserveIndex = pCache->lReserveIndex;
 
         // clamp the min free index and min reserve index to be non-negative;
         // this is necessary since interlocked operations can set these variables
@@ -1195,7 +1204,7 @@ UINT HndCountHandles(HHANDLETABLE hTable)
         if (lReserveIndex < 0) lReserveIndex = 0;
 
         // compute the number of handles
-        UINT uHandleCount = (UINT)lReserveIndex + (HANDLES_PER_CACHE_BANK - (UINT)lFreeIndex);
+        uint32_t uHandleCount = (uint32_t)lReserveIndex + (HANDLES_PER_CACHE_BANK - (uint32_t)lFreeIndex);
 
         // add the number of handles to the total handle count and update
         // dwCount in this HandleTable
@@ -1227,9 +1236,9 @@ UINT HndCountHandles(HHANDLETABLE hTable)
  * while its handles are being counted.
  *
  */
-UINT HndCountAllHandles(BOOL fUseLocks)
+uint32_t HndCountAllHandles(BOOL fUseLocks)
 {
-    UINT uCount = 0;
+    uint32_t uCount = 0;
     int offset = 0;
     
     // get number of HandleTables per HandleTableBucket
@@ -1351,9 +1360,10 @@ BOOL Ref_ContainHandle(HandleTableBucket *pBucket, OBJECTHANDLE handle)
  ****************************************************************************/
 #ifdef _DEBUG
 
-void DEBUG_PostGCScanHandler(HandleTable *pTable, const UINT *types, UINT typeCount, UINT condemned, UINT maxgen, ScanCallbackInfo *info)
+void DEBUG_PostGCScanHandler(HandleTable *pTable, const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, ScanCallbackInfo *info)
 {
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(types);
 
     // looks like the GC supports more generations than we expected
     _ASSERTE(condemned < MAXSTATGEN);
@@ -1378,18 +1388,18 @@ void DEBUG_PostGCScanHandler(HandleTable *pTable, const UINT *types, UINT typeCo
 
         // dump the handle types we were asked to scan
         LOG((LF_GC, LL_INFO1000, "    Handle Type(s)        = %u", *types));
-        for (UINT u = 1; u < typeCount; u++)
+        for (uint32_t u = 1; u < typeCount; u++)
             LOG((LF_GC, LL_INFO1000, ",%u", types[u]));
         LOG((LF_GC, LL_INFO1000,  "\n"));
 
         // dump the number of blocks and slots we scanned
-        ULONG32 blockHandles = info->DEBUG_BlocksScanned * HANDLE_HANDLES_PER_BLOCK;
+        uint32_t blockHandles = info->DEBUG_BlocksScanned * HANDLE_HANDLES_PER_BLOCK;
         LOG((LF_GC, LL_INFO1000, "    Blocks Scanned        = %u (%u slots)\n", info->DEBUG_BlocksScanned, blockHandles));
 
         // if we scanned any blocks then summarize some stats
         if (blockHandles)
         {
-            ULONG32 nonTrivialBlockHandles = info->DEBUG_BlocksScannedNonTrivially * HANDLE_HANDLES_PER_BLOCK;
+            uint32_t nonTrivialBlockHandles = info->DEBUG_BlocksScannedNonTrivially * HANDLE_HANDLES_PER_BLOCK;
             LOG((LF_GC, LL_INFO1000, "    Blocks Examined       = %u (%u slots)\n", info->DEBUG_BlocksScannedNonTrivially, nonTrivialBlockHandles));
 
             LOG((LF_GC, LL_INFO1000, "    Slots Scanned         = %u\n", info->DEBUG_HandleSlotsScanned));
@@ -1405,9 +1415,10 @@ void DEBUG_PostGCScanHandler(HandleTable *pTable, const UINT *types, UINT typeCo
     }
 }
 
-void DEBUG_LogScanningStatistics(HandleTable *pTable, DWORD level)
+void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level)
 {
     WRAPPER_NO_CONTRACT;
+    UNREFERENCED_PARAMETER(level);
 
     // have we done any GC's yet?
     if (pTable->_DEBUG_iMaxGen >= 0)
@@ -1419,7 +1430,7 @@ void DEBUG_LogScanningStatistics(HandleTable *pTable, DWORD level)
         // for each generation we've collected,  dump the current stats
         for (int i = 0; i <= pTable->_DEBUG_iMaxGen; i++)
         {
-            INT64 totalBlocksScanned = pTable->_DEBUG_TotalBlocksScanned[i];
+            int64_t totalBlocksScanned = pTable->_DEBUG_TotalBlocksScanned[i];
 
             // dump the generation number and the number of blocks scanned
             LOG((LF_GC, level,     "--------------------------------------------------------------\n"));

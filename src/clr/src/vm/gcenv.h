@@ -49,7 +49,7 @@
 struct ScanContext;
 class CrawlFrame;
 
-typedef void promote_func(PTR_PTR_Object, ScanContext*, DWORD);
+typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
 
 typedef struct
 {
@@ -131,6 +131,22 @@ public:
     static bool CatchAtSafePoint(Thread * pThread);
 
     static Thread * GetThreadList(Thread * pThread);
+};
+
+#define GCMemoryStatus MEMORYSTATUSEX
+
+#define CLR_MUTEX_COOKIE MUTEX_COOKIE
+
+namespace ETW
+{
+    typedef  enum _GC_ROOT_KIND {
+        GC_ROOT_STACK = 0,
+        GC_ROOT_FQ = 1,
+        GC_ROOT_HANDLES = 2,
+        GC_ROOT_OLDER = 3,
+        GC_ROOT_SIZEDREF = 4,
+        GC_ROOT_OVERFLOW = 5
+    } GC_ROOT_KIND;
 };
 
 #endif // GCENV_H_

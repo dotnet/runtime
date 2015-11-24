@@ -1,8 +1,6 @@
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_definitions(-DNO_CRT)
-
 if(WIN32)
     add_compile_options(/wd4996)
 endif(WIN32)
