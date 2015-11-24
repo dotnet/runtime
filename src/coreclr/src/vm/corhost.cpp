@@ -4008,7 +4008,7 @@ public:
         static DWORD lastTime = (DWORD)-1;
         if (eMemoryAvailable == eMemoryAvailableLow)
         {
-            FastInterlockIncrement (&g_bLowMemoryFromHost);
+            FastInterlockIncrement ((LONG *)&g_bLowMemoryFromHost);
             DWORD curTime = GetTickCount();
             if (curTime < lastTime || curTime - lastTime >= 0x2000)
             {
@@ -4018,7 +4018,7 @@ public:
         }
         else
         {
-            FastInterlockExchange (&g_bLowMemoryFromHost, FALSE);
+            FastInterlockExchange ((LONG *)&g_bLowMemoryFromHost, FALSE);
         }
         END_ENTRYPOINT_NOTHROW;
 

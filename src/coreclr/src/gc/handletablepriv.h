@@ -90,7 +90,7 @@
 #define HANDLE_CLUMPS_PER_SEGMENT       (HANDLE_HANDLES_PER_SEGMENT / HANDLE_HANDLES_PER_CLUMP)
 #define HANDLE_CLUMPS_PER_BLOCK         (HANDLE_HANDLES_PER_BLOCK / HANDLE_HANDLES_PER_CLUMP)
 #define HANDLE_BYTES_PER_BLOCK          (HANDLE_HANDLES_PER_BLOCK * HANDLE_SIZE)
-#define HANDLE_HANDLES_PER_MASK         (sizeof(ULONG32) * BITS_PER_BYTE)
+#define HANDLE_HANDLES_PER_MASK         (sizeof(uint32_t) * BITS_PER_BYTE)
 #define HANDLE_MASKS_PER_SEGMENT        (HANDLE_HANDLES_PER_SEGMENT / HANDLE_HANDLES_PER_MASK)
 #define HANDLE_MASKS_PER_BLOCK          (HANDLE_HANDLES_PER_BLOCK / HANDLE_HANDLES_PER_MASK)
 #define HANDLE_CLUMPS_PER_MASK          (HANDLE_HANDLES_PER_MASK / HANDLE_HANDLES_PER_CLUMP)
@@ -115,8 +115,8 @@ C_ASSERT (HANDLE_HANDLES_PER_MASK * 2 == HANDLE_HANDLES_PER_BLOCK);
 #define MASK_FULL                       (0)
 #define MASK_EMPTY                      (0xFFFFFFFF)
 #define MASK_LOBYTE                     (0x000000FF)
-#define TYPE_INVALID                    ((BYTE)0xFF)
-#define BLOCK_INVALID                   ((BYTE)0xFF)
+#define TYPE_INVALID                    ((uint8_t)0xFF)
+#define BLOCK_INVALID                   ((uint8_t)0xFF)
 
 /*--------------------------------------------------------------------------*/
 
@@ -148,39 +148,39 @@ struct _TableSegmentHeader
      * The value of the byte corresponds to the lowest possible generation that a
      * handle in that clump could point into.
      *
-     * WARNING: Although this array is logically organized as a BYTE[], it is sometimes
-     *  accessed as ULONG32[] when processing bytes in parallel.  Code which treats the
+     * WARNING: Although this array is logically organized as a uint8_t[], it is sometimes
+     *  accessed as uint32_t[] when processing bytes in parallel.  Code which treats the
      *  array as an array of ULONG32s must handle big/little endian issues itself.
      */
-    BYTE rgGeneration[HANDLE_BLOCKS_PER_SEGMENT * sizeof(ULONG32) / sizeof(BYTE)];
+    uint8_t rgGeneration[HANDLE_BLOCKS_PER_SEGMENT * sizeof(uint32_t) / sizeof(uint8_t)];
 
     /*
      * Block Allocation Chains
      *
      * Each slot indexes the next block in an allocation chain.
      */
-    BYTE rgAllocation[HANDLE_BLOCKS_PER_SEGMENT];
+    uint8_t rgAllocation[HANDLE_BLOCKS_PER_SEGMENT];
 
     /*
      * Block Free Masks
      *
      * Masks - 1 bit for every handle in the segment.
      */
-    ULONG32 rgFreeMask[HANDLE_MASKS_PER_SEGMENT];
+    uint32_t rgFreeMask[HANDLE_MASKS_PER_SEGMENT];
 
     /*
      * Block Handle Types
      *
      * Each slot holds the handle type of the associated block.
      */
-    BYTE rgBlockType[HANDLE_BLOCKS_PER_SEGMENT];
+    uint8_t rgBlockType[HANDLE_BLOCKS_PER_SEGMENT];
 
     /*
      * Block User Data Map
      *
      * Each slot holds the index of a user data block (if any) for the associated block.
      */
-    BYTE rgUserData[HANDLE_BLOCKS_PER_SEGMENT];
+    uint8_t rgUserData[HANDLE_BLOCKS_PER_SEGMENT];
 
     /*
      * Block Lock Count
@@ -188,28 +188,28 @@ struct _TableSegmentHeader
      * Each slot holds a lock count for its associated block.
      * Locked blocks are not freed, even when empty.
      */
-    BYTE rgLocks[HANDLE_BLOCKS_PER_SEGMENT];
+    uint8_t rgLocks[HANDLE_BLOCKS_PER_SEGMENT];
 
     /*
      * Allocation Chain Tails
      *
      * Each slot holds the tail block index for an allocation chain.
      */
-    BYTE rgTail[HANDLE_MAX_INTERNAL_TYPES];
+    uint8_t rgTail[HANDLE_MAX_INTERNAL_TYPES];
 
     /*
      * Allocation Chain Hints
      *
      * Each slot holds a hint block index for an allocation chain.
      */
-    BYTE rgHint[HANDLE_MAX_INTERNAL_TYPES];
+    uint8_t rgHint[HANDLE_MAX_INTERNAL_TYPES];
 
     /*
      * Free Count
      *
      * Each slot holds the number of free handles in an allocation chain.
      */
-    UINT rgFreeCount[HANDLE_MAX_INTERNAL_TYPES];
+    uint32_t rgFreeCount[HANDLE_MAX_INTERNAL_TYPES];
 
     /*
      * Next Segment
@@ -232,48 +232,48 @@ struct _TableSegmentHeader
     /*
      * Flags
      */
-    BYTE fResortChains      : 1;    // allocation chains need sorting
-    BYTE fNeedsScavenging   : 1;    // free blocks need scavenging
-    BYTE _fUnused           : 6;    // unused
+    uint8_t fResortChains      : 1;    // allocation chains need sorting
+    uint8_t fNeedsScavenging   : 1;    // free blocks need scavenging
+    uint8_t _fUnused           : 6;    // unused
 
     /*
      * Free List Head
      *
      * Index of the first free block in the segment.
      */
-    BYTE bFreeList;
+    uint8_t bFreeList;
 
     /*
      * Empty Line
      *
      * Index of the first KNOWN block of the last group of unused blocks in the segment.
      */
-    BYTE bEmptyLine;
+    uint8_t bEmptyLine;
 
     /*
      * Commit Line
      *
      * Index of the first uncommited block in the segment.
      */
-    BYTE bCommitLine;
+    uint8_t bCommitLine;
 
     /*
      * Decommit Line
      *
      * Index of the first block in the highest committed page of the segment.
      */
-    BYTE bDecommitLine;
+    uint8_t bDecommitLine;
 
     /*
      * Sequence
      *
      * Indicates the segment sequence number.
      */
-    BYTE bSequence;
+    uint8_t bSequence;
 };
 
 typedef DPTR(struct _TableSegmentHeader) PTR__TableSegmentHeader;
-typedef DPTR(LPARAM) PTR_LPARAM;
+typedef DPTR(uintptr_t) PTR_uintptr_t;
 
 // The handle table is large and may not be entirely mapped. That's one reason for splitting out the table
 // segment and the header as two separate classes. In DAC builds, we generally need only a single element from
@@ -288,7 +288,7 @@ struct TableSegment : public _TableSegmentHeader
     /*
      * Filler
      */
-    BYTE rgUnused[HANDLE_HEADER_SIZE - sizeof(_TableSegmentHeader)];
+    uint8_t rgUnused[HANDLE_HEADER_SIZE - sizeof(_TableSegmentHeader)];
 
     /*
      * Handles
@@ -296,7 +296,7 @@ struct TableSegment : public _TableSegmentHeader
     _UNCHECKED_OBJECTREF rgValue[HANDLE_HANDLES_PER_SEGMENT];
     
 #ifdef DACCESS_COMPILE
-    static ULONG32 DacSize(TADDR addr);
+    static uint32_t DacSize(TADDR addr);
 #endif
 };
 
@@ -323,7 +323,7 @@ struct HandleTypeCache
     /*
      * index of next available handle slot in the reserve bank
      */
-    LONG lReserveIndex;
+    int32_t lReserveIndex;
     
 
     /*---------------------------------------------------------------------------------
@@ -339,7 +339,7 @@ struct HandleTypeCache
     /*
      * index of next empty slot in the free bank
      */
-    LONG lFreeIndex;
+    int32_t lFreeIndex;
 };
 
 
@@ -362,18 +362,18 @@ struct HandleTypeCache
 struct ScanCallbackInfo
 {
     PTR_TableSegment pCurrentSegment;   // segment we are presently scanning, if any
-    UINT             uFlags;            // HNDGCF_* flags
+    uint32_t         uFlags;            // HNDGCF_* flags
     BOOL             fEnumUserData;     // whether user data is being enumerated as well
     HANDLESCANPROC   pfnScan;           // per-handle scan callback
-    LPARAM           param1;            // callback param 1
-    LPARAM           param2;            // callback param 2
-    ULONG32          dwAgeMask;         // generation mask for ephemeral GCs
+    uintptr_t        param1;            // callback param 1
+    uintptr_t        param2;            // callback param 2
+    uint32_t         dwAgeMask;         // generation mask for ephemeral GCs
 
 #ifdef _DEBUG
-    UINT DEBUG_BlocksScanned;
-    UINT DEBUG_BlocksScannedNonTrivially;
-    UINT DEBUG_HandleSlotsScanned;
-    UINT DEBUG_HandlesActuallyScanned;
+    uint32_t DEBUG_BlocksScanned;
+    uint32_t DEBUG_BlocksScannedNonTrivially;
+    uint32_t DEBUG_HandleSlotsScanned;
+    uint32_t DEBUG_HandlesActuallyScanned;
 #endif
 };
 
@@ -384,7 +384,7 @@ struct ScanCallbackInfo
  * Prototype for callbacks that implement per-block scanning logic.
  *
  */
-typedef void (CALLBACK *BLOCKSCANPROC)(PTR_TableSegment pSegment, UINT uBlock, UINT uCount, ScanCallbackInfo *pInfo);
+typedef void (CALLBACK *BLOCKSCANPROC)(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo);
 
 
 /*
@@ -403,7 +403,7 @@ typedef PTR_TableSegment (CALLBACK *SEGMENTITERATOR)(PTR_HandleTable pTable, PTR
  *
  */
 typedef void (CALLBACK *TABLESCANPROC)(PTR_HandleTable pTable,
-                                       const UINT *puType, UINT uTypeCount,
+                                       const uint32_t *puType, uint32_t uTypeCount,
                                        SEGMENTITERATOR pfnSegmentIterator,
                                        BLOCKSCANPROC pfnBlockHandler,
                                        ScanCallbackInfo *pInfo,
@@ -480,7 +480,7 @@ struct HandleTable
      *
      * N.B. this is at offset 0 due to frequent access by cache free codepath
      */
-    UINT rgTypeFlags[HANDLE_MAX_INTERNAL_TYPES];
+    uint32_t rgTypeFlags[HANDLE_MAX_INTERNAL_TYPES];
 
     /*
      * lock for this table
@@ -490,13 +490,13 @@ struct HandleTable
     /*
      * number of types this table supports
      */
-    UINT uTypeCount;
+    uint32_t uTypeCount;
 
     /*
      * number of handles owned by this table that are marked as "used"
      * (this includes the handles residing in rgMainCache and rgQuickCache)
      */
-    DWORD dwCount;
+    uint32_t dwCount;
 
     /*
      * head of segment list for this table
@@ -511,7 +511,7 @@ struct HandleTable
     /*
      * per-table user info
      */
-    UINT uTableIndex;
+    uint32_t uTableIndex;
 
     /*
      * per-table AppDomain info
@@ -528,10 +528,10 @@ struct HandleTable
      */
 #ifdef _DEBUG
     int     _DEBUG_iMaxGen;
-    INT64   _DEBUG_TotalBlocksScanned            [MAXSTATGEN];
-    INT64   _DEBUG_TotalBlocksScannedNonTrivially[MAXSTATGEN];
-    INT64   _DEBUG_TotalHandleSlotsScanned       [MAXSTATGEN];
-    INT64   _DEBUG_TotalHandlesActuallyScanned   [MAXSTATGEN];
+    int64_t _DEBUG_TotalBlocksScanned            [MAXSTATGEN];
+    int64_t _DEBUG_TotalBlocksScannedNonTrivially[MAXSTATGEN];
+    int64_t _DEBUG_TotalHandleSlotsScanned       [MAXSTATGEN];
+    int64_t _DEBUG_TotalHandlesActuallyScanned   [MAXSTATGEN];
 #endif
 
     /*
@@ -560,7 +560,7 @@ struct HandleTable
  * @TODO: move/merge into common util file
  *</TODO>
  */
-typedef int (*PFNCOMPARE)(UINT_PTR p, UINT_PTR q);
+typedef int (*PFNCOMPARE)(uintptr_t p, uintptr_t q);
 
 
 /*
@@ -569,7 +569,7 @@ typedef int (*PFNCOMPARE)(UINT_PTR p, UINT_PTR q);
  * @TODO: move/merge into common util file
  *</TODO>
  */
-void QuickSort(UINT_PTR *pData, int left, int right, PFNCOMPARE pfnCompare);
+void QuickSort(uintptr_t *pData, int left, int right, PFNCOMPARE pfnCompare);
 
 
 /*
@@ -581,7 +581,7 @@ void QuickSort(UINT_PTR *pData, int left, int right, PFNCOMPARE pfnCompare);
  *  >0 - handle Q should be freed before handle P
  *
  */
-int CompareHandlesByFreeOrder(UINT_PTR p, UINT_PTR q);
+int CompareHandlesByFreeOrder(uintptr_t p, uintptr_t q);
 
 /*--------------------------------------------------------------------------*/
 
@@ -599,7 +599,7 @@ int CompareHandlesByFreeOrder(UINT_PTR p, UINT_PTR q);
  * Determines whether a given handle type has user data.
  *
  */
-__inline BOOL TypeHasUserData(HandleTable *pTable, UINT uType)
+__inline BOOL TypeHasUserData(HandleTable *pTable, uint32_t uType)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -626,7 +626,7 @@ BOOL TableCanFreeSegmentNow(HandleTable *pTable, TableSegment *pSegment);
  * Determines if the lock count for the specified block is currently non-zero.
  *
  */
-__inline BOOL BlockIsLocked(TableSegment *pSegment, UINT uBlock)
+__inline BOOL BlockIsLocked(TableSegment *pSegment, uint32_t uBlock)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -644,12 +644,12 @@ __inline BOOL BlockIsLocked(TableSegment *pSegment, UINT uBlock)
  * Increases the lock count for a block.
  *
  */
-__inline void BlockLock(TableSegment *pSegment, UINT uBlock)
+__inline void BlockLock(TableSegment *pSegment, uint32_t uBlock)
 {
     LIMITED_METHOD_CONTRACT;
 
     // fetch the old lock count
-    BYTE bLocks = pSegment->rgLocks[uBlock];
+    uint8_t bLocks = pSegment->rgLocks[uBlock];
 
     // assert if we are about to trash the count
     _ASSERTE(bLocks < 0xFF);
@@ -665,12 +665,12 @@ __inline void BlockLock(TableSegment *pSegment, UINT uBlock)
  * Decreases the lock count for a block.
  *
  */
-__inline void BlockUnlock(TableSegment *pSegment, UINT uBlock)
+__inline void BlockUnlock(TableSegment *pSegment, uint32_t uBlock)
 {
     LIMITED_METHOD_CONTRACT;
 
     // fetch the old lock count
-    BYTE bLocks = pSegment->rgLocks[uBlock];
+    uint8_t bLocks = pSegment->rgLocks[uBlock];
 
     // assert if we are about to trash the count
     _ASSERTE(bLocks > 0);
@@ -686,7 +686,7 @@ __inline void BlockUnlock(TableSegment *pSegment, UINT uBlock)
  * Gets the user data pointer for the first handle in a block.
  *
  */
-PTR_LPARAM BlockFetchUserDataPointer(PTR__TableSegmentHeader pSegment, UINT uBlock, BOOL fAssertOnError);
+PTR_uintptr_t BlockFetchUserDataPointer(PTR__TableSegmentHeader pSegment, uint32_t uBlock, BOOL fAssertOnError);
 
 
 /*
@@ -696,7 +696,7 @@ PTR_LPARAM BlockFetchUserDataPointer(PTR__TableSegmentHeader pSegment, UINT uBlo
  * ASSERTs and returns NULL if handle is not of the expected type.
  *
  */
-LPARAM *HandleValidateAndFetchUserDataPointer(OBJECTHANDLE handle, UINT uTypeExpected);
+uintptr_t *HandleValidateAndFetchUserDataPointer(OBJECTHANDLE handle, uint32_t uTypeExpected);
 
 
 /*
@@ -706,7 +706,7 @@ LPARAM *HandleValidateAndFetchUserDataPointer(OBJECTHANDLE handle, UINT uTypeExp
  * Less validation is performed.
  *
  */
-PTR_LPARAM HandleQuickFetchUserDataPointer(OBJECTHANDLE handle);
+PTR_uintptr_t HandleQuickFetchUserDataPointer(OBJECTHANDLE handle);
 
 
 /*
@@ -716,7 +716,7 @@ PTR_LPARAM HandleQuickFetchUserDataPointer(OBJECTHANDLE handle);
  * Less validation is performed.
  *
  */
-void HandleQuickSetUserData(OBJECTHANDLE handle, LPARAM lUserData);
+void HandleQuickSetUserData(OBJECTHANDLE handle, uintptr_t lUserData);
 
 
 /*
@@ -725,7 +725,7 @@ void HandleQuickSetUserData(OBJECTHANDLE handle, LPARAM lUserData);
  * Computes the type index for a given handle.
  *
  */
-UINT HandleFetchType(OBJECTHANDLE handle);
+uint32_t HandleFetchType(OBJECTHANDLE handle);
 
 
 /*
@@ -782,7 +782,7 @@ BOOL TableContainHandle(HandleTable *pTable, OBJECTHANDLE handle);
  * the segment's free list.
  *
  */
-void SegmentRemoveFreeBlocks(TableSegment *pSegment, UINT uType);
+void SegmentRemoveFreeBlocks(TableSegment *pSegment, uint32_t uType);
 
 
 /*
@@ -823,7 +823,7 @@ void SegmentTrimExcessPages(TableSegment *pSegment);
  * in which case it is the number of handles that were successfully allocated.
  *
  */
-UINT TableAllocBulkHandles(HandleTable *pTable, UINT uType, OBJECTHANDLE *pHandleBase, UINT uCount);
+uint32_t TableAllocBulkHandles(HandleTable *pTable, uint32_t uType, OBJECTHANDLE *pHandleBase, uint32_t uCount);
 
 
 /*
@@ -834,7 +834,7 @@ UINT TableAllocBulkHandles(HandleTable *pTable, UINT uType, OBJECTHANDLE *pHandl
  * This routine is optimized for a sorted array of handles but will accept any order.
  *
  */
-void TableFreeBulkPreparedHandles(HandleTable *pTable, UINT uType, OBJECTHANDLE *pHandleBase, UINT uCount);
+void TableFreeBulkPreparedHandles(HandleTable *pTable, uint32_t uType, OBJECTHANDLE *pHandleBase, uint32_t uCount);
 
 
 /*
@@ -843,7 +843,7 @@ void TableFreeBulkPreparedHandles(HandleTable *pTable, UINT uType, OBJECTHANDLE 
  * Frees an array of handles of the specified type by preparing them and calling TableFreeBulkPreparedHandles.
  *
  */
-void TableFreeBulkUnpreparedHandles(HandleTable *pTable, UINT uType, const OBJECTHANDLE *pHandles, UINT uCount);
+void TableFreeBulkUnpreparedHandles(HandleTable *pTable, uint32_t uType, const OBJECTHANDLE *pHandles, uint32_t uCount);
 
 /*--------------------------------------------------------------------------*/
 
@@ -863,7 +863,7 @@ void TableFreeBulkUnpreparedHandles(HandleTable *pTable, UINT uType, const OBJEC
  * reserve cache is empty, this routine calls TableCacheMissOnAlloc.
  *
  */
-OBJECTHANDLE TableAllocSingleHandleFromCache(HandleTable *pTable, UINT uType);
+OBJECTHANDLE TableAllocSingleHandleFromCache(HandleTable *pTable, uint32_t uType);
 
 
 /*
@@ -874,7 +874,7 @@ OBJECTHANDLE TableAllocSingleHandleFromCache(HandleTable *pTable, UINT uType);
  * free cache is full, this routine calls TableCacheMissOnFree.
  *
  */
-void TableFreeSingleHandleToCache(HandleTable *pTable, UINT uType, OBJECTHANDLE handle);
+void TableFreeSingleHandleToCache(HandleTable *pTable, uint32_t uType, OBJECTHANDLE handle);
 
 
 /*
@@ -884,7 +884,7 @@ void TableFreeSingleHandleToCache(HandleTable *pTable, UINT uType, OBJECTHANDLE 
  * calling TableAllocSingleHandleFromCache.
  *
  */
-UINT TableAllocHandlesFromCache(HandleTable *pTable, UINT uType, OBJECTHANDLE *pHandleBase, UINT uCount);
+uint32_t TableAllocHandlesFromCache(HandleTable *pTable, uint32_t uType, OBJECTHANDLE *pHandleBase, uint32_t uCount);
 
 
 /*
@@ -894,7 +894,7 @@ UINT TableAllocHandlesFromCache(HandleTable *pTable, UINT uType, OBJECTHANDLE *p
  * calling TableFreeSingleHandleToCache.
  *
  */
-void TableFreeHandlesToCache(HandleTable *pTable, UINT uType, const OBJECTHANDLE *pHandleBase, UINT uCount);
+void TableFreeHandlesToCache(HandleTable *pTable, uint32_t uType, const OBJECTHANDLE *pHandleBase, uint32_t uCount);
 
 /*--------------------------------------------------------------------------*/
 
@@ -913,8 +913,8 @@ void TableFreeHandlesToCache(HandleTable *pTable, UINT uType, const OBJECTHANDLE
  *
  */
 void CALLBACK TableScanHandles(PTR_HandleTable pTable,
-                               const UINT *puType,
-                               UINT uTypeCount,
+                               const uint32_t *puType,
+                               uint32_t uTypeCount,
                                SEGMENTITERATOR pfnSegmentIterator,
                                BLOCKSCANPROC pfnBlockHandler,
                                ScanCallbackInfo *pInfo,
@@ -928,8 +928,8 @@ void CALLBACK TableScanHandles(PTR_HandleTable pTable,
  *
  */
 void CALLBACK xxxTableScanHandlesAsync(PTR_HandleTable pTable,
-                                       const UINT *puType,
-                                       UINT uTypeCount,
+                                       const uint32_t *puType,
+                                       uint32_t uTypeCount,
                                        SEGMENTITERATOR pfnSegmentIterator,
                                        BLOCKSCANPROC pfnBlockHandler,
                                        ScanCallbackInfo *pInfo,
@@ -947,7 +947,7 @@ void CALLBACK xxxTableScanHandlesAsync(PTR_HandleTable pTable,
  * IN OTHER WORDS, SCANNING WITH A MIX OF USER-DATA AND NON-USER-DATA TYPES IS NOT SUPPORTED
  *
  */
-BOOL TypesRequireUserDataScanning(HandleTable *pTable, const UINT *types, UINT typeCount);
+BOOL TypesRequireUserDataScanning(HandleTable *pTable, const uint32_t *types, uint32_t typeCount);
 
 
 /*
@@ -956,7 +956,7 @@ BOOL TypesRequireUserDataScanning(HandleTable *pTable, const UINT *types, UINT t
  * Builds an age mask to be used when examining/updating the write barrier.
  *
  */
-ULONG32 BuildAgeMask(UINT uGen, UINT uMaxGen);
+uint32_t BuildAgeMask(uint32_t uGen, uint32_t uMaxGen);
 
 
 /*
@@ -1000,7 +1000,7 @@ PTR_TableSegment CALLBACK FullSegmentIterator(PTR_HandleTable pTable, PTR_TableS
  * NEVER propagates per-handle user data to the callback.
  *
  */
-void CALLBACK BlockScanBlocksWithoutUserData(PTR_TableSegment pSegment, UINT uBlock, UINT uCount, ScanCallbackInfo *pInfo);
+void CALLBACK BlockScanBlocksWithoutUserData(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo);
 
 
 /*
@@ -1010,7 +1010,7 @@ void CALLBACK BlockScanBlocksWithoutUserData(PTR_TableSegment pSegment, UINT uBl
  * ALWAYS propagates per-handle user data to the callback.
  *
  */
-void CALLBACK BlockScanBlocksWithUserData(PTR_TableSegment pSegment, UINT uBlock, UINT uCount, ScanCallbackInfo *pInfo);
+void CALLBACK BlockScanBlocksWithUserData(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo);
 
 
 /*
@@ -1020,7 +1020,7 @@ void CALLBACK BlockScanBlocksWithUserData(PTR_TableSegment pSegment, UINT uBlock
  * Propagates per-handle user data to the callback if present.
  *
  */
-void CALLBACK BlockScanBlocksEphemeral(PTR_TableSegment pSegment, UINT uBlock, UINT uCount, ScanCallbackInfo *pInfo);
+void CALLBACK BlockScanBlocksEphemeral(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo);
 
 
 /*
@@ -1029,7 +1029,7 @@ void CALLBACK BlockScanBlocksEphemeral(PTR_TableSegment pSegment, UINT uBlock, U
  * Ages all clumps in a range of consecutive blocks.
  *
  */
-void CALLBACK BlockAgeBlocks(PTR_TableSegment pSegment, UINT uBlock, UINT uCount, ScanCallbackInfo *pInfo);
+void CALLBACK BlockAgeBlocks(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo);
 
 
 /*
@@ -1038,7 +1038,7 @@ void CALLBACK BlockAgeBlocks(PTR_TableSegment pSegment, UINT uBlock, UINT uCount
  * Ages all clumps within the specified generation.
  *
  */
-void CALLBACK BlockAgeBlocksEphemeral(PTR_TableSegment pSegment, UINT uBlock, UINT uCount, ScanCallbackInfo *pInfo);
+void CALLBACK BlockAgeBlocksEphemeral(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo);
 
 
 /*
@@ -1047,7 +1047,7 @@ void CALLBACK BlockAgeBlocksEphemeral(PTR_TableSegment pSegment, UINT uBlock, UI
  * Clears the age maps for a range of blocks.
  *
  */
-void CALLBACK BlockResetAgeMapForBlocks(PTR_TableSegment pSegment, UINT uBlock, UINT uCount, ScanCallbackInfo *pInfo);
+void CALLBACK BlockResetAgeMapForBlocks(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo);
 
 
 /*
@@ -1056,7 +1056,7 @@ void CALLBACK BlockResetAgeMapForBlocks(PTR_TableSegment pSegment, UINT uBlock, 
  * Verifies the age maps for a range of blocks, and also validates the objects pointed to.
  *
  */
-void CALLBACK BlockVerifyAgeMapForBlocks(PTR_TableSegment pSegment, UINT uBlock, UINT uCount, ScanCallbackInfo *pInfo);
+void CALLBACK BlockVerifyAgeMapForBlocks(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo);
 
 
 /*

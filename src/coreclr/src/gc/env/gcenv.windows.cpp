@@ -51,12 +51,12 @@ void * _FastInterlockCompareExchangePointer(void * volatile *Destination, void *
 
 void FastInterlockOr(uint32_t volatile *p, uint32_t msk)
 {
-    InterlockedOr((LONG *)p, msk);
+    InterlockedOr((LONG volatile *)p, msk);
 }
 
 void FastInterlockAnd(uint32_t volatile *p, uint32_t msk)
 {
-    InterlockedAnd((LONG *)p, msk);
+    InterlockedAnd((LONG volatile *)p, msk);
 }
 
 
@@ -81,7 +81,7 @@ void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection)
 }
 
 
-void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
+void GetProcessMemoryLoad(GCMemoryStatus* pGCMemStatus)
 {
     CONTRACTL
     {
@@ -90,16 +90,27 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     }
     CONTRACTL_END;
 
-    pMSEX->dwLength = sizeof(MEMORYSTATUSEX);
-    BOOL fRet = GlobalMemoryStatusEx(pMSEX);
+    MEMORYSTATUSEX memStatus;
+
+    memStatus.dwLength = sizeof(MEMORYSTATUSEX);
+    BOOL fRet = GlobalMemoryStatusEx(&memStatus);
     _ASSERTE (fRet);
 
     // If the machine has more RAM than virtual address limit, let us cap it.
     // Our GC can never use more than virtual address limit.
-    if (pMSEX->ullAvailPhys > pMSEX->ullTotalVirtual)
+    if (memStatus.ullAvailPhys > memStatus.ullTotalVirtual)
     {
-        pMSEX->ullAvailPhys = pMSEX->ullAvailVirtual;
+        memStatus.ullAvailPhys = memStatus.ullAvailVirtual;
     }
+
+    // Convert Windows struct to abstract struct
+    pGCMemStatus->dwMemoryLoad              = memStatus.dwMemoryLoad           ;
+    pGCMemStatus->ullTotalPhys              = memStatus.ullTotalPhys           ;
+    pGCMemStatus->ullAvailPhys              = memStatus.ullAvailPhys           ;
+    pGCMemStatus->ullTotalPageFile          = memStatus.ullTotalPageFile       ;
+    pGCMemStatus->ullAvailPageFile          = memStatus.ullAvailPageFile       ;
+    pGCMemStatus->ullTotalVirtual           = memStatus.ullTotalVirtual        ;
+    pGCMemStatus->ullAvailVirtual           = memStatus.ullAvailVirtual        ;
 }
 
 void CLREventStatic::CreateManualEvent(bool bInitialState)

@@ -4,12 +4,33 @@ include_directories(..)
 include_directories(../env)
 
 set(SOURCES
-    GCSample.cpp    
+    GCSample.cpp
+    gcenv.cpp
+    ../gccommon.cpp
+    ../gceewks.cpp
+    ../gcscan.cpp
+    ../gcwks.cpp
+    ../handletable.cpp
+    ../handletablecache.cpp
+    ../handletablecore.cpp
+    ../handletablescan.cpp
+    ../objecthandle.cpp
 )
 
-add_executable(gcsample
-    ${SOURCES}
-)
+if(WIN32)
+    list(APPEND SOURCES
+        ../env/gcenv.windows.cpp)
+else()
+    list(APPEND SOURCES
+        ../env/gcenv.unix.cpp)
+endif()
+
+if(CLR_CMAKE_PLATFORM_UNIX)
+  add_compile_options(-Wno-format)
+  add_compile_options(-Wno-unused-variable)
+  add_compile_options(-Wno-unused-private-field)
+  add_compile_options(-Wno-tautological-undefined-compare)
+endif()
 
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
   add_definitions(-D_TARGET_AMD64_=1)
@@ -27,6 +48,6 @@ else()
   clr_unknown_arch()
 endif()
 
-target_link_libraries(gcsample 
-    clrgc
+add_executable(gcsample
+    ${SOURCES}
 )

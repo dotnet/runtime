@@ -27,7 +27,7 @@
 PerformanceDefaults::PerformanceScenario PerformanceDefaults::s_Scenario = Uninitialized;
 
 // See use in code:PerformanceDefaults:InitializeForScenario
-extern LONG g_bLowMemoryFromHost;
+extern int32_t g_bLowMemoryFromHost;
 
 
 //

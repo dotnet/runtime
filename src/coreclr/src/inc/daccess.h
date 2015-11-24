@@ -527,6 +527,8 @@
 #ifndef __daccess_h__
 #define __daccess_h__
 
+#include <stdint.h>
+
 #include "switches.h"
 #include "safemath.h"
 #include "corerror.h"
@@ -2336,7 +2338,9 @@ inline type* DacUnsafeMarshalSingleElement( ArrayDPTR(type) arrayPtr )
 //----------------------------------------------------------------------------
 
 typedef ArrayDPTR(BYTE)    PTR_BYTE;
+typedef ArrayDPTR(uint8_t) PTR_uint8_t;
 typedef DPTR(PTR_BYTE) PTR_PTR_BYTE;
+typedef DPTR(PTR_uint8_t) PTR_PTR_uint8_t;
 typedef DPTR(PTR_PTR_BYTE) PTR_PTR_PTR_BYTE;
 typedef ArrayDPTR(signed char) PTR_SBYTE;
 typedef ArrayDPTR(const BYTE) PTR_CBYTE;
@@ -2345,6 +2349,7 @@ typedef DPTR(INT16)   PTR_INT16;
 typedef DPTR(WORD)    PTR_WORD;
 typedef DPTR(USHORT)  PTR_USHORT;
 typedef DPTR(DWORD)   PTR_DWORD;
+typedef DPTR(uint32_t) PTR_uint32_t;
 typedef DPTR(LONG)    PTR_LONG;
 typedef DPTR(ULONG)   PTR_ULONG;
 typedef DPTR(INT32)   PTR_INT32;
