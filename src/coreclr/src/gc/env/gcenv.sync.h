@@ -10,14 +10,14 @@
 class EEThreadId
 {
 public:
-    EEThreadId(UINT32 uiId) : m_uiId(uiId) {}
+    EEThreadId(uint32_t uiId) : m_uiId(uiId) {}
     bool IsSameThread()
     {
         return m_uiId == GetCurrentThreadId();
     }
 
 private:
-    UINT32 m_uiId;
+    uint32_t m_uiId;
 };
 
 #define CRST_REENTRANCY         0
@@ -35,7 +35,7 @@ class CrstStatic
 {
     CRITICAL_SECTION m_cs;
 #ifdef _DEBUG
-    UINT32 m_holderThreadId;
+    uint32_t m_holderThreadId;
 #endif
 
 public:

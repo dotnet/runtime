@@ -2988,10 +2988,12 @@ bool Lowering::AreSourcesPossiblyModified(GenTree* use, GenTree* src1, GenTree* 
 //
 void Lowering::LowerAddrMode(GenTreePtr* pTree, GenTree* before, Compiler::fgWalkData* data, bool isIndir)
 {
-    GenTree* addr = *pTree;
-    GenTreePtr  base, index;
-    unsigned    scale, offset;
-    bool        rev;
+    GenTree*    addr   = *pTree;
+    GenTreePtr  base   = nullptr;
+    GenTreePtr  index  = nullptr;
+    unsigned    scale  = 0;
+    unsigned    offset = 0;
+    bool        rev    = false;
 
     // If it's not an indir, we need the fgWalkData to get info about the parent.
     assert(isIndir || data);
@@ -3006,11 +3008,16 @@ void Lowering::LowerAddrMode(GenTreePtr* pTree, GenTree* before, Compiler::fgWal
     if (!isIndir)
     {
         // this is just a reg-const add
-        if (!index)
+        if (index == nullptr)
+        {
             return;
+        }
+
         // this is just a reg-reg add
-        if (index && scale == 1 && offset == 0)
+        if (scale == 1 && offset == 0)
+        {
             return;
+        }
     }
 
     // make sure there are not any side effects between def of leaves and use
@@ -3021,7 +3028,7 @@ void Lowering::LowerAddrMode(GenTreePtr* pTree, GenTree* before, Compiler::fgWal
         JITDUMP("Addressing mode:\n");
         JITDUMP("  Base\n");
         DISPNODE(base);
-        if (index != NULL)
+        if (index != nullptr)
         {
             JITDUMP("  + Index * %u + %u\n", scale, offset);
             DISPNODE(index);
@@ -3054,8 +3061,10 @@ void Lowering::LowerAddrMode(GenTreePtr* pTree, GenTree* before, Compiler::fgWal
         // The method genCreateAddrMode() above probably should be fixed
         //    to not return rev=true, when index is returned as NULL
         //
-        if (rev && !index)
+        if (rev && index == nullptr)
+        {
             rev = false;
+        }
 
         if (rev)
         {
@@ -3084,7 +3093,6 @@ void Lowering::LowerAddrMode(GenTreePtr* pTree, GenTree* before, Compiler::fgWal
     {
         JITDUMP("  No addressing mode\n");
     }
-
 }
 
 //------------------------------------------------------------------------
