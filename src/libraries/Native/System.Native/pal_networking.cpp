@@ -1929,39 +1929,6 @@ static void ConvertFdSetPlatformToPal(FdSet& palSet, fd_set& platformSet, int32_
 #if !HAVE_FDS_BITS && !HAVE_PRIVATE_FDS_BITS
     for (int i = 0; i < fdCount; i++)
     {
-        int word = i / static_cast<int>(PAL_FDSET_NFD_BITS);
-        int bit = i % static_cast<int>(PAL_FDSET_NFD_BITS);
-        if ((palSet.Bits[word] & (1 << bit)) == 0)
-        {
-            FD_SET(i, &platformSet);
-        }
-        else
-        {
-            FD_CLR(i, &platformSet);
-        }
-    }
-#else
-
-    size_t bytesToCopy = static_cast<size_t>((fdCount / 8) + ((fdCount % 8) == 0 ? 1 : 0));
-
-    uint8_t* dest;
-#if HAVE_FDS_BITS
-    dest = reinterpret_cast<uint8_t*>(&platformSet.fds_bits[0]);
-#elif HAVE_PRIVATE_FDS_BITS
-    dest = reinterpret_cast<uint8_t*>(&platformSet.__fds_bits[0]);
-#endif
-
-    memcpy(dest, &palSet.Bits[0], bytesToCopy);
-#endif
-}
-
-static void ConvertFdSetPalToPlatform(fd_set& platformSet, FdSet& palSet, int32_t fdCount)
-{
-    assert(fdCount >= 0);
-
-#if !HAVE_FDS_BITS && !HAVE_PRIVATE_FDS_BITS
-    for (int i = 0; i < fdCount; i++)
-    {
         uint32_t* word = &palSet.Bits[i / static_cast<int>(PAL_FDSET_NFD_BITS)];
         uint32_t mask = 1 << (i % static_cast<int>(PAL_FDSET_NFD_BITS));
 
@@ -1985,6 +1952,41 @@ static void ConvertFdSetPalToPlatform(fd_set& platformSet, FdSet& palSet, int32_
 #endif
 
     memcpy(&palSet.Bits[0], source, bytesToCopy);
+#endif
+}
+
+static void ConvertFdSetPalToPlatform(fd_set& platformSet, FdSet& palSet, int32_t fdCount)
+{
+    assert(fdCount >= 0);
+
+    memset(&platformSet, 0, sizeof(platformSet));
+
+#if !HAVE_FDS_BITS && !HAVE_PRIVATE_FDS_BITS
+    for (int i = 0; i < fdCount; i++)
+    {
+        int word = i / static_cast<int>(PAL_FDSET_NFD_BITS);
+        int bit = i % static_cast<int>(PAL_FDSET_NFD_BITS);
+        if ((palSet.Bits[word] & (1 << bit)) == 0)
+        {
+            FD_CLR(i, &platformSet);
+        }
+        else
+        {
+            FD_SET(i, &platformSet);
+        }
+    }
+#else
+
+    size_t bytesToCopy = static_cast<size_t>((fdCount / 8) + ((fdCount % 8) == 0 ? 1 : 0));
+
+    uint8_t* dest;
+#if HAVE_FDS_BITS
+    dest = reinterpret_cast<uint8_t*>(&platformSet.fds_bits[0]);
+#elif HAVE_PRIVATE_FDS_BITS
+    dest = reinterpret_cast<uint8_t*>(&platformSet.__fds_bits[0]);
+#endif
+
+    memcpy(dest, &palSet.Bits[0], bytesToCopy);
 #endif
 }
 
@@ -2040,17 +2042,17 @@ Select(int32_t fdCount, FdSet* readFdSet, FdSet* writeFdSet, FdSet* errorFdSet, 
 
     if (readFdSet != nullptr)
     {
-        ConvertFdSetPlatformToPal(*writeFdSet, *writeFds, rv);
+        ConvertFdSetPlatformToPal(*readFdSet, *readFds, fdCount);
     }
 
     if (writeFdSet != nullptr)
     {
-        ConvertFdSetPlatformToPal(*writeFdSet, *writeFds, rv);
+        ConvertFdSetPlatformToPal(*writeFdSet, *writeFds, fdCount);
     }
 
     if (errorFdSet != nullptr)
     {
-        ConvertFdSetPlatformToPal(*errorFdSet, *errorFds, rv);
+        ConvertFdSetPlatformToPal(*errorFdSet, *errorFds, fdCount);
     }
 
     *selected = rv;
