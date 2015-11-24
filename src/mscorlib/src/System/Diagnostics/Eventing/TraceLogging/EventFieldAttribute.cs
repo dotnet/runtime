@@ -55,6 +55,7 @@ namespace System.Diagnostics.Tracing
         /// Gets or sets the name to use for the field. This defaults to null.
         /// If null, the name of the corresponding property will be used
         /// as the event field's name.
+        /// TODO REMOVE
         /// </summary>
         internal string Name
         {
