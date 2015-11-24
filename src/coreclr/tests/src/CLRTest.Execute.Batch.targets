@@ -137,6 +137,29 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
         ]]></Command>
         <Description>Run testcases under debugger.</Description>
       </BatchCLRTestExecutionScriptArgument>
+
+      <BatchCLRTestExecutionScriptArgument Include="env">
+        <HasParam>true</HasParam>
+        <ParamName>envScriptFullPath</ParamName>
+        <Command><![CDATA[
+    IF EXIST "%2" (
+        set __TestEnv=%2
+    ) ELSE (
+        ECHO The environment script "%2" does not exist
+        GOTO :USAGE
+    )
+        ]]></Command>
+        <Description>Run the specified script to set environment variables before running the test.</Description>
+      </BatchCLRTestExecutionScriptArgument>
+
+      <BatchCLRTestExecutionScriptArgument Include="coreroot">
+        <HasParam>true</HasParam>
+        <ParamName>envScriptFullPath</ParamName>
+        <Command><![CDATA[
+    set CORE_ROOT=%2
+        ]]></Command>
+        <Description>Set CORE_ROOT to the specified value before running the test.</Description>
+      </BatchCLRTestExecutionScriptArgument>
     </ItemGroup>
       
     <ItemGroup>
