@@ -1122,9 +1122,17 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					g_assert_not_reached ();
 					break;
 				}
-				if (target && wrapper != target)
-					return FALSE;
-				ref->method = wrapper;
+				if (target) {
+					/*
+					 * Due to the way mini_get_shared_method () works, we could end up with
+					 * multiple copies of the same wrapper.
+					 */
+					if (wrapper->klass != target->klass)
+						return FALSE;
+					ref->method = target;
+				} else {
+					ref->method = wrapper;
+				}
 			} else {
 				/*
 				 * These wrappers are associated with a signature, not with a method.

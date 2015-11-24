@@ -312,4 +312,15 @@ class Tests
 			return 1;
 		return 0;
 	}
+
+	public static void SetArrayValue_<T> (T[] values) {
+		values.Select (x => x).ToArray ();
+	}
+
+	public static int test_0_delegate_invoke_wrappers_gsharedvt () {
+		var enums = new LongEnum [] { LongEnum.A };
+		SetArrayValue_ (enums);
+		return 0;
+	}
+
 }
