@@ -525,7 +525,7 @@ namespace System.IO.Packaging
             {
                 //This method expects the reader to be in ReadState.Initial.
                 //It will make the first read call.
-                PackagingUtilities.PerformInitailReadAndVerifyEncoding(reader);
+                PackagingUtilities.PerformInitialReadAndVerifyEncoding(reader);
 
                 //Note: After the previous method call the reader should be at the first tag in the markup.
                 //MoveToContent - Skips over the following - ProcessingInstruction, DocumentType, Comment, Whitespace, or SignificantWhitespace

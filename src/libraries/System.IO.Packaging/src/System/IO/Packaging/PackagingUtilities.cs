@@ -50,31 +50,32 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="reader">XmlReader</param>
         /// <returns>throws an exception if the encoding is not UTF-8 or UTF-16</returns>
-        internal static void PerformInitailReadAndVerifyEncoding(XmlReader reader)
+        internal static void PerformInitialReadAndVerifyEncoding(XmlReader reader)
         {
             Debug.Assert(reader != null && reader.ReadState == ReadState.Initial);
 
             //If the first node is XmlDeclaration we check to see if the encoding attribute is present
             if (reader.Read() && reader.NodeType == XmlNodeType.XmlDeclaration && reader.Depth == 0)
             {
-                string encoding;
-                encoding = reader.GetAttribute(EncodingAttribute);
+                string encoding = reader.GetAttribute(EncodingAttribute);
 
-                if (encoding != null && encoding.Length > 0)
+                if (!string.IsNullOrEmpty(encoding))
                 {
-                    encoding = encoding.ToUpperInvariant();
-
                     //If a non-empty encoding attribute is present [for example - <?xml version="1.0" encoding="utf-8" ?>]
-                    //we check to see if the value is either "utf-8" or utf-16. Only these two values are supported
+                    //we check to see if the value is either "utf-8" or "utf-16". Only these two values are supported
                     //Note: For Byte order markings that require additional information to be specified in
                     //the encoding attribute in XmlDeclaration have already been ruled out by this check as we allow for
                     //only two valid values.
-                    if (String.CompareOrdinal(encoding, s_webNameUTF8) == 0
-                        || String.CompareOrdinal(encoding, s_webNameUnicode) == 0)
+                    if (string.Equals(encoding, WebNameUTF8, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(encoding, WebNameUnicode, StringComparison.OrdinalIgnoreCase))
+                    {
                         return;
+                    }
                     else
+                    {
                         //if the encoding attribute has any other value we throw an exception
                         throw new FileFormatException(SR.EncodingNotSupported);
+                    }
                 }
             }
 
@@ -364,13 +365,15 @@ namespace System.IO.Packaging
             //If true, reader moves to the attribute
             //If false, there are no more attributes (or none)
             //and in that case the position of the reader is unchanged.
-            //First time through, since the reader will be positioned at an Element, 
+            //First time through, since the reader will be positioned at an Element,
             //MoveToNextAttribute is the same as MoveToFirstAttribute.
             while (reader.MoveToNextAttribute())
             {
-                if (String.CompareOrdinal(reader.Name, XmlNamespace) != 0 &&
-                    String.CompareOrdinal(reader.Prefix, XmlNamespace) != 0)
+                if (!string.Equals(reader.Name, XmlNamespace, StringComparison.Ordinal) &&
+                    !string.Equals(reader.Prefix, XmlNamespace, StringComparison.Ordinal))
+                {
                     readerCount++;
+                }
             }
 
             //re-position the reader to the element
@@ -393,8 +396,8 @@ namespace System.IO.Packaging
         /// <remarks>See PS 1468964 for details.</remarks>
         private const string XmlNamespace = "xmlns";
         private const string EncodingAttribute = "encoding";
-        private static readonly string s_webNameUTF8 = Encoding.UTF8.WebName.ToUpperInvariant();
-        private static readonly string s_webNameUnicode = Encoding.Unicode.WebName.ToUpperInvariant();
+        private const string WebNameUTF8 = "utf-8";
+        private const string WebNameUnicode = "utf-16";
 
     }
 }
