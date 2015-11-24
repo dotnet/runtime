@@ -34,7 +34,7 @@ namespace System.Resources
         //blatantly copied over from BinaryReader
         public static bool TryReadInt327BitEncoded(this Stream stream, out int result)
         {
-            // Read out an Int32 7 bits at a time.  The high bit
+            // Read out an int 7 bits at a time.  The high bit
             // of the byte when on means to continue reading more bytes.
             result = 0;
             int shift = 0;
@@ -43,7 +43,7 @@ namespace System.Resources
             {
                 // Check for a corrupted stream.  Read a max of 5 bytes.
                 // In a future version, add a DataFormatException.
-                if (shift == 5 * 7)  // 5 bytes max per Int32, shift += 7
+                if (shift == 5 * 7)  // 5 bytes max per int, shift += 7
                     throw new FormatException(SR.Format_Bad7BitInt32);
 
                 // ReadByte handles end of stream cases for us.
@@ -61,8 +61,8 @@ namespace System.Resources
             return true;
         }
 
-        // reads length (7-bit encoded Int32) + UTF8 buffer
-        internal static string ReadString(this Stream stream, bool utf16 = false)
+        // reads length (7-bit encoded int) + UTF8 buffer
+        public static string ReadString(this Stream stream, bool utf16 = false)
         {
             var position = stream.Position;
             int stringLength;
