@@ -1,14 +1,12 @@
-// ==++==
-// 
-//   Copyright (c) Microsoft Corporation.  All rights reserved.
-// 
-// ==--==
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
+//
+
 //{{NO_DEPENDENCIES}}
 // Microsoft Developer Studio generated include file.
 // Used by dasm.rc
 //
-
-#include <copyrightstring.h>
 
 #define IDS_FILE                        1
 #define IDS_VIEW                        2

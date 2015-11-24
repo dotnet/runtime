@@ -5,6 +5,7 @@
 
 #include "ildasmpch.h"
 
+#ifndef FEATURE_CORECLR
 #include "resource.h"
 #include "formattype.h"
 
@@ -272,3 +273,4 @@ void DestroyProgressBar()
     g_hwndCancel = NULL;
     g_ulCount = 0;
 }
+#endif
