@@ -201,94 +201,89 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AllCMDExcludeFilter Include="@(CanonicalExcludeList)" Condition="'$(__Exclude)' != ''"/>
       <AllCMDs Include="@(AllCMDsPresent)" Exclude="@(AllCMDExcludeFilter)"/>
 
-      <AllCommamds Include="@(AllCMDs)" >
+      <AllCommands Include="@(AllCMDs)" >
+        <_FactName>$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("\","_").Replace("-","_"))</_FactName>
+        <_ClassName>$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))</_ClassName>
 
-        <_FactName>$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_"))</_FactName>
         <_XunitFact >
           <![CDATA[
              
-public class $([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))
-    {
-               static bool category_initlialized = false%3B
-               static bool runningInWindows = false%3B
-               static string reportbase%3B
-               static string TestBinaryBase%3B
-               static string core_root%3B
-               static void init()
-               {
-                   if (!category_initlialized)
-                   {
-                       reportbase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22))%3B
-                       TestBinaryBase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestBinBase%22))%3B
-                       core_root = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22))%3B
-                       if (String.IsNullOrEmpty(reportbase)){
-                      
-                           throw new ArgumentException("Env variables XunitTestReportDirBase is not set") %3B
-                       }
-                           
-                       if (String.IsNullOrEmpty(TestBinaryBase)){
-                        
-                           throw new ArgumentException("Env variables XunitTestBinBase is not set")%3B
-                       }
-                       
-                       if (String.IsNullOrEmpty(core_root)){
-                        
-                           throw new ArgumentException("Env variables CORE_ROOT is not set")%3B
-                       }
-                       runningInWindows = System.Environment.GetEnvironmentVariable("OS").StartsWith("Windows")%3B
+        public class %(AllCommands._ClassName)
+        {
+            static bool runningInWindows%3B
+            static string reportBase%3B
+            static string testBinaryBase%3B
+            static string coreRoot%3B
 
-                       
-                       category_initlialized = true%3B
-                   }
-               }
-    
-                [Fact]
-                public void $([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("\","_").Replace("-","_"))()
+            static %(AllCommands._ClassName)()
+            {
+                reportBase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22))%3B
+                testBinaryBase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestBinBase%22))%3B
+                coreRoot = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22))%3B
+
+                if (String.IsNullOrEmpty(reportBase)) {
+                    throw new ArgumentException("Environment variable XunitTestReportDirBase is not set")%3B
+                }
+
+                if (String.IsNullOrEmpty(testBinaryBase)) {
+                    throw new ArgumentException("Environment variable XunitTestBinBase is not set")%3B
+                }
+
+                if (String.IsNullOrEmpty(coreRoot)) {
+                    throw new ArgumentException("Environment variable CORE_ROOT is not set")%3B
+                }
+
+                runningInWindows = System.Environment.GetEnvironmentVariable("OS").StartsWith("Windows")%3B
+            }
+
+            [Fact]
+            public void %(AllCommands._FactName)()
+            {
+                int ret = -100%3B
+                string outputFile = null%3B
+                string errorFile = null%3B
+                string testExecutable = null%3B
+                Exception infraEx = null%3B
+
+                try
                 {
-                    int ret = -100%3B
-                    string msg ="Test Infrastructure Failure :\n"%3B
-                    try
-                    {
-                      init()%3B
-                      CoreclrTestWrapperLib wrapper = new CoreclrTestWrapperLib()%3B
-                      string testsubfolder = @"\$(Category)\$([System.String]::Copy('%(AllCMDs.RelativeDir)').Replace("$(_CMDDIR)\",''))"%3B
-                      string outputfile = System.IO.Path.GetFullPath(reportbase + testsubfolder + @"%(AllCMDs.FileName).output.txt")%3B
-                      string errorfile = System.IO.Path.GetFullPath(reportbase + testsubfolder + @"%(AllCMDs.FileName).error.txt")%3B
-                      string test_cmd = System.IO.Path.GetFullPath(TestBinaryBase + @"\$(Category)\$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
+                  CoreclrTestWrapperLib wrapper = new CoreclrTestWrapperLib()%3B
+                  string testSubfolder = @"\$(Category)\$([System.String]::Copy('%(AllCMDs.RelativeDir)').Replace("$(_CMDDIR)\",''))"%3B
+                  outputFile = System.IO.Path.GetFullPath(reportBase + testSubfolder + @"%(AllCMDs.FileName).output.txt")%3B
+                  errorFile = System.IO.Path.GetFullPath(reportBase + testSubfolder + @"%(AllCMDs.FileName).error.txt")%3B
+                  testExecutable = System.IO.Path.GetFullPath(testBinaryBase + @"\$(Category)\$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
 
-                    
-                      if (!runningInWindows){
-                    
-                          test_cmd = test_cmd.Replace(".cmd", ".sh")%3B
-                      }
-                    
-                      System.IO.Directory.CreateDirectory(reportbase + testsubfolder)%3B
-                    
-                      ret = wrapper.RunTest(test_cmd, outputfile, errorfile)%3B
-                    
-                      string err_text = System.IO.File.ReadAllText(errorfile)%3B
-                      msg = err_text + 
-                            @"Raw Output          :"+ outputfile + "\n" +
-                            @"To Run the test     :Step 1. set Core_Root="+ core_root + "\n" +
-                             "                     Step 2. "+test_cmd + "\n"%3B
-                      
-                    
-                    }
-                    catch (Exception Ex)
-                    {
-                       msg = msg  + Ex.Message%3B
-                    }
-                    
+                  if (!runningInWindows) {
+                      testExecutable = testExecutable.Replace(".cmd", ".sh")%3B
+                  }
+
+                  System.IO.Directory.CreateDirectory(reportBase + testSubfolder)%3B
+
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile)%3B
+                }
+                catch (Exception ex)
+                {
+                    infraEx = ex%3B
+                }
+
+                if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
+                {
+                    string msg = infraEx != null ? "Test Infrastructure Failure: " + infraEx.Message
+                                                 : System.IO.File.ReadAllText(errorFile) + "\n\n" +
+                                                   "Raw output:      " + outputFile + "\n" +
+                                                   "To run the test:\n" +
+                                                   "> set CORE_ROOT=" + coreRoot + "\n" +
+                                                   "> " + testExecutable + "\n"%3B
+
                     Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, msg)%3B
                 }
-                    
+            }
        }
-
 
         ]]>
         </_XunitFact>
-      </AllCommamds>
-      <AllXUnitFacts Include= "%(AllCommamds._XunitFact)" />
+      </AllCommands>
+      <AllXUnitFacts Include= "%(AllCommands._XunitFact)" />
     </ItemGroup>
 
   </Target>
