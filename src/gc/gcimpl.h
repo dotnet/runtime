@@ -74,7 +74,7 @@ protected:
     friend struct ::alloc_context;
     friend void EnterAllocLock();
     friend void LeaveAllocLock();
-    friend void ProfScanRootsHelper(Object** object, ScanContext *pSC, DWORD dwFlags);
+    friend void ProfScanRootsHelper(Object** object, ScanContext *pSC, uint32_t dwFlags);
     friend void GCProfileWalkHeap();
 
 public:
@@ -98,11 +98,11 @@ public:
     size_t  GetNow();
 
     void  TraceGCSegments ();    
-    void PublishObject(BYTE* obj);
+    void PublishObject(uint8_t* obj);
     
     BOOL    IsGCInProgressHelper (BOOL bConsiderGCStart = FALSE);
 
-    DWORD    WaitUntilGCComplete (BOOL bConsiderGCStart = FALSE);
+    uint32_t    WaitUntilGCComplete (BOOL bConsiderGCStart = FALSE);
 
     void     SetGCInProgress(BOOL fInProgress);
 
@@ -111,16 +111,16 @@ public:
     HRESULT Initialize ();
 
     //flags can be GC_ALLOC_CONTAINS_REF GC_ALLOC_FINALIZE
-    Object*  Alloc (size_t size, DWORD flags);
+    Object*  Alloc (size_t size, uint32_t flags);
 #ifdef FEATURE_64BIT_ALIGNMENT
-    Object*  AllocAlign8 (size_t size, DWORD flags);
-    Object*  AllocAlign8 (alloc_context* acontext, size_t size, DWORD flags);
+    Object*  AllocAlign8 (size_t size, uint32_t flags);
+    Object*  AllocAlign8 (alloc_context* acontext, size_t size, uint32_t flags);
 private:
-    Object*  AllocAlign8Common (void* hp, alloc_context* acontext, size_t size, DWORD flags);
+    Object*  AllocAlign8Common (void* hp, alloc_context* acontext, size_t size, uint32_t flags);
 public:
 #endif // FEATURE_64BIT_ALIGNMENT
-    Object*  AllocLHeap (size_t size, DWORD flags);
-    Object* Alloc (alloc_context* acontext, size_t size, DWORD flags);
+    Object*  AllocLHeap (size_t size, uint32_t flags);
+    Object* Alloc (alloc_context* acontext, size_t size, uint32_t flags);
 
     void FixAllocContext (alloc_context* acontext,
                                             BOOL lockp, void* arg, void *heap);
@@ -155,12 +155,12 @@ public:
     // promote an object
     PER_HEAP_ISOLATED void    Promote (Object** object, 
                                           ScanContext* sc,
-                                          DWORD flags=0);
+                                          uint32_t flags=0);
 
     // Find the relocation address for an object
     PER_HEAP_ISOLATED void    Relocate (Object** object,
                                            ScanContext* sc, 
-                                           DWORD flags=0);
+                                           uint32_t flags=0);
 
 
     HRESULT Init (size_t heapSize);
@@ -192,13 +192,13 @@ public:
     int GetLOHCompactionMode();
     void SetLOHCompactionMode(int newLOHCompactionyMode);
 
-    BOOL RegisterForFullGCNotification(DWORD gen2Percentage,
-                                       DWORD lohPercentage);
+    BOOL RegisterForFullGCNotification(uint32_t gen2Percentage,
+                                       uint32_t lohPercentage);
     BOOL CancelFullGCNotification();
     int WaitForFullGCApproach(int millisecondsTimeout);
     int WaitForFullGCComplete(int millisecondsTimeout);
 
-    int StartNoGCRegion(ULONGLONG totalSize, BOOL lohSizeKnown, ULONGLONG lohSize, BOOL disallowFullBlockingGC);
+    int StartNoGCRegion(uint64_t totalSize, BOOL lohSizeKnown, uint64_t lohSize, BOOL disallowFullBlockingGC);
     int EndNoGCRegion();
 
     PER_HEAP_ISOLATED     unsigned GetMaxGeneration();
@@ -233,7 +233,7 @@ public:	// FIX
 
     // Lock for finalization
     PER_HEAP_ISOLATED   
-        VOLATILE(LONG)          m_GCFLock;
+        VOLATILE(int32_t)          m_GCFLock;
 
     PER_HEAP_ISOLATED   BOOL    GcCollectClasses;
     PER_HEAP_ISOLATED

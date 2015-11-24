@@ -10,7 +10,7 @@
             $(ClrSrcDirectory)\vm;
             $(ClrSrcDirectory)\strongname\inc
         </UserIncludes>
-        <ClAdditionalOptions>$(ClAdditionalOptions) -DUNICODE -D_UNICODE -DNO_CRT</ClAdditionalOptions>
+        <ClAdditionalOptions>$(ClAdditionalOptions) -DUNICODE -D_UNICODE</ClAdditionalOptions>
         <OutputPath>$(ClrLibDest)</OutputPath>
         <TargetType>LIBRARY</TargetType>
         <PCHHeader>stdafx.h</PCHHeader>

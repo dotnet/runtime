@@ -74,6 +74,7 @@ void GCHeap::UpdatePreGCCounters()
 
 #endif //ENABLE_PERF_COUNTERS
 
+#ifdef FEATURE_EVENT_TRACE
 #ifdef MULTIPLE_HEAPS
         //take the first heap....
     gc_mechanisms *pSettings = &gc_heap::g_heaps[0]->settings;
@@ -81,11 +82,10 @@ void GCHeap::UpdatePreGCCounters()
     gc_mechanisms *pSettings = &gc_heap::settings;
 #endif //MULTIPLE_HEAPS
 
-#ifdef FEATURE_EVENT_TRACE
     ETW::GCLog::ETW_GC_INFO Info;
 
-    Info.GCStart.Count = (ULONG)pSettings->gc_index;
-    Info.GCStart.Depth = (ULONG)pSettings->condemned_generation;
+    Info.GCStart.Count = (uint32_t)pSettings->gc_index;
+    Info.GCStart.Depth = (uint32_t)pSettings->condemned_generation;
     Info.GCStart.Reason = (ETW::GCLog::ETW_GC_INFO::GC_REASON)((int)(pSettings->reason));
 
     Info.GCStart.Type = ETW::GCLog::ETW_GC_INFO::GC_NGC;
@@ -119,7 +119,7 @@ void GCHeap::UpdatePostGCCounters()
 
     int condemned_gen = pSettings->condemned_generation;
     Info.GCEnd.Depth = condemned_gen;
-    Info.GCEnd.Count = (ULONG)pSettings->gc_index;
+    Info.GCEnd.Count = (uint32_t)pSettings->gc_index;
     ETW::GCLog::FireGcEndAndGenerationRanges(Info.GCEnd.Count, Info.GCEnd.Depth);
 
     int xGen;
@@ -326,17 +326,17 @@ void GCHeap::UpdatePostGCCounters()
     }
 
     // Update Total Time    
-    GetPerfCounters().m_GC.timeInGC = (DWORD)g_TotalTimeInGC;
-    GetPerfCounters().m_GC.timeInGCBase = (DWORD)_timeInGCBase;
+    GetPerfCounters().m_GC.timeInGC = (uint32_t)g_TotalTimeInGC;
+    GetPerfCounters().m_GC.timeInGCBase = (uint32_t)_timeInGCBase;
 
     if (!GetPerfCounters().m_GC.cProcessID)
         GetPerfCounters().m_GC.cProcessID = (size_t)GetCurrentProcessId();
     
     g_TotalTimeSinceLastGCEnd = _currentPerfCounterTimer;
 
-    HeapInfo.HeapStats.PinnedObjectCount = (ULONG)(GetPerfCounters().m_GC.cPinnedObj);
-    HeapInfo.HeapStats.SinkBlockCount =  (ULONG)(GetPerfCounters().m_GC.cSinkBlocks);
-    HeapInfo.HeapStats.GCHandleCount =  (ULONG)(GetPerfCounters().m_GC.cHandles);
+    HeapInfo.HeapStats.PinnedObjectCount = (uint32_t)(GetPerfCounters().m_GC.cPinnedObj);
+    HeapInfo.HeapStats.SinkBlockCount =  (uint32_t)(GetPerfCounters().m_GC.cSinkBlocks);
+    HeapInfo.HeapStats.GCHandleCount =  (uint32_t)(GetPerfCounters().m_GC.cHandles);
 #endif //ENABLE_PERF_COUNTERS
 
     FireEtwGCHeapStats_V1(HeapInfo.HeapStats.GenInfo[0].GenerationSize, HeapInfo.HeapStats.GenInfo[0].TotalPromotedSize,
@@ -391,14 +391,14 @@ size_t GCHeap::GetNow()
 }
 
 #if defined(GC_PROFILING) //UNIXTODO: Enable this for FEATURE_EVENT_TRACE
-void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, DWORD dwFlags)
+void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
 {
 #if  defined(FEATURE_EVENT_TRACE)
     Object *pObj = *ppObject;
 #ifdef INTERIOR_POINTERS
     if (dwFlags & GC_CALL_INTERIOR)
     {
-        BYTE *o = (BYTE*)pObj;
+        uint8_t *o = (uint8_t*)pObj;
         gc_heap* hp = gc_heap::heap_of (o);
 
         if ((o < hp->gc_low) || (o >= hp->gc_high))
@@ -556,7 +556,7 @@ BOOL GCHeap::IsGCInProgressHelper (BOOL bConsiderGCStart)
     return GcInProgress || (bConsiderGCStart? VolatileLoad(&gc_heap::gc_started) : FALSE);
 }
 
-DWORD GCHeap::WaitUntilGCComplete(BOOL bConsiderGCStart)
+uint32_t GCHeap::WaitUntilGCComplete(BOOL bConsiderGCStart)
 {
     if (bConsiderGCStart)
     {
@@ -566,7 +566,7 @@ DWORD GCHeap::WaitUntilGCComplete(BOOL bConsiderGCStart)
         }
     }
 
-    DWORD dwWaitResult = NOERROR;
+    uint32_t dwWaitResult = NOERROR;
 
     if (GcInProgress) 
     {
@@ -625,28 +625,42 @@ BOOL GCHeap::IsConcurrentGCInProgress()
 }
 
 #ifdef FEATURE_EVENT_TRACE
-void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_number, BYTE* object_address)
+void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_number, uint8_t* object_address)
 {
+    void * typeId = nullptr;
+    const WCHAR * name = nullptr;
+#ifdef FEATURE_REDHAWK
+    typeId = RedhawkGCInterface::GetLastAllocEEType();
+#else
     TypeHandle th = GetThread()->GetTHAllocContextObj();
-
     if (th != 0)
     {
-        InlineSString<MAX_CLASSNAME_LENGTH> strTypeName; 
+        InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
         th.GetName(strTypeName);
+        typeId = th.GetMethodTable();
+        name = strTypeName.GetUnicode();
+    }
+#endif
 
-        FireEtwGCAllocationTick_V3((ULONG)allocation_amount,
+    if (typeId != nullptr)
+    {
+        FireEtwGCAllocationTick_V3((uint32_t)allocation_amount,
                                    ((gen_number == 0) ? ETW::GCLog::ETW_GC_INFO::AllocationSmall : ETW::GCLog::ETW_GC_INFO::AllocationLarge), 
                                    GetClrInstanceId(),
                                    allocation_amount,
-                                   th.GetMethodTable(), 
-                                   strTypeName.GetUnicode(),
+                                   typeId, 
+                                   name,
                                    heap_number,
                                    object_address
                                    );
     }
 }
-void gc_heap::fire_etw_pin_object_event (BYTE* object, BYTE** ppObject)
+void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)
 {
+#ifdef FEATURE_REDHAWK
+    UNREFERENCED_PARAMETER(object);
+    UNREFERENCED_PARAMETER(ppObject);
+#else
     Object* obj = (Object*)object;
 
     InlineSString<MAX_CLASSNAME_LENGTH> strTypeName; 
@@ -669,14 +683,15 @@ void gc_heap::fire_etw_pin_object_event (BYTE* object, BYTE** ppObject)
     }
     EX_CATCH {}
     EX_END_CATCH(SwallowAllExceptions)
+#endif // FEATURE_REDHAWK
 }
 #endif // FEATURE_EVENT_TRACE
 
-DWORD gc_heap::user_thread_wait (CLREvent *event, BOOL no_mode_change, int time_out_ms)
+uint32_t gc_heap::user_thread_wait (CLREvent *event, BOOL no_mode_change, int time_out_ms)
 {
     Thread* pCurThread = NULL;
     bool mode = false;
-    DWORD dwWaitResult = NOERROR;
+    uint32_t dwWaitResult = NOERROR;
     
     if (!no_mode_change)
     {
@@ -700,12 +715,12 @@ DWORD gc_heap::user_thread_wait (CLREvent *event, BOOL no_mode_change, int time_
 
 #ifdef BACKGROUND_GC
 // Wait for background gc to finish
-DWORD gc_heap::background_gc_wait (alloc_wait_reason awr, int time_out_ms)
+uint32_t gc_heap::background_gc_wait (alloc_wait_reason awr, int time_out_ms)
 {
     dprintf(2, ("Waiting end of background gc"));
     assert (background_gc_done_event.IsValid());
     fire_alloc_wait_event_begin (awr);
-    DWORD dwRet = user_thread_wait (&background_gc_done_event, FALSE, time_out_ms);
+    uint32_t dwRet = user_thread_wait (&background_gc_done_event, FALSE, time_out_ms);
     fire_alloc_wait_event_end (awr);
     dprintf(2, ("Waiting end of background gc is done"));
 
@@ -779,7 +794,7 @@ void GCHeap::DescrGenerationsToProfiler (gen_walk_fn fn, void *context)
 
 // Helper used to wrap the start routine of background GC threads so we can do things like initialize the
 // Redhawk thread state which requires running in the new thread's context.
-DWORD WINAPI gc_heap::rh_bgc_thread_stub(void * pContext)
+uint32_t WINAPI gc_heap::rh_bgc_thread_stub(void * pContext)
 {
     rh_bgc_thread_ctx * pStartContext = (rh_bgc_thread_ctx*)pContext;
 
@@ -807,7 +822,7 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
         return NULL;
     }
 
-    BYTE* base_mem = (BYTE*)pseginfo->pvMem;
+    uint8_t* base_mem = (uint8_t*)pseginfo->pvMem;
     heap_segment_mem(seg) = base_mem + pseginfo->ibFirstObject;
     heap_segment_allocated(seg) = base_mem + pseginfo->ibAllocated;
     heap_segment_committed(seg) = base_mem + pseginfo->ibCommit;
