@@ -3,7 +3,7 @@
 usage()
 {
     echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [coverage] [cross] [clangx.y] [ninja] [skipcoreclr] [skipmscorlib] [skiptests]"
-    echo "BuildArch can be: x64, ARM"
+    echo "BuildArch can be: x64, x86, arm, arm64"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
@@ -168,7 +168,7 @@ build_mscorlib()
     esac
 
     # Invoke MSBuild
-    mono "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__MSBuildBuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:ToolNugetRuntimeId=$_ToolNugetRuntimeId
+    mono "$__MSBuildPath" /nologo "$__ProjectRoot/build.proj" /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__LogsDir/MSCorLib_$__BuildOS__$__BuildArch__$__BuildType.log" /t:Build /p:__BuildOS=$__BuildOS /p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__IntermediatesDir=$__IntermediatesDir /p:UseRoslynCompiler=true /p:BuildNugetPackage=false /p:ToolNugetRuntimeId=$_ToolNugetRuntimeId
 
     if [ $? -ne 0 ]; then
         echo "Failed to build mscorlib."
@@ -187,7 +187,35 @@ echo "Commencing CoreCLR Repo build"
 
 # Obtain the location of the bash script to figure out whether the root of the repo is.
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-__BuildArch=x64
+
+# Use uname to determine what the CPU is.
+CPUName=$(uname -p)
+case $CPUName in
+    i686)
+        echo "Unsupported CPU $CPUName detected, build might not succeed!"
+        __BuildArch=x86
+        ;;
+
+    x86_64)
+        __BuildArch=x64
+        ;;
+
+    armv7l)
+        echo "Unsupported CPU $CPUName detected, build might not succeed!"
+        __BuildArch=arm
+        ;;
+
+    aarch64)
+        echo "Unsupported CPU $CPUName detected, build might not succeed!"
+        __BuildArch=arm64
+        ;;
+
+    *)
+        echo "Unknown CPU $CPUName detected, configuring as if for x64"
+        __BuildArch=x64
+        ;;
+esac
+
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 case $OSName in
@@ -216,7 +244,6 @@ case $OSName in
         __BuildOS=Linux
         ;;
 esac
-__MSBuildBuildArch=x64
 __BuildType=Debug
 __CodeCoverage=
 __IncludeTests=Include_Tests
@@ -250,17 +277,17 @@ for i in "$@"
         usage
         exit 1
         ;;
+        x86)
+        __BuildArch=x86
+        ;;
         x64)
         __BuildArch=x64
-        __MSBuildBuildArch=x64
         ;;
         arm)
         __BuildArch=arm
-        __MSBuildBuildArch=arm
         ;;
         arm64)
         __BuildArch=arm64
-        __MSBuildBuildArch=arm64
         ;;
         debug)
         __BuildType=Debug
