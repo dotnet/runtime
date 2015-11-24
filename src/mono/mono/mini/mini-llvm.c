@@ -415,10 +415,8 @@ create_llvm_type_for_type (MonoLLVMModule *module, MonoClass *klass)
 static LLVMTypeRef
 type_to_llvm_type (EmitContext *ctx, MonoType *t)
 {
-	if (t->byref)
-		return LLVMPointerType (LLVMInt8Type (), 0);
-
 	t = mini_get_underlying_type (t);
+
 	switch (t->type) {
 	case MONO_TYPE_VOID:
 		return LLVMVoidType ();
