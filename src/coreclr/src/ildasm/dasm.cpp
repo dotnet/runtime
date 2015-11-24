@@ -36,12 +36,12 @@
 #include <corcompile.h>
 #endif
 
+#ifndef FEATURE_CORECLR
 // Define also LegacyActivationShim::CoInitializeEE wrapper around CoInitializeEE
 #define LEGACY_ACTIVATION_SHIM_DEFINE_CoInitializeEE
 #include "LegacyActivationShim.h"
 #include "clrinternal.h"
-
-
+#endif
 
 struct MIDescriptor
 {
@@ -114,7 +114,7 @@ BOOL                    g_fProject = FALSE;  // if .winmd file, transform to .NE
 
 extern BOOL             g_fQuoteAllNames; // declared in formatType.cpp, init to FALSE
 BOOL                    g_fShowProgressBar = TRUE;
-BOOL                g_fForwardDecl=FALSE;
+BOOL                    g_fForwardDecl=FALSE;
 
 char                    g_szAsmCodeIndent[MAX_MEMBER_LENGTH];
 char                    g_szNamespace[MAX_MEMBER_LENGTH];
@@ -259,6 +259,7 @@ WCHAR* RstrW(unsigned id)
         wcscat_s(buff,cchBuff,L" */");
     return buffer;
 }
+
 char* RstrA(unsigned n, unsigned codepage)
 {
     static char buff[2048];
@@ -306,11 +307,14 @@ extern CQuickBytes *        g_szBuf_JUMPPT;
 extern CQuickBytes *        g_szBuf_UnquotedProperName;
 extern CQuickBytes *        g_szBuf_ProperName;
 
+#ifndef FEATURE_CORECLR
 // CLR internal hosting API
 ICLRRuntimeHostInternal *g_pCLRRuntimeHostInternal = NULL;
+#endif
 
 BOOL Init()
 {
+#ifndef FEATURE_CORECLR
     if (FAILED(CoInitialize(NULL)))
     {
         return FALSE;
@@ -339,6 +343,7 @@ BOOL Init()
     {
         return FALSE;
     }
+#endif
     
     g_szBuf_KEYWORD = new CQuickBytes();
     g_szBuf_COMMENT = new CQuickBytes();
@@ -438,7 +443,9 @@ void Cleanup()
 
 void Uninit()
 {
+#ifndef FEATURE_CORECLR
     GUIAddOpcode(NULL,NULL);
+#endif
 
     if (g_pPtrTags != NULL)
     {
@@ -495,6 +502,7 @@ void Uninit()
         SDELETE(g_szBuf_ProperName);
     }
     
+#ifndef FEATURE_CORECLR
     if (g_pCLRRuntimeHostInternal != NULL)
     {
         g_pCLRRuntimeHostInternal->Release();
@@ -504,6 +512,7 @@ void Uninit()
     LegacyActivationShim::CoUninitializeEE(COUNINITEE_DEFAULT);
     LegacyActivationShim::CoUninitializeCor();
     CoUninitialize();
+#endif
 } // Uninit
 
 HRESULT IsClassRefInScope(mdTypeRef classref)
@@ -644,16 +653,16 @@ BOOL EnumClasses()
             BOOL fDumpTokens = g_fDumpTokens;
             g_fDumpTokens = FALSE;
 
-            WIN_PAL_CPP_TRY
+            PAL_CPP_TRY
             {
                 if (strcmp(PrettyPrintClass(&out, g_cl_list[i], g_pImport), g_pszClassToDump) == 0)
                 {
                     g_tkClassToDump = g_cl_list[i];
                 }
             }
-            WIN_PAL_CPP_CATCH_ALL
+            PAL_CPP_CATCH_ALL
             { }
-            WIN_PAL_CPP_ENDTRY;
+            PAL_CPP_ENDTRY;
 
             g_fDumpTokens = fDumpTokens;
         }
@@ -1345,15 +1354,15 @@ void DumpByteArray(__inout __nullterminated char* szString, const BYTE* pBlob, U
             printsz = FALSE;
         }
         bool bBreak = FALSE;
-        WIN_PAL_CPP_TRY {
+        PAL_CPP_TRY {
             byt = pBlob[j];
         }
-        WIN_PAL_CPP_CATCH_ALL
+        PAL_CPP_CATCH_ALL
         {
             strcat_s(szString, SZSTRING_SIZE,ERRORMSG("INVALID DATA ADDRESS"));
             bBreak = TRUE;
         }
-        WIN_PAL_CPP_ENDTRY;
+        PAL_CPP_ENDTRY;
 
         if (bBreak)
             break;
@@ -1638,10 +1647,17 @@ mdToken TypeRefToTypeDef(mdToken tk, IMDInternalImport *pIMDI, IMDInternalImport
             IUnknown *pUnk; 
             if(FAILED(pIAMDI[0]->QueryInterface(IID_IUnknown, (void**)&pUnk))) goto AssignAndReturn;
 
+#ifdef FEATURE_CORECLR
+            if (FAILED(GetMetaDataInternalInterfaceFromPublic(
+                pUnk,
+                IID_IMDInternalImport,
+                (LPVOID *)ppIMDInew)))
+#else
             if (FAILED(g_pCLRRuntimeHostInternal->GetMetaDataInternalInterfaceFromPublic(
                 pUnk, 
                 IID_IMDInternalImport, 
                 (LPVOID *)ppIMDInew)))
+#endif
             {
                 goto AssignAndReturn;
             }
@@ -2697,11 +2713,11 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
 
         case ELEMENT_TYPE_STRING:
             szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = ");
-            WIN_PAL_CPP_TRY {
+            PAL_CPP_TRY {
                 szptr = DumpUnicodeString(GUICookie,szString,(WCHAR*)MDDV.m_wzValue,MDDV.m_cbSize/sizeof(WCHAR));
-            } WIN_PAL_CPP_CATCH_ALL {
+            } PAL_CPP_CATCH_ALL {
                 strcat_s(szString, SZSTRING_SIZE,ERRORMSG("INVALID DATA ADDRESS"));
-            } WIN_PAL_CPP_ENDTRY;
+            } PAL_CPP_ENDTRY;
             break;
 
         case ELEMENT_TYPE_CLASS:
@@ -2717,11 +2733,11 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
             if(MDDV.m_wzValue)
             {
                 szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(");
-                WIN_PAL_CPP_TRY {
+                PAL_CPP_TRY {
                     DumpByteArray(szString,(BYTE*)MDDV.m_wzValue,MDDV.m_cbSize,GUICookie);
-                } WIN_PAL_CPP_CATCH_ALL {
+                } PAL_CPP_CATCH_ALL {
                     szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),ERRORMSG(" Invalid blob at 0x%08X)"), MDDV.m_wzValue);
-                } WIN_PAL_CPP_ENDTRY
+                } PAL_CPP_ENDTRY
             }
             else
             {
@@ -3014,16 +3030,16 @@ BOOL DisassembleWrapper(IMDInternalImport *pImport, BYTE *ILHeader,
     BOOL fRet = FALSE;
     //char szString[4096];
 
-    WIN_PAL_CPP_TRY
+    PAL_CPP_TRY
     {
         fRet = Disassemble(pImport, ILHeader, GUICookie, FuncToken, pszArgname, ulArgs);
     }
-    WIN_PAL_CPP_CATCH_ALL
+    PAL_CPP_CATCH_ALL
     {
         sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_E_DASMERR),g_szAsmCodeIndent);
         printLine(GUICookie, szString);
     }
-    WIN_PAL_CPP_ENDTRY
+    PAL_CPP_ENDTRY
 
     return fRet;
 }
@@ -3432,7 +3448,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
     }
     bool bRet = FALSE;
 
-    WIN_PAL_CPP_TRY {
+    PAL_CPP_TRY {
         if((*pComSig & IMAGE_CEE_CS_CALLCONV_MASK) > IMAGE_CEE_CS_CALLCONV_VARARG)
         {
             sprintf_s(szString,SZSTRING_SIZE,"%sERROR: signature of method '%s' has invalid calling convention 0x%2.2X",g_szAsmCodeIndent,pszMemberName,*pComSig);
@@ -3446,10 +3462,10 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
         DumpGenericPars(szString,FuncToken); //,NULL,FALSE);
         pszMemberSig = PrettyPrintSig(pComSig, cComSig, szString, &qbMemberSig, g_pImport,NULL);
 lDone: ;
-    } WIN_PAL_CPP_CATCH_ALL {
+    } PAL_CPP_CATCH_ALL {
         printError(GUICookie,"INVALID DATA ADDRESS");
         bRet = TRUE;
-    } WIN_PAL_CPP_ENDTRY;
+    } PAL_CPP_ENDTRY;
 
     if (bRet)
     {
@@ -3470,16 +3486,16 @@ lDone: ;
                 // temporarily disable token dumping
                 g_fDumpTokens = FALSE;
 
-                WIN_PAL_CPP_TRY
+                PAL_CPP_TRY
                 {
                     CQuickBytes qbTempSig;
                     pszPlainSig = PrettyPrintSig(pComSig, cComSig, "", &qbTempSig, g_pImport, NULL);
                 }
-                WIN_PAL_CPP_CATCH_ALL 
+                PAL_CPP_CATCH_ALL
                 {
                     pszPlainSig = "";
                 }
-                WIN_PAL_CPP_ENDTRY;
+                PAL_CPP_ENDTRY;
 
                 g_fDumpTokens = TRUE;
             }
@@ -3919,14 +3935,14 @@ BOOL DumpField(mdToken FuncToken, const char *pszClassName,void *GUICookie, BOOL
     g_tkRefUser = FuncToken;
     
     bool bRet = FALSE;
-    WIN_PAL_CPP_TRY {
+    PAL_CPP_TRY {
         szStr = PrettyPrintSig(pComSig, cComSig, (DumpBody ? pszMemberName : ""), &qbMemberSig, g_pImport,NULL);
     } 
-    WIN_PAL_CPP_CATCH_ALL 
+    PAL_CPP_CATCH_ALL
     {
         printError(GUICookie,"INVALID ADDRESS IN FIELD SIGNATURE");
         bRet = TRUE;
-    } WIN_PAL_CPP_ENDTRY;
+    } PAL_CPP_ENDTRY;
 
     if (bRet)
         return FALSE;
@@ -3948,16 +3964,16 @@ BOOL DumpField(mdToken FuncToken, const char *pszClassName,void *GUICookie, BOOL
             g_fDumpTokens = FALSE;
 
             const char *pszPlainSig;
-            WIN_PAL_CPP_TRY
+            PAL_CPP_TRY
             {
                 CQuickBytes qbTempSig;
                 pszPlainSig = PrettyPrintSig(pComSig, cComSig, "", &qbTempSig, g_pImport, NULL);
             }
-            WIN_PAL_CPP_CATCH_ALL 
+            PAL_CPP_CATCH_ALL
             {
                 pszPlainSig = "";
             }
-            WIN_PAL_CPP_ENDTRY;
+            PAL_CPP_ENDTRY;
             
             g_fDumpTokens = fDumpTokens;
 
@@ -4859,7 +4875,9 @@ BOOL DumpClass(mdTypeDef cl, DWORD dwEntryPointToken, void* GUICookie, ULONG Wha
     if(WhatToDump & 4)
     {
         DumpMembers(cl, pszNamespace, pszClassName, dwClassAttrs, dwEntryPointToken,GUICookie);
+#ifndef FEATURE_CORECLR
         if(!ProgressStep()) g_fAbortDisassembly = TRUE;
+#endif
     }
 
     if(g_szAsmCodeIndent[0]) g_szAsmCodeIndent[strlen(g_szAsmCodeIndent)-2] = 0;
@@ -4899,11 +4917,13 @@ void DumpGlobalMethods(DWORD dwEntryPointToken)
         if(DumpMethod(FuncToken, NULL, dwEntryPointToken, g_pFile, TRUE)&&
             (g_Mode == MODE_DUMP_CLASS_METHOD || g_Mode == MODE_DUMP_CLASS_METHOD_SIG)) break;
 
+#ifndef FEATURE_CORECLR
         if(!ProgressStep())
         {
             g_fAbortDisassembly = TRUE;
             break;
         }
+#endif
     }
     g_pImport->EnumClose(&hEnumMethod);
     if(i)
@@ -6468,14 +6488,14 @@ void DumpHexbytes(__inout __nullterminated char* szString,BYTE *pb, DWORD fromPt
         if(curPtr >= limPtr) pb = &zero;    // at limPtr and after, pad with 0
         else
         {
-            WIN_PAL_CPP_TRY 
+            PAL_CPP_TRY
             {
                 sz[k] = *pb; // check the ptr validity
             } 
-            WIN_PAL_CPP_CATCH_ALL 
+            PAL_CPP_CATCH_ALL
             {
                 pb = &zero;
-            } WIN_PAL_CPP_ENDTRY;
+            } PAL_CPP_ENDTRY;
         }
         szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," %2.2X", *pb);
         if(isprint(*pb))
@@ -6688,11 +6708,11 @@ void DumpEATEntriesWrapper(void* GUICookie,
     IMAGE_NT_HEADERS32 *pNTHeader32, IMAGE_OPTIONAL_HEADER32 *pOptHeader32,
     IMAGE_NT_HEADERS64 *pNTHeader64, IMAGE_OPTIONAL_HEADER64 *pOptHeader64)
 {
-    WIN_PAL_CPP_TRY
+    PAL_CPP_TRY
     {
         DumpEATEntries(GUICookie, pNTHeader32, pOptHeader32, pNTHeader64, pOptHeader64);
     }
-    WIN_PAL_CPP_CATCH_ALL
+    PAL_CPP_CATCH_ALL
     {
         printError(GUICookie,"// ERROR READING EXPORT ADDRESS TABLE");
         if (g_prEATableRef != NULL)
@@ -6701,7 +6721,7 @@ void DumpEATEntriesWrapper(void* GUICookie,
         }
         g_nEATableRef = 0;
     }
-    WIN_PAL_CPP_ENDTRY
+    PAL_CPP_ENDTRY
 }
 
 void DumpVtable(void* GUICookie)
@@ -6947,6 +6967,10 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
     if(pch && (!_wcsicmp(pch+1,L"lib") || !_wcsicmp(pch+1,L"obj")))
     {   // This works only when all the rest does not
         // Init and run.
+#ifdef FEATURE_CORECLR
+        if (MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
+            IID_IMetaDataDispenserEx, (void **)&g_pDisp))
+#else
         if(SUCCEEDED(CoInitialize(0)))
         {
             if(SUCCEEDED(LegacyActivationShim::CoInitializeCor(0)))
@@ -6954,6 +6978,7 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
                 if (SUCCEEDED(LegacyActivationShim::ClrCoCreateInstance(
                     CLSID_CorMetaDataDispenser, NULL, CLSCTX_INPROC_SERVER, 
                     IID_IMetaDataDispenserEx, (void **) &g_pDisp)))
+#endif
                 {
                     WCHAR *pwzObjFileName=NULL;
                     if (pszObjFileName)
@@ -6968,19 +6993,26 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
                     g_pDisp = NULL;
                     if (pwzObjFileName) VDELETE(pwzObjFileName);
                 }
+#ifndef FEATURE_CORECLR
                 LegacyActivationShim::CoUninitializeCor();
             }
             CoUninitialize();
         }
+#endif
     }
     else
     {
         HRESULT hr = S_OK;
         if(g_pDisp == NULL)
         {
+#ifdef FEATURE_CORECLR
+            hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
+                IID_IMetaDataDispenserEx, (void **)&g_pDisp);
+#else
             hr = LegacyActivationShim::ClrCoCreateInstance(
                 CLSID_CorMetaDataDispenser, NULL, CLSCTX_INPROC_SERVER,
                 IID_IMetaDataDispenserEx, (void **) &g_pDisp);
+#endif
         }
         if(SUCCEEDED(hr))
         {
@@ -7466,12 +7498,21 @@ BOOL DumpFile()
     }
 
     const DWORD openFlags = ofRead | (g_fProject ? 0 : ofNoTransform);
+#ifdef FEATURE_CORECLR
+    if (FAILED(GetMetaDataInternalInterface(
+        (BYTE *)g_pMetaData,
+        g_cbMetaData,
+        openFlags,
+        IID_IMDInternalImport,
+        (LPVOID *)&g_pImport)))
+#else
     if (FAILED(g_pCLRRuntimeHostInternal->GetMetaDataInternalInterface(
         (BYTE *)g_pMetaData, 
         g_cbMetaData, 
         openFlags, 
         IID_IMDInternalImport, 
         (LPVOID *)&g_pImport)))
+#endif
     {
         if (g_fDumpHeader)
             DumpHeader(g_CORHeader, g_pFile);
@@ -7480,7 +7521,11 @@ BOOL DumpFile()
     }
 
     TokenSigInit(g_pImport);
+#ifdef FEATURE_CORECLR
+    if (FAILED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser, IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
+#else
     if (FAILED(CoCreateInstance(CLSID_CorMetaDataDispenser, 0, CLSCTX_INPROC_SERVER, IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
+#endif
     {
         if (g_fDumpHeader)
             DumpHeader(g_CORHeader, g_pFile);
@@ -7495,7 +7540,7 @@ BOOL DumpFile()
         goto exit;
     }
 
-
+#ifndef FEATURE_CORECLR
     // Get a symbol binder.
     ISymUnmanagedBinder *binder;
     HRESULT hr;
@@ -7518,6 +7563,7 @@ BOOL DumpFile()
 
     if (FAILED(hr))
         g_fShowSource = FALSE;
+#endif
 
     if((g_uNCA = g_pImport->GetCountWithTokenKind(mdtCustomAttribute)))
     {
@@ -7546,11 +7592,13 @@ DoneInitialization:
     }
 #endif
 
+#ifndef FEATURE_CORECLR
     if (g_Mode & MODE_GUI)
     {
         GUIAddItemsToList();
     }
     else
+#endif
     {
         // Dump the CLR header info if requested.
         printLine(g_pFile,COMMENT((char*)0)); // start multiline comment
@@ -7590,10 +7638,15 @@ DoneInitialization:
                     ulNumGlobalFunc = g_pImport->EnumGetCount(&hEnumMethod);
                     g_pImport->EnumClose(&hEnumMethod);
                 }
+#ifndef FEATURE_CORECLR
                 if(g_fShowProgressBar)
                     CreateProgressBar((LONG) (g_NumClasses + ulNumGlobalFunc));
+#endif
+
             }
+#ifndef FEATURE_CORECLR
             ProgressStep();
+#endif
             g_fAbortDisassembly = FALSE;
             //DumpVtable(g_pFile);
             DumpMscorlib(g_pFile);
@@ -7666,7 +7719,9 @@ DoneInitialization:
                 fSuccess = FALSE;
                 goto CloseFileAndExit;
             }
+#ifndef FEATURE_CORECLR
             ProgressStep();
+#endif
 
 #if (0)
             /* Third, dump GC/EH info about the native methods, using the IPMap */
@@ -7851,7 +7906,9 @@ CloseFileAndExit:
             fclose(g_pFile);
             g_pFile = NULL;
         }
+#ifndef FEATURE_CORECLR
         DestroyProgressBar();
+#endif
     }
 
 exit:
