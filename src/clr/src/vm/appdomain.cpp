@@ -3693,7 +3693,7 @@ void SystemDomain::ExecuteMainMethod(HMODULE hMod, __in_opt LPWSTR path /*=NULL*
         pDomain->GetMulticoreJitManager().AutoStartProfile(pDomain);
 #endif
 
-        pDomain->m_pRootAssembly->ExecuteMainMethod(NULL);
+        pDomain->m_pRootAssembly->ExecuteMainMethod(NULL, FALSE /* waitForOtherThreads */);
     }
 
     pThread->ReturnToContext(&frame);
