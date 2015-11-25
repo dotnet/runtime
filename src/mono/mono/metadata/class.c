@@ -43,6 +43,7 @@
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/bsearch.h>
+#include <mono/utils/checked-build.h>
 
 MonoStats mono_stats;
 
@@ -5692,13 +5693,16 @@ mono_class_setup_supertypes (MonoClass *klass)
 	supertypes = mono_class_alloc0 (klass, sizeof (MonoClass *) * ms);
 
 	if (klass->parent) {
-		supertypes [klass->idepth - 1] = klass;
-		memcpy (supertypes, klass->parent->supertypes, klass->parent->idepth * sizeof (gpointer));
+		CHECKED_METADATA_WRITE_PTR ( supertypes [klass->idepth - 1] , klass );
+
+		int supertype_idx;
+		for (supertype_idx = 0; supertype_idx < klass->parent->idepth; supertype_idx++)
+			CHECKED_METADATA_WRITE_PTR ( supertypes [supertype_idx] , klass->parent->supertypes [supertype_idx] );
 	} else {
-		supertypes [0] = klass;
+		CHECKED_METADATA_WRITE_PTR ( supertypes [0] , klass );
 	}
 
-	mono_atomic_store_release (&klass->supertypes, supertypes);
+	CHECKED_METADATA_WRITE_PTR_ATOMIC ( klass->supertypes , supertypes );
 }
 
 static gboolean
@@ -6132,23 +6136,23 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 	classes_size += sizeof (MonoClass);
 
 	if (pinfo) {
-		klass->name = pinfo->name;
+		CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name , pinfo->name );
 	} else {
 		int n = mono_generic_param_num (param);
-		klass->name = mono_image_alloc0 (image, 16);
+		CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->name , mono_image_alloc0 (image, 16) );
 		sprintf ((char*)klass->name, "%d", n);
 	}
 
 	if (container) {
 		if (is_mvar) {
 			MonoMethod *omethod = container->owner.method;
-			klass->name_space = (omethod && omethod->klass) ? omethod->klass->name_space : "";
+			CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name_space , (omethod && omethod->klass) ? omethod->klass->name_space : "" );
 		} else {
 			MonoClass *oklass = container->owner.klass;
-			klass->name_space = oklass ? oklass->name_space : "";
+			CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name_space , oklass ? oklass->name_space : "" );
 		}
 	} else {
-		klass->name_space = "";
+		CHECKED_METADATA_WRITE_PTR_EXEMPT  ( klass->name_space , "" );
 	}
 
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
@@ -6160,30 +6164,32 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 
 	pos = 0;
 	if ((count > 0) && !MONO_CLASS_IS_INTERFACE (pinfo->constraints [0])) {
-		klass->parent = pinfo->constraints [0];
+		CHECKED_METADATA_WRITE_PTR ( klass->parent , pinfo->constraints [0] );
 		pos++;
-	} else if (pinfo && pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)
-		klass->parent = mono_class_from_name (mono_defaults.corlib, "System", "ValueType");
-	else
-		klass->parent = mono_defaults.object_class;
-
+	} else if (pinfo && pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) {
+		CHECKED_METADATA_WRITE_PTR ( klass->parent , mono_class_from_name (mono_defaults.corlib, "System", "ValueType") );
+	} else {
+		CHECKED_METADATA_WRITE_PTR ( klass->parent , mono_defaults.object_class );
+	}
 
 	if (count - pos > 0) {
 		klass->interface_count = count - pos;
-		klass->interfaces = mono_image_alloc0 (image, sizeof (MonoClass *) * (count - pos));
+		CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->interfaces , mono_image_alloc0 (image, sizeof (MonoClass *) * (count - pos)) );
 		klass->interfaces_inited = TRUE;
 		for (i = pos; i < count; i++)
-			klass->interfaces [i - pos] = pinfo->constraints [i];
+			CHECKED_METADATA_WRITE_PTR ( klass->interfaces [i - pos] , pinfo->constraints [i] );
 	}
 
-	klass->image = image;
+	CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->image , image );
 
 	klass->inited = TRUE;
-	klass->cast_class = klass->element_class = klass;
+	CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->cast_class ,    klass );
+	CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->element_class , klass );
 	klass->flags = TYPE_ATTRIBUTE_PUBLIC;
 
 	klass->this_arg.type = klass->byval_arg.type = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
-	klass->this_arg.data.generic_param = klass->byval_arg.data.generic_param = param;
+	CHECKED_METADATA_WRITE_PTR ( klass->this_arg.data.generic_param ,  param );
+	CHECKED_METADATA_WRITE_PTR ( klass->byval_arg.data.generic_param , param );
 	klass->this_arg.byref = TRUE;
 
 	/* We don't use type_token for VAR since only classes can use it (not arrays, pointer, VARs, etc) */
