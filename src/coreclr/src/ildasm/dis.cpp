@@ -134,9 +134,11 @@ char* AnsiToUtf(__in __nullterminated const char* sz) { return UnicodeToUtf(Ansi
     
 static void UnicodeToConsoleOrMsgBox(__in __nullterminated const WCHAR* wz)
 {
+#ifndef FEATURE_CORECLR
     if (g_Mode & MODE_GUI)
             WszMessageBox(NULL,wz,RstrW(IDS_ERRORCAPTION),MB_OK|MB_ICONERROR|GetDasmMBRTLStyle());
     else
+#endif
     {
         //DWORD dw;
         //char* sz = UnicodeToAnsi(wz);
@@ -154,9 +156,11 @@ static void UnicodeToFile(__in __nullterminated const WCHAR* wz, FILE* pF)
 }
 static void ToGUIOrFile(__in __nullterminated const char* sz, void* GUICookie)
 {
+#ifndef FEATURE_CORECLR
     if (g_Mode & MODE_GUI)
         GUIAddOpcode(sz, GUICookie);
     else
+#endif
     {
         if(g_fDumpRTF) fprintf((FILE*)GUICookie,"%s\\line\n",sz);
         else fprintf((FILE*)GUICookie,"%s\n",sz);
@@ -872,7 +876,7 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, __out_ecount(nSize)
         sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_ERRORREOPENINGFILE),pLCD->FileToken);
         printError(GUICookie, szString);
     }
-    WIN_PAL_ENDTRY
+    PAL_ENDTRY
 
     return param.fRet;
 }
