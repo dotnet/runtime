@@ -10828,7 +10828,6 @@ bool                Compiler::gtNodeHasSideEffects(GenTreePtr tree, unsigned fla
                     || (s_helperCallProperties.IsAllocator(helper) && !s_helperCallProperties.MayFinalize(helper)))
                 {
                     GenTreeCall* call = tree->AsCall();
-                    GenTreeArgList* args = call->gtCallArgs;
                     for (GenTreeArgList* args = call->gtCallArgs; args != nullptr; args = args->Rest())
                     {
                         if (gtTreeHasSideEffects(args->Current(), flags)) return true;
