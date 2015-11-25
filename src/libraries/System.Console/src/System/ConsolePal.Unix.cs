@@ -8,19 +8,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Runtime.InteropServices;
 
 namespace System
 {
     // Provides Unix-based support for System.Console.
-    // - OpenStandardInput, OpenStandardOutput, OpenStandardError
-    // - InputEncoding, OutputEncoding
-    // - ForegroundColor, BackgroundColor, ResetColor
     //
-    // This implementation relies only on POSIX-compliant/POSIX-standard APIs,
-    // e.g. for reading/writing /dev/stdin, /dev/stdout, and /dev/stderr,
-    // for getting environment variables for accessing charset information for encodings, 
-    // and terminfo databases / strings for manipulating the terminal.
     // NOTE: The test class reflects over this class to run the tests due to limitations in
     //       the test infrastructure that prevent OS-specific builds of test binaries. If you
     //       change any of the class / struct / function names, parameters, etc then you need
@@ -60,7 +52,7 @@ namespace System
         {
             get
             {
-                EnsureApplicationMode();
+                EnsureInitialized();
 
                 return Volatile.Read(ref s_stdInReader) ??
                     Console.EnsureInitialized(
@@ -95,6 +87,8 @@ namespace System
                 return StdInReader;
             }
         }
+
+        public static bool KeyAvailable { get { return StdInReader.KeyAvailable; } }
 
         public static ConsoleKeyInfo ReadKey(bool intercept)
         {
@@ -137,38 +131,236 @@ namespace System
             }
         }
 
-        public static int WindowWidth
+        public static string Title
         {
-            get
-            {
-                int cols = Interop.Sys.GetWindowWidth();
-                return (cols != -1) ? cols : TerminalBasicInfo.Instance.ColumnFormat;
-            }
-            set
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
-        public static bool CursorVisible
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
+            get { throw new PlatformNotSupportedException(); }
             set
             {
                 if (Console.IsOutputRedirected)
                     return;
 
-                string formatString = value ?
-                    TerminalBasicInfo.Instance.CursorVisibleFormat :
-                    TerminalBasicInfo.Instance.CursorInvisibleFormat;
-                if (!string.IsNullOrEmpty(formatString))
+                string titleFormat = TerminalBasicInfo.Instance.TitleFormat;
+                if (!string.IsNullOrEmpty(titleFormat))
                 {
-                    WriteStdoutAnsiString(formatString);
+                    string ansiStr = TermInfo.ParameterizedStrings.Evaluate(titleFormat, value);
+                    WriteStdoutAnsiString(ansiStr);
                 }
             }
         }
+
+        public static void Beep()
+        {
+            if (!Console.IsOutputRedirected)
+            {
+                WriteStdoutAnsiString(TerminalBasicInfo.Instance.BellFormat);
+            }
+        }
+
+        public static void Clear()
+        {
+            if (!Console.IsOutputRedirected)
+            {
+                WriteStdoutAnsiString(TerminalBasicInfo.Instance.ClearFormat);
+            }
+        }
+
+        public static void SetCursorPosition(int left, int top)
+        {
+            if (Console.IsOutputRedirected)
+                return;
+
+            string cursorAddressFormat = TerminalBasicInfo.Instance.CursorAddressFormat;
+            if (!string.IsNullOrEmpty(cursorAddressFormat))
+            {
+                string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
+                WriteStdoutAnsiString(ansiStr);
+            }
+        }
+
+        public static int BufferWidth
+        {
+            get { return WindowWidth; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
+        public static int BufferHeight
+        {
+            get { return WindowHeight; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
+        public static int WindowLeft
+        {
+            get { return 0; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
+        public static int WindowTop
+        {
+            get { return 0; }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
+        public static int WindowWidth
+        {
+            get
+            {
+                Interop.Sys.WinSize winsize;
+                return Interop.Sys.GetWindowSize(out winsize) == 0 ?
+                    winsize.Col :
+                    TerminalBasicInfo.Instance.ColumnFormat;
+            }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
+        public static int WindowHeight
+        {
+            get
+            {
+                Interop.Sys.WinSize winsize;
+                return Interop.Sys.GetWindowSize(out winsize) == 0 ?
+                    winsize.Row :
+                    TerminalBasicInfo.Instance.LinesFormat;
+            }
+            set { throw new PlatformNotSupportedException(); }
+        }
+
+        public static bool CursorVisible
+        {
+            get { throw new PlatformNotSupportedException(); }
+            set
+            {
+                if (!Console.IsOutputRedirected)
+                {
+                    WriteStdoutAnsiString(value ?
+                        TerminalBasicInfo.Instance.CursorVisibleFormat :
+                        TerminalBasicInfo.Instance.CursorInvisibleFormat);
+                }
+            }
+        }
+
+        // TODO: It's quite expensive to use the request/response protocol each time CursorLeft/Top is accessed.
+        // We should be able to (mostly) track the position of the cursor in locals, doing the request/response infrequently.
+
+        public static int CursorLeft
+        {
+            get
+            {
+                int left, top;
+                GetCursorPosition(out left, out top);
+                return left;
+            }
+        }
+
+        public static int CursorTop
+        {
+            get
+            {
+                int left, top;
+                GetCursorPosition(out left, out top);
+                return top;
+            }
+        }
+
+        /// <summary>Gets the current cursor position.  This involves both writing to stdout and reading stdin.</summary>
+        private static unsafe void GetCursorPosition(out int left, out int top)
+        {
+            left = top = 0;
+
+            // Getting the cursor position involves both writing out a request string and
+            // parsing a response string from the terminal.  So if anything is redirected, bail.
+            if (Console.IsInputRedirected || Console.IsOutputRedirected)
+                return;
+
+            // Get the cursor position request format string.
+            string cpr = TerminalBasicInfo.Instance.CursorPositionRequestFormat;
+            if (string.IsNullOrEmpty(cpr))
+                return;
+
+            // Synchronize with all other stdin readers.  We need to do this in case multiple threads are
+            // trying to read/write concurrently, and to minimize the chances of resulting conflicts.
+            // This does mean that Console.get_CursorLeft/Top can't be used concurrently Console.Read*, etc.;
+            // attempting to do so will block one of them until the other completes, but in doing so we prevent
+            // one thread's get_CursorLeft/Top from providing input to the other's Console.Read*.
+            lock (StdInReader) 
+            {
+                // Write out the cursor position request.
+                WriteStdoutAnsiString(cpr);
+
+                // Read the response.  There's a race condition here if the user is typing,
+                // or if other threads are accessing the console; there's relatively little
+                // we can do about that, but we try not to lose any data.
+                StdInStreamReader r = StdInReader.Inner;
+                const int BufferSize = 1024;
+                byte* bytes = stackalloc byte[BufferSize];
+
+                int bytesRead = 0, i = 0;
+
+                // Response expected in the form "\ESC[row;colR".  However, user typing concurrently
+                // with the request/response sequence can result in other characters, and potentially
+                // other escape sequences (e.g. for an arrow key) being entered concurrently with
+                // the response.  To avoid garbage showing up in the user's input, we are very liberal
+                // with regards to eating all input from this point until all aspects of the sequence
+                // have been consumed.  
+
+                // Find the ESC as the start of the sequence.
+                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 0x1B);
+                i++; // move past the ESC
+
+                // Find the '['
+                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == '[');
+
+                // Find the first Int32 and parse it.
+                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => IsDigit((char)b));
+                int row = ParseInt32(bytes, bytesRead, ref i);
+                if (row >= 1) top = row - 1;
+
+                // Find the second Int32 and parse it.
+                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => IsDigit((char)b));
+                int col = ParseInt32(bytes, bytesRead, ref i);
+                if (col >= 1) left = col - 1;
+
+                // Find the ending 'R'
+                ReadStdinUnbufferedUntil(r, bytes, BufferSize, ref bytesRead, ref i, b => b == 'R');
+            }
+        }
+
+        /// <summary>Reads from the stdin reader, unbuffered, until the specified condition is met.</summary>
+        private static unsafe void ReadStdinUnbufferedUntil(
+            StdInStreamReader reader, 
+            byte* buffer, int bufferSize, 
+            ref int bytesRead, ref int pos, 
+            Func<byte, bool> condition)
+        {
+            while (true)
+            {
+                for (; pos < bytesRead && !condition(buffer[pos]); pos++) ;
+                if (pos < bytesRead) return;
+
+                bytesRead = reader.ReadStdinUnbuffered(buffer, bufferSize);
+                pos = 0;
+            }
+        }
+
+        /// <summary>Parses the Int32 at the specified position in the buffer.</summary>
+        /// <param name="buffer">The buffer.</param>
+        /// <param name="bufferSize">The length of the buffer.</param>
+        /// <param name="pos">The current position in the buffer.</param>
+        /// <returns>The parsed result, or 0 if nothing could be parsed.</returns>
+        private static unsafe int ParseInt32(byte* buffer, int bufferSize, ref int pos)
+        {
+            int result = 0;
+            for (; pos < bufferSize; pos++)
+            {
+                char c = (char)buffer[pos];
+                if (!IsDigit(c)) break;
+                result = (result * 10) + (c - '0');
+            }
+            return result;
+        }
+
+        /// <summary>Gets whether the specified character is a digit 0-9.</summary>
+        private static bool IsDigit(char c) { return c >= '0' && c <= '9'; }
 
         /// <summary>
         /// Gets whether the specified file descriptor was redirected.
@@ -319,7 +511,7 @@ namespace System
 
             // We haven't yet computed a format string.  Compute it, use it, then cache it.
             string formatString = foreground ? TerminalColorInfo.Instance.ForegroundFormat : TerminalColorInfo.Instance.BackgroundFormat;
-            if (formatString != null)
+            if (!string.IsNullOrEmpty(formatString))
             {
                 int maxColors = TerminalColorInfo.Instance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
@@ -340,11 +532,7 @@ namespace System
             // We only want to send the reset string if we're targeting a TTY device
             if (!Console.IsOutputRedirected)
             {
-                string resetFormat = TerminalColorInfo.Instance.ResetFormat;
-                if (resetFormat != null)
-                {
-                    WriteStdoutAnsiString(resetFormat);
-                }
+                WriteStdoutAnsiString(TerminalColorInfo.Instance.ResetFormat);
             }
         }
 
@@ -379,66 +567,62 @@ namespace System
         /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
         private static readonly string[,] s_fgbgAndColorStrings = new string[2, 16]; // 2 == fg vs bg, 16 == ConsoleColor values
 
-        public static bool TryGetSpecialConsoleKey(char[] givenChars, int startIndex, int endIndex, out ConsoleKey key, out int keyLength)
+        public static bool TryGetSpecialConsoleKey(char[] givenChars, int startIndex, int endIndex, out ConsoleKeyInfo key, out int keyLength)
         {
-            key = (ConsoleKey)0;
-            keyLength = 0;
-            int unprocessedCharCount = endIndex - startIndex + 1;
+            int unprocessedCharCount = endIndex - startIndex;
 
-            if (unprocessedCharCount < TerminalKeyInfo.Instance.MinKeyLength)
-                return false;
-
-            int minRange = TerminalKeyInfo.Instance.MinKeyLength;
-            int maxRange = Math.Min(unprocessedCharCount, TerminalKeyInfo.Instance.MaxKeyLength);
-
-            for (int i = maxRange; i >= minRange; i--)
+            if (unprocessedCharCount >= TerminalKeyInfo.Instance.MinKeyLength)
             {
-                string currentString = new string(givenChars, startIndex, i);
+                int minRange = TerminalKeyInfo.Instance.MinKeyLength;
+                int maxRange = Math.Min(unprocessedCharCount, TerminalKeyInfo.Instance.MaxKeyLength);
 
-                // Check if the string prefix matches.
-                if (TerminalKeyInfo.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
+                for (int i = maxRange; i >= minRange; i--)
                 {
-                    keyLength = currentString.Length;
-                    return true;
+                    string currentString = new string(givenChars, startIndex, i);
+
+                    // Check if the string prefix matches.
+                    if (TerminalKeyInfo.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
+                    {
+                        keyLength = currentString.Length;
+                        return true;
+                    }
                 }
             }
 
+            key = default(ConsoleKeyInfo);
+            keyLength = 0;
             return false;
         }
 
         /// <summary>Whether keypad_xmit has already been written out to the terminal.</summary>
-        private static volatile bool s_enteredApplicationMode;
+        private static volatile bool s_initialized;
 
-        /// <summary>
-        /// Ensures that keypad_xmit has been written out to the terminal.  This needs to be done
-        /// before interpreting any terminfo strings, as the mode can impact what strings are sent
-        /// by the terminal for keyboard input.
-        /// </summary>
-        private static void EnsureApplicationMode()
+        /// <summary>Ensures that the console has been initialized for reading.</summary>
+        private static void EnsureInitialized()
         {
-            if (!s_enteredApplicationMode)
+            if (!s_initialized)
             {
-                EnsureApplicationModeCore(); // factored out for inlinability
+                EnsureInitializedCore(); // factored out for inlinability
             }
         }
 
-        /// <summary>
-        /// Ensures that keypad_xmit has been written out to the terminal.  This needs to be done
-        /// before interpreting any terminfo strings, as the mode can impact what strings are sent
-        /// by the terminal for keyboard input.
-        /// </summary>
-        private static void EnsureApplicationModeCore()
+        /// <summary>Ensures that the console has been initialized for reading.</summary>
+        private static void EnsureInitializedCore()
         {
-            string keypadXmit = TerminalKeyInfo.Instance.KeypadXmit;
             lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
             {
-                if (!s_enteredApplicationMode)
+                if (!s_initialized)
                 {
-                    if (keypadXmit != null)
+                    // Ensure the console is configured appropriately
+                    Interop.Sys.InitializeConsole();
+
+                    // Make sure it's in application mode
+                    if (!Console.IsOutputRedirected)
                     {
-                        WriteStdoutAnsiString(keypadXmit);
+                        WriteStdoutAnsiString(TerminalKeyInfo.Instance.KeypadXmit);
                     }
-                    s_enteredApplicationMode = true;
+
+                    s_initialized = true;
                 }
             }
         }
@@ -456,7 +640,7 @@ namespace System
             public int MaxColors;
 
             /// <summary>The cached instance.</summary>
-            public static TerminalColorInfo Instance { get { return _instance.Value; } }
+            public static TerminalColorInfo Instance { get { return s_instance.Value; } }
 
             private TerminalColorInfo(TermInfo.Database db)
             {
@@ -475,34 +659,109 @@ namespace System
             }
 
             /// <summary>Lazy initialization of the terminal color information.</summary>
-            private static Lazy<TerminalColorInfo> _instance = new Lazy<TerminalColorInfo>(() =>
+            private static Lazy<TerminalColorInfo> s_instance = new Lazy<TerminalColorInfo>(() =>
             {
                 TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
                 return new TerminalColorInfo(db);
             }, isThreadSafe: true);
         }
 
-        private struct TerminalBasicInfo
+        internal struct TerminalBasicInfo
         {
-            /// <summary>The no. of columns in a format</summary>
+            /// <summary>The no. of columns in a format.</summary>
             public int ColumnFormat;
+            /// <summary>The no. of lines in a format.</summary>
+            public int LinesFormat;
             /// <summary>The format string to use to make cursor visible.</summary>
             public string CursorVisibleFormat;
             /// <summary>The format string to use to make cursor invisible</summary>
             public string CursorInvisibleFormat;
+            /// <summary>The format string to use to set the window title.</summary>
+            public string TitleFormat;
+            /// <summary>The format string to use for an audible bell.</summary>
+            public string BellFormat;
+            /// <summary>The format string to use to clear the terminal.</summary>
+            public string ClearFormat;
+            /// <summary>The format string to use to set the position of the cursor.</summary>
+            public string CursorAddressFormat;
+            /// <summary>The format string to use to move the cursor to the left.</summary>
+            public string CursorLeftFormat;
+            /// <summary>The format string for "user string 7", interpreted to be a cursor position request.</summary>
+            /// <remarks>
+            /// This should be <see cref="KnownCursorPositionRequestFormat"/>, but we use the format string as a way to 
+            /// guess whether the terminal will actually support the request/response protocol.
+            /// </remarks>
+            public string CursorPositionRequestFormat;
+            /// <summary>Well-known CPR format.</summary>
+            private const string KnownCursorPositionRequestFormat = "\x1B[6n";
 
             /// <summary>The cached instance.</summary>
-            public static TerminalBasicInfo Instance { get { return _instance.Value; } }
+            public static TerminalBasicInfo Instance { get { return s_instance.Value; } }
 
             private TerminalBasicInfo(TermInfo.Database db)
             {
+                BellFormat = db != null ? db.GetString(TermInfo.Database.BellIndex) : string.Empty;
+                ClearFormat = db != null ? db.GetString(TermInfo.Database.ClearIndex) : string.Empty;
                 ColumnFormat = db != null ? db.GetNumber(TermInfo.Database.ColumnIndex) : 0;
+                LinesFormat = db != null ? db.GetNumber(TermInfo.Database.LinesIndex) : 0;
                 CursorVisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorVisibleIndex) : string.Empty;
                 CursorInvisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorInvisibleIndex) : string.Empty;
+                CursorAddressFormat = db != null ? db.GetString(TermInfo.Database.CursorAddressIndex) : string.Empty;
+                CursorLeftFormat = db != null ? db.GetString(TermInfo.Database.CursorLeftIndex) : string.Empty;
+                TitleFormat = GetTitleFormat(db);
+                CursorPositionRequestFormat = db != null && db.GetString(TermInfo.Database.CursorPositionRequest) == KnownCursorPositionRequestFormat ?
+                    KnownCursorPositionRequestFormat : 
+                    string.Empty;
+            }
+
+            private static string GetTitleFormat(TermInfo.Database db)
+            {
+                if (db == null)
+                {
+                    return string.Empty;
+                }
+
+                // Try to get the format string from tsl/fsl and use it if they're available
+                string tsl = db.GetString(TermInfo.Database.ToStatusLineIndex);
+                string fsl = db.GetString(TermInfo.Database.FromStatusLineIndex);
+                if (tsl != null && fsl != null)
+                {
+                    return tsl + "%p1%s" + fsl;
+                }
+
+                string term = db.Term;
+                if (term == null)
+                {
+                    return string.Empty;
+                }
+
+                if (term.StartsWith("xterm", StringComparison.Ordinal)) // normalize all xterms to enable easier matching
+                {
+                    term = "xterm";
+                }
+
+                switch (term)
+                {
+                    case "aixterm":
+                    case "dtterm":
+                    case "linux":
+                    case "rxvt":
+                    case "xterm":
+                        return "\x1B]0;%p1%s\x07";
+                    case "cygwin":
+                        return "\x1B];%p1%s\x07";
+                    case "konsole":
+                        return "\x1B]30;%p1%s\x07";
+                    case "screen":
+                        return "\x1Bk%p1%s\x1B";
+                    default:
+                        return string.Empty;
+                }
+
             }
 
             /// <summary>Lazy initialization of the terminal basic information.</summary>
-            private static Lazy<TerminalBasicInfo> _instance = new Lazy<TerminalBasicInfo>(() =>
+            private static Lazy<TerminalBasicInfo> s_instance = new Lazy<TerminalBasicInfo>(() =>
             {
                 TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
                 return new TerminalBasicInfo(db);
@@ -512,8 +771,11 @@ namespace System
         /// <summary>Provides a cache of color information sourced from terminfo.</summary>
         private struct TerminalKeyInfo
         {
-            /// <summary> The dictionary of keystring to ConsoleKeyInfo. </summary>
-            public Dictionary<string, ConsoleKey> KeyFormatToConsoleKey;
+            /// <summary>
+            /// The dictionary of keystring to ConsoleKeyInfo.
+            /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
+            /// </summary>
+            public Dictionary<string, ConsoleKeyInfo> KeyFormatToConsoleKey;
             /// <summary> Max key length </summary>
             public int MaxKeyLength;
             /// <summary> Min key length </summary>
@@ -522,22 +784,30 @@ namespace System
             public string KeypadXmit;
 
             /// <summary>The cached instance.</summary>
-            public static TerminalKeyInfo Instance { get { return _instance.Value; } }
+            public static TerminalKeyInfo Instance { get { return s_instance.Value; } }
 
             private void AddKey(TermInfo.Database db, int keyId, ConsoleKey key)
             {
+                AddKey(db, keyId, key, false, false, false);
+            }
+
+            private void AddKey(TermInfo.Database db, int keyId, ConsoleKey key, bool shift, bool alt, bool control)
+            {
                 string keyFormat = db.GetString(keyId);
                 if (!string.IsNullOrEmpty(keyFormat))
-                    KeyFormatToConsoleKey[keyFormat] = key;
+                    KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
 
             private TerminalKeyInfo(TermInfo.Database db)
             {
-                KeyFormatToConsoleKey = new Dictionary<string, ConsoleKey>();
+                KeyFormatToConsoleKey = new Dictionary<string, ConsoleKeyInfo>();
                 MaxKeyLength = MinKeyLength = 0;
-                KeypadXmit = db.GetString(TermInfo.Database.KeypadXmit);
+                KeypadXmit = string.Empty;
+
                 if (db != null)
                 {
+                    KeypadXmit = db.GetString(TermInfo.Database.KeypadXmit);
+
                     AddKey(db, TermInfo.Database.KeyF1, ConsoleKey.F1);
                     AddKey(db, TermInfo.Database.KeyF2, ConsoleKey.F2);
                     AddKey(db, TermInfo.Database.KeyF3, ConsoleKey.F3);
@@ -563,6 +833,8 @@ namespace System
                     AddKey(db, TermInfo.Database.KeyF23, ConsoleKey.F23);
                     AddKey(db, TermInfo.Database.KeyF24, ConsoleKey.F24);
                     AddKey(db, TermInfo.Database.KeyBackspace, ConsoleKey.Backspace);
+                    AddKey(db, TermInfo.Database.KeyBackTab, ConsoleKey.Tab, true, false, false);
+                    AddKey(db, TermInfo.Database.KeyBegin, ConsoleKey.Home);
                     AddKey(db, TermInfo.Database.KeyClear, ConsoleKey.Clear);
                     AddKey(db, TermInfo.Database.KeyDelete, ConsoleKey.Delete);
                     AddKey(db, TermInfo.Database.KeyDown, ConsoleKey.DownArrow);
@@ -576,6 +848,15 @@ namespace System
                     AddKey(db, TermInfo.Database.KeyPageUp, ConsoleKey.PageUp);
                     AddKey(db, TermInfo.Database.KeyPrint, ConsoleKey.Print);
                     AddKey(db, TermInfo.Database.KeyRight, ConsoleKey.RightArrow);
+                    AddKey(db, TermInfo.Database.KeyScrollForward, ConsoleKey.PageDown, true, false, false);
+                    AddKey(db, TermInfo.Database.KeyScrollReverse, ConsoleKey.PageUp, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySBegin, ConsoleKey.Home, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySDelete, ConsoleKey.Delete, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySHome, ConsoleKey.Home, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySelect, ConsoleKey.Select);
+                    AddKey(db, TermInfo.Database.KeySLeft, ConsoleKey.LeftArrow, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySPrint, ConsoleKey.Print, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySRight, ConsoleKey.RightArrow, true, false, false);
                     AddKey(db, TermInfo.Database.KeyUp, ConsoleKey.UpArrow);
 
                     MaxKeyLength = KeyFormatToConsoleKey.Keys.Max(key => key.Length);
@@ -584,7 +865,7 @@ namespace System
             }
 
             /// <summary>Lazy initialization of the terminal key information.</summary>
-            private static Lazy<TerminalKeyInfo> _instance = new Lazy<TerminalKeyInfo>(() =>
+            private static Lazy<TerminalKeyInfo> s_instance = new Lazy<TerminalKeyInfo>(() =>
             {
                 TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
                 return new TerminalKeyInfo(db);
@@ -604,7 +885,7 @@ namespace System
                 int result;
                 while (Interop.CheckIo(result = Interop.Sys.Read(fd, (byte*)bufPtr + offset, count))) ;
                 Debug.Assert(result <= count);
-                return (int)result;
+                return result;
             }
         }
 
@@ -617,33 +898,38 @@ namespace System
         {
             fixed (byte* bufPtr = buffer)
             {
-                while (count > 0)
-                {
-                    int bytesWritten = Interop.Sys.Write(fd, bufPtr + offset, count);
-                    if (bytesWritten < 0)
-                    {
-                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                        if (errorInfo.Error == Interop.Error.EINTR)
-                        {
-                            // Interrupted... try again.
-                            continue;
-                        }
-                        else if (errorInfo.Error == Interop.Error.EPIPE)
-                        {
-                            // Broken pipe... likely due to being redirected to a program
-                            // that ended, so simply pretend we were successful.
-                            return;
-                        }
-                        else
-                        {
-                            // Something else... fail.
-                            throw Interop.GetExceptionForIoErrno(errorInfo);
-                        }
-                    }
+                Write(fd, bufPtr + offset, count);
+            }
+        }
 
-                    count -= bytesWritten;
-                    offset += bytesWritten;
+        private static unsafe void Write(int fd, byte* bufPtr, int count)
+        {
+            while (count > 0)
+            {
+                int bytesWritten = Interop.Sys.Write(fd, bufPtr, count);
+                if (bytesWritten < 0)
+                {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    if (errorInfo.Error == Interop.Error.EINTR)
+                    {
+                        // Interrupted... try again.
+                        continue;
+                    }
+                    else if (errorInfo.Error == Interop.Error.EPIPE)
+                    {
+                        // Broken pipe... likely due to being redirected to a program
+                        // that ended, so simply pretend we were successful.
+                        return;
+                    }
+                    else
+                    {
+                        // Something else... fail.
+                        throw Interop.GetExceptionForIoErrno(errorInfo);
+                    }
                 }
+
+                count -= bytesWritten;
+                bufPtr += bytesWritten;
             }
         }
 
@@ -651,10 +937,33 @@ namespace System
         /// <param name="value">The string to write.</param>
         private static unsafe void WriteStdoutAnsiString(string value)
         {
-            byte[] data = Encoding.UTF8.GetBytes(value);
-            lock (Console.Out) // synchronize with other writers
+            if (string.IsNullOrEmpty(value))
+                return;
+
+            // Except for extremely rare cases, ANSI escape strings should be very short.
+            const int StackAllocThreshold = 256;
+            if (value.Length <= StackAllocThreshold)
             {
-                Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, 0, data.Length);
+                int dataLen = Encoding.UTF8.GetMaxByteCount(value.Length);
+                byte* data = stackalloc byte[dataLen];
+                fixed (char* chars = value)
+                {
+                    int bytesToWrite = Encoding.UTF8.GetBytes(chars, value.Length, data, dataLen);
+                    Debug.Assert(bytesToWrite <= dataLen);
+
+                    lock (Console.Out) // synchronize with other writers
+                    {
+                        Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, bytesToWrite);
+                    }
+                }
+            }
+            else
+            {
+                byte[] data = Encoding.UTF8.GetBytes(value);
+                lock (Console.Out) // synchronize with other writers
+                {
+                    Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, 0, data.Length);
+                }
             }
         }
 
@@ -757,6 +1066,8 @@ namespace System
             {
                 /// <summary>Lazily-initialized instance of the database.</summary>
                 private static readonly Lazy<Database> _instance = new Lazy<Database>(() => ReadDatabase(), isThreadSafe: true);
+                /// <summary>The name of the terminfo file.</summary>
+                private readonly string _term;
                 /// <summary>Raw data of the database instance.</summary>
                 private readonly byte[] _data;
                 /// <summary>The number of bytes in the names section of the database.</summary>
@@ -770,9 +1081,11 @@ namespace System
                 //private readonly int _stringTableNumBytes; // number of bytes in the strings table; this is in the header, but we don't actually use it
 
                 /// <summary>Initializes the database instance.</summary>
+                /// <param name="term">The name of the terminal.</param>
                 /// <param name="data">The data from the terminfo file.</param>
-                private Database(byte[] data)
+                private Database(string term, byte[] data)
                 {
+                    _term = term;
                     _data = data;
 
                     // See "man term" for the file format.
@@ -790,6 +1103,9 @@ namespace System
 
                 /// <summary>Gets the cached instance of the database.</summary>
                 public static Database Instance { get { return _instance.Value; } }
+
+                /// <summary>The name of the associated terminfo, if any.</summary>
+                public string Term { get { return _term; } }
 
                 /// <summary>Read the database for the current terminal as specified by the "TERM" environment variable.</summary>
                 /// <returns>The database, or null if it could not be found.</returns>
@@ -904,7 +1220,7 @@ namespace System
                         }
 
                         // Create the database from the data
-                        return new Database(data);
+                        return new Database(term, data);
                     }
                     finally
                     {
@@ -979,6 +1295,17 @@ namespace System
                     return ReadInt16(_data, NumbersOffset + (numberIndex * 2));
                 }
 
+                /// <summary>The well-known index of the audible bell entry.</summary>
+                public const int BellIndex = 1;
+                /// <summary>The well-known index of the clear screen entry.</summary>
+                public const int ClearIndex = 5;
+                /// <summary>The well-known index of the cursor address entry.</summary>
+                public const int CursorAddressIndex = 10;
+                /// <summary>The well-known index of the cursor left entry.</summary>
+                public const int CursorLeftIndex = 14;
+                /// <summary>The well-known index of "user string 7", which is used for cursor position requests.</summary>
+                public const int CursorPositionRequest = 294;
+
                 /// <summary>The well-known index of the max_colors numbers entry.</summary>
                 public const int MaxColorsIndex = 13;
                 /// <summary>The well-known index of the orig_pairs string entry.</summary>
@@ -992,10 +1319,16 @@ namespace System
 
                 /// <summary>The well-known index of the columns numeric entry.</summary>
                 public const int ColumnIndex = 0;
+                /// <summary>The well-known index of the lines numeric entry.</summary>
+                public const int LinesIndex = 2;
                 /// <summary>The well-known index of the cursor_invisible string entry.</summary>
                 public const int CursorInvisibleIndex = 13;
                 /// <summary>The well-known index of the cursor_normal string entry.</summary>
                 public const int CursorVisibleIndex = 16;
+                /// <summary>The well-known index of the from_status_line string entry.</summary>
+                public const int FromStatusLineIndex = 47;
+                /// <summary>The well-known index of the from_status_line string entry.</summary>
+                public const int ToStatusLineIndex = 135;
 
                 /// <summary>The well-known index of key_backspace</summary>
                 public const int KeyBackspace = 55;
@@ -1037,14 +1370,18 @@ namespace System
                 public const int KeyPageUp = 82;
                 /// <summary>The well-known index of key_right</summary>
                 public const int KeyRight = 83;
+                /// <summary>The well-known index of key_sf</summary>
+                public const int KeyScrollForward = 84;
+                /// <summary>The well-known index of key_sr</summary>
+                public const int KeyScrollReverse = 85;
                 /// <summary>The well-known index of key_up</summary>
                 public const int KeyUp = 87;
-                /// <summary>The well-known index of keypad_xmit.</summary>
+                /// <summary>The well-known index of keypad_xmit</summary>
                 public const int KeypadXmit = 89;
-                /// <summary>The well-known index of key_cancel</summary>
-                public const int KeyCancel = 159;
-                /// <summary>The well-known index of key_close</summary>
-                public const int KeyClose = 160;
+                /// <summary>The well-known index of key_btab</summary>
+                public const int KeyBackTab = 148;
+                /// <summary>The well-known index of key_beg</summary>
+                public const int KeyBegin = 158;
                 /// <summary>The well-known index of key_end</summary>
                 public const int KeyEnd = 164;
                 /// <summary>The well-known index of key_enter</summary>
@@ -1053,8 +1390,22 @@ namespace System
                 public const int KeyHelp = 168;
                 /// <summary>The well-known index of key_print</summary>
                 public const int KeyPrint = 176;
+                /// <summary>The well-known index of key_sbeg</summary>
+                public const int KeySBegin = 186;
+                /// <summary>The well-known index of key_sdc</summary>
+                public const int KeySDelete = 191;
                 /// <summary>The well-known index of key_select</summary>
                 public const int KeySelect = 193;
+                /// <summary>The well-known index of key_shelp</summary>
+                public const int KeySHelp = 198;
+                /// <summary>The well-known index of key_shome</summary>
+                public const int KeySHome = 199;
+                /// <summary>The well-known index of key_sleft</summary>
+                public const int KeySLeft = 201;
+                /// <summary>The well-known index of key_sprint</summary>
+                public const int KeySPrint = 207;
+                /// <summary>The well-known index of key_sright</summary>
+                public const int KeySRight = 210;
                 /// <summary>The well-known index of key_f11</summary>
                 public const int KeyF11 = 216;
                 /// <summary>The well-known index of key_f12</summary>
@@ -1116,7 +1467,51 @@ namespace System
             {
                 /// <summary>A cached stack to use to avoid allocating a new stack object for every evaluation.</summary>
                 [ThreadStatic]
-                private static LowLevelStack<FormatParam> _cachedStack;
+                private static LowLevelStack<FormatParam> t_cachedStack;
+
+                /// <summary>A cached array of arguments to use to avoid allocating a new array object for every evaluation.</summary>
+                [ThreadStatic]
+                private static FormatParam[] t_cachedOneElementArgsArray;
+
+                /// <summary>A cached array of arguments to use to avoid allocating a new array object for every evaluation.</summary>
+                [ThreadStatic]
+                private static FormatParam[] t_cachedTwoElementArgsArray;
+
+                /// <summary>Evaluates a terminfo formatting string, using the supplied argument.</summary>
+                /// <param name="format">The format string.</param>
+                /// <param name="arg">The argument to the format string.</param>
+                /// <returns>The formatted string.</returns>
+                public static string Evaluate(string format, FormatParam arg)
+                {
+                    FormatParam[] args = t_cachedOneElementArgsArray;
+                    if (args == null)
+                    {
+                        t_cachedOneElementArgsArray = args = new FormatParam[1]; 
+                    }
+
+                    args[0] = arg;
+
+                    return Evaluate(format, args);
+                }
+
+                /// <summary>Evaluates a terminfo formatting string, using the supplied arguments.</summary>
+                /// <param name="format">The format string.</param>
+                /// <param name="arg1">The first argument to the format string.</param>
+                /// <param name="arg2">The second argument to the format string.</param>
+                /// <returns>The formatted string.</returns>
+                public static string Evaluate(string format, FormatParam arg1, FormatParam arg2)
+                {
+                    FormatParam[] args = t_cachedTwoElementArgsArray;
+                    if (args == null)
+                    {
+                        t_cachedTwoElementArgsArray = args = new FormatParam[2];
+                    }
+
+                    args[0] = arg1;
+                    args[1] = arg2;
+
+                    return Evaluate(format, args);
+                }
 
                 /// <summary>Evaluates a terminfo formatting string, using the supplied arguments.</summary>
                 /// <param name="format">The format string.</param>
@@ -1134,10 +1529,10 @@ namespace System
                     }
 
                     // Initialize the stack to use for processing.
-                    LowLevelStack<FormatParam> stack = _cachedStack;
+                    LowLevelStack<FormatParam> stack = t_cachedStack;
                     if (stack == null)
                     {
-                        _cachedStack = stack = new LowLevelStack<FormatParam>();
+                        t_cachedStack = stack = new LowLevelStack<FormatParam>();
                     }
                     else
                     {

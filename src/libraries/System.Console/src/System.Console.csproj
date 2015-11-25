@@ -187,8 +187,14 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetWindowWidth.cs">
       <Link>Common\Interop\Unix\Interop.GetWindowWidth.cs"</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.InitializeConsole.cs">
+      <Link>Common\Interop\Unix\Interop.InitializeConsole.cs"</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ReadStdinUnbuffered.cs">
       <Link>Common\Interop\Unix\Interop.ReadStdinUnbuffered.cs"</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.StdinReady.cs">
+      <Link>Common\Interop\Unix\Interop.StdinReady.cs"</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
