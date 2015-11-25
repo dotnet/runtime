@@ -144,15 +144,6 @@
         }                                                                       \
     }
 
-#define WIN_PAL_CPP_TRY try
-#define WIN_PAL_CPP_ENDTRY
-#define WIN_PAL_CPP_THROW(type, obj) throw obj;
-#define WIN_PAL_CPP_RETHROW throw;
-#define WIN_PAL_CPP_CATCH_EXCEPTION(obj) catch (Exception * obj)
-#define WIN_PAL_CPP_CATCH_DERIVED(type, obj) catch (type * obj)
-#define WIN_PAL_CPP_CATCH_ALL catch (...)
-#define WIN_PAL_CPP_CATCH_EXCEPTION_NOARG catch (Exception *)
-
 #endif // !PAL_WIN_SEH
 
 
