@@ -1942,7 +1942,7 @@ static void ConvertFdSetPlatformToPal(FdSet& palSet, fd_set& platformSet, int32_
         }
     }
 #else
-    size_t bytesToCopy = static_cast<size_t>((fdCount / 8) + ((fdCount % 8) == 0 ? 1 : 0));
+    size_t bytesToCopy = static_cast<size_t>((fdCount / 8) + ((fdCount % 8) != 0 ? 1 : 0));
 
     uint8_t* source;
 #if HAVE_FDS_BITS
@@ -1977,7 +1977,7 @@ static void ConvertFdSetPalToPlatform(fd_set& platformSet, FdSet& palSet, int32_
     }
 #else
 
-    size_t bytesToCopy = static_cast<size_t>((fdCount / 8) + ((fdCount % 8) == 0 ? 1 : 0));
+    size_t bytesToCopy = static_cast<size_t>((fdCount / 8) + ((fdCount % 8) != 0 ? 1 : 0));
 
     uint8_t* dest;
 #if HAVE_FDS_BITS
