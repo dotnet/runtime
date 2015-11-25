@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Globalization.Tests
 {
@@ -10,6 +11,7 @@ namespace System.Globalization.Tests
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static int s_WindowsVersion = DateTimeFormatInfoData.GetWindowsVersion();
         private static bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        private static Version s_OSXKernelVersion = GetOSXKernelVersion();
 
         public static int[] GetNumberGroupSizes(CultureInfo cultureInfo)
         {
@@ -19,7 +21,9 @@ namespace System.Globalization.Tests
             }
             if (string.Equals(cultureInfo.Name, "ur-IN", StringComparison.OrdinalIgnoreCase))
             {
-                if (s_isOSX || (s_isWindows && s_WindowsVersion >= 10))
+                if ((s_isWindows && s_WindowsVersion >= 10)
+                    ||
+                    (s_isOSX && s_OSXKernelVersion >= new Version(15, 0)))
                 {
                     return new int[] { 3 };
                 }
@@ -93,5 +97,22 @@ namespace System.Globalization.Tests
 
             throw DateTimeFormatInfoData.GetCultureNotSupportedException(cultureInfo);
         }
+        
+        private static Version GetOSXKernelVersion()
+        {
+            if (s_isOSX)
+            {
+                ulong bytesLength = 256;
+                byte[] bytes = new byte[bytesLength];
+                sysctlbyname("kern.osrelease", bytes, ref bytesLength, null, 0);
+                string versionString = Encoding.UTF8.GetString(bytes);
+                return Version.Parse(versionString);
+            }
+            
+            return new Version(0, 0, 0);
+        }
+        
+        [DllImport("libc")]
+        private static extern int sysctlbyname(string ctlName, byte[] oldp, ref ulong oldpLen, byte[] newp, ulong newpLen);
     }
 }
