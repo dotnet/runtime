@@ -66,7 +66,7 @@ struct _MonoMethod {
 	guint16 flags;  /* method flags */
 	guint16 iflags; /* method implementation flags */
 	guint32 token;
-	MonoClass *klass;
+	MonoClass *klass; /* To what class does this method belong */
 	MonoMethodSignature *signature;
 	/* name is useful mostly for debugging */
 	const char *name;
@@ -528,7 +528,7 @@ struct _MonoMethodInflated {
  */
 struct _MonoGenericClass {
 	MonoClass *container_class;	/* the generic type definition */
-	MonoGenericContext context;	/* a context that contains the type instantiation doesn't contain any method instantiation */
+	MonoGenericContext context;	/* a context that contains the type instantiation doesn't contain any method instantiation */ /* FIXME: Only the class_inst member of "context" is ever used, so this field could be replaced with just a monogenericinst */
 	guint is_dynamic  : 1;		/* We're a MonoDynamicGenericClass */
 	guint is_tb_open  : 1;		/* This is the fully open instantiation for a type_builder. Quite ugly, but it's temporary.*/
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */

@@ -4269,7 +4269,7 @@ verify_class_overrides (MonoClass *klass, MonoMethod **overrides, int onum)
 		}
 
 		if (!mono_class_is_assignable_from_slow (decl->klass, klass)) {
-			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method overrides a class or interface that extended or implemented by this type"));
+			mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, g_strdup ("Method overrides a class or interface that is not extended or implemented by this type"));
 			return FALSE;
 		}
 
@@ -5982,7 +5982,7 @@ parent_failure:
 	return NULL;
 }
 
-/** is klass Nullable<T>? */
+/** Is klass a Nullable<T> ginst? */
 gboolean
 mono_class_is_nullable (MonoClass *klass)
 {

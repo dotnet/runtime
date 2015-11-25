@@ -5419,6 +5419,7 @@ mono_dynamic_image_release_gc_roots (MonoDynamicImage *image)
 	release_hashtable (&image->methodspec);
 }
 
+// Free dynamic image pass one: Free resources but not image itself
 void
 mono_dynamic_image_free (MonoDynamicImage *image)
 {
@@ -5498,6 +5499,7 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 	dynamic_images_unlock ();
 }
 
+// Free dynamic image pass two: Free image itself (might never get called in some debug modes)
 void
 mono_dynamic_image_free_image (MonoDynamicImage *image)
 {
