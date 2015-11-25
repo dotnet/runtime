@@ -354,7 +354,7 @@ public static unsafe class DateTimeTests
 
         DateTime parsedDate;
         Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
-        if (ci.DateTimeFormat.ShortDatePattern.Contains("yyyy"))
+        if (ci.DateTimeFormat.ShortDatePattern.Contains("yyyy") || HasDifferentDateTimeSeparators(ci.DateTimeFormat))
         {
             Assert.Equal(date.Date, parsedDate);
         }
@@ -379,6 +379,23 @@ public static unsafe class DateTimeTests
         dateString = date.ToString(ci.DateTimeFormat.LongTimePattern, ci);
         Assert.True(DateTime.TryParse(dateString, ci, DateTimeStyles.None, out parsedDate));
         Assert.Equal(date.TimeOfDay, parsedDate.TimeOfDay);
+    }
+
+    /// <summary>
+    /// Since .NET Core doesn't expose DateTimeFormatInfo DateSeparator and TimeSeparator properties,
+    /// this method gets the separators using DateTime.ToString by passing in the invariant separators.
+    /// The invariant separators will then get turned into the culture's separators by ToString,
+    /// which are then compared.
+    /// </summary>
+    private static bool HasDifferentDateTimeSeparators(DateTimeFormatInfo dateTimeFormat)
+    {
+        DateTime d = new DateTime(2015, 11, 24, 17, 57, 29);
+        string separators = d.ToString("/@:", dateTimeFormat);
+
+        int delimiterIndex = separators.IndexOf('@');
+        string dateSeparator = separators.Substring(0, delimiterIndex);
+        string timeSeparator = separators.Substring(delimiterIndex + 1);
+        return dateSeparator != timeSeparator;
     }
 
     [Fact]
