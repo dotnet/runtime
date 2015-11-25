@@ -41,7 +41,7 @@ namespace System.Diagnostics.Tracing
     /// On any normal event log the event with activityTracker.CurrentActivityId
     /// </summary>
     internal class ActivityTracker
-    { 
+    {
 
         /// <summary>
         /// Called on work item begins.  The activity name = providerName + activityName without 'Start' suffix.
@@ -77,9 +77,9 @@ namespace System.Diagnostics.Tracing
 
             var currentActivity = m_current.Value;
             var fullActivityName = NormalizeActivityName(providerName, activityName, task);
-            
+
             var etwLog = TplEtwProvider.Log;
-            if (etwLog.Debug) 
+            if (etwLog.Debug)
             {
                 etwLog.DebugFacilityMessage("OnStartEnter", fullActivityName);
                 etwLog.DebugFacilityMessage("OnStartEnterActivityState", ActivityInfo.LiveActivities(currentActivity));
@@ -125,7 +125,7 @@ namespace System.Diagnostics.Tracing
             // Remember the current ID so we can log it 
             activityId = newActivity.ActivityId;
 
-            if (etwLog.Debug) 
+            if (etwLog.Debug)
             {
                 etwLog.DebugFacilityMessage("OnStartRetActivityState", ActivityInfo.LiveActivities(newActivity));
                 etwLog.DebugFacilityMessage1("OnStartRet", activityId.ToString(), relatedActivityId.ToString());
@@ -146,13 +146,13 @@ namespace System.Diagnostics.Tracing
             var fullActivityName = NormalizeActivityName(providerName, activityName, task);
 
             var etwLog = TplEtwProvider.Log;
-            if (etwLog.Debug) 
+            if (etwLog.Debug)
             {
                 etwLog.DebugFacilityMessage("OnStopEnter", fullActivityName);
                 etwLog.DebugFacilityMessage("OnStopEnterActivityState", ActivityInfo.LiveActivities(m_current.Value));
             }
 
-            for (; ;) // This is a retry loop.
+            for (; ; ) // This is a retry loop.
             {
                 ActivityInfo currentActivity = m_current.Value;
                 ActivityInfo newCurrentActivity = null;               // if we have seen any live activities (orphans), at he first one we have seen.   
@@ -225,12 +225,12 @@ namespace System.Diagnostics.Tracing
         [System.Security.SecuritySafeCritical]
         public void Enable()
         {
-            if (m_current == null) 
+            if (m_current == null)
             {
                 m_current = new AsyncLocal<ActivityInfo>(ActivityChanging);
             }
         }
-        
+
         /// <summary>
         /// An activity tracker is a singleton, this is how you get the one and only instance.
         /// </summary>
@@ -310,19 +310,19 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            public static string Path(ActivityInfo activityInfo) 
+            public static string Path(ActivityInfo activityInfo)
             {
                 if (activityInfo == null)
                     return ("");
                 return Path(activityInfo.m_creator) + "/" + activityInfo.m_uniqueId;
             }
 
-            public override string ToString() 
+            public override string ToString()
             {
                 string dead = "";
                 if (m_stopped != 0)
-                   dead = ",DEAD";
-                 return m_name + "(" + Path(this) + dead + ")";
+                    dead = ",DEAD";
+                return m_name + "(" + Path(this) + dead + ")";
             }
 
             public static string LiveActivities(ActivityInfo list)
@@ -363,7 +363,7 @@ namespace System.Diagnostics.Tracing
             [System.Security.SecuritySafeCritical]
             private unsafe void CreateActivityPathGuid(out Guid idRet, out int activityPathGuidOffset)
             {
-                fixed (Guid* outPtr = &idRet) 
+                fixed (Guid* outPtr = &idRet)
                 {
                     int activityPathGuidOffsetStart = 0;
                     if (m_creator != null)
@@ -371,7 +371,7 @@ namespace System.Diagnostics.Tracing
                         activityPathGuidOffsetStart = m_creator.m_activityPathGuidOffset;
                         idRet = m_creator.m_guid;
                     }
-                    else 
+                    else
                     {
                         // TODO FIXME - differentiate between AD inside PCL
                         int appDomainID = 0;
@@ -471,9 +471,9 @@ namespace System.Diagnostics.Tracing
                     {
                         if (endPtr <= ptr + 2)        // I need at least 2 bytes
                             return 13;
-                        
+
                         // Write out the prefix code nibble and the length nibble 
-                        WriteNibble(ref ptr, endPtr, (uint) NumberListCodes.PrefixCode);
+                        WriteNibble(ref ptr, endPtr, (uint)NumberListCodes.PrefixCode);
                     }
                     // The rest is the same for overflow and non-overflow case
                     WriteNibble(ref ptr, endPtr, (uint)NumberListCodes.MultiByte1 + (len - 1));
@@ -535,7 +535,7 @@ namespace System.Diagnostics.Tracing
             #endregion // CreateGuidForActivityPath
 
             readonly internal string m_name;                        // The name used in the 'start' and 'stop' APIs to help match up
-            readonly long m_uniqueId;                                    // a small number that makes this activity unique among its siblings
+            readonly long m_uniqueId;                               // a small number that makes this activity unique among its siblings
             internal readonly Guid m_guid;                          // Activity Guid, it is basically an encoding of the Path() (see CreateActivityPathGuid)
             internal readonly int m_activityPathGuidOffset;         // Keeps track of where in m_guid the causality path stops (used to generated child GUIDs)
             internal readonly int m_level;                          // current depth of the Path() of the activity (used to keep recursion under control)
@@ -565,7 +565,7 @@ namespace System.Diagnostics.Tracing
                 if (cur == null || prev.m_activityIdToRestore != cur.ActivityId)
                 {
                     EventSource.SetCurrentThreadActivityId(prev.m_activityIdToRestore);
-                return;
+                    return;
                 }
             }
 
@@ -577,7 +577,7 @@ namespace System.Diagnostics.Tracing
             {
                 // We found a live activity (typically the first time), set it to that.  
                 if (cur.m_stopped == 0)
-            {
+                {
                     EventSource.SetCurrentThreadActivityId(cur.ActivityId);
                     return;
                 }
