@@ -2508,10 +2508,9 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 		encode_value (klass->byval_arg.type, p, &p);
 		encode_value (mono_type_get_generic_param_num (&klass->byval_arg), p, &p);
 
-		encode_value (container ? 1 : 0, p, &p);
-		if (container) {
+		encode_value (container->is_anonymous ? 0 : 1, p, &p);
+		if (!container->is_anonymous) {
 			encode_value (container->is_method, p, &p);
-			g_assert (!par->gshared_constraint);
 			if (container->is_method)
 				encode_method_ref (acfg, container->owner.method, p, &p);
 			else

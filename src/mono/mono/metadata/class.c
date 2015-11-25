@@ -5812,6 +5812,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	if (klass->generic_container) {
 		klass->is_generic = 1;
 		klass->generic_container->owner.klass = klass;
+		klass->generic_container->is_anonymous = FALSE; // Owner class is now known, container is no longer anonymous
 		context = &klass->generic_container->context;
 	}
 
@@ -6121,16 +6122,59 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	return klass;
 }
 
+static MonoImage *
+get_image_for_container (MonoGenericContainer *container)
+{
+	MonoImage *result;
+	if (container->is_anonymous) {
+		result = container->owner.image;
+	} else {
+		MonoClass *klass;
+		if (container->is_method) {
+			MonoMethod *method = container->owner.method;
+			g_assert_checked (method);
+			klass = method->klass;
+		} else {
+			klass = container->owner.klass;
+		}
+		g_assert_checked (klass);
+		result = klass->image;
+	}
+	g_assert (result);
+	return result;
+}
+
+MonoImage *
+get_image_for_generic_param (MonoGenericParam *param)
+{
+	MonoGenericContainer *container = mono_generic_param_owner (param);
+	g_assert_checked (container);
+	return get_image_for_container (container);
+}
+
+// Make a string in the designated image consisting of a single integer.
+#define INT_STRING_SIZE 16
+char *
+make_generic_name_string (MonoImage *image, int num)
+{
+	char *name = mono_image_alloc0 (image, INT_STRING_SIZE);
+	snprintf (name, INT_STRING_SIZE, "%d", num);
+	return name;
+}
+
+// This is called by mono_class_from_generic_parameter_internal when a new class must be created.
+// pinfo is derived from param by the caller for us.
 static MonoClass*
-make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is_mvar, MonoGenericParamInfo *pinfo)
+make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 {
 	MonoClass *klass, **ptr;
 	int count, pos, i;
 	MonoGenericContainer *container = mono_generic_param_owner (param);
+	g_assert_checked (container);
 
-	if (!image)
-		/* FIXME: */
-		image = mono_defaults.corlib;
+	MonoImage *image = get_image_for_container (container);
+	gboolean is_mvar = container->is_method;
+	gboolean is_anonymous = container->is_anonymous;
 
 	klass = mono_image_alloc0 (image, sizeof (MonoClass));
 	classes_size += sizeof (MonoClass);
@@ -6139,24 +6183,23 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 		CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name , pinfo->name );
 	} else {
 		int n = mono_generic_param_num (param);
-		CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->name , mono_image_alloc0 (image, 16) );
-		sprintf ((char*)klass->name, "%d", n);
+
+		CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->name , make_generic_name_string (image, n) );
 	}
 
-	if (container) {
-		if (is_mvar) {
-			MonoMethod *omethod = container->owner.method;
-			CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name_space , (omethod && omethod->klass) ? omethod->klass->name_space : "" );
-		} else {
-			MonoClass *oklass = container->owner.klass;
-			CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name_space , oklass ? oklass->name_space : "" );
-		}
+	if (is_anonymous) {
+		CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name_space ,  "" );
+	} else if (is_mvar) {
+		MonoMethod *omethod = container->owner.method;
+		CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name_space , (omethod && omethod->klass) ? omethod->klass->name_space : "" );
 	} else {
-		CHECKED_METADATA_WRITE_PTR_EXEMPT  ( klass->name_space , "" );
+		MonoClass *oklass = container->owner.klass;
+		CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name_space , oklass ? oklass->name_space : "" );
 	}
 
 	mono_profiler_class_event (klass, MONO_PROFILE_START_LOAD);
 
+	// Count non-NULL items in pinfo->constraints
 	count = 0;
 	if (pinfo)
 		for (ptr = pinfo->constraints; ptr && *ptr; ptr++, count++)
@@ -6222,18 +6265,25 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 #define FAST_CACHE_SIZE 16
 
 /*
+ * get_anon_gparam_class and set_anon_gparam_class are helpers for mono_class_from_generic_parameter_internal.
+ * The latter will sometimes create MonoClasses for anonymous generic params. To prevent this being wasteful,
+ * we cache the MonoClasses.
+ * FIXME: It would be better to instead cache anonymous MonoGenericParams, and allow anonymous params to point directly to classes using the pklass field.
  * LOCKING: Takes the image lock depending on @take_lock.
  */
 static MonoClass *
-get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, gboolean take_lock)
+get_anon_gparam_class (MonoGenericParam *param, gboolean take_lock)
 {
 	int n = mono_generic_param_num (param);
-	MonoImage *image = param->image;
+	MonoImage *image = get_image_for_generic_param (param);
+	gboolean is_mvar = mono_generic_param_owner (param)->is_method;
 	MonoClass *klass = NULL;
 	GHashTable *ht;
 
 	g_assert (image);
 
+	// For params with a small num and no constraints, we use a "fast" cache which does simple num lookup in an array.
+	// For high numbers or constraints we have to use pointer hashes.
 	if (param->gshared_constraint) {
 		ht = is_mvar ? image->mvar_cache_constrained : image->var_cache_constrained;
 		if (ht) {
@@ -6268,10 +6318,11 @@ get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, gboolean take_
  * LOCKING: Image lock (param->image) must be held
  */
 static void
-set_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, MonoClass *klass)
+set_anon_gparam_class (MonoGenericParam *param, MonoClass *klass)
 {
 	int n = mono_generic_param_num (param);
-	MonoImage *image = param->image;
+	MonoImage *image = get_image_for_generic_param (param);
+	gboolean is_mvar = mono_generic_param_owner (param)->is_method;
 
 	g_assert (image);
 
@@ -6318,65 +6369,70 @@ set_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, MonoClass *kla
  * LOCKING: Acquires the image lock (@image).
  */
 MonoClass *
-mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, gboolean is_mvar)
+mono_class_from_generic_parameter_internal (MonoGenericParam *param)
 {
-	MonoGenericContainer *container = mono_generic_param_owner (param);
-	MonoGenericParamInfo *pinfo = NULL;
+	MonoImage *image = get_image_for_generic_param (param);
+	MonoGenericParamInfo *pinfo = mono_generic_param_info (param);
 	MonoClass *klass, *klass2;
 
-	if (container) {
-		pinfo = mono_generic_param_info (param);
+	// If a klass already exists for this object and is cached, return it.
+	if (pinfo) // Non-anonymous
 		klass = pinfo->pklass;
-	} else {
-		image = NULL;
-		klass = get_anon_gparam_class (param, is_mvar, TRUE);
-	}
+	else     // Anonymous
+		klass = get_anon_gparam_class (param, TRUE);
+
 	if (klass)
 		return klass;
 
-	if (!image && container) {
-		if (is_mvar) {
-			MonoMethod *method = container->owner.method;
-			image = (method && method->klass) ? method->klass->image : NULL;
-		} else {
-			MonoClass *klass = container->owner.klass;
-			// FIXME: 'klass' should not be null
-			// 	  But, monodis creates GenericContainers without associating a owner to it
-			image = klass ? klass->image : NULL;
-		}
-	}
+	// Create a new klass
+	klass = make_generic_param_class (param, pinfo);
 
-	klass = make_generic_param_class (param, image, is_mvar, pinfo);
-
+	// Now we need to cache the klass we created.
+	// But since we wait to grab the lock until after creating the klass, we need to check to make sure
+	// another thread did not get in and cache a klass ahead of us. In that case, return their klass
+	// and allow our newly-created klass object to just leak.
 	mono_memory_barrier ();
 
-	if (!image) //FIXME is this only needed by monodis? Can't we fix monodis instead of having this hack?
-		image = mono_defaults.corlib;
-
 	mono_image_lock (image);
-	if (container)
+
+    // Here "klass2" refers to the klass potentially created by the other thread.
+	if (pinfo) // Repeat check from above
 		klass2 = pinfo->pklass;
 	else
-		klass2 = get_anon_gparam_class (param, is_mvar, FALSE);
+		klass2 = get_anon_gparam_class (param, FALSE);
 
 	if (klass2) {
 		klass = klass2;
 	} else {
-		if (container)
+		// Cache here
+		if (pinfo)
 			pinfo->pklass = klass;
 		else
-			set_anon_gparam_class (param, is_mvar, klass);
+			set_anon_gparam_class (param, klass);
 	}
 	mono_image_unlock (image);
 
 	/* FIXME: Should this go inside 'make_generic_param_klass'? */
 	if (klass2)
-		mono_profiler_class_loaded (klass2, MONO_PROFILE_FAILED);
+		mono_profiler_class_loaded (klass2, MONO_PROFILE_FAILED); // Alert profiler about botched class create
 	else
 		mono_profiler_class_loaded (klass, MONO_PROFILE_OK);
 
 	return klass;
 }
+
+/**
+ * mono_class_from_generic_parameter:
+ * @param: Parameter to find/construct a class for.
+ * @arg2: Is ignored.
+ * @arg3: Is ignored.
+ */
+MonoClass *
+mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *arg2 G_GNUC_UNUSED, gboolean arg3 G_GNUC_UNUSED)
+{
+	return mono_class_from_generic_parameter_internal (param);
+}
+
 
 MonoClass *
 mono_ptr_class_get (MonoType *type)
@@ -6545,10 +6601,9 @@ mono_class_from_mono_type (MonoType *type)
 		return type->data.klass;
 	case MONO_TYPE_GENERICINST:
 		return mono_generic_class_get_class (type->data.generic_class);
-	case MONO_TYPE_VAR:
-		return mono_class_from_generic_parameter (type->data.generic_param, NULL, FALSE);
 	case MONO_TYPE_MVAR:
-		return mono_class_from_generic_parameter (type->data.generic_param, NULL, TRUE);
+	case MONO_TYPE_VAR:
+		return mono_class_from_generic_parameter_internal (type->data.generic_param);
 	default:
 		g_warning ("mono_class_from_mono_type: implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();

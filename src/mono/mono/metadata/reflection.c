@@ -10746,6 +10746,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		container->type_argc = count;
 		container->type_params = image_g_new0 (image, MonoGenericParamFull, count);
 		container->owner.method = m;
+		container->is_anonymous = FALSE; // Method is now known, container is no longer anonymous
 
 		m->is_generic = TRUE;
 		mono_method_set_generic_container (m, container);
@@ -11946,7 +11947,8 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 			 * Cannot set owner.method, since the MonoMethod is not created yet.
 			 * Set the image field instead, so type_in_image () works.
 			 */
-			gparam->mbuilder->generic_container->image = klass->image;
+			gparam->mbuilder->generic_container->is_anonymous = TRUE;
+			gparam->mbuilder->generic_container->owner.image = klass->image;
 		}
 		param->param.owner = gparam->mbuilder->generic_container;
 	} else if (gparam->tbuilder) {
@@ -11958,7 +11960,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 		param->param.owner = gparam->tbuilder->generic_container;
 	}
 
-	pklass = mono_class_from_generic_parameter ((MonoGenericParam *) param, image, gparam->mbuilder != NULL);
+	pklass = mono_class_from_generic_parameter_internal ((MonoGenericParam *) param);
 
 	gparam->type.type = &pklass->byval_arg;
 

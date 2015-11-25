@@ -7932,7 +7932,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 				count = container->type_argc;
 				buffer_add_int (buf, count);
 				for (i = 0; i < count; i++) {
-					pklass = mono_class_from_generic_parameter (mono_generic_container_get_param (container, i), klass->image, FALSE);
+					pklass = mono_class_from_generic_parameter_internal (mono_generic_container_get_param (container, i));
 					buffer_add_typeid (buf, domain, pklass);
 				}
 			} else {
@@ -8544,7 +8544,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 						buffer_add_int (buf, count);
 						for (i = 0; i < count; i++) {
 							MonoGenericParam *param = mono_generic_container_get_param (container, i);
-							MonoClass *pklass = mono_class_from_generic_parameter (param, method->klass->image, TRUE);
+							MonoClass *pklass = mono_class_from_generic_parameter_internal (param);
 							buffer_add_typeid (buf, domain, pklass);
 						}
 					} else {
