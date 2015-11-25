@@ -644,6 +644,9 @@ namespace Internal.Cryptography.Pal.Native
 
         CERT_TRUST_IS_OFFLINE_REVOCATION               = 0x01000000,
         CERT_TRUST_NO_ISSUANCE_CHAIN_POLICY            = 0x02000000,
+        CERT_TRUST_IS_EXPLICIT_DISTRUST                = 0x04000000,
+        CERT_TRUST_HAS_NOT_SUPPORTED_CRITICAL_EXT      = 0x08000000,
+        CERT_TRUST_HAS_WEAK_SIGNATURE                  = 0x00100000,
 
         // These can be applied to chains only
         CERT_TRUST_IS_PARTIAL_CHAIN                    = 0x00010000,
