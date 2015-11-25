@@ -3,7 +3,7 @@
   "version": 2,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0026": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -214,14 +214,14 @@
           "lib/DNXCore50/System.Reflection.Primitives.dll": {}
         }
       },
-      "System.Reflection.TypeExtensions/4.1.0-beta-23510": {
+      "System.Reflection.TypeExtensions/4.1.0-beta-23516": {
         "type": "package",
         "dependencies": {
           "System.Reflection": "4.0.0",
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet5.4/System.Reflection.TypeExtensions.dll": {}
+          "ref/dotnet5.1/System.Reflection.TypeExtensions.dll": {}
         },
         "runtime": {
           "lib/DNXCore50/System.Reflection.TypeExtensions.dll": {}
@@ -292,13 +292,13 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23510": {
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23516": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet5.2/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+          "ref/dotnet5.1/System.Runtime.InteropServices.RuntimeInformation.dll": {}
         }
       },
       "System.Text.Encoding/4.0.10": {
@@ -468,7 +468,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00122": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -495,7 +495,7 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x86": {
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0026": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -525,17 +525,17 @@
           "lib/dotnet/xunit.performance.execution.dotnet.dll": {}
         }
       },
-      "runtime.win.System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23510": {
+      "runtime.win.System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23516": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.0"
+          "System.Runtime": "4.0.20"
         },
         "compile": {
           "ref/dotnet/_._": {}
         },
         "runtime": {
-          "runtimes/win/lib/dotnet5.1/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+          "runtimes/win/lib/dotnet5.4/System.Runtime.InteropServices.RuntimeInformation.dll": {}
         }
       },
       "System.Collections/4.0.10": {
@@ -719,14 +719,14 @@
           "lib/DNXCore50/System.Reflection.Primitives.dll": {}
         }
       },
-      "System.Reflection.TypeExtensions/4.1.0-beta-23510": {
+      "System.Reflection.TypeExtensions/4.1.0-beta-23516": {
         "type": "package",
         "dependencies": {
           "System.Reflection": "4.0.0",
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet5.4/System.Reflection.TypeExtensions.dll": {}
+          "ref/dotnet5.1/System.Reflection.TypeExtensions.dll": {}
         },
         "runtime": {
           "lib/DNXCore50/System.Reflection.TypeExtensions.dll": {}
@@ -797,13 +797,13 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23510": {
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23516": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet5.2/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+          "ref/dotnet5.1/System.Runtime.InteropServices.RuntimeInformation.dll": {}
         }
       },
       "System.Text.Encoding/4.0.10": {
@@ -973,7 +973,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00122": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1000,7 +1000,7 @@
       }
     },
     "DNXCore,Version=v5.0/win7-x64": {
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0026": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -1030,17 +1030,17 @@
           "lib/dotnet/xunit.performance.execution.dotnet.dll": {}
         }
       },
-      "runtime.win.System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23510": {
+      "runtime.win.System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23516": {
         "type": "package",
         "dependencies": {
           "System.Resources.ResourceManager": "4.0.0",
-          "System.Runtime": "4.0.0"
+          "System.Runtime": "4.0.20"
         },
         "compile": {
           "ref/dotnet/_._": {}
         },
         "runtime": {
-          "runtimes/win/lib/dotnet5.1/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+          "runtimes/win/lib/dotnet5.4/System.Runtime.InteropServices.RuntimeInformation.dll": {}
         }
       },
       "System.Collections/4.0.10": {
@@ -1224,14 +1224,14 @@
           "lib/DNXCore50/System.Reflection.Primitives.dll": {}
         }
       },
-      "System.Reflection.TypeExtensions/4.1.0-beta-23510": {
+      "System.Reflection.TypeExtensions/4.1.0-beta-23516": {
         "type": "package",
         "dependencies": {
           "System.Reflection": "4.0.0",
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet5.4/System.Reflection.TypeExtensions.dll": {}
+          "ref/dotnet5.1/System.Reflection.TypeExtensions.dll": {}
         },
         "runtime": {
           "lib/DNXCore50/System.Reflection.TypeExtensions.dll": {}
@@ -1302,13 +1302,13 @@
           "lib/DNXCore50/System.Runtime.InteropServices.dll": {}
         }
       },
-      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23510": {
+      "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23516": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/dotnet5.2/System.Runtime.InteropServices.RuntimeInformation.dll": {}
+          "ref/dotnet5.1/System.Runtime.InteropServices.RuntimeInformation.dll": {}
         }
       },
       "System.Text.Encoding/4.0.10": {
@@ -1478,7 +1478,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00122": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1506,9 +1506,9 @@
     }
   },
   "libraries": {
-    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0026": {
+    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
       "type": "package",
-      "sha512": "inC+HvCtQRevFQcU9pMSMneqXFSwp6ng/GXvSOhKpMUujL8mXazQTyQutPpHuoP2Nya8DNclOGMjSaDRkBHRqA==",
+      "sha512": "47bNAZqRQEQba9EhC4dfWagSkH/jUN8cT6QjxOHMdY7q/G676/tcelkCaymnNXcCMei7qNrTPBxBKlhVQt9/QQ==",
       "files": [
         "lib/dotnet/xunit.performance.core.dll",
         "lib/dotnet/xunit.performance.core.pdb",
@@ -1520,21 +1520,21 @@
         "lib/net46/xunit.performance.core.XML",
         "lib/net46/xunit.performance.execution.desktop.dll",
         "lib/net46/xunit.performance.execution.desktop.pdb",
-        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0026.nupkg",
-        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0026.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0025.nupkg",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0025.nupkg.sha512",
         "Microsoft.DotNet.xunit.performance.nuspec"
       ]
     },
-    "runtime.win.System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23510": {
+    "runtime.win.System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23516": {
       "type": "package",
       "serviceable": true,
-      "sha512": "8k9vB/O4+BHd88eHytBROERzHemSjbNbyA9MIyCEbiQfD/Wmadm/4H7sTnw5HMIMzq5qC4aTxuvRqVzMiGcvcQ==",
+      "sha512": "YabWAwRmagQhHr28a3cBjA9tYnGtPEge74oypR5dhMieiRk2UaYTwOln69zB8fbVdYNjOwx7u+7MXOTwFwkizQ==",
       "files": [
         "ref/dotnet/_._",
-        "runtime.win.System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23510.nupkg",
-        "runtime.win.System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23510.nupkg.sha512",
+        "runtime.win.System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23516.nupkg",
+        "runtime.win.System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23516.nupkg.sha512",
         "runtime.win.System.Runtime.InteropServices.RuntimeInformation.nuspec",
-        "runtimes/win/lib/dotnet5.1/System.Runtime.InteropServices.RuntimeInformation.dll"
+        "runtimes/win/lib/dotnet5.4/System.Runtime.InteropServices.RuntimeInformation.dll"
       ]
     },
     "System.Collections/4.0.10": {
@@ -2016,10 +2016,10 @@
         "System.Reflection.Primitives.nuspec"
       ]
     },
-    "System.Reflection.TypeExtensions/4.1.0-beta-23510": {
+    "System.Reflection.TypeExtensions/4.1.0-beta-23516": {
       "type": "package",
       "serviceable": true,
-      "sha512": "lbsmJvRLGeyW64WV1twKmAbsdWzbnzQWyVglJr2jo0YdEm4+UBYISfXWaXOCloSZjMV5OCIKFAN9+pEaoi+53g==",
+      "sha512": "vA+eepDQ8ZFRodTHc+w8nBTkUqD+rEgirRR38tW6Z/uCDTzBPHGg6TqhqBhmY4wdWsT8/7fjwFPb7/dxldQW7g==",
       "files": [
         "lib/DNXCore50/System.Reflection.TypeExtensions.dll",
         "lib/MonoAndroid10/_._",
@@ -2028,25 +2028,25 @@
         "lib/netcore50/System.Reflection.TypeExtensions.dll",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
-        "ref/dotnet5.4/de/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet5.4/es/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet5.4/fr/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet5.4/it/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet5.4/ja/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet5.4/ko/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet5.4/ru/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet5.4/System.Reflection.TypeExtensions.dll",
-        "ref/dotnet5.4/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet5.4/zh-hans/System.Reflection.TypeExtensions.xml",
-        "ref/dotnet5.4/zh-hant/System.Reflection.TypeExtensions.xml",
+        "ref/dotnet5.1/de/System.Reflection.TypeExtensions.xml",
+        "ref/dotnet5.1/es/System.Reflection.TypeExtensions.xml",
+        "ref/dotnet5.1/fr/System.Reflection.TypeExtensions.xml",
+        "ref/dotnet5.1/it/System.Reflection.TypeExtensions.xml",
+        "ref/dotnet5.1/ja/System.Reflection.TypeExtensions.xml",
+        "ref/dotnet5.1/ko/System.Reflection.TypeExtensions.xml",
+        "ref/dotnet5.1/ru/System.Reflection.TypeExtensions.xml",
+        "ref/dotnet5.1/System.Reflection.TypeExtensions.dll",
+        "ref/dotnet5.1/System.Reflection.TypeExtensions.xml",
+        "ref/dotnet5.1/zh-hans/System.Reflection.TypeExtensions.xml",
+        "ref/dotnet5.1/zh-hant/System.Reflection.TypeExtensions.xml",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Reflection.TypeExtensions.dll",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtimes/win8-aot/lib/netcore50/System.Reflection.TypeExtensions.dll",
-        "System.Reflection.TypeExtensions.4.1.0-beta-23510.nupkg",
-        "System.Reflection.TypeExtensions.4.1.0-beta-23510.nupkg.sha512",
+        "System.Reflection.TypeExtensions.4.1.0-beta-23516.nupkg",
+        "System.Reflection.TypeExtensions.4.1.0-beta-23516.nupkg.sha512",
         "System.Reflection.TypeExtensions.nuspec"
       ]
     },
@@ -2220,23 +2220,23 @@
         "System.Runtime.InteropServices.nuspec"
       ]
     },
-    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23510": {
+    "System.Runtime.InteropServices.RuntimeInformation/4.0.0-beta-23516": {
       "type": "package",
       "serviceable": true,
-      "sha512": "Ni0DA1vtQWkk46nzGM2heciilSe2JqV38BQ39N6CDQ0lABsBXOQZVDY6q/lgmxXvWTdA4d5FevMxTKJTSC/KBQ==",
+      "sha512": "ZEMNyVBUeQE2hXkXsw8jF4d1ev5H6CT3N4sbnvrM6J6EVln2stGxSHq/QawZVO0zYbMXeYBzM9qLxrz26utSHw==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
-        "ref/dotnet5.2/System.Runtime.InteropServices.RuntimeInformation.dll",
+        "ref/dotnet5.1/System.Runtime.InteropServices.RuntimeInformation.dll",
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23510.nupkg",
-        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23510.nupkg.sha512",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23516.nupkg",
+        "System.Runtime.InteropServices.RuntimeInformation.4.0.0-beta-23516.nupkg.sha512",
         "System.Runtime.InteropServices.RuntimeInformation.nuspec"
       ]
     },
@@ -2564,21 +2564,21 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00122": {
       "type": "package",
       "serviceable": true,
-      "sha512": "oCniHZ9M9IVdGV3iInQDEja2mK+i+r9MyJzH1/gLD8drExfVuvYc1QuzOer9eu0GPZxPRsP/K9MiGR1vC555HQ==",
+      "sha512": "eSQ1Jo09hXNAFL+JfcqiiN7+GuOO78RZoXd0darX4V0xYopw0sbe/wxTy54fXE2TvlQj9l7943j5FN2Psz9TWA==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00119.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00119.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00122.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00122.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }
   },
   "projectFileDependencyGroups": {
     "": [
-      "Microsoft.DotNet.xunit.performance >= 1.0.0-*",
+      "Microsoft.DotNet.xunit.performance >= 1.0.0-alpha-build0025",
       "System.IO.FileSystem >= 4.0.0",
       "System.Globalization >= 4.0.10",
       "System.Runtime >= 4.0.20",
