@@ -44,6 +44,19 @@ namespace System
             }
         }
 
+        public static bool KeyAvailable
+        {
+            get
+            {
+                if (IsInputRedirected)
+                {
+                    throw new InvalidOperationException(SR.InvalidOperation_ConsoleKeyAvailableOnFile);
+                }
+
+                return ConsolePal.KeyAvailable;
+            }
+        }
+
         public static ConsoleKeyInfo ReadKey()
         {
             return ConsolePal.ReadKey(false);
@@ -126,6 +139,30 @@ namespace System
             ConsolePal.ResetColor();
         }
 
+        public static int BufferWidth
+        {
+            get { return ConsolePal.BufferWidth; }
+            set { ConsolePal.BufferWidth = value; }
+        }
+
+        public static int BufferHeight
+        {
+            get { return ConsolePal.BufferHeight; }
+            set { ConsolePal.BufferHeight = value; }
+        }
+
+        public static int WindowLeft
+        {
+            get { return ConsolePal.WindowLeft; }
+            set { ConsolePal.WindowLeft = value; }
+        }
+
+        public static int WindowTop
+        {
+            get { return ConsolePal.WindowTop; }
+            set { ConsolePal.WindowTop = value; }
+        }
+
         public static int WindowWidth
         {
             get
@@ -134,20 +171,88 @@ namespace System
             }
             set
             {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_NeedPosNum);
+                }
                 ConsolePal.WindowWidth = value;
+            }
+        }
+
+        public static int WindowHeight
+        {
+            get
+            {
+                return ConsolePal.WindowHeight;
+            }
+            set
+            {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException("value", value, SR.ArgumentOutOfRange_NeedPosNum);
+                }
+                ConsolePal.WindowHeight = value;
             }
         }
 
         public static bool CursorVisible
         {
-            get
-            {
-                return ConsolePal.CursorVisible;
-            }
+            get { return ConsolePal.CursorVisible; }
+            set { ConsolePal.CursorVisible = value; }
+        }
+
+        public static int CursorLeft
+        {
+            get { return ConsolePal.CursorLeft; }
+            set { SetCursorPosition(value, CursorTop); }
+        }
+
+        public static int CursorTop
+        {
+            get { return ConsolePal.CursorTop; }
+            set { SetCursorPosition(CursorLeft, value); }
+        }
+
+        private const int MaxConsoleTitleLength = 24500; // same value as in .NET Framework
+
+        public static string Title
+        {
+            get { return ConsolePal.Title; }
             set
             {
-                ConsolePal.CursorVisible = value;
+                if (value == null)
+                {
+                    throw new ArgumentNullException("value");
+                }
+
+                if (value.Length > MaxConsoleTitleLength)
+                {
+                    throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_ConsoleTitleTooLong);
+                }
+
+                ConsolePal.Title = value;
             }
+        }
+
+        public static void Beep()
+        {
+            ConsolePal.Beep();
+        }
+
+        public static void Clear()
+        {
+            ConsolePal.Clear();
+        }
+
+        public static void SetCursorPosition(int left, int top)
+        {
+            // Basic argument validation.  The PAL implementation may provide further validation.
+            if (left < 0 || left >= short.MaxValue)
+                throw new ArgumentOutOfRangeException("left", left, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+            if (top < 0 || top >= short.MaxValue)
+                throw new ArgumentOutOfRangeException("top", top, SR.ArgumentOutOfRange_ConsoleBufferBoundaries);
+
+            ConsolePal.SetCursorPosition(left, top);
         }
 
         public static event ConsoleCancelEventHandler CancelKeyPress

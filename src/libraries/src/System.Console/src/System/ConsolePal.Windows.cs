@@ -11,10 +11,6 @@ using System.Threading;
 namespace System
 {
     // Provides Windows-based support for System.Console.
-    // Required exposed methods:
-    // - OpenStandardInput, OpenStandardOutput, OpenStandardError
-    // - InputEncoding, OutputEncoding
-    // - ForegroundColor, BackgroundColor, ResetColor
     internal static class ConsolePal
     {
         private const int DefaultConsoleBufferSize = 256; // default size of buffer used in stream readers/writers
@@ -214,6 +210,11 @@ namespace System
                               & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0;
         }
 
+        public static bool KeyAvailable
+        {
+            // TODO #4636: Implement this
+            get { throw new NotImplementedException(); }
+        }
 
         private const short AltVKCode = 0x12;
 
@@ -419,6 +420,68 @@ namespace System
             }
         }
 
+        public static int CursorLeft
+        {
+            // TODO #4636: Implement this
+            get { throw new NotImplementedException(); }
+        }
+
+        public static int CursorTop
+        {
+            // TODO #4636: Implement this
+            get { throw new NotImplementedException(); }
+        }
+
+        public static string Title
+        {
+            // TODO #4636: Implement this
+            get { throw new NotImplementedException(); }
+            set { throw new NotImplementedException(); }
+        }
+
+        public static void Beep()
+        {
+            // TODO #4636: Implement this
+        }
+
+        public static void Clear()
+        {
+            // TODO #4636: Implement this
+        }
+
+        public static void SetCursorPosition(int left, int top)
+        {
+            // TODO #4636: Implement this
+        }
+
+        public static int BufferWidth
+        {
+            // TODO #4636: Implement this
+            get { return ConsolePal.BufferWidth; }
+            set { ConsolePal.BufferWidth = value; }
+        }
+
+        public static int BufferHeight
+        {
+            // TODO #4636: Implement this
+            get { return ConsolePal.BufferHeight; }
+            set { ConsolePal.BufferHeight = value; }
+        }
+
+        public static int WindowLeft
+        {
+            // TODO #4636: Implement this
+            get { return ConsolePal.WindowLeft; }
+            set { ConsolePal.WindowLeft = value; }
+        }
+
+        public static int WindowTop
+        {
+            // TODO #4636: Implement this
+            get { return ConsolePal.WindowTop; }
+            set { ConsolePal.WindowTop = value; }
+        }
+
         public static int WindowWidth
         {
             get
@@ -432,7 +495,7 @@ namespace System
             }
         }
 
-        private static int WindowHeight
+        public static int WindowHeight
         {
             get
             {

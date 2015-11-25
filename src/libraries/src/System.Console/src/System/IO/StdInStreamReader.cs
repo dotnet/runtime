@@ -1,12 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32.SafeHandles;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Text;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.IO
 {
@@ -17,51 +14,79 @@ namespace System.IO
      */
     internal class StdInStreamReader : StreamReader
     {
-        private readonly char[] _unprocessedBufferToBeRead; // Buffer that might have already been read from stdin but not yet processed.
+        private char[] _unprocessedBufferToBeRead; // Buffer that might have already been read from stdin but not yet processed.
         private const int BytesToBeRead = 1024; // No. of bytes to be read from the stream at a time.
         private int _startIndex; // First unprocessed index in the buffer;
-        private int _endIndex; // Last unprocessed index in the buffer;
+        private int _endIndex; // Index after last unprocessed index in the buffer;
         private readonly StringBuilder _readLineSB; // SB that holds readLine output
 
         internal StdInStreamReader(Stream stream, Encoding encoding, int bufferSize) : base(stream: stream, encoding: encoding, detectEncodingFromByteOrderMarks: false, bufferSize: bufferSize, leaveOpen: true)
         {
             _unprocessedBufferToBeRead = new char[encoding.GetMaxCharCount(BytesToBeRead)];
             _startIndex = 0;
-            _endIndex = -1; // There is no unprocessed index yet.
+            _endIndex = 0;
             _readLineSB = new StringBuilder();
         }
 
         /// <summary> Checks whether the unprocessed buffer is empty. </summary>
-        bool IsExtraBufferEmpty()
+        internal bool IsExtraBufferEmpty()
         {
-            return _startIndex > _endIndex; // Everything has been processed;
+            return _startIndex >= _endIndex; // Everything has been processed;
         }
 
         /// <summary> Reads the buffer in the raw mode. </summary>
-        unsafe void ReadExtraBuffer()
+        private unsafe void ReadExtraBuffer()
         {
-            Debug.Assert(IsExtraBufferEmpty());
-
+            // Read in bytes
             byte* bufPtr = stackalloc byte[BytesToBeRead];
-            int result;
-            Interop.CheckIo(result = Interop.Sys.ReadStdinUnbuffered(bufPtr, BytesToBeRead));
+            int result = ReadStdinUnbuffered(bufPtr, BytesToBeRead);
 
-            Debug.Assert(result > 0 && result <= BytesToBeRead);
-
-            // Now we need to convert the byte buffer to char buffer.
-            fixed (char* unprocessedBufPtr = _unprocessedBufferToBeRead)
-            {
-                _startIndex = 0;
-                _endIndex = CurrentEncoding.GetChars(bufPtr, result, unprocessedBufPtr, _unprocessedBufferToBeRead.Length) - 1;
-            }
+            // Append them
+            AppendExtraBuffer(bufPtr, result);
         }
+
+        internal unsafe void AppendExtraBuffer(byte* buffer, int bufferLength)
+        {
+            // Then convert the bytes to chars
+            int charLen = CurrentEncoding.GetMaxCharCount(bufferLength);
+            char* charPtr = stackalloc char[charLen];
+            charLen = CurrentEncoding.GetChars(buffer, bufferLength, charPtr, charLen);
+
+            // Ensure our buffer is large enough to hold all of the data
+            if (IsExtraBufferEmpty())
+            {
+                _startIndex = _endIndex = 0;
+            }
+            else
+            {
+                Debug.Assert(_endIndex > 0);
+                int spaceRemaining = _unprocessedBufferToBeRead.Length - _endIndex;
+                if (spaceRemaining < charLen)
+                {
+                    Array.Resize(ref _unprocessedBufferToBeRead, _unprocessedBufferToBeRead.Length * 2);
+                }
+            }
+
+            // Copy the data into our buffer
+            Marshal.Copy((IntPtr)charPtr, _unprocessedBufferToBeRead, _endIndex, charLen);
+            _endIndex += charLen;
+        }
+
+        internal unsafe int ReadStdinUnbuffered(byte* buffer, int bufferSize)
+        {
+            int result;
+            Interop.CheckIo(result = Interop.Sys.ReadStdinUnbuffered(buffer, bufferSize));
+            Debug.Assert(result > 0 && result <= bufferSize);
+            return result;
+        }
+
+        private static string s_moveLeftString;
 
         public override string ReadLine()
         {
             string readLineStr;
 
-            //Check if there is anything left in the _unprocessedBufferToBeRead.
-            while (!IsExtraBufferEmpty())
+            while (true)
             {
                 ConsoleKeyInfo keyInfo = ReadKey();
 
@@ -69,34 +94,52 @@ namespace System.IO
                 {
                     readLineStr = _readLineSB.ToString();
                     _readLineSB.Clear();
+                    Console.WriteLine();
                     return readLineStr;
                 }
-
-                else if (keyInfo.Key == ConsoleKey.Backspace)
+                else if (keyInfo.Key == ConsoleKey.Backspace || keyInfo.Key == ConsoleKey.Delete)
                 {
                     int len = _readLineSB.Length;
                     if (len > 0)
                     {
                         _readLineSB.Length = len - 1;
+
+                        if (s_moveLeftString == null)
+                        {
+                            string moveLeft = ConsolePal.TerminalBasicInfo.Instance.CursorLeftFormat;
+                            s_moveLeftString = moveLeft != null ? moveLeft + " " + moveLeft : string.Empty;
+                        }
+                        Console.Write(s_moveLeftString);
                     }
+                }
+                else if (keyInfo.Key == ConsoleKey.Tab)
+                {
+                    _readLineSB.Append(keyInfo.KeyChar);
+                    Console.Write(' ');
+                }
+                else if (keyInfo.Key == ConsoleKey.Clear)
+                {
+                    _readLineSB.Clear();
+                    Console.Clear();
                 }
                 else
                 {
                     _readLineSB.Append(keyInfo.KeyChar);
+                    Console.Write(keyInfo.KeyChar);
                 }
             }
-
-            readLineStr = _readLineSB.Append(base.ReadLine()).ToString();
-            _readLineSB.Clear();
-
-            return readLineStr;
         }
 
 
         public override int Read()
         {
-            // Convert byte to char.
-            return IsExtraBufferEmpty() ? base.Read() : (int)_unprocessedBufferToBeRead[_startIndex++];
+            if (IsExtraBufferEmpty())
+            {
+                ReadExtraBuffer();
+            }
+
+            Debug.Assert(!IsExtraBufferEmpty());
+            return _unprocessedBufferToBeRead[_startIndex++];
         }
 
         internal ConsoleKey GetKeyFromCharValue(char x, out bool isShift, out bool isCtrl)
@@ -173,23 +216,26 @@ namespace System.IO
         {
             Debug.Assert(!IsExtraBufferEmpty());
 
-            isAlt = isCtrl = isShift = false;
-            int keyLength;
-
             // Try to get the special key match from the TermInfo static information.
-            if (ConsolePal.TryGetSpecialConsoleKey(_unprocessedBufferToBeRead, _startIndex, _endIndex, out key, out keyLength))
+            ConsoleKeyInfo keyInfo;
+            int keyLength;
+            if (ConsolePal.TryGetSpecialConsoleKey(_unprocessedBufferToBeRead, _startIndex, _endIndex, out keyInfo, out keyLength))
             {
-                ch = ((keyLength == 1) ? _unprocessedBufferToBeRead[_startIndex] : '\0');
+                key = keyInfo.Key;
+                isShift = (keyInfo.Modifiers & ConsoleModifiers.Shift) != 0;
+                isAlt = (keyInfo.Modifiers & ConsoleModifiers.Alt) != 0;
+                isCtrl = (keyInfo.Modifiers & ConsoleModifiers.Control) != 0;
+
+                ch = ((keyLength == 1) ? _unprocessedBufferToBeRead[_startIndex] : '\0'); // ignore keyInfo.KeyChar
                 _startIndex += keyLength;
                 return true;
             }
 
             // Check if we can match Esc + combination and guess if alt was pressed.
-            if (isAlt == false &&
-                _unprocessedBufferToBeRead[_startIndex] == (char)(int)(0x1B) /*Alt is send as an escape character*/ &&
-                _endIndex - _startIndex + 1 >= 2 /*We have at least two characters to read.*/)
+            isAlt = isCtrl = isShift = false;
+            if (_unprocessedBufferToBeRead[_startIndex] == (char)0x1B && // Alt is send as an escape character
+                _endIndex - _startIndex >= 2) // We have at least two characters to read
             {
-                isAlt = true; // Since the alt is pressed.
                 _startIndex++;
                 if (MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl))
                 {
@@ -202,7 +248,7 @@ namespace System.IO
                     // The current key needs to be marked as Esc key.
                     // Also, we do not increment _startIndex as we already did it.
                     key = ConsoleKey.Escape;
-                    ch = (char)(int)(0x1B);
+                    ch = (char)0x1B;
                     isAlt = false;
                     return true;
                 }
@@ -239,5 +285,8 @@ namespace System.IO
             MapBufferToConsoleKey(out key, out ch, out isShift, out isAlt, out isCtrl);
             return new ConsoleKeyInfo(ch, key, isShift, isAlt, isCtrl);
         }
+
+        /// <summary>Gets whether there's input waiting on stdin.</summary>
+        internal bool StdinReady { get { return Interop.Sys.StdinReady(); } }
     }
 }

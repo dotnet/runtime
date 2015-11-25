@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [StructLayout(LayoutKind.Sequential)]
-        private struct WinSize
+        internal struct WinSize
         {
             internal ushort Row;
             internal ushort Col;
@@ -18,18 +18,6 @@ internal static partial class Interop
         };
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        private static extern int GetWindowSize(out WinSize winSize);
-
-        internal static int GetWindowWidth()
-        {
-            WinSize winsize;
-
-            if (GetWindowSize(out winsize) == 0)
-            {
-                return winsize.Col;
-            }
-
-            return -1;
-        }
+        internal static extern int GetWindowSize(out WinSize winSize);
     }
 }
