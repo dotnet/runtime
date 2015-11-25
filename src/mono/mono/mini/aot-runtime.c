@@ -4104,9 +4104,11 @@ gpointer
 mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 {
 	MonoClass *klass = method->klass;
+	MonoMethod *orig_method = method;
 	guint32 method_index;
 	MonoAotModule *amodule = klass->image->aot_module;
 	guint8 *code;
+	gboolean cache_result = FALSE;
 
 	if (enable_aot_cache && !amodule && domain->entry_assembly && klass->image == mono_defaults.corlib) {
 		/* This cannot be AOTed during startup, so do it now */
@@ -4165,6 +4167,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 		if (code)
 			return code;
 
+		cache_result = TRUE;
 		method_index = find_aot_method (method, &amodule);
 		/*
 		 * Special case the ICollection<T> wrappers for arrays, as they cannot
@@ -4313,7 +4316,13 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method)
 		method_index = mono_metadata_token_index (method->token) - 1;
 	}
 
-	return load_method (domain, amodule, klass->image, method, method->token, method_index);
+	code = load_method (domain, amodule, klass->image, method, method->token, method_index);
+	if (code && cache_result) {
+		amodule_lock (amodule);
+		g_hash_table_insert (amodule->method_to_code, orig_method, code);
+		amodule_unlock (amodule);
+	}
+	return code;
 }
 
 /**
