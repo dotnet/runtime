@@ -13,8 +13,8 @@
 #include <unicode/utf16.h>
 
 const int32_t CompareOptionsIgnoreCase = 1;
-// const int32_t CompareOptionsIgnoreNonSpace = 2;
-// const int32_t CompareOptionsIgnoreSymbols = 4;
+const int32_t CompareOptionsIgnoreNonSpace = 2;
+const int32_t CompareOptionsIgnoreSymbols = 4;
 // const int32_t CompareOptionsIgnoreKanaType = 8;
 // const int32_t CompareOptionsIgnoreWidth = 0x10;
 // const int32_t CompareOptionsStringSort = 0x20000000;
@@ -39,18 +39,46 @@ typedef struct _sort_handle
 } SortHandle;
 
 /*
- * To collator returned by this function is owned by the callee and must be
+ * The collator returned by this function is owned by the callee and must be
  * closed when this method returns with a U_SUCCESS UErrorCode.
  *
  * On error, the return value is undefined.
  */
 UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options, UErrorCode* pErr)
 {
+    UColAttributeValue strength = UCOL_DEFAULT;
+
+    bool isIgnoreCase = (options & CompareOptionsIgnoreCase) == CompareOptionsIgnoreCase;
+    bool isIgnoreNonSpace = (options & CompareOptionsIgnoreNonSpace) == CompareOptionsIgnoreNonSpace;
+    bool isIgnoreSymbols = (options & CompareOptionsIgnoreSymbols) == CompareOptionsIgnoreSymbols;
+
+    if (isIgnoreCase)
+    {
+        strength = UCOL_SECONDARY;
+    }
+
+    if (isIgnoreNonSpace)
+    {
+        strength = UCOL_PRIMARY;
+    }
+
     UCollator* pClonedCollator = ucol_safeClone(pCollator, nullptr, nullptr, pErr);
 
-    if ((options & CompareOptionsIgnoreCase) == CompareOptionsIgnoreCase)
+    if (isIgnoreSymbols)
     {
-        ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, UCOL_SECONDARY, pErr);
+        ucol_setAttribute(pClonedCollator, UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, pErr);
+    }
+
+    if (strength != UCOL_DEFAULT)
+    {
+        ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, strength, pErr);
+
+        // casing differs at the tertiary level.
+        // if strength is less than tertiary, but we are not ignoring case, then we need to flip CASE_LEVEL On
+        if (strength < UCOL_TERTIARY && !isIgnoreCase)
+        {
+            ucol_setAttribute(pClonedCollator, UCOL_CASE_LEVEL, UCOL_ON, pErr);
+        }
     }
 
     return pClonedCollator;
