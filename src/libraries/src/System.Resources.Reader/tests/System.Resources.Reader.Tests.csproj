@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Resources.Reader.Tests</AssemblyName>
     <RootNamespace>System.Resources.Reader.Tests</RootNamespace>
+    <ProjectGuid>{8D7202E8-084A-4C20-AB93-3BF70D2E0651}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

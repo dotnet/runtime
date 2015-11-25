@@ -17,6 +17,7 @@ namespace System.Resources
         private Stream _stream;    // backing store we're reading from.
         private long _nameSectionOffset;  // Offset to name section of file.
         private long _dataSectionOffset;  // Offset to Data section of file.
+        private long _resourceStreamStart;  // beginning of the resource stream, which could be part of a longer file stream
 
         private int[] _namePositions; // relative locations of names
         private int _stringTypeIndex;
@@ -104,7 +105,7 @@ namespace System.Resources
             long nameVA = GetNamePosition(index);
             lock (this)
             {
-                _stream.Seek(nameVA + _nameSectionOffset, SeekOrigin.Begin);
+                _stream.Seek(_resourceStreamStart + nameVA + _nameSectionOffset, SeekOrigin.Begin);
                 var result = _stream.ReadString(utf16: true);
 
                 int dataOffset;
@@ -123,7 +124,7 @@ namespace System.Resources
             long nameVA = GetNamePosition(index);
             lock (this)
             {
-                _stream.Seek(nameVA + _nameSectionOffset, SeekOrigin.Begin);
+                _stream.Seek(_resourceStreamStart + nameVA + _nameSectionOffset, SeekOrigin.Begin);
                 SkipString();
 
                 int dataPos;
@@ -195,6 +196,8 @@ namespace System.Resources
 
         private void _ReadResources()
         {
+            _resourceStreamStart = _stream.Position;
+
             // Read out the ResourceManager header
             // Read out magic number
             int magicNum;
@@ -306,7 +309,7 @@ namespace System.Resources
             _dataSectionOffset = dataSectionOffset;
 
             // Store current location as start of name section
-            _nameSectionOffset = _stream.Position;
+            _nameSectionOffset = _stream.Position - _resourceStreamStart;
 
             // _nameSectionOffset should be <= _dataSectionOffset; if not, it's corrupt
             if (_dataSectionOffset < _nameSectionOffset)
@@ -347,7 +350,7 @@ namespace System.Resources
 
         internal sealed class ResourceEnumerator : IDictionaryEnumerator
         {
-            private const int ENUM_DONE = Int32.MinValue;
+            private const int ENUM_DONE = int.MinValue;
             private const int ENUM_NOT_STARTED = -1;
 
             private ResourceReader _reader;
