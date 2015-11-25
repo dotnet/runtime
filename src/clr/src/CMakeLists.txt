@@ -51,6 +51,7 @@ add_subdirectory(dlls)
 add_subdirectory(ToolBox)
 add_subdirectory(tools)
 add_subdirectory(unwinder)
+add_subdirectory(ildasm)
 
 if(WIN32)
   add_subdirectory(ipcman)

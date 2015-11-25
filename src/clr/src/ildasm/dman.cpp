@@ -940,8 +940,10 @@ void DumpManifestResources(void* GUICookie)
     else nManRes=0;
 }
 
+#ifndef FEATURE_CORECLR
 // CLR internal hosting API
 extern ICLRRuntimeHostInternal *g_pCLRRuntimeHostInternal;
+#endif
 
 IMetaDataAssemblyImport* GetAssemblyImport(void* GUICookie)
 {
@@ -992,6 +994,19 @@ IMetaDataAssemblyImport* GetAssemblyImport(void* GUICookie)
             if(pdwSize && *pdwSize)
             {
                 pbManifest += sizeof(DWORD);
+#ifdef FEATURE_CORECLR
+                if (SUCCEEDED(hr = GetMetaDataInternalInterface(
+                    pbManifest,
+                    VAL32(*pdwSize),
+                    ofRead,
+                    IID_IMDInternalImport,
+                    (LPVOID *)&pParam->pImport)))
+                {
+                    if (FAILED(hr = GetMetaDataPublicInterfaceFromInternal(
+                        pParam->pImport,
+                        IID_IMetaDataAssemblyImport,
+                        (LPVOID *)&pParam->pAssemblyImport)))
+#else
                 if (SUCCEEDED(hr = g_pCLRRuntimeHostInternal->GetMetaDataInternalInterface(
                                     pbManifest,
                                     VAL32(*pdwSize),
@@ -1003,6 +1018,7 @@ IMetaDataAssemblyImport* GetAssemblyImport(void* GUICookie)
                         pParam->pImport, 
                         IID_IMetaDataAssemblyImport, 
                         (LPVOID *)&pParam->pAssemblyImport)))
+#endif
                     {
                         sprintf_s(szString,SZSTRING_SIZE,RstrUTF(IDS_E_MDAFROMMDI),hr);
                         printLine(pParam->GUICookie,COMMENT(szString));
