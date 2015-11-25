@@ -41,7 +41,9 @@ ellismg@linux:~$ sudo apt-get update
 
 Then install the packages you need:
 
-`ellismg@linux:~$ sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev uuid-dev`
+```
+ellismg@linux:~$ sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev uuid-dev
+```
 
 You now have all the required components.
 
@@ -58,7 +60,7 @@ If you don't already have Mono installed on your system, use the [installation i
 At a high level, you do the following:
 
 ```
-ellismg@linux:~$ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+ellismg@linux:~$ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
 ellismg@linux:~$ echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
 ellismg@linux:~$ sudo apt-get update
 ellismg@linux:~$ sudo apt-get install mono-devel
