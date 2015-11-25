@@ -90,6 +90,17 @@
 		return retval;										  \
        };				}G_STMT_END
 
+/* Use this as MONO_ARG_NULL (arg,) in functions returning void */
+#define MONO_CHECK_NULL(arg, retval)	    G_STMT_START{		  \
+		if (G_UNLIKELY (arg == NULL))						  \
+       {								  \
+		MonoException *ex;					  \
+		if (arg) {} /* check if the name exists */		  \
+		ex = mono_get_exception_null_reference ();		  \
+		mono_set_pending_exception (ex);					  \
+		return retval;										  \
+       };				}G_STMT_END
+
 #define mono_string_builder_capacity(sb) sb->chunkOffset + sb->chunkChars->max_length
 #define mono_string_builder_string_length(sb) sb->chunkOffset + sb->chunkLength
 

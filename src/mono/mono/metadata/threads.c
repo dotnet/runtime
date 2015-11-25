@@ -2029,6 +2029,7 @@ MonoObject*
 ves_icall_System_Threading_Interlocked_Exchange_T (MonoObject **location, MonoObject *value)
 {
 	MonoObject *res;
+	MONO_CHECK_NULL (location, NULL);
 	res = (MonoObject *)InterlockedExchangePointer ((volatile gpointer *)location, value);
 	mono_gc_wbarrier_generic_nostore (location);
 	return res;
