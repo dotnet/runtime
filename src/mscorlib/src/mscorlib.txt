@@ -1010,7 +1010,7 @@ EventSource_IllegalTaskValue = Task {0} has a value of {1} which is outside the 
 EventSource_TaskCollision = Tasks {0} and {1} are defined with the same value ({2}).
 EventSource_IllegalKeywordsValue = Keyword {0} has a value of {1} which is outside the legal range (0-0x0000080000000000).
 EventSource_KeywordCollision = Keywords {0} and {1} are defined with the same value ({2}).
-EventSource_EventChannelOutOfRange = Channel {0} has a value of [1} which is outside the legal range (16-254).
+EventSource_EventChannelOutOfRange = Channel {0} has a value of {1} which is outside the legal range (16-254).
 EventSource_ChannelTypeDoesNotMatchEventChannelValue = Channel {0} does not match event channel value {1}.
 EventSource_MaxChannelExceeded = Attempt to define more than the maximum limit of 8 channels for a provider.
 EventSource_DuplicateStringKey = Multiple definitions for string "{0}".
@@ -1036,6 +1036,8 @@ EventSource_NotSupportedNestedArraysEnums = Nested arrays/enumerables are not su
 EventSource_IncorrentlyAuthoredTypeInfo = Incorrectly-authored TypeInfo - a type should be serialized as one field or as one group
 EventSource_NotSupportedCustomSerializedData = Enumerables of custom-serialized data are not supported
 EventSource_StopsFollowStarts = An event with stop suffix must follow a corresponding event with a start suffix.
+EventSource_NoRelatedActivityId = EventSource expects the first parameter of the Event method to be of type Guid and to be named "relatedActivityId" when calling WriteEventWithRelatedActivityId.
+EventSource_VarArgsParameterMismatch = The parameters to the Event method do not match the parameters to the WriteEvent method. This may cause the event to be displayed incorrectly.
 
 ; ExecutionEngineException
 ExecutionEngine_InvalidAttribute = Attribute cannot have multiple definitions.

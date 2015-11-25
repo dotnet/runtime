@@ -4478,6 +4478,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private static void RemoveReferencesToListenerInEventSources(EventListener listenerToRemove)
         {
+#if !ES_BUILD_STANDALONE
+            Contract.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
+#endif
             // Foreach existing EventSource in the appdomain
             foreach (WeakReference eventSourceRef in s_EventSources)
             {

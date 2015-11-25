@@ -5739,7 +5739,7 @@ HCIMPLEND;
 //
 //========================================================================
 
-HCIMPL2(void, JIT_DelegateSecurityCheck_Internal, CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeMethodHnd)
+NOINLINE HCIMPL2(void, JIT_DelegateSecurityCheck_Internal, CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeMethodHnd)
 {
     FCALL_CONTRACT;
 
@@ -5754,6 +5754,7 @@ HCIMPL2(void, JIT_DelegateSecurityCheck_Internal, CORINFO_CLASS_HANDLE delegateH
 }
 HCIMPLEND
 
+#include <optsmallperfcritical.h>
 /*************************************************************/
 HCIMPL2(void, JIT_DelegateSecurityCheck, CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeMethodHnd)
 {
@@ -5772,11 +5773,12 @@ HCIMPL2(void, JIT_DelegateSecurityCheck, CORINFO_CLASS_HANDLE delegateHnd, CORIN
     HCCALL2(JIT_DelegateSecurityCheck_Internal, delegateHnd, calleeMethodHnd);
 }
 HCIMPLEND
+#include <optdefault.h>
 
 
 /*************************************************************/
 //Make sure to allow check of 0 for COMPlus_Security_AlwaysInsertCallout
-HCIMPL4(void, JIT_MethodAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_METHOD_HANDLE calleeMethodHnd, CORINFO_CLASS_HANDLE calleeTypeHnd, CorInfoSecurityRuntimeChecks check)
+NOINLINE HCIMPL4(void, JIT_MethodAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_METHOD_HANDLE calleeMethodHnd, CORINFO_CLASS_HANDLE calleeTypeHnd, CorInfoSecurityRuntimeChecks check)
 {
     FCALL_CONTRACT;
 
@@ -5819,6 +5821,7 @@ HCIMPL4(void, JIT_MethodAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethod
 HCIMPLEND
 
 
+#include <optsmallperfcritical.h>
 /*************************************************************/
 //Make sure to allow check of 0 for COMPlus_Security_AlwaysInsertCallout
 HCIMPL4(void, JIT_MethodAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_METHOD_HANDLE calleeMethodHnd, CORINFO_CLASS_HANDLE calleeTypeHnd, CorInfoSecurityRuntimeChecks check)
@@ -5841,10 +5844,11 @@ HCIMPL4(void, JIT_MethodAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORI
     HCCALL4(JIT_MethodAccessCheck_Internal, callerMethodHnd, calleeMethodHnd, calleeTypeHnd, check);
 }
 HCIMPLEND
+#include <optdefault.h>
 
 
 // Slower checks (including failure paths) for determining if a method has runtime access to a field
-HCIMPL3(void, JIT_FieldAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_FIELD_HANDLE calleeFieldHnd, CorInfoSecurityRuntimeChecks check)
+NOINLINE HCIMPL3(void, JIT_FieldAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_FIELD_HANDLE calleeFieldHnd, CorInfoSecurityRuntimeChecks check)
 {
     FCALL_CONTRACT;
 
@@ -5875,6 +5879,7 @@ HCIMPL3(void, JIT_FieldAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodH
 }
 HCIMPLEND
 
+#include <optsmallperfcritical.h>
 // Check to see if a method has runtime access to a field
 HCIMPL3(void, JIT_FieldAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_FIELD_HANDLE calleeFieldHnd, CorInfoSecurityRuntimeChecks check)
 {
@@ -5903,9 +5908,10 @@ HCIMPL3(void, JIT_FieldAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORIN
     HCCALL3(JIT_FieldAccessCheck_Internal, callerMethodHnd, calleeFieldHnd, check);
 }
 HCIMPLEND
+#include <optdefault.h>
 
 // Slower checks (including failure paths) for determining if a method has runtime access to a type
-HCIMPL3(void, JIT_ClassAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_CLASS_HANDLE calleeClassHnd, CorInfoSecurityRuntimeChecks check)
+NOINLINE HCIMPL3(void, JIT_ClassAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_CLASS_HANDLE calleeClassHnd, CorInfoSecurityRuntimeChecks check)
 {
     FCALL_CONTRACT;
 
@@ -5920,6 +5926,7 @@ HCIMPL3(void, JIT_ClassAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodH
 }
 HCIMPLEND
 
+#include <optsmallperfcritical.h>
 // Check to see if a method has runtime access to a type
 HCIMPL3(void, JIT_ClassAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_CLASS_HANDLE calleeClassHnd, CorInfoSecurityRuntimeChecks check)
 {
@@ -5948,6 +5955,7 @@ HCIMPL3(void, JIT_ClassAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORIN
     HCCALL3(JIT_ClassAccessCheck_Internal, callerMethodHnd, calleeClassHnd, check);
 }
 HCIMPLEND
+#include <optdefault.h>
 
 NOINLINE HCIMPL2(void, JIT_Security_Prolog_Framed, CORINFO_METHOD_HANDLE methHnd_, OBJECTREF* ppFrameSecDesc)
 {
@@ -6022,7 +6030,7 @@ HCIMPLEND
 #include <optdefault.h>
 
 /*************************************************************/
-HCIMPL1(void, JIT_VerificationRuntimeCheck_Internal, CORINFO_METHOD_HANDLE methHnd_)
+NOINLINE HCIMPL1(void, JIT_VerificationRuntimeCheck_Internal, CORINFO_METHOD_HANDLE methHnd_)
 {
     FCALL_CONTRACT;
 
@@ -6061,6 +6069,7 @@ HCIMPL1(void, JIT_VerificationRuntimeCheck_Internal, CORINFO_METHOD_HANDLE methH
 }
 HCIMPLEND
 
+#include <optsmallperfcritical.h>
 /*************************************************************/
 HCIMPL1(void, JIT_VerificationRuntimeCheck, CORINFO_METHOD_HANDLE methHnd_)
 {
@@ -6079,6 +6088,7 @@ HCIMPL1(void, JIT_VerificationRuntimeCheck, CORINFO_METHOD_HANDLE methHnd_)
 
 }
 HCIMPLEND
+#include <optdefault.h>
 
 
 
