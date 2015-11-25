@@ -1,15 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Linq;
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Resources;
 using Xunit;
 
 namespace System.Resources.ResourceWriterTests
@@ -40,17 +34,28 @@ namespace System.Resources.ResourceWriterTests
             return rw;
         }
 
-        [Fact]
-        public static void ReadResource()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(100)]
+        public static void ReadResource(int numberOfLeadingBytes)
         {
-
-            using (var ms2 = new MemoryStream())
+            var buffer = new byte[4096];
+            using (var ms2 = new MemoryStream(buffer, true))
             {
+                ms2.Write(new byte[numberOfLeadingBytes], 0, numberOfLeadingBytes);
                 using (var rw = GenerateResourceStream(s_dict, ms2))
                 {
                     //Rewind to begining of stream
 
-                    ms2.Seek(0L, SeekOrigin.Begin);
+                    ms2.Seek(numberOfLeadingBytes, SeekOrigin.Begin);
 
                     var reder = new ResourceReader(ms2);
 
@@ -67,8 +72,8 @@ namespace System.Resources.ResourceWriterTests
                     Assert.True(s_found_list.Count == s_dict.Count);
                 }
             }
-
         }
+
         [Fact]
         public static void ReadResource1()
         {
