@@ -56,7 +56,7 @@ $(_XunitEpilog)
 
 ]]>
       </_XunitWrapperGen>
-      <XunitVersionCompiled>2.0.0-beta5-build2785</XunitVersionCompiled>
+      <XunitVersionCompiled>2.1.0</XunitVersionCompiled>
       <XunitWrapperGenCsProj>
         <![CDATA[
 <?xml version="1.0" encoding="utf-8"?>
@@ -118,12 +118,10 @@ $(_XunitEpilog)
         <![CDATA[
 {
   "dependencies": {
-    "xunit" : "2.0.0-beta5-build2785",
-    "xunit.abstractions" : "2.0.0-beta5-build2785",
-    "xunit.assert" : "2.0.0-beta5-build2785",
-    "xunit.core" : "2.0.0-beta5-build2785",
-    "xunit.execution" : "2.0.0-beta5-build2785",
-    "xunit.runners" : "2.0.0-beta5-build2785"
+    "xunit" : "2.1.0",
+    "xunit.assert" : "2.1.0",
+    "xunit.core" : "2.1.0",
+    "xunit.runner.msbuild": "2.1.0"
   },
   "frameworks": {
     "net45": {}
