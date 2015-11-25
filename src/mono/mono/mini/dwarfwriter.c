@@ -223,6 +223,39 @@ emit_byte (MonoDwarfWriter *w, guint8 val)
 	mono_img_writer_emit_byte (w->w, val); 
 }
 
+static void
+emit_escaped_string (MonoDwarfWriter *w, char *value)
+{
+	int i, len;
+
+	len = strlen (value);
+	for (i = 0; i < len; ++i) {
+		char c = value [i];
+		if (!(isalnum (c))) {
+			switch (c) {
+			case '_':
+			case '-':
+			case ':':
+			case '.':
+			case ',':
+			case '/':
+			case '<':
+			case '>':
+			case '`':
+			case '(':
+			case ')':
+			case '[':
+			case ']':
+				break;
+			default:
+				value [i] = '_';
+				break;
+			}
+		}
+	}
+	mono_img_writer_emit_string (w->w, value);
+}
+
 static G_GNUC_UNUSED void
 emit_uleb128 (MonoDwarfWriter *w, guint32 value)
 {
@@ -1870,7 +1903,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	emit_uleb128 (w, ABBREV_SUBPROGRAM);
 	/* DW_AT_name */
 	name = mono_method_full_name (method, FALSE);
-	emit_string (w, name);
+	emit_escaped_string (w, name);
 	/* DW_AT_MIPS_linkage_name */
 	if (linkage_name)
 		emit_string (w, linkage_name);
