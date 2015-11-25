@@ -6,6 +6,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <map>
 #include <unicode/uchar.h>
 #include <unicode/ucol.h>
 #include <unicode/usearch.h>
@@ -18,6 +19,9 @@ const int32_t CompareOptionsIgnoreCase = 1;
 // const int32_t CompareOptionsIgnoreWidth = 0x10;
 // const int32_t CompareOptionsStringSort = 0x20000000;
 
+typedef std::map<int32_t, UCollator*> TCollatorMap;
+typedef std::pair<int32_t, UCollator*> TCollatorMapPair;
+
 /*
  * For increased performance, we cache the UCollator objects for a locale and
  * share them across threads. This is safe (and supported in ICU) if we ensure
@@ -26,9 +30,9 @@ const int32_t CompareOptionsIgnoreCase = 1;
 typedef struct _sort_handle
 {
     UCollator* regular;
-    UCollator* ignoreCase;
+    TCollatorMap collatorsPerOption;
 
-    _sort_handle() : regular(nullptr), ignoreCase(nullptr)
+    _sort_handle() : regular(nullptr)
     {
     }
 
@@ -59,15 +63,11 @@ extern "C" SortHandle* GetSortHandle(const char* lpLocaleName)
     UErrorCode err = U_ZERO_ERROR;
 
     pSortHandle->regular = ucol_open(lpLocaleName, &err);
-    pSortHandle->ignoreCase = CloneCollatorWithOptions(pSortHandle->regular, CompareOptionsIgnoreCase, &err);
 
     if (U_FAILURE(err))
     {
         if (pSortHandle->regular != nullptr)
               ucol_close(pSortHandle->regular);
-
-        if (pSortHandle->ignoreCase != nullptr)
-            ucol_close(pSortHandle->ignoreCase);
 
         delete pSortHandle;
         pSortHandle = nullptr;
@@ -79,29 +79,46 @@ extern "C" SortHandle* GetSortHandle(const char* lpLocaleName)
 extern "C" void CloseSortHandle(SortHandle* pSortHandle)
 {
     ucol_close(pSortHandle->regular);
-    ucol_close(pSortHandle->ignoreCase);
-
     pSortHandle->regular = nullptr;
-    pSortHandle->ignoreCase = nullptr;
+
+    TCollatorMap::iterator it;
+    for (it = pSortHandle->collatorsPerOption.begin(); it != pSortHandle->collatorsPerOption.end(); it++)
+    {
+        ucol_close(it->second);
+    }
 
     delete pSortHandle;
 }
 
-const UCollator* GetCollatorFromSortHandle(const SortHandle* pSortHandle, int32_t options, UErrorCode* pErr)
+const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t options, UErrorCode* pErr)
 {
-    if ((options & CompareOptionsIgnoreCase) == CompareOptionsIgnoreCase)
+    UCollator* pCollator;
+    if (options == 0)
     {
-        return pSortHandle->ignoreCase;
+        pCollator = pSortHandle->regular;
+    }
+    else
+    {
+        TCollatorMap::iterator entry = pSortHandle->collatorsPerOption.find(options);
+        if (entry == pSortHandle->collatorsPerOption.end())
+        {
+            pCollator = CloneCollatorWithOptions(pSortHandle->regular, options, pErr);
+            pSortHandle->collatorsPerOption[options] = pCollator;
+        }
+        else
+        {
+            pCollator = entry->second;
+        }
     }
 
-    return pSortHandle->regular;
+    return pCollator;
 }
 
 /*
 Function:
 CompareString
 */
-extern "C" int32_t CompareString(const SortHandle* pSortHandle,
+extern "C" int32_t CompareString(SortHandle* pSortHandle,
                                  const UChar* lpStr1,
                                  int32_t cwStr1Length,
                                  const UChar* lpStr2,
@@ -129,7 +146,7 @@ Function:
 IndexOf
 */
 extern "C" int32_t
-IndexOf(const SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+IndexOf(SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
@@ -156,7 +173,7 @@ Function:
 LastIndexOf
 */
 extern "C" int32_t LastIndexOf(
-    const SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+    SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     static_assert(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
@@ -255,7 +272,7 @@ IndexOfOrdinalIgnoreCase(
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 extern "C" int32_t StartsWith(
-    const SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+    SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     int32_t result = FALSE;
     UErrorCode err = U_ZERO_ERROR;
@@ -317,7 +334,7 @@ extern "C" int32_t StartsWith(
  Return value is a "Win32 BOOL" (1 = true, 0 = false)
  */
 extern "C" int32_t EndsWith(
-    const SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
+    SortHandle* pSortHandle, const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t options)
 {
     int32_t result = FALSE;
     UErrorCode err = U_ZERO_ERROR;
@@ -351,7 +368,7 @@ extern "C" int32_t EndsWith(
     return result;
 }
 
-extern "C" int32_t GetSortKey(const SortHandle* pSortHandle,
+extern "C" int32_t GetSortKey(SortHandle* pSortHandle,
                               const UChar* lpStr,
                               int32_t cwStrLength,
                               uint8_t* sortKey,
