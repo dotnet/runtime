@@ -798,6 +798,22 @@ namespace System
                     KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
 
+            private void AddPrefixKey(TermInfo.Database db, string extendedNamePrefix, ConsoleKey key)
+            {
+                AddKey(db, extendedNamePrefix + "3", key, false, true, false);
+                AddKey(db, extendedNamePrefix + "4", key, true, true, false);
+                AddKey(db, extendedNamePrefix + "5", key, false, false, true);
+                AddKey(db, extendedNamePrefix + "6", key, true, false, true);
+                AddKey(db, extendedNamePrefix + "7", key, false, false, true);
+            }
+
+            private void AddKey(TermInfo.Database db, string extendedName, ConsoleKey key, bool shift, bool alt, bool control)
+            {
+                string keyFormat = db.GetExtendedString(extendedName);
+                if (!string.IsNullOrEmpty(keyFormat))
+                    KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
+            }
+
             private TerminalKeyInfo(TermInfo.Database db)
             {
                 KeyFormatToConsoleKey = new Dictionary<string, ConsoleKeyInfo>();
@@ -858,6 +874,16 @@ namespace System
                     AddKey(db, TermInfo.Database.KeySPrint, ConsoleKey.Print, true, false, false);
                     AddKey(db, TermInfo.Database.KeySRight, ConsoleKey.RightArrow, true, false, false);
                     AddKey(db, TermInfo.Database.KeyUp, ConsoleKey.UpArrow);
+
+                    AddPrefixKey(db, "kLFT", ConsoleKey.LeftArrow);
+                    AddPrefixKey(db, "kRIT", ConsoleKey.RightArrow);
+                    AddPrefixKey(db, "kUP", ConsoleKey.UpArrow);
+                    AddPrefixKey(db, "kDN", ConsoleKey.DownArrow);
+                    AddPrefixKey(db, "kDC", ConsoleKey.Delete);
+                    AddPrefixKey(db, "kEND", ConsoleKey.End);
+                    AddPrefixKey(db, "kHOM", ConsoleKey.Home);
+                    AddPrefixKey(db, "kNXT", ConsoleKey.PageDown);
+                    AddPrefixKey(db, "kPRV", ConsoleKey.PageUp);
 
                     MaxKeyLength = KeyFormatToConsoleKey.Keys.Max(key => key.Length);
                     MinKeyLength = KeyFormatToConsoleKey.Keys.Min(key => key.Length);
@@ -1066,10 +1092,12 @@ namespace System
             {
                 /// <summary>Lazily-initialized instance of the database.</summary>
                 private static readonly Lazy<Database> _instance = new Lazy<Database>(() => ReadDatabase(), isThreadSafe: true);
+
                 /// <summary>The name of the terminfo file.</summary>
                 private readonly string _term;
                 /// <summary>Raw data of the database instance.</summary>
                 private readonly byte[] _data;
+
                 /// <summary>The number of bytes in the names section of the database.</summary>
                 private readonly int _nameSectionNumBytes;
                 /// <summary>The number of bytes in the Booleans section of the database.</summary>
@@ -1078,7 +1106,11 @@ namespace System
                 private readonly int _numberSectionNumShorts;
                 /// <summary>The number of offsets in the strings section of the database.</summary>
                 private readonly int _stringSectionNumOffsets;
-                //private readonly int _stringTableNumBytes; // number of bytes in the strings table; this is in the header, but we don't actually use it
+                /// <summary>The number of bytes in the strings table of the database.</summary>
+                private readonly int _stringTableNumBytes;
+
+                /// <summary>Extended / user-defined entries in the terminfo database.</summary>
+                private readonly Dictionary<string, string> _extendedStrings;
 
                 /// <summary>Initializes the database instance.</summary>
                 /// <param name="term">The name of the terminal.</param>
@@ -1098,7 +1130,25 @@ namespace System
                     _boolSectionNumBytes = ReadInt16(data, 4);
                     _numberSectionNumShorts = ReadInt16(data, 6);
                     _stringSectionNumOffsets = ReadInt16(data, 8);
-                    //_stringTableNumBytes = ReadInt16(data, 10); // in the header, but we don't currently need it
+                    _stringTableNumBytes = ReadInt16(data, 10);
+                    if (_nameSectionNumBytes < 0 ||
+                        _boolSectionNumBytes < 0 ||
+                        _numberSectionNumShorts < 0 ||
+                        _stringSectionNumOffsets < 0 ||
+                        _stringTableNumBytes < 0)
+                    {
+                        throw new InvalidOperationException(SR.IO_TermInfoInvalid);
+                    }
+
+                    // In addition to the main section of bools, numbers, and strings, there is also
+                    // an "extended" section.  This section contains additional entries that don't
+                    // have well-known indices, and are instead named mappings.  As such, we parse
+                    // all of this data now rather than on each request, as the mapping is fairly complicated.
+                    // This function relies on the data stored above, so it's the last thing we run.
+                    // (Note that the extended section also includes other Booleans and numbers, but we don't
+                    // have any need for those now, so we don't parse them.)
+                    int extendedBeginning = RoundUpToEven(StringsTableOffset + _stringTableNumBytes);
+                    _extendedStrings = ParseExtendedStrings(data, extendedBeginning);
                 }
 
                 /// <summary>Gets the cached instance of the database.</summary>
@@ -1235,14 +1285,7 @@ namespace System
                 private int BooleansOffset { get { return NamesOffset + _nameSectionNumBytes; } } // after the names section
 
                 /// <summary>The offset into data where the numbers section begins.</summary>
-                private int NumbersOffset // after the Booleans section, at an even position
-                {
-                    get
-                    {
-                        int offset = BooleansOffset + _boolSectionNumBytes;
-                        return offset % 2 == 1 ? offset + 1 : offset;
-                    }
-                }
+                private int NumbersOffset { get { return RoundUpToEven(BooleansOffset + _boolSectionNumBytes); } } // after the Booleans section, at an even position
 
                 /// <summary>
                 /// The offset into data where the string offsets section begins.  We index into this section
@@ -1278,6 +1321,19 @@ namespace System
                     return ReadString(_data, StringsTableOffset + tableIndex);
                 }
 
+                /// <summary>Gets a string from the extended strings section.</summary>
+                /// <param name="name">The name of the string as contained in the extended names section.</param>
+                /// <returns>The string if it's in the database; otherwise, null.</returns>
+                public string GetExtendedString(string name)
+                {
+                    Debug.Assert(name != null);
+
+                    string value;
+                    return _extendedStrings.TryGetValue(name, out value) ? 
+                        value : 
+                        null;
+                }
+
                 /// <summary>Gets a number from the numbers section by the number's well-known index.</summary>
                 /// <param name="numberIndex">The index of the string to find.</param>
                 /// <returns>The number if it's in the database; otherwise, -1.</returns>
@@ -1294,6 +1350,114 @@ namespace System
 
                     return ReadInt16(_data, NumbersOffset + (numberIndex * 2));
                 }
+
+                /// <summary>Parses the extended string information from the terminfo data.</summary>
+                /// <returns>
+                /// A dictionary of the name to value mapping.  As this section of the terminfo isn't as well
+                /// defined as the earlier portions, and may not even exist, the parsing is more lenient about
+                /// errors, returning an empty collection rather than throwing.
+                /// </returns>
+                private static Dictionary<string, string> ParseExtendedStrings(byte[] data, int extendedBeginning)
+                {
+                    const int ExtendedHeaderSize = 10;
+                    var extendedStrings = new Dictionary<string, string>();
+
+                    if (extendedBeginning + ExtendedHeaderSize >= data.Length)
+                    {
+                        // Exit out as there's no extended information.
+                        return extendedStrings;
+                    }
+
+                    // Read in extended counts, and exit out if we got any incorrect info
+                    int extendedBoolCount = ReadInt16(data, extendedBeginning);
+                    int extendedNumberCount = ReadInt16(data, extendedBeginning + 2);
+                    int extendedStringCount = ReadInt16(data, extendedBeginning + 4);
+                    int extendedStringNumOffsets = ReadInt16(data, extendedBeginning + 6);
+                    int extendedStringTableByteSize = ReadInt16(data, extendedBeginning + 8);
+                    if (extendedBoolCount < 0 ||
+                        extendedNumberCount < 0 ||
+                        extendedStringCount < 0 ||
+                        extendedStringNumOffsets < 0 ||
+                        extendedStringTableByteSize < 0)
+                    {
+                        // The extended header contained invalid data.  Bail.
+                        return extendedStrings;
+                    }
+
+                    // Skip over the extended bools.  We don't need them now and can add this in later 
+                    // if needed. Also skip over extended numbers, for the same reason.
+
+                    // Get the location where the extended string offsets begin.  These point into
+                    // the extended string table.
+                    int extendedOffsetsStart =
+                        extendedBeginning + // go past the normal data
+                        ExtendedHeaderSize + // and past the extended header
+                        RoundUpToEven(extendedBoolCount) + // and past all of the extended Booleans
+                        (extendedNumberCount * 2); // and past all of the extended numbers
+
+                    // Get the location where the extended string table begins.  This area contains
+                    // null-terminated strings.
+                    int extendedStringTableStart =
+                        extendedOffsetsStart +
+                        (extendedStringCount * 2) + // and past all of the string offsets
+                        ((extendedBoolCount + extendedNumberCount + extendedStringCount) * 2); // and past all of the name offsets
+
+                    // Get the location where the extended string table ends.  We shouldn't read past this.
+                    int extendedStringTableEnd =
+                        extendedStringTableStart +
+                        extendedStringTableByteSize;
+
+                    if (extendedStringTableEnd > data.Length)
+                    {
+                        // We don't have enough data to parse everything.  Bail.
+                        return extendedStrings;
+                    }
+
+                    // Now we need to parse all of the extended string values.  These aren't necessarily
+                    // "in order", meaning the offsets aren't guaranteed to be increasing.  Instead, we parse
+                    // the offsets in order, pulling out each string it references and storing them into our
+                    // results list in the order of the offsets.
+                    var values = new List<string>();
+                    int lastEnd = 0;
+                    for (int i = 0; i < extendedStringCount; i++)
+                    {
+                        int offset = extendedStringTableStart + ReadInt16(data, extendedOffsetsStart + (i * 2));
+                        if (offset < 0 || offset >= data.Length)
+                        {
+                            // If the offset is invalid, bail.
+                            return extendedStrings;
+                        }
+
+                        // Add the string
+                        int end = FindNullTerminator(data, offset);
+                        values.Add(Encoding.ASCII.GetString(data, offset, end - offset));
+
+                        // Keep track of where the last string ends.  The name strings will come after that.
+                        lastEnd = Math.Max(end, lastEnd);
+                    }
+
+                    // Now parse all of the names.
+                    var names = new List<string>();
+                    for (int pos = lastEnd + 1; pos < extendedStringTableEnd; pos++)
+                    {
+                        int end = FindNullTerminator(data, pos);
+                        names.Add(Encoding.ASCII.GetString(data, pos, end - pos));
+                        pos = end;
+                    }
+
+                    // The names are in order for the Booleans, then the numbers, and then the strings.
+                    // Skip over the bools and numbers, and associate the names with the values.
+                    for (int iName = extendedBoolCount + extendedNumberCount, iValue = 0; 
+                         iName < names.Count && iValue < values.Count; 
+                         iName++, iValue++)
+                    {
+                        extendedStrings.Add(names[iName], values[iValue]);
+                    }
+
+                    return extendedStrings;
+                }
+
+                private static int RoundUpToEven(int i) { return i % 2 == 1 ? i + 1 : i; }
 
                 /// <summary>The well-known index of the audible bell entry.</summary>
                 public const int BellIndex = 1;
@@ -1434,7 +1598,7 @@ namespace System
                 public const int KeyF23 = 228;
                 /// <summary>The well-known index of key_f24</summary>
                 public const int KeyF24 = 229;
-               
+
                 /// <summary>Read a 16-bit value from the buffer starting at the specified position.</summary>
                 /// <param name="buffer">The buffer from which to read.</param>
                 /// <param name="pos">The position at which to read.</param>
@@ -1452,13 +1616,16 @@ namespace System
                 /// <returns>The string read from the specified position.</returns>
                 private static string ReadString(byte[] buffer, int pos)
                 {
-                    // Strings are null-terminated in the data.  First find how long it is.
-                    int findNullEnding = pos;
-                    while (findNullEnding < buffer.Length && buffer[findNullEnding] != '\0')
-                    {
-                        findNullEnding++;
-                    }
-                    return Encoding.ASCII.GetString(buffer, pos, findNullEnding - pos);
+                    int end = FindNullTerminator(buffer, pos);
+                    return Encoding.ASCII.GetString(buffer, pos, end - pos);
+                }
+
+                /// <summary>Finds the null-terminator for a string that begins at the specified position.</summary>
+                private static int FindNullTerminator(byte[] buffer, int pos)
+                {
+                    int termPos = pos;
+                    while (termPos < buffer.Length && buffer[termPos] != '\0') termPos++;
+                    return termPos;
                 }
             }
 
