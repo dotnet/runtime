@@ -30,7 +30,7 @@
           "lib/dotnet/Microsoft.CSharp.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0026": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -577,7 +577,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00122": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -631,7 +631,7 @@
           "lib/dotnet/Microsoft.CSharp.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0026": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -1193,7 +1193,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00122": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1247,7 +1247,7 @@
           "lib/dotnet/Microsoft.CSharp.dll": {}
         }
       },
-      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0026": {
+      "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
         "type": "package",
         "dependencies": {
           "System.Collections": "4.0.10",
@@ -1809,7 +1809,7 @@
           "lib/dotnet/xunit.execution.dotnet.dll": {}
         }
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00122": {
         "type": "package",
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10",
@@ -1878,9 +1878,9 @@
         "ref/xamarinmac20/_._"
       ]
     },
-    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0026": {
+    "Microsoft.DotNet.xunit.performance/1.0.0-alpha-build0025": {
       "type": "package",
-      "sha512": "inC+HvCtQRevFQcU9pMSMneqXFSwp6ng/GXvSOhKpMUujL8mXazQTyQutPpHuoP2Nya8DNclOGMjSaDRkBHRqA==",
+      "sha512": "47bNAZqRQEQba9EhC4dfWagSkH/jUN8cT6QjxOHMdY7q/G676/tcelkCaymnNXcCMei7qNrTPBxBKlhVQt9/QQ==",
       "files": [
         "lib/dotnet/xunit.performance.core.dll",
         "lib/dotnet/xunit.performance.core.pdb",
@@ -1892,8 +1892,8 @@
         "lib/net46/xunit.performance.core.XML",
         "lib/net46/xunit.performance.execution.desktop.dll",
         "lib/net46/xunit.performance.execution.desktop.pdb",
-        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0026.nupkg",
-        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0026.nupkg.sha512",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0025.nupkg",
+        "Microsoft.DotNet.xunit.performance.1.0.0-alpha-build0025.nupkg.sha512",
         "Microsoft.DotNet.xunit.performance.nuspec"
       ]
     },
@@ -3010,21 +3010,21 @@
         "xunit.extensibility.execution.nuspec"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00119": {
+    "xunit.netcore.extensions/1.0.0-prerelease-00122": {
       "type": "package",
       "serviceable": true,
-      "sha512": "oCniHZ9M9IVdGV3iInQDEja2mK+i+r9MyJzH1/gLD8drExfVuvYc1QuzOer9eu0GPZxPRsP/K9MiGR1vC555HQ==",
+      "sha512": "eSQ1Jo09hXNAFL+JfcqiiN7+GuOO78RZoXd0darX4V0xYopw0sbe/wxTy54fXE2TvlQj9l7943j5FN2Psz9TWA==",
       "files": [
         "lib/dotnet/Xunit.NetCore.Extensions.dll",
-        "xunit.netcore.extensions.1.0.0-prerelease-00119.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00119.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00122.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00122.nupkg.sha512",
         "xunit.netcore.extensions.nuspec"
       ]
     }
   },
   "projectFileDependencyGroups": {
     "": [
-      "Microsoft.DotNet.xunit.performance >= 1.0.0-*",
+      "Microsoft.DotNet.xunit.performance >= 1.0.0-alpha-build0025",
       "System.Runtime >= 4.0.20",
       "System.Runtime.Extensions >= 4.0.10",
       "System.Linq >= 4.0.0",
