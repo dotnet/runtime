@@ -1,8 +1,10 @@
 {
   "locked": true,
-  "version": -9996,
+  "version": 2,
   "targets": {
-    "DNXCore,Version=v5.0": {}
+    "DNXCore,Version=v5.0": {},
+    "DNXCore,Version=v5.0/win7-x86": {},
+    "DNXCore,Version=v5.0/win7-x64": {}
   },
   "libraries": {},
   "projectFileDependencyGroups": {
