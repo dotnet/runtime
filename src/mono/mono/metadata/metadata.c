@@ -2503,6 +2503,24 @@ mono_image_set_strdup (MonoImageSet *set, const char *s)
 	return res;
 }
 
+// Get a descriptive string for a MonoImageSet
+// Callers are obligated to free buffer with g_free after use
+char *
+mono_image_set_description (MonoImageSet *set)
+{
+	GString *result = g_string_new (NULL);
+	int img;
+	g_string_append (result, "[");
+	for (img = 0; img < set->nimages; img++)
+	{
+		if (img > 0)
+			g_string_append (result, ", ");
+		g_string_append (result, set->images[img]->name);
+	}
+	g_string_append (result, "]");
+	return g_string_free (result, FALSE);
+}
+
 /* 
  * Structure used by the collect_..._images functions to store the image list.
  */
@@ -6637,4 +6655,33 @@ mono_method_get_wrapper_cache (MonoMethod *method)
 	} else {
 		return &method->klass->image->wrapper_caches;
 	}
+}
+
+// This is support for the mempool reference tracking feature in checked-build, but lives in metadata.c due to use of static variables of this file.
+
+/**
+ * mono_find_image_set_owner:
+ *
+ * Find the imageset, if any, which a given pointer is located in the memory of.
+ */
+MonoImageSet *
+mono_find_image_set_owner (void *ptr)
+{
+	MonoImageSet *owner = NULL;
+	int i;
+
+	image_sets_lock ();
+
+	if (image_sets)
+	{
+		for (i = 0; !owner && i < image_sets->len; ++i) {
+			MonoImageSet *set = g_ptr_array_index (image_sets, i);
+			if (mono_mempool_contains_addr (set->mempool, ptr))
+				owner = set;
+		}
+	}
+
+	image_sets_unlock ();
+
+	return owner;
 }

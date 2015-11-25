@@ -215,6 +215,48 @@ static void init_type_builder_generics (MonoObject *type);
 #define ADDP_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADDP_OVERFLOW_UN (a, b))
 #define ADD_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADD4_OVERFLOW_UN (a, b))
 
+// The dynamic images list is only needed to support the mempool reference tracking feature in checked-build.
+static GPtrArray *dynamic_images;
+static mono_mutex_t dynamic_images_mutex;
+
+static inline void
+dynamic_images_lock (void)
+{
+	mono_mutex_lock (&dynamic_images_mutex);
+}
+
+static inline void
+dynamic_images_unlock (void)
+{
+	mono_mutex_unlock (&dynamic_images_mutex);
+}
+
+/**
+ * mono_find_dynamic_image_owner:
+ *
+ * Find the dynamic image, if any, which a given pointer is located in the memory of.
+ */
+MonoImage *
+mono_find_dynamic_image_owner (void *ptr)
+{
+	MonoImage *owner = NULL;
+	int i;
+
+	dynamic_images_lock ();
+
+	if (dynamic_images)
+	{
+		for (i = 0; !owner && i < dynamic_images->len; ++i) {
+			MonoImage *image = g_ptr_array_index (dynamic_images, i);
+			if (mono_mempool_contains_addr (image->mempool, ptr))
+				owner = image;
+		}
+	}
+
+	dynamic_images_unlock ();
+
+	return owner;
+}
 
 void
 mono_reflection_init (void)
@@ -5338,6 +5380,15 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	
 	mono_profiler_module_loaded (&image->image, MONO_PROFILE_OK);
 
+	dynamic_images_lock ();
+
+	if (!dynamic_images)
+		dynamic_images = g_ptr_array_new ();
+
+	g_ptr_array_add (dynamic_images, image);
+
+	dynamic_images_unlock ();
+
 	return image;
 }
 #endif
@@ -5438,7 +5489,14 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 	for (i = 0; i < MONO_TABLE_NUM; ++i) {
 		g_free (di->tables [i].values);
 	}
-}	
+
+	dynamic_images_lock ();
+
+	if (dynamic_images)
+		g_ptr_array_remove (dynamic_images, di);
+
+	dynamic_images_unlock ();
+}
 
 void
 mono_dynamic_image_free_image (MonoDynamicImage *image)

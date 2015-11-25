@@ -20,6 +20,8 @@
 
 #ifdef CHECKED_BUILD
 
+#define g_assert_checked g_assert
+
 /*
 GC runtime modes rules:
 
@@ -88,6 +90,12 @@ Functions that can be called from both coop or preept modes.
     (ptr) = (val);    \
 } while (0);
 
+// Use when writing a pointer from one image or imageset to another (atomic version).
+#define CHECKED_METADATA_WRITE_PTR_ATOMIC(ptr, val) do {    \
+    check_metadata_store (&(ptr), (val));    \
+    mono_atomic_store_release (&(ptr), (val));    \
+} while (0);
+
 /*
 This can be called by embedders
 */
@@ -116,6 +124,8 @@ void check_metadata_store_local(void *from, void *to);
 
 #else
 
+#define g_assert_checked(...)
+
 #define MONO_REQ_GC_SAFE_MODE
 #define MONO_REQ_GC_UNSAFE_MODE
 #define MONO_REQ_GC_NEUTRAL_MODE
@@ -127,6 +137,7 @@ void check_metadata_store_local(void *from, void *to);
 
 #define CHECKED_METADATA_WRITE_PTR(ptr, val) do { (ptr) = (val); } while (0)
 #define CHECKED_METADATA_WRITE_PTR_LOCAL(ptr, val) do { (ptr) = (val); } while (0)
+#define CHECKED_METADATA_WRITE_PTR_ATOMIC(ptr, val) do { mono_atomic_store_release (&(ptr), (val)); } while (0)
 
 #endif /* CHECKED_BUILD */
 
