@@ -4243,13 +4243,7 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
         if (doingFloat)
         {
 #if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-#if defined(_TARGET_ARM_)
-            insCopy = INS_vmov;
-#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-            insCopy = INS_mov;
-#else
-#error Error. Wrong architecture.
-#endif
+            insCopy = ins_Copy(TYP_FLOAT);
             // Compute xtraReg here when we have a float argument
             assert(xtraReg == REG_NA);
 
@@ -4258,23 +4252,22 @@ void            CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg,
             fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
 #if defined(_TARGET_ARM_)
             fpAvailMask &= RBM_DBL_REGS;
-#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-            fpAvailMask &= RBM_ALLFLOAT;
 #else
+#if !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 #error Error. Wrong architecture.
-#endif
-            
+#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(_TARGET_ARM_)
 
             if (fpAvailMask == RBM_NONE)
             {
                 fpAvailMask = RBM_ALLFLOAT & ~regArgMaskLive;
 #if defined(_TARGET_ARM_)
                 fpAvailMask &= RBM_DBL_REGS;
-#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-                fpAvailMask &= RBM_ALLFLOAT;
 #else
+#if !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 #error Error. Wrong architecture.
-#endif
+#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(_TARGET_ARM_)
             }
 
             assert(fpAvailMask != RBM_NONE);
