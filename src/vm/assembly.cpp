@@ -2649,7 +2649,7 @@ static void RunMainPost()
     }
 }
 
-INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs)
+INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads)
 {
     CONTRACTL
     {
@@ -2722,7 +2722,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs)
     //to decide when the process should get torn down.  So, don't call it from
     // AppDomain.ExecuteAssembly()
     if (pMeth) {
-        if (stringArgs == NULL)
+        if (waitForOtherThreads)
             RunMainPost();
     }
     else {
