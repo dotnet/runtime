@@ -62,7 +62,7 @@ static LPCWSTR StringToUnicode(LPCSTR str)
     LPWSTR result = new (nothrow) WCHAR[length];
     ASSERTE_ALL_BUILDS(result != NULL);
     
-    length = MultiByteToWideChar(CP_ACP, 0, str, length, result, length);
+    length = MultiByteToWideChar(CP_ACP, 0, str, -1, result, length);
     ASSERTE_ALL_BUILDS(length != 0);
 
     return result;
