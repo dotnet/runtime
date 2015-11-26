@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+
 using Xunit;
 
 public static class CustomClassStructTests

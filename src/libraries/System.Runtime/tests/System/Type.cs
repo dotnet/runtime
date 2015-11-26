@@ -2,13 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.IO;
-using System.Text;
-using System.Reflection;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
-using System.Globalization;
 using Xunit;
 
 internal class Outside
@@ -23,467 +18,239 @@ internal class Outside<T>
     { }
 }
 
-public class TypeTests
+public static class TypeTests
 {
-    [Fact]
-    public static void TestDeclaringType()
+    [Theory]
+    [InlineData(typeof(int), null)]
+    [InlineData(typeof(int[]), null)]
+    [InlineData(typeof(Outside.Inside), typeof(Outside))]
+    [InlineData(typeof(Outside.Inside[]), null)]
+    [InlineData(typeof(Outside<int>), null)]
+    [InlineData(typeof(Outside<int>.Inside<double>), typeof(Outside<>))]
+    public static void TestDeclaringType(Type t, Type expected)
     {
-        Type t;
-        Type d;
+        Assert.Equal(expected, t.DeclaringType);
+    }
 
-        t = typeof(int);
-        d = t.DeclaringType;
-        Assert.Null(d);
+    [Theory]
+    [InlineData(typeof(int))]
+    [InlineData(typeof(int[]))]
+    [InlineData(typeof(IList<int>))]
+    [InlineData(typeof(IList<>))]
+    public static void TestGenericParameterPositionInvalid(Type t)
+    {
+        Assert.Throws<InvalidOperationException>(() => t.GenericParameterPosition);
+    }
 
-        t = typeof(Outside.Inside);
-        d = t.DeclaringType;
-        Assert.Equal(d, typeof(Outside));
+    [Theory]
+    [InlineData(typeof(int), new Type[0])]
+    [InlineData(typeof(IDictionary<int, string>), new[] { typeof(int), typeof(string) })]
+    [InlineData(typeof(IList<int>), new[] { typeof(int) })]
+    [InlineData(typeof(IList<>), new Type[0])]
+    public static void TestGenericTypeArguments(Type t, Type[] expected)
+    {
+        Type[] result = t.GenericTypeArguments;
+        Assert.Equal(expected.Length, result.Length);
+        for (int i = 0; i < expected.Length; i++)
+        {
+            Assert.Equal(expected[i], result[i]);
+        }
+    }
 
-        t = typeof(int[]);
-        d = t.DeclaringType;
-        Assert.Null(d);
+    [Theory]
+    [InlineData(typeof(int), false)]
+    [InlineData(typeof(int[]), true)]
+    [InlineData(typeof(IList<int>), false)]
+    [InlineData(typeof(IList<>), false)]
+    public static void TestHasElementType(Type t, bool expected)
+    {
+        Assert.Equal(expected, t.HasElementType);
+    }
+    
+    [Theory]
+    [InlineData(typeof(int), false)]
+    [InlineData(typeof(int[]), true)]
+    [InlineData(typeof(IList<int>), false)]
+    [InlineData(typeof(IList<>), false)]
+    public static void TestIsArray(Type t, bool expected)
+    {
+        Assert.Equal(expected, t.IsArray);
+    }
+    
+    [Theory]
+    [InlineData(typeof(int), false)]
+    [InlineData(typeof(int[]), false)]
+    [InlineData(typeof(IList<int>), false)]
+    [InlineData(typeof(IList<>), false)]
+    public static void TestIsByRef(Type t, bool expected)
+    {
+        Assert.Equal(expected, t.IsByRef);
+        Assert.True(t.MakeByRefType().IsByRef);
+    }
+    
+    [Theory]
+    [InlineData(typeof(int), false)]
+    [InlineData(typeof(int[]), false)]
+    [InlineData(typeof(IList<int>), false)]
+    [InlineData(typeof(IList<>), false)]
+    [InlineData(typeof(int *), true)]
+    public static void testIsPointer(Type t, bool expected)
+    {
+        Assert.Equal(expected, t.IsPointer);
+        Assert.True(t.MakePointerType().IsPointer);
+    }
 
-        t = typeof(Outside.Inside[]);
-        d = t.DeclaringType;
-        Assert.Null(d);
+    [Theory]
+    [InlineData(typeof(int), false)]
+    [InlineData(typeof(int[]), false)]
+    [InlineData(typeof(IList<int>), true)]
+    [InlineData(typeof(IList<>), false)]
+    public static void TestIsConstructedGenericType(Type t, bool expected)
+    {
+        Assert.Equal(expected, t.IsConstructedGenericType);
+    }
 
-        t = typeof(Outside<int>);
-        d = t.DeclaringType;
-        Assert.Null(d);
+    [Theory]
+    [InlineData(typeof(int), false)]
+    [InlineData(typeof(int[]), false)]
+    [InlineData(typeof(IList<int>), false)]
+    [InlineData(typeof(IList<>), false)]
+    public static void TestIsGenericParameter(Type t, bool expected)
+    {
+        Assert.Equal(expected, t.IsGenericParameter);
+    }
 
-        t = typeof(Outside<int>.Inside<double>);
-        d = t.DeclaringType;
-        Assert.Equal(d, typeof(Outside<>));
+    [Theory]
+    [InlineData(typeof(int), false)]
+    [InlineData(typeof(int[]), false)]
+    [InlineData(typeof(Outside.Inside), true)]
+    [InlineData(typeof(Outside.Inside[]), false)]
+    [InlineData(typeof(Outside<int>), false)]
+    [InlineData(typeof(Outside<int>.Inside<double>), true)]
+    public static void TestIsNested(Type t, bool expected)
+    {
+        Assert.Equal(expected, t.IsNested);
+    }
+
+    [Theory]
+    [InlineData(typeof(int), typeof(int))]
+    [InlineData(typeof(int[]), typeof(int[]))]
+    [InlineData(typeof(Outside<int>), typeof(Outside<int>))]
+    public static void TestTypeHandle(Type t1, Type t2)
+    {
+        RuntimeTypeHandle r1 = t1.TypeHandle;
+        RuntimeTypeHandle r2 = t2.TypeHandle;
+        Assert.Equal(r1, r2);
+
+        Assert.Equal(t1, Type.GetTypeFromHandle(r1));
+        Assert.Equal(t1, Type.GetTypeFromHandle(r2));
     }
 
     [Fact]
-    public static void TestGenericParameterPosition()
+    public static void TestGetTypeFromDefaultHandle()
     {
-        Type t;
-        int pos;
-
-        t = typeof(int);
-        Assert.Throws<InvalidOperationException>(() => pos = t.GenericParameterPosition);
-
-        t = typeof(int[]);
-        Assert.Throws<InvalidOperationException>(() => pos = t.GenericParameterPosition);
-
-        t = typeof(IList<int>);
-        Assert.Throws<InvalidOperationException>(() => pos = t.GenericParameterPosition);
-
-        t = typeof(IList<>);
-        Assert.Throws<InvalidOperationException>(() => pos = t.GenericParameterPosition);
+        Assert.Null(Type.GetTypeFromHandle(default(RuntimeTypeHandle)));
     }
 
-    [Fact]
-    public static void TestGenericTypeArguments()
+    [Theory]
+    [InlineData(typeof(int[]), 1)]
+    [InlineData(typeof(int[,,]), 3)]
+    public static void TestGetArrayRank(Type t, int expected)
     {
-        Type t;
-        Type[] a;
-
-        t = typeof(int);
-        a = t.GenericTypeArguments;
-        Assert.Equal(a.Length, 0);
-
-        t = typeof(IDictionary<int, String>);
-        a = t.GenericTypeArguments;
-        Assert.Equal(a.Length, 2);
-        Assert.Equal(a[0], typeof(int));
-        Assert.Equal(a[1], typeof(String));
-
-        t = typeof(IList<int>[]);
-        a = t.GenericTypeArguments;
-        Assert.Equal(a.Length, 0);
-
-        t = typeof(IList<>);
-        a = t.GenericTypeArguments;
-        Assert.Equal(a.Length, 0);
+        Assert.Equal(expected, t.GetArrayRank());
     }
 
-    [Fact]
-    public static void TestHasElementType()
+    [Theory]
+    [InlineData(typeof(int))]
+    [InlineData(typeof(IList<int>))]
+    [InlineData(typeof(IList<>))]
+    public static void TestGetArrayRankInvalid(Type t)
     {
-        Type t;
-        bool b;
-
-        t = typeof(int);
-        b = t.HasElementType;
-        Assert.False(b);
-
-        t = typeof(int[]);
-        b = t.HasElementType;
-        Assert.True(b);
-
-        t = typeof(IList<int>);
-        b = t.HasElementType;
-        Assert.False(b);
-
-        t = typeof(IList<>);
-        b = t.HasElementType;
-        Assert.False(b);
+        Assert.Throws<ArgumentException>(() => t.GetArrayRank());
     }
 
-    [Fact]
-    public static void TestIsArray()
+    [Theory]
+    [InlineData(typeof(int), null)]
+    [InlineData(typeof(Outside.Inside), null)]
+    [InlineData(typeof(int[]), typeof(int))]
+    [InlineData(typeof(Outside<int>.Inside<double>[]), typeof(Outside<int>.Inside<double>))]
+    [InlineData(typeof(Outside<int>), null)]
+    [InlineData(typeof(Outside<int>.Inside<double>), null)]
+    public static void TestGetElementType(Type t, Type expected)
     {
-        Type t;
-        bool b;
-
-        t = typeof(int);
-        b = t.IsArray;
-        Assert.False(b);
-
-        t = typeof(int[]);
-        b = t.IsArray;
-        Assert.True(b);
-
-        t = typeof(IList<int>);
-        b = t.IsArray;
-        Assert.False(b);
-
-        t = typeof(IList<>);
-        b = t.IsArray;
-        Assert.False(b);
+        Assert.Equal(expected, t.GetElementType());
     }
 
-    [Fact]
-    public static void TestIsByRef()
+    [Theory]
+    [InlineData(typeof(int), typeof(int[]))]
+    public static void TestMakeArrayType(Type t, Type tArrayExpected)
     {
-        Type t;
-        bool b;
+        Type tArray = t.MakeArrayType();
 
-        t = typeof(int);
-        b = t.IsByRef;
-        Assert.False(b);
+        Assert.Equal(tArrayExpected, tArray);
+        Assert.Equal(t, tArray.GetElementType());
 
-        t = typeof(int[]);
-        b = t.IsByRef;
-        Assert.False(b);
+        Assert.True(tArray.IsArray);
+        Assert.True(tArray.HasElementType);
 
-        t = typeof(IList<int>);
-        b = t.IsByRef;
-        Assert.False(b);
-
-        t = typeof(IList<>);
-        b = t.IsByRef;
-        Assert.False(b);
+        string s1 = t.ToString();
+        string s2 = tArray.ToString();
+        Assert.Equal(s2, s1 + "[]");
     }
 
-    [Fact]
-    public static void TestIsPointer()
+    [Theory]
+    [InlineData(typeof(int))]
+    public static void TestMakeByRefType(Type t)
     {
-        Type t;
-        bool b;
+        Type tRef1 = t.MakeByRefType();
+        Type tRef2 = t.MakeByRefType();
 
-        t = typeof(int);
-        b = t.IsPointer;
-        Assert.False(b);
+        Assert.Equal(tRef1, tRef2);
 
-        t = typeof(int[]);
-        b = t.IsPointer;
-        Assert.False(b);
+        Assert.True(tRef1.IsByRef);
+        Assert.True(tRef1.HasElementType);
 
-        t = typeof(IList<int>);
-        b = t.IsPointer;
-        Assert.False(b);
+        Assert.Equal(t, tRef1.GetElementType());
 
-        t = typeof(IList<int>);
-        b = t.IsPointer;
-        Assert.False(b);
-
-        t = typeof (int *);
-        b = t.IsPointer;
-        Assert.True(b);
+        string s1 = t.ToString();
+        string s2 = tRef1.ToString();
+        Assert.Equal(s2, s1 + "&");
     }
-
-    [Fact]
-    public static void TestIsConstructedGenericType()
-    {
-        Type t;
-        bool b;
-
-        t = typeof(int);
-        b = t.IsConstructedGenericType;
-        Assert.False(b);
-
-        t = typeof(int[]);
-        b = t.IsConstructedGenericType;
-        Assert.False(b);
-
-        t = typeof(IList<int>);
-        b = t.IsConstructedGenericType;
-        Assert.True(b);
-
-        t = typeof(IList<>);
-        b = t.IsConstructedGenericType;
-        Assert.False(b);
-    }
-
-    [Fact]
-    public static void TestIsGenericParameter()
-    {
-        Type t;
-        bool b;
-
-        t = typeof(int);
-        b = t.IsGenericParameter;
-        Assert.False(b);
-
-        t = typeof(int[]);
-        b = t.IsGenericParameter;
-        Assert.False(b);
-
-        t = typeof(IList<int>);
-        b = t.IsGenericParameter;
-        Assert.False(b);
-
-        t = typeof(IList<>);
-        b = t.IsGenericParameter;
-        Assert.False(b);
-    }
-
-    [Fact]
-    public static void TestIsNested()
-    {
-        Type t;
-        bool b;
-
-        t = typeof(int);
-        b = t.IsNested;
-        Assert.False(b);
-
-        t = typeof(Outside.Inside);
-        b = t.IsNested;
-        Assert.True(b);
-
-        t = typeof(int[]);
-        b = t.IsNested;
-        Assert.False(b);
-
-        t = typeof(Outside.Inside[]);
-        b = t.IsNested;
-        Assert.False(b);
-
-        t = typeof(Outside<int>);
-        b = t.IsNested;
-        Assert.False(b);
-
-        t = typeof(Outside<int>.Inside<double>);
-        b = t.IsNested;
-        Assert.True(b);
-    }
-
-    [Fact]
-    public static void TestTypeHandle()
-    {
-        Type t, t1, t2;
-        RuntimeTypeHandle r, r1;
-
-        t = typeof(int);
-        r = t.TypeHandle;
-        t1 = typeof(Outside<int>).GenericTypeArguments[0];
-        r1 = t1.TypeHandle;
-        Assert.Equal(r, r1);
-        t2 = Type.GetTypeFromHandle(r);
-        Assert.Equal(t, t2);
-        t2 = Type.GetTypeFromHandle(r1);
-        Assert.Equal(t, t2);
-
-        r = default(RuntimeTypeHandle);
-        t = Type.GetTypeFromHandle(r);
-        Assert.Null(t);
-
-        t = typeof(int[]);
-        r = t.TypeHandle;
-        t1 = typeof(int[]);
-        r1 = t1.TypeHandle;
-        Assert.Equal(r, r1);
-        t2 = Type.GetTypeFromHandle(r);
-        Assert.Equal(t, t2);
-        t2 = Type.GetTypeFromHandle(r1);
-        Assert.Equal(t, t2);
-
-        t = typeof(Outside<int>);
-        r = t.TypeHandle;
-        t1 = typeof(Outside<int>);
-        r1 = t1.TypeHandle;
-        Assert.Equal(r, r1);
-        t2 = Type.GetTypeFromHandle(r);
-        Assert.Equal(t, t2);
-        t2 = Type.GetTypeFromHandle(r1);
-        Assert.Equal(t, t2);
-    }
-
-    [Fact]
-    public static void TestGetArrayRank()
-    {
-        Type t;
-        int i;
-
-        t = typeof(int);
-        Assert.Throws<ArgumentException>(() => i = t.GetArrayRank());
-
-        t = typeof(int[]);
-        i = t.GetArrayRank();
-        Assert.Equal(i, 1);
-
-        t = typeof(int[,,]);
-        i = t.GetArrayRank();
-        Assert.Equal(i, 3);
-
-        t = typeof(IList<int>);
-        Assert.Throws<ArgumentException>(() => i = t.GetArrayRank());
-
-        t = typeof(IList<>);
-        Assert.Throws<ArgumentException>(() => i = t.GetArrayRank());
-    }
-
-    [Fact]
-    public static void TestGetElementType()
-    {
-        Type t;
-        Type d;
-
-        t = typeof(int);
-        d = t.GetElementType();
-        Assert.Null(d);
-
-        t = typeof(Outside.Inside);
-        d = t.GetElementType();
-        Assert.Null(d);
-
-        t = typeof(int[]);
-        d = t.GetElementType();
-        Assert.Equal(d, typeof(int));
-
-        t = typeof(Outside<int>.Inside<double>[]);
-        d = t.GetElementType();
-        Assert.Equal(d, typeof(Outside<int>.Inside<double>));
-
-        t = typeof(Outside<int>);
-        d = t.GetElementType();
-        Assert.Null(d);
-
-        t = typeof(Outside<int>.Inside<double>);
-        d = t.GetElementType();
-        Assert.Null(d);
-    }
-
-    [Fact]
-    public static void TestMakeArrayType()
-    {
-        Type t1, t2, t3, t5;
-        bool b;
-
-        t1 = typeof(int);
-        t2 = typeof(int[]);
-        t3 = t1.MakeArrayType();
-
-        b = t3.IsArray;
-        Assert.True(b);
-
-        b = t3.HasElementType;
-        Assert.True(b);
-
-        t5 = t3.GetElementType();
-        b = t5.Equals(t1);
-        Assert.True(b);
-
-        b = t2.Equals(t3);
-        Assert.True(b);
-
-        t5 = t1.MakeArrayType();
-        b = t5.Equals(t3);
-        Assert.True(b);
-
-        String s1 = t1.ToString();
-        String s2 = t3.ToString();
-        Assert.Equal<String>(s2, s1 + "[]");
-    }
-
-    [Fact]
-    public static void TestMakeByRefType()
-    {
-        Type t1, t2, t3, t5;
-        bool b;
-
-        t1 = typeof(int);
-        t2 = t1.MakeByRefType();
-        t3 = t1.MakeByRefType();
-
-        b = t3.IsByRef;
-        Assert.True(b);
-
-        b = t3.HasElementType;
-        Assert.True(b);
-
-        t5 = t3.GetElementType();
-        b = t5.Equals(t1);
-        Assert.True(b);
-
-        b = t2.Equals(t3);
-        Assert.True(b);
-
-        String s1 = t1.ToString();
-        String s2 = t3.ToString();
-        Assert.Equal<String>(s2, s1 + "&");
-    }
-
-    [Theory, MemberData("GetTypeByNameTestData")]
+    
+    [Theory]
+    [InlineData("System.Nullable`1[System.Int32]", typeof(int?))]
+    [InlineData("System.Int32*", typeof(int*))]
+    [InlineData("System.Int32**", typeof(int**))]
+    [InlineData("Outside`1", typeof(Outside<>))]
+    [InlineData("Outside`1+Inside`1", typeof(Outside<>.Inside<>))]
+    [InlineData("Outside[]", typeof(Outside[]))]
+    [InlineData("Outside[,,]", typeof(Outside[,,]))]
+    [InlineData("Outside[][]", typeof(Outside[][]))]
+    [InlineData("Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>))]
     public static void TestGetTypeByName(string typeName, Type expectedType)
     {
-        var actualType = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
-        Assert.Equal(expectedType, actualType);
+        Type t = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
+        Assert.Equal(expectedType, t);
 
-        actualType = Type.GetType(typeName.ToLower(), throwOnError: false, ignoreCase: true);
-        Assert.Equal(expectedType, actualType);
+        t = Type.GetType(typeName.ToLower(), throwOnError: false, ignoreCase: true);
+        Assert.Equal(expectedType, t);
     }
 
-    [Theory, MemberData("GetTypeByNameTestData_Error")]
-    public static void TestGetTypeByName_ThrowOnError(string typeName, Type expectedException, bool alwaysThrowsException)
+    [Theory]
+    [InlineData("system.nullable`1[system.int32]", typeof(TypeLoadException), false)]
+    [InlineData("System.NonExistingType", typeof(TypeLoadException), false)]
+    [InlineData("", typeof(TypeLoadException), false)]
+    [InlineData("System.Int32[,*,]", typeof(ArgumentException), false)]
+    [InlineData("Outside`2", typeof(TypeLoadException), false)]
+    [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
+    public static void TestGetTypeByNameInvalid(string typeName, Type expectedException, bool alwaysThrowsException)
     {
         if (!alwaysThrowsException)
         {
-            var actualType = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
-            Assert.Null(actualType);
+            Type t = Type.GetType(typeName, throwOnError: false, ignoreCase: false);
+            Assert.Null(t);
         }
 
         Assert.Throws(expectedException, () => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
     }
-
-    public static IEnumerable<object[]> GetTypeByNameTestData
-    {
-        get
-        {
-            return new[]
-            {
-                new object[] { "System.Nullable`1[System.Int32]", typeof(int?) },
-                new object[] { "System.Int32*", typeof(int*) },
-                new object[] { "System.Int32**", typeof(int**) },
-                new object[] { "Outside`1", typeof(Outside<>) },
-                new object[] { "Outside`1+Inside`1", typeof(Outside<>.Inside<>) },
-                new object[] { "Outside[]", typeof(Outside[]) },
-                new object[] { "Outside[,,]", typeof(Outside[,,]) },
-                new object[] { "Outside[][]", typeof(Outside[][]) },
-                new object[] { "Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>) },
-            };
-        }
-    }
-
-    public static IEnumerable<object[]> GetTypeByNameTestData_Error
-    {
-        get
-        {
-            return new[]
-            {
-                new object[] { "System.Nullable`1[System.Int32]".ToLower(), typeof(TypeLoadException), false },
-                new object[] { "System.NonExistingType", typeof(TypeLoadException), false },
-                new object[] { "", typeof(TypeLoadException), false },
-                new object[] { "System.Int32[,*,]", typeof(ArgumentException), false },
-                new object[] { "Outside`2", typeof(TypeLoadException), false },
-                new object[] { "Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true },
-            };
-        }
-    }
 }
-

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+
 using Xunit;
 
 public static class DecimalTests
@@ -12,141 +13,141 @@ public static class DecimalTests
     public static void TestEquals()
     {
         // Boolean Decimal.Equals(Decimal)
-        Assert.True(Decimal.Zero.Equals(Decimal.Zero));
-        Assert.False(Decimal.Zero.Equals(Decimal.One));
-        Assert.True(Decimal.MaxValue.Equals(Decimal.MaxValue));
-        Assert.True(Decimal.MinValue.Equals(Decimal.MinValue));
-        Assert.False(Decimal.MaxValue.Equals(Decimal.MinValue));
-        Assert.False(Decimal.MinValue.Equals(Decimal.MaxValue));
+        Assert.True(decimal.Zero.Equals(decimal.Zero));
+        Assert.False(decimal.Zero.Equals(decimal.One));
+        Assert.True(decimal.MaxValue.Equals(decimal.MaxValue));
+        Assert.True(decimal.MinValue.Equals(decimal.MinValue));
+        Assert.False(decimal.MaxValue.Equals(decimal.MinValue));
+        Assert.False(decimal.MinValue.Equals(decimal.MaxValue));
     }
 
     [Fact]
     public static void TestEqualsDecDec()
     {
         // Boolean Decimal.Equals(Decimal, Decimal)
-        Assert.True(Decimal.Equals(Decimal.Zero, Decimal.Zero));
-        Assert.False(Decimal.Equals(Decimal.Zero, Decimal.One));
-        Assert.True(Decimal.Equals(Decimal.MaxValue, Decimal.MaxValue));
-        Assert.True(Decimal.Equals(Decimal.MinValue, Decimal.MinValue));
-        Assert.False(Decimal.Equals(Decimal.MinValue, Decimal.MaxValue));
-        Assert.False(Decimal.Equals(Decimal.MaxValue, Decimal.MinValue));
+        Assert.True(decimal.Equals(decimal.Zero, decimal.Zero));
+        Assert.False(decimal.Equals(decimal.Zero, decimal.One));
+        Assert.True(decimal.Equals(decimal.MaxValue, decimal.MaxValue));
+        Assert.True(decimal.Equals(decimal.MinValue, decimal.MinValue));
+        Assert.False(decimal.Equals(decimal.MinValue, decimal.MaxValue));
+        Assert.False(decimal.Equals(decimal.MaxValue, decimal.MinValue));
     }
 
     [Fact]
     public static void TestEqualsObj()
     {
         // Boolean Decimal.Equals(Object)
-        Assert.True(Decimal.Zero.Equals((object)Decimal.Zero));
-        Assert.False(Decimal.Zero.Equals((object)Decimal.One));
-        Assert.True(Decimal.MaxValue.Equals((object)Decimal.MaxValue));
-        Assert.True(Decimal.MinValue.Equals((object)Decimal.MinValue));
-        Assert.False(Decimal.MinValue.Equals((object)Decimal.MaxValue));
-        Assert.False(Decimal.MaxValue.Equals((object)Decimal.MinValue));
-        Assert.False(Decimal.One.Equals(null));
-        Assert.False(Decimal.One.Equals("one"));
-        Assert.False(Decimal.One.Equals((object)1));
+        Assert.True(decimal.Zero.Equals((object)decimal.Zero));
+        Assert.False(decimal.Zero.Equals((object)decimal.One));
+        Assert.True(decimal.MaxValue.Equals((object)decimal.MaxValue));
+        Assert.True(decimal.MinValue.Equals((object)decimal.MinValue));
+        Assert.False(decimal.MinValue.Equals((object)decimal.MaxValue));
+        Assert.False(decimal.MaxValue.Equals((object)decimal.MinValue));
+        Assert.False(decimal.One.Equals(null));
+        Assert.False(decimal.One.Equals("one"));
+        Assert.False(decimal.One.Equals((object)1));
     }
 
     [Fact]
     public static void Testop_Equality()
     {
         // Boolean Decimal.op_Equality(Decimal, Decimal)
-        Assert.True(Decimal.Zero == Decimal.Zero);
-        Assert.False(Decimal.Zero == Decimal.One);
-        Assert.True(Decimal.MaxValue == Decimal.MaxValue);
-        Assert.True(Decimal.MinValue == Decimal.MinValue);
-        Assert.False(Decimal.MinValue == Decimal.MaxValue);
-        Assert.False(Decimal.MaxValue == Decimal.MinValue);
+        Assert.True(decimal.Zero == decimal.Zero);
+        Assert.False(decimal.Zero == decimal.One);
+        Assert.True(decimal.MaxValue == decimal.MaxValue);
+        Assert.True(decimal.MinValue == decimal.MinValue);
+        Assert.False(decimal.MinValue == decimal.MaxValue);
+        Assert.False(decimal.MaxValue == decimal.MinValue);
     }
 
     [Fact]
     public static void Testop_GreaterThan()
     {
         // Boolean Decimal.op_GreaterThan(Decimal, Decimal)
-        Assert.False(Decimal.Zero > Decimal.Zero);
-        Assert.False(Decimal.Zero > Decimal.One);
-        Assert.True(Decimal.One > Decimal.Zero);
-        Assert.False(Decimal.MaxValue > Decimal.MaxValue);
-        Assert.False(Decimal.MinValue > Decimal.MinValue);
-        Assert.False(Decimal.MinValue > Decimal.MaxValue);
-        Assert.True(Decimal.MaxValue > Decimal.MinValue);
+        Assert.False(decimal.Zero > decimal.Zero);
+        Assert.False(decimal.Zero > decimal.One);
+        Assert.True(decimal.One > decimal.Zero);
+        Assert.False(decimal.MaxValue > decimal.MaxValue);
+        Assert.False(decimal.MinValue > decimal.MinValue);
+        Assert.False(decimal.MinValue > decimal.MaxValue);
+        Assert.True(decimal.MaxValue > decimal.MinValue);
     }
 
     [Fact]
     public static void Testop_GreaterThanOrEqual()
     {
         // Boolean Decimal.op_GreaterThanOrEqual(Decimal, Decimal)
-        Assert.True(Decimal.Zero >= Decimal.Zero);
-        Assert.False(Decimal.Zero >= Decimal.One);
-        Assert.True(Decimal.One >= Decimal.Zero);
-        Assert.True(Decimal.MaxValue >= Decimal.MaxValue);
-        Assert.True(Decimal.MinValue >= Decimal.MinValue);
-        Assert.False(Decimal.MinValue >= Decimal.MaxValue);
-        Assert.True(Decimal.MaxValue >= Decimal.MinValue);
+        Assert.True(decimal.Zero >= decimal.Zero);
+        Assert.False(decimal.Zero >= decimal.One);
+        Assert.True(decimal.One >= decimal.Zero);
+        Assert.True(decimal.MaxValue >= decimal.MaxValue);
+        Assert.True(decimal.MinValue >= decimal.MinValue);
+        Assert.False(decimal.MinValue >= decimal.MaxValue);
+        Assert.True(decimal.MaxValue >= decimal.MinValue);
     }
 
     [Fact]
     public static void Testop_Inequality()
     {
         // Boolean Decimal.op_Inequality(Decimal, Decimal)
-        Assert.False(Decimal.Zero != Decimal.Zero);
-        Assert.True(Decimal.Zero != Decimal.One);
-        Assert.True(Decimal.One != Decimal.Zero);
-        Assert.False(Decimal.MaxValue != Decimal.MaxValue);
-        Assert.False(Decimal.MinValue != Decimal.MinValue);
-        Assert.True(Decimal.MinValue != Decimal.MaxValue);
-        Assert.True(Decimal.MaxValue != Decimal.MinValue);
+        Assert.False(decimal.Zero != decimal.Zero);
+        Assert.True(decimal.Zero != decimal.One);
+        Assert.True(decimal.One != decimal.Zero);
+        Assert.False(decimal.MaxValue != decimal.MaxValue);
+        Assert.False(decimal.MinValue != decimal.MinValue);
+        Assert.True(decimal.MinValue != decimal.MaxValue);
+        Assert.True(decimal.MaxValue != decimal.MinValue);
     }
 
     [Fact]
     public static void Testop_LessThan()
     {
         // Boolean Decimal.op_LessThan(Decimal, Decimal)
-        Assert.False(Decimal.Zero < Decimal.Zero);
-        Assert.True(Decimal.Zero < Decimal.One);
-        Assert.False(Decimal.One < Decimal.Zero);
+        Assert.False(decimal.Zero < decimal.Zero);
+        Assert.True(decimal.Zero < decimal.One);
+        Assert.False(decimal.One < decimal.Zero);
         Assert.True(5m < 15m);
         decimal d5 = 5;
         decimal d3 = 3;
         Assert.False(d5 < d3);
-        Assert.False(Decimal.MaxValue < Decimal.MaxValue);
-        Assert.False(Decimal.MinValue < Decimal.MinValue);
-        Assert.True(Decimal.MinValue < Decimal.MaxValue);
-        Assert.False(Decimal.MaxValue < Decimal.MinValue);
+        Assert.False(decimal.MaxValue < decimal.MaxValue);
+        Assert.False(decimal.MinValue < decimal.MinValue);
+        Assert.True(decimal.MinValue < decimal.MaxValue);
+        Assert.False(decimal.MaxValue < decimal.MinValue);
     }
 
     [Fact]
     public static void Testop_LessThanOrEqual()
     {
         // Boolean Decimal.op_LessThanOrEqual(Decimal, Decimal)
-        Assert.True(Decimal.Zero <= Decimal.Zero);
-        Assert.True(Decimal.Zero <= Decimal.One);
-        Assert.False(Decimal.One <= Decimal.Zero);
-        Assert.True(Decimal.MaxValue <= Decimal.MaxValue);
-        Assert.True(Decimal.MinValue <= Decimal.MinValue);
-        Assert.True(Decimal.MinValue <= Decimal.MaxValue);
-        Assert.False(Decimal.MaxValue <= Decimal.MinValue);
+        Assert.True(decimal.Zero <= decimal.Zero);
+        Assert.True(decimal.Zero <= decimal.One);
+        Assert.False(decimal.One <= decimal.Zero);
+        Assert.True(decimal.MaxValue <= decimal.MaxValue);
+        Assert.True(decimal.MinValue <= decimal.MinValue);
+        Assert.True(decimal.MinValue <= decimal.MaxValue);
+        Assert.False(decimal.MaxValue <= decimal.MinValue);
     }
 
     [Fact]
     public static void TestToByte()
     {
         // Byte Decimal.ToByte(Decimal)
-        Assert.Equal(0, Decimal.ToByte(0));
-        Assert.Equal(1, Decimal.ToByte(1));
-        Assert.Equal(255, Decimal.ToByte(255));
+        Assert.Equal(0, decimal.ToByte(0));
+        Assert.Equal(1, decimal.ToByte(1));
+        Assert.Equal(255, decimal.ToByte(255));
 
-        Assert.Throws<OverflowException>(() => Decimal.ToByte(256));
+        Assert.Throws<OverflowException>(() => decimal.ToByte(256));
     }
 
-    private static void VerifyAdd<T>(Decimal d1, Decimal d2, Decimal expected = Decimal.Zero) where T : Exception
+    private static void VerifyAdd<T>(decimal d1, decimal d2, decimal expected = decimal.Zero) where T : Exception
     {
         bool expectFailure = typeof(T) != typeof(Exception);
 
         try
         {
-            Decimal result1 = Decimal.Add(d1, d2);
-            Decimal result2 = d1 + d2;
+            decimal result1 = decimal.Add(d1, d2);
+            decimal result2 = d1 + d2;
 
             Assert.False(expectFailure, "Expected an exception to be thrown");
             Assert.Equal(result1, result2);
@@ -165,11 +166,11 @@ public static class DecimalTests
         VerifyAdd<Exception>(1, 1, 2);
         VerifyAdd<Exception>(-1, 1, 0);
         VerifyAdd<Exception>(1, -1, 0);
-        VerifyAdd<Exception>(Decimal.MaxValue, Decimal.Zero, Decimal.MaxValue);
-        VerifyAdd<Exception>(Decimal.MinValue, Decimal.Zero, Decimal.MinValue);
-        VerifyAdd<Exception>(79228162514264337593543950330m, 5, Decimal.MaxValue);
+        VerifyAdd<Exception>(decimal.MaxValue, decimal.Zero, decimal.MaxValue);
+        VerifyAdd<Exception>(decimal.MinValue, decimal.Zero, decimal.MinValue);
+        VerifyAdd<Exception>(79228162514264337593543950330m, 5, decimal.MaxValue);
         VerifyAdd<Exception>(79228162514264337593543950330m, -5, 79228162514264337593543950325m);
-        VerifyAdd<Exception>(-79228162514264337593543950330m, -5, Decimal.MinValue);
+        VerifyAdd<Exception>(-79228162514264337593543950330m, -5, decimal.MinValue);
         VerifyAdd<Exception>(-79228162514264337593543950330m, 5, -79228162514264337593543950325m);
         VerifyAdd<Exception>(1234.5678m, 0.00009m, 1234.56789m);
         VerifyAdd<Exception>(-1234.5678m, 0.00009m, -1234.56771m);
@@ -181,30 +182,30 @@ public static class DecimalTests
                              1.1111111111111111111111111110m);
 
         // Exceptions
-        VerifyAdd<OverflowException>(Decimal.MaxValue, Decimal.MaxValue);
+        VerifyAdd<OverflowException>(decimal.MaxValue, decimal.MaxValue);
         VerifyAdd<OverflowException>(79228162514264337593543950330m, 6);
-        VerifyAdd<OverflowException>(-79228162514264337593543950330m, -6, Decimal.MinValue);
+        VerifyAdd<OverflowException>(-79228162514264337593543950330m, -6, decimal.MinValue);
     }
 
     [Fact]
     public static void TestCeiling()
     {
         // Decimal Decimal.Ceiling(Decimal)
-        Assert.Equal<Decimal>(123, Decimal.Ceiling((Decimal)123));
-        Assert.Equal<Decimal>(124, Decimal.Ceiling((Decimal)123.123));
-        Assert.Equal<Decimal>(-123, Decimal.Ceiling((Decimal)(-123.123)));
-        Assert.Equal<Decimal>(124, Decimal.Ceiling((Decimal)123.567));
-        Assert.Equal<Decimal>(-123, Decimal.Ceiling((Decimal)(-123.567)));
+        Assert.Equal<Decimal>(123, decimal.Ceiling((decimal)123));
+        Assert.Equal<Decimal>(124, decimal.Ceiling((decimal)123.123));
+        Assert.Equal<Decimal>(-123, decimal.Ceiling((decimal)(-123.123)));
+        Assert.Equal<Decimal>(124, decimal.Ceiling((decimal)123.567));
+        Assert.Equal<Decimal>(-123, decimal.Ceiling((decimal)(-123.567)));
     }
 
-    private static void VerifyDivide<T>(Decimal d1, Decimal d2, Decimal expected = Decimal.Zero) where T : Exception
+    private static void VerifyDivide<T>(decimal d1, decimal d2, decimal expected = decimal.Zero) where T : Exception
     {
         bool expectFailure = typeof(T) != typeof(Exception);
 
         try
         {
-            Decimal result1 = Decimal.Divide(d1, d2);
-            Decimal result2 = d1 / d2;
+            decimal result1 = decimal.Divide(d1, d2);
+            decimal result2 = d1 / d2;
 
             Assert.False(expectFailure, "Expected an exception to be thrown");
             Assert.Equal(result1, result2);
@@ -222,11 +223,11 @@ public static class DecimalTests
         // Decimal Decimal.op_Division(Decimal, Decimal)
 
         // Vanilla cases
-        VerifyDivide<Exception>(Decimal.One, Decimal.One, Decimal.One);
-        VerifyDivide<Exception>(Decimal.MaxValue, Decimal.MinValue, Decimal.MinusOne);
-        VerifyDivide<Exception>(0.9214206543486529434634231456m, Decimal.MaxValue, Decimal.Zero);
+        VerifyDivide<Exception>(decimal.One, decimal.One, decimal.One);
+        VerifyDivide<Exception>(decimal.MaxValue, decimal.MinValue, decimal.MinusOne);
+        VerifyDivide<Exception>(0.9214206543486529434634231456m, decimal.MaxValue, decimal.Zero);
         VerifyDivide<Exception>(38214206543486529434634231456m, 0.49214206543486529434634231456m, 77648730371625094566866001277m);
-        VerifyDivide<Exception>(-78228162514264337593543950335m, Decimal.MaxValue, -0.987378225516463811113412343m);
+        VerifyDivide<Exception>(-78228162514264337593543950335m, decimal.MaxValue, -0.987378225516463811113412343m);
         VerifyDivide<Exception>(5m + 10m, 2m, 7.5m);
         VerifyDivide<Exception>(10m, 2m, 5m);
 
@@ -273,12 +274,12 @@ public static class DecimalTests
         VerifyDivide<Exception>(7922816251426433759354395033.5m, 1.0000000000000000000000000002m, 7922816251426433759354395031.9m);
         VerifyDivide<Exception>(7922816251426433759354395033.5m, 0.9999999999999999999999999999m, 7922816251426433759354395034m);
         VerifyDivide<Exception>(79228162514264337593543950335m, 1.0000000000000000000000000001m, 79228162514264337593543950327m);
-        Decimal boundary7 = new Decimal((int)429u, (int)2133437386u, 0, false, 0);
-        Decimal boundary71 = new Decimal((int)429u, (int)2133437387u, 0, false, 0);
-        Decimal maxValueBy7 = Decimal.MaxValue * 0.0000001m;
+        decimal boundary7 = new decimal((int)429u, (int)2133437386u, 0, false, 0);
+        decimal boundary71 = new decimal((int)429u, (int)2133437387u, 0, false, 0);
+        decimal maxValueBy7 = decimal.MaxValue * 0.0000001m;
         VerifyDivide<Exception>(maxValueBy7, 1m, maxValueBy7);
         VerifyDivide<Exception>(maxValueBy7, 1m, maxValueBy7);
-        VerifyDivide<Exception>(maxValueBy7, 0.0000001m, Decimal.MaxValue);
+        VerifyDivide<Exception>(maxValueBy7, 0.0000001m, decimal.MaxValue);
         VerifyDivide<Exception>(boundary7, 1m, boundary7);
         VerifyDivide<Exception>(boundary7, 0.000000100000000000000000001m, 91630438009337286849083695.62m);
         VerifyDivide<Exception>(boundary71, 0.000000100000000000000000001m, 91630438052286959809083695.62m);
@@ -286,9 +287,9 @@ public static class DecimalTests
         VerifyDivide<Exception>(7922816251426433759354.3950335m, 0.0000001m, 79228162514264337593543950335m);
 
         //[] DivideByZero exceptions
-        VerifyDivide<DivideByZeroException>(Decimal.One, Decimal.Zero);
-        VerifyDivide<DivideByZeroException>(Decimal.Zero, Decimal.Zero);
-        VerifyDivide<DivideByZeroException>(-5.00m, (-1m) * Decimal.Zero);
+        VerifyDivide<DivideByZeroException>(decimal.One, decimal.Zero);
+        VerifyDivide<DivideByZeroException>(decimal.Zero, decimal.Zero);
+        VerifyDivide<DivideByZeroException>(-5.00m, (-1m) * decimal.Zero);
         VerifyDivide<DivideByZeroException>(0.0m, -0.00m);
 
         //[] Overflow exceptions
@@ -326,63 +327,63 @@ public static class DecimalTests
         VerifyDivide<OverflowException>(79228162514264337593543950335m, 0.9999999999999999999999999999m);
         VerifyDivide<OverflowException>(79228162514264337593543950335m, -0.1m);
         VerifyDivide<OverflowException>(79228162514264337593543950335m, -0.9999999999999999999999999m);
-        VerifyDivide<OverflowException>(Decimal.MaxValue / 2, 0.5m);
+        VerifyDivide<OverflowException>(decimal.MaxValue / 2, 0.5m);
     }
 
     [Fact]
     public static void TestFloor()
     {
         // Decimal Decimal.Floor(Decimal)
-        Assert.Equal<Decimal>(123, Decimal.Floor((Decimal)123));
-        Assert.Equal<Decimal>(123, Decimal.Floor((Decimal)123.123));
-        Assert.Equal<Decimal>(-124, Decimal.Floor((Decimal)(-123.123)));
-        Assert.Equal<Decimal>(123, Decimal.Floor((Decimal)123.567));
-        Assert.Equal<Decimal>(-124, Decimal.Floor((Decimal)(-123.567)));
+        Assert.Equal<Decimal>(123, decimal.Floor((decimal)123));
+        Assert.Equal<Decimal>(123, decimal.Floor((decimal)123.123));
+        Assert.Equal<Decimal>(-124, decimal.Floor((decimal)(-123.123)));
+        Assert.Equal<Decimal>(123, decimal.Floor((decimal)123.567));
+        Assert.Equal<Decimal>(-124, decimal.Floor((decimal)(-123.567)));
     }
 
     [Fact]
     public static void TestMaxValue()
     {
         // Decimal Decimal.MaxValue
-        Assert.Equal(Decimal.MaxValue, 79228162514264337593543950335m);
+        Assert.Equal(decimal.MaxValue, 79228162514264337593543950335m);
     }
 
     [Fact]
     public static void TestMinusOne()
     {
         // Decimal Decimal.MinusOne
-        Assert.Equal(Decimal.MinusOne, -1);
+        Assert.Equal(decimal.MinusOne, -1);
     }
 
     [Fact]
     public static void TestZero()
     {
         // Decimal Decimal.Zero
-        Assert.Equal(Decimal.Zero, 0);
+        Assert.Equal(decimal.Zero, 0);
     }
 
     [Fact]
     public static void TestOne()
     {
         // Decimal Decimal.One
-        Assert.Equal(Decimal.One, 1);
+        Assert.Equal(decimal.One, 1);
     }
 
     [Fact]
     public static void TestMinValue()
     {
         // Decimal Decimal.MinValue
-        Assert.Equal(Decimal.MinValue, -79228162514264337593543950335m);
+        Assert.Equal(decimal.MinValue, -79228162514264337593543950335m);
     }
 
-    private static void VerifyMultiply<T>(Decimal d1, Decimal d2, Decimal expected = Decimal.Zero) where T : Exception
+    private static void VerifyMultiply<T>(decimal d1, decimal d2, decimal expected = decimal.Zero) where T : Exception
     {
         bool expectFailure = typeof(T) != typeof(Exception);
 
         try
         {
-            Decimal result1 = Decimal.Multiply(d1, d2);
-            Decimal result2 = d1 * d2;
+            decimal result1 = decimal.Multiply(d1, d2);
+            decimal result2 = d1 * d2;
 
             Assert.False(expectFailure, "Expected an exception to be thrown");
             Assert.Equal(result1, result2);
@@ -400,8 +401,8 @@ public static class DecimalTests
         // Decimal Decimal.Multiply(Decimal, Decimal)
         // Decimal Decimal.op_Multiply(Decimal, Decimal)
 
-        VerifyMultiply<Exception>(Decimal.One, Decimal.One, Decimal.One);
-        VerifyMultiply<Exception>(7922816251426433759354395033.5m, new Decimal(10), Decimal.MaxValue);
+        VerifyMultiply<Exception>(decimal.One, decimal.One, decimal.One);
+        VerifyMultiply<Exception>(7922816251426433759354395033.5m, new decimal(10), decimal.MaxValue);
         VerifyMultiply<Exception>(0.2352523523423422342354395033m, 56033525474612414574574757495m, 13182018677937129120135020796m);
         VerifyMultiply<Exception>(46161363632634613634.093453337m, 461613636.32634613634083453337m, 21308714924243214928823669051m);
         VerifyMultiply<Exception>(0.0000000000000345435353453563m, .0000000000000023525235234234m, 0.0000000000000000000000000001m);
@@ -415,8 +416,8 @@ public static class DecimalTests
         VerifyMultiply<Exception>(-79228162514264337593543950335m, 0.9999999999999999999999999999m, -79228162514264337593543950327m);
 
         // Exceptions
-        VerifyMultiply<OverflowException>(Decimal.MaxValue, Decimal.MinValue);
-        VerifyMultiply<OverflowException>(Decimal.MinValue, 1.1m);
+        VerifyMultiply<OverflowException>(decimal.MaxValue, decimal.MinValue);
+        VerifyMultiply<OverflowException>(decimal.MinValue, 1.1m);
         VerifyMultiply<OverflowException>(79228162514264337593543950335m, 1.1m);
         VerifyMultiply<OverflowException>(79228162514264337593543950335m, 1.01m);
         VerifyMultiply<OverflowException>(79228162514264337593543950335m, 1.001m);
@@ -444,23 +445,23 @@ public static class DecimalTests
         VerifyMultiply<OverflowException>(79228162514264337593543950335m, 1.0000000000000000000000001m);
         VerifyMultiply<OverflowException>(79228162514264337593543950335m, 1.00000000000000000000000001m);
         VerifyMultiply<OverflowException>(79228162514264337593543950335m, 1.000000000000000000000000001m);
-        VerifyMultiply<OverflowException>(Decimal.MaxValue / 2, 2m);
+        VerifyMultiply<OverflowException>(decimal.MaxValue / 2, 2m);
     }
 
     [Fact]
     public static void TestNegate()
     {
         // Decimal Decimal.Negate(Decimal)
-        Assert.Equal(0, Decimal.Negate(0));
-        Assert.Equal(1, Decimal.Negate(-1));
-        Assert.Equal(-1, Decimal.Negate(1));
+        Assert.Equal(0, decimal.Negate(0));
+        Assert.Equal(1, decimal.Negate(-1));
+        Assert.Equal(-1, decimal.Negate(1));
     }
 
     [Fact]
     public static void Testop_Decrement()
     {
         // Decimal Decimal.op_Decrement(Decimal)
-        Decimal d = 12345;
+        decimal d = 12345;
         Assert.Equal(12344, --d);
         d = 12345.678m;
         Assert.Equal(12344.678m, --d);
@@ -474,7 +475,7 @@ public static class DecimalTests
     public static void Testop_Increment()
     {
         // Decimal Decimal.op_Increment(Decimal)
-        Decimal d = 12345;
+        decimal d = 12345;
         Assert.Equal(12346, ++d);
         d = 12345.678m;
         Assert.Equal(12346.678m, ++d);
@@ -488,30 +489,30 @@ public static class DecimalTests
     public static void TestParse()
     {
         // Boolean Decimal.TryParse(String, NumberStyles, IFormatProvider, Decimal)
-        Assert.Equal(123, Decimal.Parse("123"));
-        Assert.Equal(-123, Decimal.Parse("-123"));
-        Assert.Equal(123.123m, Decimal.Parse((123.123).ToString()));
-        Assert.Equal(-123.123m, Decimal.Parse((-123.123).ToString()));
+        Assert.Equal(123, decimal.Parse("123"));
+        Assert.Equal(-123, decimal.Parse("-123"));
+        Assert.Equal(123.123m, decimal.Parse((123.123).ToString()));
+        Assert.Equal(-123.123m, decimal.Parse((-123.123).ToString()));
 
-        Decimal d;
-        Assert.True(Decimal.TryParse("79228162514264337593543950335", out d));
-        Assert.Equal(Decimal.MaxValue, d);
+        decimal d;
+        Assert.True(decimal.TryParse("79228162514264337593543950335", out d));
+        Assert.Equal(decimal.MaxValue, d);
 
-        Assert.True(Decimal.TryParse("-79228162514264337593543950335", out d));
-        Assert.Equal(Decimal.MinValue, d);
+        Assert.True(decimal.TryParse("-79228162514264337593543950335", out d));
+        Assert.Equal(decimal.MinValue, d);
 
         var nfi = new NumberFormatInfo() { NumberGroupSeparator = "," };
-        Assert.True(Decimal.TryParse("79,228,162,514,264,337,593,543,950,335", NumberStyles.AllowThousands, nfi, out d));
-        Assert.Equal(Decimal.MaxValue, d);
+        Assert.True(decimal.TryParse("79,228,162,514,264,337,593,543,950,335", NumberStyles.AllowThousands, nfi, out d));
+        Assert.Equal(decimal.MaxValue, d);
 
-        Assert.False(Decimal.TryParse("ysaidufljasdf", out d));
-        Assert.False(Decimal.TryParse("79228162514264337593543950336", out d));
+        Assert.False(decimal.TryParse("ysaidufljasdf", out d));
+        Assert.False(decimal.TryParse("79228162514264337593543950336", out d));
     }
 
-    private static void VerifyRemainder(Decimal d1, Decimal d2, Decimal expectedResult)
+    private static void VerifyRemainder(decimal d1, decimal d2, decimal expectedResult)
     {
-        Decimal result1 = Decimal.Remainder(d1, d2);
-        Decimal result2 = d1 % d2;
+        decimal result1 = decimal.Remainder(d1, d2);
+        decimal result2 = d1 % d2;
 
         Assert.Equal(result1, result2);
         Assert.Equal(expectedResult, result1);
@@ -522,7 +523,7 @@ public static class DecimalTests
     {
         // Decimal Decimal.Remainder(Decimal, Decimal)
         // Decimal Decimal.op_Modulus(Decimal, Decimal)
-        Decimal NegativeZero = new Decimal(0, 0, 0, true, 0);
+        decimal NegativeZero = new decimal(0, 0, 0, true, 0);
         VerifyRemainder(5m, 3m, 2m);
         VerifyRemainder(5m, -3m, 2m);
         VerifyRemainder(-5m, 3m, -2m);
@@ -543,25 +544,25 @@ public static class DecimalTests
         VerifyRemainder(NegativeZero, 2.2m, NegativeZero);
 
         // [] Max/Min
-        VerifyRemainder(Decimal.MaxValue, Decimal.MaxValue, 0m);
-        VerifyRemainder(Decimal.MaxValue, Decimal.MinValue, 0m);
-        VerifyRemainder(Decimal.MaxValue, 1, 0m);
-        VerifyRemainder(Decimal.MaxValue, 2394713m, 1494647m);
-        VerifyRemainder(Decimal.MaxValue, -32768m, 32767m);
-        VerifyRemainder(-0.00m, Decimal.MaxValue, -0.00m);
-        VerifyRemainder(1.23984m, Decimal.MaxValue, 1.23984m);
-        VerifyRemainder(2398412.12983m, Decimal.MaxValue, 2398412.12983m);
-        VerifyRemainder(-0.12938m, Decimal.MaxValue, -0.12938m);
+        VerifyRemainder(decimal.MaxValue, decimal.MaxValue, 0m);
+        VerifyRemainder(decimal.MaxValue, decimal.MinValue, 0m);
+        VerifyRemainder(decimal.MaxValue, 1, 0m);
+        VerifyRemainder(decimal.MaxValue, 2394713m, 1494647m);
+        VerifyRemainder(decimal.MaxValue, -32768m, 32767m);
+        VerifyRemainder(-0.00m, decimal.MaxValue, -0.00m);
+        VerifyRemainder(1.23984m, decimal.MaxValue, 1.23984m);
+        VerifyRemainder(2398412.12983m, decimal.MaxValue, 2398412.12983m);
+        VerifyRemainder(-0.12938m, decimal.MaxValue, -0.12938m);
 
-        VerifyRemainder(Decimal.MinValue, Decimal.MinValue, NegativeZero);
-        VerifyRemainder(Decimal.MinValue, Decimal.MaxValue, NegativeZero);
-        VerifyRemainder(Decimal.MinValue, 1, NegativeZero);
-        VerifyRemainder(Decimal.MinValue, 2394713m, -1494647m);
-        VerifyRemainder(Decimal.MinValue, -32768m, -32767m); // ASURT #90921
-        VerifyRemainder(0.0m, Decimal.MinValue, 0.0m);
-        VerifyRemainder(1.23984m, Decimal.MinValue, 1.23984m);
-        VerifyRemainder(2398412.12983m, Decimal.MinValue, 2398412.12983m);
-        VerifyRemainder(-0.12938m, Decimal.MinValue, -0.12938m);
+        VerifyRemainder(decimal.MinValue, decimal.MinValue, NegativeZero);
+        VerifyRemainder(decimal.MinValue, decimal.MaxValue, NegativeZero);
+        VerifyRemainder(decimal.MinValue, 1, NegativeZero);
+        VerifyRemainder(decimal.MinValue, 2394713m, -1494647m);
+        VerifyRemainder(decimal.MinValue, -32768m, -32767m); // ASURT #90921
+        VerifyRemainder(0.0m, decimal.MinValue, 0.0m);
+        VerifyRemainder(1.23984m, decimal.MinValue, 1.23984m);
+        VerifyRemainder(2398412.12983m, decimal.MinValue, 2398412.12983m);
+        VerifyRemainder(-0.12938m, decimal.MinValue, -0.12938m);
 
         VerifyRemainder(57675350989891243676868034225m, 7m, 5m); // VSWhidbey #325142
         VerifyRemainder(-57675350989891243676868034225m, 7m, -5m);
@@ -579,14 +580,14 @@ public static class DecimalTests
         VerifyRemainder(79228162514264337567774146559m, 10m, 9m);
     }
 
-    private static void VerifySubtract<T>(Decimal d1, Decimal d2, Decimal expected = Decimal.Zero) where T : Exception
+    private static void VerifySubtract<T>(decimal d1, decimal d2, decimal expected = decimal.Zero) where T : Exception
     {
         bool expectFailure = typeof(T) != typeof(Exception);
 
         try
         {
-            Decimal result1 = Decimal.Subtract(d1, d2);
-            Decimal result2 = d1 - d2;
+            decimal result1 = decimal.Subtract(d1, d2);
+            decimal result2 = d1 - d2;
 
             Assert.False(expectFailure, "Expected an exception to be thrown");
             Assert.Equal(result1, result2);
@@ -607,11 +608,11 @@ public static class DecimalTests
         VerifySubtract<Exception>(1, 1, 0);
         VerifySubtract<Exception>(-1, 1, -2);
         VerifySubtract<Exception>(1, -1, 2);
-        VerifySubtract<Exception>(Decimal.MaxValue, Decimal.Zero, Decimal.MaxValue);
-        VerifySubtract<Exception>(Decimal.MinValue, Decimal.Zero, Decimal.MinValue);
-        VerifySubtract<Exception>(79228162514264337593543950330m, -5, Decimal.MaxValue);
+        VerifySubtract<Exception>(decimal.MaxValue, decimal.Zero, decimal.MaxValue);
+        VerifySubtract<Exception>(decimal.MinValue, decimal.Zero, decimal.MinValue);
+        VerifySubtract<Exception>(79228162514264337593543950330m, -5, decimal.MaxValue);
         VerifySubtract<Exception>(79228162514264337593543950330m, 5, 79228162514264337593543950325m);
-        VerifySubtract<Exception>(-79228162514264337593543950330m, 5, Decimal.MinValue);
+        VerifySubtract<Exception>(-79228162514264337593543950330m, 5, decimal.MinValue);
         VerifySubtract<Exception>(-79228162514264337593543950330m, -5, -79228162514264337593543950325m);
         VerifySubtract<Exception>(1234.5678m, 0.00009m, 1234.56771m);
         VerifySubtract<Exception>(-1234.5678m, 0.00009m, -1234.56789m);
@@ -628,11 +629,11 @@ public static class DecimalTests
     public static void TestTruncate()
     {
         // Decimal Decimal.Truncate(Decimal)
-        Assert.Equal<Decimal>(123, Decimal.Truncate((Decimal)123));
-        Assert.Equal<Decimal>(123, Decimal.Truncate((Decimal)123.123));
-        Assert.Equal<Decimal>(-123, Decimal.Truncate((Decimal)(-123.123)));
-        Assert.Equal<Decimal>(123, Decimal.Truncate((Decimal)123.567));
-        Assert.Equal<Decimal>(-123, Decimal.Truncate((Decimal)(-123.567)));
+        Assert.Equal<Decimal>(123, decimal.Truncate((decimal)123));
+        Assert.Equal<Decimal>(123, decimal.Truncate((decimal)123.123));
+        Assert.Equal<Decimal>(-123, decimal.Truncate((decimal)(-123.123)));
+        Assert.Equal<Decimal>(123, decimal.Truncate((decimal)123.567));
+        Assert.Equal<Decimal>(-123, decimal.Truncate((decimal)(-123.567)));
     }
 
     [Fact]
@@ -650,26 +651,26 @@ public static class DecimalTests
     public static void TestCompare()
     {
         // Int32 Decimal.Compare(Decimal, Decimal)
-        Assert.True(Decimal.Compare(Decimal.Zero, Decimal.Zero) == 0);
-        Assert.True(Decimal.Compare(Decimal.Zero, Decimal.One) < 0);
-        Assert.True(Decimal.Compare(Decimal.One, Decimal.Zero) > 0);
-        Assert.True(Decimal.Compare(Decimal.MinusOne, Decimal.Zero) < 0);
-        Assert.True(Decimal.Compare(Decimal.Zero, Decimal.MinusOne) > 0);
-        Assert.True(Decimal.Compare(5, 3) > 0);
-        Assert.True(Decimal.Compare(5, 5) == 0);
-        Assert.True(Decimal.Compare(5, 9) < 0);
-        Assert.True(Decimal.Compare(-123.123m, 123.123m) < 0);
-        Assert.True(Decimal.Compare(Decimal.MaxValue, Decimal.MaxValue) == 0);
-        Assert.True(Decimal.Compare(Decimal.MinValue, Decimal.MinValue) == 0);
-        Assert.True(Decimal.Compare(Decimal.MinValue, Decimal.MaxValue) < 0);
-        Assert.True(Decimal.Compare(Decimal.MaxValue, Decimal.MinValue) > 0);
+        Assert.True(decimal.Compare(decimal.Zero, decimal.Zero) == 0);
+        Assert.True(decimal.Compare(decimal.Zero, decimal.One) < 0);
+        Assert.True(decimal.Compare(decimal.One, decimal.Zero) > 0);
+        Assert.True(decimal.Compare(decimal.MinusOne, decimal.Zero) < 0);
+        Assert.True(decimal.Compare(decimal.Zero, decimal.MinusOne) > 0);
+        Assert.True(decimal.Compare(5, 3) > 0);
+        Assert.True(decimal.Compare(5, 5) == 0);
+        Assert.True(decimal.Compare(5, 9) < 0);
+        Assert.True(decimal.Compare(-123.123m, 123.123m) < 0);
+        Assert.True(decimal.Compare(decimal.MaxValue, decimal.MaxValue) == 0);
+        Assert.True(decimal.Compare(decimal.MinValue, decimal.MinValue) == 0);
+        Assert.True(decimal.Compare(decimal.MinValue, decimal.MaxValue) < 0);
+        Assert.True(decimal.Compare(decimal.MaxValue, decimal.MinValue) > 0);
     }
 
     [Fact]
     public static void TestCompareTo()
     {
         // Int32 Decimal.CompareTo(Decimal)
-        Decimal d = 456;
+        decimal d = 456;
         Assert.True(d.CompareTo(456m) == 0);
         Assert.True(d.CompareTo(457m) < 0);
         Assert.True(d.CompareTo(455m) > 0);
@@ -679,7 +680,7 @@ public static class DecimalTests
     public static void TestSystemIComparableCompareTo()
     {
         // Int32 Decimal.System.IComparable.CompareTo(Object)
-        IComparable d = (Decimal)248;
+        IComparable d = (decimal)248;
         Assert.True(d.CompareTo(248m) == 0);
         Assert.True(d.CompareTo(249m) < 0);
         Assert.True(d.CompareTo(247m) > 0);
@@ -692,7 +693,7 @@ public static class DecimalTests
     public static void TestGetHashCode()
     {
         // Int32 Decimal.GetHashCode()
-        Assert.NotEqual(Decimal.MinusOne.GetHashCode(), Decimal.One.GetHashCode());
+        Assert.NotEqual(decimal.MinusOne.GetHashCode(), decimal.One.GetHashCode());
     }
 
     [Fact]
@@ -700,56 +701,56 @@ public static class DecimalTests
     {
         // Single Decimal.ToSingle(Decimal)
         Single s = 12345.12f;
-        Assert.Equal(s, Decimal.ToSingle((Decimal)s));
-        Assert.Equal(-s, Decimal.ToSingle((Decimal)(-s)));
+        Assert.Equal(s, decimal.ToSingle((decimal)s));
+        Assert.Equal(-s, decimal.ToSingle((decimal)(-s)));
 
         s = 1e20f;
-        Assert.Equal(s, Decimal.ToSingle((Decimal)s));
-        Assert.Equal(-s, Decimal.ToSingle((Decimal)(-s)));
+        Assert.Equal(s, decimal.ToSingle((decimal)s));
+        Assert.Equal(-s, decimal.ToSingle((decimal)(-s)));
 
         s = 1e27f;
-        Assert.Equal(s, Decimal.ToSingle((Decimal)s));
-        Assert.Equal(-s, Decimal.ToSingle((Decimal)(-s)));
+        Assert.Equal(s, decimal.ToSingle((decimal)s));
+        Assert.Equal(-s, decimal.ToSingle((decimal)(-s)));
     }
 
     [Fact]
     public static void TestToDouble()
     {
-        Double d = Decimal.ToDouble(new Decimal(0, 0, 1, false, 0));
+        Double d = decimal.ToDouble(new decimal(0, 0, 1, false, 0));
 
         // Double Decimal.ToDouble(Decimal)
         Double dbl = 123456789.123456;
-        Assert.Equal(dbl, Decimal.ToDouble((Decimal)dbl));
-        Assert.Equal(-dbl, Decimal.ToDouble((Decimal)(-dbl)));
+        Assert.Equal(dbl, decimal.ToDouble((decimal)dbl));
+        Assert.Equal(-dbl, decimal.ToDouble((decimal)(-dbl)));
 
         dbl = 1e20;
-        Assert.Equal(dbl, Decimal.ToDouble((Decimal)dbl));
-        Assert.Equal(-dbl, Decimal.ToDouble((Decimal)(-dbl)));
+        Assert.Equal(dbl, decimal.ToDouble((decimal)dbl));
+        Assert.Equal(-dbl, decimal.ToDouble((decimal)(-dbl)));
 
         dbl = 1e27;
-        Assert.Equal(dbl, Decimal.ToDouble((Decimal)dbl));
-        Assert.Equal(-dbl, Decimal.ToDouble((Decimal)(-dbl)));
+        Assert.Equal(dbl, decimal.ToDouble((decimal)dbl));
+        Assert.Equal(-dbl, decimal.ToDouble((decimal)(-dbl)));
 
-        dbl = Int64.MaxValue;
+        dbl = long.MaxValue;
         // Need to pass in the Int64.MaxValue to ToDouble and not dbl because the conversion to double is a little lossy and we want precision
-        Assert.Equal(dbl, Decimal.ToDouble((Decimal)Int64.MaxValue));
-        Assert.Equal(-dbl, Decimal.ToDouble((Decimal)(-Int64.MaxValue)));
+        Assert.Equal(dbl, decimal.ToDouble((decimal)long.MaxValue));
+        Assert.Equal(-dbl, decimal.ToDouble((decimal)(-long.MaxValue)));
     }
 
     [Fact]
     public static void TestToInt16()
     {
         // Int16 Decimal.ToInt16(Decimal)
-        Assert.Equal(Int16.MaxValue, Decimal.ToInt16((Decimal)Int16.MaxValue));
-        Assert.Equal(Int16.MinValue, Decimal.ToInt16((Decimal)Int16.MinValue));
+        Assert.Equal(short.MaxValue, decimal.ToInt16((decimal)short.MaxValue));
+        Assert.Equal(short.MinValue, decimal.ToInt16((decimal)short.MinValue));
     }
 
     [Fact]
     public static void TestToInt32()
     {
         // Int32 Decimal.ToInt32(Decimal)
-        Assert.Equal(Int32.MaxValue, Decimal.ToInt32((Decimal)Int32.MaxValue));
-        Assert.Equal(Int32.MinValue, Decimal.ToInt32((Decimal)Int32.MinValue));
+        Assert.Equal(int.MaxValue, decimal.ToInt32((decimal)int.MaxValue));
+        Assert.Equal(int.MinValue, decimal.ToInt32((decimal)int.MinValue));
     }
 
     public static IEnumerable<object[]> DecimalTestData
@@ -768,23 +769,23 @@ public static class DecimalTests
                 new object[] {0.000000000000000000123456789M, new int[] { 0x075BCD15, 0x00000000, 0x00000000, 0x001B0000 } },
                 new object[] {4294967295M, new int[] { unchecked((int)0xFFFFFFFF), 0x00000000, 0x00000000, 0x00000000 } },
                 new object[] {18446744073709551615M, new int[] { unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), 0x00000000, 0x00000000 } },
-                new object[] {Decimal.MaxValue, new int[] { unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), 0x00000000 } },
-                new object[] {Decimal.MinValue, new int[] { unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0x80000000) } },
+                new object[] { decimal.MaxValue, new int[] { unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), 0x00000000 } },
+                new object[] { decimal.MinValue, new int[] { unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0x80000000) } },
                 new object[] {-7.9228162514264337593543950335M, new int[] { unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0xFFFFFFFF), unchecked((int)0x801C0000) } }
             };
         }
     }
 
     [Theory, MemberData("DecimalTestData")]
-    public static void TestGetBits(Decimal input, int[] expectedBits)
+    public static void TestGetBits(decimal input, int[] expectedBits)
     {
-        int[] actualsBits = Decimal.GetBits(input);
+        int[] actualsBits = decimal.GetBits(input);
 
         Assert.Equal(expectedBits, actualsBits);
 
         bool sign = (actualsBits[3] & 0x80000000) != 0;
         byte scale = (byte)((actualsBits[3] >> 16) & 0x7F);
-        Decimal newValue = new Decimal(actualsBits[0], actualsBits[1], actualsBits[2], sign, scale);
+        decimal newValue = new decimal(actualsBits[0], actualsBits[1], actualsBits[2], sign, scale);
 
         Assert.Equal(input, newValue);
     }
@@ -793,105 +794,104 @@ public static class DecimalTests
     public static void TestToInt64()
     {
         // Int64 Decimal.ToInt64(Decimal)
-        Assert.Equal(Int64.MaxValue, Decimal.ToInt64((Decimal)Int64.MaxValue));
-        Assert.Equal(Int64.MinValue, Decimal.ToInt64((Decimal)Int64.MinValue));
+        Assert.Equal(long.MaxValue, decimal.ToInt64((decimal)long.MaxValue));
+        Assert.Equal(long.MinValue, decimal.ToInt64((decimal)long.MinValue));
     }
 
     [Fact]
     public static void TestToSByte()
     {
         // SByte Decimal.ToSByte(Decimal)
-        Assert.Equal(SByte.MaxValue, Decimal.ToSByte((Decimal)SByte.MaxValue));
-        Assert.Equal(SByte.MinValue, Decimal.ToSByte((Decimal)SByte.MinValue));
+        Assert.Equal(sbyte.MaxValue, decimal.ToSByte((decimal)sbyte.MaxValue));
+        Assert.Equal(sbyte.MinValue, decimal.ToSByte((decimal)sbyte.MinValue));
     }
 
     [Fact]
     public static void TestToUInt16()
     {
         // UInt16 Decimal.ToUInt16(Decimal)
-        Assert.Equal(UInt16.MaxValue, Decimal.ToUInt16((Decimal)UInt16.MaxValue));
-        Assert.Equal(UInt16.MinValue, Decimal.ToUInt16((Decimal)UInt16.MinValue));
+        Assert.Equal(ushort.MaxValue, decimal.ToUInt16((decimal)ushort.MaxValue));
+        Assert.Equal(ushort.MinValue, decimal.ToUInt16((decimal)ushort.MinValue));
     }
 
     [Fact]
     public static void TestToUInt32()
     {
         // UInt32 Decimal.ToUInt32(Decimal)
-        Assert.Equal(UInt32.MaxValue, Decimal.ToUInt32((Decimal)UInt32.MaxValue));
-        Assert.Equal(UInt32.MinValue, Decimal.ToUInt32((Decimal)UInt32.MinValue));
+        Assert.Equal(uint.MaxValue, decimal.ToUInt32((decimal)uint.MaxValue));
+        Assert.Equal(uint.MinValue, decimal.ToUInt32((decimal)uint.MinValue));
     }
 
     [Fact]
     public static void TestToUInt64()
     {
         // UInt64 Decimal.ToUInt64(Decimal)
-        Assert.Equal(UInt64.MaxValue, Decimal.ToUInt64((Decimal)UInt64.MaxValue));
-        Assert.Equal(UInt64.MinValue, Decimal.ToUInt64((Decimal)UInt64.MinValue));
+        Assert.Equal(ulong.MaxValue, decimal.ToUInt64((decimal)ulong.MaxValue));
+        Assert.Equal(ulong.MinValue, decimal.ToUInt64((decimal)ulong.MinValue));
     }
 
     [Fact]
     public static void TestToString()
     {
         // String Decimal.ToString()
-        Decimal d1 = 6310.23m;
+        decimal d1 = 6310.23m;
         Assert.Equal(string.Format("{0}", 6310.23), d1.ToString());
 
-        Decimal d2 = -8249.000003m;
+        decimal d2 = -8249.000003m;
         Assert.Equal(string.Format("{0}", -8249.000003), d2.ToString());
 
-        Assert.Equal("79228162514264337593543950335", Decimal.MaxValue.ToString());
-        Assert.Equal("-79228162514264337593543950335", Decimal.MinValue.ToString());
+        Assert.Equal("79228162514264337593543950335", decimal.MaxValue.ToString());
+        Assert.Equal("-79228162514264337593543950335", decimal.MinValue.ToString());
     }
 
     [Fact]
     public static void Testctor()
     {
-        Decimal d;
+        decimal d;
         // Void Decimal..ctor(Double)
-        d = new Decimal((Double)123456789.123456);
-        Assert.Equal<Decimal>(d, (Decimal)123456789.123456);
+        d = new decimal((Double)123456789.123456);
+        Assert.Equal<Decimal>(d, (decimal)123456789.123456);
 
         // Void Decimal..ctor(Int32)
-        d = new Decimal((Int32)Int32.MaxValue);
-        Assert.Equal<Decimal>(d, Int32.MaxValue);
+        d = new decimal((int)int.MaxValue);
+        Assert.Equal<Decimal>(d, int.MaxValue);
 
         // Void Decimal..ctor(Int64)
-        d = new Decimal((Int64)Int64.MaxValue);
-        Assert.Equal<Decimal>(d, Int64.MaxValue);
+        d = new decimal((long)long.MaxValue);
+        Assert.Equal<Decimal>(d, long.MaxValue);
 
         // Void Decimal..ctor(Single)
-        d = new Decimal((Single)123.123);
-        Assert.Equal<Decimal>(d, (Decimal)123.123);
+        d = new decimal((Single)123.123);
+        Assert.Equal<Decimal>(d, (decimal)123.123);
 
         // Void Decimal..ctor(UInt32)
-        d = new Decimal((UInt32)UInt32.MaxValue);
-        Assert.Equal<Decimal>(d, UInt32.MaxValue);
+        d = new decimal((uint)uint.MaxValue);
+        Assert.Equal<Decimal>(d, uint.MaxValue);
 
         // Void Decimal..ctor(UInt64)
-        d = new Decimal((UInt64)UInt64.MaxValue);
-        Assert.Equal<Decimal>(d, UInt64.MaxValue);
+        d = new decimal((ulong)ulong.MaxValue);
+        Assert.Equal<Decimal>(d, ulong.MaxValue);
 
         // Void Decimal..ctor(Int32, Int32, Int32, Boolean, Byte)
-        d = new Decimal(1, 1, 1, false, 0);
-        Decimal d2 = 3;
-        d2 += UInt32.MaxValue;
-        d2 += UInt64.MaxValue;
+        d = new decimal(1, 1, 1, false, 0);
+        decimal d2 = 3;
+        d2 += uint.MaxValue;
+        d2 += ulong.MaxValue;
         Assert.Equal(d, d2);
 
         // Void Decimal..ctor(Int32[])
-        d = new Decimal(new Int32[] { 1, 1, 1, 0 });
+        d = new decimal(new int[] { 1, 1, 1, 0 });
         Assert.Equal(d, d2);
     }
 
     [Fact]
     public static void TestNumberBufferLimit()
     {
-        Decimal dE = 1234567890123456789012345.6785m;
+        decimal dE = 1234567890123456789012345.6785m;
         string s1 = "1234567890123456789012345.678456";
         var nfi = new NumberFormatInfo() { NumberDecimalSeparator = "." };
-        Decimal d1 = Decimal.Parse(s1, nfi);
+        decimal d1 = decimal.Parse(s1, nfi);
         Assert.Equal(d1, dE);
         return;
     }
 }
-

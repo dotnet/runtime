@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+
 using Xunit;
+
 public static class CharTests
 {
     [Fact]
@@ -61,8 +63,8 @@ public static class CharTests
         ValidateConvertFromUtf32(0xDFFF, null);
         ValidateConvertFromUtf32(0x110000, null);
         ValidateConvertFromUtf32(-1, null);
-        ValidateConvertFromUtf32(Int32.MaxValue, null);
-        ValidateConvertFromUtf32(Int32.MinValue, null);
+        ValidateConvertFromUtf32(int.MaxValue, null);
+        ValidateConvertFromUtf32(int.MinValue, null);
     }
 
     private static void ValidateconverToUtf32<T>(string s, int i, int expected) where T : Exception
@@ -74,7 +76,7 @@ public static class CharTests
         }
         catch (T)
         {
-            Assert.True(expected == Int32.MinValue, "Expected an exception to be thrown");
+            Assert.True(expected == int.MinValue, "Expected an exception to be thrown");
         }
     }
 
@@ -98,20 +100,20 @@ public static class CharTests
         ValidateconverToUtf32<Exception>("\uD800\u0000", 1, 0);  // high, non-surrogate
         ValidateconverToUtf32<Exception>("\uDF01\u0000", 1, 0);  // low, non-surrogate
         // Invalid inputs
-        ValidateconverToUtf32<ArgumentException>("\uD800\uD800", 0, Int32.MinValue);  // high, high
-        ValidateconverToUtf32<ArgumentException>("\uD800\uD7FF", 0, Int32.MinValue);  // high, non-surrogate
-        ValidateconverToUtf32<ArgumentException>("\uD800\u0000", 0, Int32.MinValue);  // high, non-surrogate
-        ValidateconverToUtf32<ArgumentException>("\uDC01\uD940", 0, Int32.MinValue);  // low, high
-        ValidateconverToUtf32<ArgumentException>("\uDD00\uDE00", 0, Int32.MinValue);  // low, low
-        ValidateconverToUtf32<ArgumentException>("\uDF01\u0000", 0, Int32.MinValue);  // low, non-surrogate
-        ValidateconverToUtf32<ArgumentException>("\uD800\uD800", 1, Int32.MinValue);  // high, high
-        ValidateconverToUtf32<ArgumentException>("\uDC01\uD940", 1, Int32.MinValue);  // low, high
-        ValidateconverToUtf32<ArgumentException>("\uDD00\uDE00", 1, Int32.MinValue);  // low, low
-        ValidateconverToUtf32<ArgumentNullException>(null, 0, Int32.MinValue);  // null string
-        ValidateconverToUtf32<ArgumentOutOfRangeException>("", 0, Int32.MinValue);  // index out of range
-        ValidateconverToUtf32<ArgumentOutOfRangeException>("", -1, Int32.MinValue);  // index out of range
-        ValidateconverToUtf32<ArgumentOutOfRangeException>("abcde", -1, Int32.MinValue);  // index out of range
-        ValidateconverToUtf32<ArgumentOutOfRangeException>("abcde", 5, Int32.MinValue);  // index out of range
+        ValidateconverToUtf32<ArgumentException>("\uD800\uD800", 0, int.MinValue);  // high, high
+        ValidateconverToUtf32<ArgumentException>("\uD800\uD7FF", 0, int.MinValue);  // high, non-surrogate
+        ValidateconverToUtf32<ArgumentException>("\uD800\u0000", 0, int.MinValue);  // high, non-surrogate
+        ValidateconverToUtf32<ArgumentException>("\uDC01\uD940", 0, int.MinValue);  // low, high
+        ValidateconverToUtf32<ArgumentException>("\uDD00\uDE00", 0, int.MinValue);  // low, low
+        ValidateconverToUtf32<ArgumentException>("\uDF01\u0000", 0, int.MinValue);  // low, non-surrogate
+        ValidateconverToUtf32<ArgumentException>("\uD800\uD800", 1, int.MinValue);  // high, high
+        ValidateconverToUtf32<ArgumentException>("\uDC01\uD940", 1, int.MinValue);  // low, high
+        ValidateconverToUtf32<ArgumentException>("\uDD00\uDE00", 1, int.MinValue);  // low, low
+        ValidateconverToUtf32<ArgumentNullException>(null, 0, int.MinValue);  // null string
+        ValidateconverToUtf32<ArgumentOutOfRangeException>("", 0, int.MinValue);  // index out of range
+        ValidateconverToUtf32<ArgumentOutOfRangeException>("", -1, int.MinValue);  // index out of range
+        ValidateconverToUtf32<ArgumentOutOfRangeException>("abcde", -1, int.MinValue);  // index out of range
+        ValidateconverToUtf32<ArgumentOutOfRangeException>("abcde", 5, int.MinValue);  // index out of range
     }
 
     private static void ValidateconverToUtf32<T>(char c1, char c2, int expected) where T : Exception
@@ -123,7 +125,7 @@ public static class CharTests
         }
         catch (T)
         {
-            Assert.True(expected == Int32.MinValue, "Expected an exception to be thrown");
+            Assert.True(expected == int.MinValue, "Expected an exception to be thrown");
         }
     }
 
@@ -137,14 +139,14 @@ public static class CharTests
         ValidateconverToUtf32<Exception>('\uDBFF', '\uDC00', 0x10FC00);
         ValidateconverToUtf32<Exception>('\uDBFF', '\uDFFF', 0x10FFFF);
 
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uD800', '\uD800', Int32.MinValue);  // high, high
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uD800', '\uD7FF', Int32.MinValue);  // high, non-surrogate
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uD800', '\u0000', Int32.MinValue);  // high, non-surrogate
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uDC01', '\uD940', Int32.MinValue);  // low, high
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uDD00', '\uDE00', Int32.MinValue);  // low, low
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uDF01', '\u0000', Int32.MinValue);  // low, non-surrogate
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\u0032', '\uD7FF', Int32.MinValue);  // both non-surrogate
-        ValidateconverToUtf32<ArgumentOutOfRangeException>('\u0000', '\u0000', Int32.MinValue);  // both non-surrogate
+        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uD800', '\uD800', int.MinValue);  // high, high
+        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uD800', '\uD7FF', int.MinValue);  // high, non-surrogate
+        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uD800', '\u0000', int.MinValue);  // high, non-surrogate
+        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uDC01', '\uD940', int.MinValue);  // low, high
+        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uDD00', '\uDE00', int.MinValue);  // low, low
+        ValidateconverToUtf32<ArgumentOutOfRangeException>('\uDF01', '\u0000', int.MinValue);  // low, non-surrogate
+        ValidateconverToUtf32<ArgumentOutOfRangeException>('\u0032', '\uD7FF', int.MinValue);  // both non-surrogate
+        ValidateconverToUtf32<ArgumentOutOfRangeException>('\u0000', '\u0000', int.MinValue);  // both non-surrogate
     }
 
     [Fact]

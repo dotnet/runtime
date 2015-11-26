@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+
 using Xunit;
 
 public static class ArrayUtil
@@ -66,8 +67,8 @@ public static class ArrayUtil
             bool swapped = false;
             for (int g = startingIndex; g < startingIndex + length - 1; g++)
             {
-                Object first = array.GetValue(g);
-                Object second = array.GetValue(g + 1);
+                object first = array.GetValue(g);
+                object second = array.GetValue(g + 1);
                 int comparison = comparer.Compare(first, second);
                 if (comparison == 1)
                 {
@@ -87,7 +88,7 @@ public static class ArrayUtil
 
     private static void Swap(int from, int to, Array array, Array items)
     {
-        Object temp = array.GetValue(from);
+        object temp = array.GetValue(from);
         array.SetValue(array.GetValue(to), from);
         array.SetValue(temp, to);
 

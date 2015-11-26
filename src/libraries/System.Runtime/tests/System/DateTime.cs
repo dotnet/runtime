@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
+
 using Xunit;
 
 public static unsafe class DateTimeTests
@@ -188,9 +188,9 @@ public static unsafe class DateTimeTests
     public static void TestParse1()
     {
         DateTime src = DateTime.MaxValue;
-        String s = src.ToString();
+        string s = src.ToString();
         DateTime in_1 = DateTime.Parse(s);
-        String actual = in_1.ToString();
+        string actual = in_1.ToString();
         Assert.Equal(s, actual);
     }
 
@@ -198,9 +198,9 @@ public static unsafe class DateTimeTests
     public static void TestParse2()
     {
         DateTime src = DateTime.MaxValue;
-        String s = src.ToString();
+        string s = src.ToString();
         DateTime in_1 = DateTime.Parse(s, null);
-        String actual = in_1.ToString();
+        string actual = in_1.ToString();
         Assert.Equal(s, actual);
     }
 
@@ -208,9 +208,9 @@ public static unsafe class DateTimeTests
     public static void TestParse3()
     {
         DateTime src = DateTime.MaxValue;
-        String s = src.ToString();
+        string s = src.ToString();
         DateTime in_1 = DateTime.Parse(s, null, DateTimeStyles.None);
-        String actual = in_1.ToString();
+        string actual = in_1.ToString();
         Assert.Equal(s, actual);
     }
 
@@ -218,9 +218,9 @@ public static unsafe class DateTimeTests
     public static void TestParseExact3()
     {
         DateTime src = DateTime.MaxValue;
-        String s = src.ToString("g");
+        string s = src.ToString("g");
         DateTime in_1 = DateTime.ParseExact(s, "g", null);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -228,9 +228,9 @@ public static unsafe class DateTimeTests
     public static void TestParseExact4()
     {
         DateTime src = DateTime.MaxValue;
-        String s = src.ToString("g");
+        string s = src.ToString("g");
         DateTime in_1 = DateTime.ParseExact(s, "g", null, DateTimeStyles.None);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -238,10 +238,10 @@ public static unsafe class DateTimeTests
     public static void TestParseExact4a()
     {
         DateTime src = DateTime.MaxValue;
-        String s = src.ToString("g");
-        String[] formats = { "g" };
+        string s = src.ToString("g");
+        string[] formats = { "g" };
         DateTime in_1 = DateTime.ParseExact(s, formats, null, DateTimeStyles.None);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -249,11 +249,11 @@ public static unsafe class DateTimeTests
     public static void TestTryParse2()
     {
         DateTime src = DateTime.MaxValue;
-        String s = src.ToString("g");
+        string s = src.ToString("g");
         DateTime in_1;
         bool b = DateTime.TryParse(s, out in_1);
         Assert.True(b);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -261,11 +261,11 @@ public static unsafe class DateTimeTests
     public static void TestTryParse4()
     {
         DateTime src = DateTime.MaxValue;
-        String s = src.ToString("g");
+        string s = src.ToString("g");
         DateTime in_1;
         bool b = DateTime.TryParse(s, null, DateTimeStyles.None, out in_1);
         Assert.True(b);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -273,11 +273,11 @@ public static unsafe class DateTimeTests
     public static void TestTryParseExact()
     {
         DateTime src = DateTime.MaxValue;
-        String s = src.ToString("g");
+        string s = src.ToString("g");
         DateTime in_1;
         bool b = DateTime.TryParseExact(s, "g", null, DateTimeStyles.None, out in_1);
         Assert.True(b);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -285,12 +285,12 @@ public static unsafe class DateTimeTests
     public static void TestTryParseExactA()
     {
         DateTime src = DateTime.MaxValue;
-        String s = src.ToString("g");
-        String[] formats = { "g" };
+        string s = src.ToString("g");
+        string[] formats = { "g" };
         DateTime in_1;
         bool b = DateTime.TryParseExact(s, formats, null, DateTimeStyles.None, out in_1);
         Assert.True(b);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -413,4 +413,3 @@ public static unsafe class DateTimeTests
         Assert.Equal(dt.Millisecond, millisecond);
     }
 }
-

@@ -3,7 +3,7 @@
 
 using System;
 using System.Text;
-using System.Globalization;
+
 using Xunit;
 
 public static class StringBuilderTests
@@ -12,7 +12,7 @@ public static class StringBuilderTests
     public static void TestToString()
     {
         StringBuilder sb = new StringBuilder("Finally");
-        String s = sb.ToString(2, 3);
+        string s = sb.ToString(2, 3);
         Assert.Equal(s, "nal");
     }
 
@@ -20,7 +20,7 @@ public static class StringBuilderTests
     public static void TestReplace()
     {
         StringBuilder sb;
-        String s;
+        string s;
 
         sb = new StringBuilder("aaaabbbbccccdddd");
         sb.Replace('a', '!', 2, 3);
@@ -38,7 +38,7 @@ public static class StringBuilderTests
     {
         StringBuilder sb = new StringBuilder("Almost");
         sb.Remove(1, 3);
-        String s = sb.ToString();
+        string s = sb.ToString();
         Assert.Equal(s, "Ast");
     }
 
@@ -48,7 +48,7 @@ public static class StringBuilderTests
         //@todo: Not testing all the Insert() overloads that just call ToString() on the input and forward to Insert(int, String).
         StringBuilder sb = new StringBuilder("Hello");
         sb.Insert(2, "!!");
-        String s = sb.ToString();
+        string s = sb.ToString();
         Assert.Equal(s, "He!!llo");
     }
 
@@ -88,7 +88,7 @@ public static class StringBuilderTests
     public static void TestClear()
     {
         StringBuilder sb;
-        String s;
+        string s;
 
         sb = new StringBuilder("Hello");
         sb.Clear();
@@ -100,7 +100,7 @@ public static class StringBuilderTests
     public static void TestLength()
     {
         StringBuilder sb;
-        String s;
+        string s;
         int len;
 
         sb = new StringBuilder("Hello");
@@ -115,14 +115,14 @@ public static class StringBuilderTests
         len = sb.Length;
         Assert.Equal(len, 10);
         s = sb.ToString();
-        Assert.Equal(s, "He" + new String((char)0, 8));
+        Assert.Equal(s, "He" + new string((char)0, 8));
     }
 
     [Fact]
     public static void TestAppendFormat()
     {
         StringBuilder sb;
-        String s;
+        string s;
 
         sb = new StringBuilder();
         sb.AppendFormat("Foo {0} Bar {1}", "Red", "Green");
@@ -136,7 +136,7 @@ public static class StringBuilderTests
         //@todo: Skipped all the Append overloads that just call ToString() on the argument and delegate to Append(String)
 
         StringBuilder sb;
-        String s;
+        string s;
 
         sb = new StringBuilder();
         s = "";
@@ -155,7 +155,7 @@ public static class StringBuilderTests
             char c = (char)(0x41 + (i % 10));
             int repeat = i % 8;
             sb.Append(c, repeat);
-            s += new String(c, repeat);
+            s += new string(c, repeat);
             Assert.Equal(sb.ToString(), s);
         }
 
@@ -169,7 +169,7 @@ public static class StringBuilderTests
             for (int j = 0; j < ca.Length; j++)
                 ca[j] = c;
             sb.Append(ca);
-            s += new String(ca);
+            s += new string(ca);
             Assert.Equal(sb.ToString(), s);
         }
 
@@ -195,7 +195,7 @@ public static class StringBuilderTests
         char c = sb[1];
         Assert.Equal(c, 'e');
         sb[1] = 'X';
-        String s = sb.ToString();
+        string s = sb.ToString();
         Assert.Equal(s, "HXllo");
     }
 
@@ -203,7 +203,7 @@ public static class StringBuilderTests
     public static void TestCtors()
     {
         StringBuilder sb;
-        String s;
+        string s;
         int c;
         int l;
         int m;

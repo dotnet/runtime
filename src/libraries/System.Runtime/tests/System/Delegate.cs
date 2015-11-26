@@ -2,10 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using DelegateTestInternal;
+
 using Xunit;
 
 namespace DelegateTestInternal
@@ -127,14 +126,14 @@ public static unsafe class DelegateTests
     {
         {
             Delegate d = new DFoo2(Foo2);
-            Object[] args = { 7 };
+            object[] args = { 7 };
             d.DynamicInvoke(args);
             Assert.Equal(args[0], 8);
         }
 
         {
             Delegate d = new DFoo2(Foo2);
-            Object[] args = { null };
+            object[] args = { null };
             d.DynamicInvoke(args);
             Assert.Equal(args[0], 1);
         }
@@ -142,7 +141,7 @@ public static unsafe class DelegateTests
         // for "byref ValueType" arguments, the incoming is allowed to be null. The target will receive default(ValueType).
         {
             Delegate d = new DFoo3(Foo3);
-            Object[] args = { null };
+            object[] args = { null };
             d.DynamicInvoke(args);
             MyStruct s = (MyStruct)(args[0]);
             Assert.Equal(s.X, 7);
@@ -152,13 +151,13 @@ public static unsafe class DelegateTests
         // For "byref ValueType" arguments, the type must match exactly.
         {
             Delegate d = new DFoo2(Foo2);
-            Object[] args = { (uint)7 };
+            object[] args = { (uint)7 };
             Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
         }
 
         {
             Delegate d = new DFoo2(Foo2);
-            Object[] args = { E4.One };
+            object[] args = { E4.One };
             Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
         }
 
@@ -171,49 +170,49 @@ public static unsafe class DelegateTests
         {
             // For primitives, value-preserving widenings allowed.
             Delegate d = new DFoo1(Foo1);
-            Object[] args = { 7, (short)7 };
+            object[] args = { 7, (short)7 };
             d.DynamicInvoke(args);
         }
 
         {
             // For primitives, conversion of enum to underlying integral prior to value-preserving widening allowed.
             Delegate d = new DFoo1(Foo1);
-            Object[] args = { 7, E4.Seven };
+            object[] args = { 7, E4.Seven };
             d.DynamicInvoke(args);
         }
 
         {
             // For primitives, conversion of enum to underlying integral prior to value-preserving widening allowed.
             Delegate d = new DFoo1(Foo1);
-            Object[] args = { 7, E2.Seven };
+            object[] args = { 7, E2.Seven };
             d.DynamicInvoke(args);
         }
 
         {
             // For primitives, conversion to enum after value-preserving widening allowed.
             Delegate d = new DFoo4(Foo4);
-            Object[] args = { E4.Seven, 7 };
+            object[] args = { E4.Seven, 7 };
             d.DynamicInvoke(args);
         }
 
         {
             // For primitives, conversion to enum after value-preserving widening allowed.
             Delegate d = new DFoo4(Foo4);
-            Object[] args = { E4.Seven, (short)7 };
+            object[] args = { E4.Seven, (short)7 };
             d.DynamicInvoke(args);
         }
 
         {
             // Size-preserving but non-value-preserving conversions NOT allowed.
             Delegate d = new DFoo1(Foo1);
-            Object[] args = { 7, (uint)7 };
+            object[] args = { 7, (uint)7 };
             Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
         }
 
         {
             // Size-preserving but non-value-preserving conversions NOT allowed.
             Delegate d = new DFoo1(Foo1);
-            Object[] args = { 7, U4.Seven };
+            object[] args = { 7, U4.Seven };
             Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
         }
 
@@ -226,28 +225,28 @@ public static unsafe class DelegateTests
         {
             // DynamicInvoke allows "null" for any value type (converts to default(valuetype)).
             Delegate d = new DFoo5(Foo5);
-            Object[] args = { null };
+            object[] args = { null };
             d.DynamicInvoke(args);
         }
 
         {
             // DynamicInvoke allows conversion of T to Nullable<T>
             Delegate d = new DFoo6(Foo6);
-            Object[] args = { 7 };
+            object[] args = { 7 };
             d.DynamicInvoke(args);
         }
 
         {
             // DynamicInvoke allows conversion of T to Nullable<T> but T must match exactly.
             Delegate d = new DFoo6(Foo6);
-            Object[] args = { (short)7 };
+            object[] args = { (short)7 };
             Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
         }
 
         {
             // DynamicInvoke allows conversion of T to Nullable<T> but T must match exactly.
             Delegate d = new DFoo6(Foo6);
-            Object[] args = { E4.Seven };
+            object[] args = { E4.Seven };
             Assert.Throws<ArgumentException>(() => d.DynamicInvoke(args));
         }
 
@@ -324,4 +323,3 @@ public static unsafe class DelegateTests
         Seven = 7,
     }
 }
-

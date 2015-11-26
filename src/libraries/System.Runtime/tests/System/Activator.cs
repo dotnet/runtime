@@ -3,8 +3,6 @@
 
 using System;
 using System.Reflection;
-using System.Collections;
-using System.Collections.Generic;
 
 using ActivatorTestsTestData;
 using Xunit;
@@ -15,11 +13,11 @@ public static class ActivatorTests
     public static void TestActivatorCreateInstanceBinding()
     {
         Type t;
-        Object[] args;
+        object[] args;
         Choice1 c1;
 
         // Root the constructors
-        if (String.Empty.Length > 0)
+        if (string.Empty.Length > 0)
         {
             new Choice1();
             new Choice1(123);
@@ -31,7 +29,7 @@ public static class ActivatorTests
         }
 
         t = null;
-        args = new Object[1];
+        args = new object[1];
         Assert.Throws<ArgumentNullException>(() => Activator.CreateInstance(t, args));
 
         t = typeof(Choice1);
@@ -40,12 +38,12 @@ public static class ActivatorTests
         Assert.Equal(c1.I, 1);
 
         t = typeof(Choice1);
-        args = new Object[] { };
+        args = new object[] { };
         c1 = (Choice1)(Activator.CreateInstance(t, args));
         Assert.Equal(c1.I, 1);
 
         t = typeof(Choice1);
-        args = new Object[] { 42 };
+        args = new object[] { 42 };
         c1 = (Choice1)(Activator.CreateInstance(t, args));
         Assert.Equal(c1.I, 2);
 
@@ -53,31 +51,31 @@ public static class ActivatorTests
         // but not by Dynamic.DelegateInvoke()... 
         {
             t = typeof(Choice1);
-            args = new Object[] { (short)(-2) };
+            args = new object[] { (short)(-2) };
             c1 = (Choice1)(Activator.CreateInstance(t, args));
             Assert.Equal(c1.I, 2);
         }
 
         t = typeof(Choice1);
-        args = new Object[] { "Hello" };
+        args = new object[] { "Hello" };
         c1 = (Choice1)(Activator.CreateInstance(t, args));
         Assert.Equal(c1.I, 3);
 
         t = typeof(Choice1);
-        args = new Object[] { null };
+        args = new object[] { null };
         Assert.Throws<AmbiguousMatchException>(() => Activator.CreateInstance(t, args));
 
         // "optional" parameters are not optional as far as Activator.CreateInstance() is concerned.
         t = typeof(Choice1);
-        args = new Object[] { 5.1 };
+        args = new object[] { 5.1 };
         Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(t, args));
 
         t = typeof(Choice1);
-        args = new Object[] { 5.1, Type.Missing };
+        args = new object[] { 5.1, Type.Missing };
         Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(t, args));
 
         t = typeof(Choice1);
-        args = new Object[] { 5.1, "Yes" };
+        args = new object[] { 5.1, "Yes" };
         c1 = (Choice1)(Activator.CreateInstance(t, args));
         Assert.Equal(c1.I, 4);
 
@@ -86,38 +84,38 @@ public static class ActivatorTests
         //
         VarArgs varArgs = new VarArgs();
         t = typeof(Choice1);
-        args = new Object[] { varArgs };
+        args = new object[] { varArgs };
         c1 = (Choice1)(Activator.CreateInstance(t, args));
         Assert.Equal(c1.I, 5);
 
         t = typeof(Choice1);
-        args = new Object[] { varArgs, "P1" };
+        args = new object[] { varArgs, "P1" };
         c1 = (Choice1)(Activator.CreateInstance(t, args));
         Assert.Equal(c1.I, 5);
 
         t = typeof(Choice1);
-        args = new Object[] { varArgs, "P1", "P2" };
+        args = new object[] { varArgs, "P1", "P2" };
         c1 = (Choice1)(Activator.CreateInstance(t, args));
         Assert.Equal(c1.I, 5);
 
         VarStringArgs varStringArgs = new VarStringArgs();
         t = typeof(Choice1);
-        args = new Object[] { varStringArgs };
+        args = new object[] { varStringArgs };
         c1 = (Choice1)(Activator.CreateInstance(t, args));
         Assert.Equal(c1.I, 6);
 
         t = typeof(Choice1);
-        args = new Object[] { varStringArgs, "P1" };
+        args = new object[] { varStringArgs, "P1" };
         c1 = (Choice1)(Activator.CreateInstance(t, args));
         Assert.Equal(c1.I, 6);
 
         t = typeof(Choice1);
-        args = new Object[] { varStringArgs, "P1", "P2" };
+        args = new object[] { varStringArgs, "P1", "P2" };
         c1 = (Choice1)(Activator.CreateInstance(t, args));
         Assert.Equal(c1.I, 6);
 
         t = typeof(Choice1);
-        args = new Object[] { varStringArgs, 5, 6 };
+        args = new object[] { varStringArgs, 5, 6 };
         Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(t, args));
 
         //
@@ -130,7 +128,7 @@ public static class ActivatorTests
         //
         VarIntArgs varIntArgs = new VarIntArgs();
         t = typeof(Choice1);
-        args = new Object[] { varIntArgs, 1, (short)2 };
+        args = new object[] { varIntArgs, 1, (short)2 };
         Assert.Throws<InvalidCastException>(() => Activator.CreateInstance(t, args));
 
         return;
@@ -196,22 +194,22 @@ namespace ActivatorTestsTestData
             I = 2;
         }
 
-        public Choice1(String s)
+        public Choice1(string s)
         {
             I = 3;
         }
 
-        public Choice1(double d, String optionalS = "Hey")
+        public Choice1(double d, string optionalS = "Hey")
         {
             I = 4;
         }
 
-        public Choice1(VarArgs varArgs, params Object[] parameters)
+        public Choice1(VarArgs varArgs, params object[] parameters)
         {
             I = 5;
         }
 
-        public Choice1(VarStringArgs varArgs, params String[] parameters)
+        public Choice1(VarStringArgs varArgs, params string[] parameters)
         {
             I = 6;
         }
