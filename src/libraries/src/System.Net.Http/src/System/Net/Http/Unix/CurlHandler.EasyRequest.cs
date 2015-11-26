@@ -346,7 +346,7 @@ namespace System.Net.Http
                 }
             }
 
-            private void SetRequestHeaders()
+            internal void SetRequestHeaders()
             {
                 HttpContentHeaders contentHeaders = null;
                 if (_requestMessage.Content != null)

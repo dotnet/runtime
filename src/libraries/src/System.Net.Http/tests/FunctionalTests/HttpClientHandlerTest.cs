@@ -31,6 +31,13 @@ namespace System.Net.Http.Functional.Tests
         public readonly static object[][] EchoServers = HttpTestServers.EchoServers;
         public readonly static object[][] VerifyUploadServers = HttpTestServers.VerifyUploadServers;
         public readonly static object[][] CompressedServers = HttpTestServers.CompressedServers;
+        public readonly static object[][] HeaderValueAndUris = {
+            new object[] { "X-CustomHeader", "x-value", HttpTestServers.RemoteEchoServer },
+            new object[] { "X-Cust-Header-NoValue", "" , HttpTestServers.RemoteEchoServer },
+            new object[] { "X-CustomHeader", "x-value", HttpTestServers.RedirectUriForDestinationUri(false, HttpTestServers.RemoteEchoServer, -1) },
+            new object[] { "X-Cust-Header-NoValue", "" , HttpTestServers.RedirectUriForDestinationUri(false, HttpTestServers.RemoteEchoServer, -1) },
+        };
+
 
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
         //     "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE"
@@ -365,15 +372,13 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
-        [InlineData("X-Cust-Header", "x-value")]
-        [InlineData("X-Cust-Header-NoValue", "")]
-        public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(string name, string value)
+        [Theory, MemberData("HeaderValueAndUris")]
+        public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(string name, string value, Uri uri)
         {
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add(name, value);
-                using (HttpResponseMessage httpResponse = await client.GetAsync(HttpTestServers.RemoteEchoServer))
+                using (HttpResponseMessage httpResponse = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
                     string responseText = await httpResponse.Content.ReadAsStringAsync();
