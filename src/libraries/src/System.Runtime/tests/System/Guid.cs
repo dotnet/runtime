@@ -3,7 +3,7 @@
 
 using System;
 using System.Linq;
-using System.Globalization;
+
 using Xunit;
 
 public static class GuidTests

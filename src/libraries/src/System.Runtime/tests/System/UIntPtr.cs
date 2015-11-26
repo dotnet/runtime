@@ -2,8 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
+
 using Xunit;
 
 public static unsafe class UIntPtrTests
@@ -58,9 +57,9 @@ public static unsafe class UIntPtrTests
         p = new UIntPtr(42);
         b = p.Equals(null);
         Assert.False(b);
-        b = p.Equals((Object)42);
+        b = p.Equals((object)42);
         Assert.False(b);
-        b = p.Equals((Object)(new UIntPtr(42)));
+        b = p.Equals((object)(new UIntPtr(42)));
         Assert.True(b);
 
         int h = p.GetHashCode();
@@ -105,8 +104,8 @@ public static unsafe class UIntPtrTests
             Assert.Equal(expected32, i);
         }
 
-        String s = p.ToString();
-        String sExpected = expected.ToString();
+        string s = p.ToString();
+        string sExpected = expected.ToString();
         Assert.Equal(s, sExpected);
 
         Assert.True(p == new UIntPtr(expected));
@@ -117,4 +116,3 @@ public static unsafe class UIntPtrTests
         Assert.True(p != new UIntPtr(expected + 1));
     }
 }
-

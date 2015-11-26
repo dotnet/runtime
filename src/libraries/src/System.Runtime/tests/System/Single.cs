@@ -3,166 +3,152 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.Tests.Common;
+
 using Xunit;
 
 public static class SingleTests
 {
     [Fact]
-    public static void TestCtor()
+    public static void TestCtorEmpty()
     {
-        Single i = new Single();
-        Assert.True(i == 0);
+        float i = new float();
+        Assert.Equal(0, i);
+    }
 
-        i = 41;
-        Assert.True(i == 41);
-
-        i = (Single)41.3;
-        Assert.True(i == (Single)41.3);
+    [Fact]
+    public static void TestCtorValue()
+    {
+        float i = 41;
+        Assert.Equal(41, i);
     }
 
     [Fact]
     public static void TestMaxValue()
     {
-        Single max = Single.MaxValue;
-
-        Assert.True(max == (Single)3.40282346638528859e+38);
+        Assert.Equal((float)3.40282346638528859e+38, float.MaxValue);
     }
 
     [Fact]
     public static void TestMinValue()
     {
-        Single min = Single.MinValue;
-
-        Assert.True(min == ((Single)(-3.40282346638528859e+38)));
+        Assert.Equal((float)(-3.40282346638528859e+38), float.MinValue);
     }
 
     [Fact]
     public static void TestEpsilon()
     {
-        // Single Single.Epsilon
-        Assert.Equal<Single>((Single)1.4e-45, Single.Epsilon);
+        Assert.Equal((float)1.4e-45, float.Epsilon);
     }
 
     [Fact]
     public static void TestIsInfinity()
     {
-        // Boolean Single.IsInfinity(Single)
-        Assert.True(Single.IsInfinity(Single.NegativeInfinity));
-        Assert.True(Single.IsInfinity(Single.PositiveInfinity));
+        Assert.True(float.IsInfinity(float.NegativeInfinity));
+        Assert.True(float.IsInfinity(float.PositiveInfinity));
     }
 
     [Fact]
     public static void TestNaN()
     {
-        // Single Single.NaN
-        Assert.Equal<Single>((Single)0.0 / (Single)0.0, Single.NaN);
+        Assert.Equal((float)0.0 / (float)0.0, float.NaN);
     }
 
     [Fact]
     public static void TestIsNaN()
     {
-        // Boolean Single.IsNaN(Single)
-        Assert.True(Single.IsNaN(Single.NaN));
+        Assert.True(float.IsNaN(float.NaN));
     }
 
     [Fact]
     public static void TestNegativeInfinity()
     {
-        // Single Single.NegativeInfinity
-        Assert.Equal<Single>((Single)(-1.0) / (Single)0.0, Single.NegativeInfinity);
+        Assert.Equal((float)(-1.0) / (float)0.0, float.NegativeInfinity);
     }
 
     [Fact]
     public static void TestIsNegativeInfinity()
     {
-        // Boolean Single.IsNegativeInfinity(Single)
-        Assert.True(Single.IsNegativeInfinity(Single.NegativeInfinity));
+        Assert.True(float.IsNegativeInfinity(float.NegativeInfinity));
     }
 
     [Fact]
     public static void TestPositiveInfinity()
     {
-        // Single Single.PositiveInfinity
-        Assert.Equal<Single>((Single)1.0 / (Single)0.0, Single.PositiveInfinity);
+        Assert.Equal((float)1.0 / (float)0.0, float.PositiveInfinity);
     }
 
     [Fact]
     public static void TestIsPositiveInfinity()
     {
-        // Boolean Single.IsPositiveInfinity(Single)
-        Assert.True(Single.IsPositiveInfinity(Single.PositiveInfinity));
+        Assert.True(float.IsPositiveInfinity(float.PositiveInfinity));
+    }
+
+    [Theory]
+    [InlineData((float)234, (float)234, 0)]
+    [InlineData((float)234, float.MinValue, 1)]
+    [InlineData((float)234, (float)(-123), 1)]
+    [InlineData((float)234, (float)0, 1)]
+    [InlineData((float)234, (float)123, 1)]
+    [InlineData((float)234, (float)456, -1)]
+    [InlineData((float)234, float.MaxValue, -1)]
+    [InlineData((float)234, float.NaN, 1)]
+    [InlineData(float.NaN, float.NaN, 0)]
+    [InlineData(float.NaN, 0, -1)]
+    public static void TestCompareTo(float i, float value, int expected)
+    {
+        int result = CompareHelper.NormalizeCompare(i.CompareTo(value));
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(null, 1)]
+    [InlineData((float)234, 0)]
+    [InlineData(float.MinValue, 1)]
+    [InlineData((float)(-123), 1)]
+    [InlineData((float)0, 1)]
+    [InlineData((float)123, 1)]
+    [InlineData((float)456, -1)]
+    [InlineData(float.MaxValue, -1)]
+    public static void TestCompareToObject(object obj, int expected)
+    {
+        IComparable comparable = (float)234;
+        int i = CompareHelper.NormalizeCompare(comparable.CompareTo(obj));
+        Assert.Equal(expected, i);
     }
 
     [Fact]
-    public static void TestCompareToObject()
+    public static void TestCompareToObjectInvalid()
     {
-        Single i = 234;
-        IComparable comparable = i;
-
-        Assert.Equal(1, comparable.CompareTo(null));
-        Assert.Equal(0, comparable.CompareTo((Single)234));
-
-        Assert.True(comparable.CompareTo(Single.MinValue) > 0);
-        Assert.True(comparable.CompareTo((Single)0) > 0);
-        Assert.True(comparable.CompareTo((Single)(-123)) > 0);
-        Assert.True(comparable.CompareTo((Single)123) > 0);
-        Assert.True(comparable.CompareTo((Single)456) < 0);
-        Assert.True(comparable.CompareTo(Single.MaxValue) < 0);
-
-        Assert.Throws<ArgumentException>(() => comparable.CompareTo("a"));
+        IComparable comparable = (float)234;
+        Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); //Obj is not a float
+    }
+    
+    [Theory]
+    [InlineData((float)789, true)]
+    [InlineData((float)(-789), false)]
+    [InlineData((float)0, false)]
+    public static void TestEqualsObject(object obj, bool expected)
+    {
+        float i = 789;
+        Assert.Equal(expected, i.Equals(obj));
     }
 
-    [Fact]
-    public static void TestCompareTo()
+    [Theory]
+    [InlineData((float)789, (float)789, true)]
+    [InlineData((float)789, (float)(-789), false)]
+    [InlineData((float)789, (float)0, false)]
+    [InlineData(float.NaN, float.NaN, true)]
+    public static void TestEquals(float i1, float i2, bool expected)
     {
-        Single i = 234;
-
-        Assert.Equal(0, i.CompareTo((Single)234));
-
-        Assert.True(i.CompareTo(Single.MinValue) > 0);
-        Assert.True(i.CompareTo((Single)0) > 0);
-        Assert.True(i.CompareTo((Single)(-123)) > 0);
-        Assert.True(i.CompareTo((Single)123) > 0);
-        Assert.True(i.CompareTo((Single)456) < 0);
-        Assert.True(i.CompareTo(Single.MaxValue) < 0);
-
-        Assert.True(Single.NaN.CompareTo(Single.NaN) == 0);
-        Assert.True(Single.NaN.CompareTo(0) < 0);
-        Assert.True(i.CompareTo(Single.NaN) > 0);
-    }
-
-    [Fact]
-    public static void TestEqualsObject()
-    {
-        Single i = 789;
-
-        object obj1 = (Single)789;
-        Assert.True(i.Equals(obj1));
-
-        object obj2 = (Single)(-789);
-        Assert.True(!i.Equals(obj2));
-
-        object obj3 = (Single)0;
-        Assert.True(!i.Equals(obj3));
-    }
-
-    [Fact]
-    public static void TestEquals()
-    {
-        Single i = -911;
-
-        Assert.True(i.Equals((Single)(-911)));
-
-        Assert.True(!i.Equals((Single)911));
-        Assert.True(!i.Equals((Single)0));
-        Assert.True(Single.NaN.Equals(Single.NaN));
+        Assert.Equal(expected, i1.Equals(i2));
     }
 
     [Fact]
     public static void TestGetHashCode()
     {
-        Single i1 = 123;
-        Single i2 = 654;
+        float i1 = 123;
+        float i2 = 654;
 
         Assert.NotEqual(0, i1.GetHashCode());
         Assert.NotEqual(i1.GetHashCode(), i2.GetHashCode());
@@ -171,79 +157,79 @@ public static class SingleTests
     [Fact]
     public static void TestToString()
     {
-        Single i1 = 6310;
+        float i1 = 6310;
         Assert.Equal("6310", i1.ToString());
 
-        Single i2 = -8249;
+        float i2 = -8249;
         Assert.Equal("-8249", i2.ToString());
     }
 
     [Fact]
     public static void TestToStringFormatProvider()
     {
-        var numberFormat = new System.Globalization.NumberFormatInfo();
+        var numberFormat = new NumberFormatInfo();
 
-        Single i1 = 6310;
+        float i1 = 6310;
         Assert.Equal("6310", i1.ToString(numberFormat));
 
-        Single i2 = -8249;
+        float i2 = -8249;
         Assert.Equal("-8249", i2.ToString(numberFormat));
 
-        Single i3 = -2468;
+        float i3 = -2468;
 
         // Changing the negative pattern doesn't do anything without also passing in a format string
         numberFormat.NumberNegativePattern = 0;
         Assert.Equal("-2468", i3.ToString(numberFormat));
 
-        Assert.Equal("NaN", Single.NaN.ToString(NumberFormatInfo.InvariantInfo));
-        Assert.Equal("Infinity", Single.PositiveInfinity.ToString(NumberFormatInfo.InvariantInfo));
-        Assert.Equal("-Infinity", Single.NegativeInfinity.ToString(NumberFormatInfo.InvariantInfo));
+        Assert.Equal("NaN", float.NaN.ToString(NumberFormatInfo.InvariantInfo));
+        Assert.Equal("Infinity", float.PositiveInfinity.ToString(NumberFormatInfo.InvariantInfo));
+        Assert.Equal("-Infinity", float.NegativeInfinity.ToString(NumberFormatInfo.InvariantInfo));
     }
 
     [Fact]
     public static void TestToStringFormat()
     {
-        Single i1 = 6310;
+        float i1 = 6310;
         Assert.Equal("6310", i1.ToString("G"));
 
-        Single i2 = -8249;
+        float i2 = -8249;
         Assert.Equal("-8249", i2.ToString("g"));
 
-        Single i3 = -2468;
+        float i3 = -2468;
         Assert.Equal(string.Format("{0:N}", -2468.00), i3.ToString("N"));
     }
 
     [Fact]
     public static void TestToStringFormatFormatProvider()
     {
-        var numberFormat = new System.Globalization.NumberFormatInfo();
+        var numberFormat = new NumberFormatInfo();
 
-        Single i1 = 6310;
+        float i1 = 6310;
         Assert.Equal("6310", i1.ToString("G", numberFormat));
 
-        Single i2 = -8249;
+        float i2 = -8249;
         Assert.Equal("-8249", i2.ToString("g", numberFormat));
 
         numberFormat.NegativeSign = "xx"; // setting it to trash to make sure it doesn't show up
         numberFormat.NumberGroupSeparator = "*";
         numberFormat.NumberNegativePattern = 0;
-        Single i3 = -2468;
+        float i3 = -2468;
         Assert.Equal("(2*468.00)", i3.ToString("N", numberFormat));
     }
 
     [Fact]
     public static void TestParse()
     {
-        Assert.Equal(123, Single.Parse("123"));
-        Assert.Equal(-123, Single.Parse("-123"));
+        Assert.Equal(123, float.Parse("123"));
+        Assert.Equal(-123, float.Parse("-123"));
         //TODO: Negative tests once we get better exceptions
     }
 
     [Fact]
     public static void TestParseNumberStyle()
     {
-        Assert.Equal<Single>(123.1f, Single.Parse((123.1).ToString("F"), NumberStyles.AllowDecimalPoint));
-        Assert.Equal(1000, Single.Parse((1000).ToString("N0"), NumberStyles.AllowThousands));
+        Assert.Equal(123.1f, float.Parse((123.1).ToString("F"), NumberStyles.AllowDecimalPoint));
+        Assert.Equal(1000, float.Parse((1000).ToString("N0"), NumberStyles.AllowThousands));
         //TODO: Negative tests once we get better exceptions
     }
 
@@ -251,8 +237,8 @@ public static class SingleTests
     public static void TestParseFormatProvider()
     {
         var nfi = new NumberFormatInfo();
-        Assert.Equal(123, Single.Parse("123", nfi));
-        Assert.Equal(-123, Single.Parse("-123", nfi));
+        Assert.Equal(123, float.Parse("123", nfi));
+        Assert.Equal(-123, float.Parse("-123", nfi));
         //TODO: Negative tests once we get better exceptions
     }
 
@@ -261,11 +247,11 @@ public static class SingleTests
     {
         var nfi = new NumberFormatInfo();
         nfi.NumberDecimalSeparator = ".";
-        Assert.Equal<Single>(123.123f, Single.Parse("123.123", NumberStyles.Float, nfi));
+        Assert.Equal(123.123f, float.Parse("123.123", NumberStyles.Float, nfi));
 
         nfi.CurrencySymbol = "$";
         nfi.CurrencyGroupSeparator = ",";
-        Assert.Equal(1000, Single.Parse("$1,000", NumberStyles.Currency, nfi));
+        Assert.Equal(1000, float.Parse("$1,000", NumberStyles.Currency, nfi));
         //TODO: Negative tests once we get better exception support
     }
 
@@ -274,64 +260,63 @@ public static class SingleTests
     {
         // Defaults AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowDecimalPoint | AllowExponent | AllowThousands
 
-        Single i;
-        Assert.True(Single.TryParse("123", out i));     // Simple
+        float i;
+        Assert.True(float.TryParse("123", out i));     // Simple
         Assert.Equal(123, i);
 
-        Assert.True(Single.TryParse("-385", out i));    // LeadingSign
+        Assert.True(float.TryParse("-385", out i));    // LeadingSign
         Assert.Equal(-385, i);
 
-        Assert.True(Single.TryParse(" 678 ", out i));   // Leading/Trailing whitespace
+        Assert.True(float.TryParse(" 678 ", out i));   // Leading/Trailing whitespace
         Assert.Equal(678, i);
 
-        Assert.True(Single.TryParse((678.90).ToString("F2"), out i)); // Decimal
-        Assert.Equal((Single)678.90, i);
+        Assert.True(float.TryParse((678.90).ToString("F2"), out i)); // Decimal
+        Assert.Equal((float)678.90, i);
 
-        Assert.True(Single.TryParse("1E23", out i));   // Exponent
-        Assert.Equal((Single)1E23, i);
+        Assert.True(float.TryParse("1E23", out i));   // Exponent
+        Assert.Equal((float)1E23, i);
 
-        Assert.True(Single.TryParse((1000).ToString("N0"), out i));  // Thousands
+        Assert.True(float.TryParse((1000).ToString("N0"), out i));  // Thousands
         Assert.Equal(1000, i);
 
         var nfi = new NumberFormatInfo() { CurrencyGroupSeparator = "" };
-        Assert.False(Single.TryParse((1000).ToString("C0", nfi), out i));  // Currency
-        Assert.False(Single.TryParse("abc", out i));    // Hex digits
-        Assert.False(Single.TryParse("(135)", out i));  // Parentheses
+        Assert.False(float.TryParse((1000).ToString("C0", nfi), out i));  // Currency
+        Assert.False(float.TryParse("abc", out i));    // Hex digits
+        Assert.False(float.TryParse("(135)", out i));  // Parentheses
     }
 
     [Fact]
     public static void TestTryParseNumberStyleFormatProvider()
     {
-        Single i;
+        float i;
         var nfi = new NumberFormatInfo();
         nfi.NumberDecimalSeparator = ".";
-        Assert.True(Single.TryParse("123.123", NumberStyles.Any, nfi, out i));   // Simple positive
+        Assert.True(float.TryParse("123.123", NumberStyles.Any, nfi, out i));   // Simple positive
         Assert.Equal(123.123f, i);
 
-        Assert.True(Single.TryParse("123", NumberStyles.Float, nfi, out i));   // Simple Hex
+        Assert.True(float.TryParse("123", NumberStyles.Float, nfi, out i));   // Simple Hex
         Assert.Equal(123, i);
 
         nfi.CurrencySymbol = "$";
         nfi.CurrencyGroupSeparator = ",";
-        Assert.True(Single.TryParse("$1,000", NumberStyles.Currency, nfi, out i)); // Currency/Thousands postive
+        Assert.True(float.TryParse("$1,000", NumberStyles.Currency, nfi, out i)); // Currency/Thousands postive
         Assert.Equal(1000, i);
 
-        Assert.False(Single.TryParse("abc", NumberStyles.None, nfi, out i));       // Hex Number negative
+        Assert.False(float.TryParse("abc", NumberStyles.None, nfi, out i));       // Hex Number negative
 
-        Assert.False(Single.TryParse("678.90", NumberStyles.Integer, nfi, out i));  // Decimal
-        Assert.False(Single.TryParse(" 678 ", NumberStyles.None, nfi, out i));      // Trailing/Leading whitespace negative
+        Assert.False(float.TryParse("678.90", NumberStyles.Integer, nfi, out i));  // Decimal
+        Assert.False(float.TryParse(" 678 ", NumberStyles.None, nfi, out i));      // Trailing/Leading whitespace negative
 
-        Assert.True(Single.TryParse("(135)", NumberStyles.AllowParentheses, nfi, out i)); // Parenthese postive
+        Assert.True(float.TryParse("(135)", NumberStyles.AllowParentheses, nfi, out i)); // Parenthese postive
         Assert.Equal(-135, i);
 
-        Assert.True(Single.TryParse("Infinity", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));
-        Assert.True(Single.IsPositiveInfinity(i));
+        Assert.True(float.TryParse("Infinity", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));
+        Assert.True(float.IsPositiveInfinity(i));
 
-        Assert.True(Single.TryParse("-Infinity", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));
-        Assert.True(Single.IsNegativeInfinity(i));
+        Assert.True(float.TryParse("-Infinity", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));
+        Assert.True(float.IsNegativeInfinity(i));
 
-        Assert.True(Single.TryParse("NaN", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));
-        Assert.True(Single.IsNaN(i));
+        Assert.True(float.TryParse("NaN", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));
+        Assert.True(float.IsNaN(i));
     }
 }
-

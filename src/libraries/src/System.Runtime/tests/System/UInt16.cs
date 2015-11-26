@@ -2,96 +2,101 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.Tests.Common;
+
 using Xunit;
 
 public static class UInt16Tests
 {
     [Fact]
-    public static void TestCtor()
+    public static void TestCtorEmpty()
     {
-        UInt16 i = new UInt16();
-        Assert.True(i == 0);
+        ushort i = new ushort();
+        Assert.Equal(0, i);
+    }
 
-        i = 41;
-        Assert.True(i == 41);
+    [Fact]
+    public static void TestCtorValue()
+    {
+        ushort i = 41;
+        Assert.Equal(41, i);
     }
 
     [Fact]
     public static void TestMaxValue()
     {
-        UInt16 max = UInt16.MaxValue;
-
-        Assert.True(max == (UInt16)0xFFFF);
+        Assert.Equal(0xFFFF, ushort.MaxValue);
     }
 
     [Fact]
     public static void TestMinValue()
     {
-        UInt16 min = UInt16.MinValue;
+        Assert.Equal(0, ushort.MinValue);
+    }
 
-        Assert.True(min == 0);
+    [Theory]
+    [InlineData((ushort)234, 0)]
+    [InlineData(ushort.MinValue, 1)]
+    [InlineData((ushort)0, 1)]
+    [InlineData((ushort)45, 1)]
+    [InlineData((ushort)123, 1)]
+    [InlineData((ushort)456, -1)]
+    [InlineData(ushort.MaxValue, -1)]
+    public static void TestCompareTo(ushort value, int expected)
+    {
+        ushort i = 234;
+        int result = CompareHelper.NormalizeCompare(i.CompareTo(value));
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(null, 1)]
+    [InlineData((ushort)234, 0)]
+    [InlineData(ushort.MinValue, 1)]
+    [InlineData((ushort)0, 1)]
+    [InlineData((ushort)45, 1)]
+    [InlineData((ushort)123, 1)]
+    [InlineData((ushort)456, -1)]
+    [InlineData(ushort.MaxValue, -1)]
+    public static void TestCompareToObject(object obj, int expected)
+    {
+        IComparable comparable = (ushort)234;
+        int i = CompareHelper.NormalizeCompare(comparable.CompareTo(obj));
+        Assert.Equal(expected, i);
     }
 
     [Fact]
-    public static void TestCompareToObject()
+    public static void TestCompareToObjectInvalid()
     {
-        UInt16 i = 234;
-        IComparable comparable = i;
-
-        Assert.Equal(1, comparable.CompareTo(null));
-        Assert.Equal(0, comparable.CompareTo((UInt16)234));
-
-        Assert.True(comparable.CompareTo(UInt16.MinValue) > 0);
-        Assert.True(comparable.CompareTo((UInt16)0) > 0);
-        Assert.True(comparable.CompareTo((UInt16)(23)) > 0);
-        Assert.True(comparable.CompareTo((UInt16)123) > 0);
-        Assert.True(comparable.CompareTo((UInt16)456) < 0);
-        Assert.True(comparable.CompareTo(UInt16.MaxValue) < 0);
-
-        Assert.Throws<ArgumentException>(() => comparable.CompareTo("a"));
+        IComparable comparable = (ushort)234;
+        Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); //Obj is not a ushort
     }
 
-    [Fact]
-    public static void TestCompareTo()
+    [Theory]
+    [InlineData((ushort)789, true)]
+    [InlineData((ushort)0, false)]
+    public static void TestEqualsObject(object obj, bool expected)
     {
-        UInt16 i = 234;
-
-        Assert.Equal(0, i.CompareTo((UInt16)234));
-
-        Assert.True(i.CompareTo(UInt16.MinValue) > 0);
-        Assert.True(i.CompareTo((UInt16)0) > 0);
-        Assert.True(i.CompareTo((UInt16)123) > 0);
-        Assert.True(i.CompareTo((UInt16)456) < 0);
-        Assert.True(i.CompareTo(UInt16.MaxValue) < 0);
+        ushort i = 789;
+        Assert.Equal(expected, i.Equals(obj));
     }
 
-    [Fact]
-    public static void TestEqualsObject()
+    [Theory]
+    [InlineData((ushort)789, true)]
+    [InlineData((ushort)0, false)]
+    public static void TestEquals(ushort i2, bool expected)
     {
-        UInt16 i = 789;
-
-        object obj1 = (UInt16)789;
-        Assert.True(i.Equals(obj1));
-
-        object obj3 = (UInt16)0;
-        Assert.True(!i.Equals(obj3));
-    }
-
-    [Fact]
-    public static void TestEquals()
-    {
-        UInt16 i = 911;
-
-        Assert.True(i.Equals((UInt16)911));
-        Assert.True(!i.Equals((UInt16)0));
+        ushort i = 789;
+        Assert.Equal(expected, i.Equals(i2));
     }
 
     [Fact]
     public static void TestGetHashCode()
     {
-        UInt16 i1 = 123;
-        UInt16 i2 = 654;
+        ushort i1 = 123;
+        ushort i2 = 654;
 
         Assert.NotEqual(0, i1.GetHashCode());
         Assert.NotEqual(i1.GetHashCode(), i2.GetHashCode());
@@ -100,137 +105,169 @@ public static class UInt16Tests
     [Fact]
     public static void TestToString()
     {
-        UInt16 i1 = 6310;
+        ushort i1 = 6310;
         Assert.Equal("6310", i1.ToString());
     }
 
     [Fact]
     public static void TestToStringFormatProvider()
     {
-        var numberFormat = new System.Globalization.NumberFormatInfo();
+        var numberFormat = new NumberFormatInfo();
 
-        UInt16 i1 = 6310;
+        ushort i1 = 6310;
         Assert.Equal("6310", i1.ToString(numberFormat));
     }
 
     [Fact]
     public static void TestToStringFormat()
     {
-        UInt16 i1 = 6310;
+        ushort i1 = 6310;
         Assert.Equal("6310", i1.ToString("G"));
 
-        UInt16 i2 = 8249;
+        ushort i2 = 8249;
         Assert.Equal("8249", i2.ToString("g"));
 
-        UInt16 i3 = 2468;
+        ushort i3 = 2468;
         Assert.Equal(string.Format("{0:N}", 2468.00), i3.ToString("N"));
 
-        UInt16 i4 = 0x248;
+        ushort i4 = 0x248;
         Assert.Equal("248", i4.ToString("x"));
     }
 
     [Fact]
     public static void TestToStringFormatFormatProvider()
     {
-        var numberFormat = new System.Globalization.NumberFormatInfo();
+        var numberFormat = new NumberFormatInfo();
 
-        UInt16 i1 = 6310;
+        ushort i1 = 6310;
         Assert.Equal("6310", i1.ToString("G", numberFormat));
 
-        UInt16 i2 = 8249;
+        ushort i2 = 8249;
         Assert.Equal("8249", i2.ToString("g", numberFormat));
 
         numberFormat.NegativeSign = "xx"; // setting it to trash to make sure it doesn't show up
         numberFormat.NumberGroupSeparator = "*";
         numberFormat.NumberNegativePattern = 0;
-        UInt16 i3 = 2468;
+        ushort i3 = 2468;
         Assert.Equal("2*468.00", i3.ToString("N", numberFormat));
     }
 
-    [Fact]
-    public static void TestParse()
+    public static IEnumerable<object[]> ParseValidData()
     {
-        Assert.Equal<UInt16>(123, UInt16.Parse("123"));
-        //TODO: Negative tests once we get better exceptions
+        NumberFormatInfo defaultFormat = null;
+        NumberStyles defaultStyle = NumberStyles.Integer;
+        var emptyNfi = new NumberFormatInfo();
+
+        var testNfi = new NumberFormatInfo();
+        testNfi.CurrencySymbol = "$";
+
+        yield return new object[] { "0", defaultStyle, defaultFormat, (ushort)0 };
+        yield return new object[] { "123", defaultStyle, defaultFormat, (ushort)123 };
+        yield return new object[] { "  123  ", defaultStyle, defaultFormat, (ushort)123 };
+        yield return new object[] { "65535", defaultStyle, defaultFormat, (ushort)65535 };
+
+        yield return new object[] { "12", NumberStyles.HexNumber, defaultFormat, (ushort)0x12 };
+        yield return new object[] { "1000", NumberStyles.AllowThousands, defaultFormat, (ushort)1000 };
+
+        yield return new object[] { "123", defaultStyle, emptyNfi, (ushort)123 };
+
+        yield return new object[] { "123", NumberStyles.Any, emptyNfi, (ushort)123 };
+        yield return new object[] { "12", NumberStyles.HexNumber, emptyNfi, (ushort)0x12 };
+        yield return new object[] { "abc", NumberStyles.HexNumber, emptyNfi, (ushort)0xabc };
+        yield return new object[] { "$1,000", NumberStyles.Currency, testNfi, (ushort)1000 };
     }
 
-    [Fact]
-    public static void TestParseNumberStyle()
+    public static IEnumerable<object[]> ParseInvalidData()
     {
-        Assert.Equal<UInt16>(0x123, UInt16.Parse("123", NumberStyles.HexNumber));
+        NumberFormatInfo defaultFormat = null;
+        NumberStyles defaultStyle = NumberStyles.Integer;
+        var emptyNfi = new NumberFormatInfo();
 
-        Assert.Equal<UInt16>(1000, UInt16.Parse((1000).ToString("N0"), NumberStyles.AllowThousands));
-        //TODO: Negative tests once we get better exceptions
+        var testNfi = new NumberFormatInfo();
+        testNfi.CurrencySymbol = "$";
+        testNfi.NumberDecimalSeparator = ".";
+
+        yield return new object[] { null, defaultStyle, defaultFormat, typeof(ArgumentNullException) };
+        yield return new object[] { "", defaultStyle, defaultFormat, typeof(FormatException) };
+        yield return new object[] { " ", defaultStyle, defaultFormat, typeof(FormatException) };
+        yield return new object[] { "Garbage", defaultStyle, defaultFormat, typeof(FormatException) };
+
+        yield return new object[] { "abc", defaultStyle, defaultFormat, typeof(FormatException) }; // Hex value
+        yield return new object[] { "1E23", defaultStyle, defaultFormat, typeof(FormatException) }; // Exponent
+        yield return new object[] { "(123)", defaultStyle, defaultFormat, typeof(FormatException) }; // Parentheses
+        yield return new object[] { 100.ToString("C0"), defaultStyle, defaultFormat, typeof(FormatException) }; //Currency
+        yield return new object[] { 1000.ToString("N0"), defaultStyle, defaultFormat, typeof(FormatException) }; //Thousands
+        yield return new object[] { 678.90.ToString("F2"), defaultStyle, defaultFormat, typeof(FormatException) }; //Decimal
+
+        yield return new object[] { "abc", NumberStyles.None, defaultFormat, typeof(FormatException) }; // Negative hex value
+        yield return new object[] { "  123  ", NumberStyles.None, defaultFormat, typeof(FormatException) }; // Trailing and leading whitespace
+
+        yield return new object[] { "678.90", defaultStyle, testNfi, typeof(FormatException) }; // Decimal
+
+        yield return new object[] { "-1", defaultStyle, defaultFormat, typeof(OverflowException) }; // < min value
+        yield return new object[] { "65536", defaultStyle, defaultFormat, typeof(OverflowException) }; // > max value
+        yield return new object[] { "(123)", NumberStyles.AllowParentheses, defaultFormat, typeof(OverflowException) }; // Parentheses = negative
     }
 
-    [Fact]
-    public static void TestParseFormatProvider()
+    [Theory, MemberData("ParseValidData")]
+    public static void TestParse(string value, NumberStyles style, NumberFormatInfo nfi, ushort expected)
     {
-        var nfi = new NumberFormatInfo();
-        Assert.Equal<UInt16>(123, UInt16.Parse("123", nfi));
-        //TODO: Negative tests once we get better exceptions
+        ushort i;
+        //If no style is specified, use the (String) or (String, IFormatProvider) overload
+        if (style == NumberStyles.Integer)
+        {
+            Assert.Equal(true, ushort.TryParse(value, out i));
+            Assert.Equal(expected, i);
+
+            Assert.Equal(expected, ushort.Parse(value));
+
+            //If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
+            if (nfi != null)
+            {
+                Assert.Equal(expected, ushort.Parse(value, nfi));
+            }
+        }
+
+        // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
+        Assert.Equal(true, ushort.TryParse(value, style, nfi ?? new NumberFormatInfo(), out i));
+        Assert.Equal(expected, i);
+
+        //If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
+        if (nfi == null)
+        {
+            Assert.Equal(expected, ushort.Parse(value, style));
+        }
+        Assert.Equal(expected, ushort.Parse(value, style, nfi ?? new NumberFormatInfo()));
     }
 
-    [Fact]
-    public static void TestParseNumberStyleFormatProvider()
+    [Theory, MemberData("ParseInvalidData")]
+    public static void TestParseInvalid(string value, NumberStyles style, NumberFormatInfo nfi, Type exceptionType)
     {
-        var nfi = new NumberFormatInfo();
-        Assert.Equal<UInt16>(0x123, UInt16.Parse("123", NumberStyles.HexNumber, nfi));
+        ushort i;
+        //If no style is specified, use the (String) or (String, IFormatProvider) overload
+        if (style == NumberStyles.Integer)
+        {
+            Assert.Equal(false, ushort.TryParse(value, out i));
+            Assert.Equal(default(ushort), i);
 
-        nfi.CurrencySymbol = "$";
-        nfi.CurrencyGroupSeparator = ",";
-        Assert.Equal<UInt16>(1000, UInt16.Parse("$1,000", NumberStyles.Currency, nfi));
-        //TODO: Negative tests once we get better exception support
-    }
+            Assert.Throws(exceptionType, () => ushort.Parse(value));
 
-    [Fact]
-    public static void TestTryParse()
-    {
-        // Defaults NumberStyles.Integer = NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingSign
+            //If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
+            if (nfi != null)
+            {
+                Assert.Throws(exceptionType, () => ushort.Parse(value, nfi));
+            }
+        }
 
-        UInt16 i;
-        Assert.True(UInt16.TryParse("123", out i));     // Simple
-        Assert.Equal<UInt16>(123, i);
+        // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
+        Assert.Equal(false, ushort.TryParse(value, style, nfi ?? new NumberFormatInfo(), out i));
+        Assert.Equal(default(ushort), i);
 
-        Assert.False(UInt16.TryParse("-385", out i));    // LeadingSign negative
-
-        Assert.True(UInt16.TryParse(" 678 ", out i));   // Leading/Trailing whitespace
-        Assert.Equal<UInt16>(678, i);
-
-        var nfi = new NumberFormatInfo() { CurrencyGroupSeparator = "" };
-        Assert.False(UInt16.TryParse((1000).ToString("C0", nfi), out i));  // Currency
-        Assert.False(UInt16.TryParse((1000).ToString("N0"), out i));  // Thousands
-        Assert.False(UInt16.TryParse("abc", out i));    // Hex digits
-        Assert.False(UInt16.TryParse((678.90).ToString("F2"), out i)); // Decimal
-        Assert.False(UInt16.TryParse("(135)", out i));  // Parentheses
-        Assert.False(UInt16.TryParse("1E23", out i));   // Exponent
-    }
-
-    [Fact]
-    public static void TestTryParseNumberStyleFormatProvider()
-    {
-        UInt16 i;
-        var nfi = new NumberFormatInfo();
-        Assert.True(UInt16.TryParse("123", NumberStyles.Any, nfi, out i));   // Simple positive
-        Assert.Equal<UInt16>(123, i);
-
-        Assert.True(UInt16.TryParse("123", NumberStyles.HexNumber, nfi, out i));   // Simple Hex
-        Assert.Equal<UInt16>(0x123, i);
-
-        nfi.CurrencySymbol = "$";
-        nfi.CurrencyGroupSeparator = ",";
-        Assert.True(UInt16.TryParse("$1,000", NumberStyles.Currency, nfi, out i)); // Currency/Thousands postive
-        Assert.Equal<UInt16>(1000, i);
-
-        Assert.False(UInt16.TryParse("abc", NumberStyles.None, nfi, out i));       // Hex Number negative
-        Assert.True(UInt16.TryParse("abc", NumberStyles.HexNumber, nfi, out i));   // Hex Number positive
-        Assert.Equal<UInt16>(0xabc, i);
-
-        nfi.NumberDecimalSeparator = ".";
-        Assert.False(UInt16.TryParse("678.90", NumberStyles.Integer, nfi, out i));  // Decimal
-        Assert.False(UInt16.TryParse(" 678 ", NumberStyles.None, nfi, out i));      // Trailing/Leading whitespace negative
-
-        Assert.False(UInt16.TryParse("(135)", NumberStyles.AllowParentheses, nfi, out i)); // Parenthese negative
+        //If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
+        if (nfi == null)
+        {
+            Assert.Throws(exceptionType, () => ushort.Parse(value, style));
+        }
+        Assert.Throws(exceptionType, () => ushort.Parse(value, style, nfi ?? new NumberFormatInfo()));
     }
 }
-

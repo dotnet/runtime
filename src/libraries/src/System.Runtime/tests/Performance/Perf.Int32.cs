@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
 using Microsoft.Xunit.Performance;
 
 namespace System.Runtime.Tests
@@ -11,7 +10,7 @@ namespace System.Runtime.Tests
         [Benchmark]
         public void ToString_()
         {
-            Int32 i32 = 32;
+            int i32 = 32;
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < 10000; i++)
@@ -30,9 +29,9 @@ namespace System.Runtime.Tests
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < 10000; i++)
                     {
-                        Int32.Parse(builtString); Int32.Parse(builtString); Int32.Parse(builtString);
-                        Int32.Parse(builtString); Int32.Parse(builtString); Int32.Parse(builtString);
-                        Int32.Parse(builtString); Int32.Parse(builtString); Int32.Parse(builtString);
+                        int.Parse(builtString); int.Parse(builtString); int.Parse(builtString);
+                        int.Parse(builtString); int.Parse(builtString); int.Parse(builtString);
+                        int.Parse(builtString); int.Parse(builtString); int.Parse(builtString);
                     }
         }
     }

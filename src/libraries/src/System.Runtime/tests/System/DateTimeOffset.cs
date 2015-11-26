@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+
 using Xunit;
 
 public class DateTimeOffsetTests
@@ -192,9 +193,9 @@ public class DateTimeOffsetTests
     public static void TestParse1()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString();
+        string s = src.ToString();
         DateTimeOffset in_1 = DateTimeOffset.Parse(s);
-        String actual = in_1.ToString();
+        string actual = in_1.ToString();
         Assert.Equal(s, actual);
     }
 
@@ -202,9 +203,9 @@ public class DateTimeOffsetTests
     public static void TestParse2()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString();
+        string s = src.ToString();
         DateTimeOffset in_1 = DateTimeOffset.Parse(s, null);
-        String actual = in_1.ToString();
+        string actual = in_1.ToString();
         Assert.Equal(s, actual);
     }
 
@@ -212,9 +213,9 @@ public class DateTimeOffsetTests
     public static void TestParse3()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString();
+        string s = src.ToString();
         DateTimeOffset in_1 = DateTimeOffset.Parse(s, null, DateTimeStyles.None);
-        String actual = in_1.ToString();
+        string actual = in_1.ToString();
         Assert.Equal(s, actual);
     }
 
@@ -222,9 +223,9 @@ public class DateTimeOffsetTests
     public static void TestParseExact2()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString("u");
+        string s = src.ToString("u");
         DateTimeOffset in_1 = DateTimeOffset.ParseExact(s, "u", null, DateTimeStyles.None);
-        String actual = in_1.ToString("u");
+        string actual = in_1.ToString("u");
         Assert.Equal(s, actual);
     }
 
@@ -232,9 +233,9 @@ public class DateTimeOffsetTests
     public static void TestParseExact3()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString("g");
+        string s = src.ToString("g");
         DateTimeOffset in_1 = DateTimeOffset.ParseExact(s, "g", null, DateTimeStyles.AssumeUniversal);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -242,9 +243,9 @@ public class DateTimeOffsetTests
     public static void TestParseExact4()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString("o");
+        string s = src.ToString("o");
         DateTimeOffset in_1 = DateTimeOffset.ParseExact(s, "o", null, DateTimeStyles.None);
-        String actual = in_1.ToString("o");
+        string actual = in_1.ToString("o");
         Assert.Equal(s, actual);
     }
 
@@ -252,10 +253,10 @@ public class DateTimeOffsetTests
     public static void TestParseExact4a()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString("g");
-        String[] formats = { "g" };
+        string s = src.ToString("g");
+        string[] formats = { "g" };
         DateTimeOffset in_1 = DateTimeOffset.ParseExact(s, formats, null, DateTimeStyles.AssumeUniversal);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -263,11 +264,11 @@ public class DateTimeOffsetTests
     public static void TestTryParse1()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString("u");
+        string s = src.ToString("u");
         DateTimeOffset in_1;
         bool b = DateTimeOffset.TryParse(s, out in_1);
         Assert.True(b);
-        String actual = in_1.ToString("u");
+        string actual = in_1.ToString("u");
         Assert.Equal(s, actual);
     }
 
@@ -275,11 +276,11 @@ public class DateTimeOffsetTests
     public static void TestTryParse2()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString("u");
+        string s = src.ToString("u");
         DateTimeOffset in_1;
         bool b = DateTimeOffset.TryParse(s, out in_1);
         Assert.True(b);
-        String actual = in_1.ToString("u");
+        string actual = in_1.ToString("u");
         Assert.Equal(s, actual);
     }
 
@@ -287,11 +288,11 @@ public class DateTimeOffsetTests
     public static void TestTryParse4()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString("u");
+        string s = src.ToString("u");
         DateTimeOffset in_1;
         bool b = DateTimeOffset.TryParse(s, null, DateTimeStyles.None, out in_1);
         Assert.True(b);
-        String actual = in_1.ToString("u");
+        string actual = in_1.ToString("u");
         Assert.Equal(s, actual);
     }
 
@@ -299,11 +300,11 @@ public class DateTimeOffsetTests
     public static void TestTryParse4a()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString("g");
+        string s = src.ToString("g");
         DateTimeOffset in_1;
         bool b = DateTimeOffset.TryParse(s, null, DateTimeStyles.AssumeUniversal, out in_1);
         Assert.True(b);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -311,11 +312,11 @@ public class DateTimeOffsetTests
     public static void TestTryParseExact()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString("g");
+        string s = src.ToString("g");
         DateTimeOffset in_1;
         bool b = DateTimeOffset.TryParseExact(s, "g", null, DateTimeStyles.AssumeUniversal, out in_1);
         Assert.True(b);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
@@ -323,12 +324,12 @@ public class DateTimeOffsetTests
     public static void TestTryParseExactA()
     {
         DateTimeOffset src = DateTimeOffset.MaxValue;
-        String s = src.ToString("g");
-        String[] formats = { "g" };
+        string s = src.ToString("g");
+        string[] formats = { "g" };
         DateTimeOffset in_1;
         bool b = DateTimeOffset.TryParseExact(s, formats, null, DateTimeStyles.AssumeUniversal, out in_1);
         Assert.True(b);
-        String actual = in_1.ToString("g");
+        string actual = in_1.ToString("g");
         Assert.Equal(s, actual);
     }
 
