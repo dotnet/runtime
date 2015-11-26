@@ -604,6 +604,9 @@ namespace System.Net.Http
                     state.SetCookieOption(forwardUri);
                 }
             }
+
+            // set the headers again. This is a workaround for libcurl's limitation in handling headers with empty values
+            state.SetRequestHeaders();
         }
 
         private static void SetChunkedModeForSend(HttpRequestMessage request)
