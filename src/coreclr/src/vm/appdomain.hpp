@@ -1222,12 +1222,6 @@ public:
 #endif
 
     //****************************************************************************************
-    //
-
-    virtual IApplicationSecurityDescriptor* GetSecurityDescriptor() { LIMITED_METHOD_CONTRACT; return NULL; }
-
-
-    //****************************************************************************************
     // Get the class init lock. The method is limited to friends because inappropriate use
     // will cause deadlocks in the system
     ListLock*  GetClassInitLock()
@@ -4602,13 +4596,6 @@ public:
     // torn down using the normal sequence.
     static HRESULT NotifyProfilerShutdown();
 #endif // PROFILING_SUPPORTED
-
-    IApplicationSecurityDescriptor* GetSecurityDescriptor()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
 
     //****************************************************************************************
     // return the dev path
