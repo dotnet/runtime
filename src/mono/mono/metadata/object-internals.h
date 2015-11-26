@@ -163,6 +163,8 @@ struct _MonoArray {
 	double vector [MONO_ZERO_LEN_ARRAY];
 };
 
+#define MONO_SIZEOF_MONO_ARRAY (sizeof (MonoArray) - MONO_ZERO_LEN_ARRAY * sizeof (double))
+
 struct _MonoString {
 	MonoObject object;
 	int32_t length;
