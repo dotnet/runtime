@@ -618,6 +618,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the behavior of various access levels when working with a read-only file.
         /// </summary>
+        [ActiveIssue(4605, PlatformID.OSX)]
         [Theory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]

@@ -96,7 +96,7 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => Read(path));
         }
 
-
+        [ActiveIssue(4605, PlatformID.OSX)]
         [Fact]
         public void WriteToReadOnlyFile_UnauthException()
         {

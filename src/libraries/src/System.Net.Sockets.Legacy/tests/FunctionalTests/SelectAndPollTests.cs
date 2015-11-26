@@ -63,6 +63,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue(4686, PlatformID.OSX)]
         [Fact]
         public void SelectRead_Multiple_Success()
         {
