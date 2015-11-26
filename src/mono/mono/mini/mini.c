@@ -3008,7 +3008,12 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 				 */
 				ei->try_start = (guint8*)ei->try_start - cfg->backend->monitor_enter_adjustment;
 			}
-			tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
+			if (ec->try_offset + ec->try_len < header->code_size)
+				tblock = cfg->cil_offset_to_bb [ec->try_offset + ec->try_len];
+			else
+				tblock = cfg->bb_exit;
+			if (G_UNLIKELY (cfg->verbose_level >= 4))
+				printf ("looking for end of try [%d, %d] -> %p (code size %d)\n", ec->try_offset, ec->try_len, tblock, header->code_size);
 			g_assert (tblock);
 			if (!tblock->native_offset) {
 				int j, end;
