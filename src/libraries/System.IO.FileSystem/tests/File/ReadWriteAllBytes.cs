@@ -104,6 +104,7 @@ namespace System.IO.Tests
             }
         }
 
+        [ActiveIssue(4605, PlatformID.OSX)]
         [Fact]
         public void WriteToReadOnlyFile_UnauthException()
         {
