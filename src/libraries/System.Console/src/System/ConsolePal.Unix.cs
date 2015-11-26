@@ -788,7 +788,7 @@ namespace System
 
             private void AddKey(TermInfo.Database db, int keyId, ConsoleKey key)
             {
-                AddKey(db, keyId, key, false, false, false);
+                AddKey(db, keyId, key, shift: false, alt: false, control: false);
             }
 
             private void AddKey(TermInfo.Database db, int keyId, ConsoleKey key, bool shift, bool alt, bool control)
@@ -800,11 +800,11 @@ namespace System
 
             private void AddPrefixKey(TermInfo.Database db, string extendedNamePrefix, ConsoleKey key)
             {
-                AddKey(db, extendedNamePrefix + "3", key, false, true, false);
-                AddKey(db, extendedNamePrefix + "4", key, true, true, false);
-                AddKey(db, extendedNamePrefix + "5", key, false, false, true);
-                AddKey(db, extendedNamePrefix + "6", key, true, false, true);
-                AddKey(db, extendedNamePrefix + "7", key, false, false, true);
+                AddKey(db, extendedNamePrefix + "3", key, shift: false, alt: true,  control: false);
+                AddKey(db, extendedNamePrefix + "4", key, shift: true,  alt: true,  control: false);
+                AddKey(db, extendedNamePrefix + "5", key, shift: false, alt: false, control: true);
+                AddKey(db, extendedNamePrefix + "6", key, shift: true,  alt: false, control: true);
+                AddKey(db, extendedNamePrefix + "7", key, shift: false, alt: false, control: true);
             }
 
             private void AddKey(TermInfo.Database db, string extendedName, ConsoleKey key, bool shift, bool alt, bool control)
@@ -849,7 +849,7 @@ namespace System
                     AddKey(db, TermInfo.Database.KeyF23, ConsoleKey.F23);
                     AddKey(db, TermInfo.Database.KeyF24, ConsoleKey.F24);
                     AddKey(db, TermInfo.Database.KeyBackspace, ConsoleKey.Backspace);
-                    AddKey(db, TermInfo.Database.KeyBackTab, ConsoleKey.Tab, true, false, false);
+                    AddKey(db, TermInfo.Database.KeyBackTab, ConsoleKey.Tab, shift: true, alt: false, control: false);
                     AddKey(db, TermInfo.Database.KeyBegin, ConsoleKey.Home);
                     AddKey(db, TermInfo.Database.KeyClear, ConsoleKey.Clear);
                     AddKey(db, TermInfo.Database.KeyDelete, ConsoleKey.Delete);
@@ -864,15 +864,15 @@ namespace System
                     AddKey(db, TermInfo.Database.KeyPageUp, ConsoleKey.PageUp);
                     AddKey(db, TermInfo.Database.KeyPrint, ConsoleKey.Print);
                     AddKey(db, TermInfo.Database.KeyRight, ConsoleKey.RightArrow);
-                    AddKey(db, TermInfo.Database.KeyScrollForward, ConsoleKey.PageDown, true, false, false);
-                    AddKey(db, TermInfo.Database.KeyScrollReverse, ConsoleKey.PageUp, true, false, false);
-                    AddKey(db, TermInfo.Database.KeySBegin, ConsoleKey.Home, true, false, false);
-                    AddKey(db, TermInfo.Database.KeySDelete, ConsoleKey.Delete, true, false, false);
-                    AddKey(db, TermInfo.Database.KeySHome, ConsoleKey.Home, true, false, false);
+                    AddKey(db, TermInfo.Database.KeyScrollForward, ConsoleKey.PageDown, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.Database.KeyScrollReverse, ConsoleKey.PageUp, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.Database.KeySBegin, ConsoleKey.Home, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.Database.KeySDelete, ConsoleKey.Delete, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.Database.KeySHome, ConsoleKey.Home, shift: true, alt: false, control: false);
                     AddKey(db, TermInfo.Database.KeySelect, ConsoleKey.Select);
-                    AddKey(db, TermInfo.Database.KeySLeft, ConsoleKey.LeftArrow, true, false, false);
-                    AddKey(db, TermInfo.Database.KeySPrint, ConsoleKey.Print, true, false, false);
-                    AddKey(db, TermInfo.Database.KeySRight, ConsoleKey.RightArrow, true, false, false);
+                    AddKey(db, TermInfo.Database.KeySLeft, ConsoleKey.LeftArrow, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.Database.KeySPrint, ConsoleKey.Print, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.Database.KeySRight, ConsoleKey.RightArrow, shift: true, alt: false, control: false);
                     AddKey(db, TermInfo.Database.KeyUp, ConsoleKey.UpArrow);
 
                     AddPrefixKey(db, "kLFT", ConsoleKey.LeftArrow);
@@ -1148,7 +1148,7 @@ namespace System
                     // (Note that the extended section also includes other Booleans and numbers, but we don't
                     // have any need for those now, so we don't parse them.)
                     int extendedBeginning = RoundUpToEven(StringsTableOffset + _stringTableNumBytes);
-                    _extendedStrings = ParseExtendedStrings(data, extendedBeginning);
+                    _extendedStrings = ParseExtendedStrings(data, extendedBeginning) ?? new Dictionary<string, string>();
                 }
 
                 /// <summary>Gets the cached instance of the database.</summary>
@@ -1360,12 +1360,10 @@ namespace System
                 private static Dictionary<string, string> ParseExtendedStrings(byte[] data, int extendedBeginning)
                 {
                     const int ExtendedHeaderSize = 10;
-                    var extendedStrings = new Dictionary<string, string>();
-
                     if (extendedBeginning + ExtendedHeaderSize >= data.Length)
                     {
                         // Exit out as there's no extended information.
-                        return extendedStrings;
+                        return null;
                     }
 
                     // Read in extended counts, and exit out if we got any incorrect info
@@ -1381,7 +1379,7 @@ namespace System
                         extendedStringTableByteSize < 0)
                     {
                         // The extended header contained invalid data.  Bail.
-                        return extendedStrings;
+                        return null;
                     }
 
                     // Skip over the extended bools.  We don't need them now and can add this in later 
@@ -1410,14 +1408,14 @@ namespace System
                     if (extendedStringTableEnd > data.Length)
                     {
                         // We don't have enough data to parse everything.  Bail.
-                        return extendedStrings;
+                        return null;
                     }
 
                     // Now we need to parse all of the extended string values.  These aren't necessarily
                     // "in order", meaning the offsets aren't guaranteed to be increasing.  Instead, we parse
                     // the offsets in order, pulling out each string it references and storing them into our
                     // results list in the order of the offsets.
-                    var values = new List<string>();
+                    var values = new List<string>(extendedStringCount);
                     int lastEnd = 0;
                     for (int i = 0; i < extendedStringCount; i++)
                     {
@@ -1425,7 +1423,7 @@ namespace System
                         if (offset < 0 || offset >= data.Length)
                         {
                             // If the offset is invalid, bail.
-                            return extendedStrings;
+                            return null;
                         }
 
                         // Add the string
@@ -1437,7 +1435,7 @@ namespace System
                     }
 
                     // Now parse all of the names.
-                    var names = new List<string>();
+                    var names = new List<string>(extendedBoolCount + extendedNumberCount + extendedStringCount);
                     for (int pos = lastEnd + 1; pos < extendedStringTableEnd; pos++)
                     {
                         int end = FindNullTerminator(data, pos);
@@ -1447,6 +1445,7 @@ namespace System
 
                     // The names are in order for the Booleans, then the numbers, and then the strings.
                     // Skip over the bools and numbers, and associate the names with the values.
+                    var extendedStrings = new Dictionary<string, string>(extendedStringCount);
                     for (int iName = extendedBoolCount + extendedNumberCount, iValue = 0; 
                          iName < names.Count && iValue < values.Count; 
                          iName++, iValue++)
