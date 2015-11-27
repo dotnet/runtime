@@ -4232,7 +4232,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_branch8 (code, X86_CC_NE, 0, FALSE);
 
 			x86_fstp (code, 0);			
-			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "ArithmeticException");
+			EMIT_COND_SYSTEM_EXCEPTION (X86_CC_EQ, FALSE, "OverflowException");
 
 			x86_patch (br1, code);
 			break;

@@ -5799,10 +5799,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 				ARM_CMPD (code, vfp_scratch2, vfp_scratch1);
 				ARM_FMSTAT (code);
-				EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_GT, "ArithmeticException");
+				EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_GT, "OverflowException");
 				ARM_CMPD (code, ins->sreg1, ins->sreg1);
 				ARM_FMSTAT (code);
-				EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_VS, "ArithmeticException");
+				EMIT_COND_SYSTEM_EXCEPTION_FLAGS (ARMCOND_VS, "OverflowException");
 				ARM_CPYD (code, ins->dreg, ins->sreg1);
 
 				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);

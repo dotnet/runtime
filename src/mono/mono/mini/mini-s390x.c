@@ -4604,7 +4604,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_tcdb (code, ins->sreg1, 0, s390_r13, 0);
 			s390_jz   (code, 0); CODEPTR(code, o);
 			mono_add_patch_info (cfg, code - cfg->native_code, 
-					     MONO_PATCH_INFO_EXC, "ArithmeticException");
+					     MONO_PATCH_INFO_EXC, "OverflowException");
 			s390_brasl (code, s390_r14,0);
 			PTRSLOT(code, o);
 		}

@@ -4632,7 +4632,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_bne (code, mips_at, mips_zero, 0);
 			mips_nop (code);
 
-			EMIT_SYSTEM_EXCEPTION_NAME("ArithmeticException");
+			EMIT_SYSTEM_EXCEPTION_NAME("OverflowException");
 			mips_patch (branch_patch, (guint32)code);
 			mips_fmovd (code, ins->dreg, ins->sreg1);
 			break;

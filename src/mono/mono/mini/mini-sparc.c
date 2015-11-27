@@ -3626,7 +3626,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			sparc_srl_imm (code, sparc_o7, 4, sparc_o7);
 			sparc_and_imm (code, FALSE, sparc_o7, 2047, sparc_o7);
 			sparc_cmp_imm (code, sparc_o7, 2047);
-			EMIT_COND_SYSTEM_EXCEPTION (ins, sparc_be, "ArithmeticException");
+			EMIT_COND_SYSTEM_EXCEPTION (ins, sparc_be, "OverflowException");
 #ifdef SPARCV9
 			sparc_fmovd (code, ins->sreg1, ins->dreg);
 #else

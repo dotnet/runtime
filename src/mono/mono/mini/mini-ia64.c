@@ -2690,16 +2690,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CKFINITE:
 			/* Quiet NaN */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x080);
-			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
+			emit_cond_system_exception (cfg, code, "OverflowException", 6);
 			/* Signaling NaN */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x040);
-			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
+			emit_cond_system_exception (cfg, code, "OverflowException", 6);
 			/* Positive infinity */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x021);
-			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
+			emit_cond_system_exception (cfg, code, "OverflowException", 6);
 			/* Negative infinity */
 			ia64_fclass_m (code, 6, 7, ins->sreg1, 0x022);
-			emit_cond_system_exception (cfg, code, "ArithmeticException", 6);
+			emit_cond_system_exception (cfg, code, "OverflowException", 6);
 			break;
 
 		/* Calls */
