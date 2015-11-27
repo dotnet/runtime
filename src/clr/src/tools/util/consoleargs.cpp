@@ -665,7 +665,7 @@ LEADINGWHITE:
         argLast = &listArgNew->next;
     }
 
-    delete szTemp;
+    delete[] szTemp;
 
 }
 
