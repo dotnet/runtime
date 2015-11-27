@@ -79,10 +79,8 @@ namespace System.Collections.ObjectModel
                 return dict.ContainsKey(key);
             }
 
-            if (key != null) {
-                foreach (TItem item in Items) {
-                    if (comparer.Equals(GetKeyForItem(item), key)) return true;
-                }
+            foreach (TItem item in Items) {
+                if (comparer.Equals(GetKeyForItem(item), key)) return true;
             }
             return false;
         }
@@ -114,12 +112,10 @@ namespace System.Collections.ObjectModel
                 return false;
             }
 
-            if (key != null) {
-                for (int i = 0; i < Items.Count; i++) {
-                    if (comparer.Equals(GetKeyForItem(Items[i]), key)) {
-                        RemoveItem(i);
-                        return true;
-                    }
+            for (int i = 0; i < Items.Count; i++) {
+                if (comparer.Equals(GetKeyForItem(Items[i]), key)) {
+                    RemoveItem(i);
+                    return true;
                 }
             }
             return false;
