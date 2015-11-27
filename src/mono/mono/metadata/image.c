@@ -1062,7 +1062,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		if (!mono_image_load_pe_data (image))
 			goto invalid_image;
 	} else {
-		image->loader = &pe_loader;
+		image->loader = (MonoImageLoader*)&pe_loader;
 	}
 
 	if (care_about_cli == FALSE) {
