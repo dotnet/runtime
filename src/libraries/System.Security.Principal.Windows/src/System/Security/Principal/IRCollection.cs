@@ -422,7 +422,7 @@ namespace System.Security.Principal
         {
             get
             {
-                return _collection.Identities[_current];
+                return Current;
             }
         }
 
@@ -430,7 +430,7 @@ namespace System.Security.Principal
         {
             get
             {
-                return ((IEnumerator)this).Current as IdentityReference;
+                return _collection.Identities[_current];
             }
         }
 
