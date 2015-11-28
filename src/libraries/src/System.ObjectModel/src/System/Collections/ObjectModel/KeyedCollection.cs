@@ -25,6 +25,8 @@ namespace System.Collections.ObjectModel
 
 
         protected KeyedCollection(IEqualityComparer<TKey> comparer, int dictionaryCreationThreshold)
+            : base(new List<TItem>()) // Be explicit about the use of List<T> so we can foreach over
+                                      // Items internally without enumerator allocations.
         {
             if (comparer == null)
             {
@@ -43,6 +45,19 @@ namespace System.Collections.ObjectModel
 
             _comparer = comparer;
             _threshold = dictionaryCreationThreshold;
+        }
+
+        /// <summary>
+        /// Enables the use of foreach internally without allocations using <see cref="List{T}"/>'s struct enumerator.
+        /// </summary>
+        new private List<TItem> Items
+        {
+            get
+            {
+                Debug.Assert(base.Items is List<TItem>);
+
+                return (List<TItem>)base.Items;
+            }
         }
 
         public IEqualityComparer<TKey> Comparer
