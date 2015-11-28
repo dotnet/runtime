@@ -16,12 +16,14 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
-        internal static int FillFdSetFromSocketList(ref Interop.Sys.FdSet fdset, IList socketList)
+        internal static unsafe int FillFdSetFromSocketList(uint* fdset, IList socketList)
         {
             if (socketList == null || socketList.Count == 0)
             {
                 return 0;
             }
+
+            Interop.Sys.FD_ZERO(fdset);
 
             int maxFd = -1;
             for (int i = 0; i < socketList.Count; i++)
@@ -33,7 +35,7 @@ namespace System.Net.Sockets
                 }
 
                 int fd = socket._handle.FileDescriptor;
-                fdset.Set(fd);
+                Interop.Sys.FD_SET(fd, fdset);
 
                 if (fd > maxFd)
                 {
@@ -46,7 +48,7 @@ namespace System.Net.Sockets
 
         // Transform the list socketList such that the only sockets left are those
         // with a file descriptor contained in the array "fileDescriptorArray".
-        internal static void FilterSocketListUsingFdSet(ref Interop.Sys.FdSet fdset, IList socketList)
+        internal static unsafe void FilterSocketListUsingFdSet(uint* fdset, IList socketList)
         {
             if (socketList == null || socketList.Count == 0)
             {
@@ -58,7 +60,7 @@ namespace System.Net.Sockets
                 for (int i = socketList.Count - 1; i >= 0; i--)
                 {
                     var socket = (Socket)socketList[i];
-                    if (!fdset.IsSet(socket._handle.FileDescriptor))
+                    if (!Interop.Sys.FD_ISSET(socket._handle.FileDescriptor, fdset))
                     {
                         socketList.RemoveAt(i);
                     }
