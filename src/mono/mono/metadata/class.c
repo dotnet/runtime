@@ -6763,7 +6763,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	if (eclass->byval_arg.type == MONO_TYPE_TYPEDBYREF || eclass->byval_arg.type == MONO_TYPE_VOID) {
 		/*Arrays of those two types are invalid.*/
-		mono_class_set_failure (klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+		mono_class_set_failure (klass, MONO_EXCEPTION_INVALID_PROGRAM, NULL);
 	} else if (eclass->enumtype && !mono_class_enum_basetype (eclass)) {
 		if (!eclass->ref_info_handle || eclass->wastypebuilder) {
 			g_warning ("Only incomplete TypeBuilder objects are allowed to be an enum without base_type");
@@ -10073,6 +10073,9 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 	}
 	case MONO_EXCEPTION_BAD_IMAGE: {
 		return mono_get_exception_bad_image_format ((const char *)exception_data);
+	}
+	case MONO_EXCEPTION_INVALID_PROGRAM: {
+		return mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidProgramException", "");
 	}
 	default: {
 		MonoLoaderError *error;
