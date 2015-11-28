@@ -10,7 +10,7 @@ namespace System.Runtime.Tests
         [Benchmark]
         public void ToString_()
         {
-            UInt32 testint = new UInt32();
+            uint testint = new uint();
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < 10000; i++)

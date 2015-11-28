@@ -316,7 +316,7 @@ namespace System
             char c;
             int length;
 
-            if (0 == minLength && 0 == maxLength) return String.Empty;
+            if (0 == minLength && 0 == maxLength) return string.Empty;
             if (minLength > maxLength) return null;
 
             length = minLength;

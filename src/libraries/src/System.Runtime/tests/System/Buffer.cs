@@ -2,10 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.InteropServices;
+
 using Xunit;
 
 public static unsafe class BufferTests
@@ -34,7 +33,7 @@ public static unsafe class BufferTests
         Assert.Equal(b2[3], 0x3c);
         Assert.Equal(b2[4], 0x5e);
 
-        Assert.Throws<ArgumentException>(() => Buffer.BlockCopy(new String[3], 0, new int[3], 0, 0));
+        Assert.Throws<ArgumentException>(() => Buffer.BlockCopy(new string[3], 0, new int[3], 0, 0));
         Assert.Throws<ArgumentException>(() => Buffer.BlockCopy(new byte[3], 3, new byte[3], 0, 1));
         Assert.Throws<ArgumentException>(() => Buffer.BlockCopy(new byte[3], 0, new byte[3], 3, 1));
         Assert.Throws<ArgumentException>(() => Buffer.BlockCopy(new byte[3], 0, new byte[3], 4, 0));
@@ -112,4 +111,3 @@ public static unsafe class BufferTests
         Assert.Equal<uint>(a[1], 0xa2abcdef);
     }
 }
-

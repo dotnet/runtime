@@ -2,209 +2,143 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Runtime.Tests.Common;
+
 using Xunit;
 
 public static class BooleanTests
 {
-    private static void VerifyBooleanTryParse(string s, bool expectedResult, bool expectedReturn)
-    {
-        Boolean b;
-        Assert.Equal(expectedReturn, Boolean.TryParse(s, out b));
-        Assert.Equal(expectedResult, b);
-    }
     [Fact]
-    public static void TestTryParse()
+    public static void TestTrueString()
     {
-        // Boolean Boolean.TryParse(String, Boolean)
-
-        // Success cases
-        VerifyBooleanTryParse(Boolean.TrueString, true, true);
-        VerifyBooleanTryParse(Boolean.FalseString, false, true);
-        VerifyBooleanTryParse("True", true, true);
-        VerifyBooleanTryParse("true", true, true);
-        VerifyBooleanTryParse("TRUE", true, true);
-        VerifyBooleanTryParse("tRuE", true, true);
-        VerifyBooleanTryParse("False", false, true);
-        VerifyBooleanTryParse("false", false, true);
-        VerifyBooleanTryParse("FALSE", false, true);
-        VerifyBooleanTryParse("fAlSe", false, true);
-        VerifyBooleanTryParse("  True  ", true, true);
-        VerifyBooleanTryParse("False  ", false, true);
-        VerifyBooleanTryParse("True\0", true, true);
-        VerifyBooleanTryParse("False\0", false, true);
-        VerifyBooleanTryParse("True\0    ", true, true);
-        VerifyBooleanTryParse(" \0 \0  True   \0 ", true, true);
-        VerifyBooleanTryParse("  False \0\0\0  ", false, true);
-
-        // Fail cases
-        VerifyBooleanTryParse(null, false, false);
-        VerifyBooleanTryParse("", false, false);
-        VerifyBooleanTryParse(" ", false, false);
-        VerifyBooleanTryParse("Garbage", false, false);
-        VerifyBooleanTryParse("True\0Garbage", false, false);
-        VerifyBooleanTryParse("True\0True", false, false);
-        VerifyBooleanTryParse("True True", false, false);
-        VerifyBooleanTryParse("True False", false, false);
-        VerifyBooleanTryParse("False True", false, false);
-        VerifyBooleanTryParse("Fa lse", false, false);
-        VerifyBooleanTryParse("T", false, false);
-        VerifyBooleanTryParse("0", false, false);
-        VerifyBooleanTryParse("1", false, false);
-    }
-
-    private static void VerifyBooleanParse(string s, bool expectedResult, bool shouldSucceed)
-    {
-        Boolean b;
-        Boolean succeeded;
-        try
-        {
-            b = Boolean.Parse(s);
-            Assert.Equal(expectedResult, b);
-            succeeded = true;
-        }
-        catch (Exception)
-        {
-            succeeded = false;
-        }
-        Assert.Equal(shouldSucceed, succeeded);
-    }
-
-    [Fact]
-    public static void TestParse()
-    {
-        // Boolean Boolean.Parse(String)
-        // Success cases
-        VerifyBooleanParse(Boolean.TrueString, true, true);
-        VerifyBooleanParse(Boolean.FalseString, false, true);
-        VerifyBooleanParse("True", true, true);
-        VerifyBooleanParse("true", true, true);
-        VerifyBooleanParse("TRUE", true, true);
-        VerifyBooleanParse("tRuE", true, true);
-        VerifyBooleanParse("False", false, true);
-        VerifyBooleanParse("false", false, true);
-        VerifyBooleanParse("FALSE", false, true);
-        VerifyBooleanParse("fAlSe", false, true);
-        VerifyBooleanParse("  True  ", true, true);
-        VerifyBooleanParse("False  ", false, true);
-        VerifyBooleanParse("True\0", true, true);
-        VerifyBooleanParse("False\0", false, true);
-        VerifyBooleanParse("True\0    ", true, true);
-        VerifyBooleanParse(" \0 \0  True   \0 ", true, true);
-        VerifyBooleanParse("  False \0\0\0  ", false, true);
-
-        // Fail cases
-        VerifyBooleanParse(null, false, false);
-        VerifyBooleanParse("", false, false);
-        VerifyBooleanParse(" ", false, false);
-        VerifyBooleanParse("Garbage", false, false);
-        VerifyBooleanParse("True\0Garbage", false, false);
-        VerifyBooleanParse("True\0True", false, false);
-        VerifyBooleanParse("True True", false, false);
-        VerifyBooleanParse("True False", false, false);
-        VerifyBooleanParse("False True", false, false);
-        VerifyBooleanParse("Fa lse", false, false);
-        VerifyBooleanParse("T", false, false);
-        VerifyBooleanParse("0", false, false);
-        VerifyBooleanParse("1", false, false);
+        Assert.Equal("True", bool.TrueString);
     }
 
     [Fact]
     public static void TestFalseString()
     {
-        // String Boolean.FalseString
-        Assert.Equal("False", Boolean.FalseString);
+        Assert.Equal("False", bool.FalseString);
     }
 
-    [Fact]
-    public static void TestEqualsObject()
-    {
-        // Boolean Boolean.Equals(Object)
-        Boolean bTrue = true;
-        Boolean bFalse = false;
-        Assert.True(bTrue.Equals(true));
-        Assert.True(bFalse.Equals(false));
-        Assert.False(bTrue.Equals(false));
-        Assert.False(bFalse.Equals(true));
+    [Theory]
+    [InlineData("True", true, true)]
+    [InlineData("true", true, true)]
+    [InlineData("TRUE", true, true)]
+    [InlineData("tRuE", true, true)]
+    [InlineData("  True  ", true, true)]
+    [InlineData("True\0", true, true)]
+    [InlineData(" \0 \0  True   \0 ", true, true)]
 
-        Assert.False(bTrue.Equals(1));
-        Assert.False(bTrue.Equals("true"));
-        Assert.False(bFalse.Equals(0));
-        Assert.False(bFalse.Equals("False"));
-        Assert.False(bTrue.Equals(null));
-        Assert.False(bFalse.Equals(null));
+    [InlineData("False", false, true)]
+    [InlineData("false", false, true)]
+    [InlineData("FALSE", false, true)]
+    [InlineData("fAlSe", false, true)]
+    [InlineData("False  ", false, true)]
+    [InlineData("False\0", false, true)]
+    [InlineData("  False \0\0\0  ", false, true)]
+    
+    [InlineData(null, default(bool), false)]
+    [InlineData("", default(bool), false)]
+    [InlineData(" ", default(bool), false)]
+    [InlineData("Garbage", default(bool), false)]
+    [InlineData("True\0Garbage", default(bool), false)]
+    [InlineData("True\0True", default(bool), false)]
+    [InlineData("True True", default(bool), false)]
+    [InlineData("True False", default(bool), false)]
+    [InlineData("False True", default(bool), false)]
+    [InlineData("Fa lse", default(bool), false)]
+    [InlineData("T", default(bool), false)]
+    [InlineData("0", default(bool), false)]
+    [InlineData("1", default(bool), false)]
+    public static void TestParse(string value, bool expectedResult, bool shouldSucceed)
+    {
+        //TryParse
+        bool result;
+        Assert.Equal(shouldSucceed, bool.TryParse(value, out result));
+        Assert.Equal(expectedResult, result);
+
+        //Parse
+        if (shouldSucceed)
+        {
+            Assert.Equal(expectedResult, bool.Parse(value));
+        }
+        else if (value == null)
+        {
+            Assert.Throws<ArgumentNullException>("value", () => bool.Parse(value));
+        }
+        else
+        {
+            Assert.Throws<FormatException>(() => bool.Parse(value));
+        }
     }
 
-    [Fact]
-    public static void TestEquals()
+    [Theory]
+    [InlineData(true, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(true, "1", false)]
+    [InlineData(true, "True", false)]
+    [InlineData(true, null, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, false)]
+    [InlineData(false, "0", false)]
+    [InlineData(false, "False", false)]
+    [InlineData(false, null, false)]
+    public static void TestEquals(bool b1, object b2, bool expected)
     {
-        // Boolean Boolean.Equals(Boolean)
-        Boolean bTrue = true;
-        Boolean bFalse = false;
-        Assert.True(bTrue.Equals(true));
-        Assert.True(bFalse.Equals(false));
-        Assert.False(bTrue.Equals(false));
-        Assert.False(bFalse.Equals(true));
-    }
-
-    [Fact]
-    public static void TestTrueString()
-    {
-        // String Boolean.TrueString
-        Assert.Equal("True", Boolean.TrueString);
+        if (b2 is bool)
+        {
+            Assert.Equal(expected, b1.Equals((bool)b2));
+        }
+        Assert.Equal(expected, b1.Equals(b2));
     }
 
     [Fact]
     public static void TestGetHashCode()
     {
-        // Int32 Boolean.GetHashCode()
         Assert.Equal(1, true.GetHashCode());
         Assert.Equal(0, false.GetHashCode());
-    }
-
-    private static void VerifyCompareToFailures(IComparable b, object o)
-    {
-        Assert.True(b is Boolean);
-        Assert.Throws<ArgumentException>(() => b.CompareTo(o));
-    }
-
-    [Fact]
-    public static void TestCompareTo()
-    {
-        // Int32 Boolean.CompareTo(Boolean)
-        Boolean bTrue = true;
-        Boolean bFalse = false;
-        Assert.True(bTrue.CompareTo(true) == 0);
-        Assert.True(bFalse.CompareTo(false) == 0);
-        Assert.False(bTrue.CompareTo(false) < 0);
-        Assert.False(bFalse.CompareTo(true) > 0);
     }
 
     [Fact]
     public static void TestToString()
     {
-        // String Boolean.ToString()
-        Boolean bTrue = true;
-        Boolean bFalse = false;
-        Assert.Equal(Boolean.TrueString, bTrue.ToString());
-        Assert.Equal(Boolean.FalseString, bFalse.ToString());
+        Assert.Equal(bool.TrueString, true.ToString());
+        Assert.Equal(bool.FalseString, false.ToString());
     }
 
-    [Fact]
-    public static void TestSystemIComparableCompareTo()
+    [Theory]
+    [InlineData(true, true, 0)]
+    [InlineData(true, false, 1)]
+    [InlineData(true, null, 1)]
+    [InlineData(false, false, 0)]
+    [InlineData(false, true, -1)]
+    [InlineData(false, null, 0)]
+    public static void TestCompareTo(bool b1, bool b2, int expected)
     {
-        // Int32 Boolean.System.IComparable.CompareTo(Object)
-        IComparable bTrue = true;
-        IComparable bFalse = false;
-        Assert.True(bTrue.CompareTo(true) == 0);
-        Assert.True(bFalse.CompareTo(false) == 0);
-        Assert.False(bTrue.CompareTo(false) < 0);
-        Assert.False(bFalse.CompareTo(true) > 0);
+        int i = CompareHelper.NormalizeCompare(b1.CompareTo(b2));
+        Assert.Equal(expected, i);
+    }
 
-        VerifyCompareToFailures(bTrue, 1);
-        VerifyCompareToFailures(bTrue, "true");
-        VerifyCompareToFailures(bFalse, 0);
-        VerifyCompareToFailures(bFalse, "false");
-        Assert.True(bTrue.CompareTo(null) > 0);
-        Assert.True(bFalse.CompareTo(null) > 0);
+    [Theory]
+    [InlineData(true, true, 0)]
+    [InlineData(true, false, 1)]
+    [InlineData(true, null, 1)]
+    [InlineData(false, false, 0)]
+    [InlineData(false, true, -1)]
+    [InlineData(false, null, 1)]
+    public static void TestIComparableCompareTo(IComparable b1, IComparable b2, int expected)
+    {
+        int i = CompareHelper.NormalizeCompare(b1.CompareTo(b2));
+        Assert.Equal(expected, i);
+    }
+
+    [Theory]
+    [InlineData(true, 1)]
+    [InlineData(true, "true")]
+    [InlineData(false, 0)]
+    [InlineData(false, "false")]
+    private static void VerifyCompareToFailures(IComparable b, object obj)
+    {
+        Assert.Throws<ArgumentException>(null, () => b.CompareTo(obj));
     }
 }

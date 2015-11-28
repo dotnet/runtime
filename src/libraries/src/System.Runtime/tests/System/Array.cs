@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+
 using Xunit;
 
 public static unsafe class ArrayTests
@@ -11,14 +12,14 @@ public static unsafe class ArrayTests
     [Fact]
     public static void TestArrayAsIListOfT()
     {
-        String[] sa = { "Hello", "There" };
-        String s;
+        string[] sa = { "Hello", "There" };
+        string s;
         int idx;
 
-        bool b = (sa is IList<String>);
+        bool b = (sa is IList<string>);
         Assert.True(b);
 
-        IList<String> ils = sa;
+        IList<string> ils = sa;
         int len = ils.Count;
         Assert.Equal(len, 2);
 
@@ -33,7 +34,7 @@ public static unsafe class ArrayTests
         idx = ils.IndexOf(null);
         Assert.Equal(idx, -1);
 
-        String[] sa2 = new String[2];
+        string[] sa2 = new string[2];
         ils.CopyTo(sa2, 0);
         Assert.Equal(sa2[0], sa[0]);
         Assert.Equal(sa2[1], sa[1]);
@@ -59,7 +60,7 @@ public static unsafe class ArrayTests
         Assert.Throws<NotSupportedException>(() => ils.RemoveAt(1));
         Assert.Throws<NotSupportedException>(() => ils.Insert(0, "x"));
 
-        IEnumerator<String> e = ils.GetEnumerator();
+        IEnumerator<string> e = ils.GetEnumerator();
         b = e.MoveNext();
         Assert.True(b);
         s = e.Current;
@@ -106,7 +107,7 @@ public static unsafe class ArrayTests
         Assert.False(il.Contains(999));
         Assert.Equal(il.IndexOf(1), 0);
         Assert.Equal(il.IndexOf(999), -1);
-        Object v = il[0];
+        object v = il[0];
         Assert.Equal(v, 1);
         v = il[1];
         Assert.Equal(v, 2);
@@ -310,17 +311,17 @@ public static unsafe class ArrayTests
         int[] idirect = new int[3] { 7, 8, 9 };
         Array a = idirect;
 
-        Object seven = a.GetValue(0);
+        object seven = a.GetValue(0);
         Assert.Equal(7, seven);
         a.SetValue(41, 0);
         Assert.Equal(41, idirect[0]);
 
-        Object eight = a.GetValue(1);
+        object eight = a.GetValue(1);
         Assert.Equal(8, eight);
         a.SetValue(42, 1);
         Assert.Equal(42, idirect[1]);
 
-        Object nine = a.GetValue(2);
+        object nine = a.GetValue(2);
         Assert.Equal(9, nine);
         a.SetValue(43, 2);
         Assert.Equal(43, idirect[2]);
@@ -399,32 +400,32 @@ public static unsafe class ArrayTests
         //----------------------------------------------------------
         // GC-refs
         //----------------------------------------------------------
-        String[] sdirect;
+        string[] sdirect;
 
-        sdirect = new String[] { "7", "8", "9" };
+        sdirect = new string[] { "7", "8", "9" };
 
         Array.Clear((Array)sdirect, 0, 3);
         Assert.Null(sdirect[0]);
         Assert.Null(sdirect[1]);
         Assert.Null(sdirect[2]);
 
-        sdirect = new String[] { "7", "8", "9" };
+        sdirect = new string[] { "7", "8", "9" };
 
         ((IList)sdirect).Clear();
         Assert.Null(sdirect[0]);
         Assert.Null(sdirect[1]);
         Assert.Null(sdirect[2]);
 
-        sdirect = new String[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" };
+        sdirect = new string[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" };
         Array.Clear((Array)sdirect, 2, 3);
-        Assert.Equal<String>(sdirect[0], "0x1234567");
-        Assert.Equal<String>(sdirect[1], "0x789abcde");
+        Assert.Equal<string>(sdirect[0], "0x1234567");
+        Assert.Equal<string>(sdirect[1], "0x789abcde");
         Assert.Null(sdirect[2]);
         Assert.Null(sdirect[3]);
         Assert.Null(sdirect[4]);
-        Assert.Equal<String>(sdirect[5], "0x22446688");
+        Assert.Equal<string>(sdirect[5], "0x22446688");
 
-        sdirect = new String[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" };
+        sdirect = new string[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" };
         Array.Clear((Array)sdirect, 0, 6);
         Assert.Null(sdirect[0]);
         Assert.Null(sdirect[1]);
@@ -433,23 +434,23 @@ public static unsafe class ArrayTests
         Assert.Null(sdirect[4]);
         Assert.Null(sdirect[5]);
 
-        sdirect = new String[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" };
+        sdirect = new string[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" };
         Array.Clear((Array)sdirect, 6, 0);
-        Assert.Equal<String>(sdirect[0], "0x1234567");
-        Assert.Equal<String>(sdirect[1], "0x789abcde");
-        Assert.Equal<String>(sdirect[2], "0x22334455");
-        Assert.Equal<String>(sdirect[3], "0x66778899");
-        Assert.Equal<String>(sdirect[4], "0x11335577");
-        Assert.Equal<String>(sdirect[5], "0x22446688");
+        Assert.Equal<string>(sdirect[0], "0x1234567");
+        Assert.Equal<string>(sdirect[1], "0x789abcde");
+        Assert.Equal<string>(sdirect[2], "0x22334455");
+        Assert.Equal<string>(sdirect[3], "0x66778899");
+        Assert.Equal<string>(sdirect[4], "0x11335577");
+        Assert.Equal<string>(sdirect[5], "0x22446688");
 
-        sdirect = new String[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" };
+        sdirect = new string[] { "0x1234567", "0x789abcde", "0x22334455", "0x66778899", "0x11335577", "0x22446688" };
         Array.Clear((Array)sdirect, 0, 0);
-        Assert.Equal<String>(sdirect[0], "0x1234567");
-        Assert.Equal<String>(sdirect[1], "0x789abcde");
-        Assert.Equal<String>(sdirect[2], "0x22334455");
-        Assert.Equal<String>(sdirect[3], "0x66778899");
-        Assert.Equal<String>(sdirect[4], "0x11335577");
-        Assert.Equal<String>(sdirect[5], "0x22446688");
+        Assert.Equal<string>(sdirect[0], "0x1234567");
+        Assert.Equal<string>(sdirect[1], "0x789abcde");
+        Assert.Equal<string>(sdirect[2], "0x22334455");
+        Assert.Equal<string>(sdirect[3], "0x66778899");
+        Assert.Equal<string>(sdirect[4], "0x11335577");
+        Assert.Equal<string>(sdirect[5], "0x22446688");
 
         //----------------------------------------------------------
         // Valuetypes with embedded GC-refs
@@ -499,10 +500,10 @@ public static unsafe class ArrayTests
 
         Array.Clear((Array)g, 2, 3);
         Assert.Equal<int>(g[0].x, 7);
-        Assert.Equal<String>(g[0].s, "Hello");
+        Assert.Equal<string>(g[0].s, "Hello");
         Assert.Equal<int>(g[0].z, 8);
         Assert.Equal<int>(g[1].x, 7);
-        Assert.Equal<String>(g[1].s, "Hello");
+        Assert.Equal<string>(g[1].s, "Hello");
         Assert.Equal<int>(g[1].z, 8);
         for (int i = 2; i < 2 + 3; i++)
         {
@@ -532,23 +533,23 @@ public static unsafe class ArrayTests
     [Fact]
     public static void TestCopy_GCRef()
     {
-        String[] s;
-        String[] d;
+        string[] s;
+        string[] d;
 
-        s = new String[] { "Red", "Green", null, "Blue" };
-        d = new String[] { "X", "X", "X", "X" };
+        s = new string[] { "Red", "Green", null, "Blue" };
+        d = new string[] { "X", "X", "X", "X" };
         Array.Copy(s, 0, d, 0, 4);
-        Assert.Equal<String>(d[0], "Red");
-        Assert.Equal<String>(d[1], "Green");
+        Assert.Equal<string>(d[0], "Red");
+        Assert.Equal<string>(d[1], "Green");
         Assert.Null(d[2]);
-        Assert.Equal<String>(d[3], "Blue");
+        Assert.Equal<string>(d[3], "Blue");
 
         // With reverse overlap
-        s = new String[] { "Red", "Green", null, "Blue" };
+        s = new string[] { "Red", "Green", null, "Blue" };
         Array.Copy(s, 1, s, 2, 2);
-        Assert.Equal<String>(s[0], "Red");
-        Assert.Equal<String>(s[1], "Green");
-        Assert.Equal<String>(s[2], "Green");
+        Assert.Equal<string>(s[0], "Red");
+        Assert.Equal<string>(s[1], "Green");
+        Assert.Equal<string>(s[2], "Green");
         Assert.Null(s[3]);
     }
 
@@ -557,9 +558,9 @@ public static unsafe class ArrayTests
     {
         // Test the Array.Copy code for value-type arrays => Object[]
         G[] s;
-        Object[] d;
+        object[] d;
         s = new G[5];
-        d = new Object[5];
+        d = new object[5];
 
         s[0].x = 7;
         s[0].s = "Hello0";
@@ -587,7 +588,7 @@ public static unsafe class ArrayTests
             Assert.True(d[i] is G);
             G g = (G)(d[i]);
             Assert.Equal<int>(g.x, s[i].x);
-            Assert.Equal<String>(g.s, s[i].s);
+            Assert.Equal<string>(g.s, s[i].s);
             Assert.Equal<int>(g.z, s[i].z);
         }
     }
@@ -626,30 +627,30 @@ public static unsafe class ArrayTests
         for (int i = 0; i < d.Length; i++)
         {
             Assert.Equal<int>(d[i].x, s[i].x);
-            Assert.Equal<String>(d[i].s, s[i].s);
+            Assert.Equal<string>(d[i].s, s[i].s);
             Assert.Equal<int>(d[i].z, s[i].z);
         }
 
         // With overlap
         Array.Copy(s, 1, s, 2, 3);
         Assert.Equal<int>(s[0].x, 7);
-        Assert.Equal<String>(s[0].s, "Hello0");
+        Assert.Equal<string>(s[0].s, "Hello0");
         Assert.Equal<int>(s[0].z, 8);
 
         Assert.Equal<int>(s[1].x, 9);
-        Assert.Equal<String>(s[1].s, "Hello1");
+        Assert.Equal<string>(s[1].s, "Hello1");
         Assert.Equal<int>(s[1].z, 10);
 
         Assert.Equal<int>(s[2].x, 9);
-        Assert.Equal<String>(s[2].s, "Hello1");
+        Assert.Equal<string>(s[2].s, "Hello1");
         Assert.Equal<int>(s[2].z, 10);
 
         Assert.Equal<int>(s[3].x, 11);
-        Assert.Equal<String>(s[3].s, "Hello2");
+        Assert.Equal<string>(s[3].s, "Hello2");
         Assert.Equal<int>(s[3].z, 12);
 
         Assert.Equal<int>(s[4].x, 13);
-        Assert.Equal<String>(s[4].s, "Hello3");
+        Assert.Equal<string>(s[4].s, "Hello3");
         Assert.Equal<int>(s[4].z, 14);
     }
 
@@ -691,23 +692,23 @@ public static unsafe class ArrayTests
     [Fact]
     public static void TestConstrainedCopy_GCRef()
     {
-        String[] s;
-        String[] d;
+        string[] s;
+        string[] d;
 
-        s = new String[] { "Red", "Green", null, "Blue" };
-        d = new String[] { "X", "X", "X", "X" };
+        s = new string[] { "Red", "Green", null, "Blue" };
+        d = new string[] { "X", "X", "X", "X" };
         Array.ConstrainedCopy(s, 0, d, 0, 4);
-        Assert.Equal<String>(d[0], "Red");
-        Assert.Equal<String>(d[1], "Green");
+        Assert.Equal<string>(d[0], "Red");
+        Assert.Equal<string>(d[1], "Green");
         Assert.Null(d[2]);
-        Assert.Equal<String>(d[3], "Blue");
+        Assert.Equal<string>(d[3], "Blue");
 
         // With reverse overlap
-        s = new String[] { "Red", "Green", null, "Blue" };
+        s = new string[] { "Red", "Green", null, "Blue" };
         Array.ConstrainedCopy(s, 1, s, 2, 2);
-        Assert.Equal<String>(s[0], "Red");
-        Assert.Equal<String>(s[1], "Green");
-        Assert.Equal<String>(s[2], "Green");
+        Assert.Equal<string>(s[0], "Red");
+        Assert.Equal<string>(s[1], "Green");
+        Assert.Equal<string>(s[2], "Green");
         Assert.Null(s[3]);
     }
 
@@ -745,30 +746,30 @@ public static unsafe class ArrayTests
         for (int i = 0; i < d.Length; i++)
         {
             Assert.Equal<int>(d[i].x, s[i].x);
-            Assert.Equal<String>(d[i].s, s[i].s);
+            Assert.Equal<string>(d[i].s, s[i].s);
             Assert.Equal<int>(d[i].z, s[i].z);
         }
 
         // With overlap
         Array.ConstrainedCopy(s, 1, s, 2, 3);
         Assert.Equal<int>(s[0].x, 7);
-        Assert.Equal<String>(s[0].s, "Hello0");
+        Assert.Equal<string>(s[0].s, "Hello0");
         Assert.Equal<int>(s[0].z, 8);
 
         Assert.Equal<int>(s[1].x, 9);
-        Assert.Equal<String>(s[1].s, "Hello1");
+        Assert.Equal<string>(s[1].s, "Hello1");
         Assert.Equal<int>(s[1].z, 10);
 
         Assert.Equal<int>(s[2].x, 9);
-        Assert.Equal<String>(s[2].s, "Hello1");
+        Assert.Equal<string>(s[2].s, "Hello1");
         Assert.Equal<int>(s[2].z, 10);
 
         Assert.Equal<int>(s[3].x, 11);
-        Assert.Equal<String>(s[3].s, "Hello2");
+        Assert.Equal<string>(s[3].s, "Hello2");
         Assert.Equal<int>(s[3].z, 12);
 
         Assert.Equal<int>(s[4].x, 13);
-        Assert.Equal<String>(s[4].s, "Hello3");
+        Assert.Equal<string>(s[4].s, "Hello3");
         Assert.Equal<int>(s[4].z, 14);
     }
 
@@ -826,8 +827,8 @@ public static unsafe class ArrayTests
         Assert.True(Array.Exists<int>(results, i => i == 7));
         Assert.True(Array.Exists<int>(results, i => i == 9));
 
-        String[] sa = { "7", "8", "88", "888", "9" };
-        String elem;
+        string[] sa = { "7", "8", "88", "888", "9" };
+        string elem;
         elem = Array.Find<String>(sa, s => s.StartsWith("8"));
         Assert.Equal(elem, "8");
 
@@ -854,7 +855,7 @@ public static unsafe class ArrayTests
         idx = Array.FindIndex<int>(ia, 1, 2, i => i == 43);
         Assert.Equal(idx, -1);
 
-        sa = new String[] { "7", "8", "88", "888", "9" };
+        sa = new string[] { "7", "8", "88", "888", "9" };
         elem = Array.FindLast<String>(sa, s => s.StartsWith("8"));
         Assert.Equal(elem, "888");
 
@@ -888,7 +889,7 @@ public static unsafe class ArrayTests
 
         IEnumerator ie = i.GetEnumerator();
         bool b;
-        Object v;
+        object v;
 
         b = ie.MoveNext();
         Assert.True(b);
@@ -953,7 +954,7 @@ public static unsafe class ArrayTests
         idx = Array.IndexOf<int>(ia, 9, 2, 2);
         Assert.Equal(idx, -1);
 
-        a = new String[] { null, null, "Hello", "Hello", "Goodbye", "Goodbye", null, null };
+        a = new string[] { null, null, "Hello", "Hello", "Goodbye", "Goodbye", null, null };
         idx = Array.IndexOf(a, null);
         Assert.Equal(idx, 0);
         idx = Array.IndexOf(a, "Hello");
@@ -971,7 +972,7 @@ public static unsafe class ArrayTests
         idx = Array.IndexOf(a, "Goodbye", 2, 2);
         Assert.Equal(idx, -1);
 
-        String[] sa = (String[])a;
+        string[] sa = (string[])a;
         idx = Array.IndexOf<String>(sa, null);
         Assert.Equal(idx, 0);
         idx = Array.IndexOf<String>(sa, "Hello");
@@ -1028,7 +1029,7 @@ public static unsafe class ArrayTests
         idx = Array.LastIndexOf<int>(ia, 7, 3, 2);
         Assert.Equal(idx, -1);
 
-        a = new String[] { null, null, "Hello", "Hello", "Goodbye", "Goodbye", null, null };
+        a = new string[] { null, null, "Hello", "Hello", "Goodbye", "Goodbye", null, null };
         idx = Array.LastIndexOf(a, null);
         Assert.Equal(idx, 7);
         idx = Array.LastIndexOf(a, "Hello");
@@ -1046,7 +1047,7 @@ public static unsafe class ArrayTests
         idx = Array.LastIndexOf(a, "Goodbye", 7, 2);
         Assert.Equal(idx, -1);
 
-        String[] sa = (String[])a;
+        string[] sa = (string[])a;
         idx = Array.LastIndexOf<String>(sa, null);
         Assert.Equal(idx, 7);
         idx = Array.LastIndexOf<String>(sa, "Hello");
@@ -1144,9 +1145,9 @@ public static unsafe class ArrayTests
         Assert.Equal(i[3], 4);
         Assert.Equal(i[4], 3);
 
-        String[] s;
+        string[] s;
 
-        s = new String[] { "1", "2", "3", "4", "5" };
+        s = new string[] { "1", "2", "3", "4", "5" };
         Array.Reverse((Array)s);
         Assert.Equal(s[0], "5");
         Assert.Equal(s[1], "4");
@@ -1154,7 +1155,7 @@ public static unsafe class ArrayTests
         Assert.Equal(s[3], "2");
         Assert.Equal(s[4], "1");
 
-        s = new String[] { "1", "2", "3", "4", "5" };
+        s = new string[] { "1", "2", "3", "4", "5" };
         Array.Reverse((Array)s, 2, 3);
         Assert.Equal(s[0], "1");
         Assert.Equal(s[1], "2");
@@ -1176,14 +1177,14 @@ public static unsafe class ArrayTests
         TestSortHelper<int>(new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 }, 3, 4, icomparer);
         TestSortHelper<int>(new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 }, 3, 6, icomparer);
 
-        IComparer<String> scomparer = new StringComparer();
-        TestSortHelper<String>(new String[] { }, 0, 0, scomparer);
-        TestSortHelper<String>(new String[] { "5" }, 0, 1, scomparer);
-        TestSortHelper<String>(new String[] { "5", "2" }, 0, 2, scomparer);
+        IComparer<string> scomparer = new StringComparer();
+        TestSortHelper<String>(new string[] { }, 0, 0, scomparer);
+        TestSortHelper<String>(new string[] { "5" }, 0, 1, scomparer);
+        TestSortHelper<String>(new string[] { "5", "2" }, 0, 2, scomparer);
 
-        TestSortHelper<String>(new String[] { "5", "2", null, "8", "4", "3", "2", "4", "6" }, 0, 9, scomparer);
-        TestSortHelper<String>(new String[] { "5", "2", null, "8", "4", "3", "2", "4", "6" }, 3, 4, scomparer);
-        TestSortHelper<String>(new String[] { "5", "2", null, "8", "4", "3", "2", "4", "6" }, 3, 6, scomparer);
+        TestSortHelper<String>(new string[] { "5", "2", null, "8", "4", "3", "2", "4", "6" }, 0, 9, scomparer);
+        TestSortHelper<String>(new string[] { "5", "2", null, "8", "4", "3", "2", "4", "6" }, 3, 4, scomparer);
+        TestSortHelper<String>(new string[] { "5", "2", null, "8", "4", "3", "2", "4", "6" }, 3, 6, scomparer);
     }
 
     private static void TestSortHelper<T>(T[] array, int index, int length, IComparer<T> comparer)
@@ -1270,14 +1271,14 @@ public static unsafe class ArrayTests
 
         {
             int[] lengths = { 10 };
-            String[] sa = (String[])Array.CreateInstance(typeof(String), lengths);
-            Assert.Equal(sa, new String[10]);
+            string[] sa = (string[])Array.CreateInstance(typeof(string), lengths);
+            Assert.Equal(sa, new string[10]);
         }
 
         {
             int[] lengths = { 0 };
-            String[] sa = (String[])Array.CreateInstance(typeof(String), lengths);
-            Assert.Equal(sa, new String[0]);
+            string[] sa = (string[])Array.CreateInstance(typeof(string), lengths);
+            Assert.Equal(sa, new string[0]);
         }
 
         {
@@ -1414,7 +1415,7 @@ public static unsafe class ArrayTests
     private struct G
     {
         public int x;
-        public String s;
+        public string s;
         public int z;
     }
 
@@ -1441,14 +1442,14 @@ public static unsafe class ArrayTests
         }
     }
 
-    private class StringComparer : IComparer, IComparer<String>
+    private class StringComparer : IComparer, IComparer<string>
     {
-        public int Compare(Object x, Object y)
+        public int Compare(object x, object y)
         {
-            return Compare((String)x, (String)y);
+            return Compare((string)x, (string)y);
         }
 
-        public int Compare(String x, String y)
+        public int Compare(string x, string y)
         {
             if (x == y)
                 return 0;
@@ -1539,14 +1540,14 @@ public static unsafe class ArrayTests
     {
         {
             int[] s = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            Object[] d = new IEnumerable<int>[10];
+            object[] d = new IEnumerable<int>[10];
 
             Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(s, 0, d, 0, 10));
         }
 
         {
             int[] s = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            Object[] d = new Object[10];
+            object[] d = new object[10];
 
             Array.Copy(s, 2, d, 5, 3);
 
@@ -1564,7 +1565,7 @@ public static unsafe class ArrayTests
 
         {
             int[] s = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-            Object[] d = new IEquatable<int>[10];
+            object[] d = new IEquatable<int>[10];
 
             Array.Copy(s, 2, d, 5, 3);
 
@@ -1582,7 +1583,7 @@ public static unsafe class ArrayTests
 
         {
             Nullable<int>[] s = { 0, 1, 2, default(Nullable<int>), 4, 5, 6, 7, 8, 9 };
-            Object[] d = new Object[10];
+            object[] d = new object[10];
 
             Array.Copy(s, 2, d, 5, 3);
 
@@ -1607,7 +1608,7 @@ public static unsafe class ArrayTests
         const int cc = unchecked((int)0xcccccccc);
 
         {
-            Object[] s = new String[10];
+            object[] s = new string[10];
             int[] d = new int[10];
             for (int i = 0; i < d.Length; i++)
                 d[i] = cc;
@@ -1616,7 +1617,7 @@ public static unsafe class ArrayTests
         }
 
         {
-            Object[] s = new Object[10];
+            object[] s = new object[10];
             for (int i = 0; i < s.Length; i++)
                 s[i] = i;
 
@@ -1638,7 +1639,7 @@ public static unsafe class ArrayTests
         }
 
         {
-            Object[] s = new IEquatable<int>[10];
+            object[] s = new IEquatable<int>[10];
             for (int i = 0; i < s.Length; i++)
                 s[i] = i;
 
@@ -1660,7 +1661,7 @@ public static unsafe class ArrayTests
         }
 
         {
-            Object[] s = new IEquatable<int>[10];
+            object[] s = new IEquatable<int>[10];
             for (int i = 0; i < s.Length; i++)
                 s[i] = i;
             s[1] = new NotInt32();
@@ -1684,7 +1685,7 @@ public static unsafe class ArrayTests
         }
 
         {
-            Object[] s = new IEquatable<int>[10];
+            object[] s = new IEquatable<int>[10];
             for (int i = 0; i < s.Length; i++)
                 s[i] = i;
             s[4] = new NotInt32();
@@ -1699,7 +1700,7 @@ public static unsafe class ArrayTests
         }
 
         {
-            Object[] s = new IEquatable<int>[10];
+            object[] s = new IEquatable<int>[10];
             for (int i = 0; i < s.Length; i++)
                 s[i] = i;
             s[4] = null;
@@ -1714,7 +1715,7 @@ public static unsafe class ArrayTests
         }
 
         {
-            Object[] s = new Object[10];
+            object[] s = new object[10];
             for (int i = 0; i < s.Length; i++)
                 s[i] = i;
             s[4] = null;
@@ -1800,4 +1801,3 @@ public static unsafe class ArrayTests
         Assert.Equal(arr.GetValue(0, 0, 0, 2), 3);
     }
 }
-

@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+
 using Xunit;
 
 public partial class FileLoadException_40100_Tests
@@ -71,13 +72,13 @@ public partial class FileLoadException_40100_Tests
         try { throw fle; }
         catch
         {
-            Assert.False(String.IsNullOrEmpty(fle.StackTrace));
+            Assert.False(string.IsNullOrEmpty(fle.StackTrace));
             AssertContains(fle.StackTrace, fle.ToString());
         }
     }
 
     private static void AssertContains(string expected, string actual)
     {
-        Assert.True(actual.Contains(expected), String.Format("\"{0}\" contains \"{1}\"", actual, expected));
+        Assert.True(actual.Contains(expected), string.Format("\"{0}\" contains \"{1}\"", actual, expected));
     }
 }

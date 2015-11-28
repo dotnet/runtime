@@ -3,8 +3,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
 
+using Xunit;
 
 public class ConditionalWeakTableTests
 {
@@ -82,4 +82,3 @@ public class ConditionalWeakTableTests
         Assert.False(wrkey.TryGetTarget(out obj));
     }
 }
-

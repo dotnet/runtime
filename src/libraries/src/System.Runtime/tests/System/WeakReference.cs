@@ -2,9 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+
 using Xunit;
 
 public static unsafe class WeakReferenceTests
@@ -28,14 +27,14 @@ public static unsafe class WeakReferenceTests
     [Fact]
     public static void TestNonGeneric()
     {
-        Object o1 = new char[10];
+        object o1 = new char[10];
         WeakReference w = new WeakReference(o1);
         VerifyStillAlive(w);
         Assert.True(RuntimeHelpers.ReferenceEquals(o1, w.Target));
         Assert.False(w.TrackResurrection);
         GC.KeepAlive(o1);
 
-        Object o2 = new char[100];
+        object o2 = new char[100];
         w.Target = o2;
         VerifyStillAlive(w);
         Assert.True(RuntimeHelpers.ReferenceEquals(o2, w.Target));
@@ -77,18 +76,18 @@ public static unsafe class WeakReferenceTests
     [Fact]
     public static void TestGeneric()
     {
-        Object o1 = new char[10];
-        WeakReference<Object> w = new WeakReference<Object>(o1);
+        object o1 = new char[10];
+        WeakReference<object> w = new WeakReference<object>(o1);
         VerifyStillAlive(w);
-        Object v1;
+        object v1;
         Assert.True(w.TryGetTarget(out v1));
         Assert.True(Object.ReferenceEquals(v1, o1));
         GC.KeepAlive(o1);
 
-        Object o2 = new char[100];
+        object o2 = new char[100];
         w.SetTarget(o2);
         VerifyStillAlive(w);
-        Object v2;
+        object v2;
         Assert.True(w.TryGetTarget(out v2));
         Assert.True(Object.ReferenceEquals(v2, o2));
         GC.KeepAlive(o2);
@@ -191,4 +190,3 @@ public static unsafe class WeakReferenceTests
         Assert.True(value == null);
     }
 }
-

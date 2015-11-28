@@ -2,8 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
+
 using Xunit;
 
 public static unsafe class ArraySegmentTests
@@ -63,7 +63,7 @@ public static unsafe class ArraySegmentTests
         b = a.Equals(a3);
         Assert.False(b);
 
-        Object o;
+        object o;
         o = null;
         b = a.Equals(null);
         Assert.False(b);
@@ -150,18 +150,18 @@ public static unsafe class ArraySegmentTests
     public static void TestCopyTo()
     {
         {
-            String[] src;
-            IList<String> seg;
+            string[] src;
+            IList<string> seg;
 
-            src = new String[] { "0", "1", "2", "3", "4" };
-            seg = new ArraySegment<String>(src, 1, 3);
+            src = new string[] { "0", "1", "2", "3", "4" };
+            seg = new ArraySegment<string>(src, 1, 3);
             seg.CopyTo(src, 2);
-            Assert.Equal(src, new String[] { "0", "1", "1", "2", "3" });
+            Assert.Equal(src, new string[] { "0", "1", "1", "2", "3" });
 
-            src = new String[] { "0", "1", "2", "3", "4" };
-            seg = new ArraySegment<String>(src, 1, 3);
+            src = new string[] { "0", "1", "2", "3", "4" };
+            seg = new ArraySegment<string>(src, 1, 3);
             seg.CopyTo(src, 0);
-            Assert.Equal(src, new String[] { "1", "2", "3", "3", "4" });
+            Assert.Equal(src, new string[] { "1", "2", "3", "3", "4" });
         }
 
         {
@@ -180,4 +180,3 @@ public static unsafe class ArraySegmentTests
         }
     }
 }
-

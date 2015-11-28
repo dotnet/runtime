@@ -14,16 +14,16 @@ namespace System.Runtime.Tests
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < 10000; i++)
                     {
-                        new Object(); new Object(); new Object();
-                        new Object(); new Object(); new Object();
-                        new Object(); new Object(); new Object();
+                        new object(); new object(); new object();
+                        new object(); new object(); new object();
+                        new object(); new object(); new object();
                     }
         }
 
         [Benchmark]
         public void GetType_()
         {
-            Object obj = new Object();
+            object obj = new object();
             foreach (var iteration in Benchmark.Iterations)
                 using (iteration.StartMeasurement())
                     for (int i = 0; i < 10000; i++)
