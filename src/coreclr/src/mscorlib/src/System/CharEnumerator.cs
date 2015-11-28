@@ -53,14 +53,7 @@ namespace System {
     
         /// <internalonly/>
         Object IEnumerator.Current {
-            get {
-                if (index == -1)
-                    throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
-                if (index >= str.Length)
-                    throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));                        
-                    
-                return currentElement;
-            }
+            get { return Current; }
         }
     
         public char Current {
