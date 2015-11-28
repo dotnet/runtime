@@ -283,19 +283,6 @@ struct MessageHeader
     int32_t ControlBufferLen;
     int32_t Flags;
 };
-
-// FdSet constants.
-enum
-{
-    PAL_FDSET_MAX_FDS = 1024,
-    PAL_FDSET_NFD_BITS = 8 * sizeof(uint32_t)
-};
-
-struct FdSet
-{
-    uint32_t Bits[PAL_FDSET_MAX_FDS / PAL_FDSET_NFD_BITS];
-};
-
 struct SocketEvent
 {
     uintptr_t Data;      // User data for this event
@@ -403,8 +390,10 @@ extern "C" Error SetSockOpt(
 
 extern "C" Error Socket(int32_t addressFamily, int32_t socketType, int32_t protocolType, int32_t* createdSocket);
 
+extern "C" int32_t FdSetSize();
+
 extern "C" Error Select(
-    int32_t fdCount, FdSet* readFdSet, FdSet* writeFdSet, FdSet* errorFdSet, int32_t microseconds, int32_t* selected);
+    int32_t fdCount, uint32_t* readFdSet, uint32_t* writeFdSet, uint32_t* errorFdSet, int32_t microseconds, int32_t* selected);
 
 extern "C" Error GetBytesAvailable(int32_t socket, int32_t* available);
 
