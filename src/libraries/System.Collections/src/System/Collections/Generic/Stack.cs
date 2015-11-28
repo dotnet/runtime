@@ -325,12 +325,7 @@ namespace System.Collections.Generic
 
             Object System.Collections.IEnumerator.Current
             {
-                get
-                {
-                    if (_index == -2) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                    if (_index == -1) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
-                    return _currentElement;
-                }
+                get { return Current; }
             }
 
             void System.Collections.IEnumerator.Reset()
