@@ -437,17 +437,7 @@ namespace System.Collections.Generic
 
             Object System.Collections.IEnumerator.Current
             {
-                get
-                {
-                    if (_index < 0)
-                    {
-                        if (_index == -1)
-                            throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                        else
-                            throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
-                    }
-                    return _currentElement;
-                }
+                get { return Current; }
             }
 
             void System.Collections.IEnumerator.Reset()
