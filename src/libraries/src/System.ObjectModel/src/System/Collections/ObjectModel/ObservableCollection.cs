@@ -43,27 +43,14 @@ namespace System.Collections.ObjectModel
         /// same order they are read by the enumerator of the collection.
         /// </remarks>
         /// <exception cref="ArgumentNullException"> collection is a null reference </exception>
-        public ObservableCollection(IEnumerable<T> collection)
+        public ObservableCollection(IEnumerable<T> collection) : base(CreateCopy(collection)) { }
+
+        private static List<T> CreateCopy(IEnumerable<T> collection)
         {
             if (collection == null)
                 throw new ArgumentNullException("collection");
 
-            CopyFrom(collection);
-        }
-
-        private void CopyFrom(IEnumerable<T> collection)
-        {
-            IList<T> items = Items;
-            if (collection != null && items != null)
-            {
-                using (IEnumerator<T> enumerator = collection.GetEnumerator())
-                {
-                    while (enumerator.MoveNext())
-                    {
-                        items.Add(enumerator.Current);
-                    }
-                }
-            }
+            return new List<T>(collection);
         }
 
         #endregion Constructors
