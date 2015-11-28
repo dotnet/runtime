@@ -88,12 +88,9 @@ namespace System.Collections.ObjectModel
                 return _dict.ContainsKey(key);
             }
 
-            if (key != null)
+            foreach (TItem item in Items)
             {
-                foreach (TItem item in Items)
-                {
-                    if (_comparer.Equals(GetKeyForItem(item), key)) return true;
-                }
+                if (_comparer.Equals(GetKeyForItem(item), key)) return true;
             }
             return false;
         }
@@ -128,15 +125,12 @@ namespace System.Collections.ObjectModel
                 return _dict.TryGetValue(key, out item) && Remove(item);
             }
 
-            if (key != null)
+            for (int i = 0; i < Items.Count; i++)
             {
-                for (int i = 0; i < Items.Count; i++)
+                if (_comparer.Equals(GetKeyForItem(Items[i]), key))
                 {
-                    if (_comparer.Equals(GetKeyForItem(Items[i]), key))
-                    {
-                        RemoveItem(i);
-                        return true;
-                    }
+                    RemoveItem(i);
+                    return true;
                 }
             }
             return false;
@@ -149,7 +143,7 @@ namespace System.Collections.ObjectModel
 
         protected void ChangeItemKey(TItem item, TKey newKey)
         {
-            // check if the item exists in the collection
+            // Check if the item exists in the collection
             if (!ContainsItem(item))
             {
                 throw new ArgumentException(SR.Argument_ItemNotExist);
