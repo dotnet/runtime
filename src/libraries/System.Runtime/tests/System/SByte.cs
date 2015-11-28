@@ -2,96 +2,102 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.Tests.Common;
+
 using Xunit;
 
 public static class SByteTests
 {
     [Fact]
-    public static void TestCtor()
+    public static void TestCtorEmpty()
     {
-        SByte i = new SByte();
-        Assert.True(i == 0);
+        sbyte i = new sbyte();
+        Assert.Equal(0, i);
+    }
 
-        i = 41;
-        Assert.True(i == 41);
+    [Fact]
+    public static void TestCtorValue()
+    {
+        sbyte i = 41;
+        Assert.Equal(41, i);
     }
 
     [Fact]
     public static void TestMaxValue()
     {
-        SByte max = SByte.MaxValue;
-
-        Assert.True(max == (SByte)0x7F);
+        Assert.Equal(0x7F, sbyte.MaxValue);
     }
 
     [Fact]
     public static void TestMinValue()
     {
-        SByte min = SByte.MinValue;
+        Assert.Equal(-0x80, sbyte.MinValue);
+    }
+    
+    [Theory]
+    [InlineData((sbyte)114, 0)]
+    [InlineData(sbyte.MinValue, 1)]
+    [InlineData((sbyte)0, 1)]
+    [InlineData((sbyte)45, 1)]
+    [InlineData((sbyte)123, -1)]
+    [InlineData(sbyte.MaxValue, -1)]
+    public static void TestCompareTo(sbyte value, int expected)
+    {
+        sbyte i = 114;
+        int result = CompareHelper.NormalizeCompare(i.CompareTo(value));
+        Assert.Equal(expected, result);
+    }
 
-        Assert.True(min == (SByte)(-0x80));
+    [Theory]
+    [InlineData(null, 1)]
+    [InlineData((sbyte)114, 0)]
+    [InlineData(sbyte.MinValue, 1)]
+    [InlineData((sbyte)(-23), 1)]
+    [InlineData((sbyte)0, 1)]
+    [InlineData((sbyte)45, 1)]
+    [InlineData((sbyte)123, -1)]
+    [InlineData(sbyte.MaxValue, -1)]
+    public static void TestCompareToObject(object obj, int expected)
+    {
+        IComparable comparable = (sbyte)114;
+        int i = CompareHelper.NormalizeCompare(comparable.CompareTo(obj));
+        Assert.Equal(expected, i);
     }
 
     [Fact]
-    public static void TestCompareToObject()
+    public static void TestCompareToObjectInvalid()
     {
-        SByte i = 114;
-        IComparable comparable = i;
-
-        Assert.Equal(1, comparable.CompareTo(null));
-        Assert.Equal(0, comparable.CompareTo((SByte)114));
-
-        Assert.True(comparable.CompareTo(SByte.MinValue) > 0);
-        Assert.True(comparable.CompareTo((SByte)0) > 0);
-        Assert.True(comparable.CompareTo((SByte)(-23)) > 0);
-        Assert.True(comparable.CompareTo((SByte)123) < 0);
-        Assert.True(comparable.CompareTo((SByte)45) > 0);
-        Assert.True(comparable.CompareTo(SByte.MaxValue) < 0);
-
-        Assert.Throws<ArgumentException>(() => comparable.CompareTo("a"));
+        IComparable comparable = (sbyte)114;
+        Assert.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); //Obj is not a sbyte
     }
 
-    [Fact]
-    public static void TestCompareTo()
+    [Theory]
+    [InlineData((sbyte)78, true)]
+    [InlineData((sbyte)(-78), false)]
+    [InlineData((sbyte)0, false)]
+    public static void TestEqualsObject(object obj, bool expected)
     {
-        SByte i = 114;
-
-        Assert.Equal(0, i.CompareTo((SByte)114));
-
-        Assert.True(i.CompareTo(SByte.MinValue) > 0);
-        Assert.True(i.CompareTo((SByte)0) > 0);
-        Assert.True(i.CompareTo((SByte)123) < 0);
-        Assert.True(i.CompareTo((SByte)45) > 0);
-        Assert.True(i.CompareTo(SByte.MaxValue) < 0);
+        sbyte i = 78;
+        Assert.Equal(expected, i.Equals(obj));
     }
 
-    [Fact]
-    public static void TestEqualsObject()
+    [Theory]
+    [InlineData((sbyte)78, true)]
+    [InlineData((sbyte)(-78), false)]
+    [InlineData((sbyte)0, false)]
+    public static void TestEqualsObject(sbyte i2, bool expected)
     {
-        SByte i = 78;
-
-        object obj1 = (SByte)78;
-        Assert.True(i.Equals(obj1));
-
-        object obj3 = (SByte)0;
-        Assert.True(!i.Equals(obj3));
-    }
-
-    [Fact]
-    public static void TestEquals()
-    {
-        SByte i = 91;
-
-        Assert.True(i.Equals((SByte)91));
-        Assert.True(!i.Equals((SByte)0));
+        sbyte i = 78;
+        Assert.Equal(expected, i.Equals(i2));
     }
 
     [Fact]
     public static void TestGetHashCode()
     {
-        SByte i1 = 123;
-        SByte i2 = 65;
+        sbyte i1 = 123;
+        sbyte i2 = 65;
 
         Assert.NotEqual(0, i1.GetHashCode());
         Assert.NotEqual(i1.GetHashCode(), i2.GetHashCode());
@@ -100,136 +106,170 @@ public static class SByteTests
     [Fact]
     public static void TestToString()
     {
-        SByte i1 = 63;
+        sbyte i1 = 63;
         Assert.Equal("63", i1.ToString());
     }
 
     [Fact]
     public static void TestToStringFormatProvider()
     {
-        var numberFormat = new System.Globalization.NumberFormatInfo();
+        var numberFormat = new NumberFormatInfo();
 
-        SByte i1 = 63;
+        sbyte i1 = 63;
         Assert.Equal("63", i1.ToString(numberFormat));
     }
 
     [Fact]
     public static void TestToStringFormat()
     {
-        SByte i1 = 63;
+        sbyte i1 = 63;
         Assert.Equal("63", i1.ToString("G"));
 
-        SByte i2 = 82;
+        sbyte i2 = 82;
         Assert.Equal("82", i2.ToString("g"));
 
-        SByte i3 = 46;
+        sbyte i3 = 46;
         Assert.Equal(string.Format("{0:N}", 46.00), i3.ToString("N"));
 
-        SByte i4 = 0x24;
+        sbyte i4 = 0x24;
         Assert.Equal("24", i4.ToString("x"));
     }
 
     [Fact]
     public static void TestToStringFormatFormatProvider()
     {
-        var numberFormat = new System.Globalization.NumberFormatInfo();
+        var numberFormat = new NumberFormatInfo();
 
-        SByte i1 = 63;
+        sbyte i1 = 63;
         Assert.Equal("63", i1.ToString("G", numberFormat));
 
-        SByte i2 = 82;
+        sbyte i2 = 82;
         Assert.Equal("82", i2.ToString("g", numberFormat));
 
         numberFormat.NegativeSign = "xx"; // setting it to trash to make sure it doesn't show up
         numberFormat.NumberGroupSeparator = "*";
         numberFormat.NumberNegativePattern = 0;
         numberFormat.NumberDecimalSeparator = ".";
-        SByte i3 = 24;
+        sbyte i3 = 24;
         Assert.Equal("24.00", i3.ToString("N", numberFormat));
     }
 
-    [Fact]
-    public static void TestParse()
+    public static IEnumerable<object[]> ParseValidData()
     {
-        Assert.Equal<SByte>(123, SByte.Parse("123"));
-        //TODO: Negative tests once we get better exceptions
+        NumberFormatInfo defaultFormat = null;
+        NumberStyles defaultStyle = NumberStyles.Integer;
+        var emptyNfi = new NumberFormatInfo();
+
+        var testNfi = new NumberFormatInfo();
+        testNfi.CurrencySymbol = "$";
+
+        yield return new object[] { "-123", defaultStyle, defaultFormat, (sbyte)-123 };
+        yield return new object[] { "0", defaultStyle, defaultFormat, (sbyte)0 };
+        yield return new object[] { "123", defaultStyle, defaultFormat, (sbyte)123 };
+        yield return new object[] { "  123  ", defaultStyle, defaultFormat, (sbyte)123 };
+        yield return new object[] { "127", defaultStyle, defaultFormat, (sbyte)127 };
+
+        yield return new object[] { "12", NumberStyles.HexNumber, defaultFormat, (sbyte)0x12 };
+        yield return new object[] { "10", NumberStyles.AllowThousands, defaultFormat, (sbyte)10 };
+        yield return new object[] { "(123)", NumberStyles.AllowParentheses, defaultFormat, (sbyte)-123 }; // Parentheses = negative
+
+        yield return new object[] { "123", defaultStyle, emptyNfi, (sbyte)123 };
+
+        yield return new object[] { "123", NumberStyles.Any, emptyNfi, (sbyte)123 };
+        yield return new object[] { "12", NumberStyles.HexNumber, emptyNfi, (sbyte)0x12 };
+        yield return new object[] { "$100", NumberStyles.Currency, testNfi, (sbyte)100 };
     }
 
-    [Fact]
-    public static void TestParseNumberStyle()
+    public static IEnumerable<object[]> ParseInvalidData()
     {
-        Assert.Equal<SByte>(0x12, SByte.Parse("12", NumberStyles.HexNumber));
-        Assert.Equal<SByte>(10, SByte.Parse("10", NumberStyles.AllowThousands));
-        //TODO: Negative tests once we get better exceptions
+        NumberFormatInfo defaultFormat = null;
+        NumberStyles defaultStyle = NumberStyles.Integer;
+        var emptyNfi = new NumberFormatInfo();
+
+        var testNfi = new NumberFormatInfo();
+        testNfi.CurrencySymbol = "$";
+        testNfi.NumberDecimalSeparator = ".";
+
+        yield return new object[] { null, defaultStyle, defaultFormat, typeof(ArgumentNullException) };
+        yield return new object[] { "", defaultStyle, defaultFormat, typeof(FormatException) };
+        yield return new object[] { " ", defaultStyle, defaultFormat, typeof(FormatException) };
+        yield return new object[] { "Garbage", defaultStyle, defaultFormat, typeof(FormatException) };
+
+        yield return new object[] { "ab", defaultStyle, defaultFormat, typeof(FormatException) }; // Hex value
+        yield return new object[] { "1E23", defaultStyle, defaultFormat, typeof(FormatException) }; // Exponent
+        yield return new object[] { "(123)", defaultStyle, defaultFormat, typeof(FormatException) }; // Parentheses
+        yield return new object[] { 100.ToString("C0"), defaultStyle, defaultFormat, typeof(FormatException) }; //Currency
+        yield return new object[] { 1000.ToString("N0"), defaultStyle, defaultFormat, typeof(FormatException) }; //Thousands
+        yield return new object[] { 67.90.ToString("F2"), defaultStyle, defaultFormat, typeof(FormatException) }; //Decimal
+
+        yield return new object[] { "ab", NumberStyles.None, defaultFormat, typeof(FormatException) }; // Hex value
+        yield return new object[] { "  123  ", NumberStyles.None, defaultFormat, typeof(FormatException) }; // Trailing and leading whitespace
+
+        yield return new object[] { "67.90", defaultStyle, testNfi, typeof(FormatException) }; // Decimal
+
+        yield return new object[] { "-129", defaultStyle, defaultFormat, typeof(OverflowException) }; // < min value
+        yield return new object[] { "128", defaultStyle, defaultFormat, typeof(OverflowException) }; // > max value
     }
 
-    [Fact]
-    public static void TestParseFormatProvider()
+    [Theory, MemberData("ParseValidData")]
+    public static void TestParse(string value, NumberStyles style, NumberFormatInfo nfi, sbyte expected)
     {
-        var nfi = new NumberFormatInfo();
-        Assert.Equal<SByte>(123, SByte.Parse("123", nfi));
-        //TODO: Negative tests once we get better exceptions
+        sbyte i;
+        //If no style is specified, use the (String) or (String, IFormatProvider) overload
+        if (style == NumberStyles.Integer)
+        {
+            Assert.Equal(true, sbyte.TryParse(value, out i));
+            Assert.Equal(expected, i);
+
+            Assert.Equal(expected, sbyte.Parse(value));
+
+            //If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
+            if (nfi != null)
+            {
+                Assert.Equal(expected, sbyte.Parse(value, nfi));
+            }
+        }
+
+        // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
+        Assert.Equal(true, sbyte.TryParse(value, style, nfi ?? new NumberFormatInfo(), out i));
+        Assert.Equal(expected, i);
+
+        //If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
+        if (nfi == null)
+        {
+            Assert.Equal(expected, sbyte.Parse(value, style));
+        }
+        Assert.Equal(expected, sbyte.Parse(value, style, nfi ?? new NumberFormatInfo()));
     }
 
-    [Fact]
-    public static void TestParseNumberStyleFormatProvider()
+    [Theory, MemberData("ParseInvalidData")]
+    public static void TestParseInvalid(string value, NumberStyles style, NumberFormatInfo nfi, Type exceptionType)
     {
-        var nfi = new NumberFormatInfo();
-        Assert.Equal<SByte>(0x12, SByte.Parse("12", NumberStyles.HexNumber, nfi));
+        sbyte i;
+        //If no style is specified, use the (String) or (String, IFormatProvider) overload
+        if (style == NumberStyles.Integer)
+        {
+            Assert.Equal(false, sbyte.TryParse(value, out i));
+            Assert.Equal(default(sbyte), i);
 
-        nfi.CurrencySymbol = "$";
-        Assert.Equal<SByte>(100, SByte.Parse("$100", NumberStyles.Currency, nfi));
-        //TODO: Negative tests once we get better exception support
-    }
+            Assert.Throws(exceptionType, () => sbyte.Parse(value));
 
-    [Fact]
-    public static void TestTryParse()
-    {
-        // Defaults NumberStyles.Integer = NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite | NumberStyles.AllowLeadingSign
+            //If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
+            if (nfi != null)
+            {
+                Assert.Throws(exceptionType, () => sbyte.Parse(value, nfi));
+            }
+        }
 
-        SByte i;
-        Assert.True(SByte.TryParse("123", out i));     // Simple
-        Assert.Equal<SByte>(123, i);
+        // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
+        Assert.Equal(false, sbyte.TryParse(value, style, nfi ?? new NumberFormatInfo(), out i));
+        Assert.Equal(default(sbyte), i);
 
-        Assert.True(SByte.TryParse("-38", out i));    // LeadingSign negative
-        Assert.Equal(-38, i);
-
-        Assert.True(SByte.TryParse(" 67 ", out i));   // Leading/Trailing whitespace
-        Assert.Equal<SByte>(67, i);
-
-        Assert.False(SByte.TryParse((100).ToString("C0"), out i));  // Currency
-        Assert.False(SByte.TryParse((1000).ToString("N0"), out i));  // Thousands
-        Assert.False(SByte.TryParse("ab", out i));    // Hex digits
-        Assert.False(SByte.TryParse((67.90).ToString("F2"), out i)); // Decimal
-        Assert.False(SByte.TryParse("(35)", out i));  // Parentheses
-        Assert.False(SByte.TryParse("1E23", out i));   // Exponent
-    }
-
-    [Fact]
-    public static void TestTryParseNumberStyleFormatProvider()
-    {
-        SByte i;
-        var nfi = new NumberFormatInfo();
-        Assert.True(SByte.TryParse("123", NumberStyles.Any, nfi, out i));   // Simple positive
-        Assert.Equal<SByte>(123, i);
-
-        Assert.True(SByte.TryParse("12", NumberStyles.HexNumber, nfi, out i));   // Simple Hex
-        Assert.Equal<SByte>(0x12, i);
-
-        nfi.CurrencySymbol = "$";
-        Assert.True(SByte.TryParse("$100", NumberStyles.Currency, nfi, out i)); // Currency/Thousands postive
-        Assert.Equal<SByte>(100, i);
-
-        Assert.False(SByte.TryParse("ab", NumberStyles.None, nfi, out i));       // Hex Number negative
-        Assert.True(SByte.TryParse("2b", NumberStyles.HexNumber, nfi, out i));   // Hex Number positive
-        Assert.Equal<SByte>(0x2b, i);
-
-        nfi.NumberDecimalSeparator = ".";
-        Assert.False(SByte.TryParse("67.90", NumberStyles.Integer, nfi, out i));  // Decimal
-        Assert.False(SByte.TryParse(" 67 ", NumberStyles.None, nfi, out i));      // Trailing/Leading whitespace negative
-
-        Assert.True(SByte.TryParse("(35)", NumberStyles.AllowParentheses, nfi, out i)); // Parenthese
-        Assert.Equal(-35, i);
+        //If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
+        if (nfi == null)
+        {
+            Assert.Throws(exceptionType, () => sbyte.Parse(value, style));
+        }
+        Assert.Throws(exceptionType, () => sbyte.Parse(value, style, nfi ?? new NumberFormatInfo()));
     }
 }
-

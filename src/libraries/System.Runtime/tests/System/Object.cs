@@ -2,8 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using Xunit;
 
 public static unsafe class ObjectTests
@@ -11,7 +9,7 @@ public static unsafe class ObjectTests
     [Fact]
     public static void TestEqualsAndHashCode()
     {
-        Object o1 = new Object();
+        object o1 = new object();
         int h1 = o1.GetHashCode();
         int h2 = o1.GetHashCode();
         Assert.Equal(h1, h2);
@@ -23,7 +21,7 @@ public static unsafe class ObjectTests
         b = o1.Equals(null);
         Assert.False(b);
 
-        Object o2 = new Object();
+        object o2 = new object();
         b = o1.Equals(o2);
         Assert.False(b);
 
@@ -79,11 +77,11 @@ public static unsafe class ObjectTests
     [Fact]
     public static void TestGetType()
     {
-        Object o1 = new Object();
-        Object o2 = new Object();
+        object o1 = new object();
+        object o2 = new object();
         Type t1 = o1.GetType();
         Type t2 = o2.GetType();
-        Assert.Equal(t1, typeof(Object));
+        Assert.Equal(t1, typeof(object));
         Assert.Equal(t1, t2);
         Assert.Equal(t1.ToString(), o1.ToString());
 
@@ -107,10 +105,10 @@ public static unsafe class ObjectTests
     [Fact]
     public static void TestToString()
     {
-        Object o = new Object();
-        String s = o.ToString();
+        object o = new object();
+        string s = o.ToString();
         Assert.Equal(s, "System.Object");
-        String s1 = o.GetType().ToString();
+        string s1 = o.GetType().ToString();
         Assert.Equal(s, s1);
     }
 
@@ -126,13 +124,13 @@ public static unsafe class ObjectTests
 
     private class C
     {
-        public C(String s, int x, int y)
+        public C(string s, int x, int y)
         {
             this.s = s;
             this.x = x;
             this.y = y;
         }
-        public String s;
+        public string s;
         public int x;
         public int y;
 
@@ -149,7 +147,7 @@ public static unsafe class ObjectTests
             X = x;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             s_EqualsCalled = true;
 
@@ -169,4 +167,3 @@ public static unsafe class ObjectTests
         public static bool s_EqualsCalled = false;
     }
 }
-

@@ -2,9 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+
 using Xunit;
 
 public static unsafe class MulticastDelegateTests
@@ -63,7 +62,7 @@ public static unsafe class MulticastDelegateTests
         DRet dret1 = new DRet(t.ARet);
         DRet dret2 = new DRet(t.BRet);
         DRet dret12 = (DRet)Delegate.Combine(dret1, dret2);
-        String s = dret12(4);
+        string s = dret12(4);
         Assert.Equal(s, "BRet4");
         Assert.Equal(t.S, "ARet4BRet4");
         return;
@@ -125,7 +124,7 @@ public static unsafe class MulticastDelegateTests
         D abcc = (D)(Delegate.Remove(abcdabc, dab));
         t1.Clear();
         abcc(9);
-        String s = t1.S;
+        string s = t1.S;
         Assert.Equal(s, "A9B9C9C9");
         CheckInvokeList(new D[] { a, b, c, c }, abcc, t1);
 
@@ -208,11 +207,11 @@ public static unsafe class MulticastDelegateTests
 
         target.Clear();
         expected(9);
-        String sExpected = target.S;
+        string sExpected = target.S;
 
         target.Clear();
         actual(9);
-        String sActual = target.S;
+        string sActual = target.S;
 
         Assert.Equal(sExpected, sActual);
 
@@ -226,7 +225,7 @@ public static unsafe class MulticastDelegateTests
             S = "";
         }
 
-        public String S;
+        public string S;
 
         public void Clear()
         {
@@ -238,7 +237,7 @@ public static unsafe class MulticastDelegateTests
             S = S + "A" + x;
         }
 
-        public String ARet(int x)
+        public string ARet(int x)
         {
             S = S + "ARet" + x;
             return "ARet" + x;
@@ -249,7 +248,7 @@ public static unsafe class MulticastDelegateTests
             S = S + "B" + x;
         }
 
-        public String BRet(int x)
+        public string BRet(int x)
         {
             S = S + "BRet" + x;
             return "BRet" + x;
@@ -277,22 +276,21 @@ public static unsafe class MulticastDelegateTests
     }
 
     private delegate void D(int x);
-    private delegate String DRet(int x);
+    private delegate string DRet(int x);
 
-    private delegate String DFoo(int x);
-    private delegate String DGoo(int x);
+    private delegate string DFoo(int x);
+    private delegate string DGoo(int x);
 
     private class C
     {
-        public String Foo(int x)
+        public string Foo(int x)
         {
-            return new String('A', x);
+            return new string('A', x);
         }
 
-        public String Goo(int x)
+        public string Goo(int x)
         {
-            return new String('A', x);
+            return new string('A', x);
         }
     }
 }
-

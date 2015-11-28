@@ -13,7 +13,7 @@ public class ComparableRefType : IComparable, IEquatable<ComparableRefType>
         this.Id = id;
     }
 
-    public int CompareTo(Object other)
+    public int CompareTo(object other)
     {
         ComparableRefType o = (ComparableRefType)other;
         if (o.Id == this.Id)
@@ -60,7 +60,7 @@ public class ComparableValueType : IComparable, IEquatable<ComparableValueType>
         this.Id = id;
     }
 
-    public int CompareTo(Object other)
+    public int CompareTo(object other)
     {
         ComparableValueType o = (ComparableValueType)other;
         if (o.Id == this.Id)
@@ -201,7 +201,7 @@ public static class TestObjects
         Array array = new int[length];
         for (int g = 0; g < length; g++)
         {
-            array.SetValue(random.Next(Int32.MinValue, Int32.MaxValue), g);
+            array.SetValue(random.Next(int.MinValue, int.MaxValue), g);
         }
         return array;
     }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+
 using Xunit;
 
 public static class RuntimeHelpersTests
@@ -56,7 +57,7 @@ public static class RuntimeHelpersTests
         object tOV = RuntimeHelpers.GetObjectValue(t);
         Assert.Equal(t, (TestStruct)tOV);
 
-        Object o = new object();
+        object o = new object();
         object oOV = RuntimeHelpers.GetObjectValue(o);
         Assert.Equal(o, oOV);
 
@@ -101,12 +102,12 @@ public static class RuntimeHelpersTests
     {
         static HasCctor()
         {
-            HasCctorReceiver.S = "Hello" + (Guid.NewGuid().ToString().Substring(String.Empty.Length, 0));  // Make sure the preinitialization optimization doesn't eat this.
+            HasCctorReceiver.S = "Hello" + (Guid.NewGuid().ToString().Substring(string.Empty.Length, 0));  // Make sure the preinitialization optimization doesn't eat this.
         }
     }
 
     internal class HasCctorReceiver
     {
-        public static String S;
+        public static string S;
     }
 }

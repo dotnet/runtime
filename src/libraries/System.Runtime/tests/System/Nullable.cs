@@ -2,8 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
+
 using Xunit;
 
 public static unsafe class NullableTests
@@ -47,7 +46,7 @@ public static unsafe class NullableTests
         Foo(n);
     }
 
-    private static void Foo(Object o)
+    private static void Foo(object o)
     {
         Type t = o.GetType();
         Assert.IsNotType<Nullable<int>>(t);
@@ -124,4 +123,3 @@ public static unsafe class NullableTests
     {
     }
 }
-

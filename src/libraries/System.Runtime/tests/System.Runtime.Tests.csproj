@@ -19,6 +19,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Common\CompareHelper.cs" />
     <Compile Include="System\Activator.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\Array.CustomClassStructTests.cs" />
