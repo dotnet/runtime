@@ -518,7 +518,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	scope_idx = start_scope_idx;
 	mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
 	locals_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
-	while (TRUE) {
+	while (scope_idx == tables [MONO_TABLE_LOCALSCOPE].rows) {
 		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
 		if (cols [MONO_LOCALSCOPE_METHOD] != method_idx)
 			break;
@@ -526,9 +526,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	}
 	nscopes = scope_idx - start_scope_idx;
 	if (scope_idx == tables [MONO_TABLE_LOCALSCOPE].rows) {
-		// FIXME:
-		g_assert_not_reached ();
-		locals_end_idx = -1;
+		locals_end_idx = tables [MONO_TABLE_LOCALVARIABLE].rows;
 	} else {
 		locals_end_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
 	}
@@ -546,8 +544,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 
 		locals_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
 		if (scope_idx == tables [MONO_TABLE_LOCALSCOPE].rows) {
-			// FIXME:
-			g_assert_not_reached ();
+			locals_end_idx = tables [MONO_TABLE_LOCALVARIABLE].rows;
 		} else {
 			locals_end_idx = mono_metadata_decode_row_col (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1 + 1, MONO_LOCALSCOPE_VARIABLELIST);
 		}
