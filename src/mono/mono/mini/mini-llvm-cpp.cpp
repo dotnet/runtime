@@ -25,35 +25,11 @@
 #include <stdint.h>
 
 #include <llvm/Support/raw_ostream.h>
-#include <llvm/Support/Host.h>
-#include <llvm/PassManager.h>
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/JITMemoryManager.h>
-#include <llvm/ExecutionEngine/JITEventListener.h>
-#include <llvm/Target/TargetOptions.h>
-#include <llvm/Target/TargetRegisterInfo.h>
-#include <llvm/IR/Verifier.h>
-#include <llvm/Analysis/Passes.h>
-#include <llvm/Transforms/Scalar.h>
-#include <llvm/Support/CommandLine.h>
-#include <llvm/IR/LegacyPassNameParser.h>
-#include <llvm/Support/PrettyStackTrace.h>
-#include <llvm/CodeGen/Passes.h>
-#include <llvm/CodeGen/MachineFunctionPass.h>
-#include <llvm/CodeGen/MachineFunction.h>
-#include <llvm/CodeGen/MachineFrameInfo.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
-#include <llvm-c/Core.h>
-#include <llvm-c/ExecutionEngine.h>
-
 #include "mini-llvm-cpp.h"
-
-// extern "C" void LLVMInitializeARMTargetInfo();
-// extern "C" void LLVMInitializeARMTarget ();
-// extern "C" void LLVMInitializeARMTargetMC ();
 
 using namespace llvm;
 
