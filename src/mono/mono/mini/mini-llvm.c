@@ -1326,6 +1326,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	if (sig->hasthis) {
 		cinfo->this_arg_pindex = pindex;
 		param_types [pindex ++] = ThisType ();
+		cinfo->args [0].pindex = cinfo->this_arg_pindex;
 	}
 	if (vretaddr && vret_arg_pindex == pindex)
 		param_types [pindex ++] = IntPtrType ();
@@ -6518,7 +6519,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		int err = LLVMVerifyFunction(method,   LLVMPrintMessageAction);
 		g_assert (err == 0);
 	} else {
-		LLVMVerifyFunction(method, 0);
+		//LLVMVerifyFunction(method, 0);
 		mono_llvm_optimize_method (ctx->module->mono_ee, method);
 
 		if (cfg->verbose_level > 1)
