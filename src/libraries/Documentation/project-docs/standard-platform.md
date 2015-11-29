@@ -292,7 +292,7 @@ Tooling support for the `netstandard` TFM is as follows. This list will be updat
 
 ### Legend 
 - `X` - API appeared in specific .NET Platform Standard version
-- `&larr;` - API version determined by nearest `X` e.g. In the table below, if you target .NET Platform Standard version 1.4 and reference Microsoft.CSharp, you'd get the 1.0 API version.
+- `←` - API version determined by nearest `X` e.g. In the table below, if you target .NET Platform Standard version 1.4 and reference Microsoft.CSharp, you'd get the 1.0 API version.
 
 | Contract | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 |
 | -------- | --- | --- | --- | --- | --- |
