@@ -147,7 +147,7 @@ endif
 
 if LOADED_LLVM
 lib_LTLIBRARIES += libmono-llvm.la
-libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp
+libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp llvm-jit.cpp
 libmono_llvm_la_LIBADD = $(GLIB_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
 if PLATFORM_DARWIN
 libmono_llvm_la_LDFLAGS=-Wl,-undefined -Wl,suppress -Wl,-flat_namespace
@@ -363,7 +363,8 @@ else
 llvm_sources = \
 	mini-llvm.c		\
 	mini-llvm-loaded.c \
-	mini-llvm-cpp.cpp
+	mini-llvm-cpp.cpp \
+	llvm-jit.cpp
 endif
 endif
 
