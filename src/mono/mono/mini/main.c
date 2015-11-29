@@ -15,7 +15,7 @@
 static int
 mono_main_with_options (int argc, char *argv [])
 {
-	mono_parse_env_options (argc, argv);
+	mono_parse_env_options (&argc, &argv);
 
 	return mono_main (argc, argv);
 }
