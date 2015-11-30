@@ -106,8 +106,8 @@ namespace System.IO
 
                         if (s_moveLeftString == null)
                         {
-                            string moveLeft = ConsolePal.TerminalBasicInfo.Instance.CursorLeftFormat;
-                            s_moveLeftString = moveLeft != null ? moveLeft + " " + moveLeft : string.Empty;
+                            string moveLeft = ConsolePal.TerminalFormatStrings.Instance.CursorLeft;
+                            s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;
                         }
                         Console.Write(s_moveLeftString);
                     }
