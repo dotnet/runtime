@@ -11,6 +11,82 @@ namespace System
     /// <summary>Provides access to and processing of a terminfo database.</summary>
     internal static class TermInfo
     {
+        internal enum WellKnownNumbers
+        {
+            Columns = 0,
+            Lines = 2,
+            MaxColors = 13,
+        }
+
+        internal enum WellKnownStrings
+        {
+            Bell = 1,
+            Clear = 5,
+            CursorAddress = 10,
+            CursorLeft = 14,
+            CursorPositionRequest = 294,
+            OrigPairs = 297,
+            OrigColors = 298,
+            SetAnsiForeground = 359,
+            SetAnsiBackground = 360,
+            CursorInvisible = 13,
+            CursorVisible = 16,
+            FromStatusLine = 47,
+            ToStatusLine = 135,
+            KeyBackspace = 55,
+            KeyClear = 57,
+            KeyDelete = 59,
+            KeyDown = 61,
+            KeyF1 = 66,
+            KeyF10 = 67,
+            KeyF2 = 68,
+            KeyF3 = 69,
+            KeyF4 = 70,
+            KeyF5 = 71,
+            KeyF6 = 72,
+            KeyF7 = 73,
+            KeyF8 = 74,
+            KeyF9 = 75,
+            KeyHome = 76,
+            KeyInsert = 77,
+            KeyLeft = 79,
+            KeyPageDown = 81,
+            KeyPageUp = 82,
+            KeyRight = 83,
+            KeyScrollForward = 84,
+            KeyScrollReverse = 85,
+            KeyUp = 87,
+            KeypadXmit = 89,
+            KeyBackTab = 148,
+            KeyBegin = 158,
+            KeyEnd = 164,
+            KeyEnter = 165,
+            KeyHelp = 168,
+            KeyPrint = 176,
+            KeySBegin = 186,
+            KeySDelete = 191,
+            KeySelect = 193,
+            KeySHelp = 198,
+            KeySHome = 199,
+            KeySLeft = 201,
+            KeySPrint = 207,
+            KeySRight = 210,
+            KeyF11 = 216,
+            KeyF12 = 217,
+            KeyF13 = 218,
+            KeyF14 = 219,
+            KeyF15 = 220,
+            KeyF16 = 221,
+            KeyF17 = 222,
+            KeyF18 = 223,
+            KeyF19 = 224,
+            KeyF20 = 225,
+            KeyF21 = 226,
+            KeyF22 = 227,
+            KeyF23 = 228,
+            KeyF24 = 229,
+        }
+
         /// <summary>Provides a terminfo database.</summary>
         internal sealed class Database
         {
@@ -223,18 +299,19 @@ namespace System
             /// <summary>Gets a string from the strings section by the string's well-known index.</summary>
             /// <param name="stringTableIndex">The index of the string to find.</param>
             /// <returns>The string if it's in the database; otherwise, null.</returns>
-            public string GetString(int stringTableIndex)
+            public string GetString(WellKnownStrings stringTableIndex)
             {
-                Debug.Assert(stringTableIndex >= 0);
+                int index = (int)stringTableIndex;
+                Debug.Assert(index >= 0);
 
-                if (stringTableIndex >= _stringSectionNumOffsets)
+                if (index >= _stringSectionNumOffsets)
                 {
                     // Some terminfo files may not contain enough entries to actually 
                     // have the requested one.
                     return null;
                 }
 
-                int tableIndex = ReadInt16(_data, StringOffsetsOffset + (stringTableIndex * 2));
+                int tableIndex = ReadInt16(_data, StringOffsetsOffset + (index * 2));
                 if (tableIndex == -1)
                 {
                     // Some terminfo files may have enough entries, but may not actually
@@ -261,18 +338,19 @@ namespace System
             /// <summary>Gets a number from the numbers section by the number's well-known index.</summary>
             /// <param name="numberIndex">The index of the string to find.</param>
             /// <returns>The number if it's in the database; otherwise, -1.</returns>
-            public int GetNumber(int numberIndex)
+            public int GetNumber(WellKnownNumbers numberIndex)
             {
-                Debug.Assert(numberIndex >= 0);
+                int index = (int)numberIndex;
+                Debug.Assert(index >= 0);
 
-                if (numberIndex >= _numberSectionNumShorts)
+                if (index >= _numberSectionNumShorts)
                 {
                     // Some terminfo files may not contain enough entries to actually
                     // have the requested one.
                     return -1;
                 }
 
-                return ReadInt16(_data, NumbersOffset + (numberIndex * 2));
+                return ReadInt16(_data, NumbersOffset + (index * 2));
             }
 
             /// <summary>Parses the extended string information from the terminfo data.</summary>
@@ -381,146 +459,6 @@ namespace System
             }
 
             private static int RoundUpToEven(int i) { return i % 2 == 1 ? i + 1 : i; }
-
-            /// <summary>The well-known index of the audible bell entry.</summary>
-            public const int BellIndex = 1;
-            /// <summary>The well-known index of the clear screen entry.</summary>
-            public const int ClearIndex = 5;
-            /// <summary>The well-known index of the cursor address entry.</summary>
-            public const int CursorAddressIndex = 10;
-            /// <summary>The well-known index of the cursor left entry.</summary>
-            public const int CursorLeftIndex = 14;
-            /// <summary>The well-known index of "user string 7", which is used for cursor position requests.</summary>
-            public const int CursorPositionRequest = 294;
-
-            /// <summary>The well-known index of the max_colors numbers entry.</summary>
-            public const int MaxColorsIndex = 13;
-            /// <summary>The well-known index of the orig_pairs string entry.</summary>
-            public const int OrigPairsIndex = 297;
-            /// <summary>The well-known index of the orig_colors string entry.</summary>
-            public const int OrigColorsIndex = 298;
-            /// <summary>The well-known index of the set_a_foreground string entry.</summary>
-            public const int SetAnsiForegroundIndex = 359;
-            /// <summary>The well-known index of the set_a_background string entry.</summary>
-            public const int SetAnsiBackgroundIndex = 360;
-
-            /// <summary>The well-known index of the columns numeric entry.</summary>
-            public const int ColumnIndex = 0;
-            /// <summary>The well-known index of the lines numeric entry.</summary>
-            public const int LinesIndex = 2;
-            /// <summary>The well-known index of the cursor_invisible string entry.</summary>
-            public const int CursorInvisibleIndex = 13;
-            /// <summary>The well-known index of the cursor_normal string entry.</summary>
-            public const int CursorVisibleIndex = 16;
-            /// <summary>The well-known index of the from_status_line string entry.</summary>
-            public const int FromStatusLineIndex = 47;
-            /// <summary>The well-known index of the from_status_line string entry.</summary>
-            public const int ToStatusLineIndex = 135;
-
-            /// <summary>The well-known index of key_backspace</summary>
-            public const int KeyBackspace = 55;
-            /// <summary>The well-known index of key_clear</summary>
-            public const int KeyClear = 57;
-            /// <summary>The well-known index of key_dc</summary>
-            public const int KeyDelete = 59;
-            /// <summary>The well-known index of key_down</summary>
-            public const int KeyDown = 61;
-            /// <summary>The well-known index of key_f1</summary>
-            public const int KeyF1 = 66;
-            /// <summary>The well-known index of key_f10</summary>
-            public const int KeyF10 = 67;
-            /// <summary>The well-known index of key_f2</summary>
-            public const int KeyF2 = 68;
-            /// <summary>The well-known index of key_f3</summary>
-            public const int KeyF3 = 69;
-            /// <summary>The well-known index of key_f4</summary>
-            public const int KeyF4 = 70;
-            /// <summary>The well-known index of key_f5</summary>
-            public const int KeyF5 = 71;
-            /// <summary>The well-known index of key_f6</summary>
-            public const int KeyF6 = 72;
-            /// <summary>The well-known index of key_f7</summary>
-            public const int KeyF7 = 73;
-            /// <summary>The well-known index of key_f8</summary>
-            public const int KeyF8 = 74;
-            /// <summary>The well-known index of key_f9</summary>
-            public const int KeyF9 = 75;
-            /// <summary>The well-known index of key_home</summary>
-            public const int KeyHome = 76;
-            /// <summary>The well-known index of key_ic</summary>
-            public const int KeyInsert = 77;
-            /// <summary>The well-known index of key_left</summary>
-            public const int KeyLeft = 79;
-            /// <summary>The well-known index of key_npage</summary>
-            public const int KeyPageDown = 81;
-            /// <summary>The well-known index of key_ppage</summary>
-            public const int KeyPageUp = 82;
-            /// <summary>The well-known index of key_right</summary>
-            public const int KeyRight = 83;
-            /// <summary>The well-known index of key_sf</summary>
-            public const int KeyScrollForward = 84;
-            /// <summary>The well-known index of key_sr</summary>
-            public const int KeyScrollReverse = 85;
-            /// <summary>The well-known index of key_up</summary>
-            public const int KeyUp = 87;
-            /// <summary>The well-known index of keypad_xmit</summary>
-            public const int KeypadXmit = 89;
-            /// <summary>The well-known index of key_btab</summary>
-            public const int KeyBackTab = 148;
-            /// <summary>The well-known index of key_beg</summary>
-            public const int KeyBegin = 158;
-            /// <summary>The well-known index of key_end</summary>
-            public const int KeyEnd = 164;
-            /// <summary>The well-known index of key_enter</summary>
-            public const int KeyEnter = 165;
-            /// <summary>The well-known index of key_help</summary>
-            public const int KeyHelp = 168;
-            /// <summary>The well-known index of key_print</summary>
-            public const int KeyPrint = 176;
-            /// <summary>The well-known index of key_sbeg</summary>
-            public const int KeySBegin = 186;
-            /// <summary>The well-known index of key_sdc</summary>
-            public const int KeySDelete = 191;
-            /// <summary>The well-known index of key_select</summary>
-            public const int KeySelect = 193;
-            /// <summary>The well-known index of key_shelp</summary>
-            public const int KeySHelp = 198;
-            /// <summary>The well-known index of key_shome</summary>
-            public const int KeySHome = 199;
-            /// <summary>The well-known index of key_sleft</summary>
-            public const int KeySLeft = 201;
-            /// <summary>The well-known index of key_sprint</summary>
-            public const int KeySPrint = 207;
-            /// <summary>The well-known index of key_sright</summary>
-            public const int KeySRight = 210;
-            /// <summary>The well-known index of key_f11</summary>
-            public const int KeyF11 = 216;
-            /// <summary>The well-known index of key_f12</summary>
-            public const int KeyF12 = 217;
-            /// <summary>The well-known index of key_f13</summary>
-            public const int KeyF13 = 218;
-            /// <summary>The well-known index of key_f14</summary>
-            public const int KeyF14 = 219;
-            /// <summary>The well-known index of key_f15</summary>
-            public const int KeyF15 = 220;
-            /// <summary>The well-known index of key_f16</summary>
-            public const int KeyF16 = 221;
-            /// <summary>The well-known index of key_f17</summary>
-            public const int KeyF17 = 222;
-            /// <summary>The well-known index of key_f18</summary>
-            public const int KeyF18 = 223;
-            /// <summary>The well-known index of key_f19</summary>
-            public const int KeyF19 = 224;
-            /// <summary>The well-known index of key_f20</summary>
-            public const int KeyF20 = 225;
-            /// <summary>The well-known index of key_f21</summary>
-            public const int KeyF21 = 226;
-            /// <summary>The well-known index of key_f22</summary>
-            public const int KeyF22 = 227;
-            /// <summary>The well-known index of key_f23</summary>
-            public const int KeyF23 = 228;
-            /// <summary>The well-known index of key_f24</summary>
-            public const int KeyF24 = 229;
 
             /// <summary>Read a 16-bit value from the buffer starting at the specified position.</summary>
             /// <param name="buffer">The buffer from which to read.</param>
