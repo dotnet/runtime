@@ -73,11 +73,11 @@ namespace System.Diagnostics
             // Set the product version based on the assembly's version (this may be overwritten 
             // later in the method).
             Version productVersion = assemblyDefinition.Version;
-            _productVersion = productVersion.ToString(4);
+            _productVersion = productVersion.ToString();
             _productMajor = productVersion.Major;
             _productMinor = productVersion.Minor;
-            _productBuild = productVersion.Build;
-            _productPrivate = productVersion.Revision;
+            _productBuild = productVersion.Build != -1 ? productVersion.Build : 0;
+            _productPrivate = productVersion.Revision != -1 ? productVersion.Revision : 0;
 
             // "Language Neutral" is used on Win32 for unknown language identifiers.
             _language = "Language Neutral";
@@ -128,11 +128,11 @@ namespace System.Diagnostics
                         Version v;
                         if (Version.TryParse(versionString, out v))
                         {
-                            _fileVersion = v.ToString(4);
+                            _fileVersion = v.ToString();
                             _fileMajor = v.Major;
                             _fileMinor = v.Minor;
-                            _fileBuild = v.Build;
-                            _filePrivate = v.Revision;
+                            _fileBuild = v.Build != -1 ? v.Build : 0;
+                            _filePrivate = v.Revision != -1 ? v.Revision : 0;
 
                             // When the managed compiler sees an [AssemblyVersion(...)] attribute, it uses that to set 
                             // both the assembly version and the product version in the Win32 resources. If it doesn't 
