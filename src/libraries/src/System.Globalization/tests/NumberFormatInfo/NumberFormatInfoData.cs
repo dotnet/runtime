@@ -3,15 +3,16 @@
 
 using System.Runtime.InteropServices;
 using System.Text;
+using Xunit;
 
 namespace System.Globalization.Tests
 {
     internal static class NumberFormatInfoData
     {
-        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        private static int s_WindowsVersion = DateTimeFormatInfoData.GetWindowsVersion();
-        private static bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        private static Version s_OSXKernelVersion = GetOSXKernelVersion();
+        private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        private static readonly int s_WindowsVersion = DateTimeFormatInfoData.GetWindowsVersion();
+        private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        private static readonly Version s_OSXKernelVersion = GetOSXKernelVersion();
 
         public static int[] GetNumberGroupSizes(CultureInfo cultureInfo)
         {
@@ -102,9 +103,9 @@ namespace System.Globalization.Tests
         {
             if (s_isOSX)
             {
-                ulong bytesLength = 256;
-                byte[] bytes = new byte[bytesLength];
-                sysctlbyname("kern.osrelease", bytes, ref bytesLength, null, 0);
+                byte[] bytes = new byte[256];
+                IntPtr bytesLength = new IntPtr(bytes.Length);
+                Assert.Equal(0, sysctlbyname("kern.osrelease", bytes, ref bytesLength, null, IntPtr.Zero));
                 string versionString = Encoding.UTF8.GetString(bytes);
                 return Version.Parse(versionString);
             }
@@ -112,7 +113,7 @@ namespace System.Globalization.Tests
             return new Version(0, 0, 0);
         }
         
-        [DllImport("libc")]
-        private static extern int sysctlbyname(string ctlName, byte[] oldp, ref ulong oldpLen, byte[] newp, ulong newpLen);
+        [DllImport("libc", SetLastError = true)]
+        private static extern int sysctlbyname(string ctlName, byte[] oldp, ref IntPtr oldpLen, byte[] newp, IntPtr newpLen);
     }
 }
