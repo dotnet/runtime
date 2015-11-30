@@ -571,14 +571,14 @@ namespace System
         {
             int unprocessedCharCount = endIndex - startIndex;
 
-            if (unprocessedCharCount >= TerminalKeyInfo.Instance.MinKeyLength)
+            int minRange = TerminalKeyInfo.Instance.MinKeyLength;
+            if (unprocessedCharCount >= minRange)
             {
-                int minRange = TerminalKeyInfo.Instance.MinKeyLength;
                 int maxRange = Math.Min(unprocessedCharCount, TerminalKeyInfo.Instance.MaxKeyLength);
 
                 for (int i = maxRange; i >= minRange; i--)
                 {
-                    string currentString = new string(givenChars, startIndex, i);
+                    var currentString = new StringOrCharArray(givenChars, startIndex, i);
 
                     // Check if the string prefix matches.
                     if (TerminalKeyInfo.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
@@ -775,7 +775,7 @@ namespace System
             /// The dictionary of keystring to ConsoleKeyInfo.
             /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
             /// </summary>
-            public Dictionary<string, ConsoleKeyInfo> KeyFormatToConsoleKey;
+            public Dictionary<StringOrCharArray, ConsoleKeyInfo> KeyFormatToConsoleKey;
             /// <summary> Max key length </summary>
             public int MaxKeyLength;
             /// <summary> Min key length </summary>
@@ -816,7 +816,7 @@ namespace System
 
             private TerminalKeyInfo(TermInfo.Database db)
             {
-                KeyFormatToConsoleKey = new Dictionary<string, ConsoleKeyInfo>();
+                KeyFormatToConsoleKey = new Dictionary<StringOrCharArray, ConsoleKeyInfo>();
                 MaxKeyLength = MinKeyLength = 0;
                 KeypadXmit = string.Empty;
 
