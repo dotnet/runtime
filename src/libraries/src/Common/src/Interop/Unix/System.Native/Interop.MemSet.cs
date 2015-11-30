@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative)]
-        internal static extern unsafe Error Select(int fdCount, uint* readFds, uint* writeFds, uint* errorFds, int microseconds, int* selected);
+        internal static extern unsafe void* MemSet(void *s, int c, UIntPtr n);
     }
 }
