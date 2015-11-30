@@ -5754,6 +5754,9 @@ emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **a
 	MonoClass *param_klass = mono_class_from_mono_type (fsig->params [0]);
 	MonoClass *return_klass = mono_class_from_mono_type (fsig->ret);
 
+	if (mini_is_gsharedvt_variable_type (fsig->ret))
+		return NULL;
+
 	//Valuetypes that are semantically equivalent or numbers than can be widened to
 	if (is_unsafe_mov_compatible (cfg, param_klass, return_klass))
 		return args [0];
