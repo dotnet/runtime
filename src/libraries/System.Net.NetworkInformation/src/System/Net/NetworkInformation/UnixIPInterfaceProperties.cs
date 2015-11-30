@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 
@@ -38,11 +39,44 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public override bool IsDnsEnabled { get { return DnsAddresses.Count > 0; } }
+        public override bool IsDnsEnabled
+        {
+            get
+            {
+                if (_dnsAddresses == null)
+                {
+                    throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+                }
 
-        public sealed override string DnsSuffix { get { return _dnsSuffix; } }
+                return _dnsAddresses.Count > 0;
+            }
+        }
 
-        public sealed override IPAddressCollection DnsAddresses { get { return _dnsAddresses; } }
+        public sealed override string DnsSuffix
+        {
+            get
+            {
+                if (_dnsSuffix == null)
+                {
+                    throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+                }
+
+                return _dnsSuffix;
+            }
+        }
+
+        public sealed override IPAddressCollection DnsAddresses
+        {
+            get
+            {
+                if (_dnsAddresses == null)
+                {
+                    throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+                }
+
+                return _dnsAddresses;
+            }
+        }
 
         private static UnicastIPAddressInformationCollection GetUnicastAddresses(UnixNetworkInterface uni)
         {
@@ -71,13 +105,27 @@ namespace System.Net.NetworkInformation
 
         private static string GetDnsSuffix()
         {
-            return StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(NetworkFiles.EtcResolvConfFile);
+            try
+            {
+                return StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(NetworkFiles.EtcResolvConfFile);
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
         }
 
         private static IPAddressCollection GetDnsAddresses()
         {
-            List<IPAddress> internalAddresses = StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(NetworkFiles.EtcResolvConfFile);
-            return new InternalIPAddressCollection(internalAddresses);
+            try
+            {
+                List<IPAddress> internalAddresses = StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(NetworkFiles.EtcResolvConfFile);
+                return new InternalIPAddressCollection(internalAddresses);
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
         }
     }
 }
