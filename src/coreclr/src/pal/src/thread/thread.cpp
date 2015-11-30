@@ -1303,6 +1303,156 @@ InternalSetThreadPriorityExit:
     return palError;    
 }
 
+BOOL
+CorUnix::GetThreadTimesInternal(
+    IN HANDLE hThread,
+    OUT LPFILETIME lpKernelTime,
+    OUT LPFILETIME lpUserTime)
+{
+    __int64 calcTime;
+    BOOL retval = FALSE;
+    const __int64 SECS_TO_NS = 1000000000; /* 10^9 */
+
+#if HAVE_MACH_THREADS
+    thread_basic_info resUsage;
+    PAL_ERROR palError = NO_ERROR;
+    CPalThread *pthrCurrent = NULL;
+    CPalThread *pthrTarget = NULL;
+    IPalObject *pobjThread = NULL;
+    mach_msg_type_number_t resUsage_count = THREAD_BASIC_INFO_COUNT;
+
+    const __int64 USECS_TO_NS = 1000;      /* 10^3 */
+
+    pthrCurrent = InternalGetCurrentThread();
+    palError = InternalGetThreadDataFromHandle(
+        pthrCurrent,
+        hThread,
+        0,
+        &pthrTarget,
+        &pobjThread
+        );
+    
+    if (palError != NO_ERROR)
+    {
+        ASSERT("Unable to get thread data from handle %p"
+              "thread\n", hThread);
+        SetLastError(ERROR_INTERNAL_ERROR);
+        goto SetTimesToZero;
+    }   
+
+    pthrTarget->Lock(pthrCurrent);
+    
+    mach_port_t mhThread;
+    mhThread = pthread_mach_thread_np(pthrTarget->GetPThreadSelf());
+    
+    kern_return_t status;
+    status = thread_info(
+        mhThread, 
+        THREAD_BASIC_INFO, 
+        (thread_info_t)&resUsage, 
+        &resUsage_count);
+
+    pthrTarget->Unlock(pthrCurrent);
+
+    if (status != KERN_SUCCESS)
+    {
+        ASSERT("Unable to get resource usage information for the current "
+              "thread\n");
+        SetLastError(ERROR_INTERNAL_ERROR);
+        goto SetTimesToZero;
+    }
+
+    /* Get the time of user mode execution, in nanoseconds */
+    calcTime = (__int64)resUsage.user_time.seconds * SECS_TO_NS;
+    calcTime += (__int64)resUsage.user_time.microseconds * USECS_TO_NS;
+    /* Assign the time into lpUserTime */
+    lpUserTime->dwLowDateTime = (DWORD)calcTime;
+    lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
+
+    /* Get the time of kernel mode execution, in nanoseconds */
+    calcTime = (__int64)resUsage.system_time.seconds * SECS_TO_NS;
+    calcTime += (__int64)resUsage.system_time.microseconds * USECS_TO_NS;
+    /* Assign the time into lpKernelTime */
+    lpKernelTime->dwLowDateTime = (DWORD)calcTime;
+    lpKernelTime->dwHighDateTime = (DWORD)(calcTime >> 32);
+
+    retval = TRUE;
+
+    goto GetThreadTimesInternalExit;
+
+#else //HAVE_MACH_THREADS
+
+    PAL_ERROR palError;
+    CPalThread *pThread;
+    CPalThread *pTargetThread;
+    IPalObject *pobjThread = NULL;
+    clockid_t cid;
+
+    pThread = InternalGetCurrentThread();
+
+    palError = InternalGetThreadDataFromHandle(
+        pThread,
+        hThread,
+        0, // THREAD_GET_CONTEXT
+        &pTargetThread,
+        &pobjThread
+        );
+    if (palError != NO_ERROR)
+    {
+        ASSERT("Unable to get thread data from handle %p"
+              "thread\n", hThread);
+        SetLastError(ERROR_INTERNAL_ERROR);
+        goto SetTimesToZero;
+    }   
+
+    pTargetThread->Lock(pThread);
+
+    if (pthread_getcpuclockid(pTargetThread->GetPThreadSelf(), &cid) != 0)
+    {
+        ASSERT("Unable to get clock from thread\n", hThread);
+        SetLastError(ERROR_INTERNAL_ERROR);
+        pTargetThread->Unlock(pThread);
+        goto SetTimesToZero;
+    }
+
+    struct timespec ts;
+    if (clock_gettime(cid, &ts) != 0)
+    {
+        ASSERT("clock_gettime() failed; errno is %d (%s)\n", errno, strerror(errno));
+        SetLastError(ERROR_INTERNAL_ERROR);
+        pTargetThread->Unlock(pThread);
+        goto SetTimesToZero;
+    }
+
+    pTargetThread->Unlock(pThread);
+
+    /* Calculate time in nanoseconds and assign to user time */
+    calcTime = (__int64) ts.tv_sec * SECS_TO_NS;
+    calcTime += (__int64) ts.tv_nsec;
+    lpUserTime->dwLowDateTime = (DWORD)calcTime;
+    lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
+    
+    /* Set kernel time to zero, for now */
+    lpKernelTime->dwLowDateTime = 0;
+    lpKernelTime->dwHighDateTime = 0;
+
+    retval = TRUE;
+    goto GetThreadTimesInternalExit;
+
+#endif //HAVE_MACH_THREADS
+
+SetTimesToZero:
+    
+    lpUserTime->dwLowDateTime = 0;
+    lpUserTime->dwHighDateTime = 0;
+    lpKernelTime->dwLowDateTime = 0;
+    lpKernelTime->dwHighDateTime = 0;
+    goto GetThreadTimesInternalExit;
+
+GetThreadTimesInternalExit:
+    return retval;
+}
+
 /*++
 Function:
   GetThreadTimes
@@ -1323,104 +1473,49 @@ GetThreadTimes(
           "lpUserTime=%p)\n",
           hThread, lpCreationTime, lpExitTime, lpKernelTime, lpUserTime );
 
-    BOOL retval = FALSE;
-    
-#if HAVE_MACH_THREADS
-    PAL_ERROR palError = NO_ERROR;
-	CPalThread *pthrCurrent = NULL;
-    CPalThread *pthrTarget = NULL;
-    IPalObject *pobjThread = NULL;
-    thread_basic_info resUsage;
-    mach_msg_type_number_t resUsage_count = THREAD_BASIC_INFO_COUNT;
-    __int64 calcTime;
-    const __int64 SECS_TO_NS = 1000000000; /* 10^9 */
-    const __int64 USECS_TO_NS = 1000;      /* 10^3 */
+    FILETIME KernelTime, UserTime;
 
-    pthrCurrent = InternalGetCurrentThread();
-    palError = InternalGetThreadDataFromHandle(
-        pthrCurrent,
-        hThread,
-        0,
-        &pthrTarget,
-        &pobjThread
-        );
-    
-	if (palError != NO_ERROR)
-    {
-        ASSERT("Unable to get thread data from handle %p"
-              "thread\n", hThread);
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto GetThreadTimesExit;
-	}	
+    BOOL retval = GetThreadTimesInternal(hThread, &KernelTime, &UserTime);
 
-    pthrTarget->Lock(pthrCurrent);
-	
-    mach_port_t mhThread;
-    mhThread = pthrTarget->GetMachPortSelf();
-	
-	kern_return_t status;
-	status = thread_info(
-	    mhThread, 
-		THREAD_BASIC_INFO, 
-		(thread_info_t)&resUsage, 
-		&resUsage_count);
-	
-    if (status != KERN_SUCCESS)
-	{
-        ASSERT("Unable to get resource usage information for the current "
-              "thread\n");
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto GetThreadTimesExit;
-    }
-    
+    /* Not sure if this still needs to be here */
+    /*
     TRACE ("thread_info User: %ld sec,%ld microsec. Kernel: %ld sec,%ld"
            " microsec\n",
            resUsage.user_time.seconds, resUsage.user_time.microseconds,
            resUsage.system_time.seconds, resUsage.system_time.microseconds);
+    */
 
+    __int64 calcTime;
     if (lpUserTime)
     {
-        /* Get the time of user mode execution, in 100s of nanoseconds */
-        calcTime = (__int64)resUsage.user_time.seconds * SECS_TO_NS;
-        calcTime += (__int64)resUsage.user_time.microseconds * USECS_TO_NS;
-        calcTime /= 100; /* Produce the time in 100s of ns */
-        /* Assign the time into lpUserTime */
+        /* Produce the time in 100s of ns */
+        calcTime = ((ULONG64)UserTime.dwHighDateTime << 32);
+        calcTime += (ULONG64)UserTime.dwLowDateTime;
+        calcTime /= 100;
         lpUserTime->dwLowDateTime = (DWORD)calcTime;
         lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
     }
-
     if (lpKernelTime)
     {
-        /* Get the time of kernel mode execution, in 100s of nanoseconds */
-        calcTime = (__int64)resUsage.system_time.seconds * SECS_TO_NS;
-        calcTime += (__int64)resUsage.system_time.microseconds * USECS_TO_NS;
-        calcTime /= 100; /* Produce the time in 100s of ns */
-        /* Assign the time into lpUserTime */
+        /* Produce the time in 100s of ns */
+        calcTime = ((ULONG64)KernelTime.dwHighDateTime << 32);
+        calcTime += (ULONG64)KernelTime.dwLowDateTime;
+        calcTime /= 100;
         lpKernelTime->dwLowDateTime = (DWORD)calcTime;
         lpKernelTime->dwHighDateTime = (DWORD)(calcTime >> 32);
     }
+    //Set CreationTime and Exit time to zero for now - maybe change this later?
+    if (lpCreationTime)
+    {
+        lpCreationTime->dwLowDateTime = 0;
+        lpCreationTime->dwHighDateTime = 0;
+    }
     
-    pthrTarget->Unlock(pthrCurrent);
-
-    retval = TRUE;
-
-GetThreadTimesExit:
-
-#else // HAVE_MACH_THREADS
-    // UNIXTODO: Implement this
-    lpCreationTime->dwLowDateTime = 0;
-    lpCreationTime->dwHighDateTime = 0;
-    
-    lpExitTime->dwLowDateTime = 0;
-    lpExitTime->dwHighDateTime = 0;
-    
-    lpUserTime->dwLowDateTime = 0;
-    lpUserTime->dwHighDateTime = 0;
-    
-    lpKernelTime->dwLowDateTime = 0;
-    lpKernelTime->dwHighDateTime = 0;
-    retval = TRUE;
-#endif // HAVE_MACH_THREADS
+    if (lpExitTime)
+    {
+        lpExitTime->dwLowDateTime = 0;
+        lpExitTime->dwHighDateTime = 0;
+    }
     
     LOGEXIT("GetThreadTimes returns BOOL %d\n", retval);
     PERF_EXIT(GetThreadTimes);
@@ -1666,7 +1761,7 @@ CreateThreadDataExit:
 
 /*++
 Function:
-    CreateThreadObject
+    CreateThreadData
 
 Abstract:
     Creates the IPalObject for a thread, storing
