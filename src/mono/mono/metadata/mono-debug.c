@@ -775,6 +775,20 @@ mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDoma
 	return location;
 }
 
+MonoDebugSourceLocation *
+mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset)
+{
+	MonoDebugSourceLocation *location;
+
+	mono_debugger_lock ();
+	if (minfo->handle->ppdb)
+		location = mono_ppdb_lookup_location (minfo, il_offset);
+	else
+		location = mono_debug_symfile_lookup_location (minfo, il_offset);
+	mono_debugger_unlock ();
+	return location;
+}
+
 /*
  * mono_debug_lookup_locals:
  *

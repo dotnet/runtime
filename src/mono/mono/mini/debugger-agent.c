@@ -4564,7 +4564,7 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	minfo = mono_debug_lookup_method (method);
 
 	if (minfo)
-		loc = mono_debug_symfile_lookup_location (minfo, sp->il_offset);
+		loc = mono_debug_method_lookup_location (minfo, sp->il_offset);
 
 	if (!loc) {
 		DEBUG_PRINTF (1, "[%p] No line number info for il offset %x, continuing single stepping.\n", (gpointer)mono_native_thread_id_get (), sp->il_offset);
@@ -5362,7 +5362,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 
 				minfo = mono_debug_lookup_method (frame->method);
 				if (minfo && frame->il_offset != -1) {
-					MonoDebugSourceLocation *loc = mono_debug_symfile_lookup_location (minfo, frame->il_offset);
+					MonoDebugSourceLocation *loc = mono_debug_method_lookup_location (minfo, frame->il_offset);
 
 					if (loc) {
 						ss_req->last_line = loc->row;
