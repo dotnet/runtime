@@ -391,33 +391,6 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Creates a node tree that contains the contents of a list.
-        /// </summary>
-        /// <param name="items">An indexable list with the contents that the new node tree should contain.</param>
-        /// <param name="start">The starting index within <paramref name="items"/> that should be captured by the node tree.</param>
-        /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
-        /// <returns>The root of the created node tree.</returns>
-        [Pure]
-        private static SortedInt32KeyNode<TValue> NodeTreeFromList(IOrderedCollection<KeyValuePair<int, TValue>> items, int start, int length)
-        {
-            Requires.NotNull(items, "items");
-            Requires.Range(start >= 0, "start");
-            Requires.Range(length >= 0, "length");
-
-            if (length == 0)
-            {
-                return EmptyNode;
-            }
-
-            int rightCount = (length - 1) / 2;
-            int leftCount = (length - 1) - rightCount;
-            SortedInt32KeyNode<TValue> left = NodeTreeFromList(items, start, leftCount);
-            SortedInt32KeyNode<TValue> right = NodeTreeFromList(items, start + leftCount + 1, rightCount);
-            var item = items[start + leftCount];
-            return new SortedInt32KeyNode<TValue>(item.Key, item.Value, left, right, true);
-        }
-
-        /// <summary>
         /// Adds the specified key. Callers are expected to have validated arguments.
         /// </summary>
         /// <param name="key">The key.</param>
