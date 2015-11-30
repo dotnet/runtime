@@ -219,8 +219,10 @@ namespace System.Linq.Expressions
         /// Creates a <see cref="String"/> representation of the Expression.
         /// </summary>
         /// <returns>A <see cref="String"/> representation of the Expression.</returns>
-        public string DebugView
+        internal string DebugView
         {
+            // Note that this property is often accessed using reflection. As such it will have more dependencies than one
+            // might surmise from its being internal, and removing it requires greater caution than with other internal methods.
             get
             {
                 using (System.IO.StringWriter writer = new System.IO.StringWriter(CultureInfo.CurrentCulture))
@@ -242,7 +244,7 @@ namespace System.Linq.Expressions
         /// Ultimately this saves us from having to allocate a ReadOnlyCollection for our
         /// data types because the compiler is capable of going directly to the IList of T.
         /// </summary>
-        public static ReadOnlyCollection<T> ReturnReadOnly<T>(ref IList<T> collection)
+        internal static ReadOnlyCollection<T> ReturnReadOnly<T>(ref IList<T> collection)
         {
             return ExpressionUtils.ReturnReadOnly<T>(ref collection);
         }
@@ -273,17 +275,17 @@ namespace System.Linq.Expressions
         /// contains a ReadOnlyCollection or the Expression.  We check for the Expression and if it's
         /// present we return that, otherwise we return the 1st element of the ReadOnlyCollection.
         /// </summary>
-        public static T ReturnObject<T>(object collectionOrT) where T : class
+        internal static T ReturnObject<T>(object collectionOrT) where T : class
         {
             return ExpressionUtils.ReturnObject<T>(collectionOrT);
         }
 
-        public static void RequiresCanRead(Expression expression, string paramName)
+        private static void RequiresCanRead(Expression expression, string paramName)
         {
             ExpressionUtils.RequiresCanRead(expression, paramName);
         }
 
-        public static void RequiresCanRead(IEnumerable<Expression> items, string paramName)
+        private static void RequiresCanRead(IEnumerable<Expression> items, string paramName)
         {
             if (items != null)
             {
