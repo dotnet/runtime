@@ -2,7 +2,7 @@
   "locked": true,
   "version": 2,
   "targets": {
-    ".NETPlatform,Version=v5.4": {
+    ".NETPlatform,Version=v5.1": {
       "System.ComponentModel/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -22,7 +22,7 @@
         }
       }
     },
-    ".NETPlatform,Version=v5.4/win7-x86": {
+    ".NETPlatform,Version=v5.1/win7-x86": {
       "System.ComponentModel/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -42,7 +42,7 @@
         }
       }
     },
-    ".NETPlatform,Version=v5.4/win7-x64": {
+    ".NETPlatform,Version=v5.1/win7-x64": {
       "System.ComponentModel/4.0.0": {
         "type": "package",
         "dependencies": {
@@ -151,6 +151,6 @@
       "System.Runtime >= 4.0.0",
       "System.ComponentModel >= 4.0.0"
     ],
-    ".NETPlatform,Version=v5.4": []
+    ".NETPlatform,Version=v5.1": []
   }
 }
