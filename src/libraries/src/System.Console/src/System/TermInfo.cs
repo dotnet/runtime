@@ -90,9 +90,6 @@ namespace System
         /// <summary>Provides a terminfo database.</summary>
         internal sealed class Database
         {
-            /// <summary>Lazily-initialized instance of the database.</summary>
-            private static readonly Lazy<Database> _instance = new Lazy<Database>(() => ReadDatabase(), isThreadSafe: true);
-
             /// <summary>The name of the terminfo file.</summary>
             private readonly string _term;
             /// <summary>Raw data of the database instance.</summary>
@@ -151,15 +148,12 @@ namespace System
                 _extendedStrings = ParseExtendedStrings(data, extendedBeginning) ?? new Dictionary<string, string>();
             }
 
-            /// <summary>Gets the cached instance of the database.</summary>
-            public static Database Instance { get { return _instance.Value; } }
-
             /// <summary>The name of the associated terminfo, if any.</summary>
             public string Term { get { return _term; } }
 
             /// <summary>Read the database for the current terminal as specified by the "TERM" environment variable.</summary>
             /// <returns>The database, or null if it could not be found.</returns>
-            private static Database ReadDatabase()
+            internal static Database ReadActiveDatabase()
             {
                 string term = Environment.GetEnvironmentVariable("TERM");
                 return !string.IsNullOrEmpty(term) ? ReadDatabase(term) : null;

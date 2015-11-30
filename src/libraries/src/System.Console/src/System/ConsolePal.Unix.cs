@@ -139,7 +139,7 @@ namespace System
                 if (Console.IsOutputRedirected)
                     return;
 
-                string titleFormat = TerminalBasicInfo.Instance.TitleFormat;
+                string titleFormat = TerminalFormatStrings.Instance.Title;
                 if (!string.IsNullOrEmpty(titleFormat))
                 {
                     string ansiStr = TermInfo.ParameterizedStrings.Evaluate(titleFormat, value);
@@ -152,7 +152,7 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalBasicInfo.Instance.BellFormat);
+                WriteStdoutAnsiString(TerminalFormatStrings.Instance.Bell);
             }
         }
 
@@ -160,7 +160,7 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalBasicInfo.Instance.ClearFormat);
+                WriteStdoutAnsiString(TerminalFormatStrings.Instance.Clear);
             }
         }
 
@@ -169,7 +169,7 @@ namespace System
             if (Console.IsOutputRedirected)
                 return;
 
-            string cursorAddressFormat = TerminalBasicInfo.Instance.CursorAddressFormat;
+            string cursorAddressFormat = TerminalFormatStrings.Instance.CursorAddress;
             if (!string.IsNullOrEmpty(cursorAddressFormat))
             {
                 string ansiStr = TermInfo.ParameterizedStrings.Evaluate(cursorAddressFormat, top, left);
@@ -208,7 +208,7 @@ namespace System
                 Interop.Sys.WinSize winsize;
                 return Interop.Sys.GetWindowSize(out winsize) == 0 ?
                     winsize.Col :
-                    TerminalBasicInfo.Instance.ColumnFormat;
+                    TerminalFormatStrings.Instance.Columns;
             }
             set { throw new PlatformNotSupportedException(); }
         }
@@ -220,7 +220,7 @@ namespace System
                 Interop.Sys.WinSize winsize;
                 return Interop.Sys.GetWindowSize(out winsize) == 0 ?
                     winsize.Row :
-                    TerminalBasicInfo.Instance.LinesFormat;
+                    TerminalFormatStrings.Instance.Lines;
             }
             set { throw new PlatformNotSupportedException(); }
         }
@@ -233,8 +233,8 @@ namespace System
                 if (!Console.IsOutputRedirected)
                 {
                     WriteStdoutAnsiString(value ?
-                        TerminalBasicInfo.Instance.CursorVisibleFormat :
-                        TerminalBasicInfo.Instance.CursorInvisibleFormat);
+                        TerminalFormatStrings.Instance.CursorVisible :
+                        TerminalFormatStrings.Instance.CursorInvisible);
                 }
             }
         }
@@ -273,7 +273,7 @@ namespace System
                 return;
 
             // Get the cursor position request format string.
-            string cpr = TerminalBasicInfo.Instance.CursorPositionRequestFormat;
+            string cpr = TerminalFormatStrings.Instance.CursorPositionRequest;
             if (string.IsNullOrEmpty(cpr))
                 return;
 
@@ -510,10 +510,10 @@ namespace System
             }
 
             // We haven't yet computed a format string.  Compute it, use it, then cache it.
-            string formatString = foreground ? TerminalColorInfo.Instance.ForegroundFormat : TerminalColorInfo.Instance.BackgroundFormat;
+            string formatString = foreground ? TerminalFormatStrings.Instance.Foreground : TerminalFormatStrings.Instance.Background;
             if (!string.IsNullOrEmpty(formatString))
             {
-                int maxColors = TerminalColorInfo.Instance.MaxColors; // often 8 or 16; 0 is invalid
+                int maxColors = TerminalFormatStrings.Instance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
                 {
                     int ansiCode = _consoleColorToAnsiCode[ccValue] % maxColors;
@@ -532,7 +532,7 @@ namespace System
             // We only want to send the reset string if we're targeting a TTY device
             if (!Console.IsOutputRedirected)
             {
-                WriteStdoutAnsiString(TerminalColorInfo.Instance.ResetFormat);
+                WriteStdoutAnsiString(TerminalFormatStrings.Instance.Reset);
             }
         }
 
@@ -571,17 +571,17 @@ namespace System
         {
             int unprocessedCharCount = endIndex - startIndex;
 
-            int minRange = TerminalKeyInfo.Instance.MinKeyLength;
+            int minRange = TerminalFormatStrings.Instance.MinKeyFormatLength;
             if (unprocessedCharCount >= minRange)
             {
-                int maxRange = Math.Min(unprocessedCharCount, TerminalKeyInfo.Instance.MaxKeyLength);
+                int maxRange = Math.Min(unprocessedCharCount, TerminalFormatStrings.Instance.MaxKeyFormatLength);
 
                 for (int i = maxRange; i >= minRange; i--)
                 {
                     var currentString = new StringOrCharArray(givenChars, startIndex, i);
 
                     // Check if the string prefix matches.
-                    if (TerminalKeyInfo.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
+                    if (TerminalFormatStrings.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
                     {
                         keyLength = currentString.Length;
                         return true;
@@ -619,7 +619,7 @@ namespace System
                     // Make sure it's in application mode
                     if (!Console.IsOutputRedirected)
                     {
-                        WriteStdoutAnsiString(TerminalKeyInfo.Instance.KeypadXmit);
+                        WriteStdoutAnsiString(TerminalFormatStrings.Instance.KeypadXmit);
                     }
 
                     s_initialized = true;
@@ -627,99 +627,155 @@ namespace System
             }
         }
 
-        /// <summary>Provides a cache of color information sourced from terminfo.</summary>
-        private struct TerminalColorInfo
+        /// <summary>Provides format strings and related information for use with the current terminal.</summary>
+        internal class TerminalFormatStrings
         {
+            /// <summary>Gets the lazily-initialized terminal information for the terminal.</summary>
+            public static TerminalFormatStrings Instance { get { return s_instance.Value; } }
+            private static Lazy<TerminalFormatStrings> s_instance = new Lazy<TerminalFormatStrings>(() => new TerminalFormatStrings(TermInfo.Database.ReadActiveDatabase()));
+
             /// <summary>The format string to use to change the foreground color.</summary>
-            public string ForegroundFormat;
+            public readonly string Foreground;
             /// <summary>The format string to use to change the background color.</summary>
-            public string BackgroundFormat;
+            public readonly string Background;
             /// <summary>The format string to use to reset the foreground and background colors.</summary>
-            public string ResetFormat;
+            public readonly string Reset;
             /// <summary>The maximum number of colors supported by the terminal.</summary>
-            public int MaxColors;
+            public readonly int MaxColors;
+            /// <summary>The number of columns in a format.</summary>
+            public readonly int Columns;
+            /// <summary>The number of lines in a format.</summary>
+            public readonly int Lines;
+            /// <summary>The format string to use to make cursor visible.</summary>
+            public readonly string CursorVisible;
+            /// <summary>The format string to use to make cursor invisible</summary>
+            public readonly string CursorInvisible;
+            /// <summary>The format string to use to set the window title.</summary>
+            public readonly string Title;
+            /// <summary>The format string to use for an audible bell.</summary>
+            public readonly string Bell;
+            /// <summary>The format string to use to clear the terminal.</summary>
+            public readonly string Clear;
+            /// <summary>The format string to use to set the position of the cursor.</summary>
+            public readonly string CursorAddress;
+            /// <summary>The format string to use to move the cursor to the left.</summary>
+            public readonly string CursorLeft;
+            /// <summary>The format string for "user string 7", interpreted to be a cursor position request.</summary>
+            /// <remarks>
+            /// This should be <see cref="KnownCursorPositionRequest"/>, but we use the format string as a way to 
+            /// guess whether the terminal will actually support the request/response protocol.
+            /// </remarks>
+            public readonly string CursorPositionRequest;
+            /// <summary>Well-known CPR format.</summary>
+            private const string KnownCursorPositionRequest = "\x1B[6n";
+            /// <summary>
+            /// The dictionary of keystring to ConsoleKeyInfo.
+            /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
+            /// </summary>
+            public Dictionary<StringOrCharArray, ConsoleKeyInfo> KeyFormatToConsoleKey;
+            /// <summary> Max key length </summary>
+            public int MaxKeyFormatLength;
+            /// <summary> Min key length </summary>
+            public int MinKeyFormatLength;
+            /// <summary>The ANSI string used to enter "application" / "keypad transmit" mode.</summary>
+            public string KeypadXmit;
 
-            /// <summary>The cached instance.</summary>
-            public static TerminalColorInfo Instance { get { return s_instance.Value; } }
-
-            private TerminalColorInfo(TermInfo.Database db)
+            public TerminalFormatStrings(TermInfo.Database db)
             {
-                ForegroundFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.SetAnsiForeground) : string.Empty;
-                BackgroundFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.SetAnsiBackground) : string.Empty;
-                ResetFormat = db != null ?
-                    (db.GetString(TermInfo.WellKnownStrings.OrigPairs) ?? db.GetString(TermInfo.WellKnownStrings.OrigColors)) :
+                if (db == null)
+                    return;
+
+                KeypadXmit = db.GetString(TermInfo.WellKnownStrings.KeypadXmit);
+                Foreground = db.GetString(TermInfo.WellKnownStrings.SetAnsiForeground);
+                Background = db.GetString(TermInfo.WellKnownStrings.SetAnsiBackground);
+                Reset = db.GetString(TermInfo.WellKnownStrings.OrigPairs) ?? db.GetString(TermInfo.WellKnownStrings.OrigColors);
+                Bell = db.GetString(TermInfo.WellKnownStrings.Bell);
+                Clear = db.GetString(TermInfo.WellKnownStrings.Clear);
+                Columns = db.GetNumber(TermInfo.WellKnownNumbers.Columns);
+                Lines = db.GetNumber(TermInfo.WellKnownNumbers.Lines);
+                CursorVisible = db.GetString(TermInfo.WellKnownStrings.CursorVisible);
+                CursorInvisible = db.GetString(TermInfo.WellKnownStrings.CursorInvisible);
+                CursorAddress = db.GetString(TermInfo.WellKnownStrings.CursorAddress);
+                CursorLeft = db.GetString(TermInfo.WellKnownStrings.CursorLeft);
+
+                Title = GetTitle(db);
+
+                CursorPositionRequest = db.GetString(TermInfo.WellKnownStrings.CursorPositionRequest) == KnownCursorPositionRequest ?
+                    KnownCursorPositionRequest :
                     string.Empty;
 
-                int maxColors = db != null ? db.GetNumber(TermInfo.WellKnownNumbers.MaxColors) : 0;
+                int maxColors = db.GetNumber(TermInfo.WellKnownNumbers.MaxColors);
                 MaxColors = // normalize to either the full range of all ANSI colors, just the dark ones, or none
                     maxColors >= 16 ? 16 :
                     maxColors >= 8 ? 8 :
                     0;
+
+                KeyFormatToConsoleKey = new Dictionary<StringOrCharArray, ConsoleKeyInfo>();
+                AddKey(db, TermInfo.WellKnownStrings.KeyF1, ConsoleKey.F1);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF2, ConsoleKey.F2);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF3, ConsoleKey.F3);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF4, ConsoleKey.F4);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF5, ConsoleKey.F5);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF6, ConsoleKey.F6);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF7, ConsoleKey.F7);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF8, ConsoleKey.F8);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF9, ConsoleKey.F9);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF10, ConsoleKey.F10);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF11, ConsoleKey.F11);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF12, ConsoleKey.F12);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF13, ConsoleKey.F13);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF14, ConsoleKey.F14);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF15, ConsoleKey.F15);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF16, ConsoleKey.F16);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF17, ConsoleKey.F17);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF18, ConsoleKey.F18);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF19, ConsoleKey.F19);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF20, ConsoleKey.F20);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF21, ConsoleKey.F21);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF22, ConsoleKey.F22);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF23, ConsoleKey.F23);
+                AddKey(db, TermInfo.WellKnownStrings.KeyF24, ConsoleKey.F24);
+                AddKey(db, TermInfo.WellKnownStrings.KeyBackspace, ConsoleKey.Backspace);
+                AddKey(db, TermInfo.WellKnownStrings.KeyBackTab, ConsoleKey.Tab, shift: true, alt: false, control: false);
+                AddKey(db, TermInfo.WellKnownStrings.KeyBegin, ConsoleKey.Home);
+                AddKey(db, TermInfo.WellKnownStrings.KeyClear, ConsoleKey.Clear);
+                AddKey(db, TermInfo.WellKnownStrings.KeyDelete, ConsoleKey.Delete);
+                AddKey(db, TermInfo.WellKnownStrings.KeyDown, ConsoleKey.DownArrow);
+                AddKey(db, TermInfo.WellKnownStrings.KeyEnd, ConsoleKey.End);
+                AddKey(db, TermInfo.WellKnownStrings.KeyEnter, ConsoleKey.Enter);
+                AddKey(db, TermInfo.WellKnownStrings.KeyHelp, ConsoleKey.Help);
+                AddKey(db, TermInfo.WellKnownStrings.KeyHome, ConsoleKey.Home);
+                AddKey(db, TermInfo.WellKnownStrings.KeyInsert, ConsoleKey.Insert);
+                AddKey(db, TermInfo.WellKnownStrings.KeyLeft, ConsoleKey.LeftArrow);
+                AddKey(db, TermInfo.WellKnownStrings.KeyPageDown, ConsoleKey.PageDown);
+                AddKey(db, TermInfo.WellKnownStrings.KeyPageUp, ConsoleKey.PageUp);
+                AddKey(db, TermInfo.WellKnownStrings.KeyPrint, ConsoleKey.Print);
+                AddKey(db, TermInfo.WellKnownStrings.KeyRight, ConsoleKey.RightArrow);
+                AddKey(db, TermInfo.WellKnownStrings.KeyScrollForward, ConsoleKey.PageDown, shift: true, alt: false, control: false);
+                AddKey(db, TermInfo.WellKnownStrings.KeyScrollReverse, ConsoleKey.PageUp, shift: true, alt: false, control: false);
+                AddKey(db, TermInfo.WellKnownStrings.KeySBegin, ConsoleKey.Home, shift: true, alt: false, control: false);
+                AddKey(db, TermInfo.WellKnownStrings.KeySDelete, ConsoleKey.Delete, shift: true, alt: false, control: false);
+                AddKey(db, TermInfo.WellKnownStrings.KeySHome, ConsoleKey.Home, shift: true, alt: false, control: false);
+                AddKey(db, TermInfo.WellKnownStrings.KeySelect, ConsoleKey.Select);
+                AddKey(db, TermInfo.WellKnownStrings.KeySLeft, ConsoleKey.LeftArrow, shift: true, alt: false, control: false);
+                AddKey(db, TermInfo.WellKnownStrings.KeySPrint, ConsoleKey.Print, shift: true, alt: false, control: false);
+                AddKey(db, TermInfo.WellKnownStrings.KeySRight, ConsoleKey.RightArrow, shift: true, alt: false, control: false);
+                AddKey(db, TermInfo.WellKnownStrings.KeyUp, ConsoleKey.UpArrow);
+                AddPrefixKey(db, "kLFT", ConsoleKey.LeftArrow);
+                AddPrefixKey(db, "kRIT", ConsoleKey.RightArrow);
+                AddPrefixKey(db, "kUP", ConsoleKey.UpArrow);
+                AddPrefixKey(db, "kDN", ConsoleKey.DownArrow);
+                AddPrefixKey(db, "kDC", ConsoleKey.Delete);
+                AddPrefixKey(db, "kEND", ConsoleKey.End);
+                AddPrefixKey(db, "kHOM", ConsoleKey.Home);
+                AddPrefixKey(db, "kNXT", ConsoleKey.PageDown);
+                AddPrefixKey(db, "kPRV", ConsoleKey.PageUp);
+                MaxKeyFormatLength = KeyFormatToConsoleKey.Keys.Max(key => key.Length);
+                MinKeyFormatLength = KeyFormatToConsoleKey.Keys.Min(key => key.Length);
             }
 
-            /// <summary>Lazy initialization of the terminal color information.</summary>
-            private static Lazy<TerminalColorInfo> s_instance = new Lazy<TerminalColorInfo>(() =>
+            private static string GetTitle(TermInfo.Database db)
             {
-                TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
-                return new TerminalColorInfo(db);
-            }, isThreadSafe: true);
-        }
-
-        internal struct TerminalBasicInfo
-        {
-            /// <summary>The no. of columns in a format.</summary>
-            public int ColumnFormat;
-            /// <summary>The no. of lines in a format.</summary>
-            public int LinesFormat;
-            /// <summary>The format string to use to make cursor visible.</summary>
-            public string CursorVisibleFormat;
-            /// <summary>The format string to use to make cursor invisible</summary>
-            public string CursorInvisibleFormat;
-            /// <summary>The format string to use to set the window title.</summary>
-            public string TitleFormat;
-            /// <summary>The format string to use for an audible bell.</summary>
-            public string BellFormat;
-            /// <summary>The format string to use to clear the terminal.</summary>
-            public string ClearFormat;
-            /// <summary>The format string to use to set the position of the cursor.</summary>
-            public string CursorAddressFormat;
-            /// <summary>The format string to use to move the cursor to the left.</summary>
-            public string CursorLeftFormat;
-            /// <summary>The format string for "user string 7", interpreted to be a cursor position request.</summary>
-            /// <remarks>
-            /// This should be <see cref="KnownCursorPositionRequestFormat"/>, but we use the format string as a way to 
-            /// guess whether the terminal will actually support the request/response protocol.
-            /// </remarks>
-            public string CursorPositionRequestFormat;
-            /// <summary>Well-known CPR format.</summary>
-            private const string KnownCursorPositionRequestFormat = "\x1B[6n";
-
-            /// <summary>The cached instance.</summary>
-            public static TerminalBasicInfo Instance { get { return s_instance.Value; } }
-
-            private TerminalBasicInfo(TermInfo.Database db)
-            {
-                BellFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.Bell) : string.Empty;
-                ClearFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.Clear) : string.Empty;
-                ColumnFormat = db != null ? db.GetNumber(TermInfo.WellKnownNumbers.Columns) : 0;
-                LinesFormat = db != null ? db.GetNumber(TermInfo.WellKnownNumbers.Lines) : 0;
-                CursorVisibleFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.CursorVisible) : string.Empty;
-                CursorInvisibleFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.CursorInvisible) : string.Empty;
-                CursorAddressFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.CursorAddress) : string.Empty;
-                CursorLeftFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.CursorLeft) : string.Empty;
-                TitleFormat = GetTitleFormat(db);
-                CursorPositionRequestFormat = db != null && db.GetString(TermInfo.WellKnownStrings.CursorPositionRequest) == KnownCursorPositionRequestFormat ?
-                    KnownCursorPositionRequestFormat : 
-                    string.Empty;
-            }
-
-            private static string GetTitleFormat(TermInfo.Database db)
-            {
-                if (db == null)
-                {
-                    return string.Empty;
-                }
-
                 // Try to get the format string from tsl/fsl and use it if they're available
                 string tsl = db.GetString(TermInfo.WellKnownStrings.ToStatusLine);
                 string fsl = db.GetString(TermInfo.WellKnownStrings.FromStatusLine);
@@ -756,34 +812,7 @@ namespace System
                     default:
                         return string.Empty;
                 }
-
             }
-
-            /// <summary>Lazy initialization of the terminal basic information.</summary>
-            private static Lazy<TerminalBasicInfo> s_instance = new Lazy<TerminalBasicInfo>(() =>
-            {
-                TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
-                return new TerminalBasicInfo(db);
-            }, isThreadSafe: true);
-        }
-
-        /// <summary>Provides a cache of color information sourced from terminfo.</summary>
-        private struct TerminalKeyInfo
-        {
-            /// <summary>
-            /// The dictionary of keystring to ConsoleKeyInfo.
-            /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
-            /// </summary>
-            public Dictionary<StringOrCharArray, ConsoleKeyInfo> KeyFormatToConsoleKey;
-            /// <summary> Max key length </summary>
-            public int MaxKeyLength;
-            /// <summary> Min key length </summary>
-            public int MinKeyLength;
-            /// <summary>The ANSI string used to enter "application" / "keypad transmit" mode.</summary>
-            public string KeypadXmit;
-
-            /// <summary>The cached instance.</summary>
-            public static TerminalKeyInfo Instance { get { return s_instance.Value; } }
 
             private void AddKey(TermInfo.Database db, TermInfo.WellKnownStrings keyId, ConsoleKey key)
             {
@@ -812,89 +841,6 @@ namespace System
                 if (!string.IsNullOrEmpty(keyFormat))
                     KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
-
-            private TerminalKeyInfo(TermInfo.Database db)
-            {
-                KeyFormatToConsoleKey = new Dictionary<StringOrCharArray, ConsoleKeyInfo>();
-                MaxKeyLength = MinKeyLength = 0;
-                KeypadXmit = string.Empty;
-
-                if (db != null)
-                {
-                    KeypadXmit = db.GetString(TermInfo.WellKnownStrings.KeypadXmit);
-
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF1, ConsoleKey.F1);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF2, ConsoleKey.F2);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF3, ConsoleKey.F3);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF4, ConsoleKey.F4);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF5, ConsoleKey.F5);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF6, ConsoleKey.F6);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF7, ConsoleKey.F7);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF8, ConsoleKey.F8);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF9, ConsoleKey.F9);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF10, ConsoleKey.F10);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF11, ConsoleKey.F11);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF12, ConsoleKey.F12);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF13, ConsoleKey.F13);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF14, ConsoleKey.F14);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF15, ConsoleKey.F15);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF16, ConsoleKey.F16);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF17, ConsoleKey.F17);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF18, ConsoleKey.F18);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF19, ConsoleKey.F19);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF20, ConsoleKey.F20);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF21, ConsoleKey.F21);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF22, ConsoleKey.F22);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF23, ConsoleKey.F23);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyF24, ConsoleKey.F24);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyBackspace, ConsoleKey.Backspace);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyBackTab, ConsoleKey.Tab, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyBegin, ConsoleKey.Home);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyClear, ConsoleKey.Clear);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyDelete, ConsoleKey.Delete);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyDown, ConsoleKey.DownArrow);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyEnd, ConsoleKey.End);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyEnter, ConsoleKey.Enter);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyHelp, ConsoleKey.Help);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyHome, ConsoleKey.Home);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyInsert, ConsoleKey.Insert);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyLeft, ConsoleKey.LeftArrow);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyPageDown, ConsoleKey.PageDown);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyPageUp, ConsoleKey.PageUp);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyPrint, ConsoleKey.Print);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyRight, ConsoleKey.RightArrow);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyScrollForward, ConsoleKey.PageDown, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyScrollReverse, ConsoleKey.PageUp, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.WellKnownStrings.KeySBegin, ConsoleKey.Home, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.WellKnownStrings.KeySDelete, ConsoleKey.Delete, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.WellKnownStrings.KeySHome, ConsoleKey.Home, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.WellKnownStrings.KeySelect, ConsoleKey.Select);
-                    AddKey(db, TermInfo.WellKnownStrings.KeySLeft, ConsoleKey.LeftArrow, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.WellKnownStrings.KeySPrint, ConsoleKey.Print, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.WellKnownStrings.KeySRight, ConsoleKey.RightArrow, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.WellKnownStrings.KeyUp, ConsoleKey.UpArrow);
-
-                    AddPrefixKey(db, "kLFT", ConsoleKey.LeftArrow);
-                    AddPrefixKey(db, "kRIT", ConsoleKey.RightArrow);
-                    AddPrefixKey(db, "kUP", ConsoleKey.UpArrow);
-                    AddPrefixKey(db, "kDN", ConsoleKey.DownArrow);
-                    AddPrefixKey(db, "kDC", ConsoleKey.Delete);
-                    AddPrefixKey(db, "kEND", ConsoleKey.End);
-                    AddPrefixKey(db, "kHOM", ConsoleKey.Home);
-                    AddPrefixKey(db, "kNXT", ConsoleKey.PageDown);
-                    AddPrefixKey(db, "kPRV", ConsoleKey.PageUp);
-
-                    MaxKeyLength = KeyFormatToConsoleKey.Keys.Max(key => key.Length);
-                    MinKeyLength = KeyFormatToConsoleKey.Keys.Min(key => key.Length);
-                }
-            }
-
-            /// <summary>Lazy initialization of the terminal key information.</summary>
-            private static Lazy<TerminalKeyInfo> s_instance = new Lazy<TerminalKeyInfo>(() =>
-            {
-                TermInfo.Database db = TermInfo.Database.Instance; // Could be null if TERM is set to a file that doesn't exist
-                return new TerminalKeyInfo(db);
-            }, isThreadSafe: true);
         }
 
         /// <summary>Reads data from the file descriptor into the buffer.</summary>
