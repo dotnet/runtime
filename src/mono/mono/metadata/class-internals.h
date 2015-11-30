@@ -626,16 +626,63 @@ struct _MonoGenericContainer {
 	MonoGenericParamFull *type_params;
 };
 
-#define mono_generic_container_get_param(gc, i) ((MonoGenericParam *) ((gc)->type_params + (i)))
-#define mono_generic_container_get_param_info(gc, i) (&((gc)->type_params + (i))->info)
+static inline MonoGenericParam *
+mono_generic_container_get_param (MonoGenericContainer *gc, int i)
+{
+	return (MonoGenericParam *) &gc->type_params [i];
+}
 
-#define mono_generic_param_owner(p)		((p)->owner)
-#define mono_generic_param_num(p)		((p)->num)
-#define mono_generic_param_is_fullsize(p) ( !mono_generic_param_owner (p)->is_small_param )
-#define mono_generic_param_info(p)		(mono_generic_param_is_fullsize (p) ? &((MonoGenericParamFull *) p)->info : NULL)
-#define mono_generic_param_name(p)		(((mono_generic_param_is_fullsize (p) || (p)->gshared_constraint)) ? ((MonoGenericParamFull *) p)->info.name : NULL)
-#define mono_type_get_generic_param_owner(t)	(mono_generic_param_owner ((t)->data.generic_param))
-#define mono_type_get_generic_param_num(t)	(mono_generic_param_num   ((t)->data.generic_param))
+static inline MonoGenericParamInfo *
+mono_generic_container_get_param_info (MonoGenericContainer *gc, int i)
+{
+	return &gc->type_params [i].info;
+}
+
+static inline MonoGenericContainer *
+mono_generic_param_owner (MonoGenericParam *p)
+{
+	return p->owner;
+}
+
+static inline int
+mono_generic_param_num (MonoGenericParam *p)
+{
+	return p->num;
+}
+
+static inline gboolean
+mono_generic_param_is_fullsize (MonoGenericParam *p)
+{
+	return !mono_generic_param_owner (p)->is_small_param;
+}
+
+static inline MonoGenericParamInfo *
+mono_generic_param_info (MonoGenericParam *p)
+{
+	if (mono_generic_param_is_fullsize (p))
+		return &((MonoGenericParamFull *) p)->info;
+	return NULL;
+}
+
+static inline const char *
+mono_generic_param_name (MonoGenericParam *p)
+{
+	if (mono_generic_param_is_fullsize (p))
+		return ((MonoGenericParamFull *) p)->info.name;
+	return NULL;
+}
+
+static inline MonoGenericContainer *
+mono_type_get_generic_param_owner (MonoType *t)
+{
+	return mono_generic_param_owner (t->data.generic_param);
+}
+
+static inline int
+mono_type_get_generic_param_num (MonoType *t)
+{
+	return mono_generic_param_num (t->data.generic_param);
+}
 
 /*
  * Class information which might be cached by the runtime in the AOT file for
