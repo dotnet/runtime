@@ -2187,6 +2187,9 @@ handle_enum:
 	return -1;
 }
 
+//XXX this ignores if t is byref
+#define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+
 /*
  * target_type_is_incompatible:
  * @cfg: MonoCompile context
@@ -2210,7 +2213,16 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 			MonoClass *base_class = mono_class_from_mono_type (target);
 			/* This is needed to handle gshared types + ldaddr */
 			simple_type = mini_get_underlying_type (&base_class->byval_arg);
-			return target->type != MONO_TYPE_I && arg->klass != base_class && arg->klass != mono_class_from_mono_type (simple_type);
+
+			/* if the target is native int& or same type */
+			if (target->type == MONO_TYPE_I || arg->klass == mono_class_from_mono_type (simple_type))
+				return 0;
+
+			/* Both are primitive type byrefs and the source points to a larger type that the destination */
+			if (MONO_TYPE_IS_PRIMITIVE_SCALAR (target) && MONO_TYPE_IS_PRIMITIVE_SCALAR (&arg->klass->byval_arg) &&
+				mono_class_instance_size (mono_class_from_mono_type (target)) <= mono_class_instance_size (arg->klass))
+				return 0;
+			return 1;
 		}
 		if (arg->type == STACK_PTR)
 			return 0;
