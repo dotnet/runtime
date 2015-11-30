@@ -8,9 +8,9 @@ namespace System.Globalization.Tests
 {
     internal static class DateTimeFormatInfoData
     {
-        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        private static int s_WindowsVersion = GetWindowsVersion();
-        private static bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+        private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        private static readonly int s_WindowsVersion = GetWindowsVersion();
+        private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
         public static string GetEraName(CultureInfo cultureInfo)
         {
