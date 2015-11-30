@@ -344,6 +344,19 @@ int main()
 }" HAVE_MACH_ABSOLUTE_TIME)
 check_cxx_source_runs("
 #include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
+
+int main()
+{
+  int ret;
+  struct timespec ts;
+  ret = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+
+  exit(ret);
+}" HAVE_CLOCK_THREAD_CPUTIME)
+check_cxx_source_runs("
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <fcntl.h>
