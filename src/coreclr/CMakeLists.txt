@@ -255,6 +255,11 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   # Disable frame pointer optimizations so profilers can get better call stacks
   add_compile_options(-fno-omit-frame-pointer)
 
+  # The -fms-extensions enable the stuff like __if_exists, __declspec(uuid()), etc.
+  add_compile_options(-fms-extensions )
+  #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
+  #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
+
   # set the CLANG sanitizer flags for debug build
   if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     # obtain settings from running enablesanitizers.sh
@@ -460,11 +465,6 @@ add_compile_options(-Wno-invalid-offsetof)
 # to a struct or a class that has virtual members or a base class. In that case, clang
 # may not generate the same object layout as MSVC.
 add_compile_options(-Wno-incompatible-ms-struct)
-
-# The -fms-extensions enable the stuff like __if_exists, __declspec(uuid()), etc.
-add_compile_options(-fms-extensions )
-#-fms-compatibility      Enable full Microsoft Visual C++ compatibility
-#-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
 
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
