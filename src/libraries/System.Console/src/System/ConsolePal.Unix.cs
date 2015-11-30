@@ -644,14 +644,13 @@ namespace System
 
             private TerminalColorInfo(TermInfo.Database db)
             {
-                ForegroundFormat = db != null ? db.GetString(TermInfo.Database.SetAnsiForegroundIndex) : string.Empty;
-                BackgroundFormat = db != null ? db.GetString(TermInfo.Database.SetAnsiBackgroundIndex) : string.Empty;
+                ForegroundFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.SetAnsiForeground) : string.Empty;
+                BackgroundFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.SetAnsiBackground) : string.Empty;
                 ResetFormat = db != null ?
-                    db.GetString(TermInfo.Database.OrigPairsIndex) ??
-                    db.GetString(TermInfo.Database.OrigColorsIndex)
-                    : string.Empty;
+                    (db.GetString(TermInfo.WellKnownStrings.OrigPairs) ?? db.GetString(TermInfo.WellKnownStrings.OrigColors)) :
+                    string.Empty;
 
-                int maxColors = db != null ? db.GetNumber(TermInfo.Database.MaxColorsIndex) : 0;
+                int maxColors = db != null ? db.GetNumber(TermInfo.WellKnownNumbers.MaxColors) : 0;
                 MaxColors = // normalize to either the full range of all ANSI colors, just the dark ones, or none
                     maxColors >= 16 ? 16 :
                     maxColors >= 8 ? 8 :
@@ -700,16 +699,16 @@ namespace System
 
             private TerminalBasicInfo(TermInfo.Database db)
             {
-                BellFormat = db != null ? db.GetString(TermInfo.Database.BellIndex) : string.Empty;
-                ClearFormat = db != null ? db.GetString(TermInfo.Database.ClearIndex) : string.Empty;
-                ColumnFormat = db != null ? db.GetNumber(TermInfo.Database.ColumnIndex) : 0;
-                LinesFormat = db != null ? db.GetNumber(TermInfo.Database.LinesIndex) : 0;
-                CursorVisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorVisibleIndex) : string.Empty;
-                CursorInvisibleFormat = db != null ? db.GetString(TermInfo.Database.CursorInvisibleIndex) : string.Empty;
-                CursorAddressFormat = db != null ? db.GetString(TermInfo.Database.CursorAddressIndex) : string.Empty;
-                CursorLeftFormat = db != null ? db.GetString(TermInfo.Database.CursorLeftIndex) : string.Empty;
+                BellFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.Bell) : string.Empty;
+                ClearFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.Clear) : string.Empty;
+                ColumnFormat = db != null ? db.GetNumber(TermInfo.WellKnownNumbers.Columns) : 0;
+                LinesFormat = db != null ? db.GetNumber(TermInfo.WellKnownNumbers.Lines) : 0;
+                CursorVisibleFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.CursorVisible) : string.Empty;
+                CursorInvisibleFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.CursorInvisible) : string.Empty;
+                CursorAddressFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.CursorAddress) : string.Empty;
+                CursorLeftFormat = db != null ? db.GetString(TermInfo.WellKnownStrings.CursorLeft) : string.Empty;
                 TitleFormat = GetTitleFormat(db);
-                CursorPositionRequestFormat = db != null && db.GetString(TermInfo.Database.CursorPositionRequest) == KnownCursorPositionRequestFormat ?
+                CursorPositionRequestFormat = db != null && db.GetString(TermInfo.WellKnownStrings.CursorPositionRequest) == KnownCursorPositionRequestFormat ?
                     KnownCursorPositionRequestFormat : 
                     string.Empty;
             }
@@ -722,8 +721,8 @@ namespace System
                 }
 
                 // Try to get the format string from tsl/fsl and use it if they're available
-                string tsl = db.GetString(TermInfo.Database.ToStatusLineIndex);
-                string fsl = db.GetString(TermInfo.Database.FromStatusLineIndex);
+                string tsl = db.GetString(TermInfo.WellKnownStrings.ToStatusLine);
+                string fsl = db.GetString(TermInfo.WellKnownStrings.FromStatusLine);
                 if (tsl != null && fsl != null)
                 {
                     return tsl + "%p1%s" + fsl;
@@ -786,12 +785,12 @@ namespace System
             /// <summary>The cached instance.</summary>
             public static TerminalKeyInfo Instance { get { return s_instance.Value; } }
 
-            private void AddKey(TermInfo.Database db, int keyId, ConsoleKey key)
+            private void AddKey(TermInfo.Database db, TermInfo.WellKnownStrings keyId, ConsoleKey key)
             {
                 AddKey(db, keyId, key, shift: false, alt: false, control: false);
             }
 
-            private void AddKey(TermInfo.Database db, int keyId, ConsoleKey key, bool shift, bool alt, bool control)
+            private void AddKey(TermInfo.Database db, TermInfo.WellKnownStrings keyId, ConsoleKey key, bool shift, bool alt, bool control)
             {
                 string keyFormat = db.GetString(keyId);
                 if (!string.IsNullOrEmpty(keyFormat))
@@ -822,58 +821,58 @@ namespace System
 
                 if (db != null)
                 {
-                    KeypadXmit = db.GetString(TermInfo.Database.KeypadXmit);
+                    KeypadXmit = db.GetString(TermInfo.WellKnownStrings.KeypadXmit);
 
-                    AddKey(db, TermInfo.Database.KeyF1, ConsoleKey.F1);
-                    AddKey(db, TermInfo.Database.KeyF2, ConsoleKey.F2);
-                    AddKey(db, TermInfo.Database.KeyF3, ConsoleKey.F3);
-                    AddKey(db, TermInfo.Database.KeyF4, ConsoleKey.F4);
-                    AddKey(db, TermInfo.Database.KeyF5, ConsoleKey.F5);
-                    AddKey(db, TermInfo.Database.KeyF6, ConsoleKey.F6);
-                    AddKey(db, TermInfo.Database.KeyF7, ConsoleKey.F7);
-                    AddKey(db, TermInfo.Database.KeyF8, ConsoleKey.F8);
-                    AddKey(db, TermInfo.Database.KeyF9, ConsoleKey.F9);
-                    AddKey(db, TermInfo.Database.KeyF10, ConsoleKey.F10);
-                    AddKey(db, TermInfo.Database.KeyF11, ConsoleKey.F11);
-                    AddKey(db, TermInfo.Database.KeyF12, ConsoleKey.F12);
-                    AddKey(db, TermInfo.Database.KeyF13, ConsoleKey.F13);
-                    AddKey(db, TermInfo.Database.KeyF14, ConsoleKey.F14);
-                    AddKey(db, TermInfo.Database.KeyF15, ConsoleKey.F15);
-                    AddKey(db, TermInfo.Database.KeyF16, ConsoleKey.F16);
-                    AddKey(db, TermInfo.Database.KeyF17, ConsoleKey.F17);
-                    AddKey(db, TermInfo.Database.KeyF18, ConsoleKey.F18);
-                    AddKey(db, TermInfo.Database.KeyF19, ConsoleKey.F19);
-                    AddKey(db, TermInfo.Database.KeyF20, ConsoleKey.F20);
-                    AddKey(db, TermInfo.Database.KeyF21, ConsoleKey.F21);
-                    AddKey(db, TermInfo.Database.KeyF22, ConsoleKey.F22);
-                    AddKey(db, TermInfo.Database.KeyF23, ConsoleKey.F23);
-                    AddKey(db, TermInfo.Database.KeyF24, ConsoleKey.F24);
-                    AddKey(db, TermInfo.Database.KeyBackspace, ConsoleKey.Backspace);
-                    AddKey(db, TermInfo.Database.KeyBackTab, ConsoleKey.Tab, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.Database.KeyBegin, ConsoleKey.Home);
-                    AddKey(db, TermInfo.Database.KeyClear, ConsoleKey.Clear);
-                    AddKey(db, TermInfo.Database.KeyDelete, ConsoleKey.Delete);
-                    AddKey(db, TermInfo.Database.KeyDown, ConsoleKey.DownArrow);
-                    AddKey(db, TermInfo.Database.KeyEnd, ConsoleKey.End);
-                    AddKey(db, TermInfo.Database.KeyEnter, ConsoleKey.Enter);
-                    AddKey(db, TermInfo.Database.KeyHelp, ConsoleKey.Help);
-                    AddKey(db, TermInfo.Database.KeyHome, ConsoleKey.Home);
-                    AddKey(db, TermInfo.Database.KeyInsert, ConsoleKey.Insert);
-                    AddKey(db, TermInfo.Database.KeyLeft, ConsoleKey.LeftArrow);
-                    AddKey(db, TermInfo.Database.KeyPageDown, ConsoleKey.PageDown);
-                    AddKey(db, TermInfo.Database.KeyPageUp, ConsoleKey.PageUp);
-                    AddKey(db, TermInfo.Database.KeyPrint, ConsoleKey.Print);
-                    AddKey(db, TermInfo.Database.KeyRight, ConsoleKey.RightArrow);
-                    AddKey(db, TermInfo.Database.KeyScrollForward, ConsoleKey.PageDown, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.Database.KeyScrollReverse, ConsoleKey.PageUp, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.Database.KeySBegin, ConsoleKey.Home, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.Database.KeySDelete, ConsoleKey.Delete, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.Database.KeySHome, ConsoleKey.Home, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.Database.KeySelect, ConsoleKey.Select);
-                    AddKey(db, TermInfo.Database.KeySLeft, ConsoleKey.LeftArrow, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.Database.KeySPrint, ConsoleKey.Print, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.Database.KeySRight, ConsoleKey.RightArrow, shift: true, alt: false, control: false);
-                    AddKey(db, TermInfo.Database.KeyUp, ConsoleKey.UpArrow);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF1, ConsoleKey.F1);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF2, ConsoleKey.F2);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF3, ConsoleKey.F3);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF4, ConsoleKey.F4);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF5, ConsoleKey.F5);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF6, ConsoleKey.F6);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF7, ConsoleKey.F7);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF8, ConsoleKey.F8);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF9, ConsoleKey.F9);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF10, ConsoleKey.F10);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF11, ConsoleKey.F11);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF12, ConsoleKey.F12);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF13, ConsoleKey.F13);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF14, ConsoleKey.F14);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF15, ConsoleKey.F15);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF16, ConsoleKey.F16);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF17, ConsoleKey.F17);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF18, ConsoleKey.F18);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF19, ConsoleKey.F19);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF20, ConsoleKey.F20);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF21, ConsoleKey.F21);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF22, ConsoleKey.F22);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF23, ConsoleKey.F23);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyF24, ConsoleKey.F24);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyBackspace, ConsoleKey.Backspace);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyBackTab, ConsoleKey.Tab, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyBegin, ConsoleKey.Home);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyClear, ConsoleKey.Clear);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyDelete, ConsoleKey.Delete);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyDown, ConsoleKey.DownArrow);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyEnd, ConsoleKey.End);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyEnter, ConsoleKey.Enter);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyHelp, ConsoleKey.Help);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyHome, ConsoleKey.Home);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyInsert, ConsoleKey.Insert);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyLeft, ConsoleKey.LeftArrow);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyPageDown, ConsoleKey.PageDown);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyPageUp, ConsoleKey.PageUp);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyPrint, ConsoleKey.Print);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyRight, ConsoleKey.RightArrow);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyScrollForward, ConsoleKey.PageDown, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyScrollReverse, ConsoleKey.PageUp, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.WellKnownStrings.KeySBegin, ConsoleKey.Home, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.WellKnownStrings.KeySDelete, ConsoleKey.Delete, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.WellKnownStrings.KeySHome, ConsoleKey.Home, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.WellKnownStrings.KeySelect, ConsoleKey.Select);
+                    AddKey(db, TermInfo.WellKnownStrings.KeySLeft, ConsoleKey.LeftArrow, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.WellKnownStrings.KeySPrint, ConsoleKey.Print, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.WellKnownStrings.KeySRight, ConsoleKey.RightArrow, shift: true, alt: false, control: false);
+                    AddKey(db, TermInfo.WellKnownStrings.KeyUp, ConsoleKey.UpArrow);
 
                     AddPrefixKey(db, "kLFT", ConsoleKey.LeftArrow);
                     AddPrefixKey(db, "kRIT", ConsoleKey.RightArrow);
