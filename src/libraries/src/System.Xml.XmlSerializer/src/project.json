@@ -22,11 +22,6 @@
     "System.Xml.XmlDocument": "4.0.0"
   },
   "frameworks": {
-    "dnxcore50": {},
-    "netcore50": {
-      "dependencies": {
-        "System.Runtime.WindowsRuntime": "4.0.10"
-      }
-    }
+    "dnxcore50": {}
   }
 }
