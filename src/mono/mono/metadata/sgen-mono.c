@@ -376,7 +376,7 @@ get_array_fill_vtable (void)
 
 		klass.element_class = mono_defaults.byte_class;
 		klass.rank = 1;
-		klass.instance_size = sizeof (MonoArray);
+		klass.instance_size = MONO_SIZEOF_MONO_ARRAY;
 		klass.sizes.element_size = 1;
 		klass.name = "array_filler_type";
 
@@ -395,7 +395,7 @@ sgen_client_array_fill_range (char *start, size_t size)
 {
 	MonoArray *o;
 
-	if (size < sizeof (MonoArray)) {
+	if (size < MONO_SIZEOF_MONO_ARRAY) {
 		memset (start, 0, size);
 		return FALSE;
 	}
@@ -405,7 +405,7 @@ sgen_client_array_fill_range (char *start, size_t size)
 	/* Mark this as not a real object */
 	o->obj.synchronisation = GINT_TO_POINTER (-1);
 	o->bounds = NULL;
-	o->max_length = (mono_array_size_t)(size - sizeof (MonoArray));
+	o->max_length = (mono_array_size_t)(size - MONO_SIZEOF_MONO_ARRAY);
 
 	return TRUE;
 }
@@ -413,10 +413,10 @@ sgen_client_array_fill_range (char *start, size_t size)
 void
 sgen_client_zero_array_fill_header (void *p, size_t size)
 {
-	if (size >= sizeof (MonoArray)) {
-		memset (p, 0, sizeof (MonoArray));
+	if (size >= MONO_SIZEOF_MONO_ARRAY) {
+		memset (p, 0, MONO_SIZEOF_MONO_ARRAY);
 	} else {
-		static guint8 zeros [sizeof (MonoArray)];
+		static guint8 zeros [MONO_SIZEOF_MONO_ARRAY];
 
 		SGEN_ASSERT (0, !memcmp (p, zeros, size), "TLAB segment must be zeroed out.");
 	}
@@ -1185,7 +1185,7 @@ create_allocator (int atype, gboolean slowpath)
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_byte (mb, CEE_MUL_OVF_UN);
 		/* + sizeof (MonoArray) */
-		mono_mb_emit_icon (mb, sizeof (MonoArray));
+		mono_mb_emit_icon (mb, MONO_SIZEOF_MONO_ARRAY);
 		mono_mb_emit_byte (mb, CEE_ADD_OVF_UN);
 		mono_mb_emit_stloc (mb, size_var);
 
