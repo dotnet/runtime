@@ -5,6 +5,7 @@
 //
 
 #include <assert.h>
+#include <pthread.h>
 #include <stdint.h>
 #include <vector>
 #include <map>
@@ -32,9 +33,11 @@ typedef struct _sort_handle
 {
     UCollator* regular;
     TCollatorMap collatorsPerOption;
+    pthread_mutex_t collatorsLockObject;
 
     _sort_handle() : regular(nullptr)
     {
+        pthread_mutex_init(&collatorsLockObject, NULL);
     }
 
 } SortHandle;
@@ -272,6 +275,8 @@ extern "C" void CloseSortHandle(SortHandle* pSortHandle)
         ucol_close(it->second);
     }
 
+    pthread_mutex_destroy(&pSortHandle->collatorsLockObject);
+
     delete pSortHandle;
 }
 
@@ -284,6 +289,8 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
     }
     else
     {
+        pthread_mutex_lock(&pSortHandle->collatorsLockObject);
+
         TCollatorMap::iterator entry = pSortHandle->collatorsPerOption.find(options);
         if (entry == pSortHandle->collatorsPerOption.end())
         {
@@ -294,6 +301,8 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
         {
             pCollator = entry->second;
         }
+
+        pthread_mutex_unlock(&pSortHandle->collatorsLockObject);
     }
 
     return pCollator;
