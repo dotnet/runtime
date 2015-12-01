@@ -20,12 +20,41 @@ namespace System.IO
 
         // Trim trailing white spaces, tabs etc but don't be aggressive in removing everything that has UnicodeCategory of trailing space.
         // string.WhitespaceChars will trim more aggressively than what the underlying FS does (for ex, NTFS, FAT).
-        private static readonly char[] s_trimEndChars = { (char)0x9, (char)0xA, (char)0xB, (char)0xC, (char)0xD, (char)0x20, (char)0x85, (char)0xA0 };
+        private static readonly char[] s_trimEndChars =
+        {
+            (char)0x9,          // Horizontal tab
+            (char)0xA,          // Line feed
+            (char)0xB,          // Vertical tab
+            (char)0xC,          // Form feed
+            (char)0xD,          // Carriage return
+            (char)0x20,         // Space
+            (char)0x85,         // Next line
+            (char)0xA0          // Non breaking space
+        };
 
         [ThreadStatic]
         private static StringBuffer t_fullPathBuffer;
 
-        internal static string Normalize(string path, bool fullCheck, bool expandShortPaths)
+        /// <summary>
+        /// Normalize the given path.
+        /// </summary>
+        /// <remarks>
+        /// Normalizes via Win32 GetFullPathName(). It will also trim all "typical" whitespace at the end of the path (see s_trimEndChars). Will also trim initial
+        /// spaces if the path is determined to be rooted.
+        /// 
+        /// Note that invalid characters will be checked after the path is normalized, which could remove bad characters. (C:\|\..\a.txt -- C:\a.txt)
+        /// </remarks>
+        /// <param name="path">Path to normalize</param>
+        /// <param name="checkInvalidCharacters">True to check for invalid characters</param>
+        /// <param name="expandShortPaths">Attempt to expand short paths if true</param>
+        /// <exception cref="ArgumentException">Thrown if the path is an illegal UNC (does not contain a full server/share) or contains illegal characters.</exception>
+        /// <exception cref="PathTooLongException">Thrown if the path or a path segment exceeds the filesystem limits.</exception>
+        /// <exception cref="FileNotFoundException">Thrown if Windows returns ERROR_FILE_NOT_FOUND. (See Win32Marshal.GetExceptionForWin32Error)</exception>
+        /// <exception cref="DirectoryNotFoundException">Thrown if Windows returns ERROR_PATH_NOT_FOUND. (See Win32Marshal.GetExceptionForWin32Error)</exception>
+        /// <exception cref="UnauthorizedAccessException">Thrown if Windows returns ERROR_ACCESS_DENIED. (See Win32Marshal.GetExceptionForWin32Error)</exception>
+        /// <exception cref="IOException">Thrown if Windows returns an error that doesn't map to the above. (See Win32Marshal.GetExceptionForWin32Error)</exception>
+        /// <returns>Normalized path</returns>
+        internal static string Normalize(string path, bool checkInvalidCharacters, bool expandShortPaths)
         {
             // Get the full path
             StringBuffer fullPath = t_fullPathBuffer ?? (t_fullPathBuffer = new StringBuffer(PathInternal.MaxShortPath));
@@ -33,11 +62,8 @@ namespace System.IO
             {
                 GetFullPathName(path, fullPath);
 
-                if (fullCheck)
-                {
-                    // Trim whitespace off the end of the string. Win32 normalization trims only U+0020.
-                    fullPath.TrimEnd(s_trimEndChars);
-                }
+                // Trim whitespace off the end of the string. Win32 normalization trims only U+0020.
+                fullPath.TrimEnd(s_trimEndChars);
 
                 if (fullPath.Length >= PathInternal.MaxLongPath)
                 {
@@ -83,7 +109,7 @@ namespace System.IO
                             case '>':
                             case '<':
                             case '\"':
-                                if (fullCheck) throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
+                                if (checkInvalidCharacters) throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
                                 foundTilde = false;
                                 break;
                             case '~':
@@ -91,7 +117,7 @@ namespace System.IO
                                 break;
                             case '\\':
                                 segmentLength = index - lastSeparator - 1;
-                                if (segmentLength > (ulong)Path.MaxComponentLength)
+                                if (segmentLength > (ulong)PathInternal.MaxComponentLength)
                                     throw new PathTooLongException(SR.IO_PathTooLong);
                                 lastSeparator = index;
 
@@ -119,7 +145,7 @@ namespace System.IO
                                 break;
 
                             default:
-                                if (fullCheck && current < ' ') throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
+                                if (checkInvalidCharacters && current < ' ') throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
                                 break;
                         }
                     }
@@ -131,7 +157,7 @@ namespace System.IO
                     throw new ArgumentException(SR.Arg_PathIllegalUNC);
 
                 segmentLength = fullPath.Length - lastSeparator - 1;
-                if (segmentLength > (ulong)Path.MaxComponentLength)
+                if (segmentLength > (ulong)PathInternal.MaxComponentLength)
                     throw new PathTooLongException(SR.IO_PathTooLong);
 
                 if (foundTilde && segmentLength <= MaxShortName)
