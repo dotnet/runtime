@@ -44,6 +44,7 @@
     <Compile Include="..\src\System\IO\TaskHelpers.cs">
       <Link>Common\System\IO\TaskHelpers.cs</Link>
     </Compile>
+    <Compile Include="Tests\System\IO\PathInternal_Unix_Tests.cs" />
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\SafeHeapHandle.cs">

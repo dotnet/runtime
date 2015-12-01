@@ -69,8 +69,8 @@ namespace System.IO
             if (path != null)
             {
                 PathInternal.CheckInvalidPathChars(path);
+                path = PathInternal.NormalizeDirectorySeparators(path);
                 int root = PathInternal.GetRootLength(path);
-                path = RemoveRelativeSegments(path, root);
 
                 int i = path.Length;
                 if (i > root)
@@ -483,7 +483,7 @@ namespace System.IO
                     }
                 }
 
-                if (++componentCharCount > MaxComponentLength)
+                if (++componentCharCount > PathInternal.MaxComponentLength)
                 {
                     throw new PathTooLongException(SR.IO_PathTooLong);
                 }

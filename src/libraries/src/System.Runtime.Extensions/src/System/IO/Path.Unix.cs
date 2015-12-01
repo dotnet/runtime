@@ -19,7 +19,6 @@ namespace System.IO
 
         private static readonly int MaxPath = Interop.Sys.MaxPath;
         private static readonly int MaxLongPath = MaxPath;
-        private static readonly int MaxComponentLength = Interop.Sys.MaxName;
 
         private static bool IsDirectoryOrVolumeSeparator(char c)
         {
@@ -35,26 +34,15 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException("path");
 
-            return NormalizePath(path, fullChecks: true);
-        }
-
-        private static string NormalizePath(
-            string path, bool fullChecks)
-        {
-            Debug.Assert(path != null);
-
             if (path.Length == 0)
                 throw new ArgumentException(SR.Arg_PathIllegal);
 
-            if (fullChecks)
-            {
-                PathInternal.CheckInvalidPathChars(path);
+            PathInternal.CheckInvalidPathChars(path);
 
-                // Expand with current directory if necessary
-                if (!IsPathRooted(path))
-                {
-                    path = Combine(Interop.Sys.GetCwd(), path);
-                }
+            // Expand with current directory if necessary
+            if (!IsPathRooted(path))
+            {
+                path = Combine(Interop.Sys.GetCwd(), path);
             }
 
             // We would ideally use realpath to do this, but it resolves symlinks, requires that the file actually exist,
@@ -69,9 +57,7 @@ namespace System.IO
                 throw new PathTooLongException(SR.IO_PathTooLong);
             }
 
-            string result =
-                collapsedString.Length == 0 ? (fullChecks ? DirectorySeparatorCharAsString : string.Empty) :
-                collapsedString;
+            string result = collapsedString.Length == 0 ? DirectorySeparatorCharAsString : collapsedString;
 
             return result;
         }
