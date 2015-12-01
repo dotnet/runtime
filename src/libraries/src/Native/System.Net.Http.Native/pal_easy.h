@@ -24,6 +24,7 @@ enum PAL_CURLoption : int32_t
     PAL_CURLOPT_PROXYPORT = CurlOptionLongBase + 59,
     PAL_CURLOPT_POSTFIELDSIZE = CurlOptionLongBase + 60,
     PAL_CURLOPT_MAXREDIRS = CurlOptionLongBase + 68,
+    PAL_CURLOPT_HTTP_VERSION = CurlOptionLongBase + 84,
     PAL_CURLOPT_NOSIGNAL = CurlOptionLongBase + 99,
     PAL_CURLOPT_PROXYTYPE = CurlOptionLongBase + 101,
     PAL_CURLOPT_HTTPAUTH = CurlOptionLongBase + 107,
@@ -64,6 +65,14 @@ enum
 {
     CurlInfoStringBase = 0x100000,
     CurlInfoLongBase = 0x200000,
+};
+
+enum PAL_CURL_HTTP_VERSION
+{
+    PAL_CURL_HTTP_VERSION_NONE = 0,
+    PAL_CURL_HTTP_VERSION_1_0 = 1,
+    PAL_CURL_HTTP_VERSION_1_1 = 2,
+    PAL_CURL_HTTP_VERSION_2_0 = 3
 };
 
 enum PAL_CURLINFO : int32_t
