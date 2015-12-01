@@ -4,6 +4,12 @@ coreclr_execute_assembly
 coreclr_initialize
 coreclr_shutdown
 
+; il{d}asm
+MetaDataGetDispenser
+GetMetaDataInternalInterface
+GetMetaDataInternalInterfaceFromPublic
+GetMetaDataPublicInterfaceFromInternal
+
 ; Obsolete Unix hosting API, to be removed
 ExecuteAssembly
 
