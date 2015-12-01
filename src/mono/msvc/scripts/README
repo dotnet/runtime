@@ -54,10 +54,10 @@ necessary to build the Mono class libraries.
    	   On Mac:
 		cd msvc/scripts/
 		make genproj.exe
-		mono genproj.
+		mono genproj.exe
 		
 	One output of genproj is the solutions for the successive profiles, 
-	from net_2_0.sln to from net_4.5.sln 
+	like net_4_x.sln.
 
 	The command
 		./genproj.exe -h 
