@@ -1865,7 +1865,7 @@ public static partial class DataContractSerializerTests
     public static void DCS_MyPersonSurrogate()
     {
         DataContractSerializer dcs = new DataContractSerializer(typeof(Family));
-        dcs.SetSerializationSurrogateProvider(MyPersonSurrogateProvider());
+        dcs.SetSerializationSurrogateProvider(new MyPersonSurrogateProvider());
         MemoryStream ms = new MemoryStream();
         Family myFamily = new Family
         {
