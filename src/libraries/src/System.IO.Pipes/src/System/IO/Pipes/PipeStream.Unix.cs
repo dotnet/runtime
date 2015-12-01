@@ -360,9 +360,9 @@ namespace System.IO.Pipes
                         {
                             // We want to wait for data to be available on either the pipe we want to read from
                             // or on the cancellation pipe, which would signal a cancellation request.
-                            Interop.Sys.PollFD* fds = stackalloc Interop.Sys.PollFD[2];
-                            fds[0] = new Interop.Sys.PollFD { FD = fd, Events = Interop.Sys.PollFlags.POLLIN, REvents = 0 };
-                            fds[1] = new Interop.Sys.PollFD { FD = (int)cancellationFd, Events = Interop.Sys.PollFlags.POLLIN, REvents = 0 };
+                            Interop.Sys.PollEvent* events = stackalloc Interop.Sys.PollEvent[2];
+                            events[0] = new Interop.Sys.PollEvent { FileDescriptor = fd, Events = Interop.Sys.PollEvents.POLLIN };
+                            events[1] = new Interop.Sys.PollEvent { FileDescriptor = (int)cancellationFd, Events = Interop.Sys.PollEvents.POLLIN };
 
                             // Some systems (at least OS X) appear to have a race condition in poll with FIFOs where the poll can 
                             // end up not noticing writes of greater than the internal buffer size.  Restarting the poll causes it 
@@ -373,8 +373,8 @@ namespace System.IO.Pipes
                             for (int timeout = InitialMsTimeout; ; timeout = Math.Min(timeout * 2, MaxMsTimeout))
                             {
                                 // Do the poll.
-                                int signaledFdCount;
-                                while (Interop.CheckIo(signaledFdCount = Interop.Sys.Poll(fds, 2, timeout))) ;
+                                uint signaledFdCount;
+                                while (Interop.CheckIo(Interop.Sys.Poll(events, 2, timeout, &signaledFdCount))) ;
                                 if (cancellationToken.IsCancellationRequested)
                                 {
                                     // Cancellation occurred.  Bail by returning the cancellation sentinel.
@@ -388,13 +388,13 @@ namespace System.IO.Pipes
                                 else
                                 {
                                     // Our pipe is ready.  Break out of the loop to read from it.
-                                    Debug.Assert((fds[0].REvents & Interop.Sys.PollFlags.POLLIN) != 0, "Expected revents on read fd to have POLLIN set");
+                                    Debug.Assert((events[0].TriggeredEvents & Interop.Sys.PollEvents.POLLIN) != 0, "Expected revents on read fd to have POLLIN set");
                                     break;
                                 }
                             }
 
                             // Read it.
-                            Debug.Assert((fds[0].REvents & Interop.Sys.PollFlags.POLLIN) != 0);
+                            Debug.Assert((events[0].TriggeredEvents & Interop.Sys.PollEvents.POLLIN) != 0);
                             int result = Interop.Sys.Read(fd, (byte*)ptr, len);
                             Debug.Assert(result <= len);
                             return result;
