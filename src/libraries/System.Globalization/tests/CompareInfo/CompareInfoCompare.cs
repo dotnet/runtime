@@ -9,6 +9,8 @@ namespace System.Globalization.Tests
 {
     public class CompareInfoCompare
     {
+        private const string c_SoftHyphen = "\u00AD";
+
         [Fact]
         [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test1() { TestOrd(CultureInfo.InvariantCulture, "\u3042", "\u30A1", 1, CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase); }
@@ -561,6 +563,51 @@ namespace System.Globalization.Tests
         [Fact]
         public void Test156() { Test(CultureInfo.InvariantCulture, new string('a', 5555), new string('a', 5555), 0, CompareOptions.None); }
 
+        [Theory]
+        [InlineData(null, 0, 0, null, 0, 0, 0)]
+        [InlineData("Hello", 0, 5, null, 0, 0, 1)]
+        [InlineData(null, 0, 0, "Hello", 0, 5, -1)]
+        [InlineData("Hello", 0, 0, "Hello", 0, 0, 0)]
+        [InlineData("Hello", 0, 5, "Hello", 0, 5, 0)]
+        [InlineData("Hello", 0, 3, "Hello", 0, 3, 0)]
+        [InlineData("Hello", 2, 3, "Hello", 2, 3, 0)]
+        [InlineData("Hello", 0, 5, "He" + c_SoftHyphen + "llo", 0, 5, -1)]
+        [InlineData("Hello", 0, 5, "-=<Hello>=-", 3, 5, 0)]
+        [InlineData("\uD83D\uDD53Hello\uD83D\uDD50", 1, 7, "\uD83D\uDD53Hello\uD83D\uDD54", 1, 7, 0)] // Surrogate split
+        [InlineData("Hello", 0, 5, "Hello123", 0, 8, -1)]
+        [InlineData("Hello123", 0, 8, "Hello", 0, 5, 1)]
+        [InlineData("---aaaaaaaaaaa", 3, 11, "+++aaaaaaaaaaa", 3, 11, 0)]      // Equal long alignment 2, equal compare
+        [InlineData("aaaaaaaaaaaaaa", 3, 11, "aaaxaaaaaaaaaa", 3, 11, -1)]     // Equal long alignment 2, different compare at n=1
+        [InlineData("-aaaaaaaaaaaaa", 1, 13, "+aaaaaaaaaaaaa", 1, 13, 0)]      // Equal long alignment 6, equal compare
+        [InlineData("aaaaaaaaaaaaaa", 1, 13, "axaaaaaaaaaaaa", 1, 13, -1)]     // Equal long alignment 6, different compare at n=1
+        [InlineData("aaaaaaaaaaaaaa", 0, 14, "aaaaaaaaaaaaaa", 0, 14, 0)]      // Equal long alignment 4, equal compare
+        [InlineData("aaaaaaaaaaaaaa", 0, 14, "xaaaaaaaaaaaaa", 0, 14, -1)]     // Equal long alignment 4, different compare at n=1
+        [InlineData("aaaaaaaaaaaaaa", 0, 14, "axaaaaaaaaaaaa", 0, 14, -1)]     // Equal long alignment 4, different compare at n=2
+        [InlineData("--aaaaaaaaaaaa", 2, 12, "++aaaaaaaaaaaa", 2, 12, 0)]      // Equal long alignment 0, equal compare
+        [InlineData("aaaaaaaaaaaaaa", 2, 12, "aaxaaaaaaaaaaa", 2, 12, -1)]     // Equal long alignment 0, different compare at n=1
+        [InlineData("aaaaaaaaaaaaaa", 2, 12, "aaaxaaaaaaaaaa", 2, 12, -1)]     // Equal long alignment 0, different compare at n=2
+        [InlineData("aaaaaaaaaaaaaa", 2, 12, "aaaaxaaaaaaaaa", 2, 12, -1)]     // Equal long alignment 0, different compare at n=3
+        [InlineData("aaaaaaaaaaaaaa", 2, 12, "aaaaaxaaaaaaaa", 2, 12, -1)]     // Equal long alignment 0, different compare at n=4
+        [InlineData("aaaaaaaaaaaaaa", 2, 12, "aaaaaaxaaaaaaa", 2, 12, -1)]     // Equal long alignment 0, different compare at n=5
+        [InlineData("aaaaaaaaaaaaaa", 0, 13, "+aaaaaaaaaaaaa", 1, 13, 0)]      // Different int alignment, equal compare
+        [InlineData("aaaaaaaaaaaaaa", 0, 13, "aaaaaaaaaaaaax", 1, 13, -1)]     // Different int alignment
+        [InlineData("aaaaaaaaaaaaaa", 1, 13, "aaaxaaaaaaaaaa", 3, 11, -1)]     // Different long alignment, abs of 4, one of them is 2, different at n=1
+        [InlineData("-aaaaaaaaaaaaa", 1, 10, "++++aaaaaaaaaa", 4, 10, 0)]      // Different long alignment, equal compare
+        [InlineData("aaaaaaaaaaaaaa", 1, 10, "aaaaaaaaaaaaax", 4, 10, -1)]     // Different long alignment
+        public static void TestCompareOrdinalIndexed(string str1, int offset1, int length1, string str2, int offset2, int length2, int expectedResult)
+        {
+            CompareInfo ci = CultureInfo.InvariantCulture.CompareInfo;
+            int i = NormalizeCompare(ci.Compare(str1, offset1, length1, str2, offset2, length2, CompareOptions.Ordinal));
+            Assert.Equal(expectedResult, i);
+
+            if ((str1 == null || offset1 + length1 == str1.Length) &&
+                (str2 == null || offset2 + length2 == str2.Length))
+            {
+                i = NormalizeCompare(ci.Compare(str1, offset1, str2, offset2, CompareOptions.Ordinal));
+                Assert.Equal(expectedResult, i);
+            }
+        }
+
         public void Test(CultureInfo culture, string str1, string str2, int expected, CompareOptions options)
         {
             CompareInfo ci = culture.CompareInfo;
@@ -594,6 +641,14 @@ namespace System.Globalization.Tests
                 }
             }
             return Char.MinValue; // there are no unassigned unicode characters from \u0000 - \uFFFF
+        }
+
+        private static int NormalizeCompare(int i)
+        {
+            return
+                i == 0 ? 0 :
+                i > 0 ? 1 :
+                -1;
         }
     }
 }
