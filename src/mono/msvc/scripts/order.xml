@@ -2,7 +2,7 @@
 <root>
     <project dir="mcs" library="basic-basic">
       <boot></boot>
-      <flags>/codepage:65001 -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../class/lib/basic -optimize /noconfig -r:System -r:System.Core -r:System.Xml</flags>
+      <flags>/codepage:65001 -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_PROCESS_START -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../class/lib/basic -optimize /noconfig -r:System -r:System.Core -r:System.Xml</flags>
       <output>basic.exe</output>
       <built_sources></built_sources>
       <library_output>./../class/lib/basic/basic.exe</library_output>
@@ -12,7 +12,7 @@
     </project>
     <project dir="class/corlib" library="corlib-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618,1635 -d:INSIDE_CORLIB,MONO_CULTURE_DATA -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -resource:resources/charinfo.nlp -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618,1635 -d:INSIDE_CORLIB,MONO_CULTURE_DATA -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -resource:resources/charinfo.nlp -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/mscorlib.dll</library_output>
@@ -22,7 +22,7 @@
     </project>
     <project dir="class/System" library="System-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/basic/secxml/System.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/basic/secxml/System.dll -d:MONO_SECURITY_ALIAS -d:MONO_X509_ALIAS -r:System.Configuration.dll -d:CONFIGURATION_DEP -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/System.dll</library_output>
@@ -42,7 +42,7 @@
     </project>
     <project dir="class/System" library="System-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/basic/secxml/System.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/basic/secxml/System.dll -d:MONO_SECURITY_ALIAS -d:MONO_X509_ALIAS -r:System.Configuration.dll -d:CONFIGURATION_DEP -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/System.dll</library_output>
@@ -72,7 +72,7 @@
     </project>
     <project dir="class/corlib" library="corlib-build">
       <boot>true</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618,1635 -d:INSIDE_CORLIB,MONO_CULTURE_DATA -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -optimize /noconfig -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -resource:resources/charinfo.nlp -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618,1635 -d:INSIDE_CORLIB,MONO_CULTURE_DATA -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -optimize /noconfig -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -resource:resources/charinfo.nlp -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/mscorlib.dll</library_output>
@@ -82,7 +82,7 @@
     </project>
     <project dir="class/System" library="System-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/secxml/System.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/secxml/System.dll -d:MONO_SECURITY_ALIAS -d:MONO_X509_ALIAS -r:System.Configuration.dll -d:CONFIGURATION_DEP -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/System.dll</library_output>
@@ -92,7 +92,7 @@
     </project>
     <project dir="class/System" library="System-bare-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/bare/System.dll</library_output>
@@ -102,7 +102,7 @@
     </project>
     <project dir="class/System" library="System-secxml-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -d:MONO_SECURITY_ALIAS -d:MONO_X509_ALIAS -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/secxml/System.dll</library_output>
@@ -132,7 +132,7 @@
     </project>
     <project dir="class/System" library="System-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/secxml/System.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/secxml/System.dll -d:MONO_SECURITY_ALIAS -d:MONO_X509_ALIAS -r:System.Configuration.dll -d:CONFIGURATION_DEP -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/System.dll</library_output>
@@ -142,7 +142,7 @@
     </project>
     <project dir="class/System" library="System-bare-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/bare/System.dll</library_output>
@@ -152,7 +152,7 @@
     </project>
     <project dir="class/System" library="System-secxml-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -d:MONO_SECURITY_ALIAS -d:MONO_X509_ALIAS -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/secxml/System.dll</library_output>
@@ -202,7 +202,7 @@
     </project>
     <project dir="mcs" library="mcs-build">
       <boot></boot>
-      <flags>/codepage:65001 -lib:./../class/lib/build -debug -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../class/lib/build -r:mscorlib.dll -optimize /noconfig -r:System -r:System.Core -r:System.Xml</flags>
+      <flags>/codepage:65001 -lib:./../class/lib/build -debug -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_PROCESS_START -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../class/lib/build -r:mscorlib.dll -optimize /noconfig -r:System -r:System.Core -r:System.Xml</flags>
       <output>mcs.exe</output>
       <built_sources></built_sources>
       <library_output>mcs.exe</library_output>
@@ -232,7 +232,7 @@
     </project>
     <project dir="mcs" library="mcs-net_4_x">
       <boot></boot>
-      <flags>/codepage:65001 -lib:./../class/lib/build -debug -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -r:System -r:System.Core -r:System.Xml</flags>
+      <flags>/codepage:65001 -lib:./../class/lib/build -debug -d:STATIC,NO_SYMBOL_WRITER,NO_AUTHENTICODE -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_PROCESS_START -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -r:System -r:System.Core -r:System.Xml</flags>
       <output>mcs.exe</output>
       <built_sources></built_sources>
       <library_output>mcs.exe</library_output>
@@ -242,7 +242,7 @@
     </project>
     <project dir="class/corlib" library="corlib-net_4_x">
       <boot>true</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618,1635 -d:INSIDE_CORLIB,MONO_CULTURE_DATA -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -debug -optimize /noconfig -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -resource:resources/charinfo.nlp -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618,1635 -d:INSIDE_CORLIB,MONO_CULTURE_DATA -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -debug -optimize /noconfig -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -resource:resources/charinfo.nlp -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/mscorlib.dll</library_output>
@@ -252,7 +252,7 @@
     </project>
     <project dir="class/corlib" library="corlib-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618,1635 -d:INSIDE_CORLIB,MONO_CULTURE_DATA -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -debug -optimize -r:./../../class/lib/net_4_x/mscorlib.dll -debug -nowarn:168,219,618,672 -unsafe -r:Mono.Posix.dll -r:System.Core.dll -define:MONO_DATACONVERTER_STATIC_METHODS -resource:Test/resources/Resources.resources</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618,1635 -d:INSIDE_CORLIB,MONO_CULTURE_DATA -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES,FEATURE_SERIALIZATION,FEATURE_ASCII,FEATURE_LATIN1,FEATURE_UTF7,FEATURE_UTF32,MONO_HYBRID_ENCODING_SUPPORT,FEATURE_ASYNC_IO,NEW_EXPERIMENTAL_ASYNC_IO,FEATURE_UTF32,FEATURE_EXCEPTIONDISPATCHINFO,FEATURE_CORRUPTING_EXCEPTIONS,FEATURE_EXCEPTION_NOTIFICATIONS,FEATURE_STRONGNAME_MIGRATION,FEATURE_USE_LCID,FEATURE_FUSION,FEATURE_CRYPTO,FEATURE_X509_SECURESTRINGS,FEATURE_SYNCHRONIZATIONCONTEXT,FEATURE_SYNCHRONIZATIONCONTEXT_WAIT -d:FEATURE_REMOTING,MONO_COM,FEATURE_COMINTEROP,FEATURE_ROLE_BASED_SECURITY -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -debug -optimize -r:./../../class/lib/net_4_x/mscorlib.dll -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -debug -nowarn:168,219,618,672 -unsafe -r:Mono.Posix.dll -r:System.Core.dll -define:MONO_DATACONVERTER_STATIC_METHODS -resource:Test/resources/Resources.resources</flags>
       <output>corlib_test_net_4_x.dll</output>
       <built_sources></built_sources>
       <library_output>corlib_test_net_4_x.dll</library_output>
@@ -262,7 +262,7 @@
     </project>
     <project dir="class/System" library="System-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_4_x/secxml/System.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_4_x/secxml/System.dll -d:MONO_SECURITY_ALIAS -d:MONO_X509_ALIAS -r:System.Configuration.dll -d:CONFIGURATION_DEP -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/System.dll</library_output>
@@ -272,7 +272,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -lib:./../../class/lib/net_4_x/bare -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_x/bare -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -d:MONO_FEATURE_PROCESS_START -r:System.Configuration -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME</flags>
       <output>System_test_net_4_x.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_x.dll</library_output>
@@ -282,7 +282,7 @@
     </project>
     <project dir="class/System" library="System-bare-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/bare/System.dll</library_output>
@@ -292,7 +292,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -lib:./../../class/lib/net_4_x/bare -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_x/bare -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -d:MONO_FEATURE_PROCESS_START -r:System.Configuration -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME</flags>
       <output>System_test_net_4_x.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_x.dll</library_output>
@@ -302,7 +302,7 @@
     </project>
     <project dir="class/System" library="System-secxml-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -lib:./../../class/lib/net_4_x/bare -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_4_x/bare/System.dll -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_x/bare -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -d:MONO_FEATURE_PROCESS_START -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_4_x/bare/System.dll -d:MONO_SECURITY_ALIAS -d:MONO_X509_ALIAS -r:System.Xml -r:MonoSecurity=Mono.Security</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/secxml/System.dll</library_output>
@@ -312,7 +312,7 @@
     </project>
     <project dir="class/System" library="System-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -lib:./../../class/lib/net_4_x/bare -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -r:System.Configuration</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_x/bare -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/secxml/System.dll -r:System.Drawing.dll -r:Mono.Security.dll -r:System.Data -r:System.Xml.dll -r:System.Core.dll -nowarn:618,672,219,67,169,612 -resource:Test/System/test-uri-props.txt,test-uri-props.txt -resource:Test/System/test-uri-props-manual.txt,test-uri-props-manual.txt -resource:Test/System/test-uri-relative-props.txt,test-uri-relative-props.txt -d:MONO_FEATURE_PROCESS_START -r:System.Configuration -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME</flags>
       <output>System_test_net_4_x.dll</output>
       <built_sources></built_sources>
       <library_output>System_test_net_4_x.dll</library_output>
@@ -499,6 +499,46 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
       <response>resgen.exe.sources</response>
+    </project>
+    <project dir="class/System.IO.Compression" library="System.IO.Compression-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig /unsafe -r:System -r:System.Core</flags>
+      <output>System.IO.Compression.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_x/System.IO.Compression.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <response>System.IO.Compression.dll.sources</response>
+    </project>
+    <project dir="class/System.IO.Compression" library="System.IO.Compression-tests-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/System.IO.Compression.dll /r:System /r:System.Core</flags>
+      <output>System.IO.Compression_test_net_4_x.dll</output>
+      <built_sources></built_sources>
+      <library_output>System.IO.Compression_test_net_4_x.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <response>./../../build/deps/System.IO.Compression_test_net_4_x.dll.response</response>
+    </project>
+    <project dir="class/System.IO.Compression.FileSystem" library="System.IO.Compression.FileSystem-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -r:System -r:System.IO.Compression</flags>
+      <output>System.IO.Compression.FileSystem.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_x/System.IO.Compression.FileSystem.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <response>System.IO.Compression.FileSystem.dll.sources</response>
+    </project>
+    <project dir="class/System.IO.Compression.FileSystem" library="System.IO.Compression.FileSystem-tests-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/System.IO.Compression.FileSystem.dll /r:System /r:System.Core /r:System.IO.Compression.dll</flags>
+      <output>System.IO.Compression.FileSystem_test_net_4_x.dll</output>
+      <built_sources></built_sources>
+      <library_output>System.IO.Compression.FileSystem_test_net_4_x.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <response>./../../build/deps/System.IO.Compression.FileSystem_test_net_4_x.dll.response</response>
     </project>
     <project dir="class/System.Drawing" library="System.Drawing-net_4_x">
       <boot>false</boot>
@@ -822,7 +862,7 @@
     </project>
     <project dir="class/System.Web.Services" library="System.Web.Services-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -lib:./../../class/lib/net_4_x/plainweb -lib:./../../class/lib/net_4_x/plaindesign -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/System.Web.Services.dll -nowarn:168,169,219,414,612,649 -d:MONO_BROKEN_CONFIGURATION_DLL -resource:System.Web.Services.Description/wsdl-1.1.xsd,wsdl-1.1.xsd -resource:System.Web.Services.Description/wsdl-1.1-soap.xsd,wsdl-1.1-soap.xsd -resource:System.Web.Services.Description/web-reference.xsd,web-reference.xsd -r:System -r:System.EnterpriseServices -r:System.Xml -r:System.Data -r:System.Web -r:System.Design -r:System.DirectoryServices -r:System.Configuration -nowarn:618</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_x/plainweb -lib:./../../class/lib/net_4_x/plaindesign -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/System.Web.Services.dll -nowarn:168,169,219,414,612,649 -d:MONO_BROKEN_CONFIGURATION_DLL -resource:System.Web.Services.Description/wsdl-1.1.xsd,wsdl-1.1.xsd -resource:System.Web.Services.Description/wsdl-1.1-soap.xsd,wsdl-1.1-soap.xsd -resource:System.Web.Services.Description/web-reference.xsd,web-reference.xsd -r:System -r:System.EnterpriseServices -r:System.Xml -r:System.Data -r:System.Web -r:System.Design -r:System.DirectoryServices -r:System.Configuration -nowarn:618 -d:MONO_FEATURE_THREAD_ABORT -d:MONO_FEATURE_THREAD_SUSPEND_RESUME</flags>
       <output>System.Web.Services_test_net_4_x.dll</output>
       <built_sources></built_sources>
       <library_output>System.Web.Services_test_net_4_x.dll</library_output>
@@ -1282,7 +1322,7 @@
     </project>
     <project dir="class/System.Web.Extensions" library="System.Web.Extensions-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/System.Web.Extensions.dll -unsafe -define:NET_3_5 -define:SYSTEM_WEB_EXTENSIONS -r:mscorlib.dll -r:System.Web.ApplicationServices.dll /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjax.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjax.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxTimer.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxTimer.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxWebForms.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxWebForms.js -r:System -r:System.Core -r:System.Drawing -r:System.Data -r:System.Data.Linq -r:System.Xml -r:System.Web -r:System.Web.Services -r:System.Configuration -r:System.EnterpriseServices -r:System.ServiceModel -doc:System.Web.Extensions_test_net_4_x.xml -nowarn:219,169,1591 /resource:Test/resources/Web.mono.config /resource:Test/resources/profile.config.4.x /resource:Test/resources/ListViewSort.aspx /resource:Test/resources/ListViewTest.aspx /resource:Test/resources/ListViewTotalRowCount_Bug535701_1.aspx /resource:Test/resources/ListViewTotalRowCount_Bug535701_2.aspx /resource:Test/resources/ListViewTotalRowCount_Bug604053.aspx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyPage.aspx.cs /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/Global.asax /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/My.ashx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyPage.aspx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyPageWithDerivedMaster.aspx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyPageWithMaster.aspx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyPageWithMasterInvalidPlaceHolder.aspx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/My.master /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyDerived.master -r:SystemWebTestShim.dll -define:SYSTEM_WEB_EXTENSIONS</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/System.Web.Extensions.dll -unsafe -define:NET_3_5 -define:SYSTEM_WEB_EXTENSIONS -r:mscorlib.dll -r:System.Web.ApplicationServices.dll /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjax.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjax.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxTimer.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxTimer.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxWebForms.debug.js /resource:../MicrosoftAjaxLibrary/System.Web.Extensions/3.5.0.0/3.5.21022.8/MicrosoftAjaxWebForms.js -r:System -r:System.Core -r:System.Drawing -r:System.Data -r:System.Data.Linq -r:System.Xml -r:System.Web -r:System.Web.Services -r:System.Configuration -r:System.EnterpriseServices -r:System.ServiceModel -doc:System.Web.Extensions_test_net_4_x.xml -nowarn:219,169,1591 /resource:Test/resources/Web.mono.config /resource:Test/resources/profile.config.4.x /resource:Test/resources/ListViewSort.aspx /resource:Test/resources/ListViewTest.aspx /resource:Test/resources/ListViewTotalRowCount_Bug535701_1.aspx /resource:Test/resources/ListViewTotalRowCount_Bug535701_2.aspx /resource:Test/resources/ListViewTotalRowCount_Bug604053.aspx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyPage.aspx.cs /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/Global.asax /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/My.ashx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyPage.aspx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyPageWithDerivedMaster.aspx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyPageWithMaster.aspx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyPageWithMasterInvalidPlaceHolder.aspx /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/MyDerived.master /resource:../System.Web/Test/mainsoft/NunitWeb/NunitWeb/Resources/My.master -r:SystemWebTestShim.dll -define:SYSTEM_WEB_EXTENSIONS</flags>
       <output>System.Web.Extensions_test_net_4_x.dll</output>
       <built_sources></built_sources>
       <library_output>System.Web.Extensions_test_net_4_x.dll</library_output>
@@ -1322,7 +1362,7 @@
     </project>
     <project dir="class/Mono.CSharp" library="Mono.CSharp-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -r:System.Core -r:System.Xml -r:System</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -d:MONO_FEATURE_THREAD_ABORT -r:System.Core -r:System.Xml -r:System</flags>
       <output>Mono.CSharp.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/Mono.CSharp.dll</library_output>
@@ -2292,7 +2332,7 @@
     </project>
     <project dir="class/System.Threading.Tasks.Dataflow" library="System.Threading.Tasks.Dataflow-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -r:System.Core -r:System -r:mscorlib.dll</flags>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -r:System.Core -r:System -r:mscorlib.dll -d:CONCURRENT_COLLECTIONS</flags>
       <output>System.Threading.Tasks.Dataflow.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/System.Threading.Tasks.Dataflow.dll</library_output>
@@ -2320,46 +2360,6 @@
       <profile>net_4_x</profile>
       <response>System.ComponentModel.Composition.dll.sources</response>
     </project>
-    <project dir="class/System.IO.Compression" library="System.IO.Compression-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig /unsafe -r:System -r:System.Core</flags>
-      <output>System.IO.Compression.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/System.IO.Compression.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <response>System.IO.Compression.dll.sources</response>
-    </project>
-    <project dir="class/System.IO.Compression" library="System.IO.Compression-tests-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/System.IO.Compression.dll /r:System /r:System.Core</flags>
-      <output>System.IO.Compression_test_net_4_x.dll</output>
-      <built_sources></built_sources>
-      <library_output>System.IO.Compression_test_net_4_x.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <response>./../../build/deps/System.IO.Compression_test_net_4_x.dll.response</response>
-    </project>
-    <project dir="class/System.IO.Compression.FileSystem" library="System.IO.Compression.FileSystem-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -r:System -r:System.IO.Compression</flags>
-      <output>System.IO.Compression.FileSystem.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../class/lib/net_4_x/System.IO.Compression.FileSystem.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <response>System.IO.Compression.FileSystem.dll.sources</response>
-    </project>
-    <project dir="class/System.IO.Compression.FileSystem" library="System.IO.Compression.FileSystem-tests-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize -r:./../../class/lib/net_4_x/System.IO.Compression.FileSystem.dll /r:System /r:System.Core /r:System.IO.Compression.dll</flags>
-      <output>System.IO.Compression.FileSystem_test_net_4_x.dll</output>
-      <built_sources></built_sources>
-      <library_output>System.IO.Compression.FileSystem_test_net_4_x.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <response>./../../build/deps/System.IO.Compression.FileSystem_test_net_4_x.dll.response</response>
-    </project>
     <project dir="class/System.Windows" library="System.Windows-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig -r:System</flags>
@@ -2379,6 +2379,36 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
       <response>System.Xml.Serialization.dll.sources</response>
+    </project>
+    <project dir="class/Mono.Security.Providers.DotNet" library="Mono.Security.Providers.DotNet-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:1030 -keyfile:../mono.pub -delaysign -r:System -r:Mono.Security</flags>
+      <output>Mono.Security.Providers.DotNet.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_x/Mono.Security.Providers.DotNet.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <response>Mono.Security.Providers.DotNet.dll.sources</response>
+    </project>
+    <project dir="class/Mono.Security.Providers.OldTls" library="Mono.Security.Providers.OldTls-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -unsafe -nowarn:1030 -keyfile:../mono.pub -delaysign -d:SECURITY_DEP -r:System -r:Mono.Security</flags>
+      <output>Mono.Security.Providers.OldTls.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_x/Mono.Security.Providers.OldTls.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <response>Mono.Security.Providers.OldTls.dll.sources</response>
+    </project>
+    <project dir="class/Mono.Security.Providers.NewSystemSource" library="Mono.Security.Providers.NewSystemSource-net_4_x">
+      <boot>false</boot>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig -d:SECURITY_DEP -d:MONO_SECURITY_ALIAS -r:MonoSecurity=Mono.Security -unsafe -nowarn:1030 -keyfile:../mono.pub -delaysign -d:MONO -d:FEATURE_PAL -d:MONO_FEATURE_NEW_TLS -d:MONO_FEATURE_NEW_SYSTEM_SOURCE -d:DISABLE_CAS_USE -r:System</flags>
+      <output>Mono.Security.Providers.NewSystemSource.dll</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_x/Mono.Security.Providers.NewSystemSource.dll</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <response>Mono.Security.Providers.NewSystemSource.dll.sources</response>
     </project>
     <project dir="class/System.DirectoryServices.Protocols" library="System.DirectoryServices.Protocols-net_4_x">
       <boot>false</boot>
@@ -2440,7 +2470,7 @@
       <profile>net_4_x</profile>
       <response>./../../build/deps/monodoc_test_net_4_x.dll.response</response>
     </project>
-    <project dir="class/Facades/System.Collections.Concurrent" library="Facades_System.Collections.Concurrent-net_4_x">
+    <project dir="class/Facades/System.Collections.Concurrent" library="System.Collections.Concurrent-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Collections.Concurrent.dll</output>
@@ -2450,7 +2480,7 @@
       <profile>net_4_x</profile>
       <response>System.Collections.Concurrent.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Collections" library="Facades_System.Collections-net_4_x">
+    <project dir="class/Facades/System.Collections" library="System.Collections-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System -r:System.Core</flags>
       <output>System.Collections.dll</output>
@@ -2460,7 +2490,7 @@
       <profile>net_4_x</profile>
       <response>System.Collections.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ComponentModel.Annotations" library="Facades_System.ComponentModel.Annotations-net_4_x">
+    <project dir="class/Facades/System.ComponentModel.Annotations" library="System.ComponentModel.Annotations-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.ComponentModel.DataAnnotations</flags>
       <output>System.ComponentModel.Annotations.dll</output>
@@ -2470,7 +2500,7 @@
       <profile>net_4_x</profile>
       <response>System.ComponentModel.Annotations.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ComponentModel.EventBasedAsync" library="Facades_System.ComponentModel.EventBasedAsync-net_4_x">
+    <project dir="class/Facades/System.ComponentModel.EventBasedAsync" library="System.ComponentModel.EventBasedAsync-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.ComponentModel.EventBasedAsync.dll</output>
@@ -2480,7 +2510,7 @@
       <profile>net_4_x</profile>
       <response>System.ComponentModel.EventBasedAsync.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ComponentModel" library="Facades_System.ComponentModel-net_4_x">
+    <project dir="class/Facades/System.ComponentModel" library="System.ComponentModel-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.ComponentModel.dll</output>
@@ -2490,7 +2520,7 @@
       <profile>net_4_x</profile>
       <response>System.ComponentModel.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.Contracts" library="Facades_System.Diagnostics.Contracts-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.Contracts" library="System.Diagnostics.Contracts-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Diagnostics.Contracts.dll</output>
@@ -2500,7 +2530,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.Contracts.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.Debug" library="Facades_System.Diagnostics.Debug-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.Debug" library="System.Diagnostics.Debug-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Diagnostics.Debug.dll</output>
@@ -2510,7 +2540,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.Debug.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.Tracing" library="Facades_System.Diagnostics.Tracing-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.Tracing" library="System.Diagnostics.Tracing-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Diagnostics.Tracing.dll</output>
@@ -2520,7 +2550,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.Tracing.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.Tools" library="Facades_System.Diagnostics.Tools-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.Tools" library="System.Diagnostics.Tools-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Diagnostics.Tools.dll</output>
@@ -2530,7 +2560,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.Tools.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Dynamic.Runtime" library="Facades_System.Dynamic.Runtime-net_4_x">
+    <project dir="class/Facades/System.Dynamic.Runtime" library="System.Dynamic.Runtime-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Core -r:System</flags>
       <output>System.Dynamic.Runtime.dll</output>
@@ -2540,7 +2570,7 @@
       <profile>net_4_x</profile>
       <response>System.Dynamic.Runtime.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Globalization" library="Facades_System.Globalization-net_4_x">
+    <project dir="class/Facades/System.Globalization" library="System.Globalization-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Globalization.dll</output>
@@ -2550,7 +2580,7 @@
       <profile>net_4_x</profile>
       <response>System.Globalization.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO" library="Facades_System.IO-net_4_x">
+    <project dir="class/Facades/System.IO" library="System.IO-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.IO.dll</output>
@@ -2560,7 +2590,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Linq.Expressions" library="Facades_System.Linq.Expressions-net_4_x">
+    <project dir="class/Facades/System.Linq.Expressions" library="System.Linq.Expressions-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Core</flags>
       <output>System.Linq.Expressions.dll</output>
@@ -2570,7 +2600,7 @@
       <profile>net_4_x</profile>
       <response>System.Linq.Expressions.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Linq.Parallel" library="Facades_System.Linq.Parallel-net_4_x">
+    <project dir="class/Facades/System.Linq.Parallel" library="System.Linq.Parallel-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Core</flags>
       <output>System.Linq.Parallel.dll</output>
@@ -2580,7 +2610,7 @@
       <profile>net_4_x</profile>
       <response>System.Linq.Parallel.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Linq.Queryable" library="Facades_System.Linq.Queryable-net_4_x">
+    <project dir="class/Facades/System.Linq.Queryable" library="System.Linq.Queryable-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Core</flags>
       <output>System.Linq.Queryable.dll</output>
@@ -2590,7 +2620,7 @@
       <profile>net_4_x</profile>
       <response>System.Linq.Queryable.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Linq" library="Facades_System.Linq-net_4_x">
+    <project dir="class/Facades/System.Linq" library="System.Linq-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Core</flags>
       <output>System.Linq.dll</output>
@@ -2600,7 +2630,7 @@
       <profile>net_4_x</profile>
       <response>System.Linq.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.NetworkInformation" library="Facades_System.Net.NetworkInformation-net_4_x">
+    <project dir="class/Facades/System.Net.NetworkInformation" library="System.Net.NetworkInformation-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.NetworkInformation.dll</output>
@@ -2610,7 +2640,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.NetworkInformation.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.Primitives" library="Facades_System.Net.Primitives-net_4_x">
+    <project dir="class/Facades/System.Net.Primitives" library="System.Net.Primitives-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.Primitives.dll</output>
@@ -2620,7 +2650,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.Primitives.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.Requests" library="Facades_System.Net.Requests-net_4_x">
+    <project dir="class/Facades/System.Net.Requests" library="System.Net.Requests-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.Requests.dll</output>
@@ -2630,7 +2660,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.Requests.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ObjectModel" library="Facades_System.ObjectModel-net_4_x">
+    <project dir="class/Facades/System.ObjectModel" library="System.ObjectModel-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.ObjectModel.dll</output>
@@ -2640,7 +2670,7 @@
       <profile>net_4_x</profile>
       <response>System.ObjectModel.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Reflection.Extensions" library="Facades_System.Reflection.Extensions-net_4_x">
+    <project dir="class/Facades/System.Reflection.Extensions" library="System.Reflection.Extensions-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Reflection.Extensions.dll</output>
@@ -2650,7 +2680,7 @@
       <profile>net_4_x</profile>
       <response>System.Reflection.Extensions.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Reflection.Primitives" library="Facades_System.Reflection.Primitives-net_4_x">
+    <project dir="class/Facades/System.Reflection.Primitives" library="System.Reflection.Primitives-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Reflection.Primitives.dll</output>
@@ -2660,7 +2690,7 @@
       <profile>net_4_x</profile>
       <response>System.Reflection.Primitives.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Reflection" library="Facades_System.Reflection-net_4_x">
+    <project dir="class/Facades/System.Reflection" library="System.Reflection-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Reflection.dll</output>
@@ -2670,7 +2700,7 @@
       <profile>net_4_x</profile>
       <response>System.Reflection.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Resources.ResourceManager" library="Facades_System.Resources.ResourceManager-net_4_x">
+    <project dir="class/Facades/System.Resources.ResourceManager" library="System.Resources.ResourceManager-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Resources.ResourceManager.dll</output>
@@ -2680,7 +2710,7 @@
       <profile>net_4_x</profile>
       <response>System.Resources.ResourceManager.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.Extensions" library="Facades_System.Runtime.Extensions-net_4_x">
+    <project dir="class/Facades/System.Runtime.Extensions" library="System.Runtime.Extensions-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Runtime.Extensions.dll</output>
@@ -2690,7 +2720,7 @@
       <profile>net_4_x</profile>
       <response>System.Runtime.Extensions.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.InteropServices" library="Facades_System.Runtime.InteropServices-net_4_x">
+    <project dir="class/Facades/System.Runtime.InteropServices" library="System.Runtime.InteropServices-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System -r:System.Core</flags>
       <output>System.Runtime.InteropServices.dll</output>
@@ -2700,7 +2730,7 @@
       <profile>net_4_x</profile>
       <response>System.Runtime.InteropServices.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.InteropServices.WindowsRuntime" library="Facades_System.Runtime.InteropServices.WindowsRuntime-net_4_x">
+    <project dir="class/Facades/System.Runtime.InteropServices.WindowsRuntime" library="System.Runtime.InteropServices.WindowsRuntime-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Runtime.InteropServices.WindowsRuntime.dll</output>
@@ -2710,7 +2740,7 @@
       <profile>net_4_x</profile>
       <response>System.Runtime.InteropServices.WindowsRuntime.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.Numerics" library="Facades_System.Runtime.Numerics-net_4_x">
+    <project dir="class/Facades/System.Runtime.Numerics" library="System.Runtime.Numerics-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Numerics</flags>
       <output>System.Runtime.Numerics.dll</output>
@@ -2720,7 +2750,7 @@
       <profile>net_4_x</profile>
       <response>System.Runtime.Numerics.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.Serialization.Json" library="Facades_System.Runtime.Serialization.Json-net_4_x">
+    <project dir="class/Facades/System.Runtime.Serialization.Json" library="System.Runtime.Serialization.Json-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Runtime.Serialization</flags>
       <output>System.Runtime.Serialization.Json.dll</output>
@@ -2730,7 +2760,7 @@
       <profile>net_4_x</profile>
       <response>System.Runtime.Serialization.Json.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.Serialization.Primitives" library="Facades_System.Runtime.Serialization.Primitives-net_4_x">
+    <project dir="class/Facades/System.Runtime.Serialization.Primitives" library="System.Runtime.Serialization.Primitives-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Runtime.Serialization</flags>
       <output>System.Runtime.Serialization.Primitives.dll</output>
@@ -2740,7 +2770,7 @@
       <profile>net_4_x</profile>
       <response>System.Runtime.Serialization.Primitives.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.Serialization.Xml" library="Facades_System.Runtime.Serialization.Xml-net_4_x">
+    <project dir="class/Facades/System.Runtime.Serialization.Xml" library="System.Runtime.Serialization.Xml-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Runtime.Serialization -r:System.Xml</flags>
       <output>System.Runtime.Serialization.Xml.dll</output>
@@ -2750,7 +2780,7 @@
       <profile>net_4_x</profile>
       <response>System.Runtime.Serialization.Xml.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime" library="Facades_System.Runtime-net_4_x">
+    <project dir="class/Facades/System.Runtime" library="System.Runtime-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System -r:System.ComponentModel.Composition -r:System.Core</flags>
       <output>System.Runtime.dll</output>
@@ -2760,7 +2790,7 @@
       <profile>net_4_x</profile>
       <response>System.Runtime.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Principal" library="Facades_System.Security.Principal-net_4_x">
+    <project dir="class/Facades/System.Security.Principal" library="System.Security.Principal-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Security.Principal.dll</output>
@@ -2770,7 +2800,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Principal.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ServiceModel.Http" library="Facades_System.ServiceModel.Http-net_4_x">
+    <project dir="class/Facades/System.ServiceModel.Http" library="System.ServiceModel.Http-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.ServiceModel</flags>
       <output>System.ServiceModel.Http.dll</output>
@@ -2780,7 +2810,7 @@
       <profile>net_4_x</profile>
       <response>System.ServiceModel.Http.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ServiceModel.Primitives" library="Facades_System.ServiceModel.Primitives-net_4_x">
+    <project dir="class/Facades/System.ServiceModel.Primitives" library="System.ServiceModel.Primitives-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.ServiceModel -r:System.Xml</flags>
       <output>System.ServiceModel.Primitives.dll</output>
@@ -2790,7 +2820,7 @@
       <profile>net_4_x</profile>
       <response>System.ServiceModel.Primitives.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ServiceModel.Security" library="Facades_System.ServiceModel.Security-net_4_x">
+    <project dir="class/Facades/System.ServiceModel.Security" library="System.ServiceModel.Security-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.ServiceModel</flags>
       <output>System.ServiceModel.Security.dll</output>
@@ -2800,7 +2830,7 @@
       <profile>net_4_x</profile>
       <response>System.ServiceModel.Security.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Text.Encoding.Extensions" library="Facades_System.Text.Encoding.Extensions-net_4_x">
+    <project dir="class/Facades/System.Text.Encoding.Extensions" library="System.Text.Encoding.Extensions-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Text.Encoding.Extensions.dll</output>
@@ -2810,7 +2840,7 @@
       <profile>net_4_x</profile>
       <response>System.Text.Encoding.Extensions.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Text.Encoding" library="Facades_System.Text.Encoding-net_4_x">
+    <project dir="class/Facades/System.Text.Encoding" library="System.Text.Encoding-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Text.Encoding.dll</output>
@@ -2820,7 +2850,7 @@
       <profile>net_4_x</profile>
       <response>System.Text.Encoding.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Text.RegularExpressions" library="Facades_System.Text.RegularExpressions-net_4_x">
+    <project dir="class/Facades/System.Text.RegularExpressions" library="System.Text.RegularExpressions-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Text.RegularExpressions.dll</output>
@@ -2830,7 +2860,7 @@
       <profile>net_4_x</profile>
       <response>System.Text.RegularExpressions.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading.Tasks.Parallel" library="Facades_System.Threading.Tasks.Parallel-net_4_x">
+    <project dir="class/Facades/System.Threading.Tasks.Parallel" library="System.Threading.Tasks.Parallel-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Threading.Tasks.Parallel.dll</output>
@@ -2840,7 +2870,7 @@
       <profile>net_4_x</profile>
       <response>System.Threading.Tasks.Parallel.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading.Tasks" library="Facades_System.Threading.Tasks-net_4_x">
+    <project dir="class/Facades/System.Threading.Tasks" library="System.Threading.Tasks-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Core</flags>
       <output>System.Threading.Tasks.dll</output>
@@ -2850,7 +2880,7 @@
       <profile>net_4_x</profile>
       <response>System.Threading.Tasks.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading.Timer" library="Facades_System.Threading.Timer-net_4_x">
+    <project dir="class/Facades/System.Threading.Timer" library="System.Threading.Timer-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System -r:System.Core</flags>
       <output>System.Threading.Timer.dll</output>
@@ -2860,7 +2890,7 @@
       <profile>net_4_x</profile>
       <response>System.Threading.Timer.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading" library="Facades_System.Threading-net_4_x">
+    <project dir="class/Facades/System.Threading" library="System.Threading-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System -r:System.Core</flags>
       <output>System.Threading.dll</output>
@@ -2870,7 +2900,7 @@
       <profile>net_4_x</profile>
       <response>System.Threading.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Xml.ReaderWriter" library="Facades_System.Xml.ReaderWriter-net_4_x">
+    <project dir="class/Facades/System.Xml.ReaderWriter" library="System.Xml.ReaderWriter-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Xml</flags>
       <output>System.Xml.ReaderWriter.dll</output>
@@ -2880,7 +2910,7 @@
       <profile>net_4_x</profile>
       <response>System.Xml.ReaderWriter.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Xml.XDocument" library="Facades_System.Xml.XDocument-net_4_x">
+    <project dir="class/Facades/System.Xml.XDocument" library="System.Xml.XDocument-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Xml.Linq -r:System.Xml</flags>
       <output>System.Xml.XDocument.dll</output>
@@ -2890,7 +2920,7 @@
       <profile>net_4_x</profile>
       <response>System.Xml.XDocument.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Xml.XmlSerializer" library="Facades_System.Xml.XmlSerializer-net_4_x">
+    <project dir="class/Facades/System.Xml.XmlSerializer" library="System.Xml.XmlSerializer-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.Xml</flags>
       <output>System.Xml.XmlSerializer.dll</output>
@@ -2900,7 +2930,7 @@
       <profile>net_4_x</profile>
       <response>System.Xml.XmlSerializer.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.Handles" library="Facades_System.Runtime.Handles-net_4_x">
+    <project dir="class/Facades/System.Runtime.Handles" library="System.Runtime.Handles-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System -r:System.Core</flags>
       <output>System.Runtime.Handles.dll</output>
@@ -2910,7 +2940,7 @@
       <profile>net_4_x</profile>
       <response>System.Runtime.Handles.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ServiceModel.Duplex" library="Facades_System.ServiceModel.Duplex-net_4_x">
+    <project dir="class/Facades/System.ServiceModel.Duplex" library="System.ServiceModel.Duplex-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.ServiceModel</flags>
       <output>System.ServiceModel.Duplex.dll</output>
@@ -2920,7 +2950,7 @@
       <profile>net_4_x</profile>
       <response>System.ServiceModel.Duplex.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ServiceModel.NetTcp" library="Facades_System.ServiceModel.NetTcp-net_4_x">
+    <project dir="class/Facades/System.ServiceModel.NetTcp" library="System.ServiceModel.NetTcp-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System.ServiceModel</flags>
       <output>System.ServiceModel.NetTcp.dll</output>
@@ -2930,7 +2960,7 @@
       <profile>net_4_x</profile>
       <response>System.ServiceModel.NetTcp.dll.sources</response>
     </project>
-    <project dir="class/Facades/Microsoft.Win32.Primitives" library="Facades_Microsoft.Win32.Primitives-net_4_x">
+    <project dir="class/Facades/Microsoft.Win32.Primitives" library="Microsoft.Win32.Primitives-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>Microsoft.Win32.Primitives.dll</output>
@@ -2940,7 +2970,7 @@
       <profile>net_4_x</profile>
       <response>Microsoft.Win32.Primitives.dll.sources</response>
     </project>
-    <project dir="class/Facades/Microsoft.Win32.Registry" library="Facades_Microsoft.Win32.Registry-net_4_x">
+    <project dir="class/Facades/Microsoft.Win32.Registry" library="Microsoft.Win32.Registry-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>Microsoft.Win32.Registry.dll</output>
@@ -2950,7 +2980,7 @@
       <profile>net_4_x</profile>
       <response>Microsoft.Win32.Registry.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.AppContext" library="Facades_System.AppContext-net_4_x">
+    <project dir="class/Facades/System.AppContext" library="System.AppContext-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.AppContext.dll</output>
@@ -2960,7 +2990,7 @@
       <profile>net_4_x</profile>
       <response>System.AppContext.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Collections.NonGeneric" library="Facades_System.Collections.NonGeneric-net_4_x">
+    <project dir="class/Facades/System.Collections.NonGeneric" library="System.Collections.NonGeneric-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Collections.NonGeneric.dll</output>
@@ -2970,7 +3000,7 @@
       <profile>net_4_x</profile>
       <response>System.Collections.NonGeneric.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Collections.Specialized" library="Facades_System.Collections.Specialized-net_4_x">
+    <project dir="class/Facades/System.Collections.Specialized" library="System.Collections.Specialized-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Collections.Specialized.dll</output>
@@ -2980,7 +3010,7 @@
       <profile>net_4_x</profile>
       <response>System.Collections.Specialized.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ComponentModel.Primitives" library="Facades_System.ComponentModel.Primitives-net_4_x">
+    <project dir="class/Facades/System.ComponentModel.Primitives" library="System.ComponentModel.Primitives-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.ComponentModel.Primitives.dll</output>
@@ -2990,7 +3020,7 @@
       <profile>net_4_x</profile>
       <response>System.ComponentModel.Primitives.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ComponentModel.TypeConverter" library="Facades_System.ComponentModel.TypeConverter-net_4_x">
+    <project dir="class/Facades/System.ComponentModel.TypeConverter" library="System.ComponentModel.TypeConverter-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.ComponentModel.TypeConverter.dll</output>
@@ -3000,7 +3030,7 @@
       <profile>net_4_x</profile>
       <response>System.ComponentModel.TypeConverter.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Console" library="Facades_System.Console-net_4_x">
+    <project dir="class/Facades/System.Console" library="System.Console-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Console.dll</output>
@@ -3010,7 +3040,7 @@
       <profile>net_4_x</profile>
       <response>System.Console.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Data.Common" library="Facades_System.Data.Common-net_4_x">
+    <project dir="class/Facades/System.Data.Common" library="System.Data.Common-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Data.dll -r:System</flags>
       <output>System.Data.Common.dll</output>
@@ -3020,7 +3050,7 @@
       <profile>net_4_x</profile>
       <response>System.Data.Common.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Data.SqlClient" library="Facades_System.Data.SqlClient-net_4_x">
+    <project dir="class/Facades/System.Data.SqlClient" library="System.Data.SqlClient-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Data.dll /r:System.Xml.dll -r:System</flags>
       <output>System.Data.SqlClient.dll</output>
@@ -3030,7 +3060,7 @@
       <profile>net_4_x</profile>
       <response>System.Data.SqlClient.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.FileVersionInfo" library="Facades_System.Diagnostics.FileVersionInfo-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.FileVersionInfo" library="System.Diagnostics.FileVersionInfo-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Diagnostics.FileVersionInfo.dll</output>
@@ -3040,7 +3070,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.FileVersionInfo.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.Process" library="Facades_System.Diagnostics.Process-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.Process" library="System.Diagnostics.Process-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Diagnostics.Process.dll</output>
@@ -3050,7 +3080,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.Process.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.TextWriterTraceListener" library="Facades_System.Diagnostics.TextWriterTraceListener-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.TextWriterTraceListener" library="System.Diagnostics.TextWriterTraceListener-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Diagnostics.TextWriterTraceListener.dll</output>
@@ -3060,7 +3090,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.TextWriterTraceListener.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.TraceEvent" library="Facades_System.Diagnostics.TraceEvent-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.TraceEvent" library="System.Diagnostics.TraceEvent-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Diagnostics.TraceEvent.dll</output>
@@ -3070,7 +3100,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.TraceEvent.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.TraceSource" library="Facades_System.Diagnostics.TraceSource-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.TraceSource" library="System.Diagnostics.TraceSource-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Diagnostics.TraceSource.dll</output>
@@ -3080,7 +3110,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.TraceSource.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Globalization.Calendars" library="Facades_System.Globalization.Calendars-net_4_x">
+    <project dir="class/Facades/System.Globalization.Calendars" library="System.Globalization.Calendars-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Globalization.Calendars.dll</output>
@@ -3090,17 +3120,7 @@
       <profile>net_4_x</profile>
       <response>System.Globalization.Calendars.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO.Compression" library="Facades_System.IO.Compression-net_4_x">
-      <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.IO.Compression.dll -r:System</flags>
-      <output>System.IO.Compression.dll</output>
-      <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_x/Facades/System.IO.Compression.dll</library_output>
-      <fx_version>4.5</fx_version>
-      <profile>net_4_x</profile>
-      <response>System.IO.Compression.dll.sources</response>
-    </project>
-    <project dir="class/Facades/System.IO.Compression.ZipFile" library="Facades_System.IO.Compression.ZipFile-net_4_x">
+    <project dir="class/Facades/System.IO.Compression.ZipFile" library="System.IO.Compression.ZipFile-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.IO.Compression.FileSystem.dll -r:System</flags>
       <output>System.IO.Compression.ZipFile.dll</output>
@@ -3110,7 +3130,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.Compression.ZipFile.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO.FileSystem" library="Facades_System.IO.FileSystem-net_4_x">
+    <project dir="class/Facades/System.IO.FileSystem" library="System.IO.FileSystem-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.IO.FileSystem.dll</output>
@@ -3120,7 +3140,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.FileSystem.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO.FileSystem.DriveInfo" library="Facades_System.IO.FileSystem.DriveInfo-net_4_x">
+    <project dir="class/Facades/System.IO.FileSystem.DriveInfo" library="System.IO.FileSystem.DriveInfo-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.IO.FileSystem.DriveInfo.dll</output>
@@ -3130,7 +3150,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.FileSystem.DriveInfo.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO.FileSystem.Primitives" library="Facades_System.IO.FileSystem.Primitives-net_4_x">
+    <project dir="class/Facades/System.IO.FileSystem.Primitives" library="System.IO.FileSystem.Primitives-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.IO.FileSystem.Primitives.dll</output>
@@ -3140,7 +3160,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.FileSystem.Primitives.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO.IsolatedStorage" library="Facades_System.IO.IsolatedStorage-net_4_x">
+    <project dir="class/Facades/System.IO.IsolatedStorage" library="System.IO.IsolatedStorage-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.IO.IsolatedStorage.dll</output>
@@ -3150,7 +3170,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.IsolatedStorage.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO.MemoryMappedFiles" library="Facades_System.IO.MemoryMappedFiles-net_4_x">
+    <project dir="class/Facades/System.IO.MemoryMappedFiles" library="System.IO.MemoryMappedFiles-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Core.dll -r:System</flags>
       <output>System.IO.MemoryMappedFiles.dll</output>
@@ -3160,7 +3180,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.MemoryMappedFiles.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO.UnmanagedMemoryStream" library="Facades_System.IO.UnmanagedMemoryStream-net_4_x">
+    <project dir="class/Facades/System.IO.UnmanagedMemoryStream" library="System.IO.UnmanagedMemoryStream-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.IO.UnmanagedMemoryStream.dll</output>
@@ -3170,7 +3190,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.UnmanagedMemoryStream.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.AuthenticationManager" library="Facades_System.Net.AuthenticationManager-net_4_x">
+    <project dir="class/Facades/System.Net.AuthenticationManager" library="System.Net.AuthenticationManager-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.AuthenticationManager.dll</output>
@@ -3180,7 +3200,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.AuthenticationManager.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.Cache" library="Facades_System.Net.Cache-net_4_x">
+    <project dir="class/Facades/System.Net.Cache" library="System.Net.Cache-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.Cache.dll</output>
@@ -3190,7 +3210,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.Cache.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.HttpListener" library="Facades_System.Net.HttpListener-net_4_x">
+    <project dir="class/Facades/System.Net.HttpListener" library="System.Net.HttpListener-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.dll -r:System</flags>
       <output>System.Net.HttpListener.dll</output>
@@ -3200,7 +3220,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.HttpListener.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.Mail" library="Facades_System.Net.Mail-net_4_x">
+    <project dir="class/Facades/System.Net.Mail" library="System.Net.Mail-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.dll -r:System</flags>
       <output>System.Net.Mail.dll</output>
@@ -3210,7 +3230,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.Mail.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.NameResolution" library="Facades_System.Net.NameResolution-net_4_x">
+    <project dir="class/Facades/System.Net.NameResolution" library="System.Net.NameResolution-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.NameResolution.dll</output>
@@ -3220,7 +3240,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.NameResolution.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.Security" library="Facades_System.Net.Security-net_4_x">
+    <project dir="class/Facades/System.Net.Security" library="System.Net.Security-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.dll -r:System</flags>
       <output>System.Net.Security.dll</output>
@@ -3230,7 +3250,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.Security.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.ServicePoint" library="Facades_System.Net.ServicePoint-net_4_x">
+    <project dir="class/Facades/System.Net.ServicePoint" library="System.Net.ServicePoint-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.ServicePoint.dll</output>
@@ -3240,7 +3260,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.ServicePoint.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.Sockets" library="Facades_System.Net.Sockets-net_4_x">
+    <project dir="class/Facades/System.Net.Sockets" library="System.Net.Sockets-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.dll -r:System</flags>
       <output>System.Net.Sockets.dll</output>
@@ -3250,7 +3270,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.Sockets.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.Utilities" library="Facades_System.Net.Utilities-net_4_x">
+    <project dir="class/Facades/System.Net.Utilities" library="System.Net.Utilities-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.Utilities.dll</output>
@@ -3260,7 +3280,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.Utilities.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.WebHeaderCollection" library="Facades_System.Net.WebHeaderCollection-net_4_x">
+    <project dir="class/Facades/System.Net.WebHeaderCollection" library="System.Net.WebHeaderCollection-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.WebHeaderCollection.dll</output>
@@ -3270,7 +3290,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.WebHeaderCollection.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.WebSockets" library="Facades_System.Net.WebSockets-net_4_x">
+    <project dir="class/Facades/System.Net.WebSockets" library="System.Net.WebSockets-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.WebSockets.dll</output>
@@ -3280,7 +3300,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.WebSockets.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.WebSockets.Client" library="Facades_System.Net.WebSockets.Client-net_4_x">
+    <project dir="class/Facades/System.Net.WebSockets.Client" library="System.Net.WebSockets.Client-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Net.WebSockets.Client.dll</output>
@@ -3290,7 +3310,7 @@
       <profile>net_4_x</profile>
       <response>System.Net.WebSockets.Client.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Resources.ReaderWriter" library="Facades_System.Resources.ReaderWriter-net_4_x">
+    <project dir="class/Facades/System.Resources.ReaderWriter" library="System.Resources.ReaderWriter-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Resources.ReaderWriter.dll</output>
@@ -3300,7 +3320,7 @@
       <profile>net_4_x</profile>
       <response>System.Resources.ReaderWriter.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Runtime.CompilerServices.VisualC" library="Facades_System.Runtime.CompilerServices.VisualC-net_4_x">
+    <project dir="class/Facades/System.Runtime.CompilerServices.VisualC" library="System.Runtime.CompilerServices.VisualC-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Runtime.CompilerServices.VisualC.dll</output>
@@ -3310,7 +3330,7 @@
       <profile>net_4_x</profile>
       <response>System.Runtime.CompilerServices.VisualC.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.AccessControl" library="Facades_System.Security.AccessControl-net_4_x">
+    <project dir="class/Facades/System.Security.AccessControl" library="System.Security.AccessControl-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.AccessControl.dll</output>
@@ -3320,7 +3340,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.AccessControl.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Claims" library="Facades_System.Security.Claims-net_4_x">
+    <project dir="class/Facades/System.Security.Claims" library="System.Security.Claims-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Claims.dll</output>
@@ -3330,7 +3350,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Claims.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.DeriveBytes" library="Facades_System.Security.Cryptography.DeriveBytes-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.DeriveBytes" library="System.Security.Cryptography.DeriveBytes-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Cryptography.DeriveBytes.dll</output>
@@ -3340,7 +3360,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.DeriveBytes.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.Encoding" library="Facades_System.Security.Cryptography.Encoding-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.Encoding" library="System.Security.Cryptography.Encoding-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Cryptography.Encoding.dll</output>
@@ -3350,7 +3370,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.Encoding.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.Encryption" library="Facades_System.Security.Cryptography.Encryption-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.Encryption" library="System.Security.Cryptography.Encryption-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Cryptography.Encryption.dll</output>
@@ -3360,7 +3380,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.Encryption.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.Encryption.Aes" library="Facades_System.Security.Cryptography.Encryption.Aes-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.Encryption.Aes" library="System.Security.Cryptography.Encryption.Aes-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Cryptography.Encryption.Aes.dll</output>
@@ -3370,7 +3390,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.Encryption.Aes.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.Encryption.ECDiffieHellman" library="Facades_System.Security.Cryptography.Encryption.ECDiffieHellman-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.Encryption.ECDiffieHellman" library="System.Security.Cryptography.Encryption.ECDiffieHellman-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Core.dll -r:System</flags>
       <output>System.Security.Cryptography.Encryption.ECDiffieHellman.dll</output>
@@ -3380,7 +3400,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.Encryption.ECDiffieHellman.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.Encryption.ECDsa" library="Facades_System.Security.Cryptography.Encryption.ECDsa-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.Encryption.ECDsa" library="System.Security.Cryptography.Encryption.ECDsa-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Core.dll -r:System</flags>
       <output>System.Security.Cryptography.Encryption.ECDsa.dll</output>
@@ -3390,7 +3410,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.Encryption.ECDsa.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.Hashing" library="Facades_System.Security.Cryptography.Hashing-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.Hashing" library="System.Security.Cryptography.Hashing-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Cryptography.Hashing.dll</output>
@@ -3400,7 +3420,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.Hashing.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.Hashing.Algorithms" library="Facades_System.Security.Cryptography.Hashing.Algorithms-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.Hashing.Algorithms" library="System.Security.Cryptography.Hashing.Algorithms-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Cryptography.Hashing.Algorithms.dll</output>
@@ -3410,7 +3430,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.Hashing.Algorithms.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.RSA" library="Facades_System.Security.Cryptography.RSA-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.RSA" library="System.Security.Cryptography.RSA-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Cryptography.RSA.dll</output>
@@ -3420,7 +3440,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.RSA.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.RandomNumberGenerator" library="Facades_System.Security.Cryptography.RandomNumberGenerator-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.RandomNumberGenerator" library="System.Security.Cryptography.RandomNumberGenerator-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Cryptography.RandomNumberGenerator.dll</output>
@@ -3430,7 +3450,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.RandomNumberGenerator.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.X509Certificates" library="Facades_System.Security.Cryptography.X509Certificates-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.X509Certificates" library="System.Security.Cryptography.X509Certificates-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Cryptography.X509Certificates.dll</output>
@@ -3440,7 +3460,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.X509Certificates.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Principal.Windows" library="Facades_System.Security.Principal.Windows-net_4_x">
+    <project dir="class/Facades/System.Security.Principal.Windows" library="System.Security.Principal.Windows-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.Principal.Windows.dll</output>
@@ -3450,7 +3470,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Principal.Windows.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading.Thread" library="Facades_System.Threading.Thread-net_4_x">
+    <project dir="class/Facades/System.Threading.Thread" library="System.Threading.Thread-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Threading.Thread.dll</output>
@@ -3460,7 +3480,7 @@
       <profile>net_4_x</profile>
       <response>System.Threading.Thread.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading.ThreadPool" library="Facades_System.Threading.ThreadPool-net_4_x">
+    <project dir="class/Facades/System.Threading.ThreadPool" library="System.Threading.ThreadPool-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Threading.ThreadPool.dll</output>
@@ -3470,7 +3490,7 @@
       <profile>net_4_x</profile>
       <response>System.Threading.ThreadPool.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Xml.XPath" library="Facades_System.Xml.XPath-net_4_x">
+    <project dir="class/Facades/System.Xml.XPath" library="System.Xml.XPath-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Xml.dll -r:System</flags>
       <output>System.Xml.XPath.dll</output>
@@ -3480,7 +3500,7 @@
       <profile>net_4_x</profile>
       <response>System.Xml.XPath.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Xml.XmlDocument" library="Facades_System.Xml.XmlDocument-net_4_x">
+    <project dir="class/Facades/System.Xml.XmlDocument" library="System.Xml.XmlDocument-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Xml.dll -r:System</flags>
       <output>System.Xml.XmlDocument.dll</output>
@@ -3490,7 +3510,7 @@
       <profile>net_4_x</profile>
       <response>System.Xml.XmlDocument.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Xml.Xsl.Primitives" library="Facades_System.Xml.Xsl.Primitives-net_4_x">
+    <project dir="class/Facades/System.Xml.Xsl.Primitives" library="System.Xml.Xsl.Primitives-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Xml.dll -r:System</flags>
       <output>System.Xml.Xsl.Primitives.dll</output>
@@ -3500,7 +3520,7 @@
       <profile>net_4_x</profile>
       <response>System.Xml.Xsl.Primitives.dll.sources</response>
     </project>
-    <project dir="class/Facades/Microsoft.Win32.Registry.AccessControl" library="Facades_Microsoft.Win32.Registry.AccessControl-net_4_x">
+    <project dir="class/Facades/Microsoft.Win32.Registry.AccessControl" library="Microsoft.Win32.Registry.AccessControl-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>Microsoft.Win32.Registry.AccessControl.dll</output>
@@ -3510,7 +3530,7 @@
       <profile>net_4_x</profile>
       <response>Microsoft.Win32.Registry.AccessControl.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.StackTrace" library="Facades_System.Diagnostics.StackTrace-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.StackTrace" library="System.Diagnostics.StackTrace-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Diagnostics.StackTrace.dll</output>
@@ -3520,7 +3540,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.StackTrace.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Globalization.Extensions" library="Facades_System.Globalization.Extensions-net_4_x">
+    <project dir="class/Facades/System.Globalization.Extensions" library="System.Globalization.Extensions-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Globalization.Extensions.dll</output>
@@ -3530,7 +3550,7 @@
       <profile>net_4_x</profile>
       <response>System.Globalization.Extensions.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO.FileSystem.AccessControl" library="Facades_System.IO.FileSystem.AccessControl-net_4_x">
+    <project dir="class/Facades/System.IO.FileSystem.AccessControl" library="System.IO.FileSystem.AccessControl-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.IO.FileSystem.AccessControl.dll</output>
@@ -3540,7 +3560,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.FileSystem.AccessControl.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Private.CoreLib.InteropServices" library="Facades_System.Private.CoreLib.InteropServices-net_4_x">
+    <project dir="class/Facades/System.Private.CoreLib.InteropServices" library="System.Private.CoreLib.InteropServices-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Private.CoreLib.InteropServices.dll</output>
@@ -3550,7 +3570,7 @@
       <profile>net_4_x</profile>
       <response>System.Private.CoreLib.InteropServices.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Private.CoreLib.Threading" library="Facades_System.Private.CoreLib.Threading-net_4_x">
+    <project dir="class/Facades/System.Private.CoreLib.Threading" library="System.Private.CoreLib.Threading-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Private.CoreLib.Threading.dll</output>
@@ -3560,7 +3580,7 @@
       <profile>net_4_x</profile>
       <response>System.Private.CoreLib.Threading.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Reflection.TypeExtensions" library="Facades_System.Reflection.TypeExtensions-net_4_x">
+    <project dir="class/Facades/System.Reflection.TypeExtensions" library="System.Reflection.TypeExtensions-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Reflection.TypeExtensions.dll</output>
@@ -3570,7 +3590,7 @@
       <profile>net_4_x</profile>
       <response>System.Reflection.TypeExtensions.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.SecureString" library="Facades_System.Security.SecureString-net_4_x">
+    <project dir="class/Facades/System.Security.SecureString" library="System.Security.SecureString-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Security.SecureString.dll</output>
@@ -3580,7 +3600,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.SecureString.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading.AccessControl" library="Facades_System.Threading.AccessControl-net_4_x">
+    <project dir="class/Facades/System.Threading.AccessControl" library="System.Threading.AccessControl-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Threading.AccessControl.dll</output>
@@ -3590,7 +3610,7 @@
       <profile>net_4_x</profile>
       <response>System.Threading.AccessControl.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Threading.Overlapped" library="Facades_System.Threading.Overlapped-net_4_x">
+    <project dir="class/Facades/System.Threading.Overlapped" library="System.Threading.Overlapped-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Threading.Overlapped.dll</output>
@@ -3600,7 +3620,7 @@
       <profile>net_4_x</profile>
       <response>System.Threading.Overlapped.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Xml.XPath.XDocument" library="Facades_System.Xml.XPath.XDocument-net_4_x">
+    <project dir="class/Facades/System.Xml.XPath.XDocument" library="System.Xml.XPath.XDocument-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Xml.Linq.dll -r:System</flags>
       <output>System.Xml.XPath.XDocument.dll</output>
@@ -3610,7 +3630,7 @@
       <profile>net_4_x</profile>
       <response>System.Xml.XPath.XDocument.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Reflection.Emit.ILGeneration" library="Facades_System.Reflection.Emit.ILGeneration-net_4_x">
+    <project dir="class/Facades/System.Reflection.Emit.ILGeneration" library="System.Reflection.Emit.ILGeneration-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Reflection.Emit.ILGeneration.dll</output>
@@ -3620,7 +3640,7 @@
       <profile>net_4_x</profile>
       <response>System.Reflection.Emit.ILGeneration.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Reflection.Emit.Lightweight" library="Facades_System.Reflection.Emit.Lightweight-net_4_x">
+    <project dir="class/Facades/System.Reflection.Emit.Lightweight" library="System.Reflection.Emit.Lightweight-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Reflection.Emit.Lightweight.dll</output>
@@ -3630,7 +3650,7 @@
       <profile>net_4_x</profile>
       <response>System.Reflection.Emit.Lightweight.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Reflection.Emit" library="Facades_System.Reflection.Emit-net_4_x">
+    <project dir="class/Facades/System.Reflection.Emit" library="System.Reflection.Emit-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib</flags>
       <output>System.Reflection.Emit.dll</output>
@@ -3640,7 +3660,7 @@
       <profile>net_4_x</profile>
       <response>System.Reflection.Emit.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Diagnostics.PerformanceCounter" library="Facades_System.Diagnostics.PerformanceCounter-net_4_x">
+    <project dir="class/Facades/System.Diagnostics.PerformanceCounter" library="System.Diagnostics.PerformanceCounter-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.Diagnostics.PerformanceCounter.dll</output>
@@ -3650,7 +3670,7 @@
       <profile>net_4_x</profile>
       <response>System.Diagnostics.PerformanceCounter.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO.FileSystem.Watcher" library="Facades_System.IO.FileSystem.Watcher-net_4_x">
+    <project dir="class/Facades/System.IO.FileSystem.Watcher" library="System.IO.FileSystem.Watcher-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib -r:System</flags>
       <output>System.IO.FileSystem.Watcher.dll</output>
@@ -3660,7 +3680,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.FileSystem.Watcher.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.IO.Pipes" library="Facades_System.IO.Pipes-net_4_x">
+    <project dir="class/Facades/System.IO.Pipes" library="System.IO.Pipes-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Core.dll -r:System</flags>
       <output>System.IO.Pipes.dll</output>
@@ -3670,7 +3690,7 @@
       <profile>net_4_x</profile>
       <response>System.IO.Pipes.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Security.Cryptography.ProtectedData" library="Facades_System.Security.Cryptography.ProtectedData-net_4_x">
+    <project dir="class/Facades/System.Security.Cryptography.ProtectedData" library="System.Security.Cryptography.ProtectedData-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Security.dll -r:System</flags>
       <output>System.Security.Cryptography.ProtectedData.dll</output>
@@ -3680,7 +3700,7 @@
       <profile>net_4_x</profile>
       <response>System.Security.Cryptography.ProtectedData.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.ServiceProcess.ServiceController" library="Facades_System.ServiceProcess.ServiceController-net_4_x">
+    <project dir="class/Facades/System.ServiceProcess.ServiceController" library="System.ServiceProcess.ServiceController-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.ServiceProcess.dll -r:System</flags>
       <output>System.ServiceProcess.ServiceController.dll</output>
@@ -3690,7 +3710,7 @@
       <profile>net_4_x</profile>
       <response>System.ServiceProcess.ServiceController.dll.sources</response>
     </project>
-    <project dir="class/Facades/System.Net.Http.WebRequestHandler" library="Facades_System.Net.Http.WebRequestHandler-net_4_x">
+    <project dir="class/Facades/System.Net.Http.WebRequestHandler" library="System.Net.Http.WebRequestHandler-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../../class/lib/net_4_x -r:mscorlib.dll -optimize /noconfig /delaysign /keyfile:../../msfinal.pub /nowarn:1616,1699 /r:mscorlib /r:System.Net.Http.WebRequest.dll /r:System.Net.Http.dll -r:System</flags>
       <output>System.Net.Http.WebRequestHandler.dll</output>
@@ -4239,6 +4259,16 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
       <response>mono-symbolicate.exe.sources</response>
+    </project>
+    <project dir="tools/linker-analyzer" library="linkeranalyzer-net_4_x">
+      <boot></boot>
+      <flags>/codepage:65001 -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_x -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>linkeranalyzer.exe</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_x/linkeranalyzer.exe</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <response>linkeranalyzer.exe.sources</response>
     </project>
     <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-xbuild_12">
       <boot>false</boot>
