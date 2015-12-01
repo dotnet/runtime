@@ -4486,8 +4486,6 @@ add_generic_instances (MonoAotCompile *acfg)
 		/* Add instances of EnumEqualityComparer which are created by EqualityComparer<T> for enums */
 		{
 			MonoClass *enum_comparer;
-			MonoGenericContext ctx;
-			MonoType *args [16];
 			MonoType *insts [16];
 			int ninsts;
 
