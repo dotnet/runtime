@@ -2,7 +2,7 @@
 
 import jobs.generation.Utilities;
 
-def project = 'dotnet/corefx'
+def project = GithubProject
 
 // **************************
 // Define code coverage build
@@ -26,7 +26,7 @@ def project = 'dotnet/corefx'
     // Set triggers
     if (isPR) {
         // Set PR trigger
-        Utilities.addGithubPRTrigger(newJob, 'Code Coverage Windows Debug', 'test code coverage')
+        Utilities.addGithubPRTrigger(newJob, 'Code Coverage Windows Debug', '(?i).*test\\W+code\\W+coverage.*')
     }
     else {
         // Set a periodic trigger
