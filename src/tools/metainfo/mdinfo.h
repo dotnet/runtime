@@ -46,7 +46,9 @@ public:
 
     void DisplayMD(void);
 
-    LPWSTR VariantAsString(VARIANT *pVariant);
+#ifdef FEATURE_COMINTEROP
+    LPCWSTR VariantAsString(VARIANT *pVariant);
+#endif
 
     void DisplayVersionInfo(void);
 
@@ -98,7 +100,7 @@ public:
 
     LPWSTR GUIDAsString(GUID inGuid, __out_ecount(bufLen) LPWSTR guidString, ULONG bufLen);
 
-    char *TokenTypeName(mdToken inToken);
+    const char *TokenTypeName(mdToken inToken);
 
     void DisplayMemberInfo(mdToken inMember);
     void DisplayMethodInfo(mdMethodDef method, DWORD *pflags = 0);
@@ -171,15 +173,15 @@ private:
 
     int DumpHex(const char *szPrefix, const void *pvData, ULONG cbData, int bText=true, ULONG nLine=16);
 
-    int Write(__in_z __in char *str);
-    int WriteLine(__in_z __in char *str);
+    int Write(__in_z __in const char *str);
+    int WriteLine(__in_z __in const char *str);
 
-    int VWrite(__in_z __in char *str, ...);
-    int VWriteLine(__in_z __in char *str, ...);
-    int VWriteMarker(__in_z __in char *str, va_list marker);
+    int VWrite(__in_z __in const char *str, ...);
+    int VWriteLine(__in_z __in const char *str, ...);
+    int VWriteMarker(__in_z __in const char *str, va_list marker);
     
     void InitSigBuffer();
-    HRESULT AddToSigBuffer(__in_z __in char *string);
+    HRESULT AddToSigBuffer(__in_z __in const char *string);
 
     IMetaDataImport2 *m_pRegImport;
     IMetaDataImport2 *m_pImport;

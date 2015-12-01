@@ -43,6 +43,13 @@
 #include "clrinternal.h"
 #endif
 
+#ifdef FEATURE_PAL
+#include "coreclrloader.h"
+#include "resourcestring.h"
+#define NATIVE_STRING_RESOURCE_NAME dasm_rc
+DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
+#endif
+
 struct MIDescriptor
 {
     mdToken tkClass;    // defining class token
@@ -129,6 +136,8 @@ BOOL                    g_fCustomInstructionEncodingSystem = FALSE;
 
 COR_FIELD_OFFSET        *g_rFieldOffset = NULL;
 ULONG                   g_cFieldsMax, g_cFieldOffsets;
+
+char*                   g_pszExeFile;
 char                    g_szInputFile[MAX_FILENAME_LENGTH]; // in UTF-8
 WCHAR                   g_wszFullInputFile[MAX_PATH + 1]; // in UTF-16
 char                    g_szOutputFile[MAX_FILENAME_LENGTH]; // in UTF-8
@@ -230,7 +239,7 @@ WCHAR* RstrW(unsigned id)
         case IDS_E_CANTACCESSW32RES:
         case IDS_E_CANTOPENW32RES:
         case IDS_ERRORREOPENINGFILE:
-            wcscpy_s(buffer,COUNTOF(buffer),L"// ");
+            wcscpy_s(buffer,COUNTOF(buffer),W("// "));
             buff +=3;
             cchBuff -= 3;
             break;
@@ -241,22 +250,26 @@ WCHAR* RstrW(unsigned id)
         case IDS_E_CODESIZE:
         case IDS_W_CREATEDMRES:
         case IDS_E_READINGMRES:
-            wcscpy_s(buffer,COUNTOF(buffer),L"%s// ");
+            wcscpy_s(buffer,COUNTOF(buffer),W("%s// "));
             buff +=5;
             cchBuff -= 5;
             break;
         case IDS_E_NORVA:
-            wcscpy_s(buffer,COUNTOF(buffer),L"/* ");
+            wcscpy_s(buffer,COUNTOF(buffer),W("/* "));
             buff += 3;
             cchBuff -= 3;
             break;
         default:
             break;
     }
+#ifdef FEATURE_PAL
+    LoadNativeStringResource(NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME),id, buff, cchBuff, NULL);
+#else
     _ASSERTE(g_hResources != NULL);
     WszLoadString(g_hResources,id,buff,cchBuff);
+#endif
     if(id == IDS_E_NORVA)
-        wcscat_s(buff,cchBuff,L" */");
+        wcscat_s(buff,cchBuff,W(" */"));
     return buffer;
 }
 
@@ -312,9 +325,32 @@ extern CQuickBytes *        g_szBuf_ProperName;
 ICLRRuntimeHostInternal *g_pCLRRuntimeHostInternal = NULL;
 #endif
 
+#ifdef FEATURE_CORECLR
+#ifdef FEATURE_PAL
+CoreCLRLoader *g_loader;
+#endif
+MetaDataGetDispenserFunc metaDataGetDispenser;
+GetMetaDataInternalInterfaceFunc getMetaDataInternalInterface;
+GetMetaDataInternalInterfaceFromPublicFunc getMetaDataInternalInterfaceFromPublic;
+GetMetaDataPublicInterfaceFromInternalFunc getMetaDataPublicInterfaceFromInternal;
+#endif
+
 BOOL Init()
 {
-#ifndef FEATURE_CORECLR
+#ifdef FEATURE_CORECLR
+#ifdef FEATURE_PAL
+    g_loader = CoreCLRLoader::Create(g_pszExeFile);
+    metaDataGetDispenser = (MetaDataGetDispenserFunc)g_loader->LoadFunction("MetaDataGetDispenser");
+    getMetaDataInternalInterface = (GetMetaDataInternalInterfaceFunc)g_loader->LoadFunction("GetMetaDataInternalInterface");
+    getMetaDataInternalInterfaceFromPublic = (GetMetaDataInternalInterfaceFromPublicFunc)g_loader->LoadFunction("GetMetaDataInternalInterfaceFromPublic");
+    getMetaDataPublicInterfaceFromInternal = (GetMetaDataPublicInterfaceFromInternalFunc)g_loader->LoadFunction("GetMetaDataPublicInterfaceFromInternal");
+#else // FEATURE_PAL
+    metaDataGetDispenser = (MetaDataGetDispenserFunc)MetaDataGetDispenser;
+    getMetaDataInternalInterface = (GetMetaDataInternalInterfaceFunc)GetMetaDataInternalInterface;
+    getMetaDataInternalInterfaceFromPublic = (GetMetaDataInternalInterfaceFromPublicFunc)GetMetaDataInternalInterfaceFromPublic;
+    getMetaDataPublicInterfaceFromInternal = (GetMetaDataPublicInterfaceFromInternalFunc)GetMetaDataPublicInterfaceFromInternal;
+#endif // FEATURE_PAL
+#else // FEATURE_CORECLR
     if (FAILED(CoInitialize(NULL)))
     {
         return FALSE;
@@ -343,7 +379,7 @@ BOOL Init()
     {
         return FALSE;
     }
-#endif
+#endif // FEATURE_CORECLR
     
     g_szBuf_KEYWORD = new CQuickBytes();
     g_szBuf_COMMENT = new CQuickBytes();
@@ -502,7 +538,14 @@ void Uninit()
         SDELETE(g_szBuf_ProperName);
     }
     
-#ifndef FEATURE_CORECLR
+#ifdef FEATURE_CORECLR
+#ifdef FEATURE_PAL
+    if (g_loader != NULL)
+    {
+        g_loader->Finish();
+    }
+#endif
+#else
     if (g_pCLRRuntimeHostInternal != NULL)
     {
         g_pCLRRuntimeHostInternal->Release();
@@ -981,7 +1024,7 @@ void DumpMscorlib(void* GUICookie)
                                                             &md,         // [OUT] Assembly MetaData.
                                                             &dwFlags)))  // [OUT] Flags.
             {
-                if(wcscmp(wzName,L"mscorlib") == 0)
+                if(wcscmp(wzName,W("mscorlib")) == 0)
                 {
                     printLine(GUICookie,"");
                     sprintf_s(szString,SZSTRING_SIZE,"%s%s ",g_szAsmCodeIndent,KEYWORD(".mscorlib"));
@@ -1416,7 +1459,7 @@ mdToken ResolveTypeDefReflectionNotation(IMDInternalImport *pIMDI,
 }
 
 mdToken ResolveTypeRefReflectionNotation(IMDInternalImport *pIMDI,
-                                         __in __nullterminated char* szNamespace, 
+                                         __in __nullterminated const char* szNamespace, 
                                          __inout __nullterminated char* szName, 
                                          mdToken tkResScope)
 {
@@ -1443,9 +1486,11 @@ mdToken ResolveReflectionNotation(BYTE* dataPtr,
     mdToken ret = 0;
     if(str)
     {
-        char* szNamespace = "";
+        char  szNamespaceDefault[] = "";
+        char* szNamespace = szNamespaceDefault;
         char* szName = str;
         char* szAssembly = NULL;
+        char  szAssemblyMscorlib[] = "mscorlib";
         char* pch;
         memcpy(str,dataPtr,Lstr);
         str[Lstr] = 0;
@@ -1473,7 +1518,7 @@ mdToken ResolveReflectionNotation(BYTE* dataPtr,
                 ret = tk;
             else
                 // TypeDef not found, try TypeRef from mscorlib
-                szAssembly = "mscorlib";
+                szAssembly = szAssemblyMscorlib;
         }
         if(szAssembly != NULL)
         {
@@ -1648,7 +1693,7 @@ mdToken TypeRefToTypeDef(mdToken tk, IMDInternalImport *pIMDI, IMDInternalImport
             if(FAILED(pIAMDI[0]->QueryInterface(IID_IUnknown, (void**)&pUnk))) goto AssignAndReturn;
 
 #ifdef FEATURE_CORECLR
-            if (FAILED(GetMetaDataInternalInterfaceFromPublic(
+            if (FAILED(getMetaDataInternalInterfaceFromPublic(
                 pUnk,
                 IID_IMDInternalImport,
                 (LPVOID *)ppIMDInew)))
@@ -2220,7 +2265,7 @@ BOOL PrettyPrintCustomAttributeNVPairs(unsigned nPairs, BYTE* dataPtr, BYTE* dat
         }
         // type of the field/property
         PCCOR_SIGNATURE dataTypePtr = (PCCOR_SIGNATURE)dataPtr;
-        char* szAppend = "";
+        const char* szAppend = "";
         if(*dataPtr == ELEMENT_TYPE_SZARRAY) // Only SZARRAY modifier can occur in ser.type
         {
             szAppend = "[]";
@@ -2487,7 +2532,6 @@ void DumpCustomAttributeProps(mdToken tkCA, mdToken tkType, mdToken tkOwner, BYT
                     const char*     pszMemberName;
                     ULONG           cComSig;
 
-                    pszMemberName;
                     if (FAILED(g_pImport->GetNameAndSigOfMemberRef(
                         tkOwner, 
                         &typePtr, 
@@ -3284,7 +3328,8 @@ void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, v
     const char *    pszMemberName;
     mdToken         tkDecl,tkDeclParent=0;
     char            szBadToken[256];
-    char*           pszTailSig = "";
+    char            pszTailSigDefault[] = "";
+    char*           pszTailSig = pszTailSigDefault;
     CQuickBytes     qbInstSig;
     char*           szptr = &szString[0];
     szptr+=sprintf_s(szptr,SZSTRING_SIZE,"%s%s ",g_szAsmCodeIndent,KEYWORD(".override"));
@@ -3699,7 +3744,7 @@ lDone: ;
             printError(GUICookie,ERRORMSG(szString));
             return FALSE;
         }
-        char* szt = "SIG:";
+        const char* szt = "SIG:";
         for(ULONG i=0; i<cComSig;)
         {
             szptr = &szString[0];
@@ -4303,7 +4348,8 @@ BOOL DumpProp(mdToken FuncToken, const char *pszClassName, DWORD dwClassAttrs, v
     if(IsPrRTSpecialName(dwAttrs))      szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),KEYWORD("rtspecialname "));
 
     {
-        char *pch = "";
+        char pchDefault[] = "";
+        char *pch = pchDefault;
         if(DumpBody)
         {
             pch = szptr+1;
@@ -5795,7 +5841,7 @@ void WritePerfData(const char *KeyDesc, const char *KeyName, const char *UnitDes
 
     if (!g_PerfDataFilePtr)
     {
-        if((g_PerfDataFilePtr = WszCreateFile(L"c:\\temp\\perfdata.dat", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, 0, NULL) ) == INVALID_HANDLE_VALUE)
+        if((g_PerfDataFilePtr = WszCreateFile(W("c:\\temp\\perfdata.dat"), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, 0, NULL) ) == INVALID_HANDLE_VALUE)
         {
          printLine(NULL,"PefTimer::LogStoppedTime(): Unable to open the FullPath file. No performance data will be generated");
          g_fDumpToPerfWriter = FALSE;
@@ -6767,7 +6813,7 @@ void DumpVtable(void* GUICookie)
     szptr = &szString[0];
     szptr += sprintf_s(szString,SZSTRING_SIZE,"%s%s 0x%04x", g_szAsmCodeIndent,KEYWORD(".subsystem"),j);
     {
-        char* psz[15] = {"// UNKNOWN",
+        const char* psz[15] = {"// UNKNOWN",
                          "// NATIVE",
                          "// WINDOWS_GUI",
                          "// WINDOWS_CUI",
@@ -6944,13 +6990,13 @@ HRESULT VEHandlerReporter( // Return status.
     if(szMsg)
     {
         size_t L = wcslen(szMsg)+256;
-        if(wzMsg = new (nothrow) WCHAR[L])
+        if((wzMsg = new (nothrow) WCHAR[L]) != NULL)
         {
             wcscpy_s(wzMsg,L,szMsg);
             // include token and offset from Context
-            if(Context.Token) swprintf_s(&wzMsg[wcslen(wzMsg)], L-wcslen(wzMsg), L" [token:0x%08X]",Context.Token);
-            if(Context.uOffset) swprintf_s(&wzMsg[wcslen(wzMsg)], L-wcslen(wzMsg), L" [at:0x%X]",Context.uOffset);
-            swprintf_s(&wzMsg[wcslen(wzMsg)], L-wcslen(wzMsg), L" [hr:0x%08X]\n",hrRpt);
+            if(Context.Token) swprintf_s(&wzMsg[wcslen(wzMsg)], L-wcslen(wzMsg), W(" [token:0x%08X]"),Context.Token);
+            if(Context.uOffset) swprintf_s(&wzMsg[wcslen(wzMsg)], L-wcslen(wzMsg), W(" [at:0x%X]"),Context.uOffset);
+            swprintf_s(&wzMsg[wcslen(wzMsg)], L-wcslen(wzMsg), W(" [hr:0x%08X]\n"),hrRpt);
             DumpMI(UnicodeToUtf(wzMsg));
             delete[] wzMsg;
         }
@@ -6964,11 +7010,11 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
         
     DumpMI((char*)GUICookie); // initialize the print function for DumpMetaInfo
 
-    if(pch && (!_wcsicmp(pch+1,L"lib") || !_wcsicmp(pch+1,L"obj")))
+    if(pch && (!_wcsicmp(pch+1,W("lib")) || !_wcsicmp(pch+1,W("obj"))))
     {   // This works only when all the rest does not
         // Init and run.
 #ifdef FEATURE_CORECLR
-        if (MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
+        if (metaDataGetDispenser(CLSID_CorMetaDataDispenser,
             IID_IMetaDataDispenserEx, (void **)&g_pDisp))
 #else
         if(SUCCEEDED(CoInitialize(0)))
@@ -7006,7 +7052,7 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
         if(g_pDisp == NULL)
         {
 #ifdef FEATURE_CORECLR
-            hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
+            hr = metaDataGetDispenser(CLSID_CorMetaDataDispenser,
                 IID_IMetaDataDispenserEx, (void **)&g_pDisp);
 #else
             hr = LegacyActivationShim::ClrCoCreateInstance(
@@ -7366,8 +7412,8 @@ void CloseNamespace(__inout __nullterminated char* szString)
 FILE* OpenOutput(__in __nullterminated const WCHAR* wzFileName)
 {
     FILE*   pfile = NULL;
-        if(g_uCodePage == 0xFFFFFFFF) _wfopen_s(&pfile,wzFileName,L"wb");
-        else _wfopen_s(&pfile,wzFileName,L"wt");
+        if(g_uCodePage == 0xFFFFFFFF) _wfopen_s(&pfile,wzFileName,W("wb"));
+        else _wfopen_s(&pfile,wzFileName,W("wt"));
 
     if(pfile)
     {
@@ -7396,6 +7442,7 @@ BOOL DumpFile()
     static char     szFilenameANSI[MAX_FILENAME_LENGTH*3];
     IMetaDataDispenser *pMetaDataDispenser = NULL;
     const char *pszFilename = g_szInputFile;
+    const DWORD openFlags = ofRead | (g_fProject ? 0 : ofNoTransform);
 
     if(!(g_Mode & MODE_GUI))
     {
@@ -7497,9 +7544,8 @@ BOOL DumpFile()
         g_cbMetaData = VAL32(g_CORHeader->MetaData.Size);
     }
 
-    const DWORD openFlags = ofRead | (g_fProject ? 0 : ofNoTransform);
 #ifdef FEATURE_CORECLR
-    if (FAILED(GetMetaDataInternalInterface(
+    if (FAILED(getMetaDataInternalInterface(
         (BYTE *)g_pMetaData,
         g_cbMetaData,
         openFlags,
@@ -7522,7 +7568,7 @@ BOOL DumpFile()
 
     TokenSigInit(g_pImport);
 #ifdef FEATURE_CORECLR
-    if (FAILED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser, IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
+    if (FAILED(metaDataGetDispenser(CLSID_CorMetaDataDispenser, IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
 #else
     if (FAILED(CoCreateInstance(CLSID_CorMetaDataDispenser, 0, CLSCTX_INPROC_SERVER, IID_IMetaDataDispenser, (LPVOID*)&pMetaDataDispenser)))
 #endif
@@ -7863,6 +7909,7 @@ ReportAndExit:
             fSuccess = TRUE;
         }
         fSuccess = TRUE;
+#ifndef FEATURE_PAL
         if(g_pFile) // dump .RES file (if any), if not to console
         {
             WCHAR wzResFileName[2048], *pwc;
@@ -7888,6 +7935,7 @@ ReportAndExit:
                 else printError(g_pFile,szString);
             }
         }
+#endif
         if(g_fShowRefs) DumpRefs(TRUE);
         if(g_fDumpHTML)
         {
