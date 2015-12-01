@@ -2,11 +2,34 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+    private static bool CheckIo(ErrorInfo errorInfo, string path, bool isDirectory, Func<ErrorInfo, ErrorInfo> errorRewriter)
+    {
+        Debug.Assert(errorInfo.Error != Error.SUCCESS);
+
+        if (errorRewriter != null)
+        {
+            errorInfo = errorRewriter(errorInfo);
+        }
+
+        if (errorInfo.Error != Error.EINTR)
+        {
+            throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
+        }
+
+        return true;
+    }
+
+    internal static bool CheckIo(Error error, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+    {
+        return error != Interop.Error.SUCCESS && CheckIo(error.Info(), path, isDirectory, errorRewriter);
+    }
+
     /// <summary>
     /// Validates the result of system call that returns greater than or equal to 0 on success
     /// and less than 0 on failure, with errno set to the error code.
@@ -24,21 +47,7 @@ internal static partial class Interop
     /// </returns>
     internal static bool CheckIo(long result, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
     {
-        if (result < 0)
-        {
-            ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-            if (errorRewriter != null)
-            {
-                errorInfo = errorRewriter(errorInfo);
-            }
-
-            if (errorInfo.Error != Error.EINTR)
-            {
-                throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
-            }
-            return true;
-        }
-        return false;
+        return result < 0 && CheckIo(Sys.GetLastErrorInfo(), path, isDirectory, errorRewriter);
     }
 
     /// <summary>
