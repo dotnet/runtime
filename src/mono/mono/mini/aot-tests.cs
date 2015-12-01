@@ -307,10 +307,45 @@ class Tests
 		A = 1
 			}
 
-	public static int test_0_uint_enum_eq_comparer () {
-		var t = new Dictionary<UInt32Enum, object> ();
+	enum Int32Enum : int {
+		A = 1
+			}
 
-		t [UInt32Enum.A] = "foo";
+	enum Int16Enum : short {
+		A = 1
+			}
+
+	enum UInt16Enum : ushort {
+		A = 1
+			}
+
+	enum Int8Enum : sbyte {
+		A = 1
+			}
+
+	enum UInt8Enum : byte {
+		A = 1
+			}
+
+	public static int test_0_int_enum_eq_comparer () {
+		var t1 = new Dictionary<Int32Enum, object> ();
+		t1 [Int32Enum.A] = "foo";
+
+		var t2 = new Dictionary<UInt32Enum, object> ();
+		t2 [UInt32Enum.A] = "foo";
+
+		var t3 = new Dictionary<UInt16Enum, object> ();
+		t3 [UInt16Enum.A] = "foo";
+
+		var t4 = new Dictionary<Int16Enum, object> ();
+		t4 [Int16Enum.A] = "foo";
+
+		var t5 = new Dictionary<Int8Enum, object> ();
+		t5 [Int8Enum.A] = "foo";
+
+		var t6 = new Dictionary<UInt8Enum, object> ();
+		t6 [UInt8Enum.A] = "foo";
+
 		return 0;
 	}
 
