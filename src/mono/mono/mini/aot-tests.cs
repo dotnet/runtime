@@ -303,6 +303,17 @@ class Tests
 		return 0;
 	}
 
+	enum UInt32Enum : uint {
+		A = 1
+			}
+
+	public static int test_0_uint_enum_eq_comparer () {
+		var t = new Dictionary<UInt32Enum, object> ();
+
+		t [UInt32Enum.A] = "foo";
+		return 0;
+	}
+
 	public static int test_0_array_accessor_runtime_invoke_ref () {
 		var t = typeof (string[]);
 		var arr = Array.CreateInstance (typeof (string), 1);
