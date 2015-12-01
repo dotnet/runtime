@@ -788,22 +788,20 @@ public static unsafe class StringTests
             Assert.Equal(8, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
         });
 
-        target = "\u0300";
+        target = "a\u0300"; // this diacritic combines with preceding character
         WithCulture(new CultureInfo("en-US"), () =>
         {
-            // TODO: [ActiveIssue(3973)]
-
-            //Assert.Equal(9, source.IndexOf(target));
-            //Assert.Equal(9, source.IndexOf(target, StringComparison.CurrentCulture));
-            //Assert.Equal(9, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
-            Assert.Equal(9, source.IndexOf(target, StringComparison.Ordinal));
-            //Assert.Equal(9, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(8, source.IndexOf(target));
+            Assert.Equal(8, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(8, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(8, source.IndexOf(target, StringComparison.Ordinal));
+            Assert.Equal(8, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
         });
         WithCulture(CultureInfo.InvariantCulture, () =>
         {
-            //Assert.Equal(9, source.IndexOf(target));
-            //Assert.Equal(9, source.IndexOf(target, StringComparison.CurrentCulture));
-            //Assert.Equal(9, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+            Assert.Equal(8, source.IndexOf(target));
+            Assert.Equal(8, source.IndexOf(target, StringComparison.CurrentCulture));
+            Assert.Equal(8, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
         });
     }
 
