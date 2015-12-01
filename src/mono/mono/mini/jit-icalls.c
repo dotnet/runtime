@@ -1223,11 +1223,16 @@ static MonoMethod*
 constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gpointer *this_arg)
 {
 	MonoMethod *m;
-	int vt_slot;
+	int vt_slot, iface_offset;
 
 	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		mono_set_pending_exception (mono_get_exception_execution_engine ("Not yet supported."));
-		return NULL;
+		MonoObject *this_obj;
+
+		/* Have to use the receiver's type instead of klass, the receiver is a ref type */
+		this_obj = *(MonoObject**)mp;
+		g_assert (this_obj);
+
+		klass = this_obj->vtable->klass;
 	}
 
 	if (mono_method_signature (cmethod)->pinvoke) {
@@ -1239,8 +1244,6 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		g_assert (klass->vtable);
 		vt_slot = mono_method_get_vtable_slot (cmethod);
 		if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-			int iface_offset;
-
 			iface_offset = mono_class_interface_offset (klass, cmethod->klass);
 			g_assert (iface_offset != -1);
 			vt_slot += iface_offset;
@@ -1249,6 +1252,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		if (cmethod->is_inflated)
 			m = mono_class_inflate_generic_method (m, mono_method_get_context (cmethod));
 	}
+
 	if (klass->valuetype && (m->klass == mono_defaults.object_class || m->klass == mono_defaults.enum_class->parent || m->klass == mono_defaults.enum_class))
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.

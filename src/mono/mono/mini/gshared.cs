@@ -1718,6 +1718,33 @@ public class Tests
 			return 2;
 		return 0;
 	}
+
+	public interface IFaceTest {
+		int iface_method ();
+	}
+
+	public interface IFaceConstrainedIFace {
+		int foo<T, T2> (ref T val) where T: IFaceTest;
+	}
+
+	class ConstrainedIFace : IFaceConstrainedIFace {
+		public int foo<T, T2> (ref T val) where T: IFaceTest {
+			return val.iface_method ();
+		}
+	}
+
+	class ClassTest : IFaceTest {
+		public int iface_method () {
+			return 42;
+		}
+	}
+
+	// Test constrained calls on an interface made from gsharedvt methods
+	public static int test_42_gsharedvt_constrained_iface () {
+		IFaceConstrainedIFace obj = new ConstrainedIFace ();
+		IFaceTest t = new ClassTest ();
+		return obj.foo<IFaceTest, int> (ref t);
+	}
 }
 
 // #13191
