@@ -2725,6 +2725,7 @@ case "$host" in
 	mips*)
 		TARGET=MIPS;
 		arch_target=mips;
+		with_tls=pthread;
 		ACCESS_UNALIGNED="no"
 
 		AC_MSG_CHECKING(for mips n32)
