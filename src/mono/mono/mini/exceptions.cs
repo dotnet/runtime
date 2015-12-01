@@ -2816,6 +2816,34 @@ class Tests
 		}
 		return finally_called ? 0 : 1;
 	}
+
+	static int array_len_1 = 1;
+
+	public static int test_0_bounds_check_negative_constant () {
+		try {
+			byte[] arr = new byte [array_len_1];
+			byte b = arr [-1];
+			return 1;
+		} catch {
+		}
+		try {
+			byte[] arr = new byte [array_len_1];
+			arr [-1] = 1;
+			return 2;
+		} catch {
+		}
+		return 0;
+	}
+
+	public static int test_0_string_bounds_check_negative_constant () {
+		try {
+			string s = "A";
+			char c = s [-1];
+			return 1;
+		} catch {
+		}
+		return 0;
+	}
 }
 
 #if !__MOBILE__
