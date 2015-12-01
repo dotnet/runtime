@@ -56,8 +56,8 @@ namespace System.Net
     {
         public WebException() { }
         public WebException(string message) { }
-        public WebException(string message, System.Exception inner) { }
-        public WebException(string message, System.Exception inner, System.Net.WebExceptionStatus status, System.Net.WebResponse response) { }
+        public WebException(string message, System.Exception innerException) { }
+        public WebException(string message, System.Exception innerException, System.Net.WebExceptionStatus status, System.Net.WebResponse response) { }
         public WebException(string message, System.Net.WebExceptionStatus status) { }
         public System.Net.WebResponse Response { get { return default(System.Net.WebResponse); } }
         public System.Net.WebExceptionStatus Status { get { return default(System.Net.WebExceptionStatus); } }
