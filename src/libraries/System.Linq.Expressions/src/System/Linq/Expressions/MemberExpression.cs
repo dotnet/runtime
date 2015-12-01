@@ -276,11 +276,24 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(property, "property");
 
-            MethodInfo mi = property.GetGetMethod(true) ?? property.GetSetMethod(true);
+            MethodInfo mi = property.GetGetMethod(true);
 
             if (mi == null)
             {
-                throw Error.PropertyDoesNotHaveAccessor(property);
+                mi = property.GetSetMethod(true);
+
+                if (mi == null)
+                {
+                    throw Error.PropertyDoesNotHaveAccessor(property);
+                }
+                else if (mi.GetParametersCached().Length != 1)
+                {
+                    throw Error.IncorrectNumberOfMethodCallArguments(mi);
+                }
+            }
+            else if (mi.GetParametersCached().Length != 0)
+            {
+                throw Error.IncorrectNumberOfMethodCallArguments(mi);
             }
 
             if (mi.IsStatic)
@@ -296,6 +309,7 @@ namespace System.Linq.Expressions
                     throw Error.PropertyNotDefinedForType(property, expression.Type);
                 }
             }
+
             return MemberExpression.Make(expression, property);
         }
 
