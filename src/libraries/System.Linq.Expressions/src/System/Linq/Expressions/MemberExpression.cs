@@ -39,18 +39,22 @@ namespace System.Linq.Expressions
             _expression = expression;
         }
 
+        internal static PropertyExpression Make(Expression expression, PropertyInfo property)
+        {
+            Debug.Assert(property != null);
+            return new PropertyExpression(expression, property);
+        }
+
+        internal static FieldExpression Make(Expression expression, FieldInfo field)
+        {
+            Debug.Assert(field != null);
+            return new FieldExpression(expression, field);
+        }
+
         internal static MemberExpression Make(Expression expression, MemberInfo member)
         {
             FieldInfo fi = member as FieldInfo;
-            if (fi != null)
-            {
-                return new FieldExpression(expression, fi);
-            }
-            else
-            {
-                PropertyInfo pi = (PropertyInfo)member;
-                return new PropertyExpression(expression, pi);
-            }
+            return fi == null ? (MemberExpression)Make(expression, (PropertyInfo)member) : Make(expression, fi);
         }
 
         /// <summary>
