@@ -180,7 +180,7 @@ namespace System.Runtime.Serialization
             get { return _maxItemsInObjectGraph; }
         }
 
-        public ISerializationSurrogateProvider SerializationSurrogateProvider
+        internal ISerializationSurrogateProvider SerializationSurrogateProvider
         {
             get { return _serializationSurrogateProvider; }
             set { _serializationSurrogateProvider = value; }

@@ -9,7 +9,7 @@
     <RootNamespace>System.ComponentModel.Primitives</RootNamespace>
     <AssemblyName>System.ComponentModel.Primitives</AssemblyName>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework>dotnet5.1</PackageTargetFramework>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
