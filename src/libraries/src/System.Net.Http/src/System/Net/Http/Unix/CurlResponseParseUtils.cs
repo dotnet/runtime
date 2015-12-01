@@ -26,7 +26,7 @@ namespace System.Net.Http
             return value;
         }
 
-        private static void SkipSpace(string responseHeader, ref int index, bool optional)
+        private static bool SkipSpace(string responseHeader, ref int index)
         {
             bool foundSpace = false;
             for ( ; index < responseHeader.Length; index++)
@@ -40,8 +40,7 @@ namespace System.Net.Http
                     break;
                 }
             }
-
-            CheckResponseMsgFormat(optional || foundSpace);
+            return foundSpace;
         }
 
         private static bool ValidHeaderNameChar(char c)
@@ -73,21 +72,22 @@ namespace System.Net.Http
             CheckResponseMsgFormat(index < responseHeader.Length && responseHeader[index] >= '0' && responseHeader[index] <= '9');
             int minorVersion = ReadInt(responseHeader, ref index);
 
-            SkipSpace(responseHeader, ref index, optional: false);
+            CheckResponseMsgFormat(SkipSpace(responseHeader, ref index));
 
             //  parse status code
             int statusCode = ReadInt(responseHeader, ref index);
             CheckResponseMsgFormat(statusCode >= 100 && statusCode < 600);
 
-            SkipSpace(responseHeader, ref index, optional: true);
+            bool foundSpace = SkipSpace(responseHeader, ref index);
             CheckResponseMsgFormat(index <= responseHeader.Length);
+            CheckResponseMsgFormat(foundSpace || index == responseHeader.Length);
 
             // Set the response HttpVersion
             response.Version =
                 (majorVersion == 1 && minorVersion == 1) ? HttpVersion.Version11 :
                 (majorVersion == 1 && minorVersion == 0) ? HttpVersion.Version10 :
                 (majorVersion == 2 && minorVersion == 0) ? HttpVersion.Version20 :
-                new Version(0, 0);
+                HttpVersion.Unknown;
 
             response.StatusCode = (HttpStatusCode)statusCode;
             response.ReasonPhrase = responseHeader.Substring(index);

@@ -707,32 +707,28 @@ namespace System.Net.Http.Functional.Tests
 
         #region Version tests
         [ActiveIssue(4754, PlatformID.Windows)]
-        [Theory]
-        [MemberData("Http2Servers")]
+        [Theory, MemberData("Http2Servers")]
         public async Task SendAsync_RequestVersion10_ResponseVersion10(Uri server)
         {
             Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 0), server);
             Assert.Equal(new Version(1, 0), responseVersion);
         }
 
-        [Theory]
-        [MemberData("Http2Servers")]
+        [Theory, MemberData("Http2Servers")]
         public async Task SendAsync_RequestVersion11_ResponseVersion11(Uri server)
         {
             Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 1), server);
             Assert.Equal(new Version(1, 1), responseVersion);
         }
 
-        [Theory]
-        [MemberData("Http2Servers")]
+        [Theory, MemberData("Http2Servers")]
         public async Task SendAsync_RequestVersionNotSpecified_ResponseVersion11(Uri server)
         {
             Version responseVersion = await SendRequestAndGetResponseVersionAsync(null, server);
             Assert.Equal(new Version(1, 1), responseVersion);
         }
 
-        [Theory]
-        [MemberData("Http2Servers")]
+        [Theory, MemberData("Http2Servers")]
         public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
         {
             // We don't currently have a good way to test whether HTTP/2 is supported without
