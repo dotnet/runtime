@@ -2,12 +2,22 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
     public static class MemberAccessTests
     {
+        private class UnreadableIndexableClass
+        {
+            public int this[int index]
+            {
+                set { }
+            }
+        }
+
         [Fact]
         public static void CheckMemberAccessStructInstanceFieldTest()
         {
@@ -290,6 +300,18 @@ namespace System.Linq.Expressions.Tests
             Func<int> f = e.Compile();
 
             Assert.Throws<NullReferenceException>(() => f());
+        }
+
+        [Fact]
+        public static void AccessIndexedPropertyWithoutIndex()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Property(Expression.Default(typeof(List<int>)), typeof(List<int>).GetProperty("Item")));
+        }
+
+        [Fact]
+        public static void AccessIndexedPropertyWithoutIndexWriteOnly()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Property(Expression.Default(typeof(UnreadableIndexableClass)), typeof(UnreadableIndexableClass).GetProperty("Item")));
         }
     }
 }
