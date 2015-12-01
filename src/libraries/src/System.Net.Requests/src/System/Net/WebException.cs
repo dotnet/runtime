@@ -23,8 +23,8 @@ namespace System.Net
         {
         }
 
-        public WebException(string message, Exception inner) :
-            this(message, inner, DefaultStatus, null)
+        public WebException(string message, Exception innerException) :
+            this(message, innerException, DefaultStatus, null)
         {
         }
 
@@ -34,17 +34,17 @@ namespace System.Net
         }
 
         public WebException(string message,
-                            Exception inner,
+                            Exception innerException,
                             WebExceptionStatus status,
                             WebResponse response) :
-            base(message, inner)
+            base(message, innerException)
         {
             _status = status;
             _response = response;
 
-            if (inner != null)
+            if (innerException != null)
             {
-                HResult = inner.HResult;
+                HResult = innerException.HResult;
             }
         }
 
