@@ -34,6 +34,8 @@ if /i "%1" == "vs2015"   (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen" (set _crossgen=true&shift&goto Arg_Loop)
 if /i "%1" == "priority" (set _priorityvalue=%2&shift&shift&goto Arg_Loop)
 
+if /i "%1" == "verbose" (set _verbosity=detailed&shift&goto Arg_Loop)
+
 goto Usage
 
 
@@ -41,6 +43,8 @@ goto Usage
 
 if defined _crossgen echo Building tests with CrossGen enabled.&set _buildParameters=%_buildParameters% /p:CrossGen=true
 if defined _priorityvalue echo Building Test Priority %_priorityvalue%&set _buildParameters=%_buildParameters% /p:CLRTestPriorityToBuild=%_priorityvalue%
+if defined _verbosity echo Enabling verbose file logging
+if not defined _verbosity set _verbosity=normal
 
 if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=Debug
@@ -140,7 +144,7 @@ exit /b 1
 
 REM Build CoreCLR
 :BuildTestNativeComponents
-%_msbuildexe% "%__NativeTestIntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=diagnostic;LogFile="%__TestNativeBuildLog%"
+%_msbuildexe% "%__NativeTestIntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=%_verbosity%;LogFile="%__TestNativeBuildLog%"
 IF NOT ERRORLEVEL 1 goto PerformManagedTestBuild
 echo Native component build failed. Refer !__TestNativeBuildLog! for details.
 exit /b 1
@@ -195,20 +199,20 @@ exit /b %ERRORLEVEL%
 
 :build
 
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false %_buildParameters% /fileloggerparameters:Verbosity=diagnostic;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false %_buildParameters% /fileloggerparameters:Verbosity=%_verbosity%;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
 IF ERRORLEVEL 1 echo Test build failed. Refer to !__TestManagedBuildLog! for details && exit /b 1
 exit /b 0
 
 :CreateTestOverlay
 
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\runtest.proj" /t:CreateTestOverlay /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\runtest.proj" /t:CreateTestOverlay /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=%_verbosity%;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
 IF ERRORLEVEL 1 echo Failed to create the test overlay. Refer to !__TestManagedBuildLog! for details && exit /b 1
 exit /b 0
 
 :Usage
 echo.
 echo Usage:
-echo %0 BuildArch BuildType [clean] [vsversion] [crossgen] [priority N] where:
+echo %0 BuildArch BuildType [clean] [vsversion] [crossgen] [priority N] [verbose] where:
 echo.
 echo BuildArch can be: x64
 echo BuildType can be: Debug, Release
@@ -216,4 +220,5 @@ echo Clean - optional argument to force a clean build.
 echo VSVersion - optional argument to use VS2013 or VS2015  (default VS2015)
 echo CrossGen - Enables the tests to run crossgen on the test executables before executing them. 
 echo Priority (N) where N is a number greater than zero that signifies the set of tests that will be built and consequently run.
+echo Verbose - Enables detailed file logging for the msbuild tasks.
 exit /b 1
