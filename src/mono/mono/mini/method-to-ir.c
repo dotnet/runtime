@@ -2191,8 +2191,12 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 
 	if (target->byref) {
 		/* FIXME: check that the pointed to types match */
-		if (arg->type == STACK_MP)
-			return target->type != MONO_TYPE_I && arg->klass != mono_class_from_mono_type (target);
+		if (arg->type == STACK_MP) {
+			MonoClass *base_class = mono_class_from_mono_type (target);
+			/* This is needed to handle gshared types + ldaddr */
+			simple_type = mini_get_underlying_type (&base_class->byval_arg);
+			return target->type != MONO_TYPE_I && arg->klass != base_class && arg->klass != mono_class_from_mono_type (simple_type);
+		}
 		if (arg->type == STACK_PTR)
 			return 0;
 		return 1;
