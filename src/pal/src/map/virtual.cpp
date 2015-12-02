@@ -92,21 +92,22 @@ static int gBackingFile = -1;
 #define MAP_ANON MAP_ANONYMOUS
 #endif
 
-/******
- *
- *  ReserveVirtualMemory() - Helper function that is used by Virtual* APIs
- *  and ExecutableMemoryAllocator to reserve virtual memory from the OS.
- *
- */
+/*++
+Function:
+    ReserveVirtualMemory()
+
+    Helper function that is used by Virtual* APIs and ExecutableMemoryAllocator
+    to reserve virtual memory from the OS.
+
+--*/
 static LPVOID ReserveVirtualMemory(
                 IN CPalThread *pthrCurrent, /* Currently executing thread */
                 IN LPVOID lpAddress,        /* Region to reserve or commit */
                 IN SIZE_T dwSize);          /* Size of Region */
 
-/// <summary>
-/// A memory allocator that allocates memory from a pre-reserved region
-/// of virtual memory that is located near the coreclr library.
-/// </summary>
+
+// A memory allocator that allocates memory from a pre-reserved region
+// of virtual memory that is located near the coreclr library.
 static ExecutableMemoryAllocator g_executableMemoryAllocator;
 
 /*++
@@ -2352,11 +2353,15 @@ ResetWriteWatch(
     return 1;
 }
 
-/// <summary>
-/// This function initializes the allocator. It should be called early during process startup
-/// (when process address space is pretty much empty) in order to have a chance to reserve
-/// sufficient amount of memory that is close to the coreclr library.
-/// </summary>
+/*++
+Function:
+    ExecutableMemoryAllocator::Initialize()
+
+    This function initializes the allocator. It should be called early during process startup
+    (when process address space is pretty much empty) in order to have a chance to reserve
+    sufficient amount of memory that is close to the coreclr library.
+
+--*/
 void ExecutableMemoryAllocator::Initialize()
 {
     m_startAddress = NULL;
@@ -2372,10 +2377,14 @@ void ExecutableMemoryAllocator::Initialize()
 
 }
 
-/// <summary>
-/// This function is called during PAL initialization. It opportunistically tries to reserve
-/// a large chunk of virtual memory that can be later used to store JIT'ed code.
-/// </summary>
+/*++
+Function:
+    ExecutableMemoryAllocator::TryReserveInitialMemory()
+
+    This function is called during PAL initialization. It opportunistically tries to reserve
+    a large chunk of virtual memory that can be later used to store JIT'ed code.\
+
+--*/
 void ExecutableMemoryAllocator::TryReserveInitialMemory()
 {
     CPalThread* pthrCurrent = InternalGetCurrentThread();
@@ -2398,7 +2407,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     // the OS implementation, the library is usually loaded either at the end or at the start of the user
     // address space. If the library is loaded at low addresses then try to reserve memory above libcoreclr
     // (thus avoiding reserving memory below 4GB; besides some operating systems do not allow that).
-    // If libcorclr is loaded at high addresses then try to reserve memory below its location.
+    // If libcoreclr is loaded at high addresses then try to reserve memory below its location.
     coreclrLoadAddress = (UINT_PTR)PAL_GetSymbolModuleBase((void*)VirtualAlloc);
     if ((coreclrLoadAddress < 0xFFFFFFFF) || ((coreclrLoadAddress - MaxExecutableMemorySize) < 0xFFFFFFFF))
     {
@@ -2416,7 +2425,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     // Do actual memory reservation.
     do
     {
-        m_startAddress = ReserveVirtualMemory(pthrCurrent, (LPVOID)startAddress, sizeOfAllocation);
+        m_startAddress = ReserveVirtualMemory(pthrCurrent, (void*)startAddress, sizeOfAllocation);
         if (m_startAddress != NULL)
         {
             // Memory has been successfully reserved.
@@ -2424,7 +2433,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
 
             // Randomize the location at which we start allocating from the reserved memory range.
             int32_t randomOffset = GenerateRandomStartOffset();
-            m_nextFreeAddress = (LPVOID)(((UINT_PTR)m_startAddress) + randomOffset);
+            m_nextFreeAddress = (void*)(((UINT_PTR)m_startAddress) + randomOffset);
             m_remainingReservedMemory = sizeOfAllocation - randomOffset;
             break;
         }
@@ -2436,17 +2445,20 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     } while (sizeOfAllocation >= MemoryProbingIncrement);
 }
 
-/// <summary>
-/// This function attempts to allocate the requested amount of memory from its reserved virtual
-/// address space. The function will return NULL if the allocation request cannot
-/// be satisfied by the memory that is currently available in the allocator.
-///
-/// Note: This function MUST be called with the virtual_critsec lock held.
-///
-/// </summary>
-LPVOID ExecutableMemoryAllocator::AllocateMemory(int32_t allocationSize)
+/*++
+Function:
+    ExecutableMemoryAllocator::AllocateMemory
+
+    This function attempts to allocate the requested amount of memory from its reserved virtual
+    address space. The function will return NULL if the allocation request cannot
+    be satisfied by the memory that is currently available in the allocator.
+
+    Note: This function MUST be called with the virtual_critsec lock held.
+
+--*/
+void* ExecutableMemoryAllocator::AllocateMemory(SIZE_T allocationSize)
 {
-    LPVOID allocatedMemory = NULL;
+    void* allocatedMemory = NULL;
 
     // Allocation size must be in multiples of the virtual page size.
     _ASSERTE((allocationSize & VIRTUAL_PAGE_MASK) == 0);
@@ -2456,7 +2468,7 @@ LPVOID ExecutableMemoryAllocator::AllocateMemory(int32_t allocationSize)
     if ((allocationSize > 0) && (allocationSize <= m_remainingReservedMemory))
     {
         allocatedMemory = m_nextFreeAddress;
-        m_nextFreeAddress = (LPVOID)(((UINT_PTR)m_nextFreeAddress) + allocationSize);
+        m_nextFreeAddress = (void*)(((UINT_PTR)m_nextFreeAddress) + allocationSize);
         m_remainingReservedMemory -= allocationSize;
 
     }
@@ -2464,10 +2476,14 @@ LPVOID ExecutableMemoryAllocator::AllocateMemory(int32_t allocationSize)
     return allocatedMemory;
 }
 
-/// <summary>
-/// This function returns a random offset (in multiples of the virtual page size)
-/// at which the allocator should start allocating memory from its reserved memory range.
-/// </summary>
+/*++
+Function:
+    ExecutableMemoryAllocator::GenerateRandomStartOffset()
+
+    This function returns a random offset (in multiples of the virtual page size)
+    at which the allocator should start allocating memory from its reserved memory range.
+
+--*/
 int32_t ExecutableMemoryAllocator::GenerateRandomStartOffset()
 {
     int32_t pageCount;
