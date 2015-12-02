@@ -16,7 +16,6 @@ namespace System.IO.FileSystem.DriveInfoTests
     {
         [Fact]
         [PlatformSpecific(PlatformID.Windows)]
-        [ActiveIssue(4040)]
         public void TestConstructor()
         {
             string[] invalidInput = { ":", "://", @":\", ":/", @":\\", "Az", "1", "a1", @"\\share", @"\\", "c ", string.Empty, " c" };
