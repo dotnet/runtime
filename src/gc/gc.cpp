@@ -75,6 +75,9 @@ inline BOOL ShouldTrackMovementForProfilerOrEtw()
 int compact_ratio = 0;
 #endif //GC_CONFIG_DRIVEN
 
+// See comments in reset_memory.
+BOOL reset_mm_p = TRUE;
+
 #if defined (TRACE_GC) && !defined (DACCESS_COMPILE)
 const char * const allocation_state_str[] = {
     "start",
@@ -29975,11 +29978,6 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #endif //_WIN64
 
         slack_space = min (slack_space, new_slack_space);
-
-        size_t saved_slack_space = slack_space;
-        new_slack_space = ((slack_space < gen0_big_free_spaces) ? 0 : (slack_space - gen0_big_free_spaces));
-        slack_space = new_slack_space;
-        dprintf (1, ("ss: %Id->%Id", saved_slack_space, slack_space));
     }
 
     decommit_heap_segment_pages (ephemeral_heap_segment, slack_space);    
@@ -30545,8 +30543,15 @@ void reset_memory (uint8_t* o, size_t sizeo)
 
         size_t page_start = align_on_page ((size_t)(o + size_to_skip));
         size_t size = align_lower_page ((size_t)o + sizeo - size_to_skip - plug_skew) - page_start;
-        VirtualAlloc ((char*)page_start, size, MEM_RESET, PAGE_READWRITE);
-        VirtualUnlock ((char*)page_start, size);
+        // Note we need to compensate for an OS bug here. This bug would cause the MEM_RESET to fail
+        // on write watched memory.
+        if (reset_mm_p)
+        {
+            if (VirtualAlloc ((char*)page_start, size, MEM_RESET, PAGE_READWRITE))
+                VirtualUnlock ((char*)page_start, size);
+            else
+                reset_mm_p = FALSE;
+        }
     }
 #endif //!FEATURE_PAL
 }
