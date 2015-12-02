@@ -93,14 +93,9 @@ static gboolean debug_domain_unload;
 
 gboolean mono_dont_free_domains;
 
-#define mono_appdomains_lock() do {	\
-	MONO_TRY_BLOCKING;	\
-	mono_mutex_lock (&appdomains_mutex); \
-	MONO_FINISH_TRY_BLOCKING;	\
-} while (0);
-
-#define mono_appdomains_unlock() mono_mutex_unlock (&appdomains_mutex)
-static mono_mutex_t appdomains_mutex;
+#define mono_appdomains_lock() mono_coop_mutex_lock (&appdomains_mutex)
+#define mono_appdomains_unlock() mono_coop_mutex_unlock (&appdomains_mutex)
+static MonoCoopMutex appdomains_mutex;
 
 static MonoDomain *mono_root_domain = NULL;
 
@@ -443,10 +438,11 @@ mono_domain_create (void)
 	domain->finalizable_objects_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	domain->ftnptrs_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
-	mono_mutex_init_recursive (&domain->lock);
-	mono_mutex_init_recursive (&domain->assemblies_lock);
-	mono_mutex_init_recursive (&domain->jit_code_hash_lock);
-	mono_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
+	mono_coop_mutex_init_recursive (&domain->lock);
+
+	mono_os_mutex_init_recursive (&domain->assemblies_lock);
+	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
+	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
 	domain->method_rgctx_hash = NULL;
 
@@ -522,7 +518,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	MONO_FAST_TLS_INIT (tls_appdomain);
 	mono_native_tls_alloc (&appdomain_thread_id, NULL);
 
-	mono_mutex_init_recursive (&appdomains_mutex);
+	mono_coop_mutex_init_recursive (&appdomains_mutex);
 
 	mono_metadata_init ();
 	mono_images_init ();
@@ -944,7 +940,7 @@ mono_cleanup (void)
 	mono_metadata_cleanup ();
 
 	mono_native_tls_free (appdomain_thread_id);
-	mono_mutex_destroy (&appdomains_mutex);
+	mono_coop_mutex_destroy (&appdomains_mutex);
 
 #ifndef HOST_WIN32
 	wapi_cleanup ();
@@ -1291,10 +1287,12 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		domain->method_to_dyn_method = NULL;
 	}
 
-	mono_mutex_destroy (&domain->finalizable_objects_hash_lock);
-	mono_mutex_destroy (&domain->assemblies_lock);
-	mono_mutex_destroy (&domain->jit_code_hash_lock);
-	mono_mutex_destroy (&domain->lock);
+	mono_os_mutex_destroy (&domain->finalizable_objects_hash_lock);
+	mono_os_mutex_destroy (&domain->assemblies_lock);
+	mono_os_mutex_destroy (&domain->jit_code_hash_lock);
+
+	mono_coop_mutex_destroy (&domain->lock);
+
 	domain->setup = NULL;
 
 	mono_gc_deregister_root ((char*)&(domain->MONO_DOMAIN_FIRST_GC_TRACKED));
@@ -1967,13 +1965,11 @@ mono_get_aot_cache_config (void)
 void
 mono_domain_lock (MonoDomain *domain)
 {
-	MONO_TRY_BLOCKING;
-	mono_locks_acquire (&(domain)->lock, DomainLock);
-	MONO_FINISH_TRY_BLOCKING;
+	mono_locks_coop_acquire (&domain->lock, DomainLock);
 }
 
 void
 mono_domain_unlock (MonoDomain *domain)
 {
-	mono_locks_release (&(domain)->lock, DomainLock);
+	mono_locks_coop_release (&domain->lock, DomainLock);
 }

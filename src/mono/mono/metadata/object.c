@@ -59,8 +59,8 @@ static char *
 mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error);
 
 
-#define ldstr_lock() mono_mutex_lock (&ldstr_section)
-#define ldstr_unlock() mono_mutex_unlock (&ldstr_section)
+#define ldstr_lock() mono_os_mutex_lock (&ldstr_section)
+#define ldstr_unlock() mono_os_mutex_unlock (&ldstr_section)
 static mono_mutex_t ldstr_section;
 
 void
@@ -108,25 +108,23 @@ typedef struct
 	MonoNativeThreadId initializing_tid;
 	guint32 waiting_count;
 	gboolean done;
-	mono_mutex_t initialization_section;
+	MonoCoopMutex initialization_section;
 } TypeInitializationLock;
 
 /* for locking access to type_initialization_hash and blocked_thread_hash */
-static mono_mutex_t type_initialization_section;
+static MonoCoopMutex type_initialization_section;
 
 static inline void
 mono_type_initialization_lock (void)
 {
 	/* The critical sections protected by this lock in mono_runtime_class_init_full () can block */
-	MONO_PREPARE_BLOCKING;
-	mono_mutex_lock (&type_initialization_section);
-	MONO_FINISH_BLOCKING;
+	mono_coop_mutex_lock (&type_initialization_section);
 }
 
 static inline void
 mono_type_initialization_unlock (void)
 {
-	mono_mutex_unlock (&type_initialization_section);
+	mono_coop_mutex_unlock (&type_initialization_section);
 }
 
 static void
@@ -134,15 +132,13 @@ mono_type_init_lock (TypeInitializationLock *lock)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	MONO_TRY_BLOCKING;
-	mono_mutex_lock (&lock->initialization_section);
-	MONO_FINISH_TRY_BLOCKING;
+	mono_coop_mutex_lock (&lock->initialization_section);
 }
 
 static void
 mono_type_init_unlock (TypeInitializationLock *lock)
 {
-	mono_mutex_unlock (&lock->initialization_section);
+	mono_coop_mutex_unlock (&lock->initialization_section);
 }
 
 /* from vtable to lock */
@@ -192,10 +188,10 @@ mono_thread_get_main (void)
 void
 mono_type_initialization_init (void)
 {
-	mono_mutex_init_recursive (&type_initialization_section);
+	mono_coop_mutex_init_recursive (&type_initialization_section);
 	type_initialization_hash = g_hash_table_new (NULL, NULL);
 	blocked_thread_hash = g_hash_table_new (NULL, NULL);
-	mono_mutex_init_recursive (&ldstr_section);
+	mono_os_mutex_init_recursive (&ldstr_section);
 }
 
 void
@@ -205,11 +201,11 @@ mono_type_initialization_cleanup (void)
 	/* This is causing race conditions with
 	 * mono_release_type_locks
 	 */
-	mono_mutex_destroy (&type_initialization_section);
+	mono_coop_mutex_destroy (&type_initialization_section);
 	g_hash_table_destroy (type_initialization_hash);
 	type_initialization_hash = NULL;
 #endif
-	mono_mutex_destroy (&ldstr_section);
+	mono_os_mutex_destroy (&ldstr_section);
 	g_hash_table_destroy (blocked_thread_hash);
 	blocked_thread_hash = NULL;
 
@@ -357,7 +353,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			}
 		}
 		lock = g_malloc (sizeof(TypeInitializationLock));
-		mono_mutex_init_recursive (&lock->initialization_section);
+		mono_coop_mutex_init_recursive (&lock->initialization_section);
 		lock->initializing_tid = tid;
 		lock->waiting_count = 1;
 		lock->done = FALSE;
@@ -440,7 +436,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 		g_hash_table_remove (blocked_thread_hash, GUINT_TO_POINTER (tid));
 	--lock->waiting_count;
 	if (lock->waiting_count == 0) {
-		mono_mutex_destroy (&lock->initialization_section);
+		mono_coop_mutex_destroy (&lock->initialization_section);
 		g_hash_table_remove (type_initialization_hash, vtable);
 		g_free (lock);
 	}
@@ -477,7 +473,7 @@ gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 		mono_type_init_unlock (lock);
 		--lock->waiting_count;
 		if (lock->waiting_count == 0) {
-			mono_mutex_destroy (&lock->initialization_section);
+			mono_coop_mutex_destroy (&lock->initialization_section);
 			g_free (lock);
 			return TRUE;
 		}
@@ -2954,10 +2950,10 @@ mono_method_get_unmanaged_thunk (MonoMethod *method)
 
 	gpointer res;
 
-	MONO_PREPARE_RESET_BLOCKING
+	MONO_PREPARE_RESET_BLOCKING;
 	method = mono_marshal_get_thunk_invoke_wrapper (method);
 	res = mono_compile_method (method);
-	MONO_FINISH_RESET_BLOCKING
+	MONO_FINISH_RESET_BLOCKING;
 
 	return res;
 }

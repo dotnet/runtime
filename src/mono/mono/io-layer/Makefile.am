@@ -61,8 +61,6 @@ OTHER_SRC = \
 	macros.h		\
 	messages.c		\
 	messages.h		\
-	misc.c			\
-	misc-private.h		\
 	mutexes.c		\
 	mutexes.h		\
 	mutex-private.h		\

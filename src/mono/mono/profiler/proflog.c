@@ -23,7 +23,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-counters.h>
-#include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-conc-hashtable.h>
 #include <mono/utils/lock-free-queue.h>
 #include <stdlib.h>
@@ -2781,7 +2781,7 @@ counters_add_agent (MonoCounter *counter)
 	if (!counters_initialized)
 		return;
 
-	mono_mutex_lock (&counters_mutex);
+	mono_os_mutex_lock (&counters_mutex);
 
 	for (agent = counters; agent; agent = agent->next) {
 		if (agent->counter == counter) {
@@ -2790,7 +2790,7 @@ counters_add_agent (MonoCounter *counter)
 				free (agent->value);
 				agent->value = NULL;
 			}
-			mono_mutex_unlock (&counters_mutex);
+			mono_os_mutex_unlock (&counters_mutex);
 			return;
 		}
 	}
@@ -2812,7 +2812,7 @@ counters_add_agent (MonoCounter *counter)
 		item->next = agent;
 	}
 
-	mono_mutex_unlock (&counters_mutex);
+	mono_os_mutex_unlock (&counters_mutex);
 }
 
 static mono_bool
@@ -2827,7 +2827,7 @@ counters_init (MonoProfiler *profiler)
 {
 	assert (!counters_initialized);
 
-	mono_mutex_init (&counters_mutex);
+	mono_os_mutex_init (&counters_mutex);
 
 	counters_initialized = TRUE;
 
@@ -2849,7 +2849,7 @@ counters_emit (MonoProfiler *profiler)
 	if (!counters_initialized)
 		return;
 
-	mono_mutex_lock (&counters_mutex);
+	mono_os_mutex_lock (&counters_mutex);
 
 	for (agent = counters; agent; agent = agent->next) {
 		if (agent->emitted)
@@ -2868,7 +2868,7 @@ counters_emit (MonoProfiler *profiler)
 	}
 
 	if (!len) {
-		mono_mutex_unlock (&counters_mutex);
+		mono_os_mutex_unlock (&counters_mutex);
 		return;
 	}
 
@@ -2897,7 +2897,7 @@ counters_emit (MonoProfiler *profiler)
 
 	safe_send (profiler, logbuffer);
 
-	mono_mutex_unlock (&counters_mutex);
+	mono_os_mutex_unlock (&counters_mutex);
 }
 
 static void
@@ -2919,7 +2919,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 	buffer_size = 8;
 	buffer = calloc (1, buffer_size);
 
-	mono_mutex_lock (&counters_mutex);
+	mono_os_mutex_lock (&counters_mutex);
 
 	size =
 		EVENT_SIZE /* event */ +
@@ -3028,7 +3028,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	safe_send (profiler, logbuffer);
 
-	mono_mutex_unlock (&counters_mutex);
+	mono_os_mutex_unlock (&counters_mutex);
 }
 
 typedef struct _PerfCounterAgent PerfCounterAgent;
@@ -3144,7 +3144,7 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 	if (!counters_initialized)
 		return;
 
-	mono_mutex_lock (&counters_mutex);
+	mono_os_mutex_lock (&counters_mutex);
 
 	/* mark all perfcounters as deleted, foreach will unmark them as necessary */
 	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next)
@@ -3194,7 +3194,7 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	safe_send (profiler, logbuffer);
 
-	mono_mutex_unlock (&counters_mutex);
+	mono_os_mutex_unlock (&counters_mutex);
 }
 
 static void
@@ -3538,11 +3538,11 @@ dump_coverage (MonoProfiler *prof)
 	COVERAGE_DEBUG(fprintf (stderr, "Coverage: Started dump\n");)
 	method_id = 0;
 
-	mono_mutex_lock (&coverage_mutex);
+	mono_os_mutex_lock (&coverage_mutex);
 	mono_conc_hashtable_foreach (coverage_assemblies, build_assembly_buffer, prof);
 	mono_conc_hashtable_foreach (coverage_classes, build_class_buffer, prof);
 	mono_conc_hashtable_foreach (coverage_methods, build_method_buffer, prof);
-	mono_mutex_unlock (&coverage_mutex);
+	mono_os_mutex_unlock (&coverage_mutex);
 
 	COVERAGE_DEBUG(fprintf (stderr, "Coverage: Finished dump\n");)
 }
@@ -3562,9 +3562,9 @@ process_method_enter_coverage (MonoProfiler *prof, MonoMethod *method)
 	if (mono_conc_hashtable_lookup (suppressed_assemblies, (gpointer) mono_image_get_name (image)))
 		return;
 
-	mono_mutex_lock (&coverage_mutex);
+	mono_os_mutex_lock (&coverage_mutex);
 	mono_conc_hashtable_insert (entered_methods, method, method);
-	mono_mutex_unlock (&coverage_mutex);
+	mono_os_mutex_unlock (&coverage_mutex);
 }
 
 static MonoLockFreeQueueNode *
@@ -3651,9 +3651,9 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 		if (has_positive && !found) {
 			COVERAGE_DEBUG(fprintf (stderr, "   Positive match was not found\n");)
 
-			mono_mutex_lock (&coverage_mutex);
+			mono_os_mutex_lock (&coverage_mutex);
 			mono_conc_hashtable_insert (filtered_classes, klass, klass);
-			mono_mutex_unlock (&coverage_mutex);
+			mono_os_mutex_unlock (&coverage_mutex);
 			g_free (fqn);
 			g_free (classname);
 
@@ -3673,9 +3673,9 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 			if (strstr (fqn, filter) != NULL) {
 				COVERAGE_DEBUG(fprintf (stderr, "matched\n");)
 
-				mono_mutex_lock (&coverage_mutex);
+				mono_os_mutex_lock (&coverage_mutex);
 				mono_conc_hashtable_insert (filtered_classes, klass, klass);
-				mono_mutex_unlock (&coverage_mutex);
+				mono_os_mutex_unlock (&coverage_mutex);
 				g_free (fqn);
 				g_free (classname);
 
@@ -3696,19 +3696,19 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 
 	assembly = mono_image_get_assembly (image);
 
-	mono_mutex_lock (&coverage_mutex);
+	mono_os_mutex_lock (&coverage_mutex);
 	mono_conc_hashtable_insert (coverage_methods, method, method);
 	mono_conc_hashtable_insert (coverage_assemblies, assembly, assembly);
-	mono_mutex_unlock (&coverage_mutex);
+	mono_os_mutex_unlock (&coverage_mutex);
 
 	image_methods = mono_conc_hashtable_lookup (image_to_methods, image);
 
 	if (image_methods == NULL) {
 		image_methods = g_malloc (sizeof (MonoLockFreeQueue));
 		mono_lock_free_queue_init (image_methods);
-		mono_mutex_lock (&coverage_mutex);
+		mono_os_mutex_lock (&coverage_mutex);
 		mono_conc_hashtable_insert (image_to_methods, image, image_methods);
-		mono_mutex_unlock (&coverage_mutex);
+		mono_os_mutex_unlock (&coverage_mutex);
 	}
 
 	node = create_method_node (method);
@@ -3719,9 +3719,9 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	if (class_methods == NULL) {
 		class_methods = g_malloc (sizeof (MonoLockFreeQueue));
 		mono_lock_free_queue_init (class_methods);
-		mono_mutex_lock (&coverage_mutex);
+		mono_os_mutex_lock (&coverage_mutex);
 		mono_conc_hashtable_insert (coverage_classes, klass, class_methods);
-		mono_mutex_unlock (&coverage_mutex);
+		mono_os_mutex_unlock (&coverage_mutex);
 	}
 
 	node = create_method_node (method);
@@ -3824,7 +3824,7 @@ coverage_init (MonoProfiler *prof)
 
 	COVERAGE_DEBUG(fprintf (stderr, "Coverage initialized\n");)
 
-	mono_mutex_init (&coverage_mutex);
+	mono_os_mutex_init (&coverage_mutex);
 	coverage_methods = mono_conc_hashtable_new (NULL, NULL);
 	coverage_assemblies = mono_conc_hashtable_new (NULL, NULL);
 	coverage_classes = mono_conc_hashtable_new (NULL, NULL);
@@ -3883,7 +3883,7 @@ log_shutdown (MonoProfiler *prof)
 		fclose (prof->file);
 
 	mono_conc_hashtable_destroy (prof->method_table);
-	mono_mutex_destroy (&prof->method_table_mutex);
+	mono_os_mutex_destroy (&prof->method_table_mutex);
 
 	if (coverage_initialized) {
 		mono_conc_hashtable_destroy (coverage_methods);
@@ -3894,7 +3894,7 @@ log_shutdown (MonoProfiler *prof)
 		mono_conc_hashtable_destroy (entered_methods);
 		mono_conc_hashtable_destroy (image_to_methods);
 		mono_conc_hashtable_destroy (suppressed_assemblies);
-		mono_mutex_destroy (&coverage_mutex);
+		mono_os_mutex_destroy (&coverage_mutex);
 	}
 
 	free (prof);
@@ -4192,9 +4192,9 @@ writer_thread (void *arg)
 				 * method lists will just be empty for the rest of the
 				 * app's lifetime.
 				 */
-				mono_mutex_lock (&prof->method_table_mutex);
+				mono_os_mutex_lock (&prof->method_table_mutex);
 				mono_conc_hashtable_insert (prof->method_table, info->method, info->method);
-				mono_mutex_unlock (&prof->method_table_mutex);
+				mono_os_mutex_unlock (&prof->method_table_mutex);
 
 				char *name = mono_method_full_name (info->method, 1);
 				int nlen = strlen (name) + 1;
@@ -4344,7 +4344,7 @@ create_profiler (const char *filename, GPtrArray *filters)
 #endif
 
 	mono_lock_free_queue_init (&prof->writer_queue);
-	mono_mutex_init (&prof->method_table_mutex);
+	mono_os_mutex_init (&prof->method_table_mutex);
 	prof->method_table = mono_conc_hashtable_new (NULL, NULL);
 
 	if (do_coverage)

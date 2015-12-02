@@ -15,10 +15,9 @@
 
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
-#include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/handles-private.h>
 #include <mono/io-layer/mutex-private.h>
-#include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-once.h>
 
 #if 0
 #define DEBUG(...) g_message(__VA_ARGS__)

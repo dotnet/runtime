@@ -38,14 +38,14 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
-#include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/shared.h>
 #include <mono/io-layer/collection.h>
 #include <mono/io-layer/process-private.h>
 
-#include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-once.h>
 #undef DEBUG_REFS
 
 #if 0
@@ -139,8 +139,8 @@ struct _WapiFileShareLayout *_wapi_fileshare_layout = NULL;
 static GHashTable *file_share_hash;
 static mono_mutex_t file_share_hash_mutex;
 
-#define file_share_hash_lock() mono_mutex_lock (&file_share_hash_mutex)
-#define file_share_hash_unlock() mono_mutex_unlock (&file_share_hash_mutex)
+#define file_share_hash_lock() mono_os_mutex_lock (&file_share_hash_mutex)
+#define file_share_hash_unlock() mono_os_mutex_unlock (&file_share_hash_mutex)
 
 guint32 _wapi_fd_reserve;
 
@@ -213,7 +213,7 @@ static void handle_cleanup (void)
 
 	if (file_share_hash) {
 		g_hash_table_destroy (file_share_hash);
-		mono_mutex_destroy (&file_share_hash_mutex);
+		mono_os_mutex_destroy (&file_share_hash_mutex);
 	}
 
 	for (i = 0; i < _WAPI_PRIVATE_MAX_SLOTS; ++i)
@@ -272,7 +272,7 @@ wapi_init (void)
 		_wapi_collection_init ();
 #endif
 	_wapi_io_init ();
-	mono_mutex_init (&scan_mutex);
+	mono_os_mutex_init (&scan_mutex);
 
 	_wapi_global_signal_handle = _wapi_handle_new (WAPI_HANDLE_EVENT, NULL);
 
@@ -373,7 +373,7 @@ static void _wapi_handle_init (struct _WapiHandleUnshared *handle,
 		thr_ret = pthread_cond_init (&handle->signal_cond, NULL);
 		g_assert (thr_ret == 0);
 				
-		thr_ret = mono_mutex_init (&handle->signal_mutex);
+		thr_ret = mono_os_mutex_init (&handle->signal_mutex);
 		g_assert (thr_ret == 0);
 
 		if (handle_specific != NULL) {
@@ -505,7 +505,7 @@ _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 
 	g_assert(!_WAPI_FD_HANDLE(type));
 	
-	thr_ret = mono_mutex_lock (&scan_mutex);
+	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
 		
 	while ((handle_idx = _wapi_handle_new_internal (type, handle_specific)) == 0) {
@@ -522,7 +522,7 @@ _wapi_handle_new (WapiHandleType type, gpointer handle_specific)
 		_wapi_private_handle_slot_count ++;
 	}
 	
-	thr_ret = mono_mutex_unlock (&scan_mutex);
+	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 
 	if (handle_idx == 0) {
@@ -586,7 +586,7 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
 		InterlockedExchange ((gint32 *)&shared->timestamp, now);
 	}
 		
-	thr_ret = mono_mutex_lock (&scan_mutex);
+	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
 
 	for (i = SLOT_INDEX (0); i < _wapi_private_handle_slot_count; i++) {
@@ -604,7 +604,7 @@ gpointer _wapi_handle_new_from_offset (WapiHandleType type, guint32 offset,
 	}
 
 first_pass_done:
-	thr_ret = mono_mutex_unlock (&scan_mutex);
+	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 
 	if (handle != INVALID_HANDLE_VALUE) {
@@ -633,7 +633,7 @@ first_pass_done:
 		goto done;
 	}
 	
-	thr_ret = mono_mutex_lock (&scan_mutex);
+	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
 	
 	while ((handle_idx = _wapi_handle_new_internal (type, NULL)) == 0) {
@@ -646,7 +646,7 @@ first_pass_done:
 		_wapi_private_handle_slot_count ++;
 	}
 		
-	thr_ret = mono_mutex_unlock (&scan_mutex);
+	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 		
 	/* Make sure we left the space for fd mappings */
@@ -670,7 +670,7 @@ init_handles_slot (int idx)
 {
 	int thr_ret;
 
-	thr_ret = mono_mutex_lock (&scan_mutex);
+	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
 
 	if (_wapi_private_handles [idx] == NULL) {
@@ -679,7 +679,7 @@ init_handles_slot (int idx)
 		g_assert (_wapi_private_handles [idx]);
 	}
 
-	thr_ret = mono_mutex_unlock (&scan_mutex);
+	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 }
 
@@ -786,7 +786,7 @@ _wapi_handle_foreach (WapiHandleType type,
 	guint32 i, k;
 	int thr_ret;
 
-	thr_ret = mono_mutex_lock (&scan_mutex);
+	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
 
 	for (i = SLOT_INDEX (0); i < _wapi_private_handle_slot_count; i++) {
@@ -803,7 +803,7 @@ _wapi_handle_foreach (WapiHandleType type,
 		}
 	}
 
-	thr_ret = mono_mutex_unlock (&scan_mutex);
+	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 }
 
@@ -828,7 +828,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 	gboolean found = FALSE;
 	int thr_ret;
 
-	thr_ret = mono_mutex_lock (&scan_mutex);
+	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
 	
 	for (i = SLOT_INDEX (0); !found && i < _wapi_private_handle_slot_count; i++) {
@@ -853,7 +853,7 @@ gpointer _wapi_search_handle (WapiHandleType type,
 		}
 	}
 
-	thr_ret = mono_mutex_unlock (&scan_mutex);
+	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 
 	if (!found && search_shared && _WAPI_SHARED_HANDLE (type)) {
@@ -1097,7 +1097,7 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 			g_assert (thr_ret == 0);
 		}
 		
-		thr_ret = mono_mutex_lock (&scan_mutex);
+		thr_ret = mono_os_mutex_lock (&scan_mutex);
 
 		DEBUG ("%s: Destroying handle %p", __func__, handle);
 		
@@ -1115,7 +1115,7 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 			 * now, but pthreads doesn't have a
 			 * "unlock_and_destroy" atomic function.
 			 */
-			thr_ret = mono_mutex_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
+			thr_ret = mono_os_mutex_destroy (&_WAPI_PRIVATE_HANDLES(idx).signal_mutex);
 			/*WARNING gross hack to make cleanup not crash when exiting without the whole runtime teardown.*/
 			if (thr_ret == EBUSY && ignore_private_busy_handles) {
 				early_exit = TRUE;
@@ -1150,7 +1150,7 @@ static void _wapi_handle_unref_full (gpointer handle, gboolean ignore_private_bu
 			}
 		}
 
-		thr_ret = mono_mutex_unlock (&scan_mutex);
+		thr_ret = mono_os_mutex_unlock (&scan_mutex);
 		g_assert (thr_ret == 0);
 
 		if (early_exit)
@@ -1498,48 +1498,8 @@ void _wapi_handle_unlock_handles (guint32 numhandles, gpointer *handles)
 	}
 }
 
-static int timedwait_signal_poll_cond (pthread_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout, gboolean alertable)
-{
-	struct timespec fake_timeout;
-	int ret;
-
-	if (!alertable) {
-		/*
-		 * pthread_cond_(timed)wait() can return 0 even if the condition was not
-		 * signalled.  This happens at least on Darwin.  We surface this, i.e., we
-		 * get spurious wake-ups.
-		 *
-		 * http://pubs.opengroup.org/onlinepubs/007908775/xsh/pthread_cond_wait.html
-		 */
-		if (timeout)
-			ret=mono_cond_timedwait (cond, mutex, timeout);
-		else
-			ret=mono_cond_wait (cond, mutex);
-	} else {
-		_wapi_calc_timeout (&fake_timeout, 100);
-	
-		if (timeout != NULL && ((fake_timeout.tv_sec > timeout->tv_sec) ||
-								(fake_timeout.tv_sec == timeout->tv_sec &&
-								 fake_timeout.tv_nsec > timeout->tv_nsec))) {
-			/* Real timeout is less than 100ms time */
-			ret=mono_cond_timedwait (cond, mutex, timeout);
-		} else {
-			ret=mono_cond_timedwait (cond, mutex, &fake_timeout);
-
-			/* Mask the fake timeout, this will cause
-			 * another poll if the cond was not really signaled
-			 */
-			if (ret==ETIMEDOUT) {
-				ret=0;
-			}
-		}
-	}
-	
-	return(ret);
-}
-
 int
-_wapi_handle_timedwait_signal (struct timespec *timeout, gboolean poll, gboolean *alerted)
+_wapi_handle_timedwait_signal (guint32 timeout, gboolean poll, gboolean *alerted)
 {
 	return _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, timeout, TRUE, poll, alerted);
 }
@@ -1562,16 +1522,15 @@ signal_handle_and_unref (gpointer handle)
 	cond = &_WAPI_PRIVATE_HANDLES (idx).signal_cond;
 	mutex = &_WAPI_PRIVATE_HANDLES (idx).signal_mutex;
 
-	mono_mutex_lock (mutex);
-	mono_cond_broadcast (cond);
-	mono_mutex_unlock (mutex);
+	mono_os_mutex_lock (mutex);
+	mono_os_cond_broadcast (cond);
+	mono_os_mutex_unlock (mutex);
 
 	_wapi_handle_unref (handle);
 }
 
 int
-_wapi_handle_timedwait_signal_handle (gpointer handle, struct timespec *timeout,
-		gboolean alertable, gboolean poll, gboolean *alerted)
+_wapi_handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboolean alertable, gboolean poll, gboolean *alerted)
 {
 	DEBUG ("%s: waiting for %p (type %s)", __func__, handle,
 		   _wapi_handle_typename[_wapi_handle_type (handle)]);
@@ -1586,13 +1545,8 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, struct timespec *timeout,
 		if (WAPI_SHARED_HANDLE_DATA(handle).signalled == TRUE) {
 			return (0);
 		}
-		if (timeout != NULL) {
-			struct timespec fake_timeout;
-			_wapi_calc_timeout (&fake_timeout, 100);
-		
-			if ((fake_timeout.tv_sec > timeout->tv_sec) ||
-				(fake_timeout.tv_sec == timeout->tv_sec &&
-				 fake_timeout.tv_nsec > timeout->tv_nsec)) {
+		if (timeout != INFINITE) {
+			if (timeout < 100) {
 				/* FIXME: Real timeout is less than
 				 * 100ms time, but is it really worth
 				 * calculating to the exact ms?
@@ -1625,14 +1579,33 @@ _wapi_handle_timedwait_signal_handle (gpointer handle, struct timespec *timeout,
 		cond = &_WAPI_PRIVATE_HANDLES (idx).signal_cond;
 		mutex = &_WAPI_PRIVATE_HANDLES (idx).signal_mutex;
 
-		if (poll) {
-			/* This is needed when waiting for process handles */
-			res = timedwait_signal_poll_cond (cond, mutex, timeout, alertable);
+		if (!poll) {
+			res = mono_os_cond_timedwait (cond, mutex, timeout);
 		} else {
-			if (timeout)
-				res = mono_cond_timedwait (cond, mutex, timeout);
-			else
-				res = mono_cond_wait (cond, mutex);
+			/* This is needed when waiting for process handles */
+			if (!alertable) {
+				/*
+				 * pthread_cond_(timed)wait() can return 0 even if the condition was not
+				 * signalled.  This happens at least on Darwin.  We surface this, i.e., we
+				 * get spurious wake-ups.
+				 *
+				 * http://pubs.opengroup.org/onlinepubs/007908775/xsh/pthread_cond_wait.html
+				 */
+				res = mono_os_cond_timedwait (cond, mutex, timeout);
+			} else {
+				if (timeout < 100) {
+					/* Real timeout is less than 100ms time */
+					res = mono_os_cond_timedwait (cond, mutex, timeout);
+				} else {
+					res = mono_os_cond_timedwait (cond, mutex, 100);
+
+					/* Mask the fake timeout, this will cause
+					 * another poll if the cond was not really signaled
+					 */
+					if (res == ETIMEDOUT)
+						res = 0;
+				}
+			}
 		}
 
 		if (alertable) {
@@ -1708,7 +1681,7 @@ gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 		 */
 		if (!file_share_hash) {
 			file_share_hash = g_hash_table_new_full (wapi_share_info_hash, wapi_share_info_equal, NULL, g_free);
-			mono_mutex_init_recursive (&file_share_hash_mutex);
+			mono_os_mutex_init_recursive (&file_share_hash_mutex);
 		}
 			
 		tmp.device = device;
@@ -1928,7 +1901,7 @@ void _wapi_handle_dump (void)
 	guint32 i, k;
 	int thr_ret;
 	
-	thr_ret = mono_mutex_lock (&scan_mutex);
+	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	g_assert (thr_ret == 0);
 	
 	for(i = SLOT_INDEX (0); i < _wapi_private_handle_slot_count; i++) {
@@ -1952,7 +1925,7 @@ void _wapi_handle_dump (void)
 		}
 	}
 
-	thr_ret = mono_mutex_unlock (&scan_mutex);
+	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 }
 
@@ -1976,7 +1949,7 @@ void _wapi_handle_update_refs (void)
 	thr_ret = _wapi_shm_sem_lock (_WAPI_SHARED_SEM_FILESHARE);
 	g_assert(thr_ret == 0);
 
-	thr_ret = mono_mutex_lock (&scan_mutex);
+	thr_ret = mono_os_mutex_lock (&scan_mutex);
 	
 	for(i = SLOT_INDEX (0); i < _wapi_private_handle_slot_count; i++) {
 		if (_wapi_private_handles [i]) {
@@ -2008,7 +1981,7 @@ void _wapi_handle_update_refs (void)
 		}
 	}
 
-	thr_ret = mono_mutex_unlock (&scan_mutex);
+	thr_ret = mono_os_mutex_unlock (&scan_mutex);
 	g_assert (thr_ret == 0);
 	
 	thr_ret = _wapi_shm_sem_unlock (_WAPI_SHARED_SEM_FILESHARE);

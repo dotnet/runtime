@@ -62,7 +62,8 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/verify-internals.h>
-#include <mono/utils/mono-semaphore.h>
+#include <mono/utils/mono-coop-mutex.h>
+#include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-time.h>
@@ -91,7 +92,7 @@
 
 #ifndef DISABLE_DEBUGGER_AGENT
 
-#include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-os-mutex.h>
 
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
 
@@ -680,10 +681,10 @@ static GPtrArray *pending_assembly_loads;
 static gboolean debugger_thread_exited;
 
 /* Cond variable used to wait for debugger_thread_exited becoming true */
-static mono_cond_t debugger_thread_exited_cond;
+static MonoCoopCond debugger_thread_exited_cond;
 
 /* Mutex for the cond var above */
-static mono_mutex_t debugger_thread_exited_mutex;
+static MonoCoopMutex debugger_thread_exited_mutex;
 
 static DebuggerProfiler debugger_profiler;
 
@@ -715,14 +716,9 @@ static gboolean buffer_replies;
 static ReplyPacket reply_packets [128];
 int nreply_packets;
 
-#define dbg_lock() do {	\
-	MONO_TRY_BLOCKING;			\
-	mono_mutex_lock (&debug_mutex); \
-	MONO_FINISH_TRY_BLOCKING;		\
-} while (0)
-
-#define dbg_unlock() mono_mutex_unlock (&debug_mutex)
-static mono_mutex_t debug_mutex;
+#define dbg_lock() mono_coop_mutex_lock (&debug_mutex)
+#define dbg_unlock() mono_coop_mutex_unlock (&debug_mutex)
+static MonoCoopMutex debug_mutex;
 
 static void transport_init (void);
 static void transport_connect (const char *address);
@@ -961,7 +957,7 @@ mono_debugger_agent_parse_options (char *options)
 void
 mono_debugger_agent_init (void)
 {
-	mono_mutex_init_recursive (&debug_mutex);
+	mono_coop_mutex_init_recursive (&debug_mutex);
 
 	if (!agent_config.enabled)
 		return;
@@ -973,8 +969,8 @@ mono_debugger_agent_init (void)
 
 	event_requests = g_ptr_array_new ();
 
-	mono_mutex_init (&debugger_thread_exited_mutex);
-	mono_cond_init (&debugger_thread_exited_cond, 0);
+	mono_coop_mutex_init (&debugger_thread_exited_mutex);
+	mono_coop_cond_init (&debugger_thread_exited_cond);
 
 	mono_profiler_install ((MonoProfiler*)&debugger_profiler, runtime_shutdown);
 	mono_profiler_set_events (MONO_PROFILE_APPDOMAIN_EVENTS | MONO_PROFILE_THREADS | MONO_PROFILE_ASSEMBLY_EVENTS | MONO_PROFILE_JIT_COMPILATION | MONO_PROFILE_METHOD_EVENTS);
@@ -1104,9 +1100,6 @@ mono_debugger_agent_cleanup (void)
 	breakpoints_cleanup ();
 	objrefs_cleanup ();
 	ids_cleanup ();
-	
-	mono_mutex_destroy (&debugger_thread_exited_mutex);
-	mono_cond_destroy (&debugger_thread_exited_cond);
 }
 
 /*
@@ -1538,18 +1531,18 @@ transport_handshake (void)
 	/* Write handshake message */
 	sprintf (handshake_msg, "DWP-Handshake");
 	/* Must use try blocking as this can nest into code that runs blocking */
-	MONO_TRY_BLOCKING;
+	MONO_PREPARE_BLOCKING;
 	do {
 		res = transport_send (handshake_msg, strlen (handshake_msg));
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
-	MONO_FINISH_TRY_BLOCKING;
+	MONO_FINISH_BLOCKING;
 
 	g_assert (res != -1);
 
 	/* Read answer */
-	MONO_TRY_BLOCKING;
+	MONO_PREPARE_BLOCKING;
 	res = transport_recv (buf, strlen (handshake_msg));
-	MONO_FINISH_TRY_BLOCKING;
+	MONO_FINISH_BLOCKING;
 	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg)) != 0)) {
 		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
 		return FALSE;
@@ -1604,12 +1597,10 @@ stop_debugger_thread (void)
 	 */
 	if (!is_debugger_thread ()) {
 		do {
-			MONO_TRY_BLOCKING;
-			mono_mutex_lock (&debugger_thread_exited_mutex);
+			mono_coop_mutex_lock (&debugger_thread_exited_mutex);
 			if (!debugger_thread_exited)
-				mono_cond_wait (&debugger_thread_exited_cond, &debugger_thread_exited_mutex);
-			mono_mutex_unlock (&debugger_thread_exited_mutex);
-			MONO_FINISH_TRY_BLOCKING;
+				mono_coop_cond_wait (&debugger_thread_exited_cond, &debugger_thread_exited_mutex);
+			mono_coop_mutex_unlock (&debugger_thread_exited_mutex);
 		} while (!debugger_thread_exited);
 	}
 
@@ -2480,20 +2471,20 @@ save_thread_context (MonoContext *ctx)
  */
 static gint32 threads_suspend_count;
 
-static mono_mutex_t suspend_mutex;
+static MonoCoopMutex suspend_mutex;
 
 /* Cond variable used to wait for suspend_count becoming 0 */
-static mono_cond_t suspend_cond;
+static MonoCoopCond suspend_cond;
 
 /* Semaphore used to wait for a thread becoming suspended */
-static MonoSemType suspend_sem;
+static MonoCoopSem suspend_sem;
 
 static void
 suspend_init (void)
 {
-	mono_mutex_init (&suspend_mutex);
-	mono_cond_init (&suspend_cond, 0);	
-	MONO_SEM_INIT (&suspend_sem, 0);
+	mono_coop_mutex_init (&suspend_mutex);
+	mono_coop_cond_init (&suspend_cond);	
+	mono_coop_sem_init (&suspend_sem, 0);
 }
 
 typedef struct
@@ -2608,7 +2599,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 			mono_memory_barrier ();
 
 			tls->suspended = TRUE;
-			MONO_SEM_POST (&suspend_sem);
+			mono_coop_sem_post (&suspend_sem);
 		}
 	}
 }
@@ -2747,9 +2738,7 @@ suspend_vm (void)
 {
 	mono_loader_lock ();
 
-	MONO_TRY_BLOCKING;
-	mono_mutex_lock (&suspend_mutex);
-	MONO_FINISH_TRY_BLOCKING;
+	mono_coop_mutex_lock (&suspend_mutex);
 
 	suspend_count ++;
 
@@ -2761,7 +2750,7 @@ suspend_vm (void)
 		mono_g_hash_table_foreach (thread_to_tls, notify_thread, NULL);
 	}
 
-	mono_mutex_unlock (&suspend_mutex);
+	mono_coop_mutex_unlock (&suspend_mutex);
 
 	if (suspend_count == 1)
 		/*
@@ -2787,9 +2776,7 @@ resume_vm (void)
 
 	mono_loader_lock ();
 
-	MONO_TRY_BLOCKING;
-	mono_mutex_lock (&suspend_mutex);
-	MONO_FINISH_TRY_BLOCKING;
+	mono_coop_mutex_lock (&suspend_mutex);
 
 	g_assert (suspend_count > 0);
 	suspend_count --;
@@ -2803,10 +2790,10 @@ resume_vm (void)
 	}
 
 	/* Signal this even when suspend_count > 0, since some threads might have resume_count > 0 */
-	err = mono_cond_broadcast (&suspend_cond);
+	err = mono_coop_cond_broadcast (&suspend_cond);
 	g_assert (err == 0);
 
-	mono_mutex_unlock (&suspend_mutex);
+	mono_coop_mutex_unlock (&suspend_mutex);
 	//g_assert (err == 0);
 
 	if (suspend_count == 0)
@@ -2832,10 +2819,8 @@ resume_thread (MonoInternalThread *thread)
 
 	tls = mono_g_hash_table_lookup (thread_to_tls, thread);
 	g_assert (tls);
-	
-	MONO_TRY_BLOCKING;
-	mono_mutex_lock (&suspend_mutex);
-	MONO_FINISH_TRY_BLOCKING;
+
+	mono_coop_mutex_lock (&suspend_mutex);
 
 	g_assert (suspend_count > 0);
 
@@ -2847,10 +2832,10 @@ resume_thread (MonoInternalThread *thread)
 	 * Signal suspend_count without decreasing suspend_count, the threads will wake up
 	 * but only the one whose resume_count field is > 0 will be resumed.
 	 */
-	err = mono_cond_broadcast (&suspend_cond);
+	err = mono_coop_cond_broadcast (&suspend_cond);
 	g_assert (err == 0);
 
-	mono_mutex_unlock (&suspend_mutex);
+	mono_coop_mutex_unlock (&suspend_mutex);
 	//g_assert (err == 0);
 
 	mono_loader_unlock ();
@@ -2910,33 +2895,29 @@ suspend_current (void)
  	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
 
-	MONO_TRY_BLOCKING;
-	mono_mutex_lock (&suspend_mutex);
-	MONO_FINISH_TRY_BLOCKING;
+	mono_coop_mutex_lock (&suspend_mutex);
 
 	tls->suspending = FALSE;
 	tls->really_suspended = TRUE;
 
 	if (!tls->suspended) {
 		tls->suspended = TRUE;
-		MONO_SEM_POST (&suspend_sem);
+		mono_coop_sem_post (&suspend_sem);
 	}
 
 	DEBUG_PRINTF (1, "[%p] Suspended.\n", (gpointer)mono_native_thread_id_get ());
 
-	MONO_TRY_BLOCKING;
 	while (suspend_count - tls->resume_count > 0) {
-		err = mono_cond_wait (&suspend_cond, &suspend_mutex);
+		err = mono_coop_cond_wait (&suspend_cond, &suspend_mutex);
 		g_assert (err == 0);
 	}
-	MONO_FINISH_TRY_BLOCKING;
 
 	tls->suspended = FALSE;
 	tls->really_suspended = FALSE;
 
 	threads_suspend_count --;
 
-	mono_mutex_unlock (&suspend_mutex);
+	mono_coop_mutex_unlock (&suspend_mutex);
 
 	DEBUG_PRINTF (1, "[%p] Resumed.\n", (gpointer)mono_native_thread_id_get ());
 
@@ -2995,7 +2976,7 @@ wait_for_suspend (void)
 		nwait = count_threads_to_wait_for ();
 		if (nwait) {
 			DEBUG_PRINTF (1, "Waiting for %d(%d) threads to suspend...\n", nwait, nthreads);
-			err = MONO_SEM_WAIT (&suspend_sem);
+			err = mono_coop_sem_wait (&suspend_sem, MONO_SEM_FLAGS_NONE);
 			g_assert (err == 0);
 			waited = TRUE;
 		} else {
@@ -9741,13 +9722,11 @@ debugger_thread (void *arg)
 	}
 
 	mono_set_is_debugger_attached (FALSE);
-	
-	MONO_TRY_BLOCKING;
-	mono_mutex_lock (&debugger_thread_exited_mutex);
+
+	mono_coop_mutex_lock (&debugger_thread_exited_mutex);
 	debugger_thread_exited = TRUE;
-	mono_cond_signal (&debugger_thread_exited_cond);
-	mono_mutex_unlock (&debugger_thread_exited_mutex);
-	MONO_FINISH_TRY_BLOCKING;
+	mono_coop_cond_signal (&debugger_thread_exited_cond);
+	mono_coop_mutex_unlock (&debugger_thread_exited_mutex);
 
 	DEBUG_PRINTF (1, "[dbg] Debugger thread exited.\n");
 	

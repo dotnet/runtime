@@ -31,8 +31,10 @@
  * 
  * To log more kind of locks just do the following:
  * 	- add an entry into the RuntimeLocks enum
- *  - change mono_mutex_lock(mutex) to mono_locks_acquire (mutex, LockName)
- *  - change mono_mutex_unlock to mono_locks_release (mutex, LockName)
+ *  - change mono_os_mutex_lock(mutex) to mono_locks_os_acquire (mutex, LockName)
+ *  - change mono_os_mutex_unlock(mutex) to mono_locks_os_release (mutex, LockName)
+ *  - change mono_coop_mutex_lock(mutex) to mono_locks_coop_acquire (mutex, LockName)
+ *  - change mono_coop_mutex_unlock(mutex) to mono_locks_coop_release (mutex, LockName)
  *  - change the decoder to understand the new lock kind.
  *
  * TODO:
@@ -71,7 +73,7 @@ mono_locks_tracer_init (void)
 	Dl_info info;
 	int res;
 	char *name;
-	mono_mutex_init_recursive (&tracer_lock);
+	mono_os_mutex_init_recursive (&tracer_lock);
 	if (!g_getenv ("MONO_ENABLE_LOCK_TRACER"))
 		return;
 	name = g_strdup_printf ("locks.%d", getpid ());

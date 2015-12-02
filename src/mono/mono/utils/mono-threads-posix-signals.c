@@ -17,7 +17,6 @@
 #include <errno.h>
 #include <signal.h>
 
-#include "mono-semaphore.h"
 #include "mono-threads-posix-signals.h"
 
 #if defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__)

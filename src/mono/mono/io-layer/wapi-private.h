@@ -17,6 +17,8 @@
 #include <mono/io-layer/handles.h>
 #include <mono/io-layer/io.h>
 
+#include <mono/utils/mono-os-mutex.h>
+
 /* Increment this whenever an incompatible change is made to the
  * shared handle structure.
  */

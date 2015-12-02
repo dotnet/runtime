@@ -292,7 +292,7 @@ lock_section_queue (SgenSectionGrayQueue *queue)
 	if (!queue->locked)
 		return;
 
-	mono_mutex_lock (&queue->lock);
+	mono_os_mutex_lock (&queue->lock);
 }
 
 static void
@@ -301,7 +301,7 @@ unlock_section_queue (SgenSectionGrayQueue *queue)
 	if (!queue->locked)
 		return;
 
-	mono_mutex_unlock (&queue->lock);
+	mono_os_mutex_unlock (&queue->lock);
 }
 
 void
@@ -311,7 +311,7 @@ sgen_section_gray_queue_init (SgenSectionGrayQueue *queue, gboolean locked, Gray
 
 	queue->locked = locked;
 	if (locked) {
-		mono_mutex_init_recursive (&queue->lock);
+		mono_os_mutex_init_recursive (&queue->lock);
 	}
 
 #ifdef SGEN_CHECK_GRAY_OBJECT_ENQUEUE

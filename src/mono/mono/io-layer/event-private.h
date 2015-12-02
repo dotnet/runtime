@@ -14,8 +14,6 @@
 #include <glib.h>
 #include <pthread.h>
 
-#include <mono/utils/mono-mutex.h>
-
 extern struct _WapiHandleOps _wapi_event_ops;
 extern struct _WapiHandleOps _wapi_namedevent_ops;
 

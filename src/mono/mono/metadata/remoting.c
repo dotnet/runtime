@@ -86,14 +86,14 @@ static inline void
 remoting_lock (void)
 {
 	g_assert (remoting_mutex_inited);
-	mono_mutex_lock (&remoting_mutex);
+	mono_os_mutex_lock (&remoting_mutex);
 }
 
 static inline void
 remoting_unlock (void)
 {
 	g_assert (remoting_mutex_inited);
-	mono_mutex_unlock (&remoting_mutex);
+	mono_os_mutex_unlock (&remoting_mutex);
 }
 
 /*
@@ -134,7 +134,7 @@ get_cache_full (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func, 
 void
 mono_remoting_init (void)
 {
-	mono_mutex_init (&remoting_mutex);
+	mono_os_mutex_init (&remoting_mutex);
 	remoting_mutex_inited = TRUE;
 }
 

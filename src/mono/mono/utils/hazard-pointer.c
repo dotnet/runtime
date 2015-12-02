@@ -14,7 +14,7 @@
 #include <mono/utils/monobitset.h>
 #include <mono/utils/lock-free-array-queue.h>
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-os-mutex.h>
 #ifdef SGEN_WITHOUT_MONO
 #include <mono/sgen/sgen-gc.h>
 #include <mono/sgen/sgen-client.h>
@@ -71,7 +71,7 @@ mono_thread_small_id_alloc (void)
 {
 	int i, id = -1;
 
-	mono_mutex_lock (&small_id_mutex);
+	mono_os_mutex_lock (&small_id_mutex);
 
 	if (!small_id_table)
 		small_id_table = mono_bitset_new (1, 0);
@@ -133,7 +133,7 @@ mono_thread_small_id_alloc (void)
 		mono_memory_write_barrier ();
 	}
 
-	mono_mutex_unlock (&small_id_mutex);
+	mono_os_mutex_unlock (&small_id_mutex);
 
 	return id;
 }
@@ -142,13 +142,13 @@ void
 mono_thread_small_id_free (int id)
 {
 	/* MonoBitSet operations are not atomic. */
-	mono_mutex_lock (&small_id_mutex);
+	mono_os_mutex_lock (&small_id_mutex);
 
 	g_assert (id >= 0 && id < small_id_table->size);
 	g_assert (mono_bitset_test_fast (small_id_table, id));
 	mono_bitset_clear_fast (small_id_table, id);
 
-	mono_mutex_unlock (&small_id_mutex);
+	mono_os_mutex_unlock (&small_id_mutex);
 }
 
 static gboolean
@@ -353,7 +353,7 @@ mono_thread_smr_init (void)
 {
 	int i;
 
-	mono_mutex_init_recursive(&small_id_mutex);
+	mono_os_mutex_init_recursive(&small_id_mutex);
 	mono_counters_register ("Hazardous pointers", MONO_COUNTER_JIT | MONO_COUNTER_INT, &hazardous_pointer_count);
 
 	for (i = 0; i < HAZARD_TABLE_OVERFLOW; ++i) {

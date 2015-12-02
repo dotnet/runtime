@@ -690,7 +690,10 @@ ves_icall_System_Net_Sockets_Socket_Close_internal (SOCKET sock, gint32 *error)
 	/* Clear any pending work item from this socket if the underlying
 	 * polling system does not notify when the socket is closed */
 	mono_threadpool_ms_io_remove_socket (GPOINTER_TO_INT (sock));
+
+	MONO_PREPARE_BLOCKING;
 	closesocket(sock);
+	MONO_FINISH_BLOCKING;
 }
 
 gint32

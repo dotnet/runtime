@@ -31,6 +31,4 @@
 #include <mono/io-layer/versioninfo.h>
 #include <mono/io-layer/wait.h>
 
-#include <mono/utils/mono-mutex.h>
-
 #endif /* _WAPI_WAPI_H_ */

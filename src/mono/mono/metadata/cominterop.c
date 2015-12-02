@@ -75,8 +75,8 @@ enum {
 #undef OPDEF
 
 /* This mutex protects the various cominterop related caches in MonoImage */
-#define mono_cominterop_lock() mono_mutex_lock (&cominterop_mutex)
-#define mono_cominterop_unlock() mono_mutex_unlock (&cominterop_mutex)
+#define mono_cominterop_lock() mono_os_mutex_lock (&cominterop_mutex)
+#define mono_cominterop_unlock() mono_os_mutex_unlock (&cominterop_mutex)
 static mono_mutex_t cominterop_mutex;
 
 /* STDCALL on windows, CDECL everywhere else to work with XPCOM and MainWin COM */
@@ -532,7 +532,7 @@ mono_cominterop_init (void)
 {
 	const char* com_provider_env;
 
-	mono_mutex_init_recursive (&cominterop_mutex);
+	mono_os_mutex_init_recursive (&cominterop_mutex);
 
 	com_provider_env = g_getenv ("MONO_COM");
 	if (com_provider_env && !strcmp(com_provider_env, "MS"))
@@ -564,7 +564,7 @@ mono_cominterop_init (void)
 void
 mono_cominterop_cleanup (void)
 {
-	mono_mutex_destroy (&cominterop_mutex);
+	mono_os_mutex_destroy (&cominterop_mutex);
 }
 
 void

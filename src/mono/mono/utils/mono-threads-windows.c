@@ -139,7 +139,7 @@ mono_threads_platform_free (MonoThreadInfo *info)
 typedef struct {
 	LPTHREAD_START_ROUTINE start_routine;
 	void *arg;
-	MonoSemType registered;
+	MonoCoopSem registered;
 	gboolean suspend;
 	HANDLE suspend_event;
 } ThreadStartInfo;
@@ -160,7 +160,7 @@ inner_start_thread (LPVOID arg)
 	info->runtime_thread = TRUE;
 	info->create_suspended = suspend;
 
-	post_result = MONO_SEM_POST (&(start_info->registered));
+	post_result = mono_coop_sem_post (&(start_info->registered));
 	g_assert (!post_result);
 
 	if (suspend) {
@@ -181,11 +181,12 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 	ThreadStartInfo *start_info;
 	HANDLE result;
 	DWORD thread_id;
+	int res;
 
 	start_info = g_malloc0 (sizeof (ThreadStartInfo));
 	if (!start_info)
 		return NULL;
-	MONO_SEM_INIT (&(start_info->registered), 0);
+	mono_coop_sem_init (&(start_info->registered), 0);
 	start_info->arg = arg;
 	start_info->start_routine = start_routine;
 	start_info->suspend = creation_flags & CREATE_SUSPENDED;
@@ -198,9 +199,9 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 
 	result = CreateThread (NULL, stack_size, inner_start_thread, start_info, creation_flags, &thread_id);
 	if (result) {
-		while (MONO_SEM_WAIT (&(start_info->registered)) != 0) {
-			/*if (EINTR != errno) ABORT("sem_wait failed"); */
-		}
+		res = mono_coop_sem_wait (&(start_info->registered), MONO_SEM_FLAGS_NONE);
+		g_assert (res != -1);
+
 		if (start_info->suspend) {
 			g_assert (SuspendThread (result) != (DWORD)-1);
 			SetEvent (start_info->suspend_event);
@@ -210,7 +211,7 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 	}
 	if (out_tid)
 		*out_tid = thread_id;
-	MONO_SEM_DESTROY (&(start_info->registered));
+	mono_coop_sem_destroy (&(start_info->registered));
 	g_free (start_info);
 	return result;
 }

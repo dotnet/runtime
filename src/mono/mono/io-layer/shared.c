@@ -52,7 +52,7 @@ noshm_semaphores_init (void)
 	int i;
 
 	for (i = 0; i < _WAPI_SHARED_SEM_COUNT; i++) 
-		mono_mutex_init (&noshm_sems [i]);
+		mono_os_mutex_init (&noshm_sems [i]);
 }
 
 static int
@@ -62,7 +62,7 @@ noshm_sem_lock (int sem)
 	
 	DEBUGLOG ("%s: locking nosem %d", __func__, sem);
 	
-	ret = mono_mutex_lock (&noshm_sems[sem]);
+	ret = mono_os_mutex_lock (&noshm_sems[sem]);
 	
 	return ret;
 }
@@ -74,7 +74,7 @@ noshm_sem_trylock (int sem)
 	
 	DEBUGLOG ("%s: trying to lock nosem %d", __func__, sem);
 	
-	ret = mono_mutex_trylock (&noshm_sems[sem]);
+	ret = mono_os_mutex_trylock (&noshm_sems[sem]);
 	
 	return ret;
 }
@@ -86,7 +86,7 @@ noshm_sem_unlock (int sem)
 	
 	DEBUGLOG ("%s: unlocking nosem %d", __func__, sem);
 	
-	ret = mono_mutex_unlock (&noshm_sems[sem]);
+	ret = mono_os_mutex_unlock (&noshm_sems[sem]);
 	
 	return ret;
 }

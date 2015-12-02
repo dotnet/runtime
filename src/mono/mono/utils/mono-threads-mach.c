@@ -21,7 +21,6 @@
 
 #include <mono/utils/mach-support.h>
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/hazard-pointer.h>
 

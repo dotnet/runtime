@@ -346,7 +346,7 @@ nursery_canaries_enabled (void)
  * ########  Global data.
  * ######################################################################
  */
-LOCK_DECLARE (gc_mutex);
+MonoCoopMutex gc_mutex;
 gboolean sgen_try_free_some_memory;
 
 #define SCAN_START_SIZE	SGEN_SCAN_START_SIZE
@@ -359,7 +359,7 @@ GCMemSection *nursery_section = NULL;
 static volatile mword lowest_heap_address = ~(mword)0;
 static volatile mword highest_heap_address = 0;
 
-LOCK_DECLARE (sgen_interruption_mutex);
+MonoCoopMutex sgen_interruption_mutex;
 
 int current_collection_generation = -1;
 static volatile gboolean concurrent_collection_in_progress = FALSE;
@@ -2807,11 +2807,11 @@ sgen_gc_init (void)
 	mono_thread_smr_init ();
 #endif
 
-	LOCK_INIT (gc_mutex);
+	mono_coop_mutex_init (&gc_mutex);
 
 	gc_debug_file = stderr;
 
-	LOCK_INIT (sgen_interruption_mutex);
+	mono_coop_mutex_init (&sgen_interruption_mutex);
 
 	if ((env = g_getenv (MONO_GC_PARAMS_NAME))) {
 		opts = g_strsplit (env, ",", -1);
@@ -3191,7 +3191,7 @@ sgen_get_nursery_clear_policy (void)
 void
 sgen_gc_lock (void)
 {
-	LOCK_GC;
+	mono_coop_mutex_lock (&gc_mutex);
 }
 
 void
@@ -3199,7 +3199,7 @@ sgen_gc_unlock (void)
 {
 	gboolean try_free = sgen_try_free_some_memory;
 	sgen_try_free_some_memory = FALSE;
-	mono_mutex_unlock (&gc_mutex);
+	mono_coop_mutex_unlock (&gc_mutex);
 	if (try_free)
 		mono_thread_hazardous_try_free_some ();
 }

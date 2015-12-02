@@ -83,7 +83,6 @@
 #include <mono/io-layer/wapi.h>
 #include <mono/io-layer/wapi-private.h>
 #include <mono/io-layer/handles-private.h>
-#include <mono/io-layer/misc-private.h>
 #include <mono/io-layer/process-private.h>
 #include <mono/io-layer/threads.h>
 #include <mono/utils/strenc.h>
@@ -91,9 +90,10 @@
 #include <mono/io-layer/timefuncs-private.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-membar.h>
-#include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/mono-proclib.h>
+#include <mono/utils/mono-once.h>
 
 /* The process' environment strings */
 #if defined(__APPLE__)
@@ -1037,7 +1037,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	mono_process = (struct MonoProcess *) g_malloc0 (sizeof (struct MonoProcess));
 	mono_process->pid = pid;
 	mono_process->handle_count = 1;
-	if (MONO_SEM_INIT (&mono_process->exit_sem, 0) != 0) {
+	if (mono_os_sem_init (&mono_process->exit_sem, 0) != 0) {
 		/* If we can't create the exit semaphore, we just don't add anything
 		 * to our list of mono processes. Waiting on the process will return 
 		 * immediately. */
@@ -1051,10 +1051,10 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 
 		process_handle_data->mono_process = mono_process;
 
-		mono_mutex_lock (&mono_processes_mutex);
+		mono_os_mutex_lock (&mono_processes_mutex);
 		mono_process->next = mono_processes;
 		mono_processes = mono_process;
-		mono_mutex_unlock (&mono_processes_mutex);
+		mono_os_mutex_unlock (&mono_processes_mutex);
 	}
 	
 	if (process_info != NULL) {
@@ -1148,6 +1148,8 @@ wapi_processes_init (void)
 	current_process = _wapi_handle_new (WAPI_HANDLE_PROCESS,
 					    &process_handle);
 	g_assert (current_process);
+
+	mono_os_mutex_init (&mono_processes_mutex);
 }
 
 gpointer
@@ -2585,10 +2587,10 @@ mono_processes_cleanup (void)
 		if (mp->pid == 0 && mp->handle) {
 			/* This process has exited and we need to remove the artifical ref
 			 * on the handle */
-			mono_mutex_lock (&mono_processes_mutex);
+			mono_os_mutex_lock (&mono_processes_mutex);
 			unref_handle = mp->handle;
 			mp->handle = NULL;
-			mono_mutex_unlock (&mono_processes_mutex);
+			mono_os_mutex_unlock (&mono_processes_mutex);
 			if (unref_handle)
 				_wapi_handle_unref (unref_handle);
 		}
@@ -2600,7 +2602,7 @@ mono_processes_cleanup (void)
 	 * asynchronously. The handler requires that the mono_processes list
 	 * remain valid.
 	 */
-	mono_mutex_lock (&mono_processes_mutex);
+	mono_os_mutex_lock (&mono_processes_mutex);
 
 	mp = mono_processes;
 	while (mp) {
@@ -2632,12 +2634,12 @@ mono_processes_cleanup (void)
 		 * accessing them.
 		 */
 		mp = l->data;
-		MONO_SEM_DESTROY (&mp->exit_sem);
+		mono_os_sem_destroy (&mp->exit_sem);
 		g_free (mp);
 	}
 	g_slist_free (finished);
 
-	mono_mutex_unlock (&mono_processes_mutex);
+	mono_os_mutex_unlock (&mono_processes_mutex);
 
 	DEBUG ("%s done", __func__);
 
@@ -2689,7 +2691,7 @@ MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, sigi
 		if (p) {
 			p->pid = 0; /* this pid doesn't exist anymore, clear it */
 			p->status = status;
-			MONO_SEM_POST (&p->exit_sem);
+			mono_os_sem_post (&p->exit_sem);
 			mono_memory_barrier ();
 			/* Mark this as freeable, the pointer becomes invalid afterwards */
 			p->freeable = TRUE;
@@ -2759,12 +2761,11 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 		if (timeout != INFINITE) {
 			DEBUG ("%s (%p, %u): waiting on semaphore for %li ms...", 
 				   __func__, handle, timeout, (timeout - (now - start)));
-
-			ret = MONO_SEM_TIMEDWAIT_ALERTABLE (&mp->exit_sem, (timeout - (now - start)), alertable);
+			ret = mono_os_sem_timedwait (&mp->exit_sem, (timeout - (now - start)), alertable ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		} else {
 			DEBUG ("%s (%p, %u): waiting on semaphore forever...", 
 				   __func__, handle, timeout);
-			ret = MONO_SEM_WAIT_ALERTABLE (&mp->exit_sem, alertable);
+			ret = mono_os_sem_wait (&mp->exit_sem, alertable ? MONO_SEM_FLAGS_ALERTABLE : MONO_SEM_FLAGS_NONE);
 		}
 
 		if (ret == -1 && errno != EINTR && errno != ETIMEDOUT) {
@@ -2775,7 +2776,7 @@ process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 
 		if (ret == 0) {
 			/* Success, process has exited */
-			MONO_SEM_POST (&mp->exit_sem);
+			mono_os_sem_post (&mp->exit_sem);
 			break;
 		}
 

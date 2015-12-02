@@ -99,10 +99,6 @@ static gboolean stop_receiver_thread;
 
 static gboolean needs_to_start, started;
 
-#define agent_lock() mono_mutex_lock (&agent_mutex)
-#define agent_unlock() mono_mutex_unlock (&agent_mutex)
-static mono_mutex_t agent_mutex;
-
 static void transport_connect (void);
 
 static guint32 WINAPI receiver_thread (void *arg);
@@ -184,8 +180,6 @@ mono_attach_parse_options (char *options)
 void
 mono_attach_init (void)
 {
-	mono_mutex_init_recursive (&agent_mutex);
-
 	config.enabled = TRUE;
 }
 
