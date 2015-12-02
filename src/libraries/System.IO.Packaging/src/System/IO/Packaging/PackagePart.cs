@@ -846,10 +846,7 @@ namespace System.IO.Packaging
         //has been closed.
         private bool IsStreamClosed(Stream s)
         {
-            if (s.CanRead == false && s.CanSeek == false && s.CanWrite == false)
-                return true;
-            else
-                return false;
+            return !s.CanRead  && !s.CanSeek && !s.CanWrite;
         }
 
         #endregion Private Methods

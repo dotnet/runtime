@@ -8,10 +8,6 @@
 //
 //---------------------------------------------------------------------------
 
-using System;
-using System.Security;
-using System.IO.Packaging;
-
 namespace System.IO
 {
     /// <summary>
@@ -136,6 +132,6 @@ namespace System.IO
             }
         }
 
-        private Uri _sourceUri;
+        private readonly Uri _sourceUri;
     }
 }

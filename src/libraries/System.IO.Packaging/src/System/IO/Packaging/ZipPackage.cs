@@ -401,7 +401,7 @@ namespace System.IO.Packaging
         // More generic function than GetPartNameFromZipItemName. In particular, it will handle piece names.
         internal static string GetOpcNameFromZipItemName(string zipItemName)
         {
-            return String.Concat(s_forwardSlash, zipItemName);
+            return String.Concat(ForwardSlashString, zipItemName);
         }
 
         // Convert from Metro CompressionOption to ZipFileInfo compression properties.
@@ -496,13 +496,13 @@ namespace System.IO.Packaging
                 //Some of the tools support this and some dont. There is no way ensure that the zip item never have 
                 //a leading "/", although this is a requirement we impose on items created through our API
                 //Therefore we ignore them at the packaging api level.
-                if (zipItemName.StartsWith(s_forwardSlash, StringComparison.Ordinal))
+                if (zipItemName.StartsWith(ForwardSlashString, StringComparison.Ordinal))
                     return false;
                 //This will ignore the folder entries found in the zip package created by some zip tool
                 //PartNames ending with a "/" slash is also invalid so we are skipping these entries,
                 //this will also prevent the PackUriHelper.CreatePartUri from throwing when it encounters a
                 // partname ending with a "/"
-                if (zipItemName.EndsWith(s_forwardSlash, StringComparison.Ordinal))
+                if (zipItemName.EndsWith(ForwardSlashString, StringComparison.Ordinal))
                     return false;
                 else
                     return true;
@@ -538,7 +538,7 @@ namespace System.IO.Packaging
         private FileAccess _packageFileAccess;
         private FileMode _packageFileMode;
 
-        private static readonly string s_forwardSlash = "/"; //Required for creating a part name from a zip item name
+        private const string ForwardSlashString = "/"; //Required for creating a part name from a zip item name
 
         //IEqualityComparer for extensions
         private static readonly ExtensionEqualityComparer s_extensionEqualityComparer = new ExtensionEqualityComparer();

@@ -9,10 +9,8 @@
 //
 //-----------------------------------------------------------------------------
 
-using System;
-using System.IO;                        // for Path class
 using System.Diagnostics;
-using System.Collections.Generic;       // For IEqualityComparer<>
+using System.Text;
 
 namespace System.IO.Packaging
 {
@@ -92,7 +90,7 @@ namespace System.IO.Packaging
         public static Uri Create(Uri packageUri, Uri partUri, string fragment)
         {
             // Step 1 - Validate input parameters
-            packageUri = ValidatePackageUri(packageUri);
+            ValidatePackageUri(packageUri);
 
             if (partUri != null)
                 partUri = ValidatePartUri(partUri);
@@ -119,7 +117,7 @@ namespace System.IO.Packaging
             absolutePackageUri = EscapeSpecialCharacters(absolutePackageUri);
 
             // Step 4 - Replace all '/' with ',' in the resulting string
-            absolutePackageUri = absolutePackageUri.Replace('/', ',');
+            absolutePackageUri = absolutePackageUri.Replace(ForwardSlashChar, ',');
 
             // Step 5 - Append pack:// at the begining and a '/' at the end of the pack uri obtained so far            
             absolutePackageUri = String.Concat(PackUriHelper.UriSchemePack, "://", absolutePackageUri);
@@ -448,14 +446,13 @@ namespace System.IO.Packaging
             // Get the parname without the last segment
             partName = partName.Substring(0, partName.Length - file.Length);
 
-            partName = Path.Combine(partName, s_relationshipPartSegmentName);         // Adding the "_rels" segment
-            partName = Path.Combine(partName, file);                                 // Adding the last segment back
-            partName = String.Concat(partName, s_relationshipPartExtensionName);      // Adding the ".rels" extension
+            partName = Path.Combine(partName, s_relationshipPartSegmentName, file); // Adding the "_rels" segment and the last segment back
             partName = partName.Replace(BackwardSlashChar, ForwardSlashChar);
+            partName += s_relationshipPartExtensionName;                            // Adding the ".rels" extension
 
             // convert to Uri - We could use PackUriHelper.Create, but since we know that this is a
             //valid Part Uri we can just call the Uri constructor.
-            return new ValidatedPartUri(partName, true /*IsRelationship*/);
+            return new ValidatedPartUri(partName, isRelationshipUri: true);
         }
 
 
@@ -515,7 +512,7 @@ namespace System.IO.Packaging
 
                 // convert to Uri - We could use PackUriHelper.Create, but since we know that this is a
                 //valid Part Uri we can just call the Uri constructor.            
-                return new ValidatedPartUri(path, false /*IsRelationship*/);
+                return new ValidatedPartUri(path, isRelationshipUri: false);
             }
         }
 
@@ -561,31 +558,29 @@ namespace System.IO.Packaging
 
         internal static bool IsPackUri(Uri uri)
         {
-            return uri != null &&
-                string.Compare(uri.Scheme, UriSchemePack, StringComparison.OrdinalIgnoreCase) == 0;
+            return uri != null && string.Equals(uri.Scheme, UriSchemePack, StringComparison.OrdinalIgnoreCase);
         }
 
         internal static bool TryValidatePartUri(Uri partUri, out ValidatedPartUri validatedPartUri)
         {
-            if (partUri is ValidatedPartUri)
+            var validatedUri = partUri as ValidatedPartUri;
+            if (validatedUri != null)
             {
-                validatedPartUri = (ValidatedPartUri)partUri;
+                validatedPartUri = validatedUri;
                 return true;
+            }
+
+            string partUriString;
+            Exception exception = GetExceptionIfPartUriInvalid(partUri, out partUriString);
+            if (exception != null)
+            {
+                validatedPartUri = null;
+                return false;
             }
             else
             {
-                string partUriString;
-                Exception exception = GetExceptionIfPartUriInvalid(partUri, out partUriString);
-                if (exception != null)
-                {
-                    validatedPartUri = null;
-                    return false;
-                }
-                else
-                {
-                    validatedPartUri = new ValidatedPartUri(partUriString);
-                    return true;
-                }
+                validatedPartUri = new ValidatedPartUri(partUriString);
+                return true;
             }
         }
 
@@ -606,8 +601,9 @@ namespace System.IO.Packaging
         /// or some characters that should be escaped are not escaped.</exception>
         internal static ValidatedPartUri ValidatePartUri(Uri partUri)
         {
-            if (partUri is ValidatedPartUri)
-                return (ValidatedPartUri)partUri;
+            var validatedUri = partUri as ValidatedPartUri;
+            if (validatedUri != null)
+                return validatedUri;
 
             string partUriString;
             Exception exception = GetExceptionIfPartUriInvalid(partUri, out partUriString);
@@ -618,7 +614,7 @@ namespace System.IO.Packaging
             }
             else
             {
-                Debug.Assert(partUriString != null && partUriString.Length > 0);
+                Debug.Assert(!string.IsNullOrEmpty(partUriString));
                 return new ValidatedPartUri(partUriString);
             }
         }
@@ -627,10 +623,10 @@ namespace System.IO.Packaging
         internal static string GetStringForPartUri(Uri partUri)
         {
             Debug.Assert(partUri != null, "Null reference check for this uri parameter should have been made earlier");
-            if (!(partUri is ValidatedPartUri))
-                partUri = ValidatePartUri(partUri);
 
-            return ((ValidatedPartUri)partUri).PartUriString;
+            ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
+
+            return validatedUri.PartUriString;
         }
 
         //This method validates the packUri and returns its two components if they are valid-
@@ -666,15 +662,13 @@ namespace System.IO.Packaging
         /// </summary>
         /// <param name="packageUri"></param>
         /// <returns></returns>
-        private static Uri ValidatePackageUri(Uri packageUri)
+        private static void ValidatePackageUri(Uri packageUri)
         {
             if (packageUri == null)
                 throw new ArgumentNullException("packageUri");
 
             if (!packageUri.IsAbsoluteUri)
                 throw new ArgumentException(SR.UriShouldBeAbsolute);
-
-            return packageUri;
         }
 
         //validates is a given uri has pack:// scheme
@@ -693,24 +687,27 @@ namespace System.IO.Packaging
         }
         
         private static readonly char[] HexUpperChars = {
-                                   '0', '1', '2', '3', '4', '5', '6', '7',
-                                   '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-        
-        private static string HexEscape(char character) {
-            if (character > '\xff') {
-                throw new ArgumentOutOfRangeException("character");
-            }
-            char[] chars = new char[3];
-            int pos = 0;
-            EscapeAsciiChar(character, chars, ref pos);
-            return new string(chars);
-        }
-        
-        private static void EscapeAsciiChar(char ch, char[] to, ref int pos)
+            '0', '1', '2', '3', '4', '5', '6', '7',
+            '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+        };
+
+        private static unsafe string[] HexEscapeCharsToStrings(char[] characters)
         {
-            to[pos++] = '%';
-            to[pos++] = HexUpperChars[(ch & 0xf0) >> 4];
-            to[pos++] = HexUpperChars[ch & 0xf];
+            var strings = new string[characters.Length];
+            char* chars = stackalloc char[3];
+            chars[0] = '%';
+
+            for (int i = 0; i < characters.Length; i++)
+            {
+                char c = characters[i];
+                Debug.Assert(c <= 0xFF);
+
+                chars[1] = HexUpperChars[(c & 0xf0) >> 4];
+                chars[2] = HexUpperChars[c & 0xf];
+                strings[i] = new string(chars, 0, 3);
+            }
+
+            return strings;
         }
 
         /// <summary>
@@ -721,19 +718,21 @@ namespace System.IO.Packaging
         /// <returns></returns>
         private static string EscapeSpecialCharacters(string path)
         {
-            string characterString;
+            // If there are no special characters, just return the original path.
+            if (path.IndexOfAny(s_specialCharacterChars) < 0)
+            {
+                return path;
+            }
 
             // Escaping for the following - '%'; '@'; ',' and '?'
             // !!Important!! - The order is important - The '%' sign should be escaped first.
             // This is currently enforced by the order of characters in the _specialCharacters array
-            foreach (char c in s_specialCharacters)
+            var builder = new StringBuilder(path);
+            for (int i = 0; i < s_specialCharacterStrings.Length; i++)
             {
-                characterString = c.ToString();
-                if (path.Contains(characterString))
-                    path = path.Replace(characterString, HexEscape(c));
+                builder.Replace(s_specialCharacterStrings[i], s_specialCharacterHexEscapedStrings[i]);
             }
-
-            return path;
+            return builder.ToString();
         }
 
         private static Exception GetExceptionIfPartUriInvalid(Uri partUri, out string partUriString)
@@ -756,7 +755,7 @@ namespace System.IO.Packaging
             if (partName == String.Empty)
                 return new ArgumentException(SR.PartUriIsEmpty);
 
-            if (partName[0] != '/')
+            if (partName[0] != ForwardSlashChar)
                 return new ArgumentException(SR.PartUriShouldStartWithForwardSlash);
 
             argumentException = GetExceptionIfPartNameStartsWithTwoSlashes(partName);
@@ -788,7 +787,7 @@ namespace System.IO.Packaging
             //to verify the uri correctly.
             //We perform the comparison in a case-insensitive manner, as at this point,
             //only escaped hex digits (A-F) might vary in casing.
-            if (String.CompareOrdinal(partUri.OriginalString.ToUpperInvariant(), wellFormedPartName.ToUpperInvariant()) != 0)
+            if (!string.Equals(partUri.OriginalString, wellFormedPartName, StringComparison.OrdinalIgnoreCase))
                 return new ArgumentException(SR.InvalidPartUri);
 
             //if we get here, the partUri is valid and so we return null, as there is no exception.
@@ -837,7 +836,7 @@ namespace System.IO.Packaging
         {
             if (partName.Length > 0)
             {
-                if (partName[partName.Length - 1] == '/')
+                if (partName[partName.Length - 1] == ForwardSlashChar)
                     return new ArgumentException(SR.PartUriShouldNotEndWithForwardSlash);
             }
             return null;
@@ -860,7 +859,7 @@ namespace System.IO.Packaging
         {
             if (partName.Length > 1)
             {
-                if (partName[0] == '/' && partName[1] == '/')
+                if (partName[0] == ForwardSlashChar && partName[1] == ForwardSlashChar)
                     return new ArgumentException(SR.PartUriShouldNotStartWithTwoForwardSlashes);
             }
             return null;
@@ -923,10 +922,7 @@ namespace System.IO.Packaging
             // Uri.GetComponents may return a single forward slash when there is no absolute path.  
             // This is Whidbey PS399695.  Until that is changed, we check for both cases - either an entirely empty string,
             // or a single forward slash character.  Either case means there is no part name.
-            if (partName.Length == 0 || ((partName.Length == 1) && (partName[0] == '/')))
-                return true;
-            else
-                return false;
+            return (partName.Length == 0 || ((partName.Length == 1) && (partName[0] == ForwardSlashChar)));
         }
 
         //This method validates and returns the PackageUri component
@@ -938,7 +934,7 @@ namespace System.IO.Packaging
             String hostAndPort = packUri.GetComponents(UriComponents.HostAndPort, UriFormat.UriEscaped);
 
             //Step 2 - Replace the ',' with '/' to reconstruct the package URI
-            hostAndPort = hostAndPort.Replace(',', '/');
+            hostAndPort = hostAndPort.Replace(',', ForwardSlashChar);
 
             //Step 3 - Unescape the special characters that we had escaped to construct the packUri
             Uri packageUri = new Uri(Uri.UnescapeDataString(hostAndPort));
@@ -981,14 +977,18 @@ namespace System.IO.Packaging
         // We need to perform Escaping for the following - '%'; '@'; ',' and '?' 
         // !!Important!! - The order is important - The '%' sign should be escaped first.
         // If any more characters need to be added to the array below they should be added at the end.
-        private static readonly char[] s_specialCharacters = { '%', '@', ',', '?' };
+        // All of these arrays must maintain the same ordering.
+        private static readonly char[] s_specialCharacterChars = { '%', '@', ',', '?' };
+        private static readonly string[] s_specialCharacterStrings = { "%", "@", ",", "?" };
+        private static readonly string[] s_specialCharacterHexEscapedStrings = HexEscapeCharsToStrings(s_specialCharacterChars);
 
         //Rels segment and extension
         private static readonly string s_relationshipPartSegmentName = "_rels";
         private static readonly string s_relationshipPartExtensionName = ".rels";
 
         // Forward Slash
-        internal static readonly char ForwardSlashChar = '/';
+        internal const char ForwardSlashChar = '/';
+        internal static readonly char[] s_forwardSlashCharArray = { ForwardSlashChar };
 
         // Backward Slash
         internal static readonly char BackwardSlashChar = '\\';
@@ -1022,7 +1022,7 @@ namespace System.IO.Packaging
             #region Internal Constructors
 
             internal ValidatedPartUri(string partUriString)
-                : this(partUriString, false /*isNormalized*/, true /*computeIsRelationship*/, false /*dummy value as we will compute it later*/)
+                : this(partUriString, isNormalized: false, computeIsRelationship: true, isRelationshipPartUri: false /*dummy value as we will compute it later*/)
             {
             }
 
@@ -1031,7 +1031,7 @@ namespace System.IO.Packaging
             //This will optimize the code and we will not have to parse the Uri to find out
             //if it is a relationship part uri
             internal ValidatedPartUri(string partUriString, bool isRelationshipUri)
-                : this(partUriString, false /*isNormalized*/, false /*computeIsRelationship*/, isRelationshipUri)
+                : this(partUriString, isNormalized: false, computeIsRelationship: false, isRelationshipPartUri: isRelationshipUri)
             {
             }
 
@@ -1156,7 +1156,7 @@ namespace System.IO.Packaging
             private ValidatedPartUri(string partUriString, bool isNormalized, bool computeIsRelationship, bool isRelationshipPartUri)
                 : base(partUriString, UriKind.Relative)
             {
-                Debug.Assert(partUriString != null && partUriString.Length > 0);
+                Debug.Assert(!string.IsNullOrEmpty(partUriString));
 
                 _partUriString = partUriString;
                 _isNormalized = isNormalized;
@@ -1199,7 +1199,7 @@ namespace System.IO.Packaging
                 // of .rels.  The folder must also be the last "folder".
                 // Comparing using the normalized string to reduce the number of ToUpperInvariant operations
                 // required for case-insensitive comparison
-                string[] segments = NormalizedPartUriString.Split(s_forwardSlashSeparator); //new Uri(_defaultUri, this).Segments; //partUri.Segments cannot be called on a relative Uri;
+                string[] segments = NormalizedPartUriString.Split(s_forwardSlashCharArray); //new Uri(_defaultUri, this).Segments; //partUri.Segments cannot be called on a relative Uri;
 
                 // String.Split, will always return an empty string as the
                 // first member in the array as the string starts with a "/"
@@ -1290,11 +1290,9 @@ namespace System.IO.Packaging
             //need to use the private constructor to initialize this particular partUri as we need this in the 
             //IsRelationshipPartUri, that is called from the constructor.
             private static readonly Uri s_containerRelationshipNormalizedPartUri = new ValidatedPartUri("/_RELS/.RELS",
-                                                                                                         true /*isnormalized*/,
-                                                                                                         false /*computeIsRelationship*/,
-                                                                                                         true /*IsRelationship*/);
-
-            private static readonly char[] s_forwardSlashSeparator = { '/' };
+                                                                                                        isNormalized: true,
+                                                                                                        computeIsRelationship: false,
+                                                                                                        isRelationshipPartUri: true);
 
             #endregion Private Methods
 
