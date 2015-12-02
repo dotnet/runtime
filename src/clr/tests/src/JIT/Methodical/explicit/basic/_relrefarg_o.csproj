@@ -27,11 +27,11 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
-    <DebugType>Full</DebugType>
-    <Optimize>True</Optimize>
+    <DebugType></DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="gcarr.cs" />
+    <Compile Include="refarg_o.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(JitPackagesConfigFileDirectory)minimal\project.json" />
