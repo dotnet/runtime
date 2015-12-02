@@ -3058,7 +3058,6 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_RGCTX_FETCH:
-	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
 		return TRUE;
 	default:
 		return FALSE;
@@ -5367,10 +5366,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	}
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 	case MONO_PATCH_INFO_AOT_MODULE:
-		break;
-	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
-		encode_method_ref (acfg, patch_info->data.imt_tramp->method, p, &p);
-		encode_value (patch_info->data.imt_tramp->vt_offset, p, &p);
 		break;
 	case MONO_PATCH_INFO_SIGNATURE:
 		encode_signature (acfg, (MonoMethodSignature*)patch_info->data.target, p, &p);

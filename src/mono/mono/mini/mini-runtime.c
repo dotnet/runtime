@@ -1642,14 +1642,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			target = mono_arch_get_seq_point_info (domain, code);
 		break;
 #endif
-	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
-#ifdef MONO_ARCH_LLVM_SUPPORTED
-		g_assert (mono_use_llvm);
-		target = mono_create_llvm_imt_trampoline (domain, patch_info->data.imt_tramp->method, patch_info->data.imt_tramp->vt_offset);
-#else
-		g_assert_not_reached ();
-#endif
-		break;
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR: {
 		int card_table_shift_bits;
 		gpointer card_table_mask;

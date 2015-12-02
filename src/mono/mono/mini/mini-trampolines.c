@@ -1502,26 +1502,6 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 
 	return ptr;
 }
- 
-#ifdef MONO_ARCH_LLVM_SUPPORTED
-/*
- * mono_create_llvm_imt_trampoline:
- *
- *   LLVM compiled code can't pass in the IMT argument, so we use this trampoline, which
- * sets the IMT argument, then branches to the contents of the vtable slot given by
- * vt_offset in the vtable which is obtained from the argument list.
- */
-gpointer
-mono_create_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_offset)
-{
-#ifdef MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE
-	return mono_arch_get_llvm_imt_trampoline (domain, m, vt_offset);
-#else
-	g_assert_not_reached ();
-	return NULL;
-#endif
-}
-#endif
 
 guint32
 mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr)

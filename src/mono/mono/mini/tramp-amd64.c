@@ -118,36 +118,6 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 	return start;
 }
 
-gpointer
-mono_arch_get_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_offset)
-{
-	guint8 *code, *start;
-	int buf_len;
-	int this_reg;
-
-	buf_len = 32;
-
-	start = code = mono_domain_code_reserve (domain, buf_len);
-
-	this_reg = mono_arch_get_this_arg_reg (NULL);
-
-	/* Set imt arg */
-	amd64_mov_reg_imm (code, MONO_ARCH_IMT_REG, m);
-	/* Load vtable address */
-	amd64_mov_reg_membase (code, AMD64_RAX, this_reg, 0, 8);
-	amd64_jump_membase (code, AMD64_RAX, vt_offset);
-	amd64_ret (code);
-
-	g_assert ((code - start) < buf_len);
-
-	nacl_domain_code_validate (domain, &start, buf_len, &code);
-
-	mono_arch_flush_icache (start, code - start);
-	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
-
-	return start;
-}
-
 #ifdef _WIN64
 // Workaround lack of Valgrind support for 64-bit Windows
 #define VALGRIND_DISCARD_TRANSLATIONS(...)

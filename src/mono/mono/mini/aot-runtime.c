@@ -3453,15 +3453,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_AOT_MODULE:
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
 		break;
-	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE: {
-		MonoJumpInfoImtTramp *imt_tramp = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoImtTramp));
-
-		imt_tramp->method = decode_resolve_method_ref (aot_module, p, &p);
-		imt_tramp->vt_offset = decode_value (p, &p);
-		
-		ji->data.imt_tramp = imt_tramp;
-		break;
-	}
 	case MONO_PATCH_INFO_SIGNATURE:
 		ji->data.target = decode_signature (aot_module, p, &p);
 		break;
