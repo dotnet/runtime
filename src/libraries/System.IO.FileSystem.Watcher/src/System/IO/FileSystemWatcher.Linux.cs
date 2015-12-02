@@ -665,7 +665,7 @@ namespace System.IO
                                 // so we will send a DELETE for this event and a CREATE when the MOVED_TO is eventually processed.
                                 if (_bufferPos == _bufferAvailable)
                                 {
-                                    int pollResult;
+                                    Interop.Sys.PollEvents events;
                                     bool gotRef = false;
                                     try
                                     {
@@ -680,8 +680,7 @@ namespace System.IO
                                         // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
                                         // for the next event to arrive).
                                         const int MillisecondsTimeout = 2;
-                                        Interop.Sys.PollFlags resultFlags;
-                                        pollResult = Interop.Sys.Poll(_inotifyHandle.DangerousGetHandle().ToInt32(), Interop.Sys.PollFlags.POLLIN, MillisecondsTimeout, out resultFlags);
+                                        Interop.Sys.Poll(_inotifyHandle.DangerousGetHandle().ToInt32(), Interop.Sys.PollEvents.POLLIN, MillisecondsTimeout, out events);
                                     }
                                     finally
                                     {
@@ -692,7 +691,7 @@ namespace System.IO
                                     }
 
                                     // If we error or don't have any signaled handles, send the deleted event
-                                    if (pollResult <= 0)
+                                    if (events == Interop.Sys.PollEvents.POLLNONE)
                                     {
                                         // There isn't any more data in the queue so this is a deleted event
                                         watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);
