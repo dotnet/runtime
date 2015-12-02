@@ -198,28 +198,4 @@
   <data name="LockRecursionException_RecursiveReadNotAllowed" xml:space="preserve">
     <value>Recursive read lock acquisitions not allowed in this mode.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNumRequired" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
-    <value>Positive number required.</value>
-  </data>
-  <data name="Argument_SemaphoreInitialMaximum" xml:space="preserve">
-    <value>The initial count for the semaphore must be greater than or equal to zero and less than the maximum count.</value>
-  </data>
-  <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
-    <value>The name can be no more than 260 characters in length.</value>
-  </data>
-  <data name="WaitHandleCannotBeOpenedException_InvalidHandle" xml:space="preserve">
-    <value>A WaitHandle with system-wide name '{0}' cannot be created. A WaitHandle of a different type might have the same name.</value>
-  </data>
-  <data name="InvalidNullEmptyArgument" xml:space="preserve">
-    <value>Argument {0} cannot be null or zero-length.</value>
-  </data>
-  <data name="UnknownError_Num" xml:space="preserve">
-    <value>Unknown error '{0}'.</value>
-  </data>
-  <data name="WaitHandle_NamesNotSupported" xml:space="preserve">
-    <value>Named synchronization primitives are not supported on this platform.</value>
-  </data>
 </root>
