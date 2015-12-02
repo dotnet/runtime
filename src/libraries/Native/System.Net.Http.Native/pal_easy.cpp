@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#include "pal_config.h"
 #include "pal_easy.h"
 
 #include <assert.h>
@@ -43,7 +44,9 @@ static_assert(PAL_CURLE_UNKNOWN_OPTION == CURLE_UNKNOWN_OPTION, "");
 static_assert(PAL_CURL_HTTP_VERSION_NONE == CURL_HTTP_VERSION_NONE, "");
 static_assert(PAL_CURL_HTTP_VERSION_1_0 == CURL_HTTP_VERSION_1_0, "");
 static_assert(PAL_CURL_HTTP_VERSION_1_1 == CURL_HTTP_VERSION_1_1, "");
+#if HAVE_CURL_HTTP_VERSION_2_0
 static_assert(PAL_CURL_HTTP_VERSION_2_0 == CURL_HTTP_VERSION_2_0, "");
+#endif
 
 static_assert(PAL_CURLINFO_PRIVATE == CURLINFO_PRIVATE, "");
 static_assert(PAL_CURLINFO_HTTPAUTH_AVAIL == CURLINFO_HTTPAUTH_AVAIL, "");
