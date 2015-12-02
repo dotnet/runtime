@@ -527,7 +527,7 @@ build(globalParams + [CORECLR_OSX_BUILD: osxBuildJob.build.number,
                     Utilities.addStandardPRParameters(newFlowJob, project)
                     if (architecture == 'x64') {
                         if (configuration == 'Release') {
-                            Utilities.addGithubPRTrigger(newFlowJob, "OSX ${architecture} ${configuration} Build and Test", "(?i).*test\\W+osx\\W+debug.*", true /* trigger by phrase only */)
+                            Utilities.addGithubPRTrigger(newFlowJob, "OSX ${architecture} ${configuration} Build and Test", "(?i).*test\\W+osx\\W+release.*", true /* trigger by phrase only */)
                         } else {
                             Utilities.addGithubPRTrigger(newFlowJob, "OSX ${architecture} ${configuration} Build and Test", "(?i).*test\\W+osx\\W+debug.*", true /* trigger by phrase only */)
                         }
