@@ -254,7 +254,7 @@ namespace System.IO.Packaging
                    || String.CompareOrdinal(_subType, String.Empty) != 0);
 
                 StringBuilder stringBuilder = new StringBuilder(_type);
-                stringBuilder.Append(s_forwardSlashSeparator[0]);
+                stringBuilder.Append(PackUriHelper.ForwardSlashChar);
                 stringBuilder.Append(_subType);
 
                 if (_parameterDictionary != null && _parameterDictionary.Count > 0)
@@ -277,78 +277,6 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Methods
-
-        //------------------------------------------------------
-        //
-        //  Nested Classes
-        //
-        //------------------------------------------------------
-
-        #region Nested Classes
-
-        /// <summary>
-        /// Comparer class makes it easier to put ContentType objects in collections.
-        /// Only compares type and subtype components of the ContentType.  Could be
-        /// expanded to optionally compare parameters as well.
-        /// </summary>
-        internal class StrongComparer : IEqualityComparer<ContentType>
-        {
-            /// <summary>
-            /// This method does a strong comparison of the content types.
-            /// Only compares the ContentTypes' type and subtype components.
-            /// </summary>
-            public bool Equals(ContentType x, ContentType y)
-            {
-                if (x == null)
-                {
-                    return (y == null);
-                }
-                else
-                {
-                    return x.AreTypeAndSubTypeEqual(y);
-                }
-            }
-
-            /// <summary>
-            /// We lower case the results of ToString() because it returns the original
-            /// casing passed into the constructor.  ContentTypes that are equal (which
-            /// ignores casing) must have the same hash code.
-            /// </summary>
-            public int GetHashCode(ContentType obj)
-            {
-                return obj.ToString().ToUpperInvariant().GetHashCode();
-            }
-        }
-
-        internal class WeakComparer : IEqualityComparer<ContentType>
-        {
-            /// <summary>            
-            /// This method does a weak comparison of the content types. 
-            /// Parameter and value pairs are not used for the comparison. 
-            /// </summary>
-            public bool Equals(ContentType x, ContentType y)
-            {
-                if (x == null)
-                {
-                    return (y == null);
-                }
-                else
-                {
-                    return x.AreTypeAndSubTypeEqual(y, true);
-                }
-            }
-
-            /// <summary>
-            /// We lower case the results of ToString() because it returns the original
-            /// casing passed into the constructor.  ContentTypes that are equal (which
-            /// ignores casing) must have the same hash code.
-            /// </summary>
-            public int GetHashCode(ContentType obj)
-            {
-                return obj._type.ToUpperInvariant().GetHashCode() ^ obj._subType.ToUpperInvariant().GetHashCode();
-            }
-        }
-        #endregion Nested Classes
 
         //------------------------------------------------------
         //
@@ -397,7 +325,7 @@ namespace System.IO.Packaging
             //okay to trim at this point the end of the string as Linear White Spaces(LWS) chars are allowed here.
             typeAndSubType = typeAndSubType.TrimEnd(s_linearWhiteSpaceChars);
 
-            string[] splitBasedOnForwardSlash = typeAndSubType.Split(s_forwardSlashSeparator);
+            string[] splitBasedOnForwardSlash = typeAndSubType.Split(PackUriHelper.s_forwardSlashCharArray);
 
             if (splitBasedOnForwardSlash.Length != 2)
                 throw new ArgumentException(SR.InvalidTypeSubType);
@@ -414,7 +342,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If the string does not have the required "="</exception>
         private void ParseParameterAndValue(string parameterAndValue)
         {
-            while (String.CompareOrdinal(parameterAndValue, String.Empty) != 0)
+            while (parameterAndValue != string.Empty)
             {
                 //At this point the first character MUST be a semi-colon
                 //First time through this test is serving more as an assert.
@@ -590,14 +518,7 @@ namespace System.IO.Packaging
         /// <returns></returns>
         private static bool IsAllowedCharacter(char character)
         {
-            //We did not use any of the .Contains methods as
-            //it will result in boxing costs.
-            foreach (char c in s_allowedCharacters)
-            {
-                if (c == character)
-                    return true;
-            }
-            return false;
+            return Array.IndexOf(s_allowedCharacters, character) >= 0;
         }
 
         /// <summary>
@@ -619,15 +540,9 @@ namespace System.IO.Packaging
         /// <returns></returns>
         private static bool IsAsciiLetter(char character)
         {
-            if ((character >= 'a') && (character <= 'z'))
-            {
-                return true;
-            }
-            if (character >= 'A')
-            {
-                return (character <= 'Z');
-            }
-            return false;
+            return 
+                (character >= 'a' && character <= 'z') || 
+                (character >= 'A' && character <= 'Z');
         }
 
         /// <summary>
@@ -687,8 +602,6 @@ namespace System.IO.Packaging
            '.' /*46*/, '^' /*94*/ , '_'  /*95*/,
            '`' /*96*/, '|' /*124*/, '~'  /*126*/,
          };
-
-        private static readonly char[] s_forwardSlashSeparator = { '/' };
 
         //Linear White Space characters
         private static readonly char[] s_linearWhiteSpaceChars =

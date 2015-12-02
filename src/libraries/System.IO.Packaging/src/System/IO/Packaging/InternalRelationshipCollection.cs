@@ -14,13 +14,9 @@
 //
 //-----------------------------------------------------------------------------
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Xml;                           // for XmlReader/Writer
-using System.IO.Packaging;
-using System.IO;
 using System.Diagnostics;
 
 namespace System.IO.Packaging
@@ -97,7 +93,7 @@ namespace System.IO.Packaging
         /// Null OK (ID will be generated).</param>
         internal PackageRelationship Add(Uri targetUri, TargetMode targetMode, string relationshipType, string id)
         {
-            return Add(targetUri, targetMode, relationshipType, id, false /*not parsing*/);
+            return Add(targetUri, targetMode, relationshipType, id, parsing: false);
         }
 
         /// <summary>
@@ -322,7 +318,10 @@ namespace System.IO.Packaging
                                         if (!reader.IsEmptyElement)
                                             ProcessEndElementForRelationshipTag(reader);
                                     }
-                                    else throw new XmlException(SR.RelationshipTagDoesntMatchSchema, null, reader.LineNumber, reader.LinePosition);
+                                    else
+                                    {
+                                        throw new XmlException(SR.RelationshipTagDoesntMatchSchema, null, reader.LineNumber, reader.LinePosition);
+                                    }
                                 }
                                 else
                                     if (!(String.CompareOrdinal(s_relationshipsTagName, reader.LocalName) == 0 && (reader.NodeType == XmlNodeType.EndElement)))
@@ -350,7 +349,7 @@ namespace System.IO.Packaging
             {
                 try
                 {
-                    relationshipTargetMode = (TargetMode)(Enum.Parse(typeof(TargetMode), targetModeAttributeValue, false /* ignore case */));
+                    relationshipTargetMode = (TargetMode)(Enum.Parse(typeof(TargetMode), targetModeAttributeValue, ignoreCase: false));
                 }
                 catch (ArgumentNullException argNullEx)
                 {
@@ -366,24 +365,24 @@ namespace System.IO.Packaging
             // Attribute : Target
             // create a new PackageRelationship
             string targetAttributeValue = reader.GetAttribute(s_targetAttributeName);
-            if (targetAttributeValue == null || targetAttributeValue == String.Empty)
+            if (string.IsNullOrEmpty(targetAttributeValue))
                 throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, s_targetAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             Uri targetUri = new Uri(targetAttributeValue, UriKind.RelativeOrAbsolute);
 
             // Attribute : Type
             string typeAttributeValue = reader.GetAttribute(s_typeAttributeName);
-            if (typeAttributeValue == null || typeAttributeValue == String.Empty)
+            if (string.IsNullOrEmpty(typeAttributeValue))
                 throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, s_typeAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             // Attribute : Id
             // Get the Id attribute (required attribute).
             string idAttributeValue = reader.GetAttribute(s_idAttributeName);
-            if (idAttributeValue == null || idAttributeValue == String.Empty)
+            if (string.IsNullOrEmpty(idAttributeValue))
                 throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, s_idAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             // Add the relationship to the collection
-            Add(targetUri, relationshipTargetMode, typeAttributeValue, idAttributeValue, true /*parsing*/);
+            Add(targetUri, relationshipTargetMode, typeAttributeValue, idAttributeValue, parsing: true);
         }
 
         //If End element is present for Relationship then we process it
@@ -585,11 +584,11 @@ namespace System.IO.Packaging
             {
                 if (target.IsAbsoluteUri)
                 {
-                    if (String.CompareOrdinal(target.Scheme, PackUriHelper.UriSchemePack) == 0)
+                    if (string.Equals(target.Scheme, PackUriHelper.UriSchemePack))
                         return PackUriHelper.GetPartUri(target);
                 }
                 else
-                    Debug.Assert(false, "Uri should not be relative at this stage");
+                    Debug.Fail("Uri should not be relative at this stage");
             }
             // relative to the location of the package.
             return target;
