@@ -17,12 +17,10 @@ namespace System.Net
         internal string Comment = null;
 
         /*
-         *  This is to support SSL under semi trusted environment.
-         *  Note that it is only for SSL with no client cert
-         *
-         *  Important: safeHandle should not be Disposed during construction of this object.
-         * 
-         *  _SecPkgInfoW in sspi.h
+            This is to support SSL with no client cert.
+            Important: safeHandle should not be Disposed during construction of this object.
+           
+            _SecPkgInfoW in sspi.h
          */
         internal SecurityPackageInfoClass(SafeHandle safeHandle, int index)
         {
@@ -35,6 +33,7 @@ namespace System.Net
             IntPtr unmanagedAddress = IntPtrHelper.Add(safeHandle.DangerousGetHandle(), SecurityPackageInfo.Size * index);
             GlobalLog.Print("SecurityPackageInfoClass::.ctor() unmanagedPointer: " + ((long)unmanagedAddress).ToString("x"));
 
+            // TODO (Issue #3114): replace with Marshal.PtrToStructure.
             Capabilities = Marshal.ReadInt32(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("Capabilities"));
             Version = Marshal.ReadInt16(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("Version"));
             RPCID = Marshal.ReadInt16(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("RPCID"));

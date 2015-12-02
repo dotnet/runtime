@@ -19,9 +19,10 @@ namespace System.Net
         {
             fixed (void* voidPtr = memory)
             {
-                IntPtr unmanagedAddress = new IntPtr(voidPtr);
+                var unmanagedAddress = new IntPtr(voidPtr);
                 try
                 {
+                    // TODO (Issue #3114): replace with Marshal.PtrToStructure.
                     header = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress));
                     trailer = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 4));
                     maximumMessage = (int)checked((uint)Marshal.ReadInt32(unmanagedAddress, 8));
@@ -38,6 +39,7 @@ namespace System.Net
                 }
             }
         }
+
         public static readonly int SizeOf = Marshal.SizeOf<StreamSizes>();
     }
 }

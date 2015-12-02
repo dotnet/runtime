@@ -63,6 +63,7 @@ namespace System.Net
             _totalRead = 0;
             StartReading();
         }
+
         //
         // Loops while subsequent completions are sync.
         //

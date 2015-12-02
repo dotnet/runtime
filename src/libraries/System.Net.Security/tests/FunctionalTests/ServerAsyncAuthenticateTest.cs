@@ -35,9 +35,10 @@ namespace System.Net.Security.Tests
         [ClassData(typeof(SslProtocolSupport.UnsupportedSslProtocolsTestData))]
         public async Task ServerAsyncAuthenticate_EachServerUnsupportedProtocol_Fail(SslProtocols protocol)
         {
-            await Assert.ThrowsAsync<NotSupportedException>(() => {
+            await Assert.ThrowsAsync<NotSupportedException>(() =>
+            {
                 return ServerAsyncSslHelper(
-                    SslProtocolSupport.SupportedSslProtocols, 
+                    SslProtocolSupport.SupportedSslProtocols,
                     protocol,
                     expectedToFail: true);
             });
@@ -46,15 +47,16 @@ namespace System.Net.Security.Tests
         [Theory]
         [MemberData("ProtocolMismatchData")]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
-            SslProtocols serverProtocol, 
+            SslProtocols serverProtocol,
             SslProtocols clientProtocol,
             Type expectedException)
         {
             await Assert.ThrowsAsync(
                 expectedException,
-                () => {
+                () =>
+                {
                     return ServerAsyncSslHelper(
-                        serverProtocol, 
+                        serverProtocol,
                         clientProtocol,
                         expectedToFail: true);
                 });
@@ -63,7 +65,8 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task ServerAsyncAuthenticate_UnsuportedAllServer_Fail()
         {
-            await Assert.ThrowsAsync<NotSupportedException>(() => {
+            await Assert.ThrowsAsync<NotSupportedException>(() =>
+            {
                 return ServerAsyncSslHelper(
                     SslProtocolSupport.SupportedSslProtocols,
                     SslProtocolSupport.UnsupportedSslProtocols,
@@ -81,8 +84,8 @@ namespace System.Net.Security.Tests
 
         private static IEnumerable<object[]> ProtocolMismatchData()
         {
-            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException)};
-            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException)};
+            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(AuthenticationException) };
+            yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(TimeoutException) };
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls12, typeof(AuthenticationException) };
             yield return new object[] { SslProtocols.Tls12, SslProtocols.Tls, typeof(TimeoutException) };
@@ -97,10 +100,10 @@ namespace System.Net.Security.Tests
             bool expectedToFail = false)
         {
             _log.WriteLine(
-                "Server: " + serverSslProtocols + "; Client: " + clientSslProtocols + 
+                "Server: " + serverSslProtocols + "; Client: " + clientSslProtocols +
                 " expectedToFail: " + expectedToFail);
 
-            int timeOut = expectedToFail ? TestConfiguration.FailingTestTimeoutMiliseconds 
+            int timeOut = expectedToFail ? TestConfiguration.FailingTestTimeoutMiliseconds
                 : TestConfiguration.PassingTestTimeoutMilliseconds;
 
             IPEndPoint endPoint = new IPEndPoint(IPAddress.IPv6Loopback, 0);
@@ -116,7 +119,7 @@ namespace System.Net.Security.Tests
 
                 // We expect that the network-level connect will always complete.
                 Task.WaitAll(
-                    new Task[] { clientConnect, serverAccept }, 
+                    new Task[] { clientConnect, serverAccept },
                     TestConfiguration.PassingTestTimeoutMilliseconds);
 
                 using (TcpClient serverConnection = await serverAccept)
@@ -139,7 +142,7 @@ namespace System.Net.Security.Tests
                         true,
                         serverSslProtocols,
                         false);
-                    
+
                     try
                     {
                         clientAuthentication.Wait(timeOut);

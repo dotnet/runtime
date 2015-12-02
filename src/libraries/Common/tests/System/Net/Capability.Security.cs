@@ -13,12 +13,12 @@ namespace System.Net.Test.Common
         // https://github.com/dotnet/corefx-testdata/blob/master/System.Net.TestData/contoso.com.p7b
         private const string CARootThumbprint = "3B279AD43D6DD459268D3F3A3D72DAAD4BF4D9C6";
 
-        private static Lazy<bool> trustedCertificateSupport = 
+        private static Lazy<bool> s_trustedCertificateSupport =
             new Lazy<bool>(InitializeTrustedRootCertificateCapability, LazyThreadSafetyMode.ExecutionAndPublication);
-        
+
         public static bool IsTrustedRootCertificateInstalled()
         {
-            return trustedCertificateSupport.Value;
+            return s_trustedCertificateSupport.Value;
         }
 
         private static bool InitializeTrustedRootCertificateCapability()
@@ -26,8 +26,8 @@ namespace System.Net.Test.Common
             using (var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser))
             {
                 store.Open(OpenFlags.ReadOnly);
-                
-                X509Certificate2Collection certs = 
+
+                X509Certificate2Collection certs =
                     store.Certificates.Find(X509FindType.FindByThumbprint, CARootThumbprint, false);
 
                 if (certs.Count == 1)

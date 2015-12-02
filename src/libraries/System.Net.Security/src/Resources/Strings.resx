@@ -117,8 +117,20 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
+    <value>Only single dimensional arrays are supported for the requested action.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Index is less than zero.</value>
+  </data>
+  <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
+    <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
+  </data>
   <data name="net_noseek" xml:space="preserve">
     <value>This stream does not support seek operations.</value>
+  </data>
+  <data name="net_mustbeuri" xml:space="preserve">
+    <value>The {0} parameter must represent a valid Uri (see inner exception).</value>
   </data>
   <data name="net_securitypackagesupport" xml:space="preserve">
     <value>The requested security package is not supported.</value>
@@ -150,6 +162,9 @@
   <data name="net_io_header_id" xml:space="preserve">
     <value>Found a wrong header field {0} read : {1}, expected : {2}.</value>
   </data>
+  <data name="net_io_out_range" xml:space="preserve">
+    <value>The byte count must not exceed {0} bytes for this stream type.</value>
+  </data>
   <data name="net_io_encrypt" xml:space="preserve">
     <value>The encryption operation failed, see inner exception.</value>
   </data>
@@ -177,6 +192,21 @@
   <data name="net_ssl_io_no_server_cert" xml:space="preserve">
     <value>The server mode SSL must use a certificate with the associated private key.</value>
   </data>
+  <data name="net_auth_bad_client_creds" xml:space="preserve">
+    <value>The server has rejected the client credentials.</value>
+  </data>
+  <data name="net_auth_bad_client_creds_or_target_mismatch" xml:space="preserve">
+    <value>Either the target name is incorrect or the server has rejected the client credentials.</value>
+  </data>
+  <data name="net_auth_context_expectation" xml:space="preserve">
+    <value>A security requirement was not fulfilled during authentication. Required: {0}, negotiated: {1}.</value>
+  </data>
+  <data name="net_auth_context_expectation_remote" xml:space="preserve">
+    <value>A remote side security requirement was not fulfilled during authentication. Try increasing the ProtectionLevel and/or ImpersonationLevel.</value>
+  </data>
+  <data name="net_auth_supported_impl_levels" xml:space="preserve">
+    <value>The supported values are Identification, Impersonation or Delegation.</value>
+  </data>
   <data name="net_auth_reauth" xml:space="preserve">
     <value>This operation is not allowed on a security context that has already been authenticated.</value>
   </data>
@@ -192,11 +222,17 @@
   <data name="net_auth_eof" xml:space="preserve">
     <value>Authentication failed because the remote party has closed the transport stream.</value>
   </data>
+  <data name="net_auth_alert" xml:space="preserve">
+    <value>Authentication failed on the remote side (the stream might still be available for additional authentication attempts).</value>
+  </data>
   <data name="net_auth_ignored_reauth" xml:space="preserve">
     <value>Re-authentication failed because the remote party continued to encrypt more than {0} bytes before answering re-authentication.</value>
   </data>
   <data name="net_auth_message_not_encrypted" xml:space="preserve">
     <value>Protocol error: A received message contains a valid signature but it was not encrypted as required by the effective Protection Level.</value>
+  </data>
+  <data name="net_auth_must_specify_extended_protection_scheme" xml:space="preserve">
+    <value>An extended protection policy must specify either a custom channel binding or a custom service name collection.</value>
   </data>
   <data name="net_frame_size" xml:space="preserve">
     <value>Received an invalid authentication frame. The message size is limited to {0} bytes, attempted to read {1} bytes.</value>
