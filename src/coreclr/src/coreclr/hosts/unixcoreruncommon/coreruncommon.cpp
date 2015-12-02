@@ -16,13 +16,7 @@
 #include <string>
 #include <string.h>
 #include <sys/stat.h>
-
-#if defined(__APPLE__)
-#include <mach-o/dyld.h>
-static const char * const coreClrDll = "libcoreclr.dylib";
-#else
-static const char * const coreClrDll = "libcoreclr.so";
-#endif
+#include "coreruncommon.h"
 
 #define SUCCEEDED(Status) ((Status) >= 0)
 

@@ -47,3 +47,11 @@ int ExecuteManagedAssembly(
             int managedAssemblyArgc,
             const char** managedAssemblyArgv);
 
+
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+static const char * const coreClrDll = "libcoreclr.dylib";
+#else
+static const char * const coreClrDll = "libcoreclr.so";
+#endif
+
