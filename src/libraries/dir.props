@@ -26,6 +26,11 @@
       <Value>True</Value>
     </AssemblyMetadata>
   </ItemGroup>
+  
+  <!-- Temporary adding this property so that non-windows builds will target the net45 version of the task library instead of the .Net Core version -->
+  <PropertyGroup>
+    <BuildToolsTargets45 Condition="'$(BuildToolsTargets45)' == '' and '$(OsEnvironment)' != 'Windows_NT'">true</BuildToolsTargets45>
+  </PropertyGroup>
 
   <!-- Common repo directories -->
   <PropertyGroup>
