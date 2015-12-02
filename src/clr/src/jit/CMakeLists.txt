@@ -88,6 +88,8 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
     targetx86.cpp
     lowerxarch.cpp
     codegenxarch.cpp
+    codegenlegacy.cpp
+    stackfp.cpp
   )
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
   set( ARCH_SOURCES
@@ -137,3 +139,7 @@ set(CLR_EXPORTED_SYMBOL_FILE ${CLRJIT_EXPORTS_DEF})
 add_subdirectory(dll)
 add_subdirectory(crossgen)
 add_subdirectory(standalone)
+
+if (CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_ARM)
+    add_subdirectory(protojit)
+endif (CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_ARM)
