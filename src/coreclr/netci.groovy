@@ -401,7 +401,7 @@ build(globalParams + [CORECLR_LINUX_BUILD: linuxBuildJob.build.number,
     // Put the OS's supported for coreclr cross testing here
     ['OSX'].each { os ->
         [true, false].each { isPR ->
-            ['Debug'].each { configuration ->
+            ['Debug', 'Release'].each { configuration ->
                 
                 def lowerConfiguration = configuration.toLowerCase()
                 def osGroup = osGroupMap[os]
