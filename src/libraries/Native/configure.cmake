@@ -301,6 +301,13 @@ check_cxx_source_compiles(
 check_cxx_source_compiles(
     "
     #include <curl/multi.h>
+    int main() { int i = CURL_HTTP_VERSION_2_0; }
+    "
+    HAVE_CURL_HTTP_VERSION_2_0)
+
+check_cxx_source_compiles(
+    "
+    #include <curl/multi.h>
     int main() { int i = CURLPIPE_MULTIPLEX; }
     "
     HAVE_CURLPIPE_MULTIPLEX)
