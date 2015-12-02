@@ -91,8 +91,8 @@ namespace System.Linq.Expressions
             RequiresCanRead(body, "body");
 
             var values = testValues.ToReadOnly();
-            RequiresCanRead(values, "testValues");
             ContractUtils.RequiresNotEmpty(values, "testValues");
+            RequiresCanRead(values, "testValues");
 
             return new SwitchCase(body, values);
         }
