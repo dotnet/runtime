@@ -16,6 +16,10 @@ static_assert(PAL_CURLM_UNKNOWN_OPTION == CURLM_UNKNOWN_OPTION, "");
 #if HAVE_CURLM_ADDED_ALREADY
 static_assert(PAL_CURLM_ADDED_ALREADY == CURLM_ADDED_ALREADY, "");
 #endif
+static_assert(PAL_CURLMOPT_PIPELINING == CURLMOPT_PIPELINING, "");
+#if HAVE_CURLPIPE_MULTIPLEX
+static_assert(PAL_CURLPIPE_MULTIPLEX == CURLPIPE_MULTIPLEX, "");
+#endif
 
 static_assert(PAL_CURLMSG_DONE == CURLMSG_DONE, "");
 
@@ -100,4 +104,9 @@ extern "C" int32_t MultiInfoRead(CURLM* multiHandle, int32_t* message, CURL** ea
 extern "C" const char* MultiGetErrorString(PAL_CURLMcode code)
 {
     return curl_multi_strerror(static_cast<CURLMcode>(code));
+}
+
+extern "C" int32_t MultiSetOptionLong(CURLM* handle, PAL_CURLMoption option, int64_t value)
+{
+    return curl_multi_setopt(handle, static_cast<CURLMoption>(option), value);
 }

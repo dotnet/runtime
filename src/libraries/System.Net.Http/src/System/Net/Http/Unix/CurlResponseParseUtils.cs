@@ -26,7 +26,7 @@ namespace System.Net.Http
             return value;
         }
 
-        private static void SkipMandatorySpace(string responseHeader, ref int index)
+        private static bool SkipSpace(string responseHeader, ref int index)
         {
             bool foundSpace = false;
             for ( ; index < responseHeader.Length; index++)
@@ -40,8 +40,7 @@ namespace System.Net.Http
                     break;
                 }
             }
-
-            CheckResponseMsgFormat(foundSpace);
+            return foundSpace;
         }
 
         private static bool ValidHeaderNameChar(char c)
@@ -73,29 +72,22 @@ namespace System.Net.Http
             CheckResponseMsgFormat(index < responseHeader.Length && responseHeader[index] >= '0' && responseHeader[index] <= '9');
             int minorVersion = ReadInt(responseHeader, ref index);
 
-            SkipMandatorySpace(responseHeader, ref index);
+            CheckResponseMsgFormat(SkipSpace(responseHeader, ref index));
 
             //  parse status code
             int statusCode = ReadInt(responseHeader, ref index);
             CheckResponseMsgFormat(statusCode >= 100 && statusCode < 600);
 
-            SkipMandatorySpace(responseHeader, ref index);
+            bool foundSpace = SkipSpace(responseHeader, ref index);
+            CheckResponseMsgFormat(index <= responseHeader.Length);
+            CheckResponseMsgFormat(foundSpace || index == responseHeader.Length);
 
-            // we need reason phrase
-            CheckResponseMsgFormat( index < responseHeader.Length);
-
-            // Check if version is  HTTP/1.1 or HTTP/1.0
-            if (majorVersion == 1)
-            {
-                response.Version =
-                    minorVersion == 1 ? HttpVersion.Version11 :
-                    minorVersion == 0 ? HttpVersion.Version10 :
-                    new Version(0, 0);
-            }
-            else
-            {
-                response.Version = new Version(0, 0);
-            }
+            // Set the response HttpVersion
+            response.Version =
+                (majorVersion == 1 && minorVersion == 1) ? HttpVersion.Version11 :
+                (majorVersion == 1 && minorVersion == 0) ? HttpVersion.Version10 :
+                (majorVersion == 2 && minorVersion == 0) ? HttpVersion.Version20 :
+                HttpVersion.Unknown;
 
             response.StatusCode = (HttpStatusCode)statusCode;
             response.ReasonPhrase = responseHeader.Substring(index);
@@ -123,4 +115,3 @@ namespace System.Net.Http
         }
     }
 }
-

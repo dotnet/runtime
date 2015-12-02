@@ -88,6 +88,7 @@ internal static partial class Interop
             CURLOPT_PROXYPORT = CurlOptionLongBase + 59,
             CURLOPT_POSTFIELDSIZE = CurlOptionLongBase + 60,
             CURLOPT_MAXREDIRS = CurlOptionLongBase + 68,
+            CURLOPT_HTTP_VERSION = CurlOptionLongBase + 84,
             CURLOPT_NOSIGNAL = CurlOptionLongBase + 99,
             CURLOPT_PROXYTYPE = CurlOptionLongBase + 101,
             CURLOPT_HTTPAUTH = CurlOptionLongBase + 107,
@@ -117,6 +118,15 @@ internal static partial class Interop
         // Curl info are of the format <type base> + <n>
         private const int CurlInfoStringBase = 0x100000;
         private const int CurlInfoLongBase = 0x200000;
+
+        // Enum for constants defined for CURL_HTTP_VERSION
+        internal enum CurlHttpVersion
+        {
+            CURL_HTTP_VERSION_NONE = 0,
+            CURL_HTTP_VERSION_1_0 = 1,
+            CURL_HTTP_VERSION_1_1 = 2,
+            CURL_HTTP_VERSION_2_0 = 3,
+        };
 
         // Enum for constants defined for the enum CURLINFO in curl.h
         internal enum CURLINFO

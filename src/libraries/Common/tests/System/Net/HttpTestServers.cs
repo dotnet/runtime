@@ -8,10 +8,11 @@ namespace System.Net.Tests
     internal class HttpTestServers
     {
         public const string Host = "corefx-networking.azurewebsites.net";
+        public const string Http2Host = "http2.akamai.com";
 
         private const string HttpScheme = "http";
         private const string HttpsScheme = "https";
-        
+
         private const string EchoHandler = "Echo.ashx";
         private const string EmptyContentHandler = "EmptyContent.ashx";
         private const string StatusCodeHandler = "StatusCode.ashx";
@@ -19,13 +20,13 @@ namespace System.Net.Tests
         private const string VerifyUploadHandler = "VerifyUpload.ashx";
         private const string DeflateHandler = "Deflate.ashx";
         private const string GZipHandler = "GZip.ashx";
-        
+
         public readonly static Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
         public readonly static Uri SecureRemoteEchoServer = new Uri("https://" + Host + "/" + EchoHandler);
-        
+
         public readonly static Uri RemoteVerifyUploadServer = new Uri("http://" + Host + "/" + VerifyUploadHandler);
         public readonly static Uri SecureRemoteVerifyUploadServer = new Uri("https://" + Host + "/" + VerifyUploadHandler);
-        
+
         public readonly static Uri RemoteEmptyContentServer = new Uri("http://" + Host + "/" + EmptyContentHandler);
         public readonly static Uri RemoteDeflateServer = new Uri("http://" + Host + "/" + DeflateHandler);
         public readonly static Uri RemoteGZipServer = new Uri("http://" + Host + "/" + GZipHandler);
@@ -33,6 +34,7 @@ namespace System.Net.Tests
         public readonly static object[][] EchoServers = { new object[] { RemoteEchoServer }, new object[] { SecureRemoteEchoServer } };
         public readonly static object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer } };
         public readonly static object[][] CompressedServers = { new object[] { RemoteDeflateServer }, new object[] { RemoteGZipServer } };
+        public readonly static object[][] Http2Servers = { new object[] { new Uri("https://" + Http2Host) } };
 
         public static Uri BasicAuthUriForCreds(bool secure, string userName, string password)
         {

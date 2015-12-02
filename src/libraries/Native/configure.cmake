@@ -298,6 +298,13 @@ check_cxx_source_compiles(
     "
     HAVE_CURLM_ADDED_ALREADY)
 
+check_cxx_source_compiles(
+    "
+    #include <curl/multi.h>
+    int main() { int i = CURLPIPE_MULTIPLEX; }
+    "
+    HAVE_CURLPIPE_MULTIPLEX)
+
 set (CMAKE_REQUIRED_LIBRARIES)
 
 configure_file(

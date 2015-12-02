@@ -37,6 +37,7 @@ namespace System.Net.Http.Functional.Tests
             new object[] { "X-CustomHeader", "x-value", HttpTestServers.RedirectUriForDestinationUri(false, HttpTestServers.RemoteEchoServer, -1) },
             new object[] { "X-Cust-Header-NoValue", "" , HttpTestServers.RedirectUriForDestinationUri(false, HttpTestServers.RemoteEchoServer, -1) },
         };
+        public readonly static object[][] Http2Servers = HttpTestServers.Http2Servers;
 
 
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
@@ -702,7 +703,58 @@ namespace System.Net.Http.Functional.Tests
                 }
             }        
         }
-        
+        #endregion
+
+        #region Version tests
+        [ActiveIssue(4754, PlatformID.Windows)]
+        [Theory, MemberData("Http2Servers")]
+        public async Task SendAsync_RequestVersion10_ResponseVersion10(Uri server)
+        {
+            Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 0), server);
+            Assert.Equal(new Version(1, 0), responseVersion);
+        }
+
+        [Theory, MemberData("Http2Servers")]
+        public async Task SendAsync_RequestVersion11_ResponseVersion11(Uri server)
+        {
+            Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(1, 1), server);
+            Assert.Equal(new Version(1, 1), responseVersion);
+        }
+
+        [Theory, MemberData("Http2Servers")]
+        public async Task SendAsync_RequestVersionNotSpecified_ResponseVersion11(Uri server)
+        {
+            Version responseVersion = await SendRequestAndGetResponseVersionAsync(null, server);
+            Assert.Equal(new Version(1, 1), responseVersion);
+        }
+
+        [Theory, MemberData("Http2Servers")]
+        public async Task SendAsync_RequestVersion20_ResponseVersion20IfHttp2Supported(Uri server)
+        {
+            // We don't currently have a good way to test whether HTTP/2 is supported without
+            // using the same mechanism we're trying to test, so for now we allow both 2.0 and 1.1 responses.
+            Version responseVersion = await SendRequestAndGetResponseVersionAsync(new Version(2, 0), server);
+            Assert.True(
+                responseVersion == new Version(2, 0) || 
+                responseVersion == new Version(1, 1),
+                "Response version " + responseVersion);
+        }
+
+        private async Task<Version> SendRequestAndGetResponseVersionAsync(Version requestVersion, Uri server)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, server);
+            if (requestVersion != null)
+            {
+                request.Version = requestVersion;
+            }
+
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.SendAsync(request))
+            {
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                return response.Version;
+            }
+        }
         #endregion
     }
 }
