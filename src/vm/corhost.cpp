@@ -2555,7 +2555,7 @@ VOID CorHost2::ExecuteMainInner(Assembly* pRootAssembly)
 		// since this is the thread 0 entry point for AppX apps we use
 		// the EntryPointFilter so that an unhandled exception here will
 		// trigger the same behavior as in classic apps.
-        pParam->pRootAssembly->ExecuteMainMethod(NULL, FALSE /* waitForOtherThreads */);
+        pParam->pRootAssembly->ExecuteMainMethod(NULL, TRUE /* waitForOtherThreads */);
     }
     PAL_EXCEPT_FILTER(EntryPointFilter)
     {
