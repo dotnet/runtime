@@ -5,7 +5,7 @@ src\<Library Name>\src - Contains the source code for the library.
 src\<Library Name>\ref - Contains any refernce assembly projects for the library
 src\<Library Name>\tests - Contains the test code for a library
 ```
-In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various configurartions (see [Configurations](project-configuration-conventions)). The src directory should also contain exactly **one** `.builds` file which contains all the valid configurations that a library should be built for (see [.builds file](project-.builds-file)). In some cases there might be a Facade subdirectory under src with a .csproj (see [Facades Projects](facades-projects)). 
+In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various configurartions (see [Configurations](#project-configuration-conventions)). The src directory should also contain exactly **one** `.builds` file which contains all the valid configurations that a library should be built for (see [#.builds file](#project-builds-file)). In some cases there might be a Facade subdirectory under src with a .csproj (see [Facades Projects](#facades-projects)). 
 
 
 ##Build Pivots
