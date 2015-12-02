@@ -28,6 +28,7 @@
     <Compile Include="IntRangePartitionerTests.cs" />
     <Compile Include="LongRangePartitionerTests.cs" />
     <Compile Include="PartitionerStaticTests.cs" />
+    <Compile Include="PartitionerTests.cs" />
     <Compile Include="RangePartitionerNegativeTests.cs" />
     <Compile Include="PartitionerHelpers.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
