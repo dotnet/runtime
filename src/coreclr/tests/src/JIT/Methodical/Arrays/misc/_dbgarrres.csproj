@@ -28,10 +28,10 @@
   </ItemGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>
-    <Optimize>True</Optimize>
+    <Optimize></Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="gcarr.cs" />
+    <Compile Include="arrres.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(JitPackagesConfigFileDirectory)minimal\project.json" />
