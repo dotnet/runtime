@@ -23,14 +23,12 @@
     <ProjectLockJson>unix\project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   
   <ItemGroup>
     <Compile Include="System\PinnableBufferCache.cs" />
@@ -48,13 +46,16 @@
     <Compile Include="System\Net\SecureProtocols\AuthenticationException.cs" />
     <Compile Include="System\Net\SecureProtocols\FixedSizeReader.cs" />
     <Compile Include="System\Net\SecureProtocols\ProtectionLevel.cs" />
+
+    <!-- NegotiateStream -->    
+    <Compile Include="System\Net\SecureProtocols\BufferAsyncResult.cs" />
+    <Compile Include="System\Net\SecureProtocols\NegotiateStream.cs" />
+    <Compile Include="System\Net\SecureProtocols\InternalNegotiateStream.cs" />
+    
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicy.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\PolicyEnforcement.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ProtectionScenario.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ServiceNameCollection.cs" />
-	
-    <!-- TODO: Shims -->
-    <Compile Include="Shims\NegotiateStream.cs" />
 	
     <!-- Logging -->
     <Compile Include="$(CommonPath)\System\Net\Shims\TraceSource.cs">
@@ -137,14 +138,20 @@
     <Compile Include="$(CommonPath)\System\IO\Error.cs">
       <Link>Common\System\IO\Error.cs</Link>
     </Compile>
-	
-	
   </ItemGroup>
+  
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Net\SslStreamPal.Windows.cs" />
     <Compile Include="System\Net\SecurityContextTokenHandle.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
 	
+    <!-- NegotiateStream -->
+    <Compile Include="System\Net\NTAuthentication.cs" />
+    <Compile Include="System\Net\SpnDictionary.cs" />
+    <Compile Include="System\Net\SSPIHandleCache.cs" />
+    <Compile Include="System\Net\StreamFramer.cs" />
+    <Compile Include="System\Net\SecureProtocols\NegoState.Windows.cs" />
+   
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -173,55 +180,60 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\UnmanagedCertificateContext.cs">
       <Link>Common\Interop\Windows\SChannel\UnmanagedCertificateContext.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Bindings.cs">
-      <Link>Common\Interop\Windows\secur32\Bindings.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\Bindings.cs">
+      <Link>Common\Interop\Windows\sspicli\Bindings.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\GlobalSSPI.cs">
-      <Link>Common\Interop\Windows\secur32\GlobalSSPI.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\GlobalSSPI.cs">
+      <Link>Common\Interop\Windows\sspicli\GlobalSSPI.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.SSPI.cs">
-      <Link>Common\Interop\Windows\secur32\Interop.SSPI.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\Interop.SSPI.cs">
+      <Link>Common\Interop\Windows\sspicli\Interop.SSPI.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\NegotiationInfo.cs">
-      <Link>Common\Interop\Windows\secur32\NegotiationInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\NegotiationInfo.cs">
+      <Link>Common\Interop\Windows\sspicli\NegotiationInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\NegotiationInfoClass.cs">
-      <Link>Common\Interop\Windows\secur32\NegotiationInfoClass.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\NegotiationInfoClass.cs">
+      <Link>Common\Interop\Windows\sspicli\NegotiationInfoClass.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecSizes.cs">
-      <Link>Common\Interop\Windows\secur32\SecSizes.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecSizes.cs">
+      <Link>Common\Interop\Windows\sspicli\SecSizes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\SecurityEventSource.Windows.cs">
       <Link>Common\System\Net\Logging\SecurityEventSource.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecurityPackageInfo.cs">
-      <Link>Common\Interop\Windows\secur32\SecurityPackageInfo.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecurityPackageInfo.cs">
+      <Link>Common\Interop\Windows\sspicli\SecurityPackageInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecurityPackageInfoClass.cs">
-      <Link>Common\Interop\Windows\secur32\SecurityPackageInfoClass.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecurityPackageInfoClass.cs">
+      <Link>Common\Interop\Windows\sspicli\SecurityPackageInfoClass.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SecuritySafeHandles.cs">
-      <Link>Common\Interop\Windows\secur32\SecuritySafeHandles.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecuritySafeHandles.cs">
+      <Link>Common\Interop\Windows\sspicli\SecuritySafeHandles.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPIAuthType.cs">
-      <Link>Common\Interop\Windows\secur32\SSPIAuthType.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SSPIAuthType.cs">
+      <Link>Common\Interop\Windows\sspicli\SSPIAuthType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPIInterface.cs">
-      <Link>Common\Interop\Windows\secur32\SSPIInterface.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SSPIInterface.cs">
+      <Link>Common\Interop\Windows\sspicli\SSPIInterface.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPISecureChannelType.cs">
-      <Link>Common\Interop\Windows\secur32\SSPISecureChannelType.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SSPISecureChannelType.cs">
+      <Link>Common\Interop\Windows\sspicli\SSPISecureChannelType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\SSPIWrapper.cs">
-      <Link>Common\Interop\Windows\secur32\SSPIWrapper.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SSPIWrapper.cs">
+      <Link>Common\Interop\Windows\sspicli\SSPIWrapper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\StreamSizes.cs">
-      <Link>Common\Interop\Windows\secur32\StreamSizes.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\sspicli\StreamSizes.cs">
+      <Link>Common\Interop\Windows\sspicli\StreamSizes.cs</Link>
     </Compile>
   </ItemGroup>
+  
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\SslStreamPal.Unix.cs" />
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
+
+    <!-- NegotiateStream -->    
+    <Compile Include="System\Net\SecureProtocols\NegoState.Unix.cs" />
+    
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
@@ -302,6 +314,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
     </Compile>
   </ItemGroup>
+  
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

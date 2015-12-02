@@ -9,7 +9,7 @@ namespace System.Net
     {
         [Event(ACQUIRE_DEFAULT_CREDENTIAL_ID, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
-        internal void AcquireDefaultCredential(string packageName, Interop.Secur32.CredentialUse intent)
+        internal void AcquireDefaultCredential(string packageName, Interop.SspiCli.CredentialUse intent)
         {
             if (!s_log.IsEnabled())
             {
@@ -24,7 +24,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        internal static void AcquireCredentialsHandle(string packageName, Interop.Secur32.CredentialUse intent, object authdata)
+        internal static void AcquireCredentialsHandle(string packageName, Interop.SspiCli.CredentialUse intent, object authdata)
         {
             if (!s_log.IsEnabled())
             {
@@ -40,7 +40,7 @@ namespace System.Net
 
         [Event(ACQUIRE_CREDENTIALS_HANDLE_ID, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
-        internal unsafe void AcquireCredentialsHandle(string packageName, Interop.Secur32.CredentialUse intent, string authdata)
+        internal unsafe void AcquireCredentialsHandle(string packageName, Interop.SspiCli.CredentialUse intent, string authdata)
         {
             if (!s_log.IsEnabled())
             {
@@ -63,7 +63,7 @@ namespace System.Net
 
         [Event(INITIALIZE_SECURITY_CONTEXT_ID, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
-        internal unsafe void InitializeSecurityContext(string credential, string context, string targetName, Interop.Secur32.ContextFlags inFlags)
+        internal unsafe void InitializeSecurityContext(string credential, string context, string targetName, Interop.SspiCli.ContextFlags inFlags)
         {
             if (!s_log.IsEnabled())
             {
@@ -88,7 +88,7 @@ namespace System.Net
 
         [Event(ACCEPT_SECURITY_CONTEXT_ID, Keywords = Keywords.Default,
             Level = EventLevel.Informational)]
-        internal unsafe void AcceptSecurityContext(string credential, string context, Interop.Secur32.ContextFlags inFlags)
+        internal unsafe void AcceptSecurityContext(string credential, string context, Interop.SspiCli.ContextFlags inFlags)
         {
             if (!s_log.IsEnabled())
             {

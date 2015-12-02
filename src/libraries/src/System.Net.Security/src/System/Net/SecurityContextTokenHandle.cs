@@ -20,6 +20,11 @@ namespace System.Net.Security
         {
         }
 
+        internal IntPtr DangerousGetHandle()
+        {
+            return handle;
+        }
+
         protected override bool ReleaseHandle()
         {
             if (!IsInvalid)

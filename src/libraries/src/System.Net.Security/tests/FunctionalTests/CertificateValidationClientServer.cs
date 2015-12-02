@@ -18,7 +18,7 @@ namespace System.Net.Security.Tests
         private readonly X509Certificate2Collection _clientCertificateCollection;
         private readonly X509Certificate2 _serverCertificate;
         private readonly X509Certificate2Collection _serverCertificateCollection;
-        
+
         public CertificateValidationClientServer()
         {
             _serverCertificateCollection = TestConfiguration.GetServerCertificateCollection();
@@ -45,7 +45,7 @@ namespace System.Net.Security.Tests
 
                 Assert.True(
                     Task.WaitAll(
-                        new Task[] { clientConnect, serverAccept }, 
+                        new Task[] { clientConnect, serverAccept },
                         TestConfiguration.PassingTestTimeoutMilliseconds),
                     "Client/Server TCP Connect timed out.");
 
@@ -80,7 +80,7 @@ namespace System.Net.Security.Tests
 
                     Assert.True(
                         Task.WaitAll(
-                            new Task[] { clientAuthentication, serverAuthentication }, 
+                            new Task[] { clientAuthentication, serverAuthentication },
                             TestConfiguration.PassingTestTimeoutMilliseconds),
                         "Client/Server Authentication timed out.");
                 }

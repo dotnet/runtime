@@ -46,7 +46,8 @@ namespace System.Net.Security.Tests
         [ClassData(typeof(SslProtocolSupport.UnsupportedSslProtocolsTestData))]
         public async Task ClientAsyncAuthenticate_EachClientUnsupportedProtocol_Fail(SslProtocols protocol)
         {
-            await Assert.ThrowsAsync<NotSupportedException>( () => {
+            await Assert.ThrowsAsync<NotSupportedException>(() =>
+            {
                 return ClientAsyncSslHelper(protocol, SslProtocolSupport.SupportedSslProtocols);
             });
         }
@@ -94,7 +95,8 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task ClientAsyncAuthenticate_UnsuportedAllClient_Fail()
         {
-            await Assert.ThrowsAsync<NotSupportedException>(() => {
+            await Assert.ThrowsAsync<NotSupportedException>(() =>
+            {
                 return ClientAsyncSslHelper(
                     SslProtocolSupport.UnsupportedSslProtocols,
                     SslProtocolSupport.SupportedSslProtocols);
@@ -151,7 +153,7 @@ namespace System.Net.Security.Tests
         }
 
         private async Task ClientAsyncSslHelper(
-            EncryptionPolicy encryptionPolicy, 
+            EncryptionPolicy encryptionPolicy,
             SslProtocols clientSslProtocols,
             SslProtocols serverSslProtocols)
         {

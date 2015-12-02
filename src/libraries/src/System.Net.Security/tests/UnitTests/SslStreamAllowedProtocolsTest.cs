@@ -17,7 +17,7 @@ namespace System.Net.Security.Tests
         public async Task SslStream_AuthenticateAsClient_NotSupported_Fails(SslProtocols protocol)
         {
             SslStream stream = new SslStream(new FakeStream());
-            await Assert.ThrowsAsync<NotSupportedException>( 
+            await Assert.ThrowsAsync<NotSupportedException>(
                 () => stream.AuthenticateAsClientAsync("host", null, protocol, false));
         }
 
@@ -43,9 +43,9 @@ namespace System.Net.Security.Tests
             SslStream stream = new SslStream(new FakeStream());
             await Assert.ThrowsAsync<NotSupportedException>(
                 () => stream.AuthenticateAsClientAsync(
-                    "host", 
-                    null, 
-                    SslProtocolSupport.UnsupportedSslProtocols, 
+                    "host",
+                    null,
+                    SslProtocolSupport.UnsupportedSslProtocols,
                     false));
         }
 
@@ -54,9 +54,9 @@ namespace System.Net.Security.Tests
         {
             SslStream stream = new SslStream(new FakeStream());
             await stream.AuthenticateAsClientAsync(
-                "host", 
-                null, 
-                SslProtocolSupport.SupportedSslProtocols, 
+                "host",
+                null,
+                SslProtocolSupport.SupportedSslProtocols,
                 false);
         }
 
@@ -147,7 +147,5 @@ namespace System.Net.Security.Tests
             }
         }
     }
-
-
 }
 

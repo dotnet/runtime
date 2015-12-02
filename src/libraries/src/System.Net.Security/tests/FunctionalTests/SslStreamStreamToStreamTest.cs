@@ -14,7 +14,7 @@ namespace System.Net.Security.Tests
 {
     public class SslStreamStreamToStreamTest
     {
-        private readonly byte[] sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
+        private readonly byte[] _sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
 
         [Fact]
         [ActiveIssue(4467)]
@@ -61,9 +61,9 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public void SslStream_StreamToStream_Successive_ClientWrite_Success()
+        public void SslStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
-            byte[] recvBuf = new byte[sampleMsg.Length];
+            byte[] recvBuf = new byte[_sampleMsg.Length];
             MockNetwork network = new MockNetwork();
 
             using (var clientStream = new FakeNetworkStream(false, network))
@@ -75,21 +75,52 @@ namespace System.Net.Security.Tests
 
                 Assert.True(result, "Handshake completed.");
 
-                clientSslStream.Write(sampleMsg);
+                clientSslStream.Write(_sampleMsg);
 
-                serverSslStream.Read(recvBuf, 0, sampleMsg.Length);
+                serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
 
-                Assert.True(VerifyOutput(recvBuf, sampleMsg), "verify first read data is as expected.");
+                Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
 
-                clientSslStream.Write(sampleMsg);
+                clientSslStream.Write(_sampleMsg);
 
-                serverSslStream.Read(recvBuf, 0, sampleMsg.Length);
+                serverSslStream.Read(recvBuf, 0, _sampleMsg.Length);
 
-                Assert.True(VerifyOutput(recvBuf, sampleMsg), "verify second read data is as expected.");
+                Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify second read data is as expected.");
             }
         }
 
-        private bool VerifyOutput(byte [] actualBuffer, byte [] expectedBuffer)
+        [Fact]
+        public void SslStream_StreamToStream_Successive_ClientWrite_Async_Success()
+        {
+            byte[] recvBuf = new byte[_sampleMsg.Length];
+            MockNetwork network = new MockNetwork();
+
+            using (var clientStream = new FakeNetworkStream(false, network))
+            using (var serverStream = new FakeNetworkStream(true, network))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            using (var serverSslStream = new SslStream(serverStream))
+            {
+                bool result = DoHandshake(clientSslStream, serverSslStream);
+
+                Assert.True(result, "Handshake completed.");
+
+                Task[] tasks = new Task[2];
+
+                tasks[0] = clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
+                tasks[1] = serverSslStream.ReadAsync(recvBuf, 0, _sampleMsg.Length);
+                bool finished = Task.WaitAll(tasks, TestConfiguration.PassingTestTimeoutMilliseconds);
+                Assert.True(finished, "Send/receive completed in the allotted time");
+                Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify first read data is as expected.");
+
+                tasks[0] = clientSslStream.WriteAsync(_sampleMsg, 0, _sampleMsg.Length);
+                tasks[1] = serverSslStream.ReadAsync(recvBuf, 0, _sampleMsg.Length);
+                finished = Task.WaitAll(tasks, TestConfiguration.PassingTestTimeoutMilliseconds);
+                Assert.True(finished, "Send/receive completed in the allotted time");
+                Assert.True(VerifyOutput(recvBuf, _sampleMsg), "verify second read data is as expected.");
+            }
+        }
+
+        private bool VerifyOutput(byte[] actualBuffer, byte[] expectedBuffer)
         {
             return expectedBuffer.SequenceEqual(actualBuffer);
         }
