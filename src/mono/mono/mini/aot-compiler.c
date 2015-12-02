@@ -9754,9 +9754,6 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 	acfg->method_index = 1;
 
-	if (mono_aot_mode_is_full (&acfg->aot_opts))
-		mono_set_partial_sharing_supported (TRUE);
-
 	res = collect_methods (acfg);
 	if (!res)
 		return 1;

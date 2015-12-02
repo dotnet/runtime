@@ -2812,9 +2812,6 @@ mono_set_generic_sharing_supported (gboolean supported);
 void
 mono_set_generic_sharing_vt_supported (gboolean supported);
 
-void
-mono_set_partial_sharing_supported (gboolean supported);
-
 gboolean
 mono_class_generic_sharing_enabled (MonoClass *klass);
 
