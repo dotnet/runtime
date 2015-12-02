@@ -1686,6 +1686,28 @@ ncells ) {
 		}
 		return 0;
 	}
+
+	struct Struct16 {
+		public int a, b, c, d;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static int pass_struct16 (object o0, object o2, object o3, object o4, object o5, object o6, object o7, Struct16 o8) {
+		// This disables LLVM
+		try {
+		} catch {
+		}
+		return o8.a;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static int pass_struct16 (object o0, object o2, object o3, object o6, object o7, Struct16 o8) {
+		return pass_struct16 (o0, o2, null, o3, null, o6, o7, o8);
+	}
+
+	public static int test_42_pass_16byte_struct_split () {
+		return pass_struct16 (null, null, null, null, null, new Struct16 () { a = 42 });
+	}
 }
 
 #if __MOBILE__
