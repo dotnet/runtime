@@ -817,6 +817,7 @@
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\ParameterizedThreadStart.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\ReaderWriterLock.cs" />
+    <ThreadingSources Condition="'$(FeatureCoreClr)'=='true'" Include="$(BclSourcesRoot)\System\Threading\Semaphore.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\SemaphoreFullException.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\SynchronizationLockException.cs" />
     <ThreadingSources Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
