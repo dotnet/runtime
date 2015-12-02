@@ -770,8 +770,12 @@ namespace System
                 AddPrefixKey(db, "kHOM", ConsoleKey.Home);
                 AddPrefixKey(db, "kNXT", ConsoleKey.PageDown);
                 AddPrefixKey(db, "kPRV", ConsoleKey.PageUp);
-                MaxKeyFormatLength = KeyFormatToConsoleKey.Keys.Max(key => key.Length);
-                MinKeyFormatLength = KeyFormatToConsoleKey.Keys.Min(key => key.Length);
+
+                if (KeyFormatToConsoleKey.Count > 0)
+                {
+                    MaxKeyFormatLength = KeyFormatToConsoleKey.Keys.Max(key => key.Length);
+                    MinKeyFormatLength = KeyFormatToConsoleKey.Keys.Min(key => key.Length);
+                }
             }
 
             private static string GetTitle(TermInfo.Database db)
