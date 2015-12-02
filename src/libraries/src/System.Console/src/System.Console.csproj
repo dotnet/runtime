@@ -116,6 +116,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\ConsolePal.Unix.cs" />
+    <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInStreamReader.cs" />
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
