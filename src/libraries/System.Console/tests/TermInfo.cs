@@ -9,13 +9,27 @@ using Xunit;
 
 public class TermInfo
 {
+    // Names of internal members accessed via reflection
+    private const string TerminfoType = "System.TermInfo";
+    private const string TerminfoDatabaseType = TerminfoType + "+Database";
+    private const string ParameterizedStringsType = TerminfoType + "+ParameterizedStrings";
+    private const string FormatParamType = ParameterizedStringsType + "+FormatParam";
+    private const string TerminalFormatStringsType = "System.ConsolePal+TerminalFormatStrings";
+    private const string ReadDatabaseMethod = "ReadDatabase";
+    private const string EvaluateMethod = "Evaluate";
+    private const string ForegroundFormatField = "Foreground";
+    private const string BackgroundFormatField = "Background";
+    private const string ResetFormatField = "Reset";
+    private const string MaxColorsField = "MaxColors";
+    private const string TerminfoLocationsField = "_terminfoLocations";
+
     [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
     public void VerifyInstalledTermInfosParse()
     {
         bool foundAtLeastOne = false;
 
-        string[] locations = GetFieldValueOnObject<string[]>("_terminfoLocations", null, typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TermInfo+Database"));
+        string[] locations = GetFieldValueOnObject<string[]>(TerminfoLocationsField, null, typeof(Console).GetTypeInfo().Assembly.GetType(TerminfoDatabaseType));
         foreach (string location in locations)
         {
             if (!Directory.Exists(location))
@@ -84,45 +98,46 @@ public class TermInfo
     [PlatformSpecific(PlatformID.AnyUnix)]
     public void TryingToLoadTermThatDoesNotExistDoesNotThrow()
     {
-        object db = ReadTermInfoDatabase("foobar____");
+        const string NonexistentTerm = "foobar____";
+        object db = ReadTermInfoDatabase(NonexistentTerm);
         object info = CreateTermColorInfo(db);
         Assert.Null(db);
-        Assert.NotNull(GetBackgroundFormat(info));
-        Assert.NotNull(GetForegroundFormat(info));
-        Assert.NotNull(GetMaxColors(info));
-        Assert.NotNull(GetResetFormat(info));
+        Assert.Null(GetBackgroundFormat(info));
+        Assert.Null(GetForegroundFormat(info));
+        Assert.Equal(0, GetMaxColors(info));
+        Assert.Null(GetResetFormat(info));
     }
 
     private object ReadTermInfoDatabase(string term)
     {
-        MethodInfo readDbMethod = typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TermInfo+Database").GetTypeInfo().GetDeclaredMethods("ReadDatabase").Where(m => m.GetParameters().Count() == 1).Single();
+        MethodInfo readDbMethod = typeof(Console).GetTypeInfo().Assembly.GetType(TerminfoDatabaseType).GetTypeInfo().GetDeclaredMethods(ReadDatabaseMethod).Where(m => m.GetParameters().Count() == 1).Single();
         return readDbMethod.Invoke(null, new object[] { term });
     }
 
     private object CreateTermColorInfo(object db)
     {
-        return typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TerminalColorInfo").GetTypeInfo().DeclaredConstructors
+        return typeof(Console).GetTypeInfo().Assembly.GetType(TerminalFormatStringsType).GetTypeInfo().DeclaredConstructors
                               .Where(c => c.GetParameters().Count() == 1).Single().Invoke(new object[] { db });
     }
 
     private string GetForegroundFormat(object colorInfo)
     {
-        return GetFieldValueOnObject<string>("ForegroundFormat", colorInfo, typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TerminalColorInfo"));
+        return GetFieldValueOnObject<string>(ForegroundFormatField, colorInfo, typeof(Console).GetTypeInfo().Assembly.GetType(TerminalFormatStringsType));
     }
 
     private string GetBackgroundFormat(object colorInfo)
     {
-        return GetFieldValueOnObject<string>("BackgroundFormat", colorInfo, typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TerminalColorInfo"));
+        return GetFieldValueOnObject<string>(BackgroundFormatField, colorInfo, typeof(Console).GetTypeInfo().Assembly.GetType(TerminalFormatStringsType));
     }
 
     private int GetMaxColors(object colorInfo)
     {
-        return GetFieldValueOnObject<int>("MaxColors", colorInfo, typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TerminalColorInfo"));
+        return GetFieldValueOnObject<int>(MaxColorsField, colorInfo, typeof(Console).GetTypeInfo().Assembly.GetType(TerminalFormatStringsType));
     }
 
     private string GetResetFormat(object colorInfo)
     {
-        return GetFieldValueOnObject<string>("ResetFormat", colorInfo, typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TerminalColorInfo"));
+        return GetFieldValueOnObject<string>(ResetFormatField, colorInfo, typeof(Console).GetTypeInfo().Assembly.GetType(TerminalFormatStringsType));
     }
 
     private T GetFieldValueOnObject<T>(string name, object instance, Type baseType)
@@ -132,9 +147,9 @@ public class TermInfo
 
     private object CreateFormatParam(object o)
     {
-        Assert.True((o.GetType() == typeof(Int32)) || (o.GetType() == typeof(string)));
+        Assert.True((o.GetType() == typeof(int)) || (o.GetType() == typeof(string)));
 
-        TypeInfo ti = typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TermInfo+ParameterizedStrings+FormatParam").GetTypeInfo();
+        TypeInfo ti = typeof(Console).GetTypeInfo().Assembly.GetType(FormatParamType).GetTypeInfo();
         ConstructorInfo ci = null;
 
         foreach (ConstructorInfo c in ti.DeclaredConstructors)
@@ -145,7 +160,7 @@ public class TermInfo
                 ci = c;
                 break;
             }
-            else if ((paramType == typeof(Int32)) && (o.GetType() == typeof(Int32)))
+            else if ((paramType == typeof(int)) && (o.GetType() == typeof(int)))
             {
                 ci = c;
                 break;
@@ -158,9 +173,9 @@ public class TermInfo
 
     private string EvaluateParameterizedStrings(string format, params object[] parameters)
     {
-        Type formatArrayType = typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TermInfo+ParameterizedStrings+FormatParam").MakeArrayType();
-        MethodInfo mi = typeof(Console).GetTypeInfo().Assembly.GetType("System.ConsolePal+TermInfo+ParameterizedStrings").GetTypeInfo()
-            .GetDeclaredMethods("Evaluate").First(m => m.GetParameters()[1].ParameterType.IsArray);
+        Type formatArrayType = typeof(Console).GetTypeInfo().Assembly.GetType(FormatParamType).MakeArrayType();
+        MethodInfo mi = typeof(Console).GetTypeInfo().Assembly.GetType(ParameterizedStringsType).GetTypeInfo()
+            .GetDeclaredMethods(EvaluateMethod).First(m => m.GetParameters()[1].ParameterType.IsArray);
 
         // Create individual FormatParams
         object[] stringParams = new object[parameters.Length];
