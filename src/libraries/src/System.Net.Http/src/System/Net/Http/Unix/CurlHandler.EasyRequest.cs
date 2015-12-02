@@ -84,6 +84,7 @@ namespace System.Net.Http
                 SetMultithreading();
                 SetRedirection();
                 SetVerb();
+                SetVersion();
                 SetDecompressionOptions();
                 SetProxyOptions(_requestMessage.RequestUri);
                 SetCredentialsOptions(_handler.GetNetworkCredentials(_handler._serverCredentials, _requestMessage.RequestUri));
@@ -228,6 +229,42 @@ namespace System.Net.Http
                     if (_requestMessage.Content != null)
                     {
                         SetCurlOption(CURLoption.CURLOPT_UPLOAD, 1L);
+                    }
+                }
+            }
+
+            private void SetVersion()
+            {
+                Version v = _requestMessage.Version;
+                if (v != null)
+                {
+                    // Try to use the requested version, if a known version was explicitly requested.
+                    // If an unknown version was requested, we simply use libcurl's default.
+                    var curlVersion =
+                        (v.Major == 1 && v.Minor == 1) ? Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_1_1 :
+                        (v.Major == 1 && v.Minor == 0) ? Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_1_0 :
+                        (v.Major == 2 && v.Minor == 0) ? Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_2_0 :
+                        Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_NONE;
+
+                    if (curlVersion != Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_NONE)
+                    {
+                        // Ask libcurl to use the specified version if possible.
+                        CURLcode c = Interop.Http.EasySetOptionLong(_easyHandle, CURLoption.CURLOPT_HTTP_VERSION, (long)curlVersion);
+                        if (c == CURLcode.CURLE_OK)
+                        {
+                            // Success.  The requested version will be used.
+                            VerboseTrace("Set HTTP version to " + v);
+                        }
+                        else if (c == CURLcode.CURLE_UNSUPPORTED_PROTOCOL)
+                        {
+                            // The requested version is unsupported.  Fall back to using the default version chosen by libcurl.
+                            VerboseTrace("Unsupported protocol.");
+                        }
+                        else
+                        {
+                            // Some other error. Fail.
+                            ThrowIfCURLEError(c);
+                        }
                     }
                 }
             }
