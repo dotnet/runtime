@@ -87,11 +87,16 @@
 
 #elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     #define PAGE_SIZE               0x1000
-    #define USE_UPPER_ADDRESS       1
     #define UPPER_ADDRESS_MAPPING_FACTOR 2
     #define CLR_UPPER_ADDRESS_MIN   0x64400000000
     #define CODEHEAP_START_ADDRESS  0x64480000000
     #define CLR_UPPER_ADDRESS_MAX   0x644FC000000
+
+#if !defined(FEATURE_PAL)
+    #define USE_UPPER_ADDRESS       1
+#else
+    #define USE_UPPER_ADDRESS       0
+#endif // !FEATURE_PAL
 
 #else
     #error Please add a new #elif clause and define all portability macros for the new platform
