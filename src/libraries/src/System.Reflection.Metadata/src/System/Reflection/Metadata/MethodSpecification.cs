@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection.Metadata.Decoding;
 
 namespace System.Reflection.Metadata
 {
@@ -39,7 +41,9 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Blob handle holding the signature of this instantiation.
+        /// Gets a handle to the signature blob.
+        ///
+        /// Decode using <see cref="DecodeSignature"/>.
         /// </summary>
         public BlobHandle Signature
         {
@@ -47,6 +51,13 @@ namespace System.Reflection.Metadata
             {
                 return _reader.MethodSpecTable.GetInstantiation(Handle);
             }
+        }
+
+        public ImmutableArray<TType> DecodeSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+        {
+            var decoder = new SignatureDecoder<TType>(provider, _reader, options);
+            var blobReader = _reader.GetBlobReader(Signature);
+            return decoder.DecodeMethodSpecificationSignature(ref blobReader);
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()

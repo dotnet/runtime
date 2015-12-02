@@ -35,6 +35,7 @@ namespace System.Reflection.Metadata
             public readonly StringHandle.VirtualIndex ClrName;
             public readonly AssemblyReferenceHandle.VirtualIndex AssemblyRef;
             public readonly TypeDefTreatment Treatment;
+            public readonly TypeRefSignatureTreatment SignatureTreatment;
             public readonly bool IsIDisposable;
 
             public ProjectionInfo(
@@ -43,6 +44,7 @@ namespace System.Reflection.Metadata
                 StringHandle.VirtualIndex clrName,
                 AssemblyReferenceHandle.VirtualIndex clrAssembly,
                 TypeDefTreatment treatment = TypeDefTreatment.RedirectedToClrType,
+                TypeRefSignatureTreatment signatureTreatment = TypeRefSignatureTreatment.None,
                 bool isIDisposable = false)
             {
                 this.WinRTNamespace = winRtNamespace;
@@ -50,6 +52,7 @@ namespace System.Reflection.Metadata
                 this.ClrName = clrName;
                 this.AssemblyRef = clrAssembly;
                 this.Treatment = treatment;
+                this.SignatureTreatment = signatureTreatment;
                 this.IsIDisposable = isIDisposable;
             }
         }
@@ -114,6 +117,12 @@ namespace System.Reflection.Metadata
             return StringHandle.FromVirtualIndex(s_projectionInfos[projectionIndex].ClrNamespace);
         }
 
+        internal static TypeRefSignatureTreatment GetProjectedSignatureTreatment(int projectionIndex)
+        {
+            Debug.Assert(s_projectionInfos != null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
+            return s_projectionInfos[projectionIndex].SignatureTreatment;
+        }
+
         private static void InitializeProjectedTypes()
         {
             if (s_projectedTypeNames == null || s_projectionInfos == null)
@@ -144,18 +153,18 @@ namespace System.Reflection.Metadata
                 keys[k++] = "GeneratorPosition"; values[v++] = new ProjectionInfo("Windows.UI.Xaml.Controls.Primitives", StringHandle.VirtualIndex.Windows_UI_Xaml_Controls_Primitives, StringHandle.VirtualIndex.GeneratorPosition, systemRuntimeWindowsUiXaml);
                 keys[k++] = "GridLength"; values[v++] = new ProjectionInfo("Windows.UI.Xaml", StringHandle.VirtualIndex.Windows_UI_Xaml, StringHandle.VirtualIndex.GridLength, systemRuntimeWindowsUiXaml);
                 keys[k++] = "GridUnitType"; values[v++] = new ProjectionInfo("Windows.UI.Xaml", StringHandle.VirtualIndex.Windows_UI_Xaml, StringHandle.VirtualIndex.GridUnitType, systemRuntimeWindowsUiXaml);
-                keys[k++] = "HResult"; values[v++] = new ProjectionInfo("Windows.Foundation", StringHandle.VirtualIndex.System, StringHandle.VirtualIndex.Exception, systemRuntime);
+                keys[k++] = "HResult"; values[v++] = new ProjectionInfo("Windows.Foundation", StringHandle.VirtualIndex.System, StringHandle.VirtualIndex.Exception, systemRuntime, signatureTreatment: TypeRefSignatureTreatment.ProjectedToClass);
                 keys[k++] = "IBindableIterable"; values[v++] = new ProjectionInfo("Windows.UI.Xaml.Interop", StringHandle.VirtualIndex.System_Collections, StringHandle.VirtualIndex.IEnumerable, systemRuntime);
                 keys[k++] = "IBindableVector"; values[v++] = new ProjectionInfo("Windows.UI.Xaml.Interop", StringHandle.VirtualIndex.System_Collections, StringHandle.VirtualIndex.IList, systemRuntime);
                 keys[k++] = "IClosable"; values[v++] = new ProjectionInfo("Windows.Foundation", StringHandle.VirtualIndex.System, StringHandle.VirtualIndex.IDisposable, systemRuntime, isIDisposable: true);
                 keys[k++] = "ICommand"; values[v++] = new ProjectionInfo("Windows.UI.Xaml.Input", StringHandle.VirtualIndex.System_Windows_Input, StringHandle.VirtualIndex.ICommand, systemObjectModel);
                 keys[k++] = "IIterable`1"; values[v++] = new ProjectionInfo("Windows.Foundation.Collections", StringHandle.VirtualIndex.System_Collections_Generic, StringHandle.VirtualIndex.IEnumerable1, systemRuntime);
-                keys[k++] = "IKeyValuePair`2"; values[v++] = new ProjectionInfo("Windows.Foundation.Collections", StringHandle.VirtualIndex.System_Collections_Generic, StringHandle.VirtualIndex.KeyValuePair2, systemRuntime);
+                keys[k++] = "IKeyValuePair`2"; values[v++] = new ProjectionInfo("Windows.Foundation.Collections", StringHandle.VirtualIndex.System_Collections_Generic, StringHandle.VirtualIndex.KeyValuePair2, systemRuntime, signatureTreatment: TypeRefSignatureTreatment.ProjectedToValueType);
                 keys[k++] = "IMapView`2"; values[v++] = new ProjectionInfo("Windows.Foundation.Collections", StringHandle.VirtualIndex.System_Collections_Generic, StringHandle.VirtualIndex.IReadOnlyDictionary2, systemRuntime);
                 keys[k++] = "IMap`2"; values[v++] = new ProjectionInfo("Windows.Foundation.Collections", StringHandle.VirtualIndex.System_Collections_Generic, StringHandle.VirtualIndex.IDictionary2, systemRuntime);
                 keys[k++] = "INotifyCollectionChanged"; values[v++] = new ProjectionInfo("Windows.UI.Xaml.Interop", StringHandle.VirtualIndex.System_Collections_Specialized, StringHandle.VirtualIndex.INotifyCollectionChanged, systemObjectModel);
                 keys[k++] = "INotifyPropertyChanged"; values[v++] = new ProjectionInfo("Windows.UI.Xaml.Data", StringHandle.VirtualIndex.System_ComponentModel, StringHandle.VirtualIndex.INotifyPropertyChanged, systemObjectModel);
-                keys[k++] = "IReference`1"; values[v++] = new ProjectionInfo("Windows.Foundation", StringHandle.VirtualIndex.System, StringHandle.VirtualIndex.Nullable1, systemRuntime);
+                keys[k++] = "IReference`1"; values[v++] = new ProjectionInfo("Windows.Foundation", StringHandle.VirtualIndex.System, StringHandle.VirtualIndex.Nullable1, systemRuntime, signatureTreatment: TypeRefSignatureTreatment.ProjectedToValueType);
                 keys[k++] = "IVectorView`1"; values[v++] = new ProjectionInfo("Windows.Foundation.Collections", StringHandle.VirtualIndex.System_Collections_Generic, StringHandle.VirtualIndex.IReadOnlyList1, systemRuntime);
                 keys[k++] = "IVector`1"; values[v++] = new ProjectionInfo("Windows.Foundation.Collections", StringHandle.VirtualIndex.System_Collections_Generic, StringHandle.VirtualIndex.IList1, systemRuntime);
                 keys[k++] = "KeyTime"; values[v++] = new ProjectionInfo("Windows.UI.Xaml.Media.Animation", StringHandle.VirtualIndex.Windows_UI_Xaml_Media_Animation, StringHandle.VirtualIndex.KeyTime, systemRuntimeWindowsUiXaml);
@@ -177,7 +186,7 @@ namespace System.Reflection.Metadata
                 keys[k++] = "Size"; values[v++] = new ProjectionInfo("Windows.Foundation", StringHandle.VirtualIndex.Windows_Foundation, StringHandle.VirtualIndex.Size, systemRuntimeWindowsRuntime);
                 keys[k++] = "Thickness"; values[v++] = new ProjectionInfo("Windows.UI.Xaml", StringHandle.VirtualIndex.Windows_UI_Xaml, StringHandle.VirtualIndex.Thickness, systemRuntimeWindowsUiXaml);
                 keys[k++] = "TimeSpan"; values[v++] = new ProjectionInfo("Windows.Foundation", StringHandle.VirtualIndex.System, StringHandle.VirtualIndex.TimeSpan, systemRuntime);
-                keys[k++] = "TypeName"; values[v++] = new ProjectionInfo("Windows.UI.Xaml.Interop", StringHandle.VirtualIndex.System, StringHandle.VirtualIndex.Type, systemRuntime);
+                keys[k++] = "TypeName"; values[v++] = new ProjectionInfo("Windows.UI.Xaml.Interop", StringHandle.VirtualIndex.System, StringHandle.VirtualIndex.Type, systemRuntime, signatureTreatment: TypeRefSignatureTreatment.ProjectedToClass);
                 keys[k++] = "Uri"; values[v++] = new ProjectionInfo("Windows.Foundation", StringHandle.VirtualIndex.System, StringHandle.VirtualIndex.Uri, systemRuntime);
                 keys[k++] = "Vector2"; values[v++] = new ProjectionInfo("Windows.Foundation.Numerics", StringHandle.VirtualIndex.System_Numerics, StringHandle.VirtualIndex.Vector2, systemNumericsVectors);
                 keys[k++] = "Vector3"; values[v++] = new ProjectionInfo("Windows.Foundation.Numerics", StringHandle.VirtualIndex.System_Numerics, StringHandle.VirtualIndex.Vector3, systemNumericsVectors);

@@ -140,6 +140,31 @@ namespace System.Reflection.Metadata
             Debug.Assert(false, "Unknown TypeRef treatment");
             return default(StringHandle);
         }
+
+        internal TypeRefSignatureTreatment SignatureTreatment
+        {
+            get
+            {
+                if (Treatment == 0)
+                {
+                    return TypeRefSignatureTreatment.None;
+                }
+
+                return GetProjectedSignatureTreatment();
+            }
+        }
+
+        private TypeRefSignatureTreatment GetProjectedSignatureTreatment()
+        {
+            if (Treatment == TypeRefTreatment.UseProjectionInfo)
+            {
+                return MetadataReader.GetProjectedSignatureTreatment(RowId);
+            }
+            else
+            {
+                return TypeRefSignatureTreatment.None;
+            }
+        }
         #endregion
     }
 }

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Reflection.Metadata.Decoding;
 using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Metadata
@@ -61,6 +62,13 @@ namespace System.Reflection.Metadata
 
                 return GetProjectedSignature();
             }
+        }
+
+        public MethodSignature<TType> DecodeSignature<TType>(ISignatureTypeProvider<TType> provider, SignatureDecoderOptions options = SignatureDecoderOptions.None)
+        {
+            var decoder = new SignatureDecoder<TType>(provider, _reader, options);
+            var blobReader = _reader.GetBlobReader(Signature);
+            return decoder.DecodeMethodSignature(ref blobReader);
         }
 
         public int RelativeVirtualAddress
