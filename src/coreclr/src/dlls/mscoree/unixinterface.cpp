@@ -107,7 +107,8 @@ static void ExtractStartupFlagsAndConvertToUnicode(
     STARTUP_FLAGS startupFlags =
         static_cast<STARTUP_FLAGS>(
             STARTUP_FLAGS::STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN |
-            STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN);
+            STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN |
+            STARTUP_FLAGS::STARTUP_CONCURRENT_GC);
     int propertyCountW = 0;
     for (int propertyIndex = 0; propertyIndex < propertyCount; ++propertyIndex)
     {
