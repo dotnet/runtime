@@ -538,7 +538,7 @@ INT32 AppDomainNative::ExecuteAssemblyHelper(Assembly* pAssembly,
 
     EE_TRY_FOR_FINALLY(Param *, pParam, &param)
     {
-        pParam->iRetVal = pParam->pAssembly->ExecuteMainMethod(pParam->pStringArgs, TRUE /* waitForOtherThreads */);
+        pParam->iRetVal = pParam->pAssembly->ExecuteMainMethod(pParam->pStringArgs, FALSE /* waitForOtherThreads */);
     }
     EE_FINALLY 
     {
