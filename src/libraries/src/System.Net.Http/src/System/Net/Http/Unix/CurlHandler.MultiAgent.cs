@@ -193,6 +193,29 @@ namespace System.Net.Http
                 Queue(new IncomingRequest { Easy = easy, Type = IncomingRequestType.Unpause });
             }
 
+            /// <summary>Creates and configures a new multi handle.</summary>
+            private SafeCurlMultiHandle CreateAndConfigureMultiHandle()
+            {
+                // Create the new handle
+                SafeCurlMultiHandle multiHandle = Interop.Http.MultiCreate();
+                if (multiHandle.IsInvalid)
+                {
+                    throw CreateHttpRequestException();
+                }
+
+                // In support of HTTP/2, enable HTTP/2 connections to be pipelined.
+                CURLMcode result = Interop.Http.MultiSetOptionLong(
+                    multiHandle, 
+                    Interop.Http.CURLMoption.CURLMOPT_PIPELINING, 
+                    (long)Interop.Http.CurlPipe.CURLPIPE_MULTIPLEX);
+                if (result != CURLMcode.CURLM_UNKNOWN_OPTION) // ignore failure to set if it's because it's not supported yet
+                {
+                    ThrowIfCURLMError(result);
+                }
+                
+                return multiHandle;
+            }
+
             private void WorkerLoop()
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "No locks should be held while invoking Process");
@@ -204,11 +227,7 @@ namespace System.Net.Http
                 // we're processing other requests.  Once the work quiesces and there are no more requests
                 // to process, this multi handle will be released as the worker goes away.  The next
                 // time a request arrives and a new worker is spun up, a new multi handle will be created.
-                SafeCurlMultiHandle multiHandle = Interop.Http.MultiCreate();
-                if (multiHandle.IsInvalid)
-                {
-                    throw CreateHttpRequestException();
-                }
+                SafeCurlMultiHandle multiHandle = CreateAndConfigureMultiHandle();
 
                 // Clear our active operations table.  This should already be clear, either because
                 // all previous operations completed without unexpected exception, or in the case of an

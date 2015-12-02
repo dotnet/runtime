@@ -19,6 +19,16 @@ enum PAL_CURLMcode : int32_t
     PAL_CURLM_ADDED_ALREADY = 7, // Added in libcurl 7.32.1
 };
 
+enum PAL_CURLMoption : int32_t
+{
+    PAL_CURLMOPT_PIPELINING = 3,
+};
+
+enum PAL_CurlPipe : int32_t
+{
+    PAL_CURLPIPE_MULTIPLEX = 2,
+};
+
 enum PAL_CURLMSG : int32_t
 {
     PAL_CURLMSG_DONE = 1,
@@ -83,3 +93,8 @@ extern "C" int32_t MultiInfoRead(CURLM* multiHandle, int32_t* message, CURL** ea
 Returns a string describing the CURLMcode error code.
 */
 extern "C" const char* MultiGetErrorString(PAL_CURLMcode code);
+
+/*
+Shims the curl_multi_setopt function
+*/
+extern "C" int32_t MultiSetOptionLong(CURLM* handle, PAL_CURLMoption option, int64_t value);
