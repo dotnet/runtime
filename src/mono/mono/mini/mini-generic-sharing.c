@@ -27,6 +27,12 @@
 static void
 mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data);
 
+/* Counters */
+static int num_templates_allocted;
+static int num_templates_bytes;
+static int num_oti_allocted;
+static int num_oti_bytes;
+
 static gboolean partial_supported = FALSE;
 
 static inline gboolean
@@ -340,41 +346,22 @@ mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_
 static MonoRuntimeGenericContextTemplate*
 alloc_template (MonoClass *klass)
 {
-	static gboolean inited = FALSE;
-	static int num_allocted = 0;
-	static int num_bytes = 0;
-
 	int size = sizeof (MonoRuntimeGenericContextTemplate);
 
-	if (!inited) {
-		mono_counters_register ("RGCTX template num allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_allocted);
-		mono_counters_register ("RGCTX template bytes allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_bytes);
-		inited = TRUE;
-	}
-
-	num_allocted++;
-	num_bytes += size;
+	num_templates_allocted++;
+	num_templates_bytes += size;
 
 	return mono_image_alloc0 (klass->image, size);
 }
 
+/* LOCKING: Takes the loader lock */
 static MonoRuntimeGenericContextInfoTemplate*
 alloc_oti (MonoImage *image)
 {
-	static gboolean inited = FALSE;
-	static int num_allocted = 0;
-	static int num_bytes = 0;
-
 	int size = sizeof (MonoRuntimeGenericContextInfoTemplate);
 
-	if (!inited) {
-		mono_counters_register ("RGCTX oti num allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_allocted);
-		mono_counters_register ("RGCTX oti bytes allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_bytes);
-		inited = TRUE;
-	}
-
-	num_allocted++;
-	num_bytes += size;
+	num_oti_allocted++;
+	num_oti_bytes += size;
 
 	return mono_image_alloc0 (image, size);
 }
@@ -2624,6 +2611,11 @@ mini_type_stack_size_full (MonoType *t, guint32 *align, gboolean pinvoke)
 void
 mono_generic_sharing_init (void)
 {
+	mono_counters_register ("RGCTX template num allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_templates_allocted);
+	mono_counters_register ("RGCTX template bytes allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_templates_bytes);
+	mono_counters_register ("RGCTX oti num allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_oti_allocted);
+	mono_counters_register ("RGCTX oti bytes allocted", MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &num_oti_bytes);
+
 	mono_install_image_unload_hook (mono_class_unregister_image_generic_subclasses, NULL);
 }
 
