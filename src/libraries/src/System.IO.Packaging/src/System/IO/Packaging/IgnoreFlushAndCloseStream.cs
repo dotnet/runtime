@@ -9,9 +9,6 @@
 //                  created specifically for perf improvements for the ZipPackage.
 //------------------------------------------------------------------------------
 
-using System;
-using System.IO;
-
 namespace System.IO.Packaging
 {
     /// <summary>
@@ -45,13 +42,7 @@ namespace System.IO.Packaging
         /// <value>Bool, true if the stream can be read from, else false</value>
         public override bool CanRead
         {
-            get
-            {
-                if (_disposed)
-                    return false;
-                else
-                    return _stream.CanRead;
-            }
+            get { return !_disposed && _stream.CanRead; }
         }
 
         /// <summary>
@@ -60,13 +51,7 @@ namespace System.IO.Packaging
         /// <value>Bool, true if the stream can be seeked, else false</value>
         public override bool CanSeek
         {
-            get
-            {
-                if (_disposed)
-                    return false;
-                else
-                    return _stream.CanSeek;
-            }
+            get { return !_disposed && _stream.CanSeek; }
         }
 
         /// <summary>
@@ -75,13 +60,7 @@ namespace System.IO.Packaging
         /// <value>Bool, true if the stream can be written to, else false</value>
         public override bool CanWrite
         {
-            get
-            {
-                if (_disposed)
-                    return false;
-                else
-                    return _stream.CanWrite;
-            }
+            get { return !_disposed && _stream.CanWrite; }
         }
 
         /// <summary>
