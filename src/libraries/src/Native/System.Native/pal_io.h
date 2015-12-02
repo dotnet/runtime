@@ -214,7 +214,7 @@ enum SysConfName : int32_t
  * Constants passed to and from poll describing what to poll for and what
  * kind of data was received from poll.
  */
-enum PollFlags : int16_t
+enum PollEvents : int16_t
 {
     PAL_POLLIN = 0x0001,   /* any readable data available */
     PAL_POLLOUT = 0x0004,  /* data can be written without blocked */
@@ -250,11 +250,11 @@ struct DirectoryEntry
 /**
  * Our intermediate pollfd struct to normalize the data types
  */
-struct PollFD
+struct PollEvent
 {
-    int32_t FD;      // The file descriptor to poll
-    int16_t Events;  // The events to poll for
-    int16_t REvents; // The events that occurred which triggered the poll
+    int32_t    FileDescriptor;  // The file descriptor to poll
+    PollEvents Events;          // The events to poll for
+    PollEvents TriggeredEvents; // The events that triggered the poll
 };
 
 /**
@@ -574,10 +574,10 @@ extern "C" int32_t FTruncate(int32_t fd, int64_t length);
  * Examines one or more file descriptors for the specified state(s) and blocks until the state(s) occur or the timeout
  * ellapses.
  *
- * Returns the number of descriptors ready, if any; if the timeout ellapses, returns 0; otherwise, returns -1 and errno
- * is set.
+ * Returns an error or PAL_SUCCESS. `triggered` is set to the number of ready descriptors if any. The number of
+ * triggered descriptors may be zero in the event of a timeout.
  */
-extern "C" int32_t Poll(PollFD* pollData, uint32_t numberOfPollFds, int32_t timeout);
+extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered);
 
 /**
  * Notifies the OS kernel that the specified file will be accessed in a particular way soon; this allows the kernel to

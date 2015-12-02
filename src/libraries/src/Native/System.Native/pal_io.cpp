@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include "pal_config.h"
+#include "pal_errno.h"
 #include "pal_io.h"
 #include "pal_utilities.h"
 
@@ -702,45 +703,57 @@ extern "C" int32_t FTruncate(int32_t fd, int64_t length)
     return ftruncate(fd, length);
 }
 
-void ConvertPollFDPalToPlatform(const PollFD& pal, pollfd& native)
+extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
 {
-    native.fd = pal.FD;
-    native.events = pal.Events;
-    native.revents = pal.REvents;
-}
-
-static void ConvertPollFDPlatformToPal(const pollfd& native, PollFD& pal)
-{
-    pal.FD = native.fd;
-    pal.Events = native.events;
-    pal.REvents = native.revents;
-}
-
-extern "C" int32_t Poll(PollFD* pollData, uint32_t numberOfPollFds, int32_t timeout)
-{
-    assert(numberOfPollFds <= 2);
-
-    if (numberOfPollFds > 2)
-        return ERANGE;
-
-    // Convert our standardized pollfd to the native one
-    pollfd fds[2];
-    for (uint32_t i = 0; i < numberOfPollFds; i++)
+    if (pollEvents == nullptr || triggered == nullptr)
     {
-        ConvertPollFDPalToPlatform(pollData[i], fds[i]);
+        return PAL_EFAULT;
     }
 
-    // Call poll with the native pollfd and, if necessary, convert the results back to our standardized pollfd
-    int32_t result = poll(fds, numberOfPollFds, timeout);
-    if (result > 0) // We only have result data if the result is positive
+    if (milliseconds < -1)
     {
-        for (uint32_t i = 0; i < numberOfPollFds; i++)
+        return PAL_EINVAL;
+    }
+
+    size_t bufferSize = sizeof(pollfd) * static_cast<size_t>(eventCount);
+    bool useStackBuffer = bufferSize <= 2048;
+    pollfd* pollfds = reinterpret_cast<pollfd*>(useStackBuffer ? alloca(bufferSize) : malloc(bufferSize));
+
+    for (uint32_t i = 0; i < eventCount; i++)
+    {
+        const PollEvent& event = pollEvents[i];
+        pollfds[i] = { .fd = event.FileDescriptor, .events = event.Events, .revents = 0 };
+    }
+
+    int rv = poll(pollfds, static_cast<nfds_t>(eventCount), milliseconds);
+    if (rv < 0)
+    {
+        if (!useStackBuffer)
         {
-            ConvertPollFDPlatformToPal(fds[i], pollData[i]);
+            free(pollfds);
         }
+
+        *triggered = 0;
+        return ConvertErrorPlatformToPal(errno);
     }
 
-    return result;
+    for (uint32_t i = 0; i < eventCount; i++)
+    {
+        const pollfd& pfd = pollfds[i];
+        assert(pfd.fd == pollEvents[i].FileDescriptor);
+        assert(pfd.events == pollEvents[i].Events);
+
+        pollEvents[i].TriggeredEvents = static_cast<PollEvents>(pfd.revents);
+    }
+
+    *triggered = static_cast<uint32_t>(rv);
+
+    if (!useStackBuffer)
+    {
+        free(pollfds);
+    }
+
+    return PAL_SUCCESS;
 }
 
 extern "C" int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, FileAdvice advice)
