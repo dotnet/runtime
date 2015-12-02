@@ -518,4 +518,39 @@ public class FileSystemWatcherTests
         }
     }
 
+    [Fact]
+    public static void FileSystemWatcher_StopCalledOnBackgroundThreadDoesNotDeadlock()
+    {
+        // Check the case where Stop or Dispose (they do the same thing) is called from 
+        // a FSW event callback and make sure we don't Thread.Join to deadlock
+        using (var dir = Utility.CreateTestDirectory())
+        {
+            FileSystemWatcher watcher = new FileSystemWatcher();
+            AutoResetEvent are = new AutoResetEvent(false);
+
+            FileSystemEventHandler callback = (sender, arg) => {
+                watcher.Dispose();
+                are.Set();
+            };
+
+            // Attach the FSW to the existing structure
+            watcher.Path = Path.GetFullPath(dir.Path);
+            watcher.Filter = "*";
+            watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.Size;
+            watcher.Changed += callback;
+
+            using (var file = File.Create(Path.Combine(dir.Path, "testfile.txt")))
+            {
+                watcher.EnableRaisingEvents = true;
+
+                // Change the nested file and verify we get the changed event
+                byte[] bt = new byte[4096];
+                file.Write(bt, 0, bt.Length);
+                file.Flush();
+            }
+
+            are.WaitOne(Utility.WaitForExpectedEventTimeout);
+        }
+    }
+
 }
