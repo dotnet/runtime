@@ -1258,8 +1258,8 @@ mini_debug_usage (void)
 
 #if defined(MONO_ARCH_ARCHITECTURE)
 /* Redefine ARCHITECTURE to include more information */
-#undef ARCHITECTURE
-#define ARCHITECTURE MONO_ARCH_ARCHITECTURE
+#undef MONO_ARCHITECTURE
+#define MONO_ARCHITECTURE MONO_ARCH_ARCHITECTURE
 #endif
 
 static const char info[] =
@@ -1280,7 +1280,7 @@ static const char info[] =
 #else
     "\tNotification:  Thread + polling\n"
 #endif
-        "\tArchitecture:  " ARCHITECTURE "\n"
+        "\tArchitecture:  " MONO_ARCHITECTURE "\n"
 	"\tDisabled:      " DISABLED_FEATURES "\n"
 	"\tMisc:          "
 #ifdef MONO_SMALL_CONFIG
@@ -1476,8 +1476,8 @@ switch_arch (char* argv[], const char* target_arch)
 	GString *path;
 	gsize arch_offset;
 
-	if ((strcmp (target_arch, "32") == 0 && strcmp (ARCHITECTURE, "x86") == 0) ||
-		(strcmp (target_arch, "64") == 0 && strcmp (ARCHITECTURE, "amd64") == 0)) {
+	if ((strcmp (target_arch, "32") == 0 && strcmp (MONO_ARCHITECTURE, "x86") == 0) ||
+		(strcmp (target_arch, "64") == 0 && strcmp (MONO_ARCHITECTURE, "amd64") == 0)) {
 		return; /* matching arch loaded */
 	}
 
