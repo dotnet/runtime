@@ -2085,7 +2085,10 @@ Parallel_ForEach_PartitionerNotDynamic=The Partitioner used here must support dy
 Parallel_ForEach_PartitionerReturnedNull=The Partitioner used here returned a null partitioner source.
 Parallel_ForEach_NullEnumerator=The Partitioner source returned a null enumerator.
 
-; SemaphyoreFullException
+; Semaphore
+Argument_SemaphoreInitialMaximum=The initial count for the semaphore must be greater than or equal to zero and less than the maximum count.
+
+; SemaphoreFullException
 Threading_SemaphoreFullException=Adding the specified count to the semaphore would cause it to exceed its maximum count.
 
 ; Lazy
