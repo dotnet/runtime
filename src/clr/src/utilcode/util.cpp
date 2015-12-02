@@ -526,6 +526,13 @@ BYTE * ClrVirtualAllocExecutable(SIZE_T dwSize,
     // Fall through to 
 #endif // USE_UPPER_ADDRESS
 
+#ifdef FEATURE_PAL
+    // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
+    // This will allow us to place JIT'ed code close to the coreclr library
+    // and thus improve performance by avoiding jump stubs in managed code.
+    flAllocationType |= MEM_RESERVE_EXECUTABLE;
+#endif // FEATURE_PAL
+
     return (BYTE *) ClrVirtualAlloc (NULL, dwSize, flAllocationType, flProtect);
 
 }
