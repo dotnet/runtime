@@ -3113,6 +3113,7 @@ in_range_for_segment(uint8_t* add, heap_segment* seg)
 struct bk
 {
     uint8_t* add;
+    size_t val;
 };
 
 class sorted_table
@@ -3133,7 +3134,7 @@ public:
     void    delete_sorted_table();
     void    delete_old_slots();
     void    enqueue_old_slot(bk* sl);
-    BOOL    insure_space_for_insert();
+    BOOL    ensure_space_for_insert();
 };
 
 sorted_table*
@@ -3199,7 +3200,7 @@ sorted_table::lookup (uint8_t*& add)
             if ((ti > 0) && (buck[ti-1].add <= add))
             {
                 add = buck[ti-1].add;
-                return 0;
+                return buck[ti - 1].val;
             }
             high = mid - 1;
         }
@@ -3208,7 +3209,7 @@ sorted_table::lookup (uint8_t*& add)
             if (buck[ti+1].add > add)
             {
                 add = buck[ti].add;
-                return 0;
+                return buck[ti].val;
             }
             low = mid + 1;
         }
@@ -3218,7 +3219,7 @@ sorted_table::lookup (uint8_t*& add)
 }
 
 BOOL
-sorted_table::insure_space_for_insert()
+sorted_table::ensure_space_for_insert()
 {
     if (count == size)
     {
@@ -3242,8 +3243,6 @@ sorted_table::insure_space_for_insert()
 BOOL
 sorted_table::insert (uint8_t* add, size_t val)
 {
-    //val is ignored for non concurrent gc
-    val = val;
     //grow if no more room
     assert (count < size);
 
@@ -3267,6 +3266,7 @@ sorted_table::insert (uint8_t* add, size_t val)
                     buck [k] = buck [k-1];
                 }
                 buck[ti].add = add;
+                buck[ti].val = val;
                 count++;
                 return TRUE;
             }
@@ -3282,6 +3282,7 @@ sorted_table::insert (uint8_t* add, size_t val)
                     buck [k] = buck [k-1];
                 }
                 buck[ti+1].add = add;
+                buck[ti+1].val = val;
                 count++;
                 return TRUE;
             }
@@ -3290,7 +3291,6 @@ sorted_table::insert (uint8_t* add, size_t val)
     }
     assert (0);
     return TRUE;
-
 }
 
 void
@@ -3436,11 +3436,11 @@ void seg_mapping_table_remove_ro_segment (heap_segment* seg)
 
 heap_segment* ro_segment_lookup (uint8_t* o)
 {
-    uint8_t* ro_seg = 0;
-    gc_heap::seg_table->lookup (ro_seg);
+    uint8_t* ro_seg_start = o;
+    heap_segment* seg = (heap_segment*)gc_heap::seg_table->lookup (ro_seg_start);
 
-    if (ro_seg && in_range_for_segment (o, (heap_segment*)ro_seg))
-        return (heap_segment*)ro_seg;
+    if (ro_seg_start && in_range_for_segment (o, seg))
+        return seg;
     else
         return 0;
 }
@@ -4549,7 +4549,7 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
     if (!result)
     {
 #ifndef SEG_MAPPING_TABLE
-        if (!seg_table->insure_space_for_insert ())
+        if (!seg_table->ensure_space_for_insert ())
             return 0;
 #endif //SEG_MAPPING_TABLE
         void* mem = virtual_alloc (size);
@@ -7435,10 +7435,10 @@ BOOL gc_heap::insert_ro_segment (heap_segment* seg)
 {
     enter_spin_lock (&gc_heap::gc_lock);
 
-    if (!gc_heap::seg_table->insure_space_for_insert () ||
-        (!(should_commit_mark_array() && commit_mark_array_new_seg (__this, seg))))
+    if (!gc_heap::seg_table->ensure_space_for_insert ()
+        || (should_commit_mark_array() && !commit_mark_array_new_seg(__this, seg)))
     {
-        leave_spin_lock (&gc_heap::gc_lock);
+        leave_spin_lock(&gc_heap::gc_lock);
         return FALSE;
     }
 
@@ -7448,8 +7448,7 @@ BOOL gc_heap::insert_ro_segment (heap_segment* seg)
     heap_segment_next (seg) = oldhead;
     generation_start_segment (gen2) = seg;
 
-    ptrdiff_t sdelta = 0;
-    seg_table->insert ((uint8_t*)seg, sdelta);
+    seg_table->insert (heap_segment_mem(seg), (size_t)seg);
 
 #ifdef SEG_MAPPING_TABLE
     seg_mapping_table_add_ro_segment (seg);
@@ -10152,7 +10151,7 @@ gc_heap::init_gc_heap (int  h_number)
     gc_done_event_set = false;
 
 #ifndef SEG_MAPPING_TABLE
-    if (!gc_heap::seg_table->insure_space_for_insert ())
+    if (!gc_heap::seg_table->ensure_space_for_insert ())
     {
         return 0;
     }
@@ -10217,7 +10216,7 @@ gc_heap::init_gc_heap (int  h_number)
     ephemeral_heap_segment = seg;
 
 #ifndef SEG_MAPPING_TABLE
-    if (!gc_heap::seg_table->insure_space_for_insert ())
+    if (!gc_heap::seg_table->ensure_space_for_insert ())
     {
         return 0;
     }
