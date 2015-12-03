@@ -499,7 +499,8 @@ Initialize(
         }
 
         /* Initialize the Virtual* functions. */
-        if (FALSE == VIRTUALInitialize())
+        bool initializeExecutableMemoryAllocator = (flags & PAL_INITIALIZE_EXEC_ALLOCATOR) != 0;
+        if (FALSE == VIRTUALInitialize(initializeExecutableMemoryAllocator))
         {
             ERROR("Unable to initialize virtual memory support\n");
             goto CLEANUP10;
@@ -623,8 +624,8 @@ PAL_ERROR
 PALAPI
 PAL_InitializeCoreCLR(const char *szExePath)
 {    
-    // Fake up a command line to call PAL_Initialize with.
-    int result = PAL_Initialize(1, &szExePath);
+    // Fake up a command line to call PAL initialization with.
+    int result = Initialize(1, &szExePath, PAL_INITIALIZE_CORECLR);
     if (result != 0)
     {
         return GetLastError();
