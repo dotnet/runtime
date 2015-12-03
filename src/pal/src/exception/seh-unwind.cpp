@@ -556,9 +556,16 @@ Note:
     The name of this function and the name of the ExceptionRecord 
     parameter is used in the sos lldb plugin code to read the exception
     record. See coreclr\src\ToolBox\SOS\lldbplugin\debugclient.cpp.
+
+    This function must not be inlined or optimized so the below PAL_VirtualUnwind
+    calls end up with RaiseException caller's context and so the above debugger 
+    code finds the function and ExceptionRecord parameter.
 --*/
 PAL_NORETURN
-static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
+__attribute__((noinline))
+__attribute__((optnone))
+static void 
+RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
 {
     // Capture the context of RtlpRaiseException.
     CONTEXT ContextRecord;
@@ -572,6 +579,7 @@ static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
     // The frame we're looking at now is RaiseException. We have to unwind one 
     // level further to get the actual context user code could be resumed at.
     PAL_VirtualUnwind(&ContextRecord, NULL);
+
 #if defined(_X86_)
     ExceptionRecord->ExceptionAddress = (void *) ContextRecord.Eip;
 #elif defined(_AMD64_)
@@ -582,19 +590,7 @@ static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
 #error unsupported architecture
 #endif
 
-    EXCEPTION_POINTERS pointers;
-    pointers.ExceptionRecord = ExceptionRecord;
-    pointers.ContextRecord = &ContextRecord;
-
-    SEHRaiseException(InternalGetCurrentThread(), &pointers, 0);
-}
-
-PAL_NORETURN
-void SEHRaiseException(CPalThread *pthrCurrent,
-                       PEXCEPTION_POINTERS lpExceptionPointers,
-                       int signal_code)
-{
-    throw PAL_SEHException(lpExceptionPointers->ExceptionRecord, lpExceptionPointers->ContextRecord);
+    throw PAL_SEHException(ExceptionRecord, &ContextRecord);
 }
 
 /*++

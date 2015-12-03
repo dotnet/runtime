@@ -13,9 +13,11 @@ ULONG g_currentThreadIndex = -1;
 ULONG g_currentThreadSystemId = -1;
 char *g_coreclrDirectory;
 
-DebugClient::DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject) :
+DebugClient::DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject, lldb::SBProcess *process, lldb::SBThread *thread) : 
     m_debugger(debugger),
-    m_returnObject(returnObject)
+    m_returnObject(returnObject),
+    m_currentProcess(process),
+    m_currentThread(thread)
 {
     returnObject.SetStatus(lldb::eReturnStatusSuccessFinishResult);
 }
@@ -171,7 +173,8 @@ DebugClient::Execute(
 }
 
 // PAL raise exception function and exception record pointer variable name
-// See coreclr\src\pal\src\exception\seh-unwind.cpp for the details.
+// See coreclr\src\pal\src\exception\seh-unwind.cpp for the details. This
+// function depends on RtlpRaisException not being inlined or optimized.
 #define FUNCTION_NAME "RtlpRaiseException"
 #define VARIABLE_NAME "ExceptionRecord"
 
@@ -206,11 +209,14 @@ DebugClient::GetLastEventInformation(
     {
         return E_FAIL;
     }
-    lldb::SBThread thread = process.GetSelectedThread();
+    lldb::SBThread thread = GetCurrentThread();
     if (!thread.IsValid())
     {
         return E_FAIL;
     }
+
+    *processId = process.GetProcessID();
+    *threadId = thread.GetThreadID();
 
     // Enumerate each stack frame at the special "throw"
     // breakpoint and find the raise exception function 
@@ -1196,6 +1202,70 @@ DebugClient::VirtualUnwind(
     return S_OK;
 }
 
+bool 
+ExceptionBreakpointCallback(
+    void *baton, 
+    lldb::SBProcess &process,
+    lldb::SBThread &thread, 
+    lldb::SBBreakpointLocation &location)
+{
+    lldb::SBDebugger debugger = process.GetTarget().GetDebugger();
+
+    // Send the normal and error output to stdout/stderr since we
+    // don't have a return object from the command interpreter.
+    lldb::SBCommandReturnObject result;
+    result.SetImmediateOutputFile(stdout);
+    result.SetImmediateErrorFile(stderr);
+
+    // Save the process and thread to be used by the current process/thread 
+    // helper functions.
+    DebugClient* client = new DebugClient(debugger, result, &process, &thread);
+    return ((PFN_EXCEPTION_CALLBACK)baton)(client) == S_OK;
+}
+
+lldb::SBBreakpoint g_exceptionbp;
+
+HRESULT 
+DebugClient::SetExceptionCallback(
+    PFN_EXCEPTION_CALLBACK callback)
+{
+    if (!g_exceptionbp.IsValid())
+    {
+        lldb::SBTarget target = m_debugger.GetSelectedTarget();
+        if (!target.IsValid())
+        {
+            return E_FAIL;
+        }
+        lldb::SBBreakpoint exceptionbp = target.BreakpointCreateForException(lldb::LanguageType::eLanguageTypeC_plus_plus, false, true);
+        if (!exceptionbp.IsValid())
+        {
+            return E_FAIL;
+        }
+#ifdef FLAGS_ANONYMOUS_ENUM
+        exceptionbp.AddName("DoNotDeleteOrDisable");
+#endif
+        exceptionbp.SetCallback(ExceptionBreakpointCallback, (void *)callback);
+        g_exceptionbp = exceptionbp;
+    }
+    return S_OK;
+}
+
+HRESULT 
+DebugClient::ClearExceptionCallback()
+{
+    if (g_exceptionbp.IsValid())
+    {
+        lldb::SBTarget target = m_debugger.GetSelectedTarget();
+        if (!target.IsValid())
+        {
+            return E_FAIL;
+        }
+        target.BreakpointDelete(g_exceptionbp.GetID());
+        g_exceptionbp = lldb::SBBreakpoint();
+    }
+    return S_OK;
+}
+
 //----------------------------------------------------------------------------
 // Helper functions
 //----------------------------------------------------------------------------
@@ -1205,10 +1275,17 @@ DebugClient::GetCurrentProcess()
 {
     lldb::SBProcess process;
 
-    lldb::SBTarget target = m_debugger.GetSelectedTarget();
-    if (target.IsValid())
+    if (m_currentProcess == nullptr)
     {
-        process = target.GetProcess();
+        lldb::SBTarget target = m_debugger.GetSelectedTarget();
+        if (target.IsValid())
+        {
+            process = target.GetProcess();
+        }
+    }
+    else
+    {
+        process = *m_currentProcess;
     }
 
     return process;
@@ -1219,10 +1296,17 @@ DebugClient::GetCurrentThread()
 {
     lldb::SBThread thread;
 
-    lldb::SBProcess process = GetCurrentProcess();
-    if (process.IsValid())
+    if (m_currentThread == nullptr)
     {
-        thread = process.GetSelectedThread();
+        lldb::SBProcess process = GetCurrentProcess();
+        if (process.IsValid())
+        {
+            thread = process.GetSelectedThread();
+        }
+    }
+    else
+    {
+        thread = *m_currentThread;
     }
 
     return thread;

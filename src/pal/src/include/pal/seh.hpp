@@ -75,32 +75,6 @@ Return value:
 VOID 
 SEHProcessException(PEXCEPTION_POINTERS pointers);
 
-/*++
-Function :
-    SEHRaiseException
-
-    Raise an exception given a specified exception information.
-
-Parameters :
-    CPalThread * pthrCurrent : reference to the current thread.
-    PEXCEPTION_POINTERS lpExceptionPointers : specification of exception 
-    to raise.
-    int signal_code : signal that caused the exception, if applicable; 
-                      0 otherwise
-
-    (no return value; function should never return)
-
-Notes :
-    The PAL does not support continuing execution after an exception was raised
-    (using EXCEPTION_CONTINUE_EXECUTION). For this reason, this function should
-    never return.
---*/
-PAL_NORETURN
-void SEHRaiseException( 
-                        CorUnix::CPalThread *pthrCurrent,
-                        PEXCEPTION_POINTERS lpExceptionPointers, 
-                        int signal_code );
-
 #if !HAVE_MACH_EXCEPTIONS
 // TODO: Implement for Mach exceptions.  Not in CoreCLR surface area.
 /*++
