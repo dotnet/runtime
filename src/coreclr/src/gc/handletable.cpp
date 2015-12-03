@@ -876,7 +876,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
  *
  */
 void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeCount,
-                    HANDLESCANPROC pfnEnum, uintptr_t lParam1, uintptr_t lParam2, BOOL fAsync)
+                    HANDLESCANPROC pfnEnum, uintptr_t lParam1, uintptr_t lParam2, bool fAsync)
 {
     WRAPPER_NO_CONTRACT;
 
