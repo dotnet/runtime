@@ -14,7 +14,7 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
-    <AssemblyVersion>1.1.1.0</AssemblyVersion>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
     <PackageTargetFramework>dotnet5.2</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
