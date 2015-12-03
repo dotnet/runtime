@@ -361,8 +361,8 @@ namespace System.IO.Pipes
                             // We want to wait for data to be available on either the pipe we want to read from
                             // or on the cancellation pipe, which would signal a cancellation request.
                             Interop.Sys.PollEvent* events = stackalloc Interop.Sys.PollEvent[2];
-                            events[0] = new Interop.Sys.PollEvent { FileDescriptor = fd.DangerousGetHandle(), Events = Interop.Sys.PollEvents.POLLIN };
-                            events[1] = new Interop.Sys.PollEvent { FileDescriptor = cancellationFd, Events = Interop.Sys.PollEvents.POLLIN };
+                            events[0] = new Interop.Sys.PollEvent { FileDescriptor = (int)fd.DangerousGetHandle(), Events = Interop.Sys.PollEvents.POLLIN };
+                            events[1] = new Interop.Sys.PollEvent { FileDescriptor = (int)cancellationFd, Events = Interop.Sys.PollEvents.POLLIN };
 
                             // Some systems (at least OS X) appear to have a race condition in poll with FIFOs where the poll can 
                             // end up not noticing writes of greater than the internal buffer size.  Restarting the poll causes it 

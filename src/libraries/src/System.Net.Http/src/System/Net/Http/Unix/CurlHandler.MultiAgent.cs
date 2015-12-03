@@ -294,7 +294,7 @@ namespace System.Net.Http
                         // Wait for more things to do.
                         bool isWakeupRequestedPipeActive;
                         bool isTimeout;
-                        ThrowIfCURLMError(Interop.Http.MultiWait(multiHandle, (int)_wakeupRequestedPipeFd.DangerousGetHandle(), out isWakeupRequestedPipeActive, out isTimeout));
+                        ThrowIfCURLMError(Interop.Http.MultiWait(multiHandle, _wakeupRequestedPipeFd, out isWakeupRequestedPipeActive, out isTimeout));
                         if (isWakeupRequestedPipeActive)
                         {
                             // We woke up (at least in part) because a wake-up was requested.  

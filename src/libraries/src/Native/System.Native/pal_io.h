@@ -252,10 +252,9 @@ struct DirectoryEntry
  */
 struct PollEvent
 {
-    intptr_t   FileDescriptor;  // The file descriptor to poll
+    int32_t    FileDescriptor;  // The file descriptor to poll
     PollEvents Events;          // The events to poll for
     PollEvents TriggeredEvents; // The events that triggered the poll
-    int32_t __padding;
 };
 
 /**
