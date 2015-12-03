@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Project Include="src\dirs.proj" />
+    <Project Include="src\packages.builds" />
     <Project Include="src\post.msbuild" />
   </ItemGroup>
 

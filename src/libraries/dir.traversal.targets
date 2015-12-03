@@ -25,6 +25,21 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
+  <Target Name="GetFilesToPackage"
+          Returns="@(FilesToPackage)">
+    <MSBuild Targets="GetFilesToPackage"
+             Projects="@(Project)"
+             BuildInParallel="$(BuildInParallel)"
+             Properties="$(ProjectProperties)"
+             ContinueOnError="ErrorAndContinue" >
+      <Output TaskParameter="TargetOutputs"
+              ItemName="FilesToPackage" />
+    </MSBuild>
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+  </Target>
+
   <Target Name="CleanAllProjects">
     <PropertyGroup>
       <DefaultCleanAllTarget Condition="'$(DefaultCleanAllTarget)'==''">Clean</DefaultCleanAllTarget>
