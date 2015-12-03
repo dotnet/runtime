@@ -120,16 +120,21 @@ bool
 sosCommandInitialize(lldb::SBDebugger debugger)
 {
     lldb::SBCommandInterpreter interpreter = debugger.GetCommandInterpreter();
-    interpreter.AddCommand("sos", new sosCommand(NULL), "Various coreclr debugging commands. sos <command-name> <args>");
+    interpreter.AddCommand("sos", new sosCommand(NULL), "Various coreclr debugging commands. See 'soshelp' for more details. sos <command-name> <args>");
     interpreter.AddCommand("bpmd", new sosCommand("bpmd"), "Creates a breakpoint at the specified managed method in the specified module.");
     interpreter.AddCommand("clrstack", new sosCommand("ClrStack"), "Provides a stack trace of managed code only.");
     interpreter.AddCommand("clrthreads", new sosCommand("Threads"), "List the managed threads running.");
     interpreter.AddCommand("dumpheap", new sosCommand("DumpHeap"), "Displays info about the garbage-collected heap and collection statistics about objects.");
+    interpreter.AddCommand("dumplog", new sosCommand("DumpLog"), "Writes the contents of an in-memory stress log to the specified file.");
+    interpreter.AddCommand("dumpmd", new sosCommand("DumpMD"), "Displays information about a MethodDesc structure at the specified address.");
+    interpreter.AddCommand("dumpmt", new sosCommand("DumpMT"), "Displays information about a method table at the specified address.");
     interpreter.AddCommand("dumpobj", new sosCommand("DumpObj"), "Displays info about an object at the specified address.");
     interpreter.AddCommand("dso", new sosCommand("DumpStackObjects"), "Displays all managed objects found within the bounds of the current stack.");
     interpreter.AddCommand("eeheap", new sosCommand("EEHeap"), "Displays info about process memory consumed by internal runtime data structures.");
     interpreter.AddCommand("gcroot", new sosCommand("GCRoot"), "Displays info about references (or roots) to an object at the specified address.");
     interpreter.AddCommand("ip2md", new sosCommand("IP2MD"), "Displays the MethodDesc structure at the specified address in code that has been JIT-compiled.");
-    interpreter.AddCommand("printexception", new sosCommand("PrintException"), "Displays and formats fields of any object derived from the Exception class at the specified address.");
+    interpreter.AddCommand("name2ee", new sosCommand("Name2EE"), "Displays the MethodTable structure and EEClass structure for the specified type or method in the specified module.");
+    interpreter.AddCommand("pe", new sosCommand("PrintException"), "Displays and formats fields of any object derived from the Exception class at the specified address.");
+    interpreter.AddCommand("soshelp", new sosCommand("Help"), "Displays all available commands when no parameter is specified, or displays detailed help information about the specified command. soshelp <command>");
     return true;
 }
