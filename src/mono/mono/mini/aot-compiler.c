@@ -4491,35 +4491,30 @@ add_generic_instances (MonoAotCompile *acfg)
 			ninsts = 0;
 			insts [ninsts ++] = &mono_defaults.int32_class->byval_arg;
 			insts [ninsts ++] = &mono_defaults.uint32_class->byval_arg;
-			insts [ninsts ++] = &mono_defaults.int16_class->byval_arg;
 			insts [ninsts ++] = &mono_defaults.uint16_class->byval_arg;
 			insts [ninsts ++] = &mono_defaults.byte_class->byval_arg;
-			insts [ninsts ++] = &mono_defaults.sbyte_class->byval_arg;
-
 			enum_comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
 			g_assert (enum_comparer);
-
 			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
-		}
 
-		/* Add an instance of LongEnumEqualityComparer<long/ulong> which is created by EqualityComparer<T> for enums */
-		{
-			MonoClass *enum_comparer;
-			MonoGenericContext ctx;
-			MonoType *args [16];
+			ninsts = 0;
+			insts [ninsts ++] = &mono_defaults.int16_class->byval_arg;
+			enum_comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "ShortEnumEqualityComparer`1");
+			g_assert (enum_comparer);
+			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
+
+			ninsts = 0;
+			insts [ninsts ++] = &mono_defaults.sbyte_class->byval_arg;
+			enum_comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "SByteEnumEqualityComparer`1");
+			g_assert (enum_comparer);
+			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
 
 			enum_comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "LongEnumEqualityComparer`1");
 			g_assert (enum_comparer);
-
-			memset (&ctx, 0, sizeof (ctx));
-			args [0] = &mono_defaults.int64_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (enum_comparer, &ctx), FALSE, "EqualityComparer<T>");
-
-			memset (&ctx, 0, sizeof (ctx));
-			args [0] = &mono_defaults.uint64_class->byval_arg;
-			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
-			add_generic_class (acfg, mono_class_inflate_generic_class (enum_comparer, &ctx), FALSE, "EqualityComparer<T>");
+			ninsts = 0;
+			insts [ninsts ++] = &mono_defaults.int64_class->byval_arg;
+			insts [ninsts ++] = &mono_defaults.uint64_class->byval_arg;
+			add_instances_of (acfg, enum_comparer, insts, ninsts, FALSE);
 		}
 
 		/* Add instances of the array generic interfaces for primitive types */
