@@ -2268,11 +2268,13 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 		return 0;
 	case MONO_TYPE_GENERICINST:
 		if (mono_type_generic_inst_is_valuetype (simple_type)) {
+			MonoClass *target_class;
 			if (arg->type != STACK_VTYPE)
 				return 1;
 			klass = mono_class_from_mono_type (simple_type);
+			target_class = mono_class_from_mono_type (target);
 			/* The second cases is needed when doing partial sharing */
-			if (klass != arg->klass && mono_class_from_mono_type (target) != arg->klass)
+			if (klass != arg->klass && target_class != arg->klass && target_class != mono_class_from_mono_type (mini_get_underlying_type (&arg->klass->byval_arg)))
 				return 1;
 			return 0;
 		} else {
