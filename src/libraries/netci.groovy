@@ -199,7 +199,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
                     copyArtifacts(fullNativeCompBuildJobName) {
                         includePatterns("bin/**")
                         buildSelector {
-                            buildNumber('COREFX_NATIVECOMP_BUILD')
+                            buildNumber('\${COREFX_NATIVECOMP_BUILD}')
                         }
                     }
                     
@@ -207,7 +207,7 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
                     copyArtifacts(fullCoreFXBuildJobName) {
                         includePatterns('bin/build.pack')
                         buildSelector {
-                            buildNumber('COREFX_BUILD')
+                            buildNumber('\${COREFX_BUILD}')
                         }
                     }
                     
