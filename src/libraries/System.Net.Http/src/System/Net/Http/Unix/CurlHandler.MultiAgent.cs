@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 // TODO: Once we upgrade to C# 6, remove all of these and simply import the Http class.
 using CURLAUTH = Interop.Http.CURLAUTH;
@@ -47,13 +48,13 @@ namespace System.Net.Http
             /// end of a pipe, with the write end written to when work is queued or when cancellation
             /// is requested. This is only valid while the worker is executing.
             /// </summary>
-            private int _wakeupRequestedPipeFd;
+            private SafeFileHandle _wakeupRequestedPipeFd;
 
             /// <summary>
             /// Write end of the pipe connected to <see cref="_wakeupRequestedPipeFd"/>.
             /// This is only valid while the worker is executing.
             /// </summary>
-            private int _requestWakeupPipeFd;
+            private SafeFileHandle _requestWakeupPipeFd;
             
             /// <summary>
             /// Task for the currently running worker, or null if there is no current worker.
@@ -87,14 +88,14 @@ namespace System.Net.Http
                     // Create pipe used to forcefully wake up curl_multi_wait calls when something important changes.
                     // This is created here rather than in Process so that the pipe is available immediately
                     // for subsequent queue calls to use.
-                    Debug.Assert(_wakeupRequestedPipeFd == 0, "Read pipe should have been cleared");
-                    Debug.Assert(_requestWakeupPipeFd == 0, "Write pipe should have been cleared");
+                    Debug.Assert(_wakeupRequestedPipeFd == null, "Read pipe should have been cleared");
+                    Debug.Assert(_requestWakeupPipeFd == null, "Write pipe should have been cleared");
                     unsafe
                     {
                         int* fds = stackalloc int[2];
                         while (Interop.CheckIo(Interop.Sys.Pipe(fds))) ;
-                        _wakeupRequestedPipeFd = fds[Interop.Sys.ReadEndOfPipe];
-                        _requestWakeupPipeFd = fds[Interop.Sys.WriteEndOfPipe];
+                        _wakeupRequestedPipeFd = new SafeFileHandle((IntPtr)fds[Interop.Sys.ReadEndOfPipe], true);
+                        _requestWakeupPipeFd = new SafeFileHandle((IntPtr)fds[Interop.Sys.WriteEndOfPipe], true);
                     }
 
                     // Kick off the processing task.  It's "DenyChildAttach" to avoid any surprises if
@@ -124,10 +125,10 @@ namespace System.Net.Http
                                 // This is done while holding the lock to prevent
                                 // subsequent Queue calls to see an improperly configured
                                 // set of descriptors.
-                                Interop.Sys.Close(thisRef._wakeupRequestedPipeFd);
-                                thisRef._wakeupRequestedPipeFd = 0;
-                                Interop.Sys.Close(thisRef._requestWakeupPipeFd);
-                                thisRef._requestWakeupPipeFd = 0;
+                                thisRef._wakeupRequestedPipeFd.Dispose();
+                                thisRef._wakeupRequestedPipeFd = null;
+                                thisRef._requestWakeupPipeFd.Dispose();
+                                thisRef._requestWakeupPipeFd = null;
 
                                 // In the time between we stopped processing and now,
                                 // more requests could have been added.  If they were
@@ -163,7 +164,7 @@ namespace System.Net.Http
                 {
                     VerboseTrace("Writing to wakeup pipe");
                     byte b = 1;
-                    while ((Interop.CheckIo((long)Interop.Sys.Write(_requestWakeupPipeFd, &b, 1)))) ;
+                    while ((Interop.CheckIo(Interop.Sys.Write(_requestWakeupPipeFd, &b, 1)))) ;
                 }
             }
 
@@ -220,7 +221,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "No locks should be held while invoking Process");
                 Debug.Assert(_runningWorker != null && _runningWorker.Id == Task.CurrentId, "This is the worker, so it must be running");
-                Debug.Assert(_wakeupRequestedPipeFd != 0, "Should have a valid pipe for wake ups");
+                Debug.Assert(_wakeupRequestedPipeFd != null && !_wakeupRequestedPipeFd.IsInvalid, "Should have a valid pipe for wake ups");
 
                 // Create the multi handle to use for this round of processing.  This one handle will be used
                 // to service all easy requests currently available and all those that come in while
@@ -293,7 +294,7 @@ namespace System.Net.Http
                         // Wait for more things to do.
                         bool isWakeupRequestedPipeActive;
                         bool isTimeout;
-                        ThrowIfCURLMError(Interop.Http.MultiWait(multiHandle, _wakeupRequestedPipeFd, out isWakeupRequestedPipeActive, out isTimeout));
+                        ThrowIfCURLMError(Interop.Http.MultiWait(multiHandle, (int)_wakeupRequestedPipeFd.DangerousGetHandle(), out isWakeupRequestedPipeActive, out isTimeout));
                         if (isWakeupRequestedPipeActive)
                         {
                             // We woke up (at least in part) because a wake-up was requested.  

@@ -64,7 +64,7 @@ namespace System.Net
             {
                 if (socket != -1)
                 {
-                    Interop.Sys.Close(socket);
+                    Interop.Sys.Close((IntPtr)socket);
                 }
             }
         }

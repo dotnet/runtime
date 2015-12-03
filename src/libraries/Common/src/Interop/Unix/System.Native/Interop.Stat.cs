@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -45,7 +46,7 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern int FStat(int fd, out FileStatus output);
+        internal static extern int FStat(SafeFileHandle fd, out FileStatus output);
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
         internal static extern int Stat(string path, out FileStatus output);

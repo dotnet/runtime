@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -17,6 +18,13 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern int FLock(int fd, LockOperations operation);
+        internal static extern int FLock(SafeFileHandle fd, LockOperations operation);
+
+        /// <summary>
+        /// Exposing this for SafeFileHandle.ReleaseHandle() to call.
+        /// Normal callers should use FLock(SafeFileHandle fd).
+        /// </summary>
+        [DllImport(Libraries.SystemNative, SetLastError = true)]
+        internal static extern int FLock(IntPtr fd, LockOperations operation);
     }
 }
