@@ -1648,8 +1648,8 @@ namespace System.Collections.Generic
             SortedSet<T> asSorted = other as SortedSet<T>;
             if (asSorted != null && AreComparersEqual(this, asSorted))
             {
-                IEnumerator<T> mine = this.GetEnumerator();
-                IEnumerator<T> theirs = asSorted.GetEnumerator();
+                Enumerator mine = GetEnumerator();
+                Enumerator theirs = asSorted.GetEnumerator();
                 bool mineEnded = !mine.MoveNext();
                 bool theirsEnded = !theirs.MoveNext();
                 while (!mineEnded && !theirsEnded)
