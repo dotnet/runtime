@@ -272,8 +272,10 @@ def innerLoopNonWindowsOSs = ['Ubuntu', 'OSX', 'FreeBSD', 'CentOS7.1', 'OpenSUSE
             // Set up triggers
             if (isPR) {
                 // Set PR trigger.
-                // TODO: Enable after validation.
-                // Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configuration} Build and Test")
+                // Set of OS's that work currently. 
+                if (os in ['Ubuntu', 'OSX', 'OpenSUSE13.2']) {
+                    Utilities.addGithubPRTrigger(newFlowJob, "Innerloop ${os} ${configuration} Build and Test")
+                }
             }
             else {
                 // Set a push trigger
@@ -310,8 +312,7 @@ def supportedFullCyclePlatforms = ['Windows_NT']
             // Set up triggers
             if (isPR) {
                 // Set PR trigger.
-                // TODO: Enable after validation.
-                // Utilities.addGithubPRTrigger(newJob, "Innerloop ${osGroup} ${configuration} Build and Test")
+                Utilities.addGithubPRTrigger(newJob, "Innerloop ${osGroup} ${configuration} Build and Test")
             }
             else {
                 // Set a push trigger
