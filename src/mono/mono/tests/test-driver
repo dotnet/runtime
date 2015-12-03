@@ -27,7 +27,7 @@ if ($test =~ /.*\|.*/) {
 	$output = $test;
 
 	#This is a silly workaround, but all tests that use extra parameters need a larger timeout.
-	$timeout_in_minutes = 9;
+	$timeout_in_minutes = 15;
 }
 $ENV{'TEST_DRIVER_TIMEOUT_SEC'} = $timeout_in_minutes * 60;
 
