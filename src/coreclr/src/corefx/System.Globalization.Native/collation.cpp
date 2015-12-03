@@ -14,10 +14,10 @@
 #include <unicode/usearch.h>
 #include <unicode/utf16.h>
 
-const int32_t CompareOptionsIgnoreCase = 1;
-const int32_t CompareOptionsIgnoreNonSpace = 2;
-const int32_t CompareOptionsIgnoreSymbols = 4;
-const int32_t CompareOptionsIgnoreKanaType = 8;
+const int32_t CompareOptionsIgnoreCase = 0x1;
+const int32_t CompareOptionsIgnoreNonSpace = 0x2;
+const int32_t CompareOptionsIgnoreSymbols = 0x4;
+const int32_t CompareOptionsIgnoreKanaType = 0x8;
 const int32_t CompareOptionsIgnoreWidth = 0x10;
 // const int32_t CompareOptionsStringSort = 0x20000000;
 
@@ -37,7 +37,11 @@ typedef struct _sort_handle
 
     _sort_handle() : regular(nullptr)
     {
-        pthread_mutex_init(&collatorsLockObject, NULL);
+        int result = pthread_mutex_init(&collatorsLockObject, NULL);
+        if (result != 0)
+        {
+            assert(false && "Unexpected pthread_mutex_init return value.");
+        }
     }
 
 } SortHandle;
@@ -94,6 +98,8 @@ const int32_t g_HalfFullCharsLength = (sizeof(g_HalfFullHigherChars) / sizeof(UC
 /*
 ICU collation rules reserve any punctuation and whitespace characters for use in the syntax.
 Thus, to use these characters in a rule, they need to be escaped.
+
+This rule was taken from http://www.unicode.org/reports/tr35/tr35-collation.html#Rules.
 */
 bool NeedsEscape(UChar character)
 {
@@ -115,12 +121,12 @@ std::vector<UChar> GetCustomRules(int32_t options, UColAttributeValue strength)
     bool isIgnoreWidth = (options & CompareOptionsIgnoreWidth) == CompareOptionsIgnoreWidth;
 
     // kana differs at the quaternary level
-    bool needsIgnoreKanaTypeCustomRule = isIgnoreKanaType && (strength == UCOL_DEFAULT || strength >= UCOL_QUATERNARY);
-    bool needsNotIgnoreKanaTypeCustomRule = !isIgnoreKanaType && (strength != UCOL_DEFAULT && strength < UCOL_QUATERNARY);
+    bool needsIgnoreKanaTypeCustomRule = isIgnoreKanaType && strength >= UCOL_QUATERNARY;
+    bool needsNotIgnoreKanaTypeCustomRule = !isIgnoreKanaType && strength < UCOL_QUATERNARY;
 
-    // character width differs at the tertiary/default level
-    bool needsIgnoreWidthCustomRule = isIgnoreWidth && (strength == UCOL_DEFAULT || strength >= UCOL_TERTIARY);
-    bool needsNotIgnoreWidthCustomRule = !isIgnoreWidth && (strength != UCOL_DEFAULT && strength < UCOL_TERTIARY);
+    // character width differs at the tertiary level
+    bool needsIgnoreWidthCustomRule = isIgnoreWidth && strength >= UCOL_TERTIARY;
+    bool needsNotIgnoreWidthCustomRule = !isIgnoreWidth && strength < UCOL_TERTIARY;
 
     std::vector<UChar> customRules;
     if (needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule || needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule)
@@ -182,7 +188,7 @@ std::vector<UChar> GetCustomRules(int32_t options, UColAttributeValue strength)
  */
 UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options, UErrorCode* pErr)
 {
-    UColAttributeValue strength = UCOL_DEFAULT;
+    UColAttributeValue strength = ucol_getStrength(pCollator);
 
     bool isIgnoreCase = (options & CompareOptionsIgnoreCase) == CompareOptionsIgnoreCase;
     bool isIgnoreNonSpace = (options & CompareOptionsIgnoreNonSpace) == CompareOptionsIgnoreNonSpace;
@@ -229,16 +235,13 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
         ucol_setAttribute(pClonedCollator, UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, pErr);
     }
 
-    if (strength != UCOL_DEFAULT)
-    {
-        ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, strength, pErr);
+    ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, strength, pErr);
 
-        // casing differs at the tertiary level.
-        // if strength is less than tertiary, but we are not ignoring case, then we need to flip CASE_LEVEL On
-        if (strength < UCOL_TERTIARY && !isIgnoreCase)
-        {
-            ucol_setAttribute(pClonedCollator, UCOL_CASE_LEVEL, UCOL_ON, pErr);
-        }
+    // casing differs at the tertiary level.
+    // if strength is less than tertiary, but we are not ignoring case, then we need to flip CASE_LEVEL On
+    if (strength < UCOL_TERTIARY && !isIgnoreCase)
+    {
+        ucol_setAttribute(pClonedCollator, UCOL_CASE_LEVEL, UCOL_ON, pErr);
     }
 
     return pClonedCollator;
@@ -289,7 +292,11 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
     }
     else
     {
-        pthread_mutex_lock(&pSortHandle->collatorsLockObject);
+        int lockResult = pthread_mutex_lock(&pSortHandle->collatorsLockObject);
+        if (lockResult != 0)
+        {
+            assert(false && "Unexpected pthread_mutex_lock return value.");
+        }
 
         TCollatorMap::iterator entry = pSortHandle->collatorsPerOption.find(options);
         if (entry == pSortHandle->collatorsPerOption.end())
