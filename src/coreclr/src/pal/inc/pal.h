@@ -3642,13 +3642,13 @@ PALIMPORT
 HMODULE
 PALAPI
 LoadLibraryA(
-         IN LPCSTR lpLibFileName);
+        IN LPCSTR lpLibFileName);
 
 PALIMPORT
 HMODULE
 PALAPI
 LoadLibraryW(
-         IN LPCWSTR lpLibFileName);
+        IN LPCWSTR lpLibFileName);
 
 PALIMPORT
 HMODULE
@@ -3667,17 +3667,17 @@ LoadLibraryExW(
         IN DWORD dwFlags);
 
 PALIMPORT
-HMODULE
+void *
 PALAPI
 PAL_LoadLibraryDirect(
-         IN LPCWSTR lpLibFileName);
+        IN LPCWSTR lpLibFileName);
 
 PALIMPORT
 HMODULE
 PALAPI
 PAL_RegisterLibraryDirect(
-         IN HMODULE dl_handle,
-         IN LPCWSTR lpLibFileName);
+        IN void *dl_handle,
+        IN LPCWSTR lpLibFileName);
 
 /*++
 Function:

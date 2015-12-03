@@ -1,3 +1,11 @@
+# Set the RPATH of sos so that it can find dependencies without needing to set LD_LIBRARY_PATH
+# For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
+if(CLR_CMAKE_PLATFORM_DARWIN)
+    set(CMAKE_INSTALL_RPATH "@loader_path")
+else()
+    set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+endif(CLR_CMAKE_PLATFORM_DARWIN)
+
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
   add_definitions(-DSOS_TARGET_AMD64=1)
   add_definitions(-D_TARGET_WIN64_=1)
