@@ -25,13 +25,14 @@ update_submodules:
 .PHONY: update_submodules
 
 EXTRA_DIST= \
-        README.md \
-	    LICENSE \
-	    autogen.sh \
-	    mkinstalldirs \
-	    mono-uninstalled.pc.in \
-	    winconfig.h \
-	    external
+	README.md 		\
+	LICENSE 		\
+	autogen.sh 		\
+	mkinstalldirs 		\
+	mono-uninstalled.pc.in 	\
+	winconfig.h 		\
+	code_of_conduct.md 	\
+	external
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
 
