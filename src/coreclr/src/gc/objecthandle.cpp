@@ -1218,7 +1218,7 @@ void Ref_TraceRefCountHandles(HANDLESCANPROC callback, uintptr_t lParam1, uintpt
                 {
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[j];
                     if (hTable)
-                        HndEnumHandles(hTable, &handleType, 1, callback, lParam1, lParam2, FALSE);
+                        HndEnumHandles(hTable, &handleType, 1, callback, lParam1, lParam2, false);
                 }
             }
         }
