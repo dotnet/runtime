@@ -5,10 +5,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 public static unsafe class StringTests
 {
+    private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows); 
     private const string c_SoftHyphen = "\u00AD";
 
     [Fact]
@@ -751,10 +753,15 @@ public static unsafe class StringTests
         string target = "ddzs";
         WithCulture(new CultureInfo("hu-HU"), () =>
         {
-            // TODO: [ActiveIssue(3972)]
-
-            //Assert.Equal(0, source.IndexOf(target));
-            //Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCulture));
+            /* 
+             There are differences between Windows and ICU regarding contractions.
+             Windows has equal contraction collation weights, including case (target="Ddzs" same behavior as "ddzs").
+             ICU has different contraction collation weights, depending on locale collation rules.
+             If CurrentCultureIgnoreCase is specified, ICU will use 'secondary' collation rules
+              which ignore the contraction collation weights (defined as 'tertiary' rules)
+            */
+            Assert.Equal(s_isWindows ? 0 : -1, source.IndexOf(target));
+            Assert.Equal(s_isWindows ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
 
             Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
             Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
