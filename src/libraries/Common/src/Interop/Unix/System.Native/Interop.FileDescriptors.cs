@@ -10,9 +10,14 @@ internal static partial class Interop
     {
         internal static class FileDescriptors
         {
-            internal static readonly SafeFileHandle STDIN_FILENO = new SafeFileHandle((IntPtr)0, false);
-            internal static readonly SafeFileHandle STDOUT_FILENO = new SafeFileHandle((IntPtr)1, false);
-            internal static readonly SafeFileHandle STDERR_FILENO = new SafeFileHandle((IntPtr)2, false);
+            internal static readonly SafeFileHandle STDIN_FILENO = CreateFileHandle(0);
+            internal static readonly SafeFileHandle STDOUT_FILENO = CreateFileHandle(1);
+            internal static readonly SafeFileHandle STDERR_FILENO = CreateFileHandle(2);
+
+            private static SafeFileHandle CreateFileHandle(int fileNumber)
+            {
+                return new SafeFileHandle((IntPtr)fileNumber, ownsHandle: false);
+            }
         }
     }
 }

@@ -127,12 +127,6 @@ static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK, "");
 static_assert(PAL_IN_ISDIR == IN_ISDIR, "");
 #endif
 
-inline static int ToFileDescriptor(intptr_t fd)
-{
-    assert(INT32_MIN <= fd && fd <= INT32_MAX);
-    return static_cast<int>(fd);
-}
-
 static void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 {
     dst->Flags = FILESTATUS_FLAGS_NONE;
@@ -719,7 +713,7 @@ extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t millis
     for (uint32_t i = 0; i < eventCount; i++)
     {
         const PollEvent& event = pollEvents[i];
-        pollfds[i] = { .fd = ToFileDescriptor(event.FileDescriptor), .events = event.Events, .revents = 0 };
+        pollfds[i] = { .fd = event.FileDescriptor, .events = event.Events, .revents = 0 };
     }
 
     int rv = poll(pollfds, static_cast<nfds_t>(eventCount), milliseconds);

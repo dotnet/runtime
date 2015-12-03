@@ -212,7 +212,7 @@ namespace System
             private static bool TryOpen(string filePath, out SafeFileHandle fd)
             {
                 IntPtr tmpFd;
-                while ((int)(tmpFd = Interop.Sys.Open(filePath, Interop.Sys.OpenFlags.O_RDONLY, 0)) < 0)
+                while ((long)(tmpFd = Interop.Sys.Open(filePath, Interop.Sys.OpenFlags.O_RDONLY, 0)) < 0)
                 {
                     // Don't throw in this case, as we'll be polling multiple locations looking for the file.
                     // But we still want to retry if the open is interrupted by a signal.

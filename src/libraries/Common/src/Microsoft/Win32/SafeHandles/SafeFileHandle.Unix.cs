@@ -13,6 +13,10 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>A handle value of -1.</summary>
         private static readonly IntPtr s_invalidHandle = new IntPtr(-1);
 
+        private SafeFileHandle() : this(ownsHandle: true)
+        {
+        }
+
         private SafeFileHandle(bool ownsHandle)
             : base(s_invalidHandle, ownsHandle)
         {

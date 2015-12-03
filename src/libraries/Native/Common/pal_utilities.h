@@ -13,6 +13,10 @@
 #include <string.h>
 #include <type_traits>
 
+#if HAVE_OPEN_MAX
+#include <sys/syslimits.h>
+#endif
+
 /**
  * ResultOf<T> is shorthand for typename std::result_of<T>::type.
  * Equivalent to C++14 std::result_of_t.
@@ -110,3 +114,19 @@ inline void SafeStringCopy(char* destination, int32_t destinationSize, const cha
         SafeStringCopy(destination, unsignedSize, source);
     }
 }
+
+/**
+* Converts an intptr_t to a file descriptor.
+* intptr_t is the type used to marshal file descriptors so we can use SafeHandles effectively.
+*/
+inline static int ToFileDescriptor(intptr_t fd)
+{
+#if HAVE_OPEN_MAX
+    assert(0 <= fd && fd <= OPEN_MAX);
+#else
+    assert(0 <= fd && fd <= INT32_MAX);
+#endif
+
+    return static_cast<int>(fd);
+}
+

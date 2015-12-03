@@ -21,10 +21,9 @@ internal static partial class Interop
 
         internal struct PollEvent
         {
-            internal IntPtr FileDescriptor;      // The file descriptor to poll
+            internal int FileDescriptor;         // The file descriptor to poll
             internal PollEvents Events;          // The events to poll for
             internal PollEvents TriggeredEvents; // The events that occurred which triggered the poll
-            private readonly int __padding;
         }
 
         /// <summary>
@@ -55,7 +54,7 @@ internal static partial class Interop
 
                 var pollEvent = new PollEvent
                 {
-                    FileDescriptor = fd.DangerousGetHandle(),
+                    FileDescriptor = fd.DangerousGetHandle().ToInt32(),
                     Events = events,
                 };
 
