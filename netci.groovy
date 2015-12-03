@@ -525,12 +525,11 @@ build(globalParams + [CORECLR_OSX_BUILD: osxBuildJob.build.number,
                 if (isPR) {
                     Utilities.addPRTestSCM(newFlowJob, project)
                     Utilities.addStandardPRParameters(newFlowJob, project)
-                    if (architecture == 'x64') {
-                        if (configuration == 'Release') {
-                            Utilities.addGithubPRTrigger(newFlowJob, "OSX ${architecture} ${configuration} Build and Test", "(?i).*test\\W+osx\\W+release.*", true /* trigger by phrase only */)
-                        } else {
-                            Utilities.addGithubPRTrigger(newFlowJob, "OSX ${architecture} ${configuration} Build and Test", "(?i).*test\\W+osx\\W+debug.*", true /* trigger by phrase only */)
-                        }
+                    if (configuration == 'Release') {
+                        // Tests will be run on x64 Release by default (no trigger phase required).
+                        Utilities.addGithubPRTrigger(newFlowJob, "OSX ${architecture} ${configuration} Build and Test", "(?i).*test\\W+osx\\W+release.*", false /* trigger by phrase only */)
+                    } else {
+                        Utilities.addGithubPRTrigger(newFlowJob, "OSX ${architecture} ${configuration} Build and Test", "(?i).*test\\W+osx\\W+debug.*", true /* trigger by phrase only */)
                     }
                 }
                 else {
