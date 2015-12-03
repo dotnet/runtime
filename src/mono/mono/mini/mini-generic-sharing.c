@@ -14,6 +14,9 @@
 #include <mono/utils/mono-counters.h>
 
 #include "mini.h"
+
+#define ALLOW_PARTIAL_SHARING TRUE
+//#define ALLOW_PARTIAL_SHARING FALSE
  
 #if 0
 #define DEBUG(...) __VA_ARGS__
@@ -30,10 +33,19 @@ static int num_templates_bytes;
 static int num_oti_allocted;
 static int num_oti_bytes;
 
+static gboolean partial_supported = TRUE;
+
 static inline gboolean
 partial_sharing_supported (void)
 {
-	return TRUE;
+	if (!ALLOW_PARTIAL_SHARING)
+		return FALSE;
+	/* Enable this when AOT compiling or running in full-aot mode */
+	if (mono_aot_only)
+		return TRUE;
+	if (partial_supported)
+		return TRUE;
+	return FALSE;
 }
 
 static int
@@ -2365,6 +2377,12 @@ void
 mono_set_generic_sharing_vt_supported (gboolean supported)
 {
 	gsharedvt_supported = supported;
+}
+
+void
+mono_set_partial_sharing_supported (gboolean supported)
+{
+	partial_supported = supported;
 }
 
 /*

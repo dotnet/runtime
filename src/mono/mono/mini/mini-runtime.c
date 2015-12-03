@@ -2773,7 +2773,7 @@ mini_parse_debug_options (void)
 		else if (!strcmp (arg, "debug-domain-unload"))
 			mono_enable_debug_domain_unload (TRUE);
 		else if (!strcmp (arg, "partial-sharing"))
-			;
+			mono_set_partial_sharing_supported (TRUE);
 		else if (!strcmp (arg, "align-small-structs"))
 			mono_align_small_structs = TRUE;
 		else if (!strcmp (arg, "native-debugger-break"))
