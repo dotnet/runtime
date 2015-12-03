@@ -363,6 +363,7 @@ class Tests
 		values.Select (x => x).ToArray ();
 	}
 
+	[Category ("GSHAREDVT")]
 	public static int test_0_delegate_invoke_wrappers_gsharedvt () {
 		var enums = new LongEnum [] { LongEnum.A };
 		SetArrayValue_ (enums);
