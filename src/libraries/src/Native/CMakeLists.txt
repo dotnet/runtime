@@ -39,6 +39,33 @@ string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     add_compile_options(-g -O0)
     add_definitions(-DDEBUG)
+
+    # obtain settings from running coreclr\enablesanitizers.sh
+    string(FIND "$ENV{DEBUG_SANITIZERS}" "asan" __ASAN_POS)
+    string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_POS)
+    if ((${__ASAN_POS} GREATER -1) OR (${__UBSAN_POS} GREATER -1))
+      set(CLR_SANITIZE_CXX_FLAGS "${CLR_SANITIZE_CXX_FLAGS} -fsanitize=")
+      set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS} -fsanitize=")
+      if (${__ASAN_POS} GREATER -1) 
+        set(CLR_SANITIZE_CXX_FLAGS "${CLR_SANITIZE_CXX_FLAGS}address,")
+        set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}address,")
+        message("Address Sanitizer (asan) enabled")
+      endif ()
+      if (${__UBSAN_POS} GREATER -1)
+        set(CLR_SANITIZE_CXX_FLAGS "${CLR_SANITIZE_CXX_FLAGS}undefined")
+        set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}undefined")
+        message("Undefined Behavior Sanitizer (ubsan) enabled")
+      endif ()
+
+      # -fdata-sections -ffunction-sections: each function has own section instead of one per .o file (needed for --gc-sections)
+      # -fPIC: enable Position Independent Code normally just for shared libraries but required when linking with address sanitizer
+      set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${CLR_SANITIZE_CXX_FLAGS} -fdata-sections -ffunction-sections -fPIC")
+
+      set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS}")
+
+      # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
+      set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
+    endif ()
 elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
     add_compile_options (-O3)
     add_definitions(-DNDEBUG)
