@@ -1045,6 +1045,9 @@ namespace Microsoft.Win32 {
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool ReleaseSemaphore(SafeWaitHandle handle, int releaseCount, out int previousCount);
 
+        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
+        internal static extern SafeWaitHandle OpenSemaphore(/* DWORD */ int desiredAccess, bool inheritHandle, String name);
+
         // Will be in winnls.h
         internal const int FIND_STARTSWITH  = 0x00100000; // see if value is at the beginning of source
         internal const int FIND_ENDSWITH    = 0x00200000; // see if value is at the end of source

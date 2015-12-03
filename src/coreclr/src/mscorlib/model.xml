@@ -12217,6 +12217,15 @@
       <Member Name="get_IsSet"/>
       <Member Name="get_WaitHandle"/>
     </Type>
+    <Type Name="System.Threading.Semaphore">
+      <Member Name="#ctor(System.Int32,System.Int32)" />
+      <Member Name="#ctor(System.Int32,System.Int32,System.String)" />
+      <Member Name="#ctor(System.Int32,System.Int32,System.String,System.Boolean@)" />
+      <Member Name="OpenExisting(System.String)" />
+      <Member Name="Release" />
+      <Member Name="Release(System.Int32)" />
+      <Member Name="TryOpenExisting(System.String,System.Threading.Semaphore@)" />
+    </Type>
     <Type Name="System.Threading.SemaphoreSlim">
       <Member Name="#ctor(System.Int32)"/>
       <Member Name="#ctor(System.Int32,System.Int32)"/>
