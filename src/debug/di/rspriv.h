@@ -138,7 +138,9 @@ class DbgTransportSession;
 class ShimProcess;
 
 
+#ifndef FEATURE_PAL
 extern HINSTANCE GetModuleInst();
+#endif
 
 
 template <class T>
