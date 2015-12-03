@@ -27,8 +27,8 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <PropertyGroup>
-    <DebugType></DebugType>
-    <Optimize></Optimize>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="gcarr.cs" />
