@@ -252,9 +252,10 @@ struct DirectoryEntry
  */
 struct PollEvent
 {
-    int32_t    FileDescriptor;  // The file descriptor to poll
+    intptr_t   FileDescriptor;  // The file descriptor to poll
     PollEvents Events;          // The events to poll for
     PollEvents TriggeredEvents; // The events that triggered the poll
+    int32_t __padding;
 };
 
 /**
@@ -278,11 +279,11 @@ enum NotifyEvents : int32_t
 };
 
 /**
- * Get file status from a decriptor. Implemented as shim to fstat(2).
+ * Get file status from a descriptor. Implemented as shim to fstat(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t FStat(int32_t fd, FileStatus* output);
+extern "C" int32_t FStat(intptr_t fd, FileStatus* output);
 
 /**
  * Get file status from a full path. Implemented as shim to stat(2).
@@ -303,21 +304,21 @@ extern "C" int32_t LStat(const char* path, FileStatus* output);
  *
  * Returns file descriptor or -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t Open(const char* path, int32_t flags, int32_t mode);
+extern "C" intptr_t Open(const char* path, int32_t flags, int32_t mode);
 
 /**
  * Close a file descriptor. Implemented as shim to open(2).
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t Close(int32_t fd);
+extern "C" int32_t Close(intptr_t fd);
 
 /**
  * Duplicates a file descriptor.
  *
  * Returns the duplication descriptor for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t Dup(int32_t oldfd);
+extern "C" intptr_t Dup(intptr_t oldfd);
 
 /**
  * Delete an entry from the file system. Implemented as shim to unlink(2).
@@ -331,7 +332,7 @@ extern "C" int32_t Unlink(const char* path);
  *
  * Returns file descriptor or -1 on fiailure. Sets errno on failure.
  */
-extern "C" int32_t ShmOpen(const char* name, int32_t flags, int32_t mode);
+extern "C" intptr_t ShmOpen(const char* name, int32_t flags, int32_t mode);
 
 /**
  * Unlink a shared memory object. Implemented as shim to shm_unlink(3).
@@ -389,7 +390,7 @@ extern "C" int32_t FcntlCanGetSetPipeSz();
  *
  * NOTE: Some platforms do not support this operation and will always fail with errno = ENOTSUP.
  */
-extern "C" int32_t FcntlGetPipeSz(int32_t fd);
+extern "C" int32_t FcntlGetPipeSz(intptr_t fd);
 
 /**
  * Sets the capacity of a pipe.
@@ -398,21 +399,14 @@ extern "C" int32_t FcntlGetPipeSz(int32_t fd);
  *
  * NOTE: Some platforms do not support this operation and will always fail with errno = ENOTSUP.
  */
-extern "C" int32_t FcntlSetPipeSz(int32_t fd, int32_t size);
-
-/**
- * Indicates whether or not a file descriptor is non-blocking.
- *
- * Returns 1 for true, 0 for false, and -1 for failure. Sets errno for failure.
- */
-extern "C" int32_t FcntlGetIsNonBlocking(int32_t fd);
+extern "C" int32_t FcntlSetPipeSz(intptr_t fd, int32_t size);
 
 /**
  * Sets whether or not a file descriptor is non-blocking.
  *
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
-extern "C" int32_t FcntlSetIsNonBlocking(int32_t fd, int32_t isNonBlocking);
+extern "C" int32_t FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking);
 
 /**
  * Create a directory. Implemented as a shim to mkdir(2).
@@ -440,14 +434,14 @@ extern "C" int32_t MkFifo(const char* path, int32_t mode);
  *
  * Returns 0 for success; on fail, -1 is returned and errno is set.
  */
-extern "C" int32_t FSync(int32_t fd);
+extern "C" int32_t FSync(intptr_t fd);
 
 /**
  * Changes the advisory lock status on a given File Descriptor
  *
  * Returns 0 on success; otherwise, -1 is returned and errno is set
  */
-extern "C" int32_t FLock(int32_t fd, LockOperations operation);
+extern "C" int32_t FLock(intptr_t fd, LockOperations operation);
 
 /**
  * Changes the current working directory to be the specified path.
@@ -478,7 +472,7 @@ extern "C" int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags f
  * On success, the resulting offet, in bytes, from the begining of the stream; otherwise,
  * returns -1 and errno is set.
  */
-extern "C" int64_t LSeek(int32_t fd, int64_t offset, SeekWhence whence);
+extern "C" int64_t LSeek(intptr_t fd, int64_t offset, SeekWhence whence);
 
 /**
  * Creates a hard-link at link pointing to source.
@@ -493,7 +487,7 @@ extern "C" int32_t Link(const char* source, const char* linkTarget);
  *
  * Returns a valid File Descriptor on success; otherwise, returns -1 and errno is set.
  */
-extern "C" int32_t MksTemps(char* pathTemplate, int32_t suffixLength);
+extern "C" intptr_t MksTemps(char* pathTemplate, int32_t suffixLength);
 
 /**
  * Map file or device into memory. Implemented as shim to mmap(2).
@@ -507,7 +501,7 @@ extern "C" void* MMap(void* address,
                       uint64_t length,
                       int32_t protection, // bitwise OR of PAL_PROT_*
                       int32_t flags,      // bitwise OR of PAL_MAP_*, but PRIVATE and SHARED are mutually exclusive.
-                      int32_t fd,
+                      intptr_t fd,
                       int64_t offset);
 
 /**
@@ -568,7 +562,7 @@ extern "C" int64_t SysConf(SysConfName name);
  *
  * Returns 0 for success, -1 for failure. Sets errno on failure.
  */
-extern "C" int32_t FTruncate(int32_t fd, int64_t length);
+extern "C" int32_t FTruncate(intptr_t fd, int64_t length);
 
 /**
  * Examines one or more file descriptors for the specified state(s) and blocks until the state(s) occur or the timeout
@@ -585,7 +579,7 @@ extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t millis
  *
  * Returns 0 on success; otherwise, the error code is returned and errno is NOT set.
  */
-extern "C" int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, FileAdvice advice);
+extern "C" int32_t PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, FileAdvice advice);
 
 /**
  * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor.
@@ -594,7 +588,7 @@ extern "C" int32_t PosixFAdvise(int32_t fd, int64_t offset, int64_t length, File
  *
  * Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
  */
-extern "C" int32_t Read(int32_t fd, void* buffer, int32_t bufferSize);
+extern "C" int32_t Read(intptr_t fd, void* buffer, int32_t bufferSize);
 
 /**
  * Takes a path to a symbolic link and attempts to place the link target path into the buffer. If the buffer is too
@@ -629,7 +623,7 @@ extern "C" void Sync();
  *
  * Returns the number of bytes written on success; otherwise, returns -1 and sets errno
  */
-extern "C" int32_t Write(int32_t fd, const void* buffer, int32_t bufferSize);
+extern "C" int32_t Write(intptr_t fd, const void* buffer, int32_t bufferSize);
 
 /**
 * Initializes a new inotify instance and returns a file
@@ -638,7 +632,7 @@ extern "C" int32_t Write(int32_t fd, const void* buffer, int32_t bufferSize);
 * Returns a new file descriptor on success.
 * On error, -1 is returned, and errno is set to indicate the error.
 */
-extern "C" int32_t INotifyInit();
+extern "C" intptr_t INotifyInit();
 
 /**
 * Adds a new watch, or modifies an existing watch,
@@ -647,7 +641,7 @@ extern "C" int32_t INotifyInit();
 * Returns a nonnegative watch descriptor on success.
 * On error -1 is returned and errno is set appropriately.
 */
-extern "C" int32_t INotifyAddWatch(int32_t fd, const char* pathName, uint32_t mask);
+extern "C" int32_t INotifyAddWatch(intptr_t fd, const char* pathName, uint32_t mask);
 
 /**
 * Removes the watch associated with the watch descriptor wd
@@ -655,4 +649,4 @@ extern "C" int32_t INotifyAddWatch(int32_t fd, const char* pathName, uint32_t ma
 *
 * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
 */
-extern "C" int32_t INotifyRemoveWatch(int32_t fd, int32_t wd);
+extern "C" int32_t INotifyRemoveWatch(intptr_t fd, int32_t wd);

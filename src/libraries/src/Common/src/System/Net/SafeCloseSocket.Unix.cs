@@ -121,7 +121,7 @@ namespace System.Net.Sockets
                 {
                     GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") Following 'blockable' branch.");
 
-                    errorCode = Interop.Sys.Close((int)handle);
+                    errorCode = Interop.Sys.Close(handle);
                     if (errorCode == -1)
                     {
                         errorCode = (int)Interop.Sys.GetLastError();
@@ -145,11 +145,11 @@ namespace System.Net.Sockets
 
                     // The socket must be non-blocking with a linger timeout set.
                     // We have to set the socket to blocking.
-                    errorCode = Interop.Sys.Fcntl.SetIsNonBlocking((int)handle, 0);
+                    errorCode = Interop.Sys.Fcntl.SetIsNonBlocking(handle, 0);
                     if (errorCode == 0)
                     {
                         // The socket successfully made blocking; retry the close().
-                        errorCode = Interop.Sys.Close((int)handle);
+                        errorCode = Interop.Sys.Close(handle);
 
                         GlobalLog.Print("SafeCloseSocket::ReleaseHandle(handle:" + handle.ToString("x") + ") close()#2:" + errorCode.ToString());
 #if DEBUG
@@ -184,7 +184,7 @@ namespace System.Net.Sockets
                     return SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
                 }
 
-                errorCode = Interop.Sys.Close((int)handle);
+                errorCode = Interop.Sys.Close(handle);
 #if DEBUG
                 _closeSocketHandle = handle;
                 _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
@@ -213,10 +213,10 @@ namespace System.Net.Sockets
 
                     // The socket was created successfully; make it non-blocking and enable
                     // IPV6_V6ONLY by default for AF_INET6 sockets.
-                    int err = Interop.Sys.Fcntl.SetIsNonBlocking(fd, 1);
+                    int err = Interop.Sys.Fcntl.SetIsNonBlocking((IntPtr)fd, 1);
                     if (err != 0)
                     {
-                        Interop.Sys.Close(fd);
+                        Interop.Sys.Close((IntPtr)fd);
                         fd = -1;
                         errorCode = SocketError.SocketError;
                     }
@@ -226,7 +226,7 @@ namespace System.Net.Sockets
                         error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
                         if (error != Interop.Error.SUCCESS)
                         {
-                            Interop.Sys.Close(fd);
+                            Interop.Sys.Close((IntPtr)fd);
                             fd = -1;
                             errorCode = SocketPal.GetSocketErrorForErrorCode(error);
                         }

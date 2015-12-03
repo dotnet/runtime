@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -208,20 +209,20 @@ namespace System
             /// <param name="filePath">The path to the file to open.</param>
             /// <param name="fd">If successful, the opened file descriptor; otherwise, -1.</param>
             /// <returns>true if the file was successfully opened; otherwise, false.</returns>
-            private static bool TryOpen(string filePath, out int fd)
+            private static bool TryOpen(string filePath, out SafeFileHandle fd)
             {
-                int tmpFd;
-                while ((tmpFd = Interop.Sys.Open(filePath, Interop.Sys.OpenFlags.O_RDONLY, 0)) < 0)
+                IntPtr tmpFd;
+                while ((int)(tmpFd = Interop.Sys.Open(filePath, Interop.Sys.OpenFlags.O_RDONLY, 0)) < 0)
                 {
                     // Don't throw in this case, as we'll be polling multiple locations looking for the file.
                     // But we still want to retry if the open is interrupted by a signal.
                     if (Interop.Sys.GetLastError() != Interop.Error.EINTR)
                     {
-                        fd = -1;
+                        fd = null;
                         return false;
                     }
                 }
-                fd = tmpFd;
+                fd = new SafeFileHandle(tmpFd, true);
                 return true;
             }
 
@@ -236,14 +237,14 @@ namespace System
                     return null;
                 }
 
-                int fd;
+                SafeFileHandle fd;
                 if (!TryOpen(directoryPath + "/" + term[0].ToString() + "/" + term, out fd) &&          // /directory/termFirstLetter/term      (Linux)
                     !TryOpen(directoryPath + "/" + ((int)term[0]).ToString("X") + "/" + term, out fd))  // /directory/termFirstLetterAsHex/term (Mac)
                 {
                     return null;
                 }
 
-                try
+                using (fd)
                 {
                     // Read in all of the terminfo data
                     long termInfoLength;
@@ -265,10 +266,6 @@ namespace System
 
                     // Create the database from the data
                     return new Database(term, data);
-                }
-                finally
-                {
-                    Interop.CheckIo(Interop.Sys.Close(fd)); // Avoid retrying close on EINTR, e.g. https://lkml.org/lkml/2005/9/11/49
                 }
             }
 

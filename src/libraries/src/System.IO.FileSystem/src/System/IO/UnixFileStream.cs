@@ -1273,7 +1273,7 @@ namespace System.IO
         /// so as to avoid delegate and closure allocations at the call sites.
         /// </remarks>
         private long SysCall<TArg1, TArg2>(
-            Func<int, TArg1, TArg2, long> sysCall,
+            Func<SafeFileHandle, TArg1, TArg2, long> sysCall,
             TArg1 arg1 = default(TArg1), TArg2 arg2 = default(TArg2),
             bool throwOnError = true,
             bool ignoreNotSupported = false)
@@ -1282,46 +1282,25 @@ namespace System.IO
 
             Debug.Assert(sysCall != null);
             Debug.Assert(handle != null);
+            Debug.Assert(!handle.IsInvalid);
 
-            bool gotRefOnHandle = false;
-            try
+            // System calls may fail due to EINTR (signal interruption).  We need to retry in those cases.
+            while (true)
             {
-                // Get the file descriptor from the handle.  We increment the ref count to help
-                // ensure it's not closed out from under us.
-                handle.DangerousAddRef(ref gotRefOnHandle);
-                Debug.Assert(gotRefOnHandle);
-                int fd = (int)handle.DangerousGetHandle();
-                Debug.Assert(fd >= 0);
-
-                // System calls may fail due to EINTR (signal interruption).  We need to retry in those cases.
-                while (true)
+                long result = sysCall(handle, arg1, arg2);
+                if (result < 0)
                 {
-                    long result = sysCall(fd, arg1, arg2);
-                    if (result < 0)
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    if (errorInfo.Error == Interop.Error.EINTR)
                     {
-                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                        if (errorInfo.Error == Interop.Error.EINTR)
-                        {
-                            continue;
-                        }
-                        else if (throwOnError && !(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
-                        {
-                            throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
-                        }
+                        continue;
                     }
-                    return result;
+                    else if (throwOnError && !(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
+                    {
+                        throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
+                    }
                 }
-            }
-            finally
-            {
-                if (gotRefOnHandle)
-                {
-                    handle.DangerousRelease();
-                }
-                else
-                {
-                    throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-                }
+                return result;
             }
         }
 

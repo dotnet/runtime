@@ -35,9 +35,10 @@ extern "C" int32_t GetWindowSize(WinSize* windowSize)
 #endif
 }
 
-extern "C" int32_t IsATty(int fd)
+extern "C" int32_t IsATty(intptr_t fd)
 {
-    return isatty(fd);
+    assert(INT32_MIN <= fd && fd <= INT32_MAX);
+    return isatty(static_cast<int>(fd));
 }
 
 static bool g_initialized = false;

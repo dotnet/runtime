@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -20,9 +21,10 @@ internal static partial class Interop
 
         internal struct PollEvent
         {
-            internal int FileDescriptor;         // The file descriptor to poll
+            internal IntPtr FileDescriptor;      // The file descriptor to poll
             internal PollEvents Events;          // The events to poll for
             internal PollEvents TriggeredEvents; // The events that occurred which triggered the poll
+            private readonly int __padding;
         }
 
         /// <summary>
@@ -44,18 +46,31 @@ internal static partial class Interop
         /// <param name="timeout">The amount of time to wait; -1 for infinite, 0 for immediate return, and a positive number is the number of milliseconds</param>
         /// <param name="triggered">The events that were returned by the poll call. May be PollEvents.POLLNONE in the case of a timeout.</param>
         /// <returns>An error or Error.SUCCESS.</returns>
-        internal static unsafe Error Poll(int fd, PollEvents events, int timeout, out PollEvents triggered)
+        internal static unsafe Error Poll(SafeFileHandle fd, PollEvents events, int timeout, out PollEvents triggered)
         {
-            var pollEvent = new PollEvent
+            bool gotRef = false;
+            try
             {
-                FileDescriptor = fd,
-                Events = events,
-            };
+                fd.DangerousAddRef(ref gotRef);
 
-            uint unused;
-            Error err = Poll(&pollEvent, 1, timeout, &unused);
-            triggered = pollEvent.TriggeredEvents;
-            return err;
+                var pollEvent = new PollEvent
+                {
+                    FileDescriptor = fd.DangerousGetHandle(),
+                    Events = events,
+                };
+
+                uint unused;
+                Error err = Poll(&pollEvent, 1, timeout, &unused);
+                triggered = pollEvent.TriggeredEvents;
+                return err;
+            }
+            finally
+            {
+                if (gotRef)
+                {
+                    fd.DangerousRelease();
+                }
+            }
         }
     }
 }

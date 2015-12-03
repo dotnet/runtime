@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -30,6 +30,6 @@ internal static partial class Interop
         /// Returns 0 on success; otherwise, the error code is returned
         /// </returns>
         [DllImport(Libraries.SystemNative, SetLastError = false /* this is explicitly called out in the man page */)]
-        internal static extern int PosixFAdvise(int fd, long offset, long length, FileAdvice advice);
+        internal static extern int PosixFAdvise(SafeFileHandle fd, long offset, long length, FileAdvice advice);
     }
 }

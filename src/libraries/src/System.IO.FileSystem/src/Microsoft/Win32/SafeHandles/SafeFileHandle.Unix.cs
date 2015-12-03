@@ -11,11 +11,6 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandle
     {
-        public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : this(ownsHandle)
-        {
-            SetHandle(preexistingHandle);
-        }
-
         internal bool? IsAsync { get; set; }
     }
 }
