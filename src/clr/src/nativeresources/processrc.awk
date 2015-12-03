@@ -8,7 +8,9 @@
 BEGIN {
     inStringTable = 0;
     inBeginEnd = 0;
-    writeheader();
+    arrayName = "nativeStringResourceArray_" name;
+    tableName = "nativeStringResourceTable_" name;
+    writeheader(arrayName, tableName);
 }
 {
     if ($1 == "STRINGTABLE" && $2 == "DISCARDABLE")
@@ -52,14 +54,11 @@ BEGIN {
         gsub(/L"/, "\"", $0);
         # join strings "..." "..." into one
         gsub(/" +"/, "", $0);
-        # remove all terminating newlines from the string - the msgfmt fails on those
-        # since it expects them to be at the end of the msgid as well
-        while(gsub(/\\n"/, "\"", $0)) {}
 
         # write the resource entry to the target file
         writestringentry(var, $0);
     }
 }
 END {
-    writefooter();
+    writefooter(arrayName, tableName);
 }

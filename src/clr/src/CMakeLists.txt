@@ -34,6 +34,40 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     # This prevents inclusion of standard C++ compiler headers
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
   endif(NOT CLR_CMAKE_PLATFORM_DARWIN)
+
+  set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
+  include_directories(${NATIVE_RESOURCE_DIR})
+  set (RC_TO_CPP ${NATIVE_RESOURCE_DIR}/rctocpp.awk)
+  set (PROCESS_RC ${NATIVE_RESOURCE_DIR}/processrc.awk)
+  set (RESOURCE_STRING_HEADER_DIR ${NATIVE_RESOURCE_DIR})
+
+  # Create a command to create a C++ source file containing an array of
+  # NativeStringResource structs which represent the information from a
+  # given Windows .rc file. The target C++ file path is returned in the
+  # variable specified by the TARGET_FILE parameter.
+  function(build_resources SOURCE TARGET_NAME TARGET_FILE)
+
+    get_compile_definitions(PREPROCESS_DEFINITIONS)
+    get_include_directories(INCLUDE_DIRECTORIES)
+
+    set(PREPROCESSED_SOURCE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.rc.i)
+    set(RESOURCE_ENTRY_ARRAY_CPP ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.cpp)
+
+    add_custom_command(
+      OUTPUT ${RESOURCE_ENTRY_ARRAY_CPP}
+      # Preprocess the windows .rc file
+      COMMAND ${CMAKE_CXX_COMPILER} -E -P ${PREPROCESS_DEFINITIONS} ${INCLUDE_DIRECTORIES} -o ${PREPROCESSED_SOURCE} -x c ${SOURCE}
+      # Convert the preprocessed .rc file to a C++ file which will be used to make a static lib.
+      COMMAND ${AWK} -v name=${TARGET_NAME} -f ${RC_TO_CPP} -f ${PROCESS_RC} ${PREPROCESSED_SOURCE} >${RESOURCE_ENTRY_ARRAY_CPP}
+            DEPENDS ${SOURCE} ${RC_TO_CPP} ${PROCESS_RC}
+    )
+
+    include_directories(${RESOURCE_STRING_HEADER_DIR})
+    set(${TARGET_FILE} ${RESOURCE_ENTRY_ARRAY_CPP} PARENT_SCOPE)
+
+  endfunction()
+
+  add_subdirectory(nativeresources)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_subdirectory(utilcode)
