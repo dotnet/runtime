@@ -9,17 +9,21 @@ private:
     lldb::SBDebugger &m_debugger;
     lldb::SBCommandReturnObject &m_returnObject;
 
+    lldb::SBProcess *m_currentProcess;
+    lldb::SBThread *m_currentThread;
+
     void OutputString(ULONG mask, PCSTR str);
-    lldb::SBProcess GetCurrentProcess();
-    lldb::SBThread GetCurrentThread();
-    lldb::SBFrame GetCurrentFrame();
     ULONG64 GetModuleBase(lldb::SBTarget& target, lldb::SBModule& module);
     DWORD_PTR GetExpression(lldb::SBFrame& frame, lldb::SBError& error, PCSTR exp);
     void GetContextFromFrame(lldb::SBFrame& frame, DT_CONTEXT *dtcontext);
     DWORD_PTR GetRegister(lldb::SBFrame& frame, const char *name);
 
+    lldb::SBProcess GetCurrentProcess();
+    lldb::SBThread GetCurrentThread();
+    lldb::SBFrame GetCurrentFrame();
+
 public:
-    DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject);
+    DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject, lldb::SBProcess *process = nullptr, lldb::SBThread *thread = nullptr);
     ~DebugClient();
 
     //----------------------------------------------------------------------------
@@ -198,4 +202,9 @@ public:
         DWORD threadID,
         ULONG32 contextSize,
         PBYTE context);
+
+    HRESULT SetExceptionCallback(
+        PFN_EXCEPTION_CALLBACK callback);
+
+    HRESULT ClearExceptionCallback();
 };

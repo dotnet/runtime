@@ -2294,6 +2294,7 @@ size_t FormatGeneratedException (DWORD_PTR dataPtr,
         // or did not update so (when ste is an explicit frames), do not update wszBuffer
         if (Status == S_OK)
         {
+#ifndef FEATURE_PAL
             char filename[MAX_LONGPATH+1] = "";
             ULONG linenum = 0;
             if (bLineNumbers
@@ -2307,12 +2308,15 @@ size_t FormatGeneratedException (DWORD_PTR dataPtr,
 
             if (!bLineNumbers)
             {
+#endif // FEATURE_PAL
                 swprintf_s(wszLineBuffer, _countof(wszLineBuffer), W("    %s\n"), so.String());
+#ifndef FEATURE_PAL
             }
             else
             {
                 swprintf_s(wszLineBuffer, _countof(wszLineBuffer), W("    %s [%S @ %d]\n"), so.String(), filename, linenum);
             }
+#endif // FEATURE_PAL
 
             Length += _wcslen(wszLineBuffer);
 
@@ -6102,12 +6106,14 @@ void IssueDebuggerBPCommand ( CLRDATA_ADDRESS addr )
     if (!bUnique)
     {
         bUnique = TRUE;
-        for ( int i = 0; i < curLimit; ++i )
+        for (int i = 0; i < curLimit; ++i)
+        {
             if (alreadyPlacedBPs[i] == addr)
             {
                 bUnique = FALSE;
                 break;
             }
+        }
     }
     if (bUnique)
     {
@@ -6115,7 +6121,7 @@ void IssueDebuggerBPCommand ( CLRDATA_ADDRESS addr )
         static WCHAR wszNameBuffer[1024]; // should be large enough
 
         // get the MethodDesc name
-               CLRDATA_ADDRESS pMD;
+        CLRDATA_ADDRESS pMD;
         if (g_sos->GetMethodDescPtrFromIP(addr, &pMD) != S_OK
             || g_sos->GetMethodDescName(pMD, 1024, wszNameBuffer, NULL) != S_OK)
         {
@@ -6130,8 +6136,10 @@ void IssueDebuggerBPCommand ( CLRDATA_ADDRESS addr )
         ExtOut("Setting breakpoint: %s [%S]\n", buffer, wszNameBuffer);
         g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
 
-        if ( curLimit < MaxBPsCached )
+        if (curLimit < MaxBPsCached)
+        {
             alreadyPlacedBPs[curLimit++] = addr;
+        }
     }
 }
 
@@ -6299,6 +6307,21 @@ public:
     }
 #endif
 
+    void CleanupNotifications()
+    {
+#ifdef FEATURE_PAL
+        if (m_breakpoints == NULL)
+        {
+            ULONG32 flags = 0;
+            g_clrData->GetOtherNotificationFlags(&flags);
+            flags &= ~(CLRDATA_NOTIFY_ON_MODULE_LOAD | CLRDATA_NOTIFY_ON_MODULE_UNLOAD);
+            g_clrData->SetOtherNotificationFlags(flags);
+
+            g_ExtClient->ClearExceptionCallback();
+        }
+#endif
+    }
+
     void ClearBreakpoint(size_t breakPointToClear)
     {
         PendingBreakpoint *pCur = m_breakpoints;
@@ -6320,6 +6343,7 @@ public:
         {
             ExtOut("Invalid pending breakpoint index.\n");
         }
+        CleanupNotifications();
     }
 
     void ClearAllBreakpoints()
@@ -6332,11 +6356,14 @@ public:
             iBreakpointIndex++;
             pCur = pNext;
         }
+        CleanupNotifications();
+
         ExtOut("All pending breakpoints cleared.\n");
     }
 
     HRESULT LoadSymbolsForModule(TADDR mod, SymbolReader* pSymbolReader)
     {
+#ifndef FEATURE_PAL
         HRESULT Status = S_OK;
         ToRelease<IXCLRDataModule> module;
         IfFailRet(g_sos->GetModule(mod, &module));
@@ -6374,7 +6401,7 @@ public:
             ExtOut("SOS warning: No symbols for module %S, source line breakpoints in this module will not bind hr=0x%x\n", wszNameBuffer, Status);
             return S_FALSE; // not finding symbols is a typical case
         }
-
+#endif // FEATURE_PAL
         return S_OK;
     }
 
@@ -6906,7 +6933,7 @@ HRESULT HandleCLRNotificationEvent()
     HRESULT Status = g_clrData->TranslateExceptionRecordToNotification(&dle.ExceptionRecord, &Notification);
     if (Status != S_OK)
     {
-        ExtOut("Error processing exception notification\n");
+        ExtErr("Error processing exception notification\n");
         return Status;
     }
     else
@@ -6930,6 +6957,14 @@ HRESULT HandleCLRNotificationEvent()
     return S_OK;
 }
 
+#ifdef FEATURE_PAL
+HRESULT HandleExceptionNotification(PDEBUG_CLIENT Client)
+{
+    INIT_API();
+    return HandleCLRNotificationEvent();
+}
+#endif
+
 DECLARE_API(HandleCLRN)
 {
     INIT_API();    
@@ -6940,7 +6975,7 @@ DECLARE_API(HandleCLRN)
 
 DECLARE_API(bpmd)
 {
-    INIT_API_NOEE();    
+    INIT_API();    
     MINIDUMP_NOT_SUPPORTED();    
     int i;
     char buffer[1024];    
@@ -6957,7 +6992,7 @@ DECLARE_API(bpmd)
     //
 
     StringHolder DllName,TypeName;
-    int lineNumber;
+    int lineNumber = 0;
     size_t Offset = 0;
 
     DWORD_PTR pMD = NULL;
@@ -7029,6 +7064,7 @@ DECLARE_API(bpmd)
         CHAR* pColon = strchr(DllName.data, ':');
         if(NULL != pColon)
         {
+#ifndef FEATURE_PAL
             fIsFilename = true;
             *pColon = '\0';
             pColon++;
@@ -7043,6 +7079,10 @@ DECLARE_API(bpmd)
                 fBadParam = true;
             }
             if(nArg != 1) fBadParam = 1;
+#else
+        ExtOut("File name:Line number not supported\n");
+        fBadParam = true;
+#endif // FEATURE_PAL
         }
     }
 
@@ -7083,7 +7123,10 @@ DECLARE_API(bpmd)
     LPWSTR FunctionName = (LPWSTR)alloca(mdNameLen * sizeof(WCHAR));
     LPWSTR Filename = (LPWSTR)alloca(MAX_LONGPATH * sizeof(WCHAR));
 
-    BOOL bNeedNotificationExceptions=FALSE;
+    BOOL bNeedNotificationExceptions = FALSE;
+#ifdef FEATURE_PAL
+    BOOL bNeedModuleNotificationExceptions = FALSE;
+#endif
 
     if (pMD == NULL)
     {
@@ -7114,7 +7157,7 @@ DECLARE_API(bpmd)
             else
             {
                 // get the module list
-                moduleList =ModuleFromName(fIsFilename ? NULL : DllName.data, &numModule);
+                moduleList = ModuleFromName(fIsFilename ? NULL : DllName.data, &numModule);
 
                 // Its OK if moduleList is NULL
                 // There is a very normal case when checking for modules after clr is loaded
@@ -7136,7 +7179,9 @@ DECLARE_API(bpmd)
         {
             ToRelease<IXCLRDataModule> ModDef;
             if (g_sos->GetModule(moduleList[iModule], &ModDef) != S_OK)
+            {
                 continue;
+            }
 
             HRESULT symbolsLoaded = S_FALSE;
             if(!fIsFilename)
@@ -7199,15 +7244,17 @@ DECLARE_API(bpmd)
                 }
             }
 
-            if(g_bpoints.Update(moduleList[iModule], FALSE))
+            if (g_bpoints.Update(moduleList[iModule], FALSE))
+            {
                 bNeedNotificationExceptions = TRUE;
+            }
         }
 
         if (!fNoFutureModule)
         {
             // add a pending breakpoint that will find future loaded modules, and
             // wait for the module load notification.
-            if(!fIsFilename)
+            if (!fIsFilename)
             {
                 g_bpoints.Add(ModuleName, FunctionName, NULL, (DWORD)Offset);
             }
@@ -7216,6 +7263,9 @@ DECLARE_API(bpmd)
                 g_bpoints.Add(Filename, lineNumber, NULL);
             }
             bNeedNotificationExceptions = TRUE;
+#ifdef FEATURE_PAL
+            bNeedModuleNotificationExceptions = TRUE;
+#endif
         }
     }
     else /* We were given a MethodDesc already */
@@ -7299,13 +7349,14 @@ DECLARE_API(bpmd)
         sprintf_s(buffer, _countof(buffer), "sxe -c \"!HandleCLRN\" clrn");
         Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);        
 #else
-        sprintf_s(buffer, _countof(buffer), "breakpoint set -E c++ -h false -w true");
-        Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);        
-        if (Status == S_OK)
+        if (bNeedModuleNotificationExceptions)
         {
-            sprintf_s(buffer, _countof(buffer), "breakpoint command add -o \"sos HandleCLRN\"");
-            Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
+            ULONG32 flags = 0;
+            g_clrData->GetOtherNotificationFlags(&flags);
+            flags |= (CLRDATA_NOTIFY_ON_MODULE_LOAD | CLRDATA_NOTIFY_ON_MODULE_UNLOAD);
+            g_clrData->SetOtherNotificationFlags(flags);
         }
+        Status = g_ExtClient->SetExceptionCallback(HandleExceptionNotification);
 #endif // FEATURE_PAL
     }
 
@@ -14141,6 +14192,8 @@ _EFN_GetManagedObjectFieldInfo(
     return S_OK;
 }
 
+#endif // FEATURE_PAL
+
 void PrintHelp (__in_z LPCSTR pszCmdName)
 {
     static LPSTR pText = NULL;
@@ -14157,39 +14210,30 @@ void PrintHelp (__in_z LPCSTR pszCmdName)
             return;
         }
 #else
-#define SOS_DOCUMENT_FILENAME "sosdocs.txt"
-
-        char  lpFilename[MAX_LONGPATH+12]; // + 12 to make enough room for strcat function.
-        DWORD nReturnedSize;
-        nReturnedSize = GetModuleFileName(g_hInstance, lpFilename, MAX_LONGPATH);
-        if ( nReturnedSize == 0 || nReturnedSize == MAX_LONGPATH ) {
-            // We consider both of these cases as failed.
-            ExtOut("Error getting the name for the current module\n");
+        int err = PAL_InitializeDLL();
+        if(err != 0)
+        {
+            ExtOut("Error initializing PAL\n");
             return;
         }
-
-        // Find the last "\" or "/" in the path.
-        char * pChar = lpFilename + strlen(lpFilename) - 1;
-        while ( pChar != lpFilename-1 && * pChar != '\\' && * pChar != '/' ) { * pChar-- = 0; }
-        strcat(lpFilename, SOS_DOCUMENT_FILENAME);
+        char lpFilename[MAX_LONGPATH + 12]; // + 12 to make enough room for strcat function.
+        strcpy_s(lpFilename, _countof(lpFilename), g_ExtClient->GetCoreClrDirectory());
+        strcat_s(lpFilename, _countof(lpFilename), "sosdocsunix.txt");
         
-        HANDLE hSosDocFile = CreateFileA(lpFilename,
-                                 GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+        HANDLE hSosDocFile = CreateFileA(lpFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
         if (hSosDocFile == INVALID_HANDLE_VALUE) {
             ExtOut("Error finding documentation file\n");
             return;
         }
 
-        HANDLE hMappedSosDocFile = CreateFileMappingA(hSosDocFile,
-                                       NULL, PAGE_READONLY, 0, 0, NULL);
+        HANDLE hMappedSosDocFile = CreateFileMappingA(hSosDocFile, NULL, PAGE_READONLY, 0, 0, NULL);
         CloseHandle(hSosDocFile);
         if (hMappedSosDocFile == NULL) { 
             ExtOut("Error mapping documentation file\n");
             return;
         }
 
-        pText = (LPSTR)MapViewOfFile(hMappedSosDocFile,
-                           FILE_MAP_READ, 0, 0, 0);
+        pText = (LPSTR)MapViewOfFile(hMappedSosDocFile, FILE_MAP_READ, 0, 0, 0);
         CloseHandle(hMappedSosDocFile);
         if (pText == NULL)
         {
@@ -14300,5 +14344,3 @@ Help(PDEBUG_CLIENT Client, PCSTR Args)
     
     return S_OK;
 }
-
-#endif // FEATURE_PAL

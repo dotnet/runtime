@@ -24,13 +24,23 @@ public:
     {
         if (arguments[0] == NULL)
         {
-            result.Printf("Clearing sos thread os id/index\n");
+            if (g_currentThreadSystemId == -1 || g_currentThreadIndex == -1)
+            {
+                result.Printf("sos OS tid not mapped\n");
+            }
+            else {
+                result.Printf("sos OS tid 0x%x mapped to lldb thread index %d\n",
+                    g_currentThreadSystemId, g_currentThreadIndex);
+            }
+        }
+        else if (strcmp(arguments[0], "-clear") == 0) {
             g_currentThreadIndex = -1;
             g_currentThreadSystemId = -1;
+            result.Printf("Cleared sos OS tid/index\n");
         }
         else if (arguments[1] == NULL)
         {
-            result.Printf("Need thread index parameter that maps to the os id\n");
+            result.Printf("Need thread index parameter that maps to the OS tid\n");
         }
         else
         {
@@ -40,7 +50,7 @@ public:
             ULONG index = strtoul(arguments[1], NULL, 16);
             g_currentThreadIndex = index;
 
-            result.Printf("Set sos thread os id to 0x%x which maps to lldb thread index %d\n", tid, index);
+            result.Printf("Mapped sos OS tid 0x%x to lldb thread index %d\n", tid, index);
         }
         return result.Succeeded();
     }
