@@ -2006,7 +2006,7 @@ Select(int32_t fdCount, uint32_t* readFdSet, uint32_t* writeFdSet, uint32_t* err
         return PAL_EFAULT;
     }
 
-    if (fdCount < 0 || fdCount >= FD_SETSIZE || microseconds < -1)
+    if (fdCount < 0 || static_cast<uint32_t>(fdCount) >= FD_SETSIZE || microseconds < -1)
     {
         return PAL_EINVAL;
     }
