@@ -3,7 +3,16 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <Project Include="System.Linq.Expressions.csproj">
-      <AdditionalProperties>TargetGroup=</AdditionalProperties>
+      <AdditionalProperties>TargetGroup=</AdditionalProperties> 
+    </Project>
+    <Project Include="System.Linq.Expressions.csproj">
+      <AdditionalProperties>TargetGroup=netcore50aot</AdditionalProperties>
+    </Project>
+    <Project Include="System.Linq.Expressions.csproj">
+      <AdditionalProperties>TargetGroup=netcore50</AdditionalProperties> 
+    </Project>
+    <Project Include="Facade\System.Linq.Expressions.csproj">
+      <AdditionalProperties>TargetGroup=net46</AdditionalProperties>
     </Project>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

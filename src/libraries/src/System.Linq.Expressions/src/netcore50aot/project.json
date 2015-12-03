@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "Microsoft.TargetingPack.Private.NetNative": "1.0.0-rc2-23530",
     "System.Collections": "4.0.10",
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
@@ -9,27 +10,17 @@
     "System.Linq": "4.0.0",
     "System.ObjectModel": "4.0.10",
     "System.Reflection": "4.0.10",
-    "System.Reflection.Emit": "4.0.0",
-    "System.Reflection.Emit.ILGeneration": "4.0.0",
-    "System.Reflection.Emit.Lightweight": "4.0.0",
     "System.Reflection.Extensions": "4.0.0",
     "System.Reflection.Primitives": "4.0.0",
     "System.Reflection.TypeExtensions": "4.0.0",
     "System.Resources.ResourceManager": "4.0.0",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
+    "System.Text.Encoding": "4.0.10",
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10"
   },
   "frameworks": {
-    "dnxcore50": {
-        "dependencies": {
-        }
-    },
-    "net46": {
-        "dependencies": {
-           "Microsoft.TargetingPack.NETFramework.v4.6": "1.0.0-rc2-23530"
-        }
-    }
+    "netcore50": {}
   }
 }
