@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23520"
+    "Microsoft.TargetingPack.Private.CoreCLR": "1.0.0-rc2-23604"
   },
   "frameworks": {
     "dnxcore50": {}
