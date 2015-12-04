@@ -203,14 +203,15 @@ namespace System.Net.Http
                     throw CreateHttpRequestException();
                 }
 
-                // In support of HTTP/2, enable HTTP/2 connections to be pipelined.
-                CURLMcode result = Interop.Http.MultiSetOptionLong(
-                    multiHandle, 
-                    Interop.Http.CURLMoption.CURLMOPT_PIPELINING, 
-                    (long)Interop.Http.CurlPipe.CURLPIPE_MULTIPLEX);
-                if (result != CURLMcode.CURLM_UNKNOWN_OPTION) // ignore failure to set if it's because it's not supported yet
+                // In support of HTTP/2, enable HTTP/2 connections to be multiplexed if possible.
+                // We must only do this if the version of libcurl being used supports HTTP/2 multiplexing.
+                // Due to a change in a libcurl signature, if we try to make this call on an older libcurl, 
+                // we'll end up accidentally and unconditionally enabling HTTP 1.1 pipelining.
+                if (s_supportsHttp2Multiplexing)
                 {
-                    ThrowIfCURLMError(result);
+                    ThrowIfCURLMError(Interop.Http.MultiSetOptionLong(multiHandle,
+                        Interop.Http.CURLMoption.CURLMOPT_PIPELINING,
+                        (long)Interop.Http.CurlPipe.CURLPIPE_MULTIPLEX));
                 }
                 
                 return multiHandle;
