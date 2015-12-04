@@ -86,7 +86,10 @@ namespace System.Net
         private volatile ExecutionContext _context;
         private object _lock;
         private StateFlags _flags;
+
+#if !NetNative
         private WindowsIdentity _windowsIdentity;
+#endif
 
         internal ContextAwareResult(object myObject, object myState, AsyncCallback myCallBack) :
             this(false, false, myObject, myState, myCallBack)
@@ -124,7 +127,9 @@ namespace System.Net
         // Security: We need an assert for a call into WindowsIdentity.GetCurrent.
         private void SafeCaptureIdentity()
         {
+#if !NetNative
             _windowsIdentity = WindowsIdentity.GetCurrent();
+#endif
         }
 
         // This can be used to establish a context during an async op for something like calling a delegate or demanding a permission.
@@ -169,6 +174,7 @@ namespace System.Net
             }
         }
 
+#if !NetNative
         // Just like ContextCopy.
         internal WindowsIdentity Identity
         {
@@ -205,6 +211,7 @@ namespace System.Net
                 return _windowsIdentity;
             }
         }
+#endif
 
 #if DEBUG
         // Want to be able to verify that the Identity was requested.  If it was requested but isn't available
@@ -304,11 +311,14 @@ namespace System.Net
             base.Cleanup();
 
             GlobalLog.Print("ContextAwareResult#" + Logging.HashString(this) + "::Cleanup()");
+#if !NetNative
             if (_windowsIdentity != null)
             {
+
                 _windowsIdentity.Dispose();
                 _windowsIdentity = null;
             }
+#endif
         }
 
         // This must be called right before returning the result to the user.  It might call the callback itself,
