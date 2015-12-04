@@ -6,9 +6,10 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{1F827C19-6023-48D3-909F-9F43AB42FAF0}</ProjectGuid>
     <OutputType>Library</OutputType>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <RootNamespace>System.IO.Packaging</RootNamespace>
     <AssemblyName>System.IO.Packaging</AssemblyName>
-    <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
+    <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
