@@ -14216,11 +14216,12 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     }
 
 #ifdef STRESS_HEAP
+#ifdef BACKGROUND_GC
     // We can only do Concurrent GC Stress if the caller did not explicitly ask for all
     // generations to be collected,
 
     if (n_original != max_generation &&
-        g_pConfig->GetGCStressLevel() && g_pConfig->GetGCconcurrent())
+        g_pConfig->GetGCStressLevel() && gc_can_use_concurrent)
     {
 #ifndef FEATURE_REDHAWK
         // for the GC stress mix mode throttle down gen2 collections
@@ -14254,6 +14255,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             n = max_generation;
         }
     }
+#endif //BACKGROUND_GC
 #endif //STRESS_HEAP
 
     return n;
@@ -14833,14 +14835,16 @@ exit:
     if (!check_only_p)
     {
 #ifdef STRESS_HEAP
+#ifdef BACKGROUND_GC
         // We can only do Concurrent GC Stress if the caller did not explicitly ask for all
         // generations to be collected,
 
         if (orig_gen != max_generation &&
-            g_pConfig->GetGCStressLevel() && g_pConfig->GetGCconcurrent())
+            g_pConfig->GetGCStressLevel() && gc_can_use_concurrent)
         {
             *elevation_requested_p = FALSE;
         }
+#endif //BACKGROUND_GC
 #endif //STRESS_HEAP
 
         if (check_memory)
@@ -29345,13 +29349,20 @@ bool gc_heap::init_dynamic_data()
     dd->min_gc_size = Align(gen0size / 8 * 5);
     dd->min_size = dd->min_gc_size;
     //dd->max_size = Align (gen0size);
-//g_pConfig->GetGCconcurrent() is not necessarily 0 for server builds
+
+#ifdef BACKGROUND_GC
+    //gc_can_use_concurrent is not necessarily 0 for server builds
+    bool can_use_concurrent = gc_can_use_concurrent;
+#else // !BACKGROUND_GC
+    bool can_use_concurrent = false;
+#endif // BACKGROUND_GC
+
 #ifdef MULTIPLE_HEAPS
     dd->max_size = max (6*1024*1024, min ( Align(get_valid_segment_size()/2), 200*1024*1024));
 #else //MULTIPLE_HEAPS
-  dd->max_size = ((g_pConfig->GetGCconcurrent()!=0) ?
-                  6*1024*1024 :
-                  max (6*1024*1024,  min ( Align(get_valid_segment_size()/2), 200*1024*1024)));
+    dd->max_size = (can_use_concurrent ?
+                    6*1024*1024 :
+                    max (6*1024*1024,  min ( Align(get_valid_segment_size()/2), 200*1024*1024)));
 #endif //MULTIPLE_HEAPS
     dd->new_allocation = dd->min_gc_size;
     dd->gc_new_allocation = dd->new_allocation;
@@ -29374,9 +29385,9 @@ bool gc_heap::init_dynamic_data()
 #ifdef MULTIPLE_HEAPS
     dd->max_size = max (6*1024*1024, Align(get_valid_segment_size()/2));
 #else //MULTIPLE_HEAPS
-  dd->max_size = ((g_pConfig->GetGCconcurrent()!=0) ?
-                  6*1024*1024 :
-                  max (6*1024*1024, Align(get_valid_segment_size()/2)));
+    dd->max_size = (can_use_concurrent ?
+                    6*1024*1024 :
+                    max (6*1024*1024, Align(get_valid_segment_size()/2)));
 #endif //MULTIPLE_HEAPS
     dd->new_allocation = dd->min_gc_size;
     dd->gc_new_allocation = dd->new_allocation;
