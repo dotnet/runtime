@@ -256,6 +256,7 @@ namespace System.Numerics.Tests
 
         // Various rotation decompose test.
         [Fact]
+        [ActiveIssue(4833, PlatformID.OSX)]
         public void Matrix4x4DecomposeTest01()
         {
             DecomposeTest(10.0f, 20.0f, 30.0f, new Vector3(10, 20, 30), new Vector3(2, 3, 4));
