@@ -67,6 +67,9 @@ public:
         DWORD dwThreadId,
         CORDB_CONTINUE_STATUS dwContinueStatus);
 
+    virtual HRESULT STDMETHODCALLTYPE VirtualUnwind(
+        DWORD threadId, ULONG32 contextSize, PBYTE context);
+
 private:
     // Handle to the process. We own this.
     HANDLE m_hProcess;
@@ -450,3 +453,20 @@ ShimLocalDataTarget::ContinueStatusChanged(
     }
     return E_NOTIMPL;
 }
+
+//---------------------------------------------------------------------------------------
+//
+// Unwind the stack to the next frame.
+//
+// Return Value: 
+//     context filled in with the next frame
+//
+HRESULT STDMETHODCALLTYPE 
+ShimLocalDataTarget::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
+{
+#ifndef FEATURE_PAL
+    _ASSERTE(!"ShimLocalDataTarget::VirtualUnwind NOT IMPLEMENTED");
+#endif 
+    return E_NOTIMPL;
+}
+

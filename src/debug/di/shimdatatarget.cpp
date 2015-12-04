@@ -80,21 +80,6 @@ DWORD ShimDataTarget::GetPid()
 }
 
 //---------------------------------------------------------------------------------------
-//
-// Unwind the stack to the next frame.
-//
-// Return Value: 
-//     context and contextPointers filled in with the next frame
-//
-HRESULT STDMETHODCALLTYPE ShimDataTarget::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
-{
-#ifndef FEATURE_PAL
-    _ASSERTE(!"ShimDataTarget::VirtualUnwind NOT IMPLEMENTED");
-#endif 
-    return E_NOTIMPL;
-}
-
-//---------------------------------------------------------------------------------------
 // Hook a custom function to handle ICorDebugMutableDataTarget::ContinueStatusChanged
 //
 // Arguments:
