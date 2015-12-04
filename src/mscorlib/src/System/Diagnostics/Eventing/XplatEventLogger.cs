@@ -79,6 +79,10 @@ namespace System.Diagnostics.Tracing
                 return String.Empty;
 
             Contract.Assert(payloadName.Count == payload.Count);
+            if(payloadName.Count != payload.Count)
+            {
+                return string.Empty;
+            }
             
             var sb = StringBuilderCache.Acquire();
 
