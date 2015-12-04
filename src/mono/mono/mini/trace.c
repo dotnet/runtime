@@ -486,7 +486,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 		
 		if (type->byref) {
 			printf ("[BYREF:%p], ", *arg_in_stack_slot(cpos, gpointer *));
-		} else switch (mono_type_get_underlying_type (type)->type) {
+		} else switch (mini_get_underlying_type (type)->type) {
 			
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
@@ -610,9 +610,8 @@ mono_trace_leave_method (MonoMethod *method, ...)
 		}
 	}
 
-	type = mono_method_signature (method)->ret;
+	type = mini_get_underlying_type (mono_method_signature (method)->ret);
 
-handle_enum:
 	switch (type->type) {
 	case MONO_TYPE_VOID:
 		break;
@@ -694,20 +693,16 @@ handle_enum:
 		printf ("FP=%f", f);
 		break;
 	}
-	case MONO_TYPE_VALUETYPE: 
-		if (type->data.klass->enumtype) {
-			type = mono_class_enum_basetype (type->data.klass);
-			goto handle_enum;
-		} else {
-			guint8 *p = va_arg (ap, gpointer);
-			int j, size, align;
-			size = mono_type_size (type, &align);
-			printf ("[");
-			for (j = 0; p && j < size; j++)
-				printf ("%02x,", p [j]);
-			printf ("]");
-		}
+	case MONO_TYPE_VALUETYPE:  {
+		guint8 *p = va_arg (ap, gpointer);
+		int j, size, align;
+		size = mono_type_size (type, &align);
+		printf ("[");
+		for (j = 0; p && j < size; j++)
+			printf ("%02x,", p [j]);
+		printf ("]");
 		break;
+	}
 	default:
 		printf ("(unknown return type %x)", mono_method_signature (method)->ret->type);
 	}
