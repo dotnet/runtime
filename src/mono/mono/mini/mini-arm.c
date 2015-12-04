@@ -4084,6 +4084,12 @@ mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val)
 	code += 4;
 	return code;
 #endif
+	if (mini_get_debug_options()->single_imm_size && v7_supported) {
+		ARM_MOVW_REG_IMM (code, dreg, val & 0xffff);
+		ARM_MOVT_REG_IMM (code, dreg, (val >> 16) & 0xffff);
+		return code;
+	}
+
 	if ((imm8 = mono_arm_is_rotated_imm8 (val, &rot_amount)) >= 0) {
 		ARM_MOV_REG_IMM (code, dreg, imm8, rot_amount);
 	} else if ((imm8 = mono_arm_is_rotated_imm8 (~val, &rot_amount)) >= 0) {
