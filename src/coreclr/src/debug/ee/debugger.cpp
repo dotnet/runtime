@@ -40,7 +40,6 @@
 #include "dbgtransportsession.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
-
 #ifdef TEST_DATA_CONSISTENCY
 #include "datatest.h"
 #endif // TEST_DATA_CONSISTENCY
@@ -16558,6 +16557,156 @@ void Debugger::ReleaseDebuggerDataLock(Debugger *pDebugger)
 #endif // DACCESS_COMPILE
 
 /* ------------------------------------------------------------------------ *
+ * Functions for DebuggerHeap executable memory allocations
+ * ------------------------------------------------------------------------ */
+
+DebuggerHeapExecutableMemoryAllocator::~DebuggerHeapExecutableMemoryAllocator()
+{
+    DebuggerHeapExecutableMemoryPage *currPage = pages;
+    while (currPage != NULL)
+    {
+        currPage = currPage->GetNextPage();
+
+        // Free this page
+        INDEBUG(BOOL ret =) VirtualFree(currPage, 0, MEM_RELEASE);
+        ASSERT(ret == TRUE);
+
+        pages = currPage;
+    }
+
+    ASSERT(pages == NULL);
+}
+
+void* DebuggerHeapExecutableMemoryAllocator::Allocate(DWORD numBytes)
+{
+    if (numBytes > DBG_MAX_EXECUTABLE_ALLOC_SIZE)
+    {
+        ASSERT(!"Allocating more than DBG_MAX_EXECUTABLE_ALLOC_SIZE at once is unsupported and breaks our assumptions.");
+        return NULL;
+    }
+
+    if (numBytes == 0)
+    {
+        // Should we allocate anything in this case?
+        ASSERT(!"Allocate called with 0 for numBytes!");
+        return NULL;
+    }
+
+    CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
+
+    int chunkToUse = -1;
+    DebuggerHeapExecutableMemoryPage *pageToAllocateOn = NULL;
+    for (DebuggerHeapExecutableMemoryPage *currPage = pages; currPage != NULL; currPage = currPage->GetNextPage())
+    {
+        if (CheckPageForAvailability(currPage, &chunkToUse))
+        {
+            pageToAllocateOn = currPage;
+            break;
+        }
+    }
+
+    if (pageToAllocateOn == NULL)
+    {
+        // No existing page had availability, so create a new page and use that.
+        pageToAllocateOn = AddNewPage();
+        if (pageToAllocateOn == NULL)
+        {
+            ASSERT(!"Call to AddNewPage failed!");
+            return NULL;
+        }
+
+        if (!CheckPageForAvailability(pageToAllocateOn, &chunkToUse))
+        {
+            ASSERT(!"No availability on new page?");
+            return NULL;
+        }
+    }
+
+    void* addr = ChangePageUsage(pageToAllocateOn, chunkToUse, true /* allocate */);
+    return addr;
+}
+
+int DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
+{
+    CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
+
+    DebuggerHeapExecutableMemoryPage *pageToFreeIn = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->d.startOfPage;
+
+    if (pageToFreeIn == NULL)
+    {
+        ASSERT(!"Couldn't locate page in which to free!");
+        return -1;
+    }
+
+    int chunkNum = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->d.chunkNumber;
+
+    // Sanity check: assert that the address really represents the start of a chunk.
+    ASSERT(((uint64_t)addr - (uint64_t)pageToFreeIn) % 64 == 0);
+
+    ChangePageUsage(pageToFreeIn, chunkNum, false /* indicates free */);
+
+    return 0;
+}
+
+DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewPage()
+{
+    void* newPageAddr = VirtualAlloc(NULL, sizeof(DebuggerHeapExecutableMemoryPage), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+
+    // Make sure new page is aligned to 4096.
+    ASSERT(((uint64_t)newPageAddr & 0xFFF) == 0);
+
+    DebuggerHeapExecutableMemoryPage *newPage = new (newPageAddr) DebuggerHeapExecutableMemoryPage;
+    newPage->SetNextPage(pages);
+
+    // Add the new page to the linked list of pages
+    pages = newPage;
+    return newPage;
+}
+
+bool DebuggerHeapExecutableMemoryAllocator::CheckPageForAvailability(DebuggerHeapExecutableMemoryPage* page, /* _Out_ */ int* chunkToUse)
+{
+    uint64_t occupancy = page->GetPageOccupancy();
+    bool available = occupancy != UINT64_MAX;
+
+    if (!available)
+    {
+        if (chunkToUse)
+        {
+            *chunkToUse = -1;
+        }
+
+        return false;
+    }
+
+    if (chunkToUse)
+    {
+        // Start i at 62 because first chunk is reserved
+        for (int i = 62; i >= 0; i--)
+        {
+            uint64_t mask = ((unsigned long long)1 << i);
+            if ((mask & occupancy) == 0)
+            {
+                *chunkToUse = 64-i-1;
+                break;
+            }
+        }
+    }
+
+    return true;
+}
+
+void* DebuggerHeapExecutableMemoryAllocator::ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNum, bool allocateOrFree)
+{
+    uint64_t mask = (uint64_t)0x1 << (64 - chunkNum - 1);
+
+    uint64_t prevOccupancy = page->GetPageOccupancy();
+    uint64_t newOccupancy = allocateOrFree ? (prevOccupancy | mask) : (prevOccupancy ^ mask);
+    page->SetPageOccupancy(newOccupancy);
+
+    return page->GetPointerToChunk(chunkNum);
+}
+
+/* ------------------------------------------------------------------------ *
  * DebuggerHeap impl
  * ------------------------------------------------------------------------ */
 
@@ -16568,7 +16717,6 @@ DebuggerHeap::DebuggerHeap()
 #endif
     m_fExecutable = FALSE;
 }
-
 
 DebuggerHeap::~DebuggerHeap()
 {
@@ -16590,6 +16738,12 @@ void DebuggerHeap::Destroy()
     {
         ::HeapDestroy(m_hHeap);
         m_hHeap = NULL;
+    }
+#endif
+#ifdef FEATURE_PAL
+    if (m_execMemAllocator != NULL)
+    {
+        delete m_execMemAllocator;
     }
 #endif
 }
@@ -16639,6 +16793,16 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
         return HRESULT_FROM_GetLastError();
     }
 #endif
+
+#ifdef FEATURE_PAL
+    m_execMemAllocator = new DebuggerHeapExecutableMemoryAllocator();
+    ASSERT(m_execMemAllocator != NULL);
+    if (m_execMemAllocator == NULL)
+    {
+        return E_OUTOFMEMORY;
+    }
+#endif
+
     return S_OK;
 }
 
@@ -16721,17 +16885,33 @@ void *DebuggerHeap::Alloc(DWORD size)
     ret = ::HeapAlloc(m_hHeap, HEAP_ZERO_MEMORY, size);
 #else // USE_INTEROPSAFE_HEAP
 
-#ifndef FEATURE_PAL
-    HANDLE hExecutableHeap  = ClrGetProcessExecutableHeap();
-#else // !FEATURE_PAL
-    HANDLE hExecutableHeap  = ClrGetProcessHeap();
-#endif // !FEATURE_PAL
+    bool allocateOnHeap = true;
+    HANDLE hExecutableHeap = NULL;
 
-    if (hExecutableHeap == NULL)
+#ifdef FEATURE_PAL
+    if (m_fExecutable)
     {
-        return NULL;
+        allocateOnHeap = false;
+        ret = m_execMemAllocator->Allocate(size);
     }
-    ret = ClrHeapAlloc(hExecutableHeap, NULL, S_SIZE_T(size));
+    else
+    {
+        hExecutableHeap  = ClrGetProcessHeap();
+    }
+#else // FEATURE_PAL
+    hExecutableHeap  = ClrGetProcessExecutableHeap();
+#endif
+
+    if (allocateOnHeap)
+    {
+        if (hExecutableHeap == NULL)
+        {
+            return NULL;
+        }
+
+        ret = ClrHeapAlloc(hExecutableHeap, NULL, S_SIZE_T(size));
+    }
+
 #endif // USE_INTEROPSAFE_HEAP
 
 #ifdef USE_INTEROPSAFE_CANARY
@@ -16743,24 +16923,8 @@ void *DebuggerHeap::Alloc(DWORD size)
     ret = pCanary->GetUserAddr();
 #endif
 
-#ifdef FEATURE_PAL
-    if (m_fExecutable)
-    {
-        // We don't have executable heap in PAL, but we still need to allocate 
-        // executable memory, that's why have change protection level for 
-        // each allocation. 
-        // UNIXTODO: We need to look how JIT solves this problem.
-        DWORD unusedFlags;
-        if (!VirtualProtect(ret, size, PAGE_EXECUTE_READWRITE, &unusedFlags))
-        {
-            _ASSERTE(!"VirtualProtect failed to make this memory executable");
-        }
-    }
-#endif // FEATURE_PAL
-
     return ret;
 }
-
 
 // Realloc memory.
 // If this fails, the original memory is still valid.
@@ -16778,7 +16942,7 @@ void *DebuggerHeap::Realloc(void *pMem, DWORD newSize, DWORD oldSize)
     _ASSERTE(newSize != 0);
     _ASSERTE(oldSize != 0);
 
-#if defined(USE_INTEROPSAFE_HEAP) && !defined(USE_INTEROPSAFE_CANARY)
+#if defined(USE_INTEROPSAFE_HEAP) && !defined(USE_INTEROPSAFE_CANARY) && !defined(FEATURE_PAL)
     // No canaries in this case.
     // Call into realloc.
     void *ret;
@@ -16799,22 +16963,6 @@ void *DebuggerHeap::Realloc(void *pMem, DWORD newSize, DWORD oldSize)
     memcpy(ret, pMem, oldSize);
     this->Free(pMem);
 #endif
-
-
-#ifdef FEATURE_PAL
-    if (m_fExecutable)
-    {    
-        // We don't have executable heap in PAL, but we still need to allocate 
-        // executable memory, that's why have change protection level for 
-        // each allocation. 
-        // UNIXTODO: We need to look how JIT solves this problem.
-        DWORD unusedFlags;
-        if (!VirtualProtect(ret, newSize, PAGE_EXECUTE_READWRITE, &unusedFlags))
-        {
-            _ASSERTE(!"VirtualProtect failed to make this memory executable");
-        }
-    }
-#endif // FEATURE_PAL    
 
     return ret;
 }
@@ -16849,12 +16997,22 @@ void DebuggerHeap::Free(void *pMem)
     if (pMem != NULL)
     {
 #ifndef FEATURE_PAL
-        HANDLE hExecutableHeap  = ClrGetProcessExecutableHeap();
+        HANDLE hProcessExecutableHeap  = ClrGetProcessExecutableHeap();
+        _ASSERTE(hProcessExecutableHeap != NULL);
+        ClrHeapFree(hProcessExecutableHeap, NULL, pMem);
 #else // !FEATURE_PAL
-        HANDLE hExecutableHeap  = ClrGetProcessHeap();
+        if(!m_fExecutable)
+        {
+            HANDLE hProcessHeap  = ClrGetProcessHeap();
+            _ASSERTE(hProcessHeap != NULL);
+            ClrHeapFree(hProcessHeap, NULL, pMem);
+        }
+        else
+        {
+            INDEBUG(int ret =) m_execMemAllocator->Free(pMem);
+            _ASSERTE(ret == 0);
+        }
 #endif // !FEATURE_PAL
-        _ASSERTE(hExecutableHeap != NULL);
-        ClrHeapFree(hExecutableHeap, NULL, pMem);
     }
 #endif
 }
