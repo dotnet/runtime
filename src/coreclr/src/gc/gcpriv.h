@@ -179,19 +179,19 @@ void GCLogConfig (const char *fmt, ... );
 
 #ifdef SERVER_GC
 
-#ifdef _WIN64
+#ifdef BIT64
 #define MAX_INDEX_POWER2 30
 #else
 #define MAX_INDEX_POWER2 26
-#endif  // _WIN64
+#endif  // BIT64
 
 #else //SERVER_GC
 
-#ifdef _WIN64
+#ifdef BIT64
 #define MAX_INDEX_POWER2 28
 #else
 #define MAX_INDEX_POWER2 24
-#endif  // _WIN64
+#endif  // BIT64
 
 #endif //SERVER_GC
 
@@ -626,9 +626,9 @@ public:
     bool stress_induced;
 #endif // STRESS_HEAP
 
-#ifdef _WIN64
+#ifdef BIT64
     uint32_t entry_memory_load;
-#endif //_WIN64
+#endif // BIT64
 
     void store (gc_mechanisms* gm)
     {
@@ -657,9 +657,9 @@ public:
         stress_induced          = (gm->stress_induced != 0);
 #endif // STRESS_HEAP
 
-#ifdef _WIN64
+#ifdef BIT64
         entry_memory_load       = gm->entry_memory_load;
-#endif //_WIN64        
+#endif // BIT64        
     }
 };
 
@@ -2521,14 +2521,14 @@ protected:
     PER_HEAP
     void decommit_ephemeral_segment_pages();
 
-#ifdef _WIN64
+#ifdef BIT64
     PER_HEAP_ISOLATED
     size_t trim_youngest_desired (uint32_t memory_load,
                                   size_t total_new_allocation,
                                   size_t total_min_allocation);
     PER_HEAP_ISOLATED
     size_t joined_youngest_desired (size_t new_allocation);
-#endif //_WIN64
+#endif // BIT64
     PER_HEAP_ISOLATED
     size_t get_total_heap_size ();
     PER_HEAP
@@ -2979,7 +2979,7 @@ public:
     float short_plugs_pad_ratio;
 #endif //SHORT_PLUGS
 
-#ifdef _WIN64
+#ifdef BIT64
     PER_HEAP_ISOLATED
     size_t youngest_gen_desired_th;
 
@@ -2991,7 +2991,7 @@ public:
 
     PER_HEAP_ISOLATED
     uint64_t available_physical_mem;
-#endif //_WIN64
+#endif // BIT64
 
     PER_HEAP_ISOLATED
     size_t last_gc_index;
@@ -3462,11 +3462,11 @@ protected:
     alloc_list loh_alloc_list[NUM_LOH_ALIST-1];
 
 #define NUM_GEN2_ALIST (12)
-#ifdef _WIN64
+#ifdef BIT64
 #define BASE_GEN2_ALIST (1*256)
 #else
 #define BASE_GEN2_ALIST (1*128)
-#endif //_WIN64
+#endif // BIT64
     PER_HEAP
     alloc_list gen2_alloc_list[NUM_GEN2_ALIST-1];
 
@@ -4371,11 +4371,11 @@ extern "C" uint8_t* g_ephemeral_high;
 // The value of card_size is determined empirically according to the average size of an object
 // In the code we also rely on the assumption that one card_table entry (uint32_t) covers an entire os page
 //
-#if defined (_WIN64)
+#if defined (BIT64)
 #define card_size ((size_t)(2*OS_PAGE_SIZE/card_word_width))
 #else
 #define card_size ((size_t)(OS_PAGE_SIZE/card_word_width))
-#endif //_WIN64
+#endif // BIT64
 
 inline
 size_t card_word (size_t card)
