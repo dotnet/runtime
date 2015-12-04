@@ -79,7 +79,7 @@ Object * AllocateObject(MethodTable * pMT)
     return pObject;
 }
 
-#if defined(_WIN64)
+#if defined(BIT64)
 // Card byte shift is different on 64bit.
 #define card_byte_shift     11
 #else
