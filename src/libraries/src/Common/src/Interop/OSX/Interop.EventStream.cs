@@ -29,6 +29,7 @@ internal static partial class Interop
         [Flags]
         internal enum FSEventStreamEventFlags : uint
         {
+            /* flags when creating the stream. */
             kFSEventStreamEventFlagNone                 = 0x00000000,
             kFSEventStreamEventFlagMustScanSubDirs      = 0x00000001,
             kFSEventStreamEventFlagUserDropped          = 0x00000002,
@@ -37,8 +38,8 @@ internal static partial class Interop
             kFSEventStreamEventFlagHistoryDone          = 0x00000010,
             kFSEventStreamEventFlagRootChanged          = 0x00000020,
             kFSEventStreamEventFlagMount                = 0x00000040,
-            kFSEventStreamEventFlagUnmount              = 0x00000080, /* These flags are only set if you specified the FileEvents */
-            /* flags when creating the stream. */
+            kFSEventStreamEventFlagUnmount              = 0x00000080,
+            /* These flags are only set if you specified the FileEvents */
             kFSEventStreamEventFlagItemCreated          = 0x00000100,
             kFSEventStreamEventFlagItemRemoved          = 0x00000200,
             kFSEventStreamEventFlagItemInodeMetaMod     = 0x00000400,
@@ -49,7 +50,10 @@ internal static partial class Interop
             kFSEventStreamEventFlagItemXattrMod         = 0x00008000,
             kFSEventStreamEventFlagItemIsFile           = 0x00010000,
             kFSEventStreamEventFlagItemIsDir            = 0x00020000,
-            kFSEventStreamEventFlagItemIsSymlink        = 0x00040000
+            kFSEventStreamEventFlagItemIsSymlink        = 0x00040000,
+            kFSEventStreamEventFlagOwnEvent             = 0x00080000,
+            kFSEventStreamEventFlagItemIsHardlink       = 0x00100000,
+            kFSEventStreamEventFlagItemIsLastHardlink   = 0x00200000,
         }
 
         /// <summary>
