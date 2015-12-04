@@ -1,13 +1,16 @@
 {
   "dependencies": {
-    "Microsoft.DotNet.xunit.performance": "1.0.0-*",
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0025",
+    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0025",
+    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0025",
     "System.Console": "4.0.0-beta-*",
     "System.Runtime": "4.0.20-beta-*",
     "System.Runtime.Extensions": "4.0.10-beta-*",
     "System.Numerics.Vectors": "4.1.1-beta-*",
     "System.Numerics.Vectors.WindowsRuntime": "4.0.1-beta-*",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+    "xunit.console.netcore": "1.0.2-prerelease-00101",
+    "xunit.runner.utility": "2.1.0"
   },
   "frameworks": {
     "dnxcore50": {}
