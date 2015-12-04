@@ -27,87 +27,60 @@ namespace Microsoft.Win32.RegistryTests
             int ret = Interop.mincore.RegSetValueEx(handle, TestValueName, 0,
                 RegistryValueKind.MultiString, corrupt, corrupt.Length * 2);
             Assert.Equal(0, ret);
+            try
+            {
+                object o = TestRegistryKey.GetValue(TestValueName);
+                Assert.IsType<string[]>(o);
 
-            object o = TestRegistryKey.GetValue(TestValueName);
-            Assert.IsType<string[]>(o);
+                var strings = (string[])o;
+                string[] expected = { "str1", "str2", "str3" };
+                Assert.Equal(expected, strings);
 
-            var strings = (string[])o;
-            string[] expected = { "str1", "str2", "str3" };
-            Assert.Equal(expected, strings);
-
-            TestRegistryKey.DeleteValue(TestValueName);
+            }
+            finally
+            {
+                TestRegistryKey.DeleteValue(TestValueName);
+            }
         }
 
-        [Fact]
-        public void RegSzOddByteLength()
+        [Theory]
+        [InlineData(RegistryValueKind.String, new byte[] { 6, 5, 6 })]
+        [InlineData(RegistryValueKind.ExpandString, new byte[] { 6, 5, 6 })]
+        [InlineData(RegistryValueKind.MultiString, new byte[] { 6, 5, 6, 0, 0 })]
+        public void RegSzOddByteLength(RegistryValueKind kind, byte[] contents)
         {
             const string TestValueName = "CorruptData2";
-            byte[] contents = { 6, 5, 6 };
 
             SafeRegistryHandle handle = TestRegistryKey.Handle;
             int ret = Interop.mincore.RegSetValueEx(handle, TestValueName, 0,
-                RegistryValueKind.String, contents, contents.Length);
+                kind, contents, contents.Length);
             Assert.Equal(0, ret);
+            try
+            {
+                object o = TestRegistryKey.GetValue(TestValueName);
 
-            object o = TestRegistryKey.GetValue(TestValueName);
-            Assert.IsType<string>(o);
+                string s;
+                if (kind == RegistryValueKind.MultiString)
+                {
+                    Assert.IsType<string[]>(o);
+                    var strings = (string[])o;
+                    Assert.Equal(1, strings.Length);
+                    s = strings[0];
+                }
+                else
+                {
+                    Assert.IsType<string>(o);
+                    s = (string)o;
+                }
 
-            string s = (string)o;
-            Assert.Equal(s.Length, 2); // Math.Ceil(contents.Length / 2);
-
-            Assert.Equal(0x506, s[0]);
-            Assert.Equal(0x6, s[1]);
-
-            TestRegistryKey.DeleteValue(TestValueName);
-        }
-
-        [Fact]
-        public void RegExpandSzOddByteLength()
-        {
-            const string TestValueName = "CorruptData3";
-            byte[] contents = { 6, 5, 6 };
-
-            SafeRegistryHandle handle = TestRegistryKey.Handle;
-            int ret = Interop.mincore.RegSetValueEx(handle, TestValueName, 0,
-                RegistryValueKind.ExpandString, contents, contents.Length);
-            Assert.Equal(0, ret);
-
-            object o = TestRegistryKey.GetValue(TestValueName);
-            Assert.IsType<string>(o);
-
-            string s = (string)o;
-            Assert.Equal(s.Length, 2); // Math.Ceil(contents.Length / 2);
-
-            Assert.Equal(0x506, s[0]);
-            Assert.Equal(0x6, s[1]);
-
-            TestRegistryKey.DeleteValue(TestValueName);
-        }
-
-        [Fact]
-        public void RegMultiSzOddByteLength()
-        {
-            const string TestValueName = "CorruptData4";
-            byte[] contents = { 6, 5, 6, 0, 0 };
-
-            SafeRegistryHandle handle = TestRegistryKey.Handle;
-            int ret = Interop.mincore.RegSetValueEx(handle, TestValueName, 0,
-                RegistryValueKind.MultiString, contents, contents.Length);
-            Assert.Equal(0, ret);
-
-            object o = TestRegistryKey.GetValue(TestValueName);
-            Assert.IsType<string[]>(o);
-
-            var strings = (string[])o;
-            Assert.Equal(strings.Length, 1);
-
-            string s = strings[0];
-            Assert.Equal(s.Length, 2);
-
-            Assert.Equal(0x506, s[0]);
-            Assert.Equal(0x6, s[1]);
-
-            TestRegistryKey.DeleteValue(TestValueName);
+                Assert.Equal(2, s.Length);
+                Assert.Equal(0x506, s[0]);
+                Assert.Equal(0x6, s[1]);
+            }
+            finally
+            {
+                TestRegistryKey.DeleteValue(TestValueName);
+            }
         }
     }
 }
