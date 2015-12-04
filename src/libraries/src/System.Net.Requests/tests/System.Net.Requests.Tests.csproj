@@ -38,6 +38,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- TODO: Temporary workaround.  This PR introduces a backward-incompatible change in System.Net.Http.Native. 
+         Due to how tests are run in CI, this results in a crash when the System.Net.Requests.Tests are run. The 
+         following is a temporary work around and will be removed as soon as the dlls and native libraries get in sync. -->	
+    <ProjectReference Include="..\..\System.Net.Http\src\System.Net.Http.csproj">		
+        <Name>System.Net.Http</Name>		
+        <Project>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</Project>		
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

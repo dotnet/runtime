@@ -43,6 +43,7 @@ namespace System.Net.Http
 
         private readonly static bool s_supportsAutomaticDecompression;
         private readonly static bool s_supportsSSL;
+        private readonly static bool s_supportsHttp2Multiplexing;
 
         private readonly MultiAgent _agent = new MultiAgent();
         private volatile bool _anyOperationStarted;
@@ -69,7 +70,11 @@ namespace System.Net.Http
             // curl_global_init call handled by Interop.LibCurl's cctor
 
             int age;
-            if (!Interop.Http.GetCurlVersionInfo(out age, out s_supportsSSL, out s_supportsAutomaticDecompression))
+            if (!Interop.Http.GetCurlVersionInfo(
+                out age, 
+                out s_supportsSSL, 
+                out s_supportsAutomaticDecompression, 
+                out s_supportsHttp2Multiplexing))
             {
                 throw new InvalidOperationException(SR.net_http_unix_https_libcurl_no_versioninfo);  
             }

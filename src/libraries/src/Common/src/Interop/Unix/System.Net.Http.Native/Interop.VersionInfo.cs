@@ -12,6 +12,7 @@ internal static partial class Interop
         internal static extern bool GetCurlVersionInfo(
             out int age,
             [MarshalAs(UnmanagedType.Bool)] out bool supportsSsl,
-            [MarshalAs(UnmanagedType.Bool)] out bool supportsAutoDecompression);
+            [MarshalAs(UnmanagedType.Bool)] out bool supportsAutoDecompression,
+            [MarshalAs(UnmanagedType.Bool)] out bool supportsHttp2Multiplexing);
     }
 }
