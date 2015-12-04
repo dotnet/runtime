@@ -29,6 +29,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue(4467)]
         public async Task CertificateValidationClientServer_EndToEnd_Ok()
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.IPv6Loopback, 0);
