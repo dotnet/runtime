@@ -3,45 +3,45 @@
   "version": 2,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23520": {
+      "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23604": {
         "type": "package",
         "compile": {
-          "ref/dnxcore50/mscorlib.dll": {}
+          "ref/dotnet5.1/mscorlib.dll": {}
         }
       }
     },
     "DNXCore,Version=v5.0/win7-x86": {
-      "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23520": {
+      "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23604": {
         "type": "package",
         "compile": {
-          "ref/dnxcore50/mscorlib.dll": {}
+          "ref/dotnet5.1/mscorlib.dll": {}
         }
       }
     },
     "DNXCore,Version=v5.0/win7-x64": {
-      "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23520": {
+      "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23604": {
         "type": "package",
         "compile": {
-          "ref/dnxcore50/mscorlib.dll": {}
+          "ref/dotnet5.1/mscorlib.dll": {}
         }
       }
     }
   },
   "libraries": {
-    "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23520": {
+    "Microsoft.TargetingPack.Private.CoreCLR/1.0.0-rc2-23604": {
       "type": "package",
-      "sha512": "pcuP9SFtnrAWEoVJ+yTBUha8RC8dxao/QJa0SyNSBt5rL2Er7rLd7aum7xwD6kAuDnbHFMTyEHT0PVx2D2XD6w==",
+      "sha512": "KYxi4jsWuIFta4EpVcNVnDIsc7ZKw9vOrXtMJ8dD9mdaBfbPPCrY5WMOvZM8oHMw2ECY3pkXnoEVwLZTZp8Vgw==",
       "files": [
-        "Microsoft.TargetingPack.Private.CoreCLR.1.0.0-rc2-23520.nupkg",
-        "Microsoft.TargetingPack.Private.CoreCLR.1.0.0-rc2-23520.nupkg.sha512",
+        "Microsoft.TargetingPack.Private.CoreCLR.1.0.0-rc2-23604.nupkg",
+        "Microsoft.TargetingPack.Private.CoreCLR.1.0.0-rc2-23604.nupkg.sha512",
         "Microsoft.TargetingPack.Private.CoreCLR.nuspec",
-        "ref/dnxcore50/mscorlib.dll"
+        "ref/dotnet5.1/mscorlib.dll"
       ]
     }
   },
   "projectFileDependencyGroups": {
     "": [
-      "Microsoft.TargetingPack.Private.CoreCLR >= 1.0.0-rc2-23520"
+      "Microsoft.TargetingPack.Private.CoreCLR >= 1.0.0-rc2-23604"
     ],
     "DNXCore,Version=v5.0": []
   }
