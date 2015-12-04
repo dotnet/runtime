@@ -130,3 +130,11 @@ inline static int ToFileDescriptor(intptr_t fd)
     return static_cast<int>(fd);
 }
 
+/**
+* Converts an intptr_t to a file descriptor.
+* intptr_t is the type used to marshal file descriptors so we can use SafeHandles effectively.
+*/
+inline static int ToFileDescriptorUnchecked(intptr_t fd)
+{
+    return static_cast<int>(fd);
+}

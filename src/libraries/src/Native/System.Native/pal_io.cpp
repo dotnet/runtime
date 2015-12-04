@@ -570,7 +570,8 @@ extern "C" void* MMap(void* address,
         return nullptr;
     }
 
-    void* ret = mmap(address, static_cast<size_t>(length), protection, flags, ToFileDescriptor(fd), offset);
+    // Use ToFileDescriptorUnchecked to allow -1 to be passed for the file descriptor, since managed code explicitly uses -1
+    void* ret = mmap(address, static_cast<size_t>(length), protection, flags, ToFileDescriptorUnchecked(fd), offset);
     if (ret == MAP_FAILED)
     {
         return nullptr;
