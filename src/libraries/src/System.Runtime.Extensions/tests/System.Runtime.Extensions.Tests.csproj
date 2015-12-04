@@ -94,6 +94,7 @@
       <!-- Don't reference implementation assembly, but do deploy it. -->
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
+      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.CoreCLR.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

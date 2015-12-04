@@ -35,6 +35,7 @@
       <!-- Don't reference implementation assembly, but do deploy it. -->
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
+      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
