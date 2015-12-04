@@ -7,6 +7,7 @@
 #include "pal_config.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <limits>
 #include <stddef.h>
 #include <stdio.h>
@@ -137,4 +138,14 @@ inline static int ToFileDescriptor(intptr_t fd)
 inline static int ToFileDescriptorUnchecked(intptr_t fd)
 {
     return static_cast<int>(fd);
+}
+
+/**
+* Checks if the IO operation was interupted and needs to be retried.
+* Returns true if the operation was interupted; otherwise, false.
+*/
+template <typename TInt>
+static inline bool CheckInterrupted(TInt result)
+{
+    return result < 0 && errno == EINTR;
 }

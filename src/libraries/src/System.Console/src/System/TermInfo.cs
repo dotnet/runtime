@@ -211,18 +211,14 @@ namespace System
             /// <returns>true if the file was successfully opened; otherwise, false.</returns>
             private static bool TryOpen(string filePath, out SafeFileHandle fd)
             {
-                IntPtr tmpFd;
-                while ((long)(tmpFd = Interop.Sys.Open(filePath, Interop.Sys.OpenFlags.O_RDONLY, 0)) < 0)
+                fd = Interop.Sys.Open(filePath, Interop.Sys.OpenFlags.O_RDONLY, 0);
+                if (fd.IsInvalid)
                 {
                     // Don't throw in this case, as we'll be polling multiple locations looking for the file.
-                    // But we still want to retry if the open is interrupted by a signal.
-                    if (Interop.Sys.GetLastError() != Interop.Error.EINTR)
-                    {
-                        fd = null;
-                        return false;
-                    }
+                    fd = null;
+                    return false;
                 }
-                fd = new SafeFileHandle(tmpFd, true);
+
                 return true;
             }
 
@@ -247,9 +243,8 @@ namespace System
                 using (fd)
                 {
                     // Read in all of the terminfo data
-                    long termInfoLength;
-                    while (Interop.CheckIo(termInfoLength = Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_END))) ; // jump to the end to get the file length
-                    while (Interop.CheckIo(Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_SET))) ; // reset back to beginning
+                    long termInfoLength = Interop.CheckIo(Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_END)); // jump to the end to get the file length
+                    Interop.CheckIo(Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_SET)); // reset back to beginning
                     const int MaxTermInfoLength = 4096; // according to the term and tic man pages, 4096 is the terminfo file size max
                     const int HeaderLength = 12;
                     if (termInfoLength <= HeaderLength || termInfoLength > MaxTermInfoLength)

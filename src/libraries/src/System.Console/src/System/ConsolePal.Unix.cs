@@ -857,8 +857,7 @@ namespace System
         {
             fixed (byte* bufPtr = buffer)
             {
-                int result;
-                while (Interop.CheckIo(result = Interop.Sys.Read(fd, (byte*)bufPtr + offset, count))) ;
+                int result = Interop.CheckIo(Interop.Sys.Read(fd, (byte*)bufPtr + offset, count));
                 Debug.Assert(result <= count);
                 return result;
             }
@@ -885,12 +884,7 @@ namespace System
                 if (bytesWritten < 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error == Interop.Error.EINTR)
-                    {
-                        // Interrupted... try again.
-                        continue;
-                    }
-                    else if (errorInfo.Error == Interop.Error.EPIPE)
+                    if (errorInfo.Error == Interop.Error.EPIPE)
                     {
                         // Broken pipe... likely due to being redirected to a program
                         // that ended, so simply pretend we were successful.

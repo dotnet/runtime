@@ -44,29 +44,18 @@ namespace System.IO.Pipes
 
             // Make sure the FIFO exists, but don't open it until WaitForConnection is called.
             _path = GetPipePath(".", pipeName);
-            while (true)
-            {
-                int result = Interop.Sys.MkFifo(_path, (int)Interop.Sys.Permissions.S_IRWXU);
-                if (result == 0)
-                {
-                    // The FIFO was successfully created - note that although we create the FIFO here, we don't
-                    // ever delete it. If we remove the FIFO we could invalidate other servers that also use it. 
-                    // See #2764 for further discussion.
-                    break;
-                }
+            int result = Interop.Sys.MkFifo(_path, (int)Interop.Sys.Permissions.S_IRWXU);
 
+            // The FIFO was successfully created on result == 0 - note that although we create the FIFO here, we don't
+            // ever delete it. If we remove the FIFO we could invalidate other servers that also use it. 
+            // See #2764 for further discussion.
+
+            if (result != 0)
+            {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.EINTR)
-                {
-                    // interrupted; try again
-                    continue;
-                }
-                else if (errorInfo.Error == Interop.Error.EEXIST)
-                {
-                    // FIFO already exists; nothing more to do
-                    break;
-                }
-                else
+                // FIFO already exists if Error == EEXIST - nothing more to do
+
+                if (errorInfo.Error != Interop.Error.EEXIST)
                 {
                     // something else; fail
                     throw Interop.GetExceptionForIoErrno(errorInfo, _path);

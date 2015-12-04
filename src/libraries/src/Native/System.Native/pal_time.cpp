@@ -3,6 +3,7 @@
 
 #include "pal_config.h"
 #include "pal_time.h"
+#include "pal_utilities.h"
 
 #include <assert.h>
 #include <utime.h>
@@ -30,7 +31,10 @@ extern "C" int32_t UTime(const char* path, UTimBuf* times)
 
     utimbuf temp;
     ConvertUTimBuf(*times, temp);
-    return utime(path, &temp);
+
+    int32_t result;
+    while (CheckInterrupted(result = utime(path, &temp)));
+    return result;
 }
 
 extern "C" int32_t GetTimestampResolution(uint64_t* resolution)

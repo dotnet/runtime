@@ -145,7 +145,7 @@ namespace System.IO
                 if (newMode != _fileStatus.Mode)
                 {
                     bool isDirectory = this is DirectoryInfo;
-                    while (Interop.CheckIo(Interop.Sys.ChMod(FullPath, newMode), FullPath, isDirectory)) ;
+                    Interop.CheckIo(Interop.Sys.ChMod(FullPath, newMode), FullPath, isDirectory);
                 }
             }
         }
@@ -211,7 +211,7 @@ namespace System.IO
             buf.AcTime = accessTime ?? _fileStatus.ATime;
             buf.ModTime = writeTime ?? _fileStatus.MTime;
             bool isDirectory = this is DirectoryInfo;
-            while (Interop.CheckIo(Interop.Sys.UTime(FullPath, ref buf), FullPath, isDirectory)) ;
+            Interop.CheckIo(Interop.Sys.UTime(FullPath, ref buf), FullPath, isDirectory);
             _fileStatusInitialized = -1;
         }
 
@@ -228,24 +228,15 @@ namespace System.IO
         {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property.
-            int result;
-            while (true)
+            int result = Interop.Sys.Stat(FullPath, out _fileStatus);
+            if (result >= 0)
             {
-                result = Interop.Sys.Stat(FullPath, out _fileStatus);
-                if (result >= 0)
-                {
-                    _fileStatusInitialized = 0;
-                }
-                else
-                {
-                    var errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error == Interop.Error.EINTR)
-                    {
-                        continue;
-                    }
-                    _fileStatusInitialized = errorInfo.RawErrno;
-                }
-                break;
+                _fileStatusInitialized = 0;
+            }
+            else
+            {
+                var errorInfo = Interop.Sys.GetLastErrorInfo();
+                _fileStatusInitialized = errorInfo.RawErrno;
             }
         }
 

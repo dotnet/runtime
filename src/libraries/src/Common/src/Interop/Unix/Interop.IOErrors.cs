@@ -5,61 +5,100 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-    private static bool CheckIo(ErrorInfo errorInfo, string path, bool isDirectory, Func<ErrorInfo, ErrorInfo> errorRewriter)
+    private static void ThrowExceptionForIoErrno(ErrorInfo errorInfo, string path, bool isDirectory, Func<ErrorInfo, ErrorInfo> errorRewriter)
     {
         Debug.Assert(errorInfo.Error != Error.SUCCESS);
+        Debug.Assert(errorInfo.Error != Error.EINTR, "EINTR errors should be handled by the native shim and never bubble up to managed code");
 
         if (errorRewriter != null)
         {
             errorInfo = errorRewriter(errorInfo);
         }
 
-        if (errorInfo.Error != Error.EINTR)
-        {
-            throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
-        }
-
-        return true;
+        throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
     }
 
-    internal static bool CheckIo(Error error, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+    internal static void CheckIo(Error error, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
     {
-        return error != Interop.Error.SUCCESS && CheckIo(error.Info(), path, isDirectory, errorRewriter);
+        if (error != Interop.Error.SUCCESS)
+        {
+            ThrowExceptionForIoErrno(error.Info(), path, isDirectory, errorRewriter);
+        }
     }
 
     /// <summary>
     /// Validates the result of system call that returns greater than or equal to 0 on success
     /// and less than 0 on failure, with errno set to the error code.
-    /// If the system call failed due to interruption (EINTR), true is returned and 
-    /// the caller should (usually) retry. If the system call failed for any other reason, 
-    /// an exception is thrown. Otherwise, the system call succeeded, and false is returned.
+    /// If the system call failed for any reason, an exception is thrown. Otherwise, the system call succeeded.
     /// </summary>
     /// <param name="result">The result of the system call.</param>
     /// <param name="path">The path with which this error is associated.  This may be null.</param>
     /// <param name="isDirectory">true if the <paramref name="path"/> is known to be a directory; otherwise, false.</param>
     /// <param name="errorRewriter">Optional function to change an error code prior to processing it.</param>
     /// <returns>
-    /// true if the system call should be retried due to it being interrupted; otherwise, false.
-    /// An exception will be thrown if the system call failed for any reason other than interruption.
+    /// On success, returns the non-negative result long that was validated.
     /// </returns>
-    internal static bool CheckIo(long result, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+    internal static long CheckIo(long result, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
     {
-        return result < 0 && CheckIo(Sys.GetLastErrorInfo(), path, isDirectory, errorRewriter);
+        if (result < 0)
+        {
+            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirectory, errorRewriter);
+        }
+
+        return result;
     }
 
     /// <summary>
     /// Validates the result of system call that returns greater than or equal to 0 on success
     /// and less than 0 on failure, with errno set to the error code.
-    /// If the system call failed due to interruption (EINTR), true is returned and 
-    /// the caller should (usually) retry. If the system call failed for any other reason, 
-    /// an exception is thrown. Otherwise, the system call succeeded, and false is returned.
+    /// If the system call failed for any reason, an exception is thrown. Otherwise, the system call succeeded.
     /// </summary>
-    internal static bool CheckIo(IntPtr ptr, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+    /// <returns>
+    /// On success, returns the non-negative result int that was validated.
+    /// </returns>
+    internal static int CheckIo(int result, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
     {
-        return CheckIo((long)ptr, path, isDirectory, errorRewriter);
+        CheckIo((long)result, path, isDirectory, errorRewriter);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Validates the result of system call that returns greater than or equal to 0 on success
+    /// and less than 0 on failure, with errno set to the error code.
+    /// If the system call failed for any reason, an exception is thrown. Otherwise, the system call succeeded.
+    /// </summary>
+    /// <returns>
+    /// On success, returns the non-negative result IntPtr that was validated.
+    /// </returns>
+    internal static IntPtr CheckIo(IntPtr result, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+    {
+        CheckIo((long)result, path, isDirectory, errorRewriter);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Validates the result of system call that returns greater than or equal to 0 on success
+    /// and less than 0 on failure, with errno set to the error code.
+    /// If the system call failed for any reason, an exception is thrown. Otherwise, the system call succeeded.
+    /// </summary>
+    /// <returns>
+    /// On success, returns the valid SafeFileHandle that was validated.
+    /// </returns>
+    internal static TSafeHandle CheckIo<TSafeHandle>(TSafeHandle handle, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+        where TSafeHandle : SafeHandle
+    {
+        if (handle.IsInvalid)
+        {
+            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirectory, errorRewriter);
+        }
+
+        return handle;
     }
 
     /// <summary>

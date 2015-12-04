@@ -36,18 +36,17 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(path != null);
 
-            SafeFileHandle handle = new SafeFileHandle(ownsHandle: true);
-
             // If we fail to open the file due to a path not existing, we need to know whether to blame
             // the file itself or its directory.  If we're creating the file, then we blame the directory,
             // otherwise we blame the file.
             bool enoentDueToDirectory = (flags & Interop.Sys.OpenFlags.O_CREAT) != 0;
 
             // Open the file. 
-            IntPtr fd;
-            while (Interop.CheckIo(fd = Interop.Sys.Open(path, flags, mode), path, isDirectory: enoentDueToDirectory,
-                errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e)) ;
-            handle.SetHandle(fd);
+            SafeFileHandle handle = Interop.CheckIo(
+                Interop.Sys.Open(path, flags, mode),
+                path, 
+                isDirectory: enoentDueToDirectory,
+                errorRewriter: e => (e.Error == Interop.Error.EISDIR) ? Interop.Error.EACCES.Info() : e);
 
             // Make sure it's not a directory; we do this after opening it once we have a file descriptor 
             // to avoid race conditions.
@@ -68,16 +67,14 @@ namespace Microsoft.Win32.SafeHandles
 
         /// <summary>Opens a SafeFileHandle for a file descriptor created by a provided delegate.</summary>
         /// <param name="fdFunc">
-        /// The function that creates the file descriptor. Returns the file descriptor on success, or -1 on error,
-        /// with Marshal.GetLastWin32Error() set to the error code.
+        /// The function that creates the file descriptor. Returns the file descriptor on success, or an invalid
+        /// file descriptor on error with Marshal.GetLastWin32Error() set to the error code.
         /// </param>
         /// <returns>The created SafeFileHandle.</returns>
-        internal static SafeFileHandle Open(Func<IntPtr> fdFunc)
+        internal static SafeFileHandle Open(Func<SafeFileHandle> fdFunc)
         {
-            var handle = new SafeFileHandle(ownsHandle: true);
-            IntPtr fd;
-            while (Interop.CheckIo(fd = fdFunc())) ;
-            handle.SetHandle(fd);
+            SafeFileHandle handle = Interop.CheckIo(fdFunc());
+
             Debug.Assert(!handle.IsInvalid, "File descriptor is invalid");
             return handle;
         }
