@@ -1072,6 +1072,139 @@ protected:
     bool m_fHasInstrumentedILMap;
 };
 
+// ------------------------------------------------------------------------ *
+// Executable code memory management for the debugger heap.
+//
+//     Rather than allocating memory that needs to be executable on the process heap (which
+//     is forbidden on some flavors of SELinux and is generally a bad idea), we use the
+//     allocator below. It will handle allocating and managing the executable memory in a
+//     different part of the address space (not on the heap).
+// ------------------------------------------------------------------------ */
+
+#define DBG_MAX_EXECUTABLE_ALLOC_SIZE 48
+
+// Forward declaration
+struct DebuggerHeapExecutableMemoryPage;
+
+// ------------------------------------------------------------------------ */
+// DebuggerHeapExecutableMemoryChunk
+//
+// Each DebuggerHeapExecutableMemoryPage is divided into 64 of these chunks.
+// The first chunk is a BookkeepingChunk used for bookkeeping information
+// for the page, and the remaining ones are DataChunks and are handed out
+// by the allocator when it allocates memory.
+// ------------------------------------------------------------------------ */
+union DECLSPEC_ALIGN(64) DebuggerHeapExecutableMemoryChunk {
+
+    struct DataChunk
+    {
+        char data[48];
+
+        DebuggerHeapExecutableMemoryPage *startOfPage;
+
+        // The chunk number within the page.
+        uint8_t chunkNumber;
+
+    } d;
+
+    struct BookkeepingChunk
+    {
+        DebuggerHeapExecutableMemoryPage *nextPage;
+
+        uint64_t pageOccupancy;
+
+        char padding[48];
+
+    } b;
+};
+
+// ------------------------------------------------------------------------ */
+// DebuggerHeapExecutableMemoryPage
+//
+// We allocate the size of DebuggerHeapExecutableMemoryPage each time we need
+// more memory and divide each page into DebuggerHeapExecutableMemoryChunks for
+// use. The pages are self describing; the first chunk contains information
+// about which of the other chunks are used/free as well as a pointer to 
+// the next page.
+// ------------------------------------------------------------------------ */
+struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
+{
+    inline DebuggerHeapExecutableMemoryPage* GetNextPage()
+    {
+        return chunks[0].b.nextPage;
+    }
+
+    inline void SetNextPage(DebuggerHeapExecutableMemoryPage* nextPage)
+    {
+        chunks[0].b.nextPage = nextPage;
+    }
+
+    inline uint64_t GetPageOccupancy()
+    {
+        return chunks[0].b.pageOccupancy;
+    }
+
+    inline void SetPageOccupancy(uint64_t newOccupancy)
+    {
+        // Can't unset first bit of occupancy!
+        ASSERT((newOccupancy & 0x8000000000000000) != 0);
+
+        chunks[0].b.pageOccupancy = newOccupancy;
+    }
+
+    inline void* GetPointerToChunk(int chunkNum)
+    {
+        return (char*)this + chunkNum * sizeof(DebuggerHeapExecutableMemoryChunk);
+    }
+
+    DebuggerHeapExecutableMemoryPage()
+    {
+        SetPageOccupancy(0x8000000000000000); // only the first bit is set.
+        for (uint8_t i = 1; i < sizeof(chunks)/sizeof(chunks[0]); i++)
+        {
+            ASSERT(i != 0);
+            chunks[i].d.startOfPage = this;
+            chunks[i].d.chunkNumber = i;
+        }
+    }
+
+private:
+    DebuggerHeapExecutableMemoryChunk chunks[64];
+
+};
+
+// ------------------------------------------------------------------------ */
+// DebuggerHeapExecutableMemoryAllocator class
+// Handles allocation and freeing (and all necessary bookkeeping) for 
+// executable memory that the DebuggerHeap class needs. This is especially
+// useful on systems (like SELinux) where having executable code on the
+// heap is explicity disallowed for security reasons.
+// ------------------------------------------------------------------------ */
+
+class DebuggerHeapExecutableMemoryAllocator
+{
+public:
+    DebuggerHeapExecutableMemoryAllocator()
+    : m_execMemAllocMutex(CrstDebuggerHeapExecMemLock, (CrstFlags)(CRST_UNSAFE_ANYMODE | CRST_REENTRANCY | CRST_DEBUGGER_THREAD))
+    {
+        pages = NULL;
+    }
+
+    ~DebuggerHeapExecutableMemoryAllocator();
+
+    void* Allocate(DWORD numBytes);
+    int Free(void* addr);
+
+private:
+    DebuggerHeapExecutableMemoryPage* AddNewPage();
+    bool CheckPageForAvailability(DebuggerHeapExecutableMemoryPage* page, /* _Out_ */ int* chunkToUse);
+    void* ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNum, bool allocateOrFree);
+
+private:
+    // Linked list of pages that have been allocated
+    DebuggerHeapExecutableMemoryPage* pages;
+    Crst m_execMemAllocMutex;
+};
 
 // ------------------------------------------------------------------------ *
 // DebuggerHeap class
@@ -1104,6 +1237,9 @@ protected:
     HANDLE m_hHeap;
 #endif
     BOOL m_fExecutable;
+
+private:
+    DebuggerHeapExecutableMemoryAllocator *m_execMemAllocator;
 };
 
 class DebuggerJitInfo;
