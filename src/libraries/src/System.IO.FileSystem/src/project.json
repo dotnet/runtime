@@ -18,7 +18,19 @@
     "System.Threading.Tasks": "4.0.10"
   },
   "frameworks": {
-    "dnxcore50": {},
-    "netcore50": {}
+    "dnxcore50": {
+        "dependencies" : {
+        }
+    },
+    "netcore50": {
+        "dependencies" : {
+            "Microsoft.TargetingPack.Private.NetNative": "1.0.0-rc2-23530",
+            "System.Globalization": "4.0.10",
+            "System.Reflection": "4.0.10",
+            "System.Reflection.Primitives": "4.0.0",
+            "System.Runtime.WindowsRuntime": "4.0.0",
+            "System.Threading.ThreadPool": "4.0.10-beta-*"
+        }
+    }
   }
 }
