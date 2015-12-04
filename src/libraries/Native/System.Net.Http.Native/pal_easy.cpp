@@ -178,19 +178,19 @@ extern "C" void RegisterSeekCallback(CURL* curl, SeekCallback callback, void* us
 static size_t write_callback(char* buffer, size_t size, size_t nitems, void* instream)
 {
     CallbackHandle* handle = static_cast<CallbackHandle*>(instream);
-    return handle->writeCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->writeUserPointer);
+    return static_cast<size_t>(handle->writeCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->writeUserPointer));
 }
 
 static size_t read_callback(char* buffer, size_t size, size_t nitems, void* instream)
 {
     CallbackHandle* handle = static_cast<CallbackHandle*>(instream);
-    return handle->readCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->readUserPointer);
+    return static_cast<size_t>(handle->readCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->readUserPointer));
 }
 
 static size_t header_callback(char* buffer, size_t size, size_t nitems, void* instream)
 {
     CallbackHandle* handle = static_cast<CallbackHandle*>(instream);
-    return handle->headerCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->headerUserPointer);
+    return static_cast<size_t>(handle->headerCallback(reinterpret_cast<uint8_t*>(buffer), size, nitems, handle->headerUserPointer));
 }
 
 extern "C" void RegisterReadWriteCallback(CURL* curl, ReadWriteFunction functionType, ReadWriteCallback callback, void* userPointer, CallbackHandle** callbackHandle)
