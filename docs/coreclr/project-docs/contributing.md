@@ -15,6 +15,7 @@ Contribution Guidelines
 - [Contribution Workflow](contributing-workflow.md) describes the workflow that the team uses for considering and accepting changes.
 - [Garbage Collection Guidelines](garbage-collector-guidelines.md) for changes that affect the GC.
 - [Performance Guidelines](performance-guidelines.md) for changes in performance critical code or that otherwise affect performance.
+- [Porting the JIT](https://github.com/dotnet/coreclr/pull/2214#issuecomment-161850464) to other chip architectures.
 
 Contribution "Bar"
 ==================
