@@ -10,17 +10,4 @@ namespace System.Net.Security
         MutualAuthRequested = 1, // default setting
         MutualAuthRequired = 2
     }
-
-    // This will request security properties of a NegotiateStream.
-    public enum ProtectionLevel
-    {
-        // Used only with Negotiate on Win9x platform
-        None = 0,
-
-        // Data integrity only
-        Sign = 1,
-
-        // Both data confidentiality and integrity
-        EncryptAndSign = 2
-    }
 }

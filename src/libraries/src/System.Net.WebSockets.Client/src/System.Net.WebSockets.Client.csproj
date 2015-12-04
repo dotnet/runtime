@@ -9,8 +9,17 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">netcore50</PackageTargetFramework>
     <PackageTargetRuntime Condition="'$(TargetsWindows)' == 'true'">win7</PackageTargetRuntime>
     <PackageTargetRuntime Condition="'$(TargetsUnix)' == 'true'">unix</PackageTargetRuntime>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">
+    <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EnableWinRT)' == 'true'">
+    <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
   </PropertyGroup>
 
   <!-- Help VS understand available configurations -->
@@ -25,6 +34,7 @@
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" />
 
+    <!-- Common -->
     <Compile Include="$(CommonPath)\System\Net\Logging.cs">
       <Link>Common\System\Net\Logging.cs</Link>
     </Compile>
@@ -38,12 +48,17 @@
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Windows.cs" />
+  </ItemGroup>
+
+  <!-- Windows : Win32 only -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Win32.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketMessageTypeAdapter.cs" />
     <Compile Include="System\Net\WebSockets\WinHttpWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\WinHttpWebSocketCallback.cs" />
     <Compile Include="System\Net\WebSockets\WinHttpWebSocketState.cs" />
-    <Compile Include="System\Net\WebSockets\WebSocketMessageTypeAdapter.cs" />
 
+    <!-- Common -->
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
@@ -54,6 +69,7 @@
       <Link>Common\System\Net\Http\WinHttpException.cs</Link>
     </Compile>
 
+    <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -84,6 +100,12 @@
     <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs">
       <Link>Interop\Windows\winhttp\Interop.winhttp_types.cs</Link>
     </Compile>
+  </ItemGroup>
+
+  <!-- Windows : Win32 + WinRT -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
+    <Compile Include="System\Net\WebSockets\WebSocketHandle.WinRT.cs" />
+    <Compile Include="System\Net\WebSockets\WinRTWebSocket.cs" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
