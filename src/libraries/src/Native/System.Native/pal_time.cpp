@@ -20,8 +20,8 @@ enum
 
 static void ConvertUTimBuf(const UTimBuf& pal, utimbuf& native)
 {
-    native.actime = pal.AcTime;
-    native.modtime = pal.ModTime;
+    native.actime = static_cast<time_t>(pal.AcTime);
+    native.modtime = static_cast<time_t>(pal.ModTime);
 }
 
 extern "C" int32_t UTime(const char* path, UTimBuf* times)

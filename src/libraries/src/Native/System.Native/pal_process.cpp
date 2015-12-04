@@ -436,7 +436,7 @@ extern "C" int32_t SchedSetAffinity(int32_t pid, intptr_t* mask)
     intptr_t bits = *mask; 
     for (int cpu = 0; cpu < maxCpu; cpu++)
     {
-        if ((bits & (1u << cpu)) != 0)
+        if ((bits & static_cast<intptr_t>(1u << cpu)) != 0)
         {
             CPU_SET(cpu, &set);
         }

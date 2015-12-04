@@ -28,6 +28,7 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL am
     add_definitions(-DBIT64=1)
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
     add_definitions(-DBIT32=1)
+    add_definitions(-D_FILE_OFFSET_BITS=64)
     # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
     # we have to set the triple by adding a compiler argument
     add_compile_options(-target armv7-linux-gnueabihf)
