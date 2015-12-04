@@ -370,4 +370,35 @@ class Tests
 		return 0;
 	}
 
+	struct LargeStruct {
+		public int a, b, c, d;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static bool GetHasValue<T>(T? value) where T : struct
+	{
+		return value.HasValue;
+	}
+
+	[Category ("DYNCALL")]
+	public static int test_0_large_nullable_invoke () {
+		var s = new LargeStruct () { a = 1, b = 2, c = 3, d = 4 };
+
+		GetHasValue<LargeStruct> (s);
+
+#if __MOBILE__
+		var m = typeof(AotTests).GetMethod("GetHasValue", BindingFlags.Static | BindingFlags.Public);
+#else
+		var m = typeof(Tests).GetMethod("GetHasValue", BindingFlags.Static | BindingFlags.Public);
+#endif
+
+		Type type = typeof (LargeStruct?).GetGenericArguments () [0];
+		bool b1 = (bool)m.MakeGenericMethod (new Type[] {type}).Invoke (null, new object[] { s });
+		if (!b1)
+			return 1;
+		bool b2 = (bool)m.MakeGenericMethod (new Type[] {type}).Invoke (null, new object[] { null });
+		if (b2)
+			return 2;
+		return 0;
+	}
 }
