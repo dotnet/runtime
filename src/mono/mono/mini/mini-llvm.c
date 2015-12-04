@@ -6094,7 +6094,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	lmodule = ctx->lmodule = ctx->module->lmodule;
 	ctx->llvm_only = ctx->module->llvm_only;
 
-	if (cfg->gsharedvt)
+	if (cfg->gsharedvt && !cfg->llvm_only)
 		LLVM_FAILURE (ctx, "gsharedvt");
 
 #if 1

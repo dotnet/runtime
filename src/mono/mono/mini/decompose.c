@@ -1200,6 +1200,8 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 	cfg->cbb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 	first_bb = cfg->cbb;
 
+	/* For LLVM, decompose only the OP_STOREV_MEMBASE opcodes, which need write barriers and the gsharedvt opcodes */
+
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *ins;
 		MonoInst *prev = NULL;
@@ -1218,10 +1220,11 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 			for (ins = bb->code; ins; ins = ins->next) {
 				switch (ins->opcode) {
 				case OP_VMOVE: {
+					g_assert (ins->klass);
+					if (COMPILE_LLVM (cfg) && !mini_is_gsharedvt_klass (ins->klass))
+						break;
 					src_var = get_vreg_to_inst (cfg, ins->sreg1);
 					dest_var = get_vreg_to_inst (cfg, ins->dreg);
-
-					g_assert (ins->klass);
 
 					if (!src_var)
 						src_var = mono_compile_create_var_for_vreg (cfg, &ins->klass->byval_arg, OP_LOCAL, ins->dreg);
@@ -1240,6 +1243,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					break;
 				}
 				case OP_VZERO:
+					if (COMPILE_LLVM (cfg))
+						break;
+
 					g_assert (ins->klass);
 
 					EMIT_NEW_VARLOADA_VREG (cfg, dest, ins->dreg, &ins->klass->byval_arg);
@@ -1258,6 +1264,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					}
 					break;
 				case OP_DUMMY_VZERO:
+					if (COMPILE_LLVM (cfg))
+						break;
+
 					NULLIFY_INS (ins);
 					break;
 				case OP_STOREV_MEMBASE: {
@@ -1277,6 +1286,8 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				}
 				case OP_LOADV_MEMBASE: {
 					g_assert (ins->klass);
+					if (COMPILE_LLVM (cfg) && !mini_is_gsharedvt_klass (ins->klass))
+						break;
 
 					dest_var = get_vreg_to_inst (cfg, ins->dreg);
 					// FIXME-VT:
@@ -1291,6 +1302,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					break;
 				}
 				case OP_OUTARG_VT: {
+					if (COMPILE_LLVM (cfg))
+						break;
+
 					g_assert (ins->klass);
 
 					src_var = get_vreg_to_inst (cfg, ins->sreg1);
@@ -1307,6 +1321,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				case OP_OUTARG_VTRETADDR: {
 					MonoCallInst *call = (MonoCallInst*)ins->inst_p1;
 
+					if (COMPILE_LLVM (cfg))
+						break;
+
 					src_var = get_vreg_to_inst (cfg, call->inst.dreg);
 					if (!src_var)
 						src_var = mono_compile_create_var_for_vreg (cfg, call->signature->ret, OP_LOCAL, call->inst.dreg);
@@ -1321,6 +1338,9 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				case OP_VCALL_MEMBASE: {
 					MonoCallInst *call = (MonoCallInst*)ins;
 					int size;
+
+					if (COMPILE_LLVM (cfg))
+						break;
 
 					if (call->vret_in_reg) {
 						MonoCallInst *call2;
@@ -1439,71 +1459,6 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 		}
 
 		if (cfg->verbose_level > 2) mono_print_bb (bb, "AFTER LOWER-VTYPE-OPTS ");
-	}
-}
-
-void
-mono_decompose_vtype_opts_llvm (MonoCompile *cfg)
-{
-	MonoBasicBlock *bb, *first_bb;
-
-	/* Decompose only the OP_STOREV_MEMBASE opcodes, which need write barriers */
-
-	cfg->cbb = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
-	first_bb = cfg->cbb;
-
-	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *ins;
-		MonoInst *prev = NULL;
-		MonoInst *src_var, *src, *dest;
-		gboolean restart;
-		int dreg;
-
-		if (cfg->verbose_level > 2) mono_print_bb (bb, "BEFORE LOWER-VTYPE-OPTS(LLVM) ");
-
-		cfg->cbb->code = cfg->cbb->last_ins = NULL;
-		restart = TRUE;
-
-		while (restart) {
-			restart = FALSE;
-
-			for (ins = bb->code; ins; ins = ins->next) {
-				switch (ins->opcode) {
-				case OP_STOREV_MEMBASE: {
-					src_var = get_vreg_to_inst (cfg, ins->sreg1);
-
-					if (!src_var) {
-						g_assert (ins->klass);
-						src_var = mono_compile_create_var_for_vreg (cfg, &ins->klass->byval_arg, OP_LOCAL, ins->sreg1);
-					}
-
-					EMIT_NEW_VARLOADA_VREG ((cfg), (src), ins->sreg1, &ins->klass->byval_arg);
-
-					dreg = alloc_preg (cfg);
-					EMIT_NEW_BIALU_IMM (cfg, dest, OP_ADD_IMM, dreg, ins->inst_destbasereg, ins->inst_offset);
-					mini_emit_stobj (cfg, dest, src, src_var->klass, src_var->backend.is_pinvoke);
-					break;
-				}
-				default:
-					break;
-				}
-
-				g_assert (cfg->cbb == first_bb);
-
-				if (cfg->cbb->code || (cfg->cbb != first_bb)) {
-					/* Replace the original instruction with the new code sequence */
-
-					mono_replace_ins (cfg, bb, ins, &prev, first_bb, cfg->cbb);
-					first_bb->code = first_bb->last_ins = NULL;
-					first_bb->in_count = first_bb->out_count = 0;
-					cfg->cbb = first_bb;
-				}
-				else
-					prev = ins;
-			}
-		}
-
-		if (cfg->verbose_level > 2) mono_print_bb (bb, "AFTER LOWER-VTYPE-OPTS(LLVM) ");
 	}
 }
 
