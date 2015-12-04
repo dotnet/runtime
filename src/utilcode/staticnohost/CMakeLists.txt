@@ -9,3 +9,8 @@ if(WIN32)
 endif(WIN32)
 
 add_library(utilcodestaticnohost STATIC ${UTILCODE_SOURCES})
+
+if(CLR_CMAKE_PLATFORM_UNIX)
+  target_link_libraries(utilcodestaticnohost  nativeresourcestring)
+endif(CLR_CMAKE_PLATFORM_UNIX)
+

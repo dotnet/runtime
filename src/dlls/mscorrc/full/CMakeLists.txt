@@ -11,7 +11,6 @@ if(WIN32)
   install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mscorrc.debug.pdb DESTINATION PDB)
 
 else()
-
   build_resources(${CMAKE_CURRENT_SOURCE_DIR}/../include.rc mscorrc_debug TARGET_CPP_FILE)
 
   add_library(mscorrc_debug STATIC
