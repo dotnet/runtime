@@ -90,7 +90,8 @@ public:
     //    
 
     // Unwind to the next stack frame
-    virtual HRESULT STDMETHODCALLTYPE VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context);
+    virtual HRESULT STDMETHODCALLTYPE VirtualUnwind(
+        DWORD threadId, ULONG32 contextSize, PBYTE context) = 0;
 
 protected:
     // Pid of the target process.
