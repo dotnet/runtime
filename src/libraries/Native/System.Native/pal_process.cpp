@@ -311,7 +311,9 @@ extern "C" int32_t WaitPid(int32_t pid, int32_t* status, WaitPidOptions options)
 {
     assert(status != nullptr);
 
-    return waitpid(pid, status, static_cast<int>(options));
+    int32_t result;
+    while (CheckInterrupted(result = waitpid(pid, status, static_cast<int>(options))));
+    return result;
 }
 
 extern "C" int32_t WExitStatus(int32_t status)

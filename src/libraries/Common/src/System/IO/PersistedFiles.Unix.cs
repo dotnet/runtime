@@ -142,45 +142,39 @@ namespace System.IO
         /// <returns>true if the call was successful (path may still be null); false is a larger buffer is needed.</returns>
         private static unsafe bool TryGetHomeDirectoryFromPasswd(byte* buf, int bufLen, out string path)
         {
-            while (true)
+            // Call getpwuid_r to get the passwd struct
+            Interop.Sys.Passwd passwd;
+            int error = Interop.Sys.GetPwUidR(Interop.Sys.GetEUid(), out passwd, buf, bufLen);
+
+            // If the call succeeds, give back the home directory path retrieved
+            if (error == 0)
             {
-                // Call getpwuid_r to get the passwd struct
-                Interop.Sys.Passwd passwd;
-                int error = Interop.Sys.GetPwUidR(Interop.Sys.GetEUid(), out passwd, buf, bufLen);
-
-                // If the call succeeds, give back the home directory path retrieved
-                if (error == 0)
-                {
-                    Debug.Assert(passwd.HomeDirectory != null);
-                    path = Marshal.PtrToStringAnsi((IntPtr)passwd.HomeDirectory);
-                    return true;
-                }
-
-                // If the current user's entry could not be found, give back null
-                // path, but still return true as false indicates the buffer was
-                // too small.
-                if (error == -1)
-                {
-                    path = null;
-                    return true;
-                }
-
-                // If the call failed because it was interrupted, try again.
-                var errorInfo = new Interop.ErrorInfo(error);
-                if (errorInfo.Error == Interop.Error.EINTR)
-                    continue;
-
-                // If the call failed because the buffer was too small, return false to 
-                // indicate the caller should try again with a larger buffer.
-                if (errorInfo.Error == Interop.Error.ERANGE)
-                {
-                    path = null;
-                    return false;
-                }
-
-                // Otherwise, fail.
-                throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+                Debug.Assert(passwd.HomeDirectory != null);
+                path = Marshal.PtrToStringAnsi((IntPtr)passwd.HomeDirectory);
+                return true;
             }
+
+            // If the current user's entry could not be found, give back null
+            // path, but still return true as false indicates the buffer was
+            // too small.
+            if (error == -1)
+            {
+                path = null;
+                return true;
+            }
+
+            var errorInfo = new Interop.ErrorInfo(error);
+
+            // If the call failed because the buffer was too small, return false to 
+            // indicate the caller should try again with a larger buffer.
+            if (errorInfo.Error == Interop.Error.ERANGE)
+            {
+                path = null;
+                return false;
+            }
+
+            // Otherwise, fail.
+            throw new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
         }
     }
 }
