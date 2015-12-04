@@ -331,6 +331,7 @@ namespace System.Diagnostics.Tests
             Assert.True(_process.VirtualMemorySize64 > 0);
         }
 
+        [ActiveIssue(3281, PlatformID.OSX)]
         [Fact]
         public void TestWorkingSet64()
         {
