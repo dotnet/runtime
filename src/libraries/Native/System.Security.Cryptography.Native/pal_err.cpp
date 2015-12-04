@@ -25,10 +25,10 @@ extern "C" uint64_t ErrGetErrorAlloc(int32_t* isAllocFailure)
 
 extern "C" const char* ErrReasonErrorString(uint64_t error)
 {
-    return ERR_reason_error_string(error);
+    return ERR_reason_error_string(static_cast<unsigned long>(error));
 }
 
 extern "C" void ErrErrorStringN(uint64_t e, char* buf, int32_t len)
 {
-    ERR_error_string_n(e, buf, UnsignedCast(len));
+    ERR_error_string_n(static_cast<unsigned long>(e), buf, UnsignedCast(len));
 }
