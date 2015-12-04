@@ -248,6 +248,31 @@
       }
     },
     ".NETCore,Version=v5.0": {
+      "Microsoft.TargetingPack.Private.NetNative/1.0.0-rc2-23530": {
+        "type": "package",
+        "compile": {
+          "ref/netcore50/System.Private.CompatQuirks.dll": {},
+          "ref/netcore50/System.Private.CoreLib.dll": {},
+          "ref/netcore50/System.Private.CoreLib.DynamicDelegate.dll": {},
+          "ref/netcore50/System.Private.CoreLib.InteropServices.dll": {},
+          "ref/netcore50/System.Private.DataContractSerialization.dll": {},
+          "ref/netcore50/System.Private.DeveloperExperience.AppX.dll": {},
+          "ref/netcore50/System.Private.DeveloperExperience.Console.dll": {},
+          "ref/netcore50/System.Private.Interop.dll": {},
+          "ref/netcore50/System.Private.PortableServiceModelThunks.dll": {},
+          "ref/netcore50/System.Private.PortableThunks.dll": {},
+          "ref/netcore50/System.Private.Reflection.Core.dll": {},
+          "ref/netcore50/System.Private.Reflection.dll": {},
+          "ref/netcore50/System.Private.Reflection.Execution.dll": {},
+          "ref/netcore50/System.Private.Reflection.Metadata.dll": {},
+          "ref/netcore50/System.Private.ServiceModel.dll": {},
+          "ref/netcore50/System.Private.StackTraceGenerator.dll": {},
+          "ref/netcore50/System.Private.Threading.dll": {},
+          "ref/netcore50/System.Private.TypeLoader.dll": {},
+          "ref/netcore50/System.Private.WinRTInterop.CoreLib.dll": {},
+          "ref/netcore50/windows.winmd": {}
+        }
+      },
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -294,16 +319,16 @@
           "lib/netcore50/System.Diagnostics.Tools.dll": {}
         }
       },
-      "System.Globalization/4.0.0": {
+      "System.Globalization/4.0.10": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/netcore50/System.Globalization.dll": {}
+          "ref/dotnet/System.Globalization.dll": {}
         },
         "runtime": {
-          "lib/wpa81/_._": {}
+          "lib/netcore50/System.Globalization.dll": {}
         }
       },
       "System.IO/4.0.10": {
@@ -436,6 +461,20 @@
           "lib/netcore50/System.Runtime.InteropServices.dll": {}
         }
       },
+      "System.Runtime.WindowsRuntime/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.IO": "4.0.0",
+          "System.Runtime": "4.0.0",
+          "System.Threading.Tasks": "4.0.0"
+        },
+        "compile": {
+          "ref/netcore50/System.Runtime.WindowsRuntime.dll": {}
+        },
+        "runtime": {
+          "lib/wpa81/_._": {}
+        }
+      },
       "System.Text.Encoding/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -501,6 +540,16 @@
         },
         "runtime": {
           "lib/netcore50/System.Threading.Tasks.dll": {}
+        }
+      },
+      "System.Threading.ThreadPool/4.0.10-beta-23516": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0",
+          "System.Runtime.InteropServices": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet5.2/System.Threading.ThreadPool.dll": {}
         }
       }
     },
@@ -995,6 +1044,31 @@
       }
     },
     ".NETCore,Version=v5.0/win7-x86": {
+      "Microsoft.TargetingPack.Private.NetNative/1.0.0-rc2-23530": {
+        "type": "package",
+        "compile": {
+          "ref/netcore50/System.Private.CompatQuirks.dll": {},
+          "ref/netcore50/System.Private.CoreLib.dll": {},
+          "ref/netcore50/System.Private.CoreLib.DynamicDelegate.dll": {},
+          "ref/netcore50/System.Private.CoreLib.InteropServices.dll": {},
+          "ref/netcore50/System.Private.DataContractSerialization.dll": {},
+          "ref/netcore50/System.Private.DeveloperExperience.AppX.dll": {},
+          "ref/netcore50/System.Private.DeveloperExperience.Console.dll": {},
+          "ref/netcore50/System.Private.Interop.dll": {},
+          "ref/netcore50/System.Private.PortableServiceModelThunks.dll": {},
+          "ref/netcore50/System.Private.PortableThunks.dll": {},
+          "ref/netcore50/System.Private.Reflection.Core.dll": {},
+          "ref/netcore50/System.Private.Reflection.dll": {},
+          "ref/netcore50/System.Private.Reflection.Execution.dll": {},
+          "ref/netcore50/System.Private.Reflection.Metadata.dll": {},
+          "ref/netcore50/System.Private.ServiceModel.dll": {},
+          "ref/netcore50/System.Private.StackTraceGenerator.dll": {},
+          "ref/netcore50/System.Private.Threading.dll": {},
+          "ref/netcore50/System.Private.TypeLoader.dll": {},
+          "ref/netcore50/System.Private.WinRTInterop.CoreLib.dll": {},
+          "ref/netcore50/windows.winmd": {}
+        }
+      },
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -1041,16 +1115,16 @@
           "lib/netcore50/System.Diagnostics.Tools.dll": {}
         }
       },
-      "System.Globalization/4.0.0": {
+      "System.Globalization/4.0.10": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/netcore50/System.Globalization.dll": {}
+          "ref/dotnet/System.Globalization.dll": {}
         },
         "runtime": {
-          "lib/wpa81/_._": {}
+          "lib/netcore50/System.Globalization.dll": {}
         }
       },
       "System.IO/4.0.10": {
@@ -1183,6 +1257,20 @@
           "lib/netcore50/System.Runtime.InteropServices.dll": {}
         }
       },
+      "System.Runtime.WindowsRuntime/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.IO": "4.0.0",
+          "System.Runtime": "4.0.0",
+          "System.Threading.Tasks": "4.0.0"
+        },
+        "compile": {
+          "ref/netcore50/System.Runtime.WindowsRuntime.dll": {}
+        },
+        "runtime": {
+          "lib/wpa81/_._": {}
+        }
+      },
       "System.Text.Encoding/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -1248,10 +1336,45 @@
         },
         "runtime": {
           "lib/netcore50/System.Threading.Tasks.dll": {}
+        }
+      },
+      "System.Threading.ThreadPool/4.0.10-beta-23516": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0",
+          "System.Runtime.InteropServices": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet5.2/System.Threading.ThreadPool.dll": {}
         }
       }
     },
     ".NETCore,Version=v5.0/win7-x64": {
+      "Microsoft.TargetingPack.Private.NetNative/1.0.0-rc2-23530": {
+        "type": "package",
+        "compile": {
+          "ref/netcore50/System.Private.CompatQuirks.dll": {},
+          "ref/netcore50/System.Private.CoreLib.dll": {},
+          "ref/netcore50/System.Private.CoreLib.DynamicDelegate.dll": {},
+          "ref/netcore50/System.Private.CoreLib.InteropServices.dll": {},
+          "ref/netcore50/System.Private.DataContractSerialization.dll": {},
+          "ref/netcore50/System.Private.DeveloperExperience.AppX.dll": {},
+          "ref/netcore50/System.Private.DeveloperExperience.Console.dll": {},
+          "ref/netcore50/System.Private.Interop.dll": {},
+          "ref/netcore50/System.Private.PortableServiceModelThunks.dll": {},
+          "ref/netcore50/System.Private.PortableThunks.dll": {},
+          "ref/netcore50/System.Private.Reflection.Core.dll": {},
+          "ref/netcore50/System.Private.Reflection.dll": {},
+          "ref/netcore50/System.Private.Reflection.Execution.dll": {},
+          "ref/netcore50/System.Private.Reflection.Metadata.dll": {},
+          "ref/netcore50/System.Private.ServiceModel.dll": {},
+          "ref/netcore50/System.Private.StackTraceGenerator.dll": {},
+          "ref/netcore50/System.Private.Threading.dll": {},
+          "ref/netcore50/System.Private.TypeLoader.dll": {},
+          "ref/netcore50/System.Private.WinRTInterop.CoreLib.dll": {},
+          "ref/netcore50/windows.winmd": {}
+        }
+      },
       "System.Collections/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -1298,16 +1421,16 @@
           "lib/netcore50/System.Diagnostics.Tools.dll": {}
         }
       },
-      "System.Globalization/4.0.0": {
+      "System.Globalization/4.0.10": {
         "type": "package",
         "dependencies": {
           "System.Runtime": "4.0.0"
         },
         "compile": {
-          "ref/netcore50/System.Globalization.dll": {}
+          "ref/dotnet/System.Globalization.dll": {}
         },
         "runtime": {
-          "lib/wpa81/_._": {}
+          "lib/netcore50/System.Globalization.dll": {}
         }
       },
       "System.IO/4.0.10": {
@@ -1440,6 +1563,20 @@
           "lib/netcore50/System.Runtime.InteropServices.dll": {}
         }
       },
+      "System.Runtime.WindowsRuntime/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.IO": "4.0.0",
+          "System.Runtime": "4.0.0",
+          "System.Threading.Tasks": "4.0.0"
+        },
+        "compile": {
+          "ref/netcore50/System.Runtime.WindowsRuntime.dll": {}
+        },
+        "runtime": {
+          "lib/wpa81/_._": {}
+        }
+      },
       "System.Text.Encoding/4.0.10": {
         "type": "package",
         "dependencies": {
@@ -1505,11 +1642,51 @@
         },
         "runtime": {
           "lib/netcore50/System.Threading.Tasks.dll": {}
+        }
+      },
+      "System.Threading.ThreadPool/4.0.10-beta-23516": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0",
+          "System.Runtime.InteropServices": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet5.2/System.Threading.ThreadPool.dll": {}
         }
       }
     }
   },
   "libraries": {
+    "Microsoft.TargetingPack.Private.NetNative/1.0.0-rc2-23530": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "YbsxqchoOlgvdu+0j4Dn5H76lTy3KwMd6aPMFIeOTL0Mtcnq8HLABG0ko9160YhOr+xbRgbVXVGwfI0nxfFEzg==",
+      "files": [
+        "Microsoft.TargetingPack.Private.NetNative.1.0.0-rc2-23530.nupkg",
+        "Microsoft.TargetingPack.Private.NetNative.1.0.0-rc2-23530.nupkg.sha512",
+        "Microsoft.TargetingPack.Private.NetNative.nuspec",
+        "ref/netcore50/System.Private.CompatQuirks.dll",
+        "ref/netcore50/System.Private.CoreLib.dll",
+        "ref/netcore50/System.Private.CoreLib.DynamicDelegate.dll",
+        "ref/netcore50/System.Private.CoreLib.InteropServices.dll",
+        "ref/netcore50/System.Private.DataContractSerialization.dll",
+        "ref/netcore50/System.Private.DeveloperExperience.AppX.dll",
+        "ref/netcore50/System.Private.DeveloperExperience.Console.dll",
+        "ref/netcore50/System.Private.Interop.dll",
+        "ref/netcore50/System.Private.PortableServiceModelThunks.dll",
+        "ref/netcore50/System.Private.PortableThunks.dll",
+        "ref/netcore50/System.Private.Reflection.Core.dll",
+        "ref/netcore50/System.Private.Reflection.dll",
+        "ref/netcore50/System.Private.Reflection.Execution.dll",
+        "ref/netcore50/System.Private.Reflection.Metadata.dll",
+        "ref/netcore50/System.Private.ServiceModel.dll",
+        "ref/netcore50/System.Private.StackTraceGenerator.dll",
+        "ref/netcore50/System.Private.Threading.dll",
+        "ref/netcore50/System.Private.TypeLoader.dll",
+        "ref/netcore50/System.Private.WinRTInterop.CoreLib.dll",
+        "ref/netcore50/windows.winmd"
+      ]
+    },
     "System.Collections/4.0.10": {
       "type": "package",
       "serviceable": true,
@@ -1690,6 +1867,39 @@
         "ref/xamarinmac20/_._",
         "System.Globalization.4.0.0.nupkg",
         "System.Globalization.4.0.0.nupkg.sha512",
+        "System.Globalization.nuspec"
+      ]
+    },
+    "System.Globalization/4.0.10": {
+      "type": "package",
+      "sha512": "kzRtbbCNAxdafFBDogcM36ehA3th8c1PGiz8QRkZn8O5yMBorDHSK8/TGJPYOaCS5zdsGk0u9qXHnW91nqy7fw==",
+      "files": [
+        "lib/DNXCore50/System.Globalization.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net46/_._",
+        "lib/netcore50/System.Globalization.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "ref/dotnet/de/System.Globalization.xml",
+        "ref/dotnet/es/System.Globalization.xml",
+        "ref/dotnet/fr/System.Globalization.xml",
+        "ref/dotnet/it/System.Globalization.xml",
+        "ref/dotnet/ja/System.Globalization.xml",
+        "ref/dotnet/ko/System.Globalization.xml",
+        "ref/dotnet/ru/System.Globalization.xml",
+        "ref/dotnet/System.Globalization.dll",
+        "ref/dotnet/System.Globalization.xml",
+        "ref/dotnet/zh-hans/System.Globalization.xml",
+        "ref/dotnet/zh-hant/System.Globalization.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "runtimes/win8-aot/lib/netcore50/System.Globalization.dll",
+        "System.Globalization.4.0.10.nupkg",
+        "System.Globalization.4.0.10.nupkg.sha512",
         "System.Globalization.nuspec"
       ]
     },
@@ -2059,6 +2269,44 @@
         "System.Runtime.InteropServices.nuspec"
       ]
     },
+    "System.Runtime.WindowsRuntime/4.0.0": {
+      "type": "package",
+      "sha512": "IvSI0X1wIgQ2yFCXnV0EJc1FFE4xxzSPqX1r6ikhcLPuKmXjBglB0IrJBmWAK8vaPkyjBIwf7ks2VSdFazXwhA==",
+      "files": [
+        "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
+        "License.rtf",
+        "ref/dotnet/de/System.Runtime.WindowsRuntime.xml",
+        "ref/dotnet/es/System.Runtime.WindowsRuntime.xml",
+        "ref/dotnet/fr/System.Runtime.WindowsRuntime.xml",
+        "ref/dotnet/it/System.Runtime.WindowsRuntime.xml",
+        "ref/dotnet/ja/System.Runtime.WindowsRuntime.xml",
+        "ref/dotnet/ko/System.Runtime.WindowsRuntime.xml",
+        "ref/dotnet/ru/System.Runtime.WindowsRuntime.xml",
+        "ref/dotnet/System.Runtime.WindowsRuntime.dll",
+        "ref/dotnet/System.Runtime.WindowsRuntime.xml",
+        "ref/dotnet/zh-hans/System.Runtime.WindowsRuntime.xml",
+        "ref/dotnet/zh-hant/System.Runtime.WindowsRuntime.xml",
+        "ref/netcore50/de/System.Runtime.WindowsRuntime.xml",
+        "ref/netcore50/es/System.Runtime.WindowsRuntime.xml",
+        "ref/netcore50/fr/System.Runtime.WindowsRuntime.xml",
+        "ref/netcore50/it/System.Runtime.WindowsRuntime.xml",
+        "ref/netcore50/ja/System.Runtime.WindowsRuntime.xml",
+        "ref/netcore50/ko/System.Runtime.WindowsRuntime.xml",
+        "ref/netcore50/ru/System.Runtime.WindowsRuntime.xml",
+        "ref/netcore50/System.Runtime.WindowsRuntime.dll",
+        "ref/netcore50/System.Runtime.WindowsRuntime.xml",
+        "ref/netcore50/zh-hans/System.Runtime.WindowsRuntime.xml",
+        "ref/netcore50/zh-hant/System.Runtime.WindowsRuntime.xml",
+        "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
+        "System.Runtime.WindowsRuntime.4.0.0.nupkg",
+        "System.Runtime.WindowsRuntime.4.0.0.nupkg.sha512",
+        "System.Runtime.WindowsRuntime.nuspec"
+      ]
+    },
     "System.Text.Encoding/4.0.10": {
       "type": "package",
       "sha512": "fNlSFgy4OuDlJrP9SFFxMlaLazq6ipv15sU5TiEgg9UCVnA/OgoVUfymFp4AOk1jOkW5SVxWbeeIUptcM+m/Vw==",
@@ -2217,6 +2465,38 @@
         "System.Threading.Tasks.4.0.10.nupkg.sha512",
         "System.Threading.Tasks.nuspec"
       ]
+    },
+    "System.Threading.ThreadPool/4.0.10-beta-23516": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "s7KzGX8skWrj2raEEWt/qbMUPZJuHlwW6XP1fC4yltuX+6FqPA/D5fag8Q0/TsbcCcC8Q50+fULuHjlCNeblow==",
+      "files": [
+        "lib/DNXCore50/System.Threading.ThreadPool.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net46/System.Threading.ThreadPool.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "ref/dotnet5.2/de/System.Threading.ThreadPool.xml",
+        "ref/dotnet5.2/es/System.Threading.ThreadPool.xml",
+        "ref/dotnet5.2/fr/System.Threading.ThreadPool.xml",
+        "ref/dotnet5.2/it/System.Threading.ThreadPool.xml",
+        "ref/dotnet5.2/ja/System.Threading.ThreadPool.xml",
+        "ref/dotnet5.2/ko/System.Threading.ThreadPool.xml",
+        "ref/dotnet5.2/ru/System.Threading.ThreadPool.xml",
+        "ref/dotnet5.2/System.Threading.ThreadPool.dll",
+        "ref/dotnet5.2/System.Threading.ThreadPool.xml",
+        "ref/dotnet5.2/zh-hans/System.Threading.ThreadPool.xml",
+        "ref/dotnet5.2/zh-hant/System.Threading.ThreadPool.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/System.Threading.ThreadPool.dll",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "System.Threading.ThreadPool.4.0.10-beta-23516.nupkg",
+        "System.Threading.ThreadPool.4.0.10-beta-23516.nupkg.sha512",
+        "System.Threading.ThreadPool.nuspec"
+      ]
     }
   },
   "projectFileDependencyGroups": {
@@ -2239,6 +2519,13 @@
       "System.Threading.Tasks >= 4.0.10"
     ],
     "DNXCore,Version=v5.0": [],
-    ".NETCore,Version=v5.0": []
+    ".NETCore,Version=v5.0": [
+      "Microsoft.TargetingPack.Private.NetNative >= 1.0.0-rc2-23530",
+      "System.Globalization >= 4.0.10",
+      "System.Reflection >= 4.0.10",
+      "System.Reflection.Primitives >= 4.0.0",
+      "System.Runtime.WindowsRuntime >= 4.0.0",
+      "System.Threading.ThreadPool >= 4.0.10-beta-*"
+    ]
   }
 }
