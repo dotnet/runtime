@@ -163,8 +163,8 @@ namespace System.IO.MemoryMappedFiles
                 perms |= Interop.Sys.Permissions.S_IXUSR;
 
             // Create the shared memory object.
-            int fd = Interop.Sys.ShmOpen(mapName, flags, (int)perms);
-            if (fd < 0)
+            SafeFileHandle fd = Interop.Sys.ShmOpen(mapName, flags, (int)perms);
+            if (fd.IsInvalid)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 if (errorInfo.Error == Interop.Error.ENOTSUP)
@@ -179,7 +179,6 @@ namespace System.IO.MemoryMappedFiles
                 throw Interop.GetExceptionForIoErrno(errorInfo);
             }
 
-            SafeFileHandle fileHandle = new SafeFileHandle((IntPtr)fd, ownsHandle: true);
             try
             {
                 // Unlink the shared memory object immediatley so that it'll go away once all handles 
@@ -194,11 +193,11 @@ namespace System.IO.MemoryMappedFiles
                 Interop.CheckIo(Interop.Sys.FTruncate(fd, capacity));
 
                 // Wrap the file descriptor in a stream and return it.
-                return new FileStream(fileHandle, TranslateProtectionsToFileAccess(protections));
+                return new FileStream(fd, TranslateProtectionsToFileAccess(protections));
             }
             catch
             {
-                fileHandle.Dispose();
+                fd.Dispose();
                 throw;
             }
         }

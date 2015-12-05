@@ -3,6 +3,7 @@
 
 #include "pal_config.h"
 #include "pal_multi.h"
+#include "pal_utilities.h"
 
 #include <assert.h>
 
@@ -43,14 +44,14 @@ extern "C" int32_t MultiRemoveHandle(CURLM* multiHandle, CURL* easyHandle)
     return curl_multi_remove_handle(multiHandle, easyHandle);
 }
 
-extern "C" int32_t MultiWait(CURLM* multiHandle, int32_t extraFileDescriptor, int32_t* isExtraFileDescriptorActive, int32_t* isTimeout)
+extern "C" int32_t MultiWait(CURLM* multiHandle, intptr_t extraFileDescriptor, int32_t* isExtraFileDescriptorActive, int32_t* isTimeout)
 {
     assert(isExtraFileDescriptorActive != nullptr);
     assert(isTimeout != nullptr);
 
     curl_waitfd extraFds =
     {
-        .fd = extraFileDescriptor,
+        .fd = ToFileDescriptor(extraFileDescriptor),
         .events = CURL_WAIT_POLLIN,
         .revents = 0
     };

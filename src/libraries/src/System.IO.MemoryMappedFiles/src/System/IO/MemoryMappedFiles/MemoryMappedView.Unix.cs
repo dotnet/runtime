@@ -12,7 +12,7 @@ namespace System.IO.MemoryMappedFiles
     {
         [SecurityCritical]
         public unsafe static MemoryMappedView CreateView(
-            SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access, 
+            SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,
             long requestedOffset, long requestedSize)
         {
             if (requestedOffset > memMappedFileHandle._capacity)
@@ -47,107 +47,93 @@ namespace System.IO.MemoryMappedFiles
             long pageSize = Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_PAGESIZE);
             Debug.Assert(pageSize > 0);
             ValidateSizeAndOffset(
-                requestedSize, requestedOffset, pageSize, 
+                requestedSize, requestedOffset, pageSize,
                 out nativeSize, out extraMemNeeded, out nativeOffset);
 
-            bool gotRefOnHandle = false;
-            try
+            // Determine whether to create the pages as private or as shared; the former is used for copy-on-write.
+            Interop.Sys.MemoryMappedFlags flags =
+                (memMappedFileHandle._access == MemoryMappedFileAccess.CopyOnWrite || access == MemoryMappedFileAccess.CopyOnWrite) ?
+                Interop.Sys.MemoryMappedFlags.MAP_PRIVATE :
+                Interop.Sys.MemoryMappedFlags.MAP_SHARED;
+
+            // If we have a file handle, get the file descriptor from it.  If the handle is null,
+            // we'll use an anonymous backing store for the map.
+            SafeFileHandle fd;
+            if (memMappedFileHandle._fileStream != null)
             {
-                // Determine whether to create the pages as private or as shared; the former is used for copy-on-write.
-                Interop.Sys.MemoryMappedFlags flags = 
-                    (memMappedFileHandle._access == MemoryMappedFileAccess.CopyOnWrite || access == MemoryMappedFileAccess.CopyOnWrite) ?
-                    Interop.Sys.MemoryMappedFlags.MAP_PRIVATE :
-                    Interop.Sys.MemoryMappedFlags.MAP_SHARED;
-
-                // If we have a file handle, get the file descriptor from it.  If the handle is null,
-                // we'll use an anonymous backing store for the map.
-                int fd;
-                if (memMappedFileHandle._fileStream != null)
-                {
-                    // Get the file descriptor from the SafeFileHandle
-                    memMappedFileHandle._fileStream.SafeFileHandle.DangerousAddRef(ref gotRefOnHandle);
-                    Debug.Assert(gotRefOnHandle);
-                    fd = (int)memMappedFileHandle._fileStream.SafeFileHandle.DangerousGetHandle();
-                    Debug.Assert(fd >= 0);
-                }
-                else
-                {
-                    Debug.Assert(!gotRefOnHandle);
-                    fd = -1;
-                    flags |= Interop.Sys.MemoryMappedFlags.MAP_ANONYMOUS;
-                }
-
-                // Nothing to do for options.DelayAllocatePages, since we're only creating the map
-                // with mmap when creating the view.
-
-                // Verify that the requested view permissions don't exceed the map's permissions
-                Interop.Sys.MemoryMappedProtections viewProtForVerification = GetProtections(access, forVerification: true);
-                Interop.Sys.MemoryMappedProtections mapProtForVerification = GetProtections(memMappedFileHandle._access, forVerification: true);
-                if ((viewProtForVerification & mapProtForVerification) != viewProtForVerification)
-                {
-                    throw new UnauthorizedAccessException();
-                }
-
-                // viewProtections is strictly less than mapProtections, so use viewProtections for actually creating the map.
-                Interop.Sys.MemoryMappedProtections viewProtForCreation = GetProtections(access, forVerification: false);
-
-                // Create the map
-                IntPtr addr = IntPtr.Zero;
-                if (nativeSize > 0)
-                {
-                    addr = Interop.Sys.MMap(
-                        IntPtr.Zero,         // don't specify an address; let the system choose one
-                        nativeSize,          // specify the rounded-size we computed so as to page align; size + extraMemNeeded
-                        viewProtForCreation,
-                        flags,
-                        fd,                  // mmap adds a ref count to the fd, so there's no need to dup it.
-                        nativeOffset);       // specify the rounded-offset we computed so as to page align; offset - extraMemNeeded
-                }
-                else
-                {
-                    // There are some corner cases where the .NET API allows the requested size to be zero, e.g. the caller is 
-                    // creating a map at the end of the capacity.  We can't pass 0 to mmap, as that'll fail with EINVAL, nor can 
-                    // we create a map that extends beyond the end of the underlying file, as that'll fail on some platforms at the 
-                    // time of the map's creation.  Instead, since there's no data to be read/written, it doesn't actually matter 
-                    // what backs the view, so we just create an anonymous mapping.
-                    addr = Interop.Sys.MMap(
-                        IntPtr.Zero,
-                        1,         // any length that's greater than zero will suffice
-                        viewProtForCreation,
-                        flags | Interop.Sys.MemoryMappedFlags.MAP_ANONYMOUS,
-                        -1,        // ignore the actual fd even if there was one
-                        0);
-                    requestedSize = 0;
-                    extraMemNeeded = 0;
-                }
-                if (addr == IntPtr.Zero) // note that shim uses null pointer, not non-null MAP_FAILED sentinel
-                {
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
-                }
-
-                // Based on the HandleInheritability, try to prevent the memory-mapped region 
-                // from being inherited by a forked process
-                if (memMappedFileHandle._inheritability == HandleInheritability.None)
-                {
-                    DisableForkingIfPossible(addr, nativeSize);
-                }
-
-                // Create and return the view handle
-                var viewHandle = new SafeMemoryMappedViewHandle(addr, ownsHandle: true);
-                viewHandle.Initialize((ulong)nativeSize);
-                return new MemoryMappedView(
-                    viewHandle, 
-                    extraMemNeeded,       // the view points to offset - extraMemNeeded, so we need to shift back by extraMemNeeded
-                    requestedSize,        // only allow access to the actual size requested
-                    access);
+                // Get the file descriptor from the SafeFileHandle
+                fd = memMappedFileHandle._fileStream.SafeFileHandle;
+                Debug.Assert(!fd.IsInvalid);
             }
-            finally
+            else
             {
-                if (gotRefOnHandle)
-                {
-                    memMappedFileHandle._fileStream.SafeFileHandle.DangerousRelease();
-                }
+                fd = new SafeFileHandle(new IntPtr(-1), false);
+                flags |= Interop.Sys.MemoryMappedFlags.MAP_ANONYMOUS;
             }
+
+            // Nothing to do for options.DelayAllocatePages, since we're only creating the map
+            // with mmap when creating the view.
+
+            // Verify that the requested view permissions don't exceed the map's permissions
+            Interop.Sys.MemoryMappedProtections viewProtForVerification = GetProtections(access, forVerification: true);
+            Interop.Sys.MemoryMappedProtections mapProtForVerification = GetProtections(memMappedFileHandle._access, forVerification: true);
+            if ((viewProtForVerification & mapProtForVerification) != viewProtForVerification)
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            // viewProtections is strictly less than mapProtections, so use viewProtections for actually creating the map.
+            Interop.Sys.MemoryMappedProtections viewProtForCreation = GetProtections(access, forVerification: false);
+
+            // Create the map
+            IntPtr addr = IntPtr.Zero;
+            if (nativeSize > 0)
+            {
+                addr = Interop.Sys.MMap(
+                    IntPtr.Zero,         // don't specify an address; let the system choose one
+                    nativeSize,          // specify the rounded-size we computed so as to page align; size + extraMemNeeded
+                    viewProtForCreation,
+                    flags,
+                    fd,                  // mmap adds a ref count to the fd, so there's no need to dup it.
+                    nativeOffset);       // specify the rounded-offset we computed so as to page align; offset - extraMemNeeded
+            }
+            else
+            {
+                // There are some corner cases where the .NET API allows the requested size to be zero, e.g. the caller is 
+                // creating a map at the end of the capacity.  We can't pass 0 to mmap, as that'll fail with EINVAL, nor can 
+                // we create a map that extends beyond the end of the underlying file, as that'll fail on some platforms at the 
+                // time of the map's creation.  Instead, since there's no data to be read/written, it doesn't actually matter 
+                // what backs the view, so we just create an anonymous mapping.
+                addr = Interop.Sys.MMap(
+                    IntPtr.Zero,
+                    1,         // any length that's greater than zero will suffice
+                    viewProtForCreation,
+                    flags | Interop.Sys.MemoryMappedFlags.MAP_ANONYMOUS,
+                    new SafeFileHandle(new IntPtr(-1), false),        // ignore the actual fd even if there was one
+                    0);
+                requestedSize = 0;
+                extraMemNeeded = 0;
+            }
+            if (addr == IntPtr.Zero) // note that shim uses null pointer, not non-null MAP_FAILED sentinel
+            {
+                throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+            }
+
+            // Based on the HandleInheritability, try to prevent the memory-mapped region 
+            // from being inherited by a forked process
+            if (memMappedFileHandle._inheritability == HandleInheritability.None)
+            {
+                DisableForkingIfPossible(addr, nativeSize);
+            }
+
+            // Create and return the view handle
+            var viewHandle = new SafeMemoryMappedViewHandle(addr, ownsHandle: true);
+            viewHandle.Initialize((ulong)nativeSize);
+            return new MemoryMappedView(
+                viewHandle,
+                extraMemNeeded,       // the view points to offset - extraMemNeeded, so we need to shift back by extraMemNeeded
+                requestedSize,        // only allow access to the actual size requested
+                access);
         }
 
         [SecurityCritical]

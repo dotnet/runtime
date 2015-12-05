@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -23,7 +24,7 @@ internal static partial class Interop
         [DllImport(Libraries.HttpNative)]
         public static extern CURLMcode MultiWait(
             SafeCurlMultiHandle multiHandle,
-            int extraFileDescriptor,
+            SafeFileHandle extraFileDescriptor,
             out bool isExtraFileDescriptorActive,
             out bool isTimeout);
 

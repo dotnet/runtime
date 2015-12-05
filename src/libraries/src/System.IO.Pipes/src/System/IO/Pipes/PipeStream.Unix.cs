@@ -361,7 +361,7 @@ namespace System.IO.Pipes
                             // We want to wait for data to be available on either the pipe we want to read from
                             // or on the cancellation pipe, which would signal a cancellation request.
                             Interop.Sys.PollEvent* events = stackalloc Interop.Sys.PollEvent[2];
-                            events[0] = new Interop.Sys.PollEvent { FileDescriptor = fd, Events = Interop.Sys.PollEvents.POLLIN };
+                            events[0] = new Interop.Sys.PollEvent { FileDescriptor = (int)fd.DangerousGetHandle(), Events = Interop.Sys.PollEvents.POLLIN };
                             events[1] = new Interop.Sys.PollEvent { FileDescriptor = (int)cancellationFd, Events = Interop.Sys.PollEvents.POLLIN };
 
                             // Some systems (at least OS X) appear to have a race condition in poll with FIFOs where the poll can 
@@ -498,19 +498,8 @@ namespace System.IO.Pipes
             CancellationTokenRegistration reg = cancellationToken.Register(s =>
             {
                 SafePipeHandle sendRef = (SafePipeHandle)s;
-                bool gotSendRef = false;
-                try
-                {
-                    sendRef.DangerousAddRef(ref gotSendRef);
-                    int fd = (int)sendRef.DangerousGetHandle();
                     byte b = 1;
-                    while (Interop.CheckIo((int)Interop.Sys.Write(fd, &b, 1))) ;
-                }
-                finally
-                {
-                    if (gotSendRef)
-                        sendRef.DangerousRelease();
-                }
+                while (Interop.CheckIo(Interop.Sys.Write(sendRef, &b, 1))) ;
             }, send);
 
             // Return a disposable struct that will unregister the cancellation registration
@@ -570,43 +559,27 @@ namespace System.IO.Pipes
         /// </remarks>
         private long SysCall(
             SafePipeHandle handle,
-            Func<int, IntPtr, int, IntPtr, long> sysCall,
+            Func<SafePipeHandle, IntPtr, int, IntPtr, long> sysCall,
             IntPtr arg1 = default(IntPtr), int arg2 = default(int), IntPtr arg3 = default(IntPtr))
         {
-            bool gotRefOnHandle = false;
-            try
+            Debug.Assert(!handle.IsInvalid);
+
+            while (true)
             {
-                // Get the file descriptor from the handle.  We increment the ref count to help
-                // ensure it's not closed out from under us.
-                handle.DangerousAddRef(ref gotRefOnHandle);
-                Debug.Assert(gotRefOnHandle);
-                int fd = (int)handle.DangerousGetHandle();
-                Debug.Assert(fd >= 0);
-
-                while (true)
+                long result = sysCall(handle, arg1, arg2, arg3);
+                if (result == -1)
                 {
-                    long result = sysCall(fd, arg1, arg2, arg3);
-                    if (result == -1)
-                    {
-                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
 
-                        if (errorInfo.Error == Interop.Error.EINTR)
-                            continue;
+                    if (errorInfo.Error == Interop.Error.EINTR)
+                        continue;
 
-                        if (errorInfo.Error == Interop.Error.EPIPE)
-                            State = PipeState.Broken;
+                    if (errorInfo.Error == Interop.Error.EPIPE)
+                        State = PipeState.Broken;
 
-                        throw Interop.GetExceptionForIoErrno(errorInfo);
-                    }
-                    return result;
+                    throw Interop.GetExceptionForIoErrno(errorInfo);
                 }
-            }
-            finally
-            {
-                if (gotRefOnHandle)
-                {
-                    handle.DangerousRelease();
-                }
+                return result;
             }
         }
 

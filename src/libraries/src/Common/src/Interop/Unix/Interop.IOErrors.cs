@@ -51,15 +51,15 @@ internal static partial class Interop
     }
 
     /// <summary>
-    /// Validates the result of system call that returns a non-zero pointer on success
-    /// and a zero pointer on failure.
+    /// Validates the result of system call that returns greater than or equal to 0 on success
+    /// and less than 0 on failure, with errno set to the error code.
     /// If the system call failed due to interruption (EINTR), true is returned and 
     /// the caller should (usually) retry. If the system call failed for any other reason, 
     /// an exception is thrown. Otherwise, the system call succeeded, and false is returned.
     /// </summary>
-    internal static bool CheckIoPtr(IntPtr ptr, string path = null, bool isDirectory = false)
+    internal static bool CheckIo(IntPtr ptr, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
     {
-        return CheckIo(ptr == IntPtr.Zero ? -1 : 0, path, isDirectory);
+        return CheckIo((long)ptr, path, isDirectory, errorRewriter);
     }
 
     /// <summary>
