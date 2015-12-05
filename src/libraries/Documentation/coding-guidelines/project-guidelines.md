@@ -98,7 +98,7 @@ Facade projects are unique in that they don't have any code and instead are gene
 TODO: Fill in more information about the required properties for creatng a facade project.
 
 # Conventions for forked code
-While our goal is to have the exact code for every configuration there is always reasons why that is not realistic so we need to have a set of conventions for dealing with places were we fork code. In order of preference, here are the strategies we employ:
+While our goal is to have the exact code for every configuration there is always reasons why that is not realistic so we need to have a set of conventions for dealing with places where we fork code. In order of preference, here are the strategies we employ:
 
 1. Using different code files with partial classes to implement individual methods different on different configurations
 2. Using entirely different code files for cases were the entire class (or perhaps static class) needs to be unique in a given configuration.
@@ -112,12 +112,12 @@ Each source file should use the following guidelines
 - The source code file should be named `<class>.cs` and should be placed in a directory structure that matches its namespace relative to its project directory. Ex. `System\IO\Stream.cs` 
 - Larger nested classes should be factored out into their own source files using a partial class and the file name should be `<class>.<nested class>.cs`.
 - Classes that are forked based on configuration should have file names `<class>.<configuration>.cs`. 
- - Where `<configuration>` is one of `$(OSGroup)`, `$(TargetGroup)`, `$(ConfigurationGroup)`, or `$(Platform)`.
+ - Where `<configuration>` is one of `$(OSGroup)`, `$(TargetGroup)`, `$(ConfigurationGroup)`, or `$(Platform)`, matching exactly by case to ensure consistency.
 - Classes that are forked based on a feature set should have file names `<class>.<feature>.cs`.
- - Where `<feature>`is the name something that causes a fork in code that isn't a configuration such as WinRT support. Ex. `FileSystemInfo..WinRT.cs`.
+ - Where `<feature>`is the name of something that causes a fork in code that isn't a configuration such as WinRT support. Ex. `FileSystemInfo.WinRT.cs`.
  
 ## Define naming convention
-As mentioned in [Conventions for forked code](conventions-for-forked-code) `#ifdef`ing the code is the last resort as it makes code harder to maintain overtime. If we do need to use `#ifdef`'s we should following the conventions:
-- For defines based on conventions should be one of `$(OSGroup)`, `$(TargetGroup)`, `$(ConfigurationGroup)`, or `$(Platform)`.
+As mentioned in [Conventions for forked code](conventions-for-forked-code) `#ifdef`ing the code is the last resort as it makes code harder to maintain overtime. If we do need to use `#ifdef`'s we should use the following conventions:
+- Defines based on conventions should be one of `$(OSGroup)`, `$(TargetGroup)`, `$(ConfigurationGroup)`, or `$(Platform)`, matching exactly by case to ensure consistency. 
  - Examples: `<DefineConstants>$(DefineConstants),netcore50</DefineContants>`
-- Defines based on convention should match the pattern `FEATURE_[FeatureName]`. These can unique to a given library project or potentially shared (via name) across multiple projects.
+- Defines based on convention should match the pattern `FEATURE_<feature name>`. These can unique to a given library project or potentially shared (via name) across multiple projects.
