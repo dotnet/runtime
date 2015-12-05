@@ -1,12 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.ComponentModel;
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using Microsoft.Win32.SafeHandles;
+using Windows.Networking;
+using Windows.Networking.Connectivity;
 
 namespace System.Net.NetworkInformation
 {
@@ -33,37 +34,35 @@ namespace System.Net.NetworkInformation
         // This function needs to be switched back to private since it has no correspondent in the Unix world.
         public static Interop.IpHlpApi.FIXED_INFO GetFixedInfo()
         {
-            uint size = 0;
-            SafeLocalAllocHandle buffer = null;
             Interop.IpHlpApi.FIXED_INFO fixedInfo = new Interop.IpHlpApi.FIXED_INFO();
 
-            // First we need to get the size of the buffer
-            uint result = Interop.IpHlpApi.GetNetworkParams(SafeLocalAllocHandle.InvalidHandle, ref size);
+            IReadOnlyList<HostName> hostNamesList = Windows.Networking.Connectivity.NetworkInformation.GetHostNames();
 
-            while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
+            foreach (HostName entry in hostNamesList)
             {
-                // Now we allocate the buffer and read the network parameters.
-                using (buffer = Interop.mincore_obsolete.LocalAlloc(0, (UIntPtr)size))
+                // The first DomainName entry in the GetHostNames() list
+                // is the fdqn of the machine itself.
+                if (entry.Type == HostNameType.DomainName)
                 {
-                    if (buffer.IsInvalid)
+                    string host = entry.ToString();
+                    int dot = host.IndexOf('.');
+                    if (dot != -1)
                     {
-                        throw new OutOfMemoryException();
+                        // The machine is domain joined.
+                        fixedInfo.hostName = host.Substring(0, dot);
+                        fixedInfo.domainName = host.Substring(dot+1);
                     }
-
-                    result = Interop.IpHlpApi.GetNetworkParams(buffer, ref size);
-                    if (result == Interop.IpHlpApi.ERROR_SUCCESS)
+                    else
                     {
-                        fixedInfo = Marshal.PtrToStructure<Interop.IpHlpApi.FIXED_INFO>(buffer.DangerousGetHandle());
+                        // The machine is not domain joined.
+                        fixedInfo.hostName = host;
+                        fixedInfo.domainName = string.Empty;
                     }
+                    
+                    break;
                 }
             }
 
-            // If the result include there being no information, we'll still throw
-            if (result != Interop.IpHlpApi.ERROR_SUCCESS)
-            {
-                throw new Win32Exception((int)result);
-            }
-            
             return fixedInfo;
         }
 
