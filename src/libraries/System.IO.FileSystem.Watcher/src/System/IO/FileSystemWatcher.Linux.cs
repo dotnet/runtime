@@ -31,8 +31,8 @@ namespace System.IO
             SafeFileHandle handle;
             try { } finally
             {
-                int fd = Interop.Sys.INotifyInit();
-                if (fd == -1)
+                handle = Interop.Sys.INotifyInit();
+                if (handle.IsInvalid)
                 {
                     Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
                     switch (error.Error)
@@ -49,7 +49,6 @@ namespace System.IO
                             throw Interop.GetExceptionForIoErrno(error);
                     }
                 }
-                handle = new SafeFileHandle((IntPtr)fd, ownsHandle: true);
             }
 
             try
@@ -665,30 +664,17 @@ namespace System.IO
                                 // so we will send a DELETE for this event and a CREATE when the MOVED_TO is eventually processed.
                                 if (_bufferPos == _bufferAvailable)
                                 {
+                                    // Do the poll with a small timeout value.  Community research showed that a few milliseconds
+                                    // was enough to allow the vast majority of MOVED_TO events that were going to show
+                                    // up to actually arrive.  This doesn't need to be perfect; there's always the chance
+                                    // that a MOVED_TO could show up after whatever timeout is specified, in which case
+                                    // it'll just result in a delete + create instead of a rename.  We need the value to be
+                                    // small so that we don't significantly delay the delivery of the deleted event in case
+                                    // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
+                                    // for the next event to arrive).
+                                    const int MillisecondsTimeout = 2;
                                     Interop.Sys.PollEvents events;
-                                    bool gotRef = false;
-                                    try
-                                    {
-                                        _inotifyHandle.DangerousAddRef(ref gotRef);
-
-                                        // Do the poll with a small timeout value.  Community research showed that a few milliseconds
-                                        // was enough to allow the vast majority of MOVED_TO events that were going to show
-                                        // up to actually arrive.  This doesn't need to be perfect; there's always the chance
-                                        // that a MOVED_TO could show up after whatever timeout is specified, in which case
-                                        // it'll just result in a delete + create instead of a rename.  We need the value to be
-                                        // small so that we don't significantly delay the delivery of the deleted event in case
-                                        // that's actually what's needed (otherwise it'd be fine to block indefinitely waiting
-                                        // for the next event to arrive).
-                                        const int MillisecondsTimeout = 2;
-                                        Interop.Sys.Poll(_inotifyHandle.DangerousGetHandle().ToInt32(), Interop.Sys.PollEvents.POLLIN, MillisecondsTimeout, out events);
-                                    }
-                                    finally
-                                    {
-                                        if (gotRef)
-                                        {
-                                            _inotifyHandle.DangerousRelease();
-                                        }
-                                    }
+                                    Interop.Sys.Poll(_inotifyHandle, Interop.Sys.PollEvents.POLLIN, MillisecondsTimeout, out events);
 
                                     // If we error or don't have any signaled handles, send the deleted event
                                     if (events == Interop.Sys.PollEvents.POLLNONE)
@@ -851,39 +837,19 @@ namespace System.IO
             /// Arguments are expected to be passed via <paramref name="arg1"/> and <paramref name="arg2"/>
             /// so as to avoid delegate and closure allocations at the call sites.
             /// </remarks>
-            private long SysCall<TArg1, TArg2>(Func<int, TArg1, TArg2, long> sysCall, TArg1 arg1, TArg2 arg2, bool checkErrors = true)
+            private long SysCall<TArg1, TArg2>(Func<SafeFileHandle, TArg1, TArg2, long> sysCall, TArg1 arg1, TArg2 arg2, bool checkErrors = true)
             {
-                bool gotRefOnHandle = false;
-                try
-                {
-                    // Get the file descriptor from the handle.  We increment the ref count to help
-                    // ensure it's not closed out from under us.
-                    _inotifyHandle.DangerousAddRef(ref gotRefOnHandle);
-                    Debug.Assert(gotRefOnHandle);
-                    int fd = (int)_inotifyHandle.DangerousGetHandle();
-                    Debug.Assert(fd >= 0);
+                Debug.Assert((int)_inotifyHandle.DangerousGetHandle() >= 0);
 
-                    if (checkErrors)
-                    {
-                        long result;
-                        while (Interop.CheckIo(result = sysCall(fd, arg1, arg2), isDirectory: true)) ;
-                        return result;
-                    }
-                    else
-                    {
-                        return sysCall(fd, arg1, arg2);
-                    }
-                }
-                finally
+                if (checkErrors)
                 {
-                    if (gotRefOnHandle)
-                    {
-                        _inotifyHandle.DangerousRelease();
-                    }
-                    else
-                    {
-                        throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
-                    }
+                    long result;
+                    while (Interop.CheckIo(result = sysCall(_inotifyHandle, arg1, arg2), isDirectory: true)) ;
+                    return result;
+                }
+                else
+                {
+                    return sysCall(_inotifyHandle, arg1, arg2);
                 }
             }
 

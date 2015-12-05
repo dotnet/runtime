@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -31,6 +32,6 @@ internal static partial class Interop
         internal static extern IntPtr MMap(
             IntPtr addr, ulong len, 
             MemoryMappedProtections prot, MemoryMappedFlags flags,
-            int fd, long offset);
+            SafeFileHandle fd, long offset);
     }
 }

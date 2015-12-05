@@ -366,7 +366,7 @@ namespace System
         /// Gets whether the specified file descriptor was redirected.
         /// It's considered redirected if it doesn't refer to a terminal.
         /// </summary>
-        private static bool IsHandleRedirected(int fd)
+        private static bool IsHandleRedirected(SafeFileHandle fd)
         {
             return !Interop.Sys.IsATty(fd);
         }
@@ -853,7 +853,7 @@ namespace System
         /// <param name="offset">The offset at which to start writing into the buffer.</param>
         /// <param name="count">The maximum number of bytes to read.</param>
         /// <returns>The number of bytes read, or a negative value if there's an error.</returns>
-        internal static unsafe int Read(int fd, byte[] buffer, int offset, int count)
+        internal static unsafe int Read(SafeFileHandle fd, byte[] buffer, int offset, int count)
         {
             fixed (byte* bufPtr = buffer)
             {
@@ -869,7 +869,7 @@ namespace System
         /// <param name="buffer">The buffer from which to write data.</param>
         /// <param name="offset">The offset at which the data to write starts in the buffer.</param>
         /// <param name="count">The number of bytes to write.</param>
-        private static unsafe void Write(int fd, byte[] buffer, int offset, int count)
+        private static unsafe void Write(SafeFileHandle fd, byte[] buffer, int offset, int count)
         {
             fixed (byte* bufPtr = buffer)
             {
@@ -877,7 +877,7 @@ namespace System
             }
         }
 
-        private static unsafe void Write(int fd, byte* bufPtr, int count)
+        private static unsafe void Write(SafeFileHandle fd, byte* bufPtr, int count)
         {
             while (count > 0)
             {
@@ -961,21 +961,11 @@ namespace System
                 _handle = handle;
 
                 // Determine the type of the descriptor (e.g. regular file, character file, pipe, etc.)
-                bool gotFd = false;
-                try
-                {
-                    _handle.DangerousAddRef(ref gotFd);
-                    Interop.Sys.FileStatus buf;
-                    _handleType =
-                        Interop.Sys.FStat((int)_handle.DangerousGetHandle(), out buf) == 0 ?
-                            (buf.Mode & Interop.Sys.FileTypes.S_IFMT) :
-                            Interop.Sys.FileTypes.S_IFREG; // if something goes wrong, don't fail, just say it's a regular file
-                }
-                finally
-                {
-                    if (gotFd)
-                        _handle.DangerousRelease();
-                }
+                Interop.Sys.FileStatus buf;
+                _handleType =
+                Interop.Sys.FStat(_handle, out buf) == 0 ?
+                        (buf.Mode & Interop.Sys.FileTypes.S_IFMT) :
+                        Interop.Sys.FileTypes.S_IFREG; // if something goes wrong, don't fail, just say it's a regular file
             }
 
             protected override void Dispose(bool disposing)
@@ -990,38 +980,16 @@ namespace System
             public override int Read(byte[] buffer, int offset, int count)
             {
                 ValidateRead(buffer, offset, count);
-                bool gotFd = false;
-                try
-                {
-                    _handle.DangerousAddRef(ref gotFd);
-                    return ConsolePal.Read((int)_handle.DangerousGetHandle(), buffer, offset, count);
+
+                return ConsolePal.Read(_handle, buffer, offset, count);
                 }
-                finally
-                {
-                    if (gotFd)
-                    {
-                        _handle.DangerousRelease();
-                    }
-                }
-            }
 
             public override void Write(byte[] buffer, int offset, int count)
             {
                 ValidateWrite(buffer, offset, count);
-                bool gotFd = false;
-                try
-                {
-                    _handle.DangerousAddRef(ref gotFd);
-                    ConsolePal.Write((int)_handle.DangerousGetHandle(), buffer, offset, count);
+
+                ConsolePal.Write(_handle, buffer, offset, count);
                 }
-                finally
-                {
-                    if (gotFd)
-                    {
-                        _handle.DangerousRelease();
-                    }
-                }
-            }
 
             public override void Flush()
             {

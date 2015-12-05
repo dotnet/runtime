@@ -90,7 +90,7 @@ namespace System.Diagnostics
                             int totalBytesWritten = 0;
                             while (bufCount > 0)
                             {
-                                int bytesWritten = Interop.Sys.Write((int)fileHandle.DangerousGetHandle(), buf + totalBytesWritten, bufCount);
+                                int bytesWritten = Interop.Sys.Write(fileHandle, buf + totalBytesWritten, bufCount);
                                 if (bytesWritten < 0)
                                 {
                                     if (Interop.Sys.GetLastErrorInfo().Error == Interop.Error.EINTR)

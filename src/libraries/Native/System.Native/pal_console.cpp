@@ -35,9 +35,9 @@ extern "C" int32_t GetWindowSize(WinSize* windowSize)
 #endif
 }
 
-extern "C" int32_t IsATty(int fd)
+extern "C" int32_t IsATty(intptr_t fd)
 {
-    return isatty(fd);
+    return isatty(ToFileDescriptor(fd));
 }
 
 static bool g_initialized = false;

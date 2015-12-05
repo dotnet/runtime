@@ -521,7 +521,7 @@ namespace System.Net.Sockets
                 Debug.Assert(fd != -1);
 
                 // If the accept completed successfully, ensure that the accepted socket is non-blocking.
-                int err = Interop.Sys.Fcntl.SetIsNonBlocking(fd, 1);
+                int err = Interop.Sys.Fcntl.SetIsNonBlocking((IntPtr)fd, 1);
                 if (err == 0)
                 {
                     socketAddressLen = sockAddrLen;
@@ -532,7 +532,7 @@ namespace System.Net.Sockets
                 {
                     errorCode = GetSocketErrorForErrorCode(Interop.Sys.GetLastError());
                     acceptedFd = -1;
-                    Interop.Sys.Close(fd);
+                    Interop.Sys.Close((IntPtr)fd);
                 }
 
                 return true;

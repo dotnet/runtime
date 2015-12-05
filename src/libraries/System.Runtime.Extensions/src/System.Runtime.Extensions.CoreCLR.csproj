@@ -117,16 +117,16 @@
       <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetCwd.cs">
-      <Link>Common\Interop\Unix\libc\Interop.GetCwd.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.GetCwd.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetTimestamp.cs">
-      <Link>Common\Interop\Unix\libc\Interop.GetTimestamp.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.GetTimestamp.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.MksTemps.cs">
-      <Link>Common\Interop\Unix\libc\Interop.MksTemps.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.MksTemps.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PathConf.cs">
-      <Link>Common\Interop\Unix\libc\Interop.PathConf.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.PathConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs</Link>

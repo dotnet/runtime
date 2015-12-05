@@ -475,12 +475,8 @@ namespace Internal.Cryptography.Pal
                 Interop.Sys.Permissions.S_IRGRP |
                 Interop.Sys.Permissions.S_IWGRP;
 
-            // NOTE: no need to call DangerousAddRef here, since the FileStream is 
-            // held open outside of this method
-            int fileDescriptor = (int)stream.SafeFileHandle.DangerousGetHandle();
-
             Interop.Sys.FileStatus stat;
-            if (Interop.Sys.FStat(fileDescriptor, out stat) != 0)
+            if (Interop.Sys.FStat(stream.SafeFileHandle, out stat) != 0)
             {
                 Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
                 throw new CryptographicException(

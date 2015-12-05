@@ -4,21 +4,22 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern int INotifyInit();
+        internal static extern SafeFileHandle INotifyInit();
 
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern int INotifyAddWatch(int fd, string pathName, uint mask);
+        internal static extern int INotifyAddWatch(SafeFileHandle fd, string pathName, uint mask);
 
         [DllImport(Libraries.SystemNative, SetLastError = true, EntryPoint = "INotifyRemoveWatch")]
-        private static extern int INotifyRemoveWatch_private(int fd, int wd);
+        private static extern int INotifyRemoveWatch_private(SafeFileHandle fd, int wd);
 
-        internal static int INotifyRemoveWatch(int fd, int wd)
+        internal static int INotifyRemoveWatch(SafeFileHandle fd, int wd)
         {
             int result = INotifyRemoveWatch_private(fd, wd);
             if (result < 0)

@@ -3,12 +3,13 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, SetLastError = true)]
-        internal static extern bool IsATty(int fd);
+        internal static extern bool IsATty(SafeFileHandle fd);
     }
 }
