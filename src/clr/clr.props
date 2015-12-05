@@ -95,9 +95,9 @@
 
     <ClAdditionalOptions>$(ClAdditionalOptions) /Zm200</ClAdditionalOptions>
     <TargetDefines Condition="'$(BuildArchitecture)'=='i386'">$(BuildArchitecture);_X86_</TargetDefines>
-    <TargetDefines Condition="'$(BuildArchitecture)'=='amd64'">$(BuildArchitecture);_AMD64_</TargetDefines>
+    <TargetDefines Condition="'$(BuildArchitecture)'=='amd64'">$(BuildArchitecture);_AMD64_;BIT64</TargetDefines>
     <TargetDefines Condition="'$(BuildArchitecture)'=='arm'">$(BuildArchitecture);_ARM_</TargetDefines>
-    <TargetDefines Condition="'$(BuildArchitecture)'=='arm64'">$(BuildArchitecture);_ARM64_</TargetDefines>
+    <TargetDefines Condition="'$(BuildArchitecture)'=='arm64'">$(BuildArchitecture);_ARM64_;BIT64</TargetDefines>
 
     <TargetCpu Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'rotor_x86')">i386</TargetCpu>
     <TargetCpu Condition="('$(TargetArch)' == 'amd64') or ('$(TargetArch)' == 'rotor_amd64')">amd64</TargetCpu>

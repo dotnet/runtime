@@ -19,9 +19,9 @@
 class ObjHeader
 {
 private:
-#if defined(_WIN64)
+#if defined(BIT64)
     uint32_t m_uAlignpad;
-#endif // _WIN64
+#endif // BIT64
     uint32_t m_uSyncBlockValue;
 
 public:
