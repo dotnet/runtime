@@ -173,11 +173,11 @@ Abstract
 
 Parameter
   processId: process ID
-  registers: reg structure in which the machine registers value will be returned.
+  lpContext: context structure in which the machine registers value will be returned.
 Return
  returns TRUE if it succeeds, FALSE otherwise
 --*/
-BOOL CONTEXT_GetRegisters(DWORD processId, ucontext_t *registers)
+BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
 {
 #if HAVE_BSD_REGS_T
     int regFd = -1;
@@ -186,46 +186,11 @@ BOOL CONTEXT_GetRegisters(DWORD processId, ucontext_t *registers)
 
     if (processId == GetCurrentProcessId()) 
     {
-#if HAVE_GETCONTEXT
-        if (getcontext(registers) != 0)
-        {
-            ASSERT("getcontext() failed %d (%s)\n", errno, strerror(errno));
-            return FALSE;
-        }
-#elif HAVE_BSD_REGS_T
-        char buf[MAX_PATH];
-        struct reg bsd_registers;
-
-        sprintf_s(buf, sizeof(buf), "/proc/%d/regs", processId);
-
-        if ((regFd = PAL__open(buf, O_RDONLY)) == -1) 
-        {
-          ASSERT("PAL__open() failed %d (%s) \n", errno, strerror(errno));
-          return FALSE;
-        }
-
-        if (lseek(regFd, 0, 0) == -1)
-        {
-            ASSERT("lseek() failed %d (%s)\n", errno, strerror(errno));
-            goto EXIT;
-        }
-
-        if (read(regFd, &bsd_registers, sizeof(bsd_registers)) != sizeof(bsd_registers))
-        {
-            ASSERT("read() failed %d (%s)\n", errno, strerror(errno));
-            goto EXIT;
-        }
-
-#define ASSIGN_REG(reg) MCREG_##reg(registers->uc_mcontext) = BSDREG_##reg(bsd_registers);
-        ASSIGN_ALL_REGS
-#undef ASSIGN_REG
-
-#else
-#error "Don't know how to get current context on this platform!"
-#endif
+        CONTEXT_CaptureContext(lpContext);
     }
     else
     {
+        ucontext_t registers;
 #if HAVE_PT_REGS
         struct pt_regs ptrace_registers;
         if (ptrace((__ptrace_request)PT_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
@@ -239,9 +204,9 @@ BOOL CONTEXT_GetRegisters(DWORD processId, ucontext_t *registers)
         }
 
 #if HAVE_PT_REGS
-#define ASSIGN_REG(reg) MCREG_##reg(registers->uc_mcontext) = PTREG_##reg(ptrace_registers);
+#define ASSIGN_REG(reg) MCREG_##reg(registers.uc_mcontext) = PTREG_##reg(ptrace_registers);
 #elif HAVE_BSD_REGS_T
-#define ASSIGN_REG(reg) MCREG_##reg(registers->uc_mcontext) = BSDREG_##reg(ptrace_registers);
+#define ASSIGN_REG(reg) MCREG_##reg(registers.uc_mcontext) = BSDREG_##reg(ptrace_registers);
 #else
 #define ASSIGN_REG(reg)
 	ASSERT("Don't know how to get the context of another process on this platform!");
@@ -249,6 +214,8 @@ BOOL CONTEXT_GetRegisters(DWORD processId, ucontext_t *registers)
 #endif
         ASSIGN_ALL_REGS
 #undef ASSIGN_REG
+
+        CONTEXTFromNativeContext(&registers, lpContext, lpContext->ContextFlags);
     }
     
     bRet = TRUE;
@@ -275,7 +242,6 @@ CONTEXT_GetThreadContext(
          LPCONTEXT lpContext)
 {    
     BOOL ret = FALSE;
-    ucontext_t registers;
 
     if (lpContext == NULL)
     {
@@ -317,13 +283,11 @@ CONTEXT_GetThreadContext(
     if (lpContext->ContextFlags & 
         (CONTEXT_CONTROL | CONTEXT_INTEGER))
     {        
-        if (CONTEXT_GetRegisters(dwProcessId, &registers) == FALSE)
+        if (CONTEXT_GetRegisters(dwProcessId, lpContext) == FALSE)
         {
             SetLastError(ERROR_INTERNAL_ERROR);
             goto EXIT;
-        }
-
-        CONTEXTFromNativeContext(&registers, lpContext, lpContext->ContextFlags);        
+        }  
     }
 
     ret = TRUE;
