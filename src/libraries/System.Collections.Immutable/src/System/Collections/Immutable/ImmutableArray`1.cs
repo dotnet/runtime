@@ -922,6 +922,24 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Sorts the elements in the entire <see cref="ImmutableArray{T}"/> using
+        /// the specified <see cref="Comparison{T}"/>.
+        /// </summary>
+        /// <param name="comparison">
+        /// The <see cref="Comparison{T}"/> to use when comparing elements.
+        /// </param>
+        /// <returns>The sorted list.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="comparison"/> is null.</exception>
+        [Pure]
+        public ImmutableArray<T> Sort(Comparison<T> comparison)
+        {
+            Requires.NotNull(comparison, "comparison");
+
+            var self = this;
+            return self.Sort(Comparer<T>.Create(comparison));
+        }
+
+        /// <summary>
         /// Returns a sorted instance of this array.
         /// </summary>
         /// <param name="comparer">The comparer to use in sorting. If <c>null</c>, the default comparer is used.</param>

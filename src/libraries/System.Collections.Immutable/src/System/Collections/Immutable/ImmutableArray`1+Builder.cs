@@ -636,6 +636,25 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Sorts the elements in the entire array using
+            /// the specified <see cref="Comparison{T}"/>.
+            /// </summary>
+            /// <param name="comparison">
+            /// The <see cref="Comparison{T}"/> to use when comparing elements.
+            /// </param>
+            /// <exception cref="ArgumentNullException"><paramref name="comparison"/> is null.</exception>
+            [Pure]
+            public void Sort(Comparison<T> comparison)
+            {
+                Requires.NotNull(comparison, "comparison");
+
+                if (Count > 1)
+                {
+                    Array.Sort(_elements, comparison);
+                }
+            }
+
+            /// <summary>
             /// Sorts the array.
             /// </summary>
             /// <param name="comparer">The comparer to use in sorting. If <c>null</c>, the default comparer is used.</param>
