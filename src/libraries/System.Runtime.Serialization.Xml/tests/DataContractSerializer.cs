@@ -101,7 +101,7 @@ public static partial class DataContractSerializerTests
     {
         foreach (decimal value in new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue })
         {
-            Assert.StrictEqual(SerializeAndDeserialize<decimal>(value, string.Format(@"<decimal xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</decimal>", value.ToString())), value);
+            Assert.StrictEqual(SerializeAndDeserialize<decimal>(value, string.Format(@"<decimal xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">{0}</decimal>", value.ToString(CultureInfo.InvariantCulture))), value);
         }
     }
 
