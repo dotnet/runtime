@@ -36,7 +36,7 @@ foreach(CONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
 endforeach()
 
 if (CLR_CMAKE_PLATFORM_ARCH_I386)
-    set_source_files_properties(${VM_SOURCES_WKS_ARCH_ASM} PROPERTIES COMPILE_FLAGS "/Zm")
+    set_source_files_properties(${VM_SOURCES_WKS_ARCH_ASM} PROPERTIES COMPILE_FLAGS "/Zm /safeseh")
 endif (CLR_CMAKE_PLATFORM_ARCH_I386)
 
 # Convert AsmConstants.h into AsmConstants.inc
