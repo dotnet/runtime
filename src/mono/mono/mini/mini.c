@@ -2566,10 +2566,13 @@ mono_codegen (MonoCompile *cfg)
  
 	if (cfg->verbose_level > 0) {
 		char* nm = mono_method_full_name (cfg->method, TRUE);
-		g_print ("Method %s emitted at %p to %p (code length %d) [%s]\n", 
+		char *opt_descr = mono_opt_descr (cfg->opt);
+		g_print ("Method %s emitted at %p to %p (code length %d) [%s] with opts %s\n", 
 				 nm, 
-				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len, cfg->domain->friendly_name);
+				 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len, cfg->domain->friendly_name,
+				 opt_descr);
 		g_free (nm);
+		g_free (opt_descr);
 	}
 
 	{

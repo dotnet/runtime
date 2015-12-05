@@ -150,7 +150,7 @@ extern char *nacl_mono_path;
 #define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT | MONO_OPT_FLOAT32)
 
 static guint32
-parse_optimizations (guint32 opt, const char* p)
+parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 {
 	guint32 exclude = 0;
 	const char *n;
@@ -160,8 +160,10 @@ parse_optimizations (guint32 opt, const char* p)
 	mono_hwcap_init ();
 
 	/* call out to cpu detection code here that sets the defaults ... */
-	opt |= mono_arch_cpu_optimizations (&exclude);
-	opt &= ~exclude;
+	if (cpu_opts) {
+		opt |= mono_arch_cpu_optimizations (&exclude);
+		opt &= ~exclude;
+	}
 	if (!p)
 		return opt;
 
@@ -287,12 +289,12 @@ mono_parse_default_optimizations (const char* p)
 {
 	guint32 opt;
 
-	opt = parse_optimizations (DEFAULT_OPTIMIZATIONS, p);
+	opt = parse_optimizations (DEFAULT_OPTIMIZATIONS, p, TRUE);
 	return opt;
 }
 
-static char*
-opt_descr (guint32 flags) {
+char*
+mono_opt_descr (guint32 flags) {
 	GString *str = g_string_new ("");
 	int i, need_comma;
 
@@ -361,7 +363,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 	int i;
 
 	mono_set_defaults (verbose, opt_flags);
-	n = opt_descr (opt_flags);
+	n = mono_opt_descr (opt_flags);
 	g_print ("Test run: image=%s, opts=%s\n", mono_image_get_filename (image), n);
 	g_free (n);
 	cfailed = failed = run = code_size = 0;
@@ -455,7 +457,7 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		fprintf (mini_stats_fd, "$graph->set_legend(qw(");
 		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); opt++) {
 			guint32 opt_flags = opt_sets [opt];
-			n = opt_descr (opt_flags);
+			n = mono_opt_descr (opt_flags);
 			if (!n [0])
 				n = (char *)"none";
 			if (opt)
@@ -1374,10 +1376,10 @@ mono_jit_parse_options (int argc, char * argv[])
 			opt->soft_breakpoints = TRUE;
 			opt->explicit_null_checks = TRUE;
 		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
-			opt = parse_optimizations (opt, argv [i] + 11);
+			opt = parse_optimizations (opt, argv [i] + 11, TRUE);
 			mono_set_optimizations (opt);
 		} else if (strncmp (argv [i], "-O=", 3) == 0) {
-			opt = parse_optimizations (opt, argv [i] + 3);
+			opt = parse_optimizations (opt, argv [i] + 3, TRUE);
 			mono_set_optimizations (opt);
 		} else if (strcmp (argv [i], "--trace") == 0) {
 			trace_options = (char*)"";
@@ -1589,7 +1591,7 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--single-method=", 16) == 0) {
 			char *full_opts = g_strdup_printf ("-all,%s", argv [i] + 16);
 			action = DO_SINGLE_METHOD_REGRESSION;
-			mono_single_method_regression_opt = parse_optimizations (opt, full_opts);
+			mono_single_method_regression_opt = parse_optimizations (opt, full_opts, TRUE);
 			g_free (full_opts);
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose++;
@@ -1639,9 +1641,20 @@ mono_main (int argc, char* argv[])
 			}
 			mini_stats_fd = fopen (argv [++i], "w+");
 		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
-			opt = parse_optimizations (opt, argv [i] + 11);
+			opt = parse_optimizations (opt, argv [i] + 11, TRUE);
 		} else if (strncmp (argv [i], "-O=", 3) == 0) {
-			opt = parse_optimizations (opt, argv [i] + 3);
+			opt = parse_optimizations (opt, argv [i] + 3, TRUE);
+		} else if (strncmp (argv [i], "--bisect=", 9) == 0) {
+			char *param = argv [i] + 9;
+			char *sep = strchr (param, ':');
+			if (!sep) {
+				fprintf (stderr, "Error: --bisect requires OPT:FILENAME\n");
+				return 1;
+			}
+			char *opt_string = g_strndup (param, sep - param);
+			guint32 opt = parse_optimizations (0, opt_string, FALSE);
+			g_free (opt_string);
+			mono_set_bisect_methods (opt, sep + 1);
 		} else if (strcmp (argv [i], "--gc=sgen") == 0) {
 			switch_gc (argv, "sgen");
 		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
@@ -2158,7 +2171,7 @@ mono_main (int argc, char* argv[])
 			fprintf (mini_stats_fd, "[");
 			for (i = 0; i < G_N_ELEMENTS (opt_sets); i++) {
 				opt = opt_sets [i];
-				n = opt_descr (opt);
+				n = mono_opt_descr (opt);
 				if (!n [0])
 					n = "none";
 				fprintf (mini_stats_fd, "\"%s\",", n);
