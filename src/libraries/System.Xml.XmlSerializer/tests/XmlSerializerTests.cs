@@ -4,6 +4,7 @@
 using SerializationTypes;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -102,7 +103,7 @@ public static partial class XmlSerializerTests
         foreach (decimal value in new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue })
         {
             Assert.StrictEqual(SerializeAndDeserialize<decimal>(value, string.Format(@"<?xml version=""1.0""?>
-<decimal>{0}</decimal>", value.ToString())), value);
+<decimal>{0}</decimal>", value.ToString(CultureInfo.InvariantCulture))), value);
         }
     }
 
