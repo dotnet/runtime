@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Diagnostics.StackTrace</AssemblyName>
+    <ProjectGuid>{02304469-722E-4723-92A1-820B9A37D275}</ProjectGuid>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'!='netcore50aot'">true</IsPartialFacadeAssembly>
+    <AssemblyVersion>4.0.1.0</AssemblyVersion>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcore50aot_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
+    <TargetingPackReference Include="mscorlib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
+    <TargetingPackReference Include="System.Private.CoreLib"/>
+    <TargetingPackReference Include="System.Private.Reflection" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
+      <AdditionalProperties>TargetGroup=$(TargetGroup)</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='netcore50aot'">
+    <Compile Include="System\Diagnostics\StackFrameExtensions.dnxcore50.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcore50aot'">
+    <Compile Include="System\Diagnostics\StackTrace.netcore50aot.cs" />
+    <Compile Include="System\Diagnostics\StackFrame.netcore50aot.cs" />
+    <Compile Include="System\Diagnostics\StackFrameExtensions.netcore50aot.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
