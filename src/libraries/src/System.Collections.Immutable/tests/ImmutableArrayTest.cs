@@ -1162,10 +1162,24 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void Sort_Comparison()
+        {
+            var array = ImmutableArray.Create(2, 4, 1, 3);
+            Assert.Equal(new[] { 4, 3, 2, 1 }, array.Sort((x, y) => y.CompareTo(x)));
+            Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array unaffected.
+        }
+
+        [Fact]
+        public void Sort_NullComparison_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => ImmutableArray.Create<int>().Sort((Comparison<int>)null));
+        }
+
+        [Fact]
         public void SortNullComparer()
         {
             var array = ImmutableArray.Create(2, 4, 1, 3);
-            Assert.Equal(new[] { 1, 2, 3, 4 }, array.Sort(null));
+            Assert.Equal(new[] { 1, 2, 3, 4 }, array.Sort((IComparer<int>)null));
             Assert.Equal(new[] { 2, 1, 4, 3 }, array.Sort(1, 2, null));
             Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array unaffected.
         }

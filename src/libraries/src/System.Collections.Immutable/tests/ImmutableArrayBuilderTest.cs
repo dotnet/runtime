@@ -285,12 +285,27 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void Sort_Comparison()
+        {
+            var builder = new ImmutableArray<int>.Builder();
+            builder.AddRange(2, 4, 1, 3);
+            builder.Sort((x, y) => y.CompareTo(x));
+            Assert.Equal(new[] { 4, 3, 2, 1 }, builder);
+        }
+
+        [Fact]
+        public void Sort_NullComparison_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => ImmutableArray.CreateBuilder<int>().Sort((Comparison<int>)null));
+        }
+
+        [Fact]
         public void SortNullComparer()
         {
             var template = ImmutableArray.Create(2, 4, 1, 3);
 
             var builder = template.ToBuilder();
-            builder.Sort(null);
+            builder.Sort((IComparer<int>)null);
             Assert.Equal(new[] { 1, 2, 3, 4 }, builder);
 
             builder = template.ToBuilder();
