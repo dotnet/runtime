@@ -5613,6 +5613,18 @@ PALIMPORT
 DWORD
 PALAPI
 GetCurrentProcessorNumber();
+
+/*++
+Function:
+PAL_HasGetCurrentProcessorNumber
+
+Checks if GetCurrentProcessorNumber is available in the current environment
+
+--*/
+PALIMPORT
+BOOL
+PALAPI
+PAL_HasGetCurrentProcessorNumber();
     
 #define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
 #define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
