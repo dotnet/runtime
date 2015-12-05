@@ -490,17 +490,15 @@ if (WIN32)
 endif(WIN32)
 # Definition directives
 
-
+  if(IS_64BIT_BUILD)
+    add_definitions(-DBIT64=1)
+  endif(IS_64BIT_BUILD)
 
 if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DFEATURE_PAL_SXS)
   add_definitions(-DFEATURE_COREFX_GLOBALIZATION)
   add_definitions(-DFEATURE_PAL)
 
-  if(IS_64BIT_BUILD)
-    add_definitions(-DBIT64=1)
-  endif(IS_64BIT_BUILD)
-  
   if(CLR_CMAKE_PLATFORM_DARWIN)
     add_definitions(-D_XOPEN_SOURCE)
   endif(CLR_CMAKE_PLATFORM_DARWIN)
