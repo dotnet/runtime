@@ -13,6 +13,9 @@ public class Bridge {
 }
 
 class Driver {
+	static void LogLine (string message) {
+		Console.WriteLine ("[" + DateTime.Now + "] " + message);
+	}
 	//we fill 16Mb worth of stuff, eg, 256k objects
 	const int major_fill = 1024 * 256;
 
@@ -24,7 +27,7 @@ class Driver {
 		for (int i = 0; i < major_fill; ++i)
 			arr [i] = new NonBridge ();
 		GC.Collect (1);
-		Console.WriteLine ("major fill done");
+		LogLine ("major fill done");
 
 		//induce massive fragmentation
 		for (int i = 0; i < major_fill; i += 4) {
@@ -33,7 +36,7 @@ class Driver {
 			arr [i + 3] = null;
 		}
 		GC.Collect (1);
-		Console.WriteLine ("fragmentation done");
+		LogLine ("fragmentation done");
 
 		//since 50% is garbage, do 2 fill passes
 		for (int j = 0; j < 2; ++j) {
@@ -44,7 +47,7 @@ class Driver {
 					arr [i] = new Bridge ();
 			}
 		}
-		Console.WriteLine ("done spewing bridges");
+		LogLine ("done spewing bridges");
 		
 		for (int i = 0; i < major_fill; ++i)
 			arr [i] = null;
@@ -55,10 +58,10 @@ class Driver {
 	static void Main () {
 		const int loops = 4;
 		for (int i = 0; i < loops; ++i) {
-			Console.WriteLine ("CrashLoop {0}/{1}", i + 1, loops);
+			LogLine ("CrashLoop " + (i + 1) + "/" + loops);
 			CrashMainLoop ();
 		}
-		Console.WriteLine ("done");
+		LogLine ("done");
 		GC.Collect ();
 		GC.WaitForPendingFinalizers ();
 		GC.Collect ();
