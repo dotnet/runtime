@@ -3568,16 +3568,43 @@ property_hash (gconstpointer data)
 }
 
 static gboolean
+method_declaring_signatures_equal (MonoMethod *method1, MonoMethod *method2)
+{
+	if (method1->is_inflated)
+		method1 = ((MonoMethodInflated*) method1)->declaring;
+	if (method2->is_inflated)
+		method2 = ((MonoMethodInflated*) method2)->declaring;
+
+	return mono_metadata_signature_equal (mono_method_signature (method1), mono_method_signature (method2));
+}
+
+static gboolean
 property_equal (MonoProperty *prop1, MonoProperty *prop2)
 {
 	// Properties are hide-by-name-and-signature
 	if (!g_str_equal (prop1->name, prop2->name))
 		return FALSE;
 
-	if (prop1->get && prop2->get && !mono_metadata_signature_equal (mono_method_signature (prop1->get), mono_method_signature (prop2->get)))
+	/* If we see a property in a generic method, we want to
+	   compare the generic signatures, not the inflated signatures
+	   because we might conflate two properties that were
+	   distinct:
+
+	   class Foo<T,U> {
+	     public T this[T t] { getter { return t; } } // method 1
+	     public U this[U u] { getter { return u; } } // method 2
+	   }
+
+	   If we see int Foo<int,int>::Item[int] we need to know if
+	   the indexer came from method 1 or from method 2, and we
+	   shouldn't conflate them.   (Bugzilla 36283)
+	*/
+	if (prop1->get && prop2->get && !method_declaring_signatures_equal (prop1->get, prop2->get))
 		return FALSE;
-	if (prop1->set && prop2->set && !mono_metadata_signature_equal (mono_method_signature (prop1->set), mono_method_signature (prop2->set)))
+
+	if (prop1->set && prop2->set && !method_declaring_signatures_equal (prop1->set, prop2->set))
 		return FALSE;
+
 	return TRUE;
 }
 
