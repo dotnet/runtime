@@ -332,6 +332,27 @@ ___CxxFrameHandler3 ENDP
 endif ; _DEBUG
 endif ; FEATURE_CORECLR
 
+; Register CLR exception handlers defined on the C++ side with SAFESEH.
+; Note that these directives must be in a file that defines symbols that will be used during linking,
+; otherwise it's possible that the resulting .obj will completly be ignored by the linker and these
+; directives will have no effect.
+COMPlusFrameHandler proto c
+.safeseh COMPlusFrameHandler
+
+COMPlusNestedExceptionHandler proto c
+.safeseh COMPlusNestedExceptionHandler
+
+FastNExportExceptHandler proto c
+.safeseh FastNExportExceptHandler
+
+UMThunkPrestubHandler proto c
+.safeseh UMThunkPrestubHandler
+
+ifdef FEATURE_COMINTEROP
+COMPlusFrameHandlerRevCom proto c
+.safeseh COMPlusFrameHandlerRevCom
+endif
+
 ; Note that RtlUnwind trashes EBX, ESI and EDI, so this wrapper preserves them
 CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, callback :DWORD, pExceptionRecord :DWORD, retVal :DWORD
 
