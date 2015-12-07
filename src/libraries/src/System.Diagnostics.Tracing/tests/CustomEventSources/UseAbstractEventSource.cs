@@ -1,18 +1,14 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 
-#if false
 using System.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif // USE_MDT_EVENTSOURCE
 
 // We wish to test both Microsoft.Diagnostics.Tracing (Nuget)
 // and System.Diagnostics.Tracing (Framewwork), we use this Ifdef make each kind 
-#if false
-namespace MdtEventSources
-#else
+
 namespace SdtEventSources
-#endif
 {
     public abstract class UtilBaseEventSource : EventSource
     {
@@ -38,7 +34,7 @@ namespace SdtEventSources
             }
         }
     }
-    
+
     [EventSource(Name = "OptimizedEventSource")]
     public sealed class OptimizedEventSource : UtilBaseEventSource
     {
@@ -48,17 +44,13 @@ namespace SdtEventSources
             : base(true)
         { }
 
-        [Event(1, 
-#if false
-            Channel = EventChannel.Admin, 
-#endif
+        [Event(1,
+            Channel = EventChannel.Admin,
             Keywords = Keywords.Kwd1, Level = EventLevel.Informational, Message = "WriteIntToAdmin called with argument {0}")]
         public void WriteToAdmin(int n, short sh, long l)
         {
             if (IsEnabled(EventLevel.Informational, Keywords.Kwd1
-#if false
                 , EventChannel.Admin
-#endif
                 ))
                 WriteEvent(1, n, sh, l);
         }

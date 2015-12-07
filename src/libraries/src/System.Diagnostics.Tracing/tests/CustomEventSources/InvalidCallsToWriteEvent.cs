@@ -1,17 +1,13 @@
-﻿using System;
-#if false
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif // USE_MDT_EVENTSOURCE
 
 // We wish to test both Microsoft.Diagnostics.Tracing (Nuget)
 // and System.Diagnostics.Tracing (Framewwork), we use this Ifdef make each kind 
-#if false
-namespace MdtEventSources
-#else
+
 namespace SdtEventSources
-#endif
 {
     public sealed class InvalidCallsToWriteEventEventSource : EventSource
     {

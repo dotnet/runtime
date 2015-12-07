@@ -1,31 +1,34 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics.Tracing;
 using Xunit;
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
 using Microsoft.Diagnostics.Tracing.Session;
 #endif
 using System.Diagnostics;
 
 namespace BasicEventSourceTests
 {
-    enum Color {  Red, Blue, Green };
-    enum ColorUInt32 : uint { Red, Blue, Green };
-    enum ColorByte : byte { Red, Blue, Green };
-    enum ColorSByte : sbyte { Red, Blue, Green };
-    enum ColorInt16 : short { Red, Blue, Green };
-    enum ColorUInt16 : ushort { Red, Blue, Green };
-    enum ColorInt64 : long { Red, Blue, Green };
-    enum ColorUInt64 : ulong { Red, Blue, Green };
+    internal enum Color { Red, Blue, Green };
+    internal enum ColorUInt32 : uint { Red, Blue, Green };
+    internal enum ColorByte : byte { Red, Blue, Green };
+    internal enum ColorSByte : sbyte { Red, Blue, Green };
+    internal enum ColorInt16 : short { Red, Blue, Green };
+    internal enum ColorUInt16 : ushort { Red, Blue, Green };
+    internal enum ColorInt64 : long { Red, Blue, Green };
+    internal enum ColorUInt64 : ulong { Red, Blue, Green };
 
-    
+
     public class TestsWrite
     {
         [EventData]
-        struct PartB_UserInfo
+        private struct PartB_UserInfo
         {
             public string UserName { get; set; }
         }
@@ -34,27 +37,25 @@ namespace BasicEventSourceTests
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
         /// Tests the EventListener code path
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_Write_T_EventListener()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_Write_T(new EventListenerListener());
-            }
+            Test_Write_T(new EventListenerListener());
         }
+
         /// <summary>
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
         /// Tests the EventListener code path using events instead of virtual callbacks.
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_Write_T_EventListener_UseEvents()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_Write_T(new EventListenerListener(true));
-            }
+            Test_Write_T(new EventListenerListener(true));
         }
-#if USE_ETW
+
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
         /// <summary>
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
         /// Tests the ETW code path
@@ -62,10 +63,7 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_Write_T_ETW()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_Write_T(new EtwListener());
-            }
+            Test_Write_T(new EtwListener());
         }
 #endif //USE_ETW
         /// <summary>
@@ -81,11 +79,11 @@ namespace BasicEventSourceTests
                 var tests = new List<SubTest>();
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/String",
-                    delegate()
+                    delegate ()
                     {
                         logger.Write("Greeting", new { msg = "Hello, world!" });
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("Greeting", evt.EventName);
@@ -95,11 +93,11 @@ namespace BasicEventSourceTests
                 /*************************************************************************/
                 decimal myMoney = 300;
                 tests.Add(new SubTest("Write/Basic/decimal",
-                    delegate()
+                    delegate ()
                     {
                         logger.Write("Decimal", new { money = myMoney });
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("Decimal", evt.EventName);
@@ -111,27 +109,26 @@ namespace BasicEventSourceTests
                 /*************************************************************************/
                 DateTime now = DateTime.Now;
                 tests.Add(new SubTest("Write/Basic/DateTime",
-                    delegate()
+                    delegate ()
                     {
                         logger.Write("DateTime", new { nowTime = now });
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("DateTime", evt.EventName);
                         var eventNow = evt.PayloadValue(0, "nowTime");
-
-                        // TODO FIX ME - We need to fix TraceEvent or in EventSource!!
-                        //Assert.Equal(eventNow, now);
+                        
+                        Assert.Equal(eventNow, now);
                     }));
                 /*************************************************************************/
-                byte[] byteArray = { 0, 1, 2, 3};
+                byte[] byteArray = { 0, 1, 2, 3 };
                 tests.Add(new SubTest("Write/Basic/byte[]",
-                    delegate()
+                    delegate ()
                     {
                         logger.Write("Bytes", new { bytes = byteArray });
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("Bytes", evt.EventName);
@@ -141,13 +138,13 @@ namespace BasicEventSourceTests
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/PartBOnly",
-                    delegate()
+                    delegate ()
                     {
                         // log just a PartB
                         logger.Write("UserInfo", new EventSourceOptions { Keywords = EventKeywords.None },
                                               new { _1 = new PartB_UserInfo { UserName = "Someone Else" } });
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("UserInfo", evt.EventName);
@@ -160,13 +157,13 @@ namespace BasicEventSourceTests
 
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/PartBAndC",
-                    delegate()
+                    delegate ()
                     {
                         // log a PartB and a PartC
                         logger.Write("Duration", new EventSourceOptions { Keywords = EventKeywords.None },
                                               new { _1 = new PartB_UserInfo { UserName = "Myself" }, msec = 10 });
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("Duration", evt.EventName);
@@ -197,23 +194,22 @@ namespace BasicEventSourceTests
                 /*************************************************************************/
 
                 /*************************************************************************/
-
-                // TODO FIX ME See why TraceEvent fails for (U)Int16, and short.
+                
                 GenerateArrayTest<Boolean>(ref tests, logger, new Boolean[] { false, true, false });
                 GenerateArrayTest<byte>(ref tests, logger, new byte[] { 1, 10, 100 });
                 GenerateArrayTest<sbyte>(ref tests, logger, new sbyte[] { 1, 10, 100 });
-                //GenerateArrayTest<Int16>(ref tests, logger, new Int16[] { 1, 10, 100 });
-                //GenerateArrayTest<UInt16>(ref tests, logger, new UInt16[] { 1, 10, 100 });
+                GenerateArrayTest<Int16>(ref tests, logger, new Int16[] { 1, 10, 100 });
+                GenerateArrayTest<UInt16>(ref tests, logger, new UInt16[] { 1, 10, 100 });
                 GenerateArrayTest<Int32>(ref tests, logger, new Int32[] { 1, 10, 100 });
                 GenerateArrayTest<UInt32>(ref tests, logger, new UInt32[] { 1, 10, 100 });
                 GenerateArrayTest<Int64>(ref tests, logger, new Int64[] { 1, 10, 100 });
                 GenerateArrayTest<UInt64>(ref tests, logger, new UInt64[] { 1, 10, 100 });
-                //GenerateArrayTest<Char>(ref tests, logger, new Char[] { 'a', 'c', 'b' });
+                GenerateArrayTest<Char>(ref tests, logger, new Char[] { 'a', 'c', 'b' });
                 GenerateArrayTest<Double>(ref tests, logger, new Double[] { 1, 10, 100 });
                 GenerateArrayTest<Single>(ref tests, logger, new Single[] { 1, 10, 100 });
                 GenerateArrayTest<IntPtr>(ref tests, logger, new IntPtr[] { (IntPtr)1, (IntPtr)10, (IntPtr)100 });
                 GenerateArrayTest<UIntPtr>(ref tests, logger, new UIntPtr[] { (UIntPtr)1, (UIntPtr)10, (UIntPtr)100 });
-                GenerateArrayTest<Guid>(ref tests, logger, new Guid[] { Guid.Empty, new Guid("121a11ee-3bcb-49cc-b425-f4906fb14f72")});
+                GenerateArrayTest<Guid>(ref tests, logger, new Guid[] { Guid.Empty, new Guid("121a11ee-3bcb-49cc-b425-f4906fb14f72") });
 
                 /*************************************************************************/
                 /*********************** DICTIONARY TESTING ******************************/
@@ -223,8 +219,7 @@ namespace BasicEventSourceTests
                 var dictInt = new Dictionary<string, int>() { { "elem1", 10 }, { "elem2", 20 } };
 
                 /*************************************************************************/
-                // TODO: enable when dictionary events are working again
-#if false
+#if false   // TODO: enable when dictionary events are working again. GitHub issue #4867.
                 tests.Add(new SubTest("Write/Dict/EventWithStringDict_C",
                     delegate()
                     {
@@ -308,11 +303,11 @@ namespace BasicEventSourceTests
                 /**************************** Empty Event TESTING ************************/
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/Message",
-                delegate()
+                delegate ()
                 {
                     logger.Write("EmptyEvent");
                 },
-                delegate(Event evt)
+                delegate (Event evt)
                 {
                     Assert.Equal(logger.Name, evt.ProviderName);
                     Assert.Equal("EmptyEvent", evt.EventName);
@@ -327,22 +322,22 @@ namespace BasicEventSourceTests
                 options.Opcode = EventOpcode.Info;
                 options.Tags = EventTags.None;
                 tests.Add(new SubTest("Write/Basic/MessageOptions",
-                delegate()
+                delegate ()
                 {
                     logger.Write("EmptyEvent", options);
                 },
-                delegate(Event evt)
+                delegate (Event evt)
                 {
                     Assert.Equal(logger.Name, evt.ProviderName);
                     Assert.Equal("EmptyEvent", evt.EventName);
                 }));
 
                 tests.Add(new SubTest("Write/Basic/WriteOfTWithOptios",
-                delegate()
+                delegate ()
                 {
                     logger.Write("OptionsEvent", options, new { OptionsEvent = "test options!" });
                 },
-                delegate(Event evt)
+                delegate (Event evt)
                 {
                     Assert.Equal(logger.Name, evt.ProviderName);
                     Assert.Equal("OptionsEvent", evt.EventName);
@@ -350,12 +345,12 @@ namespace BasicEventSourceTests
                 }));
 
                 tests.Add(new SubTest("Write/Basic/WriteOfTWithRefOptios",
-                delegate()
+                delegate ()
                 {
                     var v = new { OptionsEvent = "test ref options!" };
                     logger.Write("RefOptionsEvent", ref options, ref v);
                 },
-                delegate(Event evt)
+                delegate (Event evt)
                 {
                     Assert.Equal(logger.Name, evt.ProviderName);
                     Assert.Equal("RefOptionsEvent", evt.EventName);
@@ -366,7 +361,7 @@ namespace BasicEventSourceTests
                 delegate ()
                 {
                     string nullString = null;
-                    logger.Write("NullStringEvent", new { a = (string) null, b = nullString });
+                    logger.Write("NullStringEvent", new { a = (string)null, b = nullString });
                 },
                 delegate (Event evt)
                 {
@@ -379,12 +374,12 @@ namespace BasicEventSourceTests
                 Guid activityId = new Guid("00000000-0000-0000-0000-000000000001");
                 Guid relActivityId = new Guid("00000000-0000-0000-0000-000000000002");
                 tests.Add(new SubTest("Write/Basic/WriteOfTWithOptios",
-                delegate()
+                delegate ()
                 {
                     var v = new { ActivityMsg = "test activity!" };
                     logger.Write("ActivityEvent", ref options, ref activityId, ref relActivityId, ref v);
                 },
-                delegate(Event evt)
+                delegate (Event evt)
                 {
                     Assert.Equal(logger.Name, evt.ProviderName);
                     Assert.Equal("ActivityEvent", evt.EventName);
@@ -404,45 +399,43 @@ namespace BasicEventSourceTests
 
         /// <summary>
         /// This is not a user error but it is something unusual.   
-            /// You can use the Write API in a EventSource that was did not
+        /// You can use the Write API in a EventSource that was did not
         /// Declare SelfDescribingSerialization.  In that case THOSE
         /// events MUST use SelfDescribing serialization.  
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_Write_T_In_Manifest_Serialization()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                var listenerGenerators = new Func<Listener>[]
-            {
-#if USE_ETW
+            var listenerGenerators = new Func<Listener>[]
+        {
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
                 () => new EtwListener(),
 #endif // USE_ETW
                 () => new EventListenerListener()
-            };
+        };
 
-                foreach (Func<Listener> listenerGenerator in listenerGenerators)
+            foreach (Func<Listener> listenerGenerator in listenerGenerators)
+            {
+                var events = new List<Event>();
+                using (var listener = listenerGenerator())
                 {
-                    var events = new List<Event>();
-                    using (var listener = listenerGenerator())
+                    Debug.WriteLine("Testing Listener " + listener);
+                    // Create an eventSource with manifest based serialization
+                    using (var logger = new SdtEventSources.EventSourceTest())
                     {
-                        Console.WriteLine("Testing Listener " + listener);
-                        // Create an eventSource with manifest based serialization
-                        using (var logger = new SdtEventSources.EventSourceTest())
-                        {
-                            listener.OnEvent = delegate (Event data) { events.Add(data); };
-                            listener.EventSourceSynchronousEnable(logger);
+                        listener.OnEvent = delegate (Event data) { events.Add(data); };
+                        listener.EventSourceSynchronousEnable(logger);
 
-                            // Use the Write<T> API.   This is OK
-                            logger.Write("MyTestEvent", new { arg1 = 3, arg2 = "hi" });
-                        }
+                        // Use the Write<T> API.   This is OK
+                        logger.Write("MyTestEvent", new { arg1 = 3, arg2 = "hi" });
                     }
-                    Assert.Equal(events.Count, 1);
-                    Event _event = events[0];
-                    Assert.Equal("MyTestEvent", _event.EventName);
-                    Assert.Equal(3, (int)_event.PayloadValue(0, "arg1"));
-                    Assert.Equal("hi", (string)_event.PayloadValue(1, "arg2"));
                 }
+                Assert.Equal(events.Count, 1);
+                Event _event = events[0];
+                Assert.Equal("MyTestEvent", _event.EventName);
+                Assert.Equal(3, (int)_event.PayloadValue(0, "arg1"));
+                Assert.Equal("hi", (string)_event.PayloadValue(1, "arg2"));
             }
         }
 
@@ -478,12 +471,12 @@ namespace BasicEventSourceTests
         {
             string typeName = array.GetType().GetElementType().ToString();
             tests.Add(new SubTest("Write/Array/" + typeName,
-                 delegate()
+                 delegate ()
                  {
                      // log an array
                      logger.Write("SomeEvent" + typeName, new { a = array, s = "end" });
                  },
-                 delegate(Event evt)
+                 delegate (Event evt)
                  {
                      Assert.Equal(logger.Name, evt.ProviderName);
                      Assert.Equal("SomeEvent" + typeName, evt.EventName);

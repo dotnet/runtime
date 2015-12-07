@@ -18,11 +18,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicEventSourceTest\Harness\EventTestHarness.cs" />
-    <Compile Include="BasicEventSourceTest\ExceptionAssert.cs" />
     <Compile Include="BasicEventSourceTest\FuzzyTests.cs" />
     <Compile Include="BasicEventSourceTest\Harness\Listeners.cs" />
     <Compile Include="BasicEventSourceTest\TestEventCounter.cs" />
-    <Compile Include="BasicEventSourceTest\TestsEventSourceReferences.cs" />
     <Compile Include="BasicEventSourceTest\TestShutdown.cs" />
     <Compile Include="BasicEventSourceTest\TestsEventSourceLifetime.cs" />
     <Compile Include="BasicEventSourceTest\TestsManifestGeneration.cs" />
@@ -35,6 +33,7 @@
     <Compile Include="BasicEventSourceTest\TestsWrite.cs" />
     <Compile Include="BasicEventSourceTest\TestsUserErrors.cs" />
     <Compile Include="BasicEventSourceTest\TestUtilities.cs" />
+    <Compile Include="BasicEventSourceTest\XUnitAssemblyAttributes.cs" />
     <!--EventSources for testing-->
     <Compile Include="CustomEventSources\EventSourceTest.cs" />
     <Compile Include="CustomEventSources\InvalidCallsToWriteEvent.cs" />

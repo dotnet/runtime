@@ -1,18 +1,15 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Linq;
-#if false
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif // USE_MDT_EVENTSOURCE
 
 // We wish to test both Microsoft.Diagnostics.Tracing (Nuget)
 // and System.Diagnostics.Tracing (Framewwork), we use this Ifdef make each kind 
-#if false
-namespace MdtEventSources
-#else
+
 namespace SdtEventSources
-#endif
 {
     /// <summary>
     /// A sample Event source. The Guid and Name attributes are "idempotent", i.e. they 
@@ -23,20 +20,13 @@ namespace SdtEventSources
     public sealed class EventSourceTest : EventSource
     {
         public EventSourceTest(bool useSelfDescribingEvents = false)
-#if false
-            : base(
-            useSelfDescribingEvents ? 
-                EventSourceSettings.ThrowOnEventWriteErrors :
-                EventSourceSettings.ThrowOnEventWriteErrors | EventSourceSettings.EtwManifestEventFormat)
-#else 
             : base(true)
-#endif
         { }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
-            Console.WriteLine("EventSourceTest: Got Command {0}", command.Command);
-            Console.WriteLine("  Args: " + string.Join(", ", command.Arguments.Select((pair) => string.Format("{0} -> {1}", pair.Key, pair.Value))));
+            Debug.WriteLine(String.Format("EventSourceTest: Got Command {0}", command.Command));
+            Debug.WriteLine("  Args: " + string.Join(", ", command.Arguments.Select((pair) => string.Format("{0} -> {1}", pair.Key, pair.Value))));
         }
 
         [Event(1, Keywords = Keywords.HasNoArgs, Level = EventLevel.Informational)]
@@ -87,7 +77,6 @@ namespace SdtEventSources
         // Make sure this is before any #if so it gets a deterministic ID
         public void EventNoAttributes(string s) { WriteEvent(16, s); }
 
-#if false
         [Event(17, Keywords = Keywords.Transfer | Keywords.HasStringArgs, Opcode = EventOpcode.Send, Task = Tasks.WorkItem)]
         unsafe public void LogTaskScheduled(Guid RelatedActivityId, string message)
         {
@@ -103,7 +92,6 @@ namespace SdtEventSources
                 }
             }
         }
-#endif
 
         [Event(18, Keywords = Keywords.HasStringArgs | Keywords.HasIntArgs, Level = EventLevel.Informational)]
         public void SlowerHelper(int arg1, string arg2)
@@ -122,7 +110,6 @@ namespace SdtEventSources
         [Event(22, Keywords = Keywords.HasEnumArgs, Level = EventLevel.Informational)]
         public void EventFlags1(MyFlags x) { WriteEvent(22, x); }
 
-#if false
         [Event(23, Keywords = Keywords.Transfer | Keywords.HasStringArgs, Opcode = EventOpcode.Send, Task = Tasks.WorkItemBad)]
         public void LogTaskScheduledBad(Guid RelatedActivityId, string message)
         {
@@ -138,9 +125,7 @@ namespace SdtEventSources
                 }
             }
         }
-#endif
 
-#if false
         // v4.5 does not support DateTime (until v4.5.1)
         [Event(24, Keywords = Keywords.HasDateTimeArgs,
          Message = "DateTime passed in: <{0}>",
@@ -148,23 +133,15 @@ namespace SdtEventSources
          Task = Tasks.WorkDateTime,
          Level = EventLevel.Informational)]
         public void EventDateTime(DateTime dt) { WriteEvent(24, dt); }
-#endif
 
         [Event(25, Keywords = Keywords.HasNoArgs, Level = EventLevel.Informational)]
-        public void EventWithManyTypeArgs(string msg, long l, uint ui, UInt64 ui64, 
-#if false
-                                          char ch,
-#endif
+        public void EventWithManyTypeArgs(string msg, long l, uint ui, UInt64 ui64,
                                           byte b, sbyte sb, short sh, ushort ush,
                                           float f, double d, Guid guid)
         {
             if (IsEnabled(EventLevel.Informational, Keywords.HasNoArgs))
-#if false
-                WriteEvent(25, msg, l, ui, ui64, ch, b, sb, sh, ush, f, d, guid);
-#else
                 // 4.5 EventSource does not support "Char" type
                 WriteEvent(25, msg, l, ui, ui64, b, sb, sh, ush, f, d, guid);
-#endif
         }
 
         [Event(26)]
@@ -175,7 +152,6 @@ namespace SdtEventSources
         public void EventWith9Strings(string s0, string s1, string s2, string s3, string s4, string s5, string s6, string s7, string s8)
         { WriteEvent(27, s0, s1, s2, s3, s4, s5, s6, s7, s8); }
 
-#if false
         [Event(28, Keywords = Keywords.Transfer | Keywords.HasNoArgs)]
         public void LogTransferNoOpcode(Guid RelatedActivityId)
         {
@@ -221,16 +197,12 @@ namespace SdtEventSources
                 }
             }
         }
-#endif
 
-#if false
         [Event(30)]
         // 4.5 EventSource does not support IntPtr args
         public void EventWithWeirdArgs(IntPtr iptr, bool b, MyLongEnum le /*, decimal dec*/)
         { WriteEvent(30, iptr, b, le /*, dec*/); }
-#endif
 
-#if false
         [Event(31, Keywords = Keywords.Transfer | Keywords.HasNoArgs, Level = EventLevel.Informational, Opcode = EventOpcode.Send, Task = Tasks.WorkWeirdArgs)]
         public void EventWithXferWeirdArgs(Guid RelatedActivityId, IntPtr iptr, bool b, MyLongEnum le /*, decimal dec */)
         {
@@ -249,27 +221,18 @@ namespace SdtEventSources
                 WriteEventWithRelatedActivityIdCore(31, &RelatedActivityId, 3 /*4*/, descrs);
             }
         }
-#endif
 
         [NonEvent]
         public void NonEvent()
         { EventNoAttributes(DateTime.Now.ToString()); }
 
-#if false
-        [Event(32, Level = EventLevel.Informational, Message="msg=\"{0}\", n={1}!")]
-#else
         // The above produces different results on 4.5 vs. 4.5.1. Skip the test for those EventSources
-        [Event(32, Level = EventLevel.Informational, Message="msg={0}, n={1}!")]
-#endif
+        [Event(32, Level = EventLevel.Informational, Message = "msg={0}, n={1}!")]
         public void EventWithEscapingMessage(string msg, int n)
         { WriteEvent(32, msg, n); }
 
-#if false
-        [Event(33, Level = EventLevel.Informational, Message = "{{msg}}=\"{0}!\" percentage={1}%")]
-#else
         // The above produces different results on 4.5 vs. 4.5.1. Skip the test for those EventSources
         [Event(33, Level = EventLevel.Informational, Message = "{{msg}}={0}! percentage={1}%")]
-#endif
         public void EventWithMoreEscapingMessage(string msg, int percentage)
         { WriteEvent(33, msg, percentage); }
 
@@ -342,7 +305,7 @@ namespace SdtEventSources
         {
             this.WriteEvent(49, i, j, k, str);
         }
-        
+
         /// <summary>
         /// This event, combined with the one after it, test whether an Event named "Foo" and one named
         /// "FooStart" can coexist.
@@ -407,7 +370,7 @@ namespace SdtEventSources
 
     public enum MyLongEnum : long
     {
-        LongVal1 = (long) 0x13 << 32,
+        LongVal1 = (long)0x13 << 32,
         LongVal2 = (long)0x20 << 32,
     }
 

@@ -1,5 +1,8 @@
-﻿using System.Diagnostics.Tracing;
-#if USE_ETW
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Diagnostics.Tracing;
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
 using Microsoft.Diagnostics.Tracing.Session;
 #endif
 using Xunit;
@@ -14,47 +17,41 @@ using System.Threading.Tasks;
 
 namespace BasicEventSourceTests
 {
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
     public class TestEventCounter
     {
         private sealed class MyEventSource : EventSource
         {
-            private EventCounter requestCounter;
-            private EventCounter errorCounter;
+            private EventCounter _requestCounter;
+            private EventCounter _errorCounter;
 
             public MyEventSource()
             {
-                this.requestCounter = new EventCounter("Request", this);
-                this.errorCounter = new EventCounter("Error", this);
+                _requestCounter = new EventCounter("Request", this);
+                _errorCounter = new EventCounter("Error", this);
             }
 
             public void Request(float elapsed)
             {
-                this.requestCounter.WriteMetric(elapsed);
+                _requestCounter.WriteMetric(elapsed);
             }
 
             public void Error()
             {
-                this.errorCounter.WriteMetric(1);
+                _errorCounter.WriteMetric(1);
             }
         }
 
         [Fact]
         public void Test_Write_Metric_EventListener()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_Write_Metric(new EventListenerListener());
-            }
+            Test_Write_Metric(new EventListenerListener());
         }
 
         [Fact]
         public void Test_Write_Metric_ETW()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_Write_Metric(new EtwListener());
-            }
+            Test_Write_Metric(new EtwListener());
         }
 
         private void Test_Write_Metric(Listener listener)
