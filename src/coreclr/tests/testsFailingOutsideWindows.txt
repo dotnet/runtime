@@ -13,6 +13,10 @@ JIT/Directed/PREFIX/unaligned/4/arglist/arglist.sh
 JIT/Directed/PREFIX/volatile/1/arglist/arglist.sh
 JIT/Directed/StructABI/StructABI/StructABI.sh
 JIT/Directed/TypedReference/TypedReference/TypedReference.sh
+JIT/Directed/UnrollLoop/loop6_cs_d/loop6_cs_d.sh
+JIT/Directed/UnrollLoop/loop6_cs_do/loop6_cs_do.sh
+JIT/Directed/UnrollLoop/loop6_cs_r/loop6_cs_r.sh
+JIT/Directed/UnrollLoop/loop6_cs_ro/loop6_cs_ro.sh
 JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgi_ref/_il_dbgi_ref.sh
 JIT/Methodical/ELEMENT_TYPE_IU/_il_dbgu_ref/_il_dbgu_ref.sh
 JIT/Methodical/ELEMENT_TYPE_IU/_il_reli_ref/_il_reli_ref.sh
@@ -21,6 +25,8 @@ JIT/Methodical/refany/array1/array1.sh
 JIT/Methodical/refany/array2/array2.sh
 JIT/Methodical/refany/format/format.sh
 JIT/Methodical/refany/gcreport/gcreport.sh
+JIT/Methodical/refany/_dbgstress1/_dbgstress1.sh
+JIT/Methodical/refany/_dbgstress3/_dbgstress3.sh
 JIT/Methodical/refany/_il_dbgarray1/_il_dbgarray1.sh
 JIT/Methodical/refany/_il_dbgarray2/_il_dbgarray2.sh
 JIT/Methodical/refany/_il_dbgarray3/_il_dbgarray3.sh
@@ -33,6 +39,12 @@ JIT/Methodical/refany/_il_relarray3/_il_relarray3.sh
 JIT/Methodical/refany/_il_relnative/_il_relnative.sh
 JIT/Methodical/refany/_il_relseq/_il_relseq.sh
 JIT/Methodical/refany/_il_relu_native/_il_relu_native.sh
+JIT/Methodical/refany/_relstress1/_relstress1.sh
+JIT/Methodical/refany/_relstress3/_relstress3.sh
+JIT/Methodical/refany/_speed_dbgstress1/_speed_dbgstress1.sh
+JIT/Methodical/refany/_speed_dbgstress3/_speed_dbgstress3.sh
+JIT/Methodical/refany/_speed_relstress1/_speed_relstress1.sh
+JIT/Methodical/refany/_speed_relstress3/_speed_relstress3.sh
 JIT/Methodical/refany/lcs/lcs.sh
 JIT/Methodical/refany/native/native.sh
 JIT/Methodical/refany/virtcall/virtcall.sh
@@ -76,7 +88,9 @@ JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b31746/b31746/b31746.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b37646/b37646/b37646.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b41852/b41852/b41852.sh
 JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b51575/b51575/b51575.sh
+JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b66533/b66533/b66533.sh
 JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b88793/b88793/b88793.sh
 JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b91248/b91248/b91248.sh
 JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748/b409748.sh
+JIT/Regression/VS-ia64-JIT/V1.2-Beta1/b302509/b302509/b302509.sh
 Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
