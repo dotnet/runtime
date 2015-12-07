@@ -761,9 +761,6 @@ mono_security_core_clr_require_elevated_permissions
 mono_security_core_clr_set_options
 mono_security_enable_core_clr
 mono_security_set_core_clr_platform_callback
-mono_sem_post
-mono_sem_timedwait
-mono_sem_wait
 mono_set_assemblies_path
 mono_set_break_policy
 mono_set_config_dir

@@ -250,7 +250,7 @@ mono_os_mutex_trylock (mono_mutex_t *mutex)
 static inline int
 mono_os_mutex_unlock (mono_mutex_t *mutex)
 {
-	LeaveCriticalSection (mutex));
+	LeaveCriticalSection (mutex);
 	return 0;
 }
 
