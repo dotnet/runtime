@@ -45,7 +45,6 @@
     <ClCompile Include="..\mono\utils\mono-math.c" />
     <ClCompile Include="..\mono\utils\mono-md5.c" />
     <ClCompile Include="..\mono\utils\mono-mmap.c" />
-    <ClCompile Include="..\mono\utils\mono-mutex.c" />
     <ClCompile Include="..\mono\utils\mono-networkinterfaces.c" />
     <ClCompile Include="..\mono\utils\mono-rand.c" />
     <ClCompile Include="..\mono\utils\mono-threads-state-machine.c" />
@@ -58,7 +57,6 @@
     <ClCompile Include="..\mono\utils\mono-proclib.c" />
     <ClCompile Include="..\mono\utils\mono-property-hash.c" />
     <ClCompile Include="..\mono\utils\mono-publib.c" />
-    <ClCompile Include="..\mono\utils\mono-semaphore.c" />
     <ClCompile Include="..\mono\utils\mono-sha1.c" />
     <ClCompile Include="..\mono\utils\mono-stdlib.c" />
     <ClCompile Include="..\mono\utils\mono-threads-mach.c" />
@@ -104,6 +102,8 @@
     <ClInclude Include="..\mono\utils\mono-complex.h" />
     <ClInclude Include="..\mono\utils\mono-conc-hashtable.h" />
     <ClInclude Include="..\mono\utils\mono-context.h" />
+    <ClInclude Include="..\mono\utils\mono-coop-mutex.h" />
+    <ClInclude Include="..\mono\utils\mono-coop-semaphore.h" />
     <ClInclude Include="..\mono\utils\mono-counters.h" />
     <ClInclude Include="..\mono\utils\mono-digest.h" />
     <ClInclude Include="..\mono\utils\mono-dl-fallback.h" />
@@ -120,15 +120,16 @@
     <ClInclude Include="..\mono\utils\mono-membar.h" />
     <ClInclude Include="..\mono\utils\mono-memory-model.h" />
     <ClInclude Include="..\mono\utils\mono-mmap.h" />
-    <ClInclude Include="..\mono\utils\mono-mutex.h" />
     <ClInclude Include="..\mono\utils\mono-networkinterfaces.h" />
+    <ClInclude Include="..\mono\utils\mono-once.h" />
+    <ClInclude Include="..\mono\utils\mono-os-mutex.h" />
+    <ClInclude Include="..\mono\utils\mono-os-semaphore.h" />
     <ClInclude Include="..\mono\utils\mono-path.h" />
     <ClInclude Include="..\mono\utils\mono-poll.h" />
     <ClInclude Include="..\mono\utils\mono-proclib.h" />
     <ClInclude Include="..\mono\utils\mono-property-hash.h" />
     <ClInclude Include="..\mono\utils\mono-publib.h" />
     <ClInclude Include="..\mono\utils\mono-rand.h" />
-    <ClInclude Include="..\mono\utils\mono-semaphore.h" />
     <ClInclude Include="..\mono\utils\mono-sigcontext.h" />
     <ClInclude Include="..\mono\utils\mono-stack-unwinding.h" />
     <ClInclude Include="..\mono\utils\mono-stdlib.h" />
