@@ -471,9 +471,6 @@ namespace System.Net
         [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
         public static string UrlDecode(string encodedValue)
         {
-            if (encodedValue == null)
-                return null;
-
             return UrlDecodeInternal(encodedValue, Encoding.UTF8);
         }
 

@@ -102,7 +102,8 @@ namespace System.Xml.Linq
         /// <returns>A formatted XML string.</returns>
         public override string ToString()
         {
-            StringBuilder sb = StringBuilderCache.Acquire("<?xml");
+            StringBuilder sb = StringBuilderCache.Acquire();
+            sb.Append("<?xml");
             if (_version != null)
             {
                 sb.Append(" version=\"");
