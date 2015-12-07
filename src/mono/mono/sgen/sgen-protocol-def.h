@@ -372,6 +372,13 @@ MATCH_INDEX (ptr == entry->cursor ? 1 : ptr == entry->value ? 2 : BINARY_PROTOCO
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY_HEAVY
 
+BEGIN_PROTOCOL_ENTRY_HEAVY4 (binary_protocol_mod_union_remset, TYPE_POINTER, obj, TYPE_POINTER, ptr, TYPE_POINTER, value, TYPE_POINTER, value_vtable)
+DEFAULT_PRINT ()
+IS_ALWAYS_MATCH (FALSE)
+MATCH_INDEX (ptr == entry->obj ? 0 : ptr == entry->ptr ? 1 : ptr == entry->value ? 2 : BINARY_PROTOCOL_NO_MATCH)
+IS_VTABLE_MATCH (ptr == entry->value_vtable)
+END_PROTOCOL_ENTRY_HEAVY
+
 #undef BEGIN_PROTOCOL_ENTRY0
 #undef BEGIN_PROTOCOL_ENTRY1
 #undef BEGIN_PROTOCOL_ENTRY2

@@ -166,16 +166,21 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 
 			block = MS_BLOCK_FOR_OBJ (obj);
 
-#ifdef COPY_OR_MARK_WITH_EVACUATION
-			{
-				int size_index = block->obj_size_index;
+#ifdef COPY_OR_MARK_CONCURRENT
+			if (G_UNLIKELY (major_block_is_evacuating (block))) {
+				/*
+				 * We don't copy within the concurrent phase. These objects will
+				 * be handled below in the finishing pause, by scanning the mod-union
+				 * card table.
+				 */
+				return FALSE;
+			}
+#endif
 
-				if (evacuate_block_obj_sizes [size_index] && !block->has_pinned) {
-					HEAVY_STAT (++stat_optimized_copy_major_small_evacuate);
-					if (block->is_to_space)
-						return FALSE;
-					goto do_copy_object;
-				}
+#ifdef COPY_OR_MARK_WITH_EVACUATION
+			if (major_block_is_evacuating (block)) {
+				HEAVY_STAT (++stat_optimized_copy_major_small_evacuate);
+				goto do_copy_object;
 			}
 #endif
 
@@ -218,19 +223,26 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 #ifdef COPY_OR_MARK_CONCURRENT
 #define HANDLE_PTR(ptr,obj)	do {					\
 		GCObject *__old = *(ptr);				\
-		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
+		binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
 		if (__old && !sgen_ptr_in_nursery (__old)) {            \
-			PREFETCH_READ (__old);				\
-			COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
+			MSBlockInfo *block = MS_BLOCK_FOR_OBJ (__old);	\
+			if (G_UNLIKELY (!sgen_ptr_in_nursery (ptr) &&	\
+					sgen_safe_object_is_small (__old, sgen_obj_get_descriptor (__old) & DESC_TYPE_MASK) && \
+					major_block_is_evacuating (block))) { \
+				mark_mod_union_card ((full_object), (void**)(ptr), __old); \
+			} else {					\
+				PREFETCH_READ (__old);			\
+				COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
+			}						\
 		} else {                                                \
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
-				mark_mod_union_card ((full_object), (void**)(ptr)); \
+				mark_mod_union_card ((full_object), (void**)(ptr), __old); \
 			}						\
 		} while (0)
 #else
 #define HANDLE_PTR(ptr,obj)	do {					\
 		void *__old = *(ptr);					\
-		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
+		binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
 		if (__old) {						\
 			gboolean __still_in_nursery = COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
 			if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \

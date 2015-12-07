@@ -170,8 +170,6 @@ static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 
 static gboolean *evacuate_block_obj_sizes;
 static float evacuation_threshold = 0.666f;
-static float concurrent_evacuation_threshold = 0.666f;
-static gboolean want_evacuation = FALSE;
 
 static gboolean lazy_sweep = FALSE;
 
@@ -245,7 +243,6 @@ static MSBlockInfo * volatile *free_block_lists [MS_BLOCK_TYPE_MAX];
 static guint64 stat_major_blocks_alloced = 0;
 static guint64 stat_major_blocks_freed = 0;
 static guint64 stat_major_blocks_lazy_swept = 0;
-static guint64 stat_major_objects_evacuated = 0;
 
 #if SIZEOF_VOID_P != 8
 static guint64 stat_major_blocks_freed_ideal = 0;
@@ -533,10 +530,11 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	 * Blocks that are to-space are not evacuated from.  During an major collection
 	 * blocks are allocated for two reasons: evacuating objects from the nursery and
 	 * evacuating them from major blocks marked for evacuation.  In both cases we don't
-	 * want further evacuation.
+	 * want further evacuation. We also don't want to evacuate objects allocated during
+	 * the concurrent mark since it would add pointless stress on the finishing pause.
 	 */
-	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD);
-	info->state = (info->is_to_space || sgen_concurrent_collection_in_progress ()) ? BLOCK_STATE_MARKING : BLOCK_STATE_SWEPT;
+	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD) || sgen_concurrent_collection_in_progress ();
+	info->state = info->is_to_space ? BLOCK_STATE_MARKING : BLOCK_STATE_SWEPT;
 	SGEN_ASSERT (6, !sweep_in_progress () || info->state == BLOCK_STATE_SWEPT, "How do we add a new block to be swept while sweeping?");
 	info->cardtable_mod_union = NULL;
 
@@ -1067,7 +1065,7 @@ major_get_cardtable_mod_union_for_reference (char *ptr)
  * Mark the mod-union card for `ptr`, which must be a reference within the object `obj`.
  */
 static void
-mark_mod_union_card (GCObject *obj, void **ptr)
+mark_mod_union_card (GCObject *obj, void **ptr, GCObject *value_obj)
 {
 	int type = sgen_obj_get_descriptor (obj) & DESC_TYPE_MASK;
 	if (sgen_safe_object_is_small (obj, type)) {
@@ -1077,6 +1075,18 @@ mark_mod_union_card (GCObject *obj, void **ptr)
 	} else {
 		sgen_los_mark_mod_union_card (obj, ptr);
 	}
+
+	binary_protocol_mod_union_remset (obj, ptr, value_obj, SGEN_LOAD_VTABLE (value_obj));
+}
+
+static inline gboolean
+major_block_is_evacuating (MSBlockInfo *block)
+{
+	if (evacuate_block_obj_sizes [block->obj_size_index] &&
+			!block->has_pinned &&
+			!block->is_to_space)
+		return TRUE;
+	return FALSE;
 }
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
@@ -1166,8 +1176,6 @@ static guint64 stat_drain_prefetch_fill_failures;
 static guint64 stat_drain_loops;
 #endif
 
-static void major_scan_object_with_evacuation (GCObject *start, mword desc, SgenGrayQueue *queue);
-
 #define COPY_OR_MARK_FUNCTION_NAME	major_copy_or_mark_object_no_evacuation
 #define SCAN_OBJECT_FUNCTION_NAME	major_scan_object_no_evacuation
 #define DRAIN_GRAY_STACK_FUNCTION_NAME	drain_gray_stack_no_evacuation
@@ -1221,7 +1229,7 @@ major_copy_or_mark_object_concurrent_canonical (GCObject **ptr, SgenGrayQueue *q
 static void
 major_copy_or_mark_object_concurrent_finish_canonical (GCObject **ptr, SgenGrayQueue *queue)
 {
-	major_copy_or_mark_object_no_evacuation (ptr, *ptr, queue);
+	major_copy_or_mark_object_with_evacuation (ptr, *ptr, queue);
 }
 
 static void
@@ -1610,8 +1618,6 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 static void
 sweep_finish (void)
 {
-	mword total_evacuate_heap = 0;
-	mword total_evacuate_saved = 0;
 	int i;
 
 	for (i = 0; i < num_block_obj_sizes; ++i) {
@@ -1625,15 +1631,7 @@ sweep_finish (void)
 		} else {
 			evacuate_block_obj_sizes [i] = FALSE;
 		}
-		{
-			mword total_bytes = block_obj_sizes [i] * sweep_slots_available [i];
-			total_evacuate_heap += total_bytes;
-			if (evacuate_block_obj_sizes [i])
-				total_evacuate_saved += total_bytes - block_obj_sizes [i] * sweep_slots_used [i];
-		}
 	}
-
-	want_evacuation = (float)total_evacuate_saved / (float)total_evacuate_heap > (1 - concurrent_evacuation_threshold);
 
 	set_sweep_state (SWEEP_STATE_SWEPT, SWEEP_STATE_COMPACTING);
 }
@@ -2411,7 +2409,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed);
 	mono_counters_register ("# major blocks lazy swept", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_lazy_swept);
-	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_objects_evacuated);
 #if SIZEOF_VOID_P != 8
 	mono_counters_register ("# major blocks freed ideally", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed_ideal);
 	mono_counters_register ("# major blocks freed less ideally", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed_less_ideal);
@@ -2424,10 +2421,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	concurrent_mark = is_concurrent;
 	collector->is_concurrent = is_concurrent;
 	collector->needs_thread_pool = is_concurrent || concurrent_sweep;
-	if (is_concurrent)
-		collector->want_synchronous_collection = &want_evacuation;
-	else
-		collector->want_synchronous_collection = NULL;
 	collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 	collector->supports_cardtable = TRUE;
 
@@ -2481,9 +2474,9 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		collector->major_ops_concurrent_start.drain_gray_stack = drain_gray_stack_concurrent;
 
 		collector->major_ops_concurrent_finish.copy_or_mark_object = major_copy_or_mark_object_concurrent_finish_canonical;
-		collector->major_ops_concurrent_finish.scan_object = major_scan_object_no_evacuation;
+		collector->major_ops_concurrent_finish.scan_object = major_scan_object_with_evacuation;
 		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_concurrent_finish;
-		collector->major_ops_concurrent_finish.drain_gray_stack = drain_gray_stack_no_evacuation;
+		collector->major_ops_concurrent_finish.drain_gray_stack = drain_gray_stack;
 	}
 
 #ifdef HEAVY_STATISTICS
@@ -2494,6 +2487,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Optimized copy major", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_major);
 	mono_counters_register ("Optimized copy major small fast", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_major_small_fast);
 	mono_counters_register ("Optimized copy major small slow", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_major_small_slow);
+	mono_counters_register ("Optimized copy major small evacuate", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_major_small_evacuate);
 	mono_counters_register ("Optimized copy major large", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_major_large);
 	mono_counters_register ("Optimized major scan", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_major_scan);
 	mono_counters_register ("Optimized major scan no refs", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_major_scan_no_refs);

@@ -80,7 +80,6 @@ gpointer    ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle);
 void        ves_icall_System_GC_register_ephemeron_array (MonoObject *array);
 MonoObject  *ves_icall_System_GC_get_ephemeron_tombstone (void);
 
-MonoBoolean ves_icall_Mono_Runtime_SetGCAllowSynchronousMajor (MonoBoolean flag);
 
 extern void mono_gc_init (void);
 extern void mono_gc_base_init (void);
@@ -110,9 +109,6 @@ void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 
 /*Ephemeron functionality. Sgen only*/
 gboolean    mono_gc_ephemeron_array_add (MonoObject *obj);
-
-/* To disable synchronous, evacuating collections - concurrent SGen only */
-gboolean    mono_gc_set_allow_synchronous_major (gboolean flag);
 
 MonoBoolean
 mono_gc_GCHandle_CheckCurrentDomain (guint32 gchandle);
