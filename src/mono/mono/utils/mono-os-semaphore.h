@@ -245,12 +245,6 @@ mono_os_sem_destroy (MonoSemType *sem)
 }
 
 static inline int
-mono_os_sem_wait (MonoSemType *sem, MonoSemFlags flags)
-{
-	return mono_os_sem_timedwait (sem, INFINITE, flags);
-}
-
-static inline int
 mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 {
 	gboolean res;
@@ -262,6 +256,12 @@ retry:
 		goto retry;
 
 	return res != WAIT_OBJECT_0 ? -1 : 0;
+}
+
+static inline int
+mono_os_sem_wait (MonoSemType *sem, MonoSemFlags flags)
+{
+	return mono_os_sem_timedwait (sem, INFINITE, flags);
 }
 
 static inline int
