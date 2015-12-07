@@ -215,6 +215,48 @@ static void init_type_builder_generics (MonoObject *type);
 #define ADDP_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADDP_OVERFLOW_UN (a, b))
 #define ADD_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADD4_OVERFLOW_UN (a, b))
 
+// The dynamic images list is only needed to support the mempool reference tracking feature in checked-build.
+static GPtrArray *dynamic_images;
+static mono_mutex_t dynamic_images_mutex;
+
+static inline void
+dynamic_images_lock (void)
+{
+	mono_os_mutex_lock (&dynamic_images_mutex);
+}
+
+static inline void
+dynamic_images_unlock (void)
+{
+	mono_os_mutex_unlock (&dynamic_images_mutex);
+}
+
+/**
+ * mono_find_dynamic_image_owner:
+ *
+ * Find the dynamic image, if any, which a given pointer is located in the memory of.
+ */
+MonoImage *
+mono_find_dynamic_image_owner (void *ptr)
+{
+	MonoImage *owner = NULL;
+	int i;
+
+	dynamic_images_lock ();
+
+	if (dynamic_images)
+	{
+		for (i = 0; !owner && i < dynamic_images->len; ++i) {
+			MonoImage *image = g_ptr_array_index (dynamic_images, i);
+			if (mono_mempool_contains_addr (image->mempool, ptr))
+				owner = image;
+		}
+	}
+
+	dynamic_images_unlock ();
+
+	return owner;
+}
 
 void
 mono_reflection_init (void)
@@ -5338,6 +5380,15 @@ create_dynamic_mono_image (MonoDynamicAssembly *assembly, char *assembly_name, c
 	
 	mono_profiler_module_loaded (&image->image, MONO_PROFILE_OK);
 
+	dynamic_images_lock ();
+
+	if (!dynamic_images)
+		dynamic_images = g_ptr_array_new ();
+
+	g_ptr_array_add (dynamic_images, image);
+
+	dynamic_images_unlock ();
+
 	return image;
 }
 #endif
@@ -5368,6 +5419,7 @@ mono_dynamic_image_release_gc_roots (MonoDynamicImage *image)
 	release_hashtable (&image->methodspec);
 }
 
+// Free dynamic image pass one: Free resources but not image itself
 void
 mono_dynamic_image_free (MonoDynamicImage *image)
 {
@@ -5438,8 +5490,16 @@ mono_dynamic_image_free (MonoDynamicImage *image)
 	for (i = 0; i < MONO_TABLE_NUM; ++i) {
 		g_free (di->tables [i].values);
 	}
-}	
 
+	dynamic_images_lock ();
+
+	if (dynamic_images)
+		g_ptr_array_remove (dynamic_images, di);
+
+	dynamic_images_unlock ();
+}
+
+// Free dynamic image pass two: Free image itself (might never get called in some debug modes)
 void
 mono_dynamic_image_free_image (MonoDynamicImage *image)
 {
@@ -10688,6 +10748,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		container->type_argc = count;
 		container->type_params = image_g_new0 (image, MonoGenericParamFull, count);
 		container->owner.method = m;
+		container->is_anonymous = FALSE; // Method is now known, container is no longer anonymous
 
 		m->is_generic = TRUE;
 		mono_method_set_generic_container (m, container);
@@ -11888,7 +11949,8 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 			 * Cannot set owner.method, since the MonoMethod is not created yet.
 			 * Set the image field instead, so type_in_image () works.
 			 */
-			gparam->mbuilder->generic_container->image = klass->image;
+			gparam->mbuilder->generic_container->is_anonymous = TRUE;
+			gparam->mbuilder->generic_container->owner.image = klass->image;
 		}
 		param->param.owner = gparam->mbuilder->generic_container;
 	} else if (gparam->tbuilder) {
@@ -11900,7 +11962,7 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 		param->param.owner = gparam->tbuilder->generic_container;
 	}
 
-	pklass = mono_class_from_generic_parameter ((MonoGenericParam *) param, image, gparam->mbuilder != NULL);
+	pklass = mono_class_from_generic_parameter_internal ((MonoGenericParam *) param);
 
 	gparam->type.type = &pklass->byval_arg;
 
