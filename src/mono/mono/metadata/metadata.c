@@ -28,7 +28,6 @@
 #include "abi-details.h"
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/bsearch.h>
-#include <mono/utils/atomic.h>
 
 /* Auxiliary structure used for caching inflated signatures */
 typedef struct {
@@ -1493,14 +1492,10 @@ mono_generic_inst_equal_full (const MonoGenericInst *a, const MonoGenericInst *b
 {
 	int i;
 
-	// An optimization: if the ids of two insts are the same, we know they are the same inst and don't check contents.
-	// Furthermore, because we perform early de-duping, if the ids differ, we know the contents differ.
-#ifndef MONO_SMALL_CONFIG // Optimization does not work in MONO_SMALL_CONFIG: There are no IDs
-	if (a->id && b->id) { // "id 0" means "object has no id"-- de-duping hasn't been performed yet, must check contents.
+#ifndef MONO_SMALL_CONFIG
+	if (a->id && b->id) {
 		if (a->id == b->id)
 			return TRUE;
-		// In signature-comparison mode id equality implies object equality, but this is not true for inequality.
-		// Two separate objects could have signature-equavalent contents.
 		if (!signature_only)
 			return FALSE;
 	}
@@ -1616,7 +1611,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	gboolean byref = FALSE;
 	gboolean pinned = FALSE;
 	const char *tmp_ptr;
-	int count = 0; // Number of mod arguments
+	int count = 0;
 	gboolean found;
 
 	/*
@@ -1650,7 +1645,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 		}
 	}
 
-	if (count) { // There are mods, so the MonoType will be of nonstandard size.
+	if (count) {
 		int size;
 
 		size = MONO_SIZEOF_TYPE + ((gint32)count) * sizeof (MonoCustomMod);
@@ -1658,12 +1653,12 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 		type->num_mods = count;
 		if (count > 64)
 			g_warning ("got more than 64 modifiers in type");
-	} else {     // The type is of standard size, so we can allocate it on the stack.
+	} else {
 		type = &stype;
 		memset (type, 0, MONO_SIZEOF_TYPE);
 	}
 
-	/* Iterate again, but now parse pinned, byref and custom modifiers */
+	/* Parse pinned, byref and custom modifiers */
 	found = TRUE;
 	count = 0;
 	while (found) {
@@ -1699,7 +1694,6 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	if (rptr)
 		*rptr = ptr;
 
-	// Possibly we can return an already-allocated type instead of the one we decoded
 	if (!type->num_mods && !transient) {
 		/* no need to free type here, because it is on the stack */
 		if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
@@ -1735,7 +1729,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	
 	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
 	
-	if (type == &stype) { // Type was allocated on the stack, so we need to copy it to safety
+	if (type == &stype) {
 		type = transient ? g_malloc (MONO_SIZEOF_TYPE) : mono_image_alloc (m, MONO_SIZEOF_TYPE);
 		memcpy (type, &stype, MONO_SIZEOF_TYPE);
 	}
@@ -2294,9 +2288,43 @@ retry:
 		goto retry;
 	case MONO_TYPE_FNPTR:
 		return signature_in_image (type->data.method, image);
-	case MONO_TYPE_VAR:
-	case MONO_TYPE_MVAR:
-		return image == get_image_for_generic_param (type->data.generic_param);
+	case MONO_TYPE_VAR: {
+		MonoGenericContainer *container = mono_type_get_generic_param_owner (type);
+		if (container) {
+			g_assert (!container->is_method);
+			/*
+			 * FIXME: The following check is here solely
+			 * for monodis, which uses the internal
+			 * function
+			 * mono_metadata_load_generic_params().  The
+			 * caller of that function needs to fill in
+			 * owner->klass or owner->method of the
+			 * returned struct, but monodis doesn't do
+			 * that.  The image unloading depends on that,
+			 * however, so a crash results without this
+			 * check.
+			 */
+			if (!container->owner.klass)
+				return container->image == image;
+			return container->owner.klass->image == image;
+		} else {
+			return type->data.generic_param->image == image;
+		}
+	}
+	case MONO_TYPE_MVAR: {
+		MonoGenericContainer *container = mono_type_get_generic_param_owner (type);
+		if (type->data.generic_param->image == image)
+			return TRUE;
+		if (container) {
+			g_assert (container->is_method);
+			if (!container->owner.method)
+				/* RefEmit created generic param whose method is not finished */
+				return container->image == image;
+			return container->owner.method->klass->image == image;
+		} else {
+			return type->data.generic_param->image == image;
+		}
+	}
 	default:
 		/* At this point, we should've avoided all potential allocations in mono_class_from_mono_type () */
 		return image == mono_class_from_mono_type (type)->image;
@@ -2327,12 +2355,11 @@ get_image_set (MonoImage **images, int nimages)
 	MonoImageSet *set;
 	GSList *l;
 
-	/* Common case: Image set contains corlib only. If we've seen that case before, we cached the set. */
+	/* Common case */
 	if (nimages == 1 && images [0] == mono_defaults.corlib && mscorlib_image_set)
 		return mscorlib_image_set;
 
 	/* Happens with empty generic instances */
-	// FIXME: Is corlib the correct thing to return here? If so, why? This may be an artifact of generic instances previously defaulting to allocating from corlib.
 	if (nimages == 0)
 		return mscorlib_image_set;
 
@@ -2341,40 +2368,32 @@ get_image_set (MonoImage **images, int nimages)
 	if (!image_sets)
 		image_sets = g_ptr_array_new ();
 
-	// Before we go on, we should check to see whether a MonoImageSet with these images already exists.
-	// We can search the referred-by imagesets of any one of our images to do this. Arbitrarily pick one here:
 	if (images [0] == mono_defaults.corlib && nimages > 1)
-		l = images [1]->image_sets; // Prefer not to search the imagesets of corlib-- that will be a long list.
+		l = images [1]->image_sets;
 	else
 		l = images [0]->image_sets;
 
 	set = NULL;
-	while (l) // Iterate over selected list, looking for an imageset with members equal to our target one
-	{
+	for (; l; l = l->next) {
 		set = l->data;
 
-		if (set->nimages == nimages) { // Member count differs, this can't be it
-			// Compare all members to all members-- order might be different
+		if (set->nimages == nimages) {
 			for (j = 0; j < nimages; ++j) {
 				for (k = 0; k < nimages; ++k)
 					if (set->images [k] == images [j])
-						break; // Break on match
-
-				// If we iterated all the way through set->images, images[j] was *not* found.
+						break;
 				if (k == nimages)
-					break; // Break on "image not found"
+					/* Not found */
+					break;
 			}
-
-			// If we iterated all the way through images without breaking, all items in images were found in set->images
 			if (j == nimages)
-				break; // Break on "found a set with equal members"
+				/* Found */
+				break;
 		}
-
-		l = l->next;
 	}
 
-	// If we iterated all the way through l without breaking, the imageset does not already exist and we shuold create it
 	if (!l) {
+		/* Not found */
 		set = g_new0 (MonoImageSet, 1);
 		set->nimages = nimages;
 		set->images = g_new0 (MonoImage*, nimages);
@@ -2385,7 +2404,7 @@ get_image_set (MonoImage **images, int nimages)
 		set->ginst_cache = g_hash_table_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
 		set->gmethod_cache = g_hash_table_new_full (inflated_method_hash, inflated_method_equal, NULL, (GDestroyNotify)free_inflated_method);
 		set->gsignature_cache = g_hash_table_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature);
-
+	
 		for (i = 0; i < nimages; ++i)
 			set->images [i]->image_sets = g_slist_prepend (set->images [i]->image_sets, set);
 
@@ -2482,24 +2501,6 @@ mono_image_set_strdup (MonoImageSet *set, const char *s)
 	mono_image_set_unlock (set);
 
 	return res;
-}
-
-// Get a descriptive string for a MonoImageSet
-// Callers are obligated to free buffer with g_free after use
-char *
-mono_image_set_description (MonoImageSet *set)
-{
-	GString *result = g_string_new (NULL);
-	int img;
-	g_string_append (result, "[");
-	for (img = 0; img < set->nimages; img++)
-	{
-		if (img > 0)
-			g_string_append (result, ", ");
-		g_string_append (result, set->images[img]->name);
-	}
-	g_string_append (result, "]");
-	return g_string_free (result, FALSE);
 }
 
 /* 
@@ -2636,13 +2637,48 @@ retry:
 	case MONO_TYPE_FNPTR:
 		//return signature_in_image (type->data.method, image);
 		g_assert_not_reached ();
-	case MONO_TYPE_VAR:
-	case MONO_TYPE_MVAR:
-	{
-		MonoImage *image = get_image_for_generic_param (type->data.generic_param);
-		add_image (image, data);
-		break;
+	case MONO_TYPE_VAR: {
+		MonoGenericContainer *container = mono_type_get_generic_param_owner (type);
+		if (container) {
+			g_assert (!container->is_method);
+			/*
+			 * FIXME: The following check is here solely
+			 * for monodis, which uses the internal
+			 * function
+			 * mono_metadata_load_generic_params().  The
+			 * caller of that function needs to fill in
+			 * owner->klass or owner->method of the
+			 * returned struct, but monodis doesn't do
+			 * that.  The image unloading depends on that,
+			 * however, so a crash results without this
+			 * check.
+			 */
+			if (!container->owner.klass)
+				add_image (container->image, data);
+			else
+				add_image (container->owner.klass->image, data);
+		} else {
+			add_image (type->data.generic_param->image, data);
+		}
 	}
+		break;
+	case MONO_TYPE_MVAR: {
+		MonoGenericContainer *container = mono_type_get_generic_param_owner (type);
+		if (type->data.generic_param->image)
+			add_image (type->data.generic_param->image, data);
+		if (container) {
+			if (!container->owner.method) {
+				/* RefEmit created generic param whose method is not finished */
+				add_image (container->image, data);
+			} else {
+				g_assert (container->is_method);
+				add_image (container->owner.method->klass->image, data);
+			}
+		} else {
+			add_image (type->data.generic_param->image, data);
+		}
+	}
+		break;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 		add_image (mono_class_from_mono_type (type)->image, data);
@@ -2980,11 +3016,12 @@ mono_metadata_lookup_generic_class (MonoClass *container_class, MonoGenericInst 
 	MonoImageSet *set;
 	CollectData data;
 
-	memset (&helper, 0, sizeof(helper)); // act like g_new0
 	helper.container_class = container_class;
 	helper.context.class_inst = inst;
+	helper.context.method_inst = NULL;
 	helper.is_dynamic = is_dynamic; /* We use this in a hash lookup, which does not attempt to downcast the pointer */
 	helper.is_tb_open = is_tb_open;
+	helper.cached_class = NULL;
 
 	collect_data_init (&data);
 
@@ -3158,36 +3195,7 @@ select_container (MonoGenericContainer *gc, MonoTypeEnum type)
 	return gc;
 }
 
-MonoGenericContainer *
-get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar)
-{
-	MonoGenericContainer **container_pointer;
-	if (is_mvar)
-		container_pointer = &image->anonymous_generic_method_container;
-	else
-		container_pointer = &image->anonymous_generic_class_container;
-	MonoGenericContainer *result = *container_pointer;
-
-	// This container has never been created; make it now.
-	if (!result)
-	{
-		// Note this is never deallocated anywhere-- it exists for the lifetime of the image it's allocated from
-		result = mono_image_alloc0 (image, sizeof (MonoGenericContainer));
-		result->owner.image = image;
-		result->is_anonymous = TRUE;
-		result->is_small_param = TRUE;
-		result->is_method = is_mvar;
-
-		// If another thread already made a container, use that and leak this new one.
-		// (Technically it would currently be safe to just assign instead of CASing.)
-		MonoGenericContainer *exchange = InterlockedCompareExchangePointer ((volatile gpointer *)container_pointer, result, NULL);
-		if (exchange)
-			result = exchange;
-	}
-	return result;
-}
-
-/*
+/* 
  * mono_metadata_parse_generic_param:
  * @generic_container: Our MonoClass's or MonoMethod's MonoGenericContainer;
  *                     see mono_metadata_parse_type_full() for details.
@@ -3206,24 +3214,12 @@ mono_metadata_parse_generic_param (MonoImage *m, MonoGenericContainer *generic_c
 
 	generic_container = select_container (generic_container, type);
 	if (!generic_container) {
-		gboolean is_mvar = FALSE;
-		switch (type)
-		{
-			case MONO_TYPE_VAR:
-				break;
-			case MONO_TYPE_MVAR:
-				is_mvar = TRUE;
-				break;
-			default:
-				g_error ("Cerating generic param object with invalid MonoType"); // This is not a generic param
-		}
-
 		/* Create dummy MonoGenericParam */
 		MonoGenericParam *param;
 
 		param = mono_image_alloc0 (m, sizeof (MonoGenericParam));
 		param->num = index;
-		param->owner = get_anonymous_container_for_image (m, is_mvar);
+		param->image = m;
 
 		return param;
 	}
@@ -4935,8 +4931,12 @@ mono_metadata_generic_param_equal_internal (MonoGenericParam *p1, MonoGenericPar
 	 * image B gets that generic inst from the cache, image A is
 	 * unloaded, so the inst is deleted, but image B still retains
 	 * a pointer to it.
+	 *
+	 * The AOT runtime doesn't set the image when it's decoding
+	 * types, so we only compare it when the owner is NULL.
 	 */
-	if (mono_generic_param_owner (p1) == mono_generic_param_owner (p2))
+	if (mono_generic_param_owner (p1) == mono_generic_param_owner (p2) &&
+	    (mono_generic_param_owner (p1) || p1->image == p2->image))
 		return TRUE;
 
 	/*
@@ -5014,7 +5014,6 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
  * mono_metadata_type_equal:
  * @t1: a type
  * @t2: another type
- * @signature_only: If true, treat ginsts as equal which are instantiated separately but have equal positional value
  *
  * Determine if @t1 and @t2 represent the same type.
  * Returns: #TRUE if @t1 and @t2 are equal.
@@ -6213,8 +6212,7 @@ mono_metadata_load_generic_params (MonoImage *image, guint32 token, MonoGenericC
 	params = NULL;
 	n = 0;
 	container = mono_image_alloc0 (image, sizeof (MonoGenericContainer));
-	container->owner.image = image; // Temporarily mark as anonymous, but this will be overriden by caller
-	container->is_anonymous = TRUE;
+	container->image = image;
 	do {
 		n++;
 		params = g_realloc (params, sizeof (MonoGenericParamFull) * n);
@@ -6639,33 +6637,4 @@ mono_method_get_wrapper_cache (MonoMethod *method)
 	} else {
 		return &method->klass->image->wrapper_caches;
 	}
-}
-
-// This is support for the mempool reference tracking feature in checked-build, but lives in metadata.c due to use of static variables of this file.
-
-/**
- * mono_find_image_set_owner:
- *
- * Find the imageset, if any, which a given pointer is located in the memory of.
- */
-MonoImageSet *
-mono_find_image_set_owner (void *ptr)
-{
-	MonoImageSet *owner = NULL;
-	int i;
-
-	image_sets_lock ();
-
-	if (image_sets)
-	{
-		for (i = 0; !owner && i < image_sets->len; ++i) {
-			MonoImageSet *set = g_ptr_array_index (image_sets, i);
-			if (mono_mempool_contains_addr (set->mempool, ptr))
-				owner = set;
-		}
-	}
-
-	image_sets_unlock ();
-
-	return owner;
 }

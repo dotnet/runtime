@@ -2538,24 +2538,51 @@ mono_image_append_class_to_reflection_info_set (MonoClass *klass)
 	mono_image_unlock (image);
 }
 
-// This is support for the mempool reference tracking feature in checked-build, but lives in image.c due to use of static variables of this file.
+#if CHECKED_BUILD
+
+// These are support for the mempool reference tracking feature in checked-build, but live in image.c due to use of static variables of this file.
+
+// Given an image and a pointer, return the mempool owner if it is either this image or one of its imagesets.
+static MonoMemPoolOwner
+check_for_mempool_owner (void *ptr, MonoImage *image)
+{
+	if (mono_mempool_contains_addr (image->mempool, ptr))
+	{
+		MonoMemPoolOwner owner = {image, NULL};
+		return owner;
+	}
+
+	GSList *l;
+	for (l = image->image_sets; l; l = l->next) {
+		MonoImageSet *set = l->data;
+
+		if (mono_mempool_contains_addr (set->mempool, ptr))
+		{
+			MonoMemPoolOwner owner = {NULL, set};
+			return owner;
+		}
+	}
+
+	return mono_mempool_no_owner;
+}
 
 /**
- * mono_find_image_owner:
+ * mono_find_mempool_owner:
  *
- * Find the image, if any, which a given pointer is located in the memory of.
+ * Find the image or imageset, if any, which a given pointer is located in the memory of.
  */
-MonoImage *
-mono_find_image_owner (void *ptr)
+MonoMemPoolOwner
+mono_find_mempool_owner (void *ptr)
 {
 	mono_images_lock ();
 
-	MonoImage *owner = NULL;
+	MonoMemPoolOwner owner = mono_mempool_no_owner;
+	gboolean searching = TRUE;
 
 	// Iterate over both by-path image hashes
 	const int hash_candidates[] = {IMAGES_HASH_PATH, IMAGES_HASH_PATH_REFONLY};
 	int hash_idx;
-	for (hash_idx = 0; !owner && hash_idx < G_N_ELEMENTS (hash_candidates); hash_idx++)
+	for (hash_idx = 0; searching && hash_idx < G_N_ELEMENTS (hash_candidates); hash_idx++)
 	{
 		GHashTable *target = loaded_images_hashes [hash_candidates [hash_idx]];
 		GHashTableIter iter;
@@ -2563,12 +2590,14 @@ mono_find_image_owner (void *ptr)
 
 		// Iterate over images within a hash
 		g_hash_table_iter_init (&iter, target);
-		while (!owner && g_hash_table_iter_next(&iter, NULL, (gpointer *)&image))
+		while (searching && g_hash_table_iter_next(&iter, NULL, (gpointer *)&image))
 		{
 			mono_image_lock (image);
-			if (mono_mempool_contains_addr (image->mempool, ptr))
-				owner = image;
+			owner = check_for_mempool_owner (ptr, image);
 			mono_image_unlock (image);
+
+			// Continue searching if null owner returned
+			searching = check_mempool_owner_eq (owner, mono_mempool_no_owner);
 		}
 	}
 
@@ -2576,3 +2605,5 @@ mono_find_image_owner (void *ptr)
 
 	return owner;
 }
+
+#endif
