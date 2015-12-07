@@ -7,6 +7,17 @@ add_definitions(-D__ILDASM__)
 
 add_definitions(-DFEATURE_CORECLR)
 
+include_directories(..)
+
+if(CLR_CMAKE_PLATFORM_UNIX)
+    include_directories(../unixcoreclrloader)
+    build_resources(${CMAKE_CURRENT_SOURCE_DIR}/../dasm.rc dasm_rc TARGET_CPP_FILE)
+
+    set(ILDASM_RESOURCES
+        ${TARGET_CPP_FILE}
+    )
+endif(CLR_CMAKE_PLATFORM_UNIX)
+
 set(ILDASM_SOURCES
     ../ceeload.cpp
     ../dasm.cpp
@@ -31,23 +42,31 @@ set(ILDASM_LINK_LIBRARIES
     utilcodestaticnohost
     mdhotdata_full
     corguids
-    coreclr
 )
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-    # TODO
     target_link_libraries(ildasm
+        ${ILDASM_LINK_LIBRARIES}
+        unixcoreclrloader
         mscorrc_debug
         coreclrpal
         palrt
     )
+
+    # FreeBSD implements dlopen in libc
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+        target_link_libraries(ildasm
+            dl
+        )
+    endif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 else()
     target_link_libraries(ildasm
         ${ILDASM_LINK_LIBRARIES}
-         msvcrt
-         ole32
-         oleaut32
-         shell32
+        coreclr
+        msvcrt
+        ole32
+        oleaut32
+        shell32
     )
 
     # We will generate PDB only for the debug configuration
