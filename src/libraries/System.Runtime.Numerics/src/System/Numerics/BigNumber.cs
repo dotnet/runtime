@@ -559,7 +559,7 @@ namespace System.Numerics
             const uint kuBase = 1000000000; // 10^9
             const int kcchBase = 9;
 
-            int cuSrc = BigInteger.Length(value._bits);
+            int cuSrc = value._bits.Length;
             int cuMax;
             try
             {
