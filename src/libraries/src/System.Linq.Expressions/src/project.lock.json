@@ -288,6 +288,386 @@
         }
       }
     },
+    ".NETFramework,Version=v4.6": {
+      "Microsoft.TargetingPack.NETFramework.v4.6/1.0.0-rc2-23530": {
+        "type": "package",
+        "compile": {
+          "ref/net46/Accessibility.dll": {},
+          "ref/net46/CustomMarshalers.dll": {},
+          "ref/net46/ISymWrapper.dll": {},
+          "ref/net46/Microsoft.Activities.Build.dll": {},
+          "ref/net46/Microsoft.Build.Conversion.v4.0.dll": {},
+          "ref/net46/Microsoft.Build.dll": {},
+          "ref/net46/Microsoft.Build.Engine.dll": {},
+          "ref/net46/Microsoft.Build.Framework.dll": {},
+          "ref/net46/Microsoft.Build.Tasks.v4.0.dll": {},
+          "ref/net46/Microsoft.Build.Utilities.v4.0.dll": {},
+          "ref/net46/Microsoft.CSharp.dll": {},
+          "ref/net46/Microsoft.JScript.dll": {},
+          "ref/net46/Microsoft.VisualBasic.Compatibility.Data.dll": {},
+          "ref/net46/Microsoft.VisualBasic.Compatibility.dll": {},
+          "ref/net46/Microsoft.VisualBasic.dll": {},
+          "ref/net46/Microsoft.VisualC.dll": {},
+          "ref/net46/Microsoft.VisualC.STLCLR.dll": {},
+          "ref/net46/mscorlib.dll": {},
+          "ref/net46/PresentationBuildTasks.dll": {},
+          "ref/net46/PresentationCore.dll": {},
+          "ref/net46/PresentationFramework.Aero.dll": {},
+          "ref/net46/PresentationFramework.Aero2.dll": {},
+          "ref/net46/PresentationFramework.AeroLite.dll": {},
+          "ref/net46/PresentationFramework.Classic.dll": {},
+          "ref/net46/PresentationFramework.dll": {},
+          "ref/net46/PresentationFramework.Luna.dll": {},
+          "ref/net46/PresentationFramework.Royale.dll": {},
+          "ref/net46/ReachFramework.dll": {},
+          "ref/net46/sysglobl.dll": {},
+          "ref/net46/System.Activities.Core.Presentation.dll": {},
+          "ref/net46/System.Activities.dll": {},
+          "ref/net46/System.Activities.DurableInstancing.dll": {},
+          "ref/net46/System.Activities.Presentation.dll": {},
+          "ref/net46/System.AddIn.Contract.dll": {},
+          "ref/net46/System.AddIn.dll": {},
+          "ref/net46/System.Collections.Concurrent.dll": {},
+          "ref/net46/System.Collections.dll": {},
+          "ref/net46/System.ComponentModel.Annotations.dll": {},
+          "ref/net46/System.ComponentModel.Composition.dll": {},
+          "ref/net46/System.ComponentModel.Composition.Registration.dll": {},
+          "ref/net46/System.ComponentModel.DataAnnotations.dll": {},
+          "ref/net46/System.ComponentModel.dll": {},
+          "ref/net46/System.ComponentModel.EventBasedAsync.dll": {},
+          "ref/net46/System.Configuration.dll": {},
+          "ref/net46/System.Configuration.Install.dll": {},
+          "ref/net46/System.Core.dll": {},
+          "ref/net46/System.Data.DataSetExtensions.dll": {},
+          "ref/net46/System.Data.dll": {},
+          "ref/net46/System.Data.Entity.Design.dll": {},
+          "ref/net46/System.Data.Entity.dll": {},
+          "ref/net46/System.Data.Linq.dll": {},
+          "ref/net46/System.Data.OracleClient.dll": {},
+          "ref/net46/System.Data.Services.Client.dll": {},
+          "ref/net46/System.Data.Services.Design.dll": {},
+          "ref/net46/System.Data.Services.dll": {},
+          "ref/net46/System.Data.SqlXml.dll": {},
+          "ref/net46/System.Deployment.dll": {},
+          "ref/net46/System.Design.dll": {},
+          "ref/net46/System.Device.dll": {},
+          "ref/net46/System.Diagnostics.Contracts.dll": {},
+          "ref/net46/System.Diagnostics.Debug.dll": {},
+          "ref/net46/System.Diagnostics.Tools.dll": {},
+          "ref/net46/System.Diagnostics.Tracing.dll": {},
+          "ref/net46/System.DirectoryServices.AccountManagement.dll": {},
+          "ref/net46/System.DirectoryServices.dll": {},
+          "ref/net46/System.DirectoryServices.Protocols.dll": {},
+          "ref/net46/System.dll": {},
+          "ref/net46/System.Drawing.Design.dll": {},
+          "ref/net46/System.Drawing.dll": {},
+          "ref/net46/System.Dynamic.dll": {},
+          "ref/net46/System.Dynamic.Runtime.dll": {},
+          "ref/net46/System.EnterpriseServices.dll": {},
+          "ref/net46/System.EnterpriseServices.Thunk.dll": {},
+          "ref/net46/System.EnterpriseServices.Wrapper.dll": {},
+          "ref/net46/System.Globalization.dll": {},
+          "ref/net46/System.IdentityModel.dll": {},
+          "ref/net46/System.IdentityModel.Selectors.dll": {},
+          "ref/net46/System.IdentityModel.Services.dll": {},
+          "ref/net46/System.IO.Compression.dll": {},
+          "ref/net46/System.IO.Compression.FileSystem.dll": {},
+          "ref/net46/System.IO.dll": {},
+          "ref/net46/System.IO.Log.dll": {},
+          "ref/net46/System.Linq.dll": {},
+          "ref/net46/System.Linq.Expressions.dll": {},
+          "ref/net46/System.Linq.Parallel.dll": {},
+          "ref/net46/System.Linq.Queryable.dll": {},
+          "ref/net46/System.Management.dll": {},
+          "ref/net46/System.Management.Instrumentation.dll": {},
+          "ref/net46/System.Messaging.dll": {},
+          "ref/net46/System.Net.dll": {},
+          "ref/net46/System.Net.Http.dll": {},
+          "ref/net46/System.Net.Http.WebRequest.dll": {},
+          "ref/net46/System.Net.NetworkInformation.dll": {},
+          "ref/net46/System.Net.Primitives.dll": {},
+          "ref/net46/System.Net.Requests.dll": {},
+          "ref/net46/System.Net.WebHeaderCollection.dll": {},
+          "ref/net46/System.Numerics.dll": {},
+          "ref/net46/System.Numerics.Vectors.dll": {},
+          "ref/net46/System.ObjectModel.dll": {},
+          "ref/net46/System.Printing.dll": {},
+          "ref/net46/System.Reflection.Context.dll": {},
+          "ref/net46/System.Reflection.dll": {},
+          "ref/net46/System.Reflection.Emit.dll": {},
+          "ref/net46/System.Reflection.Emit.ILGeneration.dll": {},
+          "ref/net46/System.Reflection.Emit.Lightweight.dll": {},
+          "ref/net46/System.Reflection.Extensions.dll": {},
+          "ref/net46/System.Reflection.Primitives.dll": {},
+          "ref/net46/System.Resources.ResourceManager.dll": {},
+          "ref/net46/System.Runtime.Caching.dll": {},
+          "ref/net46/System.Runtime.dll": {},
+          "ref/net46/System.Runtime.DurableInstancing.dll": {},
+          "ref/net46/System.Runtime.Extensions.dll": {},
+          "ref/net46/System.Runtime.Handles.dll": {},
+          "ref/net46/System.Runtime.InteropServices.dll": {},
+          "ref/net46/System.Runtime.InteropServices.WindowsRuntime.dll": {},
+          "ref/net46/System.Runtime.Numerics.dll": {},
+          "ref/net46/System.Runtime.Remoting.dll": {},
+          "ref/net46/System.Runtime.Serialization.dll": {},
+          "ref/net46/System.Runtime.Serialization.Formatters.Soap.dll": {},
+          "ref/net46/System.Runtime.Serialization.Json.dll": {},
+          "ref/net46/System.Runtime.Serialization.Primitives.dll": {},
+          "ref/net46/System.Runtime.Serialization.Xml.dll": {},
+          "ref/net46/System.Security.dll": {},
+          "ref/net46/System.Security.Principal.dll": {},
+          "ref/net46/System.ServiceModel.Activation.dll": {},
+          "ref/net46/System.ServiceModel.Activities.dll": {},
+          "ref/net46/System.ServiceModel.Channels.dll": {},
+          "ref/net46/System.ServiceModel.Discovery.dll": {},
+          "ref/net46/System.ServiceModel.dll": {},
+          "ref/net46/System.ServiceModel.Duplex.dll": {},
+          "ref/net46/System.ServiceModel.Http.dll": {},
+          "ref/net46/System.ServiceModel.NetTcp.dll": {},
+          "ref/net46/System.ServiceModel.Primitives.dll": {},
+          "ref/net46/System.ServiceModel.Routing.dll": {},
+          "ref/net46/System.ServiceModel.Security.dll": {},
+          "ref/net46/System.ServiceModel.Web.dll": {},
+          "ref/net46/System.ServiceProcess.dll": {},
+          "ref/net46/System.Speech.dll": {},
+          "ref/net46/System.Text.Encoding.dll": {},
+          "ref/net46/System.Text.Encoding.Extensions.dll": {},
+          "ref/net46/System.Text.RegularExpressions.dll": {},
+          "ref/net46/System.Threading.dll": {},
+          "ref/net46/System.Threading.Tasks.dll": {},
+          "ref/net46/System.Threading.Tasks.Parallel.dll": {},
+          "ref/net46/System.Threading.Timer.dll": {},
+          "ref/net46/System.Transactions.dll": {},
+          "ref/net46/System.Web.Abstractions.dll": {},
+          "ref/net46/System.Web.ApplicationServices.dll": {},
+          "ref/net46/System.Web.DataVisualization.Design.dll": {},
+          "ref/net46/System.Web.DataVisualization.dll": {},
+          "ref/net46/System.Web.dll": {},
+          "ref/net46/System.Web.DynamicData.Design.dll": {},
+          "ref/net46/System.Web.DynamicData.dll": {},
+          "ref/net46/System.Web.Entity.Design.dll": {},
+          "ref/net46/System.Web.Entity.dll": {},
+          "ref/net46/System.Web.Extensions.Design.dll": {},
+          "ref/net46/System.Web.Extensions.dll": {},
+          "ref/net46/System.Web.Mobile.dll": {},
+          "ref/net46/System.Web.RegularExpressions.dll": {},
+          "ref/net46/System.Web.Routing.dll": {},
+          "ref/net46/System.Web.Services.dll": {},
+          "ref/net46/System.Windows.Controls.Ribbon.dll": {},
+          "ref/net46/System.Windows.dll": {},
+          "ref/net46/System.Windows.Forms.DataVisualization.Design.dll": {},
+          "ref/net46/System.Windows.Forms.DataVisualization.dll": {},
+          "ref/net46/System.Windows.Forms.dll": {},
+          "ref/net46/System.Windows.Input.Manipulations.dll": {},
+          "ref/net46/System.Windows.Presentation.dll": {},
+          "ref/net46/System.Workflow.Activities.dll": {},
+          "ref/net46/System.Workflow.ComponentModel.dll": {},
+          "ref/net46/System.Workflow.Runtime.dll": {},
+          "ref/net46/System.WorkflowServices.dll": {},
+          "ref/net46/System.Xaml.dll": {},
+          "ref/net46/System.Xml.dll": {},
+          "ref/net46/System.Xml.Linq.dll": {},
+          "ref/net46/System.Xml.ReaderWriter.dll": {},
+          "ref/net46/System.Xml.Serialization.dll": {},
+          "ref/net46/System.Xml.XDocument.dll": {},
+          "ref/net46/System.Xml.XmlSerializer.dll": {},
+          "ref/net46/UIAutomationClient.dll": {},
+          "ref/net46/UIAutomationClientsideProviders.dll": {},
+          "ref/net46/UIAutomationProvider.dll": {},
+          "ref/net46/UIAutomationTypes.dll": {},
+          "ref/net46/WindowsBase.dll": {},
+          "ref/net46/WindowsFormsIntegration.dll": {},
+          "ref/net46/XamlBuildTask.dll": {}
+        }
+      },
+      "System.Collections/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Diagnostics.Contracts/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Diagnostics.Debug/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Diagnostics.Tools/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Globalization/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.IO/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Linq/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.ObjectModel/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Reflection/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Reflection.Emit/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Emit.ILGeneration/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Emit.Lightweight/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Extensions/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Primitives/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.TypeExtensions/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Reflection": "4.0.0",
+          "System.Runtime": "4.0.0"
+        },
+        "frameworkAssemblies": [
+          "mscorlib"
+        ],
+        "compile": {
+          "ref/net46/System.Reflection.TypeExtensions.dll": {}
+        },
+        "runtime": {
+          "lib/net46/System.Reflection.TypeExtensions.dll": {}
+        }
+      },
+      "System.Resources.ResourceManager/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Runtime/4.0.20": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Runtime.Extensions/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Threading/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Threading.Tasks/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      }
+    },
     "DNXCore,Version=v5.0/win7-x86": {
       "System.Collections/4.0.10": {
         "type": "package",
@@ -859,9 +1239,964 @@
           "lib/DNXCore50/System.Threading.Tasks.dll": {}
         }
       }
+    },
+    ".NETFramework,Version=v4.6/win7-x86": {
+      "Microsoft.TargetingPack.NETFramework.v4.6/1.0.0-rc2-23530": {
+        "type": "package",
+        "compile": {
+          "ref/net46/Accessibility.dll": {},
+          "ref/net46/CustomMarshalers.dll": {},
+          "ref/net46/ISymWrapper.dll": {},
+          "ref/net46/Microsoft.Activities.Build.dll": {},
+          "ref/net46/Microsoft.Build.Conversion.v4.0.dll": {},
+          "ref/net46/Microsoft.Build.dll": {},
+          "ref/net46/Microsoft.Build.Engine.dll": {},
+          "ref/net46/Microsoft.Build.Framework.dll": {},
+          "ref/net46/Microsoft.Build.Tasks.v4.0.dll": {},
+          "ref/net46/Microsoft.Build.Utilities.v4.0.dll": {},
+          "ref/net46/Microsoft.CSharp.dll": {},
+          "ref/net46/Microsoft.JScript.dll": {},
+          "ref/net46/Microsoft.VisualBasic.Compatibility.Data.dll": {},
+          "ref/net46/Microsoft.VisualBasic.Compatibility.dll": {},
+          "ref/net46/Microsoft.VisualBasic.dll": {},
+          "ref/net46/Microsoft.VisualC.dll": {},
+          "ref/net46/Microsoft.VisualC.STLCLR.dll": {},
+          "ref/net46/mscorlib.dll": {},
+          "ref/net46/PresentationBuildTasks.dll": {},
+          "ref/net46/PresentationCore.dll": {},
+          "ref/net46/PresentationFramework.Aero.dll": {},
+          "ref/net46/PresentationFramework.Aero2.dll": {},
+          "ref/net46/PresentationFramework.AeroLite.dll": {},
+          "ref/net46/PresentationFramework.Classic.dll": {},
+          "ref/net46/PresentationFramework.dll": {},
+          "ref/net46/PresentationFramework.Luna.dll": {},
+          "ref/net46/PresentationFramework.Royale.dll": {},
+          "ref/net46/ReachFramework.dll": {},
+          "ref/net46/sysglobl.dll": {},
+          "ref/net46/System.Activities.Core.Presentation.dll": {},
+          "ref/net46/System.Activities.dll": {},
+          "ref/net46/System.Activities.DurableInstancing.dll": {},
+          "ref/net46/System.Activities.Presentation.dll": {},
+          "ref/net46/System.AddIn.Contract.dll": {},
+          "ref/net46/System.AddIn.dll": {},
+          "ref/net46/System.Collections.Concurrent.dll": {},
+          "ref/net46/System.Collections.dll": {},
+          "ref/net46/System.ComponentModel.Annotations.dll": {},
+          "ref/net46/System.ComponentModel.Composition.dll": {},
+          "ref/net46/System.ComponentModel.Composition.Registration.dll": {},
+          "ref/net46/System.ComponentModel.DataAnnotations.dll": {},
+          "ref/net46/System.ComponentModel.dll": {},
+          "ref/net46/System.ComponentModel.EventBasedAsync.dll": {},
+          "ref/net46/System.Configuration.dll": {},
+          "ref/net46/System.Configuration.Install.dll": {},
+          "ref/net46/System.Core.dll": {},
+          "ref/net46/System.Data.DataSetExtensions.dll": {},
+          "ref/net46/System.Data.dll": {},
+          "ref/net46/System.Data.Entity.Design.dll": {},
+          "ref/net46/System.Data.Entity.dll": {},
+          "ref/net46/System.Data.Linq.dll": {},
+          "ref/net46/System.Data.OracleClient.dll": {},
+          "ref/net46/System.Data.Services.Client.dll": {},
+          "ref/net46/System.Data.Services.Design.dll": {},
+          "ref/net46/System.Data.Services.dll": {},
+          "ref/net46/System.Data.SqlXml.dll": {},
+          "ref/net46/System.Deployment.dll": {},
+          "ref/net46/System.Design.dll": {},
+          "ref/net46/System.Device.dll": {},
+          "ref/net46/System.Diagnostics.Contracts.dll": {},
+          "ref/net46/System.Diagnostics.Debug.dll": {},
+          "ref/net46/System.Diagnostics.Tools.dll": {},
+          "ref/net46/System.Diagnostics.Tracing.dll": {},
+          "ref/net46/System.DirectoryServices.AccountManagement.dll": {},
+          "ref/net46/System.DirectoryServices.dll": {},
+          "ref/net46/System.DirectoryServices.Protocols.dll": {},
+          "ref/net46/System.dll": {},
+          "ref/net46/System.Drawing.Design.dll": {},
+          "ref/net46/System.Drawing.dll": {},
+          "ref/net46/System.Dynamic.dll": {},
+          "ref/net46/System.Dynamic.Runtime.dll": {},
+          "ref/net46/System.EnterpriseServices.dll": {},
+          "ref/net46/System.EnterpriseServices.Thunk.dll": {},
+          "ref/net46/System.EnterpriseServices.Wrapper.dll": {},
+          "ref/net46/System.Globalization.dll": {},
+          "ref/net46/System.IdentityModel.dll": {},
+          "ref/net46/System.IdentityModel.Selectors.dll": {},
+          "ref/net46/System.IdentityModel.Services.dll": {},
+          "ref/net46/System.IO.Compression.dll": {},
+          "ref/net46/System.IO.Compression.FileSystem.dll": {},
+          "ref/net46/System.IO.dll": {},
+          "ref/net46/System.IO.Log.dll": {},
+          "ref/net46/System.Linq.dll": {},
+          "ref/net46/System.Linq.Expressions.dll": {},
+          "ref/net46/System.Linq.Parallel.dll": {},
+          "ref/net46/System.Linq.Queryable.dll": {},
+          "ref/net46/System.Management.dll": {},
+          "ref/net46/System.Management.Instrumentation.dll": {},
+          "ref/net46/System.Messaging.dll": {},
+          "ref/net46/System.Net.dll": {},
+          "ref/net46/System.Net.Http.dll": {},
+          "ref/net46/System.Net.Http.WebRequest.dll": {},
+          "ref/net46/System.Net.NetworkInformation.dll": {},
+          "ref/net46/System.Net.Primitives.dll": {},
+          "ref/net46/System.Net.Requests.dll": {},
+          "ref/net46/System.Net.WebHeaderCollection.dll": {},
+          "ref/net46/System.Numerics.dll": {},
+          "ref/net46/System.Numerics.Vectors.dll": {},
+          "ref/net46/System.ObjectModel.dll": {},
+          "ref/net46/System.Printing.dll": {},
+          "ref/net46/System.Reflection.Context.dll": {},
+          "ref/net46/System.Reflection.dll": {},
+          "ref/net46/System.Reflection.Emit.dll": {},
+          "ref/net46/System.Reflection.Emit.ILGeneration.dll": {},
+          "ref/net46/System.Reflection.Emit.Lightweight.dll": {},
+          "ref/net46/System.Reflection.Extensions.dll": {},
+          "ref/net46/System.Reflection.Primitives.dll": {},
+          "ref/net46/System.Resources.ResourceManager.dll": {},
+          "ref/net46/System.Runtime.Caching.dll": {},
+          "ref/net46/System.Runtime.dll": {},
+          "ref/net46/System.Runtime.DurableInstancing.dll": {},
+          "ref/net46/System.Runtime.Extensions.dll": {},
+          "ref/net46/System.Runtime.Handles.dll": {},
+          "ref/net46/System.Runtime.InteropServices.dll": {},
+          "ref/net46/System.Runtime.InteropServices.WindowsRuntime.dll": {},
+          "ref/net46/System.Runtime.Numerics.dll": {},
+          "ref/net46/System.Runtime.Remoting.dll": {},
+          "ref/net46/System.Runtime.Serialization.dll": {},
+          "ref/net46/System.Runtime.Serialization.Formatters.Soap.dll": {},
+          "ref/net46/System.Runtime.Serialization.Json.dll": {},
+          "ref/net46/System.Runtime.Serialization.Primitives.dll": {},
+          "ref/net46/System.Runtime.Serialization.Xml.dll": {},
+          "ref/net46/System.Security.dll": {},
+          "ref/net46/System.Security.Principal.dll": {},
+          "ref/net46/System.ServiceModel.Activation.dll": {},
+          "ref/net46/System.ServiceModel.Activities.dll": {},
+          "ref/net46/System.ServiceModel.Channels.dll": {},
+          "ref/net46/System.ServiceModel.Discovery.dll": {},
+          "ref/net46/System.ServiceModel.dll": {},
+          "ref/net46/System.ServiceModel.Duplex.dll": {},
+          "ref/net46/System.ServiceModel.Http.dll": {},
+          "ref/net46/System.ServiceModel.NetTcp.dll": {},
+          "ref/net46/System.ServiceModel.Primitives.dll": {},
+          "ref/net46/System.ServiceModel.Routing.dll": {},
+          "ref/net46/System.ServiceModel.Security.dll": {},
+          "ref/net46/System.ServiceModel.Web.dll": {},
+          "ref/net46/System.ServiceProcess.dll": {},
+          "ref/net46/System.Speech.dll": {},
+          "ref/net46/System.Text.Encoding.dll": {},
+          "ref/net46/System.Text.Encoding.Extensions.dll": {},
+          "ref/net46/System.Text.RegularExpressions.dll": {},
+          "ref/net46/System.Threading.dll": {},
+          "ref/net46/System.Threading.Tasks.dll": {},
+          "ref/net46/System.Threading.Tasks.Parallel.dll": {},
+          "ref/net46/System.Threading.Timer.dll": {},
+          "ref/net46/System.Transactions.dll": {},
+          "ref/net46/System.Web.Abstractions.dll": {},
+          "ref/net46/System.Web.ApplicationServices.dll": {},
+          "ref/net46/System.Web.DataVisualization.Design.dll": {},
+          "ref/net46/System.Web.DataVisualization.dll": {},
+          "ref/net46/System.Web.dll": {},
+          "ref/net46/System.Web.DynamicData.Design.dll": {},
+          "ref/net46/System.Web.DynamicData.dll": {},
+          "ref/net46/System.Web.Entity.Design.dll": {},
+          "ref/net46/System.Web.Entity.dll": {},
+          "ref/net46/System.Web.Extensions.Design.dll": {},
+          "ref/net46/System.Web.Extensions.dll": {},
+          "ref/net46/System.Web.Mobile.dll": {},
+          "ref/net46/System.Web.RegularExpressions.dll": {},
+          "ref/net46/System.Web.Routing.dll": {},
+          "ref/net46/System.Web.Services.dll": {},
+          "ref/net46/System.Windows.Controls.Ribbon.dll": {},
+          "ref/net46/System.Windows.dll": {},
+          "ref/net46/System.Windows.Forms.DataVisualization.Design.dll": {},
+          "ref/net46/System.Windows.Forms.DataVisualization.dll": {},
+          "ref/net46/System.Windows.Forms.dll": {},
+          "ref/net46/System.Windows.Input.Manipulations.dll": {},
+          "ref/net46/System.Windows.Presentation.dll": {},
+          "ref/net46/System.Workflow.Activities.dll": {},
+          "ref/net46/System.Workflow.ComponentModel.dll": {},
+          "ref/net46/System.Workflow.Runtime.dll": {},
+          "ref/net46/System.WorkflowServices.dll": {},
+          "ref/net46/System.Xaml.dll": {},
+          "ref/net46/System.Xml.dll": {},
+          "ref/net46/System.Xml.Linq.dll": {},
+          "ref/net46/System.Xml.ReaderWriter.dll": {},
+          "ref/net46/System.Xml.Serialization.dll": {},
+          "ref/net46/System.Xml.XDocument.dll": {},
+          "ref/net46/System.Xml.XmlSerializer.dll": {},
+          "ref/net46/UIAutomationClient.dll": {},
+          "ref/net46/UIAutomationClientsideProviders.dll": {},
+          "ref/net46/UIAutomationProvider.dll": {},
+          "ref/net46/UIAutomationTypes.dll": {},
+          "ref/net46/WindowsBase.dll": {},
+          "ref/net46/WindowsFormsIntegration.dll": {},
+          "ref/net46/XamlBuildTask.dll": {}
+        }
+      },
+      "System.Collections/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Diagnostics.Contracts/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Diagnostics.Debug/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Diagnostics.Tools/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Globalization/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.IO/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Linq/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.ObjectModel/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Reflection/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Reflection.Emit/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Emit.ILGeneration/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Emit.Lightweight/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Extensions/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Primitives/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.TypeExtensions/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Reflection": "4.0.0",
+          "System.Runtime": "4.0.0"
+        },
+        "frameworkAssemblies": [
+          "mscorlib"
+        ],
+        "compile": {
+          "ref/net46/System.Reflection.TypeExtensions.dll": {}
+        },
+        "runtime": {
+          "lib/net46/System.Reflection.TypeExtensions.dll": {}
+        }
+      },
+      "System.Resources.ResourceManager/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Runtime/4.0.20": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Runtime.Extensions/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Threading/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Threading.Tasks/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      }
+    },
+    ".NETFramework,Version=v4.6/win7-x64": {
+      "Microsoft.TargetingPack.NETFramework.v4.6/1.0.0-rc2-23530": {
+        "type": "package",
+        "compile": {
+          "ref/net46/Accessibility.dll": {},
+          "ref/net46/CustomMarshalers.dll": {},
+          "ref/net46/ISymWrapper.dll": {},
+          "ref/net46/Microsoft.Activities.Build.dll": {},
+          "ref/net46/Microsoft.Build.Conversion.v4.0.dll": {},
+          "ref/net46/Microsoft.Build.dll": {},
+          "ref/net46/Microsoft.Build.Engine.dll": {},
+          "ref/net46/Microsoft.Build.Framework.dll": {},
+          "ref/net46/Microsoft.Build.Tasks.v4.0.dll": {},
+          "ref/net46/Microsoft.Build.Utilities.v4.0.dll": {},
+          "ref/net46/Microsoft.CSharp.dll": {},
+          "ref/net46/Microsoft.JScript.dll": {},
+          "ref/net46/Microsoft.VisualBasic.Compatibility.Data.dll": {},
+          "ref/net46/Microsoft.VisualBasic.Compatibility.dll": {},
+          "ref/net46/Microsoft.VisualBasic.dll": {},
+          "ref/net46/Microsoft.VisualC.dll": {},
+          "ref/net46/Microsoft.VisualC.STLCLR.dll": {},
+          "ref/net46/mscorlib.dll": {},
+          "ref/net46/PresentationBuildTasks.dll": {},
+          "ref/net46/PresentationCore.dll": {},
+          "ref/net46/PresentationFramework.Aero.dll": {},
+          "ref/net46/PresentationFramework.Aero2.dll": {},
+          "ref/net46/PresentationFramework.AeroLite.dll": {},
+          "ref/net46/PresentationFramework.Classic.dll": {},
+          "ref/net46/PresentationFramework.dll": {},
+          "ref/net46/PresentationFramework.Luna.dll": {},
+          "ref/net46/PresentationFramework.Royale.dll": {},
+          "ref/net46/ReachFramework.dll": {},
+          "ref/net46/sysglobl.dll": {},
+          "ref/net46/System.Activities.Core.Presentation.dll": {},
+          "ref/net46/System.Activities.dll": {},
+          "ref/net46/System.Activities.DurableInstancing.dll": {},
+          "ref/net46/System.Activities.Presentation.dll": {},
+          "ref/net46/System.AddIn.Contract.dll": {},
+          "ref/net46/System.AddIn.dll": {},
+          "ref/net46/System.Collections.Concurrent.dll": {},
+          "ref/net46/System.Collections.dll": {},
+          "ref/net46/System.ComponentModel.Annotations.dll": {},
+          "ref/net46/System.ComponentModel.Composition.dll": {},
+          "ref/net46/System.ComponentModel.Composition.Registration.dll": {},
+          "ref/net46/System.ComponentModel.DataAnnotations.dll": {},
+          "ref/net46/System.ComponentModel.dll": {},
+          "ref/net46/System.ComponentModel.EventBasedAsync.dll": {},
+          "ref/net46/System.Configuration.dll": {},
+          "ref/net46/System.Configuration.Install.dll": {},
+          "ref/net46/System.Core.dll": {},
+          "ref/net46/System.Data.DataSetExtensions.dll": {},
+          "ref/net46/System.Data.dll": {},
+          "ref/net46/System.Data.Entity.Design.dll": {},
+          "ref/net46/System.Data.Entity.dll": {},
+          "ref/net46/System.Data.Linq.dll": {},
+          "ref/net46/System.Data.OracleClient.dll": {},
+          "ref/net46/System.Data.Services.Client.dll": {},
+          "ref/net46/System.Data.Services.Design.dll": {},
+          "ref/net46/System.Data.Services.dll": {},
+          "ref/net46/System.Data.SqlXml.dll": {},
+          "ref/net46/System.Deployment.dll": {},
+          "ref/net46/System.Design.dll": {},
+          "ref/net46/System.Device.dll": {},
+          "ref/net46/System.Diagnostics.Contracts.dll": {},
+          "ref/net46/System.Diagnostics.Debug.dll": {},
+          "ref/net46/System.Diagnostics.Tools.dll": {},
+          "ref/net46/System.Diagnostics.Tracing.dll": {},
+          "ref/net46/System.DirectoryServices.AccountManagement.dll": {},
+          "ref/net46/System.DirectoryServices.dll": {},
+          "ref/net46/System.DirectoryServices.Protocols.dll": {},
+          "ref/net46/System.dll": {},
+          "ref/net46/System.Drawing.Design.dll": {},
+          "ref/net46/System.Drawing.dll": {},
+          "ref/net46/System.Dynamic.dll": {},
+          "ref/net46/System.Dynamic.Runtime.dll": {},
+          "ref/net46/System.EnterpriseServices.dll": {},
+          "ref/net46/System.EnterpriseServices.Thunk.dll": {},
+          "ref/net46/System.EnterpriseServices.Wrapper.dll": {},
+          "ref/net46/System.Globalization.dll": {},
+          "ref/net46/System.IdentityModel.dll": {},
+          "ref/net46/System.IdentityModel.Selectors.dll": {},
+          "ref/net46/System.IdentityModel.Services.dll": {},
+          "ref/net46/System.IO.Compression.dll": {},
+          "ref/net46/System.IO.Compression.FileSystem.dll": {},
+          "ref/net46/System.IO.dll": {},
+          "ref/net46/System.IO.Log.dll": {},
+          "ref/net46/System.Linq.dll": {},
+          "ref/net46/System.Linq.Expressions.dll": {},
+          "ref/net46/System.Linq.Parallel.dll": {},
+          "ref/net46/System.Linq.Queryable.dll": {},
+          "ref/net46/System.Management.dll": {},
+          "ref/net46/System.Management.Instrumentation.dll": {},
+          "ref/net46/System.Messaging.dll": {},
+          "ref/net46/System.Net.dll": {},
+          "ref/net46/System.Net.Http.dll": {},
+          "ref/net46/System.Net.Http.WebRequest.dll": {},
+          "ref/net46/System.Net.NetworkInformation.dll": {},
+          "ref/net46/System.Net.Primitives.dll": {},
+          "ref/net46/System.Net.Requests.dll": {},
+          "ref/net46/System.Net.WebHeaderCollection.dll": {},
+          "ref/net46/System.Numerics.dll": {},
+          "ref/net46/System.Numerics.Vectors.dll": {},
+          "ref/net46/System.ObjectModel.dll": {},
+          "ref/net46/System.Printing.dll": {},
+          "ref/net46/System.Reflection.Context.dll": {},
+          "ref/net46/System.Reflection.dll": {},
+          "ref/net46/System.Reflection.Emit.dll": {},
+          "ref/net46/System.Reflection.Emit.ILGeneration.dll": {},
+          "ref/net46/System.Reflection.Emit.Lightweight.dll": {},
+          "ref/net46/System.Reflection.Extensions.dll": {},
+          "ref/net46/System.Reflection.Primitives.dll": {},
+          "ref/net46/System.Resources.ResourceManager.dll": {},
+          "ref/net46/System.Runtime.Caching.dll": {},
+          "ref/net46/System.Runtime.dll": {},
+          "ref/net46/System.Runtime.DurableInstancing.dll": {},
+          "ref/net46/System.Runtime.Extensions.dll": {},
+          "ref/net46/System.Runtime.Handles.dll": {},
+          "ref/net46/System.Runtime.InteropServices.dll": {},
+          "ref/net46/System.Runtime.InteropServices.WindowsRuntime.dll": {},
+          "ref/net46/System.Runtime.Numerics.dll": {},
+          "ref/net46/System.Runtime.Remoting.dll": {},
+          "ref/net46/System.Runtime.Serialization.dll": {},
+          "ref/net46/System.Runtime.Serialization.Formatters.Soap.dll": {},
+          "ref/net46/System.Runtime.Serialization.Json.dll": {},
+          "ref/net46/System.Runtime.Serialization.Primitives.dll": {},
+          "ref/net46/System.Runtime.Serialization.Xml.dll": {},
+          "ref/net46/System.Security.dll": {},
+          "ref/net46/System.Security.Principal.dll": {},
+          "ref/net46/System.ServiceModel.Activation.dll": {},
+          "ref/net46/System.ServiceModel.Activities.dll": {},
+          "ref/net46/System.ServiceModel.Channels.dll": {},
+          "ref/net46/System.ServiceModel.Discovery.dll": {},
+          "ref/net46/System.ServiceModel.dll": {},
+          "ref/net46/System.ServiceModel.Duplex.dll": {},
+          "ref/net46/System.ServiceModel.Http.dll": {},
+          "ref/net46/System.ServiceModel.NetTcp.dll": {},
+          "ref/net46/System.ServiceModel.Primitives.dll": {},
+          "ref/net46/System.ServiceModel.Routing.dll": {},
+          "ref/net46/System.ServiceModel.Security.dll": {},
+          "ref/net46/System.ServiceModel.Web.dll": {},
+          "ref/net46/System.ServiceProcess.dll": {},
+          "ref/net46/System.Speech.dll": {},
+          "ref/net46/System.Text.Encoding.dll": {},
+          "ref/net46/System.Text.Encoding.Extensions.dll": {},
+          "ref/net46/System.Text.RegularExpressions.dll": {},
+          "ref/net46/System.Threading.dll": {},
+          "ref/net46/System.Threading.Tasks.dll": {},
+          "ref/net46/System.Threading.Tasks.Parallel.dll": {},
+          "ref/net46/System.Threading.Timer.dll": {},
+          "ref/net46/System.Transactions.dll": {},
+          "ref/net46/System.Web.Abstractions.dll": {},
+          "ref/net46/System.Web.ApplicationServices.dll": {},
+          "ref/net46/System.Web.DataVisualization.Design.dll": {},
+          "ref/net46/System.Web.DataVisualization.dll": {},
+          "ref/net46/System.Web.dll": {},
+          "ref/net46/System.Web.DynamicData.Design.dll": {},
+          "ref/net46/System.Web.DynamicData.dll": {},
+          "ref/net46/System.Web.Entity.Design.dll": {},
+          "ref/net46/System.Web.Entity.dll": {},
+          "ref/net46/System.Web.Extensions.Design.dll": {},
+          "ref/net46/System.Web.Extensions.dll": {},
+          "ref/net46/System.Web.Mobile.dll": {},
+          "ref/net46/System.Web.RegularExpressions.dll": {},
+          "ref/net46/System.Web.Routing.dll": {},
+          "ref/net46/System.Web.Services.dll": {},
+          "ref/net46/System.Windows.Controls.Ribbon.dll": {},
+          "ref/net46/System.Windows.dll": {},
+          "ref/net46/System.Windows.Forms.DataVisualization.Design.dll": {},
+          "ref/net46/System.Windows.Forms.DataVisualization.dll": {},
+          "ref/net46/System.Windows.Forms.dll": {},
+          "ref/net46/System.Windows.Input.Manipulations.dll": {},
+          "ref/net46/System.Windows.Presentation.dll": {},
+          "ref/net46/System.Workflow.Activities.dll": {},
+          "ref/net46/System.Workflow.ComponentModel.dll": {},
+          "ref/net46/System.Workflow.Runtime.dll": {},
+          "ref/net46/System.WorkflowServices.dll": {},
+          "ref/net46/System.Xaml.dll": {},
+          "ref/net46/System.Xml.dll": {},
+          "ref/net46/System.Xml.Linq.dll": {},
+          "ref/net46/System.Xml.ReaderWriter.dll": {},
+          "ref/net46/System.Xml.Serialization.dll": {},
+          "ref/net46/System.Xml.XDocument.dll": {},
+          "ref/net46/System.Xml.XmlSerializer.dll": {},
+          "ref/net46/UIAutomationClient.dll": {},
+          "ref/net46/UIAutomationClientsideProviders.dll": {},
+          "ref/net46/UIAutomationProvider.dll": {},
+          "ref/net46/UIAutomationTypes.dll": {},
+          "ref/net46/WindowsBase.dll": {},
+          "ref/net46/WindowsFormsIntegration.dll": {},
+          "ref/net46/XamlBuildTask.dll": {}
+        }
+      },
+      "System.Collections/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Diagnostics.Contracts/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Diagnostics.Debug/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Diagnostics.Tools/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Globalization/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.IO/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Linq/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.ObjectModel/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Reflection/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Reflection.Emit/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Emit.ILGeneration/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Emit.Lightweight/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Extensions/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Primitives/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.TypeExtensions/4.0.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Reflection": "4.0.0",
+          "System.Runtime": "4.0.0"
+        },
+        "frameworkAssemblies": [
+          "mscorlib"
+        ],
+        "compile": {
+          "ref/net46/System.Reflection.TypeExtensions.dll": {}
+        },
+        "runtime": {
+          "lib/net46/System.Reflection.TypeExtensions.dll": {}
+        }
+      },
+      "System.Resources.ResourceManager/4.0.0": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Runtime/4.0.20": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Runtime.Extensions/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Threading/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Threading.Tasks/4.0.10": {
+        "type": "package",
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      }
     }
   },
   "libraries": {
+    "Microsoft.TargetingPack.NETFramework.v4.6/1.0.0-rc2-23530": {
+      "type": "package",
+      "sha512": "qhZEnZLXtOGsSWkG7ozjU/sYCLIBlkKSue99fckT6Ty5v9htDythPLfAJrzHOUwDkBQ7oRPBCryeDE/E1fwnCg==",
+      "files": [
+        "Microsoft.TargetingPack.NETFramework.v4.6.1.0.0-rc2-23530.nupkg",
+        "Microsoft.TargetingPack.NETFramework.v4.6.1.0.0-rc2-23530.nupkg.sha512",
+        "Microsoft.TargetingPack.NETFramework.v4.6.nuspec",
+        "ref/net46/Accessibility.dll",
+        "ref/net46/CustomMarshalers.dll",
+        "ref/net46/ISymWrapper.dll",
+        "ref/net46/Microsoft.Activities.Build.dll",
+        "ref/net46/Microsoft.Build.Conversion.v4.0.dll",
+        "ref/net46/Microsoft.Build.dll",
+        "ref/net46/Microsoft.Build.Engine.dll",
+        "ref/net46/Microsoft.Build.Framework.dll",
+        "ref/net46/Microsoft.Build.Tasks.v4.0.dll",
+        "ref/net46/Microsoft.Build.Utilities.v4.0.dll",
+        "ref/net46/Microsoft.CSharp.dll",
+        "ref/net46/Microsoft.JScript.dll",
+        "ref/net46/Microsoft.VisualBasic.Compatibility.Data.dll",
+        "ref/net46/Microsoft.VisualBasic.Compatibility.dll",
+        "ref/net46/Microsoft.VisualBasic.dll",
+        "ref/net46/Microsoft.VisualC.dll",
+        "ref/net46/Microsoft.VisualC.STLCLR.dll",
+        "ref/net46/mscorlib.dll",
+        "ref/net46/PresentationBuildTasks.dll",
+        "ref/net46/PresentationCore.dll",
+        "ref/net46/PresentationFramework.Aero.dll",
+        "ref/net46/PresentationFramework.Aero2.dll",
+        "ref/net46/PresentationFramework.AeroLite.dll",
+        "ref/net46/PresentationFramework.Classic.dll",
+        "ref/net46/PresentationFramework.dll",
+        "ref/net46/PresentationFramework.Luna.dll",
+        "ref/net46/PresentationFramework.Royale.dll",
+        "ref/net46/ReachFramework.dll",
+        "ref/net46/sysglobl.dll",
+        "ref/net46/System.Activities.Core.Presentation.dll",
+        "ref/net46/System.Activities.dll",
+        "ref/net46/System.Activities.DurableInstancing.dll",
+        "ref/net46/System.Activities.Presentation.dll",
+        "ref/net46/System.AddIn.Contract.dll",
+        "ref/net46/System.AddIn.dll",
+        "ref/net46/System.Collections.Concurrent.dll",
+        "ref/net46/System.Collections.dll",
+        "ref/net46/System.ComponentModel.Annotations.dll",
+        "ref/net46/System.ComponentModel.Composition.dll",
+        "ref/net46/System.ComponentModel.Composition.Registration.dll",
+        "ref/net46/System.ComponentModel.DataAnnotations.dll",
+        "ref/net46/System.ComponentModel.dll",
+        "ref/net46/System.ComponentModel.EventBasedAsync.dll",
+        "ref/net46/System.Configuration.dll",
+        "ref/net46/System.Configuration.Install.dll",
+        "ref/net46/System.Core.dll",
+        "ref/net46/System.Data.DataSetExtensions.dll",
+        "ref/net46/System.Data.dll",
+        "ref/net46/System.Data.Entity.Design.dll",
+        "ref/net46/System.Data.Entity.dll",
+        "ref/net46/System.Data.Linq.dll",
+        "ref/net46/System.Data.OracleClient.dll",
+        "ref/net46/System.Data.Services.Client.dll",
+        "ref/net46/System.Data.Services.Design.dll",
+        "ref/net46/System.Data.Services.dll",
+        "ref/net46/System.Data.SqlXml.dll",
+        "ref/net46/System.Deployment.dll",
+        "ref/net46/System.Design.dll",
+        "ref/net46/System.Device.dll",
+        "ref/net46/System.Diagnostics.Contracts.dll",
+        "ref/net46/System.Diagnostics.Debug.dll",
+        "ref/net46/System.Diagnostics.Tools.dll",
+        "ref/net46/System.Diagnostics.Tracing.dll",
+        "ref/net46/System.DirectoryServices.AccountManagement.dll",
+        "ref/net46/System.DirectoryServices.dll",
+        "ref/net46/System.DirectoryServices.Protocols.dll",
+        "ref/net46/System.dll",
+        "ref/net46/System.Drawing.Design.dll",
+        "ref/net46/System.Drawing.dll",
+        "ref/net46/System.Dynamic.dll",
+        "ref/net46/System.Dynamic.Runtime.dll",
+        "ref/net46/System.EnterpriseServices.dll",
+        "ref/net46/System.EnterpriseServices.Thunk.dll",
+        "ref/net46/System.EnterpriseServices.Wrapper.dll",
+        "ref/net46/System.Globalization.dll",
+        "ref/net46/System.IdentityModel.dll",
+        "ref/net46/System.IdentityModel.Selectors.dll",
+        "ref/net46/System.IdentityModel.Services.dll",
+        "ref/net46/System.IO.Compression.dll",
+        "ref/net46/System.IO.Compression.FileSystem.dll",
+        "ref/net46/System.IO.dll",
+        "ref/net46/System.IO.Log.dll",
+        "ref/net46/System.Linq.dll",
+        "ref/net46/System.Linq.Expressions.dll",
+        "ref/net46/System.Linq.Parallel.dll",
+        "ref/net46/System.Linq.Queryable.dll",
+        "ref/net46/System.Management.dll",
+        "ref/net46/System.Management.Instrumentation.dll",
+        "ref/net46/System.Messaging.dll",
+        "ref/net46/System.Net.dll",
+        "ref/net46/System.Net.Http.dll",
+        "ref/net46/System.Net.Http.WebRequest.dll",
+        "ref/net46/System.Net.NetworkInformation.dll",
+        "ref/net46/System.Net.Primitives.dll",
+        "ref/net46/System.Net.Requests.dll",
+        "ref/net46/System.Net.WebHeaderCollection.dll",
+        "ref/net46/System.Numerics.dll",
+        "ref/net46/System.Numerics.Vectors.dll",
+        "ref/net46/System.ObjectModel.dll",
+        "ref/net46/System.Printing.dll",
+        "ref/net46/System.Reflection.Context.dll",
+        "ref/net46/System.Reflection.dll",
+        "ref/net46/System.Reflection.Emit.dll",
+        "ref/net46/System.Reflection.Emit.ILGeneration.dll",
+        "ref/net46/System.Reflection.Emit.Lightweight.dll",
+        "ref/net46/System.Reflection.Extensions.dll",
+        "ref/net46/System.Reflection.Primitives.dll",
+        "ref/net46/System.Resources.ResourceManager.dll",
+        "ref/net46/System.Runtime.Caching.dll",
+        "ref/net46/System.Runtime.dll",
+        "ref/net46/System.Runtime.DurableInstancing.dll",
+        "ref/net46/System.Runtime.Extensions.dll",
+        "ref/net46/System.Runtime.Handles.dll",
+        "ref/net46/System.Runtime.InteropServices.dll",
+        "ref/net46/System.Runtime.InteropServices.WindowsRuntime.dll",
+        "ref/net46/System.Runtime.Numerics.dll",
+        "ref/net46/System.Runtime.Remoting.dll",
+        "ref/net46/System.Runtime.Serialization.dll",
+        "ref/net46/System.Runtime.Serialization.Formatters.Soap.dll",
+        "ref/net46/System.Runtime.Serialization.Json.dll",
+        "ref/net46/System.Runtime.Serialization.Primitives.dll",
+        "ref/net46/System.Runtime.Serialization.Xml.dll",
+        "ref/net46/System.Security.dll",
+        "ref/net46/System.Security.Principal.dll",
+        "ref/net46/System.ServiceModel.Activation.dll",
+        "ref/net46/System.ServiceModel.Activities.dll",
+        "ref/net46/System.ServiceModel.Channels.dll",
+        "ref/net46/System.ServiceModel.Discovery.dll",
+        "ref/net46/System.ServiceModel.dll",
+        "ref/net46/System.ServiceModel.Duplex.dll",
+        "ref/net46/System.ServiceModel.Http.dll",
+        "ref/net46/System.ServiceModel.NetTcp.dll",
+        "ref/net46/System.ServiceModel.Primitives.dll",
+        "ref/net46/System.ServiceModel.Routing.dll",
+        "ref/net46/System.ServiceModel.Security.dll",
+        "ref/net46/System.ServiceModel.Web.dll",
+        "ref/net46/System.ServiceProcess.dll",
+        "ref/net46/System.Speech.dll",
+        "ref/net46/System.Text.Encoding.dll",
+        "ref/net46/System.Text.Encoding.Extensions.dll",
+        "ref/net46/System.Text.RegularExpressions.dll",
+        "ref/net46/System.Threading.dll",
+        "ref/net46/System.Threading.Tasks.dll",
+        "ref/net46/System.Threading.Tasks.Parallel.dll",
+        "ref/net46/System.Threading.Timer.dll",
+        "ref/net46/System.Transactions.dll",
+        "ref/net46/System.Web.Abstractions.dll",
+        "ref/net46/System.Web.ApplicationServices.dll",
+        "ref/net46/System.Web.DataVisualization.Design.dll",
+        "ref/net46/System.Web.DataVisualization.dll",
+        "ref/net46/System.Web.dll",
+        "ref/net46/System.Web.DynamicData.Design.dll",
+        "ref/net46/System.Web.DynamicData.dll",
+        "ref/net46/System.Web.Entity.Design.dll",
+        "ref/net46/System.Web.Entity.dll",
+        "ref/net46/System.Web.Extensions.Design.dll",
+        "ref/net46/System.Web.Extensions.dll",
+        "ref/net46/System.Web.Mobile.dll",
+        "ref/net46/System.Web.RegularExpressions.dll",
+        "ref/net46/System.Web.Routing.dll",
+        "ref/net46/System.Web.Services.dll",
+        "ref/net46/System.Windows.Controls.Ribbon.dll",
+        "ref/net46/System.Windows.dll",
+        "ref/net46/System.Windows.Forms.DataVisualization.Design.dll",
+        "ref/net46/System.Windows.Forms.DataVisualization.dll",
+        "ref/net46/System.Windows.Forms.dll",
+        "ref/net46/System.Windows.Input.Manipulations.dll",
+        "ref/net46/System.Windows.Presentation.dll",
+        "ref/net46/System.Workflow.Activities.dll",
+        "ref/net46/System.Workflow.ComponentModel.dll",
+        "ref/net46/System.Workflow.Runtime.dll",
+        "ref/net46/System.WorkflowServices.dll",
+        "ref/net46/System.Xaml.dll",
+        "ref/net46/System.Xml.dll",
+        "ref/net46/System.Xml.Linq.dll",
+        "ref/net46/System.Xml.ReaderWriter.dll",
+        "ref/net46/System.Xml.Serialization.dll",
+        "ref/net46/System.Xml.XDocument.dll",
+        "ref/net46/System.Xml.XmlSerializer.dll",
+        "ref/net46/UIAutomationClient.dll",
+        "ref/net46/UIAutomationClientsideProviders.dll",
+        "ref/net46/UIAutomationProvider.dll",
+        "ref/net46/UIAutomationTypes.dll",
+        "ref/net46/WindowsBase.dll",
+        "ref/net46/WindowsFormsIntegration.dll",
+        "ref/net46/XamlBuildTask.dll"
+      ]
+    },
     "System.Collections/4.0.10": {
       "type": "package",
       "serviceable": true,
@@ -1601,6 +2936,9 @@
       "System.Threading >= 4.0.10",
       "System.Threading.Tasks >= 4.0.10"
     ],
-    "DNXCore,Version=v5.0": []
+    "DNXCore,Version=v5.0": [],
+    ".NETFramework,Version=v4.6": [
+      "Microsoft.TargetingPack.NETFramework.v4.6 >= 1.0.0-rc2-23530"
+    ]
   }
 }
