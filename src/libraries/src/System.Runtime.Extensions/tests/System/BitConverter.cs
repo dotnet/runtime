@@ -208,6 +208,24 @@ public static class BitConverterTests
         Assert.Equal(String.Empty, BitConverter.ToString(new byte[0]));
     }
 
+    [Fact]
+    public static void ToString_ByteArrayTooLong_Throws()
+    {
+        byte[] arr;
+        try
+        {
+            arr = new byte[int.MaxValue / 3 + 1];
+        }
+        catch (OutOfMemoryException)
+        {
+            // Exit out of the test if we don't have an enough contiguous memory
+            // available to create a big enough array.
+            return;
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => BitConverter.ToString(arr));
+    }
+
     private static void VerifyRoundtrip<TInput>(Func<TInput, Byte[]> getBytes, Func<Byte[], int, TInput> convertBack, TInput input, Byte[] expectedBytes)
     {
         Byte[] bytes = getBytes(input);
