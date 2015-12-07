@@ -3,11 +3,10 @@
 
 namespace System.Runtime.InteropServices
 {
-    public static partial class RuntimeInformation
+    public enum Architecture
     {
-        public static bool IsOSPlatform(OSPlatform osPlatform)
-        {
-            return OSPlatform.OSX == osPlatform;
-        }
+        X86,
+        X64,
+        Arm
     }
 }

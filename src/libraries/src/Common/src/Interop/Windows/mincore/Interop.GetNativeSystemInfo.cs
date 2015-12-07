@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.SystemInfo_L1_1)]
-        internal extern static void GetSystemInfo(out SYSTEM_INFO lpSystemInfo);
+        [DllImport(Libraries.SystemInfo_L1_2)]
+        internal extern static void GetNativeSystemInfo(out SYSTEM_INFO lpSystemInfo);
     }
 }
