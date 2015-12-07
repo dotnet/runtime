@@ -14,4 +14,7 @@ mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_k
 char*
 mono_identifier_unescape_type_name_chars (char* identifier);
 
+MonoImage *
+mono_find_dynamic_image_owner (void *ptr);
+
 #endif /* __MONO_METADATA_REFLECTION_INTERNALS_H__ */

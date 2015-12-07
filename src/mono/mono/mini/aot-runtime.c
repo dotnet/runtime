@@ -471,16 +471,14 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		break;
 	}
 	case MONO_AOT_TYPEREF_VAR: {
-		MonoType *t;
+		MonoType *t = NULL;
 		MonoGenericContainer *container = NULL;
 		int type = decode_value (p, &p);
 		int num = decode_value (p, &p);
-		gboolean has_container = decode_value (p, &p);
+		gboolean is_not_anonymous = decode_value (p, &p);
 		MonoType *gshared_constraint = NULL;
-		char *par_name = NULL;
 
-		t = NULL;
-		if (has_container) {
+		if (is_not_anonymous) {
 			gboolean is_method = decode_value (p, &p);
 			
 			if (is_method) {
@@ -515,6 +513,9 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 
 				t = mini_get_shared_gparam (&par_klass->byval_arg, gshared_constraint);
 			}
+
+            // We didn't decode is_method, so we have to infer it from type enum.
+			container = get_anonymous_container_for_image (module->assembly->image, type == MONO_TYPE_MVAR);
 		}
 
 		if (t) {
@@ -522,18 +523,17 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		} else {
 			t = g_new0 (MonoType, 1);
 			t->type = type;
-			if (container) {
+			if (is_not_anonymous) {
 				t->data.generic_param = mono_generic_container_get_param (container, num);
 				g_assert (gshared_constraint == NULL);
 			} else {
 				/* Anonymous */
 				MonoGenericParam *par = (MonoGenericParam*)mono_image_alloc0 (module->assembly->image, sizeof (MonoGenericParamFull));
+				par->owner = container;
 				par->num = num;
 				par->gshared_constraint = gshared_constraint;
-				par->image = module->assembly->image;
 				t->data.generic_param = par;
-				if (par_name)
-					((MonoGenericParamFull*)par)->info.name = par_name;
+				((MonoGenericParamFull*)par)->info.name = make_generic_name_string (module->assembly->image, num);
 			}
 			// FIXME: Maybe use types directly to avoid
 			// the overhead of creating MonoClass-es
