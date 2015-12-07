@@ -338,6 +338,7 @@ namespace System.Net.Sockets
         ReceiveLowWater = 4100,
         ReceiveTimeout = 4102,
         ReuseAddress = 4,
+        ReuseUnicastPort = 12295, 
         SendBuffer = 4097,
         SendLowWater = 4099,
         SendTimeout = 4101,

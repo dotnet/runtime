@@ -65,6 +65,9 @@ namespace System.Net.Sockets
         // Get socket type.
         Type = 0x1008,
 
+        // Allow ephemeral port reuse for outbound connections.
+        ReuseUnicastPort = 0x3007,
+
         // Maximum queue length that can be specified by <see cref='System.Net.Sockets.Socket.Listen'/>.
         MaxConnections = 0x7fffffff,
         #endregion
