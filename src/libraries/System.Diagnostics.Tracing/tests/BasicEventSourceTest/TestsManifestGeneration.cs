@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,7 +18,6 @@ using System.Text.RegularExpressions;
 
 namespace BasicEventSourceTests
 {
-    
     public class TestsManifestGeneration
     {
         /// <summary>
@@ -24,74 +26,18 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_EventSource_NamedEventSource()
         {
-            lock (TestUtilities.EventSourceTestLock)
+            using (var es = new SdtEventSources.DontPollute.EventSource())
             {
-                using (var es = new SdtEventSources.DontPollute.EventSource())
+                using (var el = new LoudListener())
                 {
-                    using (var el = new LoudListener())
-                    {
-                        int i = 12;
-                        es.EventWrite(i);
+                    int i = 12;
+                    es.EventWrite(i);
 
-                        Assert.Equal(1, LoudListener.LastEvent.EventId);
-                        Assert.Equal(1, LoudListener.LastEvent.Payload.Count);
-                        Assert.Equal(i, LoudListener.LastEvent.Payload[0]);
-                    }
+                    Assert.Equal(1, LoudListener.LastEvent.EventId);
+                    Assert.Equal(1, LoudListener.LastEvent.Payload.Count);
+                    Assert.Equal(i, LoudListener.LastEvent.Payload[0]);
                 }
             }
-        }
-
-        /// <summary>
-        /// Validate generating manifests for the inproc as well as reflection-loaded event sources
-        /// </summary>
-        [Fact]
-        public void Test_GenerateManifest()
-        {
-#if true
-            Console.WriteLine("Disabled because it fails in checkin but not locally on 10/6/2015");
-#else
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                TestUtilities.CheckNoEventSourcesRunning("Start");
-                string dll = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "EvtSrcForReflection.dll");
-                string esdll = Path.Combine(Path.GetDirectoryName(dll), "Microsoft.Diagnostics.Tracing.EventSource.dll");
-                Assembly.ReflectionOnlyLoadFrom(esdll);             // preload dependency of EvtSrcForReflection
-                var esAssm = Assembly.ReflectionOnlyLoadFrom(dll);
-                Type firstEvtSrcType = esAssm.GetTypes().FirstOrDefault(ty => ty.BaseType.Name == "EventSource");
-                Assert.NotNull(firstEvtSrcType);
-                Type reflectionEvtSrc = firstEvtSrcType;
-
-                var esTypes = new Type[] { typeof(Mdt.EventSourceTest), 
-                                           typeof(Mdt.SimpleEventSource), 
-                                           typeof(Mdt.MyLoggingEventSource),
-                                           typeof(Sdt.EventSourceTest), 
-                                           typeof(Sdt.SimpleEventSource), 
-                                           // typeof(Sdt.MyLoggingEventSource), // for SDT interface methods are skipped, so we get an empty manifest
-                                           reflectionEvtSrc };
-
-                if (!Directory.Exists(Environment.ExpandEnvironmentVariables(@"%TEMP%\man")))
-                    Directory.CreateDirectory(Environment.ExpandEnvironmentVariables(@"%TEMP%\man"));
-
-                // Be helpful and tell people how to update the baselines.  
-                Console.WriteLine("To Update baselines");
-                Console.WriteLine(@"  cd to EventSource\Public\test\BasicEventSourceTest\Baselines");
-                foreach (var eventSource in esTypes)
-                {
-                    string manfilename = SaveEventSourceManifest(eventSource, Environment.ExpandEnvironmentVariables(@"%TEMP%\man"));
-                    string baselineManFile = GetPrefixFromType(eventSource) + eventSource.Name + ".man";
-                    Console.WriteLine("  tf edit " + baselineManFile);
-                    Console.WriteLine("  copy \"" + manfilename + "\" " + baselineManFile);
-                }
-
-                foreach (var eventSource in esTypes)
-                {
-                    string manfilename = SaveEventSourceManifest(eventSource, Environment.ExpandEnvironmentVariables(@"%TEMP%\man"));
-                    string baselineManFile = @"Baselines\" + GetPrefixFromType(eventSource) + eventSource.Name + ".man";
-                    ValidateManifest(baselineManFile, manfilename);
-                }
-                TestUtilities.CheckNoEventSourcesRunning("Stop");
-            }
-#endif
         }
 
         /// <summary>
@@ -110,30 +56,19 @@ namespace BasicEventSourceTests
                 string dllName = Path.GetFileName(eventSourceType.GetTypeInfo().Assembly.Location);
                 //if (!eventSourceType.GetTypeInfo().Assembly.ReflectionOnly)
                 //{
-                    var baseAssm = eventSourceType.GetTypeInfo().BaseType.GetTypeInfo().Assembly;
-                    var tyGmf = (baseAssm != null) ? baseAssm.GetType(eventSourceType.GetTypeInfo().BaseType.Namespace + ".EventManifestOptions") : null;
-                    MethodInfo mi = null;
-                    if (tyGmf != null)
-                    {
-                        //mi = eventSourceType.GetTypeInfo().GetMethod("GenerateManifest", BindingFlags.Static | BindingFlags.FlattenHierarchy | BindingFlags.Public,
-                        //                               null, new Type[] { typeof(Type), typeof(string), tyGmf }, null);
-                        mi = eventSourceType.GetTypeInfo().GetDeclaredMethod("GenerateManifest");
-                    }
-                    if (mi != null)
-                    {
-                        man = (string)mi.Invoke(null, new object[] { eventSourceType, dllName, 2 });
-                    }
-                    //else
-                    //{
-                    //    mi = eventSourceType.GetTypeInfo().GetMethod("GenerateManifest", BindingFlags.Static | BindingFlags.FlattenHierarchy | BindingFlags.Public,
-                    //                                        null, new Type[] { typeof(Type), typeof(string) }, null);
-                    //    man = (string)mi.Invoke(null, new object[] { eventSourceType, dllName });
-                    //}
-                //}
-                //else
-                //{
-                //    man = EventSource.GenerateManifest(eventSourceType, dllName, EventManifestOptions.AllCultures);
-                //}
+                var baseAssm = eventSourceType.GetTypeInfo().BaseType.GetTypeInfo().Assembly;
+                var tyGmf = (baseAssm != null) ? baseAssm.GetType(eventSourceType.GetTypeInfo().BaseType.Namespace + ".EventManifestOptions") : null;
+                MethodInfo mi = null;
+                if (tyGmf != null)
+                {
+                    //mi = eventSourceType.GetTypeInfo().GetMethod("GenerateManifest", BindingFlags.Static | BindingFlags.FlattenHierarchy | BindingFlags.Public,
+                    //                               null, new Type[] { typeof(Type), typeof(string), tyGmf }, null);
+                    mi = eventSourceType.GetTypeInfo().GetDeclaredMethod("GenerateManifest");
+                }
+                if (mi != null)
+                {
+                    man = (string)mi.Invoke(null, new object[] { eventSourceType, dllName, 2 });
+                }
                 manfile.Write(man);
             }
             return manfilename;
@@ -151,13 +86,13 @@ namespace BasicEventSourceTests
 
         private static void ValidateManifest(string baseline, string manifest)
         {
-            Console.WriteLine("Baseline: " + Path.GetFullPath(baseline));
-            Console.WriteLine("Test: " + Path.GetFullPath(manifest));
+            Debug.WriteLine("Baseline: " + Path.GetFullPath(baseline));
+            Debug.WriteLine("Test: " + Path.GetFullPath(manifest));
             var baselineOrig = Path.GetFullPath(baseline);
             baselineOrig = baselineOrig.Replace(@"\bin\Debug\", @"\");
             baselineOrig = baselineOrig.Replace(@"\bin\Release\", @"\");
-            Console.WriteLine("To Compare: windiff " + Path.GetFullPath(manifest) + " " + baselineOrig);
-            Console.WriteLine("To Update: copy " + Path.GetFullPath(manifest) + " " + baselineOrig);
+            Debug.WriteLine("To Compare: windiff " + Path.GetFullPath(manifest) + " " + baselineOrig);
+            Debug.WriteLine("To Update: copy " + Path.GetFullPath(manifest) + " " + baselineOrig);
 
             var baselineLines = File.ReadLines(baseline).ToArray();
             var manifestLines = File.ReadLines(manifest).ToArray();

@@ -1,5 +1,8 @@
-﻿using System.Diagnostics.Tracing;
-#if USE_ETW
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Diagnostics.Tracing;
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
 using Microsoft.Diagnostics.Tracing.Session;
 #endif
 using Xunit;
@@ -8,9 +11,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-
-//Our tests shouldn't be parallelized. They often use the same EventSource, and only one instance can be active at once.
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace BasicEventSourceTests
 {
@@ -31,13 +31,12 @@ namespace BasicEventSourceTests
         /// </summary>
         public static void RunTests(List<SubTest> tests, Listener listener, EventSource source, FilteringOptions options = null)
         {
-            Console.WriteLine("**** Starting Testing of " + tests.Count + " tests with Listener " + listener.GetType().Name);
             int expectedTestNumber = 0;
             SubTest currentTest = null;
             List<Event> replies = new List<Event>(2);
 
             // Wire up the callback to handle the validation when the listener receives events. 
-            listener.OnEvent = delegate(Event data)
+            listener.OnEvent = delegate (Event data)
             {
                 if (data.ProviderName == "TestHarnessEventSource")
                 {
@@ -49,7 +48,6 @@ namespace BasicEventSourceTests
                     // Validate that the events that came in during the test are correct. 
                     if (currentTest != null)
                     {
-                        Console.WriteLine("Validating SubTest " + currentTest.Name);
                         // You can use the currentTest.Name to set a filter in the harness 
                         // tests = tests.FindAll(test => Regex.IsMatch(test.Name, "Write/Basic/EventII")
                         // so the test only runs this one sub-test.   Then you can set 
@@ -73,7 +71,6 @@ namespace BasicEventSourceTests
                         currentTest = tests[testNumber];
                         Assert.Equal(currentTest.Name, data.PayloadValue(0, "name"));
                         expectedTestNumber++;
-                        Console.WriteLine("Starting SubTest " + currentTest.Name);
                     }
                     else
                     {
@@ -118,14 +115,12 @@ namespace BasicEventSourceTests
                 testHarnessEventSource.IgnoreEvent();
             }
 
-            Console.WriteLine("**** Disposing of the listener.");
             listener.Dispose();         // Indicate we are done listening.  For the ETW file based cases, we do all the processing here
 
             // expectedTetst number are the number of tests we successfully ran.  
             Assert.Equal(expectedTestNumber, tests.Count);
-            Console.WriteLine("**** Ending Testing of " + tests.Count + " tests with Listener " + listener.GetType().Name);
         }
-#region private
+
         /// <summary>
         /// This eventSource I use to emit events to separate tests from each other.  
         /// </summary>
@@ -135,10 +130,8 @@ namespace BasicEventSourceTests
             /// <summary>
             /// Sent to make sure the listener is ignoring when it should be.  
             /// </summary>
-            public void IgnoreEvent() { WriteEvent(2);  }
+            public void IgnoreEvent() { WriteEvent(2); }
         }
-
-#endregion
     }
 
     /// <summary>

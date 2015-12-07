@@ -1,11 +1,14 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics.Tracing;
 using Xunit;
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
 using Microsoft.Diagnostics.Tracing.Session;
 #endif
 using System.IO;
@@ -13,24 +16,20 @@ using System.Threading;
 
 namespace BasicEventSourceTests
 {
-    
     public class TestShutdown
     {
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
         /// <summary>
         /// Test for manifest event being logged during AD/Process shutdown during EventSource Dispose(bool) method.
         /// </summary>
         [Fact]
         public void Test_EventSource_ShutdownManifest()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                TestUtilities.CheckNoEventSourcesRunning("Start");
-                Console.WriteLine("Logging more than 1MB of events...");
-                OverflowCircularBufferTest();
-                Console.WriteLine("Success...");
-                TestUtilities.CheckNoEventSourcesRunning("Stop");
-            }
+            TestUtilities.CheckNoEventSourcesRunning("Start");
+            Debug.WriteLine("Logging more than 1MB of events...");
+            OverflowCircularBufferTest();
+            Debug.WriteLine("Success...");
+            TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
         public void OverflowCircularBufferTest()
@@ -42,7 +41,7 @@ namespace BasicEventSourceTests
 
             // Normalze to a full path name.  
             dataFileName = Path.GetFullPath(dataFileName);
-            Console.WriteLine("Creating data file {0}", dataFileName);
+            Debug.WriteLine(String.Format("Creating data file {0}", dataFileName));
 
             TraceEventSession session = null;
             using (session = new TraceEventSession(sessionName, dataFileName))
@@ -51,7 +50,7 @@ namespace BasicEventSourceTests
                 session.CircularBufferMB = 1;
                 session.BufferSizeMB = 1;
                 session.EnableProvider(logger.Name);
-       
+
                 Thread.Sleep(100);  // Enabling is async. Wait a bit.
 
                 // Generate events for all the tests, surrounded by events that tell us we are starting a test.  

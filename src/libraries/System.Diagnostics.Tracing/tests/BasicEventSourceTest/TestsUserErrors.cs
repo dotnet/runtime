@@ -1,4 +1,7 @@
-﻿using System.Diagnostics.Tracing;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Diagnostics.Tracing;
 using Xunit;
 using System;
 using System.Collections.Generic;
@@ -11,7 +14,7 @@ namespace BasicEventSourceTests
     /// <summary>
     /// Tests the user experience for common user errors.  
     /// </summary>
-    
+
     public class TestsUserErrors
     {
         /// <summary>
@@ -21,11 +24,8 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_BadTypes_Manifest_UserClass()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                var badEventSource = new BadEventSource_Bad_Type_UserClass();
-                Test_BadTypes_Manifest(badEventSource);
-            }
+            var badEventSource = new BadEventSource_Bad_Type_UserClass();
+            Test_BadTypes_Manifest(badEventSource);
         }
 
         private void Test_BadTypes_Manifest(EventSource source)
@@ -35,8 +35,8 @@ namespace BasicEventSourceTests
                 var listener = new EventListenerListener();
 
                 var events = new List<Event>();
-                Console.WriteLine("Adding delegate to onevent");
-                listener.OnEvent = delegate(Event data) { events.Add(data); };
+                Debug.WriteLine("Adding delegate to onevent");
+                listener.OnEvent = delegate (Event data) { events.Add(data); };
 
                 listener.EventSourceCommand(source.Name, EventCommand.Enable);
 
@@ -59,42 +59,40 @@ namespace BasicEventSourceTests
         /// <summary>
         /// Test the 
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_BadEventSource_MismatchedIds()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
             // We expect only one session to be on when running the test but if a ETW session was left
             // hanging, it will confuse the EventListener tests.   
-            EtwListener.InsureStopped();  
+            EtwListener.EnsureStopped();
 #endif // USE_ETW
 
-                TestUtilities.CheckNoEventSourcesRunning("Start");
-                var onStartups = new bool[] { false, true };
-                var listenerGenerators = new Func<Listener>[]
-                {
+            TestUtilities.CheckNoEventSourcesRunning("Start");
+            var onStartups = new bool[] { false, true };
+            var listenerGenerators = new Func<Listener>[]
+            {
                 () => new EventListenerListener(),
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
                 () => new EtwListener()
 #endif // USE_ETW
-                };
-                var settings = new EventSourceSettings[] { EventSourceSettings.Default, EventSourceSettings.EtwSelfDescribingEventFormat };
+            };
+            var settings = new EventSourceSettings[] { EventSourceSettings.Default, EventSourceSettings.EtwSelfDescribingEventFormat };
 
-                // For every interesting combination, run the test and see that we get a nice failure message.  
-                foreach (bool onStartup in onStartups)
+            // For every interesting combination, run the test and see that we get a nice failure message.  
+            foreach (bool onStartup in onStartups)
+            {
+                foreach (Func<Listener> listenerGenerator in listenerGenerators)
                 {
-                    foreach (Func<Listener> listenerGenerator in listenerGenerators)
+                    foreach (EventSourceSettings setting in settings)
                     {
-                        foreach (EventSourceSettings setting in settings)
-                        {
-                            Test_Bad_EventSource_Startup(onStartup, listenerGenerator(), setting);
-                        }
+                        Test_Bad_EventSource_Startup(onStartup, listenerGenerator(), setting);
                     }
                 }
-
-                TestUtilities.CheckNoEventSourcesRunning("Stop");
             }
+
+            TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
         /// <summary>
@@ -106,14 +104,14 @@ namespace BasicEventSourceTests
         private void Test_Bad_EventSource_Startup(bool onStartup, Listener listener, EventSourceSettings settings)
         {
             var eventSourceName = typeof(BadEventSource_MismatchedIds).Name;
-            Console.WriteLine("***** Test_BadEventSource_Startup(OnStartUp: " + onStartup + " Listener: " + listener + " Settings: " + settings + ")");
+            Debug.WriteLine("***** Test_BadEventSource_Startup(OnStartUp: " + onStartup + " Listener: " + listener + " Settings: " + settings + ")");
 
             // Activate the source before the source exists (if told to).  
             if (onStartup)
                 listener.EventSourceCommand(eventSourceName, EventCommand.Enable);
 
             var events = new List<Event>();
-            listener.OnEvent = delegate(Event data) { events.Add(data); };
+            listener.OnEvent = delegate (Event data) { events.Add(data); };
 
             using (var source = new BadEventSource_MismatchedIds(settings))
             {
@@ -130,7 +128,7 @@ namespace BasicEventSourceTests
             Event _event = events[0];
             Assert.Equal("EventSourceMessage", _event.EventName);
             string message = _event.PayloadString(0, "message");
-            Console.WriteLine("Message=\"{0}\"", message);
+            Debug.WriteLine(String.Format("Message=\"{0}\"", message));
             // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_MismatchedIds: Event Event2 is given event ID 2 but 1 was passed to WriteEvent. "
             Assert.True(Regex.IsMatch(message, "Event Event2 is givien event ID 2 but 1 was passed to WriteEvent"));
         }
@@ -138,50 +136,46 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_Bad_WriteRelatedID_ParameterName()
         {
-
 #if true
-            Console.WriteLine("Test disabled because the fix it tests is not in CoreCLR yet.");
+            Debug.WriteLine("Test disabled because the fix it tests is not in CoreCLR yet.");
 #else
-            lock (TestUtilities.EventSourceTestLock)
+            BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter bes = null;
+            EventListenerListener listener = null;
+            try
             {
-                BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter bes = null;
-                EventListenerListener listener = null;
-                try
+                Guid oldGuid;
+                Guid newGuid = Guid.NewGuid();
+                Guid newGuid2 = Guid.NewGuid();
+                EventSource.SetCurrentThreadActivityId(newGuid, out oldGuid);
+
+                bes = new BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter();
+                listener = new EventListenerListener();
+
+                var events = new List<Event>();
+                listener.OnEvent = delegate (Event data) { events.Add(data); };
+
+                listener.EventSourceCommand(bes.Name, EventCommand.Enable);
+
+                bes.RelatedActivity(newGuid2, "Hello", 42, "AA", "BB");
+
+                // Confirm that we get exactly one event from this whole process, that has the error message we expect.  
+                Assert.Equal(events.Count, 1);
+                Event _event = events[0];
+                Assert.Equal("EventSourceMessage", _event.EventName);
+                string message = _event.PayloadString(0, "message");
+                // expected message: "EventSource expects the first parameter of the Event method to be of type Guid and to be named "relatedActivityId" when calling WriteEventWithRelatedActivityId."
+                Assert.True(Regex.IsMatch(message, "EventSource expects the first parameter of the Event method to be of type Guid and to be named \"relatedActivityId\" when calling WriteEventWithRelatedActivityId."));
+            }
+            finally
+            {
+                if (bes != null)
                 {
-                    Guid oldGuid;
-                    Guid newGuid = Guid.NewGuid();
-                    Guid newGuid2 = Guid.NewGuid();
-                    EventSource.SetCurrentThreadActivityId(newGuid, out oldGuid);
-
-                    bes = new BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter();
-                    listener = new EventListenerListener();
-
-                    var events = new List<Event>();
-                    listener.OnEvent = delegate (Event data) { events.Add(data); };
-
-                    listener.EventSourceCommand(bes.Name, EventCommand.Enable);
-
-                    bes.RelatedActivity(newGuid2, "Hello", 42, "AA", "BB");
-
-                    // Confirm that we get exactly one event from this whole process, that has the error message we expect.  
-                    Assert.Equal(events.Count, 1);
-                    Event _event = events[0];
-                    Assert.Equal("EventSourceMessage", _event.EventName);
-                    string message = _event.PayloadString(0, "message");
-                    // expected message: "EventSource expects the first parameter of the Event method to be of type Guid and to be named "relatedActivityId" when calling WriteEventWithRelatedActivityId."
-                    Assert.True(Regex.IsMatch(message, "EventSource expects the first parameter of the Event method to be of type Guid and to be named \"relatedActivityId\" when calling WriteEventWithRelatedActivityId."));
+                    bes.Dispose();
                 }
-                finally
-                {
-                    if (bes != null)
-                    {
-                        bes.Dispose();
-                    }
 
-                    if (listener != null)
-                    {
-                        listener.Dispose();
-                    }
+                if (listener != null)
+                {
+                    listener.Dispose();
                 }
             }
 #endif
@@ -192,7 +186,7 @@ namespace BasicEventSourceTests
     /// This EventSource has a common user error, and we want to make sure EventSource
     /// gives a reasonable experience in that case. 
     /// </summary>
-    class BadEventSource_MismatchedIds : EventSource
+    internal class BadEventSource_MismatchedIds : EventSource
     {
         public BadEventSource_MismatchedIds(EventSourceSettings settings) : base(settings) { }
         public void Event1(int arg) { WriteEvent(1, arg); }
@@ -203,7 +197,7 @@ namespace BasicEventSourceTests
     /// <summary>
     /// A manifest based provider with a bad type byte[]
     /// </summary>
-    class BadEventSource_Bad_Type_ByteArray : EventSource
+    internal class BadEventSource_Bad_Type_ByteArray : EventSource
     {
         public void Event1(byte[] myArray) { WriteEvent(1, myArray); }
     }
@@ -237,9 +231,8 @@ namespace BasicEventSourceTests
     /// <summary>
     /// A manifest based provider with a bad type (only supported in self describing)
     /// </summary>
-    class BadEventSource_Bad_Type_UserClass : EventSource
+    internal class BadEventSource_Bad_Type_UserClass : EventSource
     {
         public void Event1(UserClass myClass) { WriteEvent(1, myClass); }
     }
-
 }

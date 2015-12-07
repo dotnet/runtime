@@ -1,17 +1,13 @@
-﻿using System;
-#if false
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif // USE_MDT_EVENTSOURCE
 
 // We wish to test both Microsoft.Diagnostics.Tracing (Nuget)
 // and System.Diagnostics.Tracing (Framewwork), we use this Ifdef make each kind 
-#if false
-namespace MdtEventSources
-#else
+
 namespace SdtEventSources
-#endif
 {
     public class UnsealedEventSource : EventSource
     {
@@ -40,7 +36,7 @@ namespace SdtEventSources
             WriteEvent(-10, n);
         }
     }
-    
+
     // this behaves differently in 4.5 vs. 4.5.1 so just skip it for those scenarios
     public sealed class OutOfRangeKwdEventSource : EventSource
     {
@@ -69,7 +65,7 @@ namespace SdtEventSources
         #region Keywords / Tasks /Opcodes / Channels
         public static class Opcodes
         {
-            public const EventOpcode Op1 = (EventOpcode) 3; // values <= 10 are reserved
+            public const EventOpcode Op1 = (EventOpcode)3; // values <= 10 are reserved
         }
         #endregion
     }
@@ -85,7 +81,7 @@ namespace SdtEventSources
         #region Keywords / Tasks /Opcodes / Channels
         public static class Opcodes
         {
-            public const EventKeywords Op1 = (EventKeywords) 0x1;
+            public const EventKeywords Op1 = (EventKeywords)0x1;
         }
         #endregion
     }
@@ -210,11 +206,10 @@ namespace SdtEventSources
             [Channel(Enabled = false, ChannelType = ChannelType.Debug)]
             public const EventChannel BrokeCamelsBack = (EventChannel)24;
         }
-        #endregion
+    #endregion
     }
 #endif
 
-#if false
     public sealed class EventWithAdminChannelNoMessageEventSource : EventSource
     {
         [Event(1, Channel = EventChannel.Admin, Level = EventLevel.Informational)]
@@ -236,7 +231,6 @@ namespace SdtEventSources
 #endif
         #endregion
     }
-#endif
 
     public abstract class AbstractWithKwdTaskOpcodeEventSource : EventSource
     {

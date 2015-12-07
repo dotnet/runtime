@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,21 +11,15 @@ using System.Threading;
 using Xunit;
 
 using System.Diagnostics.Tracing;
-#if false
-using Microsoft.Diagnostics.Tracing.Session;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.EventSourceTest;
-#endif
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using SdtEventSources;
 
 namespace BasicEventSourceTests
 {
-    
     public class TestsWriteEvent
     {
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
         /// <summary>
         /// Tests WriteEvent using the manifest based mechanism.   
         /// Tests the ETW path. 
@@ -30,38 +27,31 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_Manifest_ETW()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent(new EtwListener(), false);
-            }
+            Test_WriteEvent(new EtwListener(), false);
         }
 #endif // USE_ETW
         /// <summary>
         /// Tests WriteEvent using the manifest based mechanism.   
         /// Tests bTraceListener path. 
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_Manifest_EventListener()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent(new EventListenerListener(), false);
-            }
+            Test_WriteEvent(new EventListenerListener(), false);
         }
 
         /// <summary>
         /// Tests WriteEvent using the manifest based mechanism.   
         /// Tests bTraceListener path using events instead of virtual callbacks. 
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_Manifest_EventListener_UseEvents()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent(new EventListenerListener(true), false);
-            }
+            Test_WriteEvent(new EventListenerListener(true), false);
         }
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
         /// <summary>
         /// Tests WriteEvent using the self-describing mechanism.   
         /// Tests both the ETW and TraceListener paths. 
@@ -69,23 +59,18 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_SelfDescribing_ETW()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent(new EtwListener(), true);
-            }
+            Test_WriteEvent(new EtwListener(), true);
         }
 #endif
         /// <summary>
         /// Tests WriteEvent using the self-describing mechanism.   
         /// Tests both the ETW and TraceListener paths. 
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_SelfDescribing_EventListener()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent(new EventListenerListener(), true);
-            }
+            Test_WriteEvent(new EventListenerListener(), true);
         }
 
         /// <summary>
@@ -93,19 +78,17 @@ namespace BasicEventSourceTests
         /// Tests both the ETW and TraceListener paths using events 
         /// instead of virtual callbacks. 
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_SelfDescribing_EventListener_UseEvents()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent(new EventListenerListener(true), true);
-            }
+            Test_WriteEvent(new EventListenerListener(true), true);
         }
 
         /// <summary>
         /// Helper method for the two tests above.  
         /// </summary>
-        void Test_WriteEvent(Listener listener, bool useSelfDescribingEvents)
+        private void Test_WriteEvent(Listener listener, bool useSelfDescribingEvents)
         {
             using (var logger = new SdtEventSources.EventSourceTest(useSelfDescribingEvents))
             {
@@ -113,8 +96,8 @@ namespace BasicEventSourceTests
 
                 /*************************************************************************/
                 tests.Add(new SubTest("WriteEvent/Basic/EventII",
-                    delegate() { logger.EventII(10, 11); },
-                    delegate(Event evt)
+                    delegate () { logger.EventII(10, 11); },
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventII", evt.EventName);
@@ -123,28 +106,27 @@ namespace BasicEventSourceTests
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("WriteEvent/Basic/EventSS",
-                    delegate() { logger.EventSS("one", "two"); },
-                    delegate(Event evt)
+                    delegate () { logger.EventSS("one", "two"); },
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventSS", evt.EventName);
                         Assert.Equal(evt.PayloadValue(0, "arg1"), "one");
                         Assert.Equal(evt.PayloadValue(1, "arg2"), "two");
                     }));
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/EventWithManyTypeArgs",
-                    delegate()
+                    delegate ()
                     {
                         logger.EventWithManyTypeArgs("Hello", 1, 2, 3, 'a', 4, 5, 6, 7,
                                                  (float)10.0, (double)11.0, logger.Guid);
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventWithManyTypeArgs", evt.EventName);
                         Assert.Equal("Hello", evt.PayloadValue(0, "msg"));
-                        // TODO can check for other args
                         Assert.Equal((float)10.0, evt.PayloadValue(9, "f"));
                         Assert.Equal((double)11.0, evt.PayloadValue(10, "d"));
                         Assert.Equal(logger.Guid, evt.PayloadValue(11, "guid"));
@@ -152,11 +134,11 @@ namespace BasicEventSourceTests
 #endif // USE_ETW
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/EventWith7Strings",
-                    delegate()
+                    delegate ()
                     {
                         logger.EventWith7Strings("s0", "s1", "s2", "s3", "s4", "s5", "s6");
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventWith7Strings", evt.EventName);
@@ -165,21 +147,21 @@ namespace BasicEventSourceTests
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/EventWith9Strings",
-                    delegate()
+                    delegate ()
                     {
                         logger.EventWith9Strings("s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8");
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventWith9Strings", evt.EventName);
                         Assert.Equal("s0", (string)evt.PayloadValue(0, "s0"));
                         Assert.Equal("s8", (string)evt.PayloadValue(8, "s8"));
                     }));
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Activity/EventWithXferWeirdArgs",
-                    delegate()
+                    delegate ()
                     {
                         var actid = Guid.NewGuid();
                         logger.EventWithXferWeirdArgs(actid,
@@ -187,11 +169,10 @@ namespace BasicEventSourceTests
                             true,
                             SdtEventSources.MyLongEnum.LongVal1);
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
-
-                        // TODO FIX NOW decide the convention here 
+                
                         // We log EventWithXferWeirdArgs in one case and 
                         // WorkWeirdArgs/Send in the other
                         Assert.True(evt.EventName.Contains("WeirdArgs"));
@@ -207,11 +188,11 @@ namespace BasicEventSourceTests
 
                 /*************************************************************************/
                 tests.Add(new SubTest("WriteEvent/Enum/EventEnum",
-                    delegate()
+                    delegate ()
                     {
                         logger.EventEnum(SdtEventSources.MyColor.Blue);
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventEnum", evt.EventName);
@@ -222,11 +203,11 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Enum/EventEnum1",
-                   delegate()
+                   delegate ()
                    {
                        logger.EventEnum1(SdtEventSources.MyColor.Blue);
                    },
-                   delegate(Event evt)
+                   delegate (Event evt)
                    {
                        Assert.Equal(logger.Name, evt.ProviderName);
                        Assert.Equal("EventEnum1", evt.EventName);
@@ -237,8 +218,8 @@ namespace BasicEventSourceTests
                    }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithIntIntString",
-                    delegate() { logger.EventWithIntIntString(10, 11, "test"); },
-                    delegate(Event evt)
+                    delegate () { logger.EventWithIntIntString(10, 11, "test"); },
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventWithIntIntString", evt.EventName);
@@ -248,8 +229,8 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/Basic/EventWithIntLongString",
-                    delegate() { logger.EventWithIntLongString(10, (long)11, "test"); },
-                    delegate(Event evt)
+                    delegate () { logger.EventWithIntLongString(10, (long)11, "test"); },
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventWithIntLongString", evt.EventName);
@@ -354,22 +335,20 @@ namespace BasicEventSourceTests
                             Assert.Equal("", evt.PayloadValue(3, null));
                         }));
                 }
-
-                // TODO FIX NOW don't disable a case. 
+                
                 // Probably belongs in the user TestUsersErrors.cs.  
                 if (!useSelfDescribingEvents)
                 {
                     tests.Add(new SubTest("WriteEvent/Basic/EventWithIncorrectNumberOfParameters",
-                        delegate()
+                        delegate ()
                         {
                             logger.EventWithIncorrectNumberOfParameters("TestMessage", "TestPath", 10);
                         },
-                        delegate(List<Event> evts)
+                        delegate (List<Event> evts)
                         {
                             Assert.True(0 < evts.Count);
 
                             // We give an error message in EventListener case but not the ETW case. 
-                            // TODO we should probably fix this, but it is really not that important.  
                             if (1 < evts.Count)
                             {
                                 Assert.Equal(2, evts.Count);
@@ -400,16 +379,14 @@ namespace BasicEventSourceTests
         /// Tests sending complex data (class, arrays etc) from WriteEvent 
         /// Tests the EventListener case
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ComplexData_SelfDescribing_EventListener()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent_ComplexData_SelfDescribing(new EventListenerListener());
-            }
+            Test_WriteEvent_ComplexData_SelfDescribing(new EventListenerListener());
         }
 
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
         /// <summary>
         /// Tests sending complex data (class, arrays etc) from WriteEvent 
         /// Tests the EventListener case
@@ -417,10 +394,7 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_ComplexData_SelfDescribing_ETW()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent_ComplexData_SelfDescribing(new EtwListener());
-            }
+            Test_WriteEvent_ComplexData_SelfDescribing(new EtwListener());
         }
 #endif // USE_ETW
 
@@ -432,11 +406,11 @@ namespace BasicEventSourceTests
 
                 byte[] byteArray = { 0, 1, 2, 3 };
                 tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/Byte[]",
-                    delegate()
+                    delegate ()
                     {
                         logger.EventByteArrayInt(byteArray, 5);
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventByteArrayInt", evt.EventName);
@@ -447,11 +421,11 @@ namespace BasicEventSourceTests
                     }));
 
                 tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/UserData",
-                    delegate()
+                    delegate ()
                     {
                         logger.EventUserDataInt(new UserData() { x = 3, y = 8 }, 5);
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventUserDataInt", evt.EventName);
@@ -477,31 +451,27 @@ namespace BasicEventSourceTests
         /// Uses Manifest format      
         /// Tests the EventListener case
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ByteArray_Manifest_EventListener()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent_ByteArray(false, new EventListenerListener());
-            }
+            Test_WriteEvent_ByteArray(false, new EventListenerListener());
         }
-        
+
         /// <summary>
         /// Tests sending complex data (class, arrays etc) from WriteEvent 
         /// Uses Manifest format      
         /// Tests the EventListener case using events instead of virtual
         /// callbacks.
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ByteArray_Manifest_EventListener_UseEvents()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent_ByteArray(false, new EventListenerListener(true));
-            }
+            Test_WriteEvent_ByteArray(false, new EventListenerListener(true));
         }
 
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
         /// <summary>
         /// Tests sending complex data (class, arrays etc) from WriteEvent 
         /// Uses Manifest format
@@ -510,10 +480,7 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_ByteArray_Manifest_ETW()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent_ByteArray(false, new EtwListener());
-            }
+            Test_WriteEvent_ByteArray(false, new EtwListener());
         }
 #endif // USE_ETW
 
@@ -522,16 +489,14 @@ namespace BasicEventSourceTests
         /// Uses Self-Describing format
         /// Tests the EventListener case
         /// </summary>
+        [ActiveIssue(4871, PlatformID.AnyUnix)]
         [Fact]
         public void Test_WriteEvent_ByteArray_SelfDescribing_EventListener()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent_ByteArray(true, new EventListenerListener());
-            }
+            Test_WriteEvent_ByteArray(true, new EventListenerListener());
         }
 
-#if USE_ETW
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
         /// <summary>
         /// Tests sending complex data (class, arrays etc) from WriteEvent 
         /// Uses Self-Describing format
@@ -540,10 +505,7 @@ namespace BasicEventSourceTests
         [Fact]
         public void Test_WriteEvent_ByteArray_SelfDescribing_ETW()
         {
-            lock (TestUtilities.EventSourceTestLock)
-            {
-                Test_WriteEvent_ByteArray(true, new EtwListener());
-            }
+            Test_WriteEvent_ByteArray(true, new EtwListener());
         }
 #endif // USE_ETW
 
@@ -563,11 +525,11 @@ namespace BasicEventSourceTests
                 /*************************************************************************/
                 byte[] blob = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
                 tests.Add(new SubTest("Write/Array/EventWithByteArrayArg",
-                    delegate()
+                    delegate ()
                     {
                         logger.EventWithByteArrayArg(blob, 1000);
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventWithByteArrayArg", evt.EventName);
@@ -580,23 +542,20 @@ namespace BasicEventSourceTests
                             Assert.Equal(1000, (int)evt.PayloadValue(1, "n"));
                         }
                     }));
-
-                // TODO FIX NOW Decide what to do here.   Currently this does
-                // not work with self describing events.  
+ 
                 if (!useSelfDescribingEvents)
                 {
                     /*************************************************************************/
                     tests.Add(new SubTest("Write/Array/NonEventCallingEventWithBytePtrArg",
-                        delegate()
+                        delegate ()
                         {
                             logger.NonEventCallingEventWithBytePtrArg(blob, 2, 4, 1001);
                         },
-                        delegate(Event evt)
+                        delegate (Event evt)
                         {
                             Assert.Equal(logger.Name, evt.ProviderName);
                             Assert.Equal("EventWithBytePtrArg", evt.EventName);
-
-                            // TODO FIX NOW make these the same for EventListener and ETW.  
+                            
                             if (evt.IsEtw)
                             {
                                 Assert.Equal(2, evt.PayloadCount);
@@ -610,21 +569,17 @@ namespace BasicEventSourceTests
                             {
                                 Assert.Equal(3, evt.PayloadCount);
                                 byte[] retBlob = (byte[])evt.PayloadValue(1, "blob");
-                                // TODO FIX NOW this is broken, fix retBlb to return non-null
-                                // Assert.Equal(4, retBlob.Length);
-                                // Assert.Equal(retBlob[0], blob[2]);
-                                // Assert.Equal(retBlob[3], blob[2 + 3]);
                                 Assert.Equal(1001, (int)evt.PayloadValue(2, "n"));
                             }
                         }));
                 }
 
                 tests.Add(new SubTest("Write/Array/EventWithLongByteArray",
-                    delegate()
+                    delegate ()
                     {
                         logger.EventWithLongByteArray(blob, 1000);
                     },
-                    delegate(Event evt)
+                    delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventWithLongByteArray", evt.EventName);
@@ -713,5 +668,4 @@ namespace BasicEventSourceTests
         public void EventWithLongByteArray(byte[] blob, long lng)
         { WriteEvent(3, blob, lng); }
     }
-
 }

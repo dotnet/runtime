@@ -1,15 +1,15 @@
-﻿using System.Diagnostics.Tracing;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Diagnostics.Tracing;
 using System.Diagnostics;
 using Xunit;
 using System;
 
 namespace BasicEventSourceTests
 {
-    class TestUtilities
+    internal class TestUtilities
     {
-        // Every test takes this lock to force them to run one at a time.
-        public static readonly object EventSourceTestLock = new object();
-        
         /// <summary>
         /// Confirms that there are no EventSources running.  
         /// </summary>
@@ -28,7 +28,7 @@ namespace BasicEventSourceTests
                 }
             }
 
-            Console.WriteLine(message);
+            Debug.WriteLine(message);
             Assert.Equal("", eventSourceNames);
         }
     }
