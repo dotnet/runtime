@@ -2505,22 +2505,24 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 		MonoGenericParam *par = klass->byval_arg.data.generic_param;
 
 		encode_value (MONO_AOT_TYPEREF_VAR, p, &p);
-		encode_value (klass->byval_arg.type, p, &p);
-		encode_value (mono_type_get_generic_param_num (&klass->byval_arg), p, &p);
 
-		encode_value (container->is_anonymous ? 0 : 1, p, &p);
-		if (!container->is_anonymous) {
-			encode_value (container->is_method, p, &p);
-			if (container->is_method)
-				encode_method_ref (acfg, container->owner.method, p, &p);
-			else
-				encode_klass_ref (acfg, container->owner.klass, p, &p);
+		encode_value (par->gshared_constraint ? 1 : 0, p, &p);
+		if (par->gshared_constraint) {
+			MonoGSharedGenericParam *gpar = (MonoGSharedGenericParam*)par;
+			encode_type (acfg, par->gshared_constraint, p, &p);
+			encode_klass_ref (acfg, mono_class_from_generic_parameter (gpar->parent, NULL, klass->byval_arg.type == MONO_TYPE_MVAR), p, &p);
 		} else {
-			encode_value (par->gshared_constraint ? 1 : 0, p, &p);
-			if (par->gshared_constraint) {
-				MonoGSharedGenericParam *gpar = (MonoGSharedGenericParam*)par;
-				encode_type (acfg, par->gshared_constraint, p, &p);
-				encode_klass_ref (acfg, mono_class_from_generic_parameter (gpar->parent, NULL, klass->byval_arg.type == MONO_TYPE_MVAR), p, &p);
+			encode_value (klass->byval_arg.type, p, &p);
+			encode_value (mono_type_get_generic_param_num (&klass->byval_arg), p, &p);
+
+			encode_value (container->is_anonymous ? 0 : 1, p, &p);
+
+			if (!container->is_anonymous) {
+				encode_value (container->is_method, p, &p);
+				if (container->is_method)
+					encode_method_ref (acfg, container->owner.method, p, &p);
+				else
+					encode_klass_ref (acfg, container->owner.klass, p, &p);
 			}
 		}
 	} else if (klass->byval_arg.type == MONO_TYPE_PTR) {
