@@ -28,8 +28,6 @@
 #cmakedefine01 HAVE_PTHREAD_SIGQUEUE
 #cmakedefine01 HAVE_SIGRETURN
 #cmakedefine01 HAVE__THREAD_SYS_SIGRETURN
-#cmakedefine01 HAVE_SETCONTEXT
-#cmakedefine01 HAVE_GETCONTEXT
 #cmakedefine01 HAVE_COPYSIGN
 #cmakedefine01 HAVE_FSYNC
 #cmakedefine01 HAVE_FUTIMES
