@@ -265,6 +265,7 @@ static inline int
 mono_os_cond_destroy (mono_cond_t *cond)
 {
 	/* Beauty of win32 API: do not destroy it */
+	return 0;
 }
 
 static inline int
