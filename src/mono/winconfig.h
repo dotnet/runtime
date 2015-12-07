@@ -7,11 +7,11 @@
 
 /* The architecture this is running on */
 #if defined(_M_IA64)
-#define ARCHITECTURE "ia64"
+#define MONO_ARCHITECTURE "ia64"
 #elif defined(_M_AMD64)
-#define ARCHITECTURE "amd64"
+#define MONO_ARCHITECTURE "amd64"
 #elif defined(_M_IX86)
-#define ARCHITECTURE "x86"
+#define MONO_ARCHITECTURE "x86"
 #else
 #error Unknown architecture
 #endif

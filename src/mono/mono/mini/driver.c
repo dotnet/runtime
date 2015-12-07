@@ -1257,7 +1257,7 @@ mini_debug_usage (void)
 }
 
 #if defined(MONO_ARCH_ARCHITECTURE)
-/* Redefine ARCHITECTURE to include more information */
+/* Redefine MONO_ARCHITECTURE to include more information */
 #undef MONO_ARCHITECTURE
 #define MONO_ARCHITECTURE MONO_ARCH_ARCHITECTURE
 #endif
