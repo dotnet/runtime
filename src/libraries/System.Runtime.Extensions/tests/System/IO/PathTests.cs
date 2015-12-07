@@ -655,6 +655,15 @@ public static class PathTests
         }
     }
 
+    [PlatformSpecific(PlatformID.Windows)]
+    [Theory]
+    [InlineData('*')]
+    [InlineData('?')]
+    public static void GetFullPath_Windows_Wildcards(char wildcard)
+    {
+        Assert.Throws<ArgumentException>("path", () => Path.GetFullPath("test" + wildcard + "ing"));
+    }
+
     // Windows-only P/Invoke to create 8.3 short names from long names
     [DllImport("kernel32.dll", CharSet = CharSet.Ansi)]
     private static extern uint GetShortPathName(string lpszLongPath, StringBuilder lpszShortPath, int cchBuffer);
