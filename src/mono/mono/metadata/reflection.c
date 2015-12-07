@@ -222,13 +222,13 @@ static mono_mutex_t dynamic_images_mutex;
 static inline void
 dynamic_images_lock (void)
 {
-	mono_mutex_lock (&dynamic_images_mutex);
+	mono_os_mutex_lock (&dynamic_images_mutex);
 }
 
 static inline void
 dynamic_images_unlock (void)
 {
-	mono_mutex_unlock (&dynamic_images_mutex);
+	mono_os_mutex_unlock (&dynamic_images_mutex);
 }
 
 /**
