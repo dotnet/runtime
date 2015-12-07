@@ -121,6 +121,17 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [PlatformSpecific(PlatformID.AnyUnix)]
+        [Fact]
+        public void TestUseShellExecute_Unix_Succeeds()
+        {
+            using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = "exit", Arguments = "42" }))
+            {
+                Assert.True(p.WaitForExit(WaitInMS));
+                Assert.Equal(42, p.ExitCode);
+            }
+        }
+
         [Fact]
         public void TestExitTime()
         {
