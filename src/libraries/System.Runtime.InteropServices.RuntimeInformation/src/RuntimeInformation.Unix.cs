@@ -8,15 +8,11 @@ namespace System.Runtime.InteropServices
     public static partial class RuntimeInformation
     {
         private static string s_osDescription = null;
+        private static readonly bool s_is64BitProcess = IntPtr.Size == 8;
         private static object s_osLock = new object();
         private static object s_processLock = new object();
         private static Architecture? s_osArch = null;
         private static Architecture? s_processArch = null;
-
-        public static bool IsOSPlatform(OSPlatform osPlatform)
-        {
-            return OSPlatform.Windows == osPlatform;
-        }
 
         public static string OSDescription
         {
@@ -24,9 +20,7 @@ namespace System.Runtime.InteropServices
             {
                 if (null == s_osDescription)
                 {
-                    // Temporarily commenting out code to prevent build break on mirror with TFS.
-                    // Will be changed from TFS mirror.
-                    s_osDescription = "Windows";/*Interop.NtDll.RtlGetVersion();*/
+                    s_osDescription = Interop.Sys.GetUnixVersion();
                 }
 
                 return s_osDescription;
@@ -41,22 +35,21 @@ namespace System.Runtime.InteropServices
                 {
                     if (null == s_osArch)
                     {
-                        Interop.mincore.SYSTEM_INFO sysInfo;
-                        Interop.mincore.GetNativeSystemInfo(out sysInfo);
-
-                        switch ((Interop.mincore.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
+                        Interop.Sys.ProcessorArchitecture arch = (Interop.Sys.ProcessorArchitecture)Interop.Sys.GetUnixArchitecture();
+                        switch (arch)
                         {
-                            case Interop.mincore.ProcessorArchitecture.Processor_Architecture_ARM:
+                            case Interop.Sys.ProcessorArchitecture.ARM:
                                 s_osArch = Architecture.Arm;
                                 break;
-                            case Interop.mincore.ProcessorArchitecture.Processor_Architecture_AMD64:
+
+                            case Interop.Sys.ProcessorArchitecture.x64:
                                 s_osArch = Architecture.X64;
                                 break;
-                            case Interop.mincore.ProcessorArchitecture.Processor_Architecture_INTEL:
+
+                            case Interop.Sys.ProcessorArchitecture.x86:
                                 s_osArch = Architecture.X86;
                                 break;
                         }
-
                     }
                 }
 
@@ -73,20 +66,17 @@ namespace System.Runtime.InteropServices
                 {
                     if (null == s_processArch)
                     {
-                        Interop.mincore.SYSTEM_INFO sysInfo;
-                        Interop.mincore.GetSystemInfo(out sysInfo);
-
-                        switch((Interop.mincore.ProcessorArchitecture)sysInfo.wProcessorArchitecture)
+                        if (Architecture.Arm == OSArchitecture)
                         {
-                            case Interop.mincore.ProcessorArchitecture.Processor_Architecture_ARM:
-                                s_processArch = Architecture.Arm;
-                                break;
-                            case Interop.mincore.ProcessorArchitecture.Processor_Architecture_AMD64:
-                                s_processArch = Architecture.X64;
-                                break;
-                            case Interop.mincore.ProcessorArchitecture.Processor_Architecture_INTEL:
-                                s_processArch = Architecture.X86;
-                                break;
+                            s_processArch = Architecture.Arm;
+                        }
+                        else if (s_is64BitProcess)
+                        {
+                            s_processArch = Architecture.X64;
+                        }
+                        else
+                        {
+                            s_processArch = Architecture.X86;
                         }
                     }
                 }

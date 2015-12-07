@@ -21,8 +21,20 @@ namespace System.Runtime.InteropServices
         public static bool operator !=(System.Runtime.InteropServices.OSPlatform left, System.Runtime.InteropServices.OSPlatform right) { return default(bool); }
         public override string ToString() { return default(string); }
     }
+
+    public enum Architecture
+    {
+        X86,
+        X64,
+        Arm
+    }
+
     public static partial class RuntimeInformation
     {
+        public static Architecture ProcessArchitecture { get { return default(Architecture); } }
+        public static Architecture OSArchitecture { get { return default(Architecture); } }
+        public static string OSDescription { get { return default(string); } }
+        public static string FrameworkDescription { get { return default(string); } }
         public static bool IsOSPlatform(System.Runtime.InteropServices.OSPlatform osPlatform) { return default(bool); }
     }
 }
