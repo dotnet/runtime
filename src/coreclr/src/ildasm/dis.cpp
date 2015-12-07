@@ -1760,7 +1760,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 // Backwards compatible ldstr instruction.
                 if (instr == CEE_LDSTR && TypeFromToken(tk) != mdtString)
                 {
-                    WCHAR *v1 = L"";
+                    const WCHAR *v1 = W("");
 
                     if(g_fShowBytes)
                     {
@@ -2600,7 +2600,7 @@ static const char* keyword[] = {
 #undef KYWD
 };
 static bool KywdNotSorted = TRUE;
-static char* szAllowedSymbols = "#_@$.";
+static const char* szAllowedSymbols = "#_@$.";
 static char DisallowedStarting[256];
 static char DisallowedCont[256];
 
