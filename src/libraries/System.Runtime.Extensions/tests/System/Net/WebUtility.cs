@@ -107,6 +107,34 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        public static void UrlEncodeToBytes_ArgumentValidation()
+        {
+            Assert.Null(WebUtility.UrlEncodeToBytes(null, 0, 0));
+            Assert.Throws<ArgumentNullException>("bytes", () => WebUtility.UrlEncodeToBytes(null, 0, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => WebUtility.UrlEncodeToBytes(new byte[1], -1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => WebUtility.UrlEncodeToBytes(new byte[1], 2, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlEncodeToBytes(new byte[1], 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlEncodeToBytes(new byte[1], 0, 3));
+        }
+
+        [Fact]
+        public static void UrlDecodeToBytes_ArgumentValidation()
+        {
+            Assert.Null(WebUtility.UrlDecodeToBytes(null, 0, 0));
+            Assert.Throws<ArgumentNullException>("bytes", () => WebUtility.UrlDecodeToBytes(null, 0, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => WebUtility.UrlDecodeToBytes(new byte[1], -1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("offset", () => WebUtility.UrlDecodeToBytes(new byte[1], 2, 1));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlDecodeToBytes(new byte[1], 0, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => WebUtility.UrlDecodeToBytes(new byte[1], 0, 3));
+        }
+
+        [Fact]
+        public static void UrlDecodeToBytesNullIfInputIsNull()
+        {
+            Assert.Null(WebUtility.UrlDecodeToBytes(null, 0, 0));
+        }
+
+        [Fact]
         public static void UrlEncodeSingleQuote()
         {
             Assert.Equal("%27", WebUtility.UrlEncode("'"));
@@ -122,6 +150,27 @@ namespace System.Net.Tests
         public static void HtmlDefaultStrictSettingDecode()
         {
             Assert.Equal(Char.ConvertFromUtf32(144308), WebUtility.HtmlDecode("&#144308;"));
+        }
+
+        [Theory]
+        [InlineData("'")]
+        [InlineData("http://www.microsoft.com")]
+        [InlineData("/\\\"\tHello! \u2665?/\\\"\tWorld! \u2665?\u2665")]
+        public static void UrlEncodeDecode_Roundtrip(string url)
+        {
+            string encoded = WebUtility.UrlEncode(url);
+            Assert.Equal(url, WebUtility.UrlDecode(encoded));
+        }
+
+        [Theory]
+        [InlineData("'")]
+        [InlineData("http://www.microsoft.com")]
+        [InlineData("/\\\"\tHello! \u2665?/\\\"\tWorld! \u2665?\u2665")]
+        public static void UrlEncodeDecodeToBytes_Roundtrip(string url)
+        {
+            byte[] input = System.Text.Encoding.UTF8.GetBytes(url);
+            byte[] encoded = WebUtility.UrlEncodeToBytes(input, 0, input.Length);
+            Assert.Equal(input, WebUtility.UrlDecodeToBytes(encoded, 0, encoded.Length));
         }
     }
 }

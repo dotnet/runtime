@@ -73,7 +73,8 @@ namespace System.Xml
         {
             get
             {
-                StringBuilder strb = StringBuilderCache.Acquire("version=\"");
+                StringBuilder strb = StringBuilderCache.Acquire();
+                strb.Append("version=\"");
                 strb.Append(Version);
                 strb.Append('"');
                 if (Encoding.Length > 0)

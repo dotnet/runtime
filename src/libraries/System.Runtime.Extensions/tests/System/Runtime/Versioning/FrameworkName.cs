@@ -40,11 +40,14 @@ public static class FrameworkNameTests
     {
         Assert.Throws<ArgumentNullException>(() => new FrameworkName(null));
         Assert.Throws<ArgumentException>(() => new FrameworkName(string.Empty));
+        Assert.Throws<ArgumentException>(() => new FrameworkName(" ,A"));
         Assert.Throws<ArgumentException>(() => new FrameworkName("A"));
         Assert.Throws<ArgumentException>(() => new FrameworkName("A,B"));
         Assert.Throws<ArgumentException>(() => new FrameworkName("A,B,C"));
         Assert.Throws<ArgumentException>(() => new FrameworkName("A,Version=1.0.0.0,C"));
         Assert.Throws<ArgumentException>(() => new FrameworkName("A,1.0.0.0,Profile=C"));
+        Assert.Throws<ArgumentException>(() => new FrameworkName("A,Version=1.z.0.0,Profile=C"));
+        Assert.Throws<ArgumentException>(() => new FrameworkName("A,Something=1.z.0.0,Profile=C"));
         Assert.Throws<ArgumentException>(() => new FrameworkName("A,Profile=C"));
     }
 
@@ -86,8 +89,25 @@ public static class FrameworkNameTests
     }
 
     [Fact]
+    public static void ConstructFromVersionWithoutBuildRevision()
+    {
+        var majorMinor = new Version(1, 2);
+        Assert.Equal(-1, new FrameworkName(s_testName.Identifier, majorMinor).Version.Build);
+        Assert.Equal(-1, new FrameworkName(s_testName.Identifier, majorMinor).Version.Revision);
+
+        var majorMinorBuild = new Version(1, 2, 3);
+        Assert.Equal(3, new FrameworkName(s_testName.Identifier, majorMinorBuild).Version.Build);
+        Assert.Equal(-1, new FrameworkName(s_testName.Identifier, majorMinorBuild).Version.Revision);
+
+        var majorMinorBuildRevision = new Version(1, 2, 3, 4);
+        Assert.Equal(3, new FrameworkName(s_testName.Identifier, majorMinorBuildRevision).Version.Build);
+        Assert.Equal(4, new FrameworkName(s_testName.Identifier, majorMinorBuildRevision).Version.Revision);
+    }
+
+    [Fact]
     public static void Equality()
     {
+        VerifyEquality(null, null);
         VerifyEquality(s_testName, s_testName);
         VerifyEquality(s_testName, new FrameworkName(s_testNameString));
         VerifyEquality(s_testName, new FrameworkName(TestIdentifier, s_testVersion, TestProfile));
@@ -96,6 +116,7 @@ public static class FrameworkNameTests
     [Fact]
     public static void Inequality()
     {
+        VerifyInequality(null, s_testName);
         VerifyInequality(s_testName, null);
         VerifyInequality(s_testName, new FrameworkName("NotTheTestIdentifier", s_testVersion, TestProfile));
         VerifyInequality(s_testName, new FrameworkName(TestIdentifier, s_testVersion));
@@ -113,22 +134,26 @@ public static class FrameworkNameTests
 
     private static void VerifyInequality(FrameworkName x, FrameworkName y)
     {
-        Assert.NotNull(x);
-
         Assert.True(x != y);
         Assert.False(x == y);
-        Assert.False(x.Equals(y));
-        Assert.False(((IEquatable<FrameworkName>)x).Equals(y));
+        if (x != null)
+        {
+            Assert.False(x.Equals(y));
+            Assert.False(x.Equals((object)y));
+            Assert.False(((IEquatable<FrameworkName>)x).Equals(y));
+        }
     }
 
     private static void VerifyEquality(FrameworkName x, FrameworkName y)
     {
-        Assert.NotNull(x);
-
         Assert.True(x == y);
         Assert.False(x != y);
-        Assert.True(x.Equals(y));
-        Assert.True(((IEquatable<FrameworkName>)x).Equals(y));
-        Assert.Equal(x.GetHashCode(), y.GetHashCode());
+        if (x != null)
+        {
+            Assert.True(x.Equals(y));
+            Assert.True(x.Equals((object)y));
+            Assert.True(((IEquatable<FrameworkName>)x).Equals(y));
+            Assert.Equal(x.GetHashCode(), y.GetHashCode());
+        }
     }
 }
