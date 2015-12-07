@@ -53,6 +53,7 @@ update_current_thread_stack (void *start)
 	SgenThreadInfo *info = mono_thread_info_current ();
 	
 	info->client_info.stack_start = align_pointer (&stack_guard);
+	g_assert (info->client_info.stack_start);
 	g_assert (info->client_info.stack_start >= info->client_info.stack_start_limit && info->client_info.stack_start < info->client_info.stack_end);
 	MONO_CONTEXT_GET_CURRENT (cur_thread_ctx);
 	memcpy (&info->client_info.ctx, &cur_thread_ctx, sizeof (MonoContext));
@@ -346,6 +347,7 @@ update_sgen_info (SgenThreadInfo *info)
 		g_error ("BAD STACK");
 
 	info->client_info.stack_start = stack_start;
+	g_assert (info->client_info.stack_start);
 	info->client_info.ctx = mono_thread_info_get_suspend_state (info)->ctx;
 }
 
@@ -435,6 +437,7 @@ sgen_unified_suspend_stop_world (void)
 			g_assert (info->client_info.suspend_done);
 			update_sgen_info (info);
 		} else {
+			THREADS_STW_DEBUG ("[GC-STW-SUSPEND-END] thread %p is NOT suspended\n", mono_thread_info_get_tid (info));
 			g_assert (!info->client_info.suspend_done || info == mono_thread_info_current ());
 		}
 	} FOREACH_THREAD_END
