@@ -329,21 +329,4 @@ namespace System.Collections.Generic
             private int _version;
         }
     }
-
-    /// <summary>
-    /// LowLevelDictionary when enumeration is needed
-    /// </summary>
-    internal sealed class LowLevelDictionaryWithIEnumerable<TKey, TValue> : LowLevelDictionary<TKey, TValue>, IEnumerable<KeyValuePair<TKey, TValue>>
-    {
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            return new LowLevelDictEnumerator(this);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            IEnumerator<KeyValuePair<TKey, TValue>> ie = GetEnumerator();
-            return ie;
-        }
-    }
 }
