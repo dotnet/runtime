@@ -64,7 +64,15 @@
       <Link>Common\System\Net\Capability.Sockets.cs</Link>
     </Compile>
   </ItemGroup>
-
+  
+    <!-- Windows only tests -->
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="SocketOptionNameTest.cs" />
+    <Compile Include="$(CommonTestPath)\System\Net\WindowsOSVersionHelper.cs">
+      <Link>Common\System\Net\WindowsOSVersionHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
+  
   <!-- TODO: Remove after the packages are not using System.Private.Networking. -->
   <ItemGroup>
     <ProjectReference Include="..\..\..\System.Net.NameResolution\src\System.Net.NameResolution.csproj">
