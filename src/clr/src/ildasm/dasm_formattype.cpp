@@ -132,8 +132,8 @@ const char* ERRORMSG(__in_opt __nullterminated const char* szOrig)
     }
     CONTRACTL_END;
     
-    char* szPrefix = "";
-    char* szPostfix = "";
+    const char* szPrefix = "";
+    const char* szPostfix = "";
     if(g_fDumpHTML)
     {
         szPrefix = "<I><B><FONT COLOR=RED>";
@@ -283,7 +283,7 @@ const char* ProperName(__in __nullterminated const char* name, bool isLocalName)
     _ASSERTE (buff);
     if(g_fUseProperName)
     {
-        char *ret;
+        const char *ret;
         BOOL fQuoted;
         if(name)
         {

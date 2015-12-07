@@ -297,6 +297,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   add_subdirectory(src/coreclr/hosts/unixcoreruncommon)
   add_subdirectory(src/coreclr/hosts/unixcorerun)
   add_subdirectory(src/coreclr/hosts/unixcoreconsole)
+  add_subdirectory(src/ildasm/unixcoreclrloader)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if(CLR_CMAKE_PLATFORM_DARWIN)

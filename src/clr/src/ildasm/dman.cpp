@@ -14,13 +14,16 @@
 #include "dasmgui.h"
 #include "formattype.h"
 #include "dis.h"
-#include "mlang.h"
 
 #include "ceeload.h"
 #include "dynamicarray.h"
 #include "resource.h"
 
 #include "clrinternal.h"
+
+#ifndef MAX_LOCALE_NAME
+#define MAX_LOCALE_NAME (32)
+#endif
 
 extern IMAGE_COR20_HEADER *    g_CORHeader;
 extern IMDInternalImport*      g_pImport;
@@ -632,8 +635,8 @@ static BOOL ConvertToLegalFileNameInPlace(__inout LPWSTR wzName)
     // neutralize reserved names
     static const WCHAR * const rwzReserved[] =
     {
-        L"COM", L"LPT", // '1' - '9' must follow after these
-        L"CON", L"PRN", L"AUX", L"NUL"
+        W("COM"), W("LPT"), // '1' - '9' must follow after these
+        W("CON"), W("PRN"), W("AUX"), W("NUL")
     };
 
     for (size_t i = 0; i < (sizeof(rwzReserved) / sizeof(WCHAR *)); i++)
@@ -728,7 +731,7 @@ static void DumpResourceFile(void *GUICookie, BYTE *pRes, DWORD dwOffset, LPCWST
         if ((!(g_Mode & MODE_GUI)) && (g_pFile != NULL)) // embedded resource -- dump as .resources file
         {
             FILE *pF = NULL;
-            _wfopen_s(&pF, pParam->wzFileName, L"wb");
+            _wfopen_s(&pF, pParam->wzFileName, W("wb"));
             if (pF)
             {
                 struct Param
@@ -822,7 +825,7 @@ void DumpManifestResources(void* GUICookie)
             // add the Win32 resource file name to avoid conflict between the native and a managed resource file
             WCHAR *pwc = wcsrchr(wzName, L'.');
             if (pwc == NULL) pwc = &wzName[wcslen(wzName)];
-            wcscpy_s(pwc, 2048 - (pwc - wzFileName), L".res");
+            wcscpy_s(pwc, 2048 - (pwc - wzFileName), W(".res"));
 
             NAME_ARRAY_ADD(1, wzName);
 
@@ -879,7 +882,7 @@ void DumpManifestResources(void* GUICookie)
 
                         // if we have a conflict, add a number suffix to the file name
                         if (!fConflict ||
-                            swprintf_s(wpc, 2048 - (wpc - wzFileName), L"%d", iIndex) <= 0)
+                            swprintf_s(wpc, 2048 - (wpc - wzFileName), W("%d"), iIndex) <= 0)
                     {
                             // no conflict or unable to add index
                             break;
@@ -995,14 +998,14 @@ IMetaDataAssemblyImport* GetAssemblyImport(void* GUICookie)
             {
                 pbManifest += sizeof(DWORD);
 #ifdef FEATURE_CORECLR
-                if (SUCCEEDED(hr = GetMetaDataInternalInterface(
+                if (SUCCEEDED(hr = getMetaDataInternalInterface(
                     pbManifest,
                     VAL32(*pdwSize),
                     ofRead,
                     IID_IMDInternalImport,
                     (LPVOID *)&pParam->pImport)))
                 {
-                    if (FAILED(hr = GetMetaDataPublicInterfaceFromInternal(
+                    if (FAILED(hr = getMetaDataPublicInterfaceFromInternal(
                         pParam->pImport,
                         IID_IMetaDataAssemblyImport,
                         (LPVOID *)&pParam->pAssemblyImport)))
