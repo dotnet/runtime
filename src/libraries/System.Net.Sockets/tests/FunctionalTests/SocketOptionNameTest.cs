@@ -3,6 +3,7 @@
 
 using System;
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 
 using Xunit;
 
@@ -27,12 +28,20 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact("IsNotWindows10Platform")]
-        public void ReuseUnicastPort_CreateSocketGetOption_NotWindows10Platform_SocketException()
+        public void ReuseUnicastPort_CreateSocketGetOption_NotWindows10Platform_Throws()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             
-            Assert.Throws<SocketException>(() =>
-                socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.Throws<SocketException>(() =>
+                    socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+            }
         }
 
         [ConditionalFact("IsWindows10Platform")]
@@ -45,12 +54,20 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact("IsNotWindows10Platform")]
-        public void ReuseUnicastPort_CreateSocketSetOption_NotWindows10Platform_SocketException()
+        public void ReuseUnicastPort_CreateSocketSetOption_NotWindows10Platform_Throws()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             
-            Assert.Throws<SocketException>(() =>
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.Throws<SocketException>(() =>
+                    socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
+            }
         }
 
         // TODO: Issue #4887
