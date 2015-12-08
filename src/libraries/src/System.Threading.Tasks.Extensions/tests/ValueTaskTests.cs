@@ -67,6 +67,13 @@ namespace System.Threading.Tasks.Channels.Tests
         }
 
         [Fact]
+        public void CreateFromNullTask_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => new ValueTask<int>((Task<int>)null));
+            Assert.Throws<ArgumentNullException>(() => new ValueTask<string>((Task<string>)null));
+        }
+
+        [Fact]
         public void CastFromValue_IsRanToCompletion()
         {
             ValueTask<int> t = 42;
@@ -116,6 +123,16 @@ namespace System.Threading.Tasks.Channels.Tests
             Assert.False(t.IsCompletedSuccessfully);
             Assert.False(t.IsFaulted);
             Assert.True(t.IsCanceled);
+        }
+
+        [Fact]
+        public void CastFromNullTask_Throws()
+        {
+            Task<int> ti = null;
+            Assert.Throws<ArgumentNullException>(() => (ValueTask<int>)ti);
+
+            Task<string> ts = null;
+            Assert.Throws<ArgumentNullException>(() => (ValueTask<string>)ts);
         }
 
         [Fact]
