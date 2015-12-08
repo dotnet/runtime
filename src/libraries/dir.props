@@ -27,9 +27,12 @@
     </AssemblyMetadata>
   </ItemGroup>
   
-  <!-- Temporary adding this property so that non-windows builds will target the net45 version of the task library instead of the .Net Core version -->
+  <!-- 
+    Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer 
+    as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks. 
+  -->
   <PropertyGroup>
-    <BuildToolsTargets45 Condition="'$(BuildToolsTargets45)' == '' and '$(OsEnvironment)' != 'Windows_NT'">true</BuildToolsTargets45>
+    <BuildToolsTargets45>true</BuildToolsTargets45>
   </PropertyGroup>
 
   <!-- Common repo directories -->
