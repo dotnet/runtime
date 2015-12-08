@@ -422,7 +422,7 @@ namespace System.IO.Compression
                 throw new ArgumentOutOfRangeException("offset", SR.ArgumentNeedNonNegative);
             if (count < 0)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentNeedNonNegative);
-            if ((buffer.Length - offset) < count)
+            if ((buffer.Length - offset) < count) 
                 throw new ArgumentException(SR.OffsetLengthInvalid);
             Contract.EndContractBlock();
 
