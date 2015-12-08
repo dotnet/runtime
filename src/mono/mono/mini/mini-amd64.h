@@ -350,6 +350,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_CONTEXT_SET_INT_REG 1
 #define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
 #define MONO_ARCH_HAVE_CREATE_LLVM_NATIVE_THUNK 1
+#define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 #define MONO_ARCH_HAVE_TRANSLATE_TLS_OFFSET 1
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
@@ -400,6 +401,9 @@ void
 mono_amd64_resume_unwind (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 						  guint64 dummy5, guint64 dummy6,
 						  MonoContext *mctx, guint32 dummy7, gint64 dummy8);
+
+gpointer
+mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg);
 
 guint64
 mono_amd64_get_original_ip (void);

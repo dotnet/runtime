@@ -1461,6 +1461,9 @@ mono_arch_init (void)
 	mono_aot_register_jit_icall ("mono_amd64_throw_corlib_exception", mono_amd64_throw_corlib_exception);
 	mono_aot_register_jit_icall ("mono_amd64_resume_unwind", mono_amd64_resume_unwind);
 	mono_aot_register_jit_icall ("mono_amd64_get_original_ip", mono_amd64_get_original_ip);
+#if defined(ENABLE_GSHAREDVT)
+	mono_aot_register_jit_icall ("mono_amd64_start_gsharedvt_call", mono_amd64_start_gsharedvt_call);
+#endif
 
 	if (!mono_aot_only)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
@@ -2604,7 +2607,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		mono_call_inst_add_outarg_reg (cfg, call, src->dreg, ainfo->reg, FALSE);
 		break;
 	case ArgGSharedVtOnStack:
-		g_assert_not_reached ();
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, ainfo->offset, src->dreg);
 		break;
 	default:
 		if (size == 8) {
@@ -8816,4 +8819,4 @@ mono_arch_opcode_supported (int opcode)
 
 #include "../../../mono-extensions/mono/mini/mini-amd64-gsharedvt.c"
 
-#endif /* !MONOTOUCH */
+#endif /* !ENABLE_GSHAREDVT */
