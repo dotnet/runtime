@@ -1207,6 +1207,11 @@ BOOL FinalizerThread::FinalizerThreadWatchDog()
 #endif //BACKGROUND_GC
 
         _ASSERTE ((g_fEEShutDown & ShutDown_Finalize1) || g_fFastExitProcess);
+
+        // FinalizerThreadWatchDogHelper does not time out waiting for the finalizer thread in CoreCLR. If another thread blocks
+        // during GC for shutdown, a finalizer that allocates (or even jitting a finalizer, which does allocation) may block the
+        // finalizer thread indefinitely, which may in turn lead to a deadlock.
+#ifndef FEATURE_CORECLR
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_SHUTDOWN);
 
         g_fSuspendOnShutdown = TRUE;
@@ -1217,6 +1222,7 @@ BOOL FinalizerThread::FinalizerThreadWatchDog()
         ThreadStore::TrapReturningThreads(TRUE);
 
         ThreadSuspend::RestartEE(FALSE, TRUE);
+#endif
 
         if (g_fFastExitProcess)
         {
