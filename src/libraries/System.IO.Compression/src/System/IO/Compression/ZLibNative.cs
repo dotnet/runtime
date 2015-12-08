@@ -25,6 +25,7 @@ namespace System.IO.Compression
         public enum FlushCode : int
         {
             NoFlush = 0,
+            SyncFlush = 2,
             Finish = 4,
         }
 
