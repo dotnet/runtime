@@ -9,7 +9,6 @@
     <RootNamespace>CompositionThroughput</RootNamespace>
     <AssemblyName>CompositionThroughput</AssemblyName>
     <FileAlignment>512</FileAlignment>
-    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
