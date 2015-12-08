@@ -33,7 +33,7 @@ static int num_templates_bytes;
 static int num_oti_allocted;
 static int num_oti_bytes;
 
-static gboolean partial_supported = TRUE;
+static gboolean partial_supported = FALSE;
 
 static inline gboolean
 partial_sharing_supported (void)
