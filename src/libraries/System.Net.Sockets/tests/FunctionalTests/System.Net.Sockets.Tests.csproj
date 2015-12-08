@@ -25,6 +25,7 @@
     <Compile Include="SendReceive.cs" />
     <Compile Include="Shutdown.cs" />
     <Compile Include="SocketAsyncExtensions.cs" />
+    <Compile Include="SocketOptionNameTest.cs" />
     <Compile Include="SocketTestServerAPMMock.cs" />
     
     <!-- Common Sockets files -->
@@ -63,16 +64,11 @@
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
       <Link>Common\System\Net\Capability.Sockets.cs</Link>
     </Compile>
-  </ItemGroup>
-  
-    <!-- Windows only tests -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="SocketOptionNameTest.cs" />
-    <Compile Include="$(CommonTestPath)\System\Net\WindowsOSVersionHelper.cs">
-      <Link>Common\System\Net\WindowsOSVersionHelper.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Net\Capability.Version.cs">
+      <Link>Common\System\Net\Capability.Version.cs</Link>
     </Compile>
   </ItemGroup>
-  
+
   <!-- TODO: Remove after the packages are not using System.Private.Networking. -->
   <ItemGroup>
     <ProjectReference Include="..\..\..\System.Net.NameResolution\src\System.Net.NameResolution.csproj">
