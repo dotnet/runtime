@@ -11,8 +11,10 @@
 #include "assembler.h"
 
 #include "ceefilegenwriter.h"
+#ifndef FEATURE_CORECLR
 #include "strongname.h"
 #include "LegacyActivationShim.h"
+#endif
 
 #ifndef _MSC_VER
 //cloned definition from ntimage.h that is removed for non MSVC builds
@@ -33,12 +35,17 @@ HRESULT Assembler::InitMetaData()
 
     if(bClock) bClock->cMDInitBegin = GetTickCount();
 
+#ifdef FEATURE_CORECLR
+    hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
+        IID_IMetaDataDispenserEx, (void **)&m_pDisp);
+#else
     hr = LegacyActivationShim::ClrCoCreateInstance(
         CLSID_CorMetaDataDispenser, 
         NULL, 
         CLSCTX_INPROC_SERVER, 
         IID_IMetaDataDispenserEx, 
         (void **)&m_pDisp);
+#endif
     if (FAILED(hr))
         goto exit;
 
@@ -250,7 +257,7 @@ HRESULT Assembler::CreateDebugDirectory()
         pParam->debugDirData = new BYTE[pParam->debugDirDataSize];
     } PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
         hr = E_FAIL;
-    } WIN_PAL_ENDTRY
+    } PAL_ENDTRY
 
     if(FAILED(hr)) return hr;
     // Actually get the data now.
@@ -680,6 +687,7 @@ BYTE HexToByte (CHAR wc)
     return (BYTE) (wc - L'a' + 10);
 }
 
+#ifndef FEATURE_CORECLR
 bool GetBytesFromHex (LPCSTR szPublicKeyHexString, ULONG cchPublicKeyHexString, BYTE** buffer, ULONG *cbBufferSize)
 {
     ULONG cchHex = cchPublicKeyHexString;
@@ -869,6 +877,7 @@ HRESULT Assembler::StrongNameSign()
 
     return S_OK;
 }
+#endif // !FEATURE_CORECLR
 
 BOOL Assembler::EmitFieldsMethods(Class* pClass)
 {
@@ -1222,11 +1231,14 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
 
     if(bClock) bClock->cMDEmit1 = GetTickCount();
 
+#ifndef FEATURE_CORECLR
     // Allocate space for a strong name signature if we're delay or full
     // signing the assembly.
     if (m_pManifest->m_sStrongName.m_pbPublicKey)
         if (FAILED(hr = AllocateStrongNameSignature()))
             goto exit;
+#endif
+
     if(bClock) bClock->cMDEmit2 = GetTickCount();
 
     if(m_VTFList.COUNT()==0)
