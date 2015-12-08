@@ -42,10 +42,8 @@ namespace System.Net.Security.Tests
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.RequireEncryption))
                 {
-                    Assert.Throws<IOException>(() =>
-                    {
-                        sslStream.AuthenticateAsClient("localhost", null, SslProtocolSupport.DefaultSslProtocols, false);
-                    });
+                    await Assert.ThrowsAsync<IOException>(() =>
+                        sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false));
                 }
             }
         }
@@ -61,7 +59,7 @@ namespace System.Net.Security.Tests
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.AllowNoEncryption))
                 {
-                    sslStream.AuthenticateAsClient("localhost", null, SslProtocolSupport.DefaultSslProtocols, false);
+                    await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false);
 
                     _log.WriteLine("Client({0}) authenticated to server({1}) with encryption cipher: {2} {3}-bit strength",
                         client.Client.LocalEndPoint, client.Client.RemoteEndPoint,
@@ -85,7 +83,7 @@ namespace System.Net.Security.Tests
 
                 using (var sslStream = new SslStream(client.GetStream(), false, AllowAnyServerCertificate, null, EncryptionPolicy.NoEncryption))
                 {
-                    sslStream.AuthenticateAsClient("localhost", null, SslProtocolSupport.DefaultSslProtocols, false);
+                    await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false);
                     _log.WriteLine("Client({0}) authenticated to server({1}) with encryption cipher: {2} {3}-bit strength",
                         client.Client.LocalEndPoint, client.Client.RemoteEndPoint,
                         sslStream.CipherAlgorithm, sslStream.CipherStrength);
@@ -98,4 +96,3 @@ namespace System.Net.Security.Tests
         }
     }
 }
-

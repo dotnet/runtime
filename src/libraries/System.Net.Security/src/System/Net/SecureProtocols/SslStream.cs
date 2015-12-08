@@ -101,19 +101,6 @@ namespace System.Net.Security
         //
         // Client side auth.
         //
-        public virtual void AuthenticateAsClient(string targetHost)
-        {
-            AuthenticateAsClient(targetHost, new X509CertificateCollection(), SecurityProtocol.DefaultSecurityProtocols, false);
-        }
-
-        public virtual void AuthenticateAsClient(string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
-        {
-            SecurityProtocol.ThrowOnNotAllowed(enabledSslProtocols);
-
-            _sslState.ValidateCreateContext(false, targetHost, enabledSslProtocols, null, clientCertificates, true, checkCertificateRevocation);
-            _sslState.ProcessAuthentication(null);
-        }
-
         internal virtual IAsyncResult BeginAuthenticateAsClient(string targetHost, AsyncCallback asyncCallback, object asyncState)
         {
             return BeginAuthenticateAsClient(targetHost, new X509CertificateCollection(), SecurityProtocol.DefaultSecurityProtocols, false,
@@ -139,20 +126,6 @@ namespace System.Net.Security
         //
         // Server side auth.
         //
-        public virtual void AuthenticateAsServer(X509Certificate serverCertificate)
-        {
-            AuthenticateAsServer(serverCertificate, false, SecurityProtocol.DefaultSecurityProtocols, false);
-        }
-
-        public virtual void AuthenticateAsServer(X509Certificate serverCertificate, bool clientCertificateRequired,
-                                               SslProtocols enabledSslProtocols, bool checkCertificateRevocation)
-        {
-            SecurityProtocol.ThrowOnNotAllowed(enabledSslProtocols);
-
-            _sslState.ValidateCreateContext(true, string.Empty, enabledSslProtocols, serverCertificate, null, clientCertificateRequired, checkCertificateRevocation);
-            _sslState.ProcessAuthentication(null);
-        }
-
         internal virtual IAsyncResult BeginAuthenticateAsServer(X509Certificate serverCertificate, AsyncCallback asyncCallback, object asyncState)
 
         {
