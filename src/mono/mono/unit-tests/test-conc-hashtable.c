@@ -328,14 +328,25 @@ benchmark_glib (void)
 	g_hash_table_destroy (h);
 }
 
+static void
+thread_state_init (MonoThreadUnwindState *ctx)
+{
+}
+
+
 int
 main (void)
 {
 	MonoThreadInfoCallbacks cb = { NULL };
+	MonoThreadInfoRuntimeCallbacks ticallbacks;
 	int res = 0;
 
 	CHECKED_MONO_INIT ();
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
+	memset (&ticallbacks, 0, sizeof (ticallbacks));
+	ticallbacks.thread_state_init = thread_state_init;
+	mono_threads_runtime_init (&ticallbacks);
+
 	mono_thread_info_attach ((gpointer)&cb);
 
 	// benchmark_conc ();
