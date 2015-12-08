@@ -864,6 +864,7 @@ mono_gc_cleanup (void)
 
 				mono_thread_join (GUINT_TO_POINTER (gc_thread->tid));
 			}
+			g_assert (finalizer_thread_exited);
 		}
 		gc_thread = NULL;
 		mono_gc_base_cleanup ();
@@ -871,6 +872,7 @@ mono_gc_cleanup (void)
 
 	mono_reference_queue_cleanup ();
 
+	// fprintf (stderr, "destory finalizer and reference queue mutex\n");
 	mono_coop_mutex_destroy (&finalizer_mutex);
 	mono_coop_mutex_destroy (&reference_queue_mutex);
 }
