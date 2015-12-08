@@ -69,6 +69,11 @@ namespace System.Threading.Tasks
         /// <param name="task">The task.</param>
         public ValueTask(Task<TResult> task)
         {
+            if (task == null)
+            {
+                throw new ArgumentNullException("task");
+            }
+
             _task = task;
             _result = default(TResult);
         }
