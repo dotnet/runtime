@@ -1,5 +1,6 @@
 if(WIN32)
     add_subdirectory(clretwrc)
+    add_subdirectory(mscorpe)
 endif(WIN32)
 add_subdirectory(dbgshim)
 add_subdirectory(mscordbi)

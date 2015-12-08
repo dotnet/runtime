@@ -59,6 +59,11 @@ class ICeeFileGen;
 
 typedef void *HCEEFILE;
 
+#ifdef FEATURE_CORECLR
+EXTERN_C HRESULT __stdcall CreateICeeFileGen(ICeeFileGen** pCeeFileGen);
+EXTERN_C HRESULT __stdcall DestroyICeeFileGen(ICeeFileGen ** ppCeeFileGen);
+#endif
+
 typedef HRESULT (__stdcall * PFN_CreateICeeFileGen)(ICeeFileGen ** ceeFileGen);  // call this to instantiate an ICeeFileGen interface
 typedef HRESULT (__stdcall * PFN_DestroyICeeFileGen)(ICeeFileGen ** ceeFileGen); // call this to delete an ICeeFileGen
 
