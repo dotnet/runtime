@@ -42,7 +42,12 @@
   </Target>
 
 
+  <Import Project="$(__Exclude0)" Condition="'$(__Exclude0)' != '' AND '$(XunitTestBinBase)' != ''" /> 
   <Import Project="$(__Exclude)" Condition="'$(__Exclude)' != '' AND '$(XunitTestBinBase)' != ''" /> 
+  <PropertyGroup>
+    <HaveExcludes>False</HaveExcludes>
+    <HaveExcludes Condition="('$(__Exclude0)' != '') Or ('$(__Exclude)' != '')">True</HaveExcludes>
+  </PropertyGroup>
 
   <Target Name="CreateXunitWrapper" DependsOnTargets="CreateXunitFacts">
 
@@ -191,12 +196,12 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </PropertyGroup>
 
     <ItemGroup>
-      <CanonicalExcludeList Include="%(ExcludeList.FullPath)" Condition="'$(__Exclude)' != ''"/>
+      <CanonicalExcludeList Include="%(ExcludeList.FullPath)" Condition="$(HaveExcludes)"/>
     </ItemGroup>
 
     <ItemGroup>
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" />
-      <AllCMDExcludeFilter Include="@(CanonicalExcludeList)" Condition="'$(__Exclude)' != ''"/>
+      <AllCMDExcludeFilter Include="@(CanonicalExcludeList)" Condition="$(HaveExcludes)"/>
       <AllCMDs Include="@(AllCMDsPresent)" Exclude="@(AllCMDExcludeFilter)"/>
 
       <AllCommands Include="@(AllCMDs)" >
