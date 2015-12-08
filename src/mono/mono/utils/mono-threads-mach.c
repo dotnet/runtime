@@ -65,7 +65,7 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 		ret = thread_suspend (info->native_handle);
 	} while (ret == KERN_ABORTED);
 
-	THREADS_SUSPEND_DEBUG ("SUSPEND %p -> %d\n", (void*)info->native_handle, ret);
+	THREADS_SUSPEND_DEBUG ("SUSPEND %p -> %d\n", (gpointer)(gsize)info->native_handle, ret);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
@@ -76,13 +76,13 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 			ret = thread_resume (info->native_handle);
 		} while (ret == KERN_ABORTED);
 		g_assert (ret == KERN_SUCCESS);
-		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/1 %p -> %d\n", (void*)info->native_handle, 0);
+		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/1 %p -> %d\n", (gpointer)(gsize)info->native_handle, 0);
 		//XXX interrupt_kernel doesn't make sense in this case as the target is not in a syscall
 		return TRUE;
 	}
 	res = mono_threads_get_runtime_callbacks ()->
 		thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info);
-	THREADS_SUSPEND_DEBUG ("thread state %p -> %d\n", (void*)info->native_handle, res);
+	THREADS_SUSPEND_DEBUG ("thread state %p -> %d\n", (gpointer)(gsize)info->native_handle, res);
 	if (res) {
 		if (interrupt_kernel)
 			thread_abort (info->native_handle);
@@ -92,7 +92,7 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 			ret = thread_resume (info->native_handle);
 		} while (ret == KERN_ABORTED);
 		g_assert (ret == KERN_SUCCESS);
-		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/2 %p -> %d\n", (void*)info->native_handle, 0);
+		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/2 %p -> %d\n", (gpointer)(gsize)info->native_handle, 0);
 	}
 	return res;
 }
@@ -146,7 +146,7 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 	do {
 		ret = thread_resume (info->native_handle);
 	} while (ret == KERN_ABORTED);
-	THREADS_SUSPEND_DEBUG ("RESUME %p -> %d\n", (void*)info->native_handle, ret);
+	THREADS_SUSPEND_DEBUG ("RESUME %p -> %d\n", (gpointer)(gsize)info->native_handle, ret);
 
 	return ret == KERN_SUCCESS;
 }
