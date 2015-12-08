@@ -47,6 +47,9 @@ my $cpid = fork ();
 if (!defined ($cpid)) {
 	$res = system("$interpreter @ARGV $test_binary 2>$stderr 1>$stdout");
 } elsif ($cpid == 0) {
+	    print "that's it >>>>>>>>\n";
+	    print "$interpreter @ARGV $test_binary 2>$stderr 1>$stdout\n";
+	    print "\n<<<<<<<<<\n";
 	exec ("$interpreter @ARGV $test_binary 2>$stderr 1>$stdout") || die "Cannot exec: $!";
 } else {
 	# in the parent, setup the alarm
