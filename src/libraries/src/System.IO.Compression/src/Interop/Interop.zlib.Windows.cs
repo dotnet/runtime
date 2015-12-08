@@ -52,23 +52,6 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe bool IsCrc32Available()
-        {
-            try
-            {
-                // Make a P/Invoke into zlib crc32 to ensure we're able to find and use it.
-                // If we are, then use zlib.
-                crc32(0, null, 0);
-                return true;
-            }
-            catch
-            {
-                // Otherwise, fallback to managed implementation if zlib isn't available
-                Debug.Write("zlib unavailable");
-                return false;
-            }
-        }
-
         internal static unsafe uint crc32(uint crc, byte[] buffer, int offset, int len)
         {
             fixed (byte* buf = &buffer[offset])

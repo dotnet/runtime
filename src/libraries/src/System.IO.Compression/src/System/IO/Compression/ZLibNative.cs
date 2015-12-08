@@ -400,5 +400,5 @@ namespace System.IO.Compression
 
         #endregion  // public factory methods for ZLibStreamHandle
 
-    }  // internal class ZLibNative
-}  // namespace System.IO.Compression
+    }
+}
