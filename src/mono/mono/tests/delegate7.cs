@@ -16,6 +16,10 @@ class Tests {
 		v += 4;
 		Console.WriteLine ("Test.F4");
 	}
+	static void F8 () {
+		v += 8;
+		Console.WriteLine ("Test.F8");
+	}
 
 	public static int Main () {
 		return TestDriver.RunTests (typeof (Tests));
@@ -33,6 +37,7 @@ class Tests {
 		SimpleDelegate d1 = new SimpleDelegate (F1);
 		SimpleDelegate d2 = new SimpleDelegate (F2);
 		SimpleDelegate d4 = new SimpleDelegate (F4);
+		SimpleDelegate d8 = new SimpleDelegate (F8);
 
 		if (d1 - d1 != null)
 			return 1;
@@ -82,21 +87,21 @@ class Tests {
 
 		if (d12 - d12 != null)
 			return 21;
-		if (!check_is_expected_v (d12 - d14, 2))
+		if (!check_is_expected_v (d12 - d14, 3))
 			return 22;
-		if (!check_is_expected_v (d12 - d24, 1))
+		if (!check_is_expected_v (d12 - d24, 3))
 			return 23;
 
-		if (!check_is_expected_v (d14 - d12, 4))
+		if (!check_is_expected_v (d14 - d12, 5))
 			return 24;
 		if (d14 - d14 != null)
 			return 25;
-		if (!check_is_expected_v (d14 - d24, 1))
+		if (!check_is_expected_v (d14 - d24, 5))
 			return 26;
 
-		if (!check_is_expected_v (d24 - d12, 4))
+		if (!check_is_expected_v (d24 - d12, 6))
 			return 27;
-		if (!check_is_expected_v (d24 - d14, 2))
+		if (!check_is_expected_v (d24 - d14, 6))
 			return 28;
 		if (d24 - d24 != null)
 			return 29;
@@ -112,13 +117,42 @@ class Tests {
 
 		if (!check_is_expected_v (d124 - d12, 4))
 			return 34;
-		if (!check_is_expected_v (d124 - d14, 2))
+		if (!check_is_expected_v (d124 - d14, 7))
 			return 35;
 		if (!check_is_expected_v (d124 - d24, 1))
 			return 36;
 
 		if (d124 - d124 != null)
 			return 37;
+
+		SimpleDelegate d1248 = d1 + d2 + d4 + d8;
+
+		if (!check_is_expected_v (d1248 - (d1 + d2), 12))
+			return 41;
+		if (!check_is_expected_v (d1248 - (d1 + d4), 15))
+			return 42;
+		if (!check_is_expected_v (d1248 - (d1 + d8), 15))
+			return 43;
+		if (!check_is_expected_v (d1248 - (d2 + d4), 9))
+			return 44;
+		if (!check_is_expected_v (d1248 - (d2 + d8), 15))
+			return 45;
+		if (!check_is_expected_v (d1248 - (d4 + d8), 3))
+			return 46;
+
+		if (!check_is_expected_v (d1248 - (d1 + d2 + d4), 8))
+			return 51;
+		if (!check_is_expected_v (d1248 - (d1 + d2 + d8), 15))
+			return 52;
+		if (!check_is_expected_v (d1248 - (d1 + d4 + d8), 15))
+			return 53;
+		if (!check_is_expected_v (d1248 - (d2 + d4 + d8), 1))
+			return 54;
+		if (!check_is_expected_v (d1248 - (d2 + d4 + d8), 1))
+			return 54;
+
+		if (d1248 - d1248 != null)
+			return 55;
 
 		return 0;
 	}
