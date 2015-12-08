@@ -169,6 +169,21 @@ namespace System.IO.Compression
             return errC == ZErrorCode.StreamEnd;
         }
 
+        internal int Flush(byte[] outputBuffer)
+        {
+            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
+            Debug.Assert(NeedsInput(), "We have something left in previous input!");
+            Debug.Assert(!_inputBufferHandle.IsAllocated);
+
+            // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.
+            // If there is still input left we should never be getting here; instead we
+            // should be calling GetDeflateOutput.
+
+            int bytesRead;
+            ReadDeflateOutput(outputBuffer, ZFlushCode.SyncFlush, out bytesRead);
+            return bytesRead;
+        }
+
         #endregion
 
 
