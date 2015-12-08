@@ -2,11 +2,11 @@
   "dependencies": {
     "Microsoft.Win32.Primitives": "4.0.0",
     "System.Net.Http": "4.0.0",
-    "System.Net.Primitives": "4.0.11-beta-*",
-    "System.Security.Cryptography.X509Certificates": "4.0.0-*",
+    "System.Net.Primitives": "4.0.11-rc2-23604",
+    "System.Security.Cryptography.X509Certificates": "4.0.0-rc2-23604",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
     "dnxcore50": {}

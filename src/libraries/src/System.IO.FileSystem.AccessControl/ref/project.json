@@ -4,8 +4,8 @@
     "System.IO.FileSystem": "4.0.0",
     "System.IO.FileSystem.Primitives": "4.0.0",
     "System.Runtime": "4.0.0",
-    "System.Security.AccessControl": "4.0.0-beta-*",
-    "System.Security.Principal.Windows": "4.0.0-beta-*"
+    "System.Security.AccessControl": "4.0.0-rc2-23604",
+    "System.Security.Principal.Windows": "4.0.0-rc2-23604"
   },
   "frameworks": {
     "dotnet5.4": {}

@@ -12,7 +12,7 @@
     "System.Xml.XDocument": "4.0.10",
     "System.Xml.XmlDocument": "4.0.0",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
     "dnxcore50": {}

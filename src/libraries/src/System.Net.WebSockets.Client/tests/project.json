@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "System.Net.WebSockets": "4.0.0-beta-*",
-    "System.Net.WebSockets.Client": "4.0.0-beta-*",
+    "System.Net.WebSockets": "4.0.0-rc2-23604",
+    "System.Net.WebSockets.Client": "4.0.0-rc2-23604",
     "System.Reflection.Extensions": "4.0.0",
     "System.Runtime": "4.0.20",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
     "dnxcore50": {}
