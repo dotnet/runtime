@@ -6158,7 +6158,7 @@ char *
 make_generic_name_string (MonoImage *image, int num)
 {
 	char *name = mono_image_alloc0 (image, INT_STRING_SIZE);
-	snprintf (name, INT_STRING_SIZE, "%d", num);
+	g_snprintf (name, INT_STRING_SIZE, "%d", num);
 	return name;
 }
 
