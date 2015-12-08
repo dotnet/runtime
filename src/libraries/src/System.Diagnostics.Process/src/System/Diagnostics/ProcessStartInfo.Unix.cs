@@ -33,5 +33,7 @@ namespace System.Diagnostics
             get { throw new PlatformNotSupportedException(); }
             set { throw new PlatformNotSupportedException(); }
         }
+
+        public bool UseShellExecute { get; set; }
     }
 }
