@@ -173,7 +173,7 @@ namespace System.Data.SqlClient.SNI
 
             try
             {
-                _sslStream.AuthenticateAsClient(_targetServer);
+                _sslStream.AuthenticateAsClientAsync(_targetServer).GetAwaiter().GetResult();
                 _sslOverTdsStream.FinishHandshake();
             }
             catch (AuthenticationException aue)

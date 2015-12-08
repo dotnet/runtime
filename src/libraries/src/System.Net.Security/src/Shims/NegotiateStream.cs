@@ -80,31 +80,6 @@ namespace System.Net.Security
             }
         }
 
-        public virtual void AuthenticateAsClient()
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public virtual void AuthenticateAsClient(NetworkCredential credential, string targetName)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public virtual void AuthenticateAsClient(NetworkCredential credential, ChannelBinding binding, string targetName)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public virtual void AuthenticateAsClient(NetworkCredential credential, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public virtual void AuthenticateAsClient(NetworkCredential credential, ChannelBinding binding, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public virtual Task AuthenticateAsClientAsync()
         {
             throw new PlatformNotSupportedException();
@@ -126,26 +101,6 @@ namespace System.Net.Security
         }
 
         public virtual Task AuthenticateAsClientAsync(NetworkCredential credential, ChannelBinding binding, string targetName, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel allowedImpersonationLevel)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public virtual void AuthenticateAsServer()
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public virtual void AuthenticateAsServer(ExtendedProtectionPolicy policy)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public virtual void AuthenticateAsServer(NetworkCredential credential, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public virtual void AuthenticateAsServer(NetworkCredential credential, ExtendedProtectionPolicy policy, ProtectionLevel requiredProtectionLevel, TokenImpersonationLevel requiredImpersonationLevel)
         {
             throw new PlatformNotSupportedException();
         }
