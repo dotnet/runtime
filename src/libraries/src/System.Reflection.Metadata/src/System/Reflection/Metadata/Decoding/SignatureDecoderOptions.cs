@@ -10,7 +10,7 @@
 
         /// <summary>
         /// Causes the decoder to pass <see cref="SignatureTypeHandleCode.Class"/> or <see cref="SignatureTypeHandleCode.ValueType"/>
-        /// to the <see cref="IReferenceOrDefinitionTypeProvider{TType}"/> instead of <see cref="SignatureTypeHandleCode.Unresolved"/>.
+        /// to the <see cref="ITypeProvider{TType}"/> instead of <see cref="SignatureTypeHandleCode.Unresolved"/>.
         /// </summary>
         /// <remarks>
         /// There is additional overhead for this case when dealing with .winmd files to handle projection.

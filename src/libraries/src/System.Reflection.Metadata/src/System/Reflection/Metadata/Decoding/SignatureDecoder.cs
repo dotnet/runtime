@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata.Decoding
     public struct SignatureDecoder<TType>
     {
         private readonly ISignatureTypeProvider<TType> _provider;
-        private readonly MetadataReader/*?*/ _metadataReader;
+        private readonly MetadataReader _metadataReaderOpt;
         private readonly SignatureDecoderOptions _options;
 
         /// <summary>
@@ -22,15 +22,14 @@ namespace System.Reflection.Metadata.Decoding
         /// </summary>
         /// <param name="provider">The provider used to obtain type symbols as the signature is decoded.</param>
         /// <param name="metadataReader">
-        /// The metadata reader from which the signature was obtained. 
-        /// May be null if the given provider allows it.
-        /// However, if <see cref="SignatureDecoderOptions.DifferentiateClassAndValueTypes"/> is specified, it 
-        /// should be  non-null to evaluate WinRT projections from class to value type or vice-versa correctly.
+        /// The metadata reader from which the signature was obtained. It may be null if the given provider allows it.
+        /// However, if <see cref="SignatureDecoderOptions.DifferentiateClassAndValueTypes"/> is specified, it should
+        /// be non-null to evaluate WinRT projections from class to value type or vice-versa correctly.
         /// </param>
         /// <param name="options">Set of optional decoder features to enable.</param>
         public SignatureDecoder(
             ISignatureTypeProvider<TType> provider, 
-            MetadataReader/*?*/ metadataReader = null, 
+            MetadataReader metadataReader = null, 
             SignatureDecoderOptions options = SignatureDecoderOptions.None)
         {
             if (provider == null)
@@ -38,7 +37,7 @@ namespace System.Reflection.Metadata.Decoding
                 throw new ArgumentNullException("provider");
             }
 
-            _metadataReader = metadataReader;
+            _metadataReaderOpt = metadataReader;
             _provider = provider;
             _options = options;
         }
@@ -48,8 +47,6 @@ namespace System.Reflection.Metadata.Decoding
         /// </summary>
         /// <param name="blobReader">The blob reader positioned at the leading SignatureTypeCode</param>
         /// <returns>The decoded type.</returns>
-        /// <exception cref="System.ArgumentNullException">The blob contains and the metadataReader argument is null.</exception>
-        /// <exception cref="System.ArgumentNullException">The blob contains and the metadataReader argument is null.</exception>
         /// <exception cref="System.BadImageFormatException">The reader was not positioned at a valid signature type.</exception>
         public TType DecodeType(ref BlobReader blobReader)
         {
@@ -292,7 +289,7 @@ namespace System.Reflection.Metadata.Decoding
         {
             EntityHandle modifier = blobReader.ReadTypeHandle();
             TType unmodifiedType = DecodeType(ref blobReader);
-            return _provider.GetModifiedType(_metadataReader, isRequired, modifier, unmodifiedType);
+            return _provider.GetModifiedType(_metadataReaderOpt, isRequired, modifier, unmodifiedType);
         }
 
         private TType DecodeTypeDefOrRef(ref BlobReader blobReader, SignatureTypeHandleCode code)
@@ -309,7 +306,7 @@ namespace System.Reflection.Metadata.Decoding
             {
                 case HandleKind.TypeDefinition:
                     var typeDef = (TypeDefinitionHandle)handle;
-                    return _provider.GetTypeFromDefinition(_metadataReader, typeDef, code);
+                    return _provider.GetTypeFromDefinition(_metadataReaderOpt, typeDef, code);
 
                 case HandleKind.TypeReference:
                     var typeRef = (TypeReferenceHandle)handle;
@@ -317,7 +314,7 @@ namespace System.Reflection.Metadata.Decoding
                     {
                         ProjectClassOrValueType(typeRef, ref code);
                     }
-                    return _provider.GetTypeFromReference(_metadataReader, typeRef, code);
+                    return _provider.GetTypeFromReference(_metadataReaderOpt, typeRef, code);
 
                 default:
                     // To prevent cycles, the token following (CLASS | VALUETYPE) must not be a type spec
@@ -331,14 +328,14 @@ namespace System.Reflection.Metadata.Decoding
             Debug.Assert(code != SignatureTypeHandleCode.Unresolved);
             Debug.Assert((_options & SignatureDecoderOptions.DifferentiateClassAndValueTypes) != 0);
 
-            if (_metadataReader == null)
+            if (_metadataReaderOpt == null)
             {
                 // If we're asked to differentiate value types without a reader, then 
                 // return the designation unprojected as it occurs in the signature blob.
                 return; 
             }
 
-            TypeReference typeRef = _metadataReader.GetTypeReference(handle);
+            TypeReference typeRef = _metadataReaderOpt.GetTypeReference(handle);
             switch (typeRef.SignatureTreatment)
             {
                 case TypeRefSignatureTreatment.ProjectedToClass:
