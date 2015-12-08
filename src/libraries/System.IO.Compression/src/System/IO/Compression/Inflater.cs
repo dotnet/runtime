@@ -8,11 +8,9 @@ using System.Security;
 namespace System.IO.Compression
 {
     /// <summary>
-    /// Provides a wrapper around the ZLib decompression API that implements the
-    /// IInflater interface such that this implementation functions may be used interchangeably
-    /// with the Managed implementation found in InflaterManaged.cs
+    /// Provides a wrapper around the ZLib decompression API
     /// </summary>
-    internal class InflaterZlib : IInflater
+    internal sealed class Inflater : IDisposable
     {
         private bool _finished;                             // Whether the end of the stream has been reached
         private bool _isDisposed;                           // Prevents multiple disposals
@@ -25,7 +23,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Initialized the Inflater with the given windowBits size
         /// </summary>
-        internal InflaterZlib(int windowBits)
+        internal Inflater(int windowBits)
         {
             _finished = false;
             _isDisposed = false;
@@ -99,7 +97,7 @@ namespace System.IO.Compression
         }
 
         [SecuritySafeCritical]
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!_isDisposed)
             {
@@ -113,13 +111,13 @@ namespace System.IO.Compression
             }
         }
 
-        void IDisposable.Dispose()
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        ~InflaterZlib()
+        ~Inflater()
         {
             Dispose(false);
         }

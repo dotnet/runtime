@@ -11,7 +11,10 @@ using ZFlushCode = System.IO.Compression.ZLibNative.FlushCode;
 
 namespace System.IO.Compression
 {
-    internal class DeflaterZLib : IDeflater
+    /// <summary>
+    /// Provides a wrapper around the ZLib compression API
+    /// </summary>
+    internal sealed class Deflater : IDisposable
     {
         private ZLibNative.ZLibStreamHandle _zlibStream;
         private GCHandle _inputBufferHandle;
@@ -26,13 +29,11 @@ namespace System.IO.Compression
 
         #region exposed members
 
-        internal DeflaterZLib()
-
-            : this(CompressionLevel.Optimal)
+        internal Deflater() : this(CompressionLevel.Optimal)
         {
         }
 
-        internal DeflaterZLib(CompressionLevel compressionLevel)
+        internal Deflater(CompressionLevel compressionLevel)
         {
             ZLibNative.CompressionLevel zlibCompressionLevel;
             int memLevel;
@@ -66,19 +67,19 @@ namespace System.IO.Compression
             DeflateInit(zlibCompressionLevel, windowBits, memLevel, strategy);
         }
 
-        ~DeflaterZLib()
+        ~Deflater()
         {
             Dispose(false);
         }
 
-        void IDisposable.Dispose()
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         [SecuritySafeCritical]
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!_isDisposed)
             {
@@ -96,7 +97,7 @@ namespace System.IO.Compression
             return 0 == _zlibStream.AvailIn;
         }
 
-        void IDeflater.SetInput(byte[] inputBuffer, int startIndex, int count)
+        internal void SetInput(byte[] inputBuffer, int startIndex, int count)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(null != inputBuffer);
@@ -115,7 +116,7 @@ namespace System.IO.Compression
             }
         }
 
-        int IDeflater.GetDeflateOutput(byte[] outputBuffer)
+        internal int GetDeflateOutput(byte[] outputBuffer)
         {
             Contract.Ensures(Contract.Result<int>() >= 0 && Contract.Result<int>() <= outputBuffer.Length);
 
@@ -154,7 +155,7 @@ namespace System.IO.Compression
             }
         }
 
-        bool IDeflater.Finish(byte[] outputBuffer, out int bytesRead)
+        internal bool Finish(byte[] outputBuffer, out int bytesRead)
         {
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
@@ -168,7 +169,7 @@ namespace System.IO.Compression
             return errC == ZErrorCode.StreamEnd;
         }
 
-        #endregion  // exposed functions
+        #endregion
 
 
         #region helpers & native call wrappers
@@ -249,7 +250,7 @@ namespace System.IO.Compression
                     throw new ZLibException(SR.ZLibErrorUnexpected, "deflate", (int)errC, _zlibStream.GetErrorMessage());
             }
         }
-        #endregion  // helpers & native call wrappers
+        #endregion
 
-    }  // internal class DeflaterZLib
-}  // namespace System.IO.Compression
+    }
+}

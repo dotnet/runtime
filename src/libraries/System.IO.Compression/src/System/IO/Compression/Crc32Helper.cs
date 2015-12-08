@@ -17,9 +17,30 @@ using System.Diagnostics;
 
 namespace System.IO.Compression
 {
+    /// <summary>
+    /// This class contains a managed Crc32 function as well as an indirection to the Interop.Zlib.Crc32 call.
+    /// Since Desktop compression uses this file alongside the Open ZipArchive, we cannot remove it
+    /// without breaking the Desktop build. 
+    /// 
+    /// Note that in CoreFX the ZlibCrc32 function is always called.
+    /// </summary>
     internal static class Crc32Helper
     {
-        private static readonly bool s_useZlib = IsZlibCrcAvailable();
+         // Calculate CRC based on the old CRC and the new bytes 
+        // See RFC1952 for details.
+        public static uint UpdateCrc32(uint crc32, byte[] buffer, int offset, int length)
+        {
+            Debug.Assert((buffer != null) && (offset >= 0) && (length >= 0)
+                       && (offset <= buffer.Length - length), "check the caller");
+#if FEATURE_ZLIB
+            return Interop.zlib.crc32(crc32, buffer, offset, length);
+#else
+            return ManagedCrc32(crc32, buffer, offset, length);
+#endif
+
+        }
+
+#if !FEATURE_ZLIB
 
         // Generated tables for managed crc calculation.
         // Each table n (starting at 0) contains remainders from the long division of 
@@ -459,28 +480,6 @@ namespace System.IO.Compression
             0x264B06E6u
         };
 
-        private static bool IsZlibCrcAvailable()
-        {
-#if FEATURE_ZLIB_CRC32
-
-            // Make a check to ensure we're able to find and use crc32 in zlib.
-            // If we can, then use zlib.
-            return Interop.zlib.IsCrc32Available();
-#else
-            return false;
-#endif
-        }
-
-        // Calculate CRC based on the old CRC and the new bytes 
-        // See RFC1952 for details.
-        public static uint UpdateCrc32(uint crc32, byte[] buffer, int offset, int length)
-        {
-            Debug.Assert((buffer != null) && (offset >= 0) && (length >= 0)
-                       && (offset <= buffer.Length - length), "check the caller");
-
-            return s_useZlib ? ZlibCrc32(crc32, buffer, offset, length) : ManagedCrc32(crc32, buffer, offset, length);
-        }
-
         private static uint ManagedCrc32(uint crc32, byte[] buffer, int offset, int length)
         {
             Debug.Assert(BitConverter.IsLittleEndian, "ManagedCrc32 Expects Little Endian");
@@ -521,15 +520,6 @@ namespace System.IO.Compression
             crc32 ^= 0xFFFFFFFFU;
             return crc32;
         }
-
-        private static uint ZlibCrc32(uint crc32, byte[] buffer, int offset, int length)
-        {
-#if FEATURE_ZLIB_CRC32
-            return Interop.zlib.crc32(crc32, buffer, offset, length);
-#else
-            Debug.Fail("ZlibCrc32 should not be called when FEATURE_ZLIB_CRC32 is false!");
-            throw new InvalidOperationException();
 #endif
-        }
     }
 }

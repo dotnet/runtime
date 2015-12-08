@@ -16,7 +16,7 @@
     <UseECMAKey Condition="'$(UseECMAKey)'==''">true</UseECMAKey>
     <PackageTargetFramework>dotnet5.4</PackageTargetFramework>
     <UsePackageTargetRuntimeDefaults>true</UsePackageTargetRuntimeDefaults>
-    <DefineConstants>$(DefineConstants);FEATURE_ZLIB_CRC32</DefineConstants>
+    <DefineConstants>$(DefineConstants);FEATURE_ZLIB</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
@@ -26,33 +26,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\IO\Compression\BlockType.cs" />
     <Compile Include="System\IO\Compression\CompressionLevel.cs" />
     <Compile Include="System\IO\Compression\CompressionMode.cs" />
-    <Compile Include="System\IO\Compression\CopyEncoder.cs" />
+    <Compile Include="System\IO\Compression\Deflater.cs" />
     <Compile Include="System\IO\Compression\Crc32Helper.cs" />
-    <Compile Include="System\IO\Compression\DeflateInput.cs" />
-    <Compile Include="System\IO\Compression\DeflaterManaged.cs" />
-    <Compile Include="System\IO\Compression\DeflaterZLib.cs" />
     <Compile Include="System\IO\Compression\DeflateStream.cs" />
-    <Compile Include="System\IO\Compression\FastEncoder.cs" />
-    <Compile Include="System\IO\Compression\FastEncoderStatics.cs" />
-    <Compile Include="System\IO\Compression\FastEncoderWindow.cs" />
     <Compile Include="System\IO\Compression\FileFormats.cs" />
     <Compile Include="System\IO\Compression\GZipDecoder.cs" />
     <Compile Include="System\IO\Compression\GZipStream.cs" />
     <Compile Include="System\IO\Compression\GZipUtils.cs" />
-    <Compile Include="System\IO\Compression\HuffmanTree.cs" />
-    <Compile Include="System\IO\Compression\IDeflater.cs" />
-    <Compile Include="System\IO\Compression\IInflater.cs" />
-    <Compile Include="System\IO\Compression\InflaterManaged.cs" />
-    <Compile Include="System\IO\Compression\InflaterState.cs" />
-    <Compile Include="System\IO\Compression\InflaterZlib.cs" />
+    <Compile Include="System\IO\Compression\Inflater.cs" />
     <Compile Include="System\IO\Compression\InputBuffer.cs" />
-    <Compile Include="System\IO\Compression\Match.cs" />
-    <Compile Include="System\IO\Compression\MatchState.cs" />
     <Compile Include="System\IO\Compression\OutputBuffer.cs" />
-    <Compile Include="System\IO\Compression\OutputWindow.cs" />
     <Compile Include="System\IO\Compression\ZipArchive.cs" />
     <Compile Include="System\IO\Compression\ZipArchiveEntry.cs" />
     <Compile Include="System\IO\Compression\ZipArchiveMode.cs" />
