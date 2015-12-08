@@ -3,13 +3,13 @@
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
-    "System.Net.Primitives": "4.0.11-beta-*",
+    "System.Net.Primitives": "4.0.11-rc2-23604",
     "System.Runtime.Extensions": "4.0.10",
-    "System.Security.Cryptography.Algorithms": "4.0.0-beta-*",
+    "System.Security.Cryptography.Algorithms": "4.0.0-rc2-23604",
     "System.Text.Encoding": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
     "dnxcore50": {}

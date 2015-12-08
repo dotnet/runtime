@@ -3,11 +3,11 @@
     "System.Diagnostics.Contracts": "4.0.0",
     "System.Diagnostics.Debug": "4.0.10",
     "System.Net.Primitives": "4.0.10",
-    "System.Net.NameResolution": "4.0.0-beta-*",
+    "System.Net.NameResolution": "4.0.0-rc2-23604",
     "System.Runtime": "4.0.20",
-    "System.Threading.Tasks": "4.0.0",
+    "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
     "dnxcore50": {}
