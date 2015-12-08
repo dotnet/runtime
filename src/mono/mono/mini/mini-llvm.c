@@ -1269,6 +1269,8 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		break;
 	case LLVMArgVtypeRetAddr:
 	case LLVMArgScalarRetAddr:
+	case LLVMArgGsharedvtFixed:
+	case LLVMArgGsharedvtVariable:
 		vretaddr = TRUE;
 		ret_type = LLVMVoidType ();
 		break;
@@ -1378,6 +1380,10 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 		}
 		case LLVMArgVtypeAsScalar:
 			g_assert_not_reached ();
+			break;
+		case LLVMArgGsharedvtFixed:
+		case LLVMArgGsharedvtVariable:
+			param_types [pindex ++] = LLVMPointerType (type_to_llvm_arg_type (ctx, ainfo->type), 0);
 			break;
 		default:
 			param_types [pindex ++] = type_to_llvm_arg_type (ctx, ainfo->type);
@@ -2792,6 +2798,22 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeAsScalar:
 			g_assert_not_reached ();
 			break;
+		case LLVMArgGsharedvtFixed: {
+			/* These are non-gsharedvt arguments passed by ref, the rest of the IR treats them as scalars */
+			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
+
+			if (names [i])
+				name = g_strdup_printf ("arg_%s", names [i]);
+			else
+				name = g_strdup_printf ("arg_%d", i);
+
+			ctx->values [reg] = LLVMBuildLoad (builder, convert (ctx, arg, LLVMPointerType (type_to_llvm_type (ctx, ainfo->type), 0)), name);
+			break;
+		}
+		case LLVMArgGsharedvtVariable:
+			/* The IR treats these as variables with addresses */
+			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
+			break;
 		default:
 			ctx->values [reg] = convert_full (ctx, ctx->values [reg], llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, ainfo->type)), type_is_unsigned (ctx, ainfo->type));
 			break;
@@ -2936,7 +2958,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (call->imt_arg_reg)
 		cinfo->imt_arg = TRUE;
 
-	vretaddr = (cinfo->ret.storage == LLVMArgVtypeRetAddr || cinfo->ret.storage == LLVMArgVtypeByRef || cinfo->ret.storage == LLVMArgScalarRetAddr);
+	vretaddr = (cinfo->ret.storage == LLVMArgVtypeRetAddr || cinfo->ret.storage == LLVMArgVtypeByRef || cinfo->ret.storage == LLVMArgScalarRetAddr || cinfo->ret.storage == LLVMArgGsharedvtFixed || cinfo->ret.storage == LLVMArgGsharedvtVariable);
 
 	llvm_sig = sig_to_llvm_sig_full (ctx, sig, cinfo);
 	CHECK_FAILURE (ctx);
@@ -3231,6 +3253,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	case LLVMArgScalarRetAddr:
 		/* Normal scalar returned using a vtype return argument */
 		values [ins->dreg] = LLVMBuildLoad (builder, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (type_to_llvm_type (ctx, sig->ret), 0), FALSE), "");
+		break;
+	case LLVMArgGsharedvtFixed:
+	case LLVMArgGsharedvtVariable:
+		g_assert_not_reached ();
 		break;
 	default:
 		if (sig->ret->type != MONO_TYPE_VOID)
@@ -3965,6 +3991,21 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				break;
 			}
 			case LLVMArgVtypeByRef: {
+				LLVMBuildRetVoid (builder);
+				break;
+			}
+			case LLVMArgGsharedvtFixed: {
+				LLVMTypeRef ret_type = type_to_llvm_type (ctx, sig->ret);
+				/* The return value is in lhs, need to store to the vret argument */
+				g_assert (lhs);
+				g_assert (cfg->vret_addr);
+				g_assert (values [cfg->vret_addr->dreg]);
+				LLVMBuildStore (builder, convert (ctx, lhs, ret_type), convert (ctx, values [cfg->vret_addr->dreg], LLVMPointerType (ret_type, 0)));
+				LLVMBuildRetVoid (builder);
+				break;
+			}
+			case LLVMArgGsharedvtVariable: {
+				/* Already set */
 				LLVMBuildRetVoid (builder);
 				break;
 			}
@@ -6011,6 +6052,46 @@ get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	LLVMCallInfo *linfo;
 	int i;
 
+	if (cfg->gsharedvt && cfg->llvm_only && mini_is_gsharedvt_variable_signature (sig)) {
+		int i, n, pindex;
+
+		/*
+		 * Gsharedvt methods have the following calling convention:
+		 * - all arguments are passed by ref, even non generic ones
+		 * - the return value is returned by ref too, using a vret
+		 *   argument passed after 'this'.
+		 */
+		n = sig->param_count + sig->hasthis;
+		linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
+
+		pindex = 0;
+		if (sig->hasthis)
+			linfo->args [pindex ++].storage = LLVMArgNormal;
+
+		if (sig->ret->type != MONO_TYPE_VOID) {
+			if (mini_is_gsharedvt_variable_type (sig->ret))
+				linfo->ret.storage = LLVMArgGsharedvtVariable;
+			else
+				linfo->ret.storage = LLVMArgGsharedvtFixed;
+			linfo->vret_arg_index = pindex;
+		} else {
+			linfo->ret.storage = LLVMArgNone;
+		}
+
+		for (i = 0; i < sig->param_count; ++i) {
+			if (sig->params [i]->byref)
+				linfo->args [pindex].storage = LLVMArgNormal;
+			else if (mini_is_gsharedvt_variable_type (sig->params [i]))
+				linfo->args [pindex].storage = LLVMArgGsharedvtVariable;
+			else
+				linfo->args [pindex].storage = LLVMArgGsharedvtFixed;
+			linfo->args [pindex].type = sig->params [i];
+			pindex ++;
+		}
+		return linfo;
+	}
+
+
 	linfo = mono_arch_get_llvm_call_info (cfg, sig);
 	for (i = 0; i < sig->param_count; ++i)
 		linfo->args [i + sig->hasthis].type = sig->params [i];
@@ -6203,6 +6284,11 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 		values [cfg->args [i + sig->hasthis]->dreg] = LLVMGetParam (method, ainfo->pindex);
 		if (ainfo->storage == LLVMArgScalarByRef) {
+			if (names [i] && names [i][0] != '\0')
+				name = g_strdup_printf ("p_arg_%s", names [i]);
+			else
+				name = g_strdup_printf ("p_arg_%d", i);
+		} else if (ainfo->storage == LLVMArgGsharedvtFixed) {
 			if (names [i] && names [i][0] != '\0')
 				name = g_strdup_printf ("p_arg_%s", names [i]);
 			else
@@ -6586,6 +6672,30 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	mono_native_tls_set_value (current_cfg_tls_id, NULL);
 
 	mono_loader_unlock ();
+}
+
+/*
+ * mono_llvm_create_vars:
+ *
+ *   Same as mono_arch_create_vars () for LLVM.
+ */
+void
+mono_llvm_create_vars (MonoCompile *cfg)
+{
+	MonoMethodSignature *sig;
+
+	sig = mono_method_signature (cfg->method);
+	if (cfg->gsharedvt && cfg->llvm_only) {
+		if (mini_is_gsharedvt_variable_signature (sig) && sig->ret->type != MONO_TYPE_VOID) {
+			cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+			if (G_UNLIKELY (cfg->verbose_level > 1)) {
+				printf ("vret_addr = ");
+				mono_print_ins (cfg->vret_addr);
+			}
+		}
+	} else {
+		mono_arch_create_vars (cfg);
+	}
 }
 
 /*

@@ -741,6 +741,10 @@ typedef enum {
 	LLVMArgVtypeByVal,
 	LLVMArgVtypeRetAddr, /* On on cinfo->ret */
 	LLVMArgGSharedVt,
+	/* Fixed sized argument passed to/returned from gsharedvt method by ref */
+	LLVMArgGsharedvtFixed,
+	/* Variable sized argument passed to/returned from gsharedvt method by ref */
+	LLVMArgGsharedvtVariable,
 	/* Vtype passed as one int array argument */
 	LLVMArgAsIArgs,
 	/* Vtype passed as a set of fp arguments */
