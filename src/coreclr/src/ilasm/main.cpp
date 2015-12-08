@@ -722,6 +722,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                     exitval = 1;
                                     pParser->msg("Failed to write output file, error code=0x%08X\n",hr);
                                 }
+#ifndef FEATURE_CORECLR
                                 else if (pAsm->m_pManifest->m_sStrongName.m_fFullSign)
                                 {
                                     // Strong name sign the resultant assembly.
@@ -732,6 +733,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                                         pParser->msg("Failed to strong name sign output file, error code=0x%08X\n",hr);
                                     }
                                 }
+#endif
                                 if(bClock) cw.cEnd = GetTickCount();
 #define ENC_ENABLED
 #ifdef ENC_ENABLED
