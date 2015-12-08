@@ -32,11 +32,6 @@ internal static partial class Interop
         [DllImport(Libraries.CompressionNative)]
         internal static extern ZLibNative.ErrorCode InflateEnd(ref ZLibNative.ZStream stream);
 
-        internal static bool IsCrc32Available()
-        {
-            return true;
-        }
-
         internal static unsafe uint crc32(uint crc, byte[] buffer, int offset, int len)
         {
             fixed (byte* buf = &buffer[offset])

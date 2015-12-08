@@ -15,8 +15,8 @@ namespace System.IO.Compression
         private Stream _stream;
         private CompressionMode _mode;
         private bool _leaveOpen;
-        private IInflater _inflater;
-        private IDeflater _deflater;
+        private Inflater _inflater;
+        private Deflater _deflater;
         private byte[] _buffer;
 
         private int _asyncOperations;
@@ -24,14 +24,6 @@ namespace System.IO.Compression
         private IFileFormatWriter _formatWriter;
         private bool _wroteHeader;
         private bool _wroteBytes;
-
-        private enum WorkerType : byte { Unknown = 0, Managed = 1, ZLib = 2 };
-        private static readonly WorkerType s_deflaterType = WorkerType.ZLib; // TODO (Issue #4451) WorkerType should be removed when the managed implementation is removed
-#if DEBUG
-        // This field is used for testing purposes and is accessed via reflection.
-        // NOTE: If the name of this field changes, the test must also be updated.
-        private static WorkerType s_forcedTestingDeflaterType = WorkerType.Unknown;
-#endif
 
         public DeflateStream(Stream stream, CompressionMode mode)
             : this(stream, mode, false)
@@ -104,9 +96,6 @@ namespace System.IO.Compression
             if (!stream.CanWrite)
                 throw new ArgumentException(SR.NotWriteableStream, "stream");
 
-            // Checking of compressionLevel is passed down to the IDeflater implementation as it
-            // is a pugable component that completely encapsulates the meaning of compressionLevel.
-
             Contract.EndContractBlock();
 
             _stream = stream;
@@ -118,59 +107,24 @@ namespace System.IO.Compression
             _buffer = new byte[DefaultBufferSize];
         }
 
-        private static IDeflater CreateDeflater(CompressionLevel? compressionLevel)
+        private static Deflater CreateDeflater(CompressionLevel? compressionLevel)
         {
-            // The deflator type (zlib or managed) is normally determined by s_deflatorType,
-            // which is initialized by the provider based on what's available on the system.
-            // But for testing purposes, we sometimes want to override this, forcing
-            // compression/decompression to use a particular type.
-            WorkerType deflatorType = s_deflaterType;
-#if DEBUG
-            if (s_forcedTestingDeflaterType != WorkerType.Unknown)
-                deflatorType = s_forcedTestingDeflaterType;
-#endif
-
-            if (deflatorType == WorkerType.ZLib)
-            {
-                return compressionLevel.HasValue ?
-                    new DeflaterZLib(compressionLevel.Value) :
-                    new DeflaterZLib();
-            }
-            else
-            {
-                Debug.Assert(deflatorType == WorkerType.Managed);
-                return new DeflaterManaged();
-            }
+            return compressionLevel.HasValue ?
+                new Deflater(compressionLevel.Value) :
+                new Deflater();
         }
 
-        private static IInflater CreateInflater(IFileFormatReader reader = null)
+        private static Inflater CreateInflater(IFileFormatReader reader = null)
         {
-            // The deflator type (zlib or managed) is normally determined by s_deflatorType,
-            // which is initialized by the provider based on what's available on the system.
-            // But for testing purposes, we sometimes want to override this, forcing
-            // compression/decompression to use a particular type.
-            WorkerType deflatorType = s_deflaterType;
-#if DEBUG
-            if (s_forcedTestingDeflaterType != WorkerType.Unknown)
-                deflatorType = s_forcedTestingDeflaterType;
-#endif
-
-            if (deflatorType == WorkerType.ZLib)
-            {
-                // Rather than reading raw data and using a FormatReader to interpret
-                // headers/footers manually, we instead set the zlib stream to parse
-                // that information for us.
-                if (reader == null)
-                    return new InflaterZlib(ZLibNative.Deflate_DefaultWindowBits);
-                else
-                {
-                    Debug.Assert(reader.ZLibWindowSize == 47, "A GZip reader must be designated with ZLibWindowSize == 47. Other header formats aren't supported by ZLib.");
-                    return new InflaterZlib(reader.ZLibWindowSize);
-                }
-            }
+            // Rather than reading raw data and using a FormatReader to interpret
+            // headers/footers manually, we instead set the zlib stream to parse
+            // that information for us.
+            if (reader == null)
+                return new Inflater(ZLibNative.Deflate_DefaultWindowBits);
             else
             {
-                return new InflaterManaged(reader);
+                Debug.Assert(reader.ZLibWindowSize == 47, "A GZip reader must be designated with ZLibWindowSize == 47. Other header formats aren't supported by ZLib.");
+                return new Inflater(reader.ZLibWindowSize);
             }
         }
 
@@ -528,7 +482,7 @@ namespace System.IO.Compression
             if (_stream == null)
                 return;
 
-            Flush();
+            EnsureNotDisposed();
 
             if (_mode != CompressionMode.Compress)
                 return;
@@ -644,6 +598,6 @@ namespace System.IO.Compression
             }
         }
 
-    }  // public class DeflateStream
-}  // namespace System.IO.Compression
+    }
+}
 

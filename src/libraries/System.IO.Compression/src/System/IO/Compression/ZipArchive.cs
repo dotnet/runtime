@@ -131,9 +131,6 @@ namespace System.IO.Compression
             if (stream == null)
                 throw new ArgumentNullException("stream");
 
-            // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
-            // as it is a pugable component that completely encapsulates the meaning of compressionLevel.
-
             Contract.EndContractBlock();
 
             this.EntryNameEncoding = entryNameEncoding;
@@ -347,9 +344,6 @@ namespace System.IO.Compression
         private ZipArchiveEntry DoCreateEntry(String entryName, CompressionLevel? compressionLevel)
         {
             Contract.Ensures(Contract.Result<ZipArchiveEntry>() != null);
-
-            // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
-            // as it is a pugable component that completely encapsulates the meaning of compressionLevel.
 
             if (entryName == null)
                 throw new ArgumentNullException("entryName");
@@ -746,5 +740,5 @@ namespace System.IO.Compression
             ZipEndOfCentralDirectoryBlock.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveComment);
         }
         #endregion Privates
-    }  // class ZipArchive
-}  // namespace
+    }
+}

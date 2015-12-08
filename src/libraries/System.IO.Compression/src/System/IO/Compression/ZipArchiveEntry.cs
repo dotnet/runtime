@@ -54,9 +54,6 @@ namespace System.IO.Compression
 
             : this(archive, cd)
         {
-            // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
-            // as it is a pugable component that completely encapsulates the meaning of compressionLevel.
-
             _compressionLevel = compressionLevel;
         }
 
@@ -102,9 +99,6 @@ namespace System.IO.Compression
 
             : this(archive, entryName)
         {
-            // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
-            // as it is a pugable component that completely encapsulates the meaning of compressionLevel.
-
             _compressionLevel = compressionLevel;
         }
 
@@ -1267,5 +1261,5 @@ namespace System.IO.Compression
 
         private enum OpenableValues { Openable, FileNonExistent, FileTooLarge }
         #endregion Nested Types
-    }  // class ZipArchiveEntry
-}  // namespace
+    }
+}

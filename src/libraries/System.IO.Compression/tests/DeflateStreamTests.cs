@@ -9,19 +9,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class ZLibDeflateStreamTests : DeflateStreamTests, IDisposable
-    {
-        public ZLibDeflateStreamTests() { Common.SetDeflaterMode("zlib"); }
-        public void Dispose() { Common.SetDeflaterMode("unknown"); }
-    }
-
-    public class ManagedDeflateStreamTests : DeflateStreamTests, IDisposable
-    {
-        public ManagedDeflateStreamTests() { Common.SetDeflaterMode("managed"); }
-        public void Dispose() { Common.SetDeflaterMode("unknown"); }
-    }
-
-    public abstract class DeflateStreamTests
+    public class DeflateStreamTests
     {
         static string gzTestFile(String fileName) { return Path.Combine("GZTestData", fileName); }
 
