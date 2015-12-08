@@ -3,7 +3,7 @@
 
 namespace System.Reflection.Metadata.Decoding
 {
-    public interface ISignatureTypeProvider<TType> : IPrimitiveTypeProvider<TType>, IReferenceOrDefinitionTypeProvider<TType>, IConstructedTypeProvider<TType>
+    public interface ISignatureTypeProvider<TType> : IPrimitiveTypeProvider<TType>, ITypeProvider<TType>, IConstructedTypeProvider<TType>
     {
         /// <summary>
         /// Gets the a type symbol for the function pointer type of the given method signature.
@@ -36,7 +36,7 @@ namespace System.Reflection.Metadata.Decoding
         ///      If we were to recurse into the type spec before calling GetModifiedType, it would eliminate scenarios such
         ///      as caching by TypeSpec or deciphering the structure of a signature without resolving any handles.
         /// </remarks>
-        TType GetModifiedType(MetadataReader/*?*/ reader, bool isRequired, EntityHandle modifierTypeHandle, TType unmodifiedType);
+        TType GetModifiedType(MetadataReader reader, bool isRequired, EntityHandle modifierTypeHandle, TType unmodifiedType);
 
         /// <summary>
         /// Gets the type symbol for a local variable type that is marked as pinned.
