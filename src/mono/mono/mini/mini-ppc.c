@@ -632,6 +632,9 @@ mono_arch_init (void)
 	mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
 
 	mono_aot_register_jit_icall ("mono_ppc_throw_exception", mono_ppc_throw_exception);
+
+	// FIXME: Fix partial sharing for power and remove this
+	mono_set_partial_sharing_supported (FALSE);
 }
 
 /*
