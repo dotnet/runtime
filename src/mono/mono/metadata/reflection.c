@@ -261,6 +261,7 @@ mono_find_dynamic_image_owner (void *ptr)
 void
 mono_reflection_init (void)
 {
+	mono_os_mutex_init (&dynamic_images_mutex);
 }
 
 static inline void
