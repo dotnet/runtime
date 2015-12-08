@@ -6,10 +6,11 @@
  *   Paolo Molaro (lupus@ximian.com)
  *	 Patrik Torstensson (patrik.torstensson@labs2.com)
  *   Marek Safar (marek.safar@gmail.com)
+ *   Aleksey Kliger (aleksey@xamarin.com)
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
- * Copyright 2011-2014 Xamarin Inc (http://www.xamarin.com).
+ * Copyright 2011-2015 Xamarin Inc (http://www.xamarin.com).
  */
 
 #include <config.h>
@@ -6619,6 +6620,7 @@ ICALL_EXPORT MonoReflectionMethod *
 ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definition)
 {
 	MonoClass *klass, *parent;
+	MonoGenericContext *generic_inst = NULL;
 	MonoMethod *method = m->method;
 	MonoMethod *result = NULL;
 	int slot;
@@ -6636,21 +6638,75 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethod *m, gboolean definiti
 		return m;
 
 	klass = method->klass;
-	if (klass->generic_class)
+	if (klass->generic_class) {
+		generic_inst = mono_class_get_context (klass);
 		klass = klass->generic_class->container_class;
+	}
 
 	if (definition) {
 		/* At the end of the loop, klass points to the eldest class that has this virtual function slot. */
 		for (parent = klass->parent; parent != NULL; parent = parent->parent) {
+			/* on entry, klass is either a plain old non-generic class and generic_inst == NULL
+			   or klass is the generic container class and generic_inst is the instantiation.
+
+			   when we go to the parent, if the parent is an open constructed type, we need to
+			   replace the type parameters by the definitions from the generic_inst, and then take it
+			   apart again into the klass and the generic_inst.
+
+			   For cases like this:
+			   class C<T> : B<T, int> {
+			       public override void Foo () { ... }
+			   }
+			   class B<U,V> : A<HashMap<U,V>> {
+			       public override void Foo () { ... }
+			   }
+			   class A<X> {
+			       public virtual void Foo () { ... }
+			   }
+
+			   if at each iteration the parent isn't open, we can skip inflating it.  if at some
+			   iteration the parent isn't generic (after possible inflation), we set generic_inst to
+			   NULL;
+			*/
+			MonoGenericContext *parent_inst = NULL;
+			if (mono_class_is_open_constructed_type (mono_class_get_type (parent))) {
+				MonoError error;
+				parent = mono_class_inflate_generic_class_checked (parent, generic_inst, &error);
+				mono_error_raise_exception(&error);
+			}
+			if (parent->generic_class) {
+				parent_inst = mono_class_get_context (parent);
+				parent = parent->generic_class->container_class;
+			}
+
 			mono_class_setup_vtable (parent);
 			if (parent->vtable_size <= slot)
 				break;
 			klass = parent;
+			generic_inst = parent_inst;
 		}
 	} else {
 		klass = klass->parent;
 		if (!klass)
 			return m;
+		if (mono_class_is_open_constructed_type (mono_class_get_type (klass))) {
+			MonoError error;
+			klass = mono_class_inflate_generic_class_checked (klass, generic_inst, &error);
+			mono_error_raise_exception(&error);
+
+			generic_inst = NULL;
+		}
+		if (klass->generic_class) {
+			generic_inst = mono_class_get_context (klass);
+			klass = klass->generic_class->container_class;
+		}
+
+	}
+
+	if (generic_inst) {
+		MonoError error;
+		klass = mono_class_inflate_generic_class_checked (klass, generic_inst, &error);
+		mono_error_raise_exception(&error);
 	}
 
 	if (klass == method->klass)
