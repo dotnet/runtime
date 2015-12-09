@@ -466,23 +466,11 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
 #endif // FEATURE_COMINTEROP
 }
 
-void GCToEEInterface::ScanStaticGCRefsOpportunistically(promote_func* fn, ScanContext* sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    SystemDomain::EnumAllStaticGCRefs(fn, sc);
-}
-
 /*
  * Scan all stack roots
  */
  
-VOID GCToEEInterface::ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
+static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 {
     GCCONTEXT   gcctx;
 
@@ -554,6 +542,40 @@ VOID GCToEEInterface::ScanStackRoots(Thread * pThread, promote_func* fn, ScanCon
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 #endif // defined(WIN64EXCEPTIONS)                        
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
+    }
+}
+
+void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
+{
+    STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Promotion Phase = %d\n", sc->promotion);
+
+    // In server GC, we should be competing for marking the statics
+    if (GCHeap::MarkShouldCompeteForStatics())
+    {
+        if (condemned == max_gen && sc->promotion)
+        {
+            SystemDomain::EnumAllStaticGCRefs(fn, sc);
+        }
+    }
+
+    Thread* pThread = NULL;
+    while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+    {
+        STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
+
+        if (GCHeap::GetGCHeap()->IsThreadUsingAllocationContextHeap(
+            GCToEEInterface::GetAllocContext(pThread), sc->thread_number))
+        {
+            sc->thread_under_crawl = pThread;
+#ifdef FEATURE_EVENT_TRACE
+            sc->dwEtwRootKind = kEtwGCRootKindStack;
+#endif // FEATURE_EVENT_TRACE
+            ScanStackRoots(pThread, fn, sc);
+#ifdef FEATURE_EVENT_TRACE
+            sc->dwEtwRootKind = kEtwGCRootKindOther;
+#endif // FEATURE_EVENT_TRACE
+        }
+        STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p ID = 0x%x }\n", pThread, pThread->GetThreadId());
     }
 }
 
@@ -689,8 +711,18 @@ bool GCToEEInterface::CatchAtSafePoint(Thread * pThread)
     return !!pThread->CatchAtSafePoint();
 }
 
-Thread * GCToEEInterface::GetThreadList(Thread * pThread)
+void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
 {
-    WRAPPER_NO_CONTRACT;
-    return ThreadStore::GetThreadList(pThread);
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    Thread * pThread = NULL;
+    while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+    {
+        fn(pThread->GetAllocContext(), param);
+    }
 }

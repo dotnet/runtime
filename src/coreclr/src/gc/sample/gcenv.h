@@ -16,6 +16,7 @@
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif
 
+#include "gcenv.structs.h"
 #include "gcenv.base.h"
 #include "gcenv.object.h"
 #include "gcenv.sync.h"
@@ -139,3 +140,6 @@ public:
 };
 
 extern EEConfig * g_pConfig;
+
+#include "etmdummy.h"
+#define ETW_EVENT_ENABLED(e,f) false
