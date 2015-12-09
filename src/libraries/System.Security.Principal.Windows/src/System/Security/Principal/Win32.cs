@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -68,7 +68,7 @@ namespace System.Security.Principal
             {
                 int win32ErrorCode = Interop.mincore.RtlNtStatusToDosError(unchecked((int)ReturnCode));
 
-                throw new Exception(Interop.mincore.GetMessage(win32ErrorCode));
+                throw new Win32Exception(win32ErrorCode);
             }
         }
 

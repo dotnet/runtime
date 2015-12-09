@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
@@ -408,7 +408,7 @@ namespace System.Security.Principal
             else if (Error != Interop.mincore.Errors.ERROR_SUCCESS)
             {
                 Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.CreateSidFromString returned unrecognized error {0}", Error));
-                throw new Exception(Interop.mincore.GetMessage(Error));
+                throw new Win32Exception(Error);
             }
 
             CreateFromBinaryForm(resultSid, 0);
@@ -504,7 +504,7 @@ namespace System.Security.Principal
                 else if (ErrorCode != Interop.mincore.Errors.ERROR_SUCCESS)
                 {
                     Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.GetWindowsAccountDomainSid returned unrecognized error {0}", ErrorCode));
-                    throw new Exception(Interop.mincore.GetMessage(ErrorCode));
+                    throw new Win32Exception(ErrorCode);
                 }
 
                 //
@@ -522,12 +522,12 @@ namespace System.Security.Principal
 
             if (Error == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
             {
-                throw new ArgumentException(Interop.mincore.GetMessage(Error), "sidType/domainSid");
+                throw new ArgumentException(new Win32Exception(Error).Message, "sidType/domainSid");
             }
             else if (Error != Interop.mincore.Errors.ERROR_SUCCESS)
             {
                 Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.CreateWellKnownSid returned unrecognized error {0}", Error));
-                throw new Exception(Interop.mincore.GetMessage(Error));
+                throw new Win32Exception(Error);
             }
 
             CreateFromBinaryForm(resultSid, 0);
@@ -745,7 +745,7 @@ namespace System.Security.Principal
             else if (Error != Interop.mincore.Errors.ERROR_SUCCESS)
             {
                 Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32.GetWindowsAccountDomainSid returned unrecognized error {0}", Error));
-                throw new Exception(Interop.mincore.GetMessage(Error));
+                throw new Win32Exception(Error);
             }
             return ResultSid;
         }
@@ -986,7 +986,7 @@ namespace System.Security.Principal
                     int win32ErrorCode = Interop.mincore.RtlNtStatusToDosError(unchecked((int)ReturnCode));
 
                     Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Interop.LsaLookupSids returned {0}", win32ErrorCode));
-                    throw new Exception(Interop.mincore.GetMessage(win32ErrorCode));
+                    throw new Win32Exception(win32ErrorCode);
                 }
 
 
