@@ -64,9 +64,6 @@
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
       <Link>Common\System\Net\Capability.Sockets.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\Capability.Version.cs">
-      <Link>Common\System\Net\Capability.Version.cs</Link>
-    </Compile>
   </ItemGroup>
 
   <!-- TODO: Remove after the packages are not using System.Private.Networking. -->
