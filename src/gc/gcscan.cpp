@@ -36,11 +36,16 @@ bool CNameSpace::GetGcRuntimeStructuresValid ()
 }
 
 #ifdef DACCESS_COMPILE
+
+#ifndef FEATURE_REDHAWK
 void
 CNameSpace::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
+    UNREFERENCED_PARAMETER(flags);
     m_GcStructuresInvalidCnt.EnumMem();
 }
+#endif
+
 #else
 
 //
@@ -119,7 +124,7 @@ void CNameSpace::GcWeakPtrScan( promote_func* fn, int condemned, int max_gen, Sc
     Ref_ScanDependentHandlesForClearing(condemned, max_gen, sc, fn);
 }
 
-static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
+static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t * /*pExtraInfo*/, uintptr_t /*lp1*/, uintptr_t /*lp2*/)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -140,6 +145,8 @@ static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
 
 void CNameSpace::GcWeakPtrScanBySingleThread( int condemned, int max_gen, ScanContext* sc )
 {
+    UNREFERENCED_PARAMETER(condemned);
+    UNREFERENCED_PARAMETER(max_gen);
     GCToEEInterface::SyncBlockCacheWeakPtrScan(&CheckPromoted, (uintptr_t)sc, 0);
 }
 
@@ -151,6 +158,7 @@ void CNameSpace::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, S
 void CNameSpace::GcShortWeakPtrScan(promote_func* fn,  int condemned, int max_gen, 
                                      ScanContext* sc)
 {
+    UNREFERENCED_PARAMETER(fn);
     Ref_CheckAlive(condemned, max_gen, (uintptr_t)sc);
 }
 
@@ -166,37 +174,7 @@ void CNameSpace::GcScanRoots(promote_func* fn,  int condemned, int max_gen,
     PAL_TRY
 #endif // _DEBUG && CATCH_GC
     {
-        STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Promotion Phase = %d\n", sc->promotion);
-        {
-            // In server GC, we should be competing for marking the statics
-            if (GCHeap::MarkShouldCompeteForStatics())
-            {
-                if (condemned == max_gen && sc->promotion)
-                {
-                    GCToEEInterface::ScanStaticGCRefsOpportunistically(fn, sc);
-                }
-            }
-
-            Thread* pThread = NULL;
-            while ((pThread = GCToEEInterface::GetThreadList(pThread)) != NULL)
-            {
-                STRESS_LOG2(LF_GC|LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
-
-                if (GCHeap::GetGCHeap()->IsThreadUsingAllocationContextHeap(
-                        GCToEEInterface::GetAllocContext(pThread), sc->thread_number))
-                {
-                    sc->thread_under_crawl = pThread;
-#ifdef FEATURE_EVENT_TRACE
-                    sc->dwEtwRootKind = kEtwGCRootKindStack;
-#endif // FEATURE_EVENT_TRACE
-                    GCToEEInterface::ScanStackRoots(pThread, fn, sc);
-#ifdef FEATURE_EVENT_TRACE
-                    sc->dwEtwRootKind = kEtwGCRootKindOther;
-#endif // FEATURE_EVENT_TRACE
-                }
-                STRESS_LOG2(LF_GC|LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p ID = 0x%x }\n", pThread, pThread->GetThreadId());
-            }
-        }
+        GCToEEInterface::GcScanRoots(fn, condemned, max_gen, sc);
     }
 #if defined ( _DEBUG) && defined (CATCH_GC)
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
@@ -315,35 +293,6 @@ void CNameSpace::GcPromotionsGranted (int condemned, int max_gen, ScanContext* s
     Ref_AgeHandles(condemned, max_gen, (uintptr_t)sc);
     if (!GCHeap::IsServerHeap() || sc->thread_number == 0)
         GCToEEInterface::SyncBlockCachePromotionsGranted(max_gen);
-}
-
-
-void CNameSpace::GcFixAllocContexts (void* arg, void *heap)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (GCHeap::UseAllocationContexts())
-    {
-        Thread  *thread = NULL;
-        while ((thread = GCToEEInterface::GetThreadList(thread)) != NULL)
-        {
-            GCHeap::GetGCHeap()->FixAllocContext(GCToEEInterface::GetAllocContext(thread), FALSE, arg, heap);
-        }
-    }
-}
-
-void CNameSpace::GcEnumAllocContexts (enum_alloc_context_func* fn)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (GCHeap::UseAllocationContexts())
-    {
-        Thread  *thread = NULL;
-        while ((thread = GCToEEInterface::GetThreadList(thread)) != NULL)
-        {
-            (*fn) (GCToEEInterface::GetAllocContext(thread));
-        }
-    }
 }
 
 
