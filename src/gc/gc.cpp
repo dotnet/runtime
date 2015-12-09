@@ -5767,7 +5767,7 @@ void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
 
 //used by the heap verification for concurrent gc.
 //it nulls out the words set by fix_allocation_context for heap_verification
-void repair_allocation (alloc_context* acontext)
+void repair_allocation (alloc_context* acontext, void*)
 {
     uint8_t*  point = acontext->alloc_ptr;
 
@@ -5780,7 +5780,7 @@ void repair_allocation (alloc_context* acontext)
     }
 }
 
-void void_allocation (alloc_context* acontext)
+void void_allocation (alloc_context* acontext, void*)
 {
     uint8_t*  point = acontext->alloc_ptr;
 
@@ -5793,22 +5793,38 @@ void void_allocation (alloc_context* acontext)
     }
 }
 
-void gc_heap::fix_allocation_contexts (BOOL for_gc_p)
-{
-    CNameSpace::GcFixAllocContexts ((void*)(size_t)for_gc_p, __this);
-    fix_youngest_allocation_area (for_gc_p);
-    fix_large_allocation_area (for_gc_p);
-}
-
 void gc_heap::repair_allocation_contexts (BOOL repair_p)
 {
-    CNameSpace::GcEnumAllocContexts (repair_p ? repair_allocation : void_allocation);
+    GCToEEInterface::GcEnumAllocContexts (repair_p ? repair_allocation : void_allocation, NULL);
 
     alloc_context* acontext = generation_alloc_context (youngest_generation);
     if (repair_p)
-        repair_allocation (acontext);
+        repair_allocation (acontext, NULL);
     else
-        void_allocation (acontext);
+        void_allocation (acontext, NULL);
+}
+
+struct fix_alloc_context_args
+{
+    BOOL for_gc_p;
+    void* heap;
+};
+
+void fix_alloc_context(alloc_context* acontext, void* param)
+{
+    fix_alloc_context_args* args = (fix_alloc_context_args*)param;
+    GCHeap::GetGCHeap()->FixAllocContext(acontext, FALSE, (void*)(size_t)(args->for_gc_p), args->heap);
+}
+
+void gc_heap::fix_allocation_contexts(BOOL for_gc_p)
+{
+    fix_alloc_context_args args;
+    args.for_gc_p = for_gc_p;
+    args.heap = __this;
+    GCToEEInterface::GcEnumAllocContexts(fix_alloc_context, &args);
+
+    fix_youngest_allocation_area(for_gc_p);
+    fix_large_allocation_area(for_gc_p);
 }
 
 void gc_heap::fix_older_allocation_area (generation* older_gen)
