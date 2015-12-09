@@ -522,7 +522,7 @@ namespace System.Security.Principal
 
             if (Error == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
             {
-                throw new ArgumentException(Interop.mincore.GetMessage(Error), "sidType/domainSid");
+                throw new ArgumentException(new Win32Exception(Error).Message, "sidType/domainSid");
             }
             else if (Error != Interop.mincore.Errors.ERROR_SUCCESS)
             {

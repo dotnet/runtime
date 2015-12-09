@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
@@ -71,7 +72,7 @@ namespace System.Security.Principal
 
                 TOKEN_SOURCE sourceContext;
                 if (!Interop.SecurityBase.AllocateLocallyUniqueId(out sourceContext.SourceIdentifier))
-                    throw new SecurityException(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                    throw new SecurityException(new Win32Exception().Message);
                 sourceContext.SourceName = new byte[TOKEN_SOURCE.TOKEN_SOURCE_LENGTH];
                 Array.Copy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
 
@@ -224,7 +225,7 @@ namespace System.Security.Principal
                                              0,
                                              true,
                                              Interop.DuplicateHandleOptions.DUPLICATE_SAME_ACCESS))
-                throw new SecurityException(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                throw new SecurityException(new Win32Exception().Message);
         }
 
         //
@@ -373,7 +374,7 @@ namespace System.Security.Principal
                                                       (uint)TokenImpersonationLevel.Identification,
                                                       (uint)TokenType.TokenImpersonation,
                                                       ref token))
-                        throw new SecurityException(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                        throw new SecurityException(new Win32Exception().Message);
                 }
 
 
@@ -381,7 +382,7 @@ namespace System.Security.Principal
                 if (!Interop.mincore.CheckTokenMembership((til != TokenImpersonationLevel.None ? _safeTokenHandle : token),
                                                       sid.BinaryForm,
                                                       ref isMember))
-                    throw new SecurityException(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                    throw new SecurityException(new Win32Exception().Message);
             }
             finally
             {
@@ -607,7 +608,7 @@ namespace System.Security.Principal
             int hr;
             SafeAccessTokenHandle previousToken = GetCurrentToken(TokenAccessLevels.MaximumAllowed, false, out isImpersonating, out hr);
             if (previousToken == null || previousToken.IsInvalid)
-                throw new SecurityException(Interop.mincore.GetMessage(hr));
+                throw new SecurityException(new Win32Exception(hr).Message);
 
             s_currentImpersonatedToken.Value = isImpersonating ? previousToken : null;
 
@@ -620,7 +621,7 @@ namespace System.Security.Principal
                 delegate
                 {
                     if (!Interop.mincore.RevertToSelf())
-                        Environment.FailFast(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                        Environment.FailFast(new Win32Exception().Message);
 
                     s_currentImpersonatedToken.Value = null;
 
@@ -640,12 +641,12 @@ namespace System.Security.Principal
                 return; // we handle explicit Value property changes elsewhere.
 
             if (!Interop.mincore.RevertToSelf())
-                Environment.FailFast(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                Environment.FailFast(new Win32Exception().Message);
 
             if (args.CurrentValue != null && !args.CurrentValue.IsInvalid)
             {
                 if (!Interop.mincore.ImpersonateLoggedOnUser(args.CurrentValue))
-                    Environment.FailFast(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                    Environment.FailFast(new Win32Exception().Message);
             }
         }
         
@@ -660,7 +661,7 @@ namespace System.Security.Principal
                 if (threadOnly && !isImpersonating)
                     return null;
                 // or there was an error
-                throw new SecurityException(Interop.mincore.GetMessage(hr));
+                throw new SecurityException(new Win32Exception(hr).Message);
             }
             WindowsIdentity wi = new WindowsIdentity();
             wi._safeTokenHandle.Dispose();
@@ -688,7 +689,7 @@ namespace System.Security.Principal
                 return new OutOfMemoryException();
 
             int win32ErrorCode = Interop.mincore.RtlNtStatusToDosError(status);
-            return new SecurityException(Interop.mincore.GetMessage(win32ErrorCode));
+            return new SecurityException(new Win32Exception(win32ErrorCode).Message);
         }
         
         private static SafeAccessTokenHandle GetCurrentToken(TokenAccessLevels desiredAccess, bool threadOnly, out bool isImpersonating, out int hr)
@@ -812,12 +813,12 @@ namespace System.Security.Principal
                                                              dwLength,
                                                              out dwLength);
                     if (!result)
-                        throw new SecurityException(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                        throw new SecurityException(new Win32Exception().Message);
                     break;
                 case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
                     throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
                 default:
-                    throw new SecurityException(Interop.mincore.GetMessage(dwErrorCode));
+                    throw new SecurityException(new Win32Exception(dwErrorCode).Message);
             }
             return safeLocalAllocHandle;
         }
