@@ -791,12 +791,24 @@ namespace System.Net.Http
                     secureConnection = false;
                 }
 
+                // Try to use the requested version if a known/supported version was explicitly requested.
+                // Otherwise, we simply use winhttp's default.
+                string httpVersion = null;
+                if (state.RequestMessage.Version == HttpVersion.Version10)
+                {
+                    httpVersion = "HTTP/1.0";
+                }
+                else if (state.RequestMessage.Version == HttpVersion.Version11)
+                {
+                    httpVersion = "HTTP/1.1";
+                }
+
                 // Create an HTTP request handle.
                 state.RequestHandle = Interop.WinHttp.WinHttpOpenRequest(
                     connectHandle,
                     state.RequestMessage.Method.Method,
                     state.RequestMessage.RequestUri.PathAndQuery,
-                    null,
+                    httpVersion,
                     Interop.WinHttp.WINHTTP_NO_REFERER,
                     Interop.WinHttp.WINHTTP_DEFAULT_ACCEPT_TYPES,
                     secureConnection ? Interop.WinHttp.WINHTTP_FLAG_SECURE : 0);
