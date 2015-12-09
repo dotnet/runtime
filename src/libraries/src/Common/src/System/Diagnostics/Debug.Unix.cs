@@ -93,11 +93,6 @@ namespace System.Diagnostics
                                 int bytesWritten = Interop.Sys.Write(fileHandle, buf + totalBytesWritten, bufCount);
                                 if (bytesWritten < 0)
                                 {
-                                    if (Interop.Sys.GetLastErrorInfo().Error == Interop.Error.EINTR)
-                                    {
-                                        continue;
-                                    }
-
                                     // On error, simply stop writing the debug output.  This could commonly happen if stderr
                                     // was piped to a program that ended before this program did, resulting in EPIPE errors.
                                     return;

@@ -23,7 +23,8 @@ extern "C" int32_t GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t bufle
 
     struct passwd nativePwd;
     struct passwd* result;
-    int error = getpwuid_r(uid, &nativePwd, buf, UnsignedCast(buflen), &result);
+    int error;
+    while ((error = getpwuid_r(uid, &nativePwd, buf, UnsignedCast(buflen), &result) == EINTR));
 
     // positive error number returned -> failure other than entry-not-found
     if (error != 0)

@@ -93,7 +93,7 @@ namespace System.Net.Http
                     unsafe
                     {
                         int* fds = stackalloc int[2];
-                        while (Interop.CheckIo(Interop.Sys.Pipe(fds))) ;
+                        Interop.CheckIo(Interop.Sys.Pipe(fds));
                         _wakeupRequestedPipeFd = new SafeFileHandle((IntPtr)fds[Interop.Sys.ReadEndOfPipe], true);
                         _requestWakeupPipeFd = new SafeFileHandle((IntPtr)fds[Interop.Sys.WriteEndOfPipe], true);
                     }
@@ -164,7 +164,7 @@ namespace System.Net.Http
                 {
                     VerboseTrace("Writing to wakeup pipe");
                     byte b = 1;
-                    while ((Interop.CheckIo(Interop.Sys.Write(_requestWakeupPipeFd, &b, 1)))) ;
+                    Interop.CheckIo(Interop.Sys.Write(_requestWakeupPipeFd, &b, 1));
                 }
             }
 
@@ -182,8 +182,7 @@ namespace System.Net.Http
                 // subsequently clearing out more of the pipe.
                 const int ClearBufferSize = 64; // sufficiently large to clear the pipe in any normal case
                 byte* clearBuf = stackalloc byte[ClearBufferSize];
-                int bytesRead;
-                while (Interop.CheckIo(bytesRead = Interop.Sys.Read(_wakeupRequestedPipeFd, clearBuf, ClearBufferSize))) ;
+                int bytesRead = Interop.CheckIo(Interop.Sys.Read(_wakeupRequestedPipeFd, clearBuf, ClearBufferSize));
                 VerboseTraceIf(bytesRead > 1, "Read more than one byte from wakeup pipe: " + bytesRead);
             }
 

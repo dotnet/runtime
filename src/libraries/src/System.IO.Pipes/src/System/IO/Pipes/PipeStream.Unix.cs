@@ -44,19 +44,15 @@ namespace System.IO.Pipes
         /// <param name="safePipeHandle">The handle to validate.</param>
         internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
-            SysCall(safePipeHandle, (fd, _, __, ___) =>
+            Interop.Sys.FileStatus status;
+            int result = CheckPipeCall(Interop.Sys.FStat(safePipeHandle, out status));
+            if (result == 0)
             {
-                Interop.Sys.FileStatus status;
-                int result = Interop.Sys.FStat(fd, out status);
-                if (result == 0)
+                if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFIFO)
                 {
-                    if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFIFO)
-                    {
-                        throw new IOException(SR.IO_InvalidPipeHandle);
-                    }
+                    throw new IOException(SR.IO_InvalidPipeHandle);
                 }
-                return result;
-            });
+            }
         }
 
         /// <summary>Initializes the handle to be used asynchronously.</summary>
@@ -278,26 +274,19 @@ namespace System.IO.Pipes
 
         private static void CreateDirectory(string directoryPath)
         {
-            while (true)
-            {
-                int result = Interop.Sys.MkDir(directoryPath, (int)Interop.Sys.Permissions.S_IRWXU);
+            int result = Interop.Sys.MkDir(directoryPath, (int)Interop.Sys.Permissions.S_IRWXU);
 
-                // If successful created, we're done.
-                if (result >= 0)
-                    return;
+            // If successful created, we're done.
+            if (result >= 0)
+                return;
 
-                // If the directory already exists, consider it a success.
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.EEXIST)
-                    return;
+            // If the directory already exists, consider it a success.
+            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+            if (errorInfo.Error == Interop.Error.EEXIST)
+                return;
 
-                // If the I/O was interrupted, try again.
-                if (errorInfo.Error == Interop.Error.EINTR)
-                    continue;
-
-                // Otherwise, fail.
-                throw Interop.GetExceptionForIoErrno(errorInfo, directoryPath, isDirectory: true);
-            }
+            // Otherwise, fail.
+            throw Interop.GetExceptionForIoErrno(errorInfo, directoryPath, isDirectory: true);
         }
 
         internal static Interop.Sys.OpenFlags TranslateFlags(PipeDirection direction, PipeOptions options, HandleInheritability inheritability)
@@ -331,12 +320,10 @@ namespace System.IO.Pipes
             DebugAssertReadWriteArgs(buffer, offset, count, _handle);
             fixed (byte* bufPtr = buffer)
             {
-                return (int)SysCall(_handle, (fd, ptr, len, _) =>
-                {
-                    int result = Interop.Sys.Read(fd, (byte*)ptr, len);
-                    Debug.Assert(result <= len);
-                    return result;
-                }, (IntPtr)(bufPtr + offset), count);
+                int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr + offset, count));
+                Debug.Assert(result <= count);
+
+                return result;
             }
         }
 
@@ -355,61 +342,51 @@ namespace System.IO.Pipes
                     cancellation.Poll.DangerousAddRef(ref gotRef);
                     fixed (byte* bufPtr = buffer)
                     {
-                        const int CancellationSentinel = -42;
-                        int rv = (int)SysCall(_handle, (fd, ptr, len, cancellationFd) =>
+                        // We want to wait for data to be available on either the pipe we want to read from
+                        // or on the cancellation pipe, which would signal a cancellation request.
+                        Interop.Sys.PollEvent* events = stackalloc Interop.Sys.PollEvent[2];
+                        events[0] = new Interop.Sys.PollEvent
                         {
-                            // We want to wait for data to be available on either the pipe we want to read from
-                            // or on the cancellation pipe, which would signal a cancellation request.
-                            Interop.Sys.PollEvent* events = stackalloc Interop.Sys.PollEvent[2];
-                            events[0] = new Interop.Sys.PollEvent { FileDescriptor = (int)fd.DangerousGetHandle(), Events = Interop.Sys.PollEvents.POLLIN };
-                            events[1] = new Interop.Sys.PollEvent { FileDescriptor = (int)cancellationFd, Events = Interop.Sys.PollEvents.POLLIN };
+                            FileDescriptor = (int)_handle.DangerousGetHandle(),
+                            Events = Interop.Sys.PollEvents.POLLIN
+                        };
+                        events[1] = new Interop.Sys.PollEvent
+                        {
+                            FileDescriptor = (int)cancellation.Poll.DangerousGetHandle(),
+                            Events = Interop.Sys.PollEvents.POLLIN
+                        };
 
-                            // Some systems (at least OS X) appear to have a race condition in poll with FIFOs where the poll can 
-                            // end up not noticing writes of greater than the internal buffer size.  Restarting the poll causes it 
-                            // to notice. To deal with that, we loop around poll, first starting with a small timeout and backing off
-                            // to a larger one.  This ensures we'll at least eventually notice such changes in these corner
-                            // cases, while not adding too much overhead on systems that don't suffer from the problem.
-                            const int InitialMsTimeout = 30, MaxMsTimeout = 2000;
-                            for (int timeout = InitialMsTimeout; ; timeout = Math.Min(timeout * 2, MaxMsTimeout))
+                        // Some systems (at least OS X) appear to have a race condition in poll with FIFOs where the poll can 
+                        // end up not noticing writes of greater than the internal buffer size.  Restarting the poll causes it 
+                        // to notice. To deal with that, we loop around poll, first starting with a small timeout and backing off
+                        // to a larger one.  This ensures we'll at least eventually notice such changes in these corner
+                        // cases, while not adding too much overhead on systems that don't suffer from the problem.
+                        const int InitialMsTimeout = 30, MaxMsTimeout = 2000;
+                        for (int timeout = InitialMsTimeout; ; timeout = Math.Min(timeout * 2, MaxMsTimeout))
+                        {
+                            // Do the poll.
+                            uint signaledFdCount;
+                            Interop.CheckIo(Interop.Sys.Poll(events, 2, timeout, &signaledFdCount));
+
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            if (signaledFdCount != 0)
                             {
-                                // Do the poll.
-                                uint signaledFdCount;
-                                while (Interop.CheckIo(Interop.Sys.Poll(events, 2, timeout, &signaledFdCount))) ;
-                                if (cancellationToken.IsCancellationRequested)
-                                {
-                                    // Cancellation occurred.  Bail by returning the cancellation sentinel.
-                                    return CancellationSentinel;
-                                }
-                                else if (signaledFdCount == 0)
-                                {
-                                    // Timeout occurred.  Loop around to poll again.
-                                    continue;
-                                }
-                                else
-                                {
-                                    // Our pipe is ready.  Break out of the loop to read from it.
-                                    Debug.Assert((events[0].TriggeredEvents & Interop.Sys.PollEvents.POLLIN) != 0, "Expected revents on read fd to have POLLIN set");
-                                    break;
-                                }
+                                // Our pipe is ready.  Break out of the loop to read from it.
+                                Debug.Assert((events[0].TriggeredEvents & Interop.Sys.PollEvents.POLLIN) != 0, "Expected revents on read fd to have POLLIN set");
+                                break;
                             }
-
-                            // Read it.
-                            Debug.Assert((events[0].TriggeredEvents & Interop.Sys.PollEvents.POLLIN) != 0);
-                            int result = Interop.Sys.Read(fd, (byte*)ptr, len);
-                            Debug.Assert(result <= len);
-                            return result;
-                        }, (IntPtr)(bufPtr + offset), count, cancellation.Poll.DangerousGetHandle());
-                        Debug.Assert(rv >= 0 || rv == CancellationSentinel);
-
-                        // If cancellation was requested, waking up the read, throw.
-                        if (rv == CancellationSentinel)
-                        {
-                            Debug.Assert(cancellationToken.IsCancellationRequested);
-                            throw new OperationCanceledException(cancellationToken);
                         }
 
-                        // Otherwise return what we read.
-                        return rv;
+                        // Read it.
+                        Debug.Assert((events[0].TriggeredEvents & Interop.Sys.PollEvents.POLLIN) != 0);
+                        int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr + offset, count));
+                        Debug.Assert(result <= count);
+
+                        Debug.Assert(result >= 0);
+
+                        // return what we read.
+                        return result;
                     }
                 }
                 finally
@@ -428,12 +405,9 @@ namespace System.IO.Pipes
             {
                 while (count > 0)
                 {
-                    int bytesWritten = (int)SysCall(_handle, (fd, ptr, len, _) =>
-                    {
-                        int result = Interop.Sys.Write(fd, (byte*)ptr, len);
-                        Debug.Assert(result <= len);
-                        return result;
-                    }, (IntPtr)(bufPtr + offset), count);
+                    int bytesWritten = CheckPipeCall(Interop.Sys.Write(_handle, bufPtr + offset, count));
+                    Debug.Assert(bytesWritten <= count);
+
                     count -= bytesWritten;
                     offset += bytesWritten;
                 }
@@ -499,7 +473,7 @@ namespace System.IO.Pipes
             {
                 SafePipeHandle sendRef = (SafePipeHandle)s;
                     byte b = 1;
-                while (Interop.CheckIo(Interop.Sys.Write(sendRef, &b, 1))) ;
+                Interop.CheckIo(Interop.Sys.Write(sendRef, &b, 1));
             }, send);
 
             // Return a disposable struct that will unregister the cancellation registration
@@ -542,45 +516,19 @@ namespace System.IO.Pipes
             }
         }
 
-        /// <summary>
-        /// Helper for making system calls that involve the stream's file descriptor.
-        /// System calls are expected to return greather than or equal to zero on success,
-        /// and less than zero on failure.  In the case of failure, errno is expected to
-        /// be set to the relevant error code.
-        /// </summary>
-        /// <param name="sysCall">A delegate that invokes the system call.</param>
-        /// <param name="arg1">The first argument to be passed to the system call, after the file descriptor.</param>
-        /// <param name="arg2">The second argument to be passed to the system call.</param>
-        /// <param name="arg3">The third argument to be passed to the system call.</param>
-        /// <returns>The return value of the system call.</returns>
-        /// <remarks>
-        /// Arguments are expected to be passed via <paramref name="arg1"/> and <paramref name="arg2"/>
-        /// so as to avoid delegate and closure allocations at the call sites.
-        /// </remarks>
-        private long SysCall(
-            SafePipeHandle handle,
-            Func<SafePipeHandle, IntPtr, int, IntPtr, long> sysCall,
-            IntPtr arg1 = default(IntPtr), int arg2 = default(int), IntPtr arg3 = default(IntPtr))
+        private int CheckPipeCall(int result)
         {
-            Debug.Assert(!handle.IsInvalid);
-
-            while (true)
+            if (result == -1)
             {
-                long result = sysCall(handle, arg1, arg2, arg3);
-                if (result == -1)
-                {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
 
-                    if (errorInfo.Error == Interop.Error.EINTR)
-                        continue;
+                if (errorInfo.Error == Interop.Error.EPIPE)
+                    State = PipeState.Broken;
 
-                    if (errorInfo.Error == Interop.Error.EPIPE)
-                        State = PipeState.Broken;
-
-                    throw Interop.GetExceptionForIoErrno(errorInfo);
-                }
-                return result;
+                throw Interop.GetExceptionForIoErrno(errorInfo);
             }
+
+            return result;
         }
 
         internal void InitializeBufferSize(SafePipeHandle handle, int bufferSize)
@@ -588,8 +536,7 @@ namespace System.IO.Pipes
             // bufferSize is just advisory and ignored if platform does not support setting pipe capacity via fcntl.
             if (bufferSize > 0 && Interop.Sys.Fcntl.CanGetSetPipeSz)
             {
-                SysCall(handle, (fd, _, size, __) => Interop.Sys.Fcntl.SetPipeSz(fd, size), 
-                    IntPtr.Zero, bufferSize);
+                CheckPipeCall(Interop.Sys.Fcntl.SetPipeSz(handle, bufferSize));
             }
         }
 
@@ -604,7 +551,7 @@ namespace System.IO.Pipes
             // If we don't, the pipe has been created but not yet connected (in the case of named pipes),
             // so just return the buffer size that was passed to the constructor.
             return _handle != null ?
-                (int)SysCall(_handle, (fd, _, __, ___) => Interop.Sys.Fcntl.GetPipeSz(fd)) :
+                CheckPipeCall(Interop.Sys.Fcntl.GetPipeSz(_handle)) :
                 _outBufferSize;
         }
 
@@ -612,7 +559,7 @@ namespace System.IO.Pipes
         {
             var flags = (inheritability & HandleInheritability.Inheritable) == 0 ?
                 Interop.Sys.PipeFlags.O_CLOEXEC : 0;
-            while (Interop.CheckIo(Interop.Sys.Pipe(fdsptr, flags))) ;
+            Interop.CheckIo(Interop.Sys.Pipe(fdsptr, flags));
         }
     }
 }

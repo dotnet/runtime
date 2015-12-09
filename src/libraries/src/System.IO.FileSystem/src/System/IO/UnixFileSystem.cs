@@ -44,9 +44,9 @@ namespace System.IO
 
             // Now copy over relevant read/write/execute permissions from the source to the destination
             Interop.Sys.FileStatus status;
-            while (Interop.CheckIo(Interop.Sys.Stat(sourceFullPath, out status), sourceFullPath)) ;
+            Interop.CheckIo(Interop.Sys.Stat(sourceFullPath, out status), sourceFullPath);
             int newMode = status.Mode & (int)Interop.Sys.Permissions.Mask;
-            while (Interop.CheckIo(Interop.Sys.ChMod(destFullPath, newMode), destFullPath)) ;
+            Interop.CheckIo(Interop.Sys.ChMod(destFullPath, newMode), destFullPath);
         }
 
         public override void MoveFile(string sourceFullPath, string destFullPath)
@@ -55,17 +55,12 @@ namespace System.IO
             // if it exists. Since rename(source, dest) will replace the file at 'dest' if it exists,
             // link/unlink are used instead. Note that the Unix FileSystemWatcher will treat a Move 
             // as a Creation and Deletion instead of a Rename and thus differ from Windows.
-            while (Interop.Sys.Link(sourceFullPath, destFullPath) < 0)
+            if (Interop.Sys.Link(sourceFullPath, destFullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.EINTR) // interrupted; try again
-                {
-                    continue;
-                }
-                else if (errorInfo.Error == Interop.Error.EXDEV) // rename fails across devices / mount points
+                if (errorInfo.Error == Interop.Error.EXDEV) // rename fails across devices / mount points
                 {
                     CopyFile(sourceFullPath, destFullPath, overwrite: false);
-                    break;
                 }
                 else if (errorInfo.Error == Interop.Error.ENOENT && !Directory.Exists(Path.GetDirectoryName(destFullPath))) // The parent directory of destFile can't be found
                 {
@@ -88,18 +83,11 @@ namespace System.IO
 
         public override void DeleteFile(string fullPath)
         {
-            while (Interop.Sys.Unlink(fullPath) < 0)
+            if (Interop.Sys.Unlink(fullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.EINTR) // interrupted; try again
-                {
-                    continue;
-                }
-                else if (errorInfo.Error == Interop.Error.ENOENT) // already doesn't exist; nop
-                {
-                    break;
-                }
-                else
+                // ENOENT means it already doesn't exist; nop
+                if (errorInfo.Error != Interop.Error.ENOENT)
                 {
                     if (errorInfo.Error == Interop.Error.EISDIR)
                         errorInfo = Interop.Error.EACCES.Info();
@@ -182,10 +170,11 @@ namespace System.IO
                     throw new PathTooLongException(SR.IO_PathTooLong);
                 }
 
-                Interop.ErrorInfo errorInfo = default(Interop.ErrorInfo);
-                while ((result = Interop.Sys.MkDir(name, (int)Interop.Sys.Permissions.S_IRWXU)) < 0 && (errorInfo = Interop.Sys.GetLastErrorInfo()).Error == Interop.Error.EINTR) ;
+                result = Interop.Sys.MkDir(name, (int)Interop.Sys.Permissions.S_IRWXU);
                 if (result < 0 && firstError.Error == 0)
                 {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
                     // While we tried to avoid creating directories that don't
                     // exist above, there are a few cases that can fail, e.g.
                     // a race condition where another process or thread creates
@@ -212,13 +201,11 @@ namespace System.IO
 
         public override void MoveDirectory(string sourceFullPath, string destFullPath)
         {
-            while (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
+            if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
                 {
-                    case Interop.Error.EINTR: // interrupted; try again
-                        continue;
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
                     default:
@@ -283,13 +270,11 @@ namespace System.IO
                 }
             }
 
-            while (Interop.Sys.RmDir(fullPath) < 0)
+            if (Interop.Sys.RmDir(fullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
                 {
-                    case Interop.Error.EINTR: // interrupted; try again
-                        continue;
                     case Interop.Error.EACCES:
                     case Interop.Error.EPERM:
                     case Interop.Error.EROFS:
@@ -327,21 +312,15 @@ namespace System.IO
         private static bool FileExists(string fullPath, int fileType, out Interop.ErrorInfo errorInfo)
         {
             Interop.Sys.FileStatus fileinfo;
-            while (true)
+            errorInfo = default(Interop.ErrorInfo);
+
+            int result = Interop.Sys.Stat(fullPath, out fileinfo);
+            if (result < 0)
             {
-                errorInfo = default(Interop.ErrorInfo);
-                int result = Interop.Sys.Stat(fullPath, out fileinfo);
-                if (result < 0)
-                {
-                    errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error == Interop.Error.EINTR)
-                    {
-                        continue;
-                    }
-                    return false;
-                }
-                return (fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == fileType;
+                errorInfo = Interop.Sys.GetLastErrorInfo();
+                return false;
             }
+            return (fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == fileType;
         }
 
         public override IEnumerable<string> EnumeratePaths(string path, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
@@ -574,7 +553,7 @@ namespace System.IO
 
         public override void SetCurrentDirectory(string fullPath)
         {
-            while (Interop.CheckIo(Interop.Sys.ChDir(fullPath), fullPath)) ;
+            Interop.CheckIo(Interop.Sys.ChDir(fullPath), fullPath);
         }
 
         public override FileAttributes GetAttributes(string fullPath)

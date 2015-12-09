@@ -123,7 +123,7 @@ namespace System.IO
                 // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory, 
                 // and not atomic with file opening, it's better than nothing.
                 Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
-                SysCall<Interop.Sys.LockOperations, int>((fd, op, _) => Interop.Sys.FLock(fd, op), lockOperation | Interop.Sys.LockOperations.LOCK_NB);
+                CheckFileCall(Interop.Sys.FLock(_fileHandle, lockOperation | Interop.Sys.LockOperations.LOCK_NB));
 
                 // These provide hints around how the file will be accessed.  Specifying both RandomAccess
                 // and Sequential together doesn't make sense as they are two competing options on the same spectrum,
@@ -134,9 +134,7 @@ namespace System.IO
                     0;
                 if (fadv != 0)
                 {
-                    SysCall<Interop.Sys.FileAdvice, int>(
-                        (fd, advice, _) => Interop.Sys.PosixFAdvise(fd, 0, 0, advice),
-                        fadv,
+                    CheckFileCall(Interop.Sys.PosixFAdvise(_fileHandle, 0, 0, fadv), 
                         ignoreNotSupported: true); // just a hint.
                 }
 
@@ -294,7 +292,7 @@ namespace System.IO
                 if (!_canSeek.HasValue)
                 {
                     // Lazily-initialize whether we're able to seek, tested by seeking to our current location.
-                    _canSeek = SysCall<int, int>((fd, _, __) => Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_CUR), throwOnError: false) >= 0;
+                    _canSeek = Interop.Sys.LSeek(_fileHandle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0;
                 }
                 return _canSeek.Value;
             }
@@ -321,12 +319,9 @@ namespace System.IO
                 }
 
                 // Get the length of the file as reported by the OS
-                long length = SysCall<int, int>((fd, _, __) =>
-                {
-                    Interop.Sys.FileStatus status;
-                    int result = Interop.Sys.FStat(fd, out status);
-                    return result >= 0 ? status.Size : result;
-                });
+                Interop.Sys.FileStatus status;
+                CheckFileCall(Interop.Sys.FStat(_fileHandle, out status));
+                long length = status.Size;
 
                 // But we may have buffered some data to be written that puts our length
                 // beyond what the OS is aware of.  Update accordingly.
@@ -499,7 +494,7 @@ namespace System.IO
         /// <summary>Flushes the OS buffer.  This does not flush the internal read/write buffer.</summary>
         private void FlushOSBuffer()
         {
-            SysCall<int, int>((fd, _, __) => Interop.Sys.FSync(fd));
+            CheckFileCall(Interop.Sys.FSync(_fileHandle));
         }
 
         /// <summary>
@@ -622,7 +617,7 @@ namespace System.IO
                 SeekCore(value, SeekOrigin.Begin);
             }
 
-            SysCall<long, int>((fd, length, _) => Interop.Sys.FTruncate(fd, length), value);
+            CheckFileCall(Interop.Sys.FTruncate(_fileHandle, value));
 
             // Return file pointer to where it was before setting length
             if (origPos != value)
@@ -760,12 +755,8 @@ namespace System.IO
             int bytesRead;
             fixed (byte* bufPtr = array)
             {
-                bytesRead = (int)SysCall((fd, ptr, len) =>
-                {
-                    int result = Interop.Sys.Read(fd, (byte*)ptr, len);
-                    Debug.Assert(result <= len);
-                    return result;
-                }, (IntPtr)(bufPtr + offset), count);
+                bytesRead = CheckFileCall(Interop.Sys.Read(_fileHandle, bufPtr + offset, count));
+                Debug.Assert(bytesRead <= count);
             }
             _filePosition += bytesRead;
             return bytesRead;
@@ -1001,12 +992,9 @@ namespace System.IO
             {
                 while (count > 0)
                 {
-                    int bytesWritten = (int)SysCall((fd, ptr, len) =>
-                    {
-                        int result = Interop.Sys.Write(fd, (byte*)ptr, len);
-                        Debug.Assert(result <= len);
-                        return result;
-                    }, (IntPtr)(bufPtr + offset), count);
+                    int bytesWritten = CheckFileCall(Interop.Sys.Write(_fileHandle, bufPtr + offset, count));
+                    Debug.Assert(bytesWritten <= count);
+
                     _filePosition += bytesWritten;
                     count -= bytesWritten;
                     offset += bytesWritten;
@@ -1121,7 +1109,7 @@ namespace System.IO
         private void WriteByteCore(byte value)
         {
             PrepareForWriting();
-            
+
             // Flush the write buffer if it's full
             if (_writePos == _bufferLength)
             {
@@ -1250,58 +1238,30 @@ namespace System.IO
             Debug.Assert(!_fileHandle.IsClosed && CanSeek);
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
-            long pos = SysCall((fd, off, or) => Interop.Sys.LSeek(fd, off, or), offset, (Interop.Sys.SeekWhence)(int)origin); // SeekOrigin values are the same as Interop.libc.SeekWhence values
+            long pos = CheckFileCall(Interop.Sys.LSeek(_fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin)); // SeekOrigin values are the same as Interop.libc.SeekWhence values
             _filePosition = pos;
             return pos;
         }
 
-        /// <summary>
-        /// Helper for making system calls that involve the stream's file descriptor.
-        /// System calls are expected to return greather than or equal to zero on success,
-        /// and less than zero on failure.  In the case of failure, errno is expected to
-        /// be set to the relevant error code.
-        /// </summary>
-        /// <typeparam name="TArg1">Specifies the type of an argument to the system call.</typeparam>
-        /// <typeparam name="TArg2">Specifies the type of another argument to the system call.</typeparam>
-        /// <param name="sysCall">A delegate that invokes the system call.</param>
-        /// <param name="arg1">The first argument to be passed to the system call, after the file descriptor.</param>
-        /// <param name="arg2">The second argument to be passed to the system call.</param>
-        /// <param name="throwOnError">true to throw an exception if a non-interuption error occurs; otherwise, false.</param>
-        /// <returns>The return value of the system call.</returns>
-        /// <remarks>
-        /// Arguments are expected to be passed via <paramref name="arg1"/> and <paramref name="arg2"/>
-        /// so as to avoid delegate and closure allocations at the call sites.
-        /// </remarks>
-        private long SysCall<TArg1, TArg2>(
-            Func<SafeFileHandle, TArg1, TArg2, long> sysCall,
-            TArg1 arg1 = default(TArg1), TArg2 arg2 = default(TArg2),
-            bool throwOnError = true,
-            bool ignoreNotSupported = false)
+        private long CheckFileCall(long result, bool ignoreNotSupported = false)
         {
-            SafeFileHandle handle = _fileHandle;
-
-            Debug.Assert(sysCall != null);
-            Debug.Assert(handle != null);
-            Debug.Assert(!handle.IsInvalid);
-
-            // System calls may fail due to EINTR (signal interruption).  We need to retry in those cases.
-            while (true)
+            if (result < 0)
             {
-                long result = sysCall(handle, arg1, arg2);
-                if (result < 0)
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (!(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
                 {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    if (errorInfo.Error == Interop.Error.EINTR)
-                    {
-                        continue;
-                    }
-                    else if (throwOnError && !(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
-                    {
-                        throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
-                    }
+                    throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
                 }
-                return result;
             }
+
+            return result;
+        }
+
+        private int CheckFileCall(int result, bool ignoreNotSupported = false)
+        {
+            CheckFileCall((long)result, ignoreNotSupported);
+
+            return result;
         }
 
         /// <summary>State used when the stream is in async mode.</summary>
