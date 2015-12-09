@@ -2,7 +2,7 @@
   "dependencies": {
     "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0025",
     "System.Collections": "4.0.10",
-    "System.Console": "4.0.0-beta-*",
+    "System.Console": "4.0.0-rc2-23604",
     "System.Diagnostics.Debug": "4.0.10",
     "System.Globalization": "4.0.10",
     "System.IO": "4.0.10",
@@ -13,7 +13,7 @@
     "System.Threading": "4.0.10",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
     "dnxcore50": {}

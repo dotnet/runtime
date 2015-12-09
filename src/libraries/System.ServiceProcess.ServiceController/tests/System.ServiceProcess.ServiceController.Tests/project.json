@@ -1,12 +1,12 @@
 {
   "dependencies": {
-    "Microsoft.Win32.Registry": "4.0.0-beta-*",
-    "System.Diagnostics.Process": "4.0.0-beta-*",
+    "Microsoft.Win32.Registry": "4.0.0-rc2-23604",
+    "System.Diagnostics.Process": "4.0.0-rc2-23604",
     "System.Runtime": "4.0.20",
-    "System.Security.Principal.Windows": "4.0.0-beta-*",
+    "System.Security.Principal.Windows": "4.0.0-rc2-23604",
     "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+    "xunit.netcore.extensions": "1.0.0-prerelease-00123"
   },
   "frameworks": {
     "dnxcore50": {}
