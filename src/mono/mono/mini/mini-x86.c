@@ -6652,7 +6652,7 @@ emit_load_aotconst (guint8 *start, guint8 *code, MonoCompile *cfg, MonoJumpInfo 
  * EAX.
  */
 guint8*
-mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, int tramp_type, gconstpointer target)
+mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, MonoJumpInfoType tramp_type, gconstpointer target)
 {
 	/* Load the mscorlib got address */
 	x86_mov_reg_membase (code, X86_EAX, MONO_ARCH_GOT_REG, sizeof (gpointer), 4);
