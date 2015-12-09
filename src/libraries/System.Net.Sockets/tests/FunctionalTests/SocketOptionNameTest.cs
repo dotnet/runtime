@@ -11,24 +11,24 @@ namespace System.Net.Sockets.Tests
 {
     public class SocketOptionNameTest
     {
-        private static bool IsWindows10Platform
+        private static bool SocketsReuseUnicastPortSupport
         {
             get
             {
-                return Capability.IsWindows10Platform();
+                return Capability.SocketsReuseUnicastPortSupport();
             }
         }
 
-        private static bool IsNotWindows10Platform
+        private static bool NoSocketsReuseUnicastPortSupport
         {
             get
             {
-                return !Capability.IsWindows10Platform();
+                return !Capability.SocketsReuseUnicastPortSupport();
             }
         }
 
-        [ConditionalFact("IsNotWindows10Platform")]
-        public void ReuseUnicastPort_CreateSocketGetOption_NotWindows10Platform_Throws()
+        [ConditionalFact("NoSocketsReuseUnicastPortSupport")]
+        public void ReuseUnicastPort_CreateSocketGetOption_NoSocketsReuseUnicastPortSupport_Throws()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             
@@ -44,8 +44,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact("IsWindows10Platform")]
-        public void ReuseUnicastPort_CreateSocketGetOption_Windows10Platform_OptionIsZero()
+        [ConditionalFact("SocketsReuseUnicastPortSupport")]
+        public void ReuseUnicastPort_CreateSocketGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             
@@ -53,8 +53,8 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(0, optionValue);
         }
 
-        [ConditionalFact("IsNotWindows10Platform")]
-        public void ReuseUnicastPort_CreateSocketSetOption_NotWindows10Platform_Throws()
+        [ConditionalFact("NoSocketsReuseUnicastPortSupport")]
+        public void ReuseUnicastPort_CreateSocketSetOption_NoSocketsReuseUnicastPortSupport_Throws()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             
@@ -70,12 +70,22 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ConditionalFact("SocketsReuseUnicastPortSupport")]
+        public void ReuseUnicastPort_CreateSocketSetOptionToZeroAndGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
+        {
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 0);
+            int optionValue = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort);
+            Assert.Equal(0, optionValue);
+        }
+
         // TODO: Issue #4887
         // The socket option 'ReuseUnicastPost' only works on Windows 10 systems. In addition, setting the option
         // is a no-op unless specialized network settings using PowerShell configuration are first applied to the
         // machine. This is currently difficult to test in the CI environment. So, this ests will be disabled for now
         [ActiveIssue(4887)]
-        public void ReuseUnicastPort_CreateSocketSetOptionToOneAndGetOption_Windows10Platform_OptionIsOne()
+        public void ReuseUnicastPort_CreateSocketSetOptionToOneAndGetOption_SocketsReuseUnicastPortSupport_OptionIsOne()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
