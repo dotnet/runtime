@@ -136,7 +136,7 @@ namespace System.Threading.Tasks.Channels.Tests
         }
 
         [Fact]
-        public void CreateFromTask_AsTaskIdemptotent()
+        public void CreateFromTask_AsTaskIdempotent()
         {
             Task<int> source = Task.FromResult(42);
             ValueTask<int> t = new ValueTask<int>(source);
@@ -145,7 +145,7 @@ namespace System.Threading.Tasks.Channels.Tests
         }
 
         [Fact]
-        public void CreateFromValue_AsTaskNotIdemptotent()
+        public void CreateFromValue_AsTaskNotIdempotent()
         {
             ValueTask<int> t = new ValueTask<int>(42);
             Assert.NotSame(Task.FromResult(42), t.AsTask());
