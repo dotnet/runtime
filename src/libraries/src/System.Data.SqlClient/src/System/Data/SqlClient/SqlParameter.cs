@@ -479,7 +479,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        public new Byte Precision
+        public override Byte Precision
         {
             get
             {
@@ -523,7 +523,7 @@ namespace System.Data.SqlClient
             return (0 != _precision);
         }
 
-        public new Byte Scale
+        public override Byte Scale
         {
             get
             {
@@ -534,6 +534,7 @@ namespace System.Data.SqlClient
                 ScaleInternal = value;
             }
         }
+
         internal byte ScaleInternal
         {
             get
