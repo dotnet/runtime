@@ -60,6 +60,9 @@
 #include <locale.h>
 #include "version.h"
 #include "debugger-agent.h"
+#if TARGET_OSX
+#   include <sys/resource.h>
+#endif
 
 static FILE *mini_stats_fd;
 
@@ -1470,6 +1473,22 @@ switch_gc (char* argv[], const char* target_gc)
 
 #ifdef TARGET_OSX
 
+/*
+ * tries to increase the minimum number of files, if the number is below 1024
+ */
+static void
+darwin_change_default_file_handles ()
+{
+	struct rlimit limit;
+	
+	if (getrlimit (RLIMIT_NOFILE, &limit) == 0){
+		if (limit.rlim_cur < 1024){
+			limit.rlim_cur = MAX(1024,limit.rlim_cur);
+			setrlimit (RLIMIT_NOFILE, &limit);
+		}
+	}
+}
+
 static void
 switch_arch (char* argv[], const char* target_arch)
 {
@@ -1550,6 +1569,10 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
+#if TARGET_OSX
+	darwin_change_default_file_handles ();
+#endif
+	
 	if (g_getenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
 	
