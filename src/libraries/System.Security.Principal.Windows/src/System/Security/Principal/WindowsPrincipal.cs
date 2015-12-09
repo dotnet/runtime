@@ -3,8 +3,8 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
 using System.Security.Claims;
 
 namespace System.Security.Principal
@@ -168,7 +168,7 @@ namespace System.Security.Principal
                                                   (uint)TokenImpersonationLevel.Identification,
                                                   (uint)TokenType.TokenImpersonation,
                                                   ref token))
-                    throw new SecurityException(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                    throw new SecurityException(new Win32Exception().Message);
             }
 
             bool isMember = false;
@@ -176,7 +176,7 @@ namespace System.Security.Principal
             if (!Interop.mincore.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
                                                   sid.BinaryForm,
                                                   ref isMember))
-                throw new SecurityException(Interop.mincore.GetMessage(Marshal.GetLastWin32Error()));
+                throw new SecurityException(new Win32Exception().Message);
 
             token.Dispose();
             return isMember;
