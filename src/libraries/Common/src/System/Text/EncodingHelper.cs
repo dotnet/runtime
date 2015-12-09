@@ -7,9 +7,8 @@ using System.Text;
 namespace System.Text
 {
     // If we find issues with this or if more libraries need this behavior we will revist the solution.
-    internal class EncodingHelper
+    internal static partial class EncodingHelper
     {
-
         // Since only a minimum set of encodings are available by default,
         // Console encoding might not be available and require provider registering.
         // To avoid encoding exception in Console APIs we default to UTF8 in such scenarios.
