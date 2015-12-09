@@ -13,14 +13,13 @@ namespace System
     // array of bytes.
     public static class BitConverter
     {
-        // This field indicates the "endianess" of the architecture.
-        // The value is set to true if the architecture is
-        // little endian; false if it is big endian.
-#if BIGENDIAN
-        public static readonly bool IsLittleEndian /* = false */;
-#else
-        public static readonly bool IsLittleEndian = true;
-#endif
+        public static readonly bool IsLittleEndian = GetIsLittleEndian();
+
+        private static unsafe bool GetIsLittleEndian()
+        {
+            int i = 1;
+            return *((byte*)&i) == 1;
+        }
 
         // Converts a Boolean into an array of bytes with length one.
         public static byte[] GetBytes(bool value)
