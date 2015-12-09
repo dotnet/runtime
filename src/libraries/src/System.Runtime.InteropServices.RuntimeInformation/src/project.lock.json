@@ -1,5 +1,5 @@
 {
-  "locked": false,
+  "locked": true,
   "version": 2,
   "targets": {
     "DNXCore,Version=v5.0": {
