@@ -347,11 +347,7 @@ namespace System.IO
                 // the existing descriptor.  This works even in the case of a rename. We also add the DONT_FOLLOW
                 // and EXCL_UNLINK flags to keep parity with Windows where we don't pickup symlinks or unlinked
                 // files (which don't exist in Windows)
-                int wd = (int)SysCall(
-                    (fd, path, thisRef) => Interop.Sys.INotifyAddWatch(fd, path, (uint)(thisRef._notifyFilters | Interop.Sys.NotifyEvents.IN_DONT_FOLLOW | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK)),
-                    fullPath,
-                    this, 
-                    checkErrors: false);
+                int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, (uint)(this._notifyFilters | Interop.Sys.NotifyEvents.IN_DONT_FOLLOW | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK));
                 if (wd == -1)
                 {
                     // If we get an error when trying to add the watch, don't let that tear down processing.  Instead,
@@ -479,15 +475,11 @@ namespace System.IO
                 // And if the caller has requested, remove the associated inotify watch.
                 if (removeInotify)
                 {
-                    SysCall((fd, dirEntry, _) => 
-                    {
-                        // Remove the inotify watch.  This could fail if our state has become inconsistent
-                        // with the state of the world (e.g. due to lost events).  So we don't want failures
-                        // to throw exceptions, but we do assert to detect coding problems during debugging.
-                        long result = Interop.Sys.INotifyRemoveWatch(fd, dirEntry.WatchDescriptor);
-                        Debug.Assert(result >= 0);
-                        return 0;
-                    }, directoryEntry, 0);
+                    // Remove the inotify watch.  This could fail if our state has become inconsistent
+                    // with the state of the world (e.g. due to lost events).  So we don't want failures
+                    // to throw exceptions, but we do assert to detect coding problems during debugging.
+                    int result = Interop.Sys.INotifyRemoveWatch(_inotifyHandle, directoryEntry.WatchDescriptor);
+                    Debug.Assert(result >= 0);
                 }
             }
 
@@ -501,14 +493,12 @@ namespace System.IO
                 {
                     // Remove all watches (inotiy_rm_watch) and clear out the map.
                     // No additional watches will be added after this point.
-                    SysCall((fd, thisRef, _) => {
-                        foreach (int wd in thisRef._wdToPathMap.Keys)
-                        {
-                            int result = Interop.Sys.INotifyRemoveWatch(fd, wd);
-                            Debug.Assert(result >= 0); // ignore errors; they're non-fatal, but they also shouldn't happen
-                        }
-                        return 0;
-                    }, this, 0);
+                    foreach (int wd in this._wdToPathMap.Keys)
+                    {
+                        int result = Interop.Sys.INotifyRemoveWatch(_inotifyHandle, wd);
+                        Debug.Assert(result >= 0); // ignore errors; they're non-fatal, but they also shouldn't happen
+                    }
+
                     _wdToPathMap.Clear();
                 }
             }
@@ -746,15 +736,12 @@ namespace System.IO
                     {
                         try
                         {
-                            _bufferAvailable = (int)SysCall((fd, thisRef, _) => {
-                                int result;
-                                fixed (byte* buf = thisRef._buffer)
-                                {
-                                    result = Interop.Sys.Read(fd, buf, thisRef._buffer.Length);
-                                }
-                                Debug.Assert(result <= thisRef._buffer.Length);
-                                return result;
-                            }, this, 0);
+                            fixed (byte* buf = this._buffer)
+                            {
+                                _bufferAvailable = Interop.CheckIo(Interop.Sys.Read(_inotifyHandle, buf, this._buffer.Length), 
+                                    isDirectory: true);
+                                Debug.Assert(_bufferAvailable <= this._buffer.Length);
+                            }
                         }
                         catch (ArgumentException)
                         {
@@ -820,37 +807,6 @@ namespace System.IO
                 return lengthWithoutNullTerm > 0 ?
                     Encoding.UTF8.GetString(_buffer, position, lengthWithoutNullTerm) :
                     string.Empty;
-            }
-
-            /// <summary>
-            /// Helper for making system calls that involve the stream's file descriptor.
-            /// System calls are expected to return greather than or equal to zero on success,
-            /// and less than zero on failure.  In the case of failure, errno is expected to
-            /// be set to the relevant error code.
-            /// </summary>
-            /// <param name="sysCall">A delegate that invokes the system call.  It's passed the associated file descriptor and should return the result.</param>
-            /// <param name="arg1">The first argument to be passed to the system call, after the file descriptor.</param>
-            /// <param name="arg2">The second argument to be passed to the system call.</param>
-            /// <param name="checkErrors">true to validate the result of the <paramref name="sysCall"/>; false to leave that responsibility to the caller.</param>
-            /// <returns>The return value of the system call.</returns>
-            /// <remarks>
-            /// Arguments are expected to be passed via <paramref name="arg1"/> and <paramref name="arg2"/>
-            /// so as to avoid delegate and closure allocations at the call sites.
-            /// </remarks>
-            private long SysCall<TArg1, TArg2>(Func<SafeFileHandle, TArg1, TArg2, long> sysCall, TArg1 arg1, TArg2 arg2, bool checkErrors = true)
-            {
-                Debug.Assert((int)_inotifyHandle.DangerousGetHandle() >= 0);
-
-                if (checkErrors)
-                {
-                    long result;
-                    while (Interop.CheckIo(result = sysCall(_inotifyHandle, arg1, arg2), isDirectory: true)) ;
-                    return result;
-                }
-                else
-                {
-                    return sysCall(_inotifyHandle, arg1, arg2);
-                }
             }
 
             /// <summary>An event read and translated from the inotify handle.</summary>

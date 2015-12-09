@@ -20,13 +20,8 @@ namespace Microsoft.Win32.SafeHandles
         internal static SafePipeHandle Open(string path, Interop.Sys.OpenFlags flags, int mode)
         {
             // Ideally this would be a constrained execution region, but we don't have access to PrepareConstrainedRegions.
-            // The SafePipeHandle is allocated first to avoid the allocation after getting the file descriptor but before storing it.
-            SafePipeHandle handle = new SafePipeHandle();
+            SafePipeHandle handle = Interop.CheckIo(Interop.Sys.OpenPipe(path, flags, mode));
 
-            IntPtr fd;
-            while (Interop.CheckIo(fd = Interop.Sys.Open(path, flags, mode))) ;
-
-            handle.SetHandle(fd);
             Debug.Assert(!handle.IsInvalid);
 
             return handle;

@@ -188,8 +188,7 @@ namespace System.IO
             byte[] name = Encoding.UTF8.GetBytes(template);
 
             // Create, open, and close the temp file.
-            IntPtr fd;
-            Interop.CheckIo(fd = Interop.Sys.MksTemps(name, SuffixByteLength));
+            IntPtr fd = Interop.CheckIo(Interop.Sys.MksTemps(name, SuffixByteLength));
             Interop.Sys.Close(fd); // ignore any errors from close; nothing to do if cleanup isn't possible
 
             // 'name' is now the name of the file

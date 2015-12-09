@@ -93,7 +93,8 @@ extern "C" int32_t ReadStdinUnbuffered(void* buffer, int32_t bufferSize)
         return -1;
     }
 
-    ssize_t count = read(STDIN_FILENO, buffer, UnsignedCast(bufferSize));
+    ssize_t count;
+    while (CheckInterrupted(count = read(STDIN_FILENO, buffer, UnsignedCast(bufferSize))));
     return static_cast<int32_t>(count);
 }
 

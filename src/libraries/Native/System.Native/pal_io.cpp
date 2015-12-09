@@ -149,7 +149,8 @@ static void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 extern "C" int32_t Stat(const char* path, FileStatus* output)
 {
     struct stat_ result;
-    int ret = stat_(path, &result);
+    int ret;
+    while (CheckInterrupted(ret = stat_(path, &result)));
 
     if (ret == 0)
     {
@@ -162,7 +163,8 @@ extern "C" int32_t Stat(const char* path, FileStatus* output)
 extern "C" int32_t FStat(intptr_t fd, FileStatus* output)
 {
     struct stat_ result;
-    int ret = fstat_(ToFileDescriptor(fd), &result);
+    int ret;
+    while (CheckInterrupted(ret = fstat_(ToFileDescriptor(fd), &result)));
 
     if (ret == 0)
     {
@@ -234,7 +236,9 @@ extern "C" intptr_t Open(const char* path, int32_t flags, int32_t mode)
         return -1;
     }
 
-    return open(path, flags, static_cast<mode_t>(mode));
+    int result;
+    while (CheckInterrupted(result = open(path, flags, static_cast<mode_t>(mode))));
+    return result;
 }
 
 extern "C" int32_t Close(intptr_t fd)
@@ -244,12 +248,16 @@ extern "C" int32_t Close(intptr_t fd)
 
 extern "C" intptr_t Dup(intptr_t oldfd)
 {
-    return dup(ToFileDescriptor(oldfd));
+    int result;
+    while (CheckInterrupted(result = dup(ToFileDescriptor(oldfd))));
+    return result;
 }
 
 extern "C" int32_t Unlink(const char* path)
 {
-    return unlink(path);
+    int32_t result;
+    while (CheckInterrupted(result = unlink(path)));
+    return result;
 }
 
 extern "C" intptr_t ShmOpen(const char* name, int32_t flags, int32_t mode)
@@ -272,7 +280,9 @@ extern "C" intptr_t ShmOpen(const char* name, int32_t flags, int32_t mode)
 
 extern "C" int32_t ShmUnlink(const char* name)
 {
-    return shm_unlink(name);
+    int32_t result;
+    while (CheckInterrupted(result = shm_unlink(name)));
+    return result;
 }
 
 static void ConvertDirent(const dirent& entry, DirectoryEntry* outputEntry)
@@ -370,11 +380,13 @@ extern "C" int32_t Pipe(int32_t pipeFds[2], int32_t flags)
             return -1;
     }
 
+    int32_t result;
 #if HAVE_PIPE2
-    return pipe2(pipeFds, flags);
+    while (CheckInterrupted(result = pipe2(pipeFds, flags)));
 #else
-    return pipe(pipeFds);         // CLOEXEC intentionally ignored on platforms without pipe2.
+    while (CheckInterrupted(result = pipe(pipeFds)));         // CLOEXEC intentionally ignored on platforms without pipe2.
 #endif
+    return result;
 }
 
 extern "C" int32_t FcntlCanGetSetPipeSz()
@@ -389,7 +401,9 @@ extern "C" int32_t FcntlCanGetSetPipeSz()
 extern "C" int32_t FcntlGetPipeSz(intptr_t fd)
 {
 #ifdef F_GETPIPE_SZ
-    return fcntl(ToFileDescriptor(fd), F_GETPIPE_SZ);
+    int32_t result;
+    while (CheckInterrupted(result = fcntl(ToFileDescriptor(fd), F_GETPIPE_SZ)));
+    return result;
 #else
     (void)fd;
     errno = ENOTSUP;
@@ -400,7 +414,9 @@ extern "C" int32_t FcntlGetPipeSz(intptr_t fd)
 extern "C" int32_t FcntlSetPipeSz(intptr_t fd, int32_t size)
 {
 #ifdef F_SETPIPE_SZ
-    return fcntl(ToFileDescriptor(fd), F_SETPIPE_SZ, size);
+    int32_t result;
+    while (CheckInterrupted(result = fcntl(ToFileDescriptor(fd), F_SETPIPE_SZ, size)));
+    return result;
 #else
     (void)fd, (void)size;
     errno = ENOTSUP;
@@ -432,32 +448,44 @@ extern "C" int32_t FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonBlocking)
 
 extern "C" int32_t MkDir(const char* path, int32_t mode)
 {
-    return mkdir(path, static_cast<mode_t>(mode));
+    int32_t result;
+    while (CheckInterrupted(result = mkdir(path, static_cast<mode_t>(mode))));
+    return result;
 }
 
 extern "C" int32_t ChMod(const char* path, int32_t mode)
 {
-    return chmod(path, static_cast<mode_t>(mode));
+    int32_t result;
+    while (CheckInterrupted(result = chmod(path, static_cast<mode_t>(mode))));
+    return result;
 }
 
 extern "C" int32_t MkFifo(const char* path, int32_t mode)
 {
-    return mkfifo(path, static_cast<mode_t>(mode));
+    int32_t result;
+    while (CheckInterrupted(result = mkfifo(path, static_cast<mode_t>(mode))));
+    return result;
 }
 
 extern "C" int32_t FSync(intptr_t fd)
 {
-    return fsync(ToFileDescriptor(fd));
+    int32_t result;
+    while (CheckInterrupted(result = fsync(ToFileDescriptor(fd))));
+    return result;
 }
 
 extern "C" int32_t FLock(intptr_t fd, LockOperations operation)
 {
-    return flock(ToFileDescriptor(fd), operation);
+    int32_t result;
+    while (CheckInterrupted(result = flock(ToFileDescriptor(fd), operation)));
+    return result;
 }
 
 extern "C" int32_t ChDir(const char* path)
 {
-    return chdir(path);
+    int32_t result;
+    while (CheckInterrupted(result = chdir(path)));
+    return result;
 }
 
 extern "C" int32_t Access(const char* path, AccessMode mode)
@@ -472,17 +500,23 @@ extern "C" int32_t FnMatch(const char* pattern, const char* path, FnMatchFlags f
 
 extern "C" int64_t LSeek(intptr_t fd, int64_t offset, SeekWhence whence)
 {
-    return lseek(ToFileDescriptor(fd), offset, whence);
+    int64_t result;
+    while (CheckInterrupted(result = lseek(ToFileDescriptor(fd), offset, whence)));
+    return result;
 }
 
 extern "C" int32_t Link(const char* source, const char* linkTarget)
 {
-    return link(source, linkTarget);
+    int32_t result;
+    while (CheckInterrupted(result = link(source, linkTarget)));
+    return result;
 }
 
 extern "C" intptr_t MksTemps(char* pathTemplate, int32_t suffixLength)
 {
-    return mkstemps(pathTemplate, suffixLength);
+    intptr_t result;
+    while (CheckInterrupted(result = mkstemps(pathTemplate, suffixLength)));
+    return  result;
 }
 
 static int32_t ConvertMMapProtection(int32_t protection)
@@ -692,7 +726,9 @@ extern "C" int64_t SysConf(SysConfName name)
 
 extern "C" int32_t FTruncate(intptr_t fd, int64_t length)
 {
-    return ftruncate(ToFileDescriptor(fd), length);
+    int32_t result;
+    while (CheckInterrupted(result = ftruncate(ToFileDescriptor(fd), length)));
+    return result;
 }
 
 extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
@@ -717,7 +753,9 @@ extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t millis
         pollfds[i] = { .fd = event.FileDescriptor, .events = event.Events, .revents = 0 };
     }
 
-    int rv = poll(pollfds, static_cast<nfds_t>(eventCount), milliseconds);
+    int rv;
+    while (CheckInterrupted(rv = poll(pollfds, static_cast<nfds_t>(eventCount), milliseconds)));
+
     if (rv < 0)
     {
         if (!useStackBuffer)
@@ -751,7 +789,9 @@ extern "C" Error Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t millis
 extern "C" int32_t PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, FileAdvice advice)
 {
 #if HAVE_POSIX_ADVISE
-    return posix_fadvise(ToFileDescriptor(fd), offset, length, advice);
+    int32_t result;
+    while (CheckInterrupted(result = posix_fadvise(ToFileDescriptor(fd), offset, length, advice)));
+    return result;
 #else
     // Not supported on this platform. Caller can ignore this failure since it's just a hint.
     (void)fd, (void)offset, (void)length, (void)advice;
@@ -770,7 +810,9 @@ extern "C" int32_t Read(intptr_t fd, void* buffer, int32_t bufferSize)
         return -1;
     }
 
-    ssize_t count = read(ToFileDescriptor(fd), buffer, UnsignedCast(bufferSize));
+    ssize_t count;
+    while (CheckInterrupted(count = read(ToFileDescriptor(fd), buffer, UnsignedCast(bufferSize))));
+
     assert(count >= -1 && count <= bufferSize);
     return static_cast<int32_t>(count);
 }
@@ -793,12 +835,16 @@ extern "C" int32_t ReadLink(const char* path, char* buffer, int32_t bufferSize)
 
 extern "C" int32_t Rename(const char* oldPath, const char* newPath)
 {
-    return rename(oldPath, newPath);
+    int32_t result;
+    while (CheckInterrupted(result = rename(oldPath, newPath)));
+    return result;
 }
 
 extern "C" int32_t RmDir(const char* path)
 {
-    return rmdir(path);
+    int32_t result;
+    while (CheckInterrupted(result = rmdir(path)));
+    return result;
 }
 
 extern "C" void Sync()
@@ -817,7 +863,9 @@ extern "C" int32_t Write(intptr_t fd, const void* buffer, int32_t bufferSize)
         return -1;
     }
 
-    ssize_t count = write(ToFileDescriptor(fd), buffer, UnsignedCast(bufferSize));
+    ssize_t count;
+    while (CheckInterrupted(count = write(ToFileDescriptor(fd), buffer, UnsignedCast(bufferSize))));
+
     assert(count >= -1 && count <= bufferSize);
     return static_cast<int32_t>(count);
 }
