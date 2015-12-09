@@ -3,6 +3,7 @@
 
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
@@ -333,7 +334,7 @@ namespace System.Security.Principal
                         Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Interop.LsaLookupNames(2) returned unrecognized error {0}", win32ErrorCode));
                     }
 
-                    throw new Exception(Interop.mincore.GetMessage(win32ErrorCode));
+                    throw new Win32Exception(win32ErrorCode);
                 }
 
                 //
